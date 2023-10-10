@@ -21,6 +21,7 @@
 		Subscription,
 		System,
 		Tcp,
+		Telemetry,
 		Timer,
 		UserManagement
 	}

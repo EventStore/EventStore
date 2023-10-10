@@ -19,7 +19,6 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration
 
 		static (Action, IPublisher) CreateRuntime(InMemoryBus mainBus, IQueuedHandler mainQueue, ICheckpoint writerCheckpoint) {
 			var options = new ProjectionSubsystemOptions(3, ProjectionType.All, true, TimeSpan.FromMinutes(5), false, 500, 500);
-			var runtime = new ProjectionsSubsystem(options);
 			var config = new TFChunkDbConfig("mem", new VersionedPatternFileNamingStrategy("mem", "chunk-"), 10000, 0, writerCheckpoint, new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), 1, 1, true);
 			var db = new TFChunkDb(config);
 			var qs = new QueueStatsManager();
@@ -30,8 +29,8 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration
 				timeProvider));
 			
 			var sc = new StandardComponents(db, mainQueue, mainBus, ts, timeProvider, null, new IHttpService[] { }, mainBus, qs, new());
-			runtime.Register(sc);
-			runtime.Start();
+			var runtime = new ProjectionsSubsystem(options);
+			runtime.Create(sc).Start();
 			return (() => {
 				runtime.Stop();
 				db.Dispose();

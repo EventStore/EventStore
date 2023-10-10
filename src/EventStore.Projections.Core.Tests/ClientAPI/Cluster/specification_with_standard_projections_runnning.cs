@@ -120,7 +120,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 			var node = new MiniClusterNode<TLogFormat, TStreamId>(
 				PathName, index, endpoints.InternalTcp,
 				endpoints.ExternalTcp, endpoints.HttpEndPoint,
-				subsystems: new ISubsystem[] { _projections[index] }, gossipSeeds: gossipSeeds);
+				subsystems: new ISubsystemFactory[] { _projections[index] }, gossipSeeds: gossipSeeds);
 			return node;
 		}
 

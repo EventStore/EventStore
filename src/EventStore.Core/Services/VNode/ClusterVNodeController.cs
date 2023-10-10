@@ -56,7 +56,8 @@ namespace EventStore.Core.Services.VNode {
 
 		private readonly MessageForwardingProxy _forwardingProxy;
 		private readonly TimeSpan _forwardingTimeout;
-		private readonly IReadOnlyList<ISubsystem> _subSystems;
+		private readonly int _subsystemCount;
+		private readonly Action _startSubsystems;
 
 		private int _subSystemInitsToExpect;
 
@@ -75,19 +76,23 @@ namespace EventStore.Core.Services.VNode {
 
 		public ClusterVNodeController(IPublisher outputBus, VNodeInfo nodeInfo, TFChunkDb db,
 			INodeStatusTracker statusTracker,
-			ClusterVNodeOptions options, ClusterVNode<TStreamId> node, MessageForwardingProxy forwardingProxy) {
+			ClusterVNodeOptions options, ClusterVNode<TStreamId> node, MessageForwardingProxy forwardingProxy,
+			Action startSubsystems) {
 			Ensure.NotNull(outputBus, "outputBus");
 			Ensure.NotNull(nodeInfo, "nodeInfo");
 			Ensure.NotNull(db, "dbConfig");
 			Ensure.NotNull(node, "node");
 			Ensure.NotNull(forwardingProxy, "forwardingProxy");
+			Ensure.NotNull(startSubsystems, "startSubsystems");
 
 			_outputBus = outputBus;
 			_nodeInfo = nodeInfo;
 			_db = db;
 			_node = node;
 			_statusTracker = statusTracker;
-			_subSystems = options.Subsystems;
+			_startSubsystems = startSubsystems;
+			_subsystemCount = options.Subsystems.Count;
+			_subSystemInitsToExpect = _subsystemCount;
 			_clusterSize = options.Cluster.ClusterSize;
 			if (_clusterSize == 1) {
 				_serviceShutdownsToExpect = 1 /* StorageChaser */
@@ -97,7 +102,6 @@ namespace EventStore.Core.Services.VNode {
 				                            + 1 /* HttpService */;
 			}
 
-			_subSystemInitsToExpect = _subSystems.Count;
 
 			_forwardingProxy = forwardingProxy;
 			_forwardingTimeout = TimeSpan.FromMilliseconds(options.Database.PrepareTimeoutMs +
@@ -574,12 +578,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(AuthenticationMessage.AuthenticationProviderInitialized message) {
-			if (_subSystems != null) {
-				foreach (var subsystem in _subSystems) {
-					_node.AddTasks(subsystem.Start());
-				}
-			}
-
+			_startSubsystems();
 			_outputBus.Publish(message);
 			_fsm.Handle(new SystemMessage.SystemCoreReady());
 		}
@@ -590,7 +589,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(SystemMessage.SystemCoreReady message) {
-			if (_subSystems == null || _subSystems.Count == 0) {
+			if (_subsystemCount == 0) {
 				_outputBus.Publish(new SystemMessage.SystemReady());
 			} else {
 				_outputBus.Publish(message);

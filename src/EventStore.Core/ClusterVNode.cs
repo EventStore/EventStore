@@ -54,12 +54,14 @@ using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
 using EventStore.Core.Services.PeriodicLogs;
 using EventStore.Core.Synchronization;
+using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Native.UnixSignalManager;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Mono.Unix.Native;
@@ -496,13 +498,16 @@ namespace EventStore.Core {
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
 
-			_subsystems = options.Subsystems.ToArray();
-
 			_controller =
 				new ClusterVNodeController<TStreamId>(
 					(IPublisher)_mainBus, NodeInfo, Db,
 					trackers.NodeStatusTracker,
-					options, this, forwardingProxy);
+					options, this, forwardingProxy,
+					startSubsystems: () => {
+						foreach (var subsystem in _subsystems) {
+							AddTasks(subsystem.Start());
+						}
+					});
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager,
 				trackers.QueueTrackers);
 
@@ -1153,6 +1158,8 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ReadNextNPersistentMessages, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
 			_mainBus.Subscribe(perSubscrQueue
+				.WidenFrom<TelemetryMessage.Request, Message>());
+			_mainBus.Subscribe(perSubscrQueue
 				.WidenFrom<MonitoringMessage.GetAllPersistentSubscriptionStats, Message>());
 			_mainBus.Subscribe(
 				perSubscrQueue.WidenFrom<MonitoringMessage.GetStreamPersistentSubscriptionStats, Message>());
@@ -1188,6 +1195,7 @@ namespace EventStore.Core {
 			perSubscrBus.Subscribe<MonitoringMessage.GetAllPersistentSubscriptionStats>(persistentSubscription);
 			perSubscrBus.Subscribe<MonitoringMessage.GetStreamPersistentSubscriptionStats>(persistentSubscription);
 			perSubscrBus.Subscribe<MonitoringMessage.GetPersistentSubscriptionStats>(persistentSubscription);
+			perSubscrBus.Subscribe<TelemetryMessage.Request>(persistentSubscription);
 			perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(persistentSubscription);
 			perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionsRestart>(persistentSubscription);
 
@@ -1411,6 +1419,17 @@ namespace EventStore.Core {
 				GossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
 				options.Cluster.NodePriority, options.Cluster.ReadOnlyReplica, VersionInfo.Version);
 
+			// TELEMETRY
+			var telemetryService = new TelemetryService(
+				Db.Manager,
+				options,
+				_mainQueue,
+				new TelemetrySink(options.Application.TelemetryOptout),
+				Db.Config.WriterCheckpoint.AsReadOnly(),
+				memberInfo.InstanceId);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(telemetryService);
+			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(telemetryService);
+
 			if (!isSingleNode) {
 				// LEADER REPLICATION
 				var leaderReplicationService = new LeaderReplicationService(_mainQueue, NodeInfo.InstanceId, Db,
@@ -1523,13 +1542,13 @@ namespace EventStore.Core {
 				});
 			}
 
-			if (_subsystems != null) {
-				foreach (var subsystem in _subsystems) {
-					var http = new[] { _httpService };
-					subsystem.Register(new StandardComponents(Db, _mainQueue, _mainBus, _timerService, _timeProvider,
-						httpSendService, http, _workersHandler, _queueStatsManager, trackers.QueueTrackers));
-				}
-			}
+			// subsystems
+			var http = new[] { _httpService };
+			var standardComponents = new StandardComponents(Db, _mainQueue, _mainBus, _timerService, _timeProvider,
+					httpSendService, http, _workersHandler, _queueStatsManager, trackers.QueueTrackers);
+			_subsystems = options.Subsystems
+				.Select(factory => factory.Create(standardComponents))
+				.ToArray();
 
 			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,

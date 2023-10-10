@@ -11,6 +11,7 @@ using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core;
 using EventStore.Core.Authentication;
+using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication.InternalAuthentication;
@@ -20,8 +21,10 @@ using EventStore.Core.Certificates;
 using EventStore.Core.Hashing;
 using EventStore.Core.PluginModel;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.PluginHosting;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Plugins.Subsystems;
 using EventStore.Projections.Core;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -45,9 +48,12 @@ namespace EventStore.ClusterNode {
 
 			if (options == null) throw new ArgumentNullException(nameof(options));
 
+			// two plugin mechanisms; pluginLoader is the new one
 			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
 			var plugInContainer = FindPlugins();
 
+			options = LoadSubsystemsPlugins(pluginLoader, options);
+			
 			try {
 				ConfigureMD5();
 			} catch {
@@ -231,6 +237,22 @@ namespace EventStore.ClusterNode {
 						$"to be provided by an authentication plugin, confirm the plugin DLL is located in {Locations.PluginsDirectory}." +
 						Environment.NewLine +
 						$"Valid options for authentication are: {string.Join(", ", authenticationTypeToPlugin.Keys)}.");
+			}
+
+			static ClusterVNodeOptions LoadSubsystemsPlugins(PluginLoader pluginLoader, ClusterVNodeOptions options) {
+				var plugins = pluginLoader.Load<ISubsystemsPlugin<(ISubscriber, IPublisher)>>().ToArray();
+				foreach (var plugin in plugins) {
+					Log.Information("Loaded SubsystemsPlugin plugin: {plugin} {version}.",
+						plugin.CommandLineName,
+						plugin.Version);
+					var subsystemFactories = plugin.GetSubsystemFactories(configPath: options.Application.Config);
+					foreach (var subsystemFactory in subsystemFactories) {
+						options = options.WithSubsystem(new SubsystemFactoryAdapter<(ISubscriber, IPublisher)>(
+							subsystemFactory,
+							components => (components.MainBus, components.MainQueue)));
+					}
+				}
+				return options;
 			}
 
 			void ConfigureMD5() {

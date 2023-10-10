@@ -8,6 +8,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Telemetry;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
 using EventStore.Projections.Core.Services.Http;
@@ -101,6 +102,7 @@ namespace EventStore.Projections.Core {
 			mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(projectionManager);
 			mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(projectionManager);
 			mainBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(projectionManager);
+			mainBus.Subscribe<TelemetryMessage.Request>(projectionManager);
 
 			mainBus.Subscribe(ioDispatcher.Awaker);
 			mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
@@ -148,6 +150,8 @@ namespace EventStore.Projections.Core {
 			standardComponents.MainBus.Subscribe(
 				Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStopped>(projectionsStandardComponents
 					.LeaderInputQueue));
+			standardComponents.MainBus.Subscribe(
+				Forwarder.Create<TelemetryMessage.Request>(projectionsStandardComponents.LeaderInputQueue));
 			projectionsStandardComponents.LeaderMainBus.Subscribe(new UnwrapEnvelopeHandler());
 		}
 	}

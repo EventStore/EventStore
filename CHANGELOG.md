@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file.
 - Documentation for FIPS 140-2 compliance [EventStore#3948](https://github.com/EventStore/EventStore/pull/3948)
 - Documentation for redaction [EventStore#3949](https://github.com/EventStore/EventStore/pull/3949)
 - Add steps to update certificates [EventStore#3940](https://github.com/EventStore/EventStore/pull/3940)
+- Call home database telemetry. [EventStore#3947](https://github.com/EventStore/EventStore/pull/3947)
+- Support for more plugins use cases [EventStore#3984](https://github.com/EventStore/EventStore/pull/3984)
 
 ### Fixed
 - PersistentConfig1 system event does not begin with $ [EventStore#3932](https://github.com/EventStore/EventStore/pull/3932)
@@ -35,6 +37,7 @@ All notable changes to this project will be documented in this file.
 - Allow users to login with usernames/passwords having unicode characters [EventStore#3974](https://github.com/EventStore/EventStore/pull/3974)
 - Bug in replication test: Replica was subscribing from first epoch instead of the second one [EventStore#3975](https://github.com/EventStore/EventStore/pull/3975)
 - An way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
+- Updating a persistent subscription clears the filter [EventStore#3957](https://github.com/EventStore/EventStore/pull/3957)
 
 ### This PR addresses [Linear issue DEV-111](https
 - //linear.app/eventstore/issue/DEV-111/can-we-remove-eventstorejvm-from-supported-clients-in-our-docs). [EventStore#3956](https://github.com/EventStore/EventStore/pull/3956)

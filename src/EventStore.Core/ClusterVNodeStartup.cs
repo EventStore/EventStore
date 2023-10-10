@@ -14,6 +14,7 @@ using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
