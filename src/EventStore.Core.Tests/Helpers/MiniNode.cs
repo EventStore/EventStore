@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public MiniNode(string pathname,
 			int? tcpPort = null, int? httpPort = null,
-			ISubsystem[] subsystems = null,
+			ISubsystemFactory[] subsystems = null,
 			int chunkSize = ChunkSize, int cachedChunkSize = CachedChunkSize, bool enableTrustedAuth = false,
 			int memTableSize = 1000,
 			bool inMemDb = true, bool disableFlushToDisk = false,
@@ -125,7 +125,7 @@ namespace EventStore.Core.Tests.Helpers {
 						UnsafeDisableFlushToDisk = disableFlushToDisk,
 						StreamExistenceFilterSize = streamExistenceFilterSize,
 					},
-					Subsystems = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>())
+					Subsystems = new List<ISubsystemFactory>(subsystems ?? Array.Empty<ISubsystemFactory>())
 				}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 					ssl_connections.GetServerCertificate())
 				.WithInternalSecureTcpOn(IntTcpEndPoint)

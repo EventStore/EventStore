@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			_standardComponents = CreateStandardComponents();
 
 			Subsystem = new ProjectionsSubsystem(new ProjectionSubsystemOptions(1, ProjectionType.All, true, TimeSpan.FromSeconds(3), true, 500, 250));
-			Subsystem.Register(_standardComponents);
+			Subsystem.Create(_standardComponents);
 
 			// Unsubscribe from the actual components so we can test in isolation
 			Subsystem.LeaderMainBus.Unsubscribe<ProjectionSubsystemMessage.ComponentStarted>(Subsystem);

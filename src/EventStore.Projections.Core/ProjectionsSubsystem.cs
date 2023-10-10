@@ -11,6 +11,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Plugins.Authorization;
+using EventStore.Plugins.Subsystems;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Grpc;
 using Microsoft.AspNetCore.Builder;
@@ -27,7 +28,7 @@ namespace EventStore.Projections.Core {
 		int CompilationTimeout, 
 		int ExecutionTimeout);
 
-	public sealed class ProjectionsSubsystem :ISubsystem,
+	public sealed class ProjectionsSubsystem : ISubsystem, ISubsystemFactory,
 		IHandle<SystemMessage.SystemCoreReady>,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<CoreProjectionStatusMessage.Stopped>,
@@ -78,14 +79,16 @@ namespace EventStore.Projections.Core {
 		private SubsystemState _subsystemState = SubsystemState.NotReady;
 		private Guid _instanceCorrelationId;
 		
-		public Func<IApplicationBuilder, IApplicationBuilder> Configure => builder => builder
+		public IApplicationBuilder Configure(IApplicationBuilder builder) => builder
 			.UseEndpoints(endpoints => endpoints.MapGrpcService<ProjectionManagement>());
 
-		public Func<IServiceCollection, IServiceCollection> ConfigureServices => services =>
-			services.AddSingleton(provider =>
+		public IServiceCollection ConfigureServices(IServiceCollection services) => services
+			.AddSingleton(provider =>
 				new ProjectionManagement(_leaderInputQueue, provider.GetRequiredService<IAuthorizationProvider>()));
 
-		public ProjectionsSubsystem(ProjectionSubsystemOptions projectionSubsystemOptions) {
+		public ProjectionsSubsystem(
+			ProjectionSubsystemOptions projectionSubsystemOptions) {
+
 			if (projectionSubsystemOptions.RunProjections <= ProjectionType.System)
 				_projectionWorkerThreadCount = 1;
 			else
@@ -109,7 +112,7 @@ namespace EventStore.Projections.Core {
 			_compilationTimeout = projectionSubsystemOptions.CompilationTimeout;
 		}
 
-		public void Register(StandardComponents standardComponents) {
+		public ISubsystem Create(StandardComponents standardComponents) {
 			_leaderInputQueue = QueuedHandler.CreateQueuedHandler(_leaderMainBus, "Projections Leader",
 				standardComponents.QueueStatsManager, standardComponents.QueueTrackers);
 			_leaderOutputBus = new InMemoryBus("ProjectionManagerAndCoreCoordinatorOutput");
@@ -140,6 +143,7 @@ namespace EventStore.Projections.Core {
 				_projectionsQueryExpiry);
 			projectionsStandardComponents.LeaderMainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
 			projectionsStandardComponents.LeaderMainBus.Subscribe<CoreProjectionStatusMessage.Started>(this);
+			return this;
 		}
 		
 		private static void CreateAwakerService(StandardComponents standardComponents) {

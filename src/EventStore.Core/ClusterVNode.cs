@@ -61,6 +61,7 @@ using EventStore.Core.Util;
 using EventStore.Native.UnixSignalManager;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Mono.Unix.Native;
@@ -497,13 +498,16 @@ namespace EventStore.Core {
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
 
-			_subsystems = options.Subsystems.ToArray();
-
 			_controller =
 				new ClusterVNodeController<TStreamId>(
 					(IPublisher)_mainBus, NodeInfo, Db,
 					trackers.NodeStatusTracker,
-					options, this, forwardingProxy);
+					options, this, forwardingProxy,
+					startSubsystems: () => {
+						foreach (var subsystem in _subsystems) {
+							AddTasks(subsystem.Start());
+						}
+					});
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager,
 				trackers.QueueTrackers);
 
@@ -1538,13 +1542,13 @@ namespace EventStore.Core {
 				});
 			}
 
-			if (_subsystems != null) {
-				foreach (var subsystem in _subsystems) {
-					var http = new[] { _httpService };
-					subsystem.Register(new StandardComponents(Db, _mainQueue, _mainBus, _timerService, _timeProvider,
-						httpSendService, http, _workersHandler, _queueStatsManager, trackers.QueueTrackers));
-				}
-			}
+			// subsystems
+			var http = new[] { _httpService };
+			var standardComponents = new StandardComponents(Db, _mainQueue, _mainBus, _timerService, _timeProvider,
+					httpSendService, http, _workersHandler, _queueStatsManager, trackers.QueueTrackers);
+			_subsystems = options.Subsystems
+				.Select(factory => factory.Create(standardComponents))
+				.ToArray();
 
 			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
