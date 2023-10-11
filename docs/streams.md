@@ -72,8 +72,6 @@ When you delete a stream, EventStoreDB offers two options: **soft delete** or **
 
 **Soft delete** triggers scavenging, removing all events from the stream during the subsequent scavenging process. This allows for the reopening of the stream by appending new events. 
 
-**Hard delete** closes the stream with a tombstone event, signaling that the stream cannot be reopened. Any attempt to append to a hard-deleted stream will fail, and the tombstone event remains untouched.
-
 It's worth noting that the **`$all`** stream circumvents index checking. Deleted events within this stream remain readable until a scavenging process removes them. To understand the prerequisites for successful event removal through scavenging, refer to the [scavenging guide](operations.md#scavenging-events).
 
 Even if a stream has been deleted, EventStoreDB retains one event within the stream to indicate the stream's existence and provide information about the last event version. As a best practice, consider appending a specific event like **`StreamDeleted`** and then setting the **`MaxCount`** to 1 to delete the stream. Keep this in mind, especially when dealing with streams containing sensitive data that you want to erase thoroughly and without a trace.
@@ -114,7 +112,7 @@ calculated at the time of the read. For example, if you read a stream with a **`
 ### Hard delete
 
 A **hard delete** involves appending a **`tombstone`** event to the stream and permanently deleting it. This action prevents stream recreation or further appends. Tombstone events are appended with the event type **`$streamDeleted`**. 
-When you attempt to read a hard-deleted stream, the response is a **`StreamDeleted`** or **`410`** result. 
+Any attempt to append or read a hard-deleted stream, the response is a **`StreamDeleted`** or **`410`** result. 
 
 While events in the deleted stream are subject to removal during a scavenge, the tombstone event remains.
 
@@ -141,16 +139,18 @@ If you plan to use projections and delete streams, there are some considerations
 persistent subscriptions. It uses the **`PersistentConfig`** system event type, capturing configuration changes. 
 The event data includes:
 
-- **`version`**: Event data version
-- **`updated`**: Date of the update
-- **`updatedBy`**: User responsible for the configuration update
-- **`maxCount`**: The number of configuration events to retain
-- **`entries`**: Configuration items set by the event.
+| Property name    | Description                                                        |
+|:-----------------|:-------------------------------------------------------------------|
+|**`version`**| Event data version                               |          
+|**`updated`**| Date of the update                               |
+| **`updatedBy`**| User responsible for the configuration update |
+| **`maxCount`**| The number of configuration events to retain   |
+| **`entries`**| Configuration items set by the event            |
 
 ### **`$all`**
 
 **`$all`** is a dedicated paged stream containing all events. You can employ the same paged reading method described earlier to
-read all events for a node by pointing the stream at _/streams/\$all_. Like any other stream, you can perform all operations, except posting to it.#
+read all events for a node by pointing the stream at _/streams/\$all_. Like any other stream, you can perform all operations, except posting to it.
 
 ### **`$settings`**
 
@@ -173,6 +173,7 @@ types:
 
     - **`scavengeId`**: Scavenge event ID
     - **`nodeEndpoint`**: Node address
+       
 
 - **`$scavengeCompleted`**: An event that records the completion of a scavenge process. The event data contains:
     - **`scavengeId`**: Scavenge event ID
