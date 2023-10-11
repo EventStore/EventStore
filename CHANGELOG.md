@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - Add steps to update certificates [EventStore#3940](https://github.com/EventStore/EventStore/pull/3940)
 - Call home database telemetry. [EventStore#3947](https://github.com/EventStore/EventStore/pull/3947)
 - Support for more plugins use cases [EventStore#3984](https://github.com/EventStore/EventStore/pull/3984)
+- Support for pluggable subsystems [EventStore#3986](https://github.com/EventStore/EventStore/pull/3986)
 
 ### Fixed
 - PersistentConfig1 system event does not begin with $ [EventStore#3932](https://github.com/EventStore/EventStore/pull/3932)
