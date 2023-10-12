@@ -14,7 +14,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="EventStore.Plugins" Version="23.10.0" />
+		<PackageReference Include="EventStore.Plugins" Version="23.10.1" />
 		<PackageReference Include="Google.Protobuf" Version="3.22.0" />
 		<PackageReference Include="Grpc.AspNetCore" Version="2.52.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.52.0">
