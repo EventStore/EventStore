@@ -149,10 +149,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					CatchUp(Position.Start);
 				} else {
 					var (commitPosition, preparePosition) = startPosition.Value.ToInt64();
-					var indexResult =
-						_readIndex.ReadAllEventsForward(new TFPos(commitPosition, preparePosition), 1);
-					CatchUp(Position.FromInt64(indexResult.NextPos.CommitPosition,
-						indexResult.NextPos.PreparePosition));
+					try {
+						var indexResult =
+							_readIndex.ReadAllEventsForward(new TFPos(commitPosition, preparePosition), 1);
+						CatchUp(Position.FromInt64(indexResult.NextPos.CommitPosition,
+							indexResult.NextPos.PreparePosition));
+					} catch (Exception ex) {
+						Log.Error(ex, "Error starting catch-up subscription {subscriptionId} to $all:{eventFilter}@{position}",
+							_subscriptionId, _eventFilter, startPosition);
+						throw;
+					}
 				}
 			}
 
