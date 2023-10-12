@@ -21,10 +21,8 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 			if (clientCertificate is null) return false;
 
 			bool hasReservedNodeCN;
-			string clientCertificateCN;
 			try {
-				clientCertificateCN = clientCertificate.GetCommonName();
-				hasReservedNodeCN = clientCertificateCN == _certificateReservedNodeCommonName;
+				hasReservedNodeCN = clientCertificate.ClientCertificateMatchesName(_certificateReservedNodeCommonName);
 			} catch (CryptographicException) {
 				return false;
 			} catch (NullReferenceException) {
@@ -32,6 +30,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 			}
 
 			if (!hasReservedNodeCN) {
+				var clientCertificateCN = clientCertificate.GetCommonName();
 				var ip = context.Connection.RemoteIpAddress?.ToString() ?? "<unknown>";
 				Log.Error(
 					"Connection from node: {ip} was denied because its CN: {clientCertificateCN} does not match with the reserved node CN: {reservedNodeCN}",
