@@ -332,7 +332,7 @@ namespace EventStore.Projections.Core {
 			}
 		}
 
-		public IEnumerable<Task> Start() {
+		public IReadOnlyList<Task> Start() {
 			var tasks = new List<Task>();
 			if (_subsystemStarted == false) {
 				if (_leaderInputQueue != null)
