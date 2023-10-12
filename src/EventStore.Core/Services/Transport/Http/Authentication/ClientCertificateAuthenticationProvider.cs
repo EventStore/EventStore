@@ -9,10 +9,10 @@ using Serilog;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class ClientCertificateAuthenticationProvider : IHttpAuthenticationProvider {
-		private readonly string _certificateReservedNodeCommonName;
+		private readonly Func<string> _getCertificateReservedNodeCommonName;
 
-		public ClientCertificateAuthenticationProvider(string certificateReservedNodeCommonName) {
-			_certificateReservedNodeCommonName = certificateReservedNodeCommonName;
+		public ClientCertificateAuthenticationProvider(Func<string> getCertificateReservedNodeCommonName) {
+			_getCertificateReservedNodeCommonName = getCertificateReservedNodeCommonName;
 		}
 
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
@@ -20,9 +20,10 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 			var clientCertificate = context.Connection.ClientCertificate;
 			if (clientCertificate is null) return false;
 
+			var reservedNodeCN = _getCertificateReservedNodeCommonName();
 			bool hasReservedNodeCN;
 			try {
-				hasReservedNodeCN = clientCertificate.ClientCertificateMatchesName(_certificateReservedNodeCommonName);
+				hasReservedNodeCN = clientCertificate.ClientCertificateMatchesName(reservedNodeCN);
 			} catch (CryptographicException) {
 				return false;
 			} catch (NullReferenceException) {
@@ -34,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 				var ip = context.Connection.RemoteIpAddress?.ToString() ?? "<unknown>";
 				Log.Error(
 					"Connection from node: {ip} was denied because its CN: {clientCertificateCN} does not match with the reserved node CN: {reservedNodeCN}",
-					ip, clientCertificateCN, _certificateReservedNodeCommonName);
+					ip, clientCertificateCN, reservedNodeCN);
 				return false;
 			}
 

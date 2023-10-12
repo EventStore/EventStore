@@ -6,6 +6,7 @@ namespace EventStore.Core.Certificates {
 		public X509Certificate2Collection IntermediateCerts;
 		public X509Certificate2Collection TrustedRootCerts;
 		public abstract LoadCertificateResult LoadCertificates(ClusterVNodeOptions options);
+		public abstract string GetReservedNodeCommonName();
 	}
 
 	public enum LoadCertificateResult {

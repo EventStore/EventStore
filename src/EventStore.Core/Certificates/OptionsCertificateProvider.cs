@@ -1,3 +1,4 @@
+using System;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using Serilog;
@@ -5,6 +6,8 @@ using Serilog;
 namespace EventStore.Core.Certificates {
 	public class OptionsCertificateProvider: CertificateProvider {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
+		private string _cachedReservedNodeCN;
+
 		public override LoadCertificateResult LoadCertificates(ClusterVNodeOptions options) {
 			if (options.Application.Insecure) {
 				Log.Information("Skipping reload of certificates since TLS is disabled.");
@@ -12,16 +15,27 @@ namespace EventStore.Core.Certificates {
 			}
 
 			var (certificate, intermediates) = options.LoadNodeCertificate();
-			var reservedNodeCN = options.Certificate.CertificateReservedNodeCommonName;
 
-			if (!certificate.ClientCertificateMatchesName(reservedNodeCN)) {
-				var certificateCN = certificate.GetCommonName();
-				Log.Error(
-					"Certificate CN: {certificateCN} does not match with the CertificateReservedNodeCommonName configuration setting: {reservedNodeCN}",
-					certificateCN, reservedNodeCN);
-				return LoadCertificateResult.VerificationFailed;
+			string reservedNodeCN;
+			var reservedNodeCNOption = nameof(options.Certificate.CertificateReservedNodeCommonName);
+
+			if (options.Certificate.CertificateReservedNodeCommonName.IsNotEmptyString()) {
+				reservedNodeCN = options.Certificate.CertificateReservedNodeCommonName;
+				if (!certificate.ClientCertificateMatchesName(reservedNodeCN)) {
+					var certificateCN = certificate.GetCommonName();
+					Log.Error(
+						"Certificate CN: {certificateCN} does not match with the {reservedNodeCNOption} configuration setting: {reservedNodeCN}",
+						certificateCN, reservedNodeCNOption, reservedNodeCN);
+					return LoadCertificateResult.VerificationFailed;
+				}
+				Log.Information("{reservedNodeCNOption} configured to: {reservedNodeCN}",
+					reservedNodeCNOption, reservedNodeCN);
+			} else {
+				reservedNodeCN = certificate.GetCommonName();
+				Log.Information("{reservedNodeCNOption} auto-configured to: {reservedNodeCN} based on certificate",
+					reservedNodeCNOption, reservedNodeCN);
 			}
-			
+
 			var previousThumbprint = Certificate?.Thumbprint;
 			var newThumbprint = certificate.Thumbprint;
 			Log.Information("Loading the node's certificate. Subject: {subject}, Previous thumbprint: {previousThumbprint}, New thumbprint: {newThumbprint}",
@@ -43,13 +57,21 @@ namespace EventStore.Core.Certificates {
 				return LoadCertificateResult.VerificationFailed;
 			}
 
-			//no need for a lock here since reference assignment is atomic
+			// no need for a lock here since reference assignment is atomic. however, other threads may not immediately
+			// see the changes and the order in which they see the changes is also not guaranteed as we don't have any
+			// memory barriers here. this is not a problem as in the worst case, it will cause the certificate verifications
+			// to fail when establishing/receiving a connection and the next connection retries will succeed.
 			Certificate = certificate;
 			IntermediateCerts = intermediates;
 			TrustedRootCerts = trustedRootCerts;
+			_cachedReservedNodeCN = reservedNodeCN;
 
 			Log.Information("All certificates successfully loaded.");
 			return LoadCertificateResult.Success;
+		}
+
+		public override string GetReservedNodeCommonName() {
+			return _cachedReservedNodeCN ?? throw new InvalidOperationException("Certificates are not loaded.");
 		}
 
 		private static bool VerifyCertificates(X509Certificate2 nodeCertificate, X509Certificate2Collection intermediates, X509Certificate2Collection trustedRoots) {
