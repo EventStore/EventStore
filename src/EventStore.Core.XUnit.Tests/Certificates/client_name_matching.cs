@@ -7,7 +7,7 @@ using Xunit;
 namespace EventStore.Core.XUnit.Tests.Certificates;
 
 public class client_name_matching {
-	private static X509Certificate GenSut(string subjectName) {
+	private static X509Certificate2 GenSut(string subjectName) {
 		using (RSA rsa = RSA.Create()) {
 			var certReq = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 			return certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1));

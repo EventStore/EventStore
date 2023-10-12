@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Certificates {
 	public class name_matching {
-		private X509Certificate GenSut(string subjectName, (string name, string type)[] sans)  {
+		private X509Certificate2 GenSut(string subjectName, (string name, string type)[] sans)  {
 			using (RSA rsa = RSA.Create())
 			{
 				var certReq = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);

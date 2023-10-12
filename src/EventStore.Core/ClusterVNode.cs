@@ -1741,15 +1741,17 @@ namespace EventStore.Core {
 		public static ValueTuple<bool, string> ValidateServerCertificate(X509Certificate certificate,
 			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> intermediateCertsSelector,
 			Func<X509Certificate2Collection> trustedRootCertsSelector, string[] otherNames) {
-			return ValidateCertificate(certificate, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "server", otherNames);
+			using var _ = certificate.ConvertToCertificate2(out var certificate2);
+			return ValidateCertificate(certificate2, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "server", otherNames);
 		}
 
 		public static ValueTuple<bool, string> ValidateClientCertificate(X509Certificate certificate,
 			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector) {
-			return ValidateCertificate(certificate, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "client", null);
+			using var _ = certificate.ConvertToCertificate2(out var certificate2);
+			return ValidateCertificate(certificate2, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "client", null);
 		}
 
-		private static ValueTuple<bool, string> ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors,
+		private static ValueTuple<bool, string> ValidateCertificate(X509Certificate2 certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors,
 			Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector,
 			string certificateOrigin, string[] otherNames) {
 			if (certificate == null)

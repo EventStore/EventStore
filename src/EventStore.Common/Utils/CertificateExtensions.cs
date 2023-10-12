@@ -11,19 +11,14 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace EventStore.Common.Utils {
 	public static class CertificateExtensions {
-		public static IEnumerable<(string name, string type)> GetSubjectAlternativeNames(this X509Certificate certificate) {
+		public static IEnumerable<(string name, string type)> GetSubjectAlternativeNames(this X509Certificate2 certificate) {
 			// Implemented based on RFC 5280 (https://datatracker.ietf.org/doc/html/rfc5280)
 			// - Reads IP addresses and DNS names from the Subject Alternative Names extension
 			// - Does not support other name types yet
 
-			if (certificate is not X509Certificate2 certificate2) {
-				using var c2 = new X509Certificate2(certificate);
-				certificate2 = c2;
-			}
-
 			X509ExtensionCollection extensions;
 			try {
-				extensions = certificate2.Extensions;
+				extensions = certificate.Extensions;
 			} catch (CryptographicException) {
 				return null;
 			}
@@ -57,25 +52,20 @@ namespace EventStore.Common.Utils {
 			return sans;
 		}
 
-		public static bool MatchesName(this X509Certificate certificate, string name) {
+		public static bool MatchesName(this X509Certificate2 certificate, string name) {
 			// Implemented based on RFC 6125 (https://datatracker.ietf.org/doc/html/rfc6125) with the following changes:
 			// - Does not support SRV-ID and URI-ID identifier types yet
 			// - Partial wildcard support is not implemented since it has been deprecated in most major browsers
 
-			if (certificate is not X509Certificate2 certificate2) {
-				using var c2 = new X509Certificate2(certificate);
-				certificate2 = c2;
-			}
-
-			var sans = GetSubjectAlternativeNames(certificate2).ToArray();
+			var sans = GetSubjectAlternativeNames(certificate).ToArray();
 			if (sans.Length > 0)
 				return sans.Any(san => MatchesName(san.name, san.type, name));
 
-			var cn = GetCommonName(certificate2);
+			var cn = GetCommonName(certificate);
 			return cn != null && MatchesName(cn, CertificateNameType.DnsName, name);
 		}
 
-		public static bool ClientCertificateMatchesName(this X509Certificate clientCertificate, string name) {
+		public static bool ClientCertificateMatchesName(this X509Certificate2 clientCertificate, string name) {
 			// This method, as a whole, is not based on any standard and is specific to EventStoreDB.
 			// It matches a client certificate's CN against a name as follows:
 			// i)  do an exact (case-insensitive) match if the CN is a wildcard name, otherwise
@@ -87,12 +77,7 @@ namespace EventStore.Common.Utils {
 			// CN = abc.test.com MUST match with name = *.test.com
 			// CN = abc.test.com MUST match with name = abc.test.com
 
-			if (clientCertificate is not X509Certificate2 clientCertificate2) {
-				using var c2 = new X509Certificate2(clientCertificate);
-				clientCertificate2 = c2;
-			}
-
-			var cn = clientCertificate2.GetCommonName();
+			var cn = clientCertificate.GetCommonName();
 
 			// if the CN is a wildcard name, do an exact (case-insensitive) match
 			// as a standard RFC 6125 compliant match of two wildcard names will fail
@@ -195,6 +180,16 @@ namespace EventStore.Common.Utils {
 
 			// compare the other labels of the wildcard FQDN
 			return certNameLabels.Skip(1).EqualsOrdinalIgnoreCase(dnsNameLabels.Skip(1));
+		}
+
+		public static IDisposable ConvertToCertificate2(this X509Certificate certificate, out X509Certificate2 certificate2) {
+			if (certificate is X509Certificate2 c2) {
+				certificate2 = c2;
+				return null;
+			}
+
+			certificate2 = new X509Certificate2(certificate);
+			return certificate2;
 		}
 	}
 }
