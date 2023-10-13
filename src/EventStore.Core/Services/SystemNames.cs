@@ -27,6 +27,7 @@ namespace EventStore.Core.Services {
 		public const string ScavengesStream = "$scavenges";
 		public const string EpochInformationStream = "$epoch-information";
 		public const string ScavengePointsStream = "$scavengePoints";
+		public const string NodeStateStream = "$mem-node-state";
 
 		public static bool IsSystemStream(string streamId) {
 			return streamId.Length != 0 && streamId[0] == '$';
@@ -42,6 +43,10 @@ namespace EventStore.Core.Services {
 
 		public static string OriginalStreamOf(string metastreamId) {
 			return metastreamId.Substring(2);
+		}
+
+		public static bool IsInMemoryStream(string streamId) {
+			return streamId.StartsWith("$mem-");
 		}
 	}
 

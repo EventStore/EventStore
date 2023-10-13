@@ -37,6 +37,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly IReadIndex<TStreamId> _readIndex;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly IReadOnlyCheckpoint _writerCheckpoint;
+		private readonly IInMemoryStreamReader _inMemReader;
 		private readonly int _queueId;
 		private static readonly char[] LinkToSeparator = { '@' };
 		private const int MaxPageSize = 4096;
@@ -52,6 +53,7 @@ namespace EventStore.Core.Services.Storage {
 			IReadIndex<TStreamId> readIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IReadOnlyCheckpoint writerCheckpoint,
+			IInMemoryStreamReader inMemReader,
 			int queueId) {
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotNull(readIndex, "readIndex");
@@ -63,6 +65,7 @@ namespace EventStore.Core.Services.Storage {
 			_systemStreams = systemStreams;
 			_writerCheckpoint = writerCheckpoint;
 			_queueId = queueId;
+			_inMemReader = inMemReader;
 		}
 
 		void IHandle<ClientMessage.ReadEvent>.Handle(ClientMessage.ReadEvent msg) {
@@ -87,7 +90,8 @@ namespace EventStore.Core.Services.Storage {
 			if (msg.Expires < DateTime.UtcNow) {
 				if (msg.ReplyOnExpired) {
 					msg.Envelope.ReplyWith(new ClientMessage.ReadStreamEventsForwardCompleted(
-						msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, ReadStreamResult.Expired,
+						msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
+						ReadStreamResult.Expired,
 						ResolvedEvent.EmptyArray, default, default, default, default, default, default, default));
 				}
 				if (LogExpiredMessage(msg.Expires))
@@ -98,7 +102,10 @@ namespace EventStore.Core.Services.Storage {
 			}
 
 			using (HistogramService.Measure(ReaderStreamRangeHistogram)) {
-				var res = ReadStreamEventsForward(msg);
+				var res = SystemStreams.IsInMemoryStream(msg.EventStreamId)
+					? _inMemReader.ReadForwards(msg)
+					: ReadStreamEventsForward(msg);
+
 				switch (res.Result) {
 					case ReadStreamResult.Success:
 					case ReadStreamResult.NoStream:
@@ -136,7 +143,11 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			}
 
-			msg.Envelope.ReplyWith(ReadStreamEventsBackward(msg));
+			var res = SystemStreams.IsInMemoryStream(msg.EventStreamId)
+				? _inMemReader.ReadBackwards(msg)
+				: ReadStreamEventsBackward(msg);
+
+			msg.Envelope.ReplyWith(res);
 		}
 
 		void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward msg) {
