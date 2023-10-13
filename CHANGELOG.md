@@ -7,6 +7,10 @@ All notable changes to this project will be documented in this file.
 - Always read the active chunk from memory instead of from the FileStream. [EventStore#3890](https://github.com/EventStore/EventStore/pull/3890)
 - CI Unit test settings [EventStore#3943](https://github.com/EventStore/EventStore/pull/3943)
 - Rename Telemetry namespace to Metrics [EventStore#3971](https://github.com/EventStore/EventStore/pull/3971)
+- Configure `CertificateReservedNodeCommonName` to be the node's CN by default [EventStore#3966](https://github.com/EventStore/EventStore/pull/3966)
+- Make `CertificateReservedNodeCommonName` dynamically reloadable [EventStore#3966](https://github.com/EventStore/EventStore/pull/3966)
+- Log levels [EventStore#3973](https://github.com/EventStore/EventStore/pull/3973)
+- Updated reference to EventStore.Plugins to 23.10.1 [EventStore#3990](https://github.com/EventStore/EventStore/pull/3990)
 
 - No longer log misleading error about 'Max internal streams limit' when running out of file handles [EventStore#3902](https://github.com/EventStore/EventStore/pull/3902)
 
@@ -25,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - Call home database telemetry. [EventStore#3947](https://github.com/EventStore/EventStore/pull/3947)
 - Support for more plugins use cases [EventStore#3984](https://github.com/EventStore/EventStore/pull/3984)
 - Support for pluggable subsystems [EventStore#3986](https://github.com/EventStore/EventStore/pull/3986)
+- Support clusters with nodes that have certificates with different CNs [EventStore#3960](https://github.com/EventStore/EventStore/pull/3960)
 
 ### Fixed
 - PersistentConfig1 system event does not begin with $ [EventStore#3932](https://github.com/EventStore/EventStore/pull/3932)
@@ -39,6 +44,9 @@ All notable changes to this project will be documented in this file.
 - Bug in replication test: Replica was subscribing from first epoch instead of the second one [EventStore#3975](https://github.com/EventStore/EventStore/pull/3975)
 - An way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
 - Updating a persistent subscription clears the filter [EventStore#3957](https://github.com/EventStore/EventStore/pull/3957)
+- Cache client certificate authentication results for better performance/to make sure already established TLS connections continue to work properly. [EventStore#3966](https://github.com/EventStore/EventStore/pull/3966)
+- Certificate was disposed during the call if it was not an X509Certificate2 object [EventStore#3960](https://github.com/EventStore/EventStore/pull/3960)
+- Wildcard certificate names should have at least 3 domain labels [EventStore#3960](https://github.com/EventStore/EventStore/pull/3960)
 
 ### This PR addresses [Linear issue DEV-111](https
 - //linear.app/eventstore/issue/DEV-111/can-we-remove-eventstorejvm-from-supported-clients-in-our-docs). [EventStore#3956](https://github.com/EventStore/EventStore/pull/3956)
