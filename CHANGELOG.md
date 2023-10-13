@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [23.10.0] - 2023-10-13
+
+### Breaking Changes
+- Renamed PersistentConfig1 system event type to $PersistentConfig [EventStore#3932](https://github.com/EventStore/EventStore/pull/3932)
+- Certain configuration parameters (mainly Interface options) have been deprecated and renamed, which would make it more clear as to what each parameter/option does. [EventStore#3907](https://github.com/EventStore/EventStore/pull/3907)
+
 ### Changed
 - Always read the active chunk from memory instead of from the FileStream. [EventStore#3890](https://github.com/EventStore/EventStore/pull/3890)
 - CI Unit test settings [EventStore#3943](https://github.com/EventStore/EventStore/pull/3943)
@@ -11,11 +17,9 @@ All notable changes to this project will be documented in this file.
 - Make `CertificateReservedNodeCommonName` dynamically reloadable [EventStore#3966](https://github.com/EventStore/EventStore/pull/3966)
 - Log levels [EventStore#3973](https://github.com/EventStore/EventStore/pull/3973)
 - Updated reference to EventStore.Plugins to 23.10.1 [EventStore#3990](https://github.com/EventStore/EventStore/pull/3990)
-
 - No longer log misleading error about 'Max internal streams limit' when running out of file handles [EventStore#3902](https://github.com/EventStore/EventStore/pull/3902)
 
 ### Removed
-
 - Unused code around checkpoints [EventStore#3900](https://github.com/EventStore/EventStore/pull/3900)
 - Removed unused code paths [EventStore#3928](https://github.com/EventStore/EventStore/pull/3928)
 
@@ -25,45 +29,28 @@ All notable changes to this project will be documented in this file.
 - Prevent implicit transactions from spanning multiple chunks [EventStore#3918](https://github.com/EventStore/EventStore/pull/3918)
 - Documentation for FIPS 140-2 compliance [EventStore#3948](https://github.com/EventStore/EventStore/pull/3948)
 - Documentation for redaction [EventStore#3949](https://github.com/EventStore/EventStore/pull/3949)
-- Add steps to update certificates [EventStore#3940](https://github.com/EventStore/EventStore/pull/3940)
+- Add steps in Documentation to update certificates [EventStore#3940](https://github.com/EventStore/EventStore/pull/3940)
 - Call home database telemetry. [EventStore#3947](https://github.com/EventStore/EventStore/pull/3947)
 - Support for more plugins use cases [EventStore#3984](https://github.com/EventStore/EventStore/pull/3984)
 - Support for pluggable subsystems [EventStore#3986](https://github.com/EventStore/EventStore/pull/3986)
 - Support clusters with nodes that have certificates with different CNs [EventStore#3960](https://github.com/EventStore/EventStore/pull/3960)
 - Implement $mem-node-state in-memory stream. [EventStore#3985](https://github.com/EventStore/EventStore/pull/3985)
+- Server support for unicode passwords [EventStore#3974](https://github.com/EventStore/EventStore/pull/3974)
 
 ### Fixed
-- PersistentConfig1 system event does not begin with $ [EventStore#3932](https://github.com/EventStore/EventStore/pull/3932)
-- race conditions when caching/uncaching chunks [EventStore#3930](https://github.com/EventStore/EventStore/pull/3930)
-- Certain configuration parameters (mainly Interface options) have been renamed, which would make it more clear as to what each parameter/option does. [EventStore#3907](https://github.com/EventStore/EventStore/pull/3907)
+- Race conditions when caching/uncaching chunks [EventStore#3930](https://github.com/EventStore/EventStore/pull/3930)
 - Server now always returns a valid address when replying with a NotHandled.NotLeader response [EventStore#3869](https://github.com/EventStore/EventStore/pull/3869)
 - Prevent torn transactions during replication [EventStore#3896](https://github.com/EventStore/EventStore/pull/3896)
-- Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#3941](https://github.com/EventStore/EventStore/pull/3941)
+- Checkpoints of filtered $all subscription not always sent on correct interval. [EventStore#3941](https://github.com/EventStore/EventStore/pull/3941)
 - Report same version info when using different kind of release tags (annotated or lightweight). [EventStore#3950](https://github.com/EventStore/EventStore/pull/3950)
-- Revert the change allowing an extra chunk at startup [EventStore#3954](https://github.com/EventStore/EventStore/pull/3954)
-- Allow users to login with usernames/passwords having unicode characters [EventStore#3974](https://github.com/EventStore/EventStore/pull/3974)
 - Bug in replication test: Replica was subscribing from first epoch instead of the second one [EventStore#3975](https://github.com/EventStore/EventStore/pull/3975)
 - An way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
-- Updating a persistent subscription clears the filter [EventStore#3957](https://github.com/EventStore/EventStore/pull/3957)
+- Updating a persistent subscription no longer clears the filter [EventStore#3957](https://github.com/EventStore/EventStore/pull/3957)
 - Cache client certificate authentication results for better performance/to make sure already established TLS connections continue to work properly. [EventStore#3966](https://github.com/EventStore/EventStore/pull/3966)
 - Certificate was disposed during the call if it was not an X509Certificate2 object [EventStore#3960](https://github.com/EventStore/EventStore/pull/3960)
 - Wildcard certificate names should have at least 3 domain labels [EventStore#3960](https://github.com/EventStore/EventStore/pull/3960)
 - Support usernames/passwords with unicode characters in UI (https://github.com/EventStore/EventStore.UI/pull/364) [EventStore#3992](https://github.com/EventStore/EventStore/pull/3992)
-- Persistent subscription error cdoe regression introduced this release [EventStore#3996](https://github.com/EventStore/EventStore/pull/3996)
-
-### This PR addresses [Linear issue DEV-111](https
-- //linear.app/eventstore/issue/DEV-111/can-we-remove-eventstorejvm-from-supported-clients-in-our-docs). [EventStore#3956](https://github.com/EventStore/EventStore/pull/3956)
-
-### Cherry picked from https
-- //github.com/EventStore/EventStore/pull/3956 [EventStore#3961](https://github.com/EventStore/EventStore/pull/3961)
-- //github.com/EventStore/EventStore/pull/3976 [EventStore#3978](https://github.com/EventStore/EventStore/pull/3978)
-- //github.com/EventStore/EventStore/pull/3976 [EventStore#3979](https://github.com/EventStore/EventStore/pull/3979)
-- //github.com/EventStore/EventStore/pull/3976 [EventStore#3977](https://github.com/EventStore/EventStore/pull/3977)
-- //github.com/EventStore/EventStore/pull/3996 [EventStore#3997](https://github.com/EventStore/EventStore/pull/3997)
-
-### Cherry pick https
-- //github.com/EventStore/EventStore/pull/3940 to v22.10 [EventStore#3965](https://github.com/EventStore/EventStore/pull/3965)
-- //github.com/EventStore/EventStore/pull/3940 to v23.6 [EventStore#3964](https://github.com/EventStore/EventStore/pull/3964)
+- Persistent subscription error code regression introduced this release [EventStore#3996](https://github.com/EventStore/EventStore/pull/3996)
 
 ## [22.10.3] 2023-08-31
 
