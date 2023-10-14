@@ -30,6 +30,7 @@ All notable changes to this project will be documented in this file.
 - Support for more plugins use cases [EventStore#3984](https://github.com/EventStore/EventStore/pull/3984)
 - Support for pluggable subsystems [EventStore#3986](https://github.com/EventStore/EventStore/pull/3986)
 - Support clusters with nodes that have certificates with different CNs [EventStore#3960](https://github.com/EventStore/EventStore/pull/3960)
+- Implement $mem-node-state in-memory stream. [EventStore#3985](https://github.com/EventStore/EventStore/pull/3985)
 
 ### Fixed
 - PersistentConfig1 system event does not begin with $ [EventStore#3932](https://github.com/EventStore/EventStore/pull/3932)
@@ -47,6 +48,7 @@ All notable changes to this project will be documented in this file.
 - Cache client certificate authentication results for better performance/to make sure already established TLS connections continue to work properly. [EventStore#3966](https://github.com/EventStore/EventStore/pull/3966)
 - Certificate was disposed during the call if it was not an X509Certificate2 object [EventStore#3960](https://github.com/EventStore/EventStore/pull/3960)
 - Wildcard certificate names should have at least 3 domain labels [EventStore#3960](https://github.com/EventStore/EventStore/pull/3960)
+- Support usernames/passwords with unicode characters in UI (https://github.com/EventStore/EventStore.UI/pull/364) [EventStore#3992](https://github.com/EventStore/EventStore/pull/3992)
 
 ### This PR addresses [Linear issue DEV-111](https
 - //linear.app/eventstore/issue/DEV-111/can-we-remove-eventstorejvm-from-supported-clients-in-our-docs). [EventStore#3956](https://github.com/EventStore/EventStore/pull/3956)
