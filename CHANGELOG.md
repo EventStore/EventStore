@@ -49,6 +49,7 @@ All notable changes to this project will be documented in this file.
 - Certificate was disposed during the call if it was not an X509Certificate2 object [EventStore#3960](https://github.com/EventStore/EventStore/pull/3960)
 - Wildcard certificate names should have at least 3 domain labels [EventStore#3960](https://github.com/EventStore/EventStore/pull/3960)
 - Support usernames/passwords with unicode characters in UI (https://github.com/EventStore/EventStore.UI/pull/364) [EventStore#3992](https://github.com/EventStore/EventStore/pull/3992)
+- Persistent subscription error cdoe regression introduced this release [EventStore#3996](https://github.com/EventStore/EventStore/pull/3996)
 
 ### This PR addresses [Linear issue DEV-111](https
 - //linear.app/eventstore/issue/DEV-111/can-we-remove-eventstorejvm-from-supported-clients-in-our-docs). [EventStore#3956](https://github.com/EventStore/EventStore/pull/3956)
@@ -58,6 +59,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3976 [EventStore#3978](https://github.com/EventStore/EventStore/pull/3978)
 - //github.com/EventStore/EventStore/pull/3976 [EventStore#3979](https://github.com/EventStore/EventStore/pull/3979)
 - //github.com/EventStore/EventStore/pull/3976 [EventStore#3977](https://github.com/EventStore/EventStore/pull/3977)
+- //github.com/EventStore/EventStore/pull/3996 [EventStore#3997](https://github.com/EventStore/EventStore/pull/3997)
 
 ### Cherry pick https
 - //github.com/EventStore/EventStore/pull/3940 to v22.10 [EventStore#3965](https://github.com/EventStore/EventStore/pull/3965)
