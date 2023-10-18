@@ -8,7 +8,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Certificates {
 	public class subject_alternative_names {
-		private X509Certificate GenSut((string name, string type)[] sans)  {
+		private X509Certificate2 GenSut((string name, string type)[] sans)  {
 			using (RSA rsa = RSA.Create())
 			{
 				var certReq = new CertificateRequest("CN=hello", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);

@@ -1,5 +1,5 @@
-using System;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Certificates {
 	public class DevCertificateProvider : CertificateProvider {
@@ -9,6 +9,10 @@ namespace EventStore.Core.Certificates {
 		}
 		public override LoadCertificateResult LoadCertificates(ClusterVNodeOptions options) {
 			return LoadCertificateResult.Skipped;
+		}
+
+		public override string GetReservedNodeCommonName() {
+			return Certificate.GetCommonName();
 		}
 	}
 }

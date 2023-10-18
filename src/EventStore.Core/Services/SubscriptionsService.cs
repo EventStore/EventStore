@@ -35,6 +35,7 @@ namespace EventStore.Core.Services {
 		IHandle<ClientMessage.UnsubscribeFromStream>,
 		IHandle<SubscriptionMessage.PollStream>,
 		IHandle<SubscriptionMessage.CheckPollTimeout>,
+		IHandle<StorageMessage.InMemoryEventCommitted>,
 		IHandle<StorageMessage.EventCommitted> {
 		private const int DontReportCheckpointReached = -1;
 
@@ -49,6 +50,7 @@ namespace EventStore.Core.Services {
 			new Dictionary<string, List<PollSubscription>>();
 
 		private long _lastSeenCommitPosition = -1;
+		private long _lastSeenInMemoryCommitPosition = -1;
 
 		private readonly IPublisher _bus;
 		private readonly IEnvelope _busEnvelope;
@@ -112,10 +114,17 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ClientMessage.SubscribeToStream msg) {
-			var lastEventNumber = msg.EventStreamId.IsEmptyString()
-				? (long?)null
-				: _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
-			var lastIndexedPos = _readIndex.LastIndexedPosition;
+			var isInMemoryStream = SystemStreams.IsInMemoryStream(msg.EventStreamId);
+
+			long? lastEventNumber = null;
+			if (isInMemoryStream) {
+				lastEventNumber = -1;
+			} else if (!msg.EventStreamId.IsEmptyString()) {
+				lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
+			}
+
+			var lastIndexedPos = isInMemoryStream ? -1 : _readIndex.LastIndexedPosition;
+
 			SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
 				msg.ResolveLinkTos, lastIndexedPos, lastEventNumber,
 				msg.EventStreamId.IsEmptyString() ? EventFilter.DefaultAllFilter : EventFilter.DefaultStreamFilter);
@@ -125,15 +134,22 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ClientMessage.FilteredSubscribeToStream msg) {
-			var lastEventNumber = msg.EventStreamId.IsEmptyString()
-					? (long?)null
-					: _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
-			var lastCommitPos = _readIndex.LastIndexedPosition;
+			var isInMemoryStream = SystemStreams.IsInMemoryStream(msg.EventStreamId);
+
+			long? lastEventNumber = null;
+			if (isInMemoryStream) {
+				lastEventNumber = -1;
+			} else if (!msg.EventStreamId.IsEmptyString()) {
+				lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
+			}
+
+			var lastIndexedPos = isInMemoryStream ? -1 : _readIndex.LastIndexedPosition;
+
 			SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
-				msg.ResolveLinkTos, lastCommitPos, lastEventNumber, msg.EventFilter,
+				msg.ResolveLinkTos, lastIndexedPos, lastEventNumber, msg.EventFilter,
 				msg.CheckpointInterval, msg.CheckpointIntervalCurrent);
 			var subscribedMessage =
-				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
+				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
 			msg.Envelope.ReplyWith(subscribedMessage);
 
 		}
@@ -200,7 +216,9 @@ namespace EventStore.Core.Services {
 		}
 
 		private bool MissedEvents(string streamId, long lastIndexedPosition, long? lastEventNumber) {
-			return _lastSeenCommitPosition > lastIndexedPosition;
+			return SystemStreams.IsInMemoryStream(streamId)
+				? _lastSeenInMemoryCommitPosition > lastIndexedPosition
+				: _lastSeenCommitPosition > lastIndexedPosition;
 		}
 
 		private void SubscribePoller(string streamId, DateTime expireAt, long lastIndexedPosition, long? lastEventNumber,
@@ -273,6 +291,12 @@ namespace EventStore.Core.Services {
 			ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, resolvedEvent);
 
 			ReissueReadsFor(AllStreamsSubscriptionId, message.CommitPosition, message.Event.EventNumber);
+			ReissueReadsFor(message.Event.EventStreamId, message.CommitPosition, message.Event.EventNumber);
+		}
+
+		public void Handle(StorageMessage.InMemoryEventCommitted message) {
+			_lastSeenInMemoryCommitPosition = message.CommitPosition;
+			ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, null);
 			ReissueReadsFor(message.Event.EventStreamId, message.CommitPosition, message.Event.EventNumber);
 		}
 

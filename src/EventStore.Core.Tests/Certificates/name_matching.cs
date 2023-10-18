@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Certificates {
 	public class name_matching {
-		private X509Certificate GenSut(string subjectName, (string name, string type)[] sans)  {
+		private X509Certificate2 GenSut(string subjectName, (string name, string type)[] sans)  {
 			using (RSA rsa = RSA.Create())
 			{
 				var certReq = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -111,6 +111,21 @@ namespace EventStore.Core.Tests.Certificates {
 			Assert.False(sut.MatchesName("bar.foo.example.com"));
 			Assert.False(sut.MatchesName("foo"));
 			Assert.False(sut.MatchesName("foo.example"));
+		}
+
+		[Test]
+		public void dns_name_does_not_match_wildcard_cn_with_less_than_three_domain_labels() {
+			var sut = GenSut("CN=*", Array.Empty<(string name, string type)>());
+			Assert.False(sut.MatchesName("tld"));
+
+			sut = GenSut("CN=*.com", Array.Empty<(string name, string type)>());
+			Assert.False(sut.MatchesName("example.com"));
+		}
+
+		[Test]
+		public void dns_name_matches_wildcard_cn_with_four_domain_labels() {
+			var sut = GenSut("CN=*.test.example.com", Array.Empty<(string name, string type)>());
+			Assert.True(sut.MatchesName("abc.test.example.com"));
 		}
 
 		[Test]

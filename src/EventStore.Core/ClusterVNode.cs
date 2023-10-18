@@ -724,9 +724,17 @@ namespace EventStore.Core {
 
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
+			// Node state listener
+			var nodeStatusListener = new NodeStateListenerService(_mainQueue);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(nodeStatusListener);
+
+			var inMemReader = new InMemoryStreamReader(new Dictionary<string, IInMemoryStreamReader> {
+				[SystemStreams.NodeStateStream] = nodeStatusListener,
+			});
+
 			var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
 				logFormat.SystemStreams,
-				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager,
+				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), inMemReader, _queueStatsManager,
 				trackers.QueueTrackers);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
@@ -1005,7 +1013,7 @@ namespace EventStore.Core {
 			if (!options.Application.Insecure) {
 				//transport-level authentication providers
 				httpAuthenticationProviders.Add(
-					new ClientCertificateAuthenticationProvider(options.Certificate.CertificateReservedNodeCommonName));
+					new ClientCertificateAuthenticationProvider(() => _certificateProvider.GetReservedNodeCommonName()));
 
 				if (options.Interface.EnableTrustedAuth)
 					httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
@@ -1113,6 +1121,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.PollStream, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.CheckPollTimeout, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
+			_mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.InMemoryEventCommitted, Message>());
 
 			var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, readIndex);
 			subscrBus.Subscribe<SystemMessage.SystemStart>(subscription);
@@ -1124,6 +1133,7 @@ namespace EventStore.Core {
 			subscrBus.Subscribe<SubscriptionMessage.PollStream>(subscription);
 			subscrBus.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscription);
 			subscrBus.Subscribe<StorageMessage.EventCommitted>(subscription);
+			subscrBus.Subscribe<StorageMessage.InMemoryEventCommitted>(subscription);
 
 			// PERSISTENT SUBSCRIPTIONS
 			// IO DISPATCHER
@@ -1760,15 +1770,17 @@ namespace EventStore.Core {
 		public static ValueTuple<bool, string> ValidateServerCertificate(X509Certificate certificate,
 			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> intermediateCertsSelector,
 			Func<X509Certificate2Collection> trustedRootCertsSelector, string[] otherNames) {
-			return ValidateCertificate(certificate, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "server", otherNames);
+			using var _ = certificate.ConvertToCertificate2(out var certificate2);
+			return ValidateCertificate(certificate2, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "server", otherNames);
 		}
 
 		public static ValueTuple<bool, string> ValidateClientCertificate(X509Certificate certificate,
 			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector) {
-			return ValidateCertificate(certificate, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "client", null);
+			using var _ = certificate.ConvertToCertificate2(out var certificate2);
+			return ValidateCertificate(certificate2, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "client", null);
 		}
 
-		private static ValueTuple<bool, string> ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors,
+		private static ValueTuple<bool, string> ValidateCertificate(X509Certificate2 certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors,
 			Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector,
 			string certificateOrigin, string[] otherNames) {
 			if (certificate == null)

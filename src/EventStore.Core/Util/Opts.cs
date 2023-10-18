@@ -17,8 +17,6 @@ namespace EventStore.Core.Util {
 
 		public const int ProjectionsQueryExpiryDefault = 5;
 
-		public const string CertificateReservedNodeCommonNameDefault = "eventstoredb-node";
-
 		public const byte IndexBitnessVersionDefault = Index.PTableVersions.IndexV4;
 
 		public static readonly string AuthenticationTypeDefault = "internal";
