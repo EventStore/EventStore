@@ -14,7 +14,7 @@ In EventStoreDB, every stream and event is accompanied by metadata, distinguishe
 
 ### Reserved names
 
-EventStoreDB uses a **`$`** prefix for all internal data, such as **`$maxCount`** in a stream's metadata. Do not use names with a **`$`** prefix for event names, metadata keys, or stream names, except as detailed below.
+EventStoreDB uses a **`$`** prefix for all internal data, such as **`$maxCount`** in a stream's metadata. Do not use a **`$`** prefix for event names, metadata keys, or stream names, except as detailed below.
 
 The supported internal settings are:
 
