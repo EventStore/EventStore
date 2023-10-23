@@ -136,7 +136,7 @@ If you plan to use projections and delete streams, there are some considerations
 ### **`$persistentSubscriptionConfig`**
 
 **`$persistentSubscriptionConfig`** is a specialized paged stream that stores all configuration events for all
-persistent subscriptions. It uses the **`PersistentConfig`** system event type, capturing configuration changes. 
+persistent subscriptions. It uses the **`$PersistentConfig`** system event type (previously **`PersistentConfig1`**), capturing configuration changes. 
 The event data includes:
 
 | Property name    | Description                                                        |
