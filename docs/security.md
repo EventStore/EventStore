@@ -123,18 +123,23 @@ In this section, you can find settings related to protocol security (HTTPS and T
 
 #### Certificate common name
 
-SSL certificates can be created with a common name (CN), which is an arbitrary string. Usually is contains the DNS name for which the certificate is issued. When cluster nodes connect to each other, they need to ensure that they indeed talk to another node and not something that pretends to be a node. Therefore, EventStoreDB expects the connecting party to have a certificate with a pre-defined CN `eventstoredb-node`.
+SSL certificates can be created with a common name (CN), which is an arbitrary string. Usually it contains the DNS name for which the certificate is issued.
 
-When using the Event Store [certificate generator](#certificate-generation-tool), the CN is properly set by default. However, you might want to change the CN and in this case, you'd also need to tell EventStoreDB what value it should expect instead of the default one, using the setting below:
+When cluster nodes connect to each other, they need to ensure that they indeed talk to another node and not something that pretends to be a node. To achieve that, EventStoreDB authenticates a connecting node by ensuring that it supplies a trusted client certificate having a CN that matches exactly with the CN in its own certificate. This essentially means that the CN must be the same across all node certificates by default. For example, when using the Event Store [certificate generator](#certificate-generation-tool), the CN is set to `eventstoredb-node` in all node certificates.
+
+::: note
+Prior to version 23.10.0, the `CertificateReservedNodeCommonName` setting needed to be configured if a user had certificates with a CN other than `eventstoredb-node`. EventStoreDB will now, by default, automatically read the CN from the node's certificate and use it as the `CertificateReservedNodeCommonName`. However, if you still choose to specify the `CertificateReservedNodeCommonName` in your configuration, it will take precedence.
+:::
+
+In practice, it's not always possible to obtain certificates where the CN is the same across all nodes. For instance, when using a public CA, single-domain certificates are very common and these certificates cannot be used on multiple nodes as they are valid for exactly one host. In this case, the `CertificateReservedNodeCommonName` setting can be configured with a wildcard as per the following example:
+
+If the domains are `node1.esdb.mycompany.org`, `node2.esdb.mycompany.org` and `node3.esdb.mycompany.org`, then `CertificateReservedNodeCommonName` must be set to `*.esdb.mycompany.org`.
 
 | Format               | Syntax                                             |
 |:---------------------|:---------------------------------------------------|
 | Command line         | `--certificate-reserved-node-common-name`          |
 | YAML                 | `CertificateReservedNodeCommonName`                |
 | Environment variable | `EVENTSTORE_CERTIFICATE_RESERVED_NODE_COMMON_NAME` |
-
-**Default**: `eventstoredb-node`
-
 
 ::: warning
 Server certificates **must** have the internal and external IP addresses (`ReplicationIp` and `NodeIp` respectively) or DNS names as subject alternative names.
