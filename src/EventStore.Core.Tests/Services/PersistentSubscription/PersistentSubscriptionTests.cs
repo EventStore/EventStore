@@ -199,7 +199,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 		[Test]
 		public async Task should_not_overwrite_filter() {
 
-			_sut.Handle(UpdateMessage());
+			_sut.Handle(UpdateMessage(_create.GroupName, new NoopEnvelope()));
 			
 			await _storage.FinishedWriting.Task;
 
@@ -211,6 +211,20 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 						&& e.Filter.IsAllStream)));
 			
 			Assert.True(allFiltersSet, "Expected all filters to be set!");
+		}
+
+		[Test]
+		public async Task non_existent_replies_DoesNotExist() {
+			var envelope = new TcsEnvelope<ClientMessage.UpdatePersistentSubscriptionToAllCompleted>();
+			_sut.Handle(UpdateMessage("nonexistent", envelope));
+
+			var response = await envelope.Task;
+
+			Assert.AreEqual(
+				ClientMessage.UpdatePersistentSubscriptionToAllCompleted.UpdatePersistentSubscriptionToAllResult.DoesNotExist,
+				response.Result);
+
+			Assert.AreEqual("Group 'nonexistent' does not exist.", response.Reason);
 		}
 
 		private ClientMessage.CreatePersistentSubscriptionToAll CreateMessage() {
@@ -237,11 +251,11 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			return _create;
 		}
 
-		private ClientMessage.UpdatePersistentSubscriptionToAll UpdateMessage() => new(
+		private ClientMessage.UpdatePersistentSubscriptionToAll UpdateMessage(string name, IEnvelope envelope) => new(
 			internalCorrId: Guid.NewGuid(),
 			correlationId: Guid.NewGuid(),
-			envelope: new NoopEnvelope(),
-			groupName: _create.GroupName,
+			envelope: envelope,
+			groupName: name,
 			resolveLinkTos: _create.ResolveLinkTos,
 			startFrom: _create.StartFrom,
 			messageTimeoutMilliseconds: _create.MessageTimeoutMilliseconds,

@@ -543,6 +543,10 @@ The new certificates can be created in the same manner as you generated the exis
 You can also use the EventStore [es-gencert-cli](https://github.com/EventStore/es-gencert-cli) tool to generate the CA and node certificates.
 You can also follow the [Configurator](https://configurator.eventstore.com/) to create commands for generating the certificates based on your cluster's configuration.
 
+::: tip
+As of version 23.10.0, it is possible to do a rolling update with new certificates having a Common Name (CN) that's different from the original certificates. If `CertificateReservedNodeCommonName` was set in your configuration, any changes to its value will be taken into consideration during a config reload.
+:::
+
 ### Step 2: Replace the certificates
 
 The next step is to replace the outdated certificates with the newly generated certificates.
