@@ -155,7 +155,7 @@ consideration:
 ### `$persistentSubscriptionConfig`
 
 `$persistentSubscriptionConfig` is a special paged stream that contains all configuration events, for all
-persistent subscriptions. It uses the `PersistentConfig` system event type, which records a configuration
+persistent subscriptions. It uses the `$PersistentConfig` system event type (previously `PersistentConfig1`), which records a configuration
 event. The event data contains:
 
 - `version`: Version of event data
