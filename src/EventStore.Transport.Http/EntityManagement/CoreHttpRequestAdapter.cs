@@ -14,7 +14,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			_inner = inner;
 		}
 
-		public string[] AcceptTypes => _inner.Headers["accept"];
+		public string[] AcceptTypes => _inner.Headers.GetCommaSeparatedValues("accept");
 
 		public long ContentLength64 => _inner.ContentLength ?? 0;
 
