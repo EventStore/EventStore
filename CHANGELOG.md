@@ -5,9 +5,13 @@ All notable changes to this project will be documented in this file.
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/4001 [EventStore#4003](https://github.com/EventStore/EventStore/pull/4003)
+- //github.com/EventStore/EventStore/pull/4000 [EventStore#4008](https://github.com/EventStore/EventStore/pull/4008)
 
 ### Changed
 - Set the default value of `CertificateReservedNodeCommonName` to empty string [EventStore#4001](https://github.com/EventStore/EventStore/pull/4001)
+
+### Added
+- documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
 
 ## [23.10.0] - 2023-10-13
 
