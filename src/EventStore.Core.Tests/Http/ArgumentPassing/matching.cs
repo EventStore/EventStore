@@ -36,6 +36,16 @@ namespace EventStore.Core.Tests.Http.ArgumentPassing {
 				Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
 				HelperExtensions.AssertJson(new { a = _ra, b = _rb }, _response);
 			}
+
+			[Test]
+			[TestCase("*/*")]
+			[TestCase("application/json")]
+			[TestCase("application/json,*/*;q=0.1")]
+			public async Task can_specify_multple_accepts(string accept) {
+				_response = await GetJson<JObject>("/test-encoding/1", accept: accept);
+				Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+				HelperExtensions.AssertJson(new { a = "1" }, _response);
+			}
 		}
 
 		[Category("LongRunning")]

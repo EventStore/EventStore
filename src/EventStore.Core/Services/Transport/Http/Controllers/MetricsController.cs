@@ -9,6 +9,7 @@ using EventStore.Transport.Http.Codecs;
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class MetricsController : CommunicationController {
 		private static readonly ICodec[] SupportedCodecs = new ICodec[] {
+			Codec.CreateCustom(Codec.Text, "text/plain", Helper.UTF8NoBom, false, false),
 			Codec.CreateCustom(Codec.Text, "application/openmetrics-text", Helper.UTF8NoBom, false, false),
 		};
 
