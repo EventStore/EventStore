@@ -21,13 +21,13 @@ command line. For example:
 ```bash
 ```bash:no-line-numbers
 $ eventstored --version
-EventStoreDB version 22.10.0.0 (tags/oss-v22.10.0/242b35056, Thu, 10 Nov 2022 13:45:56 +0000)
+EventStoreDB version 23.10.0.0 (oss-v23.10.0/8660912b8, 2023-10-24T16:13:49+01:00)
 ```
 :::
 ::: code Windows
 ```
 > EventStore.ClusterNode.exe --version
-EventStoreDB version 22.10.0.0 (tags/oss-v22.10.0/242b35056, Thu, 10 Nov 2022 13:45:56 +0000)
+EventStoreDB version 23.10.0.0 (oss-v23.10.0/8660912b8, 2023-10-24T16:13:49+01:00)
 ```
 :::
 ::::
