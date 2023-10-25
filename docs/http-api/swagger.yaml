@@ -1,7 +1,7 @@
 swagger: "2.0"
 info:
   description: The HTTP API for EventStoreDB
-  version: 23.6.0
+  version: nightly
   title: HTTP API
   contact:
     url: https://www.eventstore.com/contact
