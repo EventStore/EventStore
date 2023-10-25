@@ -6,12 +6,18 @@ All notable changes to this project will be documented in this file.
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/4001 [EventStore#4003](https://github.com/EventStore/EventStore/pull/4003)
 - //github.com/EventStore/EventStore/pull/4000 [EventStore#4008](https://github.com/EventStore/EventStore/pull/4008)
+- //github.com/EventStore/EventStore/pull/4011 [EventStore#4012](https://github.com/EventStore/EventStore/pull/4012)
+- //github.com/EventStore/EventStore/pull/4011 [EventStore#4013](https://github.com/EventStore/EventStore/pull/4013)
 
 ### Changed
 - Set the default value of `CertificateReservedNodeCommonName` to empty string [EventStore#4001](https://github.com/EventStore/EventStore/pull/4001)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
+- Support for multiple media types specified in one Accept header. [EventStore#4011](https://github.com/EventStore/EventStore/pull/4011)
+
+### cherry pick of https
+- //github.com/EventStore/EventStore/pull/3999 [EventStore#4010](https://github.com/EventStore/EventStore/pull/4010)
 
 ## [23.10.0] - 2023-10-13
 
