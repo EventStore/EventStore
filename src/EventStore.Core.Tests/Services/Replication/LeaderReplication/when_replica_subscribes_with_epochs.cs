@@ -32,12 +32,13 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		[Test]
 		public void subscription_is_sent_a_replica_subscribed_message_from_start() {
-			var subscribed = GetTcpSendsFor(_replicaManager).Select(x => x.Message)
-				.OfType<ReplicationMessage.ReplicaSubscribed>().ToArray();
-			Assert.AreEqual(1, subscribed.Length);
-			Assert.Zero(subscribed[0].SubscriptionPosition);
-			Assert.AreEqual(_replicaId, subscribed[0].SubscriptionId);
-			Assert.AreEqual(LeaderId, subscribed[0].LeaderId);
+			var messages = GetTcpSendsFor(_replicaManager).Select(x => x.Message).ToArray();
+			Assert.AreEqual(1, messages.Length);
+
+			var subscribed = (ReplicationMessage.ReplicaSubscribed)messages[0];
+			Assert.Zero(subscribed.SubscriptionPosition);
+			Assert.AreEqual(_replicaId, subscribed.SubscriptionId);
+			Assert.AreEqual(LeaderId, subscribed.LeaderId);
 		}
 	}
 
@@ -65,12 +66,15 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		[Test]
 		public void subscription_is_sent_a_replica_subscribed_message_from_last_epoch_position() {
-			var subscribed = GetTcpSendsFor(_replicaManager).Select(x => x.Message)
-				.OfType<ReplicationMessage.ReplicaSubscribed>().ToArray();
-			Assert.AreEqual(1, subscribed.Length);
-			Assert.AreEqual(_lastEpoch.EpochPosition, subscribed[0].SubscriptionPosition);
-			Assert.AreEqual(_replicaId, subscribed[0].SubscriptionId);
-			Assert.AreEqual(LeaderId, subscribed[0].LeaderId);
+			var messages = GetTcpSendsFor(_replicaManager).Select(x => x.Message).ToArray();
+			Assert.IsTrue(messages.Length >= 2);
+
+			var subscribed = (ReplicationMessage.ReplicaSubscribed)messages[0];
+			Assert.AreEqual(_lastEpoch.EpochPosition, subscribed.SubscriptionPosition);
+			Assert.AreEqual(_replicaId, subscribed.SubscriptionId);
+			Assert.AreEqual(LeaderId, subscribed.LeaderId);
+
+			Assert.IsInstanceOf<ReplicationTrackingMessage.ReplicatedTo>(messages[1]);
 		}
 	}
 
@@ -99,12 +103,15 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		[Test]
 		public void subscription_is_sent_a_replica_subscribed_message_from_requested_position() {
-			var subscribed = GetTcpSendsFor(_replicaManager).Select(x => x.Message)
-				.OfType<ReplicationMessage.ReplicaSubscribed>().ToArray();
-			Assert.AreEqual(1, subscribed.Length);
-			Assert.AreEqual(_subscribedPosition, subscribed[0].SubscriptionPosition);
-			Assert.AreEqual(_replicaId, subscribed[0].SubscriptionId);
-			Assert.AreEqual(LeaderId, subscribed[0].LeaderId);
+			var messages = GetTcpSendsFor(_replicaManager).Select(x => x.Message).ToArray();
+			Assert.IsTrue(messages.Length >= 2);
+
+			var subscribed = (ReplicationMessage.ReplicaSubscribed)messages[0];
+			Assert.AreEqual(_subscribedPosition, subscribed.SubscriptionPosition);
+			Assert.AreEqual(_replicaId, subscribed.SubscriptionId);
+			Assert.AreEqual(LeaderId, subscribed.LeaderId);
+
+			Assert.IsInstanceOf<ReplicationTrackingMessage.ReplicatedTo>(messages[1]);
 		}
 	}
 
@@ -140,12 +147,13 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		[Test]
 		public void subscription_is_sent_replica_subscribed_message_for_epoch_after_common_epoch() {
-			var subscribed = GetTcpSendsFor(_replicaManager).Select(x => x.Message)
-				.OfType<ReplicationMessage.ReplicaSubscribed>().ToArray();
-			Assert.AreEqual(1, subscribed.Length);
-			Assert.AreEqual(_replicaEpochs[2].EpochPosition, subscribed[0].SubscriptionPosition);
-			Assert.AreEqual(_replicaId, subscribed[0].SubscriptionId);
-			Assert.AreEqual(LeaderId, subscribed[0].LeaderId);
+			var messages = GetTcpSendsFor(_replicaManager).Select(x => x.Message).ToArray();
+			Assert.AreEqual(1, messages.Length);
+
+			var subscribed = (ReplicationMessage.ReplicaSubscribed)messages[0];
+			Assert.AreEqual(_replicaEpochs[2].EpochPosition, subscribed.SubscriptionPosition);
+			Assert.AreEqual(_replicaId, subscribed.SubscriptionId);
+			Assert.AreEqual(LeaderId, subscribed.LeaderId);
 		}
 	}
 
@@ -175,13 +183,15 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		[Test]
 		public void subscription_is_sent_replica_subscribed_message_for_epoch_after_common_epoch() {
-			var subscribed = GetTcpSendsFor(_replicaManager).Select(x => x.Message)
-				.OfType<ReplicationMessage.ReplicaSubscribed>().ToArray();
+			var messages = GetTcpSendsFor(_replicaManager).Select(x => x.Message).ToArray();
+			Assert.IsTrue(messages.Length >= 2);
 
-			Assert.AreEqual(1, subscribed.Length);
-			Assert.AreEqual(_replicaEpochs[0].EpochPosition, subscribed[0].SubscriptionPosition);
-			Assert.AreEqual(_replicaId, subscribed[0].SubscriptionId);
-			Assert.AreEqual(LeaderId, subscribed[0].LeaderId);
+			var subscribed = (ReplicationMessage.ReplicaSubscribed)messages[0];
+			Assert.AreEqual(_replicaEpochs[0].EpochPosition, subscribed.SubscriptionPosition);
+			Assert.AreEqual(_replicaId, subscribed.SubscriptionId);
+			Assert.AreEqual(LeaderId, subscribed.LeaderId);
+
+			Assert.IsInstanceOf<ReplicationTrackingMessage.ReplicatedTo>(messages[1]);
 		}
 	}
 
@@ -212,12 +222,13 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		[Test]
 		public void subscription_is_sent_replica_subscribed_message_for_leaders_writer_checkpoint() {
-			var subscribed = GetTcpSendsFor(_replicaManager).Select(x => x.Message)
-				.OfType<ReplicationMessage.ReplicaSubscribed>().ToArray();
-			Assert.AreEqual(1, subscribed.Length);
-			Assert.AreEqual(Db.Config.WriterCheckpoint.ReadNonFlushed(), subscribed[0].SubscriptionPosition);
-			Assert.AreEqual(_replicaId, subscribed[0].SubscriptionId);
-			Assert.AreEqual(LeaderId, subscribed[0].LeaderId);
+			var messages = GetTcpSendsFor(_replicaManager).Select(x => x.Message).ToArray();
+			Assert.AreEqual(1, messages.Length);
+
+			var subscribed = (ReplicationMessage.ReplicaSubscribed)messages[0];
+			Assert.AreEqual(Db.Config.WriterCheckpoint.ReadNonFlushed(), subscribed.SubscriptionPosition);
+			Assert.AreEqual(_replicaId, subscribed.SubscriptionId);
+			Assert.AreEqual(LeaderId, subscribed.LeaderId);
 		}
 	}
 
@@ -250,12 +261,13 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		[Test]
 		public void subscription_is_sent_replica_subscribed_message_for_leaders_epoch_after_common_epoch() {
-			var subscribed = GetTcpSendsFor(_replicaManager).Select(x => x.Message)
-				.OfType<ReplicationMessage.ReplicaSubscribed>().ToArray();
-			Assert.AreEqual(1, subscribed.Length);
-			Assert.AreEqual(EpochManager.GetLastEpoch().EpochPosition, subscribed[0].SubscriptionPosition);
-			Assert.AreEqual(_replicaId, subscribed[0].SubscriptionId);
-			Assert.AreEqual(LeaderId, subscribed[0].LeaderId);
+			var messages = GetTcpSendsFor(_replicaManager).Select(x => x.Message).ToArray();
+			Assert.AreEqual(1, messages.Length);
+
+			var subscribed = (ReplicationMessage.ReplicaSubscribed)messages[0];
+			Assert.AreEqual(EpochManager.GetLastEpoch().EpochPosition, subscribed.SubscriptionPosition);
+			Assert.AreEqual(_replicaId, subscribed.SubscriptionId);
+			Assert.AreEqual(LeaderId, subscribed.LeaderId);
 		}
 	}
 
@@ -289,12 +301,15 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		[Test]
 		public void subscription_is_sent_a_replica_subscribed_message_common_epoch() {
-			var subscribed = GetTcpSendsFor(_replicaManager).Select(x => x.Message)
-				.OfType<ReplicationMessage.ReplicaSubscribed>().ToArray();
-			Assert.AreEqual(1, subscribed.Length);
-			Assert.AreEqual(_replicaEpochs[0].EpochPosition, subscribed[0].SubscriptionPosition);
-			Assert.AreEqual(_replicaId, subscribed[0].SubscriptionId);
-			Assert.AreEqual(LeaderId, subscribed[0].LeaderId);
+			var messages = GetTcpSendsFor(_replicaManager).Select(x => x.Message).ToArray();
+			Assert.IsTrue(messages.Length >= 2);
+
+			var subscribed = (ReplicationMessage.ReplicaSubscribed)messages[0];
+			Assert.AreEqual(_replicaEpochs[0].EpochPosition, subscribed.SubscriptionPosition);
+			Assert.AreEqual(_replicaId, subscribed.SubscriptionId);
+			Assert.AreEqual(LeaderId, subscribed.LeaderId);
+
+			Assert.IsInstanceOf<ReplicationTrackingMessage.ReplicatedTo>(messages[1]);
 		}
 	}
 
@@ -336,12 +351,13 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		[Test]
 		public void subscription_is_sent_a_replica_subscribed_message_to_epoch_position_after_common_epoch() {
-			var subscribed = GetTcpSendsFor(_replicaManager).Select(x => x.Message)
-				.OfType<ReplicationMessage.ReplicaSubscribed>().ToArray();
-			Assert.AreEqual(1, subscribed.Length);
-			Assert.AreEqual(EpochManager.GetLastEpochs(5).First(x => x.EpochNumber == 4).EpochPosition, subscribed[0].SubscriptionPosition);
-			Assert.AreEqual(_replicaId, subscribed[0].SubscriptionId);
-			Assert.AreEqual(LeaderId, subscribed[0].LeaderId);
+			var messages = GetTcpSendsFor(_replicaManager).Select(x => x.Message).ToArray();
+			Assert.AreEqual(1, messages.Length);
+
+			var subscribed = (ReplicationMessage.ReplicaSubscribed)messages[0];
+			Assert.AreEqual(EpochManager.GetLastEpochs(5).First(x => x.EpochNumber == 4).EpochPosition, subscribed.SubscriptionPosition);
+			Assert.AreEqual(_replicaId, subscribed.SubscriptionId);
+			Assert.AreEqual(LeaderId, subscribed.LeaderId);
 		}
 	}
 }
