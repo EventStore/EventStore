@@ -19,8 +19,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			get { return _settings.SubscriptionId; }
 		}
 
-		public string EventSource {
-			get { return _settings.EventSource.ToString(); }
+		public IPersistentSubscriptionEventSource EventSource {
+			get { return _settings.EventSource; }
 		}
 
 		public string GroupName {
