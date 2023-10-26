@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading;
-using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -15,7 +15,16 @@ using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 using EventStore.Core.Tests.ClientAPI;
 using System.Threading.Tasks;
+using EventStore.ClientAPI;
+using EventStore.Core.Bus;
+using EventStore.Core.Helpers;
+using EventStore.Core.LogAbstraction;
+using EventStore.Core.Messaging;
+using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Tests.TransactionLog;
+using EventFilter = EventStore.Core.Services.Storage.ReaderIndex.EventFilter;
+using StreamMetadata = EventStore.Core.Data.StreamMetadata;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription {
 	public enum EventSource {
@@ -59,7 +68,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 		[Test]
 		public void stream_name_is_set() {
-			Assert.AreEqual(_streamName, _sub.EventSource);
+			Assert.AreEqual(_streamName, _sub.EventSource.ToString());
 		}
 
 		[Test]
@@ -153,6 +162,210 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			}
 		}
 	}
+
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	public class when_updating_all_stream_subscription_with_filter<TLogFormat, TStreamId> {
+
+		private readonly PersistentSubscriptionService<TStreamId> _sut;
+		private readonly FakeStorage _storage;
+		private ClientMessage.CreatePersistentSubscriptionToAll _create;
+		private IEventFilter _filterWhenCreate = EventFilter.EventType.Prefixes(isAllStream: true, new[] { "prefixFilter" });
+		
+		public when_updating_all_stream_subscription_with_filter() {
+			var bus = new InMemoryBus("bus");
+			var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
+
+			_storage = new FakeStorage(cfgs => cfgs.Count() >= 2);
+
+			bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(_storage);
+			bus.Subscribe<ClientMessage.WriteEvents>(_storage);
+			bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
+			bus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
+
+			_sut = new PersistentSubscriptionService<TStreamId>(
+				QueuedHandler.CreateQueuedHandler(bus, "test", new QueueStatsManager()),
+				new FakeReadIndex<TLogFormat,TStreamId>(_ => false, new MetaStreamLookup()),
+				ioDispatcher, bus,
+				new PersistentSubscriptionConsumerStrategyRegistry(bus, bus,
+					Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()));
+
+			_sut.Start();
+			_sut.Handle(new SystemMessage.BecomeLeader(correlationId: Guid.NewGuid()));
+			_sut.Handle(CreateMessage());
+		}
+
+		[Test]
+		public async Task should_not_overwrite_filter() {
+
+			_sut.Handle(UpdateMessage(_create.GroupName, new NoopEnvelope()));
+			
+			await _storage.FinishedWriting.Task;
+
+			var filterWhenCreateDto = EventFilter.ParseToDto(_filterWhenCreate);
+			var allFiltersSet = _storage.Configurtations.All(
+				cfg => cfg.Entries.All(
+					e => (e.Filter is not null
+						&& e.Filter.Data.Equals(filterWhenCreateDto.Data)
+						&& e.Filter.IsAllStream)));
+			
+			Assert.True(allFiltersSet, "Expected all filters to be set!");
+		}
+
+		[Test]
+		public async Task non_existent_replies_DoesNotExist() {
+			var envelope = new TcsEnvelope<ClientMessage.UpdatePersistentSubscriptionToAllCompleted>();
+			_sut.Handle(UpdateMessage("nonexistent", envelope));
+
+			var response = await envelope.Task;
+
+			Assert.AreEqual(
+				ClientMessage.UpdatePersistentSubscriptionToAllCompleted.UpdatePersistentSubscriptionToAllResult.DoesNotExist,
+				response.Result);
+
+			Assert.AreEqual("Group 'nonexistent' does not exist.", response.Reason);
+		}
+
+		private ClientMessage.CreatePersistentSubscriptionToAll CreateMessage() {
+			_create = new ClientMessage.CreatePersistentSubscriptionToAll(
+				internalCorrId: Guid.NewGuid(),
+				correlationId: Guid.NewGuid(),
+				envelope: new NoopEnvelope(),
+				groupName: "someGroup",
+				eventFilter: _filterWhenCreate,
+				resolveLinkTos: false,
+				startFrom: new(0, 0),
+				messageTimeoutMilliseconds: -1, false,
+				maxRetryCount: 0,
+				bufferSize: 10,
+				liveBufferSize: 0,
+				readbatchSize: 5,
+				checkPointAfterMilliseconds: 0,
+				minCheckPointCount: 0,
+				maxCheckPointCount: 0,
+				maxSubscriberCount: 0,
+				namedConsumerStrategy: "Pinned",
+				user: ClaimsPrincipal.Current);
+
+			return _create;
+		}
+
+		private ClientMessage.UpdatePersistentSubscriptionToAll UpdateMessage(string name, IEnvelope envelope) => new(
+			internalCorrId: Guid.NewGuid(),
+			correlationId: Guid.NewGuid(),
+			envelope: envelope,
+			groupName: name,
+			resolveLinkTos: _create.ResolveLinkTos,
+			startFrom: _create.StartFrom,
+			messageTimeoutMilliseconds: _create.MessageTimeoutMilliseconds,
+			recordStatistics: _create.RecordStatistics,
+			maxRetryCount: _create.MaxRetryCount,
+			bufferSize: _create.BufferSize,
+			liveBufferSize: _create.LiveBufferSize,
+			readbatchSize: _create.ReadBatchSize,
+			checkPointAfterMilliseconds: _create.CheckPointAfterMilliseconds,
+			minCheckPointCount: _create.MinCheckPointCount,
+			maxCheckPointCount: _create.MaxCheckPointCount,
+			maxSubscriberCount: _create.MaxSubscriberCount,
+			namedConsumerStrategy: _create.NamedConsumerStrategy,
+			user: ClaimsPrincipal.Current);
+
+		private class FakeStorage :
+			IHandle<ClientMessage.ReadStreamEventsBackward>,
+			IHandle<ClientMessage.WriteEvents> {
+			private readonly Func<IEnumerable<PersistentSubscriptionConfig>, bool> _isDoneWriting;
+			private readonly List<PersistentSubscriptionConfig> _configurations = new();
+			private readonly Dictionary<string, List<Event>> _streams = new();
+			private readonly TaskCompletionSource _tcs = new();
+
+			public IEnumerable<PersistentSubscriptionConfig> Configurtations => _configurations;
+			public TaskCompletionSource FinishedWriting => _tcs;
+
+			public FakeStorage(Func<IEnumerable<PersistentSubscriptionConfig>, bool> isDoneWriting) {
+				_isDoneWriting = isDoneWriting;
+			}
+
+			public void Handle(ClientMessage.ReadStreamEventsBackward msg) {
+				Data.ReadStreamResult result = Data.ReadStreamResult.NoStream;
+				List<ResolvedEvent> resolvedEvents = new();
+
+				if (_streams.TryGetValue(msg.EventStreamId, out var events)) {
+					result = Data.ReadStreamResult.Success;
+
+					foreach (var ev in events) {
+						var prepareLogRecord = new PrepareLogRecord(
+							// values of most fields are not used and not important for the test
+							logPosition: 0,
+							correlationId: Guid.NewGuid(),
+							eventId: Guid.NewGuid(),
+							transactionPosition: 0,
+							transactionOffset: 0,
+							eventStreamId: msg.EventStreamId,
+							expectedVersion: 0,
+							timeStamp: DateTime.UtcNow,
+							PrepareFlags.Data,
+							eventType: ev.EventType,
+							data: Array.Empty<byte>(),
+							metadata: Array.Empty<byte>());
+
+						var evRec = new EventRecord(0, prepareLogRecord, msg.EventStreamId, ev.EventType);
+						resolvedEvents.Add(ResolvedEvent.ForUnresolvedEvent(evRec));
+					}
+				}
+
+				msg.Envelope.ReplyWith(new ClientMessage.ReadStreamEventsBackwardCompleted(
+					// values of most fields are not used and not important for the test
+					correlationId: msg.CorrelationId,
+					eventStreamId: msg.EventStreamId,
+					fromEventNumber: 0,
+					maxCount: msg.MaxCount,
+					result: result,
+					events: resolvedEvents.ToArray(),
+					streamMetadata: new StreamMetadata(),
+					isCachePublic: false,
+					error: null,
+					nextEventNumber: -1,
+					lastEventNumber: 0,
+					isEndOfStream: true,
+					tfLastCommitPosition: 0));
+			}
+
+			public void Handle(ClientMessage.WriteEvents msg) {
+				if (!_streams.TryGetValue(msg.EventStreamId, out var events)) {
+					events = new List<Event>();
+					_streams.Add(msg.EventStreamId, events);
+				}
+
+				events.AddRange(msg.Events);
+
+				if (msg.Events.Any(ee => ee.EventType == "PersistentConfig1")) {
+					var cfg = PersistentSubscriptionConfig.FromSerializedForm(msg.Events[0].Data);
+					_configurations.Add(cfg);
+
+					if (_isDoneWriting(_configurations)) {
+						_tcs.SetResult();
+					}
+				}
+
+				msg.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(
+					// values are not used and not important for the test
+					msg.CorrelationId,
+					firstEventNumber: 0,
+					lastEventNumber: 0,
+					preparePosition: 0,
+					commitPosition: 0));
+			}
+		}
+
+		private class MetaStreamLookup : IMetastreamLookup<TStreamId> {
+			public bool IsMetaStream(TStreamId streamId) => throw new NotSupportedException();
+
+			public TStreamId MetaStreamOf(TStreamId streamId) => throw new NotSupportedException();
+
+			public TStreamId OriginalStreamOf(TStreamId streamId) => throw new NotSupportedException();
+		}
+	}
+
 
 	[TestFixture(EventSource.SingleStream)]
 	[TestFixture(EventSource.AllStream)]

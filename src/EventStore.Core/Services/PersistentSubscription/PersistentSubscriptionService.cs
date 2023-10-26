@@ -405,7 +405,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		private void UpdatePersistentSubscription(
-				IPersistentSubscriptionEventSource eventSource,
+				string stream,
+				Func<PersistentSubscription, IPersistentSubscriptionEventSource> genEventSource,
 				string groupName,
 				IPersistentSubscriptionStreamPosition startFrom,
 				int messageTimeoutMilliseconds,
@@ -427,11 +428,11 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				string user
 		) {
 			if (!_started) return;
-			var stream = eventSource.ToString();
+
 			var key = BuildSubscriptionGroupKey(stream, groupName);
 			Log.Debug("Updating persistent subscription {subscriptionKey}", key);
 
-			if (!_subscriptionsById.ContainsKey(key)) {
+			if (!_subscriptionsById.TryGetValue(key, out var oldSubscription)) {
 				onNotExist($"Group '{groupName}' does not exist.");
 				return;
 			}
@@ -446,6 +447,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				return;
 			}
 			
+			var eventSource = genEventSource(oldSubscription);
 			var subscription = new PersistentSubscription(
 				new PersistentSubscriptionParams(
 					resolveLinkTos,
@@ -509,7 +511,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 			try {
 				UpdatePersistentSubscription(
-					new PersistentSubscriptionSingleStreamEventSource(message.EventStreamId),
+					message.EventStreamId,
+					_ => new PersistentSubscriptionSingleStreamEventSource(message.EventStreamId),
 					message.GroupName,
 					new PersistentSubscriptionSingleStreamPosition(message.StartFrom),
 					message.MessageTimeoutMilliseconds,
@@ -566,7 +569,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Handle(ClientMessage.UpdatePersistentSubscriptionToAll message) {
 			try {
 				UpdatePersistentSubscription(
-					new PersistentSubscriptionAllStreamEventSource(),
+					SystemStreams.AllStream,
+					sub => new PersistentSubscriptionAllStreamEventSource(sub.EventSource?.EventFilter),
 					message.GroupName,
 					new PersistentSubscriptionAllStreamPosition(message.StartFrom.CommitPosition,
 						message.StartFrom.PreparePosition),
