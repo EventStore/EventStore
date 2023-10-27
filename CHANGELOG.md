@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/4000 [EventStore#4008](https://github.com/EventStore/EventStore/pull/4008)
 - //github.com/EventStore/EventStore/pull/4011 [EventStore#4012](https://github.com/EventStore/EventStore/pull/4012)
 - //github.com/EventStore/EventStore/pull/4011 [EventStore#4013](https://github.com/EventStore/EventStore/pull/4013)
+- //github.com/EventStore/EventStore/pull/3995 [EventStore#4017](https://github.com/EventStore/EventStore/pull/4017)
+- //github.com/EventStore/EventStore/pull/3994 [EventStore#4018](https://github.com/EventStore/EventStore/pull/4018)
 
 ### Changed
 - Set the default value of `CertificateReservedNodeCommonName` to empty string [EventStore#4001](https://github.com/EventStore/EventStore/pull/4001)
@@ -18,6 +20,10 @@ All notable changes to this project will be documented in this file.
 
 ### cherry pick of https
 - //github.com/EventStore/EventStore/pull/3999 [EventStore#4010](https://github.com/EventStore/EventStore/pull/4010)
+
+### Fixed
+- An way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3994](https://github.com/EventStore/EventStore/pull/3994)
+- Updating a persistent subscription clears the filter [EventStore#3995](https://github.com/EventStore/EventStore/pull/3995)
 
 ## [23.10.0] - 2023-10-13
 
