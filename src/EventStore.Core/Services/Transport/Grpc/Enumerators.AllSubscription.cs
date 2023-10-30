@@ -217,14 +217,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				Task.Factory.StartNew(PumpLiveMessages, _cancellationToken);
 
 				async Task PumpLiveMessages() {
-					var position = await caughtUpSource.Task.ConfigureAwait(false);
-
-					await _channel.Writer.WriteAsync(new ReadResp {
-						Checkpoint = new ReadResp.Types.Checkpoint {
-							CommitPosition = position.CommitPosition,
-							PreparePosition = position.PreparePosition
-						}
-					}, _cancellationToken).ConfigureAwait(false);
+					await caughtUpSource.Task.ConfigureAwait(false);
 
 					await foreach (var @event in liveEvents.Reader.ReadAllAsync(_cancellationToken)
 						.ConfigureAwait(false)) {
