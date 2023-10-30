@@ -126,22 +126,17 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					}
 				}, GetCallOptions(AdminCredentials));
 
-				var receivedTheEvent = false;
 				await foreach (var response in call.ResponseStream.ReadAllAsync()) {
 					if (response.ContentCase == ReadResp.ContentOneofCase.Checkpoint) {
-						if (receivedTheEvent) {
-							// we have received the event, so this checkpoint is the one that indicates
-							// we have successfully transitioned to live (and will receive no more events)
-							break;
-						}
 						_positions.Add(new Position(response.Checkpoint.CommitPosition,
 							response.Checkpoint.PreparePosition));
 						continue;
 					}
 
 					if (response.ContentCase == ReadResp.ContentOneofCase.Event) {
+						// we have received the event. There will be no more events or checkpoints after this
 						Assert.AreEqual(StreamName, response.Event.Event.StreamIdentifier.StreamName.ToStringUtf8());
-						receivedTheEvent = true;
+						break;
 					}
 				}
 			}
@@ -261,7 +256,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 			[Test]
 			public void receives_the_correct_number_of_checkpoints() {
-				Assert.AreEqual(2, CheckpointCount);
+				Assert.AreEqual(1, CheckpointCount);
 			}
 
 			[Test]
@@ -369,10 +364,11 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 								case ReadResp.ContentOneofCase.Checkpoint:
 									_checkpointPositions.Add(_contentCaseCounts[ReadResp.ContentOneofCase.Event]);
 									break;
-								case ReadResp.ContentOneofCase.CaughtUp:
-									caughtUp.TrySetResult();
-									break;
 								case ReadResp.ContentOneofCase.Event: {
+									if (response.Event.Event.StreamIdentifier == StreamA &&
+									    response.Event.Event.StreamRevision == (ulong)_numberOfEventsToCatchUp - 1) {
+										caughtUp.TrySetResult();
+									}
 									if (response.Event.Event.Metadata[GrpcMetadata.Type] == FinishEventType) {
 										// allow some time for final events, like checkpoints, to arrive
 										cts.CancelAfter(TimeSpan.FromMilliseconds(maxResponseTimeMs * 10));
@@ -449,16 +445,6 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			[Test]
 			public void receives_the_checkpoints_on_correct_interval() {
 				_checkpointPositions.ForEach(p => Assert.Zero( p % CheckpointInterval, $"checkpoint at: {p}"));
-			}
-			
-			[Test]
-			public void receives_the_subscription_was_caught_up() {
-				Assert.AreEqual(1, _contentCaseCounts[ReadResp.ContentOneofCase.CaughtUp]);
-			}
-			
-			[Test]
-			public void does_not_receive_the_subscription_fell_behind() {
-				Assert.Zero(_contentCaseCounts[ReadResp.ContentOneofCase.FellBehind]);
 			}
 		}
 	}

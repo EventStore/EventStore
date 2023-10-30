@@ -43,27 +43,17 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 						UuidOption = new() { Structured = new() },
 						All = new() {
 							Start = new()
-							// Position = new() {
-							// 	CommitPosition = _positionOfLastWrite.CommitPosition,
-							// 	PreparePosition = _positionOfLastWrite.PreparePosition
-							// }
 						}
 					}
 				}, GetCallOptions(AdminCredentials));
 
-				var stopOnNextCheckpoint = false;
 				_responses.AddRange(await call.ResponseStream.ReadAllAsync()
 					.TakeWhile(response => {
-						if (response.ContentCase == ReadResp.ContentOneofCase.Checkpoint) {
-							if (stopOnNextCheckpoint)
-								return false;
-						}
-
 						if (response.ContentCase == ReadResp.ContentOneofCase.Event) {
 							if (_positionOfLastWrite == new Position(
-								response.Event.Event.CommitPosition,
-								response.Event.Event.PreparePosition))
-							stopOnNextCheckpoint = true;
+								    response.Event.Event.CommitPosition,
+								    response.Event.Event.PreparePosition))
+								return false;
 						}
 
 						return true;
