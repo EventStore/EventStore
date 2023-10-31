@@ -30,7 +30,7 @@ Here's an example of a full telemetry message from a single-node instance:
 ```json
 {
   "version": "23.10.0.0",
-  "tag": "",
+  "tag": "oss-v23.10.0",
   "uptime": "00:01:11.0115732",
   "cluster": {
     "leaderId": "81e9ca2a-8acc-41ed-b9d0-65a652b36801",
