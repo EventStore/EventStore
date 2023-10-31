@@ -96,10 +96,10 @@ You have opted out of sending telemetry by setting the EVENTSTORE_TELEMETRY_OPTO
 For more information visit https://eventstore.com/telemetry
 ```
 
-## When the telemetry messages are sent
+## Reporting frequency
 
-Telemetry collection is designed to exclude short-lived instances, such as EventStoreDB containers initiated for integration tests that are subsequently terminated. Telemetry messages are dispatched one hour after a cluster or instance is activated, followed by subsequent messages every 24 hours. Each telemetry transmission is logged, and the log includes the complete telemetry message, providing full transparency into the data being collected and sent to Event Store Ltd.
+To avoid tracking short-lived instances (like containers used for tests), telemetry data is sent one hour after the cluster node starts. Following this, updates are sent every 24 hours. All transmissions are logged for transparency.
 
 ## How to opt out
 
-You can completely disable telemetry transmission by setting the `EVENTSTORE_TELEMETRY_OPTOUT` environment variable to `true`. EventStoreDB will still collect the information required to produce telemetry messages, and those messages will be produced to console and diagnostic log, but they will not be sent to Event Store Ltd.
+Telemetry transmission can be disabled by setting the `EVENTSTORE_TELEMETRY_OPTOUT` environment variable to `true`. EventStoreDB will still collect the information required to produce telemetry messages, and those messages will be produced to console and diagnostic log, but they will not be sent to Event Store Ltd.
