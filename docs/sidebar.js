@@ -4,6 +4,7 @@ module.exports = [
         children: [
             "README.md",
             "installation.md",
+            "usage-telemetry.md"
         ]
     },
     {
