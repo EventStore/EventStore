@@ -51,11 +51,14 @@ public class TelemetrySink : ITelemetrySink {
 		sb.AppendLine("");
 		sb.AppendLine("Telemetry");
 		sb.AppendLine("---------");
-		sb.Append("EventStoreDB collects usage data in order to improve your experience. ");
-		sb.AppendLine("The data is anonymous and collected by EventStore Ltd.");
 
-		sb.Append(_optout ? "You have opted" : "You can opt");
-		sb.AppendLine(" out of sending telemetry by setting the EVENTSTORE_TELEMETRY_OPTOUT environment variable to true.");
+		if (_optout) {
+			sb.AppendLine("You have opted out of sending telemetry by setting the EVENTSTORE_TELEMETRY_OPTOUT environment variable to true.");
+		} else {
+			sb.Append("EventStoreDB collects usage data in order to improve your experience. ");
+			sb.AppendLine("The data is anonymous and collected by Event Store Ltd.");
+			sb.AppendLine("You can opt out of sending telemetry by setting the EVENTSTORE_TELEMETRY_OPTOUT environment variable to true.");
+		}
 
 		sb.AppendLine("For more information visit https://eventstore.com/telemetry");
 		_log.Information(sb.ToString());
