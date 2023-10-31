@@ -98,7 +98,7 @@ For more information visit https://eventstore.com/telemetry
 
 ## Reporting frequency
 
-To avoid tracking short-lived instances (like containers used for tests), telemetry data is sent one hour after the cluster node starts. Following this, updates are sent every 24 hours. All transmissions are logged for transparency.
+To avoid tracking short-lived instances (like containers used for tests), telemetry data is sent one hour after the cluster node starts. Following this, updates are sent every 24 hours. All transmissions are logged for transparency on the server console and in the log file.
 
 ## How to opt out
 
