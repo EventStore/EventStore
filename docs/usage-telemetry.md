@@ -102,5 +102,4 @@ Telemetry collection is designed to exclude short-lived instances, such as Event
 
 ## How to opt out
 
-You can completely disable telemetry collection and transmission by setting the `EVENTSTORE_TELEMETRY_OPTOUT` environment variable to `true`.
-
+You can completely disable telemetry transmission by setting the `EVENTSTORE_TELEMETRY_OPTOUT` environment variable to `true`. EventStoreDB will still collect the information required to produce telemetry messages, and those messages will be produced to console and diagnostic log, but they will not be sent to Event Store Ltd.
