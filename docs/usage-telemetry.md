@@ -86,7 +86,15 @@ You can opt out of sending telemetry by setting the EVENTSTORE_TELEMETRY_OPTOUT 
 For more information visit https://eventstore.com/telemetry
 ```
 
-The message is not shown if telemetry collection is disabled (see below).
+If telemetry collection is disabled (see below), the disclosure is still shown with a different text:
+
+```
+Telemetry
+---------
+EventStoreDB collects usage data in order to improve your experience. The data is anonymous and collected by EventStore Ltd.
+You have opted out of sending telemetry by setting the EVENTSTORE_TELEMETRY_OPTOUT environment variable to true.
+For more information visit https://eventstore.com/telemetry
+```
 
 ## When the telemetry messages are sent
 
