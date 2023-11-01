@@ -1,12 +1,17 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Client;
 using EventStore.Client.Streams;
 using EventStore.Core.Services.Transport.Grpc;
 using Google.Protobuf;
 using Grpc.Core;
 using NUnit.Framework;
 using Position = EventStore.Core.Services.Transport.Grpc.Position;
+using GrpcMetadata = EventStore.Core.Services.Transport.Grpc.Constants.Metadata;
 using LogV3StreamId = System.UInt32;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
@@ -121,22 +126,17 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					}
 				}, GetCallOptions(AdminCredentials));
 
-				var receivedTheEvent = false;
 				await foreach (var response in call.ResponseStream.ReadAllAsync()) {
 					if (response.ContentCase == ReadResp.ContentOneofCase.Checkpoint) {
-						if (receivedTheEvent) {
-							// we have received the event, so this checkpoint is the one that indicates
-							// we have successfully transitioned to live (and will receive no more events)
-							break;
-						}
 						_positions.Add(new Position(response.Checkpoint.CommitPosition,
 							response.Checkpoint.PreparePosition));
 						continue;
 					}
 
 					if (response.ContentCase == ReadResp.ContentOneofCase.Event) {
+						// we have received the event. There will be no more events or checkpoints after this
 						Assert.AreEqual(StreamName, response.Event.Event.StreamIdentifier.StreamName.ToStringUtf8());
-						receivedTheEvent = true;
+						break;
 					}
 				}
 			}
@@ -256,7 +256,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 			[Test]
 			public void receives_the_correct_number_of_checkpoints() {
-				Assert.AreEqual(2, CheckpointCount);
+				Assert.AreEqual(1, CheckpointCount);
 			}
 
 			[Test]
@@ -267,6 +267,184 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			[Test]
 			public void checkpoint_is_before_last_written_event() {
 				Assert.True(_positions[0] < _position);
+			}
+		}
+		
+		[TestFixture(typeof(LogFormat.V2), typeof(string), 8, 6)]
+		[TestFixture(typeof(LogFormat.V2), typeof(string), 32, 6)]
+		[TestFixture(typeof(LogFormat.V2), typeof(string), 36, 6)]
+		public class when_subscribing_to_all_with_a_filter_and_transitioning_to_live<TLogFormat, TStreamId>
+			: GrpcSpecification<TLogFormat, TStreamId> {
+
+			private const string StreamA = nameof(StreamA);
+			private const string MarkerStream = nameof(MarkerStream);
+			private const string FinishEventType = nameof(FinishEventType);
+			private const int CheckpointIntervalMultiplier = 2;
+			private const int CheckpointInterval = CheckpointIntervalMultiplier * 32; 
+
+			private int _expectedEventCount;
+			private AllStreamPosition _markerPosition;
+			private readonly int _numberOfEventsToCatchUp;
+			private readonly int _expectedCheckpoints;
+			private readonly List<int> _checkpointPositions = new (); 
+			private readonly Dictionary<ReadResp.ContentOneofCase, int> _contentCaseCounts = new ();
+
+			public when_subscribing_to_all_with_a_filter_and_transitioning_to_live(int catchupCount, int expectedCheckpoints)
+				: base (new LotsOfExpiriesStrategy()) {
+				
+				_expectedCheckpoints = expectedCheckpoints;
+				_numberOfEventsToCatchUp = catchupCount;
+
+				foreach (var c in Enum.GetValues<ReadResp.ContentOneofCase>()) {
+					_contentCaseCounts.Add(c, 0);
+				}
+			}
+
+			protected override async Task Given() {
+				// marker stream, start subscription after this
+				var result = await AppendToStreamBatch(new BatchAppendReq {
+					Options = new() {
+						Any = new(),
+						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8(MarkerStream) }
+					},
+					IsFinal = true,
+					ProposedMessages = { CreateEvents(1) },
+					CorrelationId = Uuid.NewUuid().ToDto()
+				});
+
+				_markerPosition = result.Success.Position;
+				
+				// initial events used for catching-up the subscription
+				await AppendToStreamBatch(new BatchAppendReq {
+					Options = new() {
+						Any = new(),
+						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8(StreamA) }
+					},
+					IsFinal = true,
+					ProposedMessages = { ExpectEvents(CreateEvents(_numberOfEventsToCatchUp)) },
+					CorrelationId = Uuid.NewUuid().ToDto()
+				});
+			}
+
+			protected override async Task When() {
+				var caughtUp = new TaskCompletionSource();
+				var cancelSubscription = new TaskCompletionSource();
+				var _ = Task.Run(async () => {
+					// subscribe
+					using var call = StreamsClient.Read(new ReadReq {
+						Options = new ReadReq.Types.Options {
+							Subscription = new(),
+							All = new() { Position = new ReadReq.Types.Options.Types.Position() {
+								CommitPosition = _markerPosition.CommitPosition,
+								PreparePosition = _markerPosition.PreparePosition
+							}},
+							Filter = new() {
+								Count = new Empty(),
+								CheckpointIntervalMultiplier = CheckpointIntervalMultiplier,
+								EventType = new ReadReq.Types.Options.Types.FilterOptions.Types.Expression() {
+									Regex = "^[^$].*" // exclude system events
+								},
+							},
+							UuidOption = new() { Structured = new() },
+							ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards
+						}
+					}, GetCallOptions(AdminCredentials));
+					
+					// consume
+					var cts = new CancellationTokenSource();
+					var sw = Stopwatch.StartNew();
+					var maxResponseTimeMs = TimeSpan.Zero.TotalMilliseconds;
+					try {
+						await foreach (var response in call.ResponseStream.ReadAllAsync(cts.Token)) {
+							maxResponseTimeMs = Math.Max(maxResponseTimeMs, sw.Elapsed.TotalMilliseconds);
+
+							_contentCaseCounts[response.ContentCase]++;
+
+							switch (response.ContentCase) {
+								case ReadResp.ContentOneofCase.Checkpoint:
+									_checkpointPositions.Add(_contentCaseCounts[ReadResp.ContentOneofCase.Event]);
+									break;
+								case ReadResp.ContentOneofCase.Event: {
+									if (response.Event.Event.StreamIdentifier == StreamA &&
+									    response.Event.Event.StreamRevision == (ulong)_numberOfEventsToCatchUp - 1) {
+										caughtUp.TrySetResult();
+									}
+									if (response.Event.Event.Metadata[GrpcMetadata.Type] == FinishEventType) {
+										// allow some time for final events, like checkpoints, to arrive
+										cts.CancelAfter(TimeSpan.FromMilliseconds(maxResponseTimeMs * 10));
+									}
+									break;
+								}
+							}
+
+							sw.Restart();
+						}
+					} catch (RpcException ex) when(ex.StatusCode == StatusCode.Cancelled) {
+						// expected
+					}
+					
+					cancelSubscription.TrySetResult();
+				});
+
+				// wait for initial events to be caught-up and subscription transitions to live
+				await caughtUp.Task;
+				
+				for (int i = 0; i < 18; i++) {
+					await AppendToStreamBatch(new BatchAppendReq {
+						Options = new() {
+							Any = new(),
+							StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8(StreamA) }
+						},
+						IsFinal = true,
+						ProposedMessages = { ExpectEvents(CreateEvents(20)) },
+						CorrelationId = Uuid.NewUuid().ToDto()
+					});
+
+					await Task.Delay(10);
+				}
+
+				await AppendToStreamBatch(new BatchAppendReq {
+					Options = new() {
+						Any = new(),
+						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8(StreamA) }
+					},
+					IsFinal = true,
+					ProposedMessages = {
+						ExpectEvents(CreateEvents(15)),
+						ExpectEvents(CreateEvent(FinishEventType))
+					},
+					CorrelationId = Uuid.NewUuid().ToDto()
+				});
+				
+				await cancelSubscription.Task;
+			}
+
+			private IEnumerable<BatchAppendReq.Types.ProposedMessage> ExpectEvents(
+				IEnumerable<BatchAppendReq.Types.ProposedMessage> events) => ExpectEvents(events.ToArray());
+
+			private IEnumerable<BatchAppendReq.Types.ProposedMessage> ExpectEvents(params BatchAppendReq.Types.ProposedMessage[] events) {
+				_expectedEventCount += events.Length;
+				return events;
+			}
+			
+			[Test]
+			public void receives_the_correct_number_of_confirmations() {
+				Assert.AreEqual(1, _contentCaseCounts[ReadResp.ContentOneofCase.Confirmation]);
+			}
+			
+			[Test]
+			public void receives_the_correct_number_of_events() {
+				Assert.AreEqual(_expectedEventCount, _contentCaseCounts[ReadResp.ContentOneofCase.Event]);
+			}
+			
+			[Test]
+			public void receives_the_correct_number_of_checkpoints() {
+				Assert.AreEqual(_expectedCheckpoints, _contentCaseCounts[ReadResp.ContentOneofCase.Checkpoint]);
+			}
+			
+			[Test]
+			public void receives_the_checkpoints_on_correct_interval() {
+				_checkpointPositions.ForEach(p => Assert.Zero( p % CheckpointInterval, $"checkpoint at: {p}"));
 			}
 		}
 	}
