@@ -102,7 +102,7 @@ This depends on:
 
 You can tell from the scavenge output in the logs and streams how much data it is removing. This can help guide how frequently to scavenge.
 
-You can set up a scheduled task, for example using [Cron](https://cron.com/) or [Windows Task Scheduler](https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-start-page), to trigger a scavenge as often as you need.
+You can set up a scheduled task, for example using cron on Linux or [Windows Task Scheduler](https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-start-page), to trigger a scavenge as often as you need.
 
 ### Spreading the load
 
@@ -160,7 +160,7 @@ Only chunks whose weight meets the threshold will be executed.
 
 This final phase removes data from the scavenge database that is no longer needed.
 
-## Scavenging HTTP options
+## Starting a scavenge
 
 When starting a scavenge with an HTTP POST request, the following options are available.
 
@@ -312,7 +312,7 @@ In EventStoreDB, events are immutable and cannot be changed after they are writt
 - Delete the old stream.
 - Run a scavenge to remove the data from disk on each node in turn.
 
-If this procedure is impractical in your use case, then you can use the redaction tool (the "redactor") to blank out the data of specific events.
+If this procedure is impractical for your use case, then you can use the redaction tool (the "redactor") to blank out the data of specific events.
 
 ::: warning
 Use the redactor as a last resort and only if you know what you're doing. Redacting events may lead to unintended consequences in your subscriptions and projections!
