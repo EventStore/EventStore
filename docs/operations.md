@@ -2,9 +2,9 @@
 
 EventStoreDB requires regular maintenance with three operational concerns:
 
-- [Scavenging](#scavenging-events) for freeing up space after deleting events.
+- [Scavenging](#scavenging) for freeing up space after deleting events.
 - [Backup and restore](#backup-and-restore) for disaster recovery.
-- [Certificate update](#rolling-certificate-update) to renew certificates.
+- [Certificate update](#certificate-update-upon-expiry) to renew certificates.
 
 You might also be interested learning about EventStoreDB [diagnostics](diagnostics.md)
 and [indexes](./indexes.md), which might require some Ops attention.
