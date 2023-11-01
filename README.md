@@ -116,7 +116,7 @@ The build scripts: `build.sh` and `build.ps1` are also available for Linux and W
 To start a single node, you can then run:
 
 ```
-dotnet ./src/EventStore.ClusterNode/bin/x64/Release/net6.0/EventStore.ClusterNode.dll --dev --db ./tmp/data --index ./tmp/index --log ./tmp/log
+dotnet ./src/EventStore.ClusterNode/bin/x64/Release/net7.0/EventStore.ClusterNode.dll --dev --db ./tmp/data --index ./tmp/index --log ./tmp/log
 ```
 
 ### Running the tests
@@ -160,9 +160,9 @@ Currently, we support the following configurations:
 - `CONTAINER_RUNTIME=bullseye-slim`
 - `RUNTIME=linux-x64`
 
-2. Focal:
+2. Jammy:
 
-- `CONTAINER_RUNTIME=focal`
+- `CONTAINER_RUNTIME=Jammy`
 - `RUNTIME=linux-x64`
 
 3. Alpine:
@@ -194,4 +194,4 @@ docker run --rm myeventstore --insecure --what-if
 
 ![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-bullseye-slim.yml/badge.svg)
 
-![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-focal.yml/badge.svg)
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-jammy.yml/badge.svg)

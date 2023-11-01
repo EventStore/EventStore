@@ -41,7 +41,7 @@ public class ProcessMetrics {
 			.Assembly
 			.GetType("System.Diagnostics.Tracing.RuntimeEventSourceHelper")!
 			.GetMethod("GetCpuUsage", BindingFlags.Static | BindingFlags.NonPublic)!
-			.CreateDelegate<Func<int>>();
+			.CreateDelegate<Func<double>>();
 
 		var getExceptionCount = typeof(Exception)
 			.GetMethod("GetExceptionCount", BindingFlags.Static | BindingFlags.NonPublic)!
