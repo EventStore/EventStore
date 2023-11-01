@@ -10,7 +10,7 @@ Below you can find more details about each of the available security options.
 
 Unlike previous versions, EventStoreDB v20+ is secure by default. It means that you have to supply valid certificates and configuration for the database node to work.
 
-We realise that many users want to try out the latest version with their existing applications, and also run a previous version of EventStoreDB without any security in their internal networks.
+We realize that many users want to try out the latest version with their existing applications, and also run a previous version of EventStoreDB without any security in their internal networks.
 
 For this to work, you can use the `Insecure` option:
 
@@ -32,7 +32,7 @@ In this section, you can find settings related to protocol security (HTTPS and T
 
 ### Certificate common name
 
-SSL certificates can be created with a common name (CN), which is an arbitrary string. Usually is contains the DNS name for which the certificate is issued. When cluster nodes connect to each other, they need to ensure that they indeed talk to another node and not something that pretends to be a node. Therefore, EventStoreDB expects the connecting party to have a certificate with a pre-defined CN `eventstoredb-node`.
+SSL certificates can be created with a common name (CN), which is an arbitrary string. Usually it contains the DNS name for which the certificate is issued. When cluster nodes connect to each other, they need to ensure that they indeed talk to another node and not something that pretends to be a node. Therefore, EventStoreDB expects the connecting party to have a certificate with a pre-defined CN `eventstoredb-node`.
 
 When using the Event Store [certificate generator](#certificate-generation-cli), the CN is properly set by default. However, you might want to change the CN and in this case, you'd also need to tell EventStoreDB what value it should expect instead of the default one, using the setting below:
 
@@ -195,12 +195,12 @@ chmod 600 [file]
 
 #### Generating the CA certificate
 
-As the first step CA certificate needs to be generated. It'll need to be trusted for each of the nodes and client environment.
+As the first step, a CA certificate needs to be generated. It'll need to be trusted for each of the nodes and client environment.
 
 By default, the tool will create the `ca` directory in the `certs` directory you created. Two keys will be generated:
 
 - `ca.crt` - public file that need to be used also for the nodes and client configuration,
-- `ca.key` - private key file that should be used only in the nodes configuration (**Do not copy it to client environment**).
+- `ca.key` - private key file that should be used only in the nodes configuration (**Do not copy it to client environments**).
 
 CA certificate will be generated with pre-defined CN `eventstoredb-node`.
 
@@ -210,7 +210,7 @@ To generate CA certificate run:
 ./es-gencert-cli create-ca
 ```
 
-You can customise generated cert by providing following params:
+You can customize the generated cert by providing the following parameters:
 
 | Param   | Description                                                       |
 | :------ | :---------------------------------------------------------------- |
@@ -230,7 +230,7 @@ You need to generate certificates signed by the CA for each node. They should be
 By default, the tool will create the `ca` directory in the `certs` directory you created. Two keys will be generated:
 
 - `node.crt` - the public file that needs to be also used for the nodes and client configuration,
-- `node.key` - the private key file that should be used only in the node's configuration (**Do not copy it to client environment**).
+- `node.key` - the private key file that should be used only in the node's configuration (**Do not copy it to client environments**).
 
 To generate node certificate run command:
 
@@ -238,7 +238,7 @@ To generate node certificate run command:
 ./es-gencert-cli -help create_node
 ```
 
-You can customise generated cert by providing following params:
+You can customize the generated cert by providing the following parameters:
 
 | Param             | Description                                                                   |
 | :---------------- | :---------------------------------------------------------------------------- |
@@ -303,7 +303,7 @@ To connect to EventStoreDB, you need to install the auto-generated CA certificat
 
 #### Linux (Ubuntu, Debian)
 
-1. Copy auto-generated CA file to dir `/usr/local/share/ca-certificates/`, e.g. using command:
+1. Copy the auto-generated CA file to `/usr/local/share/ca-certificates/`, e.g. using command:
 
 ```bash
 sudo cp ca.crt /usr/local/share/ca-certificates/event_store_ca.crt
@@ -317,7 +317,7 @@ sudo update-ca-certificates
 
 #### Windows
 
-1. You can manually import it to the local CA cert store through `Certificates Local Machine Management Console`. To do that select **Run** from the **Start** menu, and then enter `certmgr.msc`. Then import certificate to `Trusted Root Certification`.
+1. You can manually import it to the local CA cert store through `Certificates Local Machine Management Console`. To do that select **Run** from the **Start** menu, and then enter `certmgr.msc`. Then import the certificate to `Trusted Root Certification`.
 2. You can also run the PowerShell script instead:
 
 ```powershell
