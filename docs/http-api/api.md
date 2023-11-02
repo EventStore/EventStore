@@ -94,7 +94,7 @@ Append to a stream.
 |stream|path|string|true|The name of the stream|
 |ES-ExpectedVersion|header|integer|false|Expected stream version|
 |ES-EventType|header|string|false|The event type associated to a posted body|
-|ES-EventId|header|integer|false|Event ID associated to a posted body|
+|ES-EventId|header|GUID|false|Event ID associated to a posted body|
 |ES-RequiresMaster|header|boolean|false|Wether to run on a master node|
 |body|body|[streamData](#schemastreamdata)|true|Stream events to create|
 
