@@ -10,9 +10,13 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/4011 [EventStore#4013](https://github.com/EventStore/EventStore/pull/4013)
 - //github.com/EventStore/EventStore/pull/3995 [EventStore#4017](https://github.com/EventStore/EventStore/pull/4017)
 - //github.com/EventStore/EventStore/pull/3994 [EventStore#4018](https://github.com/EventStore/EventStore/pull/4018)
+- //github.com/EventStore/EventStore/pull/4025 [EventStore#4027](https://github.com/EventStore/EventStore/pull/4027)
+- //github.com/EventStore/EventStore/pull/4019 [EventStore#4022](https://github.com/EventStore/EventStore/pull/4022)
+- //github.com/EventStore/EventStore/pull/4026 [EventStore#4030](https://github.com/EventStore/EventStore/pull/4030)
 
 ### Changed
 - Set the default value of `CertificateReservedNodeCommonName` to empty string [EventStore#4001](https://github.com/EventStore/EventStore/pull/4001)
+- wording of telemetry message for clarity [EventStore#4026](https://github.com/EventStore/EventStore/pull/4026)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
@@ -24,6 +28,10 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - An way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3994](https://github.com/EventStore/EventStore/pull/3994)
 - Updating a persistent subscription clears the filter [EventStore#3995](https://github.com/EventStore/EventStore/pull/3995)
+- Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#4023](https://github.com/EventStore/EventStore/pull/4023)
+
+### Removed
+- Extra checkpoint when subscription to $all goes live. [EventStore#4023](https://github.com/EventStore/EventStore/pull/4023)
 
 ## [23.10.0] - 2023-10-13
 
