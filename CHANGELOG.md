@@ -29,9 +29,11 @@ All notable changes to this project will be documented in this file.
 - An way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3994](https://github.com/EventStore/EventStore/pull/3994)
 - Updating a persistent subscription clears the filter [EventStore#3995](https://github.com/EventStore/EventStore/pull/3995)
 - Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#4023](https://github.com/EventStore/EventStore/pull/4023)
+- Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#4035](https://github.com/EventStore/EventStore/pull/4035)
 
 ### Removed
 - Extra checkpoint when subscription to $all goes live. [EventStore#4023](https://github.com/EventStore/EventStore/pull/4023)
+- Extra checkpoint when subscription to $all goes live. [EventStore#4035](https://github.com/EventStore/EventStore/pull/4035)
 
 ## [23.10.0] - 2023-10-13
 
