@@ -23,6 +23,14 @@ An online rolling upgrade can be done from these versions of EventStoreDB, direc
 
 Follow the upgrade procedure below on each node, starting with a follower node:
 
+1. Stop the node.
+2. Upgrade EventstoreDB to 23.10 and update configuration.
+3. Start the node.
+4. Wait for the node to become a follower or read-only replica.
+5. Repeat on the next node. 
+
+As illustrated below:
+
 ::: card
 ![EventStoreDB upgrade procedure for each node](./images/upgrade-procedure.png)
 :::
