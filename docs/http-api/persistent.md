@@ -162,7 +162,7 @@ For example:
 | `stream`            | The stream to the persistent subscription is on.                                                                                                                                                                                          |
 | `subscription_name` | The name of the subscription group.                                                                                                                                                                                                       |
 | `action`            | <ul><li>**Park**: Don't retry the message; park it until a request is sent to replay the parked messages.</li><li>**Retry**: Retry the message.</li><li>**Skip**: Discard the message.</li><li>**Stop**: Stop the subscription.</li></ul> |
-| `messageid`         | The ID of the message that needs to be Nacked.                                                                                                                                                                                            |
+| `messageid`         | The ID of the message that needs to be nacked.                                                                                                                                                                                            |
 
 ### Nack a single message
 
