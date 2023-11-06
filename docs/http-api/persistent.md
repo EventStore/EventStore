@@ -1,6 +1,6 @@
 # Persistent subscriptions
 
-This document explains how to use HTTP API for setting up and consuming persistent subscriptions and competing consumer subscription groups. For an overview on competing consumers and how they relate to other subscription types, please see our [getting started guide](@server/persistent-subscriptions.md).
+This document explains how to use the HTTP API for setting up and consuming persistent subscriptions and competing consumer subscription groups. For an overview on competing consumers and how they relate to other subscription types, please see our [getting started guide](@server/persistent-subscriptions.md).
 
 ::: tip
 The Administration UI includes a _Competing Consumers_ section where you are able to create, update, delete and view subscriptions and their statuses.
@@ -8,7 +8,7 @@ The Administration UI includes a _Competing Consumers_ section where you are abl
 
 ## Creating a persistent subscription
 
-Before interacting with a subscription group, you need to create one. This requires [admin permissions](security.md). You will see an error if you try to create a subscription group more than once.
+Before interacting with a subscription group, you need to create one. This requires [admin permissions](security.md). You will get an error if you try to create a subscription group more than once.
 
 ::: warning
 Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to create persistent subscriptions to `$all`, use the [appropriate client method](@server/persistent-subscriptions.md#subscribing-to-all).
@@ -25,7 +25,7 @@ Persistent subscriptions to `$all` are not supported over the HTTP API. If you w
 | Parameter           | Description                                   |
 | ------------------- | --------------------------------------------- |
 | `stream`            | The stream the persistent subscription is on. |
-| `subscription_name` | The name for the subscription group.          |
+| `subscription_name` | The name of the subscription group.          |
 
 ### Body
 
@@ -61,7 +61,7 @@ Persistent subscriptions to `$all` are not supported over the HTTP API. To updat
 
 | Parameter           | Description                                      |
 | ------------------- | ------------------------------------------------ |
-| `stream`            | The stream to the persistent subscription is on. |
+| `stream`            | The stream the persistent subscription is on. |
 | `subscription_name` | The name of the subscription group.              |
 
 ### Body
@@ -82,7 +82,7 @@ Deleting persistent subscriptions to `$all` is not supported over the HTTP API. 
 
 | Parameter           | Description                                      |
 | ------------------- | ------------------------------------------------ |
-| `stream`            | The stream to the persistent subscription is on. |
+| `stream`            | The stream the persistent subscription is on. |
 | `subscription_name` | The name of the subscription group.              |
 
 ## Reading a stream via a persistent subscription
@@ -102,7 +102,7 @@ By default, reading a stream via a persistent subscription returns a single even
 | `count`             | How many events to return for the request.                                       |
 | `embed`             | Allowed values are `None`, `Content`, `Rich`, `Body`, `PrettyBody`, `TryHarder`. |
 
-Read [Reading Streams](README.md#reading-streams-and-events) for information on the different embed levels.
+See [Reading Streams](README.md#reading-streams-and-events) for information on the different embed levels.
 
 ### Response
 
@@ -110,7 +110,7 @@ Read [Reading Streams](README.md#reading-streams-and-events) for information on 
 
 ## Acknowledgements
 
-Clients must acknowledge (or not acknowledge) messages in the competing consumer model. If processing is successful, send an **Ack** (acknowledge) to the server to let it know that the message has been handled. If processing fails, then you can **Nack** (not acknowledge) the message and tell the server how to handle the failure. If the client fails to respond in the given timeout period, the message is retried. You should use the `rel` links in the feed for acknowledgements rather than bookmark URIs, as they are subject to change in future versions.
+Clients must acknowledge (or not acknowledge) messages in the competing consumer model. If processing is successful, send an **ack** (acknowledge) to the server to let it know that the message has been handled. If processing fails, then you can **nack** (not acknowledge) the message and tell the server how to handle the failure. If the client fails to respond in the given timeout period, the message is retried. You should use the `rel` links in the feed for acknowledgements rather than bookmark URIs, as they are subject to change in future versions.
 
 For example:
 
