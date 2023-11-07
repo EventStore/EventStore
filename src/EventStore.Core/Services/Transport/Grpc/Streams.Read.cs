@@ -46,24 +46,31 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw RpcExceptions.AccessDenied();
 				}
 
-				var enumerator = CreateEnumerator(
-					request,
-					user,
-					requiresLeader,
-					compatibility,
-					streamOptionsCase,
-					countOptionsCase,
-					readDirection,
-					filterOptionsCase,
-					context.Deadline,
-					options.UuidOption,
-					context.CancellationToken);
+				try {
+					var enumerator = CreateEnumerator(
+						request,
+						user,
+						requiresLeader,
+						compatibility,
+						streamOptionsCase,
+						countOptionsCase,
+						readDirection,
+						filterOptionsCase,
+						context.Deadline,
+						context.CancellationToken);
 
-				await using (enumerator.ConfigureAwait(false))
-				await using (context.CancellationToken.Register(() => enumerator.DisposeAsync()).ConfigureAwait(false)) {
-					while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
-						await responseStream.WriteAsync(enumerator.Current).ConfigureAwait(false);
+					async void DisposeEnumerator() => await enumerator.DisposeAsync().ConfigureAwait(false);
+
+					await using (enumerator.ConfigureAwait(false)) {
+						await using (context.CancellationToken.Register(DisposeEnumerator).ConfigureAwait(false)) {
+							while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
+								var readResponse = ConvertReadResponse(enumerator.Current, options.UuidOption);
+								await responseStream.WriteAsync(readResponse).ConfigureAwait(false);
+							}
+						}
 					}
+				} catch (ReadResponseException ex) {
+					ConvertReadResponseException(ex);
 				}
 			} catch (Exception ex) {
 				duration.SetException(ex);
@@ -71,7 +78,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 		}
 
-		private IAsyncEnumerator<ReadResp> CreateEnumerator(
+		private IAsyncEnumerator<ReadResponse> CreateEnumerator(
 			ReadReq request,
 			ClaimsPrincipal user,
 			bool requiresLeader,
@@ -81,14 +88,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			ReadDirection readDirection,
 			FilterOptionOneofCase filterOptionsCase,
 			DateTime deadline,
-			ReadReq.Types.Options.Types.UUIDOption uuidOption,
 			CancellationToken cancellationToken) {
 			return (streamOptionsCase, countOptionsCase, readDirection, filterOptionsCase) switch {
 				(StreamOptionOneofCase.Stream,
 					CountOptionOneofCase.Count,
 					ReadDirection.Forwards,
-					FilterOptionOneofCase.NoFilter) => (IAsyncEnumerator<ReadResp>)
-					new Enumerators.ReadStreamForwards(
+					FilterOptionOneofCase.NoFilter) => new Enumerator.ReadStreamForwards(
 						_publisher,
 						request.Options.Stream.StreamIdentifier,
 						request.Options.Stream.ToStreamRevision(),
@@ -97,13 +102,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						user,
 						requiresLeader,
 						deadline,
-						uuidOption,
 						compatibility,
 						cancellationToken),
 				(StreamOptionOneofCase.Stream,
 					CountOptionOneofCase.Count,
 					ReadDirection.Backwards,
-					FilterOptionOneofCase.NoFilter) => new Enumerators.ReadStreamBackwards(
+					FilterOptionOneofCase.NoFilter) => new Enumerator.ReadStreamBackwards(
 						_publisher,
 						request.Options.Stream.StreamIdentifier,
 						request.Options.Stream.ToStreamRevision(),
@@ -112,13 +116,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						user,
 						requiresLeader,
 						deadline,
-						uuidOption,
 						compatibility,
 						cancellationToken),
 				(StreamOptionOneofCase.All,
 					CountOptionOneofCase.Count,
 					ReadDirection.Forwards,
-					FilterOptionOneofCase.NoFilter) => new Enumerators.ReadAllForwards(
+					FilterOptionOneofCase.NoFilter) => new Enumerator.ReadAllForwards(
 						_publisher,
 						request.Options.All.ToPosition(),
 						request.Options.Count,
@@ -126,12 +129,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						user,
 						requiresLeader,
 						deadline,
-						uuidOption,
 						cancellationToken),
 				(StreamOptionOneofCase.All,
 					CountOptionOneofCase.Count,
 					ReadDirection.Forwards,
-					FilterOptionOneofCase.Filter) => new Enumerators.ReadAllForwardsFiltered(
+					FilterOptionOneofCase.Filter) => new Enumerator.ReadAllForwardsFiltered(
 						_publisher,
 						request.Options.All.ToPosition(),
 						request.Options.Count,
@@ -147,12 +149,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							_ => throw RpcExceptions.InvalidArgument(request.Options.Filter.WindowCase)
 						},
 						deadline,
-						uuidOption,
 						cancellationToken),
 				(StreamOptionOneofCase.All,
 					CountOptionOneofCase.Count,
 					ReadDirection.Backwards,
-					FilterOptionOneofCase.NoFilter) => new Enumerators.ReadAllBackwards(
+					FilterOptionOneofCase.NoFilter) => new Enumerator.ReadAllBackwards(
 						_publisher,
 						request.Options.All.ToPosition(),
 						request.Options.Count,
@@ -160,12 +161,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						user,
 						requiresLeader,
 						deadline,
-						uuidOption,
 						cancellationToken),
 				(StreamOptionOneofCase.All,
 					CountOptionOneofCase.Count,
 					ReadDirection.Backwards,
-					FilterOptionOneofCase.Filter) => new Enumerators.ReadAllBackwardsFiltered(
+					FilterOptionOneofCase.Filter) => new Enumerator.ReadAllBackwardsFiltered(
 						_publisher,
 						request.Options.All.ToPosition(),
 						request.Options.Count,
@@ -181,12 +181,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							_ => throw RpcExceptions.InvalidArgument(request.Options.Filter.WindowCase)
 						},
 						deadline,
-						uuidOption,
 						cancellationToken),
 				(StreamOptionOneofCase.Stream,
 					CountOptionOneofCase.Subscription,
 					ReadDirection.Forwards,
-					FilterOptionOneofCase.NoFilter) => new Enumerators.StreamSubscription<TStreamId>(
+					FilterOptionOneofCase.NoFilter) => new Enumerator.StreamSubscription<TStreamId>(
 						_publisher,
 						_expiryStrategy,
 						request.Options.Stream.StreamIdentifier,
@@ -194,12 +193,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.ResolveLinks,
 						user,
 						requiresLeader,
-						uuidOption,
 						cancellationToken),
 				(StreamOptionOneofCase.All,
 					CountOptionOneofCase.Subscription,
 					ReadDirection.Forwards,
-					FilterOptionOneofCase.NoFilter) => new Enumerators.AllSubscription(
+					FilterOptionOneofCase.NoFilter) => new Enumerator.AllSubscription(
 						_publisher,
 						_expiryStrategy,
 						request.Options.All.ToSubscriptionPosition(),
@@ -207,12 +205,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						user,
 						requiresLeader,
 						_readIndex,
-						uuidOption,
 						cancellationToken),
 				(StreamOptionOneofCase.All,
 					CountOptionOneofCase.Subscription,
 					ReadDirection.Forwards,
-					FilterOptionOneofCase.Filter) => new Enumerators.AllSubscriptionFiltered(
+					FilterOptionOneofCase.Filter) => new Enumerator.AllSubscriptionFiltered(
 						_publisher,
 						_expiryStrategy,
 						request.Options.All.ToSubscriptionPosition(),
@@ -228,7 +225,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							_ => throw RpcExceptions.InvalidArgument(request.Options.Filter.WindowCase)
 						},
 						request.Options.Filter.CheckpointIntervalMultiplier,
-						uuidOption,
 						cancellationToken),
 				_ => throw RpcExceptions.InvalidCombination((streamOptionsCase, countOptionsCase, readDirection,
 					filterOptionsCase))
@@ -247,5 +243,64 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						: EventFilter.StreamName.Regex(isAllStream, filter.StreamIdentifier.Regex)),
 				_ => throw RpcExceptions.InvalidArgument(filter)
 			};
+
+		private static ReadResp ConvertReadResponse(ReadResponse readResponse, ReadReq.Types.Options.Types.UUIDOption uuidOption) {
+			return readResponse switch {
+				ReadResponse.EventReceived eventReceived => new ReadResp {
+					Event = Enumerator.ConvertToReadEvent(uuidOption, eventReceived.Event)
+				},
+				ReadResponse.SubscriptionConfirmed subscriptionConfirmed => new ReadResp {
+					Confirmation = new ReadResp.Types.SubscriptionConfirmation {
+						SubscriptionId = subscriptionConfirmed.SubscriptionId
+					}
+				},
+				ReadResponse.CheckpointReceived checkpointReceived => new ReadResp {
+					Checkpoint = new ReadResp.Types.Checkpoint {
+						CommitPosition = checkpointReceived.CommitPosition,
+						PreparePosition = checkpointReceived.PreparePosition
+					}
+				},
+				ReadResponse.StreamNotFound streamNotFound => new ReadResp {
+					StreamNotFound = new ReadResp.Types.StreamNotFound {
+						StreamIdentifier = streamNotFound.StreamName
+					}
+				},
+				ReadResponse.SubscriptionCaughtUp => new ReadResp {
+					CaughtUp = new ReadResp.Types.CaughtUp()
+				},
+				ReadResponse.LastStreamPositionReceived lastStreamPositionReceived => new ReadResp {
+					LastStreamPosition = lastStreamPositionReceived.LastStreamPosition
+				},
+				ReadResponse.FirstStreamPositionReceived firstStreamPositionReceived => new ReadResp {
+					FirstStreamPosition = firstStreamPositionReceived.FirstStreamPosition
+				},
+				_ => throw new ArgumentException($"Unknown read response type: {readResponse.GetType().Name}", nameof(readResponse))
+			};
+		}
+
+		private static void ConvertReadResponseException(ReadResponseException readResponseEx) {
+			switch (readResponseEx) {
+				case ReadResponseException.NotHandled.ServerNotReady:
+					throw RpcExceptions.ServerNotReady();
+				case ReadResponseException.NotHandled.ServerBusy:
+					throw RpcExceptions.ServerBusy();
+				case ReadResponseException.NotHandled.LeaderInfo leaderInfo:
+					throw RpcExceptions.LeaderInfo(leaderInfo.Host, leaderInfo.Port);
+				case ReadResponseException.NotHandled.NoLeaderInfo:
+					throw RpcExceptions.NoLeaderInfo();
+				case ReadResponseException.StreamDeleted streamDeleted:
+					throw RpcExceptions.StreamDeleted(streamDeleted.StreamName);
+				case ReadResponseException.AccessDenied:
+					throw RpcExceptions.AccessDenied();
+				case ReadResponseException.Timeout timeout:
+					throw RpcExceptions.Timeout(timeout.ErrorMessage);
+				case ReadResponseException.UnknownMessage unknownMessage:
+					throw RpcExceptions.UnknownMessage(unknownMessage.UnknownMessageType, unknownMessage.ExpectedMessageType);
+				case ReadResponseException.UnknownError unknown:
+					throw RpcExceptions.UnknownError(unknown.ResultType, unknown.Result);
+				default:
+					throw new ArgumentException($"Unknown read response exception type: {readResponseEx.GetType().Name}", nameof(readResponseEx));
+			}
+		}
 	}
 }

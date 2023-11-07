@@ -1,11 +1,13 @@
 using System.Threading.Channels;
 using EventStore.Client;
 using EventStore.Client.Streams;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.Messages;
 using Google.Protobuf;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public static partial class Enumerators {
+	public static partial class Enumerator {
 		private const int MaxLiveEventBufferCount = 32;
 		private const int ReadBatchSize = 32; // TODO  JPB make this configurable
 
@@ -44,7 +46,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			};
 		}
 
-		private static ReadResp.Types.ReadEvent ConvertToReadEvent(ReadReq.Types.Options.Types.UUIDOption uuidOption,
+		public static ReadResp.Types.ReadEvent ConvertToReadEvent(ReadReq.Types.Options.Types.UUIDOption uuidOption,
 			ResolvedEvent e) {
 			var readEvent = new ReadResp.Types.ReadEvent {
 				Link = ConvertToRecordedEvent(uuidOption, e.Link, e.LinkPosition?.CommitPosition,
@@ -58,10 +60,35 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					e.OriginalPosition.Value.PreparePosition);
 				readEvent.CommitPosition = position.CommitPosition;
 			} else {
-				readEvent.NoPosition = new Empty();
+				readEvent.NoPosition = new Client.Empty();
 			}
 
 			return readEvent;
+		}
+
+		private static bool TryHandleNotHandled(ClientMessage.NotHandled notHandled, out ReadResponseException exception) {
+			exception = null;
+			switch (notHandled.Reason) {
+				case ClientMessage.NotHandled.Types.NotHandledReason.NotReady:
+					exception = new ReadResponseException.NotHandled.ServerNotReady();
+					return true;
+				case ClientMessage.NotHandled.Types.NotHandledReason.TooBusy:
+					exception = new ReadResponseException.NotHandled.ServerBusy();
+					return true;
+				case ClientMessage.NotHandled.Types.NotHandledReason.NotLeader:
+				case ClientMessage.NotHandled.Types.NotHandledReason.IsReadOnly:
+					switch (notHandled.LeaderInfo) {
+						case { } leaderInfo:
+							exception = new ReadResponseException.NotHandled.LeaderInfo(leaderInfo.Http.GetHost(), leaderInfo.Http.GetPort());
+							return true;
+						default:
+							exception = new ReadResponseException.NotHandled.NoLeaderInfo();
+							return true;
+					}
+
+				default:
+					return false;
+			}
 		}
 	}
 }
