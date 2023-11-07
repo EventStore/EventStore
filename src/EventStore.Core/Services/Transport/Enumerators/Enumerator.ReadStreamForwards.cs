@@ -4,15 +4,14 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using EventStore.Client.Streams;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class Enumerators {
-		public class ReadStreamBackwards : IAsyncEnumerator<ReadResp> {
+	partial class Enumerator {
+		public class ReadStreamForwards : IAsyncEnumerator<ReadResponse> {
 			private readonly IPublisher _bus;
 			private readonly string _streamName;
 			private readonly ulong _maxCount;
@@ -20,17 +19,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
 			private readonly DateTime _deadline;
-			private readonly ReadReq.Types.Options.Types.UUIDOption _uuidOption;
 			private readonly uint _compatibility;
 			private readonly CancellationToken _cancellationToken;
 			private readonly SemaphoreSlim _semaphore;
-			private readonly Channel<ReadResp> _channel;
+			private readonly Channel<ReadResponse> _channel;
 
-			private ReadResp _current;
+			private ReadResponse _current;
 
-			public ReadResp Current => _current;
+			public ReadResponse Current => _current;
 
-			public ReadStreamBackwards(IPublisher bus,
+			public ReadStreamForwards(IPublisher bus,
 				string streamName,
 				StreamRevision startRevision,
 				ulong maxCount,
@@ -38,7 +36,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				ClaimsPrincipal user,
 				bool requiresLeader,
 				DateTime deadline,
-				ReadReq.Types.Options.Types.UUIDOption uuidOption,
 				uint compatibility,
 				CancellationToken cancellationToken) {
 				_bus = bus ?? throw new ArgumentNullException(nameof(bus));
@@ -48,11 +45,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_user = user;
 				_requiresLeader = requiresLeader;
 				_deadline = deadline;
-				_uuidOption = uuidOption;
 				_compatibility = compatibility;
 				_cancellationToken = cancellationToken;
 				_semaphore = new SemaphoreSlim(1, 1);
-				_channel = Channel.CreateBounded<ReadResp>(BoundedChannelOptions);
+				_channel = Channel.CreateBounded<ReadResponse>(BoundedChannelOptions);
 
 				ReadPage(startRevision);
 			}
@@ -75,34 +71,43 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private void ReadPage(StreamRevision startRevision, ulong readCount = 0) {
 				Guid correlationId = Guid.NewGuid();
 
-				_bus.Publish(new ClientMessage.ReadStreamEventsBackward(
+				_bus.Publish(new ClientMessage.ReadStreamEventsForward(
 					correlationId, correlationId, new ContinuationEnvelope(OnMessage, _semaphore, _cancellationToken),
 					_streamName, startRevision.ToInt64(), (int)Math.Min(ReadBatchSize, _maxCount), _resolveLinks,
-					_requiresLeader, null, _user, _deadline,
+					_requiresLeader, null, _user, replyOnExpired: false, expires: _deadline,
 					cancellationToken: _cancellationToken));
 
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
-					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+					    TryHandleNotHandled(notHandled, out var ex)) {
 						_channel.Writer.TryComplete(ex);
 						return;
 					}
 
-					if (message is not ClientMessage.ReadStreamEventsBackwardCompleted completed) {
+					if (message is not ClientMessage.ReadStreamEventsForwardCompleted completed) {
 						_channel.Writer.TryComplete(
-							RpcExceptions.UnknownMessage<ClientMessage.ReadStreamEventsBackwardCompleted>(message));
+							ReadResponseException.UnknownMessage.Create<ClientMessage.ReadStreamEventsForwardCompleted>(message));
 						return;
 					}
 
 					switch (completed.Result) {
 						case ReadStreamResult.Success:
+							if (readCount == 0 && _compatibility >= 1) {
+								if (completed.Events.Length == 0) {
+									var firstStreamPosition = StreamRevision.FromInt64(completed.NextEventNumber);
+									if (startRevision != firstStreamPosition) {
+										await _channel.Writer
+											.WriteAsync(new ReadResponse.FirstStreamPositionReceived(firstStreamPosition), ct)
+											.ConfigureAwait(false);
+									}
+								}
+							}
+
 							foreach (var @event in completed.Events) {
 								if (readCount >= _maxCount) {
 									break;
 								}
-								await _channel.Writer.WriteAsync(new() {
-									Event = ConvertToReadEvent(_uuidOption, @event)
-								}, ct).ConfigureAwait(false);
+								await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct).ConfigureAwait(false);
 								readCount++;
 							}
 
@@ -112,29 +117,29 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							}
 
 							if (_compatibility >= 1) {
-								await _channel.Writer.WriteAsync(new() {
-									LastStreamPosition = StreamRevision.FromInt64(completed.LastEventNumber)
-								}, ct).ConfigureAwait(false);
+								await _channel.Writer
+									.WriteAsync(
+										new ReadResponse.LastStreamPositionReceived(
+											StreamRevision.FromInt64(completed.LastEventNumber)), ct)
+									.ConfigureAwait(false);
 							}
 
 							_channel.Writer.TryComplete();
 							return;
+
 						case ReadStreamResult.NoStream:
-							await _channel.Writer.WriteAsync(new ReadResp {
-								StreamNotFound = new ReadResp.Types.StreamNotFound {
-									StreamIdentifier = _streamName
-								}
-							}, _cancellationToken).ConfigureAwait(false);
+							await _channel.Writer.WriteAsync(new ReadResponse.StreamNotFound(_streamName), ct)
+								.ConfigureAwait(false);
 							_channel.Writer.TryComplete();
 							return;
 						case ReadStreamResult.StreamDeleted:
-							_channel.Writer.TryComplete(RpcExceptions.StreamDeleted(_streamName));
+							_channel.Writer.TryComplete(new ReadResponseException.StreamDeleted(_streamName));
 							return;
 						case ReadStreamResult.AccessDenied:
-							_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
+							_channel.Writer.TryComplete(new ReadResponseException.AccessDenied());
 							return;
 						default:
-							_channel.Writer.TryComplete(RpcExceptions.UnknownError(completed.Result));
+							_channel.Writer.TryComplete(ReadResponseException.UnknownError.Create(completed.Result));
 							return;
 					}
 				}
