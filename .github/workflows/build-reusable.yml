@@ -28,10 +28,10 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 3.1.x
-    - name: Install net7.0
+    - name: Install net8.0
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 7.0.x
+        dotnet-version: 8.0.x
     - name: Clear Nuget Cache
       shell: powershell
       if: inputs.os == 'windows-2019'

@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 
 			protected static HttpContext CreateTestEntityWithCredentials(string username, string password) {
 				var context = new DefaultHttpContext();
-				context.Request.Headers.Add("authorization",
+				context.Request.Headers.Append("authorization",
 					"Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}")));
 				return context;
 			}
