@@ -260,8 +260,6 @@ namespace EventStore.Core {
 #endif
 
 			var disableInternalTcpTls = options.Application.Insecure;
-			var disableExternalTcpTls = options.Application.Insecure || options.Interface.DisableExternalTcpTls;
-
 			var httpEndPoint = new IPEndPoint(options.Interface.NodeIp, options.Interface.NodePort);
 			
 			var intTcp = disableInternalTcpTls
@@ -273,15 +271,6 @@ namespace EventStore.Core {
 					options.Interface.ReplicationPort)
 				: null;
 
-			var extTcp = disableExternalTcpTls
-				? new IPEndPoint(options.Interface.NodeIp, 
-					options.Interface.NodeTcpPort)
-				: null;
-			var extSecIp = !disableExternalTcpTls
-				? new IPEndPoint(options.Interface.NodeIp, 
-					options.Interface.NodeTcpPort)
-				: null;
-
 			var intTcpPortAdvertiseAs = disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
 			var intSecTcpPortAdvertiseAs = !disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
 
@@ -291,7 +280,7 @@ namespace EventStore.Core {
 
 			Log.Information("Quorum size set to {quorum}.", options.Cluster.QuorumSize);
 
-			NodeInfo = new VNodeInfo(instanceId.Value, debugIndex, intTcp, intSecIp, extTcp, extSecIp,
+			NodeInfo = new VNodeInfo(instanceId.Value, debugIndex, intTcp, intSecIp,
 				httpEndPoint, options.Cluster.ReadOnlyReplica);
 
 			var dbConfig = CreateDbConfig(
@@ -545,8 +534,6 @@ namespace EventStore.Core {
 				TimeSpan.FromSeconds(options.Application.StatsPeriodSec),
 				NodeInfo.HttpEndPoint,
 				options.Database.StatsStorage,
-				NodeInfo.ExternalTcp,
-				NodeInfo.ExternalSecureTcp,
 				statsHelper);
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
@@ -850,25 +837,13 @@ namespace EventStore.Core {
 						? intSecTcpPortAdvertiseAs
 						: NodeInfo.InternalSecureTcp.Port);
 
-				var extTcpEndPoint = NodeInfo.ExternalTcp == null
-					? null
-					: new DnsEndPoint(extHostToAdvertise, extTcpPortAdvertiseAs > 0
-						? extTcpPortAdvertiseAs
-						: NodeInfo.ExternalTcp.Port);
-
-				var extSecureTcpEndPoint = NodeInfo.ExternalSecureTcp == null
-					? null
-					: new DnsEndPoint(extHostToAdvertise, extSecTcpPortAdvertiseAs > 0
-						? extSecTcpPortAdvertiseAs
-						: NodeInfo.ExternalSecureTcp.Port);
-				
 				var httpEndPoint = new DnsEndPoint(extHostToAdvertise,
 					options.Interface.NodePortAdvertiseAs > 0
 						? options.Interface.NodePortAdvertiseAs
 						: NodeInfo.HttpEndPoint.GetPort());
 
-				return new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint, extTcpEndPoint,
-					extSecureTcpEndPoint, httpEndPoint, options.Interface.ReplicationHostAdvertiseAs,
+				return new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint,
+					httpEndPoint, options.Interface.ReplicationHostAdvertiseAs,
 					options.Interface.NodeHostAdvertiseAs, options.Interface.NodePortAdvertiseAs,
 					options.Interface.AdvertiseHostToClientAs, options.Interface.AdvertiseNodePortToClientAs,
 					options.Interface.AdvertiseTcpPortToClientAs);

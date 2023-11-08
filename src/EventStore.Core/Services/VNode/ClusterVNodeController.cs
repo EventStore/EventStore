@@ -841,14 +841,11 @@ namespace EventStore.Core.Services.VNode {
 
 		private void DenyRequestBecauseNotLeader(Guid correlationId, IEnvelope envelope) {
 			LeaderInfoProvider leaderInfoProvider = new LeaderInfoProvider(_node.GossipAdvertiseInfo, _leader);
-			var endpoints = leaderInfoProvider.GetLeaderInfoEndPoints();
+			var endpoint = leaderInfoProvider.GetLeaderInfoEndPoint();
 			envelope.ReplyWith(
 				new ClientMessage.NotHandled(correlationId,
 					ClientMessage.NotHandled.Types.NotHandledReason.NotLeader,
-					new ClientMessage.NotHandled.Types.LeaderInfo( endpoints.AdvertisedTcpEndPoint,
-						endpoints.IsTcpEndPointSecure,
-						endpoints.AdvertisedHttpEndPoint
-						)));
+					new ClientMessage.NotHandled.Types.LeaderInfo(endpoint)));
 		}
 
 		private void HandleAsReadOnlyReplica(ClientMessage.WriteEvents message) {
@@ -926,14 +923,11 @@ namespace EventStore.Core.Services.VNode {
 
 		private void DenyRequestBecauseReadOnly(Guid correlationId, IEnvelope envelope) {
 			LeaderInfoProvider leaderInfoProvider = new LeaderInfoProvider(_node.GossipAdvertiseInfo, _leader);
-			var endpoints = leaderInfoProvider.GetLeaderInfoEndPoints();
+			var endpoint = leaderInfoProvider.GetLeaderInfoEndPoint();
 			envelope.ReplyWith(
 				new ClientMessage.NotHandled(correlationId,
 					ClientMessage.NotHandled.Types.NotHandledReason.IsReadOnly,
-					new ClientMessage.NotHandled.Types.LeaderInfo(endpoints.AdvertisedTcpEndPoint,
-						endpoints.IsTcpEndPointSecure,
-						endpoints.AdvertisedHttpEndPoint
-						)));
+					new ClientMessage.NotHandled.Types.LeaderInfo(endpoint)));
 		}
 
 		private void DenyRequestBecauseNotReady(IEnvelope envelope, Guid correlationId) {

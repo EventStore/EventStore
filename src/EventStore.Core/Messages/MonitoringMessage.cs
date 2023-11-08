@@ -179,7 +179,6 @@ namespace EventStore.Core.Messages {
 			public long TotalBytesReceived { get; set; }
 			public int PendingSendBytes { get; set; }
 			public int PendingReceivedBytes { get; set; }
-			public bool IsExternalConnection { get; set; }
 			public bool IsSslConnection { get; set; }
 		}
 

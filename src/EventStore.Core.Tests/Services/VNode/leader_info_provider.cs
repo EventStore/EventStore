@@ -117,7 +117,7 @@ public class leader_info_provider {
 			given.GossipInfo,
 			given.LeaderInfo);
 
-		var result = leaderInfoProvider.GetLeaderInfoEndPoints();
+		var result = leaderInfoProvider.GetLeaderInfoEndPoint();
 
 		AssertAreEqual(expected.TcpEndPoint, result.AdvertisedTcpEndPoint, "TcpEndPoint");
 		AssertAreEqual(expected.HttpEndPoint, result.AdvertisedHttpEndPoint, "HttpEndPoint");
