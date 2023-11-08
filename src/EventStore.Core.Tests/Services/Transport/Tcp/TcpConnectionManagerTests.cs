@@ -55,49 +55,6 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		}
 
 		[Test]
-		public void when_handling_trusted_write_on_internal_service() {
-			ManualResetEvent waiter = new ManualResetEvent(false);
-			ClientMessage.WriteEvents publishedWrite = null;
-			var evnt = new Event(Guid.NewGuid(), "TestEventType", true, new byte[] { }, new byte[] { });
-			var write = new WriteEvents(
-				Guid.NewGuid().ToString(),
-				ExpectedVersion.Any,
-				new[] {
-					new NewEvent(evnt.EventId.ToByteArray(), evnt.EventType, evnt.IsJson ? 1 : 0, 0,
-						evnt.Data, evnt.Metadata)
-				},
-				false);
-
-			var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
-			var dummyConnection = new DummyTcpConnection();
-			var publisher = InMemoryBus.CreateTest();
-
-			publisher.Subscribe(new AdHocHandler<ClientMessage.WriteEvents>(x => {
-				publishedWrite = x;
-				waiter.Set();
-			}));
-
-			var tcpConnectionManager = new TcpConnectionManager(
-				Guid.NewGuid().ToString(), TcpServiceType.Internal, new ClientTcpDispatcher(2000),
-				publisher, dummyConnection, publisher,
-				new InternalAuthenticationProvider(publisher, new Core.Helpers.IODispatcher(publisher, new NoopEnvelope()),
-					new StubPasswordHashAlgorithm(), 1, false, DefaultData.DefaultUserOptions),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
-				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
-				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
-
-			tcpConnectionManager.ProcessPackage(package);
-
-			if (!waiter.WaitOne(TimeSpan.FromSeconds(5))) {
-				throw new Exception("Timed out waiting for events.");
-			}
-
-			Assert.AreEqual(evnt.EventId, publishedWrite.Events.First().EventId,
-				"Expected the published write to be the event that was sent through the tcp connection manager to be the event {0} but got {1}",
-				evnt.EventId, publishedWrite.Events.First().EventId);
-		}
-
-		[Test]
 		public void
 			when_limit_pending_and_sending_message_smaller_than_threshold_and_pending_bytes_over_threshold_should_close_connection() {
 			var mre = new ManualResetEventSlim();

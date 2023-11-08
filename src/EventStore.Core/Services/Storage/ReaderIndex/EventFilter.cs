@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -32,24 +33,32 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				=> new EventTypeRegexStrategy(isAllStream, regex);
 		}
 
-		public static IEventFilter Get(bool isAllStream, Client.Messages.Filter filter) {
-			if (filter == null || filter.Data.Count == 0) {
+		public enum FilterContext {
+			EventType,
+			StreamId
+		}
+
+		public enum FilterType {
+			Regex,
+			Prefix
+		}
+
+		public record Filter(FilterContext Context, FilterType Type, string[] Data);
+
+		public static IEventFilter Get(bool isAllStream, Filter filter) {
+			if (filter == null || filter.Data.Length == 0) {
 				return isAllStream ? (IEventFilter) new DefaultAllFilterStrategy() : new DefaultStreamFilterStrategy();
 			}
 
 			return filter.Context switch {
-				Client.Messages.Filter.Types.FilterContext.EventType when filter.Type ==
-				                                                          Client.Messages.Filter.Types.FilterType.Prefix =>
-				EventType.Prefixes(isAllStream, filter.Data.ToArray()),
-				Client.Messages.Filter.Types.FilterContext.EventType when filter.Type ==
-				                                                          Client.Messages.Filter.Types.FilterType.Regex =>
-				EventType.Regex(isAllStream, filter.Data[0]),
-				Client.Messages.Filter.Types.FilterContext.StreamId when filter.Type ==
-				                                                         Client.Messages.Filter.Types.FilterType.Prefix =>
-				StreamName.Prefixes(isAllStream, filter.Data.ToArray()),
-				Client.Messages.Filter.Types.FilterContext.StreamId when filter.Type ==
-				                                                         Client.Messages.Filter.Types.FilterType.Regex =>
-				StreamName.Regex(isAllStream, filter.Data[0]),
+				FilterContext.EventType when filter.Type == FilterType.Prefix =>
+					EventType.Prefixes(isAllStream, filter.Data.ToArray()),
+				FilterContext.EventType when filter.Type == FilterType.Regex =>
+					EventType.Regex(isAllStream, filter.Data[0]),
+				FilterContext.StreamId when filter.Type == FilterType.Prefix =>
+					StreamName.Prefixes(isAllStream, filter.Data.ToArray()),
+				FilterContext.StreamId when filter.Type == FilterType.Regex =>
+					StreamName.Regex(isAllStream, filter.Data[0]),
 				_ => throw new Exception() // Invalid filter
 			};
 		}
@@ -247,31 +256,31 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		public static (bool Success, string Reason) TryParse(string context, bool isAllStream, string type, string data,
 			out IEventFilter filter) {
-			Client.Messages.Filter.Types.FilterContext parsedContext;
+			FilterContext parsedContext;
 			switch (context) {
 				case EventTypeContext:
-					parsedContext = Client.Messages.Filter.Types.FilterContext.EventType;
+					parsedContext = FilterContext.EventType;
 					break;
 				case StreamIdContext:
-					parsedContext = Client.Messages.Filter.Types.FilterContext.StreamId;
+					parsedContext = FilterContext.StreamId;
 					break;
 				default:
 					filter = null;
-					var names = string.Join(", ", Enum.GetNames(typeof(Client.Messages.Filter.Types.FilterContext)));
+					var names = string.Join(", ", Enum.GetNames(typeof(FilterContext)));
 					return (false, $"Invalid context please provide one of the following: {names}.");
 			}
 
-			Client.Messages.Filter.Types.FilterType parsedType;
+			FilterType parsedType;
 			switch (type) {
 				case RegexType:
-					parsedType = Client.Messages.Filter.Types.FilterType.Regex;
+					parsedType = FilterType.Regex;
 					break;
 				case PrefixType:
-					parsedType = Client.Messages.Filter.Types.FilterType.Prefix;
+					parsedType = FilterType.Prefix;
 					break;
 				default:
 					filter = null;
-					var names = string.Join(", ", Enum.GetNames(typeof(Client.Messages.Filter.Types.FilterType)));
+					var names = string.Join(", ", Enum.GetNames(typeof(FilterType)));
 					return (false, $"Invalid type please provide one of the following: {names}.");
 			}
 
@@ -280,12 +289,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return (false, "Please provide a comma delimited list of data with at least one item.");
 			}
 
-			if (parsedType == Client.Messages.Filter.Types.FilterType.Regex) {
-				filter = Get(isAllStream, new Client.Messages.Filter(parsedContext, parsedType, new[] {data}));
+			if (parsedType == FilterType.Regex) {
+				filter = Get(isAllStream, new Filter(parsedContext, parsedType, new[] {data}));
 				return (true, null);
 			}
 
-			filter = Get(isAllStream, new Client.Messages.Filter(parsedContext, parsedType,
+			filter = Get(isAllStream, new Filter(parsedContext, parsedType,
 				data.Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)));
 			return (true, null);
 		}
