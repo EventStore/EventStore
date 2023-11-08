@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "Explicit transactions are not supported yet by Log V3")]
-	public class transaction<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+	public class Transaction<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private MiniNode<TLogFormat, TStreamId> _node;
 
 		[OneTimeSetUp]

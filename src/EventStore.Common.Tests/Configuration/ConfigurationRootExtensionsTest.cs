@@ -10,7 +10,7 @@ public class ConfigurationRootExtensionsTest {
 	
 	[Fact]
 	public void successful_comma_separated_value() {
-		var config = new Dictionary<string, string> {
+		var config = new Dictionary<string, string?> {
 			{ GOSSIP_SEED, "nodeb.eventstore.test:2113,nodec.eventstore.test:3113" }
 		};
 		IConfigurationRoot configuration = MemoryConfigurationBuilderExtensions
@@ -24,7 +24,7 @@ public class ConfigurationRootExtensionsTest {
 
 	[Fact]
 	public void invalid_delimiter() {
-		var config = new Dictionary<string, string> {
+		var config = new Dictionary<string, string?> {
 			{ GOSSIP_SEED, "nodeb.eventstore.test:2113;nodec.eventstore.test:3113" }
 		};
 		IConfigurationRoot configuration = MemoryConfigurationBuilderExtensions
@@ -38,7 +38,7 @@ public class ConfigurationRootExtensionsTest {
 	
 	[Fact]
 	public void mixed_invalid_delimiter() {
-		var config = new Dictionary<string, string> {
+		var config = new Dictionary<string, string?> {
 			{ GOSSIP_SEED, "nodea.eventstore.test:2113,nodeb.eventstore.test:2113;nodec.eventstore.test:3113" }
 		};
 

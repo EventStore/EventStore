@@ -18,10 +18,10 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    - name: Install net6.0
+    - name: Install net7.0
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 7.0.x
     - name: Setup QEMU
       uses: docker/setup-qemu-action@v2
     - name: Set up Docker Buildx
@@ -44,7 +44,7 @@ jobs:
         key: "${{ inputs.container-runtime }}"
         map: |
           {
-            "focal": {
+            "jammy": {
               "runtime": "linux-x64"
             },
             "bullseye-slim": {
@@ -102,7 +102,7 @@ jobs:
         docker tag eventstore ghcr.io/eventstore/eventstore:${{ env.VERSION }}
         docker push ghcr.io/eventstore/eventstore:${{ env.VERSION }}
     - name: Push GitHub Container Registry (CI)
-      if: always() && github.event_name == 'push' && inputs.container-runtime == 'focal' && github.ref == 'refs/heads/master'
+      if: always() && github.event_name == 'push' && inputs.container-runtime == 'jammy' && github.ref == 'refs/heads/master'
       shell: bash
       run: |
         docker tag eventstore ghcr.io/eventstore/eventstore:ci

@@ -13,10 +13,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint), TcpType.Normal)]
 	[TestFixture(typeof(LogFormat.V2), typeof(string), TcpType.Ssl)]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint), TcpType.Ssl)]
-	public class connect<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+	public class Connect<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly TcpType _tcpType;
 
-		public connect(TcpType tcpType) {
+		public Connect(TcpType tcpType) {
 			_tcpType = tcpType;
 		}
 

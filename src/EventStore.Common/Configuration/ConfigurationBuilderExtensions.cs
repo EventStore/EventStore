@@ -19,7 +19,7 @@ namespace EventStore.Common.Configuration {
 			var root = builder.Build(); // need to build twice as on disk config is configurable
 			
 			var yamlSource = new YamlSource {
-				Path = root.GetValue<string>(configFileKey),
+				Path = root.GetString(configFileKey),
 				Optional = !root.IsUserSpecified(configFileKey),
 				ReloadOnChange = true
 			};
