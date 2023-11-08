@@ -9,7 +9,7 @@ using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Transport.Http;
 
 namespace EventStore.Core.Tests.Http.Streams {
-	public class filtered {
+	public class Filtered {
 		public abstract class SpecificationWithLongFeed<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			protected int NumberOfEvents;
 

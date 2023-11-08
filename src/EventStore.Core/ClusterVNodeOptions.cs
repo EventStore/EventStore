@@ -101,8 +101,8 @@ namespace EventStore.Core {
 			public string DefaultOpsPassword { get; init; } = "changeit";
  
 			internal static DefaultUserOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
-				DefaultAdminPassword = configurationRoot.GetValue<string>(nameof(DefaultAdminPassword)),
-				DefaultOpsPassword = configurationRoot.GetValue<string>(nameof(DefaultOpsPassword))
+				DefaultAdminPassword = configurationRoot.GetString(nameof(DefaultAdminPassword)),
+				DefaultOpsPassword = configurationRoot.GetString(nameof(DefaultOpsPassword))
 			};
 		}
 		
@@ -178,7 +178,7 @@ namespace EventStore.Core {
 			public bool TelemetryOptout { get; init; } = false;
 
 			internal static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
-				Config = configurationRoot.GetValue<string>(nameof(Config)),
+				Config = configurationRoot.GetString(nameof(Config)),
 				Help = configurationRoot.GetValue<bool>(nameof(Help)),
 				Version = configurationRoot.GetValue<bool>(nameof(Version)),
 				EnableHistograms = configurationRoot.GetValue<bool>(nameof(EnableHistograms)),
@@ -227,8 +227,8 @@ namespace EventStore.Core {
 			public bool DisableLogFile { get; init; } = false;
 
 			public static LoggingOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
-				Log = configurationRoot.GetValue<string>(nameof(Log)),
-				LogConfig = configurationRoot.GetValue<string>(nameof(LogConfig)),
+				Log = configurationRoot.GetString(nameof(Log)),
+				LogConfig = configurationRoot.GetString(nameof(LogConfig)),
 				LogLevel = configurationRoot.GetValue<LogLevel>(nameof(LogLevel)),
 				LogConsoleFormat = configurationRoot.GetValue<LogConsoleFormat>(nameof(LogConsoleFormat)),
 				LogFileSize = configurationRoot.GetValue<int>(nameof(LogFileSize)),
@@ -257,9 +257,9 @@ namespace EventStore.Core {
 			public bool DisableFirstLevelHttpAuthorization { get; init; } = false;
 
 			internal static AuthOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
-				AuthorizationType = configurationRoot.GetValue<string>(nameof(AuthorizationType)),
+				AuthorizationType = configurationRoot.GetString(nameof(AuthorizationType)),
 				AuthenticationConfig = configurationRoot.GetValue<string>(nameof(AuthenticationConfig)),
-				AuthenticationType = configurationRoot.GetValue<string>(nameof(AuthenticationType)),
+				AuthenticationType = configurationRoot.GetString(nameof(AuthenticationType)),
 				AuthorizationConfig = configurationRoot.GetValue<string>(nameof(AuthorizationConfig)),
 				DisableFirstLevelHttpAuthorization =
 					configurationRoot.GetValue<bool>(nameof(DisableFirstLevelHttpAuthorization))
@@ -304,8 +304,7 @@ namespace EventStore.Core {
 
 			internal static CertificateOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				TrustedRootCertificatesPath = configurationRoot.GetValue<string>(nameof(TrustedRootCertificatesPath)),
-				CertificateReservedNodeCommonName =
-					configurationRoot.GetValue<string>(nameof(CertificateReservedNodeCommonName))
+				CertificateReservedNodeCommonName = configurationRoot.GetString(nameof(CertificateReservedNodeCommonName))
 			};
 		}
 
@@ -336,18 +335,14 @@ namespace EventStore.Core {
 			public string TrustedRootCertificateThumbprint { get; init; } = string.Empty;
 
 			internal static CertificateStoreOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
-				CertificateStoreLocation = configurationRoot.GetValue<string>(nameof(CertificateStoreLocation)),
-				CertificateStoreName = configurationRoot.GetValue<string>(nameof(CertificateStoreName)),
-				CertificateSubjectName = configurationRoot.GetValue<string>(nameof(CertificateSubjectName)),
-				CertificateThumbprint = configurationRoot.GetValue<string>(nameof(CertificateThumbprint)),
-				TrustedRootCertificateStoreLocation =
-					configurationRoot.GetValue<string>(nameof(TrustedRootCertificateStoreLocation)),
-				TrustedRootCertificateStoreName =
-					configurationRoot.GetValue<string>(nameof(TrustedRootCertificateStoreName)),
-				TrustedRootCertificateThumbprint =
-					configurationRoot.GetValue<string>(nameof(TrustedRootCertificateThumbprint)),
-				TrustedRootCertificateSubjectName =
-					configurationRoot.GetValue<string>(nameof(TrustedRootCertificateSubjectName))
+				CertificateStoreLocation = configurationRoot.GetString(nameof(CertificateStoreLocation)),
+				CertificateStoreName = configurationRoot.GetString(nameof(CertificateStoreName)),
+				CertificateSubjectName = configurationRoot.GetString(nameof(CertificateSubjectName)),
+				CertificateThumbprint = configurationRoot.GetString(nameof(CertificateThumbprint)),
+				TrustedRootCertificateStoreLocation = configurationRoot.GetString(nameof(TrustedRootCertificateStoreLocation)),
+				TrustedRootCertificateStoreName = configurationRoot.GetString(nameof(TrustedRootCertificateStoreName)),
+				TrustedRootCertificateThumbprint = configurationRoot.GetString(nameof(TrustedRootCertificateThumbprint)),
+				TrustedRootCertificateSubjectName = configurationRoot.GetString(nameof(TrustedRootCertificateSubjectName))
 			};
 		}
 
@@ -405,7 +400,7 @@ namespace EventStore.Core {
 				DiscoverViaDns = configurationRoot.GetValue<bool>(nameof(DiscoverViaDns)),
 				ClusterSize = configurationRoot.GetValue<int>(nameof(ClusterSize)),
 				NodePriority = configurationRoot.GetValue<int>(nameof(NodePriority)),
-				ClusterDns = configurationRoot.GetValue<string>(nameof(ClusterDns)),
+				ClusterDns = configurationRoot.GetString(nameof(ClusterDns)),
 				ClusterGossipPort = configurationRoot.GetValue<int>(nameof(ClusterGossipPort)),
 				GossipIntervalMs = configurationRoot.GetValue<int>(nameof(GossipIntervalMs)),
 				GossipAllowedDifferenceMs = configurationRoot.GetValue<int>(nameof(GossipAllowedDifferenceMs)),
@@ -587,7 +582,7 @@ namespace EventStore.Core {
 				MinFlushDelayMs = configurationRoot.GetValue<double>(nameof(MinFlushDelayMs)),
 				DisableScavengeMerging = configurationRoot.GetValue<bool>(nameof(DisableScavengeMerging)),
 				MemDb = configurationRoot.GetValue<bool>(nameof(MemDb)),
-				Db = configurationRoot.GetValue<string>(nameof(Db)),
+				Db = configurationRoot.GetString(nameof(Db)),
 				ScavengeHistoryMaxAge = configurationRoot.GetValue<int>(nameof(ScavengeHistoryMaxAge)),
 				CachedChunks = configurationRoot.GetValue<int>(nameof(CachedChunks)),
 				ChunksCacheSize = configurationRoot.GetValue<long>(nameof(ChunksCacheSize)),

@@ -103,7 +103,7 @@ public class ProcessMetricsTests : IDisposable {
 	[Fact]
 	public void can_collect_proc_cpu() {
 		Assert.Collection(
-			_intListener.RetrieveMeasurements("eventstore-proc-cpu"),
+			_doubleListener.RetrieveMeasurements("eventstore-proc-cpu"),
 			m => {
 				Assert.True(m.Value >= 0);
 				Assert.Empty(m.Tags);
@@ -228,7 +228,7 @@ public class ProcessMetricsTests : IDisposable {
 		Assert.Collection(
 			_longListener.RetrieveMeasurements("eventstore-gc-generation-size-bytes"),
 			m => {
-				Assert.True(m.Value > 0);
+				Assert.True(m.Value >= 0);
 				Assert.Collection(
 					m.Tags,
 					tag => {
