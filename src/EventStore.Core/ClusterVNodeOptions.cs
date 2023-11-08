@@ -687,11 +687,6 @@ namespace EventStore.Core {
 				}
 			}
 
-			[Description("Whether to enable external TCP communication"),
-			 Deprecated(
-				 "The Legacy TCP Client Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead.")]
-			public bool EnableExternalTcp { get; init; } = false;
-
 			[Description("Internal TCP Port."),
 			 Deprecated(
 				 "The IntTcpPort parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationPort parameter instead.")]
@@ -709,22 +704,8 @@ namespace EventStore.Core {
 				}
 			}
 
-			[Description("External TCP Port."),
-			 Deprecated(
-				 "This ExtTcpPort parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeTcpPort parameter instead.")]
-			[Obsolete("ExtTcpPort is deprecated, use NodeTcpPort instead")]
-			public int ExtTcpPort { get; init; } = 1113;
-			
-			private readonly int _nodeTcpPort = 1113;
 			[Description("The TCP Port that external clients can connect to.")]
-			public int NodeTcpPort {
-				get {
-					return _nodeTcpPort == 1113 ? ExtTcpPort : _nodeTcpPort;
-				}
-				init {
-					_nodeTcpPort = value;
-				}
-			}
+			public int NodeTcpPort { get; init; } = 1113;
 
 			[Description("Advertise External Tcp Address As."),
 			 Deprecated(
@@ -785,23 +766,6 @@ namespace EventStore.Core {
 
 			[Description("Advertise TCP Port in Gossip to Client As.")]
 			public int AdvertiseTcpPortToClientAs { get; init; } = 0;
-
-			[Description("Advertise External Tcp Port As."),
-			 Deprecated(
-				 "The ExtTcpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeTcpPortAdvertiseAs parameter instead.")]
-			[Obsolete("ExtTcpPortAdvertiseAs is deprecated, use NodeTcpPortAdvertiseAs instead")]
-			public int ExtTcpPortAdvertiseAs { get; init; } = 0;
-
-			private readonly int _nodeTcpPortAdvertiseAs = 0;
-			[Description("Advertise Node Tcp Port As.")]
-			public int NodeTcpPortAdvertiseAs {
-				get {
-					return _nodeTcpPortAdvertiseAs == 0 ? ExtTcpPortAdvertiseAs : _nodeTcpPortAdvertiseAs;
-				}
-				init {
-					_nodeTcpPortAdvertiseAs = value;
-				}
-			}
 
 			[Description("Advertise Http Port As."),
 			 Deprecated(
@@ -958,8 +922,6 @@ namespace EventStore.Core {
 				                        IPAddress.Loopback.ToString()),
 				HttpPort = configurationRoot.GetValue<int>(nameof(HttpPort)),
 				NodePort = configurationRoot.GetValue<int>(nameof(NodePort)),
-				EnableExternalTcp = configurationRoot.GetValue<bool>(nameof(EnableExternalTcp)),
-				ExtTcpPort = configurationRoot.GetValue<int>(nameof(ExtTcpPort)),
 				NodeTcpPort = configurationRoot.GetValue<int>(nameof(NodeTcpPort)),
 				IntTcpPort = configurationRoot.GetValue<int>(nameof(IntTcpPort)),
 				ReplicationPort = configurationRoot.GetValue<int>(nameof(ReplicationPort)),
@@ -969,8 +931,6 @@ namespace EventStore.Core {
 				AdvertiseHttpPortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseHttpPortToClientAs)),
 				AdvertiseNodePortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseNodePortToClientAs)),
 				AdvertiseTcpPortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseTcpPortToClientAs)),
-				ExtTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(ExtTcpPortAdvertiseAs)),
-				NodeTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(NodeTcpPortAdvertiseAs)),
 				IntHostAdvertiseAs = configurationRoot.GetValue<string>(nameof(IntHostAdvertiseAs)),
 				ReplicationHostAdvertiseAs = configurationRoot.GetValue<string>(nameof(ReplicationHostAdvertiseAs)),
 				HttpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(HttpPortAdvertiseAs)),
