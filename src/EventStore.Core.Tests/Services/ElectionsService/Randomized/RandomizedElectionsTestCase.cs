@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 				var outputBus = new InMemoryBus(string.Format("ELECTIONS-OUTPUT-BUS-{0}", i));
 				var endPoint = new IPEndPoint(BaseEndPoint.Address, BaseEndPoint.Port + i);
 				var memberInfo = MemberInfo.Initial(Guid.NewGuid(), DateTime.UtcNow, VNodeState.Unknown, true,
-					endPoint, endPoint, endPoint, endPoint, endPoint, null, 0, 0, 0, false);
+					endPoint, endPoint, endPoint, null, 0, 0, 0, false);
 				_instances.Add(new ElectionsInstance(memberInfo.InstanceId, endPoint, inputBus, outputBus));
 
 				sendOverHttpHandler.RegisterEndPoint(endPoint, inputBus);
@@ -116,7 +116,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			List<ElectionsInstance> allInstances) {
 			var members = allInstances.Select(
 				x => MemberInfo.ForVNode(x.InstanceId, DateTime.UtcNow, VNodeState.Unknown, true,
-					x.EndPoint, null, x.EndPoint, null,
+					x.EndPoint, null,
 					x.EndPoint, null, 0, 0, -1, 0, 0, -1, -1, Guid.Empty, 0, false));
 			var gossip = new GossipMessage.GossipUpdated(new ClusterInfo(members.ToArray()));
 			return gossip;

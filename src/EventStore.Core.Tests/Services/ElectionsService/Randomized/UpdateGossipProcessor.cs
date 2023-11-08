@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 
 						previousMembers[leaderIndex] =
 							MemberInfo.ForVNode(previousLeaderInfo.InstanceId, DateTime.UtcNow, VNodeState.Leader,
-								previousLeaderInfo.IsAlive, leaderEndPoint, null, leaderEndPoint, null, leaderEndPoint, null, 0, 0,
+								previousLeaderInfo.IsAlive,  leaderEndPoint, null, leaderEndPoint, null, 0, 0,
 								-1, 0, 0, -1, -1, Guid.Empty, 0, false);
 					}
 				}
@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 				_processedItems.Add(item);
 
 				foreach (var memberInfo in updatedGossip) {
-					_sendOverGrpcProcessor.RegisterEndpointToSkip(memberInfo.ExternalTcpEndPoint, !memberInfo.IsAlive);
+					_sendOverGrpcProcessor.RegisterEndpointToSkip(memberInfo.HttpEndPoint, !memberInfo.IsAlive);
 				}
 
 				var updateGossipMessage = new GossipMessage.GossipUpdated(new ClusterInfo(updatedGossip));

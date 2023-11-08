@@ -54,8 +54,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 					MemberInfo.Initial(Guid.NewGuid(), DateTime.UtcNow, VNodeState.Unknown, true,
 						new IPEndPoint(IPAddress.Loopback, 1111),
 						new IPEndPoint(IPAddress.Loopback, 1112),
-						new IPEndPoint(IPAddress.Loopback, 1113),
-						new IPEndPoint(IPAddress.Loopback, 1114),
 						new IPEndPoint(IPAddress.Loopback, 1115), null, 0, 0,
 						1,
 						false

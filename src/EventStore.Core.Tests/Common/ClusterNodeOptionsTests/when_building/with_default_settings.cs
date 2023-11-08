@@ -27,7 +27,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		[Test]
 		public void should_have_default_endpoints() {
 			Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 1112), _node.NodeInfo.InternalSecureTcp);
-			Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 1113), _node.NodeInfo.ExternalSecureTcp);
 			Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 2113), _node.NodeInfo.HttpEndPoint);
 		}
 
@@ -98,11 +97,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			var httpEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
 
 			Assert.AreEqual(internalTcp, _node.NodeInfo.InternalSecureTcp);
-			Assert.AreEqual(externalTcp, _node.NodeInfo.ExternalSecureTcp);
 			Assert.AreEqual(httpEndPoint, _node.NodeInfo.HttpEndPoint);
 
 			Assert.AreEqual(internalTcp.ToDnsEndPoint(), _node.GossipAdvertiseInfo.InternalSecureTcp);
-			Assert.AreEqual(externalTcp.ToDnsEndPoint(), _node.GossipAdvertiseInfo.ExternalSecureTcp);
 			Assert.AreEqual(httpEndPoint.ToDnsEndPoint(), _node.GossipAdvertiseInfo.HttpEndPoint);
 		}
 
@@ -132,11 +129,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			var httpEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
 
 			Assert.AreEqual(internalTcp, _node.NodeInfo.InternalTcp);
-			Assert.AreEqual(externalTcp, _node.NodeInfo.ExternalTcp);
 			Assert.AreEqual(httpEndPoint, _node.NodeInfo.HttpEndPoint);
 
 			Assert.AreEqual(internalTcp.ToDnsEndPoint(), _node.GossipAdvertiseInfo.InternalTcp);
-			Assert.AreEqual(externalTcp.ToDnsEndPoint(), _node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(httpEndPoint.ToDnsEndPoint(), _node.GossipAdvertiseInfo.HttpEndPoint);
 		}
 		

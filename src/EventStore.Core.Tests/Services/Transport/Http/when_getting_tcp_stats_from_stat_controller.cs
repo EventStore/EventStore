@@ -57,21 +57,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		}
 
 		[Test]
-		public void should_return_the_external_connections() {
-			Assert.AreEqual(2, _results.Count(r => r.IsExternalConnection));
-		}
-
-		[Test]
-		public void should_return_the_total_number_of_bytes_sent_for_external_connections() {
-			Assert.Greater(_results.Sum(r => r.IsExternalConnection ? r.TotalBytesSent : 0), 0);
-		}
-
-		[Test]
-		public void should_return_the_total_number_of_bytes_received_from_external_connections() {
-			Assert.Greater(_results.Sum(r => r.IsExternalConnection ? r.TotalBytesReceived : 0), 0);
-		}
-
-		[Test]
 		public void should_have_set_the_client_connection_name() {
 			Assert.IsTrue(_results.Any(x => x.ClientConnectionName == _clientConnectionName));
 		}
