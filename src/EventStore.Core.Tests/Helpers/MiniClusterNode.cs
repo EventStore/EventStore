@@ -117,7 +117,6 @@ namespace EventStore.Core.Tests.Helpers {
 					ReplicationPort = InternalTcpEndPoint.Port,
 					NodeTcpPort = ExternalTcpEndPoint.Port,
 					NodePort = HttpEndPoint.Port,
-					DisableExternalTcpTls = false,
 					DisableInternalTcpTls = false,
 					NodeHeartbeatTimeout = 2_000,
 					ReplicationHeartbeatTimeout = 2_000,

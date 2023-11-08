@@ -30,7 +30,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		[Test]
 		public void should_set_tls_to_enabled() {
 			Assert.IsFalse(_options.Interface.DisableInternalTcpTls);
-			Assert.IsFalse(_options.Interface.DisableExternalTcpTls);
 		}
 
 		[Test]
@@ -74,7 +73,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		[Test]
 		public void should_set_tls_to_enabled() {
 			Assert.IsFalse(_options.Interface.DisableInternalTcpTls);
-			Assert.IsFalse(_options.Interface.DisableExternalTcpTls);
 		}
 
 		[Test]

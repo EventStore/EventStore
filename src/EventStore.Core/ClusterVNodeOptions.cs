@@ -907,10 +907,6 @@ namespace EventStore.Core {
 			            nameof(Application.Insecure) + "' option instead.")]
 			public bool DisableInternalTcpTls { get; init; } = false;
 
-			[Description("Whether to disable secure external TCP communication."),
-			 Deprecated("The '" + nameof(DisableExternalTcpTls) + "' option has been deprecated as of version 20.6.1.")]
-			public bool DisableExternalTcpTls { get; init; } = false;
-
 			[Description("Enable AtomPub over HTTP Interface."),
 			 Deprecated("AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]
 			public bool EnableAtomPubOverHttp { get; init; } = false;
@@ -959,7 +955,6 @@ namespace EventStore.Core {
 				DisableGossipOnHttp = configurationRoot.GetValue<bool>(nameof(DisableGossipOnHttp)),
 				EnableTrustedAuth = configurationRoot.GetValue<bool>(nameof(EnableTrustedAuth)),
 				DisableInternalTcpTls = configurationRoot.GetValue<bool>(nameof(DisableInternalTcpTls)),
-				DisableExternalTcpTls = configurationRoot.GetValue<bool>(nameof(DisableExternalTcpTls)),
 				EnableAtomPubOverHttp = configurationRoot.GetValue<bool>(nameof(EnableAtomPubOverHttp))
 			};
 #pragma warning restore 0618

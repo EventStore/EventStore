@@ -58,8 +58,6 @@ namespace EventStore.Core.Services.Monitoring {
 		private Guid _streamMetadataWriteCorrId;
 		private IMonitoredTcpConnection[] _memoizedTcpConnections;
 		private DateTime _lastTcpConnectionsRequestTime;
-		private IPEndPoint _tcpEndpoint;
-		private IPEndPoint _tcpSecureEndpoint;
 		private bool _started = false;
 
 		public MonitoringService(IQueuedHandler monitoringQueue,
@@ -70,8 +68,6 @@ namespace EventStore.Core.Services.Monitoring {
 			TimeSpan statsCollectionPeriod,
 			EndPoint nodeEndpoint,
 			StatsStorage statsStorage,
-			IPEndPoint tcpEndpoint,
-			IPEndPoint tcpSecureEndpoint,
 			SystemStatsHelper systemStatsHelper) {
 			Ensure.NotNull(monitoringQueue, "monitoringQueue");
 			Ensure.NotNull(statsCollectionBus, "statsCollectionBus");
@@ -90,8 +86,6 @@ namespace EventStore.Core.Services.Monitoring {
 				? (long)statsCollectionPeriod.TotalMilliseconds
 				: Timeout.Infinite;
 			_nodeStatsStream = string.Format("{0}-{1}", SystemStreams.StatsStreamPrefix, nodeEndpoint);
-			_tcpEndpoint = tcpEndpoint;
-			_tcpSecureEndpoint = tcpSecureEndpoint;
 			_timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
 			_systemStats = systemStatsHelper;
 		}
@@ -289,9 +283,7 @@ namespace EventStore.Core.Services.Monitoring {
 				foreach (var conn in connections) {
 					var tcpConn = conn as TcpConnection;
 					if (tcpConn != null) {
-						var isExternalConnection = _tcpEndpoint != null && _tcpEndpoint.Port == tcpConn.LocalEndPoint.GetPort();
 						connStats.Add(new MonitoringMessage.TcpConnectionStats {
-							IsExternalConnection = isExternalConnection,
 							RemoteEndPoint = tcpConn.RemoteEndPoint.ToString(),
 							LocalEndPoint = tcpConn.LocalEndPoint.ToString(),
 							ConnectionId = tcpConn.ConnectionId,
@@ -306,10 +298,7 @@ namespace EventStore.Core.Services.Monitoring {
 
 					var tcpConnSsl = conn as TcpConnectionSsl;
 					if (tcpConnSsl != null) {
-						var isExternalConnection = _tcpSecureEndpoint != null &&
-						                           _tcpSecureEndpoint.Port == tcpConnSsl.LocalEndPoint.GetPort();
 						connStats.Add(new MonitoringMessage.TcpConnectionStats {
-							IsExternalConnection = isExternalConnection,
 							RemoteEndPoint = tcpConnSsl.RemoteEndPoint.ToString(),
 							LocalEndPoint = tcpConnSsl.LocalEndPoint.ToString(),
 							ConnectionId = tcpConnSsl.ConnectionId,

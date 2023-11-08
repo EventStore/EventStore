@@ -485,7 +485,7 @@ namespace EventStore.Client.Messages {
 				_ => throw new ArgumentOutOfRangeException()
 			};
 			//this is horrible and only for transport compatibility purposes
-			if(source.LeaderInfo != null) AdditionalInfo = new Types.LeaderInfo(source.LeaderInfo.ExternalTcp, source.LeaderInfo.IsSecure, source.LeaderInfo.Http).ToByteString();
+			if(source.LeaderInfo != null) AdditionalInfo = new Types.LeaderInfo(source.LeaderInfo.Http).ToByteString();
 		}
 		partial class Types {
 			partial class LeaderInfo {
@@ -499,15 +499,7 @@ namespace EventStore.Client.Messages {
 					ExternalSecureTcpPort = externalSecureTcpPort;
 				}
 
-				public LeaderInfo(EndPoint tcpEndPoint, bool isTcpEndPointSecure, EndPoint httpEndPoint) {
-					if (isTcpEndPointSecure) {
-						ExternalSecureTcpAddress = tcpEndPoint?.GetHost();
-						ExternalSecureTcpPort = tcpEndPoint?.GetPort() ?? 0;
-					} else {
-						ExternalTcpAddress = tcpEndPoint?.GetHost();
-						ExternalTcpPort = tcpEndPoint?.GetPort() ?? 0;
-					}
-
+				public LeaderInfo(EndPoint httpEndPoint) {
 					HttpAddress = httpEndPoint.GetHost();
 					HttpPort = httpEndPoint.GetPort();
 				}
