@@ -284,13 +284,10 @@ namespace EventStore.Core {
 
 			var intTcpPortAdvertiseAs = disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
 			var intSecTcpPortAdvertiseAs = !disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
-			
-			var extTcpPortAdvertiseAs = options.Interface.EnableExternalTcp && disableExternalTcpTls
-				? options.Interface.NodeTcpPortAdvertiseAs
-				: 0;
-			var extSecTcpPortAdvertiseAs = options.Interface.EnableExternalTcp && !disableExternalTcpTls
-				? options.Interface.NodeTcpPortAdvertiseAs
-				: 0;
+
+			// External TCP API is no longer supported so we default it 0.
+			var extTcpPortAdvertiseAs = 0;
+			var extSecTcpPortAdvertiseAs = 0;
 
 			Log.Information("Quorum size set to {quorum}.", options.Cluster.QuorumSize);
 
@@ -916,36 +913,6 @@ namespace EventStore.Core {
 
 			AuthorizationGateway = new AuthorizationGateway(_authorizationProvider);
 			{
-				// EXTERNAL TCP
-				if (NodeInfo.ExternalTcp != null && options.Interface.EnableExternalTcp) {
-					var extTcpService = new TcpService(_mainQueue, NodeInfo.ExternalTcp, _workersHandler,
-						TcpServiceType.External, TcpSecurityType.Normal,
-						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatInterval),
-						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatTimeout),
-						_authenticationProvider, AuthorizationGateway, null, null, null,
-						options.Interface.ConnectionPendingSendBytesThreshold,
-						options.Interface.ConnectionQueueSizeThreshold);
-					_mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
-					_mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
-					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extTcpService);
-				}
-				// EXTERNAL SECURE TCP
-				if (NodeInfo.ExternalSecureTcp != null && options.Interface.EnableExternalTcp) {
-					var extSecTcpService = new TcpService(_mainQueue, NodeInfo.ExternalSecureTcp, _workersHandler,
-						TcpServiceType.External, TcpSecurityType.Secure,
-						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatInterval),
-						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatTimeout),
-						_authenticationProvider, AuthorizationGateway,
-						_certificateSelector, _intermediateCertsSelector, _externalClientCertificateValidator,
-						options.Interface.ConnectionPendingSendBytesThreshold,
-						options.Interface.ConnectionQueueSizeThreshold);
-					_mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
-					_mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
-					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extSecTcpService);
-				}
-
 				if (!isSingleNode) {
 					// INTERNAL TCP
 					if (NodeInfo.InternalTcp != null) {

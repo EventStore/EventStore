@@ -99,7 +99,6 @@ namespace EventStore.Core {
 			this ClusterVNodeOptions options, IPEndPoint endPoint) =>
 			options with {
 				Interface = options.Interface with {
-					EnableExternalTcp = true,
 					NodeIp = endPoint.Address,
 					DisableExternalTcpTls = false,
 					NodeTcpPort = endPoint.Port
@@ -132,7 +131,6 @@ namespace EventStore.Core {
 			this ClusterVNodeOptions options, IPEndPoint endPoint) =>
 			options with {
 				Interface = options.Interface with {
-					EnableExternalTcp = true,
 					NodeIp = endPoint.Address,
 					NodeTcpPort = endPoint.Port,
 					DisableExternalTcpTls = true
@@ -181,7 +179,6 @@ namespace EventStore.Core {
 			options with {
 				Interface = options.Interface with {
 					NodeHostAdvertiseAs = endPoint.GetHost(),
-					NodeTcpPortAdvertiseAs = endPoint.GetPort()
 				}
 			};
 

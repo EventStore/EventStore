@@ -116,7 +116,6 @@ namespace EventStore.Core.Tests.Helpers {
 					NodeIp = ExternalTcpEndPoint.Address,
 					ReplicationPort = InternalTcpEndPoint.Port,
 					NodeTcpPort = ExternalTcpEndPoint.Port,
-					EnableExternalTcp = ExternalTcpEndPoint != null,
 					NodePort = HttpEndPoint.Port,
 					DisableExternalTcpTls = false,
 					DisableInternalTcpTls = false,
