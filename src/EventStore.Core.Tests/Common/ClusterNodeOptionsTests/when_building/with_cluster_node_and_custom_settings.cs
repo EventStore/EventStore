@@ -117,8 +117,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 
 		[Test]
 		public void should_set_the_custom_advertise_info_for_external() {
-			Assert.AreEqual(new DnsEndPoint("196.168.1.1", 11131),
-				_node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint("196.168.1.1", 21130),
 				_node.GossipAdvertiseInfo.HttpEndPoint);
 		}
@@ -141,8 +139,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 
 		[Test]
 		public void should_set_the_custom_advertise_info_for_external() {
-			Assert.AreEqual(new DnsEndPoint("10.0.0.1", 11131),
-				_node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint("10.0.0.1", 2113),
 				_node.GossipAdvertiseInfo.HttpEndPoint);
 		}
@@ -166,8 +162,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 
 		[Test]
 		public void should_use_the_non_default_loopback_ip_as_advertise_info_for_external() {
-			Assert.AreEqual(new DnsEndPoint(IPFinder.GetNonLoopbackAddress().ToString(), 11130),
-				_node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint(IPFinder.GetNonLoopbackAddress().ToString(), 21130),
 				_node.GossipAdvertiseInfo.HttpEndPoint);
 		}
@@ -193,8 +187,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 
 		[Test]
 		public void should_set_the_custom_advertise_info_for_external() {
-			Assert.AreEqual(new DnsEndPoint("10.0.0.1", 11131),
-				_node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint("10.0.0.1", 21131),
 				_node.GossipAdvertiseInfo.HttpEndPoint);
 		}

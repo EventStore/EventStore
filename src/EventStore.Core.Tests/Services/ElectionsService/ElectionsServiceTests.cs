@@ -28,15 +28,13 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Guid.Parse($"00000000-0000-0000-0000-00000000000{id}"), id,
 			new IPEndPoint(IPAddress.Loopback, id),
 			new IPEndPoint(IPAddress.Loopback, id),
-			new IPEndPoint(IPAddress.Loopback, id),
-			new IPEndPoint(IPAddress.Loopback, id),
 			new IPEndPoint(IPAddress.Loopback, id), false);
 
 		protected static readonly Func<VNodeInfo, DateTime, VNodeState, bool, int, Guid, int, MemberInfo> MemberInfoFromVNode =
 			(nodeInfo, timestamp, state, isAlive, epochNumber, epochId, priority) => MemberInfo.ForVNode(
 				nodeInfo.InstanceId, timestamp, state, isAlive,
 				nodeInfo.InternalTcp,
-				nodeInfo.InternalSecureTcp, nodeInfo.ExternalTcp, nodeInfo.ExternalSecureTcp,
+				nodeInfo.InternalSecureTcp,
 				nodeInfo.HttpEndPoint, null, 0, 0,
 				0, 0, 0, 0, epochNumber, epochId, priority,
 				nodeInfo.IsReadOnlyReplica);
@@ -821,7 +819,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					MemberInfo.ForVNode(
 						_nodeThree.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 						_nodeThree.InternalTcp,
-						_nodeThree.InternalSecureTcp, _nodeThree.ExternalTcp, _nodeThree.ExternalSecureTcp,
+						_nodeThree.InternalSecureTcp,
 						_nodeThree.HttpEndPoint, null, 0, 0, 0, 0, 0, 0, 0, _epochId, 0,
 						_nodeThree.IsReadOnlyReplica)),
 				new GrpcMessage.SendOverGrpc(_nodeThree.HttpEndPoint,
@@ -959,7 +957,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					MemberInfo.ForVNode(
 						_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 						_nodeTwo.InternalTcp,
-						_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
+						_nodeTwo.InternalSecureTcp,
 						_nodeTwo.HttpEndPoint, null, 0, 0, 0, 0, 0, 0, 0, _epochId, 0,
 						_nodeTwo.IsReadOnlyReplica)),
 			};
@@ -1175,7 +1173,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					MemberInfo.ForVNode(
 						_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 						_nodeTwo.InternalTcp,
-						_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
+						_nodeTwo.InternalSecureTcp,
 						_nodeTwo.HttpEndPoint, null, 0, 0, 0, 0, 0, 0, 0, _epochId, 0,
 						_nodeTwo.IsReadOnlyReplica)),
 			};
@@ -1212,8 +1210,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var endpoint = new IPEndPoint(IPAddress.Loopback, 1234);
 			var nodeInfo = MemberInfo.Initial(Guid.NewGuid(),
 				DateTime.UtcNow, VNodeState.ReadOnlyLeaderless, true,
-				endpoint,
-				endpoint,
 				endpoint,
 				endpoint,
 				endpoint, null, 0, 0,
@@ -1257,7 +1253,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					MemberInfo.ForVNode(
 						_nodeThree.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 						_nodeThree.InternalTcp,
-						_nodeThree.InternalSecureTcp, _nodeThree.ExternalTcp, _nodeThree.ExternalSecureTcp,
+						_nodeThree.InternalSecureTcp,
 						_nodeThree.HttpEndPoint, null, 0, 0,
 						0, 0, 0, 0, 0, _epochId, 0,
 						_nodeThree.IsReadOnlyReplica)),
@@ -1346,7 +1342,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						MemberInfo.ForVNode(
 							_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 							_nodeTwo.InternalTcp,
-							_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
+							_nodeTwo.InternalSecureTcp,
 							_nodeTwo.HttpEndPoint, null, 0, 0,
 							0, 0, 0, 0, 0, _epochId, 0,
 							_nodeTwo.IsReadOnlyReplica)),
@@ -1379,7 +1375,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						MemberInfo.ForVNode(
 							_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 							_nodeTwo.InternalTcp,
-							_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
+							_nodeTwo.InternalSecureTcp,
 							_nodeTwo.HttpEndPoint, null, 0, 0,
 							0, 0, 0, 0, 0, _epochId, 0,
 							_nodeTwo.IsReadOnlyReplica)),
@@ -1430,7 +1426,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						MemberInfo.ForVNode(
 							_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 							_nodeTwo.InternalTcp,
-							_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
+							_nodeTwo.InternalSecureTcp,
 							_nodeTwo.HttpEndPoint, null, 0, 0,
 							0, 0, 0, 0, 0, _epochId, 0,
 							_nodeTwo.IsReadOnlyReplica)),
@@ -1463,7 +1459,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						MemberInfo.ForVNode(
 							_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 							_nodeTwo.InternalTcp,
-							_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
+							_nodeTwo.InternalSecureTcp,
 							_nodeTwo.HttpEndPoint, null, 0, 0,
 							0, 0, 0, 0, 0, _epochId, 0,
 							_nodeTwo.IsReadOnlyReplica)),

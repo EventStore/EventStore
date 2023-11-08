@@ -15,10 +15,6 @@ namespace EventStore.Core.Messages {
 		public int InternalTcpPort { get; set; }
 		public int InternalSecureTcpPort { get; set; }
 
-		public string ExternalTcpIp { get; set; }
-		public int ExternalTcpPort { get; set; }
-		public int ExternalSecureTcpPort { get; set; }
-
 		public string HttpEndPointIp { get; set; }
 		public int HttpEndPointPort { get; set; }
 		public string AdvertiseHostToClientAs { get; set; }
@@ -51,11 +47,6 @@ namespace EventStore.Core.Messages {
 			InternalSecureTcpPort =
 				member.InternalSecureTcpEndPoint == null ? 0 : member.InternalSecureTcpEndPoint.GetPort();
 
-			ExternalTcpIp = member.ExternalTcpEndPoint?.GetHost() ?? member.ExternalSecureTcpEndPoint?.GetHost();
-			ExternalTcpPort = member.ExternalTcpEndPoint == null ? 0 : member.ExternalTcpEndPoint.GetPort();
-			ExternalSecureTcpPort =
-				member.ExternalSecureTcpEndPoint == null ? 0 : member.ExternalSecureTcpEndPoint.GetPort();
-
 			HttpEndPointIp = member.HttpEndPoint.GetHost();
 			HttpEndPointPort = member.HttpEndPoint.GetPort();
 			AdvertiseHostToClientAs = member.AdvertiseHostToClientAs;
@@ -78,7 +69,6 @@ namespace EventStore.Core.Messages {
 			return
 				$"InstanceId: {InstanceId:B}, TimeStamp: {TimeStamp:yyyy-MM-dd HH:mm:ss.fff}, State: {State}, IsAlive: {IsAlive}, " +
 				$"InternalTcpIp: {InternalTcpIp}, InternalTcpPort: {InternalTcpPort}, InternalSecureTcpPort: {InternalSecureTcpPort}, " +
-				$"ExternalTcpIp: {ExternalTcpIp}, ExternalTcpPort: {ExternalTcpPort}, ExternalSecureTcpPort: {ExternalSecureTcpPort}, " +
 				$"HttpEndPointIp: {HttpEndPointIp}, HttpEndPointPort: {HttpEndPointPort}, " +
 				$"{nameof(AdvertiseHostToClientAs)}: {AdvertiseHostToClientAs}, {nameof(AdvertiseHttpPortToClientAs)}: {AdvertiseHttpPortToClientAs}, " +
 				$"{nameof(AdvertiseTcpPortToClientAs)}: {AdvertiseTcpPortToClientAs}, " +

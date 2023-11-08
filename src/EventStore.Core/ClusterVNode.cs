@@ -274,10 +274,6 @@ namespace EventStore.Core {
 			var intTcpPortAdvertiseAs = disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
 			var intSecTcpPortAdvertiseAs = !disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
 
-			// External TCP API is no longer supported so we default it 0.
-			var extTcpPortAdvertiseAs = 0;
-			var extSecTcpPortAdvertiseAs = 0;
-
 			Log.Information("Quorum size set to {quorum}.", options.Cluster.QuorumSize);
 
 			NodeInfo = new VNodeInfo(instanceId.Value, debugIndex, intTcp, intSecIp,
@@ -1363,8 +1359,6 @@ namespace EventStore.Core {
 			var memberInfo = MemberInfo.Initial(NodeInfo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 				GossipAdvertiseInfo.InternalTcp,
 				GossipAdvertiseInfo.InternalSecureTcp,
-				GossipAdvertiseInfo.ExternalTcp,
-				GossipAdvertiseInfo.ExternalSecureTcp,
 				GossipAdvertiseInfo.HttpEndPoint,
 				GossipAdvertiseInfo.AdvertiseHostToClientAs,
 				GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
@@ -1807,6 +1801,6 @@ namespace EventStore.Core {
 		}
 
 		public override string ToString() =>
-			$"[{NodeInfo.InstanceId:B}, {NodeInfo.InternalTcp}, {NodeInfo.ExternalTcp}, {NodeInfo.HttpEndPoint}]";
+			$"[{NodeInfo.InstanceId:B}, {NodeInfo.InternalTcp}, {NodeInfo.HttpEndPoint}]";
 	}
 }

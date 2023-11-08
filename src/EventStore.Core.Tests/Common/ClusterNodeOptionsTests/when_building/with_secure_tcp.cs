@@ -42,11 +42,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.AreEqual(_internalSecTcp, _node.NodeInfo.InternalSecureTcp);
 		}
 
-		[Test]
-		public void should_set_external_secure_tcp_endpoint() {
-			Assert.AreEqual(_externalSecTcp, _node.NodeInfo.ExternalSecureTcp);
-		}
-
 		private string GetCertificatePath() {
 			var filePath = Path.Combine(Path.GetTempPath(), $"cert-{Guid.NewGuid()}.p12");
 			var cert = ssl_connections.GetUntrustedCertificate();
@@ -83,11 +78,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		[Test]
 		public void should_set_internal_secure_tcp_endpoint() {
 			Assert.AreEqual(_internalSecTcp, _node.NodeInfo.InternalSecureTcp);
-		}
-
-		[Test]
-		public void should_set_external_secure_tcp_endpoint() {
-			Assert.AreEqual(_externalSecTcp, _node.NodeInfo.ExternalSecureTcp);
 		}
 	}
 

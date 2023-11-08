@@ -17,7 +17,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			return new ClusterVNodeSettings(Guid.NewGuid(), 0,
 				GetLoopbackForPort(tcpIntPort), null,
-				GetLoopbackForPort(tcpExtPort), null,
 				GetLoopbackForPort(httpPort), 0,
 				isReadOnlyReplica);
 		}

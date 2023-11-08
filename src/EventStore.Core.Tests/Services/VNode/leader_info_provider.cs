@@ -119,9 +119,7 @@ public class leader_info_provider {
 
 		var result = leaderInfoProvider.GetLeaderInfoEndPoint();
 
-		AssertAreEqual(expected.TcpEndPoint, result.AdvertisedTcpEndPoint, "TcpEndPoint");
-		AssertAreEqual(expected.HttpEndPoint, result.AdvertisedHttpEndPoint, "HttpEndPoint");
-		Assert.AreEqual(expected.IsSecure, result.IsTcpEndPointSecure);
+		AssertAreEqual(expected.HttpEndPoint, result, "HttpEndPoint");
 	}
 
 	private void AssertAreEqual(EndPoint expected, EndPoint actual, string msg) {
@@ -144,7 +142,7 @@ public class leader_info_provider {
 
 	public record Given(MemberInfo LeaderInfo, GossipAdvertiseInfo GossipInfo);
 
-	public record Expected(EndPoint TcpEndPoint, bool IsSecure, EndPoint HttpEndPoint);
+	public record Expected(EndPoint HttpEndPoint);
 
 	public record LeaderInput(
 		string TcpEndPoint=null,
@@ -178,9 +176,7 @@ public class leader_info_provider {
 				isAlive: false,
 				internalTcpEndPoint: IPEndPoint.Parse("1.1.2.2:3"),
 				internalSecureTcpEndPoint: IPEndPoint.Parse("4.4.5.5:6"),
-				externalTcpEndPoint: Leader.TcpEndPoint == null ? null : IPEndPoint.Parse(Leader.TcpEndPoint),
-				externalSecureTcpEndPoint: Leader.SecureTcpEndPoint == null ? null : IPEndPoint.Parse(Leader.SecureTcpEndPoint),
-				httpEndPoint: IPEndPoint.Parse(Leader.HttpEndPoint ?? DefaultHttpEndPoint), 
+				httpEndPoint: IPEndPoint.Parse(Leader.HttpEndPoint ?? DefaultHttpEndPoint),
 				advertiseHostToClientAs: Leader.AdvertiseHost,
 				advertiseHttpPortToClientAs: Leader.AdvertiseHttpPort,
 				advertiseTcpPortToClientAs: Leader.AdvertiseTcpPort,
@@ -190,8 +186,6 @@ public class leader_info_provider {
 
 		public GossipAdvertiseInfo BuildGossipInfo() {
 			return new GossipAdvertiseInfo(
-				externalTcp: ParseDnsEndPoint(Gossip?.TcpEndPoint),
-				externalSecureTcp: ParseDnsEndPoint(Gossip?.SecureTcpEndPoint),
 				httpEndPointEndPoint: ParseDnsEndPoint(Gossip?.HttpEndPoint ?? DefaultHttpEndPoint),
 				advertiseHostToClientAs: Gossip?.AdvertiseHost,
 				advertiseHttpPortToClientAs: Gossip?.AdvertiseHttpPort ?? 8,
@@ -213,8 +207,6 @@ public class leader_info_provider {
 	public record ExpectedInput(string TcpEndPoint=null, string HttpEndPoint=null, bool IsTcpSecure=false) {
 		public Expected Build() {
 			return new Expected(
-				ParseEndPoint(TcpEndPoint),
-				IsTcpSecure,
 				ParseEndPoint(HttpEndPoint ?? DefaultHttpEndPoint));
 		}
 	}

@@ -61,11 +61,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		public void should_set_internal_tcp_endpoint() {
 			Assert.AreEqual(_internalTcp, _node.NodeInfo.InternalSecureTcp);
 		}
-
-		[Test]
-		public void should_set_external_tcp_endpoint() {
-			Assert.AreEqual(_externalTcp, _node.NodeInfo.ExternalSecureTcp);
-		}
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -142,11 +137,8 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		[Test]
 		public void should_set_the_advertise_as_info_to_the_specified() {
 			Assert.AreEqual(null, _node.GossipAdvertiseInfo.InternalTcp);
-			Assert.AreEqual(null, _node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint($"{InternalIp}.com", _intTcpEndpoint.Port + 1000),
 				_node.GossipAdvertiseInfo.InternalSecureTcp);
-			Assert.AreEqual(new DnsEndPoint($"{ExternalIp}.com", _extTcpEndpoint.Port + 1000),
-				_node.GossipAdvertiseInfo.ExternalSecureTcp);
 			Assert.AreEqual(new DnsEndPoint($"{ExternalIp}.com", _httpEndpoint.Port + 1000),
 				_node.GossipAdvertiseInfo.HttpEndPoint);
 			Assert.AreEqual($"{InternalIp}.com", _node.GossipAdvertiseInfo.AdvertiseInternalHostAs);

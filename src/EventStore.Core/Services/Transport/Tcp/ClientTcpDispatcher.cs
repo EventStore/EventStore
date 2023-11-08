@@ -499,9 +499,9 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 			var leaderInfo = leaderInfoDto switch {
 				{ ExternalTcpAddress: { } } => new ClientMessage.NotHandled.Types.LeaderInfo(
-					new DnsEndPoint(leaderInfoDto.ExternalTcpAddress, leaderInfoDto.ExternalTcpPort), false, new DnsEndPoint(leaderInfoDto.HttpAddress, leaderInfoDto.HttpPort)),
+					new DnsEndPoint(leaderInfoDto.HttpAddress, leaderInfoDto.HttpPort)),
 				{ ExternalSecureTcpAddress: { } } => new ClientMessage.NotHandled.Types.LeaderInfo(
-					new DnsEndPoint(leaderInfoDto.ExternalSecureTcpAddress, leaderInfoDto.ExternalSecureTcpPort), true, new DnsEndPoint(leaderInfoDto.HttpAddress, leaderInfoDto.HttpPort)),
+					new DnsEndPoint(leaderInfoDto.HttpAddress, leaderInfoDto.HttpPort)),
 				_ => null
 			};
 			return new ClientMessage.NotHandled(package.CorrelationId, reason, leaderInfo);

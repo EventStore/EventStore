@@ -38,8 +38,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 				new IPEndPoint(IPAddress.Parse(ipAddress), port),
 				new IPEndPoint(IPAddress.Parse(ipAddress), port),
 				new IPEndPoint(IPAddress.Parse(ipAddress), port),
-				new IPEndPoint(IPAddress.Parse(ipAddress), port),
-				new IPEndPoint(IPAddress.Parse(ipAddress), port),
 				null, 0, 0, 0, false);
 		}
 	}

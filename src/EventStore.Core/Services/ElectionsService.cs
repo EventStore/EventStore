@@ -131,7 +131,6 @@ namespace EventStore.Core.Services {
 					VNodeState.Initializing,
 					true,
 					memberInfo.InternalTcpEndPoint, memberInfo.InternalSecureTcpEndPoint,
-					memberInfo.ExternalTcpEndPoint, memberInfo.ExternalSecureTcpEndPoint,
 					memberInfo.HttpEndPoint,
 					memberInfo.AdvertiseHostToClientAs, memberInfo.AdvertiseHttpPortToClientAs, memberInfo.AdvertiseTcpPortToClientAs,
 					ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
