@@ -1,5 +1,5 @@
 using EventStore.Client;
-using EventStore.Core.Services.Transport.Grpc;
+using EventStore.Core.Services.Transport.Common;
 using Google.Protobuf.WellKnownTypes;
 using Empty = Google.Protobuf.WellKnownTypes.Empty;
 

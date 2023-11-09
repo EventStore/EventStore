@@ -9,10 +9,11 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.Transport.Common;
 using Serilog;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
-namespace EventStore.Core.Services.Transport.Grpc {
+namespace EventStore.Core.Services.Transport.Enumerators {
 	static partial class Enumerator {
 		public abstract class StreamSubscription : IAsyncEnumerator<ReadResponse> {
 			protected static readonly ILogger Log = Serilog.Log.ForContext<StreamSubscription>();

@@ -1,7 +1,7 @@
 ﻿using System;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Services.Transport.Grpc;
+namespace EventStore.Core.Services.Transport.Enumerators;
 
 public abstract class ReadResponseException : Exception {
 	public class StreamDeleted : ReadResponseException {
