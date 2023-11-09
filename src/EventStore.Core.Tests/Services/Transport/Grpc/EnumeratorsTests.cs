@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using EventStore.Client.Streams;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.Transport.Common;
+using EventStore.Core.Services.Transport.Enumerators;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Helpers;

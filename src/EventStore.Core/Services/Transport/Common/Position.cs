@@ -1,6 +1,6 @@
 using System;
 
-namespace EventStore.Core.Services.Transport.Grpc {
+namespace EventStore.Core.Services.Transport.Common {
 	/// <summary>
 	/// A structure referring to a potential logical record position
 	/// in the Event Store transaction file.

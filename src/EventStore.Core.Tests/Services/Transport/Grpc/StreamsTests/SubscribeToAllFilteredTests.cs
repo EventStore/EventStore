@@ -10,7 +10,7 @@ using EventStore.Core.Services.Transport.Grpc;
 using Google.Protobuf;
 using Grpc.Core;
 using NUnit.Framework;
-using Position = EventStore.Core.Services.Transport.Grpc.Position;
+using Position = EventStore.Core.Services.Transport.Common.Position;
 using GrpcMetadata = EventStore.Core.Services.Transport.Grpc.Constants.Metadata;
 using LogV3StreamId = System.UInt32;
 

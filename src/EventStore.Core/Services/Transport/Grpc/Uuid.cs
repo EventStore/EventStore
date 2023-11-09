@@ -1,4 +1,5 @@
 using System;
+using HashCode = EventStore.Core.Services.Transport.Common.HashCode;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public struct Uuid : IEquatable<Uuid> {

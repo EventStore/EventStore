@@ -7,9 +7,10 @@ using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Transport.Common;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
-namespace EventStore.Core.Services.Transport.Grpc {
+namespace EventStore.Core.Services.Transport.Enumerators {
 	partial class Enumerator {
 		public class ReadStreamForwards : IAsyncEnumerator<ReadResponse> {
 			private readonly IPublisher _bus;

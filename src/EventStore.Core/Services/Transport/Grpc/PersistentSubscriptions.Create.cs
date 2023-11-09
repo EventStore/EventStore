@@ -6,6 +6,7 @@ using EventStore.Core.Messaging;
 using EventStore.Client.PersistentSubscriptions;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.Transport.Common;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 using static EventStore.Core.Messages.ClientMessage.CreatePersistentSubscriptionToStreamCompleted;

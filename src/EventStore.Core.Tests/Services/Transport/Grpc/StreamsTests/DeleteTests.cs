@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EventStore.Client.Streams;
 using EventStore.ClientAPI;
 using EventStore.Core.Services;
+using EventStore.Core.Services.Transport.Common;
 using EventStore.Core.Services.Transport.Grpc;
 using Google.Protobuf;
 using Grpc.Core;

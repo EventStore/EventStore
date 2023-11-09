@@ -1,9 +1,9 @@
-using System;
 using System.Threading.Tasks;
 using EventStore.Client.Redaction;
 using EventStore.Core.Data.Redaction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Transport.Common;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
