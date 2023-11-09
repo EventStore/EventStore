@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Set the default value of `CertificateReservedNodeCommonName` to empty string [EventStore#4001](https://github.com/EventStore/EventStore/pull/4001)
 - wording of telemetry message for clarity [EventStore#4026](https://github.com/EventStore/EventStore/pull/4026)
+- Upgrade to .NET 7. [EventStore#4031](https://github.com/EventStore/EventStore/pull/4031)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
