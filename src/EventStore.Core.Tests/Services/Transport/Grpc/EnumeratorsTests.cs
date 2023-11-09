@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Client.Streams;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Common;
@@ -34,9 +33,9 @@ public class EnumeratorsTests {
 			await using var sub = CreateAllSubscription<TLogFormat, TStreamId>(_publisher, Position.Start);
 
 			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
-			Assert.AreEqual(Uuid.FromGuid(_eventIds[0]), ((Event)await sub.GetNext()).Id);
-			Assert.AreEqual(Uuid.FromGuid(_eventIds[1]), ((Event)await sub.GetNext()).Id);
-			Assert.AreEqual(Uuid.FromGuid(_eventIds[2]), ((Event)await sub.GetNext()).Id);
+			Assert.AreEqual(_eventIds[0], ((Event)await sub.GetNext()).Id);
+			Assert.AreEqual(_eventIds[1], ((Event)await sub.GetNext()).Id);
+			Assert.AreEqual(_eventIds[2], ((Event)await sub.GetNext()).Id);
 			Assert.True(await sub.GetNext() is CaughtUp);
 		}
 	}
@@ -78,7 +77,7 @@ public class EnumeratorsTests {
 				_publisher, Position.Start, EventFilter.EventType.Prefixes(false, "type1"));
 
 			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
-			Assert.AreEqual(Uuid.FromGuid(_eventIds[0]), ((Event)await sub.GetNext()).Id);
+			Assert.AreEqual(_eventIds[0], ((Event)await sub.GetNext()).Id);
 			Assert.True(await sub.GetNext() is CaughtUp);
 		}
 	}
@@ -121,7 +120,7 @@ public class EnumeratorsTests {
 				_publisher, streamName: "test-stream1");
 
 			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
-			Assert.AreEqual(Uuid.FromGuid(_eventIds[0]), ((Event)await sub.GetNext()).Id);
+			Assert.AreEqual(_eventIds[0], ((Event)await sub.GetNext()).Id);
 			Assert.True(await sub.GetNext() is CaughtUp);
 		}
 	}
@@ -148,11 +147,154 @@ public class EnumeratorsTests {
 		}
 	}
 
-	public static SubscriptionWrapper CreateAllSubscription<TLogFormat, TStreamId>(
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	public class read_all_forwards<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
+		private readonly List<Guid> _eventIds = new();
+
+		protected override void Given() {
+			EnableReadAll();
+			_eventIds.Add(WriteEvent("test-stream", "type1", "{}", "{Data: 1}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type2", "{}", "{Data: 2}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type3", "{}", "{Data: 3}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream-all", "type3", "{}", "{Data: 3}").Item1.EventId);
+		}
+
+		[Test]
+		public async Task should_read_all_the_events() {
+			await using var enumerator = ReadAllForwards(_publisher, Position.Start);
+
+			Assert.AreEqual(_eventIds[0], ((Event)await enumerator.GetNext()).Id);
+			Assert.AreEqual(_eventIds[1], ((Event)await enumerator.GetNext()).Id);
+			Assert.AreEqual(_eventIds[2], ((Event)await enumerator.GetNext()).Id);
+			Assert.AreEqual(_eventIds[3], ((Event)await enumerator.GetNext()).Id);
+		}
+	}
+
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	public class read_all_backwards<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
+		private readonly List<Guid> _eventIds = new();
+
+		protected override void Given() {
+			EnableReadAll();
+			_eventIds.Add(WriteEvent("test-stream", "type1", "{}", "{Data: 1}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type2", "{}", "{Data: 2}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type3", "{}", "{Data: 3}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream-all", "type3", "{}", "{Data: 3}").Item1.EventId);
+		}
+
+		[Test]
+		public async Task should_read_all_the_events() {
+			await using var enumerator = ReadAllBackwards(_publisher, Position.End);
+
+			Assert.AreEqual(_eventIds[3], ((Event)await enumerator.GetNext()).Id);
+			Assert.AreEqual(_eventIds[2], ((Event)await enumerator.GetNext()).Id);
+			Assert.AreEqual(_eventIds[1], ((Event)await enumerator.GetNext()).Id);
+			Assert.AreEqual(_eventIds[0], ((Event)await enumerator.GetNext()).Id);
+		}
+	}
+
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	public class read_all_forwards_filtered<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
+		private readonly List<Guid> _eventIds = new();
+
+		protected override void Given() {
+			EnableReadAll();
+			_eventIds.Add(WriteEvent("test-stream", "type1", "{}", "{Data: 1}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type2", "{}", "{Data: 2}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type3", "{}", "{Data: 3}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream-all", "type3", "{}", "{Data: 3}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream-all", "type2", "{}", "{Data: 4}").Item1.EventId);
+		}
+
+		[Test]
+		public async Task should_read_all_the_events() {
+			await using var enumerator =
+				ReadAllForwardsFiltered<TLogFormat, TStreamId>(_publisher, Position.Start, EventFilter.EventType.Prefixes(false, "type2"));
+
+			Assert.AreEqual(_eventIds[1], ((Event)await enumerator.GetNext()).Id);
+			Assert.AreEqual(_eventIds[4], ((Event)await enumerator.GetNext()).Id);
+		}
+	}
+
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	public class read_all_backwards_filtered<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
+		private readonly List<Guid> _eventIds = new();
+
+		protected override void Given() {
+			EnableReadAll();
+			_eventIds.Add(WriteEvent("test-stream", "type1", "{}", "{Data: 1}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type2", "{}", "{Data: 2}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type3", "{}", "{Data: 3}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream-all", "type3", "{}", "{Data: 3}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream-all", "type2", "{}", "{Data: 4}").Item1.EventId);
+		}
+
+		[Test]
+		public async Task should_read_all_the_filtered_events() {
+			await using var enumerator = ReadAllBackwardsFiltered<TLogFormat, TStreamId>(_publisher, Position.End,
+				EventFilter.EventType.Prefixes(false, "type2"));
+
+			Assert.AreEqual(_eventIds[4], ((Event)await enumerator.GetNext()).Id);
+			Assert.AreEqual(_eventIds[1], ((Event)await enumerator.GetNext()).Id);
+
+		}
+	}
+
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	public class read_stream_forwards<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
+		private readonly List<Guid> _eventIds = new();
+
+		protected override void Given() {
+			EnableReadAll();
+			_eventIds.Add(WriteEvent("test-stream", "type1", "{}", "{Data: 1}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream-all", "type1", "{}", "{Data: 1}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type2", "{}", "{Data: 2}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type3", "{}", "{Data: 3}").Item1.EventId);
+		}
+
+		[Test]
+		public async Task should_read_forwards_from_a_particular_stream() {
+			await using var enumerator = ReadStreamForwards(_publisher, "test-stream");
+
+			Assert.AreEqual(_eventIds[0], ((Event)await enumerator.GetNext()).Id);
+			Assert.AreEqual(_eventIds[2], ((Event)await enumerator.GetNext()).Id);
+			Assert.AreEqual(_eventIds[3], ((Event)await enumerator.GetNext()).Id);
+		}
+	}
+
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	public class read_stream_backwards<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
+		private readonly List<Guid> _eventIds = new();
+
+		protected override void Given() {
+			EnableReadAll();
+			_eventIds.Add(WriteEvent("test-stream", "type1", "{}", "{Data: 1}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream-all", "type1", "{}", "{Data: 1}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type2", "{}", "{Data: 2}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type3", "{}", "{Data: 3}").Item1.EventId);
+		}
+
+		[Test]
+		public async Task should_read_backwards_from_a_particular_stream() {
+			await using var enumerator = ReadStreamBackwards(_publisher, "test-stream");
+
+			Assert.AreEqual(_eventIds[3], ((Event)await enumerator.GetNext()).Id);
+			Assert.AreEqual(_eventIds[2], ((Event)await enumerator.GetNext()).Id);
+			Assert.AreEqual(_eventIds[0], ((Event)await enumerator.GetNext()).Id);
+		}
+	}
+
+	public static EnumeratorWrapper CreateAllSubscription<TLogFormat, TStreamId>(
 		IPublisher publisher,
 		Position startPosition) {
 
-		return new SubscriptionWrapper(new Enumerators.AllSubscription(
+		return new EnumeratorWrapper(new Enumerator.AllSubscription(
 			bus: publisher,
 			expiryStrategy: new DefaultExpiryStrategy(),
 			startPosition: startPosition,
@@ -160,16 +302,15 @@ public class EnumeratorsTests {
 			user: SystemAccounts.System,
 			requiresLeader: false,
 			readIndex: new FakeReadIndex<TLogFormat, TStreamId>(_ => false, null),
-			uuidOption: new ReadReq.Types.Options.Types.UUIDOption(),
 			cancellationToken: CancellationToken.None));
 	}
 
-	public static SubscriptionWrapper CreateAllSubscriptionFiltered<TLogFormat, TStreamId>(
+	public static EnumeratorWrapper CreateAllSubscriptionFiltered<TLogFormat, TStreamId>(
 		IPublisher publisher,
 		Position startPosition,
 		IEventFilter eventFilter = null) {
 
-		return new SubscriptionWrapper(new Enumerators.AllSubscriptionFiltered(
+		return new EnumeratorWrapper(new Enumerator.AllSubscriptionFiltered(
 			bus: publisher,
 			expiryStrategy: new DefaultExpiryStrategy(),
 			startPosition: startPosition,
@@ -180,16 +321,15 @@ public class EnumeratorsTests {
 			readIndex: new FakeReadIndex<TLogFormat, TStreamId>(_ => false, null),
 			maxSearchWindow: null,
 			checkpointIntervalMultiplier: 1,
-			uuidOption: new ReadReq.Types.Options.Types.UUIDOption(),
 			cancellationToken: CancellationToken.None));
 	}
 
-	public static SubscriptionWrapper CreateStreamSubscription<TStreamId>(
+	public static EnumeratorWrapper CreateStreamSubscription<TStreamId>(
 		IPublisher publisher,
 		string streamName,
 		StreamRevision? startRevision = null) {
 
-		return new SubscriptionWrapper(new Enumerators.StreamSubscription<TStreamId>(
+		return new EnumeratorWrapper(new Enumerator.StreamSubscription<TStreamId>(
 			bus: publisher,
 			expiryStrategy: new DefaultExpiryStrategy(),
 			streamName: streamName,
@@ -197,19 +337,100 @@ public class EnumeratorsTests {
 			resolveLinks: false,
 			user: SystemAccounts.System,
 			requiresLeader: false,
-			uuidOption: new ReadReq.Types.Options.Types.UUIDOption(),
+			cancellationToken: CancellationToken.None));
+	}
+
+	public static EnumeratorWrapper ReadAllForwards(IPublisher publisher, Position position) {
+		return new EnumeratorWrapper(new Enumerator.ReadAllForwards(
+			bus: publisher,
+			position: position,
+			maxCount: 10,
+			resolveLinks: false,
+			user: SystemAccounts.System,
+			requiresLeader: false,
+			deadline: DateTime.Now,
+			cancellationToken: CancellationToken.None));
+	}
+
+	public static EnumeratorWrapper ReadAllBackwards(IPublisher publisher, Position position) {
+		return new EnumeratorWrapper(new Enumerator.ReadAllBackwards(
+			 bus: publisher,
+			 position: position,
+			 maxCount: 10,
+			 resolveLinks: false,
+			 user: SystemAccounts.System,
+			 requiresLeader: false,
+			 deadline: DateTime.Now,
+			 cancellationToken: CancellationToken.None));
+	}
+
+	public static EnumeratorWrapper ReadAllForwardsFiltered<TLogFormat, TStreamId>(IPublisher publisher, Position position, IEventFilter filter = null) {
+		return new EnumeratorWrapper(new Enumerator.ReadAllForwardsFiltered(
+			bus: publisher,
+			position: position,
+			maxCount: 10,
+			resolveLinks: false,
+			eventFilter: filter,
+			user: SystemAccounts.System,
+			requiresLeader: false,
+			readIndex: new FakeReadIndex<TLogFormat, TStreamId>(_ => false, null),
+			maxSearchWindow: null,
+			deadline: DateTime.Now,
+			cancellationToken: CancellationToken.None));
+	}
+
+	public static EnumeratorWrapper ReadAllBackwardsFiltered<TLogFormat, TStreamId>(IPublisher publisher, Position position, IEventFilter filter = null) {
+		return new EnumeratorWrapper(new Enumerator.ReadAllBackwardsFiltered(
+			bus: publisher,
+			position: position,
+			maxCount: 10,
+			resolveLinks: false,
+			eventFilter: filter,
+			user: SystemAccounts.System,
+			requiresLeader: false,
+			readIndex: new FakeReadIndex<TLogFormat, TStreamId>(_ => false, null),
+			maxSearchWindow: null,
+			deadline: DateTime.Now,
+			cancellationToken: CancellationToken.None));
+	}
+
+	public static EnumeratorWrapper ReadStreamForwards(IPublisher publisher, string streamName) {
+		return new EnumeratorWrapper(new Enumerator.ReadStreamForwards(
+			bus: publisher,
+			streamName: streamName,
+			startRevision: StreamRevision.Start,
+			maxCount: 10,
+			resolveLinks: false,
+			user: SystemAccounts.System,
+			requiresLeader: false,
+			deadline: DateTime.Now,
+			compatibility: 1,
+			cancellationToken: CancellationToken.None));
+	}
+
+	public static EnumeratorWrapper ReadStreamBackwards(IPublisher publisher, string streamName) {
+		return new EnumeratorWrapper(new Enumerator.ReadStreamBackwards(
+			bus: publisher,
+			streamName: streamName,
+			startRevision: StreamRevision.End,
+			maxCount: 10,
+			resolveLinks: false,
+			user: SystemAccounts.System,
+			requiresLeader: false,
+			deadline: DateTime.Now,
+			compatibility: 1,
 			cancellationToken: CancellationToken.None));
 	}
 
 	public record SubscriptionResponse { }
-	public record Event(Uuid Id) : SubscriptionResponse { }
+	public record Event(Guid Id) : SubscriptionResponse { }
 	public record SubscriptionConfirmation() : SubscriptionResponse { }
 	public record CaughtUp : SubscriptionResponse { }
 
-	public class SubscriptionWrapper : IAsyncDisposable {
-		private readonly IAsyncEnumerator<ReadResp> _enumerator;
+	public class EnumeratorWrapper : IAsyncDisposable {
+		private readonly IAsyncEnumerator<ReadResponse> _enumerator;
 
-		public SubscriptionWrapper(IAsyncEnumerator<ReadResp> enumerator) {
+		public EnumeratorWrapper(IAsyncEnumerator<ReadResponse> enumerator) {
 			_enumerator = enumerator;
 		}
 
@@ -221,11 +442,12 @@ public class EnumeratorsTests {
 			}
 
 			var resp = _enumerator.Current;
-			return resp.ContentCase switch {
-				ReadResp.ContentOneofCase.Event => new Event(Uuid.FromDto(resp.Event.Event.Id)),
-				ReadResp.ContentOneofCase.Confirmation => new SubscriptionConfirmation(),
-				ReadResp.ContentOneofCase.CaughtUp => new CaughtUp(),
-				_ => throw new ArgumentOutOfRangeException(nameof(resp), resp.ContentCase, null),
+
+			return resp switch {
+				ReadResponse.EventReceived eventReceived => new Event(eventReceived.Event.Event.EventId),
+				ReadResponse.SubscriptionConfirmed => new SubscriptionConfirmation(),
+				ReadResponse.SubscriptionCaughtUp => new CaughtUp(),
+				_ => throw new ArgumentOutOfRangeException(nameof(resp), resp, null),
 			};
 		}
 	}
