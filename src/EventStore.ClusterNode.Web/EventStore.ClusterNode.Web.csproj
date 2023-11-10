@@ -11,9 +11,6 @@
 		</Content>
 	</ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
-	</ItemGroup>
-	<ItemGroup>
 		<None Include="clusternode-web\apple-touch-icon.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>

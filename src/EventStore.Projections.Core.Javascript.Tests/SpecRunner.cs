@@ -397,9 +397,10 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 
 		[Theory]
 		[MemberData(nameof(GetTestCases))]
-		public ValueTask Test(TestDefinition def) {
-			return def.Execute(_output);
+		public Task Test(TestDefinition def) {
+			return def.Execute(_output).AsTask();
 		}
+		
 		public class TestDefinition {
 			private readonly string _name;
 			private readonly Func<ITestOutputHelper, ValueTask> _step;

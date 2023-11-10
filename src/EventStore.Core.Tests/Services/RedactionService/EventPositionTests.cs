@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Data.Redaction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.RedactionService {
@@ -44,7 +45,7 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 			var msg = await GetEventPosition(0);
 			Assert.AreEqual(GetEventPositionResult.Success, msg.Result);
 			Assert.AreEqual(1, msg.EventPositions.Length);
-			AssertEx.AssertUsingDeepCompare(msg.EventPositions, _positions[0].ToArray());
+			msg.EventPositions.Should().BeEquivalentTo(_positions[0].ToArray());
 		}
 
 		[Test]
@@ -52,7 +53,7 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 			var msg = await GetEventPosition(1);
 			Assert.AreEqual(GetEventPositionResult.Success, msg.Result);
 			Assert.AreEqual(1, msg.EventPositions.Length);
-			AssertEx.AssertUsingDeepCompare(msg.EventPositions, _positions[1].ToArray());
+			msg.EventPositions.Should().BeEquivalentTo(_positions[1].ToArray());
 		}
 
 		[Test]
@@ -60,7 +61,7 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 			var msg = await GetEventPosition(2);
 			Assert.AreEqual(GetEventPositionResult.Success, msg.Result);
 			Assert.AreEqual(2, msg.EventPositions.Length);
-			AssertEx.AssertUsingDeepCompare(msg.EventPositions, _positions[2].ToArray());
+			msg.EventPositions.Should().BeEquivalentTo(_positions[2].ToArray());
 		}
 	}
 }
