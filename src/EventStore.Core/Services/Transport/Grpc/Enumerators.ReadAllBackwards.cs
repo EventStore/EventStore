@@ -123,6 +123,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						case ReadAllResult.AccessDenied:
 							_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
 							return;
+						case ReadAllResult.InvalidPosition:
+							_channel.Writer.TryComplete(RpcExceptions.InvalidPositionException());
+							return;
 						default:
 							_channel.Writer.TryComplete(RpcExceptions.UnknownError(completed.Result));
 							return;

@@ -12,6 +12,7 @@ using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
@@ -192,6 +193,7 @@ namespace EventStore.Core.Services.Storage {
 
 						break;
 					case ReadAllResult.Error:
+					case ReadAllResult.InvalidPosition:	
 					case ReadAllResult.AccessDenied:
 						msg.Envelope.ReplyWith(res);
 						break;
@@ -257,6 +259,7 @@ namespace EventStore.Core.Services.Storage {
 
 						break;
 					case FilteredReadAllResult.Error:
+					case FilteredReadAllResult.InvalidPosition: 
 					case FilteredReadAllResult.AccessDenied:
 						msg.Envelope.ReplyWith(res);
 						break;
@@ -300,6 +303,7 @@ namespace EventStore.Core.Services.Storage {
 
 						break;
 					case FilteredReadAllResult.Error:
+					case FilteredReadAllResult.InvalidPosition:	
 					case FilteredReadAllResult.AccessDenied:
 						msg.Envelope.ReplyWith(res);
 						break;
@@ -444,7 +448,11 @@ namespace EventStore.Core.Services.Storage {
 					return new ClientMessage.ReadAllEventsForwardCompleted(
 						msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, false, msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition);
-				} catch (Exception exc) {
+				} catch (InvalidReadException ex) {
+					Log.Error(ex, "Error during processing ReadAllEventsForward request.");
+					return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, ex.Message);
+				}
+				catch (Exception exc) {
 					Log.Error(exc, "Error during processing ReadAllEventsForward request.");
 					return NoData(msg, ReadAllResult.Error, pos, lastIndexedPosition, exc.Message);
 				}
@@ -480,7 +488,11 @@ namespace EventStore.Core.Services.Storage {
 					return new ClientMessage.ReadAllEventsBackwardCompleted(
 						msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, false, msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition);
-				} catch (Exception exc) {
+				} catch (ArgumentException ex) {
+					Log.Error(ex, "Error during processing ReadAllEventsBackward request.");
+					return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, ex.Message);
+				}
+				catch (Exception exc) {
 					Log.Error(exc, "Error during processing ReadAllEventsBackward request.");
 					return NoData(msg, ReadAllResult.Error, pos, lastIndexedPosition, exc.Message);
 				}
@@ -522,7 +534,11 @@ namespace EventStore.Core.Services.Storage {
 						msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition, res.IsEndOfStream,
 						res.ConsideredEventsCount);
-				} catch (Exception exc) {
+				} catch (InvalidReadException ex) {
+					Log.Error(ex, "Error during processing ReadAllEventsForwardFiltered request.");
+					return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition,
+						ex.Message);
+				}catch (Exception exc) {
 					Log.Error(exc, "Error during processing ReadAllEventsForwardFiltered request.");
 					return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
 						exc.Message);
@@ -564,8 +580,13 @@ namespace EventStore.Core.Services.Storage {
 						msg.CorrelationId, FilteredReadAllResult.Success, null, resolved, metadata, false,
 						msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition, res.IsEndOfStream);
-				} catch (Exception exc) {
-					Log.Error(exc, "Error during processing ReadAllEventsForwardFiltered request.");
+				} catch (ArgumentException ex) {
+					Log.Error(ex, "Error during processing ReadAllEventsBackwardFiltered request.");
+					return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition,
+						ex.Message);
+				}
+				catch (Exception exc) {
+					Log.Error(exc, "Error during processing ReadAllEventsBackwardFiltered request.");
 					return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
 						exc.Message);
 				}
