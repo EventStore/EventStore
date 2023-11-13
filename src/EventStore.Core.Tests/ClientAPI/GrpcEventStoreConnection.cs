@@ -7,7 +7,6 @@ using EventStore.Client.Streams;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Services.Transport.Grpc;
 using Google.Protobuf;
 using Grpc.Net.Client;
 using Position = EventStore.ClientAPI.Position;
@@ -44,20 +43,106 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 	}
 
 	public Task ConnectAsync() {
+		return Task.CompletedTask;
 	}
 
 	public void Close() {
 	}
 
 	public Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		return DeleteStreamAsync(stream, expectedVersion, false, userCredentials);
 	}
 
-	public Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+	public async Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete, UserCredentials userCredentials = null) {
+		if (hardDelete) {
+			var request = new DeleteReq {
+				Options = new DeleteReq.Types.Options {
+					StreamIdentifier = stream,
+				}
+			};
+
+			switch (expectedVersion) {
+				case -4:
+					request.Options.StreamExists = new Empty();
+					break;
+				case -2:
+					request.Options.Any = new Empty();
+					break;
+				case -1:
+					request.Options.NoStream = new Empty();
+					break;
+				default:
+					request.Options.Revision = (ulong)expectedVersion;
+					break;
+			}
+
+			var resp = await _streamsClient.DeleteAsync(request).ConfigureAwait(false);
+			return new DeleteResult(new Position((long)resp.Position.CommitPosition,
+				(long)resp.Position.PreparePosition));
+		} else {
+			var request = new TombstoneReq {
+				Options = new TombstoneReq.Types.Options {
+					StreamIdentifier = stream,
+				}
+			};
+
+			switch (expectedVersion) {
+				case -4:
+					request.Options.StreamExists = new Empty();
+					break;
+				case -2:
+					request.Options.Any = new Empty();
+					break;
+				case -1:
+					request.Options.NoStream = new Empty();
+					break;
+				default:
+					request.Options.Revision = (ulong)expectedVersion;
+					break;
+			}
+
+			var resp = await _streamsClient.TombstoneAsync(request).ConfigureAwait(false);
+			return new DeleteResult(new Position((long)resp.Position.CommitPosition,
+				(long)resp.Position.PreparePosition));
+		}
 	}
 
-	public async Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, params EventData[] events) {
+	public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, params EventData[] events) {
+		return AppendToStreamAsync(stream, expectedVersion, null, events);
+	}
+
+	private UUID ToUUID(Guid value) {
+		if (!BitConverter.IsLittleEndian) {
+			throw new NotSupportedException();
+		}
+
+		Span<byte> data = stackalloc byte[16];
+
+		if (!value.TryWriteBytes(data)) {
+			throw new InvalidOperationException();
+		}
+
+		data.Slice(0, 8).Reverse();
+		data.Slice(0, 2).Reverse();
+		data.Slice(2, 2).Reverse();
+		data.Slice(4, 4).Reverse();
+		data.Slice(8).Reverse();
+
+		return new UUID {
+			Structured = new UUID.Types.Structured {
+				MostSignificantBits = BitConverter.ToInt64(data),
+				LeastSignificantBits = BitConverter.ToInt64(data.Slice(8))
+			},
+		};
+	}
+
+	public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials,
+		params EventData[] events) {
+		return AppendToStreamAsync(stream, expectedVersion, events, userCredentials);
+	}
+
+	public async Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
+		UserCredentials userCredentials = null) {
 		WriteResult writeResult = default;
 		using var call = _streamsClient.Append();
 		var header = new AppendReq {
@@ -143,41 +228,6 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 		}
 
 		return writeResult;
-	}
-
-	private UUID ToUUID(Guid value) {
-		if (!BitConverter.IsLittleEndian) {
-			throw new NotSupportedException();
-		}
-
-		Span<byte> data = stackalloc byte[16];
-
-		if (!value.TryWriteBytes(data)) {
-			throw new InvalidOperationException();
-		}
-
-		data.Slice(0, 8).Reverse();
-		data.Slice(0, 2).Reverse();
-		data.Slice(2, 2).Reverse();
-		data.Slice(4, 4).Reverse();
-		data.Slice(8).Reverse();
-
-		return new UUID {
-			Structured = new UUID.Types.Structured {
-				MostSignificantBits = BitConverter.ToInt64(data),
-				LeastSignificantBits = BitConverter.ToInt64(data.Slice(8))
-			},
-		};
-	}
-
-	public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials,
-		params EventData[] events) {
-		throw new NotImplementedException();
-	}
-
-	public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
-		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
 	}
 
 	public Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
