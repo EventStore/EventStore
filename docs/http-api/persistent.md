@@ -43,7 +43,7 @@ Persistent subscriptions to `$all` are not supported over the HTTP API. If you w
 | `maxSubscriberCount`          | Sets the maximum number of allowed TCP subscribers.                                                |
 | `messageTimeoutMilliseconds`  | Sets the timeout for a client before the message will be retried.                                  |
 | `minCheckPointCount`          | The minimum number of messages to write a checkpoint for.                                          |
-| `namedConsumerStrategy`       | Allowed values are `RoundRobin`, `DispatchToSingle`, `Pinned`.                                     |
+| `namedConsumerStrategy`       | Allowed values are `RoundRobin`, `DispatchToSingle`, `Pinned`, `PinnedByCorrelation`.                                     |
 
 ## Updating a persistent subscription
 
