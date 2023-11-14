@@ -20,7 +20,9 @@ namespace EventStore.Core.Tests.Helpers {
 		IHandle<ClientMessage.ReadStreamEventsBackward>,
 		IHandle<ClientMessage.ReadStreamEventsForward>,
 		IHandle<ClientMessage.ReadAllEventsForward>,
+		IHandle<ClientMessage.ReadAllEventsBackward>,
 		IHandle<ClientMessage.FilteredReadAllEventsForward>,
+		IHandle<ClientMessage.FilteredReadAllEventsBackward>,
 		IHandle<ClientMessage.WriteEvents>,
 		IHandle<ClientMessage.TransactionStart>,
 		IHandle<ClientMessage.TransactionWrite>,
@@ -217,7 +219,9 @@ namespace EventStore.Core.Tests.Helpers {
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsForward>(this);
 			_bus.Subscribe<ClientMessage.ReadAllEventsForward>(this);
+			_bus.Subscribe<ClientMessage.ReadAllEventsBackward>(this);
 			_bus.Subscribe<ClientMessage.FilteredReadAllEventsForward>(this);
+			_bus.Subscribe<ClientMessage.FilteredReadAllEventsBackward>(this);
 			_bus.Subscribe<ClientMessage.SubscribeToStream>(this);
 			_bus.Subscribe<ClientMessage.FilteredSubscribeToStream>(this);
 			_bus.Subscribe<ClientMessage.DeleteStream>(this);
@@ -528,11 +532,36 @@ namespace EventStore.Core.Tests.Helpers {
 			var events = list.ToArray();
 			message.Envelope.ReplyWith(
 				new ClientMessage.ReadAllEventsForwardCompleted(
-					message.CorrelationId, ReadAllResult.Success, "", events, null, false, message.MaxCount, pos, next,
-					prev,
-					_fakePosition));
+					message.CorrelationId, ReadAllResult.Success, "", events, null, false,
+					message.MaxCount, pos, next, prev, _fakePosition));
 		}
-		
+
+		public void Handle(ClientMessage.ReadAllEventsBackward message) {
+			if (_readsTimeOut) return;
+			if (!_readAllEnabled) return;
+
+			var from = new TFPos(message.CommitPosition, message.PreparePosition);
+			if (from == new TFPos(-1, -1)) // read from end
+				from = new TFPos(long.MaxValue, long.MaxValue);
+
+			var records = _all.Reverse().SkipWhile(v => v.Key > from).Take(message.MaxCount).ToArray();
+			var list = new List<ResolvedEvent>();
+			var pos = from;
+			var next = pos;
+			var prev = new TFPos(pos.CommitPosition, 0);
+			foreach (KeyValuePair<TFPos, EventRecord> record in records) {
+				pos = record.Key;
+				next = new TFPos(pos.CommitPosition, pos.PreparePosition - 1);
+				list.Add(BuildEvent(record.Value, message.ResolveLinkTos, record.Key.CommitPosition));
+			}
+
+			var events = list.ToArray();
+			message.Envelope.ReplyWith(
+				new ClientMessage.ReadAllEventsBackwardCompleted(
+					message.CorrelationId, ReadAllResult.Success, "", events, null, false,
+					message.MaxCount, pos, next, prev, _fakePosition));
+		}
+
 		public void Handle(ClientMessage.FilteredReadAllEventsForward message) {
 			if (_readsTimeOut) return;
 			if (!_readAllEnabled)
@@ -552,10 +581,36 @@ namespace EventStore.Core.Tests.Helpers {
 			var events = list.ToArray();
 			message.Envelope.ReplyWith(
 				new ClientMessage.FilteredReadAllEventsForwardCompleted(
-					message.CorrelationId, FilteredReadAllResult.Success, "", events, null, false, message.MaxCount, pos, next,
-					prev, _fakePosition, list.Count < message.MaxCount, -1));
+					message.CorrelationId, FilteredReadAllResult.Success, "", events, null, false,
+					message.MaxCount, pos, next, prev, _fakePosition, list.Count < message.MaxCount, -1));
 		}
-		
+
+		public void Handle(ClientMessage.FilteredReadAllEventsBackward message) {
+			if (_readsTimeOut) return;
+			if (!_readAllEnabled) return;
+
+			var from = new TFPos(message.CommitPosition, message.PreparePosition);
+			if (from == new TFPos(-1, -1)) // read from end
+				from = new TFPos(long.MaxValue, long.MaxValue);
+
+			var records = _all.Reverse().SkipWhile(v => v.Key > from).Where(kvp => message.EventFilter.IsEventAllowed(kvp.Value)).Take(message.MaxCount).ToArray();
+			var list = new List<ResolvedEvent>();
+			var pos = from;
+			var next = pos;
+			var prev = new TFPos(pos.CommitPosition, 0);
+			foreach (KeyValuePair<TFPos, EventRecord> record in records) {
+				pos = record.Key;
+				next = new TFPos(pos.CommitPosition, pos.PreparePosition - 1);
+				list.Add(BuildEvent(record.Value, message.ResolveLinkTos, record.Key.CommitPosition));
+			}
+
+			var events = list.ToArray();
+			message.Envelope.ReplyWith(
+				new ClientMessage.FilteredReadAllEventsBackwardCompleted(
+					message.CorrelationId, FilteredReadAllResult.Success, "", events, null, false,
+					message.MaxCount, pos, next, prev, _fakePosition, list.Count < message.MaxCount));
+		}
+
 		public void Handle(ClientMessage.SubscribeToStream msg) {
 			_streams.TryGetValue(msg.EventStreamId, out var list);
 			

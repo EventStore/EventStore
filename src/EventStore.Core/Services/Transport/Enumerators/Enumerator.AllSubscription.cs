@@ -4,18 +4,18 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using EventStore.Client.Streams;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.Transport.Common;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Serilog;
 
-namespace EventStore.Core.Services.Transport.Grpc {
-	partial class Enumerators {
-		public class AllSubscription : IAsyncEnumerator<ReadResp> {
+namespace EventStore.Core.Services.Transport.Enumerators {
+	partial class Enumerator {
+		public class AllSubscription : IAsyncEnumerator<ReadResponse> {
 			private static readonly ILogger Log = Serilog.Log.ForContext<AllSubscription>();
 
 			private readonly IExpiryStrategy _expiryStrategy;
@@ -25,17 +25,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
 			private readonly IReadIndex _readIndex;
-			private readonly ReadReq.Types.Options.Types.UUIDOption _uuidOption;
 			private readonly CancellationToken _cancellationToken;
-			private readonly Channel<ReadResp> _channel;
+			private readonly Channel<ReadResponse> _channel;
 			private readonly SemaphoreSlim _semaphore;
 
-			private ReadResp _current;
+			private ReadResponse _current;
 			private bool _disposed;
 			private int _subscriptionStarted;
 			private Position? _currentPosition;
 
-			public ReadResp Current => _current;
+			public ReadResponse Current => _current;
 			public string SubscriptionId { get; }
 
 			public AllSubscription(IPublisher bus,
@@ -45,7 +44,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				ClaimsPrincipal user,
 				bool requiresLeader,
 				IReadIndex readIndex,
-				ReadReq.Types.Options.Types.UUIDOption uuidOption,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
 					throw new ArgumentNullException(nameof(bus));
@@ -62,9 +60,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_user = user;
 				_requiresLeader = requiresLeader;
 				_readIndex = readIndex;
-				_uuidOption = uuidOption;
 				_cancellationToken = cancellationToken;
-				_channel = Channel.CreateBounded<ReadResp>(BoundedChannelOptions);
+				_channel = Channel.CreateBounded<ReadResponse>(BoundedChannelOptions);
 				_semaphore = new SemaphoreSlim(1, 1);
 
 				_subscriptionStarted = 0;
@@ -94,13 +91,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					return false;
 				}
 
-				var readResp = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+				var readResponse = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
 
-				if (readResp.Event != null) {
-					var @event = readResp.Event;
-
-					var position = new Position(@event.OriginalEvent.CommitPosition,
-						@event.OriginalEvent.PreparePosition);
+				if (readResponse is ReadResponse.EventReceived eventReceived) {
+					var eventPos = eventReceived.Event.OriginalPosition!.Value;
+					var position = Position.FromInt64(eventPos.CommitPosition, eventPos.PreparePosition);
 
 					if (_currentPosition.HasValue && position <= _currentPosition.Value) {
 						Log.Verbose("Subscription {subscriptionId} to $all skipping event {position}.", _subscriptionId,
@@ -114,7 +109,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_currentPosition = position;
 				}
 
-				_current = readResp;
+				_current = readResponse;
 
 				return true;
 			}
@@ -133,7 +128,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						CatchUp(Position.FromInt64(indexResult.NextPos.CommitPosition,
 							indexResult.NextPos.PreparePosition));
 					} catch (InvalidReadException ex) {
-						Fail(RpcExceptions.InvalidPositionException());
+						Fail(new ReadResponseException.InvalidPositionException());
 						Log.Error(ex, "Error starting catch-up subscription {subscriptionId} to $all@{position}",
 							_subscriptionId, startPosition);
 					}
@@ -149,14 +144,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
-					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+					    TryHandleNotHandled(notHandled, out var ex)) {
 						Fail(ex);
 						return;
 					}
 
-					if (!(message is ClientMessage.ReadAllEventsForwardCompleted completed)) {
-						Fail(
-							RpcExceptions.UnknownMessage<ClientMessage.ReadAllEventsForwardCompleted>(message));
+					if (message is not ClientMessage.ReadAllEventsForwardCompleted completed) {
+						Fail(ReadResponseException.UnknownMessage.Create<ClientMessage.ReadAllEventsForwardCompleted>(message));
 						return;
 					}
 
@@ -166,16 +160,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 							foreach (var @event in completed.Events) {
 								var position = Position.FromInt64(
-									@event.OriginalPosition.Value.CommitPosition,
-									@event.OriginalPosition.Value.PreparePosition);
+									@event.OriginalPosition!.Value.CommitPosition,
+									@event.OriginalPosition!.Value.PreparePosition);
 
 								Log.Verbose(
 									"Catch-up subscription {subscriptionId} to $all received event {position}.",
 									_subscriptionId, position);
 
-								await _channel.Writer.WriteAsync(new ReadResp {
-									Event = ConvertToReadEvent(_uuidOption, @event)
-								}, ct).ConfigureAwait(false);
+								await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct).ConfigureAwait(false);
 							}
 
 							var nextPosition = Position.FromInt64(completed.NextPos.CommitPosition,
@@ -196,10 +188,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								OnMessage);
 							return;
 						case ReadAllResult.AccessDenied:
-							Fail(RpcExceptions.AccessDenied());
+							Fail(new ReadResponseException.AccessDenied());
 							return;
 						default:
-							Fail(RpcExceptions.UnknownError(completed.Result));
+							Fail(ReadResponseException.UnknownError.Create(completed.Result));
 							return;
 					}
 				}
@@ -223,21 +215,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				async Task PumpLiveMessages() {
 					await caughtUpSource.Task.ConfigureAwait(false);
 
-					await _channel.Writer.WriteAsync(new ReadResp {
-						CaughtUp = new ReadResp.Types.CaughtUp()
-					}, _cancellationToken).ConfigureAwait(false);
+					await _channel.Writer.WriteAsync(new ReadResponse.SubscriptionCaughtUp(), _cancellationToken).ConfigureAwait(false);
 
-					await foreach (var @event in liveEvents.Reader.ReadAllAsync(_cancellationToken)
-						.ConfigureAwait(false)) {
-						await _channel.Writer.WriteAsync(new ReadResp {
-							Event = ConvertToReadEvent(_uuidOption, @event)
-						}, _cancellationToken).ConfigureAwait(false);
+					await foreach (var @event in liveEvents.Reader.ReadAllAsync(_cancellationToken).ConfigureAwait(false)) {
+						await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), _cancellationToken).ConfigureAwait(false);
 					}
 				}
 
 				async Task OnSubscriptionMessage(Message message, CancellationToken cancellationToken) {
 					if (message is ClientMessage.NotHandled notHandled &&
-					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+					    TryHandleNotHandled(notHandled, out var ex)) {
 						Fail(ex);
 						return;
 					}
@@ -269,15 +256,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							async Task OnHistoricalEventsMessage(Message message, CancellationToken ct) {
 #pragma warning restore CS1998
 								if (message is ClientMessage.NotHandled notHandled &&
-								    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+								    TryHandleNotHandled(notHandled, out var ex)) {
 									Fail(ex);
 									return;
 								}
 
-								if (!(message is ClientMessage.ReadAllEventsForwardCompleted completed)) {
-									Fail(
-										RpcExceptions.UnknownMessage<ClientMessage.ReadAllEventsForwardCompleted>(
-											message));
+								if (message is not ClientMessage.ReadAllEventsForwardCompleted completed) {
+									Fail(ReadResponseException.UnknownMessage.Create<ClientMessage.ReadAllEventsForwardCompleted>(message));
 									return;
 								}
 
@@ -290,7 +275,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										}
 
 										foreach (var @event in completed.Events) {
-											var position = @event.OriginalPosition.Value;
+											var position = @event.OriginalPosition!.Value;
 
 											if (position > caughtUp) {
 												NotifyCaughtUp(Position.FromInt64(position.CommitPosition,
@@ -298,9 +283,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 												return;
 											}
 
-											if (!_channel.Writer.TryWrite(new ReadResp {
-													Event = ConvertToReadEvent(_uuidOption, @event)})) {
-
+											if (!_channel.Writer.TryWrite(new ReadResponse.EventReceived(@event))) {
 												ConsumerTooSlow(@event);
 												return;
 											}
@@ -318,10 +301,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										return;
 
 									case ReadAllResult.AccessDenied:
-										Fail(RpcExceptions.AccessDenied());
+										Fail(new ReadResponseException.AccessDenied());
 										return;
 									default:
-										Fail(RpcExceptions.UnknownError(completed.Result));
+										Fail(ReadResponseException.UnknownError.Create(completed.Result));
 										return;
 								}
 							}
@@ -342,12 +325,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						case ClientMessage.SubscriptionDropped dropped:
 							switch (dropped.Reason) {
 								case SubscriptionDropReason.AccessDenied:
-									Fail(RpcExceptions.AccessDenied());
+									Fail(new ReadResponseException.AccessDenied());
 									return;
 								case SubscriptionDropReason.Unsubscribed:
 									return;
 								default:
-									Fail(RpcExceptions.UnknownError(dropped.Reason));
+									Fail(ReadResponseException.UnknownError.Create(dropped.Reason));
 									return;
 							}
 						case ClientMessage.StreamEventAppeared appeared: {
@@ -366,8 +349,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							return;
 						}
 						default:
-							Fail(
-								RpcExceptions.UnknownMessage<ClientMessage.SubscriptionConfirmation>(message));
+							Fail(ReadResponseException.UnknownMessage.Create<ClientMessage.SubscriptionConfirmation>(message));
 							return;
 					}
 				}
@@ -386,7 +368,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 					liveEvents.Writer.Complete();
 
-					Fail(RpcExceptions.Timeout(msg));
+					Fail(new ReadResponseException.Timeout(msg));
 				}
 
 				void Fail(Exception exception) {
@@ -397,11 +379,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			private ValueTask ConfirmSubscription() => Interlocked.CompareExchange(ref _subscriptionStarted, 1, 0) != 0
 				? new ValueTask(Task.CompletedTask)
-				: _channel.Writer.WriteAsync(new ReadResp {
-					Confirmation = new ReadResp.Types.SubscriptionConfirmation {
-						SubscriptionId = SubscriptionId
-					}
-				}, _cancellationToken);
+				: _channel.Writer.WriteAsync(new ReadResponse.SubscriptionConfirmed(SubscriptionId), _cancellationToken);
 
 			private void Fail(Exception exception) {
 				Interlocked.Exchange(ref _subscriptionStarted, 1);
