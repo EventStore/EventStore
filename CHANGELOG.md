@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
 - Support for multiple media types specified in one Accept header. [EventStore#4011](https://github.com/EventStore/EventStore/pull/4011)
+- Refactor gRPC enumerators  [EventStore#3998](https://github.com/EventStore/EventStore/pull/3998)
 
 ### cherry pick of https
 - //github.com/EventStore/EventStore/pull/3999 [EventStore#4010](https://github.com/EventStore/EventStore/pull/4010)
