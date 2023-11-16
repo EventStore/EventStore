@@ -27,7 +27,7 @@ Customers with the paid [support plan](https://eventstore.com/support/) can open
 
 Since EventStoreDB is an open-source product, we track most of the issues openly in the EventStoreDB [repository on GitHub](https://github.com/EventStore/EventStore). Before opening an issue, please ensure that a similar issue hasn't been opened already. Also, try searching closed issues that might contain a solution or workaround for your problem.
 
-When opening an issue, follow our [guidelines](../CONTRIBUTING.md) for bug reports and feature requests. By doing so, you would greatly help us to solve your concerns most efficiently.
+When opening an issue, follow our [guidelines](https://github.com/EventStore/EventStore/blob/master/CONTRIBUTING.md) for bug reports and feature requests. By doing so, you would greatly help us to solve your concerns most efficiently.
 
 ## Protocols, clients, and SDKs
 
