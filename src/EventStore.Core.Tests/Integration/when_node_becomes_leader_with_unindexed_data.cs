@@ -1,4 +1,9 @@
-﻿using NUnit.Framework;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using Empty = GrpcClient::EventStore.Client.Empty;
+using EventData = GrpcClient::EventStore.Client.EventData;
+using EventRecord = GrpcClient::EventStore.Client.EventRecord;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,16 +13,14 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
-using EventStore.Common.Utils;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Tests.Helpers;
-using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Net.Client;
-using Empty = EventStore.Client.Empty;
-using RecordedEvent = EventStore.Client.Streams.ReadResp.Types.ReadEvent.Types.RecordedEvent;
+using GrpcClientStreams::EventStore.Client;
 using GrpcMetadata = EventStore.Core.Services.Transport.Grpc.Constants.Metadata;
+using Position = GrpcClient::EventStore.Client.Position;
+using StreamRevision = GrpcClient::EventStore.Client.StreamRevision;
 
 namespace EventStore.Core.Tests.Integration {
 	[Explicit]
@@ -59,79 +62,28 @@ namespace EventStore.Core.Tests.Integration {
 				deadline: DateTime.UtcNow.AddSeconds(5));
 		}
 
-		private async Task AppendEvent(IPEndPoint endpoint, string stream, long expectedVersion) {
-			using var channel = GrpcChannel.ForAddress(new Uri($"https://{endpoint}"),
-				new GrpcChannelOptions { HttpClient = _httpClient });
-			var streamClient = new Streams.StreamsClient(channel);
-			using var call = streamClient.Append(GetCallOptions());
-
-			var optionsAppendReq = new AppendReq {
-				Options = new() {
-					StreamIdentifier = new() {
-						StreamName = ByteString.CopyFromUtf8(stream)
-					},
-				}
-			};
-			switch (expectedVersion) {
-				case ExpectedVersion.Any:
-					optionsAppendReq.Options.Any = new Empty();
-					break;
-				case ExpectedVersion.NoStream:
-					optionsAppendReq.Options.NoStream = new Empty();
-					break;
-				default:
-					optionsAppendReq.Options.Revision = (ulong) expectedVersion;
-					break;
-			}
-
-			await call.RequestStream.WriteAsync(optionsAppendReq);
-			await call.RequestStream.WriteAsync(new AppendReq {
-				ProposedMessage = new() {
-					Id = new() {
-						String = Uuid.FromGuid(Guid.NewGuid()).ToString()
-					},
-					Data = ByteString.Empty,
-					Metadata = {
-						[GrpcMetadata.Type] = "type",
-						[GrpcMetadata.ContentType] = GrpcMetadata.ContentTypes.ApplicationJson
-					}
-				}
-			});
-
-			await call.RequestStream.CompleteAsync();
-			try {
-				var appendResp = await call.ResponseAsync;
-				switch (appendResp.ResultCase)
-				{
-					case AppendResp.ResultOneofCase.Success:
-						return;
-					case AppendResp.ResultOneofCase.WrongExpectedVersion:
-						throw new WrongExpectedVersionException();
-				}
-			}
-			catch (RpcException ex) when (ex.Status.StatusCode == StatusCode.DeadlineExceeded) {
-				throw new CommitTimeoutException();
-			}
+		private static async Task AppendEvent(IPEndPoint endpoint, string stream, long expectedVersion) {
+			var settings = GrpcClient::EventStore.Client.EventStoreClientSettings.Create($"esdb://localhost:{endpoint}?tls=false");
+			await using var client = new GrpcClientStreams::EventStore.Client.EventStoreClient(settings);
+			await client.AppendToStreamAsync(
+				stream,
+				StreamRevision.FromInt64(expectedVersion),
+				new []{new EventData(GrpcClient::EventStore.Client.Uuid.NewUuid(), "type", ReadOnlyMemory<byte>.Empty)}
+				).ConfigureAwait(false);
 		}
 
-		private async Task<IEnumerable<RecordedEvent>> ReadAllEvents(IPEndPoint endpoint) {
-			using var channel = GrpcChannel.ForAddress(new Uri($"https://{endpoint}"),
-				new GrpcChannelOptions { HttpClient = _httpClient });
-			var streamClient = new Streams.StreamsClient(channel);
+		private static async Task<IEnumerable<EventRecord>> ReadAllEvents(IPEndPoint endpoint) {
+			var settings = GrpcClient::EventStore.Client.EventStoreClientSettings.Create($"esdb://localhost:{endpoint}?tls=false");
+			await using var client = new GrpcClientStreams::EventStore.Client.EventStoreClient(settings);
+			var result = client.ReadAllAsync(Direction.Forwards, Position.Start);
 
-			using var call = streamClient.Read(new ReadReq {
-				Options = new() {
-					All = new() {
-						Start = new Empty()
-					},
-					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
-					Count = ulong.MaxValue,
-					NoFilter = new Empty(),
-					UuidOption = new() { Structured = new() }
-				}
-			}, GetCallOptions());
+			var events = new List<EventRecord>();
+			await foreach (var message in result.Messages) {
+				if (message is StreamMessage.Event @event)
+					events.Add(@event.ResolvedEvent.Event);
+			}
 
-			return await (from response in call.ResponseStream.ReadAllAsync() where response.Event != null select response.Event.Event).ToListAsync();
+			return events;
 		}
 
 		private MiniClusterNode<TLogFormat, TStreamId> CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds,
@@ -295,11 +247,11 @@ namespace EventStore.Core.Tests.Integration {
 			// read "test" events from $all
 			var events =
 				(await ReadAllEvents(_nodes[1].HttpEndPoint))
-				.Where(x => x.StreamIdentifier!.StreamName.ToStringUtf8() == "test").ToArray();
+				.Where(x => x.EventStreamId == "test").ToArray();
 
 			Assert.AreEqual(appendInitialEvent ? 3 : 2, events.Length);
 			for (int i = 0; i < (appendInitialEvent ? 3 : 2); i++) {
-				Assert.AreEqual(i, events[i].StreamRevision, $"i = {i}, revision = {events[i].StreamRevision}");
+				Assert.AreEqual(i, events[i].EventNumber, $"i = {i}, revision = {events[i].EventNumber}");
 			}
 		}
 	}
