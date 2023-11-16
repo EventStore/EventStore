@@ -6,6 +6,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client;
 using EventStore.Client.Streams;
+using EventStore.Core.Services.Transport.Common;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {

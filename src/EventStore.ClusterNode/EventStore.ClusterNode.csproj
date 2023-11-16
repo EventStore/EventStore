@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFramework>net7.0</TargetFramework>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<OutputType>Exe</OutputType>
 		<ApplicationIcon>app2.ico</ApplicationIcon>

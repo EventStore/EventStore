@@ -1,6 +1,6 @@
 using System;
 
-namespace EventStore.Core.Services.Transport.Grpc {
+namespace EventStore.Core.Services.Transport.Common {
 	public struct StreamRevision : IEquatable<StreamRevision>, IComparable<StreamRevision> {
 		private readonly ulong _value;
 

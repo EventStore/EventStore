@@ -15,6 +15,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
+using EventStore.Core.Services.Transport.Common;
 using EventStore.Plugins.Authorization;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;

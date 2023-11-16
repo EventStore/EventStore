@@ -16,7 +16,7 @@ using DescriptionAttribute = System.ComponentModel.DescriptionAttribute;
 
 namespace EventStore.Core.Tests {
 	[TestFixture]
-	public class options {
+	public class Options {
 		[TestCaseSource(typeof(ParseCaseData), nameof(ParseCaseData.TestCases))]
 		public object are_parsed_correctly_when_well_formed(string option, string[] args) {
 			var sut = new TestOptions(args);

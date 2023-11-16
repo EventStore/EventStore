@@ -1,3 +1,4 @@
+using EventStore.Core.Services.Transport.Common;
 using EventStore.Core.Services.Transport.Grpc;
 using static EventStore.Core.Data.ExpectedVersion;
 

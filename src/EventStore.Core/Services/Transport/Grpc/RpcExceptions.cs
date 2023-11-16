@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using Grpc.Core;
@@ -12,10 +13,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public static RpcException ServerNotReady() =>
 			new(new Status(StatusCode.Unavailable, "Server Is Not Ready"));
 
-		private static RpcException ServerBusy() =>
+		public static RpcException ServerBusy() =>
 			new (new Status(StatusCode.Unavailable, "Server Is Too Busy"));
 
-		private static Exception NoLeaderInfo() =>
+		public static Exception NoLeaderInfo() =>
 			new RpcException(new Status(StatusCode.Unknown, "No leader info available in response"));
 
 		public static RpcException LeaderInfo(string host, int port) =>
@@ -35,11 +36,17 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			new (new Status(StatusCode.NotFound, $"Event stream '{streamName}' was not created."));
 
 		public static RpcException UnknownMessage<T>(Message message) where T : Message =>
+			UnknownMessage(message.GetType(), typeof(T));
+
+		public static RpcException UnknownMessage(Type unknownMessageType, Type expectedMsgType) =>
 			new(new Status(StatusCode.Unknown,
-				$"Envelope callback expected either {typeof(T).Name} or {nameof(ClientMessage.NotHandled)}, received {message.GetType().Name} instead"));
+				$"Envelope callback expected either {expectedMsgType.Name} or {nameof(ClientMessage.NotHandled)}, received {unknownMessageType.Name} instead"));
 
 		public static RpcException UnknownError<T>(T result) where T : unmanaged =>
-			new(new Status(StatusCode.Unknown, $"Unexpected {typeof(T).Name}: {result}"));
+			UnknownError(typeof(T), result);
+
+		public static RpcException UnknownError(Type resultType, object result) =>
+			new(new Status(StatusCode.Unknown, $"Unexpected {resultType.Name}: {result}"));
 
 		public static RpcException UnknownError(string message) =>
 			new(new Status(StatusCode.Unknown, message));
@@ -232,5 +239,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		public static RpcException InvalidCombination<T>(T combination) where T : ITuple
 			=> new(new Status(StatusCode.InvalidArgument, $"The combination of {combination} is invalid."));
+		
+		public static RpcException InvalidPositionException() =>
+			new(new Status(StatusCode.InvalidArgument, $"Trying to read from an invalid position."));
 	}
 }

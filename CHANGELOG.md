@@ -17,10 +17,12 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Set the default value of `CertificateReservedNodeCommonName` to empty string [EventStore#4001](https://github.com/EventStore/EventStore/pull/4001)
 - wording of telemetry message for clarity [EventStore#4026](https://github.com/EventStore/EventStore/pull/4026)
+- Upgrade to .NET 7. [EventStore#4031](https://github.com/EventStore/EventStore/pull/4031)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
 - Support for multiple media types specified in one Accept header. [EventStore#4011](https://github.com/EventStore/EventStore/pull/4011)
+- Refactor gRPC enumerators  [EventStore#3998](https://github.com/EventStore/EventStore/pull/3998)
 
 ### cherry pick of https
 - //github.com/EventStore/EventStore/pull/3999 [EventStore#4010](https://github.com/EventStore/EventStore/pull/4010)
@@ -30,6 +32,7 @@ All notable changes to this project will be documented in this file.
 - Updating a persistent subscription clears the filter [EventStore#3995](https://github.com/EventStore/EventStore/pull/3995)
 - Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#4023](https://github.com/EventStore/EventStore/pull/4023)
 - Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#4035](https://github.com/EventStore/EventStore/pull/4035)
+- https://github.com/EventStore/EventStore/issues/3195 [EventStore#3963](https://github.com/EventStore/EventStore/pull/3963)
 
 ### Removed
 - Extra checkpoint when subscription to $all goes live. [EventStore#4023](https://github.com/EventStore/EventStore/pull/4023)

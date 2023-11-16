@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
+using EventStore.Core.Services.Transport.Common;
 using EventStore.Core.Services.Transport.Grpc;
 using Google.Protobuf;
 using Grpc.Core;
