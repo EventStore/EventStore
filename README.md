@@ -66,7 +66,7 @@ EventStoreDB supported gRPC clients
 Community supported gRPC clients
 
 - Elixir: [NFIBrokerage/spear](https://github.com/NFIBrokerage/spear)
-- Python: [pyeventsourcing/esdbclient](https://github.com/pyeventsourcing/esdbclient) 
+- Python: [pyeventsourcing/esdbclient](https://pypi.org/project/esdbclient/) 
 - Ruby: [yousty/event_store_client](https://github.com/yousty/event_store_client)
 
 Read more in the [documentation](https://developers.eventstore.com/server/v22.10/#protocols-clients-and-sdks).
