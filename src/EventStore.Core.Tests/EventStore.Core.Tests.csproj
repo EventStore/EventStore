@@ -13,6 +13,12 @@
 		<PackageReference Include="Grpc.Core" Version="2.46.6" />
 		<PackageReference Include="Grpc.Net.Client" Version="2.59.0" />
 		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.0" />
+		<PackageReference Include="EventStore.Client.Grpc" Version="23.1.0">
+			<Aliases>GrpcClient</Aliases>
+		</PackageReference>
+		<PackageReference Include="EventStore.Client.Grpc.Streams" Version="23.1.0">
+			<Aliases>GrpcClientStreams</Aliases>
+		</PackageReference>
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
 		<PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.10" />
