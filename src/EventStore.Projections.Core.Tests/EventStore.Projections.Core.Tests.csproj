@@ -26,6 +26,12 @@
 		<PackageReference Include="NUnit" Version="3.13.3" />
 		<PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
 		<PackageReference Include="Serilog.Sinks.TextWriter" Version="2.1.0" />
+		<PackageReference Include="EventStore.Client.Grpc" Version="23.1.0">
+			<Aliases>GrpcClient</Aliases>
+		</PackageReference>
+		<PackageReference Include="EventStore.Client.Grpc.ProjectionManagement" Version="23.1.0">
+			<Aliases>GrpcClientProjections</Aliases>
+		</PackageReference>
 		<PackageReference Include="Google.Protobuf" Version="3.22.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.52.0">
 			<PrivateAssets>all</PrivateAssets>
@@ -37,9 +43,6 @@
 		<ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj" />
 		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
 		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
-	</ItemGroup>
-	<ItemGroup>
-		<Protobuf Include="..\Protos\Grpc\projections.proto" Link="Protos\projections.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 	</ItemGroup>
 	<ItemGroup>
 		<Content Include="Queries\1Query.js">
