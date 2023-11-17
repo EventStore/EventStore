@@ -13,6 +13,11 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/4025 [EventStore#4027](https://github.com/EventStore/EventStore/pull/4027)
 - //github.com/EventStore/EventStore/pull/4019 [EventStore#4022](https://github.com/EventStore/EventStore/pull/4022)
 - //github.com/EventStore/EventStore/pull/4026 [EventStore#4030](https://github.com/EventStore/EventStore/pull/4030)
+- //github.com/EventStore/EventStore/pull/4032 [EventStore#4050](https://github.com/EventStore/EventStore/pull/4050)
+- //github.com/EventStore/EventStore/pull/4032 [EventStore#4051](https://github.com/EventStore/EventStore/pull/4051)
+- //github.com/EventStore/EventStore/pull/4032 [EventStore#4049](https://github.com/EventStore/EventStore/pull/4049)
+- //github.com/EventStore/EventStore/pull/4032 [EventStore#4048](https://github.com/EventStore/EventStore/pull/4048)
+- //github.com/EventStore/EventStore/pull/4032 [EventStore#4047](https://github.com/EventStore/EventStore/pull/4047)
 
 ### Changed
 - Set the default value of `CertificateReservedNodeCommonName` to empty string [EventStore#4001](https://github.com/EventStore/EventStore/pull/4001)
