@@ -56,7 +56,11 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 		return new GrpcClient::EventStore.Client.EventData(Uuid.FromGuid(data.EventId), data.Type, data.Data, data.Metadata);
 	}
 
-	private ClientMessage.ResolvedIndexedEvent ConvertResolvedEvent(ResolvedEvent @event) {
+	private ClientMessage.ResolvedIndexedEvent ConvertResolvedIndexedEvent(ResolvedEvent @event) {
+		return null;
+	}
+
+	private ClientMessage.ResolvedEvent ConvertResolvedEvent(ResolvedEvent @event) {
 		return null;
 	}
 
@@ -118,7 +122,7 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 		await foreach (var message in result.Messages) {
 			if (message is StreamMessage.Event @event) {
 				return new EventReadResult(EventReadStatus.Success, stream, eventNumber,
-					ConvertResolvedEvent(@event.ResolvedEvent));
+					ConvertResolvedIndexedEvent(@event.ResolvedEvent));
 			}
 		}
 
@@ -128,7 +132,7 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 	public async Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
 		var result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(start),
-			maxCount: count, resolveLinkTos: resolveLinkTos);
+			maxCount: count, resolveLinkTos: resolveLinkTos, userCredentials: ConvertUC(userCredentials));
 
 		var events = new List<ClientMessage.ResolvedIndexedEvent>();
 		var lastEventNumber = -1L;
@@ -138,7 +142,7 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 			{
 				case StreamMessage.Event @event:
 					nextEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64() + 1;
-					events.Add(ConvertResolvedEvent(@event.ResolvedEvent));
+					events.Add(ConvertResolvedIndexedEvent(@event.ResolvedEvent));
 					break;
 
 				case StreamMessage.LastStreamPosition last:
@@ -151,14 +155,58 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 			nextEventNumber, lastEventNumber, nextEventNumber >= lastEventNumber);
 	}
 
-	public Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos,
+	public async Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		var result = _streamsClient.ReadStreamAsync(Direction.Backwards, stream, StreamPosition.FromInt64(start),
+			maxCount: count, resolveLinkTos: resolveLinkTos, userCredentials: ConvertUC(userCredentials));
+
+		var events = new List<ClientMessage.ResolvedIndexedEvent>();
+		var lastEventNumber = -1L;
+		var nextEventNumber = -1L;
+		await foreach (var message in result.Messages) {
+			switch (message)
+			{
+				case StreamMessage.Event @event:
+					nextEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64() - 1;
+					events.Add(ConvertResolvedIndexedEvent(@event.ResolvedEvent));
+					break;
+
+				case StreamMessage.FirstStreamPosition first:
+					lastEventNumber = first.StreamPosition.ToInt64();
+					break;
+			}
+		}
+
+		return new StreamEventsSlice(SliceReadStatus.Success, stream, start, ReadDirection.Forward, events.ToArray(),
+			nextEventNumber, lastEventNumber, nextEventNumber <= lastEventNumber);
 	}
 
-	public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
+	public async Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		var result = _streamsClient.ReadAllAsync(Direction.Forwards,
+			new GrpcClient::EventStore.Client.Position((ulong)position.CommitPosition, (ulong)position.PreparePosition),
+			maxCount: maxCount, resolveLinkTos: resolveLinkTos, userCredentials: ConvertUC(userCredentials));
+
+		var events = new List<ClientMessage.ResolvedEvent>();
+		var nextPosition = new Position();
+		var lastPosition = new Position();
+		await foreach (var message in result.Messages) {
+			switch (message)
+			{
+				case StreamMessage.Event @event:
+					var pos = @event.ResolvedEvent.OriginalPosition!;
+					nextPosition = new Position((long)pos.Value.CommitPosition, (long)pos.Value.PreparePosition);
+					events.Add(ConvertResolvedEvent(@event.ResolvedEvent));
+					break;
+
+				case StreamMessage.LastAllStreamPosition last:
+					lastPosition = new Position((long)last.Position.CommitPosition, (long)last.Position.PreparePosition);
+					break;
+			}
+		}
+
+		return new AllEventsSlice(ReadDirection.Forward, position, nextPosition, events.ToArray(),
+			nextPosition >= lastPosition);
 	}
 
 	public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, Filter filter,
