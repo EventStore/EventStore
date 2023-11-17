@@ -8,15 +8,18 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
-using Grpc.Net.ClientFactory;
+using EventStore.ClientAPI.Messages;
 using GrpcClient::EventStore.Client;
 using ConditionalWriteResult = EventStore.ClientAPI.ConditionalWriteResult;
 using DeleteResult = EventStore.ClientAPI.DeleteResult;
+using Direction = GrpcClientStreams::EventStore.Client.Direction;
 using EventData = EventStore.ClientAPI.EventData;
 using Position = EventStore.ClientAPI.Position;
-using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
+using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
+using StreamMessage = GrpcClientStreams::EventStore.Client.StreamMessage;
 using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 using StreamMetadataResult = EventStore.ClientAPI.StreamMetadataResult;
+using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
 using SystemSettings = EventStore.ClientAPI.SystemSettings;
 using UserCredentials = EventStore.ClientAPI.SystemData.UserCredentials;
 
@@ -51,6 +54,10 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 
 	private GrpcClient::EventStore.Client.EventData ConvertED(EventData data) {
 		return new GrpcClient::EventStore.Client.EventData(Uuid.FromGuid(data.EventId), data.Type, data.Data, data.Metadata);
+	}
+
+	private ClientMessage.ResolvedIndexedEvent ConvertResolvedEvent(ResolvedEvent @event) {
+		return null;
 	}
 
 	public Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials = null) {
@@ -104,13 +111,44 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 		throw new NotImplementedException();
 	}
 
-	public Task<EventReadResult> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+	public async Task<EventReadResult> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null) {
+		var result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(eventNumber),
+			maxCount:1, resolveLinkTos: resolveLinkTos);
+
+		await foreach (var message in result.Messages) {
+			if (message is StreamMessage.Event @event) {
+				return new EventReadResult(EventReadStatus.Success, stream, eventNumber,
+					ConvertResolvedEvent(@event.ResolvedEvent));
+			}
+		}
+
+		return new EventReadResult(EventReadStatus.NotFound, stream, eventNumber, null);
 	}
 
-	public Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos,
+	public async Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		var result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(start),
+			maxCount: count, resolveLinkTos: resolveLinkTos);
+
+		var events = new List<ClientMessage.ResolvedIndexedEvent>();
+		var lastEventNumber = -1L;
+		var nextEventNumber = -1L;
+		await foreach (var message in result.Messages) {
+			switch (message)
+			{
+				case StreamMessage.Event @event:
+					nextEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64() + 1;
+					events.Add(ConvertResolvedEvent(@event.ResolvedEvent));
+					break;
+
+				case StreamMessage.LastStreamPosition last:
+					lastEventNumber = last.StreamPosition.ToInt64();
+					break;
+			}
+		}
+
+		return new StreamEventsSlice(SliceReadStatus.Success, stream, start, ReadDirection.Forward, events.ToArray(),
+			nextEventNumber, lastEventNumber, nextEventNumber >= lastEventNumber);
 	}
 
 	public Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos,
