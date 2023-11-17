@@ -2,25 +2,25 @@
 
 EventStoreDB requires regular maintenance with three operational concerns:
 
-- [Scavenging](#scavenging-events) for freeing up space after deleting events
-- [Backup and restore](#backup-and-restore) for disaster recovery
-- [Certificate update](#rolling-certificate-update) to renew certificates
+- [Scavenging](#scavenging) for freeing up space after deleting events.
+- [Backup and restore](#backup-and-restore) for disaster recovery.
+- [Certificate update](#certificate-update-upon-expiry) to renew certificates.
 
 You might also be interested learning about EventStoreDB [diagnostics](diagnostics.md)
 and [indexes](./indexes.md), which might require some Ops attention.
 
 ## Scavenging
 
-In EventStoreDB, events are no longer present in stream reads or subscriptions after they have been deleted, or they have expired according to the metadata of the stream.
+In EventStoreDB, events are no longer present in stream reads or subscriptions after they have been deleted or they have expired according to the metadata of the stream.
 
-The events are, however, still present in the database and will be visible in reads and subscriptions to `$all`.
+The events are, however, still present in the database and will be visible in reads and subscriptions to the `$all` stream.
 
 To remove these events from the database, which may be necessary for GDPR, you need to run a 'scavenge' on each of your nodes.
 
 A scavenge operation removes events and reclaims disk space by creating a copy of the relevant chunk, minus those events, and
 then deleting the old chunk. The scavenged events are also removed from the index.
 
-::: warning 
+::: warning
 Scavenging is destructive. Once a scavenge has run, you cannot recover any deleted events except from a backup.
 :::
 
@@ -42,7 +42,7 @@ scavenge request to each node. The scavenges can be run concurrently, but can al
 
 ### Getting the current scavenge ID
 
-Get the ID of the currently running scavenge, if there is one, by issuing a `GET` with an ID of `current`
+Get the ID of the currently running scavenge, if there is one, by issuing a `GET` request to the following HTTP API endpoint with the `admin` or `ops` credentials.
 
 ```bash:no-line-numbers
 curl -i -X GET http://127.0.0.1:2113/admin/scavenge/current -u "admin:changeit"
@@ -67,8 +67,8 @@ A 200 response is returned after the scavenge has stopped.
 
 You can also stop scavenges from the _Admin_ page of the Admin UI.
 
-::: tip 
-A scavenge can be stopped at any time. Next time a scavenge is started it will then resume from the place that the stopped scavenge had reached.
+::: tip
+A scavenge can be stopped at any time. The next time a scavenge is started, it will resume from the place the previous scavenge stopped.
 :::
 
 ### Viewing progress
@@ -94,6 +94,7 @@ Do not take [file-copy](#regular-file-copy) backups while scavenge is running. S
 ### How often to scavenge
 
 This depends on:
+
 - How often you delete streams.
 - How you set `$maxAge`, `$maxCount` or `$tb` metadata on your streams.
 - How important freeing the disk space is to you.
@@ -101,7 +102,7 @@ This depends on:
 
 You can tell from the scavenge output in the logs and streams how much data it is removing. This can help guide how frequently to scavenge.
 
-You can set up a scheduled task, for example using cron or Windows Scheduler, to trigger a scavenge as often as you need.
+You can set up a scheduled task, for example using cron on Linux or [Windows Task Scheduler](https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-start-page), to trigger a scavenge as often as you need.
 
 ### Spreading the load
 
@@ -114,26 +115,25 @@ Scavenging does place extra load on the server, especially in terms of disk IO. 
 
 ## Scavenging algorithm
 
-Central to the scavenging process is the concept of _scavenge points_. Physically these are log records in the transaction log, each containing the following information:
+Central to the scavenging process is the concept of _scavenge points_. Physically, these are log records in the transaction log, each containing the following information:
 
-- The position in the log that the scavenge will run up to.
-- A number unique to the scavenge point (counting from 0).
-- The time ("EffectiveNow") used to determine whether the maxAge of an event has been exceeded.
-- The threshold that a chunk's weight must reach to be executed.
+- the position in the log that the scavenge will run up to
+- a number unique to the scavenge point (counting from 0)
+- the time (`EffectiveNow`) used to determine whether the `maxAge` of an event has been exceeded
+- the threshold that a chunk's weight must reach to be executed
 
 Any run of the scavenge process is associated with a single scavenge point, and it scavenges the log up to that point.
 Log records after that scavenge point do not exist as far as that scavenge is concerned.
 
-In this way, scavenge can be run on the first node, creating a scavenge point. Then it can be run (potentially later) on other nodes, to scavenge up to the same point, producing the same effect on the log.
-
+In this way, a scavenge can be run on the first node, creating a scavenge point. Then it can be run (potentially later) on other nodes, to scavenge up to the same point, producing the same effect on the log.
 
 The scavenging algorithm itself consists of several phases:
 
 ### Beginning
 
-When a scavenge is started, it first checks to see if a previous scavenge was stopped. If so, it resumes from where the previous scavenge got up to. Otherwise it begins a fresh scavenge.
+When a scavenge is started, it first checks to see if a previous scavenge was stopped. If so, it resumes from where the previous scavenge stopped. Otherwise it begins a fresh scavenge.
 
-When beginning a fresh scavenge, it checks to see if there already exists a scavenge point that this node has not already scavenged up to. If so, it begins scavenging up to that point. Otherwise it writes a new scavenge point to the log (which is replicated to the other nodes) and then begins a scavenge up to there. Writing a new scavenge point also causes the active chunk to be completed so that it can be scavenged.
+When beginning a fresh scavenge, it checks to see if a scavenge point already exists that has not been reached by previous scavenges. If so, it begins scavenging up to that point. Otherwise, it writes a new scavenge point to the log (which is replicated to the other nodes) and then begins a scavenge up to there. Writing a new scavenge point also causes the active chunk to be completed so that it can be scavenged.
 
 ### Accumulation phase
 
@@ -143,12 +143,12 @@ It finds necessary information (such as tombstones and metadata records) and sto
 In this way, any particular chunk is only accumulated once, regardless of how many times scavenge is run.
 
 ::: tip
-The first time the scavenge is run it needs to accumulate all the chunks. Typically this makes the first scavenge take longer than subsequent scavenges.
+The first time the scavenge is run it needs to accumulate all the chunks. Typically, this makes the first scavenge take longer than subsequent scavenges.
 :::
 
 ### Calculation phase
 
-During the calculation phase, the scavenging process calculates, for each stream that it accumulated tombstones or metadata for, which events can be discarded, and which chunks they are located in. It assigns weight to those chunks.
+During the calculation phase, the scavenging process calculates which events can be discarded and which chunks they are located in for each stream that it accumulated tombstones or metadata for. It assigns weight to those chunks.
 
 ### Execution phase
 
@@ -158,17 +158,18 @@ Only chunks whose weight meets the threshold will be executed.
 
 ### Cleaning phase
 
-The final phase removes data from the scavenge database that is no longer needed.
+This final phase removes data from the scavenge database that is no longer needed.
 
-## Scavenging HTTP options
+## Starting a scavenge
 
-When starting a scavenge, the following options are available.
+When starting a scavenge with an HTTP POST request, the following options are available.
 
 ### Threads
 
 Specify the number of threads to use for running the scavenging process. The default value is 1.
 
 Example:
+
 ```bash:no-line-numbers
 curl -i -X POST http://127.0.0.1:2113/admin/scavenge?threads=2 -u "admin:changeit"
 ```
@@ -186,6 +187,7 @@ Possible values for the threshold:
 - `> 0`: The minimum weight a chunk must have in order to be scavenged.
 
 Example:
+
 ```bash:no-line-numbers
 curl -i -X POST http://127.0.0.1:2113/admin/scavenge?threshold=2000 -u "admin:changeit"
 ```
@@ -196,24 +198,28 @@ Setting a positive threshold means that not all deleted and expired events will 
 
 ### Throttle percent
 
-The scavenging process can be time-consuming and resource-intensive. You can control the speed and resource usage of the scavenge process using the throttlePercent option. When set to 100 (default value), the scavenge process runs at full speed. Setting it to 50 makes the process take twice as long by pausing regularly.
+The scavenging process can be time-consuming and resource-intensive. You can control the speed and resource usage of the scavenge process using the `throttlePercent` option. When set to 100 (default value), the scavenge process runs at full speed. Setting it to 50 makes the process take twice as long by pausing regularly.
 
-A scavenge can be stopped and restarted with a different throttlePercent
+A scavenge can be stopped and restarted with a different `throttlePercent`.
 
-_Throttle percent must be between 1 and 100._
+For `throttlePercent` values:
 
-_Throttle percent must be 100 for a multi-threaded scavenge._
+- Throttle percent must be between 1 and 100.
+
+- Throttle percent must be 100 for a multi-threaded scavenge.
 
 Example:
+
 ```bash:no-line-numbers
 curl -i -X POST http://127.0.0.1:2113/admin/scavenge?throttlePercent=50 -u "admin:changeit"
 ```
 
 ### Sync Only
 
-This option is a boolean value and is false by default. When set to true, it prevents the creation of a new scavenge point and will only run the scavenge if there is an existing scavenge point that has not yet been scavenged to. After running a scavenge on one node, this flag can be used to ensure that a subsequent node scavenges to that same point.
+The `syncOnly` option is a boolean value and is false by default. When true, it prevents the creation of a new scavenge point and will only run the scavenge if there is an existing scavenge point that has not yet been reached in a previous scavenged. After running a scavenge on one node, this flag can be used to ensure that a subsequent node scavenges to that same point.
 
 Example:
+
 ```bash:no-line-numbers
 curl -i -X POST http://127.0.0.1:2113/admin/scavenge?syncOnly=true -u "admin:changeit"
 ```
@@ -231,25 +237,25 @@ Below you can find some options that change the way how scavenging works on the 
 Scavenged chunks may be small enough to be merged into a single physical chunk file of approximately 256 MB. This behaviour can be disabled with this option.
 
 | Format               | Syntax                                |
-|:---------------------|:--------------------------------------|
+| :------------------- | :------------------------------------ |
 | Command line         | `--disable-scavenge-merging`          |
 | YAML                 | `DisableScavengeMerging`              |
-| Environment variable | `EVENTSTORE_DISABLE_SCAVENGE_MERGING` | 
+| Environment variable | `EVENTSTORE_DISABLE_SCAVENGE_MERGING` |
 
 **Default**: `false`, small scavenged chunks are merged together.
 
 ### Scavenge history
 
-Each scavenge operation gets an id and creates a stream. You might want to look at these streams to see the
-scavenge history, see how much time each operation took and how much disk space was reclaimed. However, you
+Each scavenge operation gets an ID and creates a stream. You might want to look at these streams to see the
+scavenge history, how much time each operation took, and how much disk space was reclaimed. However, you
 might not want to keep this history forever. Use the following option to limit how long the scavenge history
 stays in the database:
 
 | Format               | Syntax                                |
-|:---------------------|:--------------------------------------|
+| :------------------- | :------------------------------------ |
 | Command line         | `--scavenge-history-max-age`          |
 | YAML                 | `ScavengeHistoryMaxAge`               |
-| Environment variable | `EVENTSTORE_SCAVENGE_HISTORY_MAX_AGE` | 
+| Environment variable | `EVENTSTORE_SCAVENGE_HISTORY_MAX_AGE` |
 
 **Default**: `30` (days)
 
@@ -258,7 +264,7 @@ stays in the database:
 This option ensures that the newer chunk from a scavenge operation is always kept.
 
 | Format               | Syntax                             |
-|:---------------------|:-----------------------------------|
+| :------------------- | :--------------------------------- |
 | Command line         | `--always-keep-scavenged`          |
 | YAML                 | `AlwaysKeepScavenged`              |
 | Environment variable | `EVENTSTORE_ALWAYS_KEEP_SCAVENGED` |
@@ -268,20 +274,22 @@ This option ensures that the newer chunk from a scavenge operation is always kep
 Specify the page size of the scavenge database. The default value is 16 KiB.
 
 | Format               | Syntax                                  |
-|:---------------------|:----------------------------------------|
+| :------------------- | :-------------------------------------- |
 | Command line         | `--scavenge-backend-page-size`          |
 | YAML                 | `ScavengeBackendPageSize`               |
-| Environment variable | `EVENTSTORE_SCAVENGE_BACKEND_PAGE_SIZE` | 
+| Environment variable | `EVENTSTORE_SCAVENGE_BACKEND_PAGE_SIZE` |
+
+**Default**::\*\*: `16` (KiB)
 
 ### Scavenge backend cache size
 
 Specify the amount of memory, in bytes, to use for backend caching during scavenging. The default value is 64 MiB.
 
 | Format               | Syntax                                   |
-|:---------------------|:-----------------------------------------|
+| :------------------- | :--------------------------------------- |
 | Command line         | `--scavenge-backend-cache-size`          |
 | YAML                 | `ScavengeBackendCacheSize`               |
-| Environment variable | `EVENTSTORE_SCAVENGE_BACKEND_CACHE_SIZE` |                       
+| Environment variable | `EVENTSTORE_SCAVENGE_BACKEND_CACHE_SIZE` |
 
 ### Scavenge hash users cache capacity
 
@@ -291,47 +299,52 @@ If the accumulation phase is reporting a lot of cache misses, it may benefit fro
 The default value is 100000.
 
 | Format               | Syntax                                          |
-|:---------------------|:------------------------------------------------|
+| :------------------- | :---------------------------------------------- |
 | Command line         | `--scavenge-hash-users-cache-capacity`          |
 | YAML                 | `ScavengeHashUsersCacheCapacity`                |
 | Environment variable | `EVENTSTORE_SCAVENGE_HASH_USERS_CACHE_CAPACITY` |
 
 ## Redaction
 
-In EventStoreDB, events are immutable and cannot be changed after they are written. Usually when you have an event with data that needs to be deleted you should take the following steps:
+In EventStoreDB, events are immutable and cannot be changed after they are written. Usually, when you have an event with data that needs to be deleted you should take the following steps:
 
-- Rewrite the stream to a new stream without the data to be removed
-- Delete the old stream
-- Run a scavenge to remove the data from disk on each node in turn
+- Rewrite the stream to a new stream without the data to be removed.
+- Delete the old stream.
+- Run a scavenge to remove the data from disk on each node in turn.
 
-If this procedure is impractical in your use case, then you can use the redaction tool (the "redactor") to blank out the data of specific events.
+If this procedure is impractical for your use case, then you can use the redaction tool (the "redactor") to blank out the data of specific events.
 
-::: warning 
+::: warning
 Use the redactor as a last resort and only if you know what you're doing. Redacting events may lead to unintended consequences in your subscriptions and projections!
 :::
 
 ### Prerequisites
 
 Using redaction has the following prerequisites:
-- A commercial licence
+
+- A commercial license.
 - EventStoreDB version 23.6.0 or above. If running on Windows, Windows Server 2019 or above is required.
-- Server configuration option: `EnableUnixSocket: True`
-- The redactor tool (see steps below on how to get it)
+- Server configuration option: `EnableUnixSocket: True`.
+- The redactor tool (see steps below on how to get it).
 
 ### Getting the redactor
-Redaction requires a commercial licence. Due to its sensitive nature, the tool is available only upon request. Please [contact us here](https://www.eventstore.com/contact) if you do not have commercial support, or reach out to our support team if you do.
+
+Redaction requires a commercial license. Due to its sensitive nature, the tool is available only upon request. Please [contact us here](https://www.eventstore.com/contact) if you do not have commercial support, or reach out to our support team if you do.
 
 ### Running the redactor
 
 The binary needs to be extracted and run locally on an EventStoreDB node. Similar to scavenging, redaction affects only the node where it's running. Thus, it must be run once on each node of the cluster.
 
-The redactor takes the following mandatory parameters as input:
-- `--db` the path to the database directory containing the chunk files
-- `--events` a comma-separated list of events to be redacted in the format: `eventNumber@streamName`
+The redactor takes two mandatory parameters as input:
+
+| Parameter  | Description                                                                             |
+| :--------- | --------------------------------------------------------------------------------------- |
+| `--db`     | The path to the database directory containing the chunk files.                          |
+| `--events` | A comma-separated list of events to be redacted in the format: `eventNumber@streamName` |
 
 Specify `--help` to see the full list of options.
 
-The redactor will blank out the data section of the specified events with one bits (0xFF bytes) keeping the data size exactly the same as it was before. It will also set a flag (`IsRedacted`) on the event's record to indicate that the event has been redacted. All other properties of the event such as the event type, event metadata and timestamp will remain unchanged.
+The redactor will blank out the data section of the specified events with one bits (0xFF bytes) keeping the data size exactly the same as it was before. It will also set a flag (`IsRedacted`) on the event's record to indicate that the event has been redacted. All other properties of the event such as the event type, event metadata, and timestamp will remain unchanged.
 
 ::: card
 ![Redactor run](./images/redaction-run.png)
@@ -344,24 +357,26 @@ If you read the data of a redacted event from an external client, you should see
 :::
 
 ::: tip
-The redactor is not an offline tool. The EventStoreDB server must be running as the redactor needs to communicate with it to obtain information about the events to be redacted and to also replace the chunk files with the redacted ones.
+The redactor is not an offline tool. The EventStoreDB server must be running, as the redactor needs to communicate with it to obtain information about the events to be redacted and replace the chunk files with the redacted ones.
 :::
 
 ### How the redactor works
+
 The redactor follows these steps:
 
-1. Establish a connection to the database via a unix domain socket located in the database directory
+1. It establishes a connection to the database via a unix domain socket located in the database directory.
 
-2. Fetch information about the events to be redacted from the server via an RPC call. This information includes the chunk file the event is in and the event's position in the chunk.
+2. It then fetches information about the events to be redacted from the server via an RPC call. This information includes the chunk file the event is in and the event's position in the chunk.
 
-3. Build up a list of chunk files containing events to be redacted
+3. A list is built of chunk files containing events to be redacted.
 
 4. For each chunk in the list:
-    - copy it to a file with a .tmp extension in the database directory
-    - redact the event(s) in the .tmp chunk file
-    - atomically switch the .tmp chunk into the database via an RPC call on the server.
+   - It is copied to a file with a .tmp extension in the database directory.
+   - The requested event(s) are redacted in the .tmp chunk file.
+   - The .tmp chunk is atomically switched into the database via an RPC call on the server.
 
 ## Backup and restore
+
 Backing up an EventStoreDB database is straightforward but relies on carrying out the steps below in the
 correct order.
 
@@ -369,77 +384,71 @@ correct order.
 
 There are two main ways to perform backups:
 
-#### Disk snapshotting
+- **Disk snapshots**: If your infrastructure is virtualized, [disk snapshots](#disks-snapshot) are an option and the easiest way to perform backup and
+  restore operations.
 
-If your infrastructure is virtualized, disk _snapshots_ is an option and the easiest to perform backup and
-restore operations.
+- **Regular file copy**:
 
-#### Regular file copy
+  - [Simple full backup](#simple-full-backup--restore): when the DB size is small and the frequency of appends is low.
+  - [Differential backup](#differential-backup--restore): when the DB size is large or the system has a high append frequency.
 
-- Simple full backup: when the DB size is small and the frequency of appends is low.
-- Differential backup: when the DB size is large or the system has a high append frequency.
+### Backup and restore best practices
 
-### Considerations for backup and restore procedures
+- Backing up one node is recommended. However, ensure that the node you choose to back up is **up to date** and **connected to the cluster**.
 
-Backing up one node is recommended. However, ensure that the node chosen as a target for the backup is:
+- For additional safety, you can also back up at least a quorum of nodes.
 
-- up to date
-- connected to the cluster.
+- Do not attempt to back up a node using file copy at the same time a scavenge operation is running.
 
-For additional safety, you can also back up at least a quorum of nodes.
+- [Read-only replica](./cluster.md#read-only-replica) nodes may be used as a backup source.
 
-Do not back up a node with file copy at the same time as running a scavenge operation.
+- When either running a backup or restoring, do not mix backup files of different nodes.
 
-[Read-only replica](./cluster.md#read-only-replica) nodes may be used as backup source.
+- A restore must happen on a _stopped_ node.
 
-When either running a backup or restoring, do not mix backup files of different nodes.
+- The restore process can happen on any node of a cluster.
 
-The restore must happen on a _stopped_ node.
+- You can restore any number of nodes in a cluster from the same backup source. It means, for example, in the
+  event of a non-recoverable three node cluster, that the same backup source can be used to restore a completely new
+  three node cluster.
 
-The restore process can happen on any node of a cluster.
-
-You can restore any number of nodes in a cluster from the same backup source. It means, for example, in the
-event non-recoverable three nodes cluster, that the same backup source can be used to restore a completely new
-three nodes cluster.
-
-When you restore a node that was the backup source, perform a full backup after recovery.
+- When you restore a node that was the backup source, perform a full backup after recovery.
 
 ### Database files information
 
 By default, there are two directories containing data that needs to be included in the backup:
 
-- `db\ ` where the data is located
-- `index\ ` where the indexes are kept.
+- `db/ ` where the data is located
+- `index/ ` where the indexes are kept
 
 The exact name and location are dependent on your configuration.
 
-- `db\ ` contains:
-    - the chunks files named `chk-X.Y` where `X` is the chunk number and `Y` the version.
-    - the checkpoints files `*.chk` (`chaser.chk`, `epoch.chk`, `proposal.chk`, `truncate.chk`, `writer.chk`)
-- `index\ ` contains:
-    - the index map: `indexmap`
-    - the indexes: UUID named files , e.g `5a1a8395-94ee-40c1-bf93-aa757b5887f8`
+- `db/ ` contains:
+  - the chunks files named `chk-X.Y` where `X` is the chunk number and `Y` the version.
+  - the checkpoints files `*.chk` (`chaser.chk`, `epoch.chk`, `proposal.chk`, `truncate.chk`, `writer.chk`)
+- `index/ ` contains:
+  - the index map: `indexmap`
+  - the indexes: UUID named files , e.g `5a1a8395-94ee-40c1-bf93-aa757b5887f8`
 
 ### Disks snapshot
 
-If the `db\ ` and `index\ ` directories are on the same volume, a snapshot of that volume is enough.
+If the `db/ ` and `index/ ` directories are on the same volume, a snapshot of that volume is enough.
 
-However, if they are on different volumes, take first a snapshot of the volume containing the `index\ `
-directory and then a snapshot of the volume containing the `db\ ` directory.
+However, if they are on different volumes, take first a snapshot of the volume containing the `index/ `
+directory and then a snapshot of the volume containing the `db/ ` directory.
 
 ### Simple full backup & restore
 
 #### Backup
 
-1. Copy any index checkpoint files (`<index directory>\**\*.chk`) to your backup location.
-2. Copy the other index files to your backup location (the rest of `<index directory>`, excluding the
-   checkpoints).
+1. Copy any index checkpoint files (`<index directory>/**/*.chk`) to your backup location.
+2. Copy the other index files to your backup location (the rest of `<index directory>`, excluding the checkpoints).
 3. Copy the database checkpoint files (`*.chk`) to your backup location.
 4. Copy the chunk files (`chunk-X.Y`) to your backup location.
 
 For example, with a database in `data` and index in `data/index`:
 
-``` bash:no-line-numbers
+```bash:no-line-numbers
 rsync -aIR data/./index/**/*.chk backup
 rsync -aI --exclude '*.chk' data/index backup
 rsync -aI data/*.chk backup
@@ -461,31 +470,31 @@ differential backup.
 
 #### Backup
 
-First backup the index
+First backup the index:
 
 1. If there are no files in the index directory (apart from directories), go to step 7.
 2. Copy the `index/indexmap` file to the backup. If the source file does not exist, repeat until it does.
 3. Make a list `indexFiles` of all the `index/<GUID>` and `index/<GUID>.bloomfilter` files in the source.
 4. Copy the files listed in `indexFiles` to the backup, skipping file names already in the backup.
 5. Compare the contents of the `indexmap` file in the source and the backup. If they are different (i.e. the
-   indexmap file has changed since step 2, or no longer exists), go back to step 2.
+   `indexmap` file has changed since step 2 or no longer exists), go back to step 2.
 6. Remove `index/<GUID>` and `index/<GUID>.bloomfilter` files from the backup that are not listed
    in `indexFiles`.
 7. Copy the `index/stream-existence/streamExistenceFilter.chk` file (if present) to the backup.
 8. Copy the `index/stream-existence/streamExistenceFilter.dat` file (if present) to the backup.
-9. Copy the `index/scavenging/scavenging.db` file (if present) to the backup. It should be the only file in the directory.
+9. Copy the `index/scavenging/scavenging.db` file (if present) to the backup. It should be the only file in the `scavenging` directory.
 
-Then backup the log
+Then backup the log:
 
 1. Rename the last chunk in the backup to have a `.old` suffix. e.g. rename `chunk-000123.000000`
-   to `chunk-000123.000000.old`
+   to `chunk-000123.000000.old`.
 2. Copy `chaser.chk` to the backup.
 3. Copy `epoch.chk` to the backup.
 4. Copy `writer.chk` to the backup.
 5. Copy `proposal.chk` to the backup.
 6. Make a list `chunkFiles` of all chunk files (`chunk-X.Y`) in the source.
 7. Copy the files listed in `chunkFiles` to the backup, skipping file names already in the backup. All files
-   should copy successfully - none should have been deleted since scavenge is not running.
+   should copy successfully. None should have been deleted since scavenge is not running.
 8. Remove any chunks from the backup that are not in the `chunksFiles` list. This will include the `.old`
    file from step 1.
 
@@ -496,9 +505,7 @@ Then backup the log
 2. Copy all files to the desired location.
 3. Create a copy of `chaser.chk` and call it `truncate.chk`.
 
-### Other options
-
-There are other options available for ensuring data recovery, that are not strictly related to backups.
+### Other options for data recovery
 
 #### Additional node (aka Hot Backup)
 
@@ -526,12 +533,12 @@ problem.
 
 ## Certificate update upon expiry
 
-In EventStoreDB, the certificates require updating when they have expired or are going to expire soon. The user has to follow the below steps to perform rolling certificate update:- 
+In EventStoreDB, the certificates require updating when they have expired or are going to expire soon. Follow the steps below to perform a rolling certificate update.
 
 ### Step 1: Generate new certificates
 
 The new certificates can be created in the same manner as you generated the existing certificates.
-You can also use the EventStore [es-gencert-cli](https://github.com/EventStore/es-gencert-cli) tool to generate the CA and node certificates. 
+You can use the EventStore [es-gencert-cli](https://github.com/EventStore/es-gencert-cli) tool to generate the CA and node certificates.
 You can also follow the [Configurator](https://configurator.eventstore.com/) to create commands for generating the certificates based on your cluster's configuration.
 
 ::: tip
@@ -542,24 +549,23 @@ As of version 23.10.0, it is possible to do a rolling update with new certificat
 
 The next step is to replace the outdated certificates with the newly generated certificates.
 
- If you are using symlinks then you can update the symlink to point it to the new certificates.
+If you are using symlinks, then you can update the symlink to point it to the new certificates.
 
-### Linux OS
+#### Linux OS
 
-We normally have a symlink that points to the existing certificates like:-
+We normally have a symlink that points to the existing certificates:
 
-ca -> /etc/eventstore/certs/ca
-node.crt -> /etc/eventstore/certs/node.crt
-node.key -> /etc/eventstore/certs/node.key
+ca -> `/etc/eventstore/certs/ca`
+node.crt -> `/etc/eventstore/certs/node.crt`
+node.key -> `/etc/eventstore/certs/node.key`
 
-Update the symlink so that the link points to the new certificates. For example:-
+Update the symlink so that the link points to the new certificates:
 
-ca -> /etc/eventstore/newCerts/ca
-node.crt -> /etc/eventstore/newCerts/node.crt
-node.key -> /etc/eventstore/newCerts/node.key
+ca -> `/etc/eventstore/newCerts/ca`
+node.crt -> `/etc/eventstore/newCerts/node.crt`
+node.key -> `/etc/eventstore/newCerts/node.key`
 
-In the above example we have the links in a folder at path /home/ubuntu/links
-
+In the above example we have the links in a folder at path `/home/ubuntu/links`.
 
 ### Step 3: Reload the configuration
 
@@ -569,31 +575,31 @@ You can reload the certificate configuration without restarting the node by issu
 curl -k -X POST --basic https://{nodeAddress}:{HttpPort}/admin/reloadconfig -u {username}:{Password}
 ```
 
-For Example:-
+For Example:
+
 ```bash:no-line-numbers
 curl -k -X POST --basic https://127.0.0.1:2113/admin/reloadconfig -u admin:changeit
 ```
 
-The Linux users can also send the SIGHUP signal to the EventStoreDB to reload the certificates. 
+#### Linux OS
 
-For Example:-
+Linux users can also send the SIGHUP signal to the EventStoreDB to reload the certificates.
+
+For Example:
 
 ```
 kill -s SIGHUP 38956
-
 ```
 
-Here "38956" is the PID of EventStoreDB on our local machine. The users can type the following command in the linux terminal to get the process id of EventStoreDB. 
+Here "38956" is the Process ID (PID) of EventStoreDB on our local machine. To find the PID, use the following command in the Linux terminal.
 
-``` 
+```
 pidof eventstored
-
 ```
 
-Once the configuration has been reloaded successfully, the server will log the entries like:-
+Once the configuration has been reloaded successfully, the server logs will look something like:
 
 ```
-
 [108277,30,14:46:07.453,INF] Reloading the node's configuration since a request has been received on /admin/reloadconfig.
 [108277,29,14:46:07.457,INF] Loading the node's certificate(s) from file: "/home/ubuntu/links/node.crt"
 [108277,29,14:46:07.488,INF] Loading the node's certificate. Subject: "CN=eventstoredb-node", Previous thumbprint: "05526714107700C519E24794E8964A3B30EF9BD0", New thumbprint: "BE6D5CD681D7B9281D60A5969B5A7E31AF775E9F"
@@ -604,43 +610,37 @@ Once the configuration has been reloaded successfully, the server will log the e
 [108277,29,14:46:07.493,INF] Certificate chain verification successful.
 [108277,29,14:46:07.493,INF] All certificates successfully loaded.
 [108277,29,14:46:07.494,INF] The node's configuration was successfully reloaded
-
 ```
 
 ::: tip
 If there are any errors during loading certificates, the new configuration changes will not take effect.
 :::
 
-For example:- The server logs the following error when the node certificate is not available at the path specified in the EventStore configuration file.
+The server logs the following error when the node certificate is not available at the path specified in the EventStore configuration file.
 
 ```
-
 [108277,30,14:49:47.481,INF] Reloading the node's configuration since a request has been received on /admin/reloadconfig.
 [108277,29,14:49:47.488,INF] Loading the node's certificate(s) from file: "/home/ubuntu/links/node.crt"
 [108277,29,14:49:47.489,ERR] An error has occurred while reloading the configuration
 System.IO.FileNotFoundException: Could not find file '/home/ubuntu/links/node.key'.
-
 ```
 
 ### Step 4: Update the other nodes
 
-Now update the certificates on the other nodes
+Now update the certificates on the other nodes.
 
 ### Step 5: Monitor the cluster
 
-The connection between nodes in EventStoreDB reset every 10 minutes so the new configuration won’t take immediate effect. The user has this timeframe to update the certificates on all the nodes. It is advisable to monitor the cluster after this timeframe to make sure everything is working fine.
-The EventStoreDB will log the certificate errors if the user is not able to reload the certificates in this timeframe on all the nodes.
+The connection between nodes in EventStoreDB reset every 10 minutes so the new configuration won’t take immediate effect. Use this time to update the certificates on all of the nodes. It is advisable to monitor the cluster after this timeframe to make sure everything is working as expected.
+The EventStoreDB will log certificate errors if the certificates are not reloaded on all of the nodes before the connection resets.
 
 ```
-
 [108277,29,14:59:47.489,ERR] eventstoredb-node : A certificate chain could not be built to a trusted root authority.
 [108277,29,14:59:47.489,ERR] Client certificate validation error: "The certificate (CN=eventstoredb-node) provided by the client failed validation with the following error(s): RemoteCertificateChainErrors (PartialChain)"
-
 ```
 
 The above error indicates that there is some issue with the certificate because the reload process is not yet completed on all the nodes. The error can be safely ignored during the duration of the reloading certificate process, but the affected nodes will not be able to communicate with each other until the certificates have been updated on all the nodes.
 
-
 ::: warning
-It can take up to 10 minutes for certificate changes to take effect. Certificates should be updated within this window to avoid connection issues
+It can take up to 10 minutes for certificate changes to take effect. Certificates on all nodes should be updated within this window to avoid connection issues.
 :::
