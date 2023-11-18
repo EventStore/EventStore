@@ -75,6 +75,8 @@ A scavenge can be stopped at any time. The next time a scavenge is started, it w
 
 The logs contain detailed information about the progress of the scavenge.
 
+The current state of the scavenge can also be tracked in the [metrics](metrics.md).
+
 The [execution phase](#execution-phase) of the scavenge emits events into streams.
 Each scavenge operation will generate a new stream and the stream will contain events related to that
 operation.
@@ -467,6 +469,10 @@ In EventStoreDB, the certificates require updating when they have expired or are
 The new certificates can be created in the same manner as you generated the existing certificates.
 You can use the EventStore [es-gencert-cli](https://github.com/EventStore/es-gencert-cli) tool to generate the CA and node certificates.
 You can also follow the [Configurator](https://configurator.eventstore.com/) to create commands for generating the certificates based on your cluster's configuration.
+
+::: tip
+As of version 23.10.0, it is possible to do a rolling update with new certificates having a Common Name (CN) that's different from the original certificates. If `CertificateReservedNodeCommonName` was set in your configuration, any changes to its value will be taken into consideration during a config reload.
+:::
 
 ### Step 2: Replace the certificates
 
