@@ -188,8 +188,8 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 			maxCount: maxCount, resolveLinkTos: resolveLinkTos, userCredentials: ConvertUC(userCredentials));
 
 		var events = new List<ClientMessage.ResolvedEvent>();
-		var nextPosition = new Position();
-		var lastPosition = new Position();
+		var nextPosition = Position.Start;
+		var lastPosition = Position.Start;
 		await foreach (var message in result.Messages) {
 			switch (message)
 			{
@@ -211,7 +211,7 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 
 	public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, Filter filter,
 		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		return FilteredReadAllEventsForwardAsync(position, maxCount, resolveLinkTos, filter, 0, userCredentials);
 	}
 
 	public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, Filter filter,
@@ -219,9 +219,28 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 		throw new NotImplementedException();
 	}
 
-	public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
+	public async Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		var result = _streamsClient.ReadAllAsync(Direction.Backwards,
+			new GrpcClient::EventStore.Client.Position((ulong)position.CommitPosition, (ulong)position.PreparePosition),
+			maxCount: maxCount, resolveLinkTos: resolveLinkTos, userCredentials: ConvertUC(userCredentials));
+
+		var events = new List<ClientMessage.ResolvedEvent>();
+		var nextPosition = Position.End;
+		var lastPosition = Position.Start;
+		await foreach (var message in result.Messages) {
+			switch (message)
+			{
+				case StreamMessage.Event @event:
+					var pos = @event.ResolvedEvent.OriginalPosition!;
+					nextPosition = new Position((long)pos.Value.CommitPosition, (long)pos.Value.PreparePosition);
+					events.Add(ConvertResolvedEvent(@event.ResolvedEvent));
+					break;
+			}
+		}
+
+		return new AllEventsSlice(ReadDirection.Forward, position, nextPosition, events.ToArray(),
+			nextPosition <= lastPosition);
 	}
 
 	public Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, Filter filter,
@@ -242,7 +261,7 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 	public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream, long? lastCheckpoint,
 		CatchUpSubscriptionSettings settings, Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
 		Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		var sub = new EventStoreStreamCatchUpSubscription();
 	}
 
 	public Task<EventStoreSubscription> SubscribeToAllAsync(bool resolveLinkTos, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
