@@ -54,14 +54,15 @@ This getting started guide shows you how to get started with EventStoreDB by set
 EventStoreDB supports two protocols: gRPC and TCP(legacy).
 
 EventStoreDB supported clients
-- Go: [EventStore/EventStore-Client-Go](https://github.com/EventStore/EventStore-Client-Go)
-- .NET: [EventStore/EventStore-Client-Dotnet](https://github.com/EventStore/EventStore-Client-Dotnet)
-- Java: [(EventStore/EventStoreDB-Client-Java](https://github.com/EventStore/EventStoreDB-Client-Java)
+- Python: [pyeventsourcing/esdbclient](https://pypi.org/project/esdbclient/)
 - Node.js (javascript/typescript): [EventStore/EventStore-Client-NodeJS](https://github.com/EventStore/EventStore-Client-NodeJS)
+- Java: [(EventStore/EventStoreDB-Client-Java](https://github.com/EventStore/EventStoreDB-Client-Java)
+- .NET: [EventStore/EventStore-Client-Dotnet](https://github.com/EventStore/EventStore-Client-Dotnet)
+- Go: [EventStore/EventStore-Client-Go](https://github.com/EventStore/EventStore-Client-Go)
 - Rust: [EventStore/EventStoreDB-Client-Rust](https://github.com/EventStore/EventStoreDB-Client-Rust)
 - Read more in the [gRPC clients documentation](https://developers.eventstore.com/clients/grpc)
 
-Legacy TCP Clients
+Legacy TCP Clients (support ends with 23.10 LTS)
 - .Net: [EventStoreDB-Client-Dotnet-Legacy](https://github.com/EventStore/EventStoreDB-Client-Dotnet-Legacy)
 - JVM: [EventStore.JVM](https://github.com/EventStore/EventStore.JVM)
 - Haskell: [EventStoreDB-Client-Haskell](https://github.com/EventStore/EventStoreDB-Client-Haskell)
