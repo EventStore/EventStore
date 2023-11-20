@@ -56,22 +56,22 @@ EventStoreDB supports two protocols: gRPC and TCP(legacy).
 
 EventStoreDB supported gRPC clients
 
-- Go: [EventStore/EventStore-Client-Go](https://github.com/EventStore/EventStore-Client-Go)
-- .NET: [EventStore/EventStore-Client-Dotnet](https://github.com/EventStore/EventStore-Client-Dotnet)
-- Java: [(EventStore/EventStoreDB-Client-Java](https://github.com/EventStore/EventStoreDB-Client-Java)
+- Python: [pyeventsourcing/esdbclient](https://pypi.org/project/esdbclient/)
 - Node.js (javascript/typescript): [EventStore/EventStore-Client-NodeJS](https://github.com/EventStore/EventStore-Client-NodeJS)
+- Java: [(EventStore/EventStoreDB-Client-Java](https://github.com/EventStore/EventStoreDB-Client-Java)
+- .NET: [EventStore/EventStore-Client-Dotnet](https://github.com/EventStore/EventStore-Client-Dotnet)
+- Go: [EventStore/EventStore-Client-Go](https://github.com/EventStore/EventStore-Client-Go)
 - Rust: [EventStore/EventStoreDB-Client-Rust](https://github.com/EventStore/EventStoreDB-Client-Rust)
 - Read more in the [gRPC clients documentation](https://developers.eventstore.com/clients/grpc)
 
 Community supported gRPC clients
 
 - Elixir: [NFIBrokerage/spear](https://github.com/NFIBrokerage/spear)
-- Python: (coming soon)
 - Ruby: [yousty/event_store_client](https://github.com/yousty/event_store_client)
 
 Read more in the [documentation](https://developers.eventstore.com/server/v22.10/#protocols-clients-and-sdks).
 
-Legacy TCP Clients
+Legacy TCP Clients (support ends with 23.10 LTS)
 
 - .Net: [EventStoreDB-Client-Dotnet-Legacy](https://github.com/EventStore/EventStoreDB-Client-Dotnet-Legacy)
 
