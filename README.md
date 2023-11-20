@@ -127,13 +127,14 @@ The client libraries are located in their own repositories, refer to their speci
 
 gRPC clients:
 
-- Go: [EventStore-Client-Go](https://github.com/EventStore/EventStore-Client-Go)
-- .Net: [EventStore-Client-Dotnet](https://github.com/EventStore/EventStore-Client-Dotnet)
-- Java: [EventStoreDB-Client-Java](https://github.com/EventStore/EventStoreDB-Client-Java)
-- Node.js: [EventStore-Client-NodeJS](https://github.com/EventStore/EventStore-Client-NodeJS)
+- Python: [pyeventsourcing/esdbclient](https://pypi.org/project/esdbclient/)
+- Node.js (javascript/typescript): [EventStore/EventStore-Client-NodeJS](https://github.com/EventStore/EventStore-Client-NodeJS)
+- Java: [(EventStore/EventStoreDB-Client-Java](https://github.com/EventStore/EventStoreDB-Client-Java)
+- .NET: [EventStore/EventStore-Client-Dotnet](https://github.com/EventStore/EventStore-Client-Dotnet)
+- Go: [EventStore/EventStore-Client-Go](https://github.com/EventStore/EventStore-Client-Go)
 - Rust: [EventStoreDB-Client-Rust](https://github.com/EventStore/EventStoreDB-Client-Rust)
 
-TCP clients:
+TCP clients (support ends with 23.10 LTS)
 
 - .Net: [EventStoreDB-Client-Dotnet-Legacy](https://github.com/EventStore/EventStoreDB-Client-Dotnet-Legacy)
 
