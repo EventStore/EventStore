@@ -57,7 +57,7 @@ Read more in the [gRPC clients documentation](@clients/grpc/README.md).
 - [Ruby (yousty/event_store_client)](https://github.com/yousty/event_store_client)
 - [Elixir (NFIBrokerage/spear)](https://github.com/NFIBrokerage/spear)
 
-### TCP protocol (support ends with 23.10 LTS)
+### Legacy TCP protocol (support ends with 23.10 LTS)
 
 EventStoreDB offers a low-level protocol in the form of an asynchronous TCP protocol that exchanges protobuf objects. At present this protocol has adapters for .NET and the JVM.
 
