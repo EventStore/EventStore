@@ -134,7 +134,7 @@ gRPC clients:
 - Go: [EventStore/EventStore-Client-Go](https://github.com/EventStore/EventStore-Client-Go)
 - Rust: [EventStoreDB-Client-Rust](https://github.com/EventStore/EventStoreDB-Client-Rust)
 
-TCP clients (support ends with 23.10 LTS)
+Legacy TCP Clients (support ends with 23.10 LTS)
 
 - .Net: [EventStoreDB-Client-Dotnet-Legacy](https://github.com/EventStore/EventStoreDB-Client-Dotnet-Legacy)
 
