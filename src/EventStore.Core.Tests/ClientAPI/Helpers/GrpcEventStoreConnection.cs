@@ -1,31 +1,21 @@
 extern alias GrpcClient;
 extern alias GrpcClientStreams;
-using EventStoreClientSettings = GrpcClient::EventStore.Client.EventStoreClientSettings;
-using EventStoreStreamsClient = GrpcClientStreams::EventStore.Client.EventStoreClient;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Messages;
-using GrpcClient::EventStore.Client;
-using ConditionalWriteResult = EventStore.ClientAPI.ConditionalWriteResult;
-using DeleteResult = EventStore.ClientAPI.DeleteResult;
-using Direction = GrpcClientStreams::EventStore.Client.Direction;
-using EventData = EventStore.ClientAPI.EventData;
-using Position = EventStore.ClientAPI.Position;
+using GrpcClientStreams::EventStore.Client;
+using EventStoreClientSettings = GrpcClient::EventStore.Client.EventStoreClientSettings;
+using EventStoreStreamsClient = GrpcClientStreams::EventStore.Client.EventStoreClient;
+using StreamRevision = GrpcClient::EventStore.Client.StreamRevision;
+using UserCredentials = GrpcClient::EventStore.Client.UserCredentials;
+using EventData = GrpcClient::EventStore.Client.EventData;
+using Position = GrpcClient::EventStore.Client.Position;
 using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
-using StreamMessage = GrpcClientStreams::EventStore.Client.StreamMessage;
-using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
-using StreamMetadataResult = EventStore.ClientAPI.StreamMetadataResult;
 using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
-using SystemSettings = EventStore.ClientAPI.SystemSettings;
-using UserCredentials = EventStore.ClientAPI.SystemData.UserCredentials;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
-public class GrpcEventStoreConnection : IEventStoreConnection {
+public class GrpcEventStoreConnection : IEventStoreClient {
 	private readonly IPEndPoint _endpoint;
 	private EventStoreStreamsClient _streamsClient;
 
@@ -34,7 +24,8 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 	}
 
 	public void Dispose() {
-		throw new NotImplementedException();
+		_streamsClient.Dispose();
+		_streamsClient = null;
 	}
 
 	public Task ConnectAsync() {
@@ -43,98 +34,49 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 		return Task.CompletedTask;
 	}
 
-	public void Close() {
-		_streamsClient.Dispose();
-		_streamsClient = null;
-	}
-
-	private GrpcClient::EventStore.Client.UserCredentials ConvertUC(UserCredentials creds) {
-		return creds != null ? new GrpcClient::EventStore.Client.UserCredentials(creds.Username, creds.Password) : null;
-	}
-
-	private GrpcClient::EventStore.Client.EventData ConvertED(EventData data) {
-		return new GrpcClient::EventStore.Client.EventData(Uuid.FromGuid(data.EventId), data.Type, data.Data, data.Metadata);
-	}
-
-	private ClientMessage.ResolvedIndexedEvent ConvertResolvedIndexedEvent(ResolvedEvent @event) {
-		return null;
-	}
-
-	private ClientMessage.ResolvedEvent ConvertResolvedEvent(ResolvedEvent @event) {
-		return null;
-	}
-
-	public Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials = null) {
-		return DeleteStreamAsync(stream, expectedVersion, false, userCredentials);
-	}
-
 	public async Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete, UserCredentials userCredentials = null) {
 
 		if (hardDelete) {
-			var tombstoneResult = await _streamsClient.TombstoneAsync(stream, StreamRevision.FromInt64(expectedVersion), userCredentials:ConvertUC(userCredentials));
+			var tombstoneResult = await _streamsClient.TombstoneAsync(stream, StreamRevision.FromInt64(expectedVersion), userCredentials);
 			return new DeleteResult(new Position((long)tombstoneResult.LogPosition.CommitPosition,
 				(long)tombstoneResult.LogPosition.PreparePosition));
 		}
 
 		var deleteResult = await _streamsClient.DeleteAsync(stream, StreamRevision.FromInt64(expectedVersion),
-			userCredentials: ConvertUC(userCredentials));
+			userCredentials);
 
 		return new DeleteResult(new Position((long)deleteResult.LogPosition.CommitPosition,
 			(long)deleteResult.LogPosition.PreparePosition));
 	}
 
-	public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, params EventData[] events) {
-		return AppendToStreamAsync(stream, expectedVersion, null, events);
-	}
-
-	public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials,
-		params EventData[] events) {
-		return AppendToStreamAsync(stream, expectedVersion, events, userCredentials);
-	}
-
 	public async Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
 		UserCredentials userCredentials = null) {
 		var result = await _streamsClient.AppendToStreamAsync(stream,
-			StreamRevision.FromInt64(expectedVersion), events.Select(ConvertED), userCredentials: ConvertUC(userCredentials));
+			StreamRevision.FromInt64(expectedVersion), events, userCredentials);
 
-		return new WriteResult(result.NextExpectedStreamRevision.ToInt64(),
-			new Position((long)result.LogPosition.CommitPosition, (long)result.LogPosition.PreparePosition));
+		return new WriteResult(result.NextExpectedStreamRevision.ToInt64(), result.LogPosition);
 	}
 
-	public async Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
-		UserCredentials userCredentials = null) {
-		var result = await AppendToStreamAsync(stream, expectedVersion, events, userCredentials);
-		return new ConditionalWriteResult(result.NextExpectedVersion, result.LogPosition);
-	}
-
-	public Task<EventStoreTransaction> StartTransactionAsync(string stream, long expectedVersion, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public EventStoreTransaction ContinueTransaction(long transactionId, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public async Task<EventReadResult> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null) {
+	public async Task<EventReadResultNew> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null) {
 		var result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(eventNumber),
 			maxCount:1, resolveLinkTos: resolveLinkTos);
 
 		await foreach (var message in result.Messages) {
 			if (message is StreamMessage.Event @event) {
-				return new EventReadResult(EventReadStatus.Success, stream, eventNumber,
-					ConvertResolvedIndexedEvent(@event.ResolvedEvent));
+				return new EventReadResultNew(EventReadStatus.Success, stream, eventNumber,
+					@event.ResolvedEvent);
 			}
 		}
 
-		return new EventReadResult(EventReadStatus.NotFound, stream, eventNumber, null);
+		return new EventReadResultNew(EventReadStatus.NotFound, stream, eventNumber, null);
 	}
 
-	public async Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos,
+	public async Task<StreamEventsSliceNew> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
 		var result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(start),
-			maxCount: count, resolveLinkTos: resolveLinkTos, userCredentials: ConvertUC(userCredentials));
+			maxCount: count, resolveLinkTos: resolveLinkTos, userCredentials: userCredentials);
 
-		var events = new List<ClientMessage.ResolvedIndexedEvent>();
+		var events = new List<ResolvedEvent>();
 		var lastEventNumber = -1L;
 		var nextEventNumber = -1L;
 		await foreach (var message in result.Messages) {
@@ -142,7 +84,7 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 			{
 				case StreamMessage.Event @event:
 					nextEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64() + 1;
-					events.Add(ConvertResolvedIndexedEvent(@event.ResolvedEvent));
+					events.Add(@event.ResolvedEvent);
 					break;
 
 				case StreamMessage.LastStreamPosition last:
@@ -151,16 +93,16 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 			}
 		}
 
-		return new StreamEventsSlice(SliceReadStatus.Success, stream, start, ReadDirection.Forward, events.ToArray(),
-			nextEventNumber, lastEventNumber, nextEventNumber >= lastEventNumber);
+		return new StreamEventsSliceNew(stream, Direction.Forwards, start, nextEventNumber,
+			lastEventNumber,nextEventNumber >= lastEventNumber, events.ToArray());
 	}
 
-	public async Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos,
+	public async Task<StreamEventsSliceNew> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
 		var result = _streamsClient.ReadStreamAsync(Direction.Backwards, stream, StreamPosition.FromInt64(start),
-			maxCount: count, resolveLinkTos: resolveLinkTos, userCredentials: ConvertUC(userCredentials));
+			maxCount: count, resolveLinkTos: resolveLinkTos, userCredentials: userCredentials);
 
-		var events = new List<ClientMessage.ResolvedIndexedEvent>();
+		var events = new List<ResolvedEvent>();
 		var lastEventNumber = -1L;
 		var nextEventNumber = -1L;
 		await foreach (var message in result.Messages) {
@@ -168,7 +110,7 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 			{
 				case StreamMessage.Event @event:
 					nextEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64() - 1;
-					events.Add(ConvertResolvedIndexedEvent(@event.ResolvedEvent));
+					events.Add(@event.ResolvedEvent);
 					break;
 
 				case StreamMessage.FirstStreamPosition first:
@@ -177,181 +119,53 @@ public class GrpcEventStoreConnection : IEventStoreConnection {
 			}
 		}
 
-		return new StreamEventsSlice(SliceReadStatus.Success, stream, start, ReadDirection.Forward, events.ToArray(),
-			nextEventNumber, lastEventNumber, nextEventNumber <= lastEventNumber);
+		return new StreamEventsSliceNew(stream, Direction.Backwards, start, nextEventNumber,
+			lastEventNumber,nextEventNumber <= lastEventNumber, events.ToArray());
 	}
 
-	public async Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
+	public async Task<AllEventsSliceNew> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
-		var result = _streamsClient.ReadAllAsync(Direction.Forwards,
-			new GrpcClient::EventStore.Client.Position((ulong)position.CommitPosition, (ulong)position.PreparePosition),
-			maxCount: maxCount, resolveLinkTos: resolveLinkTos, userCredentials: ConvertUC(userCredentials));
+		var result = _streamsClient.ReadAllAsync(Direction.Forwards, position, maxCount, resolveLinkTos,
+			userCredentials: userCredentials);
 
-		var events = new List<ClientMessage.ResolvedEvent>();
+		var events = new List<ResolvedEvent>();
 		var nextPosition = Position.Start;
 		var lastPosition = Position.Start;
 		await foreach (var message in result.Messages) {
 			switch (message)
 			{
 				case StreamMessage.Event @event:
-					var pos = @event.ResolvedEvent.OriginalPosition!;
-					nextPosition = new Position((long)pos.Value.CommitPosition, (long)pos.Value.PreparePosition);
-					events.Add(ConvertResolvedEvent(@event.ResolvedEvent));
+					nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
+					events.Add(@event.ResolvedEvent);
 					break;
 
 				case StreamMessage.LastAllStreamPosition last:
-					lastPosition = new Position((long)last.Position.CommitPosition, (long)last.Position.PreparePosition);
+					lastPosition = last.Position;
 					break;
 			}
 		}
 
-		return new AllEventsSlice(ReadDirection.Forward, position, nextPosition, events.ToArray(),
-			nextPosition >= lastPosition);
+		return new AllEventsSliceNew(Direction.Forwards, nextPosition, nextPosition >= lastPosition, events.ToArray());
 	}
 
-	public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, Filter filter,
+	public async Task<AllEventsSliceNew> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
-		return FilteredReadAllEventsForwardAsync(position, maxCount, resolveLinkTos, filter, 0, userCredentials);
-	}
+		var result = _streamsClient.ReadAllAsync(Direction.Backwards, position, maxCount, resolveLinkTos,
+			userCredentials: userCredentials);
 
-	public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, Filter filter,
-		int maxSearchWindow, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public async Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
-		UserCredentials userCredentials = null) {
-		var result = _streamsClient.ReadAllAsync(Direction.Backwards,
-			new GrpcClient::EventStore.Client.Position((ulong)position.CommitPosition, (ulong)position.PreparePosition),
-			maxCount: maxCount, resolveLinkTos: resolveLinkTos, userCredentials: ConvertUC(userCredentials));
-
-		var events = new List<ClientMessage.ResolvedEvent>();
+		var events = new List<ResolvedEvent>();
 		var nextPosition = Position.End;
 		var lastPosition = Position.Start;
 		await foreach (var message in result.Messages) {
 			switch (message)
 			{
 				case StreamMessage.Event @event:
-					var pos = @event.ResolvedEvent.OriginalPosition!;
-					nextPosition = new Position((long)pos.Value.CommitPosition, (long)pos.Value.PreparePosition);
-					events.Add(ConvertResolvedEvent(@event.ResolvedEvent));
+					nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
+					events.Add(@event.ResolvedEvent);
 					break;
 			}
 		}
 
-		return new AllEventsSlice(ReadDirection.Forward, position, nextPosition, events.ToArray(),
-			nextPosition <= lastPosition);
+		return new AllEventsSliceNew(Direction.Backwards, nextPosition, nextPosition <= lastPosition, events.ToArray());
 	}
-
-	public Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, Filter filter,
-		int maxSearchWindow, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, Filter filter,
-		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public Task<EventStoreSubscription> SubscribeToStreamAsync(string stream, bool resolveLinkTos, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream, long? lastCheckpoint,
-		CatchUpSubscriptionSettings settings, Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-		Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
-		var sub = new EventStoreStreamCatchUpSubscription();
-	}
-
-	public Task<EventStoreSubscription> SubscribeToAllAsync(bool resolveLinkTos, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public Task<EventStoreSubscription> FilteredSubscribeToAllAsync(bool resolveLinkTos, Filter filter, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Func<EventStoreSubscription, Position, Task> checkpointReached,
-		int checkpointInterval, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public Task<EventStoreSubscription> FilteredSubscribeToAllAsync(bool resolveLinkTos, Filter filter, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
-		Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(string stream, string groupName,
-		Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared, Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
-		bool autoAck = true) {
-		throw new NotImplementedException();
-	}
-
-	public Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(string stream, string groupName, Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared,
-		Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
-		bool autoAck = true) {
-		throw new NotImplementedException();
-	}
-
-	public EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? lastCheckpoint, CatchUpSubscriptionSettings settings,
-		Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null, Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(Position? lastCheckpoint, Filter filter,
-		CatchUpSubscriptionFilteredSettings settings, Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared, Func<EventStoreCatchUpSubscription, Position, Task> checkpointReached,
-		int checkpointIntervalMultiplier, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null, Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(Position? lastCheckpoint, Filter filter,
-		CatchUpSubscriptionFilteredSettings settings, Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-		Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public Task UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
-		UserCredentials credentials) {
-		throw new NotImplementedException();
-	}
-
-	public Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
-		UserCredentials credentials) {
-		throw new NotImplementedException();
-	}
-
-	public Task DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetastreamVersion, StreamMetadata metadata,
-		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetastreamVersion, byte[] metadata,
-		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
-	}
-
-	public string ConnectionName { get; }
-	public ConnectionSettings Settings { get; }
-	public event EventHandler<ClientConnectionEventArgs> Connected;
-	public event EventHandler<ClientConnectionEventArgs> Disconnected;
-	public event EventHandler<ClientReconnectingEventArgs> Reconnecting;
-	public event EventHandler<ClientClosedEventArgs> Closed;
-	public event EventHandler<ClientErrorEventArgs> ErrorOccurred;
-	public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed;
 }
