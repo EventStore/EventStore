@@ -24,7 +24,6 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			private readonly IEventFilter _eventFilter;
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
-			private readonly IReadIndex _readIndex;
 			private readonly DateTime _deadline;
 			private readonly uint _maxSearchWindow;
 			private readonly CancellationToken _cancellationToken;
@@ -42,7 +41,6 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				IEventFilter eventFilter,
 				ClaimsPrincipal user,
 				bool requiresLeader,
-				IReadIndex readIndex,
 				uint? maxSearchWindow,
 				DateTime deadline,
 				CancellationToken cancellationToken) {
@@ -54,17 +52,12 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 					throw new ArgumentNullException(nameof(eventFilter));
 				}
 
-				if (readIndex == null) {
-					throw new ArgumentNullException(nameof(readIndex));
-				}
-
 				_bus = bus;
 				_maxCount = maxCount;
 				_resolveLinks = resolveLinks;
 				_eventFilter = eventFilter;
 				_user = user;
 				_requiresLeader = requiresLeader;
-				_readIndex = readIndex;
 				_maxSearchWindow = maxSearchWindow ?? ReadBatchSize;
 				_deadline = deadline;
 				_cancellationToken = cancellationToken;

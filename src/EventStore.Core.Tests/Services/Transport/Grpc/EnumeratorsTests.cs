@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Common;
 using EventStore.Core.Services.Transport.Enumerators;
-using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Core.Tests.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc;
@@ -61,7 +60,37 @@ public class EnumeratorsTests {
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class subscribe_filtered_all_from_start_<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
+	public class subscribe_all_from_position<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
+		private readonly List<Guid> _eventIds = new();
+		private TFPos _subscribeFrom;
+
+		protected override void Given() {
+			EnableReadAll();
+			WriteEvent("test-stream", "type1", "{}", "{Data: 1}");
+			WriteEvent("test-stream", "type2", "{}", "{Data: 2}");
+			(_, _subscribeFrom) = WriteEvent("test-stream", "type3", "{}", "{Data: 3}");
+			_eventIds.Add(WriteEvent("test-stream", "type4", "{}", "{Data: 4}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type5", "{}", "{Data: 5}").Item1.EventId);
+			_eventIds.Add(WriteEvent("test-stream", "type6", "{}", "{Data: 6}").Item1.EventId);
+		}
+
+		[Test]
+		public async Task should_receive_events_after_start_position() {
+			await using var sub = CreateAllSubscription<TLogFormat, TStreamId>(
+				_publisher,
+				new Position((ulong)_subscribeFrom.CommitPosition, (ulong)_subscribeFrom.PreparePosition));
+
+			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
+			Assert.AreEqual(_eventIds[0], ((Event)await sub.GetNext()).Id);
+			Assert.AreEqual(_eventIds[1], ((Event)await sub.GetNext()).Id);
+			Assert.AreEqual(_eventIds[2], ((Event)await sub.GetNext()).Id);
+			Assert.True(await sub.GetNext() is CaughtUp);
+		}
+	}
+
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	public class subscribe_filtered_all_from_start<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private readonly List<Guid> _eventIds = new();
 
 		protected override void Given() {
@@ -84,7 +113,7 @@ public class EnumeratorsTests {
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class subscribe_filtered_all_from_end_<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
+	public class subscribe_filtered_all_from_end<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		protected override void Given() {
 			EnableReadAll();
 			WriteEvent("test-stream", "type1", "{}", "{Data: 1}");
@@ -98,6 +127,35 @@ public class EnumeratorsTests {
 				_publisher, Position.End, EventFilter.EventType.Prefixes(false, "type1"));
 
 			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
+			Assert.True(await sub.GetNext() is CaughtUp);
+		}
+	}
+
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	public class subscribe_filtered_all_from_position<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
+		private readonly List<Guid> _eventIds = new();
+		private TFPos _subscribeFrom;
+
+		protected override void Given() {
+			EnableReadAll();
+			WriteEvent("test-stream", "theType", "{}", "{Data: 1}");
+			WriteEvent("test-stream", "type2", "{}", "{Data: 2}");
+			(_, _subscribeFrom) = WriteEvent("test-stream", "theType", "{}", "{Data: 2}");
+			_eventIds.Add(WriteEvent("test-stream", "theType", "{}", "{Data: 3}").Item1.EventId);
+			WriteEvent("test-stream", "type3", "{}", "{Data: 3}");
+			WriteEvent("test-stream", "type4", "{}", "{Data: 4}");
+		}
+
+		[Test]
+		public async Task should_receive_matching_events_after_start_position() {
+			await using var sub = CreateAllSubscriptionFiltered<TLogFormat, TStreamId>(
+				_publisher,
+				new Position((ulong)_subscribeFrom.CommitPosition, (ulong)_subscribeFrom.PreparePosition),
+				EventFilter.EventType.Prefixes(false, "theType"));
+
+			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
+			Assert.AreEqual(_eventIds[0], ((Event)await sub.GetNext()).Id);
 			Assert.True(await sub.GetNext() is CaughtUp);
 		}
 	}
@@ -301,7 +359,6 @@ public class EnumeratorsTests {
 			resolveLinks: false,
 			user: SystemAccounts.System,
 			requiresLeader: false,
-			readIndex: new FakeReadIndex<TLogFormat, TStreamId>(_ => false, null),
 			cancellationToken: CancellationToken.None));
 	}
 
@@ -318,7 +375,6 @@ public class EnumeratorsTests {
 			eventFilter: eventFilter,
 			user: SystemAccounts.System,
 			requiresLeader: false,
-			readIndex: new FakeReadIndex<TLogFormat, TStreamId>(_ => false, null),
 			maxSearchWindow: null,
 			checkpointIntervalMultiplier: 1,
 			cancellationToken: CancellationToken.None));
@@ -373,7 +429,6 @@ public class EnumeratorsTests {
 			eventFilter: filter,
 			user: SystemAccounts.System,
 			requiresLeader: false,
-			readIndex: new FakeReadIndex<TLogFormat, TStreamId>(_ => false, null),
 			maxSearchWindow: null,
 			deadline: DateTime.Now,
 			cancellationToken: CancellationToken.None));
@@ -388,7 +443,6 @@ public class EnumeratorsTests {
 			eventFilter: filter,
 			user: SystemAccounts.System,
 			requiresLeader: false,
-			readIndex: new FakeReadIndex<TLogFormat, TStreamId>(_ => false, null),
 			maxSearchWindow: null,
 			deadline: DateTime.Now,
 			cancellationToken: CancellationToken.None));

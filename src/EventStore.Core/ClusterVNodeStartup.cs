@@ -179,7 +179,7 @@ namespace EventStore.Core {
 						.AddSingleton<AuthorizationMiddleware>()
 						.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
 						.AddSingleton(_readIndex)
-						.AddSingleton(new Streams<TStreamId>(_mainQueue, _readIndex, _maxAppendSize,
+						.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize,
 							_writeTimeout, _expiryStrategy,
 							_trackers.GrpcTrackers,
 							_authorizationProvider))
