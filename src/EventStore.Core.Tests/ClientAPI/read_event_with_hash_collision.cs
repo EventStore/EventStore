@@ -5,6 +5,7 @@ using EventStore.Core.Tests;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
+using EventReadStatus = EventStore.ClientAPI.EventReadStatus;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	[Category("ClientAPI"), Category("LongRunning")]
