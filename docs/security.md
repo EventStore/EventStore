@@ -144,7 +144,7 @@ Server certificates **must** have the internal and external IP addresses or DNS 
 
 When getting an incoming connection, the server needs to ensure if the certificate used for the connection can be trusted. For this to work, the server needs to know where trusted root certificates are located.
 
-EventStoreDB will not use the default trusted root certificates store location of the platform. So, even if you use a certificate signed by a publicly trusted CA, you'd need to explicitly tell the node to use the OS default root certificate store. For certificates signed by a private CA, you just provide the path to the CA certificate file (but not the filename).
+EventStoreDB will use the default trusted root certificates location of `/etc/ssl/certs` when running on Linux only. So if you are running on Windows or a platform with a different default certificates location, you'd need to explicitly tell the node to use the OS default root certificate store. For certificates signed by a private CA, you just provide the path to the CA certificate file (but not the filename).
 
 If you are running on Windows, you can also load the trusted root certificate from the Windows Certificate Store. The available options for configuring this are described [below](#certificate-store-windows).
 
@@ -154,7 +154,7 @@ If you are running on Windows, you can also load the trusted root certificate fr
 | YAML                 | `TrustedRootCertificatesPath`               |
 | Environment variable | `EVENTSTORE_TRUSTED_ROOT_CERTIFICATES_PATH` |
 
-**Default**: n/a
+**Default**: n/a on Windows, `/etc/ssl/certs` on Linux
 
 #### Certificate file
 
@@ -174,7 +174,7 @@ If the certificate file is protected by password, you'd need to set the `Certifi
 | YAML                 | `CertificatePassword`             |
 | Environment variable | `EVENTSTORE_CERTIFICATE_PASSWORD` |
 
-If the certificate file doesn't contain the certificate private key, you need to tell the node where to find the key file using the `CertificatePrivateKeyFile` setting.
+If the certificate file doesn't contain the certificate private key, you need to tell the node where to find the key file using the `CertificatePrivateKeyFile` setting. The private key can be in RSA, or PKCS8 format.
 
 | Format               | Syntax                                    |
 |:---------------------|:------------------------------------------|
@@ -182,16 +182,14 @@ If the certificate file doesn't contain the certificate private key, you need to
 | YAML                 | `CertificatePrivateKeyFile`               |
 | Environment variable | `EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE` |
 
-::: warning RSA private key
-EventStoreDB expects the private key to be in RSA format. Check the first line of the key file and ensure that it looks like this:
-```
------BEGIN RSA PRIVATE KEY-----
-```
-If you have non-RSA private key, you can use `openssl` to convert it:
-```bash
-openssl rsa -in privkey.pem -out privkeyrsa.pem
-```
-:::
+If the private key file is an encrypted PKCS #8 file, then you need to provide the password with the `CertificatePrivateKeyPassword` option.
+
+| Format               | Syntax                                        |
+|:---------------------|:----------------------------------------------|
+| Command line         | `--certificate-private-key-password`          |
+| YAML                 | `CertificatePrivateKeyPassword`               |
+| Environment variable | `EVENTSTORE_CERTIFICATE_PRIVATE_KEY_PASSWORD` |
+
 
 #### Certificate store (Windows)
 
@@ -752,3 +750,20 @@ Use the following option to enable this feature:
 | YAML                 | `EnableTrustedAuth`              |
 | Environment variable | `EVENTSTORE_ENABLE_TRUSTED_AUTH` |
 
+## FIPS 140-2
+
+EventStoreDB runs on FIPS 140-2 enabled operating systems, this feature requires a commercial licence.
+
+The Federal Information Processing Standards (FIPS) of the United States are a set of publicly announced standards that the National Institute of Standards and Technology (NIST) has developed for use in computer systems of non-military United States government agencies and contractors.
+
+The 140 series of FIPS (FIPS 140) are U.S. government computer security standards that specify requirements for cryptography modules.
+
+To run EventStoreDB on FIPS 140-2 enabled operating systems, the following is required:
+
+1. The FIPS plugin must be installed. It is available on our commercial downloads page.
+2. The node's certificates & keys must be FIPS 140-2 compliant
+    - Our certificate generation tool, [es-gencert-cli](https://github.com/EventStore/es-gencert-cli/releases), generates FIPS 140-2 compliant certificates & keys as from version 1.2.0 (only the linux build).
+    - If you want to manually generate your certificates or keys with openssl, you must use openssl 3 or later.
+    - If you want to use PKCS #12 bundles (.p12/.pfx extension), you must use a FIPS 140-2 compliant encryption algorithm (e.g AES-256) & hash algorithm (e.g SHA-256) to encrypt the bundle's contents.
+
+Note that EventStoreDB will also likely run properly on FIPS 140-3 compliant systems with the above steps but this cannot reliably be confirmed at the moment as FIPS 140-3 certification is still ongoing for several operating systems.

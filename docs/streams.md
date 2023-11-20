@@ -1,9 +1,8 @@
 # Event streams
 
-EventStoreDB is a database designed for storing events. In contrast with state-oriented databases that only
-keeps the latest version of the entity state, you can store each state change as a separate event.
+EventStoreDB is purpose-built for event storage. Unlike traditional state-based databases, which retain only the most recent entity state, EventStoreDB allows you to store each state alteration as an independent event.
 
-Events are logically grouped into streams, typically one stream per entity.
+These **events** are logically organized into **streams**, typically only one stream per entity.
 
 ## Metadata and reserved names
 
@@ -22,12 +21,12 @@ names, except where detailed below.
 The supported internal settings are:
 
 | Property name   | Description                                                                                                                                                                                                                                                                                                                                                                   |
-|:----------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| :-------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `$maxAge`       | Sets a sliding window based on dates. When data reaches a certain age it disappears automatically from the stream and is considered eligible for scavenging. This value is set as an integer representing the number of seconds. This value must be >= 1.                                                                                                                     |
 | `$maxCount`     | Sets a sliding window based on the number of items in the stream. When data reaches a certain length it disappears automatically from the stream and is considered eligible for scavenging. This value is set as an integer representing the count of items. This value must be >= 1.                                                                                         |
 | `$cacheControl` | This controls the cache of the head of a stream. Most URIs in a stream are infinitely cacheable but the head by default will not cache. It may be preferable in some situations to set a small amount of caching on the head to allow intermediaries to handle polls (say 10 seconds). The argument is an integer representing the seconds to cache. This value must be >= 1. |
 
-::: tip 
+::: tip
 If you set both `$maxAge` and `$maxCount` then events will become eligible for scavenging when either
 criteria is met. For example, if you set `$maxAge` to 10 and `$maxCount` to 50,000, events will be marked as
 eligible for scavenging after either 10 seconds, or 50,000 events, have passed. Deleted items will only be
@@ -37,7 +36,7 @@ removed once the scavenge process runs.
 Security access control lists are also included in the `$acl` section of the stream metadata.
 
 | Property name | Description                                                 |
-|:--------------|:------------------------------------------------------------|
+| :------------ | :---------------------------------------------------------- |
 | `$r`          | The list of users with read permissions                     |
 | `$w`          | The list of users with write permissions                    |
 | `$d`          | The list of users with delete permissions                   |
@@ -55,7 +54,7 @@ All names starting with `$` are reserved space for internal use. The currently s
 names are:
 
 | Property name    | Description                                                        |
-|:-----------------|:-------------------------------------------------------------------|
+| :--------------- | :----------------------------------------------------------------- |
 | `$correlationId` | The application level correlation ID associated with this message. |
 | `$causationId`   | The application level causation ID associated with this message.   |
 
@@ -80,7 +79,7 @@ will fail. The tombstone event doesn't get scavenged.
 The `$all` stream bypasses the index, meaning that it does not check the metadata to determine whether events
 exist or not. As such, events that have been deleted are still be readable until a scavenge has removed them.
 There are requirements for a scavenge to successfully remove events, for more information about this, read
-the [scavenging guide](operations.md#scavenging-events).
+the [scavenging guide](operations.md#scavenging).
 
 EventStoreDB will always keep one event in the stream even if the stream was deleted, to indicate the stream
 existence and the last event version. Therefore, we advise you to append a specific event like `StreamDeleted`
@@ -108,13 +107,10 @@ last event:
 
 A **soft delete** makes use of `TruncateBefore` and `$tb`. When you delete a stream, its `TruncateBefore`
 or `$tb` is set to
-the [max long/Int64 value](https://docs.microsoft.com/en-us/dotnet/api/system.int64.maxvalue?view=net-5.0):
-9223372036854775807. When you read a soft deleted stream, the read returns a `StreamNotFound` or `404` result.
+the [max long/Int64 value](https://docs.microsoft.com/en-us/dotnet/api/system.int64.maxvalue?view=net-5.0): 9223372036854775807. When you read a soft deleted stream, the read returns a `StreamNotFound` or `404` result.
 After deleting the stream, you are able to append to it again, continuing from where it left off.
 
-For example, if you soft deleted the above example stream, the `TruncateBefore` or `$tb` is set to
-9223372036854775807. If you were to append to the stream again, the next event is appended with event number
-4. Only events from event number 4 (last stream revision before deleting, incremented by one) onwards are
+For example, if you soft deleted the above example stream, the `TruncateBefore` or `$tb` is set to 9223372036854775807. If you were to append to the stream again, the next event is appended with event number 4. Only events from event number 4 (last stream revision before deleting, incremented by one) onwards are
 visible when you read this stream.
 
 ### Max count and Max age
@@ -191,13 +187,13 @@ types:
 - `$scavengeIndexInitialized`: An event that records the initialisation of the scavenge index.
 - `$scavengeStarted`: An event that records the beginning of a scavenge event, the event data contains:
 
-    - `scavengeId`: Scavenge event ID
-    - `nodeEndpoint`: Node address
+  - `scavengeId`: Scavenge event ID
+  - `nodeEndpoint`: Node address
 
 - `$scavengeCompleted`: An event that records the completion of a scavenge event, the event data contains:
-    - `scavengeId`: Scavenge event ID
-    - `nodeEndpoint`: Node address
-    - `result`: `Success`, `Failed`, `Stopped`
-    - `error`: Error details
-    - `timeTaken`: Time taken for the scavenge event in milliseconds
-    - `spaceSaved`: Space saved by scavenge event in bytes
+  - `scavengeId`: Scavenge event ID
+  - `nodeEndpoint`: Node address
+  - `result`: `Success`, `Failed`, `Stopped`
+  - `error`: Error details
+  - `timeTaken`: Time taken for the scavenge event in milliseconds
+  - `spaceSaved`: Space saved by scavenge event in bytes
