@@ -247,6 +247,7 @@ Scavenged chunks may be small enough to be merged into a single physical chunk f
 ### Scavenge history
 
 Each scavenge operation is assigned a unique ID and creates a corresponding stream. These streams provide valuable insights into the scavenge history, including the duration of each operation and the amount of disk space reclaimed. However, retaining this history indefinitely may not be necessary. To manage this, you can limit the duration for which scavenge history is stored in the database using the option below:```
+scavenge history, how much time each operation took, and how much disk space was reclaimed. However, you
 might not want to keep this history forever. Use the following option to limit how long the scavenge history
 stays in the database:
 
