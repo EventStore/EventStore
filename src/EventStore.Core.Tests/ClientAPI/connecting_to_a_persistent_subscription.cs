@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
 		private readonly PersistentSubscriptionSettings _settings =
-			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: GrpcClient::EventStore.Client.StreamPosition.Start);
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: GrpcClient::EventStore.Client.StreamPosition.End);
 
 		protected override async Task Given() {
 			await _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname17", _settings,
@@ -98,7 +98,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		private readonly PersistentSubscriptionSettings _settings =
 			new PersistentSubscriptionSettings(resolveLinkTos: false,
-				startFrom: GrpcClient::EventStore.Client.StreamPosition.Start);
+				startFrom: GrpcClient::EventStore.Client.StreamPosition.End);
 
 		protected override Task When() {
 			return _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname55", _settings,
@@ -131,7 +131,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private readonly string _stream = "$" + Guid.NewGuid();
 
 		private readonly PersistentSubscriptionSettings _settings =
-			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: GrpcClient::EventStore.Client.StreamPosition.Start, maxSubscriberCount: 1);
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: GrpcClient::EventStore.Client.StreamPosition.End, maxSubscriberCount: 1);
 
 		private Exception _exception;
 
@@ -768,7 +768,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected override Task When() {
 			return _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
-				new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0]));
+				new EventData(_id, "test", Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0]));
 		}
 
 		private async Task HandleEvent(PersistentSubscription sub, ResolvedEvent resolvedEvent,
