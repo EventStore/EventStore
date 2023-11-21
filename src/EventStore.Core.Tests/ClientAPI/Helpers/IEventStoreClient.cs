@@ -45,4 +45,7 @@ public interface IEventStoreClient {
 
 	public Task<AllEventsSliceNew> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
 		UserCredentials userCredentials = null);
+
+	Task ConnectAsync();
+	Task Close();
 }
