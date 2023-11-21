@@ -1,5 +1,7 @@
 extern alias GrpcClient;
 extern alias GrpcClientStreams;
+extern alias GrpcClientPersistent;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
@@ -9,15 +11,19 @@ using EventStoreStreamsClient = GrpcClientStreams::EventStore.Client.EventStoreC
 using StreamRevision = GrpcClient::EventStore.Client.StreamRevision;
 using UserCredentials = GrpcClient::EventStore.Client.UserCredentials;
 using EventData = GrpcClient::EventStore.Client.EventData;
+using EventStorePersistentSubscriptionsClient = GrpcClientPersistent::EventStore.Client.EventStorePersistentSubscriptionsClient;
+using PersistentSubscription = GrpcClientPersistent::EventStore.Client.PersistentSubscription;
 using Position = GrpcClient::EventStore.Client.Position;
 using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
 using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
+using SubscriptionDroppedReason = GrpcClient::EventStore.Client.SubscriptionDroppedReason;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
 public class GrpcEventStoreConnection : IEventStoreClient {
 	private readonly IPEndPoint _endpoint;
 	private EventStoreStreamsClient _streamsClient;
+	private EventStorePersistentSubscriptionsClient _psClient;
 
 	public GrpcEventStoreConnection(IPEndPoint endpoint) {
 		_endpoint = endpoint;
@@ -28,9 +34,23 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		_streamsClient = null;
 	}
 
+	public Task<PersistentSubscription> ConnectToPersistentSubscriptionAsync(string stream, string groupName, Func<PersistentSubscription, ResolvedEvent, int?, Task> eventAppeared,
+		Action<PersistentSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
+		bool autoAck = true) {
+		return _psClient.SubscribeToStreamAsync(
+			stream,
+			groupName, async (ps, @event, num, token) => {
+				await eventAppeared(ps, @event, num);
+				if (autoAck)
+					await ps.Ack(@event);
+			}, subscriptionDropped, userCredentials,
+			bufferSize);
+	}
+
 	public Task ConnectAsync() {
 		var setts = EventStoreClientSettings.Create($"esdb://{_endpoint.Address}:{_endpoint.Port}");
 		_streamsClient = new EventStoreStreamsClient(setts);
+		_psClient = new EventStorePersistentSubscriptionsClient(setts);
 		return Task.CompletedTask;
 	}
 
@@ -165,6 +185,11 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		}
 
 		return new AllEventsSliceNew(Direction.Backwards, nextPosition, nextPosition <= lastPosition, events.ToArray());
+	}
+
+	public Task CreatePersistentSubscriptionAsync(string stream, string groupName, GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings settings,
+		UserCredentials userCredentials = null) {
+		return _psClient.CreateToStreamAsync(stream, groupName, settings, userCredentials: userCredentials);
 	}
 
 	public Task Close() {

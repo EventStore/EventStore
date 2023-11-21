@@ -1,10 +1,13 @@
 extern alias GrpcClient;
 extern alias GrpcClientStreams;
-
+extern alias GrpcClientPersistent;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using GrpcClient::EventStore.Client;
 using EventData = GrpcClient::EventStore.Client.EventData;
+using PersistentSubscription = GrpcClientPersistent::EventStore.Client.PersistentSubscription;
+using PersistentSubscriptionSettings = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
@@ -19,7 +22,7 @@ public interface IEventStoreClient {
 		return AppendToStreamAsync(stream, expectedVersion, null, events);
 	}
 
-	public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials,
+	Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials,
 		params EventData[] events) {
 		return AppendToStreamAsync(stream, expectedVersion, events, userCredentials);
 	}
@@ -40,11 +43,22 @@ public interface IEventStoreClient {
 		bool resolveLinkTos,
 		UserCredentials userCredentials = null);
 
-	public Task<AllEventsSliceNew> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
+	Task<AllEventsSliceNew> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
 		UserCredentials userCredentials = null);
 
-	public Task<AllEventsSliceNew> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
+	Task<AllEventsSliceNew> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
 		UserCredentials userCredentials = null);
+
+	Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null);
+
+	Task<PersistentSubscription> ConnectToPersistentSubscriptionAsync(
+		string stream,
+		string groupName,
+		Func<PersistentSubscription, ResolvedEvent, int?, Task> eventAppeared,
+		Action<PersistentSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null,
+		int bufferSize = 10,
+		bool autoAck = true);
 
 	Task ConnectAsync();
 	Task Close();

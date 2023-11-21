@@ -14,6 +14,9 @@
 		<PackageReference Include="EventStore.Client.Grpc.Streams" Version="23.1.0">
 			<Aliases>GrpcClientStreams</Aliases>
 		</PackageReference>
+		<PackageReference Include="EventStore.Client.Grpc.PersistentSubscriptions" Version="23.1.0">
+			<Aliases>GrpcClientPersistent</Aliases>
+		</PackageReference>
 		<PackageReference Include="GitHubActionsTestLogger" Version="2.0.1" />
 		<PackageReference Include="Grpc.Core" Version="2.46.5" />
 		<PackageReference Include="Grpc.Net.Client" Version="2.52.0" />
