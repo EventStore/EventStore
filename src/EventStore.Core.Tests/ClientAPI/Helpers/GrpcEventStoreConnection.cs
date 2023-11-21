@@ -166,4 +166,8 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 		return new AllEventsSliceNew(Direction.Backwards, nextPosition, nextPosition <= lastPosition, events.ToArray());
 	}
+
+	public Task Close() {
+		return Task.CompletedTask;
+	}
 }
