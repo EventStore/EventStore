@@ -67,8 +67,8 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		}
 
 		var deleteResult = version.IsState
-		? await _streamsClient.DeleteAsync(stream, version.State!.Value, userCredentials: userCredentials)
-		: await _streamsClient.DeleteAsync(stream, version.Revision!.Value, userCredentials: userCredentials)
+			? await _streamsClient.DeleteAsync(stream, version.State!.Value, userCredentials: userCredentials)
+			: await _streamsClient.DeleteAsync(stream, version.Revision!.Value, userCredentials: userCredentials);
 
 		return new DeleteResult(deleteResult.LogPosition);
 	}
