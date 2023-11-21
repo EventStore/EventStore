@@ -8,10 +8,19 @@ using GrpcClient::EventStore.Client;
 using EventData = GrpcClient::EventStore.Client.EventData;
 using PersistentSubscription = GrpcClientPersistent::EventStore.Client.PersistentSubscription;
 using PersistentSubscriptionSettings = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
 public interface IEventStoreClient {
+	Task<EventReadResultNew> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null);
+
+	Task<WriteResult> SetStreamMetadataAsync(
+		string stream,
+		long expectedMetaStreamVersion,
+		StreamMetadata metadata,
+		UserCredentials userCredentials = null);
+
 	Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials = null) {
 		return DeleteStreamAsync(stream, expectedVersion, false, userCredentials);
 	}
@@ -51,7 +60,7 @@ public interface IEventStoreClient {
 
 	Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null);
 
-	Task<PersistentSubscription> ConnectToPersistentSubscriptionAsync(
+	Task<PersistentSubscription> ConnectToPersistentSubscription(
 		string stream,
 		string groupName,
 		Func<PersistentSubscription, ResolvedEvent, int?, Task> eventAppeared,

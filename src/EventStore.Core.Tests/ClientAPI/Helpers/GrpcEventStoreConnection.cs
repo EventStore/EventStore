@@ -31,10 +31,12 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	public void Dispose() {
 		_streamsClient.Dispose();
+		_psClient.Dispose();
 		_streamsClient = null;
+		_psClient = null;
 	}
 
-	public Task<PersistentSubscription> ConnectToPersistentSubscriptionAsync(string stream, string groupName, Func<PersistentSubscription, ResolvedEvent, int?, Task> eventAppeared,
+	public Task<PersistentSubscription> ConnectToPersistentSubscription(string stream, string groupName, Func<PersistentSubscription, ResolvedEvent, int?, Task> eventAppeared,
 		Action<PersistentSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
 		bool autoAck = true) {
 		return _psClient.SubscribeToStreamAsync(
@@ -87,6 +89,14 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		}
 
 		return new EventReadResultNew(EventReadStatus.NotFound, stream, eventNumber, null);
+	}
+
+	public async Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetaStreamVersion, StreamMetadata metadata,
+		UserCredentials userCredentials = null) {
+		var result = await _streamsClient.SetStreamMetadataAsync(stream, StreamRevision.FromInt64(expectedMetaStreamVersion), metadata,
+			userCredentials: userCredentials);
+
+		return new WriteResult(result.NextExpectedStreamRevision.ToInt64(), result.LogPosition);
 	}
 
 	public async Task<StreamEventsSliceNew> ReadStreamEventsForwardsAsync(string stream, long start, int count, bool resolveLinkTos,

@@ -1,14 +1,15 @@
-﻿using System;
+﻿extern alias GrpcClientPersistent;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 using System.Threading.Tasks;
+using GrpcClientPersistent::EventStore.Client;
+using MaximumSubscribersReachedException = EventStore.ClientAPI.ClientOperations.MaximumSubscribersReachedException;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("LongRunning"), Category("ClientAPI")]
@@ -50,7 +51,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class connect_to_existing_persistent_subscription_with_permissions<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
-		private EventStorePersistentSubscriptionBase _sub;
+		private PersistentSubscription _sub;
 		private readonly string _stream = Guid.NewGuid().ToString();
 
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
