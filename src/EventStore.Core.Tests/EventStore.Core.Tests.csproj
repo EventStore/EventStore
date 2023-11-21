@@ -19,6 +19,9 @@
 		<PackageReference Include="EventStore.Client.Grpc.Streams" Version="23.1.0">
 			<Aliases>GrpcClientStreams</Aliases>
 		</PackageReference>
+		<PackageReference Include="EventStore.Client.Grpc.PersistentSubscriptions" Version="23.1.0">
+			<Aliases>GrpcClientPersistent</Aliases>
+		</PackageReference>
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
 		<PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.10" />
