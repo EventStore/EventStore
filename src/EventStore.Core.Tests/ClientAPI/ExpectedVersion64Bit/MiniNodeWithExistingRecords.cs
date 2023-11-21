@@ -22,7 +22,6 @@ using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	public abstract class MiniNodeWithExistingRecords<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
-		private readonly TcpType _tcpType = TcpType.Ssl;
 		protected MiniNode<TLogFormat, TStreamId> Node;
 
 		protected readonly int MaxEntriesInMemTable = 20;
@@ -40,10 +39,10 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		protected IODispatcher IODispatcher;
 		protected InMemoryBus Bus;
 
-		protected IEventStoreConnection _store;
+		protected IEventStoreClient _store;
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.To(node, _tcpType);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[OneTimeSetUp]

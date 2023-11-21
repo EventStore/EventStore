@@ -12,7 +12,7 @@ using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
-public interface IEventStoreClient {
+public interface IEventStoreClient: IDisposable {
 	Task<EventReadResultNew> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null);
 
 	Task<WriteResult> SetStreamMetadataAsync(
@@ -68,6 +68,42 @@ public interface IEventStoreClient {
 		UserCredentials userCredentials = null,
 		int bufferSize = 10,
 		bool autoAck = true);
+
+	Task<PersistentSubscription> ConnectToPersistentSubscription(
+		string stream,
+		string groupName,
+		Func<PersistentSubscription, ResolvedEvent, Task> eventAppeared,
+		Action<PersistentSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null,
+		int bufferSize = 10,
+		bool autoAck = true) {
+		return ConnectToPersistentSubscription(stream, groupName, (ps, @event, num) => eventAppeared(ps, @event),
+			subscriptionDropped, userCredentials, bufferSize, autoAck);
+	}
+
+	Task<PersistentSubscription> ConnectToPersistentSubscriptionAsync(
+		string stream,
+		string groupName,
+		Func<PersistentSubscription, ResolvedEvent, Task> eventAppeared,
+		Action<PersistentSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null,
+		int bufferSize = 10,
+		bool autoAck = true) {
+		return ConnectToPersistentSubscriptionAsync(stream, groupName, (ps, @event, num) => eventAppeared(ps, @event),
+			subscriptionDropped, userCredentials, bufferSize, autoAck);
+	}
+
+	Task<PersistentSubscription> ConnectToPersistentSubscriptionAsync(
+		string stream,
+		string groupName,
+		Func<PersistentSubscription, ResolvedEvent, int?, Task> eventAppeared,
+		Action<PersistentSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null,
+		int bufferSize = 10,
+		bool autoAck = true) {
+		return ConnectToPersistentSubscription(stream, groupName, eventAppeared,
+			subscriptionDropped, userCredentials, bufferSize, autoAck);
+	}
 
 	Task ConnectAsync();
 	Task Close();
