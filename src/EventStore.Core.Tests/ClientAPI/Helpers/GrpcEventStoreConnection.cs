@@ -16,6 +16,7 @@ using PersistentSubscription = GrpcClientPersistent::EventStore.Client.Persisten
 using Position = GrpcClient::EventStore.Client.Position;
 using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
 using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
+using StreamState = GrpcClient::EventStore.Client.StreamState;
 using SubscriptionDroppedReason = GrpcClient::EventStore.Client.SubscriptionDroppedReason;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
@@ -57,22 +58,27 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	}
 
 	public async Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete, UserCredentials userCredentials = null) {
-
+		var version = FromUInt64(expectedVersion);
 		if (hardDelete) {
-			var tombstoneResult = await _streamsClient.TombstoneAsync(stream, StreamRevision.FromInt64(expectedVersion), userCredentials: userCredentials);
+			var tombstoneResult = version.IsState
+				? await _streamsClient.TombstoneAsync(stream, version.State!.Value, userCredentials: userCredentials)
+				: await _streamsClient.TombstoneAsync(stream, version.Revision!.Value, userCredentials: userCredentials);
 			return new DeleteResult(tombstoneResult.LogPosition);
 		}
 
-		var deleteResult = await _streamsClient.DeleteAsync(stream, StreamRevision.FromInt64(expectedVersion),
-			userCredentials: userCredentials);
+		var deleteResult = version.IsState
+		? await _streamsClient.DeleteAsync(stream, version.State!.Value, userCredentials: userCredentials)
+		: await _streamsClient.DeleteAsync(stream, version.Revision!.Value, userCredentials: userCredentials)
 
 		return new DeleteResult(deleteResult.LogPosition);
 	}
 
 	public async Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
 		UserCredentials userCredentials = null) {
-		var result = await _streamsClient.AppendToStreamAsync(stream,
-			StreamRevision.FromInt64(expectedVersion), events, userCredentials: userCredentials);
+		var version = FromUInt64(expectedVersion);
+		var result = version.IsState
+			? await _streamsClient.AppendToStreamAsync(stream, version.State!.Value, events, userCredentials: userCredentials)
+			: await _streamsClient.AppendToStreamAsync(stream, version.Revision!.Value, events, userCredentials: userCredentials);
 
 		return new WriteResult(result.NextExpectedStreamRevision.ToInt64(), result.LogPosition);
 	}
@@ -93,8 +99,10 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	public async Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetaStreamVersion, StreamMetadata metadata,
 		UserCredentials userCredentials = null) {
-		var result = await _streamsClient.SetStreamMetadataAsync(stream, StreamRevision.FromInt64(expectedMetaStreamVersion), metadata,
-			userCredentials: userCredentials);
+		var version = FromUInt64(expectedMetaStreamVersion);
+		var result = version.IsState
+			? await _streamsClient.SetStreamMetadataAsync(stream, version.State!.Value, metadata, userCredentials: userCredentials)
+			: await _streamsClient.SetStreamMetadataAsync(stream, version.Revision!.Value, metadata, userCredentials: userCredentials);
 
 		return new WriteResult(result.NextExpectedStreamRevision.ToInt64(), result.LogPosition);
 	}
@@ -204,5 +212,31 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	public Task Close() {
 		return Task.CompletedTask;
+	}
+
+	record StreamStateOrRevision(StreamState? State, StreamRevision? Revision) {
+		public bool IsState => State != null;
+	}
+
+	StreamStateOrRevision FromUInt64(long value) {
+		StreamState? state = null;
+		StreamRevision? revision = null;
+
+		switch (value) {
+			case -2:
+				state = StreamState.Any;
+				break;
+			case -1:
+				state = StreamState.NoStream;
+				break;
+			case -4:
+				state = StreamState.StreamExists;
+				break;
+			default:
+				revision = StreamRevision.FromInt64(value);
+				break;
+		}
+
+		return new StreamStateOrRevision(state, revision);
 	}
 }
