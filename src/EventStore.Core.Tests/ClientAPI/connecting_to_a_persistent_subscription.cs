@@ -5,13 +5,16 @@ using System.Text;
 using System.Threading;
 using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
-using EventStore.ClientAPI.Common;
-using EventStore.ClientAPI.Common.Utils;
 using System.Threading.Tasks;
 using GrpcClientPersistent::EventStore.Client;
 using MaximumSubscribersReachedException = EventStore.ClientAPI.ClientOperations.MaximumSubscribersReachedException;
+using PersistentSubscriptionNakEventAction = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionNakEventAction;
+using PersistentSubscriptionSettings = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings;
+using StreamPosition = EventStore.ClientAPI.StreamPosition;
 
 namespace EventStore.Core.Tests.ClientAPI {
+	extern alias GrpcClient;
+
 	[Category("LongRunning"), Category("ClientAPI")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
@@ -54,17 +57,16 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private PersistentSubscription _sub;
 		private readonly string _stream = Guid.NewGuid().ToString();
 
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: GrpcClient::EventStore.Client.StreamPosition.Start);
 
 		protected override async Task Given() {
 			await _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname17", _settings,
 				DefaultData.AdminCredentials);
 		}
 
-		protected override Task When() {
-			_sub = _conn.ConnectToPersistentSubscription(_stream,
+		protected override async Task When() {
+			_sub = await _conn.ConnectToPersistentSubscription(_stream,
 				"agroupname17",
 				(sub, e) => {
 					Console.Write("appeared");
@@ -72,8 +74,6 @@ namespace EventStore.Core.Tests.ClientAPI {
 				},
 				(sub, reason, ex) => { },
 				DefaultData.AdminCredentials);
-
-			return Task.CompletedTask;
 		}
 
 		[Test]
@@ -88,9 +88,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public class connect_to_existing_persistent_subscription_without_permissions<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = "$" + Guid.NewGuid();
 
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: GrpcClient::EventStore.Client.StreamPosition.Start)
 
 		protected override Task When() {
 			return _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname55", _settings,
@@ -122,10 +121,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public class connect_to_existing_persistent_subscription_with_max_one_client<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = "$" + Guid.NewGuid();
 
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent()
-			.WithMaxSubscriberCountOf(1);
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: GrpcClient::EventStore.Client.StreamPosition.Start, maxSubscriberCount: 1);
 
 		private Exception _exception;
 
@@ -139,7 +136,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				_stream,
 				_group,
 				(s, e) => {
-					s.Acknowledge(e);
+					s.Ack(e);
 					return Task.CompletedTask;
 				},
 				(sub, reason, ex) => { },
@@ -152,7 +149,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					_stream,
 					_group,
 					(s, e) => {
-						s.Acknowledge(e);
+						s.Ack(e);
 						return Task.CompletedTask;
 					},
 					(sub, reason, ex) => { },
@@ -176,12 +173,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 			SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = "$" + Guid.NewGuid();
 
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromBeginning();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: GrpcClient::EventStore.Client.StreamPosition.Start);
 
-		private readonly Guid _id = Guid.NewGuid();
-		private readonly TaskCompletionSource<ResolvedEvent> _firstEventSource = new TaskCompletionSource<ResolvedEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
+		private readonly GrpcClient::EventStore.Client.Uuid _id = GrpcClient::EventStore.Client.Uuid.NewUuid();
+		private readonly TaskCompletionSource<GrpcClient::EventStore.Client.ResolvedEvent> _firstEventSource = new TaskCompletionSource<GrpcClient::EventStore.Client.ResolvedEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		private const string _group = "startinbeginning1";
 
@@ -197,8 +193,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		protected override Task When() {
-			return _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
-				new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0]));
+			return _conn.AppendToStreamAsync(_stream, .Any, DefaultData.AdminCredentials,
+				new GrpcClient::EventStore.Client.EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0]));
 		}
 
 		private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent) {
