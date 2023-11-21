@@ -1,6 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿extern alias GrpcClient;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using NUnit.Framework;
+using EventData = EventStore.ClientAPI.EventData;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers {
 	internal class StreamWriter {
@@ -74,8 +76,11 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 			return this;
 		}
 
-		public Task<WriteResult> Commit() {
-			return _transaction.CommitAsync();
+		public async Task<WriteResult> Commit() {
+			var legacy = await _transaction.CommitAsync();
+			return new WriteResult(legacy.NextExpectedVersion,
+				new GrpcClient::EventStore.Client.Position((ulong)legacy.LogPosition.CommitPosition,
+					(ulong)legacy.LogPosition.PreparePosition));
 		}
 	}
 }

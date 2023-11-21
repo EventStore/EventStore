@@ -37,22 +37,20 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	public async Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete, UserCredentials userCredentials = null) {
 
 		if (hardDelete) {
-			var tombstoneResult = await _streamsClient.TombstoneAsync(stream, StreamRevision.FromInt64(expectedVersion), userCredentials);
-			return new DeleteResult(new Position((long)tombstoneResult.LogPosition.CommitPosition,
-				(long)tombstoneResult.LogPosition.PreparePosition));
+			var tombstoneResult = await _streamsClient.TombstoneAsync(stream, StreamRevision.FromInt64(expectedVersion), userCredentials: userCredentials);
+			return new DeleteResult(tombstoneResult.LogPosition);
 		}
 
 		var deleteResult = await _streamsClient.DeleteAsync(stream, StreamRevision.FromInt64(expectedVersion),
-			userCredentials);
+			userCredentials: userCredentials);
 
-		return new DeleteResult(new Position((long)deleteResult.LogPosition.CommitPosition,
-			(long)deleteResult.LogPosition.PreparePosition));
+		return new DeleteResult(deleteResult.LogPosition);
 	}
 
 	public async Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
 		UserCredentials userCredentials = null) {
 		var result = await _streamsClient.AppendToStreamAsync(stream,
-			StreamRevision.FromInt64(expectedVersion), events, userCredentials);
+			StreamRevision.FromInt64(expectedVersion), events, userCredentials: userCredentials);
 
 		return new WriteResult(result.NextExpectedStreamRevision.ToInt64(), result.LogPosition);
 	}
@@ -71,7 +69,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		return new EventReadResultNew(EventReadStatus.NotFound, stream, eventNumber, null);
 	}
 
-	public async Task<StreamEventsSliceNew> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos,
+	public async Task<StreamEventsSliceNew> ReadStreamEventsForwardsAsync(string stream, long start, int count, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
 		var result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(start),
 			maxCount: count, resolveLinkTos: resolveLinkTos, userCredentials: userCredentials);
