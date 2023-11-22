@@ -44,9 +44,19 @@ public interface IEventStoreClient: IDisposable {
 	Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
 		UserCredentials userCredentials = null);
 
-	Task<WriteResult> ConditionalAppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
+	async Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
 		UserCredentials userCredentials = null) {
-		return AppendToStreamAsync(stream, expectedVersion, events, userCredentials);
+		ConditionalWriteResult result = null;
+		try {
+			var writeResult = await AppendToStreamAsync(stream, expectedVersion, events, userCredentials);
+			result = new ConditionalWriteResult(ConditionalWriteStatus.Succeeded, writeResult);
+		} catch (WrongExpectedVersionException) {
+			result = new ConditionalWriteResult(ConditionalWriteStatus.VersionMismatch, null);
+		} catch (StreamDeletedException) {
+			result = new ConditionalWriteResult(ConditionalWriteStatus.StreamDeleted, null);
+		}
+
+		return result;
 	}
 
 	Task<StreamEventsSliceNew> ReadStreamEventsForwardAsync(string stream, long start, int count,
