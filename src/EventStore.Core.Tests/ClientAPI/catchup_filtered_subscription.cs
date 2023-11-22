@@ -242,7 +242,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[TearDown]
 		public override async Task TearDown() {
-			_conn.Close();
+			await _conn.Close();
 			await _node.Shutdown();
 			await base.TearDown();
 		}

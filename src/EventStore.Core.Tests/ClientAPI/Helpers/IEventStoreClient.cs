@@ -8,7 +8,10 @@ using GrpcClient::EventStore.Client;
 using EventData = GrpcClient::EventStore.Client.EventData;
 using PersistentSubscription = GrpcClientPersistent::EventStore.Client.PersistentSubscription;
 using PersistentSubscriptionSettings = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings;
+using Position = GrpcClient::EventStore.Client.Position;
+using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
 using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
+using StreamMetadataResult = GrpcClientStreams::EventStore.Client.StreamMetadataResult;
 using StreamSubscription = GrpcClientStreams::EventStore.Client.StreamSubscription;
 using SubscriptionFilterOptions = GrpcClientStreams::EventStore.Client.SubscriptionFilterOptions;
 
@@ -123,6 +126,21 @@ public interface IEventStoreClient: IDisposable {
 		IEventFilter filter,
 		int maxSearchWindow,
 		UserCredentials userCredentials = null);
+
+	Task<StreamSubscription> FilteredSubscribeToAllFrom(
+		Position? lastCheckpoint,
+		IEventFilter filter,
+		CatchUpSubscriptionFilteredSettings settings,
+		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
+		Func<StreamSubscription, Position, Task> checkpointReached,
+		int checkpointIntervalMultiplier,
+		Action<StreamSubscription> liveProcessingStarted = null,
+		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null);
+
+	Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null);
+
+	Task<StreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null);
 
 	Task ConnectAsync();
 	Task Close();

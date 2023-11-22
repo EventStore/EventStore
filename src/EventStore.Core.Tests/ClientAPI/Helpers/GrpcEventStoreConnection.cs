@@ -12,6 +12,7 @@ using StreamRevision = GrpcClient::EventStore.Client.StreamRevision;
 using UserCredentials = GrpcClient::EventStore.Client.UserCredentials;
 using EventData = GrpcClient::EventStore.Client.EventData;
 using EventStorePersistentSubscriptionsClient = GrpcClientPersistent::EventStore.Client.EventStorePersistentSubscriptionsClient;
+using IEventFilter = GrpcClient::EventStore.Client.IEventFilter;
 using PersistentSubscription = GrpcClientPersistent::EventStore.Client.PersistentSubscription;
 using Position = GrpcClient::EventStore.Client.Position;
 using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
@@ -48,6 +49,32 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 					await ps.Ack(@event);
 			}, subscriptionDropped, userCredentials,
 			bufferSize);
+	}
+
+	public Task<StreamSubscription> FilteredSubscribeToAllFrom(bool resoleLinkTos, SubscriptionFilterOptions filter, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
+		Func<StreamSubscription, Position, Task> checkpointReached, int checkpointInterval, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null) {
+		throw new NotImplementedException();
+	}
+
+	public Task<AllEventsSliceNew> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, IEventFilter filter,
+		int maxSearchWindow, UserCredentials userCredentials = null) {
+		throw new NotImplementedException();
+	}
+
+	public Task<StreamSubscription> FilteredSubscribeToAllFrom(Position? lastCheckpoint, IEventFilter filter,
+		CatchUpSubscriptionFilteredSettings settings, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Func<StreamSubscription, Position, Task> checkpointReached,
+		int checkpointIntervalMultiplier, Action<StreamSubscription> liveProcessingStarted = null, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null) {
+		throw new NotImplementedException();
+	}
+
+	public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null) {
+		throw new NotImplementedException();
+	}
+
+	public Task<StreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null) {
+		throw new NotImplementedException();
 	}
 
 	public Task ConnectAsync() {
@@ -239,4 +266,6 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 		return new StreamStateOrRevision(state, revision);
 	}
+
+
 }
