@@ -18,7 +18,7 @@ public class StreamEventsSliceNew {
 	public ResolvedEvent[] Events { get; private set; }
 	
 	public StreamEventsSliceNew(string stream, Direction readDirection, long fromEventNumber, long nextEventNumber, long lastEventNumber, bool isEndOfStream, ResolvedEvent[] events) {
-		Status = SliceReadStatus.Succeeded;
+		Status = SliceReadStatus.Success;
 		Stream = stream;
 		ReadDirection = readDirection;
 		FromEventNumber = fromEventNumber;

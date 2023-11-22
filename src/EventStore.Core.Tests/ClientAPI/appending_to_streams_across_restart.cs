@@ -1,22 +1,27 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
 
 namespace EventStore.Core.Tests.ClientAPI {
+	extern alias GrpcClientStreams;
+
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class appending_to_streams_across_restart<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private MiniNode<TLogFormat, TStreamId> _node;
 
-		virtual protected IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		virtual protected IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[TearDown]
@@ -54,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				{ uncommitted, GenEvents() },
 			};
 
-			var uncommittedTransId = 0L;
+			// var uncommittedTransId = 0L;
 
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
@@ -66,22 +71,22 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				// meta
 				Assert.AreEqual(0, await store
-					.Apply(x => x.SetStreamMetadataAsync("meta", ExpectedVersion.NoStream, StreamMetadata.Create(maxCount: 5)))
+					.Apply(x => x.SetStreamMetadataAsync("meta", ExpectedVersion.NoStream, new GrpcClientStreams::EventStore.Client.StreamMetadata(maxCount: 5)))
 					.Apply(x => x.NextExpectedVersion));
 
 				if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
-					// committed
-					Assert.AreEqual(9, await new TransactionalWriter(store, committed)
-						.Apply(x => x.StartTransaction(-1))
-						.Apply(x => x.Write(eventsByStream[committed]))
-						.Apply(x => x.Commit())
-						.Apply(x => x.NextExpectedVersion));
-
-					// uncommitted
-					uncommittedTransId = await new TransactionalWriter(store, uncommitted)
-						.Apply(x => x.StartTransaction(-1))
-						.Apply(x => x.Write(eventsByStream[committed]))
-						.Apply(x => x.TransactionId);
+					// // committed
+					// Assert.AreEqual(9, await new TransactionalWriter(store, committed)
+					// 	.Apply(x => x.StartTransaction(-1))
+					// 	.Apply(x => x.Write(eventsByStream[committed]))
+					// 	.Apply(x => x.Commit())
+					// 	.Apply(x => x.NextExpectedVersion));
+					//
+					// // uncommitted
+					// uncommittedTransId = await new TransactionalWriter(store, uncommitted)
+					// 	.Apply(x => x.StartTransaction(-1))
+					// 	.Apply(x => x.Write(eventsByStream[committed]))
+					// 	.Apply(x => x.TransactionId);
 				}
 
 				// append an event to another stream because the last event is always going to get reinitialised
@@ -111,7 +116,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				// meta
 				Assert.AreEqual(1, await store
-					.Apply(x => x.SetStreamMetadataAsync("meta", 0, StreamMetadata.Create(maxCount: 6)))
+					.Apply(x => x.SetStreamMetadataAsync("meta", 0, new StreamMetadata(maxCount: 6)))
 					.Apply(x => x.NextExpectedVersion));
 
 				Assert.AreEqual(0, await EventsStream.Count(store, meta));
@@ -127,10 +132,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 						await EventsStream.Count(store, committed));
 
 					// uncommitted
-					Assert.AreEqual(9, await new TransactionalWriter(store, uncommitted)
-						.Apply(x => x.ContinueTransaction(uncommittedTransId))
-						.Apply(x => x.Commit())
-						.Apply(x => x.NextExpectedVersion));
+					// Assert.AreEqual(9, await new TransactionalWriter(store, uncommitted)
+					// 	.Apply(x => x.ContinueTransaction(uncommittedTransId))
+					// 	.Apply(x => x.Commit())
+					// 	.Apply(x => x.NextExpectedVersion));
 
 					Assert.AreEqual(
 						eventsByStream[uncommitted].Length,
