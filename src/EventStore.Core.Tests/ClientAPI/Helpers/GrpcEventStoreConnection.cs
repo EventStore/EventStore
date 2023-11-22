@@ -107,7 +107,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		return new WriteResult(result.NextExpectedStreamRevision.ToInt64(), result.LogPosition);
 	}
 
-	public async Task<StreamEventsSliceNew> ReadStreamEventsForwardsAsync(string stream, long start, int count, bool resolveLinkTos,
+	public async Task<StreamEventsSliceNew> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
 		var result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(start),
 			maxCount: count, resolveLinkTos: resolveLinkTos, userCredentials: userCredentials);

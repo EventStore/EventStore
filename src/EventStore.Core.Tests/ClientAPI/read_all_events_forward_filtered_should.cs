@@ -1,15 +1,19 @@
+extern alias GrpcClient;
+extern alias GrpcClientStreams;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
-using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
+using SystemRoles = EventStore.Core.Services.SystemRoles;
+using Direction = GrpcClientStreams::EventStore.Client.Direction;
 
 namespace EventStore.Core.Tests.ClientAPI {
+	extern alias GrpcClientStreams;
+
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
@@ -19,7 +23,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected override async Task When() {
 			await _conn.SetStreamMetadataAsync("$all", -1,
-					StreamMetadata.Build().SetReadRole(SystemRoles.All),
+					new GrpcClientStreams::EventStore.Client.StreamMetadata(acl: new GrpcClientStreams::EventStore.Client.StreamAcl(readRole: SystemRoles.All)),
 					DefaultData.AdminCredentials);
 
 			_testEvents = Enumerable
@@ -62,7 +66,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var filter = Filter.StreamId.Regex(new Regex(@"^.*eam-b.*$"));
 
 			var read = await _conn.FilteredReadAllEventsForwardAsync(Position.Start, 1000, false, filter, 1000);
-			Assert.AreEqual(ReadDirection.Forward, read.ReadDirection);
+			Assert.AreEqual(Direction.Forwards, read.ReadDirection);
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.OddEvents().ToArray(),
 				read.Events.Select(x => x.Event).ToArray()));
@@ -74,7 +78,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
 			var read = await _conn.FilteredReadAllEventsForwardAsync(Position.Start, 1000, false, filter, 1000);
-			Assert.AreEqual(ReadDirection.Forward, read.ReadDirection);
+			Assert.AreEqual(Direction.Forwards, read.ReadDirection);
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.Where(e => e.Type == "BEvent").OrderBy(x => x.EventId).ToArray(),
 				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
@@ -86,7 +90,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
 			var read = await _conn.FilteredReadAllEventsForwardAsync(Position.Start, 1000, false, filter, 1000);
-			Assert.AreEqual(ReadDirection.Forward, read.ReadDirection);
+			Assert.AreEqual(Direction.Forwards, read.ReadDirection);
 			Assert.That(!read.Events.Any(e => e.Event.EventType.StartsWith("$")));
 		}
 	}
