@@ -1,10 +1,10 @@
-﻿using System;
+﻿extern alias GrpcClient;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
@@ -28,8 +28,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		/*

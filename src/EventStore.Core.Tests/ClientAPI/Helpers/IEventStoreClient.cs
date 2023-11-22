@@ -9,6 +9,8 @@ using EventData = GrpcClient::EventStore.Client.EventData;
 using PersistentSubscription = GrpcClientPersistent::EventStore.Client.PersistentSubscription;
 using PersistentSubscriptionSettings = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings;
 using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
+using StreamSubscription = GrpcClientStreams::EventStore.Client.StreamSubscription;
+using SubscriptionFilterOptions = GrpcClientStreams::EventStore.Client.SubscriptionFilterOptions;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
@@ -44,7 +46,7 @@ public interface IEventStoreClient: IDisposable {
 		return AppendToStreamAsync(stream, expectedVersion, events, userCredentials);
 	}
 
-	Task<StreamEventsSliceNew> ReadStreamEventsForwardsAsync(string stream, long start, int count,
+	Task<StreamEventsSliceNew> ReadStreamEventsForwardAsync(string stream, long start, int count,
 		bool resolveLinkTos,
 		UserCredentials userCredentials = null);
 
@@ -104,6 +106,23 @@ public interface IEventStoreClient: IDisposable {
 		return ConnectToPersistentSubscription(stream, groupName, eventAppeared,
 			subscriptionDropped, userCredentials, bufferSize, autoAck);
 	}
+
+	Task<StreamSubscription> FilteredSubscribeToAllFrom(
+		bool resoleLinkTos,
+		SubscriptionFilterOptions filter,
+		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
+		Func<StreamSubscription, Position, Task> checkpointReached,
+		int checkpointInterval,
+		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null);
+
+	Task<AllEventsSliceNew> FilteredReadAllEventsForwardAsync(
+		Position position,
+		int maxCount,
+		bool resolveLinkTos,
+		IEventFilter filter,
+		int maxSearchWindow,
+		UserCredentials userCredentials = null);
 
 	Task ConnectAsync();
 	Task Close();

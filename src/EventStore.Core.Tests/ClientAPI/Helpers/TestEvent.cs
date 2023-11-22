@@ -1,7 +1,7 @@
-﻿using System;
-using System.Text;
-using EventStore.ClientAPI;
+﻿extern alias GrpcClient;
+using System;
 using EventStore.Common.Utils;
+using GrpcClient::EventStore.Client;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers {
 	public class TestEvent {
@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 			var encodedData = Helper.UTF8NoBom.GetBytes(data ?? eventId.ToString());
 			var encodedMetadata = Helper.UTF8NoBom.GetBytes(metadata ?? "metadata");
 
-			return new EventData(eventId, eventName, false, encodedData, encodedMetadata);
+			return new EventData(Uuid.FromGuid(eventId), eventName, encodedData, encodedMetadata);
 		}
 	}
 }

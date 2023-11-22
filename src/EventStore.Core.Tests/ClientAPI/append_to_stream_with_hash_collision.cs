@@ -1,10 +1,9 @@
+extern alias GrpcClient;
 using System;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.Core.Tests;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
@@ -14,8 +13,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	public class append_to_stream_with_hash_collision<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private MiniNode<TLogFormat, TStreamId> _node;
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.To(node, TcpType.Ssl);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[OneTimeSetUp]
@@ -44,11 +43,11 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				await store.ConnectAsync();
 				//Write event to stream 1
 				Assert.AreEqual(0, (await store.AppendToStreamAsync(stream1, ExpectedVersion.NoStream,
-						new EventData(Guid.NewGuid(), "TestEvent", true, null, null))).NextExpectedVersion);
+						new EventData(Uuid.NewUuid(), "TestEvent", null, null))).NextExpectedVersion);
 				//Write 100 events to stream 2 which will have the same hash as stream 1.
 				for (int i = 0; i < 100; i++) {
 					Assert.AreEqual(i, (await store.AppendToStreamAsync(stream2, ExpectedVersion.Any,
-						new EventData(Guid.NewGuid(), "TestEvent", true, null, null))).NextExpectedVersion);
+						new EventData(Uuid.NewUuid(), "TestEvent",  null, null))).NextExpectedVersion);
 				}
 			}
 
@@ -69,7 +68,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 				await AssertEx.ThrowsAsync<WrongExpectedVersionException>(
 					() => store.AppendToStreamAsync(stream1, ExpectedVersion.Any,
-						new EventData(Guid.NewGuid(), "TestEvent", true, null, null)));
+						new EventData(Uuid.NewUuid(), "TestEvent", null, null)));
 			}
 		}
 	}

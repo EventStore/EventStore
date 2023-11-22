@@ -1,5 +1,4 @@
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
+extern alias GrpcClient;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -11,14 +10,19 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services;
+using GrpcClient::EventStore.Client;
+using SystemRoles = EventStore.Core.Services.SystemRoles;
+using SystemStreams = EventStore.Core.Services.SystemStreams;
 
 namespace EventStore.Core.Tests.ClientAPI {
+	extern alias GrpcClientStreams;
+
 	[Category("LongRunning"), Category("ClientAPI")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class catchup_filtered_subscription<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private MiniNode<TLogFormat, TStreamId> _node;
-		private IEventStoreConnection _conn;
+		private IEventStoreClient _conn;
 		private List<EventData> _testEvents;
 		private List<EventData> _testEventsAfter;
 		private const int Timeout = 10000;
@@ -32,7 +36,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			_conn = BuildConnection(_node);
 			await _conn.ConnectAsync();
 			_conn.SetStreamMetadataAsync(SystemStreams.AllStream, -1,
-				StreamMetadata.Build().SetReadRole(SystemRoles.All),
+
+				new GrpcClientStreams::EventStore.Client.StreamMetadata(acl: new GrpcClientStreams::EventStore.Client.StreamAcl(readRole: SystemRoles.All)),
 				new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword)).Wait();
 
 			_testEvents = Enumerable
@@ -59,8 +64,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await _conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.OddEvents());
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[Test]
@@ -218,7 +223,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			Assert.True(foundEvents.All(e => !e.Event.EventType.StartsWith("$")));
 		}
 
-		private void Subscribe(Filter filter, ConcurrentBag<ResolvedEvent> foundEvents, CountdownEvent appeared) {
+		private void Subscribe(IEventFilter filter, ConcurrentBag<ResolvedEvent> foundEvents, CountdownEvent appeared) {
 			_conn.FilteredSubscribeToAllFrom(
 				Position.Start,
 				filter,
