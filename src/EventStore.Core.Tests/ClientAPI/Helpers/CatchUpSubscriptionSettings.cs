@@ -5,4 +5,8 @@ public record CatchUpSubscriptionSettings(
 	int ReadBatchSize,
 	bool VerboseLogging,
 	bool ResolveLinkTos,
-	string SubscriptionName = "");
+	string SubscriptionName = "") {
+
+	public static readonly CatchUpSubscriptionSettings Default =
+		new CatchUpSubscriptionSettings(10_000, 500, false, true, string.Empty);
+}

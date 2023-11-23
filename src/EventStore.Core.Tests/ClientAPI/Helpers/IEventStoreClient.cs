@@ -122,7 +122,16 @@ public interface IEventStoreClient: IDisposable {
 
 	Task<StreamSubscription> FilteredSubscribeToAllFrom(
 		bool resoleLinkTos,
-		SubscriptionFilterOptions filter,
+		IEventFilter filter,
+		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
+		Func<StreamSubscription, Position, Task> checkpointReached,
+		int checkpointInterval,
+		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null);
+
+	Task<StreamSubscription> FilteredSubscribeToAllAsync(
+		bool resoleLinkTos,
+		IEventFilter filter,
 		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
 		Func<StreamSubscription, Position, Task> checkpointReached,
 		int checkpointInterval,
@@ -167,6 +176,14 @@ public interface IEventStoreClient: IDisposable {
 		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
 		Action<StreamPosition> liveProcessingStarted = null,
 		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null);
+
+	Task<StreamSubscription> SubscribeToStreamAsync(
+		string stream,
+		bool resolveLinkTos,
+		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
+		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		Action<StreamPosition> liveProcessingStarted = null,
 		UserCredentials userCredentials = null);
 
 	Task DeletePersistentSubscriptionAsync(string stream, string group, UserCredentials userCredentials = null);

@@ -1,11 +1,13 @@
+extern alias GrpcClient;
+extern alias GrpcClientStreams;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
 using ILogger = Serilog.ILogger;
 
@@ -34,8 +36,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TestFixtureTearDown();
 		}
 
-		virtual protected IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		virtual protected IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[Test, Category("LongRunning")]
@@ -46,7 +48,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var appeared = new ManualResetEventSlim(false);
 				var dropped = new CountdownEvent(1);
 
-				var subscription = store.SubscribeToStreamFrom(stream,
+				var subscription = await store.SubscribeToStreamFrom(stream,
 					null,
 					CatchUpSubscriptionSettings.Default,
 					(_, x) => {
@@ -61,7 +63,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await Task.Delay(100);
 				Assert.IsFalse(appeared.Wait(0), "Some event appeared.");
 				Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
-				subscription.Stop(Timeout);
+				subscription.Dispose();
 				Assert.IsTrue(dropped.Wait(Timeout));
 			}
 		}
@@ -74,7 +76,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var appeared = new CountdownEvent(1);
 				var dropped = new CountdownEvent(1);
 
-				var subscription = store.SubscribeToStreamFrom(stream,
+				var subscription = await store.SubscribeToStreamFrom(stream,
 					null,
 					CatchUpSubscriptionSettings.Default,
 					(_, x) => {
@@ -92,7 +94,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				}
 
 				Assert.IsFalse(dropped.Wait(0));
-				subscription.Stop(Timeout);
+				subscription.Dispose();
 				Assert.IsTrue(dropped.Wait(Timeout));
 			}
 		}
@@ -106,7 +108,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var dropped1 = new ManualResetEventSlim(false);
 				var dropped2 = new ManualResetEventSlim(false);
 
-				var sub1 = store.SubscribeToStreamFrom(stream,
+				var sub1 = await store.SubscribeToStreamFrom(stream,
 					null,
 					CatchUpSubscriptionSettings.Default,
 					(_, e) => {
@@ -115,7 +117,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					},
 					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped1.Set());
-				var sub2 = store.SubscribeToStreamFrom(stream,
+				var sub2 = await store.SubscribeToStreamFrom(stream,
 					null,
 					CatchUpSubscriptionSettings.Default,
 					(_, e) => {
@@ -134,11 +136,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 				}
 
 				Assert.IsFalse(dropped1.Wait(0));
-				sub1.Stop(Timeout);
+				sub1.Dispose();
 				Assert.IsTrue(dropped1.Wait(Timeout));
 
 				Assert.IsFalse(dropped2.Wait(0));
-				sub2.Stop(Timeout);
+				sub2.Dispose();
 				Assert.IsTrue(dropped2.Wait(Timeout));
 			}
 		}
@@ -150,14 +152,14 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await store.ConnectAsync();
 
 				var dropped = new CountdownEvent(1);
-				var subscription = store.SubscribeToStreamFrom(stream,
+				var subscription = await store.SubscribeToStreamFrom(stream,
 					null,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => Task.CompletedTask,
 					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped.Signal());
 				Assert.IsFalse(dropped.Wait(0));
-				subscription.Stop(Timeout);
+				subscription.Dispose();
 				Assert.IsTrue(dropped.Wait(Timeout));
 			}
 		}
@@ -168,10 +170,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
 				await store.AppendToStreamAsync(stream, ExpectedVersion.Any,
-					new EventData(Guid.NewGuid(), "event", false, new byte[3], null));
+					new EventData(Uuid.NewUuid(), "event", new byte[3], null));
 
 				var dropped = new CountdownEvent(1);
-				store.SubscribeToStreamFrom(stream, null,
+				await store.SubscribeToStreamFrom(stream, null,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => { throw new Exception("Error"); },
 					_ => Log.Information("Live processing started."),
@@ -192,10 +194,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				for (int i = 0; i < 10; ++i) {
 					await store.AppendToStreamAsync(stream, i - 1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+						new EventData(Uuid.NewUuid(), "et-" + i.ToString(), new byte[3], null));
 				}
 
-				var subscription = store.SubscribeToStreamFrom(stream,
+				var subscription = await store.SubscribeToStreamFrom(stream,
 					null,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => {
@@ -207,7 +209,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					(x, y, z) => dropped.Signal());
 				for (int i = 10; i < 20; ++i) {
 					await store.AppendToStreamAsync(stream, i - 1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+						new EventData(Uuid.NewUuid(), "et-" + i.ToString(), new byte[3], null));
 				}
 
 				if (!appeared.Wait(Timeout)) {
@@ -221,7 +223,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				}
 
 				Assert.IsFalse(dropped.Wait(0));
-				subscription.Stop(Timeout);
+				subscription.Dispose();
 				Assert.IsTrue(dropped.Wait(Timeout));
 			}
 		}
@@ -238,13 +240,15 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				for (int i = 0; i < 20; ++i) {
 					await store.AppendToStreamAsync(stream, i - 1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+						new EventData(Uuid.NewUuid(), "et-" + i.ToString(), new byte[3], null));
 				}
 
-				var subscription = store.SubscribeToStreamFrom(stream,
+				var lastProcessedEventNumber = -1L;
+				var subscription = await store.SubscribeToStreamFrom(stream,
 					9,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => {
+						Interlocked.Exchange(ref lastProcessedEventNumber, y.OriginalEventNumber.ToInt64());
 						events.Add(y);
 						appeared.Signal();
 						return Task.CompletedTask;
@@ -253,7 +257,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					(x, y, z) => dropped.Signal());
 				for (int i = 20; i < 30; ++i) {
 					await store.AppendToStreamAsync(stream, i - 1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+						new EventData(Uuid.NewUuid(), "et-" + i.ToString(), new byte[3], null));
 				}
 
 				if (!appeared.Wait(Timeout)) {
@@ -267,12 +271,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 				}
 
 				Assert.IsFalse(dropped.Wait(0));
-				subscription.Stop(Timeout);
+				subscription.Dispose();
 				Assert.IsTrue(dropped.Wait(Timeout));
 
-				Assert.AreEqual(events.Last().OriginalEventNumber, subscription.LastProcessedEventNumber);
+				Assert.AreEqual(events.Last().OriginalEventNumber, Interlocked.Read(ref lastProcessedEventNumber));
 
-				subscription.Stop(TimeSpan.FromSeconds(0));
+				subscription.Dispose();
 			}
 		}
 
@@ -288,13 +292,15 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				for (int i = 0; i < 20; ++i) {
 					await store.AppendToStreamAsync(stream, i - 1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+						new EventData(Uuid.NewUuid(), "et-" + i.ToString(), new byte[3], null));
 				}
 
-				var subscription = store.SubscribeToStreamFrom(stream,
+				var lastProcessedEventNumber = -1L;
+				var subscription = await store.SubscribeToStreamFrom(stream,
 					9,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => {
+						Interlocked.Exchange(ref lastProcessedEventNumber, y.OriginalEventNumber.ToInt64());
 						events.Add(y);
 						appeared.Signal();
 						return Task.CompletedTask;
@@ -312,10 +318,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 				}
 
 				Assert.IsFalse(dropped.Wait(0));
-				subscription.Stop(Timeout);
+				subscription.Dispose();
 				Assert.IsTrue(dropped.Wait(Timeout));
 
-				Assert.AreEqual(events.Last().OriginalEventNumber, subscription.LastProcessedEventNumber);
+				Assert.AreEqual(events.Last().OriginalEventNumber, Interlocked.Read(ref lastProcessedEventNumber));
 			}
 		}
 	}

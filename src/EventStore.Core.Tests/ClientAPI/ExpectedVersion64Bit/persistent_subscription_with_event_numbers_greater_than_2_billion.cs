@@ -1,12 +1,22 @@
+extern alias GrpcClient;
+extern alias GrpcClientPersistent;
+extern alias GrpcClientStreams;
 using System.Collections.Generic;
 using System;
-using EventStore.ClientAPI;
 using NUnit.Framework;
-using EventStore.Core.Data;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Data;
+using GrpcClientPersistent::EventStore.Client;
+using EventData = GrpcClient::EventStore.Client.EventData;
+using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
+using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
+using Uuid = GrpcClient::EventStore.Client.Uuid;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
+	extern alias GrpcClientStreams;
+
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -26,35 +36,35 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		public override async Task Given() {
 			_store = BuildConnection(Node);
 			await _store.ConnectAsync();
-			await _store.SetStreamMetadataAsync(_streamId, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
+			await _store.SetStreamMetadataAsync(_streamId, ExpectedVersion.Any,
+				new StreamMetadata(truncateBefore: intMaxValue + 1));
 		}
 
 		[Test]
 		public async Task should_be_able_to_create_the_persistent_subscription() {
 			var groupId = "group-" + Guid.NewGuid().ToString();
-			var settings = PersistentSubscriptionSettings.Create().StartFrom(intMaxValue);
+			var settings = new PersistentSubscriptionSettings(startFrom: StreamPosition.FromInt64(intMaxValue));
 			await _store.CreatePersistentSubscriptionAsync(_streamId, groupId, settings, DefaultData.AdminCredentials);
 		}
 
 		[Test]
 		public async Task should_be_able_to_update_the_persistent_subscription() {
 			var groupId = "group-" + Guid.NewGuid().ToString();
-			var settings = PersistentSubscriptionSettings.Create();
+			var settings = new PersistentSubscriptionSettings();
 			await _store.CreatePersistentSubscriptionAsync(_streamId, groupId, settings, DefaultData.AdminCredentials);
 
-			settings = PersistentSubscriptionSettings.Create().StartFrom(intMaxValue);
+			settings = new PersistentSubscriptionSettings(startFrom: StreamPosition.FromInt64(intMaxValue));
 			await _store.UpdatePersistentSubscriptionAsync(_streamId, groupId, settings, DefaultData.AdminCredentials);
 		}
 
 		[Test]
 		public async Task should_be_able_to_connect_to_persistent_subscription() {
 			var groupId = "group-" + Guid.NewGuid().ToString();
-			var settings = PersistentSubscriptionSettings.Create().StartFrom(intMaxValue);
+			var settings = new PersistentSubscriptionSettings(startFrom: StreamPosition.FromInt64(intMaxValue));
 			await _store.CreatePersistentSubscriptionAsync(_streamId, groupId, settings, DefaultData.AdminCredentials);
 
-			var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
-			List<EventStore.ClientAPI.ResolvedEvent> receivedEvents = new List<EventStore.ClientAPI.ResolvedEvent>();
+			var evnt = new EventData(Uuid.NewUuid(), "EventType", new byte[10], new byte[15]);
+			List<ResolvedEvent> receivedEvents = new List<ResolvedEvent>();
 			var countdown = new CountdownEvent(3);
 			await _store.ConnectToPersistentSubscriptionAsync(_streamId, groupId, (s, e) => {
 				receivedEvents.Add(e);
