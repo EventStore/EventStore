@@ -1,16 +1,20 @@
+extern alias GrpcClient;
+extern alias GrpcClientStreams;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
+using StreamAcl = GrpcClientStreams::EventStore.Client.StreamAcl;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
+using SystemRoles = EventStore.Core.Services.SystemRoles;
+using SystemStreams = EventStore.Core.Services.SystemStreams;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning"), NonParallelizable]
@@ -20,7 +24,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private const int Timeout = 10000;
 
 		private MiniNode<TLogFormat, TStreamId> _node;
-		private IEventStoreConnection _conn;
+		private IEventStoreClient _conn;
 		private List<EventData> _testEvents;
 		private List<EventData> _fakeSystemEvents;
 
@@ -33,7 +37,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			_conn = BuildConnection(_node);
 			await _conn.ConnectAsync();
 			await _conn.SetStreamMetadataAsync("$all", -1,
-				StreamMetadata.Build().SetReadRole(SystemRoles.All),
+				new StreamMetadata(acl: new StreamAcl(readRole: SystemRoles.All)),
 				new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
 
 			_testEvents = Enumerable
@@ -244,13 +248,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[TearDown]
 		public override async Task TearDown() {
-			_conn.Close();
+			await _conn.Close();
 			await _node.Shutdown();
 			await base.TearDown();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 	}
 }

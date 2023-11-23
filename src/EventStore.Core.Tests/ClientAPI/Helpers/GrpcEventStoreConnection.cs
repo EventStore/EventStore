@@ -52,9 +52,14 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			bufferSize);
 	}
 
-	public Task<StreamSubscription> FilteredSubscribeToAllFrom(bool resoleLinkTos, SubscriptionFilterOptions filter, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
+	public Task<StreamSubscription> FilteredSubscribeToAllFrom(bool resoleLinkTos, IEventFilter filter, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
 		Func<StreamSubscription, Position, Task> checkpointReached, int checkpointInterval, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null) {
+		throw new NotImplementedException();
+	}
+
+	public Task<StreamSubscription> FilteredSubscribeToAllAsync(bool resoleLinkTos, IEventFilter filter, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Func<StreamSubscription, Position, Task> checkpointReached,
+		int checkpointInterval, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
 		throw new NotImplementedException();
 	}
 
@@ -86,6 +91,11 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	public Task<StreamSubscription> SubscribeToStreamFrom(string stream, long? lastCheckpoint, CatchUpSubscriptionSettings settings,
 		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Action<StreamPosition> liveProcessingStarted = null, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null) {
+		throw new NotImplementedException();
+	}
+
+	public Task<StreamSubscription> SubscribeToStreamAsync(string stream, bool resolveLinkTos, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		Action<StreamPosition> liveProcessingStarted = null, UserCredentials userCredentials = null) {
 		throw new NotImplementedException();
 	}
 
