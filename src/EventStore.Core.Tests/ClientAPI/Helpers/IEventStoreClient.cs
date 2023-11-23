@@ -152,6 +152,23 @@ public interface IEventStoreClient: IDisposable {
 
 	Task<StreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null);
 
+	Task<StreamSubscription> SubscribeToAllFrom(
+		Position? lastCheckpoint,
+		CatchUpSubscriptionSettings settings,
+		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
+		Action<StreamSubscription> liveProcessingStarted = null,
+		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null);
+
+	Task<StreamSubscription> SubscribeToStreamFrom(
+		string stream,
+		long? lastCheckpoint,
+		CatchUpSubscriptionSettings settings,
+		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
+		Action<StreamPosition> liveProcessingStarted = null,
+		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null);
+
 	Task ConnectAsync();
 	Task Close();
 }
