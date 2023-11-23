@@ -30,7 +30,7 @@ public class ClusterVNodeOptionsTests {
 		var c = BuildConfiguration("--cluster-size 3");
 
 		var values = c.Unknown.Options;
-		Assert.Equal(0, values.Count);
+		Assert.Empty(values);
 	}
 
 	[Fact]

@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				if (_state == null || _state == JsValue.Undefined)
 					_state = new JsArray(_engine, new[]
 					{
-						PropertyDescriptor.Undefined, PropertyDescriptor.Undefined
+						JsValue.Undefined, JsValue.Undefined
 					});
 
 				_state.AsArray()[0] = jsValue;
@@ -115,7 +115,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				if (_state == null || _state == JsValue.Undefined)
 					_state = new JsArray(_engine, new[]
 					{
-						PropertyDescriptor.Undefined, PropertyDescriptor.Undefined
+						JsValue.Undefined, JsValue.Undefined,
 					});
 
 				_state.AsArray()[1] = jsValue;

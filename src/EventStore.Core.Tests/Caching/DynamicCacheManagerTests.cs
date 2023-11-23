@@ -323,7 +323,7 @@ namespace EventStore.Core.Tests.Caching {
 				{"es-cache-test2-utilizationPercent", 100.0 * 10 / 15},
 			};
 
-			AssertEx.AssertUsingDeepCompare(msg.Stats, expectedStats);
+			CollectionAssert.AreEquivalent(expectedStats, msg.Stats);
 		}
 	}
 }

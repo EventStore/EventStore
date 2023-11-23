@@ -232,7 +232,6 @@ namespace EventStore.Core {
 								return default;
 							})
 							.AddPrometheusExporter())
-						.StartWithHost()
 						.Services
 
 						// gRPC

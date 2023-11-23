@@ -23,17 +23,15 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 		protected UserCredentials _admin = DefaultData.AdminCredentials;
 		protected ProjectionsManager _manager;
 		protected QueryManager _queryManager;
-#if DEBUG
+
 		private Task _projectionsCreated;
 		private ProjectionsSubsystem _projections;
 		private MiniNode<TLogFormat, TStreamId> _node;
-#endif
+
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-#if (!DEBUG)
-            Assert.Ignore("These tests require DEBUG conditional");
-#else
+			
 			var projectionWorkerThreadCount = GivenWorkerThreadCount();
 			var configuration = new ProjectionSubsystemOptions(
 				projectionWorkerThreadCount,
@@ -85,8 +83,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			} catch (Exception ex) {
 				throw new Exception("When Failed", ex);
 			}
-
-#endif
 		}
 
 		protected virtual int GivenWorkerThreadCount() {
@@ -95,18 +91,13 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 
 		[TearDown]
 		public async Task PostTestAsserts() {
-			var all = await _manager.ListAllAsync(_admin);
-			if (all.Any(p => p.Name == "Faulted"))
-				Assert.Fail("Projections faulted while running the test" + "\r\n" + all);
-#if DEBUG
-			_node?.Shutdown();
-#endif
+ 			var all = await _manager.ListAllAsync(_admin);
+ 			if (all.Any(p => p.Name == "Faulted"))
+ 				Assert.Fail("Projections faulted while running the test" + "\r\n" + all);
 		}
 
 		protected async Task EnableStandardProjections() {
-#if DEBUG
 			await _projectionsCreated;
-#endif
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
@@ -136,10 +127,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 		public override async Task TestFixtureTearDown() {
 			if (_conn != null)
 				_conn.Close();
-#if DEBUG
+
 			if (_node != null)
 				await _node.Shutdown();
-#endif
+
 			await base.TestFixtureTearDown();
 		}
 

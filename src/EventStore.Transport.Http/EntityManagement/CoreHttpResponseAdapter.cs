@@ -1,4 +1,5 @@
 using System.IO;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 
 namespace EventStore.Transport.Http.EntityManagement {
@@ -8,7 +9,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 		public CoreHttpResponseAdapter(Microsoft.AspNetCore.Http.HttpResponse inner) {
 			_inner = inner;
 		}
-		public void AddHeader(string name, string value) => _inner.Headers.Add(name, value);
+		public void AddHeader(string name, string value) => _inner.Headers.Append(name, value);
 
 		public void Close() {
 			_inner.Body.Close();

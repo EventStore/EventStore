@@ -103,7 +103,7 @@ EventStoreDB is written in a mixture of C# and JavaScript. It can run on Windows
 
 **Prerequisites**
 
-- [.NET Core SDK 6.0](https://dotnet.microsoft.com/download/dotnet/6.0)
+- [.NET Core SDK 8.0](https://dotnet.microsoft.com/download/dotnet/8.0)
 
 Once you've installed the prerequisites for your system, you can launch a `Release` build of EventStore as follows:
 
@@ -116,7 +116,7 @@ The build scripts: `build.sh` and `build.ps1` are also available for Linux and W
 To start a single node, you can then run:
 
 ```
-dotnet ./src/EventStore.ClusterNode/bin/x64/Release/net7.0/EventStore.ClusterNode.dll --dev --db ./tmp/data --index ./tmp/index --log ./tmp/log
+dotnet ./src/EventStore.ClusterNode/bin/x64/Release/net8.0/EventStore.ClusterNode.dll --dev --db ./tmp/data --index ./tmp/index --log ./tmp/log
 ```
 
 ### Running the tests
@@ -141,7 +141,7 @@ For instance:
 
 ```
 docker build --tag myeventstore . \
---build-arg CONTAINER_RUNTIME=bullseye-slim \
+--build-arg CONTAINER_RUNTIME=bookworm-slim \
 --build-arg RUNTIME=linux-x64
 ```
 
@@ -149,15 +149,15 @@ docker build --tag myeventstore . \
 
 ```
 $env:DOCKER_BUILDKIT=0; docker build --tag myeventstore . `
---build-arg CONTAINER_RUNTIME=bullseye-slim `
+--build-arg CONTAINER_RUNTIME=bookworm-slim `
 --build-arg RUNTIME=linux-x64
 ```
 
 Currently, we support the following configurations:
 
-1. Bullseye slim:
+1. Bookworm slim:
 
-- `CONTAINER_RUNTIME=bullseye-slim`
+- `CONTAINER_RUNTIME=bookworm-slim`
 - `RUNTIME=linux-x64`
 
 2. Jammy:
@@ -168,7 +168,7 @@ Currently, we support the following configurations:
 3. Alpine:
 
 - `CONTAINER_RUNTIME=alpine`
-- `RUNTIME=alpine-x64`
+- `RUNTIME=linux-musl-x64`
 
 You can verify the built image by running:
 
@@ -192,6 +192,6 @@ docker run --rm myeventstore --insecure --what-if
 
 ![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-alpine.yml/badge.svg)
 
-![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-bullseye-slim.yml/badge.svg)
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-bookworm-slim.yml/badge.svg)
 
 ![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-jammy.yml/badge.svg)

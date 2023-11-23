@@ -487,11 +487,6 @@ namespace System.Runtime
                 IsReadOnly = false;
             }
 
-            protected HttpValueCollection(SerializationInfo info, StreamingContext context)
-                : base(info, context)
-            {
-            }
-
             internal void FillFromString(string s, bool urlencoded, Encoding encoding)
             {
                 int l = (s != null) ? s.Length : 0;

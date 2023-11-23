@@ -72,11 +72,11 @@ public class OptionsDumperTest {
 
 		Assert.True(printable.TryGetValue(nameof(TestOptions.FirstSection.SensitiveOption), out var actualText));
 		Assert.DoesNotContain(secretText, actualText.Value);
-		Assert.Equal(actualText.Value, new string('*', 8));
+		Assert.Equal(new string('*', 8), actualText.Value);
 
 		Assert.True(printable.TryGetValue(nameof(TestOptions.SecondSection.SecretNumber), out var actualNumber));
 		Assert.DoesNotContain("7", actualNumber.Value);
-		Assert.Equal(actualNumber.Value, new string('*', 8));
+		Assert.Equal(new string('*', 8), actualNumber.Value);
 	}
 
 	[Fact]
