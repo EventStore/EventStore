@@ -15,7 +15,7 @@ namespace EventStore.Client.Streams {
 							CommitPosition = (ulong)commitPosition,
 							PreparePosition = (ulong)preparePosition
 						},
-						_ => null,
+						_ => new Google.Protobuf.WellKnownTypes.Empty()
 					},
 					currentRevisionOptionCase_ = currentVersion switch {
 						>= 0 => CurrentRevisionOptionOneofCase.CurrentRevision,
