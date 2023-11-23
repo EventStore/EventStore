@@ -88,6 +88,10 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		throw new NotImplementedException();
 	}
 
+	public Task DeletePersistentSubscriptionAsync(string stream, string group, UserCredentials userCredentials = null) {
+		throw new NotImplementedException();
+	}
+
 	public Task ConnectAsync() {
 		var setts = EventStoreClientSettings.Create($"esdb://{_endpoint.Address}:{_endpoint.Port}");
 		_streamsClient = new EventStoreStreamsClient(setts);

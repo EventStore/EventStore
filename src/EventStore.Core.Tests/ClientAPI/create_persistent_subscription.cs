@@ -1,9 +1,16 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+extern alias GrpcClientPersistent;
+using System;
 using System.Text;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
+using EventStore.Core.Tests.ClientAPI.Helpers;
+using GrpcClientPersistent::EventStore.Client;
 using NUnit.Framework;
+using AccessDeniedException = GrpcClient::EventStore.Client.AccessDeniedException;
+using EventData = GrpcClient::EventStore.Client.EventData;
+using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
+using Uuid = GrpcClient::EventStore.Client.Uuid;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -12,13 +19,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public class create_persistent_subscription_on_existing_stream<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.End);
 
 		protected override Task When() {
 			return _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
-				new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
+				new EventData(Uuid.NewUuid(), "whatever", Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
 		}
 
 		[Test]
@@ -35,9 +41,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public class create_persistent_subscription_on_non_existing_stream<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.End);
 
 		protected override Task When() => Task.CompletedTask;
 
@@ -53,9 +58,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class create_persistent_subscription_on_all_stream<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.End);
 
 		protected override Task When() => Task.CompletedTask;
 
@@ -76,7 +80,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void the_build_fails_with_argument_exception() {
 			Assert.Throws<ArgumentException>(() =>
-				PersistentSubscriptionSettings.Create().WithMessageTimeoutOf(TimeSpan.FromDays(25 * 365)).Build());
+				new PersistentSubscriptionSettings(messageTimeout: TimeSpan.FromDays(25 * 365)));
 		}
 	}
 
@@ -90,7 +94,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void the_build_fails_with_argument_exception() {
 			Assert.Throws<ArgumentException>(() =>
-				PersistentSubscriptionSettings.Create().CheckPointAfter(TimeSpan.FromDays(25 * 365)).Build());
+				new PersistentSubscriptionSettings(checkPointAfter: TimeSpan.FromDays(25 * 365)));
 		}
 	}
 
@@ -100,10 +104,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public class create_persistent_subscription_with_dont_timeout<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent()
-			.DontTimeoutMessages();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.End,
+				messageTimeout: TimeSpan.Zero);
 
 		protected override Task When() => Task.CompletedTask;
 
@@ -125,9 +128,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public class create_duplicate_persistent_subscription_group<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.End);
 
 		protected override Task When() {
 			return _conn.CreatePersistentSubscriptionAsync(_stream, "group32", _settings, DefaultData.AdminCredentials);
@@ -149,9 +151,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.End);
 
 		protected override Task When() {
 			return _conn.CreatePersistentSubscriptionAsync(_stream, "group3211", _settings, DefaultData.AdminCredentials);
@@ -171,9 +172,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public class create_persistent_subscription_group_without_permissions<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.End);
 
 		protected override Task When() => Task.CompletedTask;
 
@@ -191,13 +191,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public class create_persistent_subscription_after_deleting_the_same<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.End);
 
 		protected override async Task When() {
 			await _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
-				new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
+				new EventData(Uuid.NewUuid(), "whatever", Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
 			await _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials);
 			await _conn.DeletePersistentSubscriptionAsync(_stream, "existing", DefaultData.AdminCredentials);
 		}
