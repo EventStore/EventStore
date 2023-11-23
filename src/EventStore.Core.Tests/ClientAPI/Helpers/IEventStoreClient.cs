@@ -169,6 +169,8 @@ public interface IEventStoreClient: IDisposable {
 		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null);
 
+	Task DeletePersistentSubscriptionAsync(string stream, string group, UserCredentials userCredentials = null);
+
 	Task ConnectAsync();
 	Task Close();
 }
