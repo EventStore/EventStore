@@ -8,6 +8,7 @@ namespace EventStore.SourceGenerators.Tests.Messaging
 	{
 		private static int _nextMsgId = -1;
 		protected static ref int NextMsgId => ref _nextMsgId;
+
 		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 		public virtual int MsgTypeId => TypeId;
 		public virtual string Label => "";

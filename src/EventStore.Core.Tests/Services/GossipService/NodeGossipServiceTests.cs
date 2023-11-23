@@ -13,6 +13,7 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.ElectionsService;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.Checkpoint;
+using FluentAssertions;
 using NUnit.Framework;
 using MemberInfo = EventStore.Core.Cluster.MemberInfo;
 
@@ -94,7 +95,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		protected virtual Message When() => null;
 
 		protected void ExpectMessages(params Message[] expected) =>
-			AssertEx.AssertUsingDeepCompare(_bus.Messages.ToArray(), expected);
+			_bus.Messages.Should().BeEquivalentTo(expected);
 
 		protected void ExpectNoMessages() =>
 			Assert.IsEmpty(_bus.Messages);
@@ -371,7 +372,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			//updated cluster info should have version info of currentNode, nodeTwo and nodeThree
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 			//gossip reply should have version info of currentNode, nodeTwo and nodeThree
-			AssertEx.AssertUsingDeepCompare(_capturedMessage, new GossipMessage.SendGossip(GetExpectedClusterInfo(), _currentNode.HttpEndPoint));
+			_capturedMessage.Should().BeEquivalentTo(new GossipMessage.SendGossip(GetExpectedClusterInfo(), _currentNode.HttpEndPoint));
 		}
 
 		private void CaptureGossipReply(Message message) => _capturedMessage = message;
@@ -399,8 +400,8 @@ namespace EventStore.Core.Tests.Services.GossipService {
 
 		[Test]
 		public void reply_should_have_version_info() {
-			AssertEx.AssertUsingDeepCompare(_capturedMessage,
-				new GossipMessage.SendGossip(GetExpectedClusterInfo(), _currentNode.HttpEndPoint));
+			_capturedMessage.Should()
+				.BeEquivalentTo(new GossipMessage.SendGossip(GetExpectedClusterInfo(), _currentNode.HttpEndPoint));
 		}
 
 		private void CaptureGossipReply(Message message) => _capturedMessage = message;
@@ -426,8 +427,8 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		
 		[Test]
 		public void reply_should_have_version_info() {
-			AssertEx.AssertUsingDeepCompare(_capturedMessage,
-				new GossipMessage.SendClientGossip(GetExpectedClusterInfo()));
+			_capturedMessage.Should()
+				.BeEquivalentTo(new GossipMessage.SendClientGossip(GetExpectedClusterInfo()));
 		}
 
 		private void CaptureGossipReply(Message message) => _capturedMessage = message;

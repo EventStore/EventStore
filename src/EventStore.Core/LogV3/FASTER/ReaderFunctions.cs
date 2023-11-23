@@ -34,16 +34,16 @@ namespace EventStore.Core.LogV3.FASTER {
 		}
 
 		#region not needed
-		public void CopyUpdater(ref SpanByte key, ref TValue input, ref TValue oldValue, ref TValue newValue) =>
+		public void CopyUpdater(ref SpanByte key, ref TValue input, ref TValue oldValue, ref TValue newValue, ref TValue output) =>
 			throw new NotImplementedException();
 
-		public void InitialUpdater(ref SpanByte key, ref TValue input, ref TValue value) =>
+		public void InitialUpdater(ref SpanByte key, ref TValue input, ref TValue value, ref TValue output) =>
 			throw new NotImplementedException();
 
-		public bool InPlaceUpdater(ref SpanByte key, ref TValue input, ref TValue value) =>
+		public bool InPlaceUpdater(ref SpanByte key, ref TValue input, ref TValue value, ref TValue output) =>
 			throw new NotImplementedException();
 
-		public void RMWCompletionCallback(ref SpanByte key, ref TValue input, Context<TValue> context, Status status) =>
+		public void RMWCompletionCallback(ref SpanByte key, ref TValue input, ref TValue output, Context<TValue> ctx, Status status) =>
 			throw new NotImplementedException();
 
 		public void DeleteCompletionCallback(ref SpanByte key, Context<TValue> context) =>

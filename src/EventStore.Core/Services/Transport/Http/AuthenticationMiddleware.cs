@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.Transport.Http {
 					break;
 				case HttpAuthenticationRequestStatus.NotReady:
 					context.Response.StatusCode = HttpStatusCode.ServiceUnavailable;
-					context.Response.Headers.Add("Retry-After", "5");
+					context.Response.Headers.Append("Retry-After", "5");
 					break;
 				case HttpAuthenticationRequestStatus.Unauthenticated:
 				default:
@@ -79,7 +79,7 @@ namespace EventStore.Core.Services.Transport.Http {
 				case HttpAuthenticationRequestStatus.NotReady:
 					// negative RetryPushbackHeader asks the grpc client not to retry the request.
 					// the user is then explicit about what retries they want and aware of the delays incurred
-					trailersDestination.Add(GrpcProtocolHelpers.RetryPushbackHeader, "-1");
+					trailersDestination.Append(GrpcProtocolHelpers.RetryPushbackHeader, "-1");
 					grpcStatus = new Status(StatusCode.Unavailable, "Server not ready");
 					break;
 				case HttpAuthenticationRequestStatus.Unauthenticated:
@@ -114,7 +114,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			var authSchemes = _authenticationProvider.GetSupportedAuthenticationSchemes();
 			if (authSchemes != null && authSchemes.Any()) {
 				//add "X-" in front to prevent any default browser behaviour e.g Basic Auth popups
-				context.Response.Headers.Add("WWW-Authenticate", $"X-{authSchemes.First()} realm=\"ESDB\"");
+				context.Response.Headers.Append("WWW-Authenticate", $"X-{authSchemes.First()} realm=\"ESDB\"");
 				var properties = _authenticationProvider.GetPublicProperties();
 				if (properties != null && properties.Any()) {
 					await context.Response.WriteAsync(JsonConvert.SerializeObject(properties))
