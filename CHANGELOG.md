@@ -38,6 +38,7 @@ All notable changes to this project will be documented in this file.
 - Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#4023](https://github.com/EventStore/EventStore/pull/4023)
 - Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#4035](https://github.com/EventStore/EventStore/pull/4035)
 - https://github.com/EventStore/EventStore/issues/3195 [EventStore#3963](https://github.com/EventStore/EventStore/pull/3963)
+- 'Unknown' error reported to client after successful idempotent write to deleted stream. [EventStore#4059](https://github.com/EventStore/EventStore/pull/4059)
 
 ### Removed
 - Extra checkpoint when subscription to $all goes live. [EventStore#4023](https://github.com/EventStore/EventStore/pull/4023)
