@@ -1,9 +1,9 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "Explicit transactions are not supported yet by Log V3")]
 	public class when_committing_empty_transaction<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private MiniNode<TLogFormat, TStreamId> _node;
-		private IEventStoreConnection _connection;
+		private IEventStoreClient _connection;
 		private EventData _firstEvent;
 
 		[SetUp]
@@ -32,20 +32,21 @@ namespace EventStore.Core.Tests.ClientAPI {
 				TestEvent.NewTestEvent(),
 				TestEvent.NewTestEvent())).NextExpectedVersion);
 
-			using (var transaction = await _connection.StartTransactionAsync("test-stream", 2)) {
-				Assert.AreEqual(2, (await transaction.CommitAsync()).NextExpectedVersion);
-			}
+			// TRANSACTION IS NO LONGER SUPPORTED.
+			// using (var transaction = await _connection.StartTransactionAsync("test-stream", 2)) {
+			// 	Assert.AreEqual(2, (await transaction.CommitAsync()).NextExpectedVersion);
+			// }
 		}
 
 		[TearDown]
 		public override async Task TearDown() {
-			_connection.Close();
+			await _connection.Close();
 			await _node.Shutdown();
 			await base.TearDown();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[Test]

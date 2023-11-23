@@ -14,6 +14,7 @@ using EventData = GrpcClient::EventStore.Client.EventData;
 using EventStorePersistentSubscriptionsClient = GrpcClientPersistent::EventStore.Client.EventStorePersistentSubscriptionsClient;
 using IEventFilter = GrpcClient::EventStore.Client.IEventFilter;
 using PersistentSubscription = GrpcClientPersistent::EventStore.Client.PersistentSubscription;
+using PersistentSubscriptionSettings = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings;
 using Position = GrpcClient::EventStore.Client.Position;
 using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
 using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
@@ -89,6 +90,11 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	}
 
 	public Task DeletePersistentSubscriptionAsync(string stream, string group, UserCredentials userCredentials = null) {
+		throw new NotImplementedException();
+	}
+
+	public Task UpdatePersistentSubscriptionAsync(string stream, string group, PersistentSubscriptionSettings settings,
+		UserCredentials userCredentials = null) {
 		throw new NotImplementedException();
 	}
 

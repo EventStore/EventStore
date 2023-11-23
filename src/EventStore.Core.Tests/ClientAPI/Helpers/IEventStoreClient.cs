@@ -171,6 +171,9 @@ public interface IEventStoreClient: IDisposable {
 
 	Task DeletePersistentSubscriptionAsync(string stream, string group, UserCredentials userCredentials = null);
 
+	Task UpdatePersistentSubscriptionAsync(string stream, string group, PersistentSubscriptionSettings settings,
+		UserCredentials userCredentials = null);
+
 	Task ConnectAsync();
 	Task Close();
 }
