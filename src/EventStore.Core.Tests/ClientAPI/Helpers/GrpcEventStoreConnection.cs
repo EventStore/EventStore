@@ -277,6 +277,4 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 		return new StreamStateOrRevision(state, revision);
 	}
-
-
 }
