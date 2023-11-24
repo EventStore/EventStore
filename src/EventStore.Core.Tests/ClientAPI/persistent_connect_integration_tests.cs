@@ -1,10 +1,18 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientPersistent;
+extern alias GrpcClientStreams;
+using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common;
+using EventStore.Core.Tests.ClientAPI.Helpers;
+using GrpcClientPersistent::EventStore.Client;
 using NUnit.Framework;
+using EventData = GrpcClient::EventStore.Client.EventData;
+using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
+using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
+using SystemEventTypes = GrpcClientStreams::EventStore.Client.SystemEventTypes;
+using Uuid = GrpcClient::EventStore.Client.Uuid;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -24,29 +32,23 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public async Task Test() {
 			var streamName = Guid.NewGuid().ToString();
 			var groupName = Guid.NewGuid().ToString();
-			var settings = PersistentSubscriptionSettings
-				.Create()
-				.StartFromCurrent()
-				.ResolveLinkTos()
-				.Build();
+			var settings = new PersistentSubscriptionSettings(startFrom: StreamPosition.End, resolveLinkTos: true);
 
 			await _conn.CreatePersistentSubscriptionAsync(streamName, groupName, settings, DefaultData.AdminCredentials);
 			await _conn.ConnectToPersistentSubscriptionAsync(streamName, groupName,
-				(subscription, resolvedEvent) => {
-					subscription.Acknowledge(resolvedEvent);
+				async (subscription, resolvedEvent) => {
+					await subscription.Ack(resolvedEvent);
 
 					if (Interlocked.Increment(ref _eventReceivedCount) == EventWriteCount) {
 						_eventsReceived.Set();
 					}
-
-					return Task.CompletedTask;
 				},
 				(sub, reason, exception) =>
 					Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}).", reason, exception),
 				bufferSize: 10, autoAck: false, userCredentials: DefaultData.AdminCredentials);
 
 			for (var i = 0; i < EventWriteCount; i++) {
-				var eventData = new EventData(Guid.NewGuid(), "SomeEvent", false, new byte[0], new byte[0]);
+				var eventData = new EventData(Uuid.NewUuid(), "SomeEvent", new byte[0], new byte[0]);
 
 				await _conn.AppendToStreamAsync(streamName, ExpectedVersion.Any, DefaultData.AdminCredentials, eventData);
 			}
@@ -74,11 +76,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public async Task Test() {
 			var streamName = Guid.NewGuid().ToString();
 			var groupName = Guid.NewGuid().ToString();
-			var settings = PersistentSubscriptionSettings
-				.Create()
-				.StartFromCurrent()
-				.ResolveLinkTos()
-				.Build();
+			var settings = new PersistentSubscriptionSettings(startFrom: StreamPosition.End, resolveLinkTos: true);
 			await _conn.CreatePersistentSubscriptionAsync(streamName, groupName, settings, DefaultData.AdminCredentials)
 ;
 			await _conn.ConnectToPersistentSubscriptionAsync(streamName, groupName,
@@ -94,7 +92,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				userCredentials: DefaultData.AdminCredentials);
 
 			for (var i = 0; i < EventWriteCount; i++) {
-				var eventData = new EventData(Guid.NewGuid(), "SomeEvent", false, new byte[0], new byte[0]);
+				var eventData = new EventData(Uuid.NewUuid(), "SomeEvent", new byte[0], new byte[0]);
 
 				await _conn.AppendToStreamAsync(streamName, ExpectedVersion.Any, DefaultData.AdminCredentials, eventData);
 			}
@@ -123,13 +121,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public async Task Test() {
 			var streamName = Guid.NewGuid().ToString();
 			var groupName = Guid.NewGuid().ToString();
-			var settings = PersistentSubscriptionSettings
-				.Create()
-				.StartFromBeginning()
-				.ResolveLinkTos()
-				.Build();
+			var settings = new PersistentSubscriptionSettings(startFrom: StreamPosition.Start, resolveLinkTos: true);
 			for (var i = 0; i < EventWriteCount; i++) {
-				var eventData = new EventData(Guid.NewGuid(), "SomeEvent", false, new byte[0], new byte[0]);
+				var eventData = new EventData(Uuid.NewUuid(), "SomeEvent", new byte[0], new byte[0]);
 
 				await _conn.AppendToStreamAsync(streamName, ExpectedVersion.Any, DefaultData.AdminCredentials, eventData);
 			}
@@ -173,26 +167,20 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public async Task Test() {
 			var streamName = Guid.NewGuid().ToString();
 			var groupName = Guid.NewGuid().ToString();
-			var settings = PersistentSubscriptionSettings
-				.Create()
-				.StartFromBeginning()
-				.ResolveLinkTos()
-				.Build();
+			var settings = new PersistentSubscriptionSettings(startFrom: StreamPosition.Start, resolveLinkTos: true);
 			for (var i = 0; i < EventWriteCount; i++) {
-				var eventData = new EventData(Guid.NewGuid(), "SomeEvent", false, new byte[0], new byte[0]);
+				var eventData = new EventData(Uuid.NewUuid(), "SomeEvent", new byte[0], new byte[0]);
 
 				await _conn.AppendToStreamAsync(streamName, ExpectedVersion.Any, DefaultData.AdminCredentials, eventData);
 			}
 
 			await _conn.CreatePersistentSubscriptionAsync(streamName, groupName, settings, DefaultData.AdminCredentials);
 			await _conn.ConnectToPersistentSubscriptionAsync(streamName, groupName,
-				(subscription, resolvedEvent) => {
-					subscription.Acknowledge(resolvedEvent);
+				async (subscription, resolvedEvent) => {
+					await subscription.Ack(resolvedEvent);
 					if (Interlocked.Increment(ref _eventReceivedCount) == EventWriteCount) {
 						_eventsReceived.Set();
 					}
-
-					return Task.CompletedTask;
 				},
 				(sub, reason, exception) =>
 					Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}).", reason, exception),
@@ -222,33 +210,27 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public async Task Test() {
 			var streamName = Guid.NewGuid().ToString();
 			var groupName = Guid.NewGuid().ToString();
-			var settings = PersistentSubscriptionSettings
-				.Create()
-				.StartFromBeginning()
-				.ResolveLinkTos()
-				.Build();
+			var settings = new PersistentSubscriptionSettings(startFrom: StreamPosition.Start, resolveLinkTos: true);
 			for (var i = 0; i < EventWriteCount; i++) {
-				var eventData = new EventData(Guid.NewGuid(), "SomeEvent", false, new byte[0], new byte[0]);
+				var eventData = new EventData(Uuid.NewUuid(), "SomeEvent", new byte[0], new byte[0]);
 				await _conn.AppendToStreamAsync(streamName + "original", ExpectedVersion.Any, DefaultData.AdminCredentials,
 					eventData);
 			}
 
 			await _conn.CreatePersistentSubscriptionAsync(streamName, groupName, settings, DefaultData.AdminCredentials);
 			await _conn.ConnectToPersistentSubscriptionAsync(streamName, groupName,
-				(subscription, resolvedEvent) => {
-					subscription.Acknowledge(resolvedEvent);
+				async (subscription, resolvedEvent) => {
+					await subscription.Ack(resolvedEvent);
 					if (Interlocked.Increment(ref _eventReceivedCount) == EventWriteCount) {
 						_eventsReceived.Set();
 					}
-
-					return Task.CompletedTask;
 				},
 				(sub, reason, exception) =>
 					Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}).", reason, exception),
 				userCredentials: DefaultData.AdminCredentials,
 				autoAck: false);
 			for (var i = 0; i < EventWriteCount; i++) {
-				var eventData = new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
+				var eventData = new EventData(Uuid.NewUuid(), SystemEventTypes.LinkTo,
 					Encoding.UTF8.GetBytes(i + "@" + streamName + "original"), null);
 				await _conn.AppendToStreamAsync(streamName, ExpectedVersion.Any, DefaultData.AdminCredentials, eventData);
 			}
@@ -276,13 +258,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public async Task Test() {
 			var streamName = Guid.NewGuid().ToString();
 			var groupName = Guid.NewGuid().ToString();
-			var settings = PersistentSubscriptionSettings
-				.Create()
-				.StartFromBeginning()
-				.ResolveLinkTos()
-				.Build();
+			var settings = new PersistentSubscriptionSettings(startFrom: StreamPosition.Start, resolveLinkTos: true);
 			for (var i = 0; i < EventWriteCount; i++) {
-				var eventData = new EventData(Guid.NewGuid(), "SomeEvent", false, new byte[0], new byte[0]);
+				var eventData = new EventData(Uuid.NewUuid(), "SomeEvent", new byte[0], new byte[0]);
 				await _conn.AppendToStreamAsync(streamName + "original", ExpectedVersion.Any, DefaultData.AdminCredentials,
 					eventData);
 			}
@@ -301,7 +279,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				userCredentials: DefaultData.AdminCredentials,
 				autoAck: true);
 			for (var i = 0; i < EventWriteCount; i++) {
-				var eventData = new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
+				var eventData = new EventData(Uuid.NewUuid(), SystemEventTypes.LinkTo,
 					Encoding.UTF8.GetBytes(i + "@" + streamName + "original"), null);
 				await _conn.AppendToStreamAsync(streamName, ExpectedVersion.Any, DefaultData.AdminCredentials, eventData);
 			}
@@ -329,29 +307,23 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public async Task Test() {
 			var streamName = Guid.NewGuid().ToString();
 			var groupName = Guid.NewGuid().ToString();
-			var settings = PersistentSubscriptionSettings
-				.Create()
-				.StartFromCurrent()
-				.ResolveLinkTos()
-				.Build();
+			var settings = new PersistentSubscriptionSettings(startFrom: StreamPosition.End, resolveLinkTos: true);
 
 			await _conn.CreatePersistentSubscriptionAsync(streamName, groupName, settings, DefaultData.AdminCredentials);
 			await _conn.ConnectToPersistentSubscriptionAsync(streamName, groupName,
-				(subscription, resolvedEvent) => {
-					subscription.Fail(resolvedEvent, PersistentSubscriptionNakEventAction.Park, "fail");
+				async (subscription, resolvedEvent) => {
+					await subscription.Nack(PersistentSubscriptionNakEventAction.Park, "fail", resolvedEvent);
 
 					if (Interlocked.Increment(ref _eventReceivedCount) == EventWriteCount) {
 						_eventsReceived.Set();
 					}
-
-					return Task.CompletedTask;
 				},
 				(sub, reason, exception) =>
 					Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}).", reason, exception),
 				bufferSize: 10, autoAck: false, userCredentials: DefaultData.AdminCredentials);
 
 			for (var i = 0; i < EventWriteCount; i++) {
-				var eventData = new EventData(Guid.NewGuid(), "SomeEvent", false, new byte[0], new byte[0]);
+				var eventData = new EventData(Uuid.NewUuid(), "SomeEvent", new byte[0], new byte[0]);
 
 				await _conn.AppendToStreamAsync(streamName, ExpectedVersion.Any, DefaultData.AdminCredentials, eventData);
 			}
@@ -378,16 +350,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void Test() => Assert.DoesNotThrowAsync(async () => {
 			await CloseConnectionAndWait(_conn);
 			_conn = BuildConnection(_node);
-			AddLogging(_conn);
 			await _conn.ConnectAsync();
 			
 			var streamName = Guid.NewGuid().ToString();
 			var groupName = Guid.NewGuid().ToString();
-			var settings = PersistentSubscriptionSettings
-				.Create()
-				.StartFromCurrent()
-				.WithMaxRetriesOf(0) // Don't retry messages
-				.Build();
+			var settings = new PersistentSubscriptionSettings(startFrom: StreamPosition.End, maxRetryCount: 0);
 
 			await _conn.CreatePersistentSubscriptionAsync(streamName, groupName, settings, DefaultData.AdminCredentials);
 			await _conn.ConnectToPersistentSubscriptionAsync(streamName, groupName, async (subscription, resolvedEvent) => {
@@ -399,17 +366,16 @@ namespace EventStore.Core.Tests.ClientAPI {
 				},
 				bufferSize: 10, autoAck: false, userCredentials: DefaultData.AdminCredentials);
 
-			var parkedEventData = new EventData(Guid.NewGuid(), "SomeEvent", false, new byte[0], new byte[0]);
+			var parkedEventData = new EventData(Uuid.NewUuid(), "SomeEvent", new byte[0], new byte[0]);
 			await _conn.AppendToStreamAsync(streamName, ExpectedVersion.Any, DefaultData.AdminCredentials, parkedEventData);
 
 			await _subscriptionDropped.Task.WithTimeout();
 
 			_conn = BuildConnection(_node);
-			AddLogging(_conn);
 			await _conn.ConnectAsync();
 
-			await _conn.ConnectToPersistentSubscriptionAsync(streamName, groupName, (subscription, resolvedEvent) => {
-				subscription.Acknowledge(resolvedEvent);
+			await _conn.ConnectToPersistentSubscriptionAsync(streamName, groupName, async (subscription, resolvedEvent) => {
+				await subscription.Ack(resolvedEvent);
 				_receivedEvent = resolvedEvent;
 				_eventReceived.TrySetResult(true);
 			}, (sub, reason, exception) => {
@@ -417,21 +383,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 			}, bufferSize: 10, autoAck: false, userCredentials: DefaultData.AdminCredentials);
 
 			// Ensure we only get the new event, not the previous one
-			var newEventData = new EventData(Guid.NewGuid(), "SomeEvent", false, new byte[0], new byte[0]);
+			var newEventData = new EventData(Uuid.NewUuid(), "SomeEvent", new byte[0], new byte[0]);
 			await _conn.AppendToStreamAsync(streamName, ExpectedVersion.Any, DefaultData.AdminCredentials, newEventData);
 
 			await _eventReceived.Task.WithTimeout();
 			Assert.AreEqual(newEventData.EventId, _receivedEvent.Event.EventId);
-			
-			//flaky: temporarily added for debugging
-			void AddLogging(IEventStoreConnection conn) {
-				conn.AuthenticationFailed += (_, args) => Console.WriteLine($"_conn.AuthenticationFailed: {args.Connection.ConnectionName} @ {DateTime.Now} {TestContext.CurrentContext.CurrentRepeatCount}");
-				conn.Closed += (_, args) => Console.WriteLine($"_conn.Closed: {args.Connection.ConnectionName} @ {DateTime.Now} {TestContext.CurrentContext.CurrentRepeatCount}");
-				conn.Connected += (_, args) => Console.WriteLine($"_conn.Connected: {args.Connection.ConnectionName} @ {DateTime.Now} {TestContext.CurrentContext.CurrentRepeatCount}");
-				conn.Disconnected += (_, args) => Console.WriteLine($"_conn.Disconnected: {args.Connection.ConnectionName} @ {DateTime.Now} {TestContext.CurrentContext.CurrentRepeatCount}");
-				conn.ErrorOccurred += (_, args) => Console.WriteLine($"_conn.ErrorOccurred: {args.Connection.ConnectionName} @ {DateTime.Now} {TestContext.CurrentContext.CurrentRepeatCount}");
-				conn.Reconnecting += (_, args) => Console.WriteLine($"_conn.Reconnecting: {args.Connection.ConnectionName} @ {DateTime.Now} {TestContext.CurrentContext.CurrentRepeatCount}");
-			}
 		});
 	}
 }

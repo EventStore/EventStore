@@ -1,8 +1,10 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientPersistent;
+extern alias GrpcClientStreams;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using EventStore.ClientAPI;
 using EventStore.Transport.Http;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -11,7 +13,10 @@ using System.Xml.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Http.Users.users;
+using PersistentSubscriptionSettings = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings;
+using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	[Category("LongRunning")]
@@ -286,9 +291,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_getting_subscription_stats_summary<TLogFormat, TStreamId> : SpecificationWithPersistentSubscriptionAndConnections<TLogFormat, TStreamId> {
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.End);
 
 		private JArray _json;
 
@@ -437,33 +441,32 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_getting_subscription_statistics_for_stream<TLogFormat, TStreamId> : SpecificationWithPersistentSubscriptionAndConnections<TLogFormat, TStreamId> {
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.End);
 
 		private JArray _json;
-		private EventStorePersistentSubscriptionBase _sub4;
-		private EventStorePersistentSubscriptionBase _sub3;
-		private EventStorePersistentSubscriptionBase _sub5;
+		private GrpcClientPersistent::EventStore.Client.PersistentSubscription _sub4;
+		private GrpcClientPersistent::EventStore.Client.PersistentSubscription _sub3;
+		private GrpcClientPersistent::EventStore.Client.PersistentSubscription _sub5;
 
 		protected override async Task Given() {
 			await base.Given();
 			await _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", _settings,
 				DefaultData.AdminCredentials);
-			_sub3 = _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
+			_sub3 = await _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
 				(subscription, @event) => {
 					Console.WriteLine();
 					return Task.CompletedTask;
 				},
 				(subscription, reason, arg3) => Console.WriteLine(), DefaultData.AdminCredentials);
-			_sub4 = _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
+			_sub4 = await _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
 				(subscription, @event) => {
 					Console.WriteLine();
 					return Task.CompletedTask;
 				},
 				(subscription, reason, arg3) => Console.WriteLine(),
 				DefaultData.AdminCredentials);
-			_sub5 = _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
+			_sub5 = await _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
 				(subscription, @event) => {
 					Console.WriteLine();
 					return Task.CompletedTask;
@@ -565,27 +568,25 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	public abstract class SpecificationWithPersistentSubscriptionAndConnections<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		protected string _streamName = Guid.NewGuid().ToString();
 		protected string _groupName = Guid.NewGuid().ToString();
-		protected IEventStoreConnection _conn;
-		protected EventStorePersistentSubscriptionBase _sub1;
-		protected EventStorePersistentSubscriptionBase _sub2;
+		protected IEventStoreClient _conn;
+		protected GrpcClientPersistent::EventStore.Client.PersistentSubscription _sub1;
+		protected GrpcClientPersistent::EventStore.Client.PersistentSubscription _sub2;
 
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings =
+			new PersistentSubscriptionSettings(resolveLinkTos: false, StreamPosition.End);
 
 		protected override async Task Given() {
-			_conn = EventStoreConnection.Create(ConnectionSettings.Create().DisableServerCertificateValidation().Build(),
-				_node.TcpEndPoint);
+			_conn = new GrpcEventStoreConnection(_node.HttpEndPoint);
 			await _conn.ConnectAsync();
 			await _conn.CreatePersistentSubscriptionAsync(_streamName, _groupName, _settings,
 				DefaultData.AdminCredentials);
-			_sub1 = _conn.ConnectToPersistentSubscription(_streamName, _groupName,
+			_sub1 = await _conn.ConnectToPersistentSubscription(_streamName, _groupName,
 				(subscription, @event) => {
 					Console.WriteLine();
 					return Task.CompletedTask;
 				},
 				(subscription, reason, arg3) => Console.WriteLine(), DefaultData.AdminCredentials);
-			_sub2 = _conn.ConnectToPersistentSubscription(_streamName, _groupName,
+			_sub2 = await _conn.ConnectToPersistentSubscription(_streamName, _groupName,
 				(subscription, @event) => {
 					Console.WriteLine();
 					return Task.CompletedTask;
@@ -599,7 +600,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		[OneTimeTearDown]
 		public async Task Teardown() {
 			await _conn.DeletePersistentSubscriptionAsync(_streamName, _groupName, DefaultData.AdminCredentials);
-			_conn.Close();
+			await _conn.Close();
 			_conn.Dispose();
 		}
 	}

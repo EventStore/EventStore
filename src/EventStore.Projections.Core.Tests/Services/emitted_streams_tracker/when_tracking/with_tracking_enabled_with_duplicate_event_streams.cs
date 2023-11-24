@@ -1,8 +1,7 @@
-﻿using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.SystemData;
-using EventStore.Projections.Core.Services.Processing;
+﻿using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests;
@@ -40,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream_manager.when
 			var result = await _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0, 200,
 				false, _credentials);
 			Assert.AreEqual(1, result.Events.Length);
-			Assert.AreEqual("test_stream", Helper.UTF8NoBom.GetString(result.Events[0].Event.Data));
+			Assert.AreEqual("test_stream", Encoding.UTF8NoBom.GetString(result.Events[0].Event.Data));
 			Assert.AreEqual(1, _eventAppeared.CurrentCount); //only 1 event appeared should get through
 		}
 	}
