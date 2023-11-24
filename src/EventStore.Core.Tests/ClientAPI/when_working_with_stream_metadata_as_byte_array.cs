@@ -1,20 +1,28 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using System;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClientStreams::EventStore.Client;
 using NUnit.Framework;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
+using StreamDeletedException = GrpcClient::EventStore.Client.StreamDeletedException;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
+using WrongExpectedVersionException = GrpcClient::EventStore.Client.WrongExpectedVersionException;
 
 namespace EventStore.Core.Tests.ClientAPI {
+
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_working_with_stream_metadata_as_byte_array<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private MiniNode<TLogFormat, TStreamId> _node;
-		private IEventStoreConnection _connection;
+		private IEventStoreClient _connection;
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
@@ -26,13 +34,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await _connection.ConnectAsync();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
-			_connection.Close();
+			await _connection.Close();
 			await _node.Shutdown();
 			await base.TestFixtureTearDown();
 		}
@@ -41,74 +49,74 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public async Task setting_empty_metadata_works() {
 			const string stream = "setting_empty_metadata_works";
 
-			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, (byte[])null);
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, new StreamMetadata());
 
 			var meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
-			Assert.AreEqual(stream, meta.Stream);
-			Assert.AreEqual(false, meta.IsStreamDeleted);
-			Assert.AreEqual(0, meta.MetastreamVersion);
-			Assert.AreEqual(new byte[0], meta.StreamMetadata);
+			Assert.AreEqual(stream, meta.StreamName);
+			Assert.AreEqual(false, meta.StreamDeleted);
+			Assert.AreEqual(0, meta.MetastreamRevision!.Value.ToInt64());
+			Assert.AreEqual(new byte[0], meta.Metadata.ToJsonBytes());
 		}
 
 		[Test]
 		public async Task setting_metadata_few_times_returns_last_metadata() {
 			const string stream = "setting_metadata_few_times_returns_last_metadata";
 
-			var metadataBytes = Guid.NewGuid().ToByteArray();
-			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadataBytes);
+			var metadata = RandomStreamMetadata();
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata);
 			var meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
-			Assert.AreEqual(stream, meta.Stream);
-			Assert.AreEqual(false, meta.IsStreamDeleted);
-			Assert.AreEqual(0, meta.MetastreamVersion);
-			Assert.AreEqual(metadataBytes, meta.StreamMetadata);
+			Assert.AreEqual(stream, meta.StreamName);
+			Assert.AreEqual(false, meta.StreamDeleted);
+			Assert.AreEqual(0, meta.MetastreamRevision!.Value.ToInt64());
+			Assert.AreEqual(metadata, meta.Metadata);
 
-			metadataBytes = Guid.NewGuid().ToByteArray();
-			await _connection.SetStreamMetadataAsync(stream, 0, metadataBytes);
+			metadata = RandomStreamMetadata();
+			await _connection.SetStreamMetadataAsync(stream, 0, metadata);
 			meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
-			Assert.AreEqual(stream, meta.Stream);
-			Assert.AreEqual(false, meta.IsStreamDeleted);
-			Assert.AreEqual(1, meta.MetastreamVersion);
-			Assert.AreEqual(metadataBytes, meta.StreamMetadata);
+			Assert.AreEqual(stream, meta.StreamName);
+			Assert.AreEqual(false, meta.StreamDeleted);
+			Assert.AreEqual(1, meta.MetastreamRevision!.Value.ToInt64());
+			Assert.AreEqual(metadata, meta.Metadata);
 		}
 
 		[Test]
 		public async Task trying_to_set_metadata_with_wrong_expected_version_fails() {
 			const string stream = "trying_to_set_metadata_with_wrong_expected_version_fails";
-			await AssertEx.ThrowsAsync<WrongExpectedVersionException>(() => _connection.SetStreamMetadataAsync(stream, 5, new byte[100]));
+			await AssertEx.ThrowsAsync<WrongExpectedVersionException>(() => _connection.SetStreamMetadataAsync(stream, 5, RandomStreamMetadata()));
 		}
 
 		[Test]
 		public async Task setting_metadata_with_expected_version_any_works() {
 			const string stream = "setting_metadata_with_expected_version_any_works";
 
-			var metadataBytes = Guid.NewGuid().ToByteArray();
+			var metadataBytes = RandomStreamMetadata();
 			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.Any, metadataBytes);
 			var meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
-			Assert.AreEqual(stream, meta.Stream);
-			Assert.AreEqual(false, meta.IsStreamDeleted);
-			Assert.AreEqual(0, meta.MetastreamVersion);
-			Assert.AreEqual(metadataBytes, meta.StreamMetadata);
+			Assert.AreEqual(stream, meta.StreamName);
+			Assert.AreEqual(false, meta.StreamDeleted);
+			Assert.AreEqual(0, meta.MetastreamRevision!.Value.ToInt64());
+			Assert.AreEqual(metadataBytes, meta.Metadata);
 
-			metadataBytes = Guid.NewGuid().ToByteArray();
+			metadataBytes = RandomStreamMetadata();
 			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.Any, metadataBytes);
 			meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
-			Assert.AreEqual(stream, meta.Stream);
-			Assert.AreEqual(false, meta.IsStreamDeleted);
-			Assert.AreEqual(1, meta.MetastreamVersion);
-			Assert.AreEqual(metadataBytes, meta.StreamMetadata);
+			Assert.AreEqual(stream, meta.StreamName);
+			Assert.AreEqual(false, meta.StreamDeleted);
+			Assert.AreEqual(1, meta.MetastreamRevision!.Value.ToInt64());
+			Assert.AreEqual(metadataBytes, meta.Metadata);
 		}
 
 		[Test]
 		public async Task setting_metadata_for_not_existing_stream_works() {
 			const string stream = "setting_metadata_for_not_existing_stream_works";
-			var metadataBytes = Guid.NewGuid().ToByteArray();
+			var metadataBytes = RandomStreamMetadata();
 			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadataBytes);
 
 			var meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
-			Assert.AreEqual(stream, meta.Stream);
-			Assert.AreEqual(false, meta.IsStreamDeleted);
-			Assert.AreEqual(0, meta.MetastreamVersion);
-			Assert.AreEqual(metadataBytes, meta.StreamMetadata);
+			Assert.AreEqual(stream, meta.StreamName);
+			Assert.AreEqual(false, meta.StreamDeleted);
+			Assert.AreEqual(0, meta.MetastreamRevision!.Value.ToInt64());
+			Assert.AreEqual(metadataBytes, meta.Metadata);
 		}
 
 		[Test]
@@ -118,14 +126,14 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await _connection.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(),
 				TestEvent.NewTestEvent());
 
-			var metadataBytes = Guid.NewGuid().ToByteArray();
+			var metadataBytes = RandomStreamMetadata();
 			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadataBytes);
 
 			var meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
-			Assert.AreEqual(stream, meta.Stream);
-			Assert.AreEqual(false, meta.IsStreamDeleted);
-			Assert.AreEqual(0, meta.MetastreamVersion);
-			Assert.AreEqual(metadataBytes, meta.StreamMetadata);
+			Assert.AreEqual(stream, meta.StreamName);
+			Assert.AreEqual(false, meta.StreamDeleted);
+			Assert.AreEqual(0, meta.MetastreamRevision!.Value.ToInt64());
+			Assert.AreEqual(metadataBytes, meta.Metadata);
 		}
 
 		[Test]
@@ -136,7 +144,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			var metadataBytes = Guid.NewGuid().ToByteArray();
 			await AssertEx.ThrowsAsync<StreamDeletedException>(
-				() => _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadataBytes));
+				() => _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, RandomStreamMetadata()));
 		}
 
 		[Test]
@@ -144,10 +152,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "getting_metadata_for_nonexisting_stream_returns_empty_byte_array";
 
 			var meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
-			Assert.AreEqual(stream, meta.Stream);
-			Assert.AreEqual(false, meta.IsStreamDeleted);
-			Assert.AreEqual(-1, meta.MetastreamVersion);
-			Assert.AreEqual(new byte[0], meta.StreamMetadata);
+			Assert.AreEqual(stream, meta.StreamName);
+			Assert.AreEqual(false, meta.StreamDeleted);
+			Assert.AreEqual(-1, meta.MetastreamRevision!.Value.ToInt64());
+			Assert.AreEqual(new byte[0], meta.Metadata.ToJsonBytes());
 		}
 
 		[Test]
@@ -155,16 +163,22 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream =
 				"getting_metadata_for_deleted_stream_returns_empty_byte_array_and_signals_stream_deletion";
 
-			var metadataBytes = Guid.NewGuid().ToByteArray();
+			var metadataBytes = RandomStreamMetadata();
 			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadataBytes);
 
 			await _connection.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 
 			var meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
-			Assert.AreEqual(stream, meta.Stream);
-			Assert.AreEqual(true, meta.IsStreamDeleted);
-			Assert.AreEqual(EventNumber.DeletedStream, meta.MetastreamVersion);
-			Assert.AreEqual(new byte[0], meta.StreamMetadata);
+			Assert.AreEqual(stream, meta.StreamName);
+			Assert.AreEqual(true, meta.StreamDeleted);
+			Assert.AreEqual(EventNumber.DeletedStream, meta.MetastreamRevision!.Value.ToInt64());
+			Assert.AreEqual(new byte[0], meta.Metadata.ToJsonBytes());
+		}
+
+		private StreamMetadata RandomStreamMetadata() {
+			return new StreamMetadata(customMetadata: JsonDocument.Parse(new JsonObject {
+				["foo"] = Guid.NewGuid().ToString()
+			}.ToJson()));
 		}
 	}
 }
