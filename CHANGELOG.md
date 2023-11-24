@@ -18,11 +18,14 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/4032 [EventStore#4049](https://github.com/EventStore/EventStore/pull/4049)
 - //github.com/EventStore/EventStore/pull/4032 [EventStore#4048](https://github.com/EventStore/EventStore/pull/4048)
 - //github.com/EventStore/EventStore/pull/4032 [EventStore#4047](https://github.com/EventStore/EventStore/pull/4047)
+- //github.com/EventStore/EventStore/pull/4059 [EventStore#4077](https://github.com/EventStore/EventStore/pull/4077)
+- //github.com/EventStore/EventStore/pull/4059 [EventStore#4078](https://github.com/EventStore/EventStore/pull/4078)
 
 ### Changed
 - Set the default value of `CertificateReservedNodeCommonName` to empty string [EventStore#4001](https://github.com/EventStore/EventStore/pull/4001)
 - wording of telemetry message for clarity [EventStore#4026](https://github.com/EventStore/EventStore/pull/4026)
 - Upgrade to .NET 7. [EventStore#4031](https://github.com/EventStore/EventStore/pull/4031)
+- Upgrade to .NET 8. [EventStore#4046](https://github.com/EventStore/EventStore/pull/4046)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
