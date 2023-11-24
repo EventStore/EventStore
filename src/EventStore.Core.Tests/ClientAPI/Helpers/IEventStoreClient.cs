@@ -169,6 +169,12 @@ public interface IEventStoreClient: IDisposable {
 		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null);
 
+	Task<StreamSubscription> SubscribeToAllAsync(
+		bool resolveLinkTos,
+		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
+		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials userCredentials = null);
+
 	Task<StreamSubscription> SubscribeToStreamFrom(
 		string stream,
 		long? lastCheckpoint,

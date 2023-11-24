@@ -1,8 +1,12 @@
-using System;
+extern alias GrpcClient;
+extern alias GrpcClientStreams;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
+using EventStore.Core.Tests.ClientAPI.Helpers;
+using GrpcClientStreams::EventStore.Client;
 using NUnit.Framework;
+using EventData = GrpcClient::EventStore.Client.EventData;
+using Uuid = GrpcClient::EventStore.Client.Uuid;
+using WrongExpectedVersionException = GrpcClient::EventStore.Client.WrongExpectedVersionException;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -25,12 +29,12 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			_store = BuildConnection(Node);
 			await _store.ConnectAsync();
 			await _store.SetStreamMetadataAsync(StreamName, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
+				new StreamMetadata(truncateBefore: intMaxValue + 1));
 		}
 
 		[Test]
 		public async Task should_be_able_to_append_to_stream() {
-			var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
+			var evnt = new EventData(Uuid.NewUuid(), "EventType", new byte[10], new byte[15]);
 			var writeResult = await _store.AppendToStreamAsync(StreamName, intMaxValue + 5, evnt);
 			Assert.AreEqual(intMaxValue + 6, writeResult.NextExpectedVersion);
 
@@ -42,7 +46,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 
 		[Test]
 		public async Task should_throw_wrong_expected_version_when_version_incorrect() {
-			var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
+			var evnt = new EventData(Uuid.NewUuid(), "EventType", new byte[10], new byte[15]);
 			await AssertEx.ThrowsAsync<WrongExpectedVersionException>(
 				() => _store.AppendToStreamAsync(StreamName, intMaxValue + 15, evnt));
 		}

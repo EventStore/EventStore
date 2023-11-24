@@ -1,15 +1,20 @@
+extern alias GrpcClient;
+extern alias GrpcClientStreams;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClientStreams::EventStore.Client;
 using NUnit.Framework;
+using EventData = GrpcClient::EventStore.Client.EventData;
 using ILogger = Serilog.ILogger;
+using Position = GrpcClient::EventStore.Client.Position;
+using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
+using Uuid = GrpcClient::EventStore.Client.Uuid;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -20,7 +25,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
 
 		private MiniNode<TLogFormat, TStreamId> _node;
-		private IEventStoreConnection _conn;
+		private IEventStoreClient _conn;
 
 		[SetUp]
 		public override async Task SetUp() {
@@ -31,19 +36,19 @@ namespace EventStore.Core.Tests.ClientAPI {
 			_conn = BuildConnection(_node);
 			await _conn.ConnectAsync();
 			await _conn.SetStreamMetadataAsync("$all", -1,
-				StreamMetadata.Build().SetReadRole(SystemRoles.All),
-				new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
+				new StreamMetadata(acl: new StreamAcl(readRole: SystemRoles.All)),
+				DefaultData.AdminCredentials);
 		}
 
 		[TearDown]
 		public override async Task TearDown() {
-			_conn.Close();
+			await _conn.Close();
 			await _node.Shutdown();
 			await base.TearDown();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[Test, Category("LongRunning")]
@@ -59,7 +64,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					(x, y, z) => dropped.Signal());
 
 				Assert.IsFalse(dropped.Wait(0));
-				subscription.Stop(Timeout);
+				subscription.Dispose();
 				Assert.IsTrue(dropped.Wait(Timeout));
 			}
 		}
@@ -70,10 +75,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
 				await store.AppendToStreamAsync(stream, ExpectedVersion.Any,
-					new EventData(Guid.NewGuid(), "event", false, new byte[3], null));
+					new EventData(Uuid.NewUuid(), "event", new byte[3], null));
 
 				var dropped = new CountdownEvent(1);
-				store.SubscribeToAllFrom(null, CatchUpSubscriptionSettings.Default,
+				await store.SubscribeToAllFrom(null, CatchUpSubscriptionSettings.Default,
 					(x, y) => { throw new Exception("Error"); },
 					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped.Signal());
@@ -104,7 +109,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				Assert.IsFalse(appeared.Wait(0), "Some event appeared.");
 				Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
-				subscription.Stop(Timeout);
+				subscription.Dispose();
 				Assert.IsTrue(dropped.Wait(Timeout));
 			}
 		}
@@ -120,7 +125,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				for (int i = 0; i < 10; ++i) {
 					await store.AppendToStreamAsync("stream-" + i.ToString(), -1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+						new EventData(Uuid.NewUuid(), "et-" + i.ToString(), new byte[3], null));
 				}
 
 				var subscription = store.SubscribeToAllFrom(null,
@@ -137,7 +142,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					(x, y, z) => dropped.Signal());
 				for (int i = 10; i < 20; ++i) {
 					await store.AppendToStreamAsync("stream-" + i.ToString(), -1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+						new EventData(Uuid.NewUuid(), "et-" + i.ToString(), new byte[3], null));
 				}
 
 				if (!appeared.Wait(Timeout)) {
@@ -151,7 +156,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				}
 
 				Assert.IsFalse(dropped.Wait(0));
-				subscription.Stop(Timeout);
+				subscription.Dispose();
 				Assert.IsTrue(dropped.Wait(Timeout));
 			}
 		}
@@ -161,24 +166,27 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
 
-				var events = new List<ResolvedEvent>();
+				var events = new System.Collections.Generic.List<ResolvedEvent>();
 				var appeared = new CountdownEvent(10);
 				var dropped = new CountdownEvent(1);
 
 				for (int i = 0; i < 10; ++i) {
 					await store.AppendToStreamAsync("stream-" + i.ToString(), -1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+						new EventData(Uuid.NewUuid(), "et-" + i.ToString(), new byte[3], null));
 				}
 
 				var allSlice = await store.ReadAllEventsForwardAsync(Position.Start, 100, false);
 				var lastEvent = allSlice.Events.Last();
 
+				var lastProcessedPosition = -1L;
 				var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => {
 						if (SystemStreams.IsSystemStream(y.Event.EventStreamId)) {
 							return Task.CompletedTask;
 						}
+
+						Interlocked.Exchange(ref lastProcessedPosition, (long)y.OriginalPosition!.Value.CommitPosition);
 						events.Add(y);
 						appeared.Signal();
 						return Task.CompletedTask;
@@ -191,7 +199,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				for (int i = 10; i < 20; ++i) {
 					await store.AppendToStreamAsync("stream-" + i.ToString(), -1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+						new EventData(Uuid.NewUuid(), "et-" + i.ToString(), new byte[3], null));
 				}
 
 				Log.Information("Waiting for events...");
@@ -207,10 +215,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 				}
 
 				Assert.IsFalse(dropped.Wait(0));
-				subscription.Stop(Timeout);
+				subscription.Dispose();
 				Assert.IsTrue(dropped.Wait(Timeout));
 
-				Assert.AreEqual(events.Last().OriginalPosition, subscription.LastProcessedPosition);
+				Assert.AreEqual((long)events.Last().OriginalPosition!.Value.CommitPosition, lastProcessedPosition);
 			}
 		}
 
@@ -219,21 +227,23 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
 
-				var events = new List<ResolvedEvent>();
+				var events = new System.Collections.Generic.List<ResolvedEvent>();
 				var appeared = new CountdownEvent(1);
 				var dropped = new CountdownEvent(1);
 
 				for (int i = 0; i < 10; ++i) {
 					await store.AppendToStreamAsync("stream-" + i.ToString(), -1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+						new EventData(Uuid.NewUuid(), "et-" + i.ToString(), new byte[3], null));
 				}
 
 				var allSlice = await store.ReadAllEventsForwardAsync(Position.Start, 100, false);
 				var lastEvent = allSlice.Events[allSlice.Events.Length - 2];
 
+				var lastProcessedPosition = -1L;
 				var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => {
+						Interlocked.Exchange(ref lastProcessedPosition, (long)y.OriginalPosition!.Value.CommitPosition);
 						events.Add(y);
 						appeared.Signal();
 						return Task.CompletedTask;
@@ -255,10 +265,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 				Assert.AreEqual("et-9", events[0].OriginalEvent.EventType);
 
 				Assert.IsFalse(dropped.Wait(0));
-				subscription.Stop(Timeout);
+				subscription.Dispose();
 				Assert.IsTrue(dropped.Wait(Timeout));
 
-				Assert.AreEqual(events.Last().OriginalPosition, subscription.LastProcessedPosition);
+				Assert.AreEqual((long)events.Last().OriginalPosition!.Value.CommitPosition, lastProcessedPosition);
 			}
 		}
 	}
