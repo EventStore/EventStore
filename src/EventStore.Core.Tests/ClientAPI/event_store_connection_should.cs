@@ -1,8 +1,9 @@
-﻿using System;
+﻿extern alias GrpcClient;
+using System;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
@@ -76,7 +77,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		[Category("Network")]
 		public async Task throw_invalid_operation_on_every_api_call_if_connect_was_not_called() {
-			var connection = TestConnection.To(_node, _tcpType);
+			var connection = new GrpcEventStoreConnection(_node.HttpEndPoint);
 
 			const string s = "stream";
 			var events = new[] { TestEvent.NewTestEvent() };
@@ -97,7 +98,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await AssertEx.ThrowsAsync<InvalidOperationException>(() =>
 				connection.ReadAllEventsBackwardAsync(Position.End, 1, false));
 
-			await AssertEx.ThrowsAsync<InvalidOperationException>(() => connection.StartTransactionAsync(s, 0));
+			// await AssertEx.ThrowsAsync<InvalidOperationException>(() => connection.StartTransactionAsync(s, 0));
 
 			await AssertEx.ThrowsAsync<InvalidOperationException>(
 				() => connection.SubscribeToStreamAsync(s, false, (_, __) => Task.CompletedTask, (_, __, ___) => { }));

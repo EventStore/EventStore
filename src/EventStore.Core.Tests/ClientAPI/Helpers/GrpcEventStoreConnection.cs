@@ -68,6 +68,11 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		throw new NotImplementedException();
 	}
 
+	public Task<AllEventsSliceNew> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, IEventFilter filter,
+		int maxSearchWindow, UserCredentials userCredentials = null) {
+		throw new NotImplementedException();
+	}
+
 	public Task<StreamSubscription> FilteredSubscribeToAllFrom(Position? lastCheckpoint, IEventFilter filter,
 		CatchUpSubscriptionFilteredSettings settings, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Func<StreamSubscription, Position, Task> checkpointReached,
 		int checkpointIntervalMultiplier, Action<StreamSubscription> liveProcessingStarted = null, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
@@ -120,7 +125,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		return Task.CompletedTask;
 	}
 
-	public async Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete, UserCredentials userCredentials = null) {
+	public async Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete = false, UserCredentials userCredentials = null) {
 		var version = FromUInt64(expectedVersion);
 		if (hardDelete) {
 			var tombstoneResult = version.IsState

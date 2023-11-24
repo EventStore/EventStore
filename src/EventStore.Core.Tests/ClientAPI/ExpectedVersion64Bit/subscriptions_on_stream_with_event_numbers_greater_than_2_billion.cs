@@ -1,11 +1,15 @@
+extern alias GrpcClient;
+extern alias GrpcClientStreams;
 using System.Collections.Generic;
 using System;
-using EventStore.ClientAPI;
 using NUnit.Framework;
-using EventStore.Core.Data;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services;
+using EventStore.Core.Tests.ClientAPI.Helpers;
+using GrpcClient::EventStore.Client;
+using EventRecord = EventStore.Core.Data.EventRecord;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
+using SystemStreams = EventStore.Core.Services.SystemStreams;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -36,17 +40,17 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			_store = BuildConnection(Node);
 			await _store.ConnectAsync();
 			await _store.SetStreamMetadataAsync(_volatileStreamOne, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
+				new StreamMetadata(truncateBefore: intMaxValue + 1));
 			await _store.SetStreamMetadataAsync(_volatileStreamTwo, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
+				new StreamMetadata(truncateBefore: intMaxValue + 1));
 			await _store.SetStreamMetadataAsync(_catchupStreamOne, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
+				new StreamMetadata(truncateBefore: intMaxValue + 1));
 		}
 
 		[Test]
 		public async Task should_be_able_to_subscribe_to_stream_with_volatile_subscription() {
-			var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
-			EventStore.ClientAPI.ResolvedEvent receivedEvent = new EventStore.ClientAPI.ResolvedEvent();
+			var evnt = new EventData(Uuid.NewUuid(), "EventType", new byte[10], new byte[15]);
+			ResolvedEvent receivedEvent = new ResolvedEvent();
 			var mre = new ManualResetEvent(false);
 			await _store.SubscribeToStreamAsync(_volatileStreamOne, true, (s, e) => {
 				receivedEvent = e;
@@ -62,8 +66,8 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 
 		[Test]
 		public async Task should_be_able_to_subscribe_to_all_with_volatile_subscription() {
-			var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
-			EventStore.ClientAPI.ResolvedEvent receivedEvent = new EventStore.ClientAPI.ResolvedEvent();
+			var evnt = new EventData(Uuid.NewUuid(), "EventType", new byte[10], new byte[15]);
+			ResolvedEvent receivedEvent = new ResolvedEvent();
 			var mre = new ManualResetEvent(false);
 			await _store.SubscribeToAllAsync(true, (s, e) => {
 				if (SystemStreams.IsSystemStream(e.OriginalStreamId))
@@ -82,11 +86,11 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 
 		[Test]
 		public async Task should_be_able_to_subscribe_to_stream_with_catchup_subscription() {
-			var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
-			List<EventStore.ClientAPI.ResolvedEvent> receivedEvents = new List<EventStore.ClientAPI.ResolvedEvent>();
+			var evnt = new EventData(Uuid.NewUuid(), "EventType", new byte[10], new byte[15]);
+			List<ResolvedEvent> receivedEvents = new List<ResolvedEvent>();
 
 			var countdown = new CountdownEvent(3);
-			_store.SubscribeToStreamFrom(_catchupStreamOne, 0, CatchUpSubscriptionSettings.Default, (s, e) => {
+			await _store.SubscribeToStreamFrom(_catchupStreamOne, 0, CatchUpSubscriptionSettings.Default, (s, e) => {
 				receivedEvents.Add(e);
 				countdown.Signal();
 				return Task.CompletedTask;
