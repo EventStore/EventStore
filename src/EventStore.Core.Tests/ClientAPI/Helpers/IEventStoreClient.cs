@@ -26,11 +26,7 @@ public interface IEventStoreClient: IDisposable {
 		StreamMetadata metadata,
 		UserCredentials userCredentials = null);
 
-	Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials = null) {
-		return DeleteStreamAsync(stream, expectedVersion, false, userCredentials);
-	}
-
-	Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete, UserCredentials userCredentials = null);
+	Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete = false, UserCredentials userCredentials = null);
 
 	Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, params EventData[] events) {
 		return AppendToStreamAsync(stream, expectedVersion, null, events);
@@ -139,6 +135,14 @@ public interface IEventStoreClient: IDisposable {
 		UserCredentials userCredentials = null);
 
 	Task<AllEventsSliceNew> FilteredReadAllEventsForwardAsync(
+		Position position,
+		int maxCount,
+		bool resolveLinkTos,
+		IEventFilter filter,
+		int maxSearchWindow,
+		UserCredentials userCredentials = null);
+
+	Task<AllEventsSliceNew> FilteredReadAllEventsBackwardAsync(
 		Position position,
 		int maxCount,
 		bool resolveLinkTos,
