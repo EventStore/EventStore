@@ -300,21 +300,21 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			await base.Given();
 			await _conn.CreatePersistentSubscriptionAsync(_streamName, "secondgroup", _settings,
 				DefaultData.AdminCredentials);
-			_conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
+			await _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
 				(subscription, @event) => {
 					Console.WriteLine();
 					return Task.CompletedTask;
 				},
 				(subscription, reason, arg3) => Console.WriteLine(),
 				DefaultData.AdminCredentials);
-			_conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
+			await _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
 				(subscription, @event) => {
 					Console.WriteLine();
 					return Task.CompletedTask;
 				},
 				(subscription, reason, arg3) => Console.WriteLine(),
 				DefaultData.AdminCredentials);
-			_conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
+			await _conn.ConnectToPersistentSubscription(_streamName, "secondgroup",
 				(subscription, @event) => {
 					Console.WriteLine();
 					return Task.CompletedTask;
