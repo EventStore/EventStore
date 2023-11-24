@@ -1,13 +1,14 @@
-﻿using System.Collections.Generic;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
-using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
-using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
-using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
+using StreamAcl = GrpcClientStreams::EventStore.Client.StreamAcl;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
+using SystemRoles = EventStore.Core.Services.SystemRoles;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -25,7 +26,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected override async Task When() {
 			await _conn.SetStreamMetadataAsync("$all", -1,
-				StreamMetadata.Build().SetReadRole(SystemRoles.All),
+				new StreamMetadata(acl: new StreamAcl(readRole: SystemRoles.All)),
 				DefaultData.AdminCredentials);
 
 			_testEventsA = Enumerable
@@ -57,7 +58,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var filter = Filter.EventType.Prefix("CE");
 			var sliceStart = Position.Start;
 			var read = new List<ResolvedEvent>();
-			AllEventsSlice slice;
+			AllEventsSliceNew slice;
 
 			do {
 				slice = _conn.FilteredReadAllEventsForwardAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
@@ -87,7 +88,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var filter = Filter.EventType.Prefix("AE");
 			var sliceStart = Position.End;
 			var read = new List<ResolvedEvent>();
-			AllEventsSlice slice;
+			AllEventsSliceNew slice;
 
 			do {
 				slice = _conn.FilteredReadAllEventsBackwardAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)

@@ -1,29 +1,32 @@
-﻿using System;
-using System.Threading;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using System;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
+using ExpectedVersion = EventStore.Core.Tests.ClientAPI.Helpers.ExpectedVersion;
+using StreamAcl = GrpcClientStreams::EventStore.Client.StreamAcl;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
+using SystemRoles = EventStore.Core.Services.SystemRoles;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
 	public abstract class AuthenticationTestBase<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly UserCredentials _userCredentials;
 		private MiniNode<TLogFormat, TStreamId> _node;
-		protected IEventStoreConnection Connection;
+		protected IEventStoreClient Connection;
 
 		protected AuthenticationTestBase(UserCredentials userCredentials = null) {
 			_userCredentials = userCredentials;
 		}
 
 
-		public virtual IEventStoreConnection SetupConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint, TcpType.Ssl, _userCredentials);
+		public virtual IEventStoreClient SetupConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[OneTimeSetUp]
@@ -90,72 +93,56 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			Connection = SetupConnection(_node);
 			await Connection.ConnectAsync();
 
-			await Connection.SetStreamMetadataAsync("noacl-stream", ExpectedVersion.NoStream, StreamMetadata.Build());
+			await Connection.SetStreamMetadataAsync("noacl-stream", ExpectedVersion.NoStream, new StreamMetadata());
 			await Connection.SetStreamMetadataAsync(
 				"read-stream",
 				ExpectedVersion.NoStream,
-				StreamMetadata.Build().SetReadRole("user1"));
+				new StreamMetadata(acl: new StreamAcl(readRole: "user1")));
 			await Connection.SetStreamMetadataAsync(
 				"write-stream",
 				ExpectedVersion.NoStream,
-				StreamMetadata.Build().SetWriteRole("user1"));
+				new StreamMetadata(acl: new StreamAcl(writeRole: "user1")));
 			await Connection.SetStreamMetadataAsync(
 				"metaread-stream",
 				ExpectedVersion.NoStream,
-				StreamMetadata.Build().SetMetadataReadRole("user1"));
+				new StreamMetadata(acl: new StreamAcl(metaReadRole: "user!")));
 			await Connection.SetStreamMetadataAsync(
 				"metawrite-stream",
 				ExpectedVersion.NoStream,
-				StreamMetadata.Build().SetMetadataWriteRole("user1"));
+				new StreamMetadata(acl: new StreamAcl(metaWriteRole: "user1")));
 
 			await Connection.SetStreamMetadataAsync(
 				"$all",
 				ExpectedVersion.Any,
-				StreamMetadata.Build().SetReadRole("user1"),
+				new StreamMetadata(acl: new StreamAcl(readRole: "user1")),
 				new UserCredentials("adm", "admpa$$"));
 
 			await Connection.SetStreamMetadataAsync(
 				"$system-acl",
 				ExpectedVersion.NoStream,
-				StreamMetadata.Build()
-					.SetReadRole("user1")
-					.SetWriteRole("user1")
-					.SetMetadataReadRole("user1")
-					.SetMetadataWriteRole("user1"),
+				new StreamMetadata(acl: new StreamAcl(readRole: "user1", writeRole: "user1", metaReadRole: "user1", metaWriteRole: "user1")),
 				new UserCredentials("adm", "admpa$$"));
 			await Connection.SetStreamMetadataAsync(
 				"$system-adm",
 				ExpectedVersion.NoStream,
-				StreamMetadata.Build()
-					.SetReadRole(SystemRoles.Admins)
-					.SetWriteRole(SystemRoles.Admins)
-					.SetMetadataReadRole(SystemRoles.Admins)
-					.SetMetadataWriteRole(SystemRoles.Admins),
+				new StreamMetadata(acl: new StreamAcl(readRole: SystemRoles.Admins, writeRole: SystemRoles.Admins, metaReadRole: SystemRoles.Admins, metaWriteRole: SystemRoles.Admins)),
 				new UserCredentials("adm", "admpa$$"));
 
 			await Connection.SetStreamMetadataAsync(
 				"normal-all",
 				ExpectedVersion.NoStream,
-				StreamMetadata.Build()
-					.SetReadRole(SystemRoles.All)
-					.SetWriteRole(SystemRoles.All)
-					.SetMetadataReadRole(SystemRoles.All)
-					.SetMetadataWriteRole(SystemRoles.All));
+				new StreamMetadata(acl: new StreamAcl(readRole: SystemRoles.All, writeRole: SystemRoles.All, metaReadRole: SystemRoles.All, metaWriteRole: SystemRoles.All)));
 			await Connection.SetStreamMetadataAsync(
 				"$system-all",
 				ExpectedVersion.NoStream,
-				StreamMetadata.Build()
-					.SetReadRole(SystemRoles.All)
-					.SetWriteRole(SystemRoles.All)
-					.SetMetadataReadRole(SystemRoles.All)
-					.SetMetadataWriteRole(SystemRoles.All),
+				new StreamMetadata(acl: new StreamAcl(readRole: SystemRoles.All, writeRole: SystemRoles.All, metaReadRole: SystemRoles.All, metaWriteRole: SystemRoles.All)),
 				new UserCredentials("adm", "admpa$$"));
 		}
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
 			await _node.Shutdown();
-			Connection.Close();
+			await Connection.Close();
 			await base.TestFixtureTearDown();
 		}
 
@@ -179,10 +166,10 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 				login == null && password == null ? null : new UserCredentials(login, password));
 		}
 
-		protected Task<EventStoreTransaction> TransStart(string streamId, string login, string password) {
-			return Connection.StartTransactionAsync(streamId, ExpectedVersion.Any,
-				login == null && password == null ? null : new UserCredentials(login, password));
-		}
+		// protected Task<EventStoreTransaction> TransStart(string streamId, string login, string password) {
+		// 	return Connection.StartTransactionAsync(streamId, ExpectedVersion.Any,
+		// 		login == null && password == null ? null : new UserCredentials(login, password));
+		// }
 
 		protected Task ReadAllForward(string login, string password) {
 			return Connection.ReadAllEventsForwardAsync(Position.Start, 1, false,
@@ -202,11 +189,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 		protected Task WriteMeta(string streamId, string login, string password, string metawriteRole) {
 			return Connection.SetStreamMetadataAsync(streamId, ExpectedVersion.Any,
 				metawriteRole == null
-					? StreamMetadata.Build()
-					: StreamMetadata.Build().SetReadRole(metawriteRole)
-						.SetWriteRole(metawriteRole)
-						.SetMetadataReadRole(metawriteRole)
-						.SetMetadataWriteRole(metawriteRole),
+					? new StreamMetadata()
+					: new StreamMetadata(acl: new StreamAcl(readRole: metawriteRole, writeRole: metawriteRole, metaReadRole: metawriteRole, metaWriteRole: metawriteRole)),
 				login == null && password == null ? null : new UserCredentials(login, password));
 		}
 
@@ -238,7 +222,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 		protected Task ExpectNoException(Func<Task> action) => action();
 
 		protected EventData[] CreateEvents() {
-			return new[] { new EventData(Guid.NewGuid(), "some-type", false, new byte[] { 1, 2, 3 }, null) };
+			return new[] { new EventData(Uuid.NewUuid(), "some-type", new byte[] { 1, 2, 3 }, null) };
 		}
 	}
 }

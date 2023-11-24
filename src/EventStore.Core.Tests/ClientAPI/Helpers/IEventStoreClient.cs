@@ -188,12 +188,11 @@ public interface IEventStoreClient: IDisposable {
 		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null);
 
-	Task<StreamSubscription> SubscribeToStreamAsync(
-		string stream,
+	Task<StreamSubscription> SubscribeToStreamAsync(string stream,
 		bool resolveLinkTos,
 		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
 		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
-		Action<StreamPosition> liveProcessingStarted = null,
+		UserCredentials liveProcessingStarted = null,
 		UserCredentials userCredentials = null);
 
 	Task DeletePersistentSubscriptionAsync(string stream, string group, UserCredentials userCredentials = null);

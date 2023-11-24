@@ -104,8 +104,10 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		throw new NotImplementedException();
 	}
 
-	public Task<StreamSubscription> SubscribeToStreamAsync(string stream, bool resolveLinkTos, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
-		Action<StreamPosition> liveProcessingStarted = null, UserCredentials userCredentials = null) {
+	public Task<StreamSubscription> SubscribeToStreamAsync(string stream, bool resolveLinkTos,
+		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
+		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
+		UserCredentials liveProcessingStarted = null, UserCredentials userCredentials = null) {
 		throw new NotImplementedException();
 	}
 

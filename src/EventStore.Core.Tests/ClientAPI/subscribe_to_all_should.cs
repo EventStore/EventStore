@@ -1,12 +1,13 @@
-using System;
+extern alias GrpcClient;
+extern alias GrpcClientStreams;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClientStreams::EventStore.Client;
 using NUnit.Framework;
+using UserCredentials = GrpcClient::EventStore.Client.UserCredentials;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -26,8 +27,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var connection = BuildConnection(_node)) {
 				await connection.ConnectAsync();
 				await connection.SetStreamMetadataAsync("$all", -1,
-					StreamMetadata.Build().SetReadRole(SystemRoles.All),
-					new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
+					new StreamMetadata(acl: new StreamAcl(readRole: SystemRoles.All)),
+					DefaultData.AdminCredentials);
 			}
 		}
 
@@ -37,8 +38,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TearDown();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[Test, Category("LongRunning")]
@@ -51,11 +52,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				using (await store.SubscribeToAllAsync(false, (s, x) => {
 					appeared.Signal();
-					return;
 				}, (s, r, e) => dropped.Signal()))
 				using (await store.SubscribeToAllAsync(false, (s, x) => {
 					appeared.Signal();
-					return;
 				}, (s, r, e) => dropped.Signal())) {
 					var create =
 						await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent());

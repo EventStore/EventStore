@@ -10,8 +10,6 @@ using EventStore.Core.Tests.ClientAPI.Helpers;
 using GrpcClientPersistent::EventStore.Client;
 using AccessDeniedException = GrpcClient::EventStore.Client.AccessDeniedException;
 using EventData = GrpcClient::EventStore.Client.EventData;
-using EventStorePersistentSubscriptionBase = EventStore.ClientAPI.EventStorePersistentSubscriptionBase;
-using MaximumSubscribersReachedException = EventStore.ClientAPI.ClientOperations.MaximumSubscribersReachedException;
 using PersistentSubscriptionNakEventAction = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionNakEventAction;
 using PersistentSubscriptionSettings = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings;
 using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
@@ -751,7 +749,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.Start);
 
 		private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
-		private readonly Guid _id = Guid.NewGuid();
+		private readonly Uuid _id = Uuid.NewUuid();
 		int? _retryCount;
 		private const string _group = "retries";
 
