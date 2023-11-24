@@ -1,14 +1,13 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http;
@@ -16,6 +15,8 @@ using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Core.Tests.Http.Users.users;
+using GrpcClient::EventStore.Client;
+using SystemEventTypes = GrpcClientStreams::EventStore.Client.SystemEventTypes;
 
 namespace EventStore.Core.Tests.Http.Streams {
 	namespace feed {
@@ -316,26 +317,26 @@ namespace EventStore.Core.Tests.Http.Streams {
 				var creds = DefaultData.AdminCredentials;
 				LinkedStreamName = Guid.NewGuid().ToString();
 				StreamName = Guid.NewGuid() + "@" + Guid.NewGuid() + "@";
-				using (var conn = TestConnection.Create(_node.TcpEndPoint)) {
+				using (var conn = new GrpcEventStoreConnection(_node.HttpEndPoint)) {
 					await conn.ConnectAsync();
-					await conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
-							new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),
-								new byte[0]))
+					await conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any,
+							new[]{new EventData(Uuid.NewUuid(), "testing", Encoding.UTF8.GetBytes("{'foo' : 4}"),
+								new byte[0])}, creds)
 ;
-					await conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
-							new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),
-								new byte[0]))
+					await conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any,
+							new[]{new EventData(Uuid.NewUuid(), "testing", Encoding.UTF8.GetBytes("{'foo' : 4}"),
+								new byte[0])}, creds)
 ;
-					await conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
-							new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),
-								new byte[0]))
+					await conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any,
+							new[]{new EventData(Uuid.NewUuid(), "testing", Encoding.UTF8.GetBytes("{'foo' : 4}"),
+								new byte[0])}, creds)
 ;
-					await conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
-						new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
-							Encoding.UTF8.GetBytes("0@" + StreamName), new byte[0]));
-					await conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
-						new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
-							Encoding.UTF8.GetBytes("1@" + StreamName), new byte[0]));
+					await conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any,
+						new[]{new EventData(Uuid.NewUuid(), SystemEventTypes.LinkTo,
+							Encoding.UTF8.GetBytes("0@" + StreamName), new byte[0])}, creds);
+					await conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any,
+						new[]{new EventData(Uuid.NewUuid(), SystemEventTypes.LinkTo,
+							Encoding.UTF8.GetBytes("1@" + StreamName), new byte[0])}, creds);
 				}
 			}
 
