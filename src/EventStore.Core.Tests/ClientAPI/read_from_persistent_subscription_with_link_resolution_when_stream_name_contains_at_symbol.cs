@@ -1,10 +1,12 @@
+extern alias GrpcClient;
+extern alias GrpcClientPersistent;
 using System;
 using System.Text;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
-using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
+using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
+using PersistentSubscriptionSettings = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("LongRunning"), Category("ClientAPI")]
@@ -16,16 +18,14 @@ namespace EventStore.Core.Tests.ClientAPI {
 		protected override async Task When() {
 			var task = new TaskCompletionSource<string>();
 
-			var setts = PersistentSubscriptionSettings.Create()
-				.ResolveLinkTos()
-				.StartFromBeginning();
+			var setts = new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.Start);
 
 			await _conn.CreatePersistentSubscriptionAsync("link", "Agroup", setts, DefaultData.AdminCredentials);
 			await _conn.ConnectToPersistentSubscriptionAsync(
 				"link",
 				"Agroup",
 				(sub, @event) => {
-					var data = Encoding.Default.GetString(@event.Event.Data);
+					var data = Encoding.Default.GetString(@event.Event.Data.ToArray());
 					task.TrySetResult(data);
 					return Task.CompletedTask;
 				},

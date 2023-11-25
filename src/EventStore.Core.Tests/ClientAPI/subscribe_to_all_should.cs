@@ -7,7 +7,6 @@ using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using GrpcClientStreams::EventStore.Client;
 using NUnit.Framework;
-using UserCredentials = GrpcClient::EventStore.Client.UserCredentials;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -52,9 +51,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				using (await store.SubscribeToAllAsync(false, (s, x) => {
 					appeared.Signal();
+					return Task.CompletedTask;
 				}, (s, r, e) => dropped.Signal()))
 				using (await store.SubscribeToAllAsync(false, (s, x) => {
 					appeared.Signal();
+					return Task.CompletedTask;
 				}, (s, r, e) => dropped.Signal())) {
 					var create =
 						await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent());
