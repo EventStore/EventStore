@@ -12,6 +12,6 @@ public class UnixSocketConnectionMiddleware {
 
 	public async Task OnConnectAsync(ConnectionContext context) {
 		context.Items.Add(UnixSocketConnectionKey, true);
-		await _next(context).ConfigureAwait(false);
+		await _next(context);
 	}
 }

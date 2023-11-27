@@ -14,13 +14,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var scavengeResultSource = new TaskCompletionSource<(string, ScavengeResp.Types.ScavengeResult)>();
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, StartOperation, context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, StartOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			_publisher.Publish(new ClientMessage.ScavengeDatabase(new CallbackEnvelope(OnMessage), Guid.NewGuid(), user,
 				request.Options.StartFromChunk, request.Options.ThreadCount, null, null, false));
 
-			var (scavengeId, scavengeResult) = await scavengeResultSource.Task.ConfigureAwait(false);
+			var (scavengeId, scavengeResult) = await scavengeResultSource.Task;
 
 			return new ScavengeResp {
 				ScavengeId = scavengeId,
@@ -34,13 +34,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var scavengeResultSource = new TaskCompletionSource<(string, ScavengeResp.Types.ScavengeResult)>();
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, StopOperation, context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, StopOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			_publisher.Publish(new ClientMessage.StopDatabaseScavenge(new CallbackEnvelope(OnMessage), Guid.NewGuid(), user,
 				request.Options.ScavengeId));
 
-			var (scavengeId, scavengeResult) = await scavengeResultSource.Task.ConfigureAwait(false);
+			var (scavengeId, scavengeResult) = await scavengeResultSource.Task;
 
 			return new ScavengeResp {
 				ScavengeId = scavengeId,

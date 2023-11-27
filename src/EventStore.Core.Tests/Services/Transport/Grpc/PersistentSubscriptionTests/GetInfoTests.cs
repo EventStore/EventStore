@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 					}
 				});
 
-				await call.ResponseStream.MoveNext().ConfigureAwait(false);
+				await call.ResponseStream.MoveNext();
 				
 				Assert.IsTrue(call.ResponseStream.Current.ContentCase == ReadResp.ContentOneofCase.SubscriptionConfirmation);
 

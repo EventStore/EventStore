@@ -23,9 +23,9 @@ namespace EventStore.Core.Services.Transport.Http {
 		public async Task InvokeAsync(HttpContext context, RequestDelegate next) {
 			try {
 				if (context.IsGrpc()) {
-					await HandleAsGrpcAsync(context, next).ConfigureAwait(false);
+					await HandleAsGrpcAsync(context, next);
 				} else {
-					await HandleAsHttpAsync(context, next).ConfigureAwait(false);
+					await HandleAsHttpAsync(context, next);
 				}
 			} catch (Exception ex) when (ex is OperationCanceledException or TaskCanceledException) {
 				// ignore request aborted
@@ -34,16 +34,16 @@ namespace EventStore.Core.Services.Transport.Http {
 
 		private async Task HandleAsHttpAsync(HttpContext context, RequestDelegate next) {
 			if (!TrySelectProvider(context, out var authenticationRequest)) {
-				await AddHttp1ChallengeHeaders(context).ConfigureAwait(false);
+				await AddHttp1ChallengeHeaders(context);
 				return;
 			}
 
-			var (status, principal) = await authenticationRequest.AuthenticateAsync().ConfigureAwait(false);
+			var (status, principal) = await authenticationRequest.AuthenticateAsync();
 
 			switch (status) {
 				case HttpAuthenticationRequestStatus.Authenticated:
 					context.User = principal;
-					await next(context).ConfigureAwait(false);
+					await next(context);
 					break;
 				case HttpAuthenticationRequestStatus.Error:
 					context.Response.StatusCode = HttpStatusCode.InternalServerError;
@@ -54,14 +54,14 @@ namespace EventStore.Core.Services.Transport.Http {
 					break;
 				case HttpAuthenticationRequestStatus.Unauthenticated:
 				default:
-					await AddHttp1ChallengeHeaders(context).ConfigureAwait(false);
+					await AddHttp1ChallengeHeaders(context);
 					break;
 			}
 		}
 
 		private async Task HandleAsGrpcAsync(HttpContext context, RequestDelegate next) {
 			var (status, principal) = TrySelectProvider(context, out var authenticationRequest)
-				? await authenticationRequest.AuthenticateAsync().ConfigureAwait(false)
+				? await authenticationRequest.AuthenticateAsync()
 				: (HttpAuthenticationRequestStatus.Unauthenticated, default);
 
 			GrpcProtocolHelpers.AddProtocolHeaders(context.Response);
@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			switch (status) {
 				case HttpAuthenticationRequestStatus.Authenticated:
 					context.User = principal;
-					await next(context).ConfigureAwait(false);
+					await next(context);
 					return;
 				case HttpAuthenticationRequestStatus.Error:
 					grpcStatus = new Status(StatusCode.Unknown, "Internal server error");
@@ -94,7 +94,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			// If feature is null then reset/abort will still end request, but response won't have trailers
 			var completionFeature = context.Features.Get<IHttpResponseBodyFeature>();
 			if (completionFeature != null) {
-				await completionFeature.CompleteAsync().ConfigureAwait(false);
+				await completionFeature.CompleteAsync();
 			}
 		}
 
@@ -117,8 +117,7 @@ namespace EventStore.Core.Services.Transport.Http {
 				context.Response.Headers.Append("WWW-Authenticate", $"X-{authSchemes.First()} realm=\"ESDB\"");
 				var properties = _authenticationProvider.GetPublicProperties();
 				if (properties != null && properties.Any()) {
-					await context.Response.WriteAsync(JsonConvert.SerializeObject(properties))
-						.ConfigureAwait(false);
+					await context.Response.WriteAsync(JsonConvert.SerializeObject(properties));
 				}
 			}
 		}

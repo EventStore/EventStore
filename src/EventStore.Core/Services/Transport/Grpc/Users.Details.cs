@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					readOperation.WithParameter(
 						Plugins.Authorization.Operations.Users.Parameters.User(user.Identity.Name));
 			}
-			if (!await _authorizationProvider.CheckAccessAsync(user, readOperation, context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, readOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var detailsSource = new TaskCompletionSource<UserManagementMessage.UserData[]>();
@@ -31,7 +31,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				? (Message)new UserManagementMessage.GetAll(envelope, user)
 				: new UserManagementMessage.Get(envelope, user, options.LoginName));
 
-			var details = await detailsSource.Task.ConfigureAwait(false);
+			var details = await detailsSource.Task;
 
 			foreach (var detail in details) {
 				await responseStream.WriteAsync(new DetailsResp {
@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								{TicksSinceEpoch = detail.DateLastUpdated.Value.UtcDateTime.ToTicksSinceEpoch()}
 							: null
 					}
-				}).ConfigureAwait(false);
+				});
 			}
 
 			void OnMessage(Message message) {

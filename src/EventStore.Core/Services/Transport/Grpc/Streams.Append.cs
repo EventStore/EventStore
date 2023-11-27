@@ -17,7 +17,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			using var duration = _appendTracker.Start();
 			try {
-				if (!await requestStream.MoveNext().ConfigureAwait(false))
+				if (!await requestStream.MoveNext())
 					throw new InvalidOperationException();
 
 				if (requestStream.Current.ContentCase != AppendReq.ContentOneofCase.Options)
@@ -42,7 +42,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				var user = context.GetHttpContext().User;
 				var op = WriteOperation.WithParameter(
 					Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
-				if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
+				if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken)) {
 					throw RpcExceptions.AccessDenied();
 				}
 
@@ -51,7 +51,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				var events = new List<Event>();
 
 				var size = 0;
-				while (await requestStream.MoveNext().ConfigureAwait(false)) {
+				while (await requestStream.MoveNext()) {
 					if (requestStream.Current.ContentCase != AppendReq.ContentOneofCase.ProposedMessage)
 						throw new InvalidOperationException();
 
@@ -96,7 +96,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					user,
 					cancellationToken: context.CancellationToken));
 
-				return await appendResponseSource.Task.ConfigureAwait(false);
+				return await appendResponseSource.Task;
 
 				void HandleWriteEventsCompleted(Message message) {
 					if (message is ClientMessage.NotHandled notHandled &&

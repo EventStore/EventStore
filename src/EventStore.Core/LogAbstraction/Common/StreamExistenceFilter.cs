@@ -118,7 +118,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 			_checkpointer = new Debouncer(
 				checkpointInterval,
 				async _ => {
-					await TakeCheckpointAsync().ConfigureAwait(false);
+					await TakeCheckpointAsync();
 				},
 				_cancellationTokenSource.Token);
 		}
@@ -140,7 +140,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 				// safety precaution against anything in the stack lying about the data
 				// truly being on disk.
-				await Task.Delay(_checkpointDelay).ConfigureAwait(false);
+				await Task.Delay(_checkpointDelay);
 
 				_checkpoint.Write(checkpoint);
 				_checkpoint.Flush();

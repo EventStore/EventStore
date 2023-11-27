@@ -38,7 +38,7 @@ public class TelemetrySink : ITelemetrySink {
 		} else {
 			_log.Information("Sending telemetry data to {url} (visit for more information): " + Environment.NewLine + json, ApiHost);
 			try {
-				await _httpClient.PostAsync(ApiHost, JsonContent.Create(data), token).ConfigureAwait(false);
+				await _httpClient.PostAsync(ApiHost, JsonContent.Create(data), token);
 			} catch (Exception ex) when (ex is not TaskCanceledException) {
 				_log.Error("Error when sending telemetry payload: {exception}", ex);
 			}

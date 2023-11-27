@@ -48,8 +48,7 @@ namespace EventStore.Core.Tests.Http.HealthChecks {
 		[TestCaseSource(nameof(MethodAllowedTestCases))]
 		public async Task after_start_returns_success(HttpMethod method) {
 			await _node.Start()
-				.WithTimeout()
-				.ConfigureAwait(false);
+				.WithTimeout();
 			_nodeStarted = true;
 			using var response = await _node.HttpClient.SendAsync(new HttpRequestMessage(method, "/health/live") {
 				Version = new Version(2, 0)
@@ -62,12 +61,10 @@ namespace EventStore.Core.Tests.Http.HealthChecks {
 		[TestCaseSource(nameof(MethodAllowedTestCases))]
 		public async Task after_shutdown_returns_error(HttpMethod method) {
 			await _node.Start()
-				.WithTimeout()
-				.ConfigureAwait(false);
+				.WithTimeout();
 			_nodeStarted = true;
 			await _node.Node.StopAsync()
-				.WithTimeout()
-				.ConfigureAwait(false);
+				.WithTimeout();
 
 			using var response = await _node.HttpClient.SendAsync(new HttpRequestMessage(method, "/health/live"));
 
@@ -77,8 +74,7 @@ namespace EventStore.Core.Tests.Http.HealthChecks {
 		[TestCaseSource(nameof(MethodNotAllowedTestCases))]
 		public async Task using_methods_other_than_get_or_head_returns_method_not_allowed(HttpMethod method) {
 			await _node.Start()
-				.WithTimeout()
-				.ConfigureAwait(false);
+				.WithTimeout();
 			_nodeStarted = true;
 			using var response = await _node.HttpClient.SendAsync(new HttpRequestMessage(method, "/health/live"));
 

@@ -47,7 +47,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_ => throw RpcExceptions.InvalidArgument(streamOptionsCase)
 				};
 
-				if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
+				if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken)) {
 					throw RpcExceptions.AccessDenied();
 				}
 
@@ -64,13 +64,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						context.Deadline,
 						context.CancellationToken);
 
-					async void DisposeEnumerator() => await enumerator.DisposeAsync().ConfigureAwait(false);
+					async void DisposeEnumerator() => await enumerator.DisposeAsync();
 
-					await using (enumerator.ConfigureAwait(false)) {
-						await using (context.CancellationToken.Register(DisposeEnumerator).ConfigureAwait(false)) {
-							while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
+					await using (enumerator) {
+						await using (context.CancellationToken.Register(DisposeEnumerator)) {
+							while (await enumerator.MoveNextAsync()) {
 								var readResponse = ConvertReadResponse(enumerator.Current, options.UuidOption);
-								await responseStream.WriteAsync(readResponse).ConfigureAwait(false);
+								await responseStream.WriteAsync(readResponse);
 							}
 						}
 					}

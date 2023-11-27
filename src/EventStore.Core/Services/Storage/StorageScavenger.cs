@@ -123,7 +123,7 @@ namespace EventStore.Core.Services.Storage {
 		private async void HandleCleanupWhenFinished(Task newScavengeTask, IScavenger newScavenge, ILogger logger) {
 			// Clean up the reference to the TfChunkScavenger once it's finished.
 			try {
-				await newScavengeTask.ConfigureAwait(false);
+				await newScavengeTask;
 			} catch (Exception ex) {
 				logger.Error(ex, "SCAVENGING: Unexpected error when scavenging");
 			} finally {

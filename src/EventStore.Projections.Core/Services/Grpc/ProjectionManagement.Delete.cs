@@ -14,8 +14,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var options = request.Options;
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, DeleteOperation, context.CancellationToken)
-				.ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, DeleteOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var name = options.Name;
@@ -29,7 +28,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			_queue.Publish(new ProjectionManagementMessage.Command.Delete(envelope, name, runAs,
 				deleteCheckpointStream, deleteStateStream, deleteEmittedStreams));
 
-			await deletedSource.Task.ConfigureAwait(false);
+			await deletedSource.Task;
 
 			return new DeleteResp();
 

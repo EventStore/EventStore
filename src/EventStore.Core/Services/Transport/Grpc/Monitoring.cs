@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_publisher.Publish(
 						new MonitoringMessage.GetFreshStats(envelope, x => x, request.UseMetadata, false));
 
-					await Task.Delay(delay, context.CancellationToken).ConfigureAwait(false);
+					await Task.Delay(delay, context.CancellationToken);
 				}
 			}
 		}

@@ -10,10 +10,6 @@
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="5.0.0.1">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
 		<PackageReference Include="EventStore.Plugins" Version="23.10.1" />
 		<PackageReference Include="Google.Protobuf" Version="3.25.0" />
 		<PackageReference Include="Grpc.AspNetCore" Version="2.59.0" />

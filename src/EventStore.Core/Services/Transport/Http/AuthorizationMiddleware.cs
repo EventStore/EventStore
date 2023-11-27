@@ -15,8 +15,8 @@ namespace EventStore.Core.Services.Transport.Http
 		}
 		public async Task InvokeAsync(HttpContext context, RequestDelegate next) {
 			if (InternalHttpHelper.TryGetInternalContext(context, out var manager, out var match, out _)) {
-				if (await _authorization.CheckAccessAsync(manager.User, match.ControllerAction.Operation(match.TemplateMatch), context.RequestAborted).ConfigureAwait(false)) {
-					await next(context).ConfigureAwait(false);
+				if (await _authorization.CheckAccessAsync(manager.User, match.ControllerAction.Operation(match.TemplateMatch), context.RequestAborted)) {
+					await next(context);
 					return;
 				}
 

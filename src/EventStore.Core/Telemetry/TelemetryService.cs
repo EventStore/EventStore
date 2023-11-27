@@ -53,7 +53,7 @@ public sealed class TelemetryService : IDisposable,
 		_nodeId = nodeId;
 		Task.Run(async () => {
 			try {
-				await ProcessAsync(publisher, sink).ConfigureAwait(false);
+				await ProcessAsync(publisher, sink);
 			} catch (Exception ex) when (ex is not OperationCanceledException) {
 				_log.Error(ex, "Telemetry loop stopped");
 			}
@@ -82,7 +82,7 @@ public sealed class TelemetryService : IDisposable,
 		publisher.Publish(scheduleInitialCollect);
 
 		var data = new JsonObject();
-		await foreach (var message in channel.Reader.ReadAllAsync(_cts.Token).ConfigureAwait(false)) {
+		await foreach (var message in channel.Reader.ReadAllAsync(_cts.Token)) {
 			switch (message) {
 				case TelemetryMessage.Collect:
 					Handle(usageRequest);
@@ -95,7 +95,7 @@ public sealed class TelemetryService : IDisposable,
 					break;
 
 				case TelemetryMessage.Flush:
-					await sink.Flush(data, _cts.Token).ConfigureAwait(false);
+					await sink.Flush(data, _cts.Token);
 					data.Clear();
 					publisher.Publish(scheduleCollect);
 					break;

@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					changePasswordOperation.WithParameter(
 						Plugins.Authorization.Operations.Users.Parameters.User(user.Identity.Name));
 			}
-			if (!await _authorizationProvider.CheckAccessAsync(user, changePasswordOperation, context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, changePasswordOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var changePasswordSource = new TaskCompletionSource<bool>();
@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				options.CurrentPassword,
 				options.NewPassword));
 
-			await changePasswordSource.Task.ConfigureAwait(false);
+			await changePasswordSource.Task;
 
 			return new ChangePasswordResp();
 

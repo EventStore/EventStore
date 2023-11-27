@@ -13,7 +13,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var options = request.Options;
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, CreateOperation, context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, CreateOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var createSource = new TaskCompletionSource<bool>();
@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				options.Groups.ToArray(),
 				options.Password));
 
-			await createSource.Task.ConfigureAwait(false);
+			await createSource.Task;
 
 			return new CreateResp();
 

@@ -37,7 +37,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				context.GetHttpContext().User, _maxAppendSize, _writeTimeout,
 				GetRequiresLeader(context.RequestHeaders));
 			
-			await worker.Work(context.CancellationToken).ConfigureAwait(false);
+			await worker.Work(context.CancellationToken);
 		}
 
 		private class BatchAppendWorker {
@@ -93,7 +93,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				async void HandleCompletion(Task task) {
 					try {
-						await task.ConfigureAwait(false);
+						await task;
 						if (Interlocked.Decrement(ref remaining) == 0) {
 							tcs.TrySetResult();
 						}
@@ -111,9 +111,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			private async Task Send(ChannelReader<BatchAppendResp> reader, CancellationToken cancellationToken) {
 				var isClosing = false;
-				await foreach (var response in reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)) {
+				await foreach (var response in reader.ReadAllAsync(cancellationToken)) {
 					if (!response.IsClosing) {
-						await _responseStream.WriteAsync(response).ConfigureAwait(false);
+						await _responseStream.WriteAsync(response);
 						if (Interlocked.Decrement(ref _pending) >= 0 && isClosing) {
 							break;
 						}
@@ -128,7 +128,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				var pendingWrites = new ConcurrentDictionary<Guid, ClientWriteRequest>();
 
 				try {
-					await foreach (var request in _requestStream.ReadAllAsync(cancellationToken).ConfigureAwait(false)) {
+					await foreach (var request in _requestStream.ReadAllAsync(cancellationToken)) {
 						using var duration = _tracker.Start();
 						try {
 							var correlationId = Uuid.FromDto(request.CorrelationId).ToGuid();
@@ -138,12 +138,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 								if (!await _authorizationProvider.CheckAccessAsync(user, WriteOperation.WithParameter(
 									Plugins.Authorization.Operations.Streams.Parameters.StreamId(
-										request.Options.StreamIdentifier)), cancellationToken).ConfigureAwait(false)) {
+										request.Options.StreamIdentifier)), cancellationToken)) {
 									await writer.WriteAsync(new BatchAppendResp {
 										CorrelationId = request.CorrelationId,
 										StreamIdentifier = request.Options.StreamIdentifier,
 										Error = Status.AccessDenied
-									}, cancellationToken).ConfigureAwait(false);
+									}, cancellationToken);
 									continue;
 								}
 
@@ -153,7 +153,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										StreamIdentifier = request.Options.StreamIdentifier,
 										Error = Status.BadRequest(
 											$"Required field {nameof(request.Options.StreamIdentifier)} not set.")
-									}, cancellationToken).ConfigureAwait(false);
+									}, cancellationToken);
 									continue;
 								}
 
@@ -162,7 +162,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										CorrelationId = request.CorrelationId,
 										StreamIdentifier = request.Options.StreamIdentifier,
 										Error = Status.Timeout
-									}, cancellationToken).ConfigureAwait(false);
+									}, cancellationToken);
 									continue;
 								}
 
@@ -183,7 +183,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									CorrelationId = request.CorrelationId,
 									StreamIdentifier = clientWriteRequest.StreamId,
 									Error = Status.MaximumAppendSizeExceeded((uint)_maxAppendSize)
-								}, cancellationToken).ConfigureAwait(false);
+								}, cancellationToken);
 							}
 
 							if (!request.IsFinal) {
@@ -260,13 +260,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								CorrelationId = request.CorrelationId,
 								StreamIdentifier = request.Options.StreamIdentifier,
 								Error = Status.BadRequest(ex.Message)
-							}, cancellationToken).ConfigureAwait(false);
+							}, cancellationToken);
 						}
 					}
 
 					await writer.WriteAsync(new BatchAppendResp {
 						IsClosing = true
-					}, cancellationToken).ConfigureAwait(false);
+					}, cancellationToken);
 				} catch (Exception ex) {
 					writer.TryComplete(ex);
 					throw;

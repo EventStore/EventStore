@@ -16,7 +16,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var user = context.GetHttpContext().User;
 
 			if (!await _authorizationProvider.CheckAccessAsync(user,
-				ReplayParkedOperation, context.CancellationToken).ConfigureAwait(false)) {
+				ReplayParkedOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				request.Options.GroupName,
 				stopAt,
 				user));
-			return await replayParkedMessagesSource.Task.ConfigureAwait(false);
+			return await replayParkedMessagesSource.Task;
 
 			void HandleReplayParkedMessagesCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {

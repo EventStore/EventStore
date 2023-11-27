@@ -120,7 +120,7 @@ namespace EventStore.Core.LogV3.FASTER {
 				checkpointInterval,
 				async token => {
 					try {
-						var success = await CheckpointLogAsync().ConfigureAwait(false);
+						var success = await CheckpointLogAsync();
 						if (!success)
 							throw new Exception($"not successful");
 
@@ -445,7 +445,7 @@ namespace EventStore.Core.LogV3.FASTER {
 		public async Task<bool> CheckpointLogAsync() {
 			LogStats();
 			Log.Debug("{indexName} is checkpointing", _indexName);
-			var (success, _) = await _store.TakeHybridLogCheckpointAsync(CheckpointType.FoldOver).ConfigureAwait(false);
+			var (success, _) = await _store.TakeHybridLogCheckpointAsync(CheckpointType.FoldOver);
 			return success;
 		}
 

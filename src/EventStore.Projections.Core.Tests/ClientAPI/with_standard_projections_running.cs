@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 
 			[Test, Category("Network")]
 			public async Task deleted_stream_events_are_indexed() {
-				await Task.Delay(500).ConfigureAwait(false); //give the projection time to catchup...
+				await Task.Delay(500); //give the projection time to catchup...
 				var slice = await _conn.ReadStreamEventsForwardAsync("$ce-cat", 0, 10, true, _admin);
 				Assert.AreEqual(SliceReadStatus.Success, slice.Status);
 

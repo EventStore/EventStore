@@ -41,7 +41,7 @@ namespace EventStore.Core.Authorization {
 		private async ValueTask<bool> EvaluateAsync(ValueTask<bool> pending, ReadOnlyMemory<IAssertion> remaining,
 			ClaimsPrincipal cp, Operation operation, PolicyInformation policy, EvaluationContext result) {
 			bool evaluated;
-			while ((evaluated = await pending.ConfigureAwait(false)) && !remaining.IsEmpty) {
+			while ((evaluated = await pending) && !remaining.IsEmpty) {
 				pending = remaining.Span[0].Evaluate(cp, operation, policy, result);
 				remaining = remaining.Slice(1);
 			}

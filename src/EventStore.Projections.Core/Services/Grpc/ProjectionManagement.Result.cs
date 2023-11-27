@@ -15,8 +15,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 		public override async Task<ResultResp> Result(ResultReq request, ServerCallContext context) {
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, ResultOperation, context.CancellationToken)
-				.ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, ResultOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
@@ -31,7 +30,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			_queue.Publish(new ProjectionManagementMessage.Command.GetResult(envelope, name, partition));
 
 			return new ResultResp {
-				Result = await resultSource.Task.ConfigureAwait(false)
+				Result = await resultSource.Task
 			};
 
 			void OnMessage(Message message) {
@@ -55,8 +54,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 		public override async Task<StateResp> State(StateReq request, ServerCallContext context) {
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, StateOperation, context.CancellationToken)
-				.ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, StateOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var resultSource = new TaskCompletionSource<Value>();
@@ -71,7 +69,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			_queue.Publish(new ProjectionManagementMessage.Command.GetState(envelope, name, partition));
 
 			return new StateResp {
-				State = await resultSource.Task.ConfigureAwait(false)
+				State = await resultSource.Task
 			};
 
 			void OnMessage(Message message) {

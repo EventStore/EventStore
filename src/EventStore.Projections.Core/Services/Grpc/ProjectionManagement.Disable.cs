@@ -15,8 +15,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var options = request.Options;
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, DisableOperation, context.CancellationToken)
-				.ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, DisableOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var name = options.Name;
@@ -28,7 +27,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				? new ProjectionManagementMessage.Command.Disable(envelope, name, runAs)
 				: (Message)new ProjectionManagementMessage.Command.Abort(envelope, name, runAs));
 
-			await disableSource.Task.ConfigureAwait(false);
+			await disableSource.Task;
 
 			return new DisableResp();
 

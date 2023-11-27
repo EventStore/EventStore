@@ -37,7 +37,7 @@ namespace EventStore.Core.Authorization {
 		private async ValueTask<bool> CheckAccessAsync(TimeSpan startedAt, ClaimsPrincipal cp,
 			ValueTask<EvaluationResult> evaluationTask) {
 			try {
-				return LogAndCheck(startedAt, cp, await evaluationTask.ConfigureAwait(false));
+				return LogAndCheck(startedAt, cp, await evaluationTask);
 			} catch (Exception ex) when (ex is not OperationCanceledException) {
 				_logger.Error(ex, "Error performing permission check for {identity}",
 					cp.FindFirst(ClaimTypes.Name)?.Value ?? "unknown");

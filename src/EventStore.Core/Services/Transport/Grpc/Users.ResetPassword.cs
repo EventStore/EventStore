@@ -13,7 +13,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var options = request.Options;
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, ResetOperation, context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, ResetOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var resetPasswordSource = new TaskCompletionSource<bool>();
@@ -23,7 +23,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			_publisher.Publish(
 				new UserManagementMessage.ResetPassword(envelope, user, options.LoginName, options.NewPassword));
 
-			await resetPasswordSource.Task.ConfigureAwait(false);
+			await resetPasswordSource.Task;
 
 			return new ResetPasswordResp();
 
