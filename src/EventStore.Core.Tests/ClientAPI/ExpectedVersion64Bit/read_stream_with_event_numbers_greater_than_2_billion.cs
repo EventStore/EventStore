@@ -1,10 +1,14 @@
+extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
+using Position = GrpcClient::EventStore.Client.Position;
 using System.Collections.Generic;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using NUnit.Framework;
 using EventStore.Core.Data;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -29,7 +33,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			_store = BuildConnection(Node);
 			await _store.ConnectAsync();
 			await _store.SetStreamMetadataAsync(StreamName, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
+				new StreamMetadata(truncateBefore: intMaxValue + 1));
 		}
 
 		[Test]

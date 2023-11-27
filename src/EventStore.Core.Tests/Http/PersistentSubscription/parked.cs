@@ -1,4 +1,6 @@
-﻿using System;
+﻿extern alias GrpcClient;
+using Uuid = GrpcClient::EventStore.Client.Uuid;
+using System;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -10,8 +12,6 @@ using Newtonsoft.Json.Linq;
 using System.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Transport.Http;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common;
 using EventStore.Core.Data;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
@@ -22,8 +22,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_parking_a_message<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private string _nackLink;
-		private Guid _eventIdToPark;
-		private Guid _parkedEventId;
+		private Uuid _eventIdToPark;
+		private Uuid _parkedEventId;
 		private List<JToken> _entries;
 		private readonly TaskCompletionSource<bool> _eventParked = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			Assert.DoesNotThrow(() => {
 				_entries = json != null ? json["entries"].ToList() : new List<JToken>();
 	            _nackLink = _entries[0]["links"][3]["uri"].ToString() + "?action=park";
-	            _eventIdToPark = Guid.Parse(_entries[0]["eventId"].ToString());
+	            _eventIdToPark = Uuid.Parse(_entries[0]["eventId"].ToString());
 			});
 		}
 
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		private TaskCompletionSource<bool> _eventParked = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		protected override async Task Given() {
-			_connection.Close();
+			await _connection.Close();
 			_connection.Dispose();
 			NumberOfEventsToCreate = 1;
 			await base.Given();
@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		private TaskCompletionSource<bool> _eventParked = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 		
 		protected override async Task Given() {
-			_connection.Close();
+			await _connection.Close();
 			_connection.Dispose();
 			NumberOfEventsToCreate = 3;
 			await base.Given();
@@ -256,7 +256,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		private TaskCompletionSource<bool> _eventParked = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		protected override async Task Given() {
-			_connection.Close();
+			await _connection.Close();
 			_connection.Dispose();
 			NumberOfEventsToCreate = 3;
 			await base.Given();

@@ -10,7 +10,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using EventStore.ClientAPI;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
@@ -23,7 +22,7 @@ using Newtonsoft.Json.Converters;
 namespace EventStore.Core.Tests.Http {
 	public abstract class HttpBehaviorSpecification<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		protected MiniNode<TLogFormat, TStreamId> _node;
-		protected IEventStoreConnection _connection;
+		protected IEventStoreClient _connection;
 		protected HttpResponseMessage _lastResponse;
 		protected string _lastResponseBody;
 		protected byte[] _lastResponseBytes;
@@ -42,7 +41,7 @@ namespace EventStore.Core.Tests.Http {
 			_node = CreateMiniNode();
 			await _node.Start();
 
-			_connection = TestConnection.Create(_node.TcpEndPoint);
+			_connection = new GrpcEventStoreConnection(_node.HttpEndPoint);
 			await _connection.ConnectAsync();
 
 			_lastResponse = null;
@@ -77,7 +76,7 @@ namespace EventStore.Core.Tests.Http {
 		protected virtual bool GivenSkipInitializeStandardUsersCheck() => false;
 
 		public override async Task TestFixtureTearDown() {
-			_connection.Close();
+			await _connection.Close();
 			await _node.Shutdown();
 			await base.TestFixtureTearDown();
 			foreach (var response in _allResponses) {
