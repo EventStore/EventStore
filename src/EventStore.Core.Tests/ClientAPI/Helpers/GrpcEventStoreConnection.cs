@@ -19,7 +19,10 @@ using Position = GrpcClient::EventStore.Client.Position;
 using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
 using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
 using StreamState = GrpcClient::EventStore.Client.StreamState;
+using SystemSettings = GrpcClientStreams::EventStore.Client.SystemSettings;
 using SubscriptionDroppedReason = GrpcClient::EventStore.Client.SubscriptionDroppedReason;
+using Uuid = GrpcClient::EventStore.Client.Uuid;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
@@ -278,6 +281,11 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	public Task CreatePersistentSubscriptionAsync(string stream, string groupName, GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings settings,
 		UserCredentials userCredentials = null) {
 		return _psClient.CreateToStreamAsync(stream, groupName, settings, userCredentials: userCredentials);
+	}
+
+	public async Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null) {
+		var @event = new EventData(Uuid.NewUuid(), "$settings", settings.ToJsonBytes());
+		await _streamsClient.AppendToStreamAsync("$settings", StreamState.Any, new[] {@event}, userCredentials: userCredentials);
 	}
 
 	public Task Close() {

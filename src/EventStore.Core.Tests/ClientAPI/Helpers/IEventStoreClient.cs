@@ -14,6 +14,7 @@ using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
 using StreamMetadataResult = GrpcClientStreams::EventStore.Client.StreamMetadataResult;
 using StreamSubscription = GrpcClientStreams::EventStore.Client.StreamSubscription;
 using SubscriptionFilterOptions = GrpcClientStreams::EventStore.Client.SubscriptionFilterOptions;
+using SystemSettings = GrpcClientStreams::EventStore.Client.SystemSettings;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
@@ -199,6 +200,8 @@ public interface IEventStoreClient: IDisposable {
 
 	Task UpdatePersistentSubscriptionAsync(string stream, string group, PersistentSubscriptionSettings settings,
 		UserCredentials userCredentials = null);
+
+	Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null);
 
 	Task ConnectAsync();
 	Task Close();
