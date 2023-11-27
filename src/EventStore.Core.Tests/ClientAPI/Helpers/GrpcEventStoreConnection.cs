@@ -30,9 +30,11 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	private readonly IPEndPoint _endpoint;
 	private EventStoreStreamsClient _streamsClient;
 	private EventStorePersistentSubscriptionsClient _psClient;
+	private UserCredentials _defaultUserCredentials;
 
-	public GrpcEventStoreConnection(IPEndPoint endpoint) {
+	public GrpcEventStoreConnection(IPEndPoint endpoint, UserCredentials defaultUserCredentials = null) {
 		_endpoint = endpoint;
+		_defaultUserCredentials = defaultUserCredentials;
 	}
 
 	public void Dispose() {
@@ -125,6 +127,9 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	public Task ConnectAsync() {
 		var setts = EventStoreClientSettings.Create($"esdb://{_endpoint.Address}:{_endpoint.Port}");
+		if (_defaultUserCredentials != null)
+			setts.DefaultCredentials = _defaultUserCredentials;
+
 		_streamsClient = new EventStoreStreamsClient(setts);
 		_psClient = new EventStorePersistentSubscriptionsClient(setts);
 		return Task.CompletedTask;

@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		private TaskCompletionSource<bool> _eventParked = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		protected override async Task Given() {
-			_connection.Close();
+			await _connection.Close();
 			_connection.Dispose();
 			NumberOfEventsToCreate = 1;
 			await base.Given();

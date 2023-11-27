@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		public override async Task Given() {
 			_store = BuildConnection(Node);
 			await _store.ConnectAsync();
-			await _store.SetStreamMetadataAsync(StreamName, EventStore.ClientAPI.ExpectedVersion.Any,
+			await _store.SetStreamMetadataAsync(StreamName, Helpers.ExpectedVersion.Any,
 				new StreamMetadata(truncateBefore: intMaxValue + 1));
 		}
 

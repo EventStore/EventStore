@@ -1,6 +1,8 @@
-using EventStore.ClientAPI;
+extern alias GrpcClient;
+using Position = GrpcClient.EventStore.Client.Position;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 using System.Linq;
 using System.Threading.Tasks;
