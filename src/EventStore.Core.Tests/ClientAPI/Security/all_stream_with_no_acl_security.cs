@@ -1,7 +1,9 @@
-﻿using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.SystemData;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using System.Threading.Tasks;
+using GrpcClient::EventStore.Client;
+using GrpcClientStreams::EventStore.Client;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
@@ -13,7 +15,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-			await Connection.SetStreamMetadataAsync("$all", ExpectedVersion.Any, StreamMetadata.Build(),
+			await Connection.SetStreamMetadataAsync("$all", ExpectedVersion.Any, new StreamMetadata(),
 				new UserCredentials("adm", "admpa$$"));
 		}
 

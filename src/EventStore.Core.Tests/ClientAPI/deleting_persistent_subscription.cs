@@ -1,8 +1,11 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientPersistent;
+using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
+using PersistentSubscriptionSettings = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings;
+using AccessDeniedException = GrpcClient::EventStore.Client.AccessDeniedException;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
@@ -12,9 +15,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class deleting_existing_persistent_subscription_group_with_permissions<TLogFormat, TStreamId>
 		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings = new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.End);
 
 		private readonly string _stream = Guid.NewGuid().ToString();
 
@@ -32,9 +33,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class deleting_existing_persistent_subscription_with_subscriber<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
-		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
-			.DoNotResolveLinkTos()
-			.StartFromCurrent();
+		private readonly PersistentSubscriptionSettings _settings = new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.End);
 
 		private readonly string _stream = Guid.NewGuid().ToString();
 		private readonly ManualResetEvent _called = new ManualResetEvent(false);
@@ -43,7 +42,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.Given();
 			await _conn.CreatePersistentSubscriptionAsync(_stream, "groupname123", _settings,
 				DefaultData.AdminCredentials);
-			_conn.ConnectToPersistentSubscription(_stream, "groupname123",
+			await _conn.ConnectToPersistentSubscription(_stream, "groupname123",
 				(s, e) => Task.CompletedTask,
 				(s, r, e) => _called.Set(), DefaultData.AdminCredentials);
 		}

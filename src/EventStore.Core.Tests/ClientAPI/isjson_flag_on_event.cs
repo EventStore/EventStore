@@ -1,15 +1,18 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using EventData = GrpcClient::EventStore.Client.EventData;
+using Uuid = GrpcClient::EventStore.Client.Uuid;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using System.Text;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -31,8 +34,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TearDown();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.To(node, TcpType.Ssl);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[Test, Category("LongRunning"), Category("Network")]
@@ -44,29 +47,30 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await connection.AppendToStreamAsync(
 						stream,
 						ExpectedVersion.Any,
-						new EventData(Guid.NewGuid(), "some-type", true,
-							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), null),
-						new EventData(Guid.NewGuid(), "some-type", true, null,
-							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")),
-						new EventData(Guid.NewGuid(), "some-type", true,
-							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"),
-							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")));
+						new EventData(Uuid.NewUuid(), "some-type", 
+							Encoding.UTF8.GetBytes("{\"some\":\"json\"}"), null),
+						new EventData(Uuid.NewUuid(), "some-type", null,
+							Encoding.UTF8.GetBytes("{\"some\":\"json\"}")),
+						new EventData(Uuid.NewUuid(), "some-type", 
+							Encoding.UTF8.GetBytes("{\"some\":\"json\"}"),
+							Encoding.UTF8.GetBytes("{\"some\":\"json\"}")));
 				var expectedEvents = 3;
 
-				if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-					using (var transaction = await connection.StartTransactionAsync(stream, ExpectedVersion.Any)) {
-						await transaction.WriteAsync(
-							new EventData(Guid.NewGuid(), "some-type", true,
-								Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), null),
-							new EventData(Guid.NewGuid(), "some-type", true, null,
-								Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")),
-							new EventData(Guid.NewGuid(), "some-type", true,
-								Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"),
-								Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")));
-						await transaction.CommitAsync();
-						expectedEvents += 3;
-					}
-				}
+				// TODO - Explicit transactions are no longer supported by the gRPC client.
+				// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+				// 	using (var transaction = await connection.StartTransactionAsync(stream, ExpectedVersion.Any)) {
+				// 		await transaction.WriteAsync(
+				// 			new EventData(Uuid.NewUuid(), "some-type", 
+				// 				Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), null),
+				// 			new EventData(Uuid.NewUuid(), "some-type",null,
+				// 				Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")),
+				// 			new EventData(Uuid.NewUuid(), "some-type",
+				// 				Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"),
+				// 				Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")));
+				// 		await transaction.CommitAsync();
+				// 		expectedEvents += 3;
+				// 	}
+				// }
 
 				var done = new ManualResetEventSlim();
 				_node.Node.MainQueue.Publish(new ClientMessage.ReadStreamEventsForward(

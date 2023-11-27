@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using EventStore.ClientAPI;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
@@ -7,7 +7,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class read_all_events_forward_with_linkto_to_deleted_event<TLogFormat, TStreamId> : SpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
-		private StreamEventsSlice _read;
+		private StreamEventsSliceNew _read;
 
 		protected override async Task When() {
 			_read = await _conn.ReadStreamEventsForwardAsync(LinkedStreamName, 0, 1, true, null);
