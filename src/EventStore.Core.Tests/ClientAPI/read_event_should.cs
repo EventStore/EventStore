@@ -1,7 +1,10 @@
+extern alias GrpcClient;
+using EventData = GrpcClient::EventStore.Client.EventData;
+using Uuid = GrpcClient::EventStore.Client.Uuid;
 using System;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using NUnit.Framework;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -9,17 +12,17 @@ namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class read_event_should<TLogFormat, TStreamId>
 		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
-		private Guid _eventId0;
-		private Guid _eventId1;
+		private Uuid _eventId0;
+		private Uuid _eventId1;
 
 		protected override async Task When() {
-			_eventId0 = Guid.NewGuid();
-			_eventId1 = Guid.NewGuid();
+			_eventId0 = Uuid.NewUuid();
+			_eventId1 = Uuid.NewUuid();
 
 			await _conn.AppendToStreamAsync("test-stream",
 					-1,
-					new EventData(_eventId0, "event0", false, new byte[3], new byte[2]),
-					new EventData(_eventId1, "event1", true, new byte[7], new byte[10]));
+					new EventData(_eventId0, "event0", new byte[3], new byte[2]),
+					new EventData(_eventId1, "event1", new byte[7], new byte[10]));
 			await _conn.DeleteStreamAsync("deleted-stream", -1, hardDelete: true);
 		}
 
@@ -84,7 +87,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			Assert.AreEqual("test-stream", res.Stream);
 			Assert.AreEqual(0, res.EventNumber);
 			Assert.AreNotEqual(DateTime.MinValue, res.Event.Value.OriginalEvent.Created);
-			Assert.AreNotEqual(0, res.Event.Value.OriginalEvent.CreatedEpoch);
+			Assert.AreNotEqual(0, res.Event.Value.OriginalEvent.Created.ToEpoch());
 		}
 
 		[Test, Category("Network")]
@@ -93,7 +96,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			Assert.AreEqual(EventReadStatus.Success, res.Status);
 			Assert.AreEqual(res.Event.Value.OriginalEvent.EventId, _eventId1);
-			Assert.IsTrue(res.Event.Value.OriginalEvent.IsJson);
+			Assert.AreEqual("application/json", res.Event.Value.OriginalEvent.ContentType);
 		}
 
 		[Test, Category("Network")]
@@ -105,7 +108,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			Assert.AreEqual("test-stream", res.Stream);
 			Assert.AreEqual(-1, res.EventNumber);
 			Assert.AreNotEqual(DateTime.MinValue, res.Event.Value.OriginalEvent.Created);
-			Assert.AreNotEqual(0, res.Event.Value.OriginalEvent.CreatedEpoch);
+			Assert.AreNotEqual(0, res.Event.Value.OriginalEvent.Created.ToEpoch());
 		}
 	}
 }

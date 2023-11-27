@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -27,8 +26,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TestFixtureTearDown();
 		}
 
-		virtual protected IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		virtual protected IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[Test]
@@ -136,7 +135,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await store.ConnectAsync();
 
 				await AssertEx.ThrowsAsync<ArgumentException>(() =>
-					store.ReadStreamEventsForwardAsync("foo", StreamPosition.Start, int.MaxValue,
+					store.ReadStreamEventsForwardAsync("foo", 0, int.MaxValue,
 						resolveLinkTos: false));
 			}
 		}
@@ -151,7 +150,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
 				var write10 = await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, testEvents);
 
-				var read = await store.ReadStreamEventsForwardAsync(stream, StreamPosition.Start, testEvents.Length,
+				var read = await store.ReadStreamEventsForwardAsync(stream, 0, testEvents.Length,
 					resolveLinkTos: false);
 
 				Assert.That(EventDataComparer.Equal(testEvents, read.Events.Select(x => x.Event).ToArray()));
