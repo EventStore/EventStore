@@ -27,6 +27,7 @@ module.exports = [
     {
         text:     "Operations",
         children: [
+            "upgrade-guide.md",
             "operations.md",
             "diagnostics.md",
         ]
