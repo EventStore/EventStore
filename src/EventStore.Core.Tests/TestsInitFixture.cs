@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests {
 					 + "{5,-25} {6} ({7})\n"
 					 + "{8,-25} {9} ({10}-bit)\n"
 					 + "{11,-25} {12}\n\n",
-				"ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
+				"ES VERSION:", VersionInfo.Version, VersionInfo.Tag, VersionInfo.Hashtag, VersionInfo.Timestamp,
 				"OS:", OS.OsFlavor, Environment.OSVersion,
 				"RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
 				"GC:",
