@@ -20,8 +20,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Net.Http.Headers;
-using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using MidFunc = System.Func<
@@ -29,7 +27,6 @@ using MidFunc = System.Func<
 	System.Func<System.Threading.Tasks.Task>,
 	System.Threading.Tasks.Task
 >;
-using ElectionsService = EventStore.Core.Services.Transport.Grpc.Cluster.Elections;
 using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
@@ -128,41 +125,55 @@ namespace EventStore.Core {
 		}
 
 		public void Configure(IApplicationBuilder app) {
-			var grpc = new MediaTypeHeaderValue("application/grpc");
 			var internalDispatcher = new InternalDispatcherEndpoint(_mainQueue, _httpMessageHandler);
 			_mainBus.Subscribe(internalDispatcher);
+
 			app.Map("/health", _statusCheck.Configure)
 				.UseMiddleware<AuthenticationMiddleware>()
 				.UseRouting()
-				.UseWhen(ctx => ctx.Request.Method == HttpMethods.Options 
-				                && !(ctx.Request.GetTypedHeaders().ContentType?.IsSubsetOf(grpc)).GetValueOrDefault(false),
-					b => b
-						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
-				)
-				.UseEndpoints(ep => _authenticationProvider.ConfigureEndpoints(ep))
-				.UseWhen(ctx => !(ctx.Request.GetTypedHeaders().ContentType?.IsSubsetOf(grpc)).GetValueOrDefault(false),
-					b => b
-						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
-						.UseMiddleware<AuthorizationMiddleware>()
-						.UseOpenTelemetryPrometheusScrapingEndpoint()
-						.UseLegacyHttp(internalDispatcher.InvokeAsync, _httpService)
-				)
-				// enable redaction service on unix sockets only
-				.UseWhen(ctx => ctx.IsUnixSocketConnection(),
-					b => b
-						.UseRouting()
-						.UseEndpoints(ep => ep.MapGrpcService<Redaction>()))
-				.UseEndpoints(ep => ep.MapGrpcService<PersistentSubscriptions>())
-				.UseEndpoints(ep => ep.MapGrpcService<Users>())
-				.UseEndpoints(ep => ep.MapGrpcService<Streams<TStreamId>>())
-				.UseEndpoints(ep => ep.MapGrpcService<ClusterGossip>())
-				.UseEndpoints(ep => ep.MapGrpcService<Elections>())
-				.UseEndpoints(ep => ep.MapGrpcService<Operations>())
-				.UseEndpoints(ep => ep.MapGrpcService<ClientGossip>())
-				.UseEndpoints(ep => ep.MapGrpcService<Monitoring>())
-				.UseEndpoints(ep => ep.MapGrpcService<ServerFeatures>());
+				.UseEndpoints(ep => {
+					_authenticationProvider.ConfigureEndpoints(ep);
 
-			_subsystems.Aggregate(app, (b, subsystem) => subsystem.Configure(b));
+					ep.MapGrpcService<PersistentSubscriptions>();
+					ep.MapGrpcService<Users>();
+					ep.MapGrpcService<Streams<TStreamId>>();
+					ep.MapGrpcService<ClusterGossip>();
+					ep.MapGrpcService<Elections>();
+					ep.MapGrpcService<Operations>();
+					ep.MapGrpcService<ClientGossip>();
+					ep.MapGrpcService<Monitoring>();
+					ep.MapGrpcService<ServerFeatures>();
+
+					// enable redaction service on unix sockets only
+					ep.MapGrpcService<Redaction>().AddEndpointFilter(async (c, next) => {
+						if (!c.HttpContext.IsUnixSocketConnection())
+							return Results.BadRequest("Redaction is only available via Unix Sockets");
+						return await next(c).ConfigureAwait(false);
+					});
+
+					// Map the legacy controller endpoints with special middleware pipeline
+					ep.MapLegacyHttp(
+						ep.CreateApplicationBuilder()
+							// Select an appropriate controller action and codec.
+							//    Success -> Add InternalContext (HttpEntityManager, urimatch, ...) to HttpContext
+							//    Fail -> Pipeline terminated with response.
+							.UseMiddleware<KestrelToInternalBridgeMiddleware>()
+
+							// Looks up the InternalContext to perform the check.
+							// Terminal if auth check is not successful.
+							.UseMiddleware<AuthorizationMiddleware>()
+
+							// Open telemetry currently guarded by our custom authz for consistency with stats
+							.UseOpenTelemetryPrometheusScrapingEndpoint()
+
+							// Internal dispatcher looks up the InternalContext to call the appropriate controller
+							.Use(x => internalDispatcher.InvokeAsync)
+							.Build(),
+						_httpService);
+				});
+
+			foreach (var subsystem in _subsystems)
+				subsystem.Configure(app);
 		}
 
 		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)
