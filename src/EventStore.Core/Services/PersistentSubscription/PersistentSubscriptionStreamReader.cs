@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				_ioDispatcher.ReadForward(
 					eventSource.EventStreamId, startPosition.StreamEventNumber, Math.Min(countToLoad, actualBatchSize),
 					resolveLinkTos, SystemAccounts.System, new ResponseHandler(onEventsFound, onEventsSkipped, onError, skipFirstEvent).FetchCompleted,
-					async () => await HandleTimeout(eventSource.EventStreamId).ConfigureAwait(false),
+					async () => await HandleTimeout(eventSource.EventStreamId),
 					Guid.NewGuid());
 			} else if (eventSource.FromAll) {
 				if (eventSource.EventFilter is null) {
@@ -64,7 +64,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 						SystemAccounts.System,
 						null,
 						new ResponseHandler(onEventsFound, onEventsSkipped, onError, skipFirstEvent).FetchAllCompleted,
-						async () => await HandleTimeout(SystemStreams.AllStream).ConfigureAwait(false),
+						async () => await HandleTimeout(SystemStreams.AllStream),
 						Guid.NewGuid());
 				} else {
 					var maxSearchWindow = Math.Max(actualBatchSize, maxWindowSize);
@@ -80,7 +80,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 						SystemAccounts.System,
 						null,
 						new ResponseHandler(onEventsFound, onEventsSkipped, onError, skipFirstEvent).FetchAllFilteredCompleted,
-						async () => await HandleTimeout($"{SystemStreams.AllStream} with filter {eventSource.EventFilter}").ConfigureAwait(false),
+						async () => await HandleTimeout($"{SystemStreams.AllStream} with filter {eventSource.EventFilter}"),
 						Guid.NewGuid());
 				}
 			} else {
@@ -92,7 +92,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				Log.Warning(
 					"Timed out reading from stream: {stream}. Retrying in {retryInterval} seconds.",
 					streamName, backOff);
-				await Task.Delay(TimeSpan.FromSeconds(backOff)).ConfigureAwait(false);
+				await Task.Delay(TimeSpan.FromSeconds(backOff));
 				BeginReadEventsInternal(eventSource, startPosition, countToLoad, batchSize, maxWindowSize, resolveLinkTos,
 					skipFirstEvent, onEventsFound, onEventsSkipped, onError, retryCount + 1);
 			}

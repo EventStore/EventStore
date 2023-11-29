@@ -93,11 +93,11 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			public override async ValueTask<bool> MoveNextAsync() {
 				ReadLoop:
 
-				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
+				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken)) {
 					return false;
 				}
 
-				var readResponse = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+				var readResponse = await _channel.Reader.ReadAsync(_cancellationToken);
 
 				if (readResponse is ReadResponse.EventReceived eventReceived) {
 					var @event = eventReceived.Event;
@@ -159,7 +159,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 					switch (completed.Result) {
 						case ReadStreamResult.Success:
-							await ConfirmSubscription().ConfigureAwait(false);
+							await ConfirmSubscription();
 							foreach (var @event in completed.Events) {
 								var streamRevision = StreamRevision.FromInt64(@event.OriginalEvent.EventNumber);
 
@@ -167,8 +167,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 									"Catch-up subscription {subscriptionId} to {streamName} received event {streamRevision}.",
 									_subscriptionId, _streamName, streamRevision);
 
-								await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct)
-									.ConfigureAwait(false);
+								await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct);
 							}
 
 							if (completed.IsEndOfStream) {
@@ -182,8 +181,8 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 							ReadPage(StreamRevision.FromInt64(completed.FromEventNumber), OnMessage);
 							return;
 						case ReadStreamResult.NoStream:
-							await ConfirmSubscription().ConfigureAwait(false);
-							await Task.Delay(TimeSpan.FromMilliseconds(50), ct).ConfigureAwait(false);
+							await ConfirmSubscription();
+							await Task.Delay(TimeSpan.FromMilliseconds(50), ct);
 							ReadPage(startRevision ?? StreamRevision.Start, OnMessage);
 							return;
 						case ReadStreamResult.StreamDeleted:
@@ -218,13 +217,12 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				Task.Factory.StartNew(PumpLiveMessages, _cancellationToken);
 
 				async Task PumpLiveMessages() {
-					await caughtUpSource.Task.ConfigureAwait(false);
+					await caughtUpSource.Task;
 
-					await _channel.Writer.WriteAsync(new ReadResponse.SubscriptionCaughtUp(), _cancellationToken).ConfigureAwait(false);
+					await _channel.Writer.WriteAsync(new ReadResponse.SubscriptionCaughtUp(), _cancellationToken);
 					
-					await foreach (var @event in liveEvents.Reader.ReadAllAsync(_cancellationToken)
-						.ConfigureAwait(false)) {
-						await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), _cancellationToken).ConfigureAwait(false);
+					await foreach (var @event in liveEvents.Reader.ReadAllAsync(_cancellationToken)) {
+						await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), _cancellationToken);
 					}
 				}
 
@@ -237,7 +235,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 					switch (message) {
 						case ClientMessage.SubscriptionConfirmation confirmed:
-							await ConfirmSubscription().ConfigureAwait(false);
+							await ConfirmSubscription();
 
 							var caughtUp = StreamRevision.FromInt64(confirmed.LastEventNumber!.Value);
 							Log.Verbose(
@@ -304,7 +302,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 										Log.Verbose(
 											"Live subscription {subscriptionId} to {streamName} stream not found.",
 											_subscriptionId, _streamName);
-										await Task.Delay(TimeSpan.FromMilliseconds(50), ct).ConfigureAwait(false);
+										await Task.Delay(TimeSpan.FromMilliseconds(50), ct);
 										ReadHistoricalEvents(startRevision);
 										return;
 									case ReadStreamResult.StreamDeleted:
@@ -344,7 +342,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 									Fail(new ReadResponseException.AccessDenied());
 									return;
 								case SubscriptionDropReason.NotFound:
-									await _channel.Writer.WriteAsync(new ReadResponse.StreamNotFound(_streamName), _cancellationToken).ConfigureAwait(false);
+									await _channel.Writer.WriteAsync(new ReadResponse.StreamNotFound(_streamName), _cancellationToken);
 									_channel.Writer.Complete();
 									return;
 								case SubscriptionDropReason.Unsubscribed:

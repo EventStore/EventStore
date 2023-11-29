@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user,
-				UpdateOperation, context.CancellationToken).ConfigureAwait(false)) {
+				UpdateOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
@@ -130,7 +130,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw new InvalidOperationException();
 			}
 
-			return await updatePersistentSubscriptionSource.Task.ConfigureAwait(false);
+			return await updatePersistentSubscriptionSource.Task;
 
 			void HandleUpdatePersistentSubscriptionCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {

@@ -87,11 +87,11 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			public async ValueTask<bool> MoveNextAsync() {
 				ReadLoop:
 
-				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
+				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken)) {
 					return false;
 				}
 
-				var readResponse = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+				var readResponse = await _channel.Reader.ReadAsync(_cancellationToken);
 
 				if (readResponse is ReadResponse.EventReceived eventReceived) {
 					var eventPos = eventReceived.Event.OriginalPosition!.Value;
@@ -156,7 +156,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 					switch (completed.Result) {
 						case ReadAllResult.Success:
-							await ConfirmSubscription().ConfigureAwait(false);
+							await ConfirmSubscription();
 
 							foreach (var @event in completed.Events) {
 								var position = Position.FromInt64(
@@ -167,7 +167,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 									"Catch-up subscription {subscriptionId} to $all received event {position}.",
 									_subscriptionId, position);
 
-								await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct).ConfigureAwait(false);
+								await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct);
 							}
 
 							var nextPosition = Position.FromInt64(completed.NextPos.CommitPosition,
@@ -213,12 +213,12 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				Task.Factory.StartNew(PumpLiveMessages, _cancellationToken);
 
 				async Task PumpLiveMessages() {
-					await caughtUpSource.Task.ConfigureAwait(false);
+					await caughtUpSource.Task;
 
-					await _channel.Writer.WriteAsync(new ReadResponse.SubscriptionCaughtUp(), _cancellationToken).ConfigureAwait(false);
+					await _channel.Writer.WriteAsync(new ReadResponse.SubscriptionCaughtUp(), _cancellationToken);
 
-					await foreach (var @event in liveEvents.Reader.ReadAllAsync(_cancellationToken).ConfigureAwait(false)) {
-						await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), _cancellationToken).ConfigureAwait(false);
+					await foreach (var @event in liveEvents.Reader.ReadAllAsync(_cancellationToken)) {
+						await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), _cancellationToken);
 					}
 				}
 
@@ -231,7 +231,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 					switch (message) {
 						case ClientMessage.SubscriptionConfirmation confirmed:
-							await ConfirmSubscription().ConfigureAwait(false);
+							await ConfirmSubscription();
 
 							var caughtUp = new TFPos(confirmed.LastIndexedPosition,
 								confirmed.LastIndexedPosition);

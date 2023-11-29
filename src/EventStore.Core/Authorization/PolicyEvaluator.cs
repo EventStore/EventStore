@@ -45,7 +45,7 @@ namespace EventStore.Core.Authorization {
 			CancellationToken ct) {
 			do {
 				if (ct.IsCancellationRequested) break;
-				await pending.ConfigureAwait(false);
+				await pending;
 				if (ct.IsCancellationRequested) break;
 				if (assertions.IsEmpty) break;
 				pending = assertions.Span[0].Evaluate(cp, operation, _policyInfo, evaluationContext);

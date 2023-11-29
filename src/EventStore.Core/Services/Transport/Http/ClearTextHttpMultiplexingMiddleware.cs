@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Http
 
 	    private static async Task<bool> HasHttp2Preface(PipeReader input) {
 		    while (true) {
-			    var result = await input.ReadAsync().ConfigureAwait(false);
+			    var result = await input.ReadAsync();
 			    try {
 				    int pos = 0;
 				    foreach (var x in result.Buffer) {
@@ -51,9 +51,9 @@ namespace EventStore.Core.Services.Transport.Http
         }
 
         public async Task OnConnectAsync(ConnectionContext context) {
-	        var hasHttp2Preface = await HasHttp2Preface(context.Transport.Input).ConfigureAwait(false);
+	        var hasHttp2Preface = await HasHttp2Preface(context.Transport.Input);
 	        SetProtocols(_next.Target, hasHttp2Preface ? HttpProtocols.Http2 : HttpProtocols.Http1);
-	        await _next(context).ConfigureAwait(false);
+	        await _next(context);
         }
     }
 }

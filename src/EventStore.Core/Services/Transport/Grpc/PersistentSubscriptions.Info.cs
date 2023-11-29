@@ -17,7 +17,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var user = context.GetHttpContext().User;
 
 			if (!await _authorizationProvider.CheckAccessAsync(user,
-				GetInfoOperation, context.CancellationToken).ConfigureAwait(false)) {
+				GetInfoOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
@@ -31,7 +31,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				new CallbackEnvelope(HandleGetPersistentSubscriptionStatsCompleted),
 				streamId,
 				request.Options.GroupName));
-			return await getPersistentSubscriptionInfoSource.Task.ConfigureAwait(false);
+			return await getPersistentSubscriptionInfoSource.Task;
 
 			void HandleGetPersistentSubscriptionStatsCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
@@ -80,7 +80,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var user = context.GetHttpContext().User;
 
 			if (!await _authorizationProvider.CheckAccessAsync(user,
-				GetInfoOperation, context.CancellationToken).ConfigureAwait(false)) {
+				GetInfoOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
@@ -106,7 +106,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw new InvalidOperationException();
 			}
 
-			return await listPersistentSubscriptionsSource.Task.ConfigureAwait(false);
+			return await listPersistentSubscriptionsSource.Task;
 
 			void HandleListSubscriptionsCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {

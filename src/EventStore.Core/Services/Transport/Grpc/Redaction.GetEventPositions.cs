@@ -18,20 +18,20 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = context.GetHttpContext().User;
 
-			await foreach (var request in requestStream.ReadAllAsync().ConfigureAwait(false)) {
+			await foreach (var request in requestStream.ReadAllAsync()) {
 				var streamId = request.StreamIdentifier.StreamName.ToStringUtf8();
 				var streamRevision = new StreamRevision(request.StreamRevision);
 
 				var op = ReadOperation.WithParameter(
 					Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamId));
 
-				if (!await _authorizationProvider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false))
+				if (!await _authorizationProvider.CheckAccessAsync(user, op, context.CancellationToken))
 					throw RpcExceptions.AccessDenied();
 
 				var tcsEnvelope = new TcsEnvelope<RedactionMessage.GetEventPositionCompleted>();
 				_bus.Publish(new RedactionMessage.GetEventPosition(tcsEnvelope, streamId, streamRevision.ToInt64()));
 
-				var completionMsg = await tcsEnvelope.Task.ConfigureAwait(false);
+				var completionMsg = await tcsEnvelope.Task;
 				var result = completionMsg.Result;
 				if (result != GetEventPositionResult.Success)
 					throw RpcExceptions.RedactionGetEventPositionFailed(result.GetErrorMessage());
@@ -52,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					});
 				}
 
-				await responseStream.WriteAsync(response).ConfigureAwait(false);
+				await responseStream.WriteAsync(response);
 			}
 		}
 	}

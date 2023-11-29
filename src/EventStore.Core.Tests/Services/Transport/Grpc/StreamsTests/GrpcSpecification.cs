@@ -134,7 +134,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 			public void Start() =>
 				Task.Run(async () => {
-					while (await BatchAppend.ResponseStream.MoveNext().ConfigureAwait(false)) {
+					while (await BatchAppend.ResponseStream.MoveNext()) {
 						var response = BatchAppend.ResponseStream.Current;
 						var correlationId = Uuid.FromDto(response.CorrelationId);
 

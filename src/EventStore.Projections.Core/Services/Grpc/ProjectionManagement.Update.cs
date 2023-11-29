@@ -16,8 +16,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var options = request.Options;
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, UpdateOperation, context.CancellationToken)
-				.ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, UpdateOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
@@ -36,7 +35,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				new ProjectionManagementMessage.Command.UpdateQuery(envelope, name, runAs, query,
 					emitEnabled));
 
-			await updatedSource.Task.ConfigureAwait(false);
+			await updatedSource.Task;
 
 			return new UpdateResp();
 

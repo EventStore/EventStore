@@ -86,7 +86,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 				_scavengerLogger.ScavengeStarted();
 
-				await RunInternal(_scavengerLogger, stopwatch, cancellationToken).ConfigureAwait(false);
+				await RunInternal(_scavengerLogger, stopwatch, cancellationToken);
 
 				_logger.Debug(
 					"SCAVENGING: Scavenge Completed. Total time taken: {elapsed}. Total space saved: {spaceSaved}.",
@@ -150,7 +150,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					prevScavengePoint: null,
 					scavengerLogger,
 					stopwatch,
-					cancellationToken).ConfigureAwait(false);
+					cancellationToken);
 
 			} else if (checkpoint is ScavengeCheckpoint.Done done) {
 				// start of a subsequent scavenge.
@@ -159,7 +159,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					prevScavengePoint: done.ScavengePoint,
 					scavengerLogger,
 					stopwatch,
-					cancellationToken).ConfigureAwait(false);
+					cancellationToken);
 
 			} else {
 				// the other cases are continuing an incomplete scavenge
@@ -236,8 +236,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 			ScavengePoint nextScavengePoint;
 			var latestScavengePoint = await _scavengePointSource
-				.GetLatestScavengePointOrDefaultAsync(cancellationToken)
-				.ConfigureAwait(false);
+				.GetLatestScavengePointOrDefaultAsync(cancellationToken);
 			if (latestScavengePoint == null) {
 				if (_syncOnly) {
 					_logger.Debug("SCAVENGING: No existing scavenge point to sync with, nothing to do.");
@@ -249,8 +248,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 						.AddScavengePointAsync(
 							ExpectedVersion.NoStream,
 							threshold: _thresholdForNewScavenge,
-							cancellationToken)
-						.ConfigureAwait(false);
+							cancellationToken);
 				}
 			} else {
 				// got the latest scavenge point
@@ -276,8 +274,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 							.AddScavengePointAsync(
 								expectedVersion,
 								threshold: _thresholdForNewScavenge,
-								cancellationToken)
-							.ConfigureAwait(false);
+								cancellationToken);
 					}
 				}
 			}

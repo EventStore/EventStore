@@ -29,10 +29,10 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		async Task RunAsync() {
 			while (true) {
-				await Task.Delay(_interval, _token).ConfigureAwait(false);
+				await Task.Delay(_interval, _token);
 				if (_mres.IsSet) {
 					_mres.Reset();
-					await _func(_token).ConfigureAwait(false);
+					await _func(_token);
 				}
 			}
 		}

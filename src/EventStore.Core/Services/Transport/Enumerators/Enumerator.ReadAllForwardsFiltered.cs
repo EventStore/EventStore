@@ -80,11 +80,11 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
+				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken)) {
 					return false;
 				}
 
-				_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+				_current = await _channel.Reader.ReadAsync(_cancellationToken);
 
 				return true;
 			}
@@ -123,7 +123,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 									return;
 								}
 
-								await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct).ConfigureAwait(false);
+								await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct);
 								readCount++;
 							}
 

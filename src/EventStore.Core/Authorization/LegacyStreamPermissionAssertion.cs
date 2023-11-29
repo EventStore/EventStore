@@ -34,8 +34,8 @@ namespace EventStore.Core.Authorization {
 
 		private async ValueTask<bool> CheckStreamAccessAsync(ValueTask<string> pending, ClaimsPrincipal cp,
 			Operation operation, PolicyInformation policy, EvaluationContext result) {
-			var streamId = await pending.ConfigureAwait(false);
-			return await CheckStreamAccess(cp, operation, policy, result, streamId).ConfigureAwait(false);
+			var streamId = await pending;
+			return await CheckStreamAccess(cp, operation, policy, result, streamId);
 		}
 
 		private ValueTask<bool> CheckStreamAccess(ClaimsPrincipal cp, Operation operation, PolicyInformation policy,
@@ -100,18 +100,17 @@ namespace EventStore.Core.Authorization {
 		private async ValueTask<bool> IsSystemOrAdminAsync(ValueTask<bool> isSystem, ClaimsPrincipal cp,
 			Operation operation,
 			PolicyInformation policy, EvaluationContext context) {
-			if (await isSystem.ConfigureAwait(false)) return true;
+			if (await isSystem) return true;
 
-			return await WellKnownAssertions.Admin.Evaluate(cp, operation, policy, context).ConfigureAwait(false);
+			return await WellKnownAssertions.Admin.Evaluate(cp, operation, policy, context);
 		}
 
 		private async ValueTask<bool> CheckAsync(ValueTask<bool> preChecks, ClaimsPrincipal cp, string action,
 			string streamId, PolicyInformation policy, EvaluationContext context) {
-			var isSystemOrAdmin = await preChecks.ConfigureAwait(false);
+			var isSystemOrAdmin = await preChecks;
 			if (isSystemOrAdmin)
 				return true;
-			var acl = await StorageMessage.EffectiveAcl.LoadAsync(_publisher, streamId, context.CancellationToken)
-				.ConfigureAwait(false);
+			var acl = await StorageMessage.EffectiveAcl.LoadAsync(_publisher, streamId, context.CancellationToken);
 			var roles = RolesFor(action, acl);
 			if (roles.Any(x => x == SystemRoles.All)) {
 				context.Add(new AssertionMatch(policy,

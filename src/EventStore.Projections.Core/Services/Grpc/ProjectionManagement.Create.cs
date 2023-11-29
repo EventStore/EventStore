@@ -17,8 +17,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var options = request.Options;
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, CreateOperation, context.CancellationToken)
-				.ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, CreateOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			const string handlerType = "JS";
@@ -58,7 +57,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			_queue.Publish(new ProjectionManagementMessage.Command.Post(envelope, projectionMode, name, runAs,
 				handlerType, options.Query, true, checkpointsEnabled, emitEnabled, trackEmittedStreams, true));
 
-			await createdSource.Task.ConfigureAwait(false);
+			await createdSource.Task;
 
 			return new CreateResp();
 

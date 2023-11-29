@@ -14,7 +14,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var options = request.Options;
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, UpdateOperation, context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, UpdateOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var updateSource = new TaskCompletionSource<bool>();
@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			_publisher.Publish(new UserManagementMessage.Update(envelope, user, options.LoginName, options.FullName,
 				options.Groups.ToArray()));
 
-			await updateSource.Task.ConfigureAwait(false);
+			await updateSource.Task;
 
 			return new UpdateResp();
 

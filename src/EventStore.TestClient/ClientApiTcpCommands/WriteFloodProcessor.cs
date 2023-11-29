@@ -158,7 +158,7 @@ namespace EventStore.TestClient.ClientApiTcpCommands {
 							}
 						}));
 					if (pending.Count == capacity) {
-						await Task.WhenAny(pending).ConfigureAwait(false);
+						await Task.WhenAny(pending);
 
 						while (pending.Count > 0 && Task.WhenAny(pending).IsCompleted) {
 							pending.RemoveAll(x => x.IsCompleted);

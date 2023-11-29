@@ -12,7 +12,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var options = request.Options;
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, DisableOperation, context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, DisableOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var disableSource = new TaskCompletionSource<bool>();
@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			_publisher.Publish(new UserManagementMessage.Disable(envelope, user, options.LoginName));
 
-			await disableSource.Task.ConfigureAwait(false);
+			await disableSource.Task;
 
 			return new DisableResp();
 

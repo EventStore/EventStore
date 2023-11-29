@@ -437,7 +437,7 @@ public class EnumeratorsTests {
 		public ValueTask DisposeAsync() => _enumerator.DisposeAsync();
 
 		public async Task<SubscriptionResponse> GetNext() {
-			if (!await _enumerator.MoveNextAsync().ConfigureAwait(false)) {
+			if (!await _enumerator.MoveNextAsync()) {
 				throw new Exception("No more items in enumerator");
 			}
 

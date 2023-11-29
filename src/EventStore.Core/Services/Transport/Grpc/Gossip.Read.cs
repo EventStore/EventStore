@@ -16,13 +16,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private static readonly Operation ReadOperation = new Operation(Plugins.Authorization.Operations.Node.Gossip.ClientRead);
 		public override async Task<ClusterInfo> Read(Empty request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, ReadOperation, context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, ReadOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var tcs = new TaskCompletionSource<ClusterInfo>();
 			var duration = _tracker.Start();
 			_bus.Publish(new GossipMessage.ClientGossip(new CallbackEnvelope(msg => GossipResponse(msg, tcs, duration))));;
-			return await tcs.Task.ConfigureAwait(false);
+			return await tcs.Task;
 		}
 
 		private void GossipResponse(Message msg, TaskCompletionSource<ClusterInfo> tcs, Duration duration) {

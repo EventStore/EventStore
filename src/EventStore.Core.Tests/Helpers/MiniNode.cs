@@ -233,8 +233,7 @@ namespace EventStore.Core.Tests.Helpers {
 			}
 
 			await _host.StartAsync().WithTimeout();
-			await Node.StartAsync(true).WithTimeout(TimeSpan.FromSeconds(60))
-				.ConfigureAwait(false); //starts the node
+			await Node.StartAsync(true).WithTimeout(TimeSpan.FromSeconds(60)); //starts the node
 
 			await Started.WithTimeout();
 			
@@ -250,7 +249,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_kestrelTestServer.Dispose();
 			HttpMessageHandler.Dispose();
 			HttpClient.Dispose();
-			await Node.StopAsync(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
+			await Node.StopAsync(TimeSpan.FromSeconds(20));
 
 			if (!keepDb)
 				TryDeleteDirectory(DbPath);

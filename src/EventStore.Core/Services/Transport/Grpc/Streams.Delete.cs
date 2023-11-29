@@ -30,13 +30,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				var user = context.GetHttpContext().User;
 				var op = DeleteOperation.WithParameter(Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
-				if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
+				if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken)) {
 					throw RpcExceptions.AccessDenied();
 				}
 				var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
 				var position = await DeleteInternal(streamName, expectedVersion, user, false, requiresLeader,
-					context.CancellationToken).ConfigureAwait(false);
+					context.CancellationToken);
 
 				return position.HasValue
 					? new DeleteResp {
@@ -76,12 +76,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			
 				var user = context.GetHttpContext().User;
 				var op = DeleteOperation.WithParameter(Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
-				if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
+				if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken)) {
 					throw RpcExceptions.AccessDenied();
 				}
 
 				var position = await DeleteInternal(streamName, expectedVersion, user, true, requiresLeader,
-					context.CancellationToken).ConfigureAwait(false);
+					context.CancellationToken);
 
 				return position.HasValue
 					? new TombstoneResp {
@@ -117,7 +117,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				user,
 				cancellationToken: cancellationToken));
 
-			return await deleteResponseSource.Task.ConfigureAwait(false);
+			return await deleteResponseSource.Task;
 
 			void HandleStreamDeletedCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled &&

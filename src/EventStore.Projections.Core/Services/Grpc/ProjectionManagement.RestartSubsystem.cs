@@ -15,14 +15,13 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var envelope = new CallbackEnvelope(OnMessage);
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, RestartOperation, context.CancellationToken)
-				.ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, RestartOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
 			_queue.Publish(new ProjectionSubsystemMessage.RestartSubsystem(envelope));
 
-			await restart.Task.ConfigureAwait(false);
+			await restart.Task;
 			return new Empty();
 
 			void OnMessage(Message message) {

@@ -279,8 +279,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 						Structured = new Empty()
 					}
 				}
-			}).ConfigureAwait(false);
-			if (!await call.ResponseStream.MoveNext().ConfigureAwait(false) ||
+			});
+			if (!await call.ResponseStream.MoveNext() ||
 				call.ResponseStream.Current.ContentCase != ReadResp.ContentOneofCase.SubscriptionConfirmation) {
 				throw new InvalidOperationException();
 			}

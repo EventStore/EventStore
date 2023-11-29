@@ -108,11 +108,11 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			public async ValueTask<bool> MoveNextAsync() {
 				ReadLoop:
 
-				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
+				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken)) {
 					return false;
 				}
 
-				var readResponse = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+				var readResponse = await _channel.Reader.ReadAsync(_cancellationToken);
 
 				if (readResponse is ReadResponse.EventReceived eventReceived) {
 					var eventPos = eventReceived.Event.OriginalPosition!.Value;
@@ -179,7 +179,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 					switch (completed.Result) {
 						case FilteredReadAllResult.Success:
-							await ConfirmSubscription().ConfigureAwait(false);
+							await ConfirmSubscription();
 
 							var position = Position.FromInt64(completed.CurrentPos.CommitPosition,
 								completed.CurrentPos.PreparePosition);
@@ -192,7 +192,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 									"Catch-up subscription {subscriptionId} to $all:{eventFilter} received event {position}.",
 									_subscriptionId, _eventFilter, position);
 
-								await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct).ConfigureAwait(false);
+								await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct);
 							}
 
 							_checkpointIntervalCounter += completed.ConsideredEventsCount;
@@ -218,8 +218,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 								await _channel.Writer.WriteAsync(new ReadResponse.CheckpointReceived(
 										commitPosition: position.CommitPosition,
-										preparePosition: position.PreparePosition), ct)
-									.ConfigureAwait(false);
+										preparePosition: position.PreparePosition), ct);
 							}
 
 							ReadPage(nextPosition, OnMessage);
@@ -259,12 +258,11 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				Task.Factory.StartNew(PumpLiveMessages, _cancellationToken);
 
 				async Task PumpLiveMessages() {
-					await caughtUpSource.Task.ConfigureAwait(false);
+					await caughtUpSource.Task;
 
-					await _channel.Writer.WriteAsync(new ReadResponse.SubscriptionCaughtUp(), _cancellationToken).ConfigureAwait(false);
+					await _channel.Writer.WriteAsync(new ReadResponse.SubscriptionCaughtUp(), _cancellationToken);
 
-					await foreach (var message in liveEvents.Reader.ReadAllAsync(_cancellationToken)
-						.ConfigureAwait(false)) {
+					await foreach (var message in liveEvents.Reader.ReadAllAsync(_cancellationToken)) {
 
 						if (message is ClientMessage.CheckpointReached checkpoint) {
 							if (checkpoint.Position == null) {
@@ -281,11 +279,9 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 								.WriteAsync(
 									new ReadResponse.CheckpointReceived(
 										commitPosition: checkpointPosition.CommitPosition,
-										preparePosition: checkpointPosition.PreparePosition), _cancellationToken)
-								.ConfigureAwait(false);
+										preparePosition: checkpointPosition.PreparePosition), _cancellationToken);
 						} else if (message is ClientMessage.StreamEventAppeared evt) {
-							await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(evt.Event), _cancellationToken)
-								.ConfigureAwait(false);
+							await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(evt.Event), _cancellationToken);
 						}
 					}
 				}
@@ -299,7 +295,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 					switch (message) {
 						case ClientMessage.SubscriptionConfirmation confirmed:
-							await ConfirmSubscription().ConfigureAwait(false);
+							await ConfirmSubscription();
 
 							var caughtUp = new TFPos(confirmed.LastIndexedPosition, confirmed.LastIndexedPosition);
 							Log.Verbose(

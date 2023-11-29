@@ -34,7 +34,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 
 		public override async Task<ClusterInfo> Update(GossipRequest request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, UpdateOperation, context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, UpdateOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var clusterInfo = EventStore.Core.Cluster.ClusterInfo.FromGrpcClusterInfo(request.Info, _clusterDns);
@@ -42,18 +42,18 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 			var duration = _updateTracker.Start();
 			_bus.Publish(new GossipMessage.GossipReceived(new CallbackEnvelope(msg => GossipResponse(msg, tcs, duration)),
 				clusterInfo, new DnsEndPoint(request.Server.Address, (int)request.Server.Port).WithClusterDns(_clusterDns)));
-			return await tcs.Task.ConfigureAwait(false);
+			return await tcs.Task;
 		}
 
 		public override async Task<ClusterInfo> Read(Empty request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, ReadOperation, context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, ReadOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var tcs = new TaskCompletionSource<ClusterInfo>();
 			var duration = _readTracker.Start();
 			_bus.Publish(new GossipMessage.ReadGossip(new CallbackEnvelope(msg => GossipResponse(msg, tcs, duration))));
-			return await tcs.Task.ConfigureAwait(false);
+			return await tcs.Task;
 		}
 
 		private void GossipResponse(Message msg, TaskCompletionSource<ClusterInfo> tcs, Duration duration) {

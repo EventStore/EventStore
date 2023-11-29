@@ -1689,10 +1689,10 @@ namespace EventStore.Core {
 
 			var cts = new CancellationTokenSource();
 
-			await using var _ = cts.Token.Register(() => _shutdownSource.TrySetCanceled(cancellationToken)).ConfigureAwait(false);
+			await using var _ = cts.Token.Register(() => _shutdownSource.TrySetCanceled(cancellationToken));
 
 			cts.CancelAfter(timeout.Value);
-			await _shutdownSource.Task.ConfigureAwait(false);
+			await _shutdownSource.Task;
 			_switchChunksLock?.Dispose();
 		}
 
@@ -1764,7 +1764,7 @@ namespace EventStore.Core {
 
 			Start();
 
-			return await tcs.Task.ConfigureAwait(false);
+			return await tcs.Task;
 		}
 
 		public static ValueTuple<bool, string> ValidateServerCertificate(X509Certificate certificate,

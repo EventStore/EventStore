@@ -19,7 +19,7 @@ namespace EventStore.Core.Cluster {
 				async response => {
 					try {
 						_bus.Publish(new GossipMessage.GossipReceived(new CallbackEnvelope(_ => { }),
-							await response.ConfigureAwait(false), destinationEndpoint));
+							await response, destinationEndpoint));
 					} catch (Exception ex) {
 						_bus.Publish(new GossipMessage.GossipSendFailed(ex.Message, destinationEndpoint));
 					}
@@ -29,7 +29,7 @@ namespace EventStore.Core.Cluster {
 		public void GetGossip(EndPoint destinationEndpoint, DateTime deadline) {
 			GetGossipAsync(deadline).ContinueWith(async response => {
 				try {
-					_bus.Publish(new GossipMessage.GetGossipReceived(await response.ConfigureAwait(false),
+					_bus.Publish(new GossipMessage.GetGossipReceived(await response,
 						destinationEndpoint));
 				} catch (Exception ex) {
 					_bus.Publish(new GossipMessage.GetGossipFailed(ex.Message, destinationEndpoint));
@@ -46,7 +46,7 @@ namespace EventStore.Core.Cluster {
 					Info = ClusterInfo.ToGrpcClusterInfo(clusterInfo),
 					Server = new GossipEndPoint(server.GetHost(), (uint)server.GetPort())
 				};
-				var clusterInfoDto = await _gossipClient.UpdateAsync(request, deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
+				var clusterInfoDto = await _gossipClient.UpdateAsync(request, deadline: deadline.ToUniversalTime());
 				return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto, _clusterDns);
 			}
 			catch (Exception ex) {
@@ -58,7 +58,7 @@ namespace EventStore.Core.Cluster {
 		private async Task<ClusterInfo> GetGossipAsync(DateTime deadline) {
 			using var duration = _gossipGetTracker.Start();
 			try {
-				var clusterInfoDto = await _gossipClient.ReadAsync(new Empty(), deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
+				var clusterInfoDto = await _gossipClient.ReadAsync(new Empty(), deadline: deadline.ToUniversalTime());
 				return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto, _clusterDns);
 			} catch (Exception ex) {
 				duration.SetException(ex);

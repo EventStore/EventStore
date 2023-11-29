@@ -27,8 +27,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		public override async Task<Empty> Shutdown(Empty request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, ShutdownOperation, context.CancellationToken)
-				.ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, ShutdownOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
@@ -40,15 +39,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var mergeResultSource = new TaskCompletionSource<string>();
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, MergeIndexesOperation, context.CancellationToken)
-				.ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, MergeIndexesOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
 			var correlationId = Guid.NewGuid();
 			_publisher.Publish(new ClientMessage.MergeIndexes(new CallbackEnvelope(OnMessage), correlationId, user));
 
-			await mergeResultSource.Task.ConfigureAwait(false);
+			await mergeResultSource.Task;
 			return EmptyResult;
 
 			void OnMessage(Message message) {
@@ -64,8 +62,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		public override async Task<Empty> ResignNode(Empty request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, ResignOperation, context.CancellationToken)
-				.ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, ResignOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
@@ -76,8 +73,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override async Task<Empty> SetNodePriority(SetNodePriorityReq request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider
-				.CheckAccessAsync(user, SetNodePriorityOperation, context.CancellationToken)
-				.ConfigureAwait(false)) {
+				.CheckAccessAsync(user, SetNodePriorityOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
@@ -91,14 +87,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, RestartPersistentSubscriptionsOperation,
-					context.CancellationToken)
-				.ConfigureAwait(false)) {
+					context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
 			_publisher.Publish(new SubscriptionMessage.PersistentSubscriptionsRestart(envelope));
 
-			await restart.Task.ConfigureAwait(false);
+			await restart.Task;
 			return new Empty();
 
 			void OnMessage(Message message) {

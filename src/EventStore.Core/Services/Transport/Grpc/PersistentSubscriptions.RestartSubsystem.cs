@@ -16,13 +16,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var user = context.GetHttpContext().User;
 
 			if (!await _authorizationProvider.CheckAccessAsync(user,
-				RestartOperation, context.CancellationToken).ConfigureAwait(false)) {
+				RestartOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
 			_publisher.Publish(new SubscriptionMessage.PersistentSubscriptionsRestart(
 				new CallbackEnvelope(HandleRestartSubsystemCompleted)));
-			return await restartSubsystemSource.Task.ConfigureAwait(false);
+			return await restartSubsystemSource.Task;
 
 			void HandleRestartSubsystemCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled &&

@@ -33,8 +33,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			Func<T, ValueTask> asyncAction,
 			CancellationToken token)
 			where T : class {
-			while (await streamReader.MoveNext(token).ConfigureAwait(false)) {
-				await asyncAction(streamReader.Current).ConfigureAwait(false);
+			while (await streamReader.MoveNext(token)) {
+				await asyncAction(streamReader.Current);
 			}
 		}
 	}

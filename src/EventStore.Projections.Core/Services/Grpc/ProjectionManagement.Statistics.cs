@@ -14,8 +14,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 		public override async Task Statistics(StatisticsReq request, IServerStreamWriter<StatisticsResp> responseStream,
 			ServerCallContext context) {
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, StatisticsOperation, context.CancellationToken)
-				.ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, StatisticsOperation, context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
@@ -34,7 +33,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			_queue.Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, mode, name, true));
 
-			foreach (var stats in Array.ConvertAll(await statsSource.Task.ConfigureAwait(false), s => new StatisticsResp.Types.Details {
+			foreach (var stats in Array.ConvertAll(await statsSource.Task, s => new StatisticsResp.Types.Details {
 				BufferedEvents = s.BufferedEvents,
 				CheckpointStatus = s.CheckpointStatus,
 				CoreProcessingTime = s.CoreProcessingTime,
@@ -55,7 +54,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				WritePendingEventsBeforeCheckpoint = s.WritePendingEventsBeforeCheckpoint,
 				WritesInProgress = s.WritesInProgress
 			})) {
-				await responseStream.WriteAsync(new StatisticsResp { Details = stats }).ConfigureAwait(false);
+				await responseStream.WriteAsync(new StatisticsResp { Details = stats });
 			}
 
 			void OnMessage(Message message) {

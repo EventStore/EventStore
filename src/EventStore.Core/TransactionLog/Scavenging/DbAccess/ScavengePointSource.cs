@@ -51,7 +51,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 			ResolvedEvent[] events;
 			using (cancellationToken.Register(() => readTcs.TrySetCanceled())) {
-				events = await readTcs.Task.ConfigureAwait(false);
+				events = await readTcs.Task;
 			}
 
 			if (events.Length == 0) {
@@ -113,19 +113,18 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			);
 
 			using (cancellationToken.Register(() => writeTcs.TrySetCanceled())) {
-				await writeTcs.Task.ConfigureAwait(false);
+				await writeTcs.Task;
 			}
 
 			_logger.Information("SCAVENGING: Added new scavenge point.");
 
 			// initial chance to replicate (handy if we are follower)
-			await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+			await Task.Delay(500, cancellationToken);
 
 			const int MaxAttempts = 30;
 			var attempt = 0;
 			while (true) {
-				var scavengePoint = await GetLatestScavengePointOrDefaultAsync(cancellationToken)
-					.ConfigureAwait(false);
+				var scavengePoint = await GetLatestScavengePointOrDefaultAsync(cancellationToken);
 
 				// success
 				if (scavengePoint.EventNumber == expectedVersion + 1)
@@ -144,7 +143,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					"Found {actual} but expected {expected}. Retrying {attempt}/{maxAttempts}...",
 					scavengePoint.EventNumber, expectedVersion + 1, attempt, MaxAttempts);
 
-				await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
+				await Task.Delay(1000, cancellationToken);
 			}
 		}
 	}

@@ -60,11 +60,11 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
+				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken)) {
 					return false;
 				}
 
-				_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+				_current = await _channel.Reader.ReadAsync(_cancellationToken);
 
 				return true;
 			}
@@ -97,7 +97,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 								if (readCount >= _maxCount) {
 									break;
 								}
-								await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct).ConfigureAwait(false);
+								await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct);
 								readCount++;
 							}
 
@@ -110,14 +110,13 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 								await _channel.Writer
 									.WriteAsync(
 										new ReadResponse.LastStreamPositionReceived(
-											StreamRevision.FromInt64(completed.LastEventNumber)), ct)
-									.ConfigureAwait(false);
+											StreamRevision.FromInt64(completed.LastEventNumber)), ct);
 							}
 
 							_channel.Writer.TryComplete();
 							return;
 						case ReadStreamResult.NoStream:
-							await _channel.Writer.WriteAsync(new ReadResponse.StreamNotFound(_streamName), ct).ConfigureAwait(false);
+							await _channel.Writer.WriteAsync(new ReadResponse.StreamNotFound(_streamName), ct);
 							_channel.Writer.TryComplete();
 							return;
 						case ReadStreamResult.StreamDeleted:

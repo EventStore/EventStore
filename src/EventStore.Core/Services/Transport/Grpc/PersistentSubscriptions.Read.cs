@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private static readonly Operation ProcessMessagesOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.ProcessMessages);
 		public override async Task Read(IAsyncStreamReader<ReadReq> requestStream,
 			IServerStreamWriter<ReadResp> responseStream, ServerCallContext context) {
-			if (!await requestStream.MoveNext().ConfigureAwait(false)) {
+			if (!await requestStream.MoveNext()) {
 				return;
 			}
 
@@ -49,7 +49,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			if (!await _authorizationProvider.CheckAccessAsync(user,
-				ProcessMessagesOperation.WithParameter(Plugins.Authorization.Operations.Subscriptions.Parameters.StreamId(streamId)), context.CancellationToken).ConfigureAwait(false)) {
+				ProcessMessagesOperation.WithParameter(Plugins.Authorization.Operations.Subscriptions.Parameters.StreamId(streamId)), context.CancellationToken)) {
 				throw RpcExceptions.AccessDenied();
 			}
 			var connectionName =
@@ -60,9 +60,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, connectionName,
 				_publisher, streamId, options.GroupName, options.BufferSize, user, context.CancellationToken);
-			await using var _ = enumerator.ConfigureAwait(false);
+			await using var _ = enumerator;
 
-			var subscriptionId = await enumerator.Started.ConfigureAwait(false);
+			var subscriptionId = await enumerator.Started;
 
 			var read = ValueTask.CompletedTask;
 			var cts = new CancellationTokenSource();
@@ -73,24 +73,24 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					SubscriptionConfirmation = new ReadResp.Types.SubscriptionConfirmation {
 						SubscriptionId = subscriptionId
 					}
-				}).ConfigureAwait(false);
+				});
 
-				while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
+				while (await enumerator.MoveNextAsync()) {
 					await responseStream.WriteAsync(new ReadResp {
 						Event = ConvertToReadEvent(enumerator.Current)
-					}).ConfigureAwait(false);
+					});
 				}
 			} catch (IOException) {
 				Log.Information("Subscription {correlationId} to {subscriptionId} disposed. The request stream was closed.", correlationId, subscriptionId);
 			} finally {
 				// make sure we stop reading the request stream before leaving this method
 				cts.Cancel();
-				await read.ConfigureAwait(false);
+				await read;
 			}
 
 			async ValueTask PumpRequestStream(CancellationToken token) {
 				try {
-					await requestStream.ForEachAsync(HandleAckNack, token).ConfigureAwait(false);
+					await requestStream.ForEachAsync(HandleAckNack, token);
 				} catch {
 				}
 			}
@@ -271,8 +271,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							_subscriptionIdSource.TrySetResult(confirmation.SubscriptionId);
 							return;
 						case ClientMessage.PersistentSubscriptionStreamEventAppeared appeared:
-							await _channel.Writer.WriteAsync((appeared.Event, appeared.RetryCount), ct)
-								.ConfigureAwait(false);
+							await _channel.Writer.WriteAsync((appeared.Event, appeared.RetryCount), ct);
 							return;
 						default:
 							Fail(RpcExceptions
@@ -295,11 +294,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
+				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken)) {
 					return false;
 				}
 
-				_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+				_current = await _channel.Reader.ReadAsync(_cancellationToken);
 				return true;
 			}
 		}

@@ -358,7 +358,7 @@ namespace EventStore.Core.Services {
 
 		async void AuthorizeAsync<TRequest>(ValueTask<bool> accessCheck, IEnvelope replyTo, IPublisher destination, TRequest request,
 			Func<TRequest, Message> createAccessDenied) where TRequest : Message {
-			if (await accessCheck.ConfigureAwait(false)) {
+			if (await accessCheck) {
 				destination.Publish(request);
 			} else {
 				replyTo.ReplyWith(createAccessDenied(request));
