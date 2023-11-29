@@ -41,9 +41,9 @@ fromCategory('stream').foreachStream().when({
 
 		protected override async Task When() {
 			await base.When();
-			await _manager.AbortAsync("test-projection", _admin);
+			await _manager.AbortAsync("test-projection", userCredentials: _admin);
 			WaitIdle();
-			await _manager.EnableAsync("test-projection", _admin);
+			await _manager.EnableAsync("test-projection", userCredentials: _admin);
 			WaitIdle();
 		}
 

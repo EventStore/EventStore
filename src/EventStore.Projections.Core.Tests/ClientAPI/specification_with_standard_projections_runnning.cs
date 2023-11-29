@@ -1,5 +1,7 @@
 ﻿extern alias GrpcClient;
+extern alias GrpcClientProjections;
 using GrpcClient::EventStore.Client;
+using ProjectionsManager = GrpcClientProjections.EventStore.Client.EventStoreProjectionManagementClient;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -12,8 +14,7 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
-using EventStore.ClientAPI.Projections;
+using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
@@ -22,8 +23,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 		protected IEventStoreClient _conn;
 		protected UserCredentials _admin = DefaultData.AdminCredentials;
 		protected ProjectionsManager _manager;
-		protected QueryManager _queryManager;
-
 		private Task _projectionsCreated;
 		private ProjectionsSubsystem _projections;
 		private MiniNode<TLogFormat, TStreamId> _node;
@@ -51,18 +50,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			_conn = new GrpcEventStoreConnection(_node.HttpEndPoint);
 			await _conn.ConnectAsync();
 
-			_manager = new ProjectionsManager(
-				new ConsoleLogger(),
-				_node.HttpEndPoint,
-				TimeSpan.FromMilliseconds(20000),
-				_node.HttpMessageHandler);
-
-			_queryManager = new QueryManager(
-				new ConsoleLogger(),
-				_node.HttpEndPoint,
-				TimeSpan.FromMilliseconds(20000),
-				TimeSpan.FromMilliseconds(20000),
-				_node.HttpMessageHandler);
+			_manager = new ProjectionsManager(EventStoreClientSettings.Create($"esdb://{_node.HttpEndPoint}?tls=false"));
 
 			WaitIdle();
 
@@ -89,9 +77,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 
 		[TearDown]
 		public async Task PostTestAsserts() {
- 			var all = await _manager.ListAllAsync(_admin);
- 			if (all.Any(p => p.Name == "Faulted"))
- 				Assert.Fail("Projections faulted while running the test" + "\r\n" + all);
+			var all = _manager.ListAllAsync(userCredentials: _admin);
+			if (await all.AnyAsync(p => p.Name == "Faulted"))
+				Assert.Fail("Projections faulted while running the test" + "\r\n" + all);
 		}
 
 		protected async Task EnableStandardProjections() {
@@ -114,18 +102,17 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 		}
 
 		protected Task EnableProjection(string name) {
-			return _manager.EnableAsync(name, _admin);
+			return _manager.EnableAsync(name, userCredentials: _admin);
 		}
 
 		protected Task DisableProjection(string name) {
-			return _manager.DisableAsync(name, _admin);
+			return _manager.DisableAsync(name, userCredentials: _admin);
 		}
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
 			if (_conn != null)
-				_conn.Close();
-
+				await _conn.Close();
 			if (_node != null)
 				await _node.Shutdown();
 
@@ -149,7 +136,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 		}
 
 		protected static EventData CreateEvent(string type, string data) {
-			return new EventData(Guid.NewGuid(), type, true, Encoding.UTF8.GetBytes(data), new byte[0]);
+			return new EventData(Uuid.NewUuid(), type, Encoding.UTF8.GetBytes(data), new byte[0]);
 		}
 
 		protected void WaitIdle(int multiplier = 1) {
@@ -243,12 +230,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 #endif
 
 		protected async Task PostProjection(string query) {
-			await _manager.CreateContinuousAsync("test-projection", query, _admin);
+			await _manager.CreateContinuousAsync("test-projection", query, userCredentials: _admin);
 			WaitIdle();
 		}
 
 		protected async Task PostQuery(string query) {
-			await _manager.CreateTransientAsync("query", query, _admin);
+			await _manager.CreateTransientAsync("query", query, userCredentials: _admin);
 			WaitIdle();
 		}
 	}
