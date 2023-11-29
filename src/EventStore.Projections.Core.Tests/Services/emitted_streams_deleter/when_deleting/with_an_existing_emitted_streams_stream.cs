@@ -1,10 +1,12 @@
-﻿using EventStore.ClientAPI;
+﻿extern alias GrpcClient;
+using GrpcClient::EventStore.Client;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.when_deleting {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -14,10 +16,10 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 		protected ManualResetEvent _resetEvent = new ManualResetEvent(false);
 		private string _testStreamName = "test_stream";
 		private ManualResetEvent _eventAppeared = new ManualResetEvent(false);
-		private EventStore.ClientAPI.SystemData.UserCredentials _credentials;
+		private UserCredentials _credentials;
 
 		protected override async Task Given() {
-			_credentials = new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit");
+			_credentials = new UserCredentials("admin", "changeit");
 			_onDeleteStreamCompleted = () => { _resetEvent.Set(); };
 
 			await base.Given();
@@ -36,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 				Assert.Fail("Timed out waiting for emitted stream event");
 			}
 
-			sub.Unsubscribe();
+			sub.Dispose();
 
 			var emittedStreamResult =
 				await _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0, 1, false,
@@ -57,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 		[Test]
 		public async Task should_have_deleted_the_tracked_emitted_stream() {
 			var result = await _conn.ReadStreamEventsForwardAsync(_testStreamName, 0, 1, false,
-				new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit"));
+				new UserCredentials("admin", "changeit"));
 			Assert.AreEqual(SliceReadStatus.StreamNotFound, result.Status);
 		}
 
@@ -65,14 +67,14 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 		[Test]
 		public async Task should_have_deleted_the_checkpoint_stream() {
 			var result = await _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsCheckpointName(),
-				0, 1, false, new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit"));
+				0, 1, false, new UserCredentials("admin", "changeit"));
 			Assert.AreEqual(SliceReadStatus.StreamNotFound, result.Status);
 		}
 
 		[Test]
 		public async Task should_have_deleted_the_emitted_streams_stream() {
 			var result = await _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0, 1,
-				false, new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit"));
+				false, new UserCredentials("admin", "changeit"));
 			Assert.AreEqual(SliceReadStatus.StreamNotFound, result.Status);
 		}
 	}
