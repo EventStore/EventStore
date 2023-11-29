@@ -1,11 +1,10 @@
-﻿using System;
+﻿extern alias GrpcClient;
+using GrpcClient::EventStore.Client;
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common.Log;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Tests;
@@ -15,11 +14,12 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	[Category("ClientAPI")]
 	public abstract class specification_with_standard_projections_runnning<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
-		protected IEventStoreConnection _conn;
+		protected IEventStoreClient _conn;
 		protected UserCredentials _admin = DefaultData.AdminCredentials;
 		protected ProjectionsManager _manager;
 		protected QueryManager _queryManager;
@@ -50,9 +50,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			_projectionsCreated = SystemProjections.Created(_projections.LeaderMainBus);
 
 			await _node.Start();
-			_conn = EventStoreConnection.Create(new ConnectionSettingsBuilder()
-				.DisableServerCertificateValidation()
-				.Build(), _node.TcpEndPoint);
+			_conn = new GrpcEventStoreConnection(_node.HttpEndPoint);
 			await _conn.ConnectAsync();
 
 			_manager = new ProjectionsManager(
