@@ -1,13 +1,13 @@
+extern alias GrpcClient;
+extern alias GrpcClientProjections;
+using GrpcClient::EventStore.Client;
+using ProjectionsManager = GrpcClientProjections::EventStore.Client.EventStoreProjectionManagementClient;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using NUnit.Framework;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Projections;
-using EventStore.ClientAPI.Common.Log;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Tests;
@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 	public abstract class SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		protected MiniNode<TLogFormat, TStreamId> _node;
 		protected ProjectionsManager _projManager;
-		protected IEventStoreConnection _connection;
+		protected IEventStoreClient _connection;
 		protected UserCredentials _credentials;
 		protected TimeSpan _timeout;
 		protected string _tag;
@@ -42,10 +42,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 			await _systemProjectionsCreated.WithTimeout(_timeout);
 
-			_connection = TestConnection.Create(_node.TcpEndPoint);
+			_connection = new GrpcEventStoreConnection(_node.HttpEndPoint);
 			await _connection.ConnectAsync();
 
-			_projManager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint, _timeout, _node.HttpMessageHandler);
+			_projManager = new ProjectionsManager(EventStoreClientSettings.Create($"esdb://{_node.HttpEndPoint}?tls=false"));
 			try {
 				await Given().WithTimeout(_timeout);
 			} catch (Exception ex) {
@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
-			_connection.Close();
+			await _connection.Close();
 			await _node.Shutdown();
 
 			await base.TestFixtureTearDown();
@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		}
 
 		protected EventData CreateEvent(string eventType, string data) {
-			return new EventData(Guid.NewGuid(), eventType, true, Encoding.UTF8.GetBytes(data), null);
+			return new EventData(Uuid.NewUuid(), eventType, Encoding.UTF8.GetBytes(data), null);
 		}
 
 		protected Task PostEvent(string stream, string eventType, string data) {
@@ -88,12 +88,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 		protected Task CreateOneTimeProjection() {
 			var query = CreateStandardQuery(Guid.NewGuid().ToString());
-			return _projManager.CreateOneTimeAsync(query, _credentials);
+			return _projManager.CreateOneTimeAsync(query, userCredentials: _credentials);
 		}
 
 		protected Task CreateContinuousProjection(string projectionName) {
 			var query = CreateStandardQuery(Guid.NewGuid().ToString());
-			return _projManager.CreateContinuousAsync(projectionName, query, _credentials);
+			return _projManager.CreateContinuousAsync(projectionName, query, userCredentials: _credentials);
 		}
 
 		protected string CreateStandardQuery(string stream) {
