@@ -29,6 +29,9 @@
 		<PackageReference Include="EventStore.Client.Grpc" Version="23.1.0">
 			<Aliases>GrpcClient</Aliases>
 		</PackageReference>
+		<PackageReference Include="EventStore.Client.Grpc.Streams" Version="23.1.0">
+			<Aliases>GrpcClientStreams</Aliases>
+		</PackageReference>
 		<PackageReference Include="EventStore.Client.Grpc.ProjectionManagement" Version="23.1.0">
 			<Aliases>GrpcClientProjections</Aliases>
 		</PackageReference>
