@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net;
-using EventStore.ClientAPI;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -8,12 +7,13 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Core.Tests.Integration {
 	public abstract class specification_with_cluster<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		protected readonly MiniClusterNode<TLogFormat, TStreamId>[] _nodes = new MiniClusterNode<TLogFormat, TStreamId>[3];
 		protected readonly Endpoints[] _nodeEndpoints = new Endpoints[3];
-		protected IEventStoreConnection _conn;
+		protected IEventStoreClient _conn;
 
 		private readonly Dictionary<int, Func<bool, MiniClusterNode<TLogFormat, TStreamId>>> _nodeCreationFactory = new();
 
@@ -133,8 +133,8 @@ namespace EventStore.Core.Tests.Integration {
 			await Given().WithTimeout(TimeSpan.FromMinutes(2));
 		}
 
-		protected virtual IEventStoreConnection CreateConnection() =>
-			EventStoreConnection.Create(_nodes[0].ExternalTcpEndPoint);
+		protected virtual IEventStoreClient CreateConnection() =>
+			new GrpcEventStoreConnection(_nodes[0].HttpEndPoint);
 
 		protected virtual void BeforeNodesStart() {
 		}
