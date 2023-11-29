@@ -3,24 +3,6 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Cherry picked from https
-- //github.com/EventStore/EventStore/pull/4001 [EventStore#4003](https://github.com/EventStore/EventStore/pull/4003)
-- //github.com/EventStore/EventStore/pull/4000 [EventStore#4008](https://github.com/EventStore/EventStore/pull/4008)
-- //github.com/EventStore/EventStore/pull/4011 [EventStore#4012](https://github.com/EventStore/EventStore/pull/4012)
-- //github.com/EventStore/EventStore/pull/4011 [EventStore#4013](https://github.com/EventStore/EventStore/pull/4013)
-- //github.com/EventStore/EventStore/pull/3995 [EventStore#4017](https://github.com/EventStore/EventStore/pull/4017)
-- //github.com/EventStore/EventStore/pull/3994 [EventStore#4018](https://github.com/EventStore/EventStore/pull/4018)
-- //github.com/EventStore/EventStore/pull/4025 [EventStore#4027](https://github.com/EventStore/EventStore/pull/4027)
-- //github.com/EventStore/EventStore/pull/4019 [EventStore#4022](https://github.com/EventStore/EventStore/pull/4022)
-- //github.com/EventStore/EventStore/pull/4026 [EventStore#4030](https://github.com/EventStore/EventStore/pull/4030)
-- //github.com/EventStore/EventStore/pull/4032 [EventStore#4050](https://github.com/EventStore/EventStore/pull/4050)
-- //github.com/EventStore/EventStore/pull/4032 [EventStore#4051](https://github.com/EventStore/EventStore/pull/4051)
-- //github.com/EventStore/EventStore/pull/4032 [EventStore#4049](https://github.com/EventStore/EventStore/pull/4049)
-- //github.com/EventStore/EventStore/pull/4032 [EventStore#4048](https://github.com/EventStore/EventStore/pull/4048)
-- //github.com/EventStore/EventStore/pull/4032 [EventStore#4047](https://github.com/EventStore/EventStore/pull/4047)
-- //github.com/EventStore/EventStore/pull/4059 [EventStore#4077](https://github.com/EventStore/EventStore/pull/4077)
-- //github.com/EventStore/EventStore/pull/4059 [EventStore#4078](https://github.com/EventStore/EventStore/pull/4078)
-
 ### Changed
 - Set the default value of `CertificateReservedNodeCommonName` to empty string [EventStore#4001](https://github.com/EventStore/EventStore/pull/4001)
 - wording of telemetry message for clarity [EventStore#4026](https://github.com/EventStore/EventStore/pull/4026)
@@ -32,21 +14,46 @@ All notable changes to this project will be documented in this file.
 - Support for multiple media types specified in one Accept header. [EventStore#4011](https://github.com/EventStore/EventStore/pull/4011)
 - Refactor gRPC enumerators  [EventStore#3998](https://github.com/EventStore/EventStore/pull/3998)
 
-### cherry pick of https
-- //github.com/EventStore/EventStore/pull/3999 [EventStore#4010](https://github.com/EventStore/EventStore/pull/4010)
-
 ### Fixed
-- An way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3994](https://github.com/EventStore/EventStore/pull/3994)
-- Updating a persistent subscription clears the filter [EventStore#3995](https://github.com/EventStore/EventStore/pull/3995)
-- Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#4023](https://github.com/EventStore/EventStore/pull/4023)
-- Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#4035](https://github.com/EventStore/EventStore/pull/4035)
-- https://github.com/EventStore/EventStore/issues/3195 [EventStore#3963](https://github.com/EventStore/EventStore/pull/3963)
+- A way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
 - 'Unknown' error reported to client after successful idempotent write to deleted stream. [EventStore#4059](https://github.com/EventStore/EventStore/pull/4059)
 - Report same version info when using different kind of release tags (annotated or lightweight). [EventStore#4081](https://github.com/EventStore/EventStore/pull/4081)
 
+## [22.10.4] - 2023-11-22
+
+### Fixed
+- Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#4023](https://github.com/EventStore/EventStore/pull/4023)
+- A way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#4018](https://github.com/EventStore/EventStore/pull/4018)
+- Updating a persistent subscription clears the filter [EventStore#4017](https://github.com/EventStore/EventStore/pull/4107)
+- Persistent subscription error code regression introduced this release. [EventStore#3963](https://github.com/EventStore/EventStore/pull/3963)
+- FilteredAllSubscription checkpoint now continues to update after becomming live. [EventStore#3734](https://github.com/EventStore/EventStore/pull/3734)
+
 ### Removed
 - Extra checkpoint when subscription to $all goes live. [EventStore#4023](https://github.com/EventStore/EventStore/pull/4023)
+
+## [21.10.10] - 2023-11-22
+
+### Fixed
+- Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#4035](https://github.com/EventStore/EventStore/pull/4035)
+- Patch Newtonsoft from `13.0.1` to `13.0.2` [EventStore#3679](https://github.com/EventStore/EventStore/pull/3679)
+- Database checkpoints becomes inconsistent when running out of disk space [EventStore#3682](https://github.com/EventStore/EventStore/pull/3682)
+- Slow persistent subscription consumer no longer slows down other subscribers [EventStore#3710](https://github.com/EventStore/EventStore/pull/3710)
+- Cancel reads already in the reader queues when the gRPC call is cancelled [EventStore#3719](https://github.com/EventStore/EventStore/pull/3719)
+- Downgraded an error log message that is not really an error to debug level [EventStore#3728](https://github.com/EventStore/EventStore/pull/3728)
+- Sender of create / update Persistent Subscription now notified of failure [EventStore#3755](https://github.com/EventStore/EventStore/pull/3755)
+- Support bloom filters for 400gb+ index files. [EventStore#3880](https://github.com/EventStore/EventStore/pull/3880)
+- Bump gRPC packages for [CVE-2023-32731](https://github.com/advisories/GHSA-cfgp-2977-2fmm) [EventStore#3893](https://github.com/EventStore/EventStore/pull/3893)
+- Bump System.Text.RegularExpressions for [CVE-2019-0820](https://github.com/advisories/GHSA-cmhx-cq75-c4mj) [EventStore#3893](https://github.com/EventStore/EventStore/pull/3893)
+- Bump System.Drawing.Common [CVE-2021-24112](https://github.com/advisories/GHSA-rxg9-xrhp-64gj) [EventStore#3893](https://github.com/EventStore/EventStore/pull/3893)
+- Bump System.Security.Cryptography.* [CVE-2022-34716](https://github.com/advisories/GHSA-2m65-m22p-9wjw) [EventStore#3893](https://github.com/EventStore/EventStore/pull/3893)
+- A way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#4018](https://github.com/EventStore/EventStore/pull/4018)
+- Updating a persistent subscription clears the filter [EventStore#4017](https://github.com/EventStore/EventStore/pull/4017)
+- Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#4035](https://github.com/EventStore/EventStore/pull/4035)
+
+### Removed
 - Extra checkpoint when subscription to $all goes live. [EventStore#4035](https://github.com/EventStore/EventStore/pull/4035)
+- Some redundant code. [EventStore#3722](https://github.com/EventStore/EventStore/pull/3722)
+
 
 ## [23.10.0] - 2023-10-13
 
