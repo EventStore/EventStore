@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests;
 using NUnit.Framework;
 
@@ -14,24 +13,24 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 
 		[Test]
 		public async Task list_all_projections_works() {
-			var x = await _manager.ListAllAsync(new UserCredentials("admin", "changeit"));
-			Assert.AreEqual(true, x.Any());
-			Assert.IsTrue(x.Any(p => p.Name == "$streams"));
+			var x = _manager.ListAllAsync(userCredentials: DefaultData.AdminCredentials);
+			Assert.AreEqual(true, await x.AnyAsync());
+			Assert.IsTrue(await x.AnyAsync(p => p.Name == "$streams"));
 		}
 
 		[Test]
 		public async Task list_oneTime_projections_works() {
-			await _manager.CreateOneTimeAsync(TestProjection, new UserCredentials("admin", "changeit"));
-			var x = await _manager.ListOneTimeAsync(new UserCredentials("admin", "changeit"));
-			Assert.AreEqual(true, x.Any(p => p.Mode == "OneTime"));
+			await _manager.CreateOneTimeAsync(TestProjection, userCredentials: DefaultData.AdminCredentials);
+			var x = _manager.ListOneTimeAsync(userCredentials: DefaultData.AdminCredentials);
+			Assert.AreEqual(true, await x.AnyAsync(p => p.Mode == "OneTime"));
 		}
 
 		[Test]
 		public async Task list_continuous_projections_works() {
 			var nameToTest = Guid.NewGuid().ToString();
-			await _manager.CreateContinuousAsync(nameToTest, TestProjection, new UserCredentials("admin", "changeit"));
-			var x = await _manager.ListContinuousAsync(new UserCredentials("admin", "changeit"));
-			Assert.AreEqual(true, x.Any(p => p.Name == nameToTest));
+			await _manager.CreateContinuousAsync(nameToTest, TestProjection, userCredentials: DefaultData.AdminCredentials);
+			var x = _manager.ListContinuousAsync(userCredentials: DefaultData.AdminCredentials);
+			Assert.AreEqual(true, await x.AnyAsync(p => p.Name == nameToTest));
 		}
 	}
 }
