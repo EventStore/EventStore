@@ -69,8 +69,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					await using (enumerator) {
 						await using (context.CancellationToken.Register(DisposeEnumerator)) {
 							while (await enumerator.MoveNextAsync()) {
-								var readResponse = ConvertReadResponse(enumerator.Current, options.UuidOption);
-								await responseStream.WriteAsync(readResponse);
+								if (TryConvertReadResponse(enumerator.Current, options.UuidOption, out var readResponse))
+									await responseStream.WriteAsync(readResponse);
 							}
 						}
 					}
@@ -245,8 +245,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw RpcExceptions.InvalidArgument(filter)
 			};
 
-		private static ReadResp ConvertReadResponse(ReadResponse readResponse, ReadReq.Types.Options.Types.UUIDOption uuidOption) {
-			return readResponse switch {
+		private static bool TryConvertReadResponse(ReadResponse readResponse, ReadReq.Types.Options.Types.UUIDOption uuidOption, out ReadResp readResp) {
+			readResp = readResponse switch {
 				ReadResponse.EventReceived eventReceived => new ReadResp {
 					Event = ConvertToReadEvent(uuidOption, eventReceived.Event)
 				},
@@ -269,6 +269,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				ReadResponse.SubscriptionCaughtUp => new ReadResp {
 					CaughtUp = new ReadResp.Types.CaughtUp()
 				},
+				ReadResponse.SubscriptionFellBehind => null, // currently not sent to clients
 				ReadResponse.LastStreamPositionReceived lastStreamPositionReceived => new ReadResp {
 					LastStreamPosition = lastStreamPositionReceived.LastStreamPosition
 				},
@@ -277,6 +278,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				},
 				_ => throw new ArgumentException($"Unknown read response type: {readResponse.GetType().Name}", nameof(readResponse))
 			};
+
+			return readResp != null;
 		}
 
 		private static void ConvertReadResponseException(ReadResponseException readResponseEx) {

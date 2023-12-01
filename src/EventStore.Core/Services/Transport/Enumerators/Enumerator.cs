@@ -14,6 +14,13 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				SingleWriter = true
 			};
 
+		private static readonly BoundedChannelOptions LiveChannelOptions =
+			new(MaxLiveEventBufferCount) {
+				FullMode = BoundedChannelFullMode.DropOldest,
+				SingleReader = true,
+				SingleWriter = true
+			};
+
 		private static bool TryHandleNotHandled(ClientMessage.NotHandled notHandled, out ReadResponseException exception) {
 			exception = null;
 			switch (notHandled.Reason) {

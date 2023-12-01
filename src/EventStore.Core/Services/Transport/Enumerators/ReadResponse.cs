@@ -14,6 +14,8 @@ public abstract class ReadResponse {
 
 	public class SubscriptionCaughtUp: ReadResponse { }
 
+	public class SubscriptionFellBehind: ReadResponse { }
+
 	public class CheckpointReceived: ReadResponse {
 		public readonly ulong CommitPosition;
 		public readonly ulong PreparePosition;

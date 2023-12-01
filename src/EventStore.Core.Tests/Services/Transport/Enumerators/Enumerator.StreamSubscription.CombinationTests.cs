@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Services.Transport.Enumerators;
 public partial class EnumeratorTests {
 	public record struct StreamProperties(int NumEvents = 0, TruncationInfo TruncationInfo = new(), bool IsHardDeleted = false, bool IsEphemeralStream = false);
 	public record struct SubscriptionProperties(CheckpointType CheckpointType = CheckpointType.Start);
-	public record struct LiveProperties(int NumEventsToAdd = 0, bool SoftDeleteStream = false, bool HardDeleteStream = false, bool RevokeAccessToStream = false);
+	public record struct LiveProperties(int NumEventsToAdd = 0, bool SoftDeleteStream = false, bool HardDeleteStream = false, bool RevokeAccessToStream = false, bool FallBehindThenCatchUp = false);
 	public readonly record struct TestData(string TestCase, StreamProperties StreamProperties, SubscriptionProperties SubscriptionProperties, LiveProperties LiveProperties) {
 		public override string ToString() {
 			return TestCase;
@@ -48,6 +48,8 @@ public partial class EnumeratorTests {
 		AtLast = 4,
 		OneAfterLast = 5
 	}
+
+	private const int NumEventsToFallBehind = 3 * 32;
 
 	[TestFixtureSource(nameof(TestCases))]
 	public class StreamSubscriptionCombinationTests : TestFixtureWithMiniNodeConnection {
@@ -97,6 +99,12 @@ public partial class EnumeratorTests {
 				new StreamProperties(0),
 				new SubscriptionProperties(CheckpointType.Start),
 				new LiveProperties(RevokeAccessToStream: true)
+			),
+			CreateTestData(
+				"subscribe to a stream that doesn't exist from start then fall behind and catch up",
+				new StreamProperties(0),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(FallBehindThenCatchUp: true)
 			),
 			// EXISTING STREAM
 			CreateTestData(
@@ -153,6 +161,12 @@ public partial class EnumeratorTests {
 				new SubscriptionProperties(CheckpointType.Start),
 				new LiveProperties(RevokeAccessToStream: true)
 			),
+			CreateTestData(
+				"subscribe to a stream that exists from start then fall behind and catch up",
+				new StreamProperties(10),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(FallBehindThenCatchUp: true)
+			),
 			// SOFT DELETED STREAM
 			CreateTestData(
 				"subscribe to a soft deleted stream from start",
@@ -207,6 +221,12 @@ public partial class EnumeratorTests {
 				new StreamProperties(10, new TruncationInfo(TruncationType.SoftDelete)),
 				new SubscriptionProperties(CheckpointType.Start),
 				new LiveProperties(RevokeAccessToStream: true)
+			),
+			CreateTestData(
+				"subscribe to a soft deleted stream from start then fall behind and catch up",
+				new StreamProperties(10, new TruncationInfo(TruncationType.SoftDelete)),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(FallBehindThenCatchUp: true)
 			),
 			// FULLY TRUNCATED STREAM
 			CreateTestData(
@@ -263,6 +283,12 @@ public partial class EnumeratorTests {
 				new SubscriptionProperties(CheckpointType.Start),
 				new LiveProperties(RevokeAccessToStream: true)
 			),
+			CreateTestData(
+				"subscribe to a fully truncated stream from start then fall behind and catch up",
+				new StreamProperties(10, new TruncationInfo(TruncationType.TruncateBefore, 10)),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(FallBehindThenCatchUp: true)
+			),
 			// PARTLY TRUNCATED STREAM
 			CreateTestData(
 				"subscribe to a partly truncated stream from start",
@@ -317,6 +343,12 @@ public partial class EnumeratorTests {
 				new StreamProperties(10, new TruncationInfo(TruncationType.TruncateBefore, 8)),
 				new SubscriptionProperties(CheckpointType.Start),
 				new LiveProperties(RevokeAccessToStream: true)
+			),
+			CreateTestData(
+				"subscribe to a partly truncated stream from start then fall behind and catch up",
+				new StreamProperties(10, new TruncationInfo(TruncationType.TruncateBefore, 8)),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(FallBehindThenCatchUp: true)
 			),
 			// MAX COUNT
 			CreateTestData(
@@ -373,6 +405,12 @@ public partial class EnumeratorTests {
 				new SubscriptionProperties(CheckpointType.Start),
 				new LiveProperties(RevokeAccessToStream: true)
 			),
+			CreateTestData(
+				"subscribe to a stream with max count from start then fall behind and catch up",
+				new StreamProperties(120, new TruncationInfo(TruncationType.MaxCount, 100)),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(FallBehindThenCatchUp: true)
+			),
 			// EXPIRED MAX AGE (1 second)
 			CreateTestData(
 				"subscribe to a stream with expired max age from start",
@@ -427,6 +465,12 @@ public partial class EnumeratorTests {
 				new StreamProperties(10, new TruncationInfo(TruncationType.ExpiredMaxAge)),
 				new SubscriptionProperties(CheckpointType.Start),
 				new LiveProperties(RevokeAccessToStream: true)
+			),
+			CreateTestData(
+				"subscribe to a stream with expired max age from start then fall behind and catch up",
+				new StreamProperties(10, new TruncationInfo(TruncationType.ExpiredMaxAge)),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(FallBehindThenCatchUp: true)
 			),
 			// HARD DELETED STREAM
 			CreateTestData(
@@ -609,11 +653,12 @@ public partial class EnumeratorTests {
 			return StreamProperties.IsHardDeleted ? Tombstone() : Task.CompletedTask;
 		}
 
-		private async Task<(int numEventsAdded, bool softDeleted, bool hardDeleted, bool accessRevoked)> ApplyLiveProperties() {
+		private async Task<(int numEventsAdded, bool softDeleted, bool hardDeleted, bool accessRevoked, bool fallBehindThenCatchup)> ApplyLiveProperties() {
 			var numEventsAdded = 0;
 			var softDeleted = false;
 			var hardDeleted = false;
 			var accessRevoked = false;
+			var shouldFallBehindThenCatchup = false;
 
 			if (LiveProperties.NumEventsToAdd > 0) {
 				if (StreamProperties.IsEphemeralStream)
@@ -640,9 +685,15 @@ public partial class EnumeratorTests {
 
 				accessRevoked = true;
 				await RevokeAccess();
+			} else if (LiveProperties.FallBehindThenCatchUp) {
+				numEventsAdded = NumEventsToFallBehind;
+				for (var i = 0; i < NumEventsToFallBehind; i++)
+					await WriteEvent();
+
+				shouldFallBehindThenCatchup = true;
 			}
 
-			return (numEventsAdded, softDeleted, hardDeleted, accessRevoked);
+			return (numEventsAdded, softDeleted, hardDeleted, accessRevoked, shouldFallBehindThenCatchup);
 		}
 
 		private async Task SetUpForEphemeralStream() {
@@ -681,14 +732,47 @@ public partial class EnumeratorTests {
 			return CreateStreamSubscription<string>(Node.Node.MainQueue, _stream, checkpoint, SystemAccounts.Anonymous);
 		}
 
-		private static async Task<long> ReadExpectedEvents(EnumeratorWrapper sub, long nextEventNumber, long lastEventNumber) {
-			for (; 0 <= nextEventNumber && nextEventNumber <= lastEventNumber; nextEventNumber++) {
+		private static async Task<long> ReadExpectedEvents(EnumeratorWrapper sub, long nextEventNumber, long lastEventNumber, bool shouldFallBehindThenCatchUp = false) {
+			var fellBehind = false;
+			var caughtUp = false;
+
+			var numResponsesExpected = lastEventNumber - nextEventNumber + 1;
+			if (shouldFallBehindThenCatchUp)
+				numResponsesExpected += 2;
+
+			while (--numResponsesExpected >= 0) {
 				var response = await sub.GetNext();
-				if (response is Event evt) {
-					Assert.AreEqual(nextEventNumber, evt.EventNumber);
-				} else {
-					Assert.Fail($"Expected event but got: {response}");
+				switch (response) {
+					case Event evt:
+						Assert.AreEqual(nextEventNumber++, evt.EventNumber);
+						break;
+					case FellBehind:
+						if (!shouldFallBehindThenCatchUp)
+							Assert.Fail("Subscription fell behind.");
+
+						fellBehind = true;
+						break;
+					case CaughtUp:
+						if (!fellBehind)
+							Assert.Fail("Subscription caught up before falling behind");
+
+						if (!shouldFallBehindThenCatchUp)
+							Assert.Fail("Subscription fell behind then caught up.");
+
+						caughtUp = true;
+						break;
+					default:
+						Assert.Fail($"Unexpected response: {response}");
+						break ;
 				}
+			}
+
+			if (shouldFallBehindThenCatchUp) {
+				if (!fellBehind)
+					Assert.Fail("Subscription did not fall behind.");
+
+				if (!caughtUp)
+					Assert.Fail("Subscription fell behind but did not catch up.");
 			}
 
 			return nextEventNumber;
@@ -717,9 +801,9 @@ public partial class EnumeratorTests {
 
 			Assert.True(await sub.GetNext() is CaughtUp);
 
-			var (numEventsAdded, softDeleted, hardDeleted, accessRevoked) = await ApplyLiveProperties();
+			var (numEventsAdded, softDeleted, hardDeleted, accessRevoked, shouldFallBehindThenCatchup) = await ApplyLiveProperties();
 
-			_nextEventNumber = await ReadExpectedEvents(sub, _nextEventNumber, LastEventNumber + numEventsAdded); 
+			_nextEventNumber = await ReadExpectedEvents(sub, _nextEventNumber, LastEventNumber + numEventsAdded, shouldFallBehindThenCatchup);
 
 			if (softDeleted) {
 				Assert.ThrowsAsync<TimeoutException>(async () => await sub.GetNext().WithTimeout(timeoutMs: 500));

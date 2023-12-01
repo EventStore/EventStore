@@ -12,6 +12,7 @@ public partial class EnumeratorTests {
 	public record Event(Guid Id, long EventNumber) : SubscriptionResponse { }
 	public record SubscriptionConfirmation() : SubscriptionResponse { }
 	public record CaughtUp : SubscriptionResponse { }
+	public record FellBehind : SubscriptionResponse { }
 
 	public class EnumeratorWrapper : IAsyncDisposable {
 		private readonly IAsyncEnumerator<ReadResponse> _enumerator;
@@ -33,6 +34,7 @@ public partial class EnumeratorTests {
 				ReadResponse.EventReceived eventReceived => new Event(eventReceived.Event.Event.EventId, eventReceived.Event.OriginalEventNumber),
 				ReadResponse.SubscriptionConfirmed => new SubscriptionConfirmation(),
 				ReadResponse.SubscriptionCaughtUp => new CaughtUp(),
+				ReadResponse.SubscriptionFellBehind => new FellBehind(),
 				_ => throw new ArgumentOutOfRangeException(nameof(resp), resp, null),
 			};
 		}

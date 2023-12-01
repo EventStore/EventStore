@@ -18,14 +18,14 @@ public partial class EnumeratorTests {
 	private static EnumeratorWrapper CreateStreamSubscription<TStreamId>(
 		IPublisher publisher,
 		string streamName,
-		StreamRevision? startRevision = null,
+		StreamRevision? checkpoint = null,
 		ClaimsPrincipal user = null) {
 
 		return new EnumeratorWrapper(new Enumerator.StreamSubscription<TStreamId>(
 			bus: publisher,
 			expiryStrategy: new DefaultExpiryStrategy(),
 			streamName: streamName,
-			startRevision: startRevision,
+			checkpoint: checkpoint,
 			resolveLinks: false,
 			user: user ?? SystemAccounts.System,
 			requiresLeader: false,
