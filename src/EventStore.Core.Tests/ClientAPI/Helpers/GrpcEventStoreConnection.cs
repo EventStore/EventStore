@@ -126,7 +126,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	}
 
 	public Task ConnectAsync() {
-		var setts = EventStoreClientSettings.Create($"esdb://{_endpoint.Address}:{_endpoint.Port}");
+		var setts = EventStoreClientSettings.Create($"esdb://{_endpoint.Address}:{_endpoint.Port}?tlsVerifyCert=false");
 		if (_defaultUserCredentials != null)
 			setts.DefaultCredentials = _defaultUserCredentials;
 
