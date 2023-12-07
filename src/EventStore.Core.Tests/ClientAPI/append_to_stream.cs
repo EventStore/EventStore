@@ -291,11 +291,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "should_fail_appending_with_stream_exists_exp_ver_and_stream_does_not_exist";
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
-
 				var wev = await AssertEx.ThrowsAsync<WrongExpectedVersionException>(
 					() => store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, TestEvent.NewTestEvent()));
-				Assert.AreEqual(ExpectedVersion.StreamExists, wev.ExpectedVersion);
-				Assert.AreEqual(ExpectedVersion.NoStream, wev.ActualVersion);
+
+				Assert.AreEqual(ExpectedVersion.StreamExists, wev.ExpectedStreamRevision.ToInt64());
+				Assert.AreEqual(ExpectedVersion.NoStream, wev.ActualStreamRevision.ToInt64());
 			}
 		}
 
@@ -348,7 +348,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				var largeData = new string(' ', 20000);
 				var events = Enumerable.Range(0, 100).Select(i => TestEvent.NewTestEvent(largeData, i.ToString()));
-				Assert.ThrowsAsync<GrpcClientStreams::EventStore.Client.InvalidTransactionException>(async () =>
+				Assert.ThrowsAsync<GrpcClientStreams::EventStore.Client.MaximumAppendSizeExceededException>(async () =>
 					await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events));
 			}
 		}

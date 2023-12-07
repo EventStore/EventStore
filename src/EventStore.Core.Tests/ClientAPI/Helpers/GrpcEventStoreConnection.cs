@@ -154,11 +154,20 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	public async Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
 		UserCredentials userCredentials = null) {
 		var version = FromUInt64(expectedVersion);
-		var result = version.IsState
-			? await _streamsClient.AppendToStreamAsync(stream, version.State!.Value, events, userCredentials: userCredentials)
-			: await _streamsClient.AppendToStreamAsync(stream, version.Revision!.Value, events, userCredentials: userCredentials);
 
-		return new WriteResult(result.NextExpectedStreamRevision.ToInt64(), result.LogPosition);
+		try {
+			var result = version.IsState
+				? await _streamsClient.AppendToStreamAsync(stream, version.State!.Value, events,
+					userCredentials: userCredentials)
+				: await _streamsClient.AppendToStreamAsync(stream, version.Revision!.Value, events,
+					userCredentials: userCredentials);
+
+
+			return new WriteResult(result.NextExpectedStreamRevision.ToInt64(), result.LogPosition);
+		} catch (Exception e) {
+			Console.WriteLine(e);
+			throw;
+		}
 	}
 
 	public async Task<EventReadResultNew> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null) {
