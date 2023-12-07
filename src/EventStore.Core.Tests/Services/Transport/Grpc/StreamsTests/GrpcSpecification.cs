@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +17,7 @@ using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
 using Convert = System.Convert;
 using Streams = EventStore.Client.Streams.Streams;
+using Users = EventStore.Client.Users.Users;
 using GrpcMetadata = EventStore.Core.Services.Transport.Grpc.Constants.Metadata;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
@@ -29,6 +29,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		private readonly MiniNode<TLogFormat, TStreamId> _node;
 		protected MiniNode<TLogFormat, TStreamId> Node => _node;
 		internal Streams.StreamsClient StreamsClient { get; }
+		internal Users.UsersClient UsersClient { get; }
 		private readonly BatchAppender _batchAppender;
 
 		protected GrpcSpecification(IExpiryStrategy expiryStrategy = null) {
@@ -48,6 +49,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				DisposeHttpClient = true
 			});
 			StreamsClient = new Streams.StreamsClient(Channel);
+			UsersClient = new Users.UsersClient(Channel);
 			_batchAppender = new BatchAppender(StreamsClient);
 		}
 

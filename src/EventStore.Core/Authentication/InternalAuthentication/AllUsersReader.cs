@@ -90,7 +90,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 							var eventRecord = result.Events[0].Event;
 							var userData = eventRecord.Data.ParseJson<UserData>();
 							AddLoadedUserDetails(
-								userData.LoginName, userData.FullName, userData.Groups, userData.Disabled,
+								loginName, userData.FullName, userData.Groups, userData.Disabled,
 								new DateTimeOffset(eventRecord.TimeStamp, TimeSpan.FromHours(0)));
 						} catch {
 							Abort(UserManagementMessage.Error.Error);
