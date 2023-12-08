@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using GrpcClient::EventStore.Client;
+using WrongExpectedVersionException = EventStore.Core.Tests.ClientAPI.Helpers.WrongExpectedVersionException;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {

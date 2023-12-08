@@ -21,6 +21,7 @@ using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
 using StreamState = GrpcClient::EventStore.Client.StreamState;
 using SystemSettings = GrpcClientStreams::EventStore.Client.SystemSettings;
 using SubscriptionDroppedReason = GrpcClient::EventStore.Client.SubscriptionDroppedReason;
+using WEVE = GrpcClient::EventStore.Client.WrongExpectedVersionException;
 using Uuid = GrpcClient::EventStore.Client.Uuid;
 using EventStore.Common.Utils;
 
@@ -164,9 +165,8 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 
 			return new WriteResult(result.NextExpectedStreamRevision.ToInt64(), result.LogPosition);
-		} catch (Exception e) {
-			Console.WriteLine(e);
-			throw;
+		} catch (WEVE e) {
+			throw new WrongExpectedVersionException(version.Raw, e.ActualVersion.GetValueOrDefault(-1));
 		}
 	}
 
@@ -308,6 +308,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	record StreamStateOrRevision(StreamState? State, StreamRevision? Revision) {
 		public bool IsState => State != null;
+		public long Raw => IsState ? State!.Value.ToInt64() : Revision!.Value.ToInt64();
 	}
 
 	StreamStateOrRevision FromUInt64(long value) {

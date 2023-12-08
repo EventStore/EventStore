@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using GrpcClient::EventStore.Client;
+using WrongExpectedVersionException = EventStore.Core.Tests.ClientAPI.Helpers.WrongExpectedVersionException;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
@@ -294,8 +295,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var wev = await AssertEx.ThrowsAsync<WrongExpectedVersionException>(
 					() => store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, TestEvent.NewTestEvent()));
 
-				Assert.AreEqual(ExpectedVersion.StreamExists, wev.ExpectedStreamRevision.ToInt64());
-				Assert.AreEqual(ExpectedVersion.NoStream, wev.ActualStreamRevision.ToInt64());
+				Assert.AreEqual(ExpectedVersion.StreamExists, wev.ExpectedVersion);
+				Assert.AreEqual(ExpectedVersion.NoStream, wev.ActualVersion);
 			}
 		}
 
@@ -588,7 +589,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var wev = await AssertEx.ThrowsAsync<WrongExpectedVersionException>(() =>
 					store.AppendToStreamAsync(stream, 1, TestEvent.NewTestEvent()));
 				Assert.AreEqual(1, wev.ExpectedVersion);
-				Assert.AreEqual(0, wev.ActualVersion.GetValueOrDefault(0));
+				Assert.AreEqual(0, wev.ActualVersion);
 			}
 		}
 

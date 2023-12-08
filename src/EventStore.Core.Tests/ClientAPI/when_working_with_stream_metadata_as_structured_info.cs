@@ -8,9 +8,9 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
-using GrpcClient::EventStore.Client;
 using NUnit.Framework;
 using ExpectedVersion = EventStore.Core.Tests.ClientAPI.Helpers.ExpectedVersion;
+using WrongExpectedVersionException = EventStore.Core.Tests.ClientAPI.Helpers.WrongExpectedVersionException;
 using StreamAcl = GrpcClientStreams::EventStore.Client.StreamAcl;
 using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
 
