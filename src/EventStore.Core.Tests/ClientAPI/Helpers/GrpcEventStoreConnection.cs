@@ -24,6 +24,7 @@ using SubscriptionDroppedReason = GrpcClient::EventStore.Client.SubscriptionDrop
 using WEVE = GrpcClient::EventStore.Client.WrongExpectedVersionException;
 using Uuid = GrpcClient::EventStore.Client.Uuid;
 using EventStore.Common.Utils;
+using FromAll = GrpcClient::EventStore.Client.FromAll;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
@@ -83,7 +84,19 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		CatchUpSubscriptionFilteredSettings settings, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Func<StreamSubscription, Position, Task> checkpointReached,
 		int checkpointIntervalMultiplier, Action<StreamSubscription> liveProcessingStarted = null, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+
+		var start = lastCheckpoint.HasValue ? FromAll.After(lastCheckpoint.Value) : FromAll.End;
+		var options = new SubscriptionFilterOptions(
+			filter,
+			(uint)checkpointIntervalMultiplier,
+			(s, p, _) => checkpointReached(s, p));
+
+		return _streamsClient.SubscribeToAllAsync(
+			start,
+			(s,e, _) => eventAppeared(s, e),
+			filterOptions: options,
+			subscriptionDropped: subscriptionDropped,
+			userCredentials: userCredentials);
 	}
 
 	public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null) {

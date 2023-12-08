@@ -1,29 +1,29 @@
 extern alias GrpcClient;
-using System;
 using System.Text.RegularExpressions;
 using GrpcClient::EventStore.Client;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
 public static class Filter {
-	public static readonly IEventFilter ExcludeSystemEvents = null;
+	public static readonly IEventFilter ExcludeSystemEvents = EventTypeFilter.ExcludeSystemEvents();
+
 	public static class StreamId {
 		public static IEventFilter Prefix(string prefix) {
-			throw new NotImplementedException();
+			return StreamFilter.Prefix(prefix);
 		}
 
 		public static IEventFilter Regex(Regex regex) {
-			throw new NotImplementedException();
+			return StreamFilter.RegularExpression(regex);
 		}
 	}
 
 	public static class EventType {
 		public static IEventFilter Prefix(string prefix) {
-			throw new NotImplementedException();
+			return EventTypeFilter.Prefix(prefix);
 		}
 
 		public static IEventFilter Regex(Regex regex) {
-			throw new NotImplementedException();
+			return EventTypeFilter.RegularExpression(regex);
 		}
 	}
 }
