@@ -200,24 +200,26 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			maxCount: count, resolveLinkTos: resolveLinkTos, userCredentials: userCredentials);
 
 		var events = new List<ResolvedEvent>();
+		var lastStreamEventNumber = -1L;
 		var lastEventNumber = -1L;
 		var nextEventNumber = -1L;
 		await foreach (var message in result.Messages) {
 			switch (message)
 			{
 				case StreamMessage.Event @event:
-					nextEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64() + 1;
+					lastEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64();
+					nextEventNumber = lastEventNumber + 1;
 					events.Add(@event.ResolvedEvent);
 					break;
 
 				case StreamMessage.LastStreamPosition last:
-					lastEventNumber = last.StreamPosition.ToInt64();
+					lastStreamEventNumber = last.StreamPosition.ToInt64();
 					break;
 			}
 		}
 
 		return new StreamEventsSliceNew(stream, Direction.Forwards, start, nextEventNumber,
-			lastEventNumber,nextEventNumber >= lastEventNumber, events.ToArray());
+			lastStreamEventNumber,lastEventNumber >= lastStreamEventNumber, events.ToArray());
 	}
 
 	public async Task<StreamEventsSliceNew> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos,

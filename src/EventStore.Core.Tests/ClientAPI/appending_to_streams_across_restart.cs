@@ -122,14 +122,15 @@ namespace EventStore.Core.Tests.ClientAPI {
 				Assert.AreEqual(0, await EventsStream.Count(store, meta));
 
 				if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+					// Those asserts are disabled as they used to rely on explicit transactions.
 					// committed
-					Assert.AreEqual(10, await store
-						.Apply(x => x.AppendToStreamAsync(committed, 9, TestEvent.NewTestEvent(Guid.NewGuid())))
-						.Apply(x => x.NextExpectedVersion));
-
-					Assert.AreEqual(
-						eventsByStream[committed].Length + 1,
-						await EventsStream.Count(store, committed));
+					// Assert.AreEqual(10, await store
+					// 	.Apply(x => x.AppendToStreamAsync(committed, 9, TestEvent.NewTestEvent(Guid.NewGuid())))
+					// 	.Apply(x => x.NextExpectedVersion));
+					//
+					// Assert.AreEqual(
+					// 	eventsByStream[committed].Length + 1,
+					// 	await EventsStream.Count(store, committed));
 
 					// uncommitted
 					// Assert.AreEqual(9, await new TransactionalWriter(store, uncommitted)
@@ -137,9 +138,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 					// 	.Apply(x => x.Commit())
 					// 	.Apply(x => x.NextExpectedVersion));
 
-					Assert.AreEqual(
-						eventsByStream[uncommitted].Length,
-						await EventsStream.Count(store, uncommitted));
+					// Assert.AreEqual(
+					// 	eventsByStream[uncommitted].Length,
+					// 	await EventsStream.Count(store, uncommitted));
 				}
 			}
 		}
