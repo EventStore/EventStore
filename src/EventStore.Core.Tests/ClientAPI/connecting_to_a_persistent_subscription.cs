@@ -16,6 +16,7 @@ using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
 using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
 using SubscriptionDroppedReason = GrpcClient::EventStore.Client.SubscriptionDroppedReason;
 using Uuid = GrpcClient::EventStore.Client.Uuid;
+using Grpc.Core;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	extern alias GrpcClient;
@@ -29,9 +30,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private Exception _caught;
 
 		protected override Task When() {
-			_caught = Assert.Throws<AggregateException>(
-				() => {
-					_conn.ConnectToPersistentSubscription(
+			_caught = Assert.ThrowsAsync<PersistentSubscriptionNotFoundException>(
+				async () => {
+					await _conn.ConnectToPersistentSubscription(
 						"nonexisting2",
 						"foo",
 						(sub, e) => {
@@ -41,7 +42,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						(sub, reason, ex) => { },
 						DefaultData.AdminCredentials);
 					throw new Exception("should have thrown");
-				}).InnerException;
+				});
 			return Task.CompletedTask;
 		}
 
@@ -52,7 +53,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		public void the_exception_is_an_argument_exception() {
-			Assert.IsInstanceOf<ArgumentException>(_caught);
+			Assert.IsInstanceOf<PersistentSubscriptionNotFoundException>(_caught);
 		}
 	}
 
@@ -104,9 +105,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void the_subscription_fails_to_connect() {
+		public async Task the_subscription_fails_to_connect() {
 			try {
-				_conn.ConnectToPersistentSubscription(
+				await _conn.ConnectToPersistentSubscription(
 					_stream,
 					"agroupname55",
 					(sub, e) => {
@@ -116,8 +117,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					(sub, reason, ex) => Console.WriteLine("dropped."));
 				throw new Exception("should have thrown.");
 			} catch (Exception ex) {
-				Assert.IsInstanceOf<AggregateException>(ex);
-				Assert.IsInstanceOf<AccessDeniedException>(ex.InnerException);
+				Assert.IsInstanceOf<AccessDeniedException>(ex);
 			}
 		}
 	}
@@ -151,8 +151,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		protected override Task When() {
-			_exception = Assert.Throws<AggregateException>(() => {
-				_conn.ConnectToPersistentSubscription(
+			_exception = Assert.ThrowsAsync<MaximumSubscribersReachedException>(async () => {
+				await _conn.ConnectToPersistentSubscription(
 					_stream,
 					_group,
 					(s, e) => {
@@ -162,7 +162,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					(sub, reason, ex) => { },
 					DefaultData.AdminCredentials);
 				throw new Exception("should have thrown.");
-			}).InnerException;
+			});
 			return Task.CompletedTask;
 		}
 
@@ -212,7 +212,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public async Task the_subscription_gets_event_zero_as_its_first_event() {
 			var firstEvent = await _firstEventSource.Task.WithTimeout(TimeSpan.FromSeconds(10));
-			Assert.AreEqual(0, firstEvent.Event.EventNumber);
+			Assert.AreEqual(0, firstEvent.Event.EventNumber.ToInt64());
 			Assert.AreEqual(_id, firstEvent.Event.EventId);
 		}
 	}
@@ -265,7 +265,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public async Task the_subscription_gets_event_two_as_its_first_event() {
 			var resolvedEvent = await _firstEventSource.Task.WithTimeout(TimeSpan.FromSeconds(10));
-			Assert.AreEqual(2, resolvedEvent.Event.EventNumber);
+			Assert.AreEqual(2, resolvedEvent.Event.EventNumber.ToInt64());
 			Assert.AreEqual(_id, resolvedEvent.Event.EventId);
 		}
 	}
@@ -326,7 +326,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void the_subscription_gets_event_zero_as_its_first_event() {
 			Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
-			Assert.AreEqual(0, _firstEvent.Event.EventNumber);
+			Assert.AreEqual(0, _firstEvent.Event.EventNumber.ToInt64());
 			Assert.AreEqual(_ids[0], _firstEvent.Event.EventId);
 		}
 	}
@@ -436,7 +436,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void the_subscription_gets_the_written_event_as_its_first_event() {
 			Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
 			Assert.IsNotNull(_firstEvent);
-			Assert.AreEqual(10, _firstEvent.Event.EventNumber);
+			Assert.AreEqual(10, _firstEvent.Event.EventNumber.ToInt64());
 			Assert.AreEqual(_id, _firstEvent.Event.EventId);
 		}
 	}
@@ -495,7 +495,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void the_subscription_gets_the_written_event_as_its_first_event() {
 			Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
 			Assert.IsNotNull(_firstEvent);
-			Assert.AreEqual(11, _firstEvent.Event.EventNumber);
+			Assert.AreEqual(11, _firstEvent.Event.EventNumber.ToInt64());
 			Assert.AreEqual(_id, _firstEvent.Event.EventId);
 		}
 	}
@@ -607,7 +607,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void the_subscription_gets_the_written_event_as_its_first_event() {
 			Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
 			Assert.IsNotNull(_firstEvent);
-			Assert.AreEqual(10, _firstEvent.Event.EventNumber);
+			Assert.AreEqual(10, _firstEvent.Event.EventNumber.ToInt64());
 			Assert.AreEqual(_id, _firstEvent.Event.EventId);
 		}
 	}
@@ -671,7 +671,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void the_subscription_gets_the_written_event_as_its_first_event() {
 			Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
 			Assert.IsNotNull(_firstEvent);
-			Assert.AreEqual(4, _firstEvent.Event.EventNumber);
+			Assert.AreEqual(4, _firstEvent.Event.EventNumber.ToInt64());
 			Assert.AreEqual(_id, _firstEvent.Event.EventId);
 		}
 	}
@@ -734,8 +734,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void the_subscription_resolves_the_linked_event_correctly() {
 			Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
-			Assert.AreEqual(intMaxValue + 1, _firstEvent.Event.EventNumber);
-			Assert.AreEqual(_event1Id, _firstEvent.Event.EventId);
+			Assert.AreEqual(intMaxValue + 1, _firstEvent.Event.EventNumber.ToInt64());
+			Assert.AreEqual(_event1Id, _firstEvent.Event.EventId.ToGuid());
 		}
 	}
 

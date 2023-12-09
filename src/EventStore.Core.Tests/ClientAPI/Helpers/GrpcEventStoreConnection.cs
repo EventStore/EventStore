@@ -25,6 +25,7 @@ using WEVE = GrpcClient::EventStore.Client.WrongExpectedVersionException;
 using Uuid = GrpcClient::EventStore.Client.Uuid;
 using EventStore.Common.Utils;
 using FromAll = GrpcClient::EventStore.Client.FromAll;
+using FromStream = GrpcClient::EventStore.Client.FromStream;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
@@ -100,11 +101,11 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	}
 
 	public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		return _streamsClient.GetStreamMetadataAsync(stream, userCredentials: userCredentials);
 	}
 
 	public Task<StreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		return GetStreamMetadataAsync(stream, userCredentials);
 	}
 
 	public Task<StreamSubscription> SubscribeToAllFrom(Position? lastCheckpoint, CatchUpSubscriptionSettings settings, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
@@ -120,7 +121,14 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	public Task<StreamSubscription> SubscribeToStreamFrom(string stream, long? lastCheckpoint, CatchUpSubscriptionSettings settings,
 		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Action<StreamPosition> liveProcessingStarted = null, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		var start = lastCheckpoint.HasValue ? FromStream.After(StreamPosition.FromInt64(lastCheckpoint.Value)) : FromStream.End;
+		return _streamsClient.SubscribeToStreamAsync(
+			stream,
+			start,
+			(s, e, _) => eventAppeared(s, e),
+			subscriptionDropped: subscriptionDropped,
+			resolveLinkTos: settings.ResolveLinkTos,
+			userCredentials: userCredentials);
 	}
 
 	public Task<StreamSubscription> SubscribeToStreamAsync(string stream, bool resolveLinkTos,
@@ -131,12 +139,12 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	}
 
 	public Task DeletePersistentSubscriptionAsync(string stream, string group, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		return _psClient.DeleteToStreamAsync(stream, group, userCredentials: userCredentials);
 	}
 
 	public Task UpdatePersistentSubscriptionAsync(string stream, string group, PersistentSubscriptionSettings settings,
 		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		return _psClient.UpdateToStreamAsync(stream, group, settings, userCredentials: userCredentials);
 	}
 
 	public Task ConnectAsync() {

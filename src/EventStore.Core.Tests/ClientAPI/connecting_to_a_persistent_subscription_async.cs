@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private Exception _innerEx;
 
 		protected override async Task When() {
-			_innerEx = await AssertEx.ThrowsAsync<ArgumentException>(() => _conn.ConnectToPersistentSubscriptionAsync(
+			_innerEx = await AssertEx.ThrowsAsync<PersistentSubscriptionNotFoundException>(() => _conn.ConnectToPersistentSubscriptionAsync(
 				"nonexisting2",
 				"foo",
 				(sub, e) => {
@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		public void the_subscription_fails_to_connect_with_argument_exception() {
-			Assert.IsInstanceOf<ArgumentException>(_innerEx);
+			Assert.IsInstanceOf<PersistentSubscriptionNotFoundException>(_innerEx);
 		}
 	}
 
@@ -195,7 +195,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void the_subscription_gets_event_zero_as_its_first_event() {
 			Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
-			Assert.AreEqual(0, _firstEvent.Event.EventNumber);
+			Assert.AreEqual(0, _firstEvent.Event.EventNumber.ToInt64());
 			Assert.AreEqual(_id, _firstEvent.Event.EventId);
 		}
 	}
@@ -250,7 +250,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void the_subscription_gets_event_two_as_its_first_event() {
 			Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
-			Assert.AreEqual(2, _firstEvent.Event.EventNumber);
+			Assert.AreEqual(2, _firstEvent.Event.EventNumber.ToInt64());
 			Assert.AreEqual(_id, _firstEvent.Event.EventId);
 		}
 	}
@@ -309,7 +309,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void the_subscription_gets_event_zero_as_its_first_event() {
 			Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
-			Assert.AreEqual(0, _firstEvent.Event.EventNumber);
+			Assert.AreEqual(0, _firstEvent.Event.EventNumber.ToInt64());
 			Assert.AreEqual(_ids[0], _firstEvent.Event.EventId);
 		}
 	}

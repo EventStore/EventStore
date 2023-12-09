@@ -2,12 +2,14 @@
 extern alias GrpcClientPersistent;
 using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
 using PersistentSubscriptionSettings = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings;
+using PersistentSubscriptionNotFoundException = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionNotFoundException;
 using AccessDeniedException = GrpcClient::EventStore.Client.AccessDeniedException;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
+using EventStore.Client;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -68,7 +70,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		public async Task the_delete_fails_with_argument_exception() {
-			await AssertEx.ThrowsAsync<InvalidOperationException>(
+			await AssertEx.ThrowsAsync<PersistentSubscriptionNotFoundException>(
 				() =>
 					_conn.DeletePersistentSubscriptionAsync(_stream, Guid.NewGuid().ToString(),
 						DefaultData.AdminCredentials));

@@ -5,6 +5,7 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using Grpc.Core;
 using GrpcClientPersistent::EventStore.Client;
 using NUnit.Framework;
 using AccessDeniedException = GrpcClient::EventStore.Client.AccessDeniedException;
@@ -65,7 +66,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		public async Task the_completion_fails_with_invalid_stream() {
-			await AssertEx.ThrowsAsync<InvalidOperationException>(() =>
+			await AssertEx.ThrowsAsync<ArgumentException>(() =>
 				_conn.CreatePersistentSubscriptionAsync("$all", "shitbird", _settings, DefaultData.AdminCredentials));
 		}
 	}
@@ -79,7 +80,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		public void the_build_fails_with_argument_exception() {
-			Assert.Throws<ArgumentException>(() =>
+			Assert.Throws<ArgumentOutOfRangeException>(() =>
 				new PersistentSubscriptionSettings(messageTimeout: TimeSpan.FromDays(25 * 365)));
 		}
 	}
@@ -93,7 +94,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		public void the_build_fails_with_argument_exception() {
-			Assert.Throws<ArgumentException>(() =>
+			Assert.Throws<ArgumentOutOfRangeException>(() =>
 				new PersistentSubscriptionSettings(checkPointAfter: TimeSpan.FromDays(25 * 365)));
 		}
 	}
@@ -137,7 +138,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		public async Task the_completion_fails_with_invalid_operation_exception() {
-			await AssertEx.ThrowsAsync<InvalidOperationException>(
+			await AssertEx.ThrowsAsync<RpcException>(
 				() => _conn.CreatePersistentSubscriptionAsync(_stream, "group32", _settings,
 					DefaultData.AdminCredentials));
 		}

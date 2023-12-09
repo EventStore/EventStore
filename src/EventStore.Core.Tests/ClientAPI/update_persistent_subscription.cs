@@ -81,8 +81,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void existing_subscriptions_are_dropped() {
 			Assert.IsTrue(_dropped.WaitOne(TimeSpan.FromSeconds(5)));
-			Assert.AreEqual(SubscriptionDroppedReason.SubscriberError, _reason);
-			Assert.IsNull(_exception);
+			Assert.AreEqual(SubscriptionDroppedReason.ServerError, _reason);
+			Assert.IsInstanceOf<PersistentSubscriptionDroppedByServerException>(_exception);
 		}
 	}
 
