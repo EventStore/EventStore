@@ -7,6 +7,7 @@ using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 using StreamPosition = GrpcClient::EventStore.Client.StreamPosition;
 using PersistentSubscriptionSettings = GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings;
+using System.Threading;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("LongRunning"), Category("ClientAPI")]
@@ -17,8 +18,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected override async Task When() {
 			var task = new TaskCompletionSource<string>();
-
-			var setts = new PersistentSubscriptionSettings(resolveLinkTos: false, startFrom: StreamPosition.Start);
+			var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+			var setts = new PersistentSubscriptionSettings(resolveLinkTos: true, startFrom: StreamPosition.Start);
 
 			await _conn.CreatePersistentSubscriptionAsync("link", "Agroup", setts, DefaultData.AdminCredentials);
 			await _conn.ConnectToPersistentSubscriptionAsync(
@@ -33,8 +34,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			await _conn.AppendToStreamAsync("target@me@com", ExpectedVersion.NoStream, TestEvent.NewTestEvent("data", eventName: "AEvent"));
 			await _conn.AppendToStreamAsync("link", ExpectedVersion.NoStream, TestEvent.NewTestEvent("0@target@me@com", eventName: "$>"));
-
-			_result = await Task.WhenAny(task.Task, Task.Delay(TimeSpan.FromSeconds(30)).ContinueWith(_ => "timeout")).Result;
+			task.Task.Wait(cancellation.Token);
+			_result = task.Task.Result;
 		}
 
 		[Test]
