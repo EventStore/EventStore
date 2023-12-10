@@ -131,6 +131,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		var breakMainLoop = false;
 		var events = new List<ResolvedEvent>();
 		var nextPosition = Position.End;
+		var isEof = false;
 
 		while (events.Count < maxCount) {
 			var result = _streamsClient.ReadAllAsync(Direction.Backwards, position, 50, resolveLinkTos,
@@ -152,14 +153,14 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 					break;
 			}
 
-			// We reached the beginning of the $all stream.
-			if (breakMainLoop || nextPosition <= Position.Start)
+			isEof = nextPosition <= Position.Start || position == nextPosition;
+			if (breakMainLoop || isEof)
 				break;
 
 			position = nextPosition;
 		}
 
-		return new AllEventsSliceNew(Direction.Backwards, nextPosition, nextPosition <= Position.Start, events.ToArray());
+		return new AllEventsSliceNew(Direction.Backwards, nextPosition, isEof, events.ToArray());
 	}
 
 	private static bool CandProcessEvent(ref IEventFilter filter, ResolvedEvent @event) {

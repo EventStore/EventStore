@@ -55,8 +55,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var read = await _conn.FilteredReadAllEventsBackwardAsync(Position.End, 4096, false, filter, 4096);
 			Assert.AreEqual(Direction.Backwards, read.ReadDirection);
 			Assert.That(EventDataComparer.Equal(
-				_testEvents.Where(e => e.Type == "AEvent").OrderBy(x => x.EventId).ToArray(),
-				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
+				_testEvents.Where(e => e.Type == "AEvent").OrderBy(x => x.EventId.ToGuid()).ToArray(),
+				read.Events.Select(x => x.Event).OrderBy(x => x.EventId.ToGuid()).ToArray()));
 		}
 
 		[Test, Category("LongRunning")]
@@ -78,8 +78,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var read = await _conn.FilteredReadAllEventsBackwardAsync(Position.End, 4096, false, filter, 4096);
 			Assert.AreEqual(Direction.Backwards, read.ReadDirection);
 			Assert.That(EventDataComparer.Equal(
-				_testEvents.Where(e => e.Type == "BEvent").OrderBy(x => x.EventId).ToArray(),
-				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
+				_testEvents.Where(e => e.Type == "BEvent").OrderBy(x => x.EventId.ToGuid()).ToArray(),
+				read.Events.Select(x => x.Event).OrderBy(x => x.EventId.ToGuid()).ToArray()));
 		}
 
 		[Test, Category("LongRunning")]
