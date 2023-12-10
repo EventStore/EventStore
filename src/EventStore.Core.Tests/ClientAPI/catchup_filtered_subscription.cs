@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void calls_checkpoint_delegate_during_catchup() {
+		public async Task calls_checkpoint_delegate_during_catchup() {
 			var filter = Filter.StreamId.Prefix("stream-a");
 			// in v2 there are 20 events, 10 in stream-a and 10 in stream-b.
 			// in v3 there are additionally two stream records and two event type records
@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				subscriptionName: String.Empty
 			);
 
-			_conn.FilteredSubscribeToAllFrom(
+			await _conn.FilteredSubscribeToAllFrom(
 				Position.Start,
 				filter,
 				settings,
@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void calls_checkpoint_during_live_processing_stage() {
+		public async Task calls_checkpoint_during_live_processing_stage() {
 			var filter = Filter.StreamId.Prefix("stream-a");
 			var appeared = new CountdownEvent(_testEventsAfter.EvenEvents().Count + 1); // Calls once for switch to live.
 			var eventsSeen = 0;
@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				subscriptionName: String.Empty
 			);
 
-			_conn.FilteredSubscribeToAllFrom(
+			await _conn.FilteredSubscribeToAllFrom(
 				Position.Start,
 				filter,
 				settings,
@@ -149,12 +149,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_with_a_given_stream_prefix() {
+		public async Task only_return_events_with_a_given_stream_prefix() {
 			var filter = Filter.StreamId.Prefix("stream-a");
 			var foundEvents = new ConcurrentBag<ResolvedEvent>();
 			var appeared = new CountdownEvent(20);
 
-			Subscribe(filter, foundEvents, appeared);
+			await Subscribe(filter, foundEvents, appeared);
 
 			if (!appeared.Wait(Timeout)) {
 				Assert.Fail("Appeared countdown event timed out.");
@@ -164,12 +164,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_with_a_given_event_prefix() {
+		public async Task only_return_events_with_a_given_event_prefix() {
 			var filter = Filter.EventType.Prefix("AE");
 			var foundEvents = new ConcurrentBag<ResolvedEvent>();
 			var appeared = new CountdownEvent(20);
 
-			Subscribe(filter, foundEvents, appeared);
+			await Subscribe(filter, foundEvents, appeared);
 
 			if (!appeared.Wait(Timeout)) {
 				Assert.Fail("Appeared countdown event timed out.");
@@ -179,12 +179,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_that_satisfy_a_given_stream_regex() {
+		public async Task only_return_events_that_satisfy_a_given_stream_regex() {
 			var filter = Filter.StreamId.Regex(new Regex(@"^.*eam-b.*$"));
 			var foundEvents = new ConcurrentBag<ResolvedEvent>();
 			var appeared = new CountdownEvent(20);
 
-			Subscribe(filter, foundEvents, appeared);
+			await Subscribe(filter, foundEvents, appeared);
 
 			if (!appeared.Wait(Timeout)) {
 				Assert.Fail("Appeared countdown event timed out.");
@@ -194,27 +194,27 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_that_satisfy_a_given_event_regex() {
+		public async Task only_return_events_that_satisfy_a_given_event_regex() {
 			var filter = Filter.EventType.Regex(new Regex(@"^.*BEv.*$"));
 			var foundEvents = new ConcurrentBag<ResolvedEvent>();
 			var appeared = new CountdownEvent(20);
 
-			Subscribe(filter, foundEvents, appeared);
+			await Subscribe(filter, foundEvents, appeared);
 
 			if (!appeared.Wait(Timeout)) {
-				Assert.Fail("Appeared countdown event timed out.");
+				Assert.Fail($"Appeared countdown event timed out: {appeared.CurrentCount}/20");
 			}
 
 			Assert.True(foundEvents.All(e => e.Event.EventType == "BEvent"));
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_that_are_not_system_events() {
+		public async Task only_return_events_that_are_not_system_events() {
 			var filter = Filter.ExcludeSystemEvents;
 			var foundEvents = new ConcurrentBag<ResolvedEvent>();
 			var appeared = new CountdownEvent(20);
 
-			Subscribe(filter, foundEvents, appeared);
+			await Subscribe(filter, foundEvents, appeared);
 
 			if (!appeared.Wait(Timeout)) {
 				Assert.Fail("Appeared countdown event timed out.");
@@ -223,8 +223,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			Assert.True(foundEvents.All(e => !e.Event.EventType.StartsWith("$")));
 		}
 
-		private void Subscribe(IEventFilter filter, ConcurrentBag<ResolvedEvent> foundEvents, CountdownEvent appeared) {
-			_conn.FilteredSubscribeToAllFrom(
+		private async Task Subscribe(IEventFilter filter, ConcurrentBag<ResolvedEvent> foundEvents, CountdownEvent appeared) {
+			await _conn.FilteredSubscribeToAllFrom(
 				Position.Start,
 				filter,
 				CatchUpSubscriptionFilteredSettings.Default,

@@ -163,7 +163,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	}
 
 	private static bool CandProcessEvent(ref IEventFilter filter, ResolvedEvent @event) {
-		var canProcess = true;
+		var canProcess = false;
 		var isStreamNameBased = false;
 		switch (filter) {
 			case StreamFilter:
@@ -200,24 +200,40 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		return canProcess;
 	}
 
-	public Task<StreamSubscription> FilteredSubscribeToAllFrom(Position? lastCheckpoint, IEventFilter filter,
+	public async Task<StreamSubscription> FilteredSubscribeToAllFrom(Position? lastCheckpoint, IEventFilter filter,
 		CatchUpSubscriptionFilteredSettings settings, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Func<StreamSubscription, Position, Task> checkpointReached,
 		int checkpointIntervalMultiplier, Action<StreamSubscription> liveProcessingStarted = null, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null) {
 
-		var start = lastCheckpoint.HasValue ? FromAll.After(lastCheckpoint.Value) : FromAll.End;
+		var starting = lastCheckpoint ?? Position.End;
+		var from = FromAll.End;
+
+		if (starting != Position.End) {
+			var slice = await FilteredReadAllEventsForwardAsync(starting, int.MaxValue, settings.ResolveLinkTos, filter, 500, userCredentials: userCredentials);
+			from = FromAll.After(slice.NextPosition);
+
+			foreach (var @event in slice.Events)
+				// Hopefully, nobody is using the subcription handle this early.
+				// Worst case scenario, I have to create another StreamSubscription sham type.
+				await eventAppeared(null, @event);
+		}
+
 		var options = new SubscriptionFilterOptions(
 			filter,
 			(uint)checkpointIntervalMultiplier,
 			(s, p, _) => checkpointReached(s, p));
 
-		return _streamsClient.SubscribeToAllAsync(
-			start,
+		var sub = await _streamsClient.SubscribeToAllAsync(
+			from,
 			(s,e, _) => eventAppeared(s, e),
 			resolveLinkTos: settings.ResolveLinkTos,
 			filterOptions: options,
 			subscriptionDropped: subscriptionDropped,
 			userCredentials: userCredentials);
+
+		liveProcessingStarted?.Invoke(sub);
+
+		return sub;
 	}
 
 	public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null) {
