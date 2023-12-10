@@ -26,6 +26,10 @@ using Uuid = GrpcClient::EventStore.Client.Uuid;
 using EventStore.Common.Utils;
 using FromAll = GrpcClient::EventStore.Client.FromAll;
 using FromStream = GrpcClient::EventStore.Client.FromStream;
+using PrefixFilterExpression = GrpcClient::EventStore.Client.PrefixFilterExpression;
+using EventTypeFilter = GrpcClient::EventStore.Client.EventTypeFilter;
+using StreamFilter = GrpcClient::EventStore.Client.StreamFilter;
+using System.Text.RegularExpressions;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
@@ -68,17 +72,132 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	public Task<StreamSubscription> FilteredSubscribeToAllAsync(bool resoleLinkTos, IEventFilter filter, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Func<StreamSubscription, Position, Task> checkpointReached,
 		int checkpointInterval, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		return FilteredSubscribeToAllFrom(
+			null,
+			filter,
+			new CatchUpSubscriptionFilteredSettings(0, 10, resolveLinkTos: resoleLinkTos),
+			eventAppeared,
+			checkpointReached,
+			checkpointInterval,
+			subscriptionDropped: subscriptionDropped,
+			userCredentials: userCredentials);
 	}
 
-	public Task<AllEventsSliceNew> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, IEventFilter filter,
+	public async Task<AllEventsSliceNew> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, IEventFilter filter,
 		int maxSearchWindow, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		// Because in C#, we can't name loops, we have to resort to local variable to break from nested loops.
+		var breakMainLoop = false;
+		var events = new List<ResolvedEvent>();
+		var nextPosition = Position.Start;
+		var lastPosition = Position.Start;
+
+		while (events.Count < maxCount) {
+			var result = _streamsClient.ReadAllAsync(Direction.Forwards, position, 50, resolveLinkTos,
+				userCredentials: userCredentials);
+	
+			await foreach (var message in result.Messages) {
+				switch (message) {
+					case StreamMessage.Event @event:
+						nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
+
+						if (CandProcessEvent(ref filter, @event.ResolvedEvent))
+							events.Add(@event.ResolvedEvent);
+
+						breakMainLoop = events.Count >= maxCount;
+						break;
+
+					case StreamMessage.LastAllStreamPosition last:
+						lastPosition = last.Position;
+						break;
+				}
+
+				if (breakMainLoop)
+					break;
+			}
+
+			// We reached the end of the $all stream.
+			if (breakMainLoop || nextPosition >= lastPosition)
+				break;
+
+			position = nextPosition;
+		}
+
+		return new AllEventsSliceNew(Direction.Forwards, nextPosition, nextPosition >= lastPosition, events.ToArray());
 	}
 
-	public Task<AllEventsSliceNew> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, IEventFilter filter,
+	public async Task<AllEventsSliceNew> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, IEventFilter filter,
 		int maxSearchWindow, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		// Because in C#, we can't name loops, we have to resort to local variable to break from nested loops.
+		var breakMainLoop = false;
+		var events = new List<ResolvedEvent>();
+		var nextPosition = Position.End;
+
+		while (events.Count < maxCount) {
+			var result = _streamsClient.ReadAllAsync(Direction.Backwards, position, 50, resolveLinkTos,
+				userCredentials: userCredentials);
+
+			await foreach (var message in result.Messages) {
+				switch (message) {
+					case StreamMessage.Event @event:
+						nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
+
+						if (CandProcessEvent(ref filter, @event.ResolvedEvent))
+							events.Add(@event.ResolvedEvent);
+
+						breakMainLoop = events.Count >= maxCount;
+						break;
+				}
+
+				if (breakMainLoop)
+					break;
+			}
+
+			// We reached the beginning of the $all stream.
+			if (breakMainLoop || nextPosition <= Position.Start)
+				break;
+
+			position = nextPosition;
+		}
+
+		return new AllEventsSliceNew(Direction.Backwards, nextPosition, nextPosition <= Position.Start, events.ToArray());
+	}
+
+	private static bool CandProcessEvent(ref IEventFilter filter, ResolvedEvent @event) {
+		var canProcess = true;
+		var isStreamNameBased = false;
+		switch (filter) {
+			case StreamFilter:
+				isStreamNameBased = true;
+				break;
+			case EventTypeFilter:
+				isStreamNameBased = false;
+				break;
+		}
+
+		if (filter.Prefixes.IsNotEmpty()) {
+			foreach (var prefix in filter.Prefixes) {
+				if (isStreamNameBased) {
+					if (@event.OriginalEvent.EventStreamId.StartsWith(prefix)) {
+						canProcess = true;
+						break;
+					}
+				} else {
+					if (@event.OriginalEvent.EventType.StartsWith(prefix)) {
+						canProcess = true;
+						break;
+					}
+				}
+			}
+		} else {
+			var regex = new Regex(filter.Regex.ToString());
+			if (isStreamNameBased) {
+				canProcess = regex.Match(@event.OriginalEvent.EventStreamId).Success;
+			} else {
+				canProcess = regex.Match(@event.OriginalEvent.EventType).Success;
+			}
+		}
+		
+		return canProcess;
 	}
 
 	public Task<StreamSubscription> FilteredSubscribeToAllFrom(Position? lastCheckpoint, IEventFilter filter,
@@ -95,6 +214,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		return _streamsClient.SubscribeToAllAsync(
 			start,
 			(s,e, _) => eventAppeared(s, e),
+			resolveLinkTos: settings.ResolveLinkTos,
 			filterOptions: options,
 			subscriptionDropped: subscriptionDropped,
 			userCredentials: userCredentials);
@@ -110,12 +230,16 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	public Task<StreamSubscription> SubscribeToAllFrom(Position? lastCheckpoint, CatchUpSubscriptionSettings settings, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
 		Action<StreamSubscription> liveProcessingStarted = null, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		return FilteredSubscribeToAllFrom(lastCheckpoint, null, CatchUpSubscriptionFilteredSettings.FromSettings(settings), eventAppeared, null, 1, liveProcessingStarted, subscriptionDropped, userCredentials);
 	}
 
 	public Task<StreamSubscription> SubscribeToAllAsync(bool resolveLinkTos, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		return _streamsClient.SubscribeToAllAsync(
+			FromAll.End, (s, e, _) => eventAppeared(s, e),
+			resolveLinkTos: resolveLinkTos,
+			subscriptionDropped: subscriptionDropped,
+			userCredentials: userCredentials);
 	}
 
 	public Task<StreamSubscription> SubscribeToStreamFrom(string stream, long? lastCheckpoint, CatchUpSubscriptionSettings settings,
@@ -135,7 +259,13 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
 		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials liveProcessingStarted = null, UserCredentials userCredentials = null) {
-		throw new NotImplementedException();
+		return _streamsClient.SubscribeToStreamAsync(
+			stream,
+			FromStream.End,
+			(s, e, _) => eventAppeared(s, e),
+			resolveLinkTos: resolveLinkTos,
+			subscriptionDropped: subscriptionDropped,
+			userCredentials: userCredentials);
 	}
 
 	public Task DeletePersistentSubscriptionAsync(string stream, string group, UserCredentials userCredentials = null) {
