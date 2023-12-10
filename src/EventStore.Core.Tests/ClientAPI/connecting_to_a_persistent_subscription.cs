@@ -413,7 +413,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		private async Task WriteEvents(IEventStoreClient connection) {
 			for (int i = 0; i < 10; i++) {
-				await connection.AppendToStreamAsync(_stream, -2, DefaultData.AdminCredentials,
+				await connection.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
 						new EventData(Uuid.NewUuid(), "test", Encoding.UTF8.GetBytes("{'foo' : 'bar'}"),
 							new byte[0]))
 ;
@@ -422,7 +422,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected override async Task When() {
 			_id = Uuid.NewUuid();
-			await _conn.AppendToStreamAsync(_stream, -1, DefaultData.AdminCredentials,
+			await _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
 				new EventData(_id, "test", Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0]));
 		}
 
