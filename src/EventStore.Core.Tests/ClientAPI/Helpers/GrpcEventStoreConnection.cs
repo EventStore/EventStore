@@ -91,46 +91,30 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		if (maxSearchWindow <= 0)
 			maxSearchWindow = 500;
 
-		// Because in C#, we can't name loops, we have to resort to local variable to break from nested loops.
-		var breakMainLoop = false;
 		var events = new List<ResolvedEvent>();
 		var nextPosition = position;
-		var lastPosition = Position.End;
 		var processedCount = 0;
 
-		while (events.Count < maxCount) {
-			var result = _streamsClient.ReadAllAsync(Direction.Forwards, position, 500, resolveLinkTos,
-				userCredentials: userCredentials);
-	
-			await foreach (var message in result.Messages) {
-				switch (message) {
-					case StreamMessage.Event @event:
-						nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
-						processedCount++;
+		var result = _streamsClient.ReadAllAsync(Direction.Forwards, position, resolveLinkTos:resolveLinkTos,
+			userCredentials: userCredentials);
 
-						if (CandProcessEvent(ref filter, @event.ResolvedEvent))
-							events.Add(@event.ResolvedEvent);
-
-						breakMainLoop = events.Count >= maxCount || processedCount >= maxSearchWindow;
-						break;
-
-					case StreamMessage.LastAllStreamPosition last:
-						lastPosition = last.Position;
-						break;
+		var endOfStream = true;
+		await foreach (var message in result.Messages) {
+			if (message is StreamMessage.Event @event) {
+				nextPosition = @event.ResolvedEvent.OriginalPosition.Value;
+				if (events.Count >= maxCount || processedCount >= maxSearchWindow) {
+					endOfStream = false;
+					break;
 				}
 
-				if (breakMainLoop)
-					break;
+				processedCount++;
+
+				if (CandProcessEvent(ref filter, @event.ResolvedEvent))
+					events.Add(@event.ResolvedEvent);
 			}
-
-			// We reached the end of the $all stream.
-			if (breakMainLoop || nextPosition >= lastPosition)
-				break;
-
-			position = nextPosition;
 		}
 
-		return new AllEventsSliceNew(Direction.Forwards, nextPosition, nextPosition >= lastPosition, events.ToArray());
+		return new AllEventsSliceNew(Direction.Forwards, nextPosition, endOfStream, events.ToArray());
 	}
 
 	public async Task<AllEventsSliceNew> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, IEventFilter filter,

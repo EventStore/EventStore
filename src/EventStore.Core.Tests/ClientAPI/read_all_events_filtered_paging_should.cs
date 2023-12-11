@@ -107,12 +107,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void handle_paging_between_events_returns_correct_number_of_events_for_max_search_window_forward() {
+		public async Task handle_paging_between_events_returns_correct_number_of_events_for_max_search_window_forward() {
 			var filter = Filter.EventType.Prefix("BE");
 
-			var slice = _conn.FilteredReadAllEventsForwardAsync(Position.Start, 30, false, filter, maxSearchWindow: 30)
-				.GetAwaiter()
-				.GetResult();
+			var slice = await _conn.FilteredReadAllEventsForwardAsync(Position.Start, 30, false, filter, maxSearchWindow: 30);
 
 			// Includes system events at start of stream (inc epoch-information)
 			var expectedCount = 11;
@@ -128,12 +126,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void handle_paging_between_events_returns_correct_number_of_events_for_max_search_window_backward() {
+		public async Task handle_paging_between_events_returns_correct_number_of_events_for_max_search_window_backward() {
 			var filter = Filter.EventType.Prefix("BE");
 
-			var slice = _conn.FilteredReadAllEventsBackwardAsync(Position.End, 20, false, filter, maxSearchWindow: 20)
-				.GetAwaiter()
-				.GetResult();
+			var slice = await _conn.FilteredReadAllEventsBackwardAsync(Position.End, 20, false, filter, maxSearchWindow: 20);
 
 			Assert.AreEqual(10, slice.Events.Length); // Includes system events
 		}
