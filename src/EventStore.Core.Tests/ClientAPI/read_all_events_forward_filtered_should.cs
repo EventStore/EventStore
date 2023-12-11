@@ -57,8 +57,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
 			var read = await _conn.FilteredReadAllEventsForwardAsync(Position.Start, 1000, false, filter, 1000);
 			Assert.That(EventDataComparer.Equal(
-				_testEvents.Where(e => e.Type == "AEvent").OrderBy(x => x.EventId).ToArray(),
-				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
+				_testEvents.Where(e => e.Type == "AEvent").OrderBy(x => x.EventId.ToGuid()).ToArray(),
+				read.Events.Select(x => x.Event).OrderBy(x => x.EventId.ToGuid()).ToArray()));
 		}
 
 		[Test, Category("LongRunning")]
@@ -80,8 +80,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var read = await _conn.FilteredReadAllEventsForwardAsync(Position.Start, 1000, false, filter, 1000);
 			Assert.AreEqual(Direction.Forwards, read.ReadDirection);
 			Assert.That(EventDataComparer.Equal(
-				_testEvents.Where(e => e.Type == "BEvent").OrderBy(x => x.EventId).ToArray(),
-				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
+				_testEvents.Where(e => e.Type == "BEvent").OrderBy(x => x.EventId.ToGuid()).ToArray(),
+				read.Events.Select(x => x.Event).OrderBy(x => x.EventId.ToGuid()).ToArray()));
 		}
 
 		[Test, Category("LongRunning")]

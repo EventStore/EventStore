@@ -88,6 +88,11 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		if (maxCount == int.MaxValue)
 			throw new ArgumentException("is equal to int.MaxValue", nameof(maxCount));
 
+		// Internal code for disabling maxCount during test
+		if (maxCount == -42) {
+			maxCount = int.MaxValue;
+		}
+
 		if (maxSearchWindow <= 0)
 			maxSearchWindow = 500;
 
@@ -213,7 +218,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		var from = FromAll.End;
 
 		if (starting != Position.End) {
-			var slice = await FilteredReadAllEventsForwardAsync(starting, int.MaxValue, settings.ResolveLinkTos, filter, 500, userCredentials: userCredentials);
+			var slice = await FilteredReadAllEventsForwardAsync(starting, -42, settings.ResolveLinkTos, filter, 500, userCredentials: userCredentials);
 			from = FromAll.After(slice.NextPosition);
 
 			foreach (var @event in slice.Events)
@@ -419,29 +424,9 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			lastEventNumber,nextEventNumber <= lastEventNumber, events.ToArray());
 	}
 
-	public async Task<AllEventsSliceNew> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
+	public Task<AllEventsSliceNew> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
-		var result = _streamsClient.ReadAllAsync(Direction.Forwards, position, maxCount, resolveLinkTos,
-			userCredentials: userCredentials);
-
-		var events = new List<ResolvedEvent>();
-		var nextPosition = Position.Start;
-		var lastPosition = Position.Start;
-		await foreach (var message in result.Messages) {
-			switch (message)
-			{
-				case StreamMessage.Event @event:
-					nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
-					events.Add(@event.ResolvedEvent);
-					break;
-
-				case StreamMessage.LastAllStreamPosition last:
-					lastPosition = last.Position;
-					break;
-			}
-		}
-
-		return new AllEventsSliceNew(Direction.Forwards, nextPosition, nextPosition >= lastPosition, events.ToArray());
+		return FilteredReadAllEventsForwardAsync(position, maxCount, resolveLinkTos, null, 0, userCredentials);
 	}
 
 	public Task<AllEventsSliceNew> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
