@@ -85,25 +85,33 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	public async Task<AllEventsSliceNew> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, IEventFilter filter,
 		int maxSearchWindow, UserCredentials userCredentials = null) {
+		if (maxCount == int.MaxValue)
+			throw new ArgumentException("is equal to int.MaxValue", nameof(maxCount));
+
+		if (maxSearchWindow <= 0)
+			maxSearchWindow = 500;
+
 		// Because in C#, we can't name loops, we have to resort to local variable to break from nested loops.
 		var breakMainLoop = false;
 		var events = new List<ResolvedEvent>();
-		var nextPosition = Position.Start;
-		var lastPosition = Position.Start;
+		var nextPosition = position;
+		var lastPosition = Position.End;
+		var processedCount = 0;
 
 		while (events.Count < maxCount) {
-			var result = _streamsClient.ReadAllAsync(Direction.Forwards, position, 50, resolveLinkTos,
+			var result = _streamsClient.ReadAllAsync(Direction.Forwards, position, 500, resolveLinkTos,
 				userCredentials: userCredentials);
 	
 			await foreach (var message in result.Messages) {
 				switch (message) {
 					case StreamMessage.Event @event:
 						nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
+						processedCount++;
 
 						if (CandProcessEvent(ref filter, @event.ResolvedEvent))
 							events.Add(@event.ResolvedEvent);
 
-						breakMainLoop = events.Count >= maxCount;
+						breakMainLoop = events.Count >= maxCount || processedCount >= maxSearchWindow;
 						break;
 
 					case StreamMessage.LastAllStreamPosition last:
@@ -127,25 +135,33 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	public async Task<AllEventsSliceNew> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, IEventFilter filter,
 		int maxSearchWindow, UserCredentials userCredentials = null) {
+		if (maxCount == int.MaxValue)
+			throw new ArgumentException("is equal to int.MaxValue", nameof(maxCount));
+
+		if (maxSearchWindow <= 0)
+			maxSearchWindow = 500;
+
 		// Because in C#, we can't name loops, we have to resort to local variable to break from nested loops.
 		var breakMainLoop = false;
 		var events = new List<ResolvedEvent>();
-		var nextPosition = Position.End;
+		var nextPosition = position;
 		var isEof = false;
+		var processedCount = 0;
 
 		while (events.Count < maxCount) {
-			var result = _streamsClient.ReadAllAsync(Direction.Backwards, position, 50, resolveLinkTos,
+			var result = _streamsClient.ReadAllAsync(Direction.Backwards, position, 500, resolveLinkTos,
 				userCredentials: userCredentials);
 
 			await foreach (var message in result.Messages) {
 				switch (message) {
 					case StreamMessage.Event @event:
 						nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
+						processedCount++;
 
 						if (CandProcessEvent(ref filter, @event.ResolvedEvent))
 							events.Add(@event.ResolvedEvent);
 
-						breakMainLoop = events.Count >= maxCount;
+						breakMainLoop = events.Count >= maxCount || processedCount >= maxSearchWindow;
 						break;
 				}
 
@@ -164,6 +180,9 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	}
 
 	private static bool CandProcessEvent(ref IEventFilter filter, ResolvedEvent @event) {
+		if (filter == null)
+			return true;
+
 		var canProcess = false;
 		var isStreamNameBased = false;
 		switch (filter) {
@@ -441,25 +460,9 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		return new AllEventsSliceNew(Direction.Forwards, nextPosition, nextPosition >= lastPosition, events.ToArray());
 	}
 
-	public async Task<AllEventsSliceNew> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
+	public Task<AllEventsSliceNew> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
-		var result = _streamsClient.ReadAllAsync(Direction.Backwards, position, maxCount, resolveLinkTos,
-			userCredentials: userCredentials);
-
-		var events = new List<ResolvedEvent>();
-		var nextPosition = Position.End;
-		var lastPosition = Position.Start;
-		await foreach (var message in result.Messages) {
-			switch (message)
-			{
-				case StreamMessage.Event @event:
-					nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
-					events.Add(@event.ResolvedEvent);
-					break;
-			}
-		}
-
-		return new AllEventsSliceNew(Direction.Backwards, nextPosition, nextPosition <= lastPosition, events.ToArray());
+		return FilteredReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos, null, 1, userCredentials);
 	}
 
 	public Task CreatePersistentSubscriptionAsync(string stream, string groupName, GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings settings,

@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void handle_paging_between_events_forward() {
+		public async Task handle_paging_between_events_forward() {
 			var numberOfEmptySlicesRead = 0;
 
 			var filter = Filter.EventType.Prefix("CE");
@@ -61,9 +61,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			AllEventsSliceNew slice;
 
 			do {
-				slice = _conn.FilteredReadAllEventsForwardAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
-					.GetAwaiter()
-					.GetResult();
+				slice = await _conn.FilteredReadAllEventsForwardAsync(sliceStart, 50, false, filter, maxSearchWindow: 100);
 
 				if (slice.Events.Length == 0) {
 					numberOfEmptySlicesRead++;
@@ -82,7 +80,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void handle_paging_between_events_backward() {
+		public async Task handle_paging_between_events_backward() {
 			var numberOfEmptySlicesRead = 0;
 
 			var filter = Filter.EventType.Prefix("AE");
@@ -91,9 +89,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			AllEventsSliceNew slice;
 
 			do {
-				slice = _conn.FilteredReadAllEventsBackwardAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
-					.GetAwaiter()
-					.GetResult();
+				slice = await _conn.FilteredReadAllEventsBackwardAsync(sliceStart, 50, false, filter, maxSearchWindow: 100);
 				if (slice.Events.Length == 0) {
 					numberOfEmptySlicesRead++;
 				} else {
