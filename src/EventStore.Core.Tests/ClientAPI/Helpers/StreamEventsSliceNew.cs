@@ -30,5 +30,6 @@ public class StreamEventsSliceNew {
 
 	public StreamEventsSliceNew(SliceReadStatus status) {
 		Status = status;
+		Events = new ResolvedEvent[0];
 	}
 }

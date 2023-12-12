@@ -6,7 +6,7 @@ using GrpcClientStreams::EventStore.Client;
 using NUnit.Framework;
 using EventData = GrpcClient::EventStore.Client.EventData;
 using Uuid = GrpcClient::EventStore.Client.Uuid;
-using WrongExpectedVersionException = GrpcClient::EventStore.Client.WrongExpectedVersionException;
+using WrongExpectedVersionException = EventStore.Core.Tests.ClientAPI.Helpers.WrongExpectedVersionException;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]

@@ -47,45 +47,45 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		public async Task should_be_able_to_read_stream_forward() {
 			var result = await _store.ReadStreamEventsForwardAsync(StreamName, intMaxValue, 100, false);
 			Assert.AreEqual(5, result.Events.Count());
-			Assert.AreEqual(_r1.EventId, result.Events[0].Event.EventId);
-			Assert.AreEqual(_r2.EventId, result.Events[1].Event.EventId);
-			Assert.AreEqual(_r3.EventId, result.Events[2].Event.EventId);
-			Assert.AreEqual(_r4.EventId, result.Events[3].Event.EventId);
-			Assert.AreEqual(_r5.EventId, result.Events[4].Event.EventId);
+			Assert.AreEqual(_r1.EventId, result.Events[0].Event.EventId.ToGuid());
+			Assert.AreEqual(_r2.EventId, result.Events[1].Event.EventId.ToGuid());
+			Assert.AreEqual(_r3.EventId, result.Events[2].Event.EventId.ToGuid());
+			Assert.AreEqual(_r4.EventId, result.Events[3].Event.EventId.ToGuid());
+			Assert.AreEqual(_r5.EventId, result.Events[4].Event.EventId.ToGuid());
 		}
 
 		[Test]
 		public async Task should_be_able_to_read_stream_backward() {
 			var result = await _store.ReadStreamEventsBackwardAsync(StreamName, intMaxValue + 6, 100, false);
 			Assert.AreEqual(5, result.Events.Count());
-			Assert.AreEqual(_r5.EventId, result.Events[0].Event.EventId);
-			Assert.AreEqual(_r4.EventId, result.Events[1].Event.EventId);
-			Assert.AreEqual(_r3.EventId, result.Events[2].Event.EventId);
-			Assert.AreEqual(_r2.EventId, result.Events[3].Event.EventId);
-			Assert.AreEqual(_r1.EventId, result.Events[4].Event.EventId);
+			Assert.AreEqual(_r5.EventId, result.Events[0].Event.EventId.ToGuid());
+			Assert.AreEqual(_r4.EventId, result.Events[1].Event.EventId.ToGuid());
+			Assert.AreEqual(_r3.EventId, result.Events[2].Event.EventId.ToGuid());
+			Assert.AreEqual(_r2.EventId, result.Events[3].Event.EventId.ToGuid());
+			Assert.AreEqual(_r1.EventId, result.Events[4].Event.EventId.ToGuid());
 		}
 
 		[Test]
 		public async Task should_be_able_to_read_each_event() {
 			var record = await _store.ReadEventAsync(StreamName, intMaxValue + 1, false);
 			Assert.AreEqual(EventReadStatus.Success, record.Status);
-			Assert.AreEqual(_r1.EventId, record.Event.Value.Event.EventId);
+			Assert.AreEqual(_r1.EventId, record.Event.Value.Event.EventId.ToGuid());
 
 			record = await _store.ReadEventAsync(StreamName, intMaxValue + 2, false);
 			Assert.AreEqual(EventReadStatus.Success, record.Status);
-			Assert.AreEqual(_r2.EventId, record.Event.Value.Event.EventId);
+			Assert.AreEqual(_r2.EventId, record.Event.Value.Event.EventId.ToGuid());
 
 			record = await _store.ReadEventAsync(StreamName, intMaxValue + 3, false);
 			Assert.AreEqual(EventReadStatus.Success, record.Status);
-			Assert.AreEqual(_r3.EventId, record.Event.Value.Event.EventId);
+			Assert.AreEqual(_r3.EventId, record.Event.Value.Event.EventId.ToGuid());
 
 			record = await _store.ReadEventAsync(StreamName, intMaxValue + 4, false);
 			Assert.AreEqual(EventReadStatus.Success, record.Status);
-			Assert.AreEqual(_r4.EventId, record.Event.Value.Event.EventId);
+			Assert.AreEqual(_r4.EventId, record.Event.Value.Event.EventId.ToGuid());
 
 			record = await _store.ReadEventAsync(StreamName, intMaxValue + 5, false);
 			Assert.AreEqual(EventReadStatus.Success, record.Status);
-			Assert.AreEqual(_r5.EventId, record.Event.Value.Event.EventId);
+			Assert.AreEqual(_r5.EventId, record.Event.Value.Event.EventId.ToGuid());
 		}
 
 		[Test]
@@ -95,11 +95,11 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			Assert.IsTrue(result.Events.Count() > 5);
 
 			var records = result.Events.Where(x => x.OriginalStreamId == StreamName).ToList();
-			Assert.AreEqual(_r1.EventId, records[0].Event.EventId);
-			Assert.AreEqual(_r2.EventId, records[1].Event.EventId);
-			Assert.AreEqual(_r3.EventId, records[2].Event.EventId);
-			Assert.AreEqual(_r4.EventId, records[3].Event.EventId);
-			Assert.AreEqual(_r5.EventId, records[4].Event.EventId);
+			Assert.AreEqual(_r1.EventId, records[0].Event.EventId.ToGuid());
+			Assert.AreEqual(_r2.EventId, records[1].Event.EventId.ToGuid());
+			Assert.AreEqual(_r3.EventId, records[2].Event.EventId.ToGuid());
+			Assert.AreEqual(_r4.EventId, records[3].Event.EventId.ToGuid());
+			Assert.AreEqual(_r5.EventId, records[4].Event.EventId.ToGuid());
 		}
 
 		[Test]
@@ -109,11 +109,11 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			Assert.IsTrue(result.Events.Count() > 5);
 
 			var records = result.Events.Where(x => x.OriginalStreamId == StreamName).ToList();
-			Assert.AreEqual(_r5.EventId, records[0].Event.EventId);
-			Assert.AreEqual(_r4.EventId, records[1].Event.EventId);
-			Assert.AreEqual(_r3.EventId, records[2].Event.EventId);
-			Assert.AreEqual(_r2.EventId, records[3].Event.EventId);
-			Assert.AreEqual(_r1.EventId, records[4].Event.EventId);
+			Assert.AreEqual(_r5.EventId, records[0].Event.EventId.ToGuid());
+			Assert.AreEqual(_r4.EventId, records[1].Event.EventId.ToGuid());
+			Assert.AreEqual(_r3.EventId, records[2].Event.EventId.ToGuid());
+			Assert.AreEqual(_r2.EventId, records[3].Event.EventId.ToGuid());
+			Assert.AreEqual(_r1.EventId, records[4].Event.EventId.ToGuid());
 		}
 	}
 }

@@ -7,6 +7,7 @@ using System.Net;
 using System.Threading.Tasks;
 using GrpcClientStreams::EventStore.Client;
 using EventStoreClientSettings = GrpcClient::EventStore.Client.EventStoreClientSettings;
+using StreamDeletedException = GrpcClient::EventStore.Client.StreamDeletedException;
 using EventStoreStreamsClient = GrpcClientStreams::EventStore.Client.EventStoreClient;
 using StreamRevision = GrpcClient::EventStore.Client.StreamRevision;
 using UserCredentials = GrpcClient::EventStore.Client.UserCredentials;
@@ -372,30 +373,33 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	public async Task<StreamEventsSliceNew> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
-		var result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(start),
-			maxCount: count, resolveLinkTos: resolveLinkTos, userCredentials: userCredentials);
+		try {
+			var result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(start),
+				maxCount: count, resolveLinkTos: resolveLinkTos, userCredentials: userCredentials);
 
-		var events = new List<ResolvedEvent>();
-		var lastStreamEventNumber = -1L;
-		var lastEventNumber = -1L;
-		var nextEventNumber = -1L;
-		await foreach (var message in result.Messages) {
-			switch (message)
-			{
-				case StreamMessage.Event @event:
-					lastEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64();
-					nextEventNumber = lastEventNumber + 1;
-					events.Add(@event.ResolvedEvent);
-					break;
+			var events = new List<ResolvedEvent>();
+			var lastStreamEventNumber = -1L;
+			var lastEventNumber = -1L;
+			var nextEventNumber = -1L;
+			await foreach (var message in result.Messages) {
+				switch (message) {
+					case StreamMessage.Event @event:
+						lastEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64();
+						nextEventNumber = lastEventNumber + 1;
+						events.Add(@event.ResolvedEvent);
+						break;
 
-				case StreamMessage.LastStreamPosition last:
-					lastStreamEventNumber = last.StreamPosition.ToInt64();
-					break;
+					case StreamMessage.LastStreamPosition last:
+						lastStreamEventNumber = last.StreamPosition.ToInt64();
+						break;
+				}
 			}
-		}
 
-		return new StreamEventsSliceNew(stream, Direction.Forwards, start, nextEventNumber,
-			lastStreamEventNumber,lastEventNumber >= lastStreamEventNumber, events.ToArray());
+			return new StreamEventsSliceNew(stream, Direction.Forwards, start, nextEventNumber,
+				lastStreamEventNumber, lastEventNumber >= lastStreamEventNumber, events.ToArray());
+		} catch (StreamDeletedException) {
+			return new StreamEventsSliceNew(SliceReadStatus.StreamDeleted);
+		}
 	}
 
 	public async Task<StreamEventsSliceNew> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos,
