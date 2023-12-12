@@ -446,7 +446,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	public Task<AllEventsSliceNew> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
-		return FilteredReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos, null, 1, userCredentials);
+		return FilteredReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos, null, 0, userCredentials);
 	}
 
 	public Task CreatePersistentSubscriptionAsync(string stream, string groupName, GrpcClientPersistent::EventStore.Client.PersistentSubscriptionSettings settings,
