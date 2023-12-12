@@ -41,10 +41,10 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				.ReadStreamEventsForwardAsync(_linkedStreamName, 0, 100, true, DefaultData.AdminCredentials);
 			Assert.AreEqual(SliceReadStatus.Success, readResult.Status);
 			Assert.AreEqual(2, readResult.Events.Length);
-			Assert.AreEqual(_event1.EventId, readResult.Events[0].Event.EventId);
-			Assert.AreEqual(_event2.EventId, readResult.Events[1].Event.EventId);
-			Assert.AreEqual(intMaxValue + 1, readResult.Events[0].Event.EventNumber);
-			Assert.AreEqual(intMaxValue + 2, readResult.Events[1].Event.EventNumber);
+			Assert.AreEqual(_event1.EventId, readResult.Events[0].Event.EventId.ToGuid());
+			Assert.AreEqual(_event2.EventId, readResult.Events[1].Event.EventId.ToGuid());
+			Assert.AreEqual(intMaxValue + 1, readResult.Events[0].Event.EventNumber.ToInt64());
+			Assert.AreEqual(intMaxValue + 2, readResult.Events[1].Event.EventNumber.ToInt64());
 		}
 
 		[Test]
@@ -53,10 +53,10 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				.ReadStreamEventsBackwardAsync(_linkedStreamName, 10, 100, true, DefaultData.AdminCredentials);
 			Assert.AreEqual(SliceReadStatus.Success, readResult.Status);
 			Assert.AreEqual(2, readResult.Events.Length);
-			Assert.AreEqual(_event2.EventId, readResult.Events[0].Event.EventId);
-			Assert.AreEqual(_event1.EventId, readResult.Events[1].Event.EventId);
-			Assert.AreEqual(intMaxValue + 2, readResult.Events[0].Event.EventNumber);
-			Assert.AreEqual(intMaxValue + 1, readResult.Events[1].Event.EventNumber);
+			Assert.AreEqual(_event2.EventId, readResult.Events[0].Event.EventId.ToGuid());
+			Assert.AreEqual(_event1.EventId, readResult.Events[1].Event.EventId.ToGuid());
+			Assert.AreEqual(intMaxValue + 2, readResult.Events[0].Event.EventNumber.ToInt64());
+			Assert.AreEqual(intMaxValue + 1, readResult.Events[1].Event.EventNumber.ToInt64());
 		}
 
 		[Test]
@@ -65,10 +65,10 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 ;
 			var linkedEvents = readResult.Events.Where(x => x.OriginalStreamId == _linkedStreamName).ToList();
 			Assert.AreEqual(2, linkedEvents.Count());
-			Assert.AreEqual(_event1.EventId, linkedEvents[0].Event.EventId);
-			Assert.AreEqual(_event2.EventId, linkedEvents[1].Event.EventId);
-			Assert.AreEqual(intMaxValue + 1, linkedEvents[0].Event.EventNumber);
-			Assert.AreEqual(intMaxValue + 2, linkedEvents[1].Event.EventNumber);
+			Assert.AreEqual(_event1.EventId, linkedEvents[0].Event.EventId.ToGuid());
+			Assert.AreEqual(_event2.EventId, linkedEvents[1].Event.EventId.ToGuid());
+			Assert.AreEqual(intMaxValue + 1, linkedEvents[0].Event.EventNumber.ToInt64());
+			Assert.AreEqual(intMaxValue + 2, linkedEvents[1].Event.EventNumber.ToInt64());
 		}
 
 		[Test]
@@ -77,10 +77,10 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 ;
 			var linkedEvents = readResult.Events.Where(x => x.OriginalStreamId == _linkedStreamName).ToList();
 			Assert.AreEqual(2, linkedEvents.Count());
-			Assert.AreEqual(_event2.EventId, linkedEvents[0].Event.EventId);
-			Assert.AreEqual(_event1.EventId, linkedEvents[1].Event.EventId);
-			Assert.AreEqual(intMaxValue + 2, linkedEvents[0].Event.EventNumber);
-			Assert.AreEqual(intMaxValue + 1, linkedEvents[1].Event.EventNumber);
+			Assert.AreEqual(_event2.EventId, linkedEvents[0].Event.EventId.ToGuid());
+			Assert.AreEqual(_event1.EventId, linkedEvents[1].Event.EventId.ToGuid());
+			Assert.AreEqual(intMaxValue + 2, linkedEvents[0].Event.EventNumber.ToInt64());
+			Assert.AreEqual(intMaxValue + 1, linkedEvents[1].Event.EventNumber.ToInt64());
 		}
 	}
 }

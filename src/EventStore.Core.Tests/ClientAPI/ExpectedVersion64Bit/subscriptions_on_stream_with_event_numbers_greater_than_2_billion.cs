@@ -101,8 +101,8 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			Assert.That(countdown.Wait(TimeSpan.FromSeconds(5)), "Timed out waiting for events to appear");
 
 			Assert.AreEqual(3, receivedEvents.Count);
-			Assert.AreEqual(_c1.EventId, receivedEvents[0].Event.EventId);
-			Assert.AreEqual(_c2.EventId, receivedEvents[1].Event.EventId);
+			Assert.AreEqual(_c1.EventId, receivedEvents[0].Event.EventId.ToGuid());
+			Assert.AreEqual(_c2.EventId, receivedEvents[1].Event.EventId.ToGuid());
 			Assert.AreEqual(evnt.EventId, receivedEvents[2].Event.EventId);
 		}
 	}

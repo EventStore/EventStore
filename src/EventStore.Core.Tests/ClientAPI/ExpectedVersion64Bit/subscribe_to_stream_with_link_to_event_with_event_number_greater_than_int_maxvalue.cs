@@ -56,9 +56,9 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		[Test]
 		public void should_receive_and_resolve_the_linked_event() {
 			Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
-			Assert.AreEqual(intMaxValue + 1, _receivedEvent.Event.EventNumber);
-			Assert.AreEqual(_event1Id, _receivedEvent.Event.EventId);
-			Assert.AreEqual(intMaxValue + 1, _receivedEvent.Event.EventNumber);
+			Assert.AreEqual(intMaxValue + 1, _receivedEvent.Event.EventNumber.ToInt64());
+			Assert.AreEqual(_event1Id, _receivedEvent.Event.EventId.ToGuid());
+			Assert.AreEqual(intMaxValue + 1, _receivedEvent.Event.EventNumber.ToInt64());
 		}
 	}
 }
