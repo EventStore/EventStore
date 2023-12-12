@@ -374,32 +374,43 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	public async Task<StreamEventsSliceNew> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos,
 		UserCredentials userCredentials = null) {
 		try {
+			var lastStreamEventNumber = -1L;
 			var result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(start),
-				maxCount: count, resolveLinkTos: resolveLinkTos, userCredentials: userCredentials);
+				maxCount: 1, resolveLinkTos: resolveLinkTos, userCredentials: userCredentials);
+
+			await foreach(var message in result.Messages) {
+				if (message is StreamMessage.LastStreamPosition lastPos)
+					lastStreamEventNumber = lastPos.StreamPosition.ToInt64();
+			}
+
+			result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(start),
+				resolveLinkTos: resolveLinkTos, userCredentials: userCredentials);
 
 			var events = new List<ResolvedEvent>();
-			var lastStreamEventNumber = -1L;
-			var lastEventNumber = -1L;
 			var nextEventNumber = -1L;
+			var isEndOfStream = true;
 			await foreach (var message in result.Messages) {
-				switch (message) {
-					case StreamMessage.Event @event:
-						lastEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64();
-						nextEventNumber = lastEventNumber + 1;
-						events.Add(@event.ResolvedEvent);
-						break;
+				if (message is StreamMessage.Event @event) {
+					nextEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64();
 
-					case StreamMessage.LastStreamPosition last:
-						lastStreamEventNumber = last.StreamPosition.ToInt64();
+					if (events.Count >= count || OutOfRangeEvent(start, count, @event.ResolvedEvent)) {
+						isEndOfStream = false;
 						break;
+					}
+
+					events.Add(@event.ResolvedEvent);
 				}
 			}
 
 			return new StreamEventsSliceNew(stream, Direction.Forwards, start, nextEventNumber,
-				lastStreamEventNumber, lastEventNumber >= lastStreamEventNumber, events.ToArray());
+				lastStreamEventNumber, isEndOfStream, events.ToArray());
 		} catch (StreamDeletedException) {
 			return new StreamEventsSliceNew(SliceReadStatus.StreamDeleted);
 		}
+	}
+
+	private static bool OutOfRangeEvent(long start, long count, ResolvedEvent @event) {
+		return !(@event.OriginalEventNumber.ToInt64() > start && @event.OriginalEventNumber.ToInt64() < start + count - 1);
 	}
 
 	public async Task<StreamEventsSliceNew> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos,
