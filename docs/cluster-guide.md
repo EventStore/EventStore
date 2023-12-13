@@ -24,7 +24,7 @@ Welcome to the quick start guide for setting up a 3-node cluster using EventStor
 
 `C:\Path\To\Folder\Generate_Certificate\es-gencert-cli_[Version]_Windows-x86_64`
 
-- Run the command to generate the root certificate and root private key: 
+- Run this command to generate the root certificate and root private key: 
 `.\es-gencert-cli create-ca -out [Your Generate_Certificate Path]\ca`
 `C:\Path\To\Folder\Generate_Certificate\es-gencert-cli_[Version]_Windows-x86_64\ca`
 
