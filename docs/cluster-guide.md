@@ -20,7 +20,7 @@ Welcome to the quick start guide for setting up a 3-node cluster using EventStor
 
 1. Create a 'Generate_Certificate' folder on the desktop. 
 2. Download the latest version of the certificate generator from [EventStore es-gencert-cli-releases](https://github.com/EventStore/es-gencert-cli/releases) and unzip it into 'Generate_Certificate'.
-3. In the command line, navigate to: 
+3. In a terminal, change to the es-gencert-cli directory: 
 
 `C:\Path\To\Folder\Generate_Certificate\es-gencert-cli_[Version]_Windows-x86_64`
 
