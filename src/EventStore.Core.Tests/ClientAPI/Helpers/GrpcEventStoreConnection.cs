@@ -222,20 +222,29 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			var slice = await FilteredReadAllEventsForwardAsync(starting, -42, settings.ResolveLinkTos, filter, 500, userCredentials: userCredentials);
 			from = FromAll.After(slice.NextPosition);
 
-			foreach (var @event in slice.Events)
-				// Hopefully, nobody is using the subcription handle this early.
-				// Worst case scenario, I have to create another StreamSubscription sham type.
-				await eventAppeared(null, @event);
+			foreach (var @event in slice.Events) {
+				try {
+					// Hopefully, nobody is using the subscription handle this early.
+					// Worst case scenario, I have to create another StreamSubscription sham type.
+					await eventAppeared(null, @event);
+				} catch (Exception ex) {
+					subscriptionDropped?.Invoke(null, SubscriptionDroppedReason.SubscriberError, ex);
+					throw;
+				}
+			}
 		}
+		SubscriptionFilterOptions options = null;
 
-		var options = new SubscriptionFilterOptions(
-			filter,
-			(uint)checkpointIntervalMultiplier,
-			(s, p, _) => checkpointReached(s, p));
+		if (filter != null) {
+			options = new SubscriptionFilterOptions(
+				filter,
+				(uint)checkpointIntervalMultiplier,
+				(s, p, _) => checkpointReached(s, p));
+		}
 
 		var sub = await _streamsClient.SubscribeToAllAsync(
 			from,
-			(s,e, _) => eventAppeared(s, e),
+			(s,e, _) =>  eventAppeared(s, e),
 			resolveLinkTos: settings.ResolveLinkTos,
 			filterOptions: options,
 			subscriptionDropped: subscriptionDropped,
@@ -256,7 +265,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	public Task<StreamSubscription> SubscribeToAllFrom(Position? lastCheckpoint, CatchUpSubscriptionSettings settings, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
 		Action<StreamSubscription> liveProcessingStarted = null, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
-		return FilteredSubscribeToAllFrom(lastCheckpoint, null, CatchUpSubscriptionFilteredSettings.FromSettings(settings), eventAppeared, null, 1, liveProcessingStarted, subscriptionDropped, userCredentials);
+		return FilteredSubscribeToAllFrom(lastCheckpoint, null, CatchUpSubscriptionFilteredSettings.FromSettings(settings), eventAppeared, (_, _) => Task.CompletedTask, 1, liveProcessingStarted, subscriptionDropped, userCredentials);
 	}
 
 	public Task<StreamSubscription> SubscribeToAllAsync(bool resolveLinkTos, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
@@ -410,7 +419,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	}
 
 	private static bool OutOfRangeEvent(long start, long count, ResolvedEvent @event) {
-		return !(@event.OriginalEventNumber.ToInt64() > start && @event.OriginalEventNumber.ToInt64() < start + count - 1);
+		return !(@event.OriginalEventNumber.ToInt64() >= start && @event.OriginalEventNumber.ToInt64() < start + count);
 	}
 
 	public async Task<StreamEventsSliceNew> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos,

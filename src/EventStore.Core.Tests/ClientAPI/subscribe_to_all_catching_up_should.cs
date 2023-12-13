@@ -77,12 +77,14 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await store.AppendToStreamAsync(stream, ExpectedVersion.Any,
 					new EventData(Uuid.NewUuid(), "event", new byte[3], null));
 
-				var dropped = new CountdownEvent(1);
+				//var dropped = new CountdownEvent(1);
+				var dropped = new TaskCompletionSource<bool>();
 				await store.SubscribeToAllFrom(null, CatchUpSubscriptionSettings.Default,
 					(x, y) => { throw new Exception("Error"); },
 					_ => Log.Information("Live processing started."),
-					(x, y, z) => dropped.Signal());
-				Assert.IsTrue(dropped.Wait(Timeout));
+					(x, y, z) => dropped.TrySetResult(true));
+				var source = new CancellationTokenSource(Timeout);
+				Assert.IsTrue(await dropped.Task.WaitAsync(source.Token));
 			}
 		}
 
