@@ -279,7 +279,7 @@ Specify the page size of the scavenge database. The default value is 16 KiB.
 | YAML                 | `ScavengeBackendPageSize`               |
 | Environment variable | `EVENTSTORE_SCAVENGE_BACKEND_PAGE_SIZE` |
 
-**Default**::\*\*: `16` (KiB)
+**Default**: `16` (KiB)
 
 ### Scavenge backend cache size
 
