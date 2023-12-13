@@ -21,7 +21,6 @@ Here is a quick how-to guide to set up a 3-node EventStoreDB cluster. It covers 
 2. Download the latest version of the certificate generator from [EventStore es-gencert-cli-releases](https://github.com/EventStore/es-gencert-cli/releases) and unzip it into 'Generate_Certificate'.
 3. In a terminal, change to the es-gencert-cli directory: 
 
-`C:\Path\To\Folder\Generate_Certificate\es-gencert-cli_[Version]_Windows-x86_64`
 
 - Run this command to generate the root certificate and root private key: 
 `./es-gencert-cli create-ca -out [Generate_Certificate Path]/ca`
