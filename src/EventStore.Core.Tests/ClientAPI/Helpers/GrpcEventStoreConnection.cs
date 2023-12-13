@@ -3,6 +3,7 @@ extern alias GrpcClientStreams;
 extern alias GrpcClientPersistent;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Threading.Tasks;
 using GrpcClientStreams::EventStore.Client;
@@ -104,26 +105,35 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		var result = _streamsClient.ReadAllAsync(Direction.Forwards, position, resolveLinkTos:resolveLinkTos,
 			userCredentials: userCredentials);
 
-		var endOfStream = true;
-		await foreach (var message in result.Messages) {
-			if (message is StreamMessage.Event @event) {
-				nextPosition = @event.ResolvedEvent.OriginalPosition.Value;
-				if (events.Count >= maxCount || processedCount >= maxSearchWindow) {
-					endOfStream = false;
-					break;
-				}
+		var isEndOfStream = true;
+		await using var messages = result.Messages.GetAsyncEnumerator();
+		while (await messages.MoveNextAsync()) {
+			if (messages.Current is not StreamMessage.Event @event)
+				continue;
 
-				processedCount++;
+			nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
+			processedCount++;
 
-				if (CandProcessEvent(ref filter, @event.ResolvedEvent))
-					events.Add(@event.ResolvedEvent);
-			}
+			if (CandProcessEvent(ref filter, @event.ResolvedEvent))
+				events.Add(@event.ResolvedEvent);
+
+			if (events.Count >= maxCount || processedCount >= maxSearchWindow)
+				break;
 		}
 
-		return new AllEventsSliceNew(Direction.Forwards, nextPosition, endOfStream, events.ToArray());
+		while (await messages.MoveNextAsync()) {
+			if (messages.Current is not StreamMessage.Event @event)
+				continue;
+
+			isEndOfStream = false;
+			break;
+		}
+
+		return new AllEventsSliceNew(Direction.Forwards, nextPosition, isEndOfStream, events.ToArray());
 	}
 
-	public async Task<AllEventsSliceNew> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, IEventFilter filter,
+	public async Task<AllEventsSliceNew> FilteredReadAllEventsBackwardAsync(Position position, int maxCount,
+		bool resolveLinkTos, IEventFilter filter,
 		int maxSearchWindow, UserCredentials userCredentials = null) {
 		if (maxCount == int.MaxValue)
 			throw new ArgumentException("is equal to int.MaxValue", nameof(maxCount));
@@ -131,42 +141,41 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		if (maxSearchWindow <= 0)
 			maxSearchWindow = 500;
 
-		// Because in C#, we can't name loops, we have to resort to local variable to break from nested loops.
-		var breakMainLoop = false;
 		var events = new List<ResolvedEvent>();
 		var nextPosition = position;
-		var isEof = false;
 		var processedCount = 0;
+		var isEndOfStream = true;
 
-		while (events.Count < maxCount) {
-			var result = _streamsClient.ReadAllAsync(Direction.Backwards, position, 500, resolveLinkTos,
-				userCredentials: userCredentials);
+		var result = _streamsClient.ReadAllAsync(Direction.Backwards, position, resolveLinkTos: resolveLinkTos,
+			userCredentials: userCredentials);
 
-			await foreach (var message in result.Messages) {
-				switch (message) {
-					case StreamMessage.Event @event:
-						nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
-						processedCount++;
+		await using var messages = result.Messages.GetAsyncEnumerator();
+		while (await messages.MoveNextAsync()) {
+			if (messages.Current is not StreamMessage.Event @event)
+				continue;
 
-						if (CandProcessEvent(ref filter, @event.ResolvedEvent))
-							events.Add(@event.ResolvedEvent);
+			nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
+			Debug.WriteLine($"Count: {events.Count}");
+			Debug.WriteLine($"processCount: {processedCount} -> {processedCount + 1}");
+			processedCount++;
 
-						breakMainLoop = events.Count >= maxCount || processedCount >= maxSearchWindow;
-						break;
-				}
+			if (CandProcessEvent(ref filter, @event.ResolvedEvent))
+				events.Add(@event.ResolvedEvent);
 
-				if (breakMainLoop)
-					break;
-			}
-
-			isEof = nextPosition <= Position.Start || position == nextPosition;
-			if (breakMainLoop || isEof)
+			if (events.Count >= maxCount || processedCount >= maxSearchWindow)
 				break;
-
-			position = nextPosition;
 		}
 
-		return new AllEventsSliceNew(Direction.Backwards, nextPosition, isEof, events.ToArray());
+		Debug.WriteLine("Completed");
+		while (await messages.MoveNextAsync()) {
+			if (messages.Current is not StreamMessage.Event @event)
+				continue;
+
+			isEndOfStream = false;
+			break;
+		}
+
+		return new AllEventsSliceNew(Direction.Backwards, nextPosition, isEndOfStream, events.ToArray());
 	}
 
 	private static bool CandProcessEvent(ref IEventFilter filter, ResolvedEvent @event) {

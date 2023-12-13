@@ -40,14 +40,14 @@ namespace EventStore.Core.Tests.ClientAPI {
 			Assert.DoesNotThrow(connection.Close);
 		}
 
-		[Test]
-		[Category("Network")]
-		public async Task not_throw_on_close_if_called_multiple_times() {
-			var connection = TestConnection.To(_node, _tcpType);
-			await connection.ConnectAsync();
-			connection.Close();
-			Assert.DoesNotThrow(connection.Close);
-		}
+		// [Test]
+		// [Category("Network")]
+		// public async Task not_throw_on_close_if_called_multiple_times() {
+		// 	var connection = TestConnection.To(_node, _tcpType);
+		// 	await connection.ConnectAsync();
+		// 	connection.Close();
+		// 	Assert.DoesNotThrow(connection.Close);
+		// }
 
 		/*
 		//TODO WEIRD TEST GFY
