@@ -39,7 +39,7 @@ For example, if the certificate generator version is 1.2.1 and we’re generatin
 Each command will automatically generate the security certificate and the private key for each node in their respective certificates file:
 `C:\Path\To\Folder\Cluster\Node1\certificates`
 
-**Note:** Include CA certificate and key paths in each node's configuration file. Below is an example of a sample complete configuration for 'Node1':
+**Note:** Include CA certificate and key paths in each node's configuration file. Below is an example of a complete configuration for 'Node1':
 
 ``` # Paths
 Db: C:\Path\To\Folder\Cluster\Node1\Data
