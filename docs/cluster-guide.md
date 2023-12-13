@@ -4,7 +4,7 @@ Welcome to the quick start guide for setting up a 3-node cluster using EventStor
 
 ## Preparing the environment
 
-1. Create a folder named 'Cluster' on the desktop. 
+1. Create a folder named 'Cluster' . 
 2. In 'Cluster', create subfolders: 'Node1', 'Node2', 'Node3'.
 3. For each node, create these subfolders:
     - 'Certificates' for storing the certificate and private key. 
