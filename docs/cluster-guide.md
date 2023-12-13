@@ -1,6 +1,6 @@
 # Guide to setting up a 3-node cluster
 
-Welcome to the quick start guide for setting up a 3-node cluster using EventStoreDB. This guide covers how to prepare the environment, generate the required certificates, and how to configure and run the cluster.
+Here is a quick how-to guide to set up a 3-node EventStoreDB cluster. It covers how to prepare the environment, generate required certificates, and how to configure and run the cluster.
 
 ## Preparing the environment
 
