@@ -146,7 +146,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						ConvertToEventFilter(true, request.Options.Filter),
 						user,
 						requiresLeader,
-						_readIndex,
 						request.Options.Filter.WindowCase switch {
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter
@@ -178,7 +177,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						ConvertToEventFilter(true, request.Options.Filter),
 						user,
 						requiresLeader,
-						_readIndex,
 						request.Options.Filter.WindowCase switch {
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter
@@ -209,7 +207,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.ResolveLinks,
 						user,
 						requiresLeader,
-						_readIndex,
 						cancellationToken),
 				(StreamOptionOneofCase.All,
 					CountOptionOneofCase.Subscription,
@@ -222,7 +219,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						ConvertToEventFilter(true, request.Options.Filter),
 						user,
 						requiresLeader,
-						_readIndex,
 						request.Options.Filter.WindowCase switch {
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter

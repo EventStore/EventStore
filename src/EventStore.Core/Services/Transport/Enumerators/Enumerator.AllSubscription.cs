@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Channels;
@@ -24,7 +25,6 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			private readonly bool _resolveLinks;
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
-			private readonly IReadIndex _readIndex;
 			private readonly CancellationToken _cancellationToken;
 			private readonly Channel<ReadResponse> _channel;
 			private readonly SemaphoreSlim _semaphore;
@@ -43,14 +43,9 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				bool resolveLinks,
 				ClaimsPrincipal user,
 				bool requiresLeader,
-				IReadIndex readIndex,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
 					throw new ArgumentNullException(nameof(bus));
-				}
-
-				if (readIndex == null) {
-					throw new ArgumentNullException(nameof(readIndex));
 				}
 
 				_expiryStrategy = expiryStrategy;
@@ -59,7 +54,6 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				_resolveLinks = resolveLinks;
 				_user = user;
 				_requiresLeader = requiresLeader;
-				_readIndex = readIndex;
 				_cancellationToken = cancellationToken;
 				_channel = Channel.CreateBounded<ReadResponse>(BoundedChannelOptions);
 				_semaphore = new SemaphoreSlim(1, 1);
@@ -123,14 +117,56 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				} else {
 					var (commitPosition, preparePosition) = startPosition.Value.ToInt64();
 					try {
-						var indexResult =
-							_readIndex.ReadAllEventsForward(new TFPos(commitPosition, preparePosition), 1);
-						CatchUp(Position.FromInt64(indexResult.NextPos.CommitPosition,
-							indexResult.NextPos.PreparePosition));
+						CatchUpFromCheckpoint(Position.FromInt64(commitPosition, preparePosition));
 					} catch (InvalidReadException ex) {
 						Fail(new ReadResponseException.InvalidPositionException());
 						Log.Error(ex, "Error starting catch-up subscription {subscriptionId} to $all@{position}",
 							_subscriptionId, startPosition);
+					}
+				}
+			}
+
+			private void CatchUpFromCheckpoint(Position checkpoint) {
+				Log.Verbose(
+					"Catch-up subscription {subscriptionId} to $all@{position} finding next position after checkpoint...",
+					_subscriptionId, checkpoint);
+
+				ReadPage(checkpoint, OnMessage, pageSize: 1);
+
+				Task OnMessage(Message message, CancellationToken ct) {
+					if (message is ClientMessage.NotHandled notHandled &&
+					    TryHandleNotHandled(notHandled, out var ex)) {
+						Fail(ex);
+						return Task.CompletedTask;
+					}
+
+					if (message is not ClientMessage.ReadAllEventsForwardCompleted completed) {
+						Fail(ReadResponseException.UnknownMessage.Create<ClientMessage.ReadAllEventsForwardCompleted>(message));
+						return Task.CompletedTask;
+					}
+
+					switch (completed.Result) {
+						case ReadAllResult.Success:
+							var nextPosition = completed.NextPos;
+							Log.Information(
+								"Catch-up subscription {subscriptionId} to $all starting from position {nextPosition}.",
+								_subscriptionId, nextPosition);
+							CatchUp(Position.FromInt64(nextPosition.CommitPosition, nextPosition.PreparePosition));
+							return Task.CompletedTask;
+						case ReadAllResult.Expired:
+							ReadPage(
+								Position.FromInt64(
+									completed.CurrentPos.CommitPosition,
+									completed.CurrentPos.PreparePosition),
+								OnMessage,
+								pageSize: 1);
+							return Task.CompletedTask;
+						case ReadAllResult.AccessDenied:
+							Fail(new ReadResponseException.AccessDenied());
+							return Task.CompletedTask;
+						default:
+							Fail(ReadResponseException.UnknownError.Create(completed.Result));
+							return Task.CompletedTask;
 					}
 				}
 			}
@@ -386,7 +422,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				_channel.Writer.TryComplete(exception);
 			}
 
-			private void ReadPage(Position position, Func<Message, CancellationToken, Task> onMessage) {
+			private void ReadPage(Position position, Func<Message, CancellationToken, Task> onMessage, int pageSize = ReadBatchSize) {
 				Guid correlationId = Guid.NewGuid();
 				Log.Verbose(
 					"Subscription {subscriptionId} to $all reading next page starting from {nextRevision}.",
@@ -396,7 +432,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 				_bus.Publish(new ClientMessage.ReadAllEventsForward(
 					correlationId, correlationId, new ContinuationEnvelope(onMessage, _semaphore, _cancellationToken),
-					commitPosition, preparePosition, ReadBatchSize, _resolveLinks, _requiresLeader, null, _user,
+					commitPosition, preparePosition, pageSize, _resolveLinks, _requiresLeader, null, _user,
 					replyOnExpired: true,
 					expires: _expiryStrategy.GetExpiry(),
 					cancellationToken: _cancellationToken));
