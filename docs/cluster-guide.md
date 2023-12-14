@@ -27,7 +27,7 @@ Here is a quick how-to guide to set up a 3-node EventStoreDB cluster. It covers 
 
 On Windows
 ```suggestion
-`.\es-gencert-cli create-ca -out [Generate_Certificate Path]\ca`
+`.\es-gencert-cli.exe create-ca -out [Generate_Certificate Path]\ca`
 `C:\Path\To\Folder\Generate_Certificate\es-gencert-cli_[Version]_Windows-x86_64\ca`
 
 4. In the 'Generate_Certificate' directory, run the following commands one at a time for each node (change the path and node number as needed) to generate the certificate and private keys for each node.
