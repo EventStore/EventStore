@@ -104,7 +104,6 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 					if (@event.OriginalEvent.EventType == SystemEventTypes.StreamDeleted) {
 						Fail(new ReadResponseException.StreamDeleted(_streamName));
-						return false;
 					}
 
 					var streamRevision = StreamRevision.FromInt64(@event.OriginalEventNumber);
