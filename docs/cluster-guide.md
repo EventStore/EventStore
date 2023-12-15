@@ -11,14 +11,13 @@ Here is a quick how-to guide to set up a 3-node EventStoreDB cluster. It covers 
     - 'Data' for all data files.
     - 'Index' for node indexes.
     - 'Logs' for log files.
-4. Add a configuration file (.yml or .txt) in each node folder. For example:
+4. Add a configuration file (.yml or .txt) in each node folder. 
 
-![Node folder example](./images/node-folder-example.png "Node folder example")
 
 ## Generating the certificates
 
-1. Create a 'Generate_Certificate' folder. 
-2. Download the latest version of the certificate generator from [EventStore es-gencert-cli-releases](https://github.com/EventStore/es-gencert-cli/releases) and unzip it into 'Generate_Certificate'.
+1. Create a folder named 'Generate_Certificate'.
+2. Download the latest version of the certificate generator from [EventStore es-gencert-cli-releases](https://github.com/EventStore/es-gencert-cli/releases) and unzip it into the 'Generate_Certificate' folder.
 3. In a terminal, change to the es-gencert-cli directory: 
 
 
@@ -37,6 +36,11 @@ For example, if the certificate generator version is 1.2.1 and we’re generatin
 `.\es-gencert-cli create-node -ca-certificate C:\Path\To\Folder\Generate_Certificate\es-gencert-cli_1.2.1_Windows-x86_64\ca\ca.crt -ca-key`
  `C:\Path\To\Folder\Generate_Certificate\es-gencert-cli_1.2.1_Windows-x86_64\ca\ca.key -out` 
  `C:\Path\To\Folder\Cluster\Node1\certificates  -ip-addresses 127.0.0.1`
+
+**Note:** You can utilize full range of 127.x.x.x IP addresses for different nodes to maintain standard ports and closely emulate a production environment. For example:
+- Node 1 intIP & extIP = 127.0.0.10
+- Node 2 intIP & extIP = 127.0.0.20
+- Node 3 intIP & extIP = 127.0.0.30
 
 Each command will automatically generate the security certificate and the private key for each node in their respective certificates file:
 `C:\Path\To\Folder\Cluster\Node1\certificates`
@@ -58,7 +62,7 @@ EnableAtomPubOverHTTP: true
 # Cluster gossip
 ClusterSize: 3
 DiscoverViaDns: false
-GossipSeed: 127.0.0.1:21132,127.0.0.1:21133
+GossipSeed:  127.0.0.10:2113,127.0.0.20:2113,127.0.0.30:2113
 # Projections configuration
 RunProjections: All
 # Certificates configuration
