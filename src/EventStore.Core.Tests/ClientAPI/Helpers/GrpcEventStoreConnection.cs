@@ -226,6 +226,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		UserCredentials userCredentials = null) {
 
 		var sub = new StreamSubscription();
+		var token = sub.CancellationTokenSource.Token;
 		var starting = lastCheckpoint ?? Position.Start;
 		var from = FromAll.End;
 
@@ -238,7 +239,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 				userCredentials: userCredentials);
 
 			await foreach (var message in result.Messages) {
-				if (sub.IsDropped)
+				if (token.IsCancellationRequested)
 					return sub;
 
 				if (message is not StreamMessage.Event @event)
@@ -271,6 +272,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			(_,e, __) =>  eventAppeared(sub, e),
 			resolveLinkTos: settings.ResolveLinkTos,
 			filterOptions: options,
+			cancellationToken: token,
 			subscriptionDropped: (_, r, ex) => sub.ReportDropped(r, ex),
 			userCredentials: userCredentials);
 
@@ -312,7 +314,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		var sub = new StreamSubscription {
 			SubscriptionDropped = subscriptionDropped
 		};
-
+		var token = sub.CancellationTokenSource.Token;
 		var nextRevision = lastCheckpoint ?? 0;
 
 		var result = _streamsClient.ReadStreamAsync(
@@ -322,7 +324,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			userCredentials: userCredentials);
 
 		await foreach (var message in result.Messages) {
-			if (sub.IsDropped)
+			if (token.IsCancellationRequested)
 				return sub;
 
 			if (message is not StreamMessage.Event @event)
@@ -342,6 +344,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			FromStream.After(StreamPosition.FromInt64(nextRevision)),
 			(s, e, _) => eventAppeared(sub, e),
 			subscriptionDropped: (_, r, ex) => sub.ReportDropped(r, ex),
+			cancellationToken: token,
 			resolveLinkTos: settings.ResolveLinkTos,
 			userCredentials: userCredentials);
 

@@ -8,26 +8,39 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers; 
 public class StreamSubscription : IDisposable {
-	private int _dropped = 0;
 	public Guid SubscriptionId { get; init; }
-	public InternalStreamSubscription Internal {  get; set; }
+	private InternalStreamSubscription _internal;
+	private Action<StreamSubscription, SubscriptionDroppedReason, Exception> _subscriptionDropped;
+	public InternalStreamSubscription Internal {
+		get { return _internal; }
 
-	public bool IsDropped => Interlocked.CompareExchange(ref _dropped, 1, 1) == 1;
+		set {
+			_internal = value;
+			CancellationTokenSource.Token.Register(() => _internal.Dispose());
+		}
+	}
 
-	public Action<StreamSubscription, SubscriptionDroppedReason, Exception> SubscriptionDropped { get; set; }
+	public CancellationTokenSource CancellationTokenSource { get; init; }
+
+	public Action<StreamSubscription, SubscriptionDroppedReason, Exception> SubscriptionDropped {
+		get { return _subscriptionDropped; }
+		set {
+			_subscriptionDropped = value;
+			CancellationTokenSource.Token.Register(() => {
+				if (_internal == null) {
+					_subscriptionDropped(this, SubscriptionDroppedReason.Disposed, null);
+				}
+			});
+		}
+	}
 
 	public StreamSubscription() {
 		SubscriptionId = Guid.NewGuid();
+		CancellationTokenSource = new CancellationTokenSource();
 	}
 
 	public void Dispose() {
-		if (Interlocked.CompareExchange(ref _dropped, 1, 0) != 0)
-			return;
-
-		if (Internal != null)
-			Internal.Dispose();
-		else
-			SubscriptionDropped?.Invoke(this, SubscriptionDroppedReason.Disposed, null);
+		CancellationTokenSource.Cancel();
 	}
 
 	public void ReportSubscriberError(Exception ex) {
@@ -35,9 +48,6 @@ public class StreamSubscription : IDisposable {
 	}
 
 	public void ReportDropped(SubscriptionDroppedReason reason, Exception ex) {
-		if (Interlocked.CompareExchange(ref _dropped, 1, 0) != 0)
-			return;
-
 		SubscriptionDropped?.Invoke(this, reason, ex);
 	}
 }

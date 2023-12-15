@@ -95,7 +95,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var appeared = new ManualResetEventSlim(false);
 				var dropped = new CountdownEvent(1);
 
-				var subscription = store.SubscribeToAllFrom(null,
+				var subscription = await store.SubscribeToAllFrom(null,
 					CatchUpSubscriptionSettings.Default,
 					(_, x) => {
 						if (!SystemStreams.IsSystemStream(x.OriginalEvent.EventStreamId))
@@ -130,7 +130,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						new EventData(Uuid.NewUuid(), "et-" + i.ToString(), new byte[3], null));
 				}
 
-				var subscription = store.SubscribeToAllFrom(null,
+				var subscription = await store.SubscribeToAllFrom(null,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => {
 						if (!SystemStreams.IsSystemStream(y.OriginalEvent.EventStreamId)) {
