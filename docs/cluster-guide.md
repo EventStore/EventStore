@@ -42,7 +42,7 @@ You can utilize full range of 127.x.x.x IP addresses for different nodes to main
 - Node 1 intIP & extIP = 127.0.0.10
 - Node 2 intIP & extIP = 127.0.0.20
 - Node 3 intIP & extIP = 127.0.0.30
-
+:::
 Each command will automatically generate the security certificate and the private key for each node in their respective certificates file:
 `C:\Path\To\Folder\Cluster\Node1\certificates`
 
