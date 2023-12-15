@@ -197,7 +197,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 		protected async Task SubscribeToStream(string streamId, string login, string password) {
 			using (await Connection.SubscribeToStreamAsync(streamId, false, (x, y) => Task.CompletedTask,
 				(x, y, z) => { },
-				login == null && password == null ? null : new UserCredentials(login, password))) {
+				userCredentials: login == null && password == null ? null : new UserCredentials(login, password))) {
 			}
 		}
 

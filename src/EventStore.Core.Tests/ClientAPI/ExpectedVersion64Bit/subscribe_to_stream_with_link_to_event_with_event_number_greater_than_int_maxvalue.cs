@@ -9,7 +9,6 @@ using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using GrpcClient::EventStore.Client;
-using StreamSubscription = GrpcClientStreams::EventStore.Client.StreamSubscription;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]

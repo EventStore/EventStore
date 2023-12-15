@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 					return Task.CompletedTask;
 				},
 				(x, y, z) => { },
-				DefaultData.AdminCredentials);
+				userCredentials: DefaultData.AdminCredentials);
 
 			var response = await MakePost(_nackLink, _admin);
 			Assert.AreEqual(HttpStatusCode.Accepted, response.StatusCode);

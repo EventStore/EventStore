@@ -32,6 +32,7 @@ using PrefixFilterExpression = GrpcClient::EventStore.Client.PrefixFilterExpress
 using EventTypeFilter = GrpcClient::EventStore.Client.EventTypeFilter;
 using StreamFilter = GrpcClient::EventStore.Client.StreamFilter;
 using System.Text.RegularExpressions;
+using EventStore.Core.Tests.Services.Transport.Http.Authentication;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
@@ -75,7 +76,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	public Task<StreamSubscription> FilteredSubscribeToAllAsync(bool resoleLinkTos, IEventFilter filter, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Func<StreamSubscription, Position, Task> checkpointReached,
 		int checkpointInterval, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
 		return FilteredSubscribeToAllFrom(
-			null,
+			Position.Start,
 			filter,
 			new CatchUpSubscriptionFilteredSettings(0, 10, resolveLinkTos: resoleLinkTos),
 			eventAppeared,
@@ -114,7 +115,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
 			processedCount++;
 
-			if (CandProcessEvent(ref filter, @event.ResolvedEvent))
+			if (CanProcessEvent(ref filter, @event.ResolvedEvent))
 				events.Add(@event.ResolvedEvent);
 
 			if (events.Count >= maxCount || processedCount >= maxSearchWindow)
@@ -159,7 +160,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			Debug.WriteLine($"processCount: {processedCount} -> {processedCount + 1}");
 			processedCount++;
 
-			if (CandProcessEvent(ref filter, @event.ResolvedEvent))
+			if (CanProcessEvent(ref filter, @event.ResolvedEvent))
 				events.Add(@event.ResolvedEvent);
 
 			if (events.Count >= maxCount || processedCount >= maxSearchWindow)
@@ -178,7 +179,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		return new AllEventsSliceNew(Direction.Backwards, nextPosition, isEndOfStream, events.ToArray());
 	}
 
-	private static bool CandProcessEvent(ref IEventFilter filter, ResolvedEvent @event) {
+	private static bool CanProcessEvent(ref IEventFilter filter, ResolvedEvent @event) {
 		if (filter == null)
 			return true;
 
@@ -224,23 +225,37 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		int checkpointIntervalMultiplier, Action<StreamSubscription> liveProcessingStarted = null, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null) {
 
-		var starting = lastCheckpoint ?? Position.End;
+		var sub = new StreamSubscription();
+		var starting = lastCheckpoint ?? Position.Start;
 		var from = FromAll.End;
 
 		if (starting != Position.End) {
-			var slice = await FilteredReadAllEventsForwardAsync(starting, -42, settings.ResolveLinkTos, filter, 500, userCredentials: userCredentials);
-			from = FromAll.After(slice.NextPosition);
+			var nextPosition = Position.Start;
+			var result = _streamsClient.ReadAllAsync(
+				Direction.Forwards,
+				starting,
+				resolveLinkTos: settings.ResolveLinkTos,
+				userCredentials: userCredentials);
 
-			foreach (var @event in slice.Events) {
+			await foreach (var message in result.Messages) {
+				if (sub.IsDropped)
+					return sub;
+
+				if (message is not StreamMessage.Event @event)
+					continue;
+
 				try {
-					// Hopefully, nobody is using the subscription handle this early.
-					// Worst case scenario, I have to create another StreamSubscription sham type.
-					await eventAppeared(null, @event);
+					if (CanProcessEvent(ref filter, @event.ResolvedEvent))
+						await eventAppeared(sub, @event.ResolvedEvent);
+
+					nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
 				} catch (Exception ex) {
-					subscriptionDropped?.Invoke(null, SubscriptionDroppedReason.SubscriberError, ex);
-					throw;
+					sub.ReportSubscriberError(ex);
+					return sub;
 				}
 			}
+
+			from = FromAll.After(nextPosition);
 		}
 		SubscriptionFilterOptions options = null;
 
@@ -248,18 +263,20 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			options = new SubscriptionFilterOptions(
 				filter,
 				(uint)checkpointIntervalMultiplier,
-				(s, p, _) => checkpointReached(s, p));
+				(s, p, _) => checkpointReached(sub, p));
 		}
 
-		var sub = await _streamsClient.SubscribeToAllAsync(
+		var internalSub = await _streamsClient.SubscribeToAllAsync(
 			from,
-			(s,e, _) =>  eventAppeared(s, e),
+			(_,e, __) =>  eventAppeared(sub, e),
 			resolveLinkTos: settings.ResolveLinkTos,
 			filterOptions: options,
-			subscriptionDropped: subscriptionDropped,
+			subscriptionDropped: (_, r, ex) => sub.ReportDropped(r, ex),
 			userCredentials: userCredentials);
 
 		liveProcessingStarted?.Invoke(sub);
+
+		sub.Internal = internalSub;
 
 		return sub;
 	}
@@ -279,37 +296,74 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 
 	public Task<StreamSubscription> SubscribeToAllAsync(bool resolveLinkTos, Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null) {
-		return _streamsClient.SubscribeToAllAsync(
-			FromAll.End, (s, e, _) => eventAppeared(s, e),
-			resolveLinkTos: resolveLinkTos,
-			subscriptionDropped: subscriptionDropped,
-			userCredentials: userCredentials);
+		var settings = new CatchUpSubscriptionFilteredSettings(500, 500, false, resolveLinkTos);
+		return FilteredSubscribeToAllFrom(
+			Position.Start,
+			null,
+			settings,
+			eventAppeared, (_, __) => Task.CompletedTask,
+			500,
+			subscriptionDropped: subscriptionDropped, userCredentials: userCredentials);
 	}
 
-	public Task<StreamSubscription> SubscribeToStreamFrom(string stream, long? lastCheckpoint, CatchUpSubscriptionSettings settings,
+	public async Task<StreamSubscription> SubscribeToStreamFrom(string stream, long? lastCheckpoint, CatchUpSubscriptionSettings settings,
 		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared, Action<StreamPosition> liveProcessingStarted = null, Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null) {
-		var start = lastCheckpoint.HasValue ? FromStream.After(StreamPosition.FromInt64(lastCheckpoint.Value)) : FromStream.End;
-		return _streamsClient.SubscribeToStreamAsync(
-			stream,
-			start,
-			(s, e, _) => eventAppeared(s, e),
-			subscriptionDropped: subscriptionDropped,
+		var sub = new StreamSubscription {
+			SubscriptionDropped = subscriptionDropped
+		};
+
+		var nextRevision = lastCheckpoint ?? 0;
+
+		var result = _streamsClient.ReadStreamAsync(
+			Direction.Forwards,
+			stream, StreamPosition.FromInt64(nextRevision),
 			resolveLinkTos: settings.ResolveLinkTos,
 			userCredentials: userCredentials);
+
+		await foreach (var message in result.Messages) {
+			if (sub.IsDropped)
+				return sub;
+
+			if (message is not StreamMessage.Event @event)
+				continue;
+
+			try {
+				await eventAppeared(sub, @event.ResolvedEvent);
+				nextRevision = @event.ResolvedEvent.OriginalEventNumber.ToInt64();
+			} catch (Exception ex) {
+				sub.ReportSubscriberError(ex);
+				return sub;
+			}
+		}
+
+		var internalSub = await _streamsClient.SubscribeToStreamAsync(
+			stream,
+			FromStream.After(StreamPosition.FromInt64(nextRevision)),
+			(s, e, _) => eventAppeared(sub, e),
+			subscriptionDropped: (_, r, ex) => sub.ReportDropped(r, ex),
+			resolveLinkTos: settings.ResolveLinkTos,
+			userCredentials: userCredentials);
+
+		sub.Internal = internalSub;
+
+		liveProcessingStarted?.Invoke(StreamPosition.FromInt64(nextRevision));
+
+		return sub;
 	}
 
 	public Task<StreamSubscription> SubscribeToStreamAsync(string stream, bool resolveLinkTos,
 		Func<StreamSubscription, ResolvedEvent, Task> eventAppeared,
 		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
-		UserCredentials liveProcessingStarted = null, UserCredentials userCredentials = null) {
-		return _streamsClient.SubscribeToStreamAsync(
+		Action<StreamPosition> liveProcessingStarted = null, UserCredentials userCredentials = null) {
+		return SubscribeToStreamFrom(
 			stream,
-			FromStream.End,
-			(s, e, _) => eventAppeared(s, e),
-			resolveLinkTos: resolveLinkTos,
-			subscriptionDropped: subscriptionDropped,
-			userCredentials: userCredentials);
+			null,
+			new CatchUpSubscriptionSettings(500, 500, false, resolveLinkTos),
+			eventAppeared,
+			liveProcessingStarted,
+			subscriptionDropped,
+			userCredentials);
 	}
 
 	public Task DeletePersistentSubscriptionAsync(string stream, string group, UserCredentials userCredentials = null) {
@@ -322,7 +376,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	}
 
 	public Task ConnectAsync() {
-		var setts = EventStoreClientSettings.Create($"esdb://{_endpoint.Address}:{_endpoint.Port}?tlsVerifyCert=false");
+		var setts = EventStoreClientSettings.Create($"esdb://{_endpoint.Address}:{_endpoint.Port}?tlsVerifyCert=false&defaultDeadline=60000");
 		if (_defaultUserCredentials != null)
 			setts.DefaultCredentials = _defaultUserCredentials;
 
