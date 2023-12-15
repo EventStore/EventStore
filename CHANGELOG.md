@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - wording of telemetry message for clarity [EventStore#4026](https://github.com/EventStore/EventStore/pull/4026)
 - Upgrade to .NET 7. [EventStore#4031](https://github.com/EventStore/EventStore/pull/4031)
 - Upgrade to .NET 8. [EventStore#4046](https://github.com/EventStore/EventStore/pull/4046)
+- Don't require ReadIndex in the enumerators when subscribing from $all [EventStore#4057](https://github.com/EventStore/EventStore/pull/4057)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
@@ -18,9 +19,15 @@ All notable changes to this project will be documented in this file.
 - A way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
 - 'Unknown' error reported to client after successful idempotent write to deleted stream. [EventStore#4059](https://github.com/EventStore/EventStore/pull/4059)
 - Report same version info when using different kind of release tags (annotated or lightweight). [EventStore#4081](https://github.com/EventStore/EventStore/pull/4081)
+- Stream (hard) deletion when gRPC subscription is live [regression] [EventStore#4095](https://github.com/EventStore/EventStore/pull/4095)
 
 ### Removed
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
+
+### Cherry picked from https
+- //github.com/EventStore/EventStore/pull/4097 [EventStore#4100](https://github.com/EventStore/EventStore/pull/4100)
+- //github.com/EventStore/EventStore/pull/4097 [EventStore#4099](https://github.com/EventStore/EventStore/pull/4099)
+- //github.com/EventStore/EventStore/pull/4097 [EventStore#4098](https://github.com/EventStore/EventStore/pull/4098)
 
 ## [22.10.4] - 2023-11-22
 
