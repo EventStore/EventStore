@@ -1,13 +1,12 @@
 # Guide to setting up a 3-node cluster
 
-Welcome to the quick start guide for setting up a 3-node cluster using EventStoreDB. This guide covers how to prepare the environment, generate the required certificates, and how to configure and run the cluster.
+Here is a quick how-to guide to set up a 3-node EventStoreDB cluster. It covers how to prepare the environment, generate required certificates, and how to configure and run the cluster.
 
 ## Preparing the environment
 
-1. Create a folder named 'Cluster' on the desktop. 
-    - For production use, place the 'Cluster' folder in the root directory (C:).
+1. Create a folder named 'Cluster' . 
 2. In 'Cluster', create subfolders: 'Node1', 'Node2', 'Node3'.
-3. Within each node, create these subfolders:
+3. For each node, create these subfolders:
     - 'Certificates' for storing the certificate and private key. 
     - 'Data' for all data files.
     - 'Index' for node indexes.
@@ -18,14 +17,17 @@ Welcome to the quick start guide for setting up a 3-node cluster using EventStor
 
 ## Generating the certificates
 
-1. Create a 'Generate_Certificate' folder on the desktop. 
+1. Create a 'Generate_Certificate' folder. 
 2. Download the latest version of the certificate generator from [EventStore es-gencert-cli-releases](https://github.com/EventStore/es-gencert-cli/releases) and unzip it into 'Generate_Certificate'.
-3. In the command line, navigate to: 
+3. In a terminal, change to the es-gencert-cli directory: 
 
-`C:\Path\To\Folder\Generate_Certificate\es-gencert-cli_[Version]_Windows-x86_64`
 
-- Run the command to generate the root certificate and root private key: 
-`.\es-gencert-cli create-ca -out [Your Generate_Certificate Path]\ca`
+- Run this command to generate the root certificate and root private key: 
+`./es-gencert-cli create-ca -out [Generate_Certificate Path]/ca`
+
+On Windows
+```suggestion
+`.\es-gencert-cli.exe create-ca -out [Generate_Certificate Path]\ca`
 `C:\Path\To\Folder\Generate_Certificate\es-gencert-cli_[Version]_Windows-x86_64\ca`
 
 4. In the 'Generate_Certificate' directory, run the following commands one at a time for each node (change the path and node number as needed) to generate the certificate and private keys for each node.
@@ -39,7 +41,7 @@ For example, if the certificate generator version is 1.2.1 and we’re generatin
 Each command will automatically generate the security certificate and the private key for each node in their respective certificates file:
 `C:\Path\To\Folder\Cluster\Node1\certificates`
 
-**Note:** Include CA certificate and key paths in each node's configuration file. Below is an example of a sample complete configuration for 'Node1':
+**Note:** Include CA certificate and key paths in each node's configuration file. Below is an example of a complete configuration for 'Node1':
 
 ``` # Paths
 Db: C:\Path\To\Folder\Cluster\Node1\Data
