@@ -37,7 +37,8 @@ For example, if the certificate generator version is 1.2.1 and we’re generatin
  `C:\Path\To\Folder\Generate_Certificate\es-gencert-cli_1.2.1_Windows-x86_64\ca\ca.key -out` 
  `C:\Path\To\Folder\Cluster\Node1\certificates  -ip-addresses 127.0.0.1`
 
-**Note:** You can utilize full range of 127.x.x.x IP addresses for different nodes to maintain standard ports and closely emulate a production environment. For example:
+::: note
+You can utilize full range of 127.x.x.x IP addresses for different nodes to maintain standard ports and closely emulate a production environment. For example:
 - Node 1 intIP & extIP = 127.0.0.10
 - Node 2 intIP & extIP = 127.0.0.20
 - Node 3 intIP & extIP = 127.0.0.30
