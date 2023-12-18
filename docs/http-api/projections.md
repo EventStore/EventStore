@@ -149,14 +149,21 @@ The server then returns the state for the partition:
 
 ## Projections API
 
-| URI                                                                | Description                                                                                                      | HTTP verb |
-|:-------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------|:----------|
-| `/projections/any`                                                 | Returns all known projections.                                                                                   | GET       |
-| `/projections/all-non-transient`                                   | Returns all known non ad-hoc projections.                                                                        | GET       |
-| `/projections/transient`                                           | Returns all known ad-hoc projections.                                                                            | GET       |
-| `/projections/onetime`                                             | Returns all known one-time projections.                                                                          | GET       |
-| `/projections/continuous`                                          | Returns all known continuous projections.                                                                        | GET       |
-| `/projections/transient?name={name}&type={type}&enabled={enabled}` | Create an ad-hoc projection. This type of projection runs until completion and automatically deleted afterwards. | POST      |
+### List Projections
+
+| URI                                                | Description                  | HTTP verb |
+|:---------------------------------------------------|:-----------------------------|:----------|
+| `/projections/any`                                 | Returns all known projections.             | GET       |
+| `/projections/all-non-transient`                   | Returns all known non ad-hoc projections.  | GET       |
+| `/projections/transient`                           | Returns all known ad-hoc projections.      | GET       |
+| `/projections/onetime`                             | Returns all known one-time projections.    | GET       |
+| `/projections/continuous`                          | Returns all known continuous projections.  | GET       |
+
+### Create an Ad-Hoc Projection
+
+| URI                                                | Description                  | HTTP verb |
+|:---------------------------------------------------|:-----------------------------|:----------|
+| `/projections/transient?name={name}&type={type}&enabled={enabled}` | Create an ad-hoc projection (or query). This type of projection runs until completion and automatically deleted afterwards. | POST      |
 
 #### Parameters
 
@@ -164,8 +171,10 @@ The server then returns the state for the partition:
 * `type`: JS or Native. (JavaScript or native. At this time, EventStoreDB only supports JavaScript)
 * `enabled`: Enable the projection (true/false)
 
-| URI                                                                                                                                              | Description                                                                                 | HTTP verb |
-|:-------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------|:----------|
+### Create OneTime Projection
+
+| URI                                                | Description                  | HTTP verb |
+|:---------------------------------------------------|:-----------------------------|:----------|
 | `/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}&trackemittedstreams={trackemittedstreams}` | Create a one-time projection. This type of projection runs until completion and then stops. | POST      |
 
 #### Parameters
@@ -177,8 +186,10 @@ The server then returns the state for the partition:
 * `emit`: Enable the ability for the projection to append to streams (true/false)
 * `trackemittedstreams`: Write the name of the streams the projection is managing to a separate stream. $projections-{projection-name}-emittedstreams (true/false)
 
-| URI                                                                                                                       | Description                                                                                                                                              | HTTP verb |
-|:--------------------------------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------|:----------|
+### Create a Continuous Projection
+
+| URI                                                | Description                  | HTTP verb |
+|:---------------------------------------------------|:-----------------------------|:----------|
 | `/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}&trackemittedstreams={trackemittedstreams}` | Create a continuous projection. This type of projection will, if enabled will continuously run unless disabled or an unrecoverable error is encountered. | POST      |
 
 #### Parameters
@@ -189,12 +200,18 @@ The server then returns the state for the partition:
 * `emit`: Allow the projection to append to streams (true/false)
 * `trackemittedstreams`: Write the name of the streams the projection is managing to a separate stream. $projections-{projection-name}-emittedstreams (true/false)
 
-`/projection/{name}/query?config={config}` | Returns the definition query and if config is set to true, will return the configuration. | GET
+### Get a Projection's Query and Config
+
+| URI                                                | Description                  | HTTP verb |
+|:---------------------------------------------------|:-----------------------------|:----------|
+| `/projection/{name}/query?config={config}` | Returns the definition query and if config is set to true, will return the configuration. | GET
 
 #### Parameters
 
 * `name`: Name of the projection
 * `config`: Return the definition of the projection (true/false)
+
+### Update a Projection's Query
 
 | URI                                                | Description                  | HTTP verb |
 |:---------------------------------------------------|:-----------------------------|:----------|
@@ -207,9 +224,20 @@ The server then returns the state for the partition:
 * `emit`: Allow the projection to write to streams (true/false)
 * `trackemittedstreams`: Write the name of the streams the projection is managing to a separate stream. $projections-{projection-name}-emittedstreams (true/false)
 
-| URI                                                                                                                                                    | Description                                                                                     | HTTP verb |
-|:-------------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------|:----------|
-| `/projection/{name}`                                                                                                                                   | Returns information for a projection.                                                           | GET       |
+### Get a Projection's Information
+
+| URI                             | Description                                    | HTTP verb |
+|:--------------------------------|:-----------------------------------------------|:----------|
+| `/projection/{name}`            | Returns information for a projection.          | GET       |
+
+#### Parameters
+
+* `name`: Name of the projection
+
+### Delete a Projection
+
+| URI                             | Description                                    | HTTP verb |
+|:--------------------------------|:-----------------------------------------------|:----------|
 | `/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}&deleteEmittedStreams={deleteEmittedStreams}` | Delete a projection, optionally delete the streams that were created as part of the projection. | DELETE    |
 
 #### Parameters
@@ -219,6 +247,8 @@ The server then returns the state for the partition:
 * `deleteCheckpointStream`: Delete the checkpoint stream (true/false)
 * `deleteEmittedStreams`: Delete the emitted streams stream (true/false)
 
+### Get a Projection's Statistics
+
 | URI                             | Description                                    | HTTP verb |
 |:--------------------------------|:-----------------------------------------------|:----------|
 | `/projection/{name}/statistics` | Returns detailed information for a projection. | GET       |
@@ -226,6 +256,8 @@ The server then returns the state for the partition:
 #### Parameters
 
 * name: Name of the projection
+
+### Get a Projection's State
 
 | URI                                              | Description                          | HTTP verb |
 |:-------------------------------------------------|:-------------------------------------|:----------|
@@ -236,6 +268,7 @@ The server then returns the state for the partition:
 * `name`: Name of the projection
 * `partition`: The partition
 
+### Get a Projection's Result
 | URI                                               | Description                           | HTTP verb |
 |:--------------------------------------------------|:--------------------------------------|:----------|
 | `/projection/{name}/result?partition={partition}` | Query for the result of a projection. | GET       |
@@ -244,6 +277,8 @@ The server then returns the state for the partition:
 
 * `name`: Name of the projection
 * `partition`: The partition
+
+### Disable a Projection
 
 | URI                                                            | Description           | HTTP verb |
 |:---------------------------------------------------------------|:----------------------|:----------|
@@ -254,6 +289,7 @@ The server then returns the state for the partition:
 * `name`: Name of the projection
 * `enableRunAs`: Enables the projection to run as the user who issued the request.
 
+### Enable a Projection
 | URI                                                           | Description          | HTTP verb |
 |:--------------------------------------------------------------|:---------------------|:----------|
 | `/projection/{name}/command/enable?enableRunAs={enableRunAs}` | Enable a projection. | POST      |
@@ -263,14 +299,18 @@ The server then returns the state for the partition:
 * `name`: Name of the projection
 * `enableRunAs`: Enables the projection to run as the user who issued the request.
 
-| URI                                                          | Description                                                                                                                | HTTP verb |
-|:-------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------|:----------|
+### Reset a Projection
+
+| URI                                                           | Description          | HTTP verb |
+|:--------------------------------------------------------------|:---------------------|:----------|
 | `/projection/{name}/command/reset?enableRunAs={enableRunAs}` | Reset a projection. (This will re-emit events, streams that are written to from the projection will also be soft deleted). | POST      |
 
 #### Parameters
 
 * `name`: Name of the projection
 * `enableRunAs`: Enables the projection to run as the user who issued the request.
+
+### Abort a Projection
 
 | URI                                                          | Description         | HTTP verb |
 |:-------------------------------------------------------------|:--------------------|:----------|
