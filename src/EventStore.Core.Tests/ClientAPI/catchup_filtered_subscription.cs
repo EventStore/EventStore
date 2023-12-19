@@ -108,6 +108,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		public async Task calls_checkpoint_during_live_processing_stage() {
+			Assert.Fail("Can't be implemented with the grpc client");
+
 			var filter = Filter.StreamId.Prefix("stream-a");
 			var appeared = new CountdownEvent(_testEventsAfter.EvenEvents().Count + 1); // Calls once for switch to live.
 			var eventsSeen = 0;

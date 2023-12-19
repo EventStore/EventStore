@@ -229,6 +229,8 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		var token = sub.CancellationTokenSource.Token;
 		var starting = lastCheckpoint ?? Position.Start;
 		var from = FromAll.End;
+		var checkpointInterval = checkpointIntervalMultiplier * settings.MaxSearchWindow;
+		var processedCount = 0;
 
 		if (starting != Position.End) {
 			var nextPosition = Position.Start;
@@ -238,16 +240,20 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 				resolveLinkTos: settings.ResolveLinkTos,
 				userCredentials: userCredentials);
 
-			await foreach (var message in result.Messages) {
+			await foreach (var message in result.Messages.WithCancellation(token)) {
 				if (token.IsCancellationRequested)
 					return sub;
 
 				if (message is not StreamMessage.Event @event)
 					continue;
 
+				processedCount++;
 				try {
 					if (CanProcessEvent(ref filter, @event.ResolvedEvent))
 						await eventAppeared(sub, @event.ResolvedEvent);
+
+					if (processedCount % checkpointInterval == 0)
+						await checkpointReached(sub, @event.ResolvedEvent.OriginalPosition!.Value);
 
 					nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
 				} catch (Exception ex) {
