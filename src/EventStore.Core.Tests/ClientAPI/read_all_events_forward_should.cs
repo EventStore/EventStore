@@ -2,6 +2,7 @@ extern alias GrpcClient;
 extern alias GrpcClientStreams;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -48,10 +49,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var position = Position.Start;
 			AllEventsSliceNew slice;
 
-			while (!(slice = await _conn.ReadAllEventsForwardAsync(position, 1, false)).IsEndOfStream) {
+			do {
+				slice = await _conn.ReadAllEventsForwardAsync(position, 1, false);
 				all.Add(slice.Events.Single().Event);
 				position = slice.NextPosition;
-			}
+			} while (!slice.IsEndOfStream);
 
 			Assert.That(EventDataComparer.Equal(_testEvents, all.Skip(all.Count - _testEvents.Length).ToArray()));
 		}
@@ -62,10 +64,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var position = Position.Start;
 			AllEventsSliceNew slice;
 
-			while (!(slice = await _conn.ReadAllEventsForwardAsync(position, 5, false)).IsEndOfStream) {
+			do {
+				slice = await _conn.ReadAllEventsForwardAsync(position, 5, false);
 				all.AddRange(slice.Events.Select(x => x.Event));
 				position = slice.NextPosition;
-			}
+			} while (!slice.IsEndOfStream);
 
 			Assert.That(EventDataComparer.Equal(_testEvents, all.Skip(all.Count - _testEvents.Length).ToArray()));
 		}

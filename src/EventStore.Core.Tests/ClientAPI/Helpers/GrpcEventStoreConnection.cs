@@ -126,8 +126,8 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			if (messages.Current is not StreamMessage.Event @event)
 				continue;
 
-			isEndOfStream = false;
 			nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
+			isEndOfStream = false;
 			break;
 		}
 

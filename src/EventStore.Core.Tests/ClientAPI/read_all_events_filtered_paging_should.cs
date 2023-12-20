@@ -76,9 +76,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				_testEventsC.ToArray(),
 				read.Select(x => x.Event).ToArray()));
 
-			// Old version had 100 empty pages. That test is useless.
-			// Assert.AreEqual(100, numberOfEmptySlicesRead);
-			Assert.AreEqual(101, numberOfEmptySlicesRead);
+			Assert.AreEqual(100, numberOfEmptySlicesRead);
 		}
 
 		[Test, Category("LongRunning")]
