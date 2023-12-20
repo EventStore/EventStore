@@ -1,6 +1,8 @@
 extern alias GrpcClient;
 extern alias GrpcClientStreams;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
@@ -51,9 +53,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var lastEvent = read.Events.Last().Event;
 			Assert.AreEqual("$$stream", lastEvent.EventStreamId);
 			Assert.AreEqual(SystemEventTypes.StreamMetadata, lastEvent.EventType);
-			Assert.Fail("StreamMetadata doesn't support loading from raw bytes");
-			// var metadata = StreamMetadata.FromJsonBytes(lastEvent.Data);
-			// Assert.AreEqual(EventNumber.DeletedStream, metadata.TruncateBefore);
+			var document = JsonDocument.Parse(Encoding.UTF8.GetString(lastEvent.Data.ToArray()));
+			var tb = document.RootElement.GetProperty("$tb").GetInt64();
+			Assert.AreEqual(tb, EventNumber.DeletedStream);
+			var meta = await _conn.GetStreamMetadataAsync("stream");
+			Assert.AreEqual(meta.Metadata.TruncateBefore, StreamPosition.End);
 		}
 	}
 }

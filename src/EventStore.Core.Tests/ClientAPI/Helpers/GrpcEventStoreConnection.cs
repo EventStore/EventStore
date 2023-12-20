@@ -461,8 +461,14 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 				maxCount: 1, resolveLinkTos: resolveLinkTos, userCredentials: userCredentials);
 
 			await foreach(var message in result.Messages) {
-				if (message is StreamMessage.LastStreamPosition lastPos)
-					lastStreamEventNumber = lastPos.StreamPosition.ToInt64();
+				switch (message) {
+					case StreamMessage.LastStreamPosition lastPos:
+						lastStreamEventNumber = lastPos.StreamPosition.ToInt64();
+						break;
+
+					case StreamMessage.NotFound _:
+						return new StreamEventsSliceNew(SliceReadStatus.StreamNotFound);
+				}
 			}
 
 			result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(start),
