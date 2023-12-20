@@ -28,11 +28,9 @@ using Uuid = GrpcClient::EventStore.Client.Uuid;
 using EventStore.Common.Utils;
 using FromAll = GrpcClient::EventStore.Client.FromAll;
 using FromStream = GrpcClient::EventStore.Client.FromStream;
-using PrefixFilterExpression = GrpcClient::EventStore.Client.PrefixFilterExpression;
 using EventTypeFilter = GrpcClient::EventStore.Client.EventTypeFilter;
 using StreamFilter = GrpcClient::EventStore.Client.StreamFilter;
 using System.Text.RegularExpressions;
-using EventStore.Core.Tests.Services.Transport.Http.Authentication;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers;
 
@@ -430,19 +428,31 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 	}
 
 	public async Task<EventReadResultNew> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null) {
-		var result = _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(eventNumber),
-			maxCount:1, resolveLinkTos: resolveLinkTos);
+		ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(eventNumber, -2, nameof(eventNumber));
+		
+		if (string.IsNullOrEmpty(stream))
+			throw new ArgumentNullException(nameof(stream));
 
-		await foreach (var message in result.Messages) {
-			if (message is StreamMessage.Event @event) {
-				return new EventReadResultNew(EventReadStatus.Success, stream, eventNumber,
-					@event.ResolvedEvent);
+		try {
+			var result = eventNumber == -1
+				? _streamsClient.ReadStreamAsync(Direction.Backwards, stream, StreamPosition.End,
+					maxCount: 1, resolveLinkTos: resolveLinkTos, userCredentials: userCredentials)
+				: _streamsClient.ReadStreamAsync(Direction.Forwards, stream, StreamPosition.FromInt64(eventNumber),
+					maxCount: 1, resolveLinkTos: resolveLinkTos, userCredentials: userCredentials);
+
+			await foreach (var message in result.Messages) {
+				if (message is StreamMessage.Event @event) {
+					return new EventReadResultNew(EventReadStatus.Success, stream, eventNumber,
+						@event.ResolvedEvent);
+				}
 			}
+
+			var status = eventNumber == -1 ? EventReadStatus.NoStream : EventReadStatus.NotFound;
+			return new EventReadResultNew(status, stream, eventNumber, null);
+		} catch (StreamDeletedException) {
+			return new EventReadResultNew(EventReadStatus.StreamDeleted, stream, eventNumber);
 		}
-
-		return new EventReadResultNew(EventReadStatus.NotFound, stream, eventNumber, null);
 	}
-
 	public async Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetaStreamVersion, StreamMetadata metadata,
 		UserCredentials userCredentials = null) {
 		var version = FromUInt64(expectedMetaStreamVersion);

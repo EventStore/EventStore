@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public async Task notify_using_status_code_if_stream_not_found() {
 			var res = await _conn.ReadEventAsync("unexisting-stream", 5, false);
 
-			Assert.AreEqual(EventReadStatus.NoStream, res.Status);
+			Assert.AreEqual(EventReadStatus.NotFound, res.Status);
 			Assert.IsNull(res.Event);
 			Assert.AreEqual("unexisting-stream", res.Stream);
 			Assert.AreEqual(5, res.EventNumber);
