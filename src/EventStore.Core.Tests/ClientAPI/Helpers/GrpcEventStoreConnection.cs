@@ -127,6 +127,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 				continue;
 
 			isEndOfStream = false;
+			nextPosition = @event.ResolvedEvent.OriginalPosition!.Value;
 			break;
 		}
 
