@@ -28,8 +28,10 @@ public class StreamEventsSliceNew {
 		Events = events;
 	}
 
-	public StreamEventsSliceNew(SliceReadStatus status) {
+	public StreamEventsSliceNew(SliceReadStatus status, Direction direction) {
 		Status = status;
 		Events = new ResolvedEvent[0];
+		IsEndOfStream = true;
+		ReadDirection = direction;
 	}
 }

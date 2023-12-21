@@ -482,7 +482,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 						break;
 
 					case StreamMessage.NotFound _:
-						return new StreamEventsSliceNew(SliceReadStatus.StreamNotFound);
+						return new StreamEventsSliceNew(SliceReadStatus.StreamNotFound, Direction.Forwards);
 				}
 			}
 
@@ -492,23 +492,38 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			var events = new List<ResolvedEvent>();
 			var nextEventNumber = -1L;
 			var isEndOfStream = true;
-			await foreach (var message in result.Messages) {
-				if (message is StreamMessage.Event @event) {
-					nextEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64();
+			await using var messages = result.Messages.GetAsyncEnumerator();
+			while (await messages.MoveNextAsync()) {
+				if (messages.Current is not StreamMessage.Event @event)
+					continue;
 
-					if (events.Count >= count || OutOfRangeEvent(start, count, @event.ResolvedEvent)) {
-						isEndOfStream = false;
-						break;
-					}
+				nextEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64();
 
-					events.Add(@event.ResolvedEvent);
-				}
+				if (OutOfRangeEvent(start, count, @event.ResolvedEvent))
+					break;
+
+				events.Add(@event.ResolvedEvent);
+
+				if (events.Count >= count || OutOfRangeEvent(start, count, @event.ResolvedEvent))
+					break;
 			}
+
+			while (await messages.MoveNextAsync()) {
+				if (messages.Current is not StreamMessage.Event @event)
+					continue;
+
+				isEndOfStream = false;
+				nextEventNumber = @event.ResolvedEvent.OriginalEventNumber.ToInt64();
+				break;
+			}
+
+			if (!isEndOfStream)
+				isEndOfStream = start == nextEventNumber;
 
 			return new StreamEventsSliceNew(stream, Direction.Forwards, start, nextEventNumber,
 				lastStreamEventNumber, isEndOfStream, events.ToArray());
 		} catch (StreamDeletedException) {
-			return new StreamEventsSliceNew(SliceReadStatus.StreamDeleted);
+			return new StreamEventsSliceNew(SliceReadStatus.StreamDeleted, Direction.Forwards);
 		}
 	}
 
@@ -541,14 +556,14 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 						break;
 
 					case StreamMessage.NotFound _:
-						return new StreamEventsSliceNew(SliceReadStatus.StreamNotFound);
+						return new StreamEventsSliceNew(SliceReadStatus.StreamNotFound, Direction.Backwards);
 				}
 			}
 
 			return new StreamEventsSliceNew(stream, Direction.Backwards, start, nextEventNumber,
 				lastEventNumber, nextEventNumber <= lastEventNumber, events.ToArray());
 		} catch (StreamDeletedException) {
-			return new StreamEventsSliceNew(SliceReadStatus.StreamDeleted);
+			return new StreamEventsSliceNew(SliceReadStatus.StreamDeleted, Direction.Backwards);
 		}
 	}
 
