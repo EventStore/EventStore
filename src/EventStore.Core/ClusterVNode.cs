@@ -240,6 +240,8 @@ namespace EventStore.Core {
 			
 			ReloadLogOptions(options);
 
+			bool isRunningInContainer = ContainerizedEnvironment.IsRunningInContainer();
+
 			instanceId ??= Guid.NewGuid();
 			if (instanceId == Guid.Empty) {
 				throw new ArgumentException("InstanceId may not be empty.", nameof(instanceId));
@@ -401,19 +403,14 @@ namespace EventStore.Core {
 				statsHelper = new SystemStatsHelper(Log, writerChk.AsReadOnly(), dbPath, statsCollectionPeriod);
 
 				var processorCount = Environment.ProcessorCount;
-				readerThreadsCount = ThreadCountCalculator.CalculateReaderThreadCount(options.Database.ReaderThreadsCount, processorCount);
-				Log.Information(
-					"ReaderThreadsCount set to {readerThreadsCount:N0}. " +
-					"Calculated based on processor count of {processorCount:N0} and configured value of {configuredCount:N0}",
-					readerThreadsCount,
-					processorCount, options.Database.ReaderThreadsCount);
 
-				workerThreadsCount = ThreadCountCalculator.CalculateWorkerThreadCount(options.Application.WorkerThreads, readerThreadsCount);
-				Log.Information(
-					"WorkerThreads set to {workerThreadsCount:N0}. " +
-					"Calculated based on a reader thread count of {readerThreadsCount:N0} and a configured value of {configuredCount:N0}",
-					workerThreadsCount,
-					readerThreadsCount, options.Application.WorkerThreads);
+				readerThreadsCount =
+					ThreadCountCalculator.CalculateReaderThreadCount(options.Database.ReaderThreadsCount,
+						processorCount, isRunningInContainer);
+
+				workerThreadsCount =
+					ThreadCountCalculator.CalculateWorkerThreadCount(options.Application.WorkerThreads,
+						readerThreadsCount, isRunningInContainer);
 
 				return new TFChunkDbConfig(dbPath,
 					new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
@@ -607,6 +604,12 @@ namespace EventStore.Core {
 			if (options.Cluster.StreamInfoCacheCapacity > 0)
 				CreateStaticStreamInfoCache(
 					options.Cluster.StreamInfoCacheCapacity,
+					out streamLastEventNumberCache,
+					out streamMetadataCache,
+					out streamInfoCacheResizer);
+			else if (isRunningInContainer)
+				CreateStaticStreamInfoCache(
+					ContainerizedEnvironment.StreamInfoCacheCapacity,
 					out streamLastEventNumberCache,
 					out streamMetadataCache,
 					out streamInfoCacheResizer);
