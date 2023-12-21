@@ -493,6 +493,11 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 						lastStreamEventNumber = lastPos.StreamPosition.ToInt64();
 						break;
 
+					// REVIEW>>: I don't think it's required to do this.
+					//case StreamMessage.FirstStreamPosition firstPos:
+					//	start = firstPos.StreamPosition.ToInt64();
+					//	break;
+
 					case StreamMessage.NotFound _:
 						return new StreamEventsSliceNew(SliceReadStatus.StreamNotFound, Direction.Forwards);
 				}
