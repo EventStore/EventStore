@@ -129,7 +129,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				.AddRouting()
 				.BuildServiceProvider();
 
-			public void Configure(IApplicationBuilder app) => app.UseLegacyHttp(_dispatcher ,_httpService);
+			public void Configure(IApplicationBuilder app) => app.UseEndpoints(ep => ep.MapLegacyHttp(_dispatcher, _httpService));
 		}
 	}
 }
