@@ -162,9 +162,9 @@ public interface IEventStoreClient: IDisposable {
 		Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = null,
 		UserCredentials userCredentials = null);
 
-	Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null);
+	Task<StreamMetadataResultNew> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null);
 
-	Task<StreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null);
+	Task<StreamMetadataResultNew> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null);
 
 	Task<StreamSubscription> SubscribeToAllFrom(
 		Position? lastCheckpoint,

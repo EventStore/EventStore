@@ -33,5 +33,8 @@ public class StreamEventsSliceNew {
 		Events = new ResolvedEvent[0];
 		IsEndOfStream = true;
 		ReadDirection = direction;
+
+		if (status == SliceReadStatus.StreamNotFound)
+			LastEventNumber = -1;
 	}
 }

@@ -288,11 +288,23 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 		return sub;
 	}
 
-	public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null) {
-		return _streamsClient.GetStreamMetadataAsync(stream, userCredentials: userCredentials);
+	public async Task<StreamMetadataResultNew> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null) {
+		try {
+			var result = await _streamsClient.GetStreamMetadataAsync(stream, userCredentials: userCredentials);
+			return new StreamMetadataResultNew {
+				StreamName = stream,
+				Metadata = result.Metadata,
+				MetastreamRevision = result.MetastreamRevision,
+			};
+		} catch (StreamDeletedException) {
+			return new StreamMetadataResultNew {
+				StreamName = stream,
+				StreamDeleted = true,
+			};
+		}
 	}
 
-	public Task<StreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null) {
+	public Task<StreamMetadataResultNew> GetStreamMetadataAsRawBytesAsync(string stream, UserCredentials userCredentials = null) {
 		return GetStreamMetadataAsync(stream, userCredentials);
 	}
 
