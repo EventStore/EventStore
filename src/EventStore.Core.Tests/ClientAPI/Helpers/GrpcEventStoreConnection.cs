@@ -338,6 +338,7 @@ public class GrpcEventStoreConnection : IEventStoreClient {
 			Direction.Forwards,
 			stream, StreamPosition.FromInt64(nextRevision),
 			resolveLinkTos: settings.ResolveLinkTos,
+			deadline: TimeSpan.FromMinutes(3),
 			userCredentials: userCredentials);
 
 		await foreach (var message in result.Messages) {

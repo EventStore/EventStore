@@ -612,7 +612,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				var largeData = new string(' ', 20000);
 				var events = Enumerable.Range(0, 100).Select(i => TestEvent.NewTestEvent(largeData, i.ToString()));
-				Assert.ThrowsAsync<GrpcClientStreams::EventStore.Client.InvalidTransactionException>(async () =>
+				Assert.ThrowsAsync<GrpcClientStreams::EventStore.Client.MaximumAppendSizeExceededException>(async () =>
 					await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events));
 			}
 		}
