@@ -1,5 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -7,8 +11,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
-using System.Linq;
-using EventStore.Core.Util;
+using EventStore.Plugins.Authorization;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {
@@ -33,6 +36,7 @@ namespace EventStore.Core.Services {
 		IHandle<ClientMessage.SubscribeToStream>,
 		IHandle<ClientMessage.FilteredSubscribeToStream>,
 		IHandle<ClientMessage.UnsubscribeFromStream>,
+		IHandle<SubscriptionMessage.DropSubscription>,
 		IHandle<SubscriptionMessage.PollStream>,
 		IHandle<SubscriptionMessage.CheckPollTimeout>,
 		IHandle<StorageMessage.InMemoryEventCommitted>,
@@ -56,20 +60,24 @@ namespace EventStore.Core.Services {
 		private readonly IEnvelope _busEnvelope;
 		private readonly IQueuedHandler _queuedHandler;
 		private readonly IReadIndex<TStreamId> _readIndex;
+		private readonly IAuthorizationProvider _authorizationProvider;
 		private static readonly char[] _linkToSeparator = new[] { '@' };
 
 		public SubscriptionsService(
 			IPublisher bus,
 			IQueuedHandler queuedHandler,
+			IAuthorizationProvider authorizationProvider,
 			IReadIndex<TStreamId> readIndex) {
 
-			Ensure.NotNull(bus, "bus");
-			Ensure.NotNull(queuedHandler, "queuedHandler");
-			Ensure.NotNull(readIndex, "readIndex");
+			Ensure.NotNull(bus, nameof(bus));
+			Ensure.NotNull(queuedHandler, nameof(queuedHandler));
+			Ensure.NotNull(authorizationProvider, nameof(authorizationProvider));
+			Ensure.NotNull(readIndex, nameof(readIndex));
 
 			_bus = bus;
 			_busEnvelope = new PublishEnvelope(bus);
 			_queuedHandler = queuedHandler;
+			_authorizationProvider = authorizationProvider;
 			_readIndex = readIndex;
 		}
 
@@ -82,7 +90,7 @@ namespace EventStore.Core.Services {
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
 			List<Subscription> subscriptions = _subscriptionsById.Values.ToList();
 			foreach (var subscription in subscriptions) {
-				DropSubscription(subscription, sendDropNotification: true);
+				DropSubscription(subscription, SubscriptionDropReason.Unsubscribed, sendDropNotification: true);
 			}
 
 			_queuedHandler.RequestStop();
@@ -127,7 +135,9 @@ namespace EventStore.Core.Services {
 
 			SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
 				msg.ResolveLinkTos, lastIndexedPos, lastEventNumber,
+				msg.User,
 				msg.EventStreamId.IsEmptyString() ? EventFilter.DefaultAllFilter : EventFilter.DefaultStreamFilter);
+
 			var subscribedMessage =
 				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
 			msg.Envelope.ReplyWith(subscribedMessage);
@@ -146,7 +156,7 @@ namespace EventStore.Core.Services {
 			var lastIndexedPos = isInMemoryStream ? -1 : _readIndex.LastIndexedPosition;
 
 			SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
-				msg.ResolveLinkTos, lastIndexedPos, lastEventNumber, msg.EventFilter,
+				msg.ResolveLinkTos, lastIndexedPos, lastEventNumber, msg.User, msg.EventFilter,
 				msg.CheckpointInterval, msg.CheckpointIntervalCurrent);
 			var subscribedMessage =
 				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
@@ -155,11 +165,16 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ClientMessage.UnsubscribeFromStream message) {
-			UnsubscribeFromStream(message.CorrelationId);
+			DropSubscription(message.CorrelationId, SubscriptionDropReason.Unsubscribed);
+		}
+
+		public void Handle(SubscriptionMessage.DropSubscription message) {
+			DropSubscription(message.SubscriptionId, message.DropReason);
 		}
 
 		private void SubscribeToStream(Guid correlationId, IEnvelope envelope, Guid connectionId,
 			string eventStreamId, bool resolveLinkTos, long lastIndexedPosition, long? lastEventNumber,
+			ClaimsPrincipal user,
 			IEventFilter eventFilter, int? checkpointInterval = null, int checkpointIntervalCurrent = 0) {
 			List<Subscription> subscribers;
 			if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscribers)) {
@@ -175,6 +190,7 @@ namespace EventStore.Core.Services {
 				resolveLinkTos,
 				lastIndexedPosition,
 				lastEventNumber ?? -1,
+				user,
 				eventFilter,
 				checkpointInterval,
 				checkpointIntervalCurrent);
@@ -182,17 +198,16 @@ namespace EventStore.Core.Services {
 			_subscriptionsById[correlationId] = subscription;
 		}
 
-		private void UnsubscribeFromStream(Guid correlationId) {
+		private void DropSubscription(Guid subscriptionId, SubscriptionDropReason dropReason) {
 			Subscription subscription;
-			if (_subscriptionsById.TryGetValue(correlationId, out subscription))
-				DropSubscription(subscription, sendDropNotification: true);
+			if (_subscriptionsById.TryGetValue(subscriptionId, out subscription))
+				DropSubscription(subscription, dropReason, sendDropNotification: true);
 		}
 
-		private void DropSubscription(Subscription subscription, bool sendDropNotification) {
+		private void DropSubscription(Subscription subscription, SubscriptionDropReason dropReason, bool sendDropNotification) {
 			if (sendDropNotification)
 				subscription.Envelope.ReplyWith(
-					new ClientMessage.SubscriptionDropped(subscription.CorrelationId,
-						SubscriptionDropReason.Unsubscribed));
+					new ClientMessage.SubscriptionDropped(subscription.CorrelationId, dropReason));
 
 			List<Subscription> subscriptions;
 			if (_subscriptionTopics.TryGetValue(subscription.EventStreamId, out subscriptions)) {
@@ -290,6 +305,8 @@ namespace EventStore.Core.Services {
 				ProcessEventCommited(AllStreamsSubscriptionId, message.CommitPosition, message.Event, null);
 			ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, resolvedEvent);
 
+			ProcessStreamMetadataChanges(message.Event.EventStreamId);
+
 			ReissueReadsFor(AllStreamsSubscriptionId, message.CommitPosition, message.Event.EventNumber);
 			ReissueReadsFor(message.Event.EventStreamId, message.CommitPosition, message.Event.EventNumber);
 		}
@@ -297,6 +314,7 @@ namespace EventStore.Core.Services {
 		public void Handle(StorageMessage.InMemoryEventCommitted message) {
 			_lastSeenInMemoryCommitPosition = message.CommitPosition;
 			ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, null);
+			ProcessStreamMetadataChanges(message.Event.EventStreamId);
 			ReissueReadsFor(message.Event.EventStreamId, message.CommitPosition, message.Event.EventNumber);
 		}
 
@@ -333,6 +351,64 @@ namespace EventStore.Core.Services {
 			}
 
 			return resolvedEvent;
+		}
+
+		private void ProcessStreamMetadataChanges(string eventStreamId) {
+			if (!SystemStreams.IsMetastream(eventStreamId))
+				return;
+
+			eventStreamId = SystemStreams.OriginalStreamOf(eventStreamId);
+
+			if (!_subscriptionTopics.TryGetValue(eventStreamId, out var subscriptions))
+				return;
+
+			foreach (var subscription in subscriptions.ToArray())
+				Authorize(subscription);
+		}
+
+		private void Authorize(Subscription subscription) {
+			try {
+				var streamId = Operations.Streams.Parameters.StreamId(subscription.EventStreamId);
+				var op = new Operation(Operations.Streams.Read).WithParameter(streamId);
+
+				var accessChk = _authorizationProvider.CheckAccessAsync(subscription.User, op, CancellationToken.None);
+
+				if (accessChk.IsCompleted)
+					AuthorizeSync();
+				else
+					_ = AuthorizeAsync();
+
+				void AuthorizeSync() {
+					if (accessChk.Result)
+						return;
+
+					LogSubscriptionDrop();
+					DropSubscription(subscription, SubscriptionDropReason.AccessDenied, sendDropNotification: true);
+				}
+
+				async Task AuthorizeAsync() {
+					// note: when authorizing asynchronously, a few live events may go through before the "Access Denied" message is sent to the subscription
+					if (await accessChk)
+						return;
+
+					LogSubscriptionDrop();
+					// we go through the queue to avoid the need for any lock
+					_bus.Publish(new SubscriptionMessage.DropSubscription(subscription.CorrelationId, SubscriptionDropReason.AccessDenied));
+				}
+			} catch (Exception ex) {
+				LogException(ex);
+			}
+
+			void LogSubscriptionDrop() {
+				Log.Debug(
+					"Dropping live subscription to stream: {streamId} (Connection ID: {connectionId}) following new stream metadata.",
+					subscription.EventStreamId, subscription.ConnectionId);
+			}
+
+			void LogException(Exception ex) {
+				Log.Error(ex, "Failed to check access for live subscription to stream: {streamId} (Connection ID: {connectionId}) following new stream metadata. Live subscription will continue to run.",
+					subscription.EventStreamId, subscription.ConnectionId);
+			}
 		}
 
 		private ResolvedEvent ResolveLinkToEvent(EventRecord eventRecord, long commitPosition) {
@@ -389,6 +465,7 @@ namespace EventStore.Core.Services {
 			public readonly bool ResolveLinkTos;
 			public readonly long LastIndexedPosition;
 			public readonly long LastEventNumber;
+			public readonly ClaimsPrincipal User;
 			public readonly IEventFilter EventFilter;
 			public readonly int? CheckpointInterval;
 
@@ -401,6 +478,7 @@ namespace EventStore.Core.Services {
 				bool resolveLinkTos,
 				long lastIndexedPosition,
 				long lastEventNumber,
+				ClaimsPrincipal user,
 				IEventFilter eventFilter,
 				int? checkpointInterval,
 				int checkpointIntervalCurrent) {
@@ -412,6 +490,7 @@ namespace EventStore.Core.Services {
 				ResolveLinkTos = resolveLinkTos;
 				LastIndexedPosition = lastIndexedPosition;
 				LastEventNumber = lastEventNumber;
+				User = user;
 
 				EventFilter = eventFilter;
 				CheckpointInterval = checkpointInterval;

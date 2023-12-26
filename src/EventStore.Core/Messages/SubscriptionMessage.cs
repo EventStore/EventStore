@@ -1,5 +1,6 @@
 using System;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 
 namespace EventStore.Core.Messages {
 	public static partial class SubscriptionMessage {
@@ -24,6 +25,17 @@ namespace EventStore.Core.Messages {
 
 		[DerivedMessage(CoreMessage.Subscription)]
 		public partial class CheckPollTimeout : Message {
+		}
+
+		[DerivedMessage(CoreMessage.Subscription)]
+		public partial class DropSubscription : Message {
+			public readonly Guid SubscriptionId;
+			public readonly SubscriptionDropReason DropReason;
+
+			public DropSubscription(Guid subscriptionId, SubscriptionDropReason dropReason) {
+				SubscriptionId = subscriptionId;
+				DropReason = dropReason;
+			}
 		}
 
 		[DerivedMessage(CoreMessage.Subscription)]
