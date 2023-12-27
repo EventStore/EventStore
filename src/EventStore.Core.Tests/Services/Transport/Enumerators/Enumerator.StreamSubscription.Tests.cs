@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
@@ -17,7 +18,8 @@ public partial class EnumeratorTests {
 	private static EnumeratorWrapper CreateStreamSubscription<TStreamId>(
 		IPublisher publisher,
 		string streamName,
-		StreamRevision? startRevision = null) {
+		StreamRevision? startRevision = null,
+		ClaimsPrincipal user = null) {
 
 		return new EnumeratorWrapper(new Enumerator.StreamSubscription<TStreamId>(
 			bus: publisher,
@@ -25,7 +27,7 @@ public partial class EnumeratorTests {
 			streamName: streamName,
 			startRevision: startRevision,
 			resolveLinks: false,
-			user: SystemAccounts.System,
+			user: user ?? SystemAccounts.System,
 			requiresLeader: false,
 			cancellationToken: CancellationToken.None));
 	}

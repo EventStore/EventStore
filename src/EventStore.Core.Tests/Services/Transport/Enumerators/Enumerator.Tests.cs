@@ -9,7 +9,7 @@ namespace EventStore.Core.Tests.Services.Transport.Enumerators;
 [TestFixture]
 public partial class EnumeratorTests {
 	public record SubscriptionResponse { }
-	public record Event(Guid Id) : SubscriptionResponse { }
+	public record Event(Guid Id, long EventNumber) : SubscriptionResponse { }
 	public record SubscriptionConfirmation() : SubscriptionResponse { }
 	public record CaughtUp : SubscriptionResponse { }
 
@@ -30,7 +30,7 @@ public partial class EnumeratorTests {
 			var resp = _enumerator.Current;
 
 			return resp switch {
-				ReadResponse.EventReceived eventReceived => new Event(eventReceived.Event.Event.EventId),
+				ReadResponse.EventReceived eventReceived => new Event(eventReceived.Event.Event.EventId, eventReceived.Event.OriginalEventNumber),
 				ReadResponse.SubscriptionConfirmed => new SubscriptionConfirmation(),
 				ReadResponse.SubscriptionCaughtUp => new CaughtUp(),
 				_ => throw new ArgumentOutOfRangeException(nameof(resp), resp, null),
