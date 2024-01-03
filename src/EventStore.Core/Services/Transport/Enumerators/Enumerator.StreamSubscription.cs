@@ -180,9 +180,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 							ReadPage(StreamRevision.FromInt64(completed.FromEventNumber), OnMessage);
 							return;
 						case ReadStreamResult.NoStream:
-							await ConfirmSubscription();
-							await Task.Delay(TimeSpan.FromMilliseconds(50), ct);
-							ReadPage(startRevision ?? StreamRevision.Start, OnMessage);
+							GoLive(StreamRevision.FromInt64(completed.NextEventNumber));
 							return;
 						case ReadStreamResult.StreamDeleted:
 							Log.Verbose(
