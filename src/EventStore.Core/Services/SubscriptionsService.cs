@@ -20,7 +20,8 @@ namespace EventStore.Core.Services {
 		AccessDenied = 1,
 		NotFound = 2,
 		PersistentSubscriptionDeleted = 3,
-		SubscriberMaxCountReached = 4
+		SubscriberMaxCountReached = 4,
+		StreamDeleted = 5
 	}
 
 	public abstract class SubscriptionsService {
@@ -129,6 +130,12 @@ namespace EventStore.Core.Services {
 				lastEventNumber = -1;
 			} else if (!msg.EventStreamId.IsEmptyString()) {
 				lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
+			}
+
+			if (lastEventNumber == EventNumber.DeletedStream) {
+				msg.Envelope.ReplyWith(
+					new ClientMessage.SubscriptionDropped(Guid.Empty, SubscriptionDropReason.StreamDeleted));
+				return;
 			}
 
 			var lastIndexedPos = isInMemoryStream ? -1 : _readIndex.LastIndexedPosition;

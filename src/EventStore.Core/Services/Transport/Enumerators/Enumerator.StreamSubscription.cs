@@ -340,6 +340,9 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 								case SubscriptionDropReason.AccessDenied:
 									Fail(new ReadResponseException.AccessDenied());
 									return;
+								case SubscriptionDropReason.StreamDeleted:
+									Fail(new ReadResponseException.StreamDeleted(_streamName));
+									return;
 								case SubscriptionDropReason.NotFound:
 									await _channel.Writer.WriteAsync(new ReadResponse.StreamNotFound(_streamName), _cancellationToken);
 									_channel.Writer.Complete();
