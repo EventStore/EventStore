@@ -11,7 +11,7 @@ public class ContainerInfo {
 
 	private static ContainerInfo Collect() {
 		var info = new ContainerInfo {
-			 IsContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") != null,
+			IsContainer = ContainerizedEnvironment.IsRunningInContainer()
 		};
 
 		if (OS.OsFlavor != OsFlavor.Linux || !File.Exists("/proc/self/cgroup"))
