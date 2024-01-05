@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			_state = JsValue.Undefined;
 			_sharedState = JsValue.Undefined;
 			_interpreterRuntime = new InterpreterRuntime(_engine, _definitionBuilder);
-			_engine.Realm.GlobalObject.FastAddProperty("log", new ClrFunctionInstance(_engine, "log", Log), false, false, false);
+			_engine.Global.FastAddProperty("log", new ClrFunction(_engine, "log", Log), false, false, false);
 
 			timeConstraint.Compiling();
 			_engine.Execute(source);
@@ -60,10 +60,10 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			_parser = _interpreterRuntime.SwitchToExecutionMode();
 
 
-			_engine.Realm.GlobalObject.FastAddProperty("emit", new ClrFunctionInstance(_engine, "emit", Emit, 4), true, false, true);
-			_engine.Realm.GlobalObject.FastAddProperty("linkTo", new ClrFunctionInstance(_engine, "linkTo", LinkTo, 3), true, false, true);
-			_engine.Realm.GlobalObject.FastAddProperty("linkStreamTo", new ClrFunctionInstance(_engine, "linkStreamTo", LinkStreamTo, 3), true, false, true);
-			_engine.Realm.GlobalObject.FastAddProperty("copyTo", new ClrFunctionInstance(_engine, "copyTo", CopyTo, 3), true, false, true);
+			_engine.Global.FastAddProperty("emit", new ClrFunction(_engine, "emit", Emit, 4), true, false, true);
+			_engine.Global.FastAddProperty("linkTo", new ClrFunction(_engine, "linkTo", LinkTo, 3), true, false, true);
+			_engine.Global.FastAddProperty("linkStreamTo", new ClrFunction(_engine, "linkStreamTo", LinkStreamTo, 3), true, false, true);
+			_engine.Global.FastAddProperty("copyTo", new ClrFunction(_engine, "copyTo", CopyTo, 3), true, false, true);
 			_emitted = new List<EmittedEventEnvelope>();
 		}
 
@@ -72,12 +72,12 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		}
 
 		public IQuerySources GetSourceDefinition() {
-			_engine.ResetConstraints();
+			_engine.Constraints.Reset();
 			return _definitionBuilder.Build();
 		}
 
 		public void Load(string? state) {
-			_engine.ResetConstraints();
+			_engine.Constraints.Reset();
 			if (state != null) {
 				var jsValue = _parser.Parse(state);
 				LoadCurrentState(jsValue);
@@ -101,7 +101,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		}
 
 		public void LoadShared(string? state) {
-			_engine.ResetConstraints();
+			_engine.Constraints.Reset();
 			if (state != null) {
 				var jsValue = _parser.Parse(state);
 				LoadCurrentSharedState(jsValue);
@@ -125,21 +125,21 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		}
 
 		public void Initialize() {
-			_engine.ResetConstraints();
+			_engine.Constraints.Reset();
 			var state = _interpreterRuntime.InitializeState();
 			LoadCurrentState(state);
 
 		}
 
 		public void InitializeShared() {
-			_engine.ResetConstraints();
+			_engine.Constraints.Reset();
 			_sharedState = _interpreterRuntime.InitializeSharedState();
 			LoadCurrentSharedState(_sharedState);
 		}
 
 		public string? GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data) {
 			_currentPosition = eventPosition;
-			_engine.ResetConstraints();
+			_engine.Constraints.Reset();
 			var envelope = CreateEnvelope("", data, category);
 			var partition = _interpreterRuntime.GetPartition(envelope);
 			if (partition == JsValue.Null || partition == JsValue.Undefined || !(partition.IsString() || partition.IsNumber()))
@@ -150,7 +150,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 
 		public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent @event,
 			out EmittedEventEnvelope[]? emittedEvents) {
-			_engine.ResetConstraints();
+			_engine.Constraints.Reset();
 			_currentPosition = createPosition;
 			var envelope = CreateEnvelope(partition, @event, "");
 			_interpreterRuntime.HandleCreated(_state, envelope);
@@ -161,7 +161,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		}
 
 		public bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string? newState) {
-			_engine.ResetConstraints();
+			_engine.Constraints.Reset();
 			_currentPosition = deletePosition;
 
 			_interpreterRuntime.HandleDeleted(_state, partition, false);
@@ -170,7 +170,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		}
 
 		public string? TransformStateToResult() {
-			_engine.ResetConstraints();
+			_engine.Constraints.Reset();
 			var result = _interpreterRuntime.TransformStateToResult(_state);
 			if (result == JsValue.Null || result == JsValue.Undefined)
 				return null;
@@ -180,9 +180,9 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		public bool ProcessEvent(string partition, CheckpointTag eventPosition, string category, ResolvedEvent @event,
 			out string? newState, out string? newSharedState, out EmittedEventEnvelope[]? emittedEvents) {
 			_currentPosition = eventPosition;
-			_engine.ResetConstraints();
+			_engine.Constraints.Reset();
 			if ((@event.IsJson && string.IsNullOrWhiteSpace(@event.Data)) ||
-				(!_enableContentTypeValidation && !@event.IsJson && string.IsNullOrEmpty(@event.Data))) {
+			    (!_enableContentTypeValidation && !@event.IsJson && string.IsNullOrEmpty(@event.Data))) {
 				PrepareOutput(out newState, out newSharedState, out emittedEvents);
 				return true;
 			}
@@ -248,7 +248,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var md = parameters.At(3).AsObject();
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					if (kvp.Value.Value.Type is Types.None or Types.Undefined)
+					if (kvp.Value.Value.Type is Types.Empty or Types.Undefined)
 						continue;
 					d.Add(kvp.Key.AsString(), Serialize(kvp.Value.Value));
 				}
@@ -418,14 +418,14 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 
 		class InterpreterRuntime : ObjectInstance {
 
-			private readonly Dictionary<string, ScriptFunctionInstance> _handlers;
-			private readonly List<(TransformType, ScriptFunctionInstance)> _transforms;
-			private readonly List<ScriptFunctionInstance> _createdHandlers;
-			private ScriptFunctionInstance? _init;
-			private ScriptFunctionInstance? _initShared;
-			private ScriptFunctionInstance? _any;
-			private ScriptFunctionInstance? _deleted;
-			private ScriptFunctionInstance? _partitionFunction;
+			private readonly Dictionary<string, ScriptFunction> _handlers;
+			private readonly List<(TransformType, ScriptFunction)> _transforms;
+			private readonly List<ScriptFunction> _createdHandlers;
+			private ScriptFunction? _init;
+			private ScriptFunction? _initShared;
+			private ScriptFunction? _any;
+			private ScriptFunction? _deleted;
+			private ScriptFunction? _partitionFunction;
 
 			private readonly JsValue _whenInstance;
 			private readonly JsValue _partitionByInstance;
@@ -479,9 +479,9 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			public InterpreterRuntime(Engine engine, SourceDefinitionBuilder builder) : base(engine) {
 
 				_definitionBuilder = builder;
-				_handlers = new Dictionary<string, ScriptFunctionInstance>(StringComparer.Ordinal);
-				_createdHandlers = new List<ScriptFunctionInstance>();
-				_transforms = new List<(TransformType, ScriptFunctionInstance)>();
+				_handlers = new Dictionary<string, ScriptFunction>(StringComparer.Ordinal);
+				_createdHandlers = new List<ScriptFunction>();
+				_transforms = new List<(TransformType, ScriptFunction)>();
 				_parser = new JsonParser(engine);
 				_definitionFunctions = new List<string>();
 				AddDefinitionFunction("options", SetOptions, 1);
@@ -492,20 +492,20 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				AddDefinitionFunction("fromStreams", FromStreams, 1);
 				AddDefinitionFunction("on_event", OnEvent, 1);
 				AddDefinitionFunction("on_any", OnAny, 1);
-				_whenInstance = new ClrFunctionInstance(engine, "when", When, 1);
-				_partitionByInstance = new ClrFunctionInstance(engine, "partitionBy", PartitionBy, 1);
-				_outputStateInstance = new ClrFunctionInstance(engine, "outputState", OutputState, 1);
-				_foreachStreamInstance = new ClrFunctionInstance(engine, "foreachStream", ForEachStream, 1);
-				_transformByInstance = new ClrFunctionInstance(engine, "transformBy", TransformBy, 1);
-				_filterByInstance = new ClrFunctionInstance(engine, "filterBy", FilterBy, 1);
-				_outputToInstance = new ClrFunctionInstance(engine, "outputTo", OutputTo, 1);
-				_definesStateTransformInstance = new ClrFunctionInstance(engine, "$defines_state_transform", DefinesStateTransform);
+				_whenInstance = new ClrFunction(engine, "when", When, 1);
+				_partitionByInstance = new ClrFunction(engine, "partitionBy", PartitionBy, 1);
+				_outputStateInstance = new ClrFunction(engine, "outputState", OutputState, 1);
+				_foreachStreamInstance = new ClrFunction(engine, "foreachStream", ForEachStream, 1);
+				_transformByInstance = new ClrFunction(engine, "transformBy", TransformBy, 1);
+				_filterByInstance = new ClrFunction(engine, "filterBy", FilterBy, 1);
+				_outputToInstance = new ClrFunction(engine, "outputTo", OutputTo, 1);
+				_definesStateTransformInstance = new ClrFunction(engine, "$defines_state_transform", DefinesStateTransform);
 
 			}
 
 			private void AddDefinitionFunction(string name, Func<JsValue, JsValue[], JsValue> func, int length) {
 				_definitionFunctions.Add(name);
-				_engine.Realm.GlobalObject.FastAddProperty(name, new ClrFunctionInstance(_engine, name, func, length), true, false, true);
+				_engine.Global.FastAddProperty(name, new ClrFunction(_engine, name, func, length), true, false, true);
 			}
 
 			private JsValue FromStream(JsValue _, JsValue[] parameters) {
@@ -550,9 +550,9 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			private JsValue When(JsValue thisValue, JsValue[] parameters) {
 				if (parameters.At(0) is ObjectInstance handlers) {
 					foreach (var kvp in handlers.GetOwnProperties()) {
-						if (kvp.Key.IsString() && kvp.Value.Value is ScriptFunctionInstance) {
+						if (kvp.Key.IsString() && kvp.Value.Value is ScriptFunction) {
 							var key = kvp.Key.AsString();
-							AddHandler(key, (ScriptFunctionInstance)kvp.Value.Value);
+							AddHandler(key, (ScriptFunction)kvp.Value.Value);
 						}
 					}
 				}
@@ -562,7 +562,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			}
 
 			private JsValue PartitionBy(JsValue thisValue, JsValue[] parameters) {
-				if (parameters.At(0) is ScriptFunctionInstance partitionFunction) {
+				if (parameters.At(0) is ScriptFunction partitionFunction) {
 					_definitionBuilder.SetByCustomPartitions();
 
 
@@ -609,7 +609,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			}
 
 			private JsValue FilterBy(JsValue thisValue, JsValue[] parameters) {
-				if (parameters.At(0) is ScriptFunctionInstance fi) {
+				if (parameters.At(0) is ScriptFunction fi) {
 					_definitionBuilder.SetDefinesStateTransform();
 					_definitionBuilder.SetOutputState();
 					_transforms.Add((TransformType.Filter, fi));
@@ -621,7 +621,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			}
 
 			private JsValue TransformBy(JsValue thisValue, JsValue[] parameters) {
-				if (parameters.At(0) is ScriptFunctionInstance fi) {
+				if (parameters.At(0) is ScriptFunction fi) {
 					_definitionBuilder.SetDefinesStateTransform();
 					_definitionBuilder.SetOutputState();
 					_transforms.Add((TransformType.Transform, fi));
@@ -639,7 +639,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var handler = parameters.At(1);
 				if (!eventName.IsString())
 					throw new ArgumentException("eventName");
-				if (handler is not ScriptFunctionInstance fi)
+				if (handler is not ScriptFunction fi)
 					throw new ArgumentException("eventHandler");
 				AddHandler(eventName.AsString(), fi);
 				return Undefined;
@@ -648,13 +648,13 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			private JsValue OnAny(JsValue thisValue, JsValue[] parameters) {
 				if (parameters.Length != 1)
 					throw new ArgumentException("invalid number of parameters");
-				if (parameters.At(0) is not ScriptFunctionInstance fi)
+				if (parameters.At(0) is not ScriptFunction fi)
 					throw new ArgumentException("eventHandler");
 				AddHandler("$any", fi);
 				return Undefined;
 			}
 
-			private void AddHandler(string name, ScriptFunctionInstance handler) {
+			private void AddHandler(string name, ScriptFunction handler) {
 				switch (name) {
 					case "$init":
 						_init = handler;
@@ -804,7 +804,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			public JsonParser SwitchToExecutionMode() {
 				RestrictProperties("execution");
 				foreach (var globalProp in _definitionFunctions) {
-					_engine.Realm.GlobalObject.RemoveOwnProperty(globalProp);
+					_engine.Global.RemoveOwnProperty(globalProp);
 				}
 				return _parser;
 			}
@@ -972,7 +972,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				return base.Get(property, receiver);
 			}
 
-			public override List<JsValue> GetOwnPropertyKeys(Types types = Types.None | Types.String | Types.Symbol) {
+			public override List<JsValue> GetOwnPropertyKeys(Types types = Types.String | Types.Symbol) {
 				var list = base.GetOwnPropertyKeys(types);
 				return list;
 			}
@@ -1027,8 +1027,8 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				_bufferWriter.Clear();
 				_writer.Reset();
 
-				if (value is ArrayInstance ai) {
-					_iterators[_depth] = new WriteState(ai);
+				if (value is JsArray array) {
+					_iterators[_depth] = new WriteState(array);
 				} else if (value is ObjectInstance oi) {
 					_iterators[_depth] = new WriteState(oi);
 				} else {
@@ -1071,7 +1071,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 					}
 				}
 
-				public WriteState(ArrayInstance instance) {
+				public WriteState(JsArray instance) {
 					_position = -1;
 					_length = (int)instance.Length;
 					_instance = instance;
@@ -1120,11 +1120,11 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 								writer.WriteStartArray();
 								_position++;
 							}
-							var instance = (ArrayInstance)_instance;
+							var instance = (JsArray)_instance;
 							for (; _position < _length; _position++) {
 								var value = instance[(uint)_position];
 								if (value.Type == Types.Object) {
-									if (value is ArrayInstance ai) {
+									if (value is JsArray ai) {
 										writeStates[++depth] = new WriteState(ai);
 									} else {
 										writeStates[++depth] = new WriteState(value.AsObject());
@@ -1149,7 +1149,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 
 								WriteMaybeCachedPropertyName(name.AsString(), knownPropertyNames, writer);
 								if (value.Type == Types.Object) {
-									if (value is ArrayInstance ai) {
+									if (value is JsArray ai) {
 										writeStates[++depth] = new WriteState(ai);
 									} else {
 										writeStates[++depth] = new WriteState(value.AsObject());
@@ -1191,7 +1191,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				switch (value.Type) {
 					case Types.Null:
 					case Types.Undefined:
-					case Types.None:
+					case Types.Empty:
 						writer.WriteNullValue();
 						break;
 					case Types.Boolean:
