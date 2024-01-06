@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Upgrade to .NET 8. [EventStore#4046](https://github.com/EventStore/EventStore/pull/4046)
 - Don't require ReadIndex in the enumerators when subscribing from $all [EventStore#4057](https://github.com/EventStore/EventStore/pull/4057)
 - Simplified HTTP pipeline [EventStore#4088](https://github.com/EventStore/EventStore/pull/4088)
+- Do not autosize thread count and streaminfocache size in containerized environments [EventStore#4103](https://github.com/EventStore/EventStore/pull/4103)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
