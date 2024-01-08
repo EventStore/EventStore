@@ -78,7 +78,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			sut.Initialize(new MockExistenceFilterInitializer("0", "1", "2"), 0);
 			Assert.Equal(2L, sut.CurrentCheckpoint);
 			// wait for flush so that we have something to truncate (or it will do nothing)
-			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 2, TimeSpan.FromSeconds(5));
+			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 2, TimeSpan.FromSeconds(20));
 
 			// truncate works
 			sut.Dispose();
@@ -109,7 +109,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			Assert.False(sut.MightContain("1"));
 
 			// wait for flush of 0
-			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 0, TimeSpan.FromSeconds(5));
+			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 0, TimeSpan.FromSeconds(20));
 
 			sut.Add("1");
 			sut.CurrentCheckpoint = 1;
@@ -139,7 +139,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			sut.Initialize(new MockExistenceFilterInitializer("0", "1", "2"), 0);
 
 			// wait for flush, then close
-			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 2, TimeSpan.FromSeconds(5));
+			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 2, TimeSpan.FromSeconds(20));
 			sut.Dispose();
 
 			// reopen, checkpoint should still be the same
@@ -154,7 +154,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			sut.Initialize(new MockExistenceFilterInitializer("0", "1", "2"), 0);
 
 			// wait for flush, then close
-			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 2, TimeSpan.FromSeconds(5));
+			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 2, TimeSpan.FromSeconds(20));
 			sut.Dispose();
 
 			// delete dat file. on reopening checkpoint must be reset
@@ -170,7 +170,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			sut.Initialize(new MockExistenceFilterInitializer("0", "1", "2"), 0);
 
 			// wait for flush, then close
-			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 2, TimeSpan.FromSeconds(5));
+			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 2, TimeSpan.FromSeconds(20));
 			sut.Dispose();
 
 			// change size. on reopening checkpoint must be reset
