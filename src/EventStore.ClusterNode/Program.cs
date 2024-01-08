@@ -190,6 +190,8 @@ namespace EventStore.ClusterNode {
 							.ConfigureServices(services => services.Configure<KestrelServerOptions>(
 								EventStoreKestrelConfiguration.GetConfiguration()))
 							.ConfigureServices(services => services.Configure<MetricsConfiguration>(metricsConfiguration))
+							.ConfigureServices(services => services.Configure<HostOptions>(
+							 	opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(5)))
 							.ConfigureWebHostDefaults(builder => builder
 								.UseKestrel(server => {
 									server.Limits.Http2.KeepAlivePingDelay =
