@@ -36,8 +36,17 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				requestStream, responseStream,
 				context.GetHttpContext().User, _maxAppendSize, _writeTimeout,
 				GetRequiresLeader(context.RequestHeaders));
-			
-			await worker.Work(context.CancellationToken);
+			try {
+				await worker.Work(context.CancellationToken);
+			} catch (IOException) {
+				// ignored
+			} catch (TaskCanceledException) {
+				//ignored
+			} catch (InvalidOperationException) {
+				//ignored
+			} catch (OperationCanceledException) {
+				//ignored
+			}
 		}
 
 		private class BatchAppendWorker {
@@ -79,13 +88,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
 #if DEBUG
-		var sendTask = 		
-#endif				
+		var sendTask =
+#endif
 				Send(_channel.Reader, cancellationToken)
 					.ContinueWith(HandleCompletion, CancellationToken.None);
 #if DEBUG
-		var receiveTask = 		
-#endif				
+		var receiveTask =
+#endif
 				Receive(_channel.Writer, _user, _requiresLeader, cancellationToken)
 					.ContinueWith(HandleCompletion, CancellationToken.None);
 

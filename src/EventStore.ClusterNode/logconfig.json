@@ -4,7 +4,7 @@
 			"Default": "Debug",
 			"System": "Warning",
 			"Microsoft": "Warning",
-			"Grpc": "Fatal"
+			"Grpc": "Warning"
 		}
 	}
 }
