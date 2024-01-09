@@ -687,11 +687,6 @@ namespace EventStore.Core {
 				}
 			}
 
-			[Description("Whether to enable external TCP communication"),
-			 Deprecated(
-				 "The Legacy TCP Client Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead.")]
-			public bool EnableExternalTcp { get; init; } = false;
-
 			[Description("Internal TCP Port."),
 			 Deprecated(
 				 "The IntTcpPort parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationPort parameter instead.")]
@@ -709,39 +704,8 @@ namespace EventStore.Core {
 				}
 			}
 
-			[Description("External TCP Port."),
-			 Deprecated(
-				 "This ExtTcpPort parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeTcpPort parameter instead.")]
-			[Obsolete("ExtTcpPort is deprecated, use NodeTcpPort instead")]
-			public int ExtTcpPort { get; init; } = 1113;
-			
-			private readonly int _nodeTcpPort = 1113;
-			[Description("The TCP Port that external clients can connect to.")]
-			public int NodeTcpPort {
-				get {
-					return _nodeTcpPort == 1113 ? ExtTcpPort : _nodeTcpPort;
-				}
-				init {
-					_nodeTcpPort = value;
-				}
-			}
-
-			[Description("Advertise External Tcp Address As."),
-			 Deprecated(
-				 "The ExtHostAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeHostAdvertiseAs instead.")]
-			[Obsolete("ExtHostAdvertiseAs is deprecated, use NodeHostAdvertiseAs instead")]
-			public string? ExtHostAdvertiseAs { get; init; } = null;
-
-			private readonly string? _nodeHostAdvertiseAs = null;
 			[Description("Advertise the Node's host name to other nodes and external clients as.")]
-			public string? NodeHostAdvertiseAs {
-				get {
-					return _nodeHostAdvertiseAs ?? ExtHostAdvertiseAs;
-				}
-				init {
-					_nodeHostAdvertiseAs = value;
-				}
-			}
+			public string? NodeHostAdvertiseAs { get; init; } = null;
 
 			[Description("Advertise Internal Tcp Address As."),
 			 Deprecated(
@@ -785,23 +749,6 @@ namespace EventStore.Core {
 
 			[Description("Advertise TCP Port in Gossip to Client As.")]
 			public int AdvertiseTcpPortToClientAs { get; init; } = 0;
-
-			[Description("Advertise External Tcp Port As."),
-			 Deprecated(
-				 "The ExtTcpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeTcpPortAdvertiseAs parameter instead.")]
-			[Obsolete("ExtTcpPortAdvertiseAs is deprecated, use NodeTcpPortAdvertiseAs instead")]
-			public int ExtTcpPortAdvertiseAs { get; init; } = 0;
-
-			private readonly int _nodeTcpPortAdvertiseAs = 0;
-			[Description("Advertise Node Tcp Port As.")]
-			public int NodeTcpPortAdvertiseAs {
-				get {
-					return _nodeTcpPortAdvertiseAs == 0 ? ExtTcpPortAdvertiseAs : _nodeTcpPortAdvertiseAs;
-				}
-				init {
-					_nodeTcpPortAdvertiseAs = value;
-				}
-			}
 
 			[Description("Advertise Http Port As."),
 			 Deprecated(
@@ -854,23 +801,6 @@ namespace EventStore.Core {
 				}
 			}
 
-			[Description("Heartbeat timeout for external TCP sockets."),
-			 Deprecated(
-				 "The ExtTcpHeartbeatTimeout parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeHeartbeatTimeout parameter instead.")]
-			[Obsolete("ExtTcpHeartbeatTimeout is deprecated, use NodeHeartbeatTimeout instead")]
-			public int ExtTcpHeartbeatTimeout { get; init; } = 1_000;
-			
-			private readonly int _nodeHeartbeatTimeout = 1000;
-			[Description("Heartbeat timeout for Node/external TCP sockets.")]
-			public int NodeHeartbeatTimeout {
-				get {
-					return _nodeHeartbeatTimeout == 1000 ? ExtTcpHeartbeatTimeout : _nodeHeartbeatTimeout;
-				}
-				init {
-					_nodeHeartbeatTimeout = value;
-				}
-			}
-
 			[Description("Heartbeat interval for internal TCP sockets."),
 			 Deprecated(
 				 "The IntTcpHeartbeatInterval parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHeartbeatInterval parameter instead.")]
@@ -887,23 +817,6 @@ namespace EventStore.Core {
 				}
 				init {
 					_replicationHeartbeatInterval = value;
-				}
-			}
-
-			[Description("Heartbeat interval for external TCP sockets."),
-			 Deprecated(
-				 "The ExtTcpHeartbeatInterval parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeHeartbeatInterval parameter instead.")]
-			[Obsolete("ExtTcpHeartbeatInterval is deprecated, use NodeHeartbeatInterval instead")]
-			public int ExtTcpHeartbeatInterval { get; init; } = 2_000;
-
-			private readonly int _nodeHeartbeatInterval = 2000;
-			[Description("Heartbeat interval for Node/external TCP sockets.")]
-			public int NodeHeartbeatInterval {
-				get {
-					return _nodeHeartbeatInterval == 2000 ? ExtTcpHeartbeatInterval : _nodeHeartbeatInterval;
-				}
-				init {
-					_nodeHeartbeatInterval = value;
 				}
 			}
 
@@ -958,31 +871,21 @@ namespace EventStore.Core {
 				                        IPAddress.Loopback.ToString()),
 				HttpPort = configurationRoot.GetValue<int>(nameof(HttpPort)),
 				NodePort = configurationRoot.GetValue<int>(nameof(NodePort)),
-				EnableExternalTcp = configurationRoot.GetValue<bool>(nameof(EnableExternalTcp)),
-				ExtTcpPort = configurationRoot.GetValue<int>(nameof(ExtTcpPort)),
-				NodeTcpPort = configurationRoot.GetValue<int>(nameof(NodeTcpPort)),
 				IntTcpPort = configurationRoot.GetValue<int>(nameof(IntTcpPort)),
 				ReplicationPort = configurationRoot.GetValue<int>(nameof(ReplicationPort)),
-				ExtHostAdvertiseAs = configurationRoot.GetValue<string?>(nameof(ExtHostAdvertiseAs)),
 				NodeHostAdvertiseAs = configurationRoot.GetValue<string?>(nameof(NodeHostAdvertiseAs)),
 				AdvertiseHostToClientAs = configurationRoot.GetValue<string?>(nameof(AdvertiseHostToClientAs)),
 				AdvertiseHttpPortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseHttpPortToClientAs)),
 				AdvertiseNodePortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseNodePortToClientAs)),
 				AdvertiseTcpPortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseTcpPortToClientAs)),
-				ExtTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(ExtTcpPortAdvertiseAs)),
-				NodeTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(NodeTcpPortAdvertiseAs)),
 				IntHostAdvertiseAs = configurationRoot.GetValue<string>(nameof(IntHostAdvertiseAs)),
 				ReplicationHostAdvertiseAs = configurationRoot.GetValue<string>(nameof(ReplicationHostAdvertiseAs)),
 				HttpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(HttpPortAdvertiseAs)),
 				NodePortAdvertiseAs = configurationRoot.GetValue<int>(nameof(NodePortAdvertiseAs)),
 				IntTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(IntTcpPortAdvertiseAs)),
 				ReplicationTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(ReplicationTcpPortAdvertiseAs)),
-				ExtTcpHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(ExtTcpHeartbeatTimeout)),
-				NodeHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(NodeHeartbeatTimeout)),
 				IntTcpHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(IntTcpHeartbeatTimeout)),
 				ReplicationHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(ReplicationHeartbeatTimeout)),
-				ExtTcpHeartbeatInterval = configurationRoot.GetValue<int>(nameof(ExtTcpHeartbeatInterval)),
-				NodeHeartbeatInterval = configurationRoot.GetValue<int>(nameof(NodeHeartbeatInterval)),
 				IntTcpHeartbeatInterval = configurationRoot.GetValue<int>(nameof(IntTcpHeartbeatInterval)),
 				ReplicationHeartbeatInterval = configurationRoot.GetValue<int>(nameof(ReplicationHeartbeatInterval)),
 				EnableUnixSocket = configurationRoot.GetValue<bool>(nameof(EnableUnixSocket)),

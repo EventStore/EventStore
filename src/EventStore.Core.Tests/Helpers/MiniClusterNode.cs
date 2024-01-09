@@ -86,6 +86,9 @@ namespace EventStore.Core.Tests.Helpers {
 
 			var useHttps = EnableHttps();
 
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, $"{externalTcp.Port}");
+
 			var options = new ClusterVNodeOptions {
 				Application = new() {
 					AllowAnonymousEndpointAccess = true,
@@ -111,14 +114,10 @@ namespace EventStore.Core.Tests.Helpers {
 					ReplicationIp = InternalTcpEndPoint.Address,
 					NodeIp = ExternalTcpEndPoint.Address,
 					ReplicationPort = InternalTcpEndPoint.Port,
-					NodeTcpPort = ExternalTcpEndPoint.Port,
-					EnableExternalTcp = ExternalTcpEndPoint != null,
 					NodePort = HttpEndPoint.Port,
 					DisableExternalTcpTls = false,
 					DisableInternalTcpTls = false,
-					NodeHeartbeatTimeout = 2_000,
 					ReplicationHeartbeatTimeout = 2_000,
-					NodeHeartbeatInterval = 2_000,
 					ReplicationHeartbeatInterval = 2_000,
 					EnableAtomPubOverHttp = true,
 					EnableTrustedAuth = enableTrustedAuth,

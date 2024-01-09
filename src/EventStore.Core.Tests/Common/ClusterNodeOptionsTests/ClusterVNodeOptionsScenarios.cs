@@ -1,3 +1,4 @@
+using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication;
@@ -62,6 +63,11 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 		public virtual void TestFixtureSetUp() {
 			_logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 			_quorumSize = _clusterSize / 2 + 1;
+
+			// Cleaning up previous runs that were using those variables.
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, null);
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, null);
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiAdvertisedPortEnvVar, null);
 
 			_options = WithOptions(new ClusterVNodeOptions()
 				.ReduceMemoryUsageForTests()

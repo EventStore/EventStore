@@ -36,9 +36,7 @@ services:
       - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/etc/eventstore/certs/node1/node.key
       - EVENTSTORE_ADVERTISE_HOST_TO_CLIENT_AS=127.0.0.1
       - EVENTSTORE_ADVERTISE_HTTP_PORT_TO_CLIENT_AS=2111
-      - EVENTSTORE_ADVERTISE_TCP_PORT_TO_CLIENT_AS=1111
     ports:
-      - 1111:1113
       - 2111:2113
     networks:
       clusternetwork:
@@ -60,9 +58,7 @@ services:
       - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/etc/eventstore/certs/node2/node.key
       - EVENTSTORE_ADVERTISE_HOST_TO_CLIENT_AS=127.0.0.1
       - EVENTSTORE_ADVERTISE_HTTP_PORT_TO_CLIENT_AS=2112
-      - EVENTSTORE_ADVERTISE_TCP_PORT_TO_CLIENT_AS=1112
     ports:
-      - 1112:1113
       - 2112:2113
     networks:
       clusternetwork:
@@ -84,9 +80,7 @@ services:
       - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/etc/eventstore/certs/node3/node.key
       - EVENTSTORE_ADVERTISE_HOST_TO_CLIENT_AS=127.0.0.1
       - EVENTSTORE_ADVERTISE_HTTP_PORT_TO_CLIENT_AS=2113
-      - EVENTSTORE_ADVERTISE_TCP_PORT_TO_CLIENT_AS=1113
     ports:
-      - 1113:1113
       - 2113:2113
     networks:
       clusternetwork:

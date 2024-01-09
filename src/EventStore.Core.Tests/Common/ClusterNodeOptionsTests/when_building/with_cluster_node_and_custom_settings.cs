@@ -107,13 +107,18 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_custom_external_ip_address_as_advertise_info<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
-		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
-			options
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiAdvertisedPortEnvVar, "11131");
+
+			return options
 				.Insecure()
 				.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, 11130))
 				.WithInternalTcpOn(new IPEndPoint(IPAddress.Loopback, 11120))
 				.AdvertiseExternalHostAs(new DnsEndPoint("196.168.1.1", 11131))
 				.AdvertiseHttpHostAs(new DnsEndPoint("196.168.1.1", 21130));
+		}
 
 		[Test]
 		public void should_set_the_custom_advertise_info_for_external() {
@@ -132,12 +137,17 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_0_0_0_0_as_external_ip_address_and_custom_advertise_info<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
-		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
-			options
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiAdvertisedPortEnvVar, "11131");
+
+			return options
 				.Insecure()
 				.WithInternalTcpOn(new IPEndPoint(IPAddress.Any, 11120))
 				.WithExternalTcpOn(new IPEndPoint(IPAddress.Any, 11130))
 				.AdvertiseExternalHostAs(new DnsEndPoint("10.0.0.1", 11131));
+		}
 
 		[Test]
 		public void should_set_the_custom_advertise_info_for_external() {
@@ -157,12 +167,16 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_0_0_0_0_as_external_ip_address_with_no_explicit_advertise_info_set<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
-		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
-			options
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
+
+			return options
 				.Insecure()
 				.WithHttpOn(new IPEndPoint(IPAddress.Any, 21130))
 				.WithExternalTcpOn(new IPEndPoint(IPAddress.Any, 11130))
 				.WithInternalTcpOn(new IPEndPoint(IPAddress.Loopback, 11120));
+		}
 
 		[Test]
 		public void should_use_the_non_default_loopback_ip_as_advertise_info_for_external() {
@@ -182,14 +196,19 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		with_0_0_0_0_for_internal_and_external_ips_with_advertise_info_set_for_external<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
-		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
-			options
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiAdvertisedPortEnvVar, "11131");
+
+			return options
 				.Insecure()
 				.WithHttpOn(new IPEndPoint(IPAddress.Loopback, 21130))
 				.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, 11130))
 				.WithInternalTcpOn(new IPEndPoint(IPAddress.Any, 11120))
 				.AdvertiseExternalHostAs(new DnsEndPoint("10.0.0.1", 11131))
 				.AdvertiseHttpHostAs(new DnsEndPoint("10.0.0.1", 21131));
+		}
 
 		[Test]
 		public void should_set_the_custom_advertise_info_for_external() {

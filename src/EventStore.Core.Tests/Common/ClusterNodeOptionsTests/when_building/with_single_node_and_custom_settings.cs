@@ -47,10 +47,15 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		private readonly IPEndPoint _internalTcp = new(IPAddress.Parse("127.0.1.15"), 1114);
 		private readonly IPEndPoint _externalTcp = new(IPAddress.Parse("127.0.1.15"), 1115);
 
-		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options
-			.WithHttpOn(_httpEndPoint)
-			.WithExternalSecureTcpOn(_externalTcp)
-			.WithInternalSecureTcpOn(_internalTcp);
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, $"{_externalTcp.Port}");
+
+			return options
+				.WithHttpOn(_httpEndPoint)
+				.WithExternalSecureTcpOn(_externalTcp)
+				.WithInternalSecureTcpOn(_internalTcp);
+		}
 
 		[Test]
 		public void should_set_http_endpoint() {
@@ -130,14 +135,19 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		const string ExternalIp = "127.0.1.2";
 
 
-		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
-			options
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1113");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiAdvertisedPortEnvVar, "2113");
+
+			return options
 				.WithHttpOn(_httpEndpoint)
 				.WithExternalSecureTcpOn(_extTcpEndpoint)
 				.WithInternalSecureTcpOn(_intTcpEndpoint)
 				.AdvertiseInternalHostAs(new DnsEndPoint($"{InternalIp}.com", _intTcpEndpoint.Port + 1000))
 				.AdvertiseExternalHostAs(new DnsEndPoint($"{ExternalIp}.com", _extTcpEndpoint.Port + 1000))
 				.AdvertiseHttpHostAs(new DnsEndPoint($"{ExternalIp}.com", _httpEndpoint.Port + 1000));
+		}
 
 		[Test]
 		public void should_set_the_advertise_as_info_to_the_specified() {

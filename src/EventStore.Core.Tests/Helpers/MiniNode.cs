@@ -91,6 +91,11 @@ namespace EventStore.Core.Tests.Helpers {
 			IntTcpEndPoint = new IPEndPoint(ip, intTcpPort);
 			HttpEndPoint = new IPEndPoint(ip, httpEndPointPort);
 
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, $"{TcpEndPoint.Port}");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiHeartbeatTimeoutEnvVar, "10000");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiHeartbeatIntervalEnvVar, "10000");
+
 			var options = new ClusterVNodeOptions {
 					IndexBitnessVersion = indexBitnessVersion,
 					Application = new() {
@@ -100,8 +105,6 @@ namespace EventStore.Core.Tests.Helpers {
 						WorkerThreads = 1
 					},
 					Interface = new() {
-						NodeHeartbeatInterval = 10_000,
-						NodeHeartbeatTimeout = 10_000,
 						ReplicationHeartbeatInterval = 10_000,
 						ReplicationHeartbeatTimeout = 10_000,
 						EnableTrustedAuth = enableTrustedAuth,
