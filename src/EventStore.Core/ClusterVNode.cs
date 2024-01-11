@@ -1442,15 +1442,15 @@ namespace EventStore.Core {
 				memberInfo.InstanceId);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(telemetryService);
 			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(telemetryService);
+			// LEADER REPLICATION
+			var leaderReplicationService = new LeaderReplicationService(_mainQueue, NodeInfo.InstanceId, Db,
+				_workersHandler,
+				epochManager, options.Cluster.ClusterSize,
+				options.Cluster.UnsafeAllowSurplusNodes,
+				_queueStatsManager);
+			AddTask(leaderReplicationService.Task);
 
 			if (!isSingleNode) {
-				// LEADER REPLICATION
-				var leaderReplicationService = new LeaderReplicationService(_mainQueue, NodeInfo.InstanceId, Db,
-					_workersHandler,
-					epochManager, options.Cluster.ClusterSize,
-					options.Cluster.UnsafeAllowSurplusNodes,
-					_queueStatsManager);
-				AddTask(leaderReplicationService.Task);
 				_mainBus.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(leaderReplicationService);
 				_mainBus.Subscribe<SystemMessage.EnablePreLeaderReplication>(leaderReplicationService);				
@@ -1474,6 +1474,10 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<ReplicationMessage.SubscribeToLeader>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.AckLogPosition>(replicaService);
 				_mainBus.Subscribe<ClientMessage.TcpForwardMessage>(replicaService);
+			}
+			else {
+				//LeaderReplicationService only running on a single node to provide stats, hence not subscribed to the other message types like SystemStart and StateChangeMessage
+				monitoringInnerBus.Subscribe<ReplicationMessage.GetReplicationStats>(leaderReplicationService);
 			}
 
 			// ELECTIONS
