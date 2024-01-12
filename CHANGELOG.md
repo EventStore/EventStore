@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - 'Unknown' error reported to client after successful idempotent write to deleted stream. [EventStore#4059](https://github.com/EventStore/EventStore/pull/4059)
 - Report same version info when using different kind of release tags (annotated or lightweight). [EventStore#4081](https://github.com/EventStore/EventStore/pull/4081)
 - Stream (hard) deletion when gRPC subscription is live [regression] [EventStore#4095](https://github.com/EventStore/EventStore/pull/4095)
+- Calls to /stats/replication on a single node cluster would hang forever. [EventStore#4102](https://github.com/EventStore/EventStore/pull/4102)
 
 ### Removed
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
