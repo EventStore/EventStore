@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Do not autosize thread count and streaminfocache size in containerized environments [EventStore#4103](https://github.com/EventStore/EventStore/pull/4103)
 - Upgrade Jint to version 3.0.0-beta-2059 [EventStore#4111](https://github.com/EventStore/EventStore/pull/4111)
 - Explicitly set the shutdown timeout to 5s, which was default in previous dotnet versions. Behaviour unchanged since previous release [EventStore#4110](https://github.com/EventStore/EventStore/pull/4110)
+- Re-authorize stream access in live subscriptions when stream metadata changes [EventStore#4104](https://github.com/EventStore/EventStore/pull/4104)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
