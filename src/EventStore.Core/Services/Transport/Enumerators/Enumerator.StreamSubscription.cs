@@ -180,9 +180,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 							ReadPage(StreamRevision.FromInt64(completed.FromEventNumber), OnMessage);
 							return;
 						case ReadStreamResult.NoStream:
-							await ConfirmSubscription();
-							await Task.Delay(TimeSpan.FromMilliseconds(50), ct);
-							ReadPage(startRevision ?? StreamRevision.Start, OnMessage);
+							GoLive(StreamRevision.FromInt64(completed.NextEventNumber));
 							return;
 						case ReadStreamResult.StreamDeleted:
 							Log.Verbose(
@@ -339,6 +337,9 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 							switch (dropped.Reason) {
 								case SubscriptionDropReason.AccessDenied:
 									Fail(new ReadResponseException.AccessDenied());
+									return;
+								case SubscriptionDropReason.StreamDeleted:
+									Fail(new ReadResponseException.StreamDeleted(_streamName));
 									return;
 								case SubscriptionDropReason.NotFound:
 									await _channel.Writer.WriteAsync(new ReadResponse.StreamNotFound(_streamName), _cancellationToken);
