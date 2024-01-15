@@ -9,8 +9,10 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Plugins.Authorization;
 using ILogger = Serilog.ILogger;
 
@@ -61,6 +63,7 @@ namespace EventStore.Core.Services {
 		private readonly IEnvelope _busEnvelope;
 		private readonly IQueuedHandler _queuedHandler;
 		private readonly IReadIndex<TStreamId> _readIndex;
+		private readonly IInMemoryStreamReader _inMemReader;
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private static readonly char[] _linkToSeparator = new[] { '@' };
 
@@ -68,18 +71,21 @@ namespace EventStore.Core.Services {
 			IPublisher bus,
 			IQueuedHandler queuedHandler,
 			IAuthorizationProvider authorizationProvider,
-			IReadIndex<TStreamId> readIndex) {
+			IReadIndex<TStreamId> readIndex,
+			IInMemoryStreamReader inMemReader) {
 
 			Ensure.NotNull(bus, nameof(bus));
 			Ensure.NotNull(queuedHandler, nameof(queuedHandler));
 			Ensure.NotNull(authorizationProvider, nameof(authorizationProvider));
 			Ensure.NotNull(readIndex, nameof(readIndex));
+			Ensure.NotNull(inMemReader, nameof(inMemReader));
 
 			_bus = bus;
 			_busEnvelope = new PublishEnvelope(bus);
 			_queuedHandler = queuedHandler;
 			_authorizationProvider = authorizationProvider;
 			_readIndex = readIndex;
+			_inMemReader = inMemReader;
 		}
 
 		public void Handle(SystemMessage.SystemStart message) {
@@ -127,7 +133,20 @@ namespace EventStore.Core.Services {
 
 			long? lastEventNumber = null;
 			if (isInMemoryStream) {
-				lastEventNumber = -1;
+				var readMsg = new ClientMessage.ReadStreamEventsBackward(
+					internalCorrId: Guid.NewGuid(),
+					correlationId: msg.CorrelationId,
+					envelope: new NoopEnvelope(),
+					eventStreamId: msg.EventStreamId,
+					fromEventNumber: -1,
+					maxCount: 1,
+					resolveLinkTos: false,
+					requireLeader: false,
+					validationStreamVersion: null,
+					user: SystemAccounts.System);
+
+				var readResult = _inMemReader.ReadBackwards(readMsg);
+				lastEventNumber = readResult.LastEventNumber;
 			} else if (!msg.EventStreamId.IsEmptyString()) {
 				lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
 			}
