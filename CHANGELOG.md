@@ -19,6 +19,8 @@ All notable changes to this project will be documented in this file.
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
 - Support for multiple media types specified in one Accept header. [EventStore#4011](https://github.com/EventStore/EventStore/pull/4011)
 - Refactor gRPC enumerators  [EventStore#3998](https://github.com/EventStore/EventStore/pull/3998)
+- gRPC stream subscriptions with smooth transitions between live and catchup. Subscriptions no longer drop with "consumer too slow" reason. [EventStore#4093](https://github.com/EventStore/EventStore/pull/4093)
+- Additional stream subscription enumerator tests [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
 
 ### Fixed
 - A way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
@@ -26,6 +28,8 @@ All notable changes to this project will be documented in this file.
 - Report same version info when using different kind of release tags (annotated or lightweight). [EventStore#4081](https://github.com/EventStore/EventStore/pull/4081)
 - Stream (hard) deletion when gRPC subscription is live [regression] [EventStore#4095](https://github.com/EventStore/EventStore/pull/4095)
 - Calls to /stats/replication on a single node cluster would hang forever. [EventStore#4102](https://github.com/EventStore/EventStore/pull/4102)
+- gRPC stream subscription now receives a stream deleted exception when subscribing to a tombstoned stream from `End` [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
+- gRPC stream subscription now receives `CaughtUp` message when subscribing to a non-existing or soft-deleted stream. Previously in such cases, the stream subscription enumerator was looping in catch-up mode until a new event is received (and thus it never sent `CaughtUp` to the subscription) [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
 
 ### Removed
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
