@@ -1067,7 +1067,9 @@ namespace EventStore.Projections.Core.Services.Management {
 				return new SerializedRunAs {Name = "$system"};
 
 			var principal = runAs.Principal;
-			var roles = principal.Claims.Where(x => x.Type != ClaimTypes.Name).Select(c => $"{c.Type}$$${c.Value}").ToArray();
+			var roles = principal.Claims
+				.Where(x => x.Type == ClaimTypes.Role)
+				.Select(c => $"{c.Type}$$${c.Value}").ToArray();
 			return new SerializedRunAs {Name = runAs.Principal.Identity.Name, Roles = roles};
 		}
 
