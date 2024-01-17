@@ -33,7 +33,7 @@
 	<!-- Transitive dependencies to help in packaging -->
 	<ItemGroup>
 		<PackageReference Include="EventStore.Plugins" Version="21.2.0" />
-		<PackageReference Include="Google.Protobuf" Version="3.14.0" />
+		<PackageReference Include="Google.Protobuf" Version="3.15.0" />
 		<PackageReference Include="Grpc.AspNetCore" Version="2.34.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.34.0">
 			<PrivateAssets>all</PrivateAssets>
@@ -42,7 +42,7 @@
 		<PackageReference Include="HdrHistogram" Version="2.5.0" />
 		<PackageReference Include="protobuf-net" Version="2.4.0" />
 		<PackageReference Include="NETStandard.Library" Version="2.0.3" />
-		<PackageReference Include="newtonsoft.json" Version="11.0.2" />
+		<PackageReference Include="newtonsoft.json" Version="13.0.2" />
 		<PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.61701" />
 		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.57" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.5" />
