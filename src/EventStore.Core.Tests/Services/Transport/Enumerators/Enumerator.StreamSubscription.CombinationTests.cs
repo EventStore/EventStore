@@ -2,14 +2,11 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Transport.Common;
 using EventStore.Core.Services.Transport.Enumerators;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.Tests.ClientAPI.Helpers;
-using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 
@@ -17,42 +14,42 @@ namespace EventStore.Core.Tests.Services.Transport.Enumerators;
 
 [TestFixture]
 public partial class EnumeratorTests {
-	public record struct StreamProperties(int NumEvents = 0, TruncationInfo TruncationInfo = new(), bool IsHardDeleted = false, bool IsEphemeralStream = false);
-	public record struct SubscriptionProperties(CheckpointType CheckpointType = CheckpointType.Start);
-	public record struct LiveProperties(int NumEventsToAdd = 0, bool SoftDeleteStream = false, bool HardDeleteStream = false, bool RevokeAccessWithStreamAcl = false, bool RevokeAccessWithDefaultAcl = false, bool FallBehindThenCatchUp = false);
-	public readonly record struct TestData(string TestCase, StreamProperties StreamProperties, SubscriptionProperties SubscriptionProperties, LiveProperties LiveProperties) {
-		public override string ToString() {
-			return TestCase;
-		}
-	}
-	private static object[] CreateTestData(string testCase, StreamProperties streamProperties, SubscriptionProperties subscriptionProperties, LiveProperties liveProperties) {
-		return new object[] {
-			new TestData(testCase, streamProperties, subscriptionProperties, liveProperties)
-		};
-	}
-
-	public record struct TruncationInfo(TruncationType TruncationType, long? TruncationParam = null);
-	public enum TruncationType {
-		None = 0,
-		SoftDelete = 1,
-		TruncateBefore = 2,
-		MaxCount = 3,
-		ExpiredMaxAge = 4
-	}
-
-	public enum CheckpointType {
-		Start = 0,
-		End = 1,
-		AtZero = 2,
-		OneBeforeLast = 3,
-		AtLast = 4,
-		OneAfterLast = 5
-	}
-
-	private const int NumEventsToFallBehind = 3 * 32;
-
 	[TestFixtureSource(nameof(TestCases))]
 	public class StreamSubscriptionCombinationTests : TestFixtureWithMiniNodeConnection {
+		public record struct StreamProperties(int NumEvents = 0, TruncationInfo TruncationInfo = new(), bool IsHardDeleted = false, bool IsEphemeralStream = false);
+		public record struct SubscriptionProperties(CheckpointType CheckpointType = CheckpointType.Start);
+		public record struct LiveProperties(int NumEventsToAdd = 0, bool SoftDeleteStream = false, bool HardDeleteStream = false, bool RevokeAccessWithStreamAcl = false, bool RevokeAccessWithDefaultAcl = false, bool FallBehindThenCatchUp = false);
+		public readonly record struct TestData(string TestCase, StreamProperties StreamProperties, SubscriptionProperties SubscriptionProperties, LiveProperties LiveProperties) {
+			public override string ToString() {
+				return TestCase;
+			}
+		}
+		public static object[] CreateTestData(string testCase, StreamProperties streamProperties, SubscriptionProperties subscriptionProperties, LiveProperties liveProperties) {
+			return new object[] {
+				new TestData(testCase, streamProperties, subscriptionProperties, liveProperties)
+			};
+		}
+
+		public record struct TruncationInfo(TruncationType TruncationType, long? TruncationParam = null);
+		public enum TruncationType {
+			None = 0,
+			SoftDelete = 1,
+			TruncateBefore = 2,
+			MaxCount = 3,
+			ExpiredMaxAge = 4
+		}
+
+		public enum CheckpointType {
+			Start = 0,
+			End = 1,
+			AtZero = 2,
+			OneBeforeLast = 3,
+			AtLast = 4,
+			OneAfterLast = 5
+		}
+
+		private const int NumEventsToFallBehind = 3 * 32;
+
 		public static object[] TestCases = {
 			// NON-EXISTENT STREAM
 			CreateTestData(
@@ -603,26 +600,26 @@ public partial class EnumeratorTests {
 		};
 
 		private readonly TestData _testData;
-		private StreamProperties StreamProperties => _testData.StreamProperties;
-		private SubscriptionProperties SubscriptionProperties => _testData.SubscriptionProperties;
-		private LiveProperties LiveProperties => _testData.LiveProperties;
+		private StreamProperties StreamProps => _testData.StreamProperties;
+		private SubscriptionProperties SubscriptionProps => _testData.SubscriptionProperties;
+		private LiveProperties LiveProps => _testData.LiveProperties;
 
 		private readonly string _stream;
 		private long _nextEventNumber;
 		private long _ephemeralStreamLastEventNumber;
 
-		private bool HardDeleted => StreamProperties.IsHardDeleted;
+		private bool HardDeleted => StreamProps.IsHardDeleted;
 		private long FirstEventNumber {
 			get {
-				if (StreamProperties.IsEphemeralStream)
+				if (StreamProps.IsEphemeralStream)
 					return _ephemeralStreamLastEventNumber; // the $mem-node-state ephemeral stream keeps only the last event
 
-				return StreamProperties.TruncationInfo.TruncationType switch {
+				return StreamProps.TruncationInfo.TruncationType switch {
 					TruncationType.None => 0L,
-					TruncationType.SoftDelete => StreamProperties.NumEvents,
-					TruncationType.TruncateBefore => StreamProperties.TruncationInfo.TruncationParam!.Value,
-					TruncationType.MaxCount => Math.Max(0L, StreamProperties.NumEvents - StreamProperties.TruncationInfo.TruncationParam!.Value),
-					TruncationType.ExpiredMaxAge => StreamProperties.NumEvents,
+					TruncationType.SoftDelete => StreamProps.NumEvents,
+					TruncationType.TruncateBefore => StreamProps.TruncationInfo.TruncationParam!.Value,
+					TruncationType.MaxCount => Math.Max(0L, StreamProps.NumEvents - StreamProps.TruncationInfo.TruncationParam!.Value),
+					TruncationType.ExpiredMaxAge => StreamProps.NumEvents,
 					_ => throw new ArgumentOutOfRangeException()
 				};
 			}
@@ -630,24 +627,24 @@ public partial class EnumeratorTests {
 
 		private long LastEventNumber {
 			get {
-				if (StreamProperties.IsEphemeralStream)
+				if (StreamProps.IsEphemeralStream)
 					return _ephemeralStreamLastEventNumber;
 
-				return StreamProperties.NumEvents - 1;
+				return StreamProps.NumEvents - 1;
 			}
 		}
 
 		public StreamSubscriptionCombinationTests(TestData testData) {
 			_testData = testData;
-			_stream = StreamProperties.IsEphemeralStream ? "$mem-node-state" : $"stream-{Guid.NewGuid()}";
+			_stream = StreamProps.IsEphemeralStream ? "$mem-node-state" : $"stream-{Guid.NewGuid()}";
 			_nextEventNumber = CalculateNextEventNumberFromCheckpoint();
 		}
 
 		private async Task WriteExistingEvents() {
-			if (StreamProperties is { IsEphemeralStream: true, NumEvents: > 0 })
+			if (StreamProps is { IsEphemeralStream: true, NumEvents: > 0 })
 				throw new Exception("Ephemeral streams cannot be written to.");
 
-			var numEvents = StreamProperties.NumEvents;
+			var numEvents = StreamProps.NumEvents;
 			for (int i = 0; i < numEvents; i++)
 				await WriteEvent();
 		}
@@ -679,11 +676,11 @@ public partial class EnumeratorTests {
 		}
 
 		private Task ApplyTruncation() {
-			if (StreamProperties.IsEphemeralStream && StreamProperties.TruncationInfo.TruncationType != TruncationType.None)
+			if (StreamProps.IsEphemeralStream && StreamProps.TruncationInfo.TruncationType != TruncationType.None)
 				throw new Exception("Ephemeral streams cannot be truncated.");
 
-			var truncationParam = StreamProperties.TruncationInfo.TruncationParam;
-			switch (StreamProperties.TruncationInfo.TruncationType) {
+			var truncationParam = StreamProps.TruncationInfo.TruncationParam;
+			switch (StreamProps.TruncationInfo.TruncationType) {
 				case TruncationType.None:
 					break;
 				case TruncationType.SoftDelete:
@@ -702,10 +699,10 @@ public partial class EnumeratorTests {
 		}
 
 		private Task ApplyTombstone() {
-			if (StreamProperties is { IsEphemeralStream: true, IsHardDeleted: true })
+			if (StreamProps is { IsEphemeralStream: true, IsHardDeleted: true })
 				throw new Exception("Ephemeral streams cannot be hard deleted.");
 
-			return StreamProperties.IsHardDeleted ? Tombstone() : Task.CompletedTask;
+			return StreamProps.IsHardDeleted ? Tombstone() : Task.CompletedTask;
 		}
 
 		private async Task<(int numEventsAdded, bool softDeleted, bool hardDeleted, bool accessRevoked, bool fallBehindThenCatchup)> ApplyLiveProperties() {
@@ -715,32 +712,32 @@ public partial class EnumeratorTests {
 			var accessRevoked = false;
 			var shouldFallBehindThenCatchup = false;
 
-			if (LiveProperties.NumEventsToAdd > 0) {
-				if (StreamProperties.IsEphemeralStream)
+			if (LiveProps.NumEventsToAdd > 0) {
+				if (StreamProps.IsEphemeralStream)
 					throw new Exception("Ephemeral streams cannot be written to.");
 
-				numEventsAdded = LiveProperties.NumEventsToAdd;
+				numEventsAdded = LiveProps.NumEventsToAdd;
 				for (var i = 0; i < numEventsAdded; i++)
 					await WriteEvent();
-			} else if (LiveProperties.SoftDeleteStream) {
-				if (StreamProperties.IsEphemeralStream)
+			} else if (LiveProps.SoftDeleteStream) {
+				if (StreamProps.IsEphemeralStream)
 					throw new Exception("Ephemeral streams cannot be soft deleted.");
 
 				softDeleted = true;
 				await SoftDelete();
-			} else if (LiveProperties.HardDeleteStream) {
-				if (StreamProperties.IsEphemeralStream)
+			} else if (LiveProps.HardDeleteStream) {
+				if (StreamProps.IsEphemeralStream)
 					throw new Exception("Ephemeral streams cannot be hard deleted.");
 
 				hardDeleted = true;
 				await Tombstone();
-			} else if (LiveProperties.RevokeAccessWithStreamAcl) {
+			} else if (LiveProps.RevokeAccessWithStreamAcl) {
 				accessRevoked = true;
 				await RevokeAccessWithStreamAcl();
-			} else if (LiveProperties.RevokeAccessWithDefaultAcl) {
+			} else if (LiveProps.RevokeAccessWithDefaultAcl) {
 				accessRevoked = true;
 				await RevokeAccessWithDefaultAcl();
-			} else if (LiveProperties.FallBehindThenCatchUp) {
+			} else if (LiveProps.FallBehindThenCatchUp) {
 				numEventsAdded = NumEventsToFallBehind;
 				for (var i = 0; i < NumEventsToFallBehind; i++)
 					await WriteEvent();
@@ -752,7 +749,7 @@ public partial class EnumeratorTests {
 		}
 
 		private async Task SetUpForEphemeralStream() {
-			if (!StreamProperties.IsEphemeralStream)
+			if (!StreamProps.IsEphemeralStream)
 				return;
 
 			var readResult = await NodeConnection.ReadStreamEventsBackwardAsync(_stream, -1, 1, resolveLinkTos: false);
@@ -762,7 +759,7 @@ public partial class EnumeratorTests {
 		}
 
 		private long CalculateNextEventNumberFromCheckpoint() {
-			return SubscriptionProperties.CheckpointType switch {
+			return SubscriptionProps.CheckpointType switch {
 				CheckpointType.Start => FirstEventNumber,
 				CheckpointType.End => LastEventNumber + 1,
 				CheckpointType.AtZero => Math.Max(1, FirstEventNumber),
@@ -774,7 +771,7 @@ public partial class EnumeratorTests {
 		}
 
 		private EnumeratorWrapper Subscribe() {
-			StreamRevision? checkpoint = SubscriptionProperties.CheckpointType switch {
+			StreamRevision? checkpoint = SubscriptionProps.CheckpointType switch {
 				CheckpointType.Start => null,
 				CheckpointType.End => StreamRevision.End,
 				CheckpointType.AtZero => StreamRevision.FromInt64(0),
@@ -869,27 +866,5 @@ public partial class EnumeratorTests {
 				Assert.ThrowsAsync<ReadResponseException.AccessDenied>(async () => await sub.GetNext());
 			}
 		}
-	}
-}
-
-[TestFixture]
-public class TestFixtureWithMiniNodeConnection : SpecificationWithDirectoryPerTestFixture {
-	protected MiniNode<LogFormat.V2, string> Node { get; private set; }
-	protected IEventStoreConnection NodeConnection { get; private set; }
-
-	[OneTimeSetUp]
-	public override async Task TestFixtureSetUp() {
-		await base.TestFixtureSetUp();
-		Node = new MiniNode<LogFormat.V2, string>(PathName);
-		await Node.Start();
-		NodeConnection = TestConnection.To(Node, TcpType.Ssl, new UserCredentials("admin", "changeit"));
-		await NodeConnection.ConnectAsync();
-	}
-
-	[OneTimeTearDown]
-	public override async Task TestFixtureTearDown() {
-		NodeConnection?.Dispose();
-		await Node.Shutdown();
-		await base.TestFixtureTearDown();
 	}
 }
