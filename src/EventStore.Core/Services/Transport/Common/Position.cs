@@ -16,7 +16,7 @@ namespace EventStore.Core.Services.Transport.Common {
 		/// </summary>
 		public static readonly Position End = new Position(ulong.MaxValue, ulong.MaxValue);
 
-		internal static Position FromInt64(long commitPosition, long preparePosition)
+		public static Position FromInt64(long commitPosition, long preparePosition)
 			=> new Position(
 				commitPosition == -1 ? ulong.MaxValue : (ulong)commitPosition,
 				preparePosition == -1 ? ulong.MaxValue : (ulong)preparePosition);
