@@ -52,6 +52,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Caching;
 using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
+using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.PeriodicLogs;
 using EventStore.Core.Synchronization;
 using EventStore.Core.Telemetry;
@@ -747,14 +748,23 @@ namespace EventStore.Core {
 
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
+			// Mem streams
+			var memLog = new InMemoryLog();
+
+			// Gossip listener
+			var gossipListener = new GossipListenerService(NodeInfo.InstanceId, _mainQueue, memLog);
+			_mainBus.Subscribe<GossipMessage.GossipUpdated>(gossipListener);
+
 			// Node state listener
-			var nodeStatusListener = new NodeStateListenerService(_mainQueue);
+			var nodeStatusListener = new NodeStateListenerService(_mainQueue, memLog);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(nodeStatusListener);
 
 			var inMemReader = new InMemoryStreamReader(new Dictionary<string, IInMemoryStreamReader> {
+				[SystemStreams.GossipStream] = gossipListener,
 				[SystemStreams.NodeStateStream] = nodeStatusListener,
 			});
 
+			// Storage Reader
 			var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
 				logFormat.SystemStreams,
 				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), inMemReader, _queueStatsManager,

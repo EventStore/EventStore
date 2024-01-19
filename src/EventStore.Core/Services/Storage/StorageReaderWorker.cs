@@ -7,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
