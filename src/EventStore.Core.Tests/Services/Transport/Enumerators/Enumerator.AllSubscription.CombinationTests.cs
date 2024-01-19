@@ -92,15 +92,12 @@ public partial class EnumeratorTests {
 				new SubscriptionProperties(CheckpointType.Start),
 				new LiveProperties(RevokeAccessWithDefaultAcl: true)
 			),
-			// at the moment, falling behind is not supported
-			/*
 			CreateTestData(
 				"subscribe to $all from start then fall behind and catch up",
 				new StreamProperties(10),
 				new SubscriptionProperties(CheckpointType.Start),
 				new LiveProperties(FallBehindThenCatchUp: true)
 			),
-			*/
 		};
 
 		private readonly TestData _testData;
