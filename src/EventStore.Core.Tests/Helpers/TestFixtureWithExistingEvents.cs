@@ -617,8 +617,10 @@ namespace EventStore.Core.Tests.Helpers {
 			var lastEventNumber = msg.EventStreamId.IsEmptyString()
 				? (long?)null
 				: list.Safe().Any() ? list.Safe().Last().EventNumber : -1;
+
+			var lastIndexedPos = _all.IsEmpty() ? -1 : _all.Keys[^1].CommitPosition;
 			var subscribedMessage =
-				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, -1, lastEventNumber);
+				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
 			msg.Envelope.ReplyWith(subscribedMessage);
 		}
 		
