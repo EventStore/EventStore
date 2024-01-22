@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Services.Transport.Enumerators;
 public partial class EnumeratorTests {
 	public record struct StreamProperties(int NumEvents = 0, TruncationInfo TruncationInfo = new(), bool IsHardDeleted = false, bool IsEphemeralStream = false);
 	public record struct SubscriptionProperties(CheckpointType CheckpointType = CheckpointType.Start);
-	public record struct LiveProperties(int NumEventsToAdd = 0, bool SoftDeleteStream = false, bool HardDeleteStream = false, bool RevokeAccessToStream = false, bool FallBehindThenCatchUp = false);
+	public record struct LiveProperties(int NumEventsToAdd = 0, bool SoftDeleteStream = false, bool HardDeleteStream = false, bool RevokeAccessWithStreamAcl = false, bool RevokeAccessWithDefaultAcl = false, bool FallBehindThenCatchUp = false);
 	public readonly record struct TestData(string TestCase, StreamProperties StreamProperties, SubscriptionProperties SubscriptionProperties, LiveProperties LiveProperties) {
 		public override string ToString() {
 			return TestCase;
@@ -95,10 +95,16 @@ public partial class EnumeratorTests {
 				new LiveProperties(HardDeleteStream: true)
 			),
 			CreateTestData(
-				"subscribe to a stream that doesn't exist from start then revoke access",
+				"subscribe to a stream that doesn't exist from start then revoke access with stream acl",
 				new StreamProperties(0),
 				new SubscriptionProperties(CheckpointType.Start),
-				new LiveProperties(RevokeAccessToStream: true)
+				new LiveProperties(RevokeAccessWithStreamAcl: true)
+			),
+			CreateTestData(
+				"subscribe to a stream that doesn't exist from start then revoke access with default acl",
+				new StreamProperties(0),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(RevokeAccessWithDefaultAcl: true)
 			),
 			CreateTestData(
 				"subscribe to a stream that doesn't exist from start then fall behind and catch up",
@@ -156,10 +162,16 @@ public partial class EnumeratorTests {
 				new LiveProperties(HardDeleteStream: true)
 			),
 			CreateTestData(
-				"subscribe to a stream that exists from start then revoke access",
+				"subscribe to a stream that exists from start then revoke access with stream acl",
 				new StreamProperties(10),
 				new SubscriptionProperties(CheckpointType.Start),
-				new LiveProperties(RevokeAccessToStream: true)
+				new LiveProperties(RevokeAccessWithStreamAcl: true)
+			),
+			CreateTestData(
+				"subscribe to a stream that exists from start then revoke access with default acl",
+				new StreamProperties(10),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(RevokeAccessWithDefaultAcl: true)
 			),
 			CreateTestData(
 				"subscribe to a stream that exists from start then fall behind and catch up",
@@ -217,10 +229,16 @@ public partial class EnumeratorTests {
 				new LiveProperties(HardDeleteStream: true)
 			),
 			CreateTestData(
-				"subscribe to a soft deleted stream from start then revoke access",
+				"subscribe to a soft deleted stream from start then revoke access with stream acl",
 				new StreamProperties(10, new TruncationInfo(TruncationType.SoftDelete)),
 				new SubscriptionProperties(CheckpointType.Start),
-				new LiveProperties(RevokeAccessToStream: true)
+				new LiveProperties(RevokeAccessWithStreamAcl: true)
+			),
+			CreateTestData(
+				"subscribe to a soft deleted stream from start then revoke access with default acl",
+				new StreamProperties(10, new TruncationInfo(TruncationType.SoftDelete)),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(RevokeAccessWithDefaultAcl: true)
 			),
 			CreateTestData(
 				"subscribe to a soft deleted stream from start then fall behind and catch up",
@@ -278,10 +296,16 @@ public partial class EnumeratorTests {
 				new LiveProperties(HardDeleteStream: true)
 			),
 			CreateTestData(
-				"subscribe to a fully truncated stream from start then revoke access",
+				"subscribe to a fully truncated stream from start then revoke access with stream acl",
 				new StreamProperties(10, new TruncationInfo(TruncationType.TruncateBefore, 10)),
 				new SubscriptionProperties(CheckpointType.Start),
-				new LiveProperties(RevokeAccessToStream: true)
+				new LiveProperties(RevokeAccessWithStreamAcl: true)
+			),
+			CreateTestData(
+				"subscribe to a fully truncated stream from start then revoke access with default acl",
+				new StreamProperties(10, new TruncationInfo(TruncationType.TruncateBefore, 10)),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(RevokeAccessWithDefaultAcl: true)
 			),
 			CreateTestData(
 				"subscribe to a fully truncated stream from start then fall behind and catch up",
@@ -339,10 +363,16 @@ public partial class EnumeratorTests {
 				new LiveProperties(HardDeleteStream: true)
 			),
 			CreateTestData(
-				"subscribe to a partly truncated stream from start then revoke access",
+				"subscribe to a partly truncated stream from start then revoke access with stream acl",
 				new StreamProperties(10, new TruncationInfo(TruncationType.TruncateBefore, 8)),
 				new SubscriptionProperties(CheckpointType.Start),
-				new LiveProperties(RevokeAccessToStream: true)
+				new LiveProperties(RevokeAccessWithStreamAcl: true)
+			),
+			CreateTestData(
+				"subscribe to a partly truncated stream from start then revoke access with default acl",
+				new StreamProperties(10, new TruncationInfo(TruncationType.TruncateBefore, 8)),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(RevokeAccessWithDefaultAcl: true)
 			),
 			CreateTestData(
 				"subscribe to a partly truncated stream from start then fall behind and catch up",
@@ -400,10 +430,16 @@ public partial class EnumeratorTests {
 				new LiveProperties(HardDeleteStream: true)
 			),
 			CreateTestData(
-				"subscribe to a stream with max count from start then revoke access",
+				"subscribe to a stream with max count from start then revoke access with stream acl",
 				new StreamProperties(10, new TruncationInfo(TruncationType.MaxCount, 3)),
 				new SubscriptionProperties(CheckpointType.Start),
-				new LiveProperties(RevokeAccessToStream: true)
+				new LiveProperties(RevokeAccessWithStreamAcl: true)
+			),
+			CreateTestData(
+				"subscribe to a stream with max count from start then revoke access with default acl",
+				new StreamProperties(10, new TruncationInfo(TruncationType.MaxCount, 3)),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(RevokeAccessWithDefaultAcl: true)
 			),
 			CreateTestData(
 				"subscribe to a stream with max count from start then fall behind and catch up",
@@ -461,10 +497,16 @@ public partial class EnumeratorTests {
 				new LiveProperties(HardDeleteStream: true)
 			),
 			CreateTestData(
-				"subscribe to a stream with expired max age from start then revoke access",
+				"subscribe to a stream with expired max age from start then revoke access with stream acl",
 				new StreamProperties(10, new TruncationInfo(TruncationType.ExpiredMaxAge)),
 				new SubscriptionProperties(CheckpointType.Start),
-				new LiveProperties(RevokeAccessToStream: true)
+				new LiveProperties(RevokeAccessWithStreamAcl: true)
+			),
+			CreateTestData(
+				"subscribe to a stream with expired max age from start then revoke access with default acl",
+				new StreamProperties(10, new TruncationInfo(TruncationType.ExpiredMaxAge)),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(RevokeAccessWithDefaultAcl: true)
 			),
 			CreateTestData(
 				"subscribe to a stream with expired max age from start then fall behind and catch up",
@@ -546,6 +588,18 @@ public partial class EnumeratorTests {
 				new SubscriptionProperties(CheckpointType.OneAfterLast),
 				new LiveProperties()
 			),
+			CreateTestData(
+				"subscribe to an ephemeral stream that exists from start then revoke access with stream acl",
+				new StreamProperties(IsEphemeralStream: true),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(RevokeAccessWithStreamAcl: true)
+			),
+			CreateTestData(
+				"subscribe to an ephemeral stream that exists from start then revoke access with default acl",
+				new StreamProperties(IsEphemeralStream: true),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(RevokeAccessWithDefaultAcl: true)
+			),
 		};
 
 		private readonly TestData _testData;
@@ -607,7 +661,8 @@ public partial class EnumeratorTests {
 		private Task WriteEvent() => WriteEvent(_stream, "type", "{}", null);
 		private async Task SoftDelete() => await NodeConnection.DeleteStreamAsync(_stream, Data.ExpectedVersion.Any, hardDelete: false);
 		private async Task Tombstone() => await NodeConnection.DeleteStreamAsync(_stream, Data.ExpectedVersion.Any, hardDelete: true);
-		private async Task RevokeAccess() => await WriteEvent(SystemStreams.MetastreamOf(_stream), "$metadata", @"{ ""$acl"": { ""$r"": ""[]"" } }", null);
+		private async Task RevokeAccessWithStreamAcl() => await WriteEvent(SystemStreams.MetastreamOf(_stream), "$metadata", @"{ ""$acl"": { ""$r"": [] } }", null);
+		private async Task RevokeAccessWithDefaultAcl() => await WriteEvent(SystemStreams.SettingsStream, "update-default-acl", @"{ ""$userStreamAcl"" : { ""$r"" : [] } }", null);
 
 		private Task WriteMetadata(string metadata) {
 			var metaStream = SystemStreams.MetastreamOf(_stream);
@@ -679,12 +734,12 @@ public partial class EnumeratorTests {
 
 				hardDeleted = true;
 				await Tombstone();
-			} else if (LiveProperties.RevokeAccessToStream) {
-				if (StreamProperties.IsEphemeralStream)
-					throw new Exception("Cannot revoke access to ephemeral stream.");
-
+			} else if (LiveProperties.RevokeAccessWithStreamAcl) {
 				accessRevoked = true;
-				await RevokeAccess();
+				await RevokeAccessWithStreamAcl();
+			} else if (LiveProperties.RevokeAccessWithDefaultAcl) {
+				accessRevoked = true;
+				await RevokeAccessWithDefaultAcl();
 			} else if (LiveProperties.FallBehindThenCatchUp) {
 				numEventsAdded = NumEventsToFallBehind;
 				for (var i = 0; i < NumEventsToFallBehind; i++)

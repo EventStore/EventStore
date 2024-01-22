@@ -332,6 +332,7 @@ namespace EventStore.Core.Services {
 			ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, resolvedEvent);
 
 			ProcessStreamMetadataChanges(message.Event.EventStreamId);
+			ProcessSettingsStreamChanges(message.Event.EventStreamId);
 
 			ReissueReadsFor(AllStreamsSubscriptionId, message.CommitPosition, message.Event.EventNumber);
 			ReissueReadsFor(message.Event.EventStreamId, message.CommitPosition, message.Event.EventNumber);
@@ -341,6 +342,7 @@ namespace EventStore.Core.Services {
 			_lastSeenInMemoryCommitPosition = message.CommitPosition;
 			ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, null);
 			ProcessStreamMetadataChanges(message.Event.EventStreamId);
+			ProcessSettingsStreamChanges(message.Event.EventStreamId);
 			ReissueReadsFor(message.Event.EventStreamId, message.CommitPosition, message.Event.EventNumber);
 		}
 
@@ -390,6 +392,16 @@ namespace EventStore.Core.Services {
 
 			foreach (var subscription in subscriptions.ToArray())
 				Authorize(subscription);
+		}
+
+		private void ProcessSettingsStreamChanges(string eventStreamId) {
+			if (eventStreamId != SystemStreams.SettingsStream)
+				return;
+
+			foreach (var subscriptions in _subscriptionTopics.Values) {
+				foreach (var subscription in subscriptions.ToArray())
+					Authorize(subscription);
+			}
 		}
 
 		private void Authorize(Subscription subscription) {
