@@ -1469,7 +1469,7 @@ namespace EventStore.Core {
 					!disableInternalTcpTls, _internalServerCertificateValidator,
 					_certificateSelector,
 					TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatTimeout),
-					TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatInterval),
+					TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatInterval),
 					TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.ReconnectToLeader>(replicaService);
