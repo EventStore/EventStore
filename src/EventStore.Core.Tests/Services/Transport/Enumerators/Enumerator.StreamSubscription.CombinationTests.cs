@@ -588,6 +588,18 @@ public partial class EnumeratorTests {
 				new SubscriptionProperties(CheckpointType.OneAfterLast),
 				new LiveProperties()
 			),
+			CreateTestData(
+				"subscribe to an ephemeral stream that exists from start then revoke access with stream acl",
+				new StreamProperties(IsEphemeralStream: true),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(RevokeAccessWithStreamAcl: true)
+			),
+			CreateTestData(
+				"subscribe to an ephemeral stream that exists from start then revoke access with default acl",
+				new StreamProperties(IsEphemeralStream: true),
+				new SubscriptionProperties(CheckpointType.Start),
+				new LiveProperties(RevokeAccessWithDefaultAcl: true)
+			),
 		};
 
 		private readonly TestData _testData;
@@ -723,15 +735,9 @@ public partial class EnumeratorTests {
 				hardDeleted = true;
 				await Tombstone();
 			} else if (LiveProperties.RevokeAccessWithStreamAcl) {
-				if (StreamProperties.IsEphemeralStream)
-					throw new Exception("Cannot revoke access to ephemeral stream.");
-
 				accessRevoked = true;
 				await RevokeAccessWithStreamAcl();
 			} else if (LiveProperties.RevokeAccessWithDefaultAcl) {
-				if (StreamProperties.IsEphemeralStream)
-					throw new Exception("Cannot revoke access to ephemeral stream.");
-
 				accessRevoked = true;
 				await RevokeAccessWithDefaultAcl();
 			} else if (LiveProperties.FallBehindThenCatchUp) {
