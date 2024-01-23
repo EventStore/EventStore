@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using EventStore.Core.Data;
 using EventStore.Core.Services.Transport.Enumerators;
 using NUnit.Framework;
 
@@ -9,7 +10,7 @@ namespace EventStore.Core.Tests.Services.Transport.Enumerators;
 [TestFixture]
 public partial class EnumeratorTests {
 	public record SubscriptionResponse { }
-	public record Event(Guid Id, long EventNumber) : SubscriptionResponse { }
+	public record Event(Guid Id, long EventNumber, TFPos? EventPosition) : SubscriptionResponse { }
 	public record SubscriptionConfirmation() : SubscriptionResponse { }
 	public record CaughtUp : SubscriptionResponse { }
 	public record FellBehind : SubscriptionResponse { }
@@ -31,7 +32,7 @@ public partial class EnumeratorTests {
 			var resp = _enumerator.Current;
 
 			return resp switch {
-				ReadResponse.EventReceived eventReceived => new Event(eventReceived.Event.Event.EventId, eventReceived.Event.OriginalEventNumber),
+				ReadResponse.EventReceived eventReceived => new Event(eventReceived.Event.Event.EventId, eventReceived.Event.OriginalEventNumber, eventReceived.Event.OriginalPosition),
 				ReadResponse.SubscriptionConfirmed => new SubscriptionConfirmation(),
 				ReadResponse.SubscriptionCaughtUp => new CaughtUp(),
 				ReadResponse.SubscriptionFellBehind => new FellBehind(),
