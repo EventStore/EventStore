@@ -5,7 +5,7 @@ using EventStore.Projections.Core.Services.Processing;
 namespace EventStore.Projections.Core.Messages {
 	public static partial class ReaderSubscriptionManagement {
 		[DerivedMessage]
-		public abstract partial class ReaderSubscriptionManagementMessage : Message {
+		public abstract partial class ReaderSubscriptionManagementMessage : Message<ReaderSubscriptionManagementMessage> {
 			private readonly Guid _subscriptionId;
 
 			protected ReaderSubscriptionManagementMessage(Guid subscriptionId) {

@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.TimeService {
 		}
 	}
 
-	public class TestResponseMessage : Message {
+	public class TestResponseMessage : Message<TestResponseMessage> {
 		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {

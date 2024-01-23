@@ -4,7 +4,7 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Services.TimerService {
 	public static partial class TimerMessage {
 		[DerivedMessage(CoreMessage.Timer)]
-		public partial class Schedule : Message {
+		public partial class Schedule : Message<Schedule> {
 			public readonly TimeSpan TriggerAfter;
 
 			public readonly IEnvelope Envelope;

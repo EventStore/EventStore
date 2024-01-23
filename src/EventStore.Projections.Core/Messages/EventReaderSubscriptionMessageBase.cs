@@ -188,7 +188,7 @@ namespace EventStore.Projections.Core.Messages {
 	}
 
 	[DerivedMessage]
-	public abstract partial class EventReaderSubscriptionMessageBase : Message {
+	public abstract partial class EventReaderSubscriptionMessageBase : Message<EventReaderSubscriptionMessageBase> {
 		private readonly Guid _subscriptionId;
 		private readonly long _subscriptionMessageSequenceNumber;
 		private readonly object _source;

@@ -8,7 +8,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 namespace EventStore.Core.Messages {
 	public static partial class UserManagementMessage {
 		[DerivedMessage(CoreMessage.UserManagement)]
-		public partial class RequestMessage : Message {
+		public partial class RequestMessage : Message<RequestMessage> {
 			public readonly IEnvelope Envelope;
 			public readonly ClaimsPrincipal Principal;
 
@@ -19,7 +19,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.UserManagement)]
-		public partial class ResponseMessage : Message {
+		public partial class ResponseMessage : Message<ResponseMessage> {
 			public readonly bool Success;
 			public readonly Error Error;
 

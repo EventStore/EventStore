@@ -4,7 +4,7 @@ using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Messages {
 	[DerivedMessage(CoreMessage.Http)]
-	public partial class IncomingHttpRequestMessage : Message {
+	public partial class IncomingHttpRequestMessage : Message<IncomingHttpRequestMessage> {
 		public readonly IPublisher NextStagePublisher;
 		public readonly IHttpService HttpService;
 		public readonly HttpEntity Entity;

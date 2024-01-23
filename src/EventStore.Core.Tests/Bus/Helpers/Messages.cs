@@ -3,7 +3,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Scanning;
 
 namespace EventStore.Core.Tests.Bus.Helpers {
-	public class DeferredExecutionTestMessage : Message {
+	public class DeferredExecutionTestMessage : Message<DeferredExecutionTestMessage> {
 		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 		}
 	}
 
-	public class ExecutableTestMessage : Message {
+	public class ExecutableTestMessage : Message<ExecutableTestMessage> {
 		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {

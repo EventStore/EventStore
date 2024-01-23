@@ -24,7 +24,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
+		public partial class WritePrepares : Message<WritePrepares>, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
 			public Guid CorrelationId { get; private set; }
 			public IEnvelope Envelope { get; private set; }
 
@@ -55,7 +55,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
+		public partial class WriteDelete : Message<WriteDelete>, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
 			public Guid CorrelationId { get; private set; }
 			public IEnvelope Envelope { get; private set; }
 			public string EventStreamId { get; private set; }
@@ -79,7 +79,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class WriteCommit : Message, IFlushableMessage, ILeaderWriteMessage {
+		public partial class WriteCommit : Message<WriteCommit>, IFlushableMessage, ILeaderWriteMessage {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
 			public readonly long TransactionPosition;
@@ -92,7 +92,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class WriteTransactionStart : Message, IPreconditionedWriteMessage, IFlushableMessage,
+		public partial class WriteTransactionStart : Message<WriteTransactionStart>, IPreconditionedWriteMessage, IFlushableMessage,
 			ILeaderWriteMessage {
 
 			public Guid CorrelationId { get; private set; }
@@ -118,7 +118,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class WriteTransactionData : Message, IFlushableMessage, ILeaderWriteMessage {
+		public partial class WriteTransactionData : Message<WriteTransactionData>, IFlushableMessage, ILeaderWriteMessage {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
 			public readonly long TransactionId;
@@ -133,7 +133,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class WriteTransactionEnd : Message, IFlushableMessage, ILeaderWriteMessage {
+		public partial class WriteTransactionEnd : Message<WriteTransactionEnd>, IFlushableMessage, ILeaderWriteMessage {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
 			public readonly long TransactionId;
@@ -151,7 +151,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class PrepareAck : Message {
+		public partial class PrepareAck : Message<PrepareAck> {
 			public readonly Guid CorrelationId;
 			public readonly long LogPosition;
 			public readonly PrepareFlags Flags;
@@ -167,7 +167,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class CommitAck : Message {
+		public partial class CommitAck : Message<CommitAck> {
 			public readonly Guid CorrelationId;
 			public readonly long LogPosition;
 			public readonly long TransactionPosition;
@@ -195,7 +195,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class CommitIndexed : Message {
+		public partial class CommitIndexed : Message<CommitIndexed> {
 			public readonly Guid CorrelationId;
 			public readonly long LogPosition;
 			public readonly long TransactionPosition;
@@ -222,7 +222,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class EventCommitted : Message {
+		public partial class EventCommitted : Message<EventCommitted> {
 			public readonly long CommitPosition;
 			public readonly EventRecord Event;
 			public readonly bool TfEof;
@@ -235,7 +235,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class InMemoryEventCommitted : Message {
+		public partial class InMemoryEventCommitted : Message<InMemoryEventCommitted> {
 			public readonly long CommitPosition;
 			public readonly EventRecord Event;
 
@@ -246,13 +246,13 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class TfEofAtNonCommitRecord : Message {
+		public partial class TfEofAtNonCommitRecord : Message<TfEofAtNonCommitRecord> {
 			public TfEofAtNonCommitRecord() {
 			}
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class AlreadyCommitted : Message {
+		public partial class AlreadyCommitted : Message<AlreadyCommitted> {
 			public readonly Guid CorrelationId;
 
 			public readonly string EventStreamId;
@@ -281,7 +281,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class InvalidTransaction : Message {
+		public partial class InvalidTransaction : Message<InvalidTransaction> {
 			public readonly Guid CorrelationId;
 
 			public InvalidTransaction(Guid correlationId) {
@@ -290,7 +290,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class WrongExpectedVersion : Message {
+		public partial class WrongExpectedVersion : Message<WrongExpectedVersion> {
 			public readonly Guid CorrelationId;
 			public readonly long CurrentVersion;
 
@@ -302,7 +302,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class StreamDeleted : Message {
+		public partial class StreamDeleted : Message<StreamDeleted> {
 			public readonly Guid CorrelationId;
 
 			public StreamDeleted(Guid correlationId) {
@@ -312,7 +312,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class RequestCompleted : Message {
+		public partial class RequestCompleted : Message<RequestCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly bool Success;
 			public readonly long CurrentVersion;
@@ -326,7 +326,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class RequestManagerTimerTick : Message {
+		public partial class RequestManagerTimerTick : Message<RequestManagerTimerTick> {
 			public DateTime UtcNow {
 				get { return _now ?? DateTime.UtcNow; }
 			}
@@ -342,7 +342,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class BatchLogExpiredMessages : Message, IQueueAffineMessage {
+		public partial class BatchLogExpiredMessages : Message<BatchLogExpiredMessages>, IQueueAffineMessage {
 			public readonly Guid CorrelationId;
 			public int QueueId { get; }
 
@@ -355,7 +355,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class EffectiveStreamAclRequest : Message {
+		public partial class EffectiveStreamAclRequest : Message<EffectiveStreamAclRequest> {
 			public readonly string StreamId;
 			public readonly IEnvelope Envelope;
 			public readonly CancellationToken CancellationToken;
@@ -368,7 +368,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class EffectiveStreamAclResponse : Message {
+		public partial class EffectiveStreamAclResponse : Message<EffectiveStreamAclResponse> {
 			public readonly EffectiveAcl Acl;
 
 			public EffectiveStreamAclResponse(EffectiveAcl acl) {
@@ -417,7 +417,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class OperationCancelledMessage : Message {
+		public partial class OperationCancelledMessage : Message<OperationCancelledMessage> {
 			public CancellationToken CancellationToken { get; }
 
 			public OperationCancelledMessage(CancellationToken cancellationToken) {
@@ -426,7 +426,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class StreamIdFromTransactionIdRequest : Message {
+		public partial class StreamIdFromTransactionIdRequest : Message<StreamIdFromTransactionIdRequest> {
 			public readonly long TransactionId;
 			public readonly IEnvelope Envelope;
 			public readonly CancellationToken CancellationToken;
@@ -439,7 +439,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
-		public partial class StreamIdFromTransactionIdResponse : Message {
+		public partial class StreamIdFromTransactionIdResponse : Message<StreamIdFromTransactionIdResponse> {
 			public readonly string StreamId;
 
 			public StreamIdFromTransactionIdResponse(string streamId){

@@ -28,7 +28,7 @@ namespace EventStore.Core.Messages {
 
 	public static partial class ClientMessage {
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class RequestShutdown : Message {
+		public partial class RequestShutdown : Message<RequestShutdown> {
 			public readonly bool ExitProcess;
 
 			public readonly bool ShutdownHttp;
@@ -40,11 +40,11 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReloadConfig : Message {
+		public partial class ReloadConfig : Message<ReloadConfig> {
 		}
 
 		[DerivedMessage]
-		public abstract partial class WriteRequestMessage : Message {
+		public abstract partial class WriteRequestMessage<T> : Message<T> where T : Message {
 			public readonly Guid InternalCorrId;
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
@@ -73,7 +73,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage]
-		public abstract partial class ReadRequestMessage : Message {
+		public abstract partial class ReadRequestMessage<T> : Message<T> where T : Message {
 			public readonly Guid InternalCorrId;
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
@@ -109,11 +109,11 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage]
-		public abstract partial class ReadResponseMessage : Message {
+		public abstract partial class ReadResponseMessage<T> : Message<T> where T : Message {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class TcpForwardMessage : Message {
+		public partial class TcpForwardMessage : Message<TcpForwardMessage> {
 			public readonly Message Message;
 
 			public TcpForwardMessage(Message message) {
@@ -124,7 +124,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class NotHandled : Message {
+		public partial class NotHandled : Message<NotHandled> {
 			public readonly Guid CorrelationId;
 			public readonly Types.NotHandledReason Reason;
 			public readonly Types.LeaderInfo LeaderInfo;
@@ -169,7 +169,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class WriteEvents : WriteRequestMessage {
+		public partial class WriteEvents : WriteRequestMessage<WriteEvents> {
 			public readonly string EventStreamId;
 			public readonly long ExpectedVersion;
 			public readonly Event[] Events;
@@ -206,7 +206,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class WriteEventsCompleted : Message {
+		public partial class WriteEventsCompleted : Message<WriteEventsCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly OperationResult Result;
 			public readonly string Message;
@@ -273,7 +273,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class TransactionStart : WriteRequestMessage {
+		public partial class TransactionStart : WriteRequestMessage<TransactionStart> {
 			public readonly string EventStreamId;
 			public readonly long ExpectedVersion;
 
@@ -291,7 +291,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class TransactionStartCompleted : Message {
+		public partial class TransactionStartCompleted : Message<TransactionStartCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly long TransactionId;
 			public readonly OperationResult Result;
@@ -311,7 +311,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class TransactionWrite : WriteRequestMessage {
+		public partial class TransactionWrite : WriteRequestMessage<TransactionWrite> {
 			public readonly long TransactionId;
 			public readonly Event[] Events;
 
@@ -327,7 +327,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class TransactionWriteCompleted : Message {
+		public partial class TransactionWriteCompleted : Message<TransactionWriteCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly long TransactionId;
 			public readonly OperationResult Result;
@@ -347,7 +347,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class TransactionCommit : WriteRequestMessage {
+		public partial class TransactionCommit : WriteRequestMessage<TransactionCommit> {
 			public readonly long TransactionId;
 
 			public TransactionCommit(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
@@ -359,7 +359,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class TransactionCommitCompleted : Message {
+		public partial class TransactionCommitCompleted : Message<TransactionCommitCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly long TransactionId;
 			public readonly OperationResult Result;
@@ -418,7 +418,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class DeleteStream : WriteRequestMessage {
+		public partial class DeleteStream : WriteRequestMessage<DeleteStream> {
 			public readonly string EventStreamId;
 			public readonly long ExpectedVersion;
 			public readonly bool HardDelete;
@@ -441,7 +441,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class DeleteStreamCompleted : Message {
+		public partial class DeleteStreamCompleted : Message<DeleteStreamCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly OperationResult Result;
 			public readonly string Message;
@@ -470,7 +470,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReadEvent : ReadRequestMessage {
+		public partial class ReadEvent : ReadRequestMessage<ReadEvent> {
 			public readonly string EventStreamId;
 			public readonly long EventNumber;
 			public readonly bool ResolveLinkTos;
@@ -499,7 +499,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReadEventCompleted : ReadResponseMessage {
+		public partial class ReadEventCompleted : ReadResponseMessage<ReadEventCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly string EventStreamId;
 			public readonly ReadEventResult Result;
@@ -526,7 +526,7 @@ namespace EventStore.Core.Messages {
 
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReadStreamEventsForward : ReadRequestMessage {
+		public partial class ReadStreamEventsForward : ReadRequestMessage<ReadStreamEventsForward> {
 			public readonly string EventStreamId;
 			public readonly long FromEventNumber;
 			public readonly int MaxCount;
@@ -570,7 +570,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReadStreamEventsForwardCompleted : ReadResponseMessage {
+		public partial class ReadStreamEventsForwardCompleted : ReadResponseMessage<ReadStreamEventsForwardCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly string EventStreamId;
 			public readonly long FromEventNumber;
@@ -617,7 +617,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReadStreamEventsBackward : ReadRequestMessage {
+		public partial class ReadStreamEventsBackward : ReadRequestMessage<ReadStreamEventsBackward> {
 			public readonly string EventStreamId;
 			public readonly long FromEventNumber;
 			public readonly int MaxCount;
@@ -653,7 +653,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReadStreamEventsBackwardCompleted : ReadResponseMessage {
+		public partial class ReadStreamEventsBackwardCompleted : ReadResponseMessage<ReadStreamEventsBackwardCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly string EventStreamId;
 			public readonly long FromEventNumber;
@@ -707,7 +707,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReadAllEventsForward : ReadRequestMessage {
+		public partial class ReadAllEventsForward : ReadRequestMessage<ReadAllEventsForward> {
 			public readonly long CommitPosition;
 			public readonly long PreparePosition;
 			public readonly int MaxCount;
@@ -748,7 +748,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReadAllEventsForwardCompleted : ReadResponseMessage {
+		public partial class ReadAllEventsForwardCompleted : ReadResponseMessage<ReadAllEventsForwardCompleted> {
 			public readonly Guid CorrelationId;
 
 			public readonly ReadAllResult Result;
@@ -788,7 +788,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReadAllEventsBackward : ReadRequestMessage {
+		public partial class ReadAllEventsBackward : ReadRequestMessage<ReadAllEventsBackward> {
 			public readonly long CommitPosition;
 			public readonly long PreparePosition;
 			public readonly int MaxCount;
@@ -822,7 +822,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReadAllEventsBackwardCompleted : ReadResponseMessage {
+		public partial class ReadAllEventsBackwardCompleted : ReadResponseMessage<ReadAllEventsBackwardCompleted> {
 			public readonly Guid CorrelationId;
 
 			public readonly ReadAllResult Result;
@@ -862,7 +862,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class FilteredReadAllEventsForward : ReadRequestMessage {
+		public partial class FilteredReadAllEventsForward : ReadRequestMessage<FilteredReadAllEventsForward> {
 			public readonly long CommitPosition;
 			public readonly long PreparePosition;
 			public readonly int MaxCount;
@@ -909,7 +909,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class FilteredReadAllEventsForwardCompleted : ReadResponseMessage {
+		public partial class FilteredReadAllEventsForwardCompleted : ReadResponseMessage<FilteredReadAllEventsForwardCompleted> {
 		public readonly Guid CorrelationId;
 
 			public readonly FilteredReadAllResult Result;
@@ -950,7 +950,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class FilteredReadAllEventsBackward : ReadRequestMessage {
+		public partial class FilteredReadAllEventsBackward : ReadRequestMessage<FilteredReadAllEventsBackward> {
 			public readonly long CommitPosition;
 			public readonly long PreparePosition;
 			public readonly int MaxCount;
@@ -993,7 +993,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class FilteredReadAllEventsBackwardCompleted : ReadResponseMessage {
+		public partial class FilteredReadAllEventsBackwardCompleted : ReadResponseMessage<FilteredReadAllEventsBackwardCompleted> {
 			public readonly Guid CorrelationId;
 
 			public readonly FilteredReadAllResult Result;
@@ -1033,7 +1033,7 @@ namespace EventStore.Core.Messages {
 
 		//Persistent subscriptions
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ConnectToPersistentSubscriptionToStream : ReadRequestMessage {
+		public partial class ConnectToPersistentSubscriptionToStream : ReadRequestMessage<ConnectToPersistentSubscriptionToStream> {
 			public readonly Guid ConnectionId;
 			public readonly string ConnectionName;
 			public readonly string GroupName;
@@ -1058,7 +1058,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ConnectToPersistentSubscriptionToAll : ReadRequestMessage {
+		public partial class ConnectToPersistentSubscriptionToAll : ReadRequestMessage<ConnectToPersistentSubscriptionToAll> {
 			public readonly Guid ConnectionId;
 			public readonly string ConnectionName;
 			public readonly string GroupName;
@@ -1081,7 +1081,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class CreatePersistentSubscriptionToStream : ReadRequestMessage {
+		public partial class CreatePersistentSubscriptionToStream : ReadRequestMessage<CreatePersistentSubscriptionToStream> {
 			public readonly long StartFrom;
 			public readonly int MessageTimeoutMilliseconds;
 			public readonly bool RecordStatistics;
@@ -1126,7 +1126,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class CreatePersistentSubscriptionToStreamCompleted : ReadResponseMessage {
+		public partial class CreatePersistentSubscriptionToStreamCompleted : ReadResponseMessage<CreatePersistentSubscriptionToStreamCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 			public readonly CreatePersistentSubscriptionToStreamResult Result;
@@ -1148,7 +1148,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class CreatePersistentSubscriptionToAll : ReadRequestMessage {
+		public partial class CreatePersistentSubscriptionToAll : ReadRequestMessage<CreatePersistentSubscriptionToAll> {
 			public readonly IEventFilter EventFilter;
 
 			public readonly TFPos StartFrom;
@@ -1194,7 +1194,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class CreatePersistentSubscriptionToAllCompleted : ReadResponseMessage {
+		public partial class CreatePersistentSubscriptionToAllCompleted : ReadResponseMessage<CreatePersistentSubscriptionToAllCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 			public readonly CreatePersistentSubscriptionToAllResult Result;
@@ -1216,7 +1216,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class UpdatePersistentSubscriptionToStream : ReadRequestMessage {
+		public partial class UpdatePersistentSubscriptionToStream : ReadRequestMessage<UpdatePersistentSubscriptionToStream> {
 			public readonly long StartFrom;
 			public readonly int MessageTimeoutMilliseconds;
 			public readonly bool RecordStatistics;
@@ -1262,7 +1262,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class UpdatePersistentSubscriptionToStreamCompleted : ReadResponseMessage {
+		public partial class UpdatePersistentSubscriptionToStreamCompleted : ReadResponseMessage<UpdatePersistentSubscriptionToStreamCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 			public readonly UpdatePersistentSubscriptionToStreamResult Result;
@@ -1284,7 +1284,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class UpdatePersistentSubscriptionToAll : ReadRequestMessage {
+		public partial class UpdatePersistentSubscriptionToAll : ReadRequestMessage<UpdatePersistentSubscriptionToAll> {
 			public readonly TFPos StartFrom;
 			public readonly int MessageTimeoutMilliseconds;
 			public readonly bool RecordStatistics;
@@ -1328,7 +1328,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class UpdatePersistentSubscriptionToAllCompleted : ReadResponseMessage {
+		public partial class UpdatePersistentSubscriptionToAllCompleted : ReadResponseMessage<UpdatePersistentSubscriptionToAllCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 			public readonly UpdatePersistentSubscriptionToAllResult Result;
@@ -1350,7 +1350,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReadNextNPersistentMessages : ReadRequestMessage {
+		public partial class ReadNextNPersistentMessages : ReadRequestMessage<ReadNextNPersistentMessages> {
 			public readonly string GroupName;
 			public readonly string EventStreamId;
 			public readonly int Count;
@@ -1365,7 +1365,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReadNextNPersistentMessagesCompleted : ReadResponseMessage {
+		public partial class ReadNextNPersistentMessagesCompleted : ReadResponseMessage<ReadNextNPersistentMessagesCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 			public readonly ReadNextNPersistentMessagesResult Result;
@@ -1389,7 +1389,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class DeletePersistentSubscriptionToStream : ReadRequestMessage {
+		public partial class DeletePersistentSubscriptionToStream : ReadRequestMessage<DeletePersistentSubscriptionToStream> {
 			public readonly string GroupName;
 			public readonly string EventStreamId;
 
@@ -1402,7 +1402,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class DeletePersistentSubscriptionToStreamCompleted : ReadResponseMessage {
+		public partial class DeletePersistentSubscriptionToStreamCompleted : ReadResponseMessage<DeletePersistentSubscriptionToStreamCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 			public readonly DeletePersistentSubscriptionToStreamResult Result;
@@ -1424,7 +1424,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class DeletePersistentSubscriptionToAll : ReadRequestMessage {
+		public partial class DeletePersistentSubscriptionToAll : ReadRequestMessage<DeletePersistentSubscriptionToAll> {
 			public readonly string GroupName;
 
 			public DeletePersistentSubscriptionToAll(Guid internalCorrId, Guid correlationId, IEnvelope envelope
@@ -1435,7 +1435,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class DeletePersistentSubscriptionToAllCompleted : ReadResponseMessage {
+		public partial class DeletePersistentSubscriptionToAllCompleted : ReadResponseMessage<DeletePersistentSubscriptionToAllCompleted> {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 			public readonly DeletePersistentSubscriptionToAllResult Result;
@@ -1457,7 +1457,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class PersistentSubscriptionAckEvents : ReadRequestMessage {
+		public partial class PersistentSubscriptionAckEvents : ReadRequestMessage<PersistentSubscriptionAckEvents> {
 			public readonly string SubscriptionId;
 			public readonly Guid[] ProcessedEventIds;
 
@@ -1473,7 +1473,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class PersistentSubscriptionNackEvents : ReadRequestMessage {
+		public partial class PersistentSubscriptionNackEvents : ReadRequestMessage<PersistentSubscriptionNackEvents> {
 			public readonly string SubscriptionId;
 			public readonly Guid[] ProcessedEventIds;
 			public readonly string Message;
@@ -1505,7 +1505,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class PersistentSubscriptionNakEvents : ReadRequestMessage {
+		public partial class PersistentSubscriptionNakEvents : ReadRequestMessage<PersistentSubscriptionNakEvents> {
 			public readonly string SubscriptionId;
 			public readonly Guid[] ProcessedEventIds;
 
@@ -1521,7 +1521,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class PersistentSubscriptionConfirmation : Message {
+		public partial class PersistentSubscriptionConfirmation : Message<PersistentSubscriptionConfirmation> {
 			public readonly Guid CorrelationId;
 			public readonly long LastIndexedPosition;
 			public readonly long? LastEventNumber;
@@ -1537,7 +1537,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReplayParkedMessages : ReadRequestMessage {
+		public partial class ReplayParkedMessages : ReadRequestMessage<ReplayParkedMessages> {
 			public readonly string EventStreamId;
 			public readonly string GroupName;
 			public readonly long? StopAt;
@@ -1552,7 +1552,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReplayParkedMessage : ReadRequestMessage {
+		public partial class ReplayParkedMessage : ReadRequestMessage<ReplayParkedMessage> {
 			public readonly string EventStreamId;
 			public readonly string GroupName;
 			public readonly ResolvedEvent Event;
@@ -1567,7 +1567,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ReplayMessagesReceived : ReadResponseMessage {
+		public partial class ReplayMessagesReceived : ReadResponseMessage<ReplayMessagesReceived> {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 			public readonly ReplayMessagesReceivedResult Result;
@@ -1591,7 +1591,7 @@ namespace EventStore.Core.Messages {
 
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class SubscribeToStream : ReadRequestMessage {
+		public partial class SubscribeToStream : ReadRequestMessage<SubscribeToStream> {
 			public readonly Guid ConnectionId;
 			public readonly string EventStreamId; // should be empty to subscribe to all
 			public readonly bool ResolveLinkTos;
@@ -1607,7 +1607,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class FilteredSubscribeToStream : ReadRequestMessage {
+		public partial class FilteredSubscribeToStream : ReadRequestMessage<FilteredSubscribeToStream> {
 			public readonly Guid ConnectionId;
 			public readonly string EventStreamId; // should be empty to subscribe to all
 			public readonly bool ResolveLinkTos;
@@ -1630,7 +1630,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class CheckpointReached : Message {
+		public partial class CheckpointReached : Message<CheckpointReached> {
 			public readonly Guid CorrelationId;
 			public readonly TFPos? Position;
 
@@ -1641,7 +1641,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class UnsubscribeFromStream : ReadRequestMessage {
+		public partial class UnsubscribeFromStream : ReadRequestMessage<UnsubscribeFromStream> {
 			public UnsubscribeFromStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				ClaimsPrincipal user, DateTime? expires = null)
 				: base(internalCorrId, correlationId, envelope, user, expires) {
@@ -1649,7 +1649,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class SubscriptionConfirmation : Message {
+		public partial class SubscriptionConfirmation : Message<SubscriptionConfirmation> {
 			public readonly Guid CorrelationId;
 			public readonly long LastIndexedPosition;
 			public readonly long? LastEventNumber;
@@ -1662,7 +1662,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class StreamEventAppeared : Message {
+		public partial class StreamEventAppeared : Message<StreamEventAppeared> {
 			public readonly Guid CorrelationId;
 			public readonly ResolvedEvent Event;
 
@@ -1673,7 +1673,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class PersistentSubscriptionStreamEventAppeared : Message {
+		public partial class PersistentSubscriptionStreamEventAppeared : Message<PersistentSubscriptionStreamEventAppeared> {
 			public readonly Guid CorrelationId;
 			public readonly ResolvedEvent Event;
 			public readonly int RetryCount;
@@ -1686,7 +1686,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class SubscriptionDropped : Message {
+		public partial class SubscriptionDropped : Message<SubscriptionDropped> {
 			public readonly Guid CorrelationId;
 			public readonly SubscriptionDropReason Reason;
 
@@ -1697,7 +1697,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class MergeIndexes : Message {
+		public partial class MergeIndexes : Message<MergeIndexes> {
 			public readonly IEnvelope Envelope;
 			public readonly Guid CorrelationId;
 			public readonly ClaimsPrincipal User;
@@ -1711,7 +1711,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class MergeIndexesResponse : Message {
+		public partial class MergeIndexesResponse : Message<MergeIndexesResponse> {
 			public readonly Guid CorrelationId;
 			public readonly MergeIndexesResult Result;
 
@@ -1730,7 +1730,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class SetNodePriority : Message	{
+		public partial class SetNodePriority : Message<SetNodePriority>	{
 			public readonly int NodePriority;
 
 			public SetNodePriority(int nodePriority) {
@@ -1739,11 +1739,11 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ResignNode : Message {
+		public partial class ResignNode : Message<ResignNode> {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ScavengeDatabase : Message {
+		public partial class ScavengeDatabase : Message<ScavengeDatabase> {
 			public readonly IEnvelope Envelope;
 			public readonly Guid CorrelationId;
 			public readonly ClaimsPrincipal User;
@@ -1776,7 +1776,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class StopDatabaseScavenge : Message {
+		public partial class StopDatabaseScavenge : Message<StopDatabaseScavenge> {
 			public readonly IEnvelope Envelope;
 			public readonly Guid CorrelationId;
 			public readonly ClaimsPrincipal User;
@@ -1792,7 +1792,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class GetDatabaseScavenge : Message {
+		public partial class GetDatabaseScavenge : Message<GetDatabaseScavenge> {
 			public readonly IEnvelope Envelope;
 			public readonly Guid CorrelationId;
 			public readonly ClaimsPrincipal User;
@@ -1807,7 +1807,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ScavengeDatabaseGetResponse : Message {
+		public partial class ScavengeDatabaseGetResponse : Message<ScavengeDatabaseGetResponse> {
 			public readonly Guid CorrelationId;
 			public readonly ScavengeResult Result;
 			public readonly string ScavengeId;
@@ -1827,7 +1827,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ScavengeDatabaseStartedResponse : Message {
+		public partial class ScavengeDatabaseStartedResponse : Message<ScavengeDatabaseStartedResponse> {
 			public readonly Guid CorrelationId;
 			public readonly string ScavengeId;
 
@@ -1839,7 +1839,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ScavengeDatabaseInProgressResponse : Message {
+		public partial class ScavengeDatabaseInProgressResponse : Message<ScavengeDatabaseInProgressResponse> {
 			public readonly Guid CorrelationId;
 			public readonly string ScavengeId;
 			public readonly string Reason;
@@ -1854,7 +1854,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ScavengeDatabaseStoppedResponse : Message {
+		public partial class ScavengeDatabaseStoppedResponse : Message<ScavengeDatabaseStoppedResponse> {
 			public readonly Guid CorrelationId;
 			public readonly string ScavengeId;
 
@@ -1867,7 +1867,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ScavengeDatabaseNotFoundResponse : Message {
+		public partial class ScavengeDatabaseNotFoundResponse : Message<ScavengeDatabaseNotFoundResponse> {
 			public readonly Guid CorrelationId;
 			public readonly string ScavengeId;
 			public readonly string Reason;
@@ -1883,7 +1883,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ScavengeDatabaseUnauthorizedResponse : Message {
+		public partial class ScavengeDatabaseUnauthorizedResponse : Message<ScavengeDatabaseUnauthorizedResponse> {
 			public readonly Guid CorrelationId;
 			public readonly string ScavengeId;
 			public readonly string Reason;
@@ -1897,7 +1897,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class IdentifyClient : Message {
+		public partial class IdentifyClient : Message<IdentifyClient> {
 			public readonly Guid CorrelationId;
 			public readonly int Version;
 			public readonly string ConnectionName;
@@ -1916,7 +1916,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ClientIdentified : Message {
+		public partial class ClientIdentified : Message<ClientIdentified> {
 			public readonly Guid CorrelationId;
 
 			public ClientIdentified(Guid correlationId) {

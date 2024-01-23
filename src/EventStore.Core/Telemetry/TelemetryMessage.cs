@@ -5,9 +5,9 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Telemetry;
 
 [DerivedMessage]
-public abstract partial class TelemetryMessage : Message {
+public abstract partial class TelemetryMessage<T> : Message<T> where T : Message {
 	[DerivedMessage(CoreMessage.Telemetry)]
-	public partial class Request : TelemetryMessage {
+	public partial class Request : TelemetryMessage<Request> {
 		public readonly IEnvelope<Response> Envelope;
 
 		public Request(IEnvelope<Response> envelope) {
@@ -18,7 +18,7 @@ public abstract partial class TelemetryMessage : Message {
 	}
 
 	[DerivedMessage(CoreMessage.Telemetry)]
-	public partial class Response : TelemetryMessage {
+	public partial class Response : TelemetryMessage<Response> {
 		public readonly string Key;
 		public readonly JsonNode Value;
 
@@ -32,8 +32,8 @@ public abstract partial class TelemetryMessage : Message {
 	}
 
 	[DerivedMessage(CoreMessage.Telemetry)]
-	public partial class Collect : TelemetryMessage { }
+	public partial class Collect : TelemetryMessage<Collect> { }
 
 	[DerivedMessage(CoreMessage.Telemetry)]
-	public partial class Flush : TelemetryMessage { }
+	public partial class Flush : TelemetryMessage<Flush> { }
 }

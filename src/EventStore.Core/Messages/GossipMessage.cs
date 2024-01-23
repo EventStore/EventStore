@@ -6,11 +6,11 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Messages {
 	public static partial class GossipMessage {
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class RetrieveGossipSeedSources : Message {
+		public partial class RetrieveGossipSeedSources : Message<RetrieveGossipSeedSources> {
 		}
 
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class GotGossipSeedSources : Message {
+		public partial class GotGossipSeedSources : Message<GotGossipSeedSources> {
 			public readonly EndPoint[] GossipSeeds;
 
 			public GotGossipSeedSources(EndPoint[] gossipSeeds) {
@@ -19,7 +19,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class Gossip : Message {
+		public partial class Gossip : Message<Gossip> {
 			public readonly int GossipRound;
 
 			public Gossip(int gossipRound) {
@@ -28,7 +28,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class GossipReceived : Message {
+		public partial class GossipReceived : Message<GossipReceived> {
 			public readonly IEnvelope Envelope;
 			public readonly ClusterInfo ClusterInfo;
 			public readonly EndPoint Server;
@@ -41,7 +41,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class ReadGossip : Message {
+		public partial class ReadGossip : Message<ReadGossip> {
 			public readonly IEnvelope Envelope;
 
 			public ReadGossip(IEnvelope envelope) {
@@ -50,7 +50,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class SendGossip : Message {
+		public partial class SendGossip : Message<SendGossip> {
 			public readonly ClusterInfo ClusterInfo;
 			public readonly EndPoint ServerEndPoint;
 
@@ -61,7 +61,7 @@ namespace EventStore.Core.Messages {
 		}
 		
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class ClientGossip : Message {
+		public partial class ClientGossip : Message<ClientGossip> {
 			public readonly IEnvelope Envelope;
 
 			public ClientGossip(IEnvelope envelope) {
@@ -70,7 +70,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class SendClientGossip : Message {
+		public partial class SendClientGossip : Message<SendClientGossip> {
 			public readonly ClientClusterInfo ClusterInfo;
 
 			public SendClientGossip(ClientClusterInfo clusterInfo) {
@@ -79,7 +79,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class GossipUpdated : Message {
+		public partial class GossipUpdated : Message<GossipUpdated> {
 			public readonly ClusterInfo ClusterInfo;
 
 			public GossipUpdated(ClusterInfo clusterInfo) {
@@ -88,7 +88,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class GossipSendFailed : Message {
+		public partial class GossipSendFailed : Message<GossipSendFailed> {
 			public readonly string Reason;
 			public readonly EndPoint Recipient;
 
@@ -103,12 +103,12 @@ namespace EventStore.Core.Messages {
 		}
 		
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class GetGossip : Message {
+		public partial class GetGossip : Message<GetGossip> {
 			public GetGossip() { }
 		}
 		
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class GetGossipFailed : Message {
+		public partial class GetGossipFailed : Message<GetGossipFailed> {
 			public readonly string Reason;
 			public readonly EndPoint Recipient;
 
@@ -123,7 +123,7 @@ namespace EventStore.Core.Messages {
 		}
 		
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class GetGossipReceived : Message {
+		public partial class GetGossipReceived : Message<GetGossipReceived> {
 			public readonly ClusterInfo ClusterInfo;
 			public readonly EndPoint Server;
 
@@ -134,7 +134,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Gossip)]
-		public partial class UpdateNodePriority : Message {
+		public partial class UpdateNodePriority : Message<UpdateNodePriority> {
 			public readonly int NodePriority;
 
 			public UpdateNodePriority(int priority) {

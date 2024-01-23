@@ -6,7 +6,7 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Messages {
 	public static partial class RedactionMessage {
 		[DerivedMessage(CoreMessage.Redaction)]
-		public partial class GetEventPosition : Message {
+		public partial class GetEventPosition : Message<GetEventPosition> {
 			public IEnvelope Envelope { get; }
 			public string EventStreamId { get; }
 			public long EventNumber { get; }
@@ -23,7 +23,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Redaction)]
-		public partial class GetEventPositionCompleted : Message {
+		public partial class GetEventPositionCompleted : Message<GetEventPositionCompleted> {
 			public GetEventPositionResult Result { get; }
 			public EventPosition[] EventPositions { get; }
 
@@ -36,7 +36,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Redaction)]
-		public partial class AcquireChunksLock : Message {
+		public partial class AcquireChunksLock : Message<AcquireChunksLock> {
 			public IEnvelope Envelope { get; }
 
 			public AcquireChunksLock(IEnvelope envelope) {
@@ -45,7 +45,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Redaction)]
-		public partial class AcquireChunksLockCompleted : Message {
+		public partial class AcquireChunksLockCompleted : Message<AcquireChunksLockCompleted> {
 			public AcquireChunksLockResult Result { get; }
 			public Guid AcquisitionId { get; }
 
@@ -56,7 +56,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Redaction)]
-		public partial class SwitchChunk : Message {
+		public partial class SwitchChunk : Message<SwitchChunk> {
 			public IEnvelope Envelope { get; }
 			public Guid AcquisitionId { get; }
 			public string TargetChunkFile { get; }
@@ -76,7 +76,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Redaction)]
-		public partial class SwitchChunkCompleted : Message {
+		public partial class SwitchChunkCompleted : Message<SwitchChunkCompleted> {
 			public SwitchChunkResult Result { get; }
 
 			public SwitchChunkCompleted(SwitchChunkResult result) {
@@ -85,7 +85,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Redaction)]
-		public partial class ReleaseChunksLock : Message {
+		public partial class ReleaseChunksLock : Message<ReleaseChunksLock> {
 			public IEnvelope Envelope { get; }
 			public Guid AcquisitionId { get; }
 
@@ -98,7 +98,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Redaction)]
-		public partial class ReleaseChunksLockCompleted : Message {
+		public partial class ReleaseChunksLockCompleted : Message<ReleaseChunksLockCompleted> {
 			public ReleaseChunksLockResult Result { get; }
 
 			public ReleaseChunksLockCompleted(ReleaseChunksLockResult result) {

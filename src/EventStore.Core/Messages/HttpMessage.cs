@@ -10,7 +10,7 @@ namespace EventStore.Core.Messages {
 
 	public static partial class HttpMessage {
 		[DerivedMessage]
-		public abstract partial class HttpSendMessage : Message, IQueueAffineMessage {
+		public abstract partial class HttpSendMessage<T> : Message<T>, IQueueAffineMessage where T : Message {
 			public int QueueId {
 				get { return HttpEntityManager.GetHashCode(); }
 			}
@@ -30,7 +30,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Http)]
-		public partial class HttpSend : HttpSendMessage {
+		public partial class HttpSend : HttpSendMessage<HttpSend> {
 			public readonly object Data;
 			public readonly ResponseConfiguration Configuration;
 			public readonly Message Message;
@@ -45,7 +45,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Http)]
-		public partial class DeniedToHandle : Message {
+		public partial class DeniedToHandle : Message<DeniedToHandle> {
 			public readonly DenialReason Reason;
 			public readonly string Details;
 
@@ -56,11 +56,11 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Http)]
-		public partial class PurgeTimedOutRequests : Message {
+		public partial class PurgeTimedOutRequests : Message<PurgeTimedOutRequests> {
 		}
 
 		[DerivedMessage(CoreMessage.Http)]
-		public partial class TextMessage : Message {
+		public partial class TextMessage : Message<TextMessage> {
 			public string Text { get; set; }
 
 			public TextMessage() {

@@ -117,7 +117,7 @@ namespace EventStore.Core {
 
 	public class ClusterVNode<TStreamId> :
 		ClusterVNode,
-		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.IStateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<SystemMessage.SystemStart>,

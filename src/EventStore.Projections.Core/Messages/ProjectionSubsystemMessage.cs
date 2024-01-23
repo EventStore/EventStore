@@ -4,7 +4,7 @@ using EventStore.Core.Messaging;
 namespace EventStore.Projections.Core.Messages {
 	public static partial class ProjectionSubsystemMessage {
 		[DerivedMessage(ProjectionMessage.Subsystem)]
-		public partial class RestartSubsystem : Message  {
+		public partial class RestartSubsystem : Message<RestartSubsystem>  {
 			public IEnvelope ReplyEnvelope { get; }
 			
 			public RestartSubsystem(IEnvelope replyEnvelope) {
@@ -13,7 +13,7 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.Subsystem)]
-		public partial class InvalidSubsystemRestart : Message {
+		public partial class InvalidSubsystemRestart : Message<InvalidSubsystemRestart> {
 			public string SubsystemState { get; }
 			public string Reason { get; }
 
@@ -24,11 +24,11 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.Subsystem)]
-		public partial class SubsystemRestarting : Message {
+		public partial class SubsystemRestarting : Message<SubsystemRestarting> {
 		}
 
 		[DerivedMessage(ProjectionMessage.Subsystem)]
-		public partial class StartComponents : Message  {
+		public partial class StartComponents : Message<StartComponents>  {
 			public Guid InstanceCorrelationId { get; }
 
 			public StartComponents(Guid instanceCorrelationId) {
@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Messages {
 		}	
 			
 		[DerivedMessage(ProjectionMessage.Subsystem)]
-		public partial class ComponentStarted : Message  {
+		public partial class ComponentStarted : Message<ComponentStarted>  {
 			public string ComponentName { get; }
 			public Guid InstanceCorrelationId { get; }
 
@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Messages {
 		}	
 	
 		[DerivedMessage(ProjectionMessage.Subsystem)]
-		public partial class StopComponents : Message  {
+		public partial class StopComponents : Message<StopComponents>  {
 			public Guid InstanceCorrelationId { get; }
 
 			public StopComponents(Guid instanceCorrelationId) {
@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Messages {
 		}
 		
 		[DerivedMessage(ProjectionMessage.Subsystem)]
-		public partial class ComponentStopped : Message {
+		public partial class ComponentStopped : Message<ComponentStopped> {
 			public string ComponentName { get; }
 			public Guid InstanceCorrelationId { get; }
 
@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.Subsystem)]
-		public partial class IODispatcherDrained : Message {
+		public partial class IODispatcherDrained : Message<IODispatcherDrained> {
 			public string ComponentName { get; }
 
 			public IODispatcherDrained(string componentName) {

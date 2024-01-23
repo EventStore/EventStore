@@ -6,7 +6,7 @@ using EventStore.Core.Services.Transport.Tcp;
 namespace EventStore.Core.Messages {
 	public static partial class TcpMessage {
 		[DerivedMessage(CoreMessage.Tcp)]
-		public partial class TcpSend : Message, IQueueAffineMessage {
+		public partial class TcpSend : Message<TcpSend>, IQueueAffineMessage {
 			public int QueueId {
 				get { return ConnectionManager.GetHashCode(); }
 			}
@@ -21,7 +21,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Tcp)]
-		public partial class Heartbeat : Message {
+		public partial class Heartbeat : Message<Heartbeat> {
 			public readonly long ReceiveProgressIndicator;
 			public readonly long SendProgressIndicator;
 
@@ -32,7 +32,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Tcp)]
-		public partial class HeartbeatTimeout : Message {
+		public partial class HeartbeatTimeout : Message<HeartbeatTimeout> {
 			public readonly long ReceiveProgressIndicator;
 
 			public HeartbeatTimeout(long receiveProgressIndicator) {
@@ -41,7 +41,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Tcp)]
-		public partial class PongMessage : Message {
+		public partial class PongMessage : Message<PongMessage> {
 			public readonly Guid CorrelationId;
 			public readonly byte[] Payload;
 
@@ -52,7 +52,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Tcp)]
-		public partial class ConnectionEstablished : Message {
+		public partial class ConnectionEstablished : Message<ConnectionEstablished> {
 			public readonly TcpConnectionManager Connection;
 
 			public ConnectionEstablished(TcpConnectionManager connection) {
@@ -61,7 +61,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Tcp)]
-		public partial class ConnectionClosed : Message {
+		public partial class ConnectionClosed : Message<ConnectionClosed> {
 			public readonly TcpConnectionManager Connection;
 			public readonly SocketError SocketError;
 
@@ -72,7 +72,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Tcp)]
-		public partial class NotReady : Message {
+		public partial class NotReady : Message<NotReady> {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 
@@ -84,7 +84,7 @@ namespace EventStore.Core.Messages {
 
 
 		[DerivedMessage(CoreMessage.Tcp)]
-		public partial class NotAuthenticated : Message {
+		public partial class NotAuthenticated : Message<NotAuthenticated> {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 
@@ -95,7 +95,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Tcp)]
-		public partial class Authenticated : Message {
+		public partial class Authenticated : Message<Authenticated> {
 			public readonly Guid CorrelationId;
 
 			public Authenticated(Guid correlationId) {

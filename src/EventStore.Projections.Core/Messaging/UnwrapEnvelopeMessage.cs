@@ -4,7 +4,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Messaging {
 	[DerivedMessage(ProjectionMessage.Misc)]
-	public partial class UnwrapEnvelopeMessage : Message {
+	public partial class UnwrapEnvelopeMessage : Message<UnwrapEnvelopeMessage> {
 		private readonly Action _action;
 
 		public UnwrapEnvelopeMessage(Action action) {

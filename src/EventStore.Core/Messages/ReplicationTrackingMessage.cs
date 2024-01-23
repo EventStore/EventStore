@@ -5,11 +5,11 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Messages {
 	public static partial class ReplicationTrackingMessage {
 		[DerivedMessage(CoreMessage.ReplicationTracking)]
-		public partial class WriterCheckpointFlushed : Message {
+		public partial class WriterCheckpointFlushed : Message<WriterCheckpointFlushed> {
 		}
 
 		[DerivedMessage(CoreMessage.ReplicationTracking)]
-		public partial class IndexedTo : Message {
+		public partial class IndexedTo : Message<IndexedTo> {
 			public readonly long LogPosition;
 			
 			public IndexedTo(long logPosition ) {
@@ -19,7 +19,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.ReplicationTracking)]
-		public partial class ReplicatedTo : Message {
+		public partial class ReplicatedTo : Message<ReplicatedTo> {
 			public readonly long LogPosition;
 			
 			public ReplicatedTo(long logPosition ) {
@@ -29,7 +29,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.ReplicationTracking)]
-		public partial class LeaderReplicatedTo : Message {
+		public partial class LeaderReplicatedTo : Message<LeaderReplicatedTo> {
 			public readonly long LogPosition;
 			
 			public LeaderReplicatedTo(long logPosition ) {
@@ -39,7 +39,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.ReplicationTracking)]
-		public partial class ReplicaWriteAck : Message {
+		public partial class ReplicaWriteAck : Message<ReplicaWriteAck> {
 			public readonly Guid SubscriptionId;
 			public readonly long ReplicationLogPosition;
 

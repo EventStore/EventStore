@@ -6,7 +6,7 @@ using EventStore.Projections.Core.Services.Processing;
 namespace EventStore.Projections.Core.Messages.EventReaders.Feeds {
 	public static partial class FeedReaderMessage {
 		[DerivedMessage]
-		public abstract partial class FeedReaderMessageBase : Message {
+		public abstract partial class FeedReaderMessageBase : Message<FeedReaderMessageBase> {
 		}
 
 		[DerivedMessage(ProjectionMessage.FeedReader)]

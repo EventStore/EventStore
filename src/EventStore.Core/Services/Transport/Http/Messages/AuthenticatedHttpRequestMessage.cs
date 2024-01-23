@@ -3,7 +3,7 @@ using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Messages {
 	[DerivedMessage(CoreMessage.Http)]
-	partial class AuthenticatedHttpRequestMessage : Message {
+	partial class AuthenticatedHttpRequestMessage : Message<AuthenticatedHttpRequestMessage> {
 		public readonly HttpEntityManager Manager;
 		public readonly UriToActionMatch Match;
 

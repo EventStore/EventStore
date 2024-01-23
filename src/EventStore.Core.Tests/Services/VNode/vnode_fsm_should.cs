@@ -9,7 +9,7 @@ using EventStore.Core.Services.VNode;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.VNode {
-	internal abstract class P : Message {
+	internal abstract class P : Message<P> {
 		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Services.VNode {
 		}
 	}
 
-	internal class C : Message {
+	internal class C : Message<C> {
 		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {

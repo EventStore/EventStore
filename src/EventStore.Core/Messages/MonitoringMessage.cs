@@ -7,7 +7,7 @@ using EventStore.Core.Services.PersistentSubscription;
 namespace EventStore.Core.Messages {
 	public static partial class MonitoringMessage {
 		[DerivedMessage(CoreMessage.Monitoring)]
-		public partial class GetAllPersistentSubscriptionStats : Message {
+		public partial class GetAllPersistentSubscriptionStats : Message<GetAllPersistentSubscriptionStats> {
 			public readonly IEnvelope Envelope;
 
 			public GetAllPersistentSubscriptionStats(IEnvelope envelope) {
@@ -17,7 +17,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Monitoring)]
-		public partial class GetPersistentSubscriptionStats : Message {
+		public partial class GetPersistentSubscriptionStats : Message<GetPersistentSubscriptionStats> {
 			public string EventStreamId {
 				get { return _eventStreamId; }
 			}
@@ -39,7 +39,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Monitoring)]
-		public partial class GetStreamPersistentSubscriptionStats : Message {
+		public partial class GetStreamPersistentSubscriptionStats : Message<GetStreamPersistentSubscriptionStats> {
 			public string EventStreamId {
 				get { return _eventStreamId; }
 			}
@@ -55,7 +55,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Monitoring)]
-		public partial class GetPersistentSubscriptionStatsCompleted : Message {
+		public partial class GetPersistentSubscriptionStatsCompleted : Message<GetPersistentSubscriptionStatsCompleted> {
 			public readonly OperationStatus Result;
 			public readonly List<PersistentSubscriptionInfo> SubscriptionStats;
 			public string ErrorString;
@@ -119,7 +119,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Monitoring)]
-		public partial class GetFreshStats : Message {
+		public partial class GetFreshStats : Message<GetFreshStats> {
 			public readonly IEnvelope Envelope;
 			public readonly Func<Dictionary<string, object>, Dictionary<string, object>> StatsSelector;
 			public readonly bool UseMetadata;
@@ -140,7 +140,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Monitoring)]
-		public partial class GetFreshStatsCompleted : Message {
+		public partial class GetFreshStatsCompleted : Message<GetFreshStatsCompleted> {
 			public readonly bool Success;
 			public readonly Dictionary<string, object> Stats;
 
@@ -151,7 +151,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Monitoring)]
-		public partial class GetFreshTcpConnectionStats : Message {
+		public partial class GetFreshTcpConnectionStats : Message<GetFreshTcpConnectionStats> {
 			public readonly IEnvelope Envelope;
 
 			public GetFreshTcpConnectionStats(IEnvelope envelope) {
@@ -162,7 +162,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Monitoring)]
-		public partial class GetFreshTcpConnectionStatsCompleted : Message {
+		public partial class GetFreshTcpConnectionStatsCompleted : Message<GetFreshTcpConnectionStatsCompleted> {
 			public readonly List<TcpConnectionStats> ConnectionStats;
 
 			public GetFreshTcpConnectionStatsCompleted(List<TcpConnectionStats> connectionStats) {
@@ -184,7 +184,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Monitoring)]
-		public partial class InternalStatsRequest : Message {
+		public partial class InternalStatsRequest : Message<InternalStatsRequest> {
 			public readonly IEnvelope Envelope;
 
 			public InternalStatsRequest(IEnvelope envelope) {
@@ -195,7 +195,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Monitoring)]
-		public partial class InternalStatsRequestResponse : Message {
+		public partial class InternalStatsRequestResponse : Message<InternalStatsRequestResponse> {
 			public readonly Dictionary<string, object> Stats;
 
 			public InternalStatsRequestResponse(Dictionary<string, object> stats) {
@@ -206,15 +206,15 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Misc)]
-		public partial class DynamicCacheManagerTick : Message {
+		public partial class DynamicCacheManagerTick : Message<DynamicCacheManagerTick> {
 		}
 		
 		[DerivedMessage(CoreMessage.Misc)]
-		public partial class CheckCertificateExpiry : Message {
+		public partial class CheckCertificateExpiry : Message<CheckCertificateExpiry> {
 		}
 
 		[DerivedMessage(CoreMessage.Misc)]
-		public partial class CheckEsVersion : Message {
+		public partial class CheckEsVersion : Message<CheckEsVersion> {
 		}
 	}
 }

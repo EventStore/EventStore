@@ -13,7 +13,7 @@ enum TestGroup {
 }
 
 [DerivedMessage]
-abstract partial class ReadMessage : Message { }
+abstract partial class ReadMessage : Message<ReadMessage> { }
 
 [DerivedMessage(TestGroup.Reads)]
 partial class ReadAllForward : ReadMessage { }

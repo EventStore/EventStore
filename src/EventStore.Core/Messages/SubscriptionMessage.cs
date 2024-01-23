@@ -5,7 +5,7 @@ using EventStore.Core.Services;
 namespace EventStore.Core.Messages {
 	public static partial class SubscriptionMessage {
 		[DerivedMessage(CoreMessage.Subscription)]
-		public partial class PollStream : Message {
+		public partial class PollStream : Message<PollStream> {
 			public readonly string StreamId;
 			public readonly long LastIndexedPosition;
 			public readonly long? LastEventNumber;
@@ -24,11 +24,11 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Subscription)]
-		public partial class CheckPollTimeout : Message {
+		public partial class CheckPollTimeout : Message<CheckPollTimeout> {
 		}
 
 		[DerivedMessage(CoreMessage.Subscription)]
-		public partial class DropSubscription : Message {
+		public partial class DropSubscription : Message<DropSubscription> {
 			public readonly Guid SubscriptionId;
 			public readonly SubscriptionDropReason DropReason;
 
@@ -39,7 +39,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Subscription)]
-		public partial class PersistentSubscriptionTimerTick : Message {
+		public partial class PersistentSubscriptionTimerTick : Message<PersistentSubscriptionTimerTick> {
 			public Guid CorrelationId { get; }
 
 			public PersistentSubscriptionTimerTick(Guid correlationId) {
@@ -48,7 +48,7 @@ namespace EventStore.Core.Messages {
 		}
 		
 		[DerivedMessage(CoreMessage.Subscription)]
-		public partial class PersistentSubscriptionsRestart : Message {
+		public partial class PersistentSubscriptionsRestart : Message<PersistentSubscriptionsRestart> {
 			public IEnvelope ReplyEnvelope { get; }
 			
 			public PersistentSubscriptionsRestart(IEnvelope replyEnvelope) {
@@ -57,11 +57,11 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Subscription)]
-		public partial class PersistentSubscriptionsRestarting : Message {
+		public partial class PersistentSubscriptionsRestarting : Message<PersistentSubscriptionsRestarting> {
 		}
 
 		[DerivedMessage(CoreMessage.Subscription)]
-		public partial class InvalidPersistentSubscriptionsRestart : Message {
+		public partial class InvalidPersistentSubscriptionsRestart : Message<InvalidPersistentSubscriptionsRestart> {
 			public readonly string Reason;
 
 			public InvalidPersistentSubscriptionsRestart(string reason) {
@@ -70,11 +70,11 @@ namespace EventStore.Core.Messages {
 		}
 	
 		[DerivedMessage(CoreMessage.Subscription)]
-		public partial class PersistentSubscriptionsStarted : Message {
+		public partial class PersistentSubscriptionsStarted : Message<PersistentSubscriptionsStarted> {
 		}
 		
 		[DerivedMessage(CoreMessage.Subscription)]
-		public partial class PersistentSubscriptionsStopped : Message {
+		public partial class PersistentSubscriptionsStopped : Message<PersistentSubscriptionsStopped> {
 		}
 	}
 }

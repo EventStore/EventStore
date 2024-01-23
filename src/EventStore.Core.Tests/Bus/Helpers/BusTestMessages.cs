@@ -2,7 +2,7 @@
 using EventStore.Core.Scanning;
 
 namespace EventStore.Core.Tests.Bus.Helpers {
-	public class TestMessage : Message {
+	public class TestMessage : Message<TestMessage> {
 		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
@@ -10,7 +10,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 		}
 	}
 
-	public class TestMessage2 : Message {
+	public class TestMessage2 : Message<TestMessage2> {
 		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 		}
 	}
 
-	public class TestMessage3 : Message {
+	public class TestMessage3 : Message<TestMessage3> {
 		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 		}
 	}
 
-	public class ParentTestMessage : Message {
+	public class ParentTestMessage : Message<ParentTestMessage> {
 		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 		}
 	}
 
-	public class TestMessageWithId : Message {
+	public class TestMessageWithId : Message<TestMessageWithId> {
 		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {

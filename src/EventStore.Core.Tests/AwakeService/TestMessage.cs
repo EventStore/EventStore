@@ -3,7 +3,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Scanning;
 
 namespace EventStore.Core.Tests.AwakeService {
-	public class TestMessage : Message {
+	public class TestMessage : Message<TestMessage> {
 		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {

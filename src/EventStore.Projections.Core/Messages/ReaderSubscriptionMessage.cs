@@ -7,7 +7,7 @@ using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEv
 namespace EventStore.Projections.Core.Messages {
 	public static partial class ReaderSubscriptionMessage {
 		[DerivedMessage(ProjectionMessage.ReaderSubscription)]
-		public partial class SubscriptionMessage : Message {
+		public partial class SubscriptionMessage : Message<SubscriptionMessage> {
 			private readonly Guid _correlationId;
 			private readonly CheckpointTag _preTagged;
 			private readonly object _source;
