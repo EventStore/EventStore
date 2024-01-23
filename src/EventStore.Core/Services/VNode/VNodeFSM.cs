@@ -70,10 +70,10 @@ namespace EventStore.Core.Services.VNode {
 
 			_handlers = new Action<VNodeState, Message>[handlers.Length][];
 			for (int i = 0; i < _handlers.Length; ++i) {
-				_handlers[i] = new Action<VNodeState, Message>[MessageHierarchy.MaxMsgTypeId + 1];
+				_handlers[i] = new Action<VNodeState, Message>[EventStoreCore.MessageHierarchy.MaxMsgTypeId + 1];
 				if (handlers[i] != null) {
 					foreach (var handler in handlers[i]) {
-						_handlers[i][MessageHierarchy.MsgTypeIdByType[handler.Key]] = handler.Value;
+						_handlers[i][EventStoreCore.MessageHierarchy.MsgTypeIdByType[handler.Key]] = handler.Value;
 					}
 				}
 			}
@@ -86,7 +86,7 @@ namespace EventStore.Core.Services.VNode {
 			var stateNum = (int)state;
 			var handlers = _handlers[stateNum];
 
-			var parents = MessageHierarchy.ParentsByTypeId[message.MsgTypeId];
+			var parents = EventStoreCore.MessageHierarchy.ParentsByTypeId[message.MsgTypeId];
 			for (int i = 0; i < parents.Length; ++i) {
 				if (TryHandle(state, handlers, message, parents[i]))
 					return;

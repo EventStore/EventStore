@@ -1,9 +1,10 @@
 using System;
 using EventStore.Core.Messaging;
+using EventStore.Core.Scanning;
 
 namespace EventStore.Core.Tests.Bus.Helpers {
 	public class DeferredExecutionTestMessage : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }
@@ -23,7 +24,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 	}
 
 	public class ExecutableTestMessage : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }

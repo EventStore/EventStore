@@ -23,6 +23,8 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using System.Runtime;
 using EventStore.Common.DevCertificates;
+using EventStore.Core.Messaging;
+using EventStore.Core.Scanning;
 using Serilog.Events;
 
 namespace EventStore.ClusterNode {
@@ -34,10 +36,13 @@ namespace EventStore.ClusterNode {
 
 			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 			try {
+				EventStoreCore.Initialize();
+				
 				var options = ClusterVNodeOptions.FromConfiguration(args, Environment.GetEnvironmentVariables());
 				var logsDirectory = string.IsNullOrWhiteSpace(options.Log.Log)
 					? Locations.DefaultLogDirectory
 					: options.Log.Log;
+				
 				EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName(),
 					options.Log.LogConsoleFormat,
 					options.Log.LogFileSize,

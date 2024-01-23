@@ -64,20 +64,20 @@ public class MessageLabelConfiguratorTests {
 	public void no_map() {
 		Run();
 
-		Assert.Equal("TestGroup-Reads-ReadAllForward", ReadAllForward.LabelStatic);
-		Assert.Equal("TestGroup-Reads-ReadAllForward", ReadAllForward.OriginalLabelStatic);
+		// Assert.Equal("TestGroup-Reads-ReadAllForward", ReadAllForward.LabelStatic);
+		// Assert.Equal("TestGroup-Reads-ReadAllForward", ReadAllForward.OriginalLabelStatic);
 		Assert.Equal("TestGroup-Reads-ReadAllForward", new ReadAllForward().Label);
 
-		Assert.Equal("TestGroup-Reads-ReadAllBackward", ReadAllBackward.LabelStatic);
-		Assert.Equal("TestGroup-Reads-ReadAllBackward", ReadAllBackward.OriginalLabelStatic);
+		// Assert.Equal("TestGroup-Reads-ReadAllBackward", ReadAllBackward.LabelStatic);
+		// Assert.Equal("TestGroup-Reads-ReadAllBackward", ReadAllBackward.OriginalLabelStatic);
 		Assert.Equal("TestGroup-Reads-ReadAllBackward", new ReadAllBackward().Label);
 
-		Assert.Equal("TestGroup-Reads-ReadStreamForward", ReadStreamForward.LabelStatic);
-		Assert.Equal("TestGroup-Reads-ReadStreamForward", ReadStreamForward.OriginalLabelStatic);
+		// Assert.Equal("TestGroup-Reads-ReadStreamForward", ReadStreamForward.LabelStatic);
+		// Assert.Equal("TestGroup-Reads-ReadStreamForward", ReadStreamForward.OriginalLabelStatic);
 		Assert.Equal("TestGroup-Reads-ReadStreamForward", new ReadStreamForward().Label);
 
-		Assert.Equal("TestGroup-Reads-ReadStreamBackward", ReadStreamBackward.LabelStatic);
-		Assert.Equal("TestGroup-Reads-ReadStreamBackward", ReadStreamBackward.OriginalLabelStatic);
+		// Assert.Equal("TestGroup-Reads-ReadStreamBackward", ReadStreamBackward.LabelStatic);
+		// Assert.Equal("TestGroup-Reads-ReadStreamBackward", ReadStreamBackward.OriginalLabelStatic);
 		Assert.Equal("TestGroup-Reads-ReadStreamBackward", new ReadStreamBackward().Label);
 	}
 

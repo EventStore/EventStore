@@ -145,7 +145,7 @@ namespace EventStore.Core.Bus {
 				Ensure.NotNull(handler, "handler");
 
 				List<Type> descendants;
-				if (!MessageHierarchy.Descendants.TryGetValue(typeof(T), out descendants))
+				if (!EventStoreCore.MessageHierarchy.Descendants.TryGetValue(typeof(T), out descendants))
 					throw new Exception(string.Format("No descendants for message of type '{0}'.", typeof(T).Name));
 
 				foreach (var descendant in descendants) {
@@ -166,7 +166,7 @@ namespace EventStore.Core.Bus {
 				Ensure.NotNull(handler, "handler");
 
 				List<Type> descendants;
-				if (!MessageHierarchy.Descendants.TryGetValue(typeof(T), out descendants))
+				if (!EventStoreCore.MessageHierarchy.Descendants.TryGetValue(typeof(T), out descendants))
 					throw new Exception(string.Format("No descendants for message of type '{0}'.", typeof(T).Name));
 
 				foreach (var descendant in descendants) {
@@ -241,7 +241,7 @@ namespace EventStore.Core.Bus {
 			_watchSlowMsg = watchSlowMsg;
 			_slowMsgThreshold = slowMsgThreshold ?? DefaultSlowMessageThreshold;
 
-			_handlers = new List<IMessageHandler>[MessageHierarchy.MaxMsgTypeId + 1];
+			_handlers = new List<IMessageHandler>[EventStoreCore.MessageHierarchy.MaxMsgTypeId + 1];
 			for (int i = 0; i < _handlers.Length; ++i) {
 				_handlers[i] = new List<IMessageHandler>();
 			}
@@ -251,7 +251,7 @@ namespace EventStore.Core.Bus {
 			lock (_handlersLock) {
 				Ensure.NotNull(handler, "handler");
 
-				int[] descendants = MessageHierarchy.DescendantsByType[typeof(T)];
+				int[] descendants = EventStoreCore.MessageHierarchy.DescendantsByType[typeof(T)];
 				for (int i = 0; i < descendants.Length; ++i) {
 					var handlers = _handlers[descendants[i]];
 					if (!handlers.Any(x => x.IsSame<T>(handler)))
@@ -264,7 +264,7 @@ namespace EventStore.Core.Bus {
 			lock (_handlersLock) {
 				Ensure.NotNull(handler, "handler");
 
-				int[] descendants = MessageHierarchy.DescendantsByType[typeof(T)];
+				int[] descendants = EventStoreCore.MessageHierarchy.DescendantsByType[typeof(T)];
 				for (int i = 0; i < descendants.Length; ++i) {
 					var handlers = _handlers[descendants[i]];
 					var messageHandler = handlers.FirstOrDefault(x => x.IsSame<T>(handler));

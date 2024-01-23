@@ -52,9 +52,6 @@
 		</PackageReference>
 	</ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\EventStore.SourceGenerators\EventStore.SourceGenerators.csproj" />
-	</ItemGroup>
-	<ItemGroup>
 	  <Compile Update="Messaging\Cases\AbstractWithGroup.cs">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Compile>

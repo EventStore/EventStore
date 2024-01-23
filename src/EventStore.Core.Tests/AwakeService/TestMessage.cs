@@ -1,9 +1,10 @@
 using System.Threading;
 using EventStore.Core.Messaging;
+using EventStore.Core.Scanning;
 
 namespace EventStore.Core.Tests.AwakeService {
 	public class TestMessage : Message {
-		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }

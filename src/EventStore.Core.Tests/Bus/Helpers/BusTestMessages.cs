@@ -1,8 +1,9 @@
 ﻿using EventStore.Core.Messaging;
+using EventStore.Core.Scanning;
 
 namespace EventStore.Core.Tests.Bus.Helpers {
 	public class TestMessage : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }
@@ -10,7 +11,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 	}
 
 	public class TestMessage2 : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }
@@ -18,7 +19,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 	}
 
 	public class TestMessage3 : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }
@@ -26,7 +27,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 	}
 
 	public class ParentTestMessage : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }
@@ -34,7 +35,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 	}
 
 	public class ChildTestMessage : ParentTestMessage {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }
@@ -42,7 +43,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 	}
 
 	public class GrandChildTestMessage : ChildTestMessage {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }
@@ -50,7 +51,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 	}
 
 	public class TestMessageWithId : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }

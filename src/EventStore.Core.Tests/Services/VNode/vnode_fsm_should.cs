@@ -4,12 +4,13 @@ using System.Linq;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.Scanning;
 using EventStore.Core.Services.VNode;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.VNode {
 	internal abstract class P : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }
@@ -17,7 +18,7 @@ namespace EventStore.Core.Tests.Services.VNode {
 	}
 
 	internal class A : P {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }
@@ -25,7 +26,7 @@ namespace EventStore.Core.Tests.Services.VNode {
 	}
 
 	internal class B : P {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }
@@ -33,7 +34,7 @@ namespace EventStore.Core.Tests.Services.VNode {
 	}
 
 	internal class C : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }

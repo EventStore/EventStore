@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Core.Scanning;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -48,7 +49,7 @@ namespace EventStore.Core.Tests.Services.TimeService {
 	}
 
 	public class TestResponseMessage : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		private static readonly int TypeId = SequenceId.Next();
 
 		public override int MsgTypeId {
 			get { return TypeId; }
