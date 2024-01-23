@@ -1,14 +1,18 @@
-using System.Collections.Generic;
+extern alias GrpcClient;
+extern alias GrpcClientStreams;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
-using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
-using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
+using ExpectedVersion = EventStore.Core.Tests.ClientAPI.Helpers.ExpectedVersion;
+using StreamAcl = GrpcClientStreams::EventStore.Client.StreamAcl;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
+using SystemRoles = EventStore.Core.Services.SystemRoles;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -20,7 +24,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected override async Task When() {
 			await _conn.SetStreamMetadataAsync(
-					"$all", -1, StreamMetadata.Build().SetReadRole(SystemRoles.All),
+					"$all", -1, new StreamMetadata(acl: new StreamAcl(readRole: SystemRoles.All)),
 					new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
 
 			_testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
@@ -37,7 +41,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test, Category("LongRunning")]
 		public async Task returns_all_events_including_tombstone() {
-			AllEventsSlice read = await _conn.ReadAllEventsForwardAsync(Position.Start, _testEvents.Length + 20, false)
+			AllEventsSliceNew read = await _conn.ReadAllEventsForwardAsync(Position.Start, _testEvents.Length + 20, false)
 ;
 			Assert.That(
 				EventDataComparer.Equal(
@@ -49,8 +53,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var lastEvent = read.Events.Last().Event;
 			Assert.AreEqual("$$stream", lastEvent.EventStreamId);
 			Assert.AreEqual(SystemEventTypes.StreamMetadata, lastEvent.EventType);
-			var metadata = StreamMetadata.FromJsonBytes(lastEvent.Data);
-			Assert.AreEqual(EventNumber.DeletedStream, metadata.TruncateBefore);
+			var document = JsonDocument.Parse(Encoding.UTF8.GetString(lastEvent.Data.ToArray()));
+			var tb = document.RootElement.GetProperty("$tb").GetInt64();
+			Assert.AreEqual(tb, EventNumber.DeletedStream);
+			var meta = await _conn.GetStreamMetadataAsync("stream");
+			Assert.AreEqual(meta.Metadata.TruncateBefore, StreamPosition.End);
 		}
 	}
 }

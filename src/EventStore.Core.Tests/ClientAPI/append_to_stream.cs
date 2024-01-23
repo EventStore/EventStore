@@ -1,22 +1,24 @@
-﻿using System;
+﻿extern alias GrpcClient;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClient::EventStore.Client;
+using WrongExpectedVersionException = EventStore.Core.Tests.ClientAPI.Helpers.WrongExpectedVersionException;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
+	extern alias GrpcClientStreams;
+
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class append_to_stream<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
-		private readonly TcpType _tcpType = TcpType.Ssl;
 		private MiniNode<TLogFormat, TStreamId> _node;
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.To(node, _tcpType);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[OneTimeSetUp]
@@ -278,7 +280,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
 				await store.SetStreamMetadataAsync(stream, ExpectedVersion.Any,
-					new StreamMetadata(10, null, null, null, null));
+					new GrpcClientStreams::EventStore.Client.StreamMetadata(maxCount: 10));
 
 				await store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, TestEvent.NewTestEvent());
 			}
@@ -290,9 +292,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "should_fail_appending_with_stream_exists_exp_ver_and_stream_does_not_exist";
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
-
 				var wev = await AssertEx.ThrowsAsync<WrongExpectedVersionException>(
 					() => store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, TestEvent.NewTestEvent()));
+
 				Assert.AreEqual(ExpectedVersion.StreamExists, wev.ExpectedVersion);
 				Assert.AreEqual(ExpectedVersion.NoStream, wev.ActualVersion);
 			}
@@ -347,7 +349,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				var largeData = new string(' ', 20000);
 				var events = Enumerable.Range(0, 100).Select(i => TestEvent.NewTestEvent(largeData, i.ToString()));
-				Assert.ThrowsAsync<InvalidTransactionException>(async () =>
+				Assert.ThrowsAsync<GrpcClientStreams::EventStore.Client.MaximumAppendSizeExceededException>(async () =>
 					await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events));
 			}
 		}
@@ -445,11 +447,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class ssl_append_to_stream<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
-		private readonly TcpType _tcpType = TcpType.Ssl;
 		protected MiniNode<TLogFormat, TStreamId> _node;
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.To(node, _tcpType);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 
@@ -588,7 +589,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var wev = await AssertEx.ThrowsAsync<WrongExpectedVersionException>(() =>
 					store.AppendToStreamAsync(stream, 1, TestEvent.NewTestEvent()));
 				Assert.AreEqual(1, wev.ExpectedVersion);
-				Assert.AreEqual(0, wev.ActualVersion.GetValueOrDefault(0));
+				Assert.AreEqual(0, wev.ActualVersion);
 			}
 		}
 
@@ -611,7 +612,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				var largeData = new string(' ', 20000);
 				var events = Enumerable.Range(0, 100).Select(i => TestEvent.NewTestEvent(largeData, i.ToString()));
-				Assert.ThrowsAsync<InvalidTransactionException>(async () =>
+				Assert.ThrowsAsync<GrpcClientStreams::EventStore.Client.MaximumAppendSizeExceededException>(async () =>
 					await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events));
 			}
 		}

@@ -1,9 +1,9 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using GrpcClient::EventStore.Client;
+using GrpcClientStreams::EventStore.Client;
+using SystemSettings = GrpcClientStreams::EventStore.Client.SystemSettings;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Services;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
@@ -29,16 +29,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream(stream, "user1", "pa$$1");
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await TransStart(stream, "user1", "pa$$1");
-			}
-
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await TransStart(stream, "user1", "pa$$1");
+			// }
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
+			// 	await trans.WriteAsync();
+			// 	await trans.CommitAsync();
+			// }
 
 			await ReadMeta(stream, "user1", "pa$$1");
 			await WriteMeta(stream, "user1", "pa$$1", null);
@@ -56,14 +57,16 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadStreamBackward(stream, "user2", "pa$$2"));
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream(stream, "user2", "pa$$2"));
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart(stream, "user2", "pa$$2"));
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
-				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
-				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart(stream, "user2", "pa$$2"));
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
+			// 	await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
+			// 	await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			// }
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta(stream, "user2", "pa$$2"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteMeta(stream, "user2", "pa$$2", null));
@@ -81,14 +84,16 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadStreamBackward(stream, null, null));
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream(stream, null, null));
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart(stream, null, null));
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId);
-				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
-				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart(stream, null, null));
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId);
+			// 	await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
+			// 	await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			// }
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta(stream, null, null));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteMeta(stream, null, null, null));
@@ -107,16 +112,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream(stream, "adm", "admpa$$");
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await TransStart(stream, "adm", "admpa$$");
-			}
-
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await TransStart(stream, "adm", "admpa$$");
+			// }
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+			// 	await trans.WriteAsync();
+			// 	await trans.CommitAsync();
+			// }
 
 			await ReadMeta(stream, "adm", "admpa$$");
 			await WriteMeta(stream, "adm", "admpa$$", null);

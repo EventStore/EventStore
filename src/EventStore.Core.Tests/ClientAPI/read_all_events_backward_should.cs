@@ -1,13 +1,18 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
+using StreamAcl = GrpcClientStreams::EventStore.Client.StreamAcl;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
+using SystemRoles = EventStore.Core.Services.SystemRoles;
 
 namespace EventStore.Core.Tests.ClientAPI {
+
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
@@ -17,7 +22,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected override async Task When() {
 			await _conn.SetStreamMetadataAsync("$all", -1,
-					StreamMetadata.Build().SetReadRole(SystemRoles.All),
+					new StreamMetadata(acl: new StreamAcl(readRole: SystemRoles.All)),
 					DefaultData.AdminCredentials);
 
 			_testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
@@ -48,9 +53,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test, Category("LongRunning")]
 		public async Task be_able_to_read_all_one_by_one_until_end_of_stream() {
-			var all = new List<RecordedEvent>();
+			var all = new List<EventRecord>();
 			var position = Position.End;
-			AllEventsSlice slice;
+			AllEventsSliceNew slice;
 
 			while (!(slice = await _conn.ReadAllEventsBackwardAsync(position, 1, false)).IsEndOfStream) {
 				all.Add(slice.Events.Single().Event);
@@ -63,9 +68,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test, Category("LongRunning")]
 		public async Task be_able_to_read_events_slice_at_time() {
-			var all = new List<RecordedEvent>();
+			var all = new List<EventRecord>();
 			var position = Position.End;
-			AllEventsSlice slice;
+			AllEventsSliceNew slice;
 
 			while (!(slice = await _conn.ReadAllEventsBackwardAsync(position, 5, false)).IsEndOfStream) {
 				all.AddRange(slice.Events.Select(x => x.Event));

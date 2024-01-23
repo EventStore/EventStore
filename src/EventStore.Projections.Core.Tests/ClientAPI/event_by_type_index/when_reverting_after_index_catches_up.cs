@@ -26,7 +26,7 @@ fromAll().foreachStream().when({
     $deleted: function(s,e){s.deleted=1;},
 }).outputState();
 ");
-			await _manager.AbortAsync("test-projection", _admin);
+			await _manager.AbortAsync("test-projection", userCredentials: _admin);
 			WaitIdle();
 
 			await EnableStandardProjections();
@@ -39,7 +39,7 @@ fromAll().foreachStream().when({
 
 		protected override async Task When() {
 			await base.When();
-			await _manager.EnableAsync("test-projection", _admin);
+			await _manager.EnableAsync("test-projection", userCredentials: _admin);
 			WaitIdle();
 		}
 

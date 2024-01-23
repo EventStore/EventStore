@@ -1,10 +1,12 @@
+extern alias GrpcClient;
+using SupportedMethod = GrpcClient::EventStore.Client.ServerFeatures.SupportedMethod;
+using ServerFeatures = GrpcClient::EventStore.Client.ServerFeatures.ServerFeatures;
+using Empty = GrpcClient::EventStore.Client.Empty;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using EventStore.Client;
-using EventStore.Client.ServerFeatures;
 using EventStore.Core.Tests.Integration;
 using Google.Protobuf.Reflection;
 using Grpc.Net.Client;

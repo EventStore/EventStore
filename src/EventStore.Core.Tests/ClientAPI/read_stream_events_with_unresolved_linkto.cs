@@ -1,15 +1,16 @@
+extern alias GrpcClient;
+extern alias GrpcClientStreams;
 using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
-using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
-using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
+using StreamAcl = GrpcClientStreams::EventStore.Client.StreamAcl;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
+using SystemRoles = EventStore.Core.Services.SystemRoles;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -20,7 +21,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected override async Task When() {
 			await _conn.SetStreamMetadataAsync(
-					"$all", -1, StreamMetadata.Build().SetReadRole(SystemRoles.All),
+					"$all", -1, new StreamMetadata(acl: new StreamAcl(readRole: SystemRoles.All)),
 					new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
 
 			_testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
@@ -28,7 +29,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await _conn.AppendToStreamAsync(
 					"links", ExpectedVersion.NoStream,
 					new EventData(
-						Guid.NewGuid(), EventStore.ClientAPI.Common.SystemEventTypes.LinkTo, false,
+						Uuid.NewUuid(), EventStore.ClientAPI.Common.SystemEventTypes.LinkTo,
 						Encoding.UTF8.GetBytes("0@stream"), null));
 			await _conn.DeleteStreamAsync("stream", ExpectedVersion.Any);
 		}

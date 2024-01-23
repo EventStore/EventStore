@@ -1,11 +1,12 @@
-﻿using System;
+﻿extern alias GrpcClient;
+using SubscriptionDroppedReason = GrpcClient::EventStore.Client.SubscriptionDroppedReason;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Http.Users.users;
 using NUnit.Framework;
 
@@ -67,7 +68,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	class when_updating_an_existing_subscription<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 		private readonly string _groupName = Guid.NewGuid().ToString();
-		private SubscriptionDropReason _droppedReason;
+		private SubscriptionDroppedReason _droppedReason;
 		private Exception _exception;
 		private const string _stream = "stream";
 		private AutoResetEvent _dropped = new AutoResetEvent(false);

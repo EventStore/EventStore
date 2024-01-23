@@ -46,26 +46,8 @@ namespace EventStore.TestClient {
 			_commands.Register(new PingFloodProcessor());
 			_commands.Register(new PingFloodWaitingProcessor());
 
-			_commands.Register(new WriteProcessor());
-			_commands.Register(new WriteJsonProcessor());
-			_commands.Register(new WriteFloodProcessor());
 			_commands.Register(new WriteFloodClientApiProcessor());
-			_commands.Register(new WriteFloodWaitingProcessor());
 
-			_commands.Register(new MultiWriteProcessor());
-			_commands.Register(new MultiWriteFloodWaitingProcessor());
-
-			_commands.Register(new TransactionWriteProcessor());
-
-			_commands.Register(new DeleteProcessor());
-
-			_commands.Register(new ReadAllProcessor());
-			_commands.Register(new ReadProcessor());
-			_commands.Register(new ReadFloodProcessor());
-
-			_commands.Register(new WriteLongTermProcessor());
-
-			_commands.Register(new DvuBasicProcessor());
 			_commands.Register(new RunTestScenariosProcessor());
 
 			_commands.Register(new SubscribeToStreamProcessor());

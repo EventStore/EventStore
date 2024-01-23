@@ -1,11 +1,12 @@
-﻿using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.SystemData;
+﻿extern alias GrpcClient;
+using GrpcClient::EventStore.Client;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests;
+using System.Text;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_streams_tracker.when_tracking {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -27,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_tracker.whe
 			});
 
 			_eventAppeared.Wait(TimeSpan.FromSeconds(5));
-			sub.Unsubscribe();
+			sub.Dispose();
 		}
 
 		[Test]
@@ -35,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_tracker.whe
 			var result = await _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0, 200,
 				false, _credentials);
 			Assert.AreEqual(1, result.Events.Length);
-			Assert.AreEqual("test_stream", Helper.UTF8NoBom.GetString(result.Events[0].Event.Data));
+			Assert.AreEqual("test_stream", Encoding.UTF8.GetString(result.Events[0].Event.Data.ToArray()));
 			Assert.AreEqual(0, _eventAppeared.CurrentCount);
 		}
 	}

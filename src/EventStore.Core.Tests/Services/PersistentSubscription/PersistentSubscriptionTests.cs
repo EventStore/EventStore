@@ -1,21 +1,19 @@
-﻿using System;
+﻿extern alias GrpcClientPersistent;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading;
-using EventStore.ClientAPI.Common;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Tests.Services.Replication;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
-using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 using EventStore.Core.Tests.ClientAPI;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.LogAbstraction;
@@ -24,10 +22,14 @@ using EventStore.Core.Metrics;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog;
+using GrpcClientPersistent::EventStore.Client;
 using EventFilter = EventStore.Core.Services.Storage.ReaderIndex.EventFilter;
 using StreamMetadata = EventStore.Core.Data.StreamMetadata;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription {
+	extern alias GrpcClient;
+	extern alias GrpcClientStreams;
+
 	public enum EventSource {
 		SingleStream,
 		AllStream,
@@ -2416,7 +2418,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 		[Test]
 		public async Task read_whilst_ack_doesnt_deadlock_with_request_response_dispatcher() {
-			var persistentSubscriptionSettings = PersistentSubscriptionSettings.Create().Build();
+			var persistentSubscriptionSettings = new PersistentSubscriptionSettings();
 			var userCredentials = DefaultData.AdminCredentials;
 			await _conn.CreatePersistentSubscriptionAsync("TestStream", "TestGroup", persistentSubscriptionSettings,
 				userCredentials);
@@ -2438,13 +2440,13 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 				(sub, reason, ex) => { });
 			Assert.IsTrue(manualResetEventSlim.Wait(TimeSpan.FromSeconds(30)),
 				"Failed to receive all events in 2 minutes. Assume event store is deadlocked.");
-			sub1.Stop(TimeSpan.FromSeconds(10));
-			_conn.Close();
+			sub1.Dispose();
+			await _conn.Close();
 		}
 
-		private static IEnumerable<EventData> CreateEvent() {
+		private static IEnumerable<GrpcClient::EventStore.Client.EventData> CreateEvent() {
 			while (true) {
-				yield return new EventData(Guid.NewGuid(), "testtype", false, new byte[0], new byte[0]);
+				yield return new GrpcClient::EventStore.Client.EventData(GrpcClient::EventStore.Client.Uuid.NewUuid(), "testtype", new byte[0], new byte[0]);
 			}
 		}
 	}
@@ -2528,7 +2530,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 		public static ResolvedEvent BuildLinkEvent(Guid id, string stream, long version, ResolvedEvent ev, bool resolved = true, long commitPosition=1234567, long preparePosition=1234567) {
 			var link = new EventRecord(version, preparePosition, Guid.NewGuid(), id, commitPosition, 1234, stream, version,
-				DateTime.UtcNow, PrepareFlags.SingleWrite, SystemEventTypes.LinkTo,
+				DateTime.UtcNow, PrepareFlags.SingleWrite, GrpcClientStreams::EventStore.Client.SystemEventTypes.LinkTo,
 				Encoding.UTF8.GetBytes(string.Format("{0}@{1}", ev.OriginalEventNumber, ev.OriginalStreamId)),
 				new byte[0]);
 			if (resolved)

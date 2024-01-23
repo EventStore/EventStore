@@ -1,14 +1,12 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using System;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.Common.Utils;
-using EventStore.Core.Data;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
-using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
-using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
 using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.ClientAPI {
@@ -17,7 +15,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_working_with_metadata<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private MiniNode<TLogFormat, TStreamId> _node;
-		private IEventStoreConnection _connection;
+		private IEventStoreClient _connection;
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
@@ -29,13 +27,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await _connection.ConnectAsync();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
-			_connection.Close();
+			await _connection.Close();
 			await _node.Shutdown();
 			await base.TestFixtureTearDown();
 		}
@@ -47,10 +45,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await _connection.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent());
 
 			var meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
-			Assert.AreEqual(stream, meta.Stream);
-			Assert.AreEqual(false, meta.IsStreamDeleted);
-			Assert.AreEqual(-1, meta.MetastreamVersion);
-			Assert.AreEqual(Helper.UTF8NoBom.GetBytes(""), meta.StreamMetadata);
+			Assert.AreEqual(stream, meta.StreamName);
+			Assert.AreEqual(false, meta.StreamDeleted);
+			Assert.AreEqual(-1, meta.MetastreamRevision!.Value.ToInt64());
+			Assert.AreEqual(Helper.UTF8NoBom.GetBytes(""), meta.Metadata.ToJson());
 		}
 	}
 }

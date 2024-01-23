@@ -1,7 +1,10 @@
-﻿using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Services;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using GrpcClient::EventStore.Client;
+using GrpcClientStreams::EventStore.Client;
+using SystemSettings = GrpcClientStreams::EventStore.Client.SystemSettings;
+using SystemRoles = GrpcClient::EventStore.Client.SystemRoles;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
@@ -29,16 +32,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream(stream, "user1", "pa$$1");
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await TransStart(stream, "user1", "pa$$1");
-			}
-
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			}
+			// TODO - gRPC client no longer support explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await TransStart(stream, "user1", "pa$$1");
+			// }
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
+			// 	await trans.WriteAsync();
+			// 	await trans.CommitAsync();
+			// }
 
 			await ReadMeta(stream, "user1", "pa$$1");
 			await WriteMeta(stream, "user1", "pa$$1", null);
@@ -57,16 +61,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream(stream, null, null);
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await TransStart(stream, null, null);
-			}
-
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId);
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			}
+			// TODO - gRPC client no longer support explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await TransStart(stream, null, null);
+			// }
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId);
+			// 	await trans.WriteAsync();
+			// 	await trans.CommitAsync();
+			// }
 
 			await ReadMeta(stream, null, null);
 			await WriteMeta(stream, null, null, null);
@@ -85,16 +90,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream(stream, "adm", "admpa$$");
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await TransStart(stream, "adm", "admpa$$");
-			}
-
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			}
+			// TODO - gRPC client no longer support explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await TransStart(stream, "adm", "admpa$$");
+			// }
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+			// 	await trans.WriteAsync();
+			// 	await trans.CommitAsync();
+			// }
 
 			await ReadMeta(stream, "adm", "admpa$$");
 			await WriteMeta(stream, "adm", "admpa$$", null);

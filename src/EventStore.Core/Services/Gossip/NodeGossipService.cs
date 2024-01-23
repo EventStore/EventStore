@@ -54,8 +54,6 @@ namespace EventStore.Core.Services.Gossip {
 				true,
 				_memberInfo.InternalTcpEndPoint,
 				_memberInfo.InternalSecureTcpEndPoint,
-				_memberInfo.ExternalTcpEndPoint,
-				_memberInfo.ExternalSecureTcpEndPoint,
 				_memberInfo.HttpEndPoint,
 				_memberInfo.AdvertiseHostToClientAs,
 				_memberInfo.AdvertiseHttpPortToClientAs,

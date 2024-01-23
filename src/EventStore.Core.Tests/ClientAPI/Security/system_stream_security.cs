@@ -1,6 +1,10 @@
-﻿using System.Threading.Tasks;
-using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.SystemData;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using GrpcClient::EventStore.Client;
+using GrpcClientStreams::EventStore.Client;
+using SystemSettings = GrpcClientStreams::EventStore.Client.SystemSettings;
+using SystemRoles = GrpcClient::EventStore.Client.SystemRoles;
+using System.Threading.Tasks;
 using EventStore.Core.Services;
 using NUnit.Framework;
 
@@ -16,15 +20,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadStreamBackward("$system-no-acl", "user1", "pa$$1"));
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream("$system-no-acl", "user1", "pa$$1"));
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart("$system-no-acl", "user1", "pa$$1"));
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart("$system-no-acl", "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
-				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
-			}
-
+			// TODO - gRPC client no longer supports explicit transactions.
+			// await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart("$system-no-acl", "user1", "pa$$1"));
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart("$system-no-acl", "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
+			// 	await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
+			// 	await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			// }
+			//
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta("$system-no-acl", "user1", "pa$$1"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteMeta("$system-no-acl", "user1", "pa$$1", null));
 
@@ -39,16 +45,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream("$system-no-acl", "adm", "admpa$$");
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await TransStart("$system-no-acl", "adm", "admpa$$");
-			}
-
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart("$system-no-acl", "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await TransStart("$system-no-acl", "adm", "admpa$$");
+			// }
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart("$system-no-acl", "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+			// 	await trans.WriteAsync();
+			// 	await trans.CommitAsync();
+			// }
 
 			await ReadMeta("$system-no-acl", "adm", "admpa$$");
 			await WriteMeta("$system-no-acl", "adm", "admpa$$", null);
@@ -63,14 +70,16 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadStreamBackward("$system-acl", "user2", "pa$$2"));
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream("$system-acl", "user2", "pa$$2"));
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart("$system-acl", "user2", "pa$$2"));
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart("$system-acl", "user1", "pa$$1")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
-				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
-				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart("$system-acl", "user2", "pa$$2"));
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart("$system-acl", "user1", "pa$$1")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
+			// 	await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
+			// 	await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			// }
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta("$system-acl", "user2", "pa$$2"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteMeta("$system-acl", "user2", "pa$$2", "user1"));
@@ -86,16 +95,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream("$system-acl", "user1", "pa$$1");
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await TransStart("$system-acl", "user1", "pa$$1");
-			}
-
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart("$system-acl", "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await TransStart("$system-acl", "user1", "pa$$1");
+			// }
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart("$system-acl", "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
+			// 	await trans.WriteAsync();
+			// 	await trans.CommitAsync();
+			// }
 
 			await ReadMeta("$system-acl", "user1", "pa$$1");
 			await WriteMeta("$system-acl", "user1", "pa$$1", "user1");
@@ -111,16 +121,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream("$system-acl", "adm", "admpa$$");
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await TransStart("$system-acl", "adm", "admpa$$");
-			}
-
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart("$system-acl", "user1", "pa$$1")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await TransStart("$system-acl", "adm", "admpa$$");
+			// }
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart("$system-acl", "user1", "pa$$1")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+			// 	await trans.WriteAsync();
+			// 	await trans.CommitAsync();
+			// }
 
 			await ReadMeta("$system-acl", "adm", "admpa$$");
 			await WriteMeta("$system-acl", "adm", "admpa$$", "user1");
@@ -136,14 +147,16 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadStreamBackward("$system-adm", "user1", "pa$$1"));
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream("$system-adm", "user1", "pa$$1"));
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart("$system-adm", "user1", "pa$$1"));
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart("$system-adm", "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
-				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart("$system-adm", "user1", "pa$$1"));
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart("$system-adm", "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
+			// 	await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
+			// 	await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			// }
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta("$system-adm", "user1", "pa$$1"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteMeta("$system-adm", "user1", "pa$$1", SystemRoles.Admins));
@@ -159,16 +172,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream("$system-adm", "adm", "admpa$$");
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await TransStart("$system-adm", "adm", "admpa$$");
-			}
-
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart("$system-adm", "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await TransStart("$system-adm", "adm", "admpa$$");
+			// }
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart("$system-adm", "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+			// 	await trans.WriteAsync();
+			// 	await trans.CommitAsync();
+			// }
 
 			await ReadMeta("$system-adm", "adm", "admpa$$");
 			await WriteMeta("$system-adm", "adm", "admpa$$", SystemRoles.Admins);
@@ -185,16 +199,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream("$system-all", null, null);
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await TransStart("$system-all", null, null);
-			}
-
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart("$system-all", null, null)).TransactionId;
-				var trans = Connection.ContinueTransaction(transId);
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await TransStart("$system-all", null, null);
+			// }
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart("$system-all", null, null)).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId);
+			// 	await trans.WriteAsync();
+			// 	await trans.CommitAsync();
+			// }
 
 			await ReadMeta("$system-all", null, null);
 			await WriteMeta("$system-all", null, null, SystemRoles.All);
@@ -210,16 +225,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream("$system-all", "user1", "pa$$1");
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await TransStart("$system-all", "user1", "pa$$1");
-			}
-
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart("$system-all", "user1", "pa$$1")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await TransStart("$system-all", "user1", "pa$$1");
+			// }
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart("$system-all", "user1", "pa$$1")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
+			// 	await trans.WriteAsync();
+			// 	await trans.CommitAsync();
+			// }
 
 			await ReadMeta("$system-all", "user1", "pa$$1");
 			await WriteMeta("$system-all", "user1", "pa$$1", SystemRoles.All);
@@ -235,16 +251,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream("$system-all", "adm", "admpa$$");
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await TransStart("$system-all", "adm", "admpa$$");
-			}
-
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart("$system-all", "adm", "admpa$$")).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			}
+			// TODO - gRPC client no longer supports explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await TransStart("$system-all", "adm", "admpa$$");
+			// }
+			//
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart("$system-all", "adm", "admpa$$")).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+			// 	await trans.WriteAsync();
+			// 	await trans.CommitAsync();
+			// }
 
 			await ReadMeta("$system-all", "adm", "admpa$$");
 			await WriteMeta("$system-all", "adm", "admpa$$", SystemRoles.All);

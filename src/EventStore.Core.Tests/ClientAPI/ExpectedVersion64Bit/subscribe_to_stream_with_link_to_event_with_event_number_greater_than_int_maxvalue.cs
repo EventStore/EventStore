@@ -1,11 +1,14 @@
-﻿using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common.Utils;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
 using EventStore.Core.Services;
 using NUnit.Framework;
 using System;
+using System.Text;
 using System.Threading;
-using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
+using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
 using System.Threading.Tasks;
+using EventStore.Core.Tests.ClientAPI.Helpers;
+using GrpcClient::EventStore.Client;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -37,13 +40,13 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 
 			await _store.SubscribeToStreamAsync(_linkedStreamName, true, HandleEvent);
 			await _store.AppendToStreamAsync(_linkedStreamName, ExpectedVersion.NoStream,
-				new EventData(Guid.NewGuid(),
-					SystemEventTypes.LinkTo, false, Helper.UTF8NoBom.GetBytes(
+				new EventData(Uuid.NewUuid(),
+					SystemEventTypes.LinkTo, Encoding.UTF8.GetBytes(
 						string.Format("{0}@{1}", intMaxValue + 1, StreamName)
 					), null));
 		}
 
-		private Task HandleEvent(EventStoreSubscription sub, ResolvedEvent resolvedEvent) {
+		private Task HandleEvent(StreamSubscription sub, ResolvedEvent resolvedEvent) {
 			_receivedEvent = resolvedEvent;
 			_resetEvent.Set();
 			return Task.CompletedTask;
@@ -52,9 +55,9 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		[Test]
 		public void should_receive_and_resolve_the_linked_event() {
 			Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
-			Assert.AreEqual(intMaxValue + 1, _receivedEvent.Event.EventNumber);
-			Assert.AreEqual(_event1Id, _receivedEvent.Event.EventId);
-			Assert.AreEqual(intMaxValue + 1, _receivedEvent.Event.EventNumber);
+			Assert.AreEqual(intMaxValue + 1, _receivedEvent.Event.EventNumber.ToInt64());
+			Assert.AreEqual(_event1Id, _receivedEvent.Event.EventId.ToGuid());
+			Assert.AreEqual(intMaxValue + 1, _receivedEvent.Event.EventNumber.ToInt64());
 		}
 	}
 }

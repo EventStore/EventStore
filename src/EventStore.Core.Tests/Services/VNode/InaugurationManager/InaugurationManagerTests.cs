@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Services.VNode.InaugurationManagement {
 		protected readonly MemberInfo _leader =
 			MemberInfo.ForVNode(
 				default, default, default, default,
-				new DnsEndPoint("localhost", default), default, default, default,
+				 default, default,
 				new DnsEndPoint("localhost", default), default, default, default,
 				default, default, default, default, default, default, default, default);
 		protected readonly long _replicationTarget = 400;

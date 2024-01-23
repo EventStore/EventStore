@@ -53,12 +53,6 @@ namespace EventStore.Core.Cluster {
 					x.IsAlive,
 					!x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port).WithClusterDns(clusterDns) : null,
 					x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port).WithClusterDns(clusterDns) : null,
-					!x.ExternalTcpUsesTls && x.ExternalTcp != null
-						? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port).WithClusterDns(clusterDns)
-						: null,
-					x.ExternalTcpUsesTls && x.ExternalTcp != null
-						? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port).WithClusterDns(clusterDns)
-						: null,
 					new DnsEndPoint(x.HttpEndPoint.Address, (int)x.HttpEndPoint.Port).WithClusterDns(clusterDns),
 					x.AdvertiseHostToClientAs, (int)x.AdvertiseHttpPortToClientAs, (int)x.AdvertiseTcpPortToClientAs,
 					x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint,
@@ -85,15 +79,6 @@ namespace EventStore.Core.Cluster {
 					x.InternalTcpEndPoint.GetHost(),
 					(uint)x.InternalTcpEndPoint.GetPort()),
 				InternalTcpUsesTls = x.InternalSecureTcpEndPoint != null,
-				ExternalTcp = x.ExternalSecureTcpEndPoint != null ?
-					new EventStore.Cluster.EndPoint(
-						x.ExternalSecureTcpEndPoint.GetHost(),
-						(uint)x.ExternalSecureTcpEndPoint.GetPort()) :
-					x.ExternalTcpEndPoint != null ?
-					new EventStore.Cluster.EndPoint(
-					x.ExternalTcpEndPoint.GetHost(),
-					(uint)x.ExternalTcpEndPoint.GetPort()) : null,
-				ExternalTcpUsesTls = x.ExternalSecureTcpEndPoint != null,
 				LastCommitPosition = x.LastCommitPosition,
 				WriterCheckpoint = x.WriterCheckpoint,
 				ChaserCheckpoint = x.ChaserCheckpoint,

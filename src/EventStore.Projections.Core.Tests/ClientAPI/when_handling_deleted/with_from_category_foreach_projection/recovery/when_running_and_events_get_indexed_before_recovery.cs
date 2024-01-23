@@ -33,13 +33,13 @@ fromCategory('stream').foreachStream().when({
 			WaitIdle();
 			await HardDeleteStream("stream-1");
 			WaitIdle();
-			await _manager.AbortAsync("test-projection", _admin);
+			await _manager.AbortAsync("test-projection", userCredentials: _admin);
 			WaitIdle();
 		}
 
 		protected override async Task When() {
 			await base.When();
-			await _manager.EnableAsync("test-projection", _admin);
+			await _manager.EnableAsync("test-projection", userCredentials: _admin);
 			WaitIdle();
 		}
 

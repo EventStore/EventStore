@@ -1,8 +1,10 @@
-﻿using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
-using EventStore.Core.Services;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using GrpcClient::EventStore.Client;
+using GrpcClientStreams::EventStore.Client;
+using System.Threading.Tasks;
 using NUnit.Framework;
+using SystemRoles = GrpcClient::EventStore.Client.SystemRoles;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
 	[Category("ClientAPI"), Category("LongRunning"), Category("Network")]
@@ -18,82 +20,82 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 		[Test]
 		public async Task deleting_normal_no_acl_stream_with_no_user_is_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build());
+			var streamId = await CreateStreamWithMeta(new StreamMetadata());
 			await DeleteStream(streamId, null, null);
 		}
 
 		[Test]
 		public async Task deleting_normal_no_acl_stream_with_existing_user_is_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build());
+			var streamId = await CreateStreamWithMeta(new StreamMetadata());
 			await DeleteStream(streamId, "user1", "pa$$1");
 		}
 
 		[Test]
 		public async Task deleting_normal_no_acl_stream_with_admin_user_is_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build());
+			var streamId = await CreateStreamWithMeta(new StreamMetadata());
 			await DeleteStream(streamId, "adm", "admpa$$");
 		}
 
 
 		[Test]
 		public async Task deleting_normal_user_stream_with_no_user_is_not_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole("user1"));
+			var streamId = await CreateStreamWithMeta(new StreamMetadata(acl: new StreamAcl(deleteRole: "user1")));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => DeleteStream(streamId, null, null));
 		}
 
 		[Test]
 		public async Task deleting_normal_user_stream_with_not_authorized_user_is_not_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole("user1"));
+			var streamId = await CreateStreamWithMeta(new StreamMetadata(acl: new StreamAcl(deleteRole: "user1")));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => DeleteStream(streamId, "user2", "pa$$2"));
 		}
 
 		[Test]
 		public async Task deleting_normal_user_stream_with_authorized_user_is_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole("user1"));
+			var streamId = await CreateStreamWithMeta(new StreamMetadata(acl: new StreamAcl(deleteRole: "user1")));
 			await DeleteStream(streamId, "user1", "pa$$1");
 		}
 
 		[Test]
 		public async Task deleting_normal_user_stream_with_admin_user_is_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole("user1"));
+			var streamId = await CreateStreamWithMeta(new StreamMetadata(acl: new StreamAcl(deleteRole: "user1")));
 			await DeleteStream(streamId, "adm", "admpa$$");
 		}
 
 
 		[Test]
 		public async Task deleting_normal_admin_stream_with_no_user_is_not_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemRoles.Admins));
+			var streamId = await CreateStreamWithMeta(new StreamMetadata(acl: new StreamAcl(deleteRole: SystemRoles.Admins)));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => DeleteStream(streamId, null, null));
 		}
 
 		[Test]
 		public async Task deleting_normal_admin_stream_with_existing_user_is_not_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemRoles.Admins));
+			var streamId = await CreateStreamWithMeta(new StreamMetadata(acl: new StreamAcl(deleteRole: SystemRoles.Admins)));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => DeleteStream(streamId, "user1", "pa$$1"));
 		}
 
 		[Test]
 		public async Task deleting_normal_admin_stream_with_admin_user_is_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemRoles.Admins));
+			var streamId = await CreateStreamWithMeta(new StreamMetadata(acl: new StreamAcl(deleteRole: SystemRoles.Admins)));
 			await DeleteStream(streamId, "adm", "admpa$$");
 		}
 
 
 		[Test]
 		public async Task deleting_normal_all_stream_with_no_user_is_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemRoles.All));
+			var streamId = await CreateStreamWithMeta(new StreamMetadata(acl: new StreamAcl(deleteRole: SystemRoles.All)));
 			await DeleteStream(streamId, null, null);
 		}
 
 		[Test]
 		public async Task deleting_normal_all_stream_with_existing_user_is_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemRoles.All));
+			var streamId = await CreateStreamWithMeta(new StreamMetadata(acl: new StreamAcl(deleteRole: SystemRoles.All)));
 			await DeleteStream(streamId, "user1", "pa$$1");
 		}
 
 		[Test]
 		public async Task deleting_normal_all_stream_with_admin_user_is_allowed() {
-			var streamId = await CreateStreamWithMeta(StreamMetadata.Build().SetDeleteRole(SystemRoles.All));
+			var streamId = await CreateStreamWithMeta(new StreamMetadata(acl: new StreamAcl(deleteRole: SystemRoles.All)));
 			await DeleteStream(streamId, "adm", "admpa$$");
 		}
 
@@ -101,19 +103,19 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 		[Test]
 		public async Task deleting_system_no_acl_stream_with_no_user_is_not_allowed() {
-			var streamId = await CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build());
+			var streamId = await CreateStreamWithMeta(streamPrefix: "$", metadata: new StreamMetadata());
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => DeleteStream(streamId, null, null));
 		}
 
 		[Test]
 		public async Task deleting_system_no_acl_stream_with_existing_user_is_not_allowed() {
-			var streamId = await CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build());
+			var streamId = await CreateStreamWithMeta(streamPrefix: "$", metadata: new StreamMetadata());
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => DeleteStream(streamId, "user1", "pa$$1"));
 		}
 
 		[Test]
 		public async Task deleting_system_no_acl_stream_with_admin_user_is_allowed() {
-			var streamId = await CreateStreamWithMeta(streamPrefix: "$", metadata: StreamMetadata.Build());
+			var streamId = await CreateStreamWithMeta(streamPrefix: "$", metadata: new StreamMetadata());
 			await DeleteStream(streamId, "adm", "admpa$$");
 		}
 
@@ -121,28 +123,28 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 		[Test]
 		public async Task deleting_system_user_stream_with_no_user_is_not_allowed() {
 			var streamId = await CreateStreamWithMeta(streamPrefix: "$",
-				metadata: StreamMetadata.Build().SetDeleteRole("user1"));
+				metadata: new StreamMetadata(acl: new StreamAcl(deleteRole: "user1")));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => DeleteStream(streamId, null, null));
 		}
 
 		[Test]
 		public async Task deleting_system_user_stream_with_not_authorized_user_is_not_allowed() {
 			var streamId = await CreateStreamWithMeta(streamPrefix: "$",
-				metadata: StreamMetadata.Build().SetDeleteRole("user1"));
+				metadata: new StreamMetadata(acl: new StreamAcl(deleteRole: "user1")));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => DeleteStream(streamId, "user2", "pa$$2"));
 		}
 
 		[Test]
 		public async Task deleting_system_user_stream_with_authorized_user_is_allowed() {
 			var streamId = await CreateStreamWithMeta(streamPrefix: "$",
-				metadata: StreamMetadata.Build().SetDeleteRole("user1"));
+				metadata: new StreamMetadata(acl: new StreamAcl(deleteRole: "user1")));
 			await DeleteStream(streamId, "user1", "pa$$1");
 		}
 
 		[Test]
 		public async Task deleting_system_user_stream_with_admin_user_is_allowed() {
 			var streamId = await CreateStreamWithMeta(streamPrefix: "$",
-				metadata: StreamMetadata.Build().SetDeleteRole("user1"));
+				metadata: new StreamMetadata(acl: new StreamAcl(deleteRole: "user1")));
 			await DeleteStream(streamId, "adm", "admpa$$");
 		}
 
@@ -150,21 +152,21 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 		[Test]
 		public async Task deleting_system_admin_stream_with_no_user_is_not_allowed() {
 			var streamId = await CreateStreamWithMeta(streamPrefix: "$",
-				metadata: StreamMetadata.Build().SetDeleteRole(SystemRoles.Admins));
+				metadata: new StreamMetadata(acl: new StreamAcl(deleteRole: SystemRoles.Admins)));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => DeleteStream(streamId, null, null));
 		}
 
 		[Test]
 		public async Task deleting_system_admin_stream_with_existing_user_is_not_allowed() {
 			var streamId = await CreateStreamWithMeta(streamPrefix: "$",
-				metadata: StreamMetadata.Build().SetDeleteRole(SystemRoles.Admins));
+				metadata: new StreamMetadata(acl: new StreamAcl(deleteRole: SystemRoles.Admins)));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => DeleteStream(streamId, "user1", "pa$$1"));
 		}
 
 		[Test]
 		public async Task deleting_system_admin_stream_with_admin_user_is_allowed() {
 			var streamId = await CreateStreamWithMeta(streamPrefix: "$",
-				metadata: StreamMetadata.Build().SetDeleteRole(SystemRoles.Admins));
+				metadata: new StreamMetadata(acl: new StreamAcl(deleteRole: SystemRoles.Admins)));
 			await DeleteStream(streamId, "adm", "admpa$$");
 		}
 
@@ -172,21 +174,21 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 		[Test]
 		public async Task deleting_system_all_stream_with_no_user_is_allowed() {
 			var streamId = await CreateStreamWithMeta(streamPrefix: "$",
-				metadata: StreamMetadata.Build().SetDeleteRole(SystemRoles.All));
+				metadata: new StreamMetadata(acl: new StreamAcl(deleteRole: SystemRoles.All)));
 			await DeleteStream(streamId, null, null);
 		}
 
 		[Test]
 		public async Task deleting_system_all_stream_with_existing_user_is_allowed() {
 			var streamId = await CreateStreamWithMeta(streamPrefix: "$",
-				metadata: StreamMetadata.Build().SetDeleteRole(SystemRoles.All));
+				metadata: new StreamMetadata(acl: new StreamAcl(deleteRole: SystemRoles.All)));
 			await DeleteStream(streamId, "user1", "pa$$1");
 		}
 
 		[Test]
 		public async Task deleting_system_all_stream_with_admin_user_is_allowed() {
 			var streamId = await CreateStreamWithMeta(streamPrefix: "$",
-				metadata: StreamMetadata.Build().SetDeleteRole(SystemRoles.All));
+				metadata: new StreamMetadata(acl: new StreamAcl(deleteRole: SystemRoles.All)));
 			await DeleteStream(streamId, "adm", "admpa$$");
 		}
 	}

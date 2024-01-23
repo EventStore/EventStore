@@ -155,14 +155,10 @@ namespace EventStore.Core.Messages {
 					IsReadOnly
 				}
 				public class LeaderInfo {
-					public LeaderInfo(EndPoint externalTcp, bool isSecure, EndPoint http) {
-						ExternalTcp = externalTcp;
-						IsSecure = isSecure;
+					public LeaderInfo(EndPoint http) {
 						Http = http;
 					}
 
-					public bool IsSecure { get; }
-					public EndPoint ExternalTcp { get; }
 					public EndPoint Http { get; }
 				}
 			}

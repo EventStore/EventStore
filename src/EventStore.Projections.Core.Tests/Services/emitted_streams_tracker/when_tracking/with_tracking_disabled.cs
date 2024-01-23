@@ -1,4 +1,5 @@
-﻿using EventStore.ClientAPI.SystemData;
+﻿extern alias GrpcClient;
+using GrpcClient::EventStore.Client;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System;
@@ -33,7 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_tracker.whe
 			});
 
 			_eventAppeared.Wait(TimeSpan.FromSeconds(5));
-			sub.Unsubscribe();
+			sub.Dispose();
 		}
 
 		[Test]

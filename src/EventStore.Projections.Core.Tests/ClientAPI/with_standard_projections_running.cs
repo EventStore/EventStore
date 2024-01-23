@@ -1,9 +1,12 @@
-﻿using System;
+﻿extern alias GrpcClient;
+using EventData = GrpcClient::EventStore.Client.EventData;
+using Uuid = GrpcClient::EventStore.Client.Uuid;
+using System;
 using System.Text;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -29,7 +32,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 				var deletedLinkMetadata = slice.Events[2].Link.Metadata;
 				Assert.IsNotNull(deletedLinkMetadata);
 
-				var checkpointTag = Encoding.UTF8.GetString(deletedLinkMetadata).ParseCheckpointExtraJson();
+				var checkpointTag = Encoding.UTF8.GetString(deletedLinkMetadata.ToArray()).ParseCheckpointExtraJson();
 				Assert.IsTrue(checkpointTag.TryGetValue("$deleted", out _));
 				Assert.IsTrue(checkpointTag.TryGetValue("$o", out var originalStream));
 				Assert.AreEqual("cat-1", ((JValue)originalStream).Value);
@@ -47,12 +50,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 				await base.When();
 				var r1 = await _conn.AppendToStreamAsync(
 						"cat-1", ExpectedVersion.NoStream, _admin,
-						new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null))
+						new EventData(Uuid.NewUuid(), "type1", Encoding.UTF8.GetBytes("{}"), null))
 					;
 
 				var r2 = await _conn.AppendToStreamAsync(
 					"cat-1", r1.NextExpectedVersion, _admin,
-					new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null));
+					new EventData(Uuid.NewUuid(), "type1", Encoding.UTF8.GetBytes("{}"), null));
 
 				await _conn.DeleteStreamAsync("cat-1", r2.NextExpectedVersion, GivenDeleteHardDeleteStreamMode(),
 						_admin)

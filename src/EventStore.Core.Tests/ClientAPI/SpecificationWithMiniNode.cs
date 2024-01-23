@@ -9,22 +9,19 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public abstract class SpecificationWithMiniNode<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly int _chunkSize;
 		protected MiniNode<TLogFormat, TStreamId> _node;
-		protected IEventStoreConnection _conn;
+		protected IEventStoreClient _conn;
 		protected virtual TimeSpan Timeout { get; } = TimeSpan.FromMinutes(1);
 
 		protected virtual Task Given() => Task.CompletedTask;
 
 		protected abstract Task When();
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint, TcpType.Ssl);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
-		protected async Task CloseConnectionAndWait(IEventStoreConnection conn) {
-			TaskCompletionSource closed = new TaskCompletionSource();
-			conn.Closed += (_,_) => closed.SetResult();
-			conn.Close();
-			await closed.Task.WithTimeout(Timeout);
+		protected async Task CloseConnectionAndWait(IEventStoreClient conn) {
+			await conn.Close();
 		}
 
 		protected SpecificationWithMiniNode() : this(chunkSize: 1024*1024) { }

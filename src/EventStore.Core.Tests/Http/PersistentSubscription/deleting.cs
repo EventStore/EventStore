@@ -1,9 +1,10 @@
-﻿using System;
+﻿extern alias GrpcClient;
+using SubscriptionDroppedReason = GrpcClient::EventStore.Client.SubscriptionDroppedReason;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Tests.Http.Users.users;
 using NUnit.Framework;
 
@@ -85,7 +86,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		private HttpResponseMessage _response;
 		private const string _stream = "astreamname";
 		private readonly string _groupName = Guid.NewGuid().ToString();
-		private SubscriptionDropReason _reason;
+		private SubscriptionDroppedReason _reason;
 		private Exception _exception;
 		private readonly AutoResetEvent _dropped = new AutoResetEvent(false);
 
@@ -95,7 +96,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				new {
 					ResolveLinkTos = true
 				}, _admin);
-			_connection.ConnectToPersistentSubscription(_stream, _groupName, (x, y) => Task.CompletedTask,
+			await _connection.ConnectToPersistentSubscription(_stream, _groupName, (x, y) => Task.CompletedTask,
 				(sub, reason, e) => {
 					_dropped.Set();
 					_reason = reason;
@@ -116,7 +117,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		[Test]
 		public void the_subscription_is_dropped() {
 			Assert.IsTrue(_dropped.WaitOne(TimeSpan.FromSeconds(5)));
-			Assert.AreEqual(SubscriptionDropReason.UserInitiated, _reason);
+			Assert.AreEqual(SubscriptionDroppedReason.SubscriberError, _reason);
 			Assert.IsNull(_exception);
 		}
 	}

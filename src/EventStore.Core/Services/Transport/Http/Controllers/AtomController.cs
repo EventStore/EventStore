@@ -820,9 +820,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					return (false, "exclude-sytem-events should have a value of true.");
 				}
 
-				filter = EventFilter.Get(isAllStream, new Filter(
-					Filter.Types.FilterContext.EventType,
-					Filter.Types.FilterType.Regex,
+				filter = EventFilter.Get(isAllStream, new EventFilter.Filter(
+					EventFilter.FilterContext.EventType,
+					EventFilter.FilterType.Regex,
 					new[] { @"^[^\$].*" }
 				));
 

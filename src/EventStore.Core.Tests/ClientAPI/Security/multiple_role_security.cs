@@ -1,9 +1,10 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Services;
+using GrpcClient::EventStore.Client;
+using GrpcClientStreams::EventStore.Client;
+using SystemSettings = GrpcClientStreams::EventStore.Client.SystemSettings;
+using SystemRoles = GrpcClient::EventStore.Client.SystemRoles;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
@@ -16,9 +17,10 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await base.TestFixtureSetUp();
 
 			var settings = new SystemSettings(
-				new StreamAcl(new[] { "user1", "user2" }, new[] { "$admins", "user1" }, new[] { "user1", SystemRoles.All },
-					null, null),
-				null);
+					new StreamAcl(
+						readRoles: new[] { "user1", "user2" },
+						writeRoles: new[] { "$admins", "user1" },
+						metaReadRoles: new[] { "user1", SystemRoles.All }));
 			await Connection.SetSystemSettingsAsync(settings, new UserCredentials("adm", "admpa$$"));
 		}
 

@@ -31,15 +31,21 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="EventStore.Client.Grpc" Version="23.1.0">
+			<Aliases>GrpcClient</Aliases>
+		</PackageReference>
+		<PackageReference Include="EventStore.Client.Grpc.Streams" Version="23.1.0">
+			<Aliases>GrpcClientStreams</Aliases>
+		</PackageReference>
+		<PackageReference Include="EventStore.Client.Grpc.ProjectionManagement" Version="23.1.0">
+			<Aliases>GrpcClientProjections</Aliases>
+		</PackageReference>
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
 		<ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj" />
 		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
 		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
-	</ItemGroup>
-	<ItemGroup>
-		<Protobuf Include="..\Protos\Grpc\projections.proto" Link="Protos\projections.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 	</ItemGroup>
 	<ItemGroup>
 		<Content Include="Queries\1Query.js">

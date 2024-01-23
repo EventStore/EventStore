@@ -1,5 +1,4 @@
-﻿using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
+﻿extern alias GrpcClient;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -8,6 +7,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using GrpcClient::EventStore.Client;
+using ExpectedVersion = EventStore.Core.Tests.ClientAPI.Helpers.ExpectedVersion;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Ignore("Very long running")]
@@ -18,7 +19,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private MiniNode<TLogFormat, TStreamId> _node;
 		private string _streamName = "TestStream";
 		private CatchUpSubscriptionSettings _settings;
-		private IEventStoreConnection _conn;
+		private IEventStoreClient _conn;
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
@@ -39,7 +40,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private EventData[] CreateThousandEvents() {
 			var events = new List<EventData>();
 			for (var i = 0; i < 1000; i++) {
-				events.Add(new EventData(Guid.NewGuid(), "testEvent", true,
+				events.Add(new EventData(Uuid.NewUuid(), "testEvent",
 					Encoding.UTF8.GetBytes("{ \"Foo\":\"Bar\" }"), null));
 			}
 
@@ -53,8 +54,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TestFixtureTearDown();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[Test]

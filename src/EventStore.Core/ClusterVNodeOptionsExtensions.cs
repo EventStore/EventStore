@@ -48,9 +48,7 @@ namespace EventStore.Core {
 			Application = options.Application with {
 				Insecure = true
 			},
-			Interface = options.Interface with {
-				DisableExternalTcpTls = true
-			},
+			Interface = options.Interface,
 			ServerCertificate = null,
 			TrustedRootCertificates = null
 		};
@@ -67,9 +65,7 @@ namespace EventStore.Core {
 			Application = options.Application with {
 				Insecure = false,
 			},
-			Interface = options.Interface with {
-				DisableExternalTcpTls = false
-			},
+			Interface = options.Interface,
 			ServerCertificate = serverCertificate,
 			TrustedRootCertificates = trustedRootCertificates
 		};
@@ -99,9 +95,7 @@ namespace EventStore.Core {
 			this ClusterVNodeOptions options, IPEndPoint endPoint) =>
 			options with {
 				Interface = options.Interface with {
-					EnableExternalTcp = true,
 					NodeIp = endPoint.Address,
-					DisableExternalTcpTls = false,
 					NodeTcpPort = endPoint.Port
 				}
 			};
@@ -132,10 +126,8 @@ namespace EventStore.Core {
 			this ClusterVNodeOptions options, IPEndPoint endPoint) =>
 			options with {
 				Interface = options.Interface with {
-					EnableExternalTcp = true,
 					NodeIp = endPoint.Address,
 					NodeTcpPort = endPoint.Port,
-					DisableExternalTcpTls = true
 				}
 			};
 
@@ -181,7 +173,6 @@ namespace EventStore.Core {
 			options with {
 				Interface = options.Interface with {
 					NodeHostAdvertiseAs = endPoint.GetHost(),
-					NodeTcpPortAdvertiseAs = endPoint.GetPort()
 				}
 			};
 

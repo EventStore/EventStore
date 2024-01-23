@@ -1,31 +1,31 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+extern alias GrpcClientProjections;
+using GrpcClient::EventStore.Client;
+using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
+using ProjectionsManager = GrpcClientProjections::EventStore.Client.EventStoreProjectionManagementClient;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
-using EventStore.Common.Options;
-using EventStore.Core;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
-using EventStore.ClientAPI.Projections;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Common.Log;
-using EventStore.Core.Data;
-using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
+using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core;
+using EventStore.Common.Options;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 	[Category("ClientAPI")]
 	public abstract class specification_with_standard_projections_runnning<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		protected MiniClusterNode<TLogFormat, TStreamId>[] _nodes = new MiniClusterNode<TLogFormat, TStreamId>[3];
 		protected Endpoints[] _nodeEndpoints = new Endpoints[3];
-		protected IEventStoreConnection _conn;
+		protected IEventStoreClient _conn;
 		private readonly ProjectionsSubsystem[] _projections = new ProjectionsSubsystem[3];
 		protected UserCredentials _admin = DefaultData.AdminCredentials;
 		protected ProjectionsManager _manager;
@@ -86,13 +86,11 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 
 			await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
 
-			_conn = EventStoreConnection.Create(_nodes[0].ExternalTcpEndPoint);
+			_conn = new GrpcEventStoreConnection(_nodes[0].HttpEndPoint);
 			await _conn.ConnectAsync().WithTimeout();
 
-			_manager = new ProjectionsManager(
-				new ConsoleLogger(),
-				_nodes.Single(x => x.NodeState == VNodeState.Leader).HttpEndPoint,
-				TimeSpan.FromMilliseconds(10000));
+			var setts = EventStoreClientSettings.Create($"esdb://{_nodes[0].HttpEndPoint}?tls=false");
+			_manager = new ProjectionsManager(setts);
 
 			if (GivenStandardProjectionsRunning()) {
 				await Task.WhenAny(projectionsStarted).WithTimeout(TimeSpan.FromSeconds(10));
@@ -126,8 +124,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 
 		[TearDown]
 		public async Task PostTestAsserts() {
-			var all = await _manager.ListAllAsync(_admin);
-			if (all.Any(p => p.Name == "Faulted"))
+			var all = _manager.ListAllAsync(userCredentials: _admin);
+			if (await all.AnyAsync(p => p.Name == "Faulted"))
 				Assert.Fail("Projections faulted while running the test" + "\r\n" + all);
 		}
 
@@ -152,7 +150,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		protected async Task EnableProjection(string name) {
 			for (int i = 1; i <= 10; i++) {
 				try {
-					await _manager.EnableAsync(name, _admin);
+					await _manager.EnableAsync(name, userCredentials: _admin);
 				} catch (Exception) {
 					if (i == 10)
 						throw;
@@ -164,12 +162,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 
 		protected Task DisableProjection(string name) {
-			return _manager.DisableAsync(name, _admin);
+			return _manager.DisableAsync(name, userCredentials: _admin);
 		}
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
-			_conn.Close();
+			await _conn.Close();
 			await Task.WhenAll(
 				_nodes[0].Shutdown(),
 				_nodes[1].Shutdown(),
@@ -194,7 +192,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 
 		protected static EventData CreateEvent(string type, string data) {
-			return new EventData(Guid.NewGuid(), type, true, Encoding.UTF8.GetBytes(data), new byte[0]);
+			return new EventData(Uuid.NewUuid(), type, Encoding.UTF8.GetBytes(data), new byte[0]);
 		}
 
 		protected void WaitIdle() {
@@ -288,7 +286,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 #endif
 
 		protected async Task PostProjection(string query) {
-			await _manager.CreateContinuousAsync("test-projection", query, _admin);
+			await _manager.CreateContinuousAsync("test-projection", query, userCredentials: _admin);
 			WaitIdle();
 		}
 	}

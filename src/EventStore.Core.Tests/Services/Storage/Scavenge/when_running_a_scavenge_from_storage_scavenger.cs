@@ -1,3 +1,5 @@
+extern alias GrpcClient;
+using ResolvedEvent = GrpcClient::EventStore.Client.ResolvedEvent;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,9 +8,9 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using CatchUpSubscriptionSettings = EventStore.Core.Tests.ClientAPI.Helpers.CatchUpSubscriptionSettings;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
-using EventStore.ClientAPI;
 using NUnit.Framework;
 using ILogger = Serilog.ILogger;
 using System.Threading.Tasks;
@@ -45,12 +47,12 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		}
 
 		public async Task When() {
-			using (var conn = TestConnection.Create(_node.TcpEndPoint, TcpType.Ssl, DefaultData.AdminCredentials)) {
+			using (var conn = new GrpcEventStoreConnection(_node.HttpEndPoint, DefaultData.AdminCredentials)) {
 				await conn.ConnectAsync();
 				var countdown = new CountdownEvent(2);
 				_result = new List<ResolvedEvent>();
 
-				conn.SubscribeToStreamFrom(SystemStreams.ScavengesStream, null, CatchUpSubscriptionSettings.Default,
+				await conn.SubscribeToStreamFrom(SystemStreams.ScavengesStream, null, CatchUpSubscriptionSettings.Default,
 					(x, y) => {
 						_result.Add(y);
 						countdown.Signal();

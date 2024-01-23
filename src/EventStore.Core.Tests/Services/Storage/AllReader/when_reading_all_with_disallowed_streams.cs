@@ -45,9 +45,9 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_event_type_prefix() {
-			var filter = new Filter(
-				Filter.Types.FilterContext.EventType,
-				Filter.Types.FilterType.Prefix, new[] {"event-type"});
+			var filter = new EventFilter.Filter(
+				EventFilter.FilterContext.EventType,
+				EventFilter.FilterType.Prefix, new[] {"event-type"});
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
@@ -59,9 +59,9 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_event_type_regex() {
-			var filter = new Filter(
-				Filter.Types.FilterContext.EventType,
-				Filter.Types.FilterType.Regex, new[] {@"^.*event-type-.*$"});
+			var filter = new EventFilter.Filter(
+				EventFilter.FilterContext.EventType,
+				EventFilter.FilterType.Regex, new[] {@"^.*event-type-.*$"});
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
@@ -73,9 +73,9 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_stream_id_prefix() {
-			var filter = new Filter(
-				Filter.Types.FilterContext.StreamId,
-				Filter.Types.FilterType.Prefix, new[] {"$persistentsubscripti"});
+			var filter = new EventFilter.Filter(
+				EventFilter.FilterContext.StreamId,
+				EventFilter.FilterType.Prefix, new[] {"$persistentsubscripti"});
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
@@ -86,9 +86,9 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_stream_id_regex() {
-			var filter = new Filter(
-				Filter.Types.FilterContext.StreamId,
-				Filter.Types.FilterType.Regex, new[] {@"^.*istentsubsc.*$"});
+			var filter = new EventFilter.Filter(
+				EventFilter.FilterContext.StreamId,
+				EventFilter.FilterType.Regex, new[] {@"^.*istentsubsc.*$"});
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
@@ -108,9 +108,9 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_event_type_prefix() {
-			var filter = new Filter(
-				Filter.Types.FilterContext.EventType,
-				Filter.Types.FilterType.Prefix, new[] {"event-type"});
+			var filter = new EventFilter.Filter(
+				EventFilter.FilterContext.EventType,
+				EventFilter.FilterType.Prefix, new[] {"event-type"});
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
@@ -122,9 +122,9 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_event_type_regex() {
-			var filter = new Filter(
-				Filter.Types.FilterContext.EventType,
-				Filter.Types.FilterType.Regex, new[] {@"^.*event-type-.*$"});
+			var filter = new EventFilter.Filter(
+				EventFilter.FilterContext.EventType,
+				EventFilter.FilterType.Regex, new[] {@"^.*event-type-.*$"});
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
@@ -136,9 +136,9 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_stream_id_prefix() {
-			var filter = new Filter(
-				Filter.Types.FilterContext.StreamId,
-				Filter.Types.FilterType.Prefix, new[] {"$persistentsubscripti"});
+			var filter = new EventFilter.Filter(
+				EventFilter.FilterContext.StreamId,
+				EventFilter.FilterType.Prefix, new[] {"$persistentsubscripti"});
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
@@ -149,9 +149,9 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_stream_id_regex() {
-			var filter = new Filter(
-				Filter.Types.FilterContext.StreamId,
-				Filter.Types.FilterType.Regex, new[] {@"^.*istentsubsc.*$"});
+			var filter = new EventFilter.Filter(
+				EventFilter.FilterContext.StreamId,
+				EventFilter.FilterType.Regex, new[] {@"^.*istentsubsc.*$"});
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);

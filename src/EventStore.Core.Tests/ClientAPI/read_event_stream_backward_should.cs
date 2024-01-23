@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -26,8 +25,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TestFixtureTearDown();
 		}
 
-		virtual protected IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		virtual protected IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[Test]
@@ -59,7 +58,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "read_event_stream_backward_should_notify_using_status_code_if_stream_not_found";
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
-				var read = await store.ReadStreamEventsBackwardAsync(stream, StreamPosition.End, 1,
+				var read = await store.ReadStreamEventsBackwardAsync(stream, long.MaxValue, 1,
 					resolveLinkTos: false);
 
 				Assert.That(read.Status, Is.EqualTo(SliceReadStatus.StreamNotFound));
@@ -74,7 +73,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await store.ConnectAsync();
 				await store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 
-				var read = await store.ReadStreamEventsBackwardAsync(stream, StreamPosition.End, 1,
+				var read = await store.ReadStreamEventsBackwardAsync(stream, long.MaxValue, 1,
 					resolveLinkTos: false);
 
 				Assert.That(read.Status, Is.EqualTo(SliceReadStatus.StreamDeleted));
@@ -88,7 +87,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
 
-				var read = await store.ReadStreamEventsBackwardAsync(stream, StreamPosition.End, 1,
+				var read = await store.ReadStreamEventsBackwardAsync(stream, long.MaxValue, 1,
 					resolveLinkTos: false);
 
 				Assert.That(read.Events.Length, Is.EqualTo(0));
@@ -124,7 +123,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					.ToArray();
 				var write10 = await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, testEvents);
 
-				var read = await store.ReadStreamEventsBackwardAsync(stream, StreamPosition.End, testEvents.Length,
+				var read = await store.ReadStreamEventsBackwardAsync(stream, long.MaxValue, testEvents.Length,
 					resolveLinkTos: false);
 
 				Assert.That(EventDataComparer.Equal(testEvents.Reverse().ToArray(),
@@ -160,7 +159,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					.ToArray();
 				var write10 = await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, testEvents);
 
-				var read = await store.ReadStreamEventsBackwardAsync(stream, StreamPosition.Start, 1,
+				var read = await store.ReadStreamEventsBackwardAsync(stream, 0, 1,
 					resolveLinkTos: false);
 
 				Assert.That(read.Events.Length, Is.EqualTo(1));
@@ -177,7 +176,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
 				var write10 = await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, testEvents);
 
-				var read = await store.ReadStreamEventsBackwardAsync(stream, StreamPosition.End, 1,
+				var read = await store.ReadStreamEventsBackwardAsync(stream, long.MaxValue, 1,
 					resolveLinkTos: false);
 
 				Assert.That(EventDataComparer.Equal(testEvents.Last(), read.Events.Single().Event));
@@ -208,7 +207,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await store.ConnectAsync();
 
 				await AssertEx.ThrowsAsync<ArgumentException>(() =>
-					store.ReadStreamEventsBackwardAsync("foo", StreamPosition.Start, int.MaxValue,
+					store.ReadStreamEventsBackwardAsync("foo", 0, int.MaxValue,
 						resolveLinkTos: false));
 			}
 		}

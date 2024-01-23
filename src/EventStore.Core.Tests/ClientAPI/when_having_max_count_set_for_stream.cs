@@ -1,9 +1,12 @@
-﻿using System.Linq;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using GrpcClient::EventStore.Client;
 using NUnit.Framework;
+using StreamMetadata = GrpcClientStreams::EventStore.Client.StreamMetadata;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
@@ -13,7 +16,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private const string Stream = "max-count-test-stream";
 
 		private MiniNode<TLogFormat, TStreamId> _node;
-		private IEventStoreConnection _connection;
+		private IEventStoreClient _connection;
 		private EventData[] _testEvents;
 
 		[SetUp]
@@ -22,11 +25,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 
-			_connection = TestConnection.Create(_node.TcpEndPoint);
+			_connection = new GrpcEventStoreConnection(_node.HttpEndPoint);
 			await _connection.ConnectAsync();
 
 			await _connection.SetStreamMetadataAsync(Stream, ExpectedVersion.NoStream,
-				StreamMetadata.Build().SetMaxCount(3));
+				new StreamMetadata(maxCount: 3));
 
 			_testEvents = Enumerable.Range(0, 5).Select(x => TestEvent.NewTestEvent(data: x.ToString())).ToArray();
 			await _connection.AppendToStreamAsync(Stream, ExpectedVersion.NoStream, _testEvents);
@@ -34,7 +37,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[TearDown]
 		public override async Task TearDown() {
-			_connection.Close();
+			await _connection.Close();
 			await _node.Shutdown();
 			await base.TearDown();
 		}
@@ -65,7 +68,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
 				res.Events.Select(x => x.Event.EventId).ToArray());
 
-			await _connection.SetStreamMetadataAsync(Stream, 0, StreamMetadata.Build().SetMaxCount(4));
+			await _connection.SetStreamMetadataAsync(Stream, 0, new StreamMetadata(maxCount: 4));
 
 			res = await _connection.ReadStreamEventsForwardAsync(Stream, 0, 100, false);
 			Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -82,7 +85,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
 				res.Events.Select(x => x.Event.EventId).ToArray());
 
-			await _connection.SetStreamMetadataAsync(Stream, 0, StreamMetadata.Build().SetMaxCount(2));
+			await _connection.SetStreamMetadataAsync(Stream, 0, new StreamMetadata(maxCount: 2));
 
 			res = await _connection.ReadStreamEventsForwardAsync(Stream, 0, 100, false);
 			Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -99,7 +102,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
 				res.Events.Reverse().Select(x => x.Event.EventId).ToArray());
 
-			await _connection.SetStreamMetadataAsync(Stream, 0, StreamMetadata.Build().SetMaxCount(4));
+			await _connection.SetStreamMetadataAsync(Stream, 0, new StreamMetadata(maxCount: 4));
 
 			res = await _connection.ReadStreamEventsBackwardAsync(Stream, -1, 100, false);
 			Assert.AreEqual(SliceReadStatus.Success, res.Status);
@@ -116,7 +119,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			Assert.AreEqual(_testEvents.Skip(2).Select(x => x.EventId).ToArray(),
 				res.Events.Reverse().Select(x => x.Event.EventId).ToArray());
 
-			await _connection.SetStreamMetadataAsync(Stream, 0, StreamMetadata.Build().SetMaxCount(2));
+			await _connection.SetStreamMetadataAsync(Stream, 0, new StreamMetadata(maxCount: 2));
 
 			res = await _connection.ReadStreamEventsBackwardAsync(Stream, -1, 100, false);
 			Assert.AreEqual(SliceReadStatus.Success, res.Status);

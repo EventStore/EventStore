@@ -27,7 +27,7 @@ fromAll().foreachStream().when({
 }).outputState();
 ");
 			WaitIdle();
-			await _manager.AbortAsync("test-projection", _admin);
+			await _manager.AbortAsync("test-projection", userCredentials: _admin);
 			WaitIdle();
 		}
 
@@ -35,7 +35,7 @@ fromAll().foreachStream().when({
 			await base.When();
 			await HardDeleteStream("stream-1");
 			WaitIdle();
-			await _manager.EnableAsync("test-projection", _admin);
+			await _manager.EnableAsync("test-projection", userCredentials: _admin);
 			WaitIdle();
 		}
 

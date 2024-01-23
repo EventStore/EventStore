@@ -8,14 +8,11 @@ namespace EventStore.Core.Data {
 		public readonly int DebugIndex;
 		public readonly IPEndPoint InternalTcp;
 		public readonly IPEndPoint InternalSecureTcp;
-		public readonly IPEndPoint ExternalTcp;
-		public readonly IPEndPoint ExternalSecureTcp;
 		public readonly EndPoint HttpEndPoint;
 		public readonly bool IsReadOnlyReplica;
 
 		public VNodeInfo(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcp, IPEndPoint internalSecureTcp,
-			IPEndPoint externalTcp, IPEndPoint externalSecureTcp,
 			EndPoint httpEndPoint,
 			bool isReadOnlyReplica) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
@@ -26,8 +23,6 @@ namespace EventStore.Core.Data {
 			InstanceId = instanceId;
 			InternalTcp = internalTcp;
 			InternalSecureTcp = internalSecureTcp;
-			ExternalTcp = externalTcp;
-			ExternalSecureTcp = externalSecureTcp;
 			HttpEndPoint = httpEndPoint;
 			IsReadOnlyReplica = isReadOnlyReplica;
 		}
@@ -35,21 +30,16 @@ namespace EventStore.Core.Data {
 		public bool Is(EndPoint endPoint) {
 			return endPoint != null
 			       && HttpEndPoint.Equals(endPoint)
-			           || (InternalTcp != null && InternalTcp.Equals(endPoint))
-			           || (InternalSecureTcp != null && InternalSecureTcp.Equals(endPoint))
-			           || (ExternalTcp != null && ExternalTcp.Equals(endPoint))
-			           || (ExternalSecureTcp != null && ExternalSecureTcp.Equals(endPoint));
+			       || (InternalTcp != null && InternalTcp.Equals(endPoint))
+			       || (InternalSecureTcp != null && InternalSecureTcp.Equals(endPoint));
 		}
 
 		public override string ToString() {
 			return string.Format("InstanceId: {0:B}, InternalTcp: {1}, InternalSecureTcp: {2}, " +
-			                     "ExternalTcp: {3}, ExternalSecureTcp: {4}, HttpEndPoint: {5}," +
-								 "IsReadOnlyReplica: {6}",
+			                     "HttpEndPoint: {3}, IsReadOnlyReplica: {4}",
 				InstanceId,
 				InternalTcp,
 				InternalSecureTcp,
-				ExternalTcp,
-				ExternalSecureTcp,
 				HttpEndPoint,
 				IsReadOnlyReplica);
 		}

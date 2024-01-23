@@ -1,9 +1,10 @@
+extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using GrpcClient::EventStore.Client;
+using GrpcClientStreams::EventStore.Client;
 using System;
 using System.Text;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Core.Tests.Http.Streams {
@@ -16,15 +17,15 @@ namespace EventStore.Core.Tests.Http.Streams {
 			var creds = DefaultData.AdminCredentials;
 			LinkedStreamName = Guid.NewGuid().ToString();
 			DeletedStreamName = Guid.NewGuid().ToString();
-			using (var conn = TestConnection.Create(_node.TcpEndPoint)) {
+			using (var conn = new GrpcEventStoreConnection(_node.HttpEndPoint)) {
 				await conn.ConnectAsync();
-				await conn.AppendToStreamAsync(DeletedStreamName, ExpectedVersion.Any, creds,
-						new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),
-							new byte[0]))
+				await conn.AppendToStreamAsync(DeletedStreamName, ExpectedVersion.Any,
+						new[] {new EventData(Uuid.NewUuid(), "testing", Encoding.UTF8.GetBytes("{'foo' : 4}"),
+							new byte[0])}, userCredentials: creds)
 ;
-				await conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
-					new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
-						Encoding.UTF8.GetBytes("0@" + DeletedStreamName), new byte[0]));
+				await conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any,
+					new[] {new EventData(Uuid.NewUuid(), SystemEventTypes.LinkTo, 
+						Encoding.UTF8.GetBytes("0@" + DeletedStreamName), new byte[0])}, userCredentials: creds);
 				await conn.DeleteStreamAsync(DeletedStreamName, ExpectedVersion.Any);
 			}
 		}

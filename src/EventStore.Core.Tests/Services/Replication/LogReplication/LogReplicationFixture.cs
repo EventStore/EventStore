@@ -173,8 +173,6 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 				isAlive: true,
 				internalTcpEndPoint: new IPEndPoint(IPAddress.Loopback, port),
 				internalSecureTcpEndPoint: null,
-				externalTcpEndPoint: null,
-				externalSecureTcpEndPoint: null,
 				httpEndPoint: FakeEndPoint,
 				advertiseHostToClientAs: null,
 				advertiseHttpPortToClientAs: 0,

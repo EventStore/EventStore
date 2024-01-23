@@ -1,10 +1,11 @@
-﻿using System;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using System;
 using System.Text;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common;
-using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Messages;
+using EventStore.Core.Tests.ClientAPI.Helpers;
+using GrpcClient::EventStore.Client;
+using SystemEventTypes = GrpcClientStreams::EventStore.Client.SystemEventTypes;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	public abstract class SpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId>
@@ -17,9 +18,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 			LinkedStreamName = Guid.NewGuid().ToString();
 			DeletedStreamName = Guid.NewGuid().ToString();
 			await _conn.AppendToStreamAsync(DeletedStreamName, ExpectedVersion.Any, creds,
-					new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"), new byte[0]));
+					new EventData(Uuid.NewUuid(), "testing", Encoding.UTF8.GetBytes("{'foo' : 4}"), new byte[0]));
 			await _conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
-				new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
+				new EventData(Uuid.NewUuid(), SystemEventTypes.LinkTo,
 					Encoding.UTF8.GetBytes("0@" + DeletedStreamName), new byte[0]));
 			await _conn.DeleteStreamAsync(DeletedStreamName, ExpectedVersion.Any);
 		}

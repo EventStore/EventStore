@@ -1,5 +1,4 @@
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
+extern alias GrpcClient;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -11,14 +10,19 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services;
+using GrpcClient::EventStore.Client;
+using SystemRoles = EventStore.Core.Services.SystemRoles;
+using SystemStreams = EventStore.Core.Services.SystemStreams;
 
 namespace EventStore.Core.Tests.ClientAPI {
+	extern alias GrpcClientStreams;
+
 	[Category("LongRunning"), Category("ClientAPI")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class catchup_filtered_subscription<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private MiniNode<TLogFormat, TStreamId> _node;
-		private IEventStoreConnection _conn;
+		private IEventStoreClient _conn;
 		private List<EventData> _testEvents;
 		private List<EventData> _testEventsAfter;
 		private const int Timeout = 10000;
@@ -32,7 +36,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			_conn = BuildConnection(_node);
 			await _conn.ConnectAsync();
 			_conn.SetStreamMetadataAsync(SystemStreams.AllStream, -1,
-				StreamMetadata.Build().SetReadRole(SystemRoles.All),
+
+				new GrpcClientStreams::EventStore.Client.StreamMetadata(acl: new GrpcClientStreams::EventStore.Client.StreamAcl(readRole: SystemRoles.All)),
 				new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword)).Wait();
 
 			_testEvents = Enumerable
@@ -59,12 +64,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await _conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.OddEvents());
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreClient BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return new GrpcEventStoreConnection(node.HttpEndPoint);
 		}
 
 		[Test]
-		public void calls_checkpoint_delegate_during_catchup() {
+		public async Task calls_checkpoint_delegate_during_catchup() {
 			var filter = Filter.StreamId.Prefix("stream-a");
 			// in v2 there are 20 events, 10 in stream-a and 10 in stream-b.
 			// in v3 there are additionally two stream records and two event type records
@@ -81,7 +86,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				subscriptionName: String.Empty
 			);
 
-			_conn.FilteredSubscribeToAllFrom(
+			await _conn.FilteredSubscribeToAllFrom(
 				Position.Start,
 				filter,
 				settings,
@@ -102,7 +107,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void calls_checkpoint_during_live_processing_stage() {
+		public async Task calls_checkpoint_during_live_processing_stage() {
+			Assert.Fail("Can't be implemented with the grpc client");
+
 			var filter = Filter.StreamId.Prefix("stream-a");
 			var appeared = new CountdownEvent(_testEventsAfter.EvenEvents().Count + 1); // Calls once for switch to live.
 			var eventsSeen = 0;
@@ -117,7 +124,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				subscriptionName: String.Empty
 			);
 
-			_conn.FilteredSubscribeToAllFrom(
+			await _conn.FilteredSubscribeToAllFrom(
 				Position.Start,
 				filter,
 				settings,
@@ -144,12 +151,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_with_a_given_stream_prefix() {
+		public async Task only_return_events_with_a_given_stream_prefix() {
 			var filter = Filter.StreamId.Prefix("stream-a");
 			var foundEvents = new ConcurrentBag<ResolvedEvent>();
 			var appeared = new CountdownEvent(20);
 
-			Subscribe(filter, foundEvents, appeared);
+			await Subscribe(filter, foundEvents, appeared);
 
 			if (!appeared.Wait(Timeout)) {
 				Assert.Fail("Appeared countdown event timed out.");
@@ -159,12 +166,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_with_a_given_event_prefix() {
+		public async Task only_return_events_with_a_given_event_prefix() {
 			var filter = Filter.EventType.Prefix("AE");
 			var foundEvents = new ConcurrentBag<ResolvedEvent>();
 			var appeared = new CountdownEvent(20);
 
-			Subscribe(filter, foundEvents, appeared);
+			await Subscribe(filter, foundEvents, appeared);
 
 			if (!appeared.Wait(Timeout)) {
 				Assert.Fail("Appeared countdown event timed out.");
@@ -174,12 +181,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_that_satisfy_a_given_stream_regex() {
+		public async Task only_return_events_that_satisfy_a_given_stream_regex() {
 			var filter = Filter.StreamId.Regex(new Regex(@"^.*eam-b.*$"));
 			var foundEvents = new ConcurrentBag<ResolvedEvent>();
 			var appeared = new CountdownEvent(20);
 
-			Subscribe(filter, foundEvents, appeared);
+			await Subscribe(filter, foundEvents, appeared);
 
 			if (!appeared.Wait(Timeout)) {
 				Assert.Fail("Appeared countdown event timed out.");
@@ -189,27 +196,27 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_that_satisfy_a_given_event_regex() {
+		public async Task only_return_events_that_satisfy_a_given_event_regex() {
 			var filter = Filter.EventType.Regex(new Regex(@"^.*BEv.*$"));
 			var foundEvents = new ConcurrentBag<ResolvedEvent>();
 			var appeared = new CountdownEvent(20);
 
-			Subscribe(filter, foundEvents, appeared);
+			await Subscribe(filter, foundEvents, appeared);
 
 			if (!appeared.Wait(Timeout)) {
-				Assert.Fail("Appeared countdown event timed out.");
+				Assert.Fail($"Appeared countdown event timed out: {appeared.CurrentCount}/20");
 			}
 
 			Assert.True(foundEvents.All(e => e.Event.EventType == "BEvent"));
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_that_are_not_system_events() {
+		public async Task only_return_events_that_are_not_system_events() {
 			var filter = Filter.ExcludeSystemEvents;
 			var foundEvents = new ConcurrentBag<ResolvedEvent>();
 			var appeared = new CountdownEvent(20);
 
-			Subscribe(filter, foundEvents, appeared);
+			await Subscribe(filter, foundEvents, appeared);
 
 			if (!appeared.Wait(Timeout)) {
 				Assert.Fail("Appeared countdown event timed out.");
@@ -218,8 +225,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			Assert.True(foundEvents.All(e => !e.Event.EventType.StartsWith("$")));
 		}
 
-		private void Subscribe(Filter filter, ConcurrentBag<ResolvedEvent> foundEvents, CountdownEvent appeared) {
-			_conn.FilteredSubscribeToAllFrom(
+		private async Task Subscribe(IEventFilter filter, ConcurrentBag<ResolvedEvent> foundEvents, CountdownEvent appeared) {
+			await _conn.FilteredSubscribeToAllFrom(
 				Position.Start,
 				filter,
 				CatchUpSubscriptionFilteredSettings.Default,
@@ -237,7 +244,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[TearDown]
 		public override async Task TearDown() {
-			_conn.Close();
+			await _conn.Close();
 			await _node.Shutdown();
 			await base.TearDown();
 		}

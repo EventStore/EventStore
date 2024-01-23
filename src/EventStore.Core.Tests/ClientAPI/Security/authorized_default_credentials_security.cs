@@ -1,6 +1,6 @@
-﻿using System.Threading.Tasks;
-using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.SystemData;
+﻿extern alias GrpcClient;
+using GrpcClient::EventStore.Client;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
@@ -22,13 +22,14 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream("write-stream", null, null);
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				await ExpectNoException(async () => {
-					var trans = await TransStart("write-stream", null, null);
-					await trans.WriteAsync();
-					await trans.CommitAsync();
-				});
-			}
+			// TODO - Grpc client no longer supports explicit transactions.
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	await ExpectNoException(async () => {
+			// 		var trans = await TransStart("write-stream", null, null);
+			// 		await trans.WriteAsync();
+			// 		await trans.CommitAsync();
+			// 	});
+			// }
 
 			await ReadMeta("metaread-stream", null, null);
 			await WriteMeta("metawrite-stream", null, null, "user1");
@@ -47,14 +48,15 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => ReadStreamBackward("read-stream", "badlogin", "badpass"));
 
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => WriteStream("write-stream", "badlogin", "badpass"));
-			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => TransStart("write-stream", "badlogin", "badpass"));
+			// TODO - Grpc client no longer supports explicit transactions.
+			// await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => TransStart("write-stream", "badlogin", "badpass"));
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart("write-stream", null, null)).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("badlogin", "badpass"));
-				await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => trans.WriteAsync());
-				await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => trans.CommitAsync());
-			}
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart("write-stream", null, null)).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("badlogin", "badpass"));
+			// 	await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => trans.WriteAsync());
+			// 	await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => trans.CommitAsync());
+			// }
 
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => ReadMeta("metaread-stream", "badlogin", "badpass"));
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => WriteMeta("metawrite-stream", "badlogin", "badpass", "user1"));
@@ -73,14 +75,16 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadStreamBackward("read-stream", "user2", "pa$$2"));
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream("write-stream", "user2", "pa$$2"));
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart("write-stream", "user2", "pa$$2"));
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
-				var transId = (await TransStart("write-stream", null, null)).TransactionId;
-				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
-				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
-				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
-			}
+			// TODO - Grpc client no longer supports explicit transactions.
+			// await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart("write-stream", "user2", "pa$$2"));
+
+			// if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
+			// 	var transId = (await TransStart("write-stream", null, null)).TransactionId;
+			// 	var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
+			// 	await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
+			// 	await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			// }
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta("metaread-stream", "user2", "pa$$2"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteMeta("metawrite-stream", "user2", "pa$$2", "user1"));

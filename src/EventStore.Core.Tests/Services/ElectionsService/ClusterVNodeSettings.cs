@@ -16,8 +16,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcpEndPoint,
 			IPEndPoint internalSecureTcpEndPoint,
-			IPEndPoint externalTcpEndPoint,
-			IPEndPoint externalSecureTcpEndPoint,
 			IPEndPoint httpEndPoint,
 			int nodePriority,
 			bool readOnlyReplica) {
@@ -28,7 +26,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			NodeInfo = new VNodeInfo(instanceId, debugIndex,
 				internalTcpEndPoint, internalSecureTcpEndPoint,
-				externalTcpEndPoint, externalSecureTcpEndPoint,
 				httpEndPoint,
 				readOnlyReplica);
 

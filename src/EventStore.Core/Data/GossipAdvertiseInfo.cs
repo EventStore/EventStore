@@ -5,8 +5,6 @@ namespace EventStore.Core.Data {
 	public class GossipAdvertiseInfo {
 		public DnsEndPoint InternalTcp { get; }
 		public DnsEndPoint InternalSecureTcp { get; }
-		public DnsEndPoint ExternalTcp { get; }
-		public DnsEndPoint ExternalSecureTcp { get; }
 		public DnsEndPoint HttpEndPoint { get; }
 		public string AdvertiseInternalHostAs { get; }
 		public string AdvertiseExternalHostAs { get; }
@@ -16,7 +14,6 @@ namespace EventStore.Core.Data {
 		public int AdvertiseTcpPortToClientAs { get; }
 
 		public GossipAdvertiseInfo(DnsEndPoint internalTcp, DnsEndPoint internalSecureTcp,
-			DnsEndPoint externalTcp, DnsEndPoint externalSecureTcp,
 			DnsEndPoint httpEndPointEndPoint,
 			string advertiseInternalHostAs, string advertiseExternalHostAs, int advertiseHttpPortAs,
 			string advertiseHostToClientAs, int advertiseHttpPortToClientAs, int advertiseTcpPortToClientAs) {
@@ -24,8 +21,6 @@ namespace EventStore.Core.Data {
 
 			InternalTcp = internalTcp;
 			InternalSecureTcp = internalSecureTcp;
-			ExternalTcp = externalTcp;
-			ExternalSecureTcp = externalSecureTcp;
 			HttpEndPoint = httpEndPointEndPoint;
 			AdvertiseInternalHostAs = advertiseInternalHostAs;
 			AdvertiseExternalHostAs = advertiseExternalHostAs;
@@ -38,7 +33,6 @@ namespace EventStore.Core.Data {
 		public override string ToString() {
 			return string.Format(
 				$"IntTcp: {InternalTcp}, IntSecureTcp: {InternalSecureTcp}\n" +
-				$"ExtTcp: {ExternalTcp}, ExtSecureTcp: {ExternalSecureTcp}\n" +
 				$"Http: {HttpEndPoint}, HttpAdvertiseAs: {AdvertiseExternalHostAs}:{AdvertiseHttpPortAs},\n" +
 				$"HttpAdvertiseToClientAs: {AdvertiseHostToClientAs}:{AdvertiseHttpPortToClientAs},\n" +
 				$"TcpAdvertiseToClientAs: {AdvertiseHostToClientAs}:{AdvertiseTcpPortToClientAs}");

@@ -262,8 +262,6 @@ namespace EventStore.Core {
 #endif
 
 			var disableInternalTcpTls = options.Application.Insecure;
-			var disableExternalTcpTls = options.Application.Insecure || options.Interface.DisableExternalTcpTls;
-
 			var httpEndPoint = new IPEndPoint(options.Interface.NodeIp, options.Interface.NodePort);
 			
 			var intTcp = disableInternalTcpTls
@@ -275,28 +273,12 @@ namespace EventStore.Core {
 					options.Interface.ReplicationPort)
 				: null;
 
-			var extTcp = disableExternalTcpTls
-				? new IPEndPoint(options.Interface.NodeIp, 
-					options.Interface.NodeTcpPort)
-				: null;
-			var extSecIp = !disableExternalTcpTls
-				? new IPEndPoint(options.Interface.NodeIp, 
-					options.Interface.NodeTcpPort)
-				: null;
-
 			var intTcpPortAdvertiseAs = disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
 			var intSecTcpPortAdvertiseAs = !disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
-			
-			var extTcpPortAdvertiseAs = options.Interface.EnableExternalTcp && disableExternalTcpTls
-				? options.Interface.NodeTcpPortAdvertiseAs
-				: 0;
-			var extSecTcpPortAdvertiseAs = options.Interface.EnableExternalTcp && !disableExternalTcpTls
-				? options.Interface.NodeTcpPortAdvertiseAs
-				: 0;
 
 			Log.Information("Quorum size set to {quorum}.", options.Cluster.QuorumSize);
 
-			NodeInfo = new VNodeInfo(instanceId.Value, debugIndex, intTcp, intSecIp, extTcp, extSecIp,
+			NodeInfo = new VNodeInfo(instanceId.Value, debugIndex, intTcp, intSecIp,
 				httpEndPoint, options.Cluster.ReadOnlyReplica);
 
 			var dbConfig = CreateDbConfig(
@@ -545,8 +527,6 @@ namespace EventStore.Core {
 				TimeSpan.FromSeconds(options.Application.StatsPeriodSec),
 				NodeInfo.HttpEndPoint,
 				options.Database.StatsStorage,
-				NodeInfo.ExternalTcp,
-				NodeInfo.ExternalSecureTcp,
 				statsHelper);
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
@@ -856,25 +836,13 @@ namespace EventStore.Core {
 						? intSecTcpPortAdvertiseAs
 						: NodeInfo.InternalSecureTcp.Port);
 
-				var extTcpEndPoint = NodeInfo.ExternalTcp == null
-					? null
-					: new DnsEndPoint(extHostToAdvertise, extTcpPortAdvertiseAs > 0
-						? extTcpPortAdvertiseAs
-						: NodeInfo.ExternalTcp.Port);
-
-				var extSecureTcpEndPoint = NodeInfo.ExternalSecureTcp == null
-					? null
-					: new DnsEndPoint(extHostToAdvertise, extSecTcpPortAdvertiseAs > 0
-						? extSecTcpPortAdvertiseAs
-						: NodeInfo.ExternalSecureTcp.Port);
-				
 				var httpEndPoint = new DnsEndPoint(extHostToAdvertise,
 					options.Interface.NodePortAdvertiseAs > 0
 						? options.Interface.NodePortAdvertiseAs
 						: NodeInfo.HttpEndPoint.GetPort());
 
-				return new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint, extTcpEndPoint,
-					extSecureTcpEndPoint, httpEndPoint, options.Interface.ReplicationHostAdvertiseAs,
+				return new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint,
+					httpEndPoint, options.Interface.ReplicationHostAdvertiseAs,
 					options.Interface.NodeHostAdvertiseAs, options.Interface.NodePortAdvertiseAs,
 					options.Interface.AdvertiseHostToClientAs, options.Interface.AdvertiseNodePortToClientAs,
 					options.Interface.AdvertiseTcpPortToClientAs);
@@ -919,36 +887,6 @@ namespace EventStore.Core {
 
 			AuthorizationGateway = new AuthorizationGateway(_authorizationProvider);
 			{
-				// EXTERNAL TCP
-				if (NodeInfo.ExternalTcp != null && options.Interface.EnableExternalTcp) {
-					var extTcpService = new TcpService(_mainQueue, NodeInfo.ExternalTcp, _workersHandler,
-						TcpServiceType.External, TcpSecurityType.Normal,
-						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatInterval),
-						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatTimeout),
-						_authenticationProvider, AuthorizationGateway, null, null, null,
-						options.Interface.ConnectionPendingSendBytesThreshold,
-						options.Interface.ConnectionQueueSizeThreshold);
-					_mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
-					_mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
-					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extTcpService);
-				}
-				// EXTERNAL SECURE TCP
-				if (NodeInfo.ExternalSecureTcp != null && options.Interface.EnableExternalTcp) {
-					var extSecTcpService = new TcpService(_mainQueue, NodeInfo.ExternalSecureTcp, _workersHandler,
-						TcpServiceType.External, TcpSecurityType.Secure,
-						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatInterval),
-						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatTimeout),
-						_authenticationProvider, AuthorizationGateway,
-						_certificateSelector, _intermediateCertsSelector, _externalClientCertificateValidator,
-						options.Interface.ConnectionPendingSendBytesThreshold,
-						options.Interface.ConnectionQueueSizeThreshold);
-					_mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
-					_mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
-					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extSecTcpService);
-				}
-
 				if (!isSingleNode) {
 					// INTERNAL TCP
 					if (NodeInfo.InternalTcp != null) {
@@ -1426,8 +1364,6 @@ namespace EventStore.Core {
 			var memberInfo = MemberInfo.Initial(NodeInfo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 				GossipAdvertiseInfo.InternalTcp,
 				GossipAdvertiseInfo.InternalSecureTcp,
-				GossipAdvertiseInfo.ExternalTcp,
-				GossipAdvertiseInfo.ExternalSecureTcp,
 				GossipAdvertiseInfo.HttpEndPoint,
 				GossipAdvertiseInfo.AdvertiseHostToClientAs,
 				GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
@@ -1874,6 +1810,6 @@ namespace EventStore.Core {
 		}
 
 		public override string ToString() =>
-			$"[{NodeInfo.InstanceId:B}, {NodeInfo.InternalTcp}, {NodeInfo.ExternalTcp}, {NodeInfo.HttpEndPoint}]";
+			$"[{NodeInfo.InstanceId:B}, {NodeInfo.InternalTcp}, {NodeInfo.HttpEndPoint}]";
 	}
 }

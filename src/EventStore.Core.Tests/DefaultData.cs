@@ -1,6 +1,7 @@
-﻿using System.Net;
-using EventStore.ClientAPI.SystemData;
+﻿extern alias GrpcClient;
+using System.Net;
 using EventStore.Core.Services;
+using UserCredentials = GrpcClient::EventStore.Client.UserCredentials;
 
 namespace EventStore.Core.Tests {
 	public class DefaultData {

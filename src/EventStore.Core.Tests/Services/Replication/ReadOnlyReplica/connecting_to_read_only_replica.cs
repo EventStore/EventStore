@@ -1,11 +1,14 @@
-﻿using System.Net;
+﻿extern alias GrpcClient;
+extern alias GrpcClientStreams;
+using GrpcClient::EventStore.Client;
+using GrpcClientStreams::EventStore.Client;
+using System.Net;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Integration;
 using NUnit.Framework;
+using System;
 
 namespace EventStore.Core.Tests.Replication.ReadOnlyReplica {
 	[Category("LongRunning")]
@@ -24,32 +27,30 @@ namespace EventStore.Core.Tests.Replication.ReadOnlyReplica {
 			return node;
 		}
 
-		protected override IEventStoreConnection CreateConnection() {
-			var settings = ConnectionSettings.Create()
-				.DisableServerCertificateValidation()
-				.PerformOnAnyNode();
-			return EventStoreConnection.Create(settings, _nodes[2].ExternalTcpEndPoint);
+		protected override IEventStoreClient CreateConnection() {
+			return new GrpcEventStoreConnection(_nodes[2].HttpEndPoint);
 		}
 
 		[Test]
 		public async Task append_to_stream_should_fail_with_not_supported_exception() {
 			const string stream = "append_to_stream_should_fail_with_not_supported_exception";
-			await AssertEx.ThrowsAsync<OperationNotSupportedException>(
+			await AssertEx.ThrowsAsync<NotSupportedException>(
 				() => _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()));
 		}
 
 		[Test]
 		public async Task delete_stream_should_fail_with_not_supported_exception() {
 			const string stream = "delete_stream_should_fail_with_not_supported_exception";
-			await AssertEx.ThrowsAsync<OperationNotSupportedException>(() =>
+			await AssertEx.ThrowsAsync<NotSupportedException>(() =>
 				_conn.DeleteStreamAsync(stream, ExpectedVersion.Any));
 		}
 
-		[Test]
-		public async Task start_transaction_should_fail_with_not_supported_exception() {
-			const string stream = "start_transaction_should_fail_with_not_supported_exception";
-			await AssertEx.ThrowsAsync<OperationNotSupportedException>(() =>
-				_conn.StartTransactionAsync(stream, ExpectedVersion.Any));
-		}
+		// TODO - gRPC client no longer supports explicit transactions.
+		// [Test]
+		// public async Task start_transaction_should_fail_with_not_supported_exception() {
+		// 	const string stream = "start_transaction_should_fail_with_not_supported_exception";
+		// 	await AssertEx.ThrowsAsync<NotSupportedException>(() =>
+		// 		_conn.StartTransactionAsync(stream, ExpectedVersion.Any));
+		// }
 	}
 }

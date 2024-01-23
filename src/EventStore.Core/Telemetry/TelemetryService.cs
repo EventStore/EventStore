@@ -136,7 +136,6 @@ public sealed class TelemetryService : IDisposable,
 			"configuration", new JsonObject {
 				["clusterSize"] = _nodeOptions.Cluster.ClusterSize,
 				["enableAtomPubOverHttp"] = _nodeOptions.Interface.EnableAtomPubOverHttp,
-				["enableExternalTcp"] = _nodeOptions.Interface.EnableExternalTcp,
 				["insecure"] = _nodeOptions.Application.Insecure,
 				["runProjections"] = _nodeOptions.Projections.RunProjections.ToString(),
 			}));
