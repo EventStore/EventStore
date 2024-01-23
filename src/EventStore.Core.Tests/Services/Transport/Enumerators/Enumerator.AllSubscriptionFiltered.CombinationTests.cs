@@ -111,15 +111,12 @@ public partial class EnumeratorTests {
 				new SubscriptionProperties(CheckpointType.Start, EventFilterType.StreamPrefix),
 				new LiveProperties(RevokeAccessWithDefaultAcl: true)
 			),
-			// falling behind is not currently supported
-			/*
 			CreateTestData(
 				"subscribe to $all with stream prefix filter from start then fall behind and catch up",
 				new StreamProperties(10),
 				new SubscriptionProperties(CheckpointType.Start, EventFilterType.StreamPrefix),
 				new LiveProperties(FallBehindThenCatchUp: true)
 			),
-			*/
 			// STREAM REGEX FILTER
 			CreateTestData(
 				"subscribe to $all with stream regex filter from start",
@@ -175,15 +172,12 @@ public partial class EnumeratorTests {
 				new SubscriptionProperties(CheckpointType.Start, EventFilterType.StreamRegex),
 				new LiveProperties(RevokeAccessWithDefaultAcl: true)
 			),
-			// falling behind is not currently supported
-			/*
 			CreateTestData(
 				"subscribe to $all with stream regex filter from start then fall behind and catch up",
 				new StreamProperties(10),
 				new SubscriptionProperties(CheckpointType.Start, EventFilterType.StreamRegex),
 				new LiveProperties(FallBehindThenCatchUp: true)
 			),
-			*/
 			// EVENT TYPE PREFIX FILTER
 			CreateTestData(
 				"subscribe to $all with event type prefix filter from start",
@@ -239,15 +233,12 @@ public partial class EnumeratorTests {
 				new SubscriptionProperties(CheckpointType.Start, EventFilterType.EventTypePrefix),
 				new LiveProperties(RevokeAccessWithDefaultAcl: true)
 			),
-			// falling behind is not currently supported
-			/*
 			CreateTestData(
 				"subscribe to $all with event type prefix filter from start then fall behind and catch up",
 				new StreamProperties(10),
 				new SubscriptionProperties(CheckpointType.Start, EventFilterType.EventTypePrefix),
 				new LiveProperties(FallBehindThenCatchUp: true)
 			),
-			*/
 			// EVENT TYPE REGEX FILTER
 			CreateTestData(
 				"subscribe to $all with event type regex filter from start",
@@ -303,15 +294,12 @@ public partial class EnumeratorTests {
 				new SubscriptionProperties(CheckpointType.Start, EventFilterType.EventTypeRegex),
 				new LiveProperties(RevokeAccessWithDefaultAcl: true)
 			),
-			// falling behind is not currently supported
-			/*
 			CreateTestData(
 				"subscribe to $all with event type regex filter from start then fall behind and catch up",
 				new StreamProperties(10),
 				new SubscriptionProperties(CheckpointType.Start, EventFilterType.EventTypeRegex),
 				new LiveProperties(FallBehindThenCatchUp: true)
 			),
-			*/
 			// CHECKPOINTS DURING CATCH-UP
 			CreateTestData(
 				"subscription to filtered $all receives checkpoints during catch-up (1)",
@@ -514,14 +502,14 @@ public partial class EnumeratorTests {
 
 			return CreateAllSubscriptionFiltered(
 				publisher: Node.Node.MainQueue,
-				startPosition: checkpoint,
+				checkpoint: checkpoint,
 				eventFilter: eventFilter,
 				maxSearchWindow: CheckpointInterval,
 				checkpointIntervalMultiplier: 1,
 				user: SystemAccounts.Anonymous);
 		}
 
-		private async Task<int> ReadExpectedEvents(EnumeratorWrapper sub, int nextEventIndex, int lastEventIndex, bool shouldFallBehindThenCatchUp = false) {
+		private async Task<int> ReadExpectedEvents(EnumeratorWrapper sub, int nextEventIndex, int lastEventIndex, bool catchingUp, bool shouldFallBehindThenCatchUp = false) {
 			var fellBehind = false;
 			var caughtUp = false;
 			var lastEventOrCheckpointPos = new TFPos(-1, -1);
@@ -531,7 +519,7 @@ public partial class EnumeratorTests {
 			if (shouldFallBehindThenCatchUp)
 				numResponsesExpected += 2;
 
-			while (--numResponsesExpected >= 0 || numEventsSinceLastCheckpoint == CheckpointInterval) {
+			while (--numResponsesExpected >= 0) {
 				var response = await sub.GetNext();
 				switch (response) {
 					case Event evt:
@@ -576,6 +564,25 @@ public partial class EnumeratorTests {
 				}
 			}
 
+			bool shouldCheckpoint = false;
+
+			// if we've just finished catching up
+			shouldCheckpoint |= catchingUp && SubscriptionProps.CheckpointType is
+				CheckpointType.Start or
+				CheckpointType.AtZero or
+				CheckpointType.OneBeforeLast;
+
+			// or we were live and we've received `checkpoint interval` events since the last checkpoint
+			shouldCheckpoint |= !catchingUp && numEventsSinceLastCheckpoint == CheckpointInterval;
+
+			// then expect a final checkpoint
+			if (shouldCheckpoint) {
+				Assert.True(await sub.GetNext() is Checkpoint);
+				numEventsSinceLastCheckpoint = 0;
+			}
+
+			Assert.Less(numEventsSinceLastCheckpoint, CheckpointInterval);
+
 			if (shouldFallBehindThenCatchUp) {
 				if (!fellBehind)
 					Assert.Fail("Subscription did not fall behind.");
@@ -583,8 +590,6 @@ public partial class EnumeratorTests {
 				if (!caughtUp)
 					Assert.Fail("Subscription fell behind but did not catch up.");
 			}
-
-			Assert.Less(numEventsSinceLastCheckpoint, CheckpointInterval);
 
 			return nextEventIndex;
 		}
@@ -600,20 +605,20 @@ public partial class EnumeratorTests {
 		public async Task enumeration_is_correct() {
 			var sub = Subscribe();
 
+			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
+
 			if (SubscriptionProps.CheckpointType == CheckpointType.InvalidPosition) {
 				Assert.ThrowsAsync<ReadResponseException.InvalidPosition>(async () => await sub.GetNext());
 				return;
 			}
 
-			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
-
-			_nextEventIndex = await ReadExpectedEvents(sub, _nextEventIndex, _events.Count - 1);
+			_nextEventIndex = await ReadExpectedEvents(sub, _nextEventIndex, _events.Count - 1, catchingUp: true);
 
 			Assert.True(await sub.GetNext() is CaughtUp);
 
 			var (numEventsAdded, accessRevoked, shouldFallBehindThenCatchup) = await ApplyLiveProperties();
 
-			_nextEventIndex = await ReadExpectedEvents(sub, _nextEventIndex, _nextEventIndex + numEventsAdded - 1, shouldFallBehindThenCatchup);
+			_nextEventIndex = await ReadExpectedEvents(sub, _nextEventIndex, _nextEventIndex + numEventsAdded - 1, catchingUp: false, shouldFallBehindThenCatchup);
 
 			if (accessRevoked) {
 				Assert.ThrowsAsync<ReadResponseException.AccessDenied>(async () => await sub.GetNext());

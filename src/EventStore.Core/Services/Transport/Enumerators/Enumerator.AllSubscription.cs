@@ -90,8 +90,8 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 					if (_currentPosition.HasValue && position <= _currentPosition.Value) {
 						// this should no longer happen
-						Log.Warning("Subscription {subscriptionId} to $all skipping event {position} as it is less than {_currentPosition}.", _subscriptionId,
-							position, _currentPosition);
+						Log.Warning("Subscription {subscriptionId} to $all skipping event {position} as it is less than {currentPosition}.",
+							_subscriptionId, position, _currentPosition);
 						goto ReadLoop;
 					}
 
@@ -232,7 +232,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 								foreach (var @event in completed.Events) {
 									var eventPosition = @event.OriginalPosition!.Value;
 
-									// this should be true only for the first event of the first page
+									// this will only be true for the first event of the first page
 									// as we start page reads from the checkpoint's position
 									if (eventPosition <= checkpoint)
 										continue;

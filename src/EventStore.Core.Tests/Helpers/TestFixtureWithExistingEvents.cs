@@ -630,7 +630,7 @@ namespace EventStore.Core.Tests.Helpers {
 			var lastEventNumber = msg.EventStreamId.IsEmptyString()
 				? (long?)null
 				: list.Safe().Any() ? list.Safe().Last().EventNumber : -1;
-			var lastCommitPos = -1;
+			var lastCommitPos = _fakePosition;
 			var subscribedMessage =
 				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
 			msg.Envelope.ReplyWith(subscribedMessage);
