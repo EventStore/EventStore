@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core {
 				var workerId = Guid.NewGuid();
 				var projectionNode = new ProjectionWorkerNode(
 					workerId,
-					standardComponents.Db,
+					standardComponents.DbConfig,
 					coreQueue,
 					standardComponents.TimeProvider,
 					coreTimeoutSchedulers[coreQueues.Count],

@@ -1,19 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
-using EventStore.Core.Services;
-using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using NUnit.Framework;
 using EventStore.Core.Tests.ClientAPI;
-using EventStore.Core.Tests.Helpers;
 using HttpMethod = System.Net.Http.HttpMethod;
 using HttpStatusCode = System.Net.HttpStatusCode;
 
@@ -22,7 +18,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_getting_tcp_stats_from_stat_controller<TLogFormat, TStreamId>
 		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
-		private PortableServer _portableServer;
 		private IEventStoreConnection _connection;
 		private string _url;
 		private string _clientConnectionName = "test-connection";
@@ -40,9 +35,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			var testEvent = new EventData(Guid.NewGuid(), "TestEvent", true,
 				Encoding.ASCII.GetBytes("{'Test' : 'OneTwoThree'}"), null);
 			await _connection.AppendToStreamAsync("tests", ExpectedVersion.Any, testEvent);
-
-			_portableServer = new PortableServer(_node.HttpEndPoint);
-			_portableServer.SetUp();
 		}
 
 		protected override async Task When() {
@@ -78,7 +70,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 
 		[OneTimeTearDown]
 		public override Task TestFixtureTearDown() {
-			_portableServer.TearDown();
 			_connection.Dispose();
 			return base.TestFixtureTearDown();
 		}

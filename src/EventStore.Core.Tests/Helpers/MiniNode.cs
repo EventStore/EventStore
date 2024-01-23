@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
 using EventStore.Core.LogAbstraction;
+using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
@@ -30,14 +31,14 @@ namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
 		public const int ChunkSize = 1024 * 1024;
 		public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
-		
+
 		protected static readonly ILogger Log = Serilog.Log.ForContext<MiniNode>();
 		public IPEndPoint TcpEndPoint { get; protected set; }
 		public IPEndPoint IntTcpEndPoint { get; protected set; }
 		public IPEndPoint HttpEndPoint { get; protected set; }
 	}
 
-	public class MiniNode<TLogFormat, TStreamId> : MiniNode {
+	public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 		public static int RunCount;
 		public static readonly Stopwatch RunningTime = new Stopwatch();
 		public static readonly Stopwatch StartingTime = new Stopwatch();
@@ -47,7 +48,6 @@ namespace EventStore.Core.Tests.Helpers {
 		public readonly TFChunkDb Db;
 		public readonly string DbPath;
 		public readonly HttpClient HttpClient;
-		private readonly IWebHost _host;
 		public readonly HttpMessageHandler HttpMessageHandler;
 
 		private readonly TestServer _kestrelTestServer;
@@ -70,12 +70,14 @@ namespace EventStore.Core.Tests.Helpers {
 			long streamExistenceFilterSize = 10_000,
 			int streamExistenceFilterCheckpointIntervalMs = 30_000,
 			int streamExistenceFilterCheckpointDelayMs = 5_000,
+			int httpClientTimeoutSec = 60,
 			IExpiryStrategy expiryStrategy = null) {
+
 			RunningTime.Start();
 			RunCount += 1;
 
 			var ip = IPAddress.Loopback;
-			
+
 			int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
 			int httpEndPointPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
 			int intTcpPort = PortsHelper.GetAvailablePort(ip);
@@ -178,18 +180,6 @@ namespace EventStore.Core.Tests.Helpers {
 
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));
 			_kestrelTestServer = new TestServer(new WebHostBuilder()
-				.UseKestrel()
-				.UseStartup(Node.Startup));
-			_started = new TaskCompletionSource<bool>();
-			_adminUserCreated = new TaskCompletionSource<bool>();
-			HttpMessageHandler = _kestrelTestServer.CreateHandler();
-			HttpClient = new HttpClient(HttpMessageHandler) {
-				BaseAddress = new UriBuilder {
-					Scheme = Uri.UriSchemeHttps
-				}.Uri
-			};
-
-			_host = new WebHostBuilder()
 				.UseKestrel(o => {
 					o.Listen(HttpEndPoint, options => {
 						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
@@ -210,8 +200,16 @@ namespace EventStore.Core.Tests.Helpers {
 						}
 					});
 				})
-				.UseStartup(Node.Startup)
-				.Build();
+				.UseStartup(Node.Startup));
+			_started = new TaskCompletionSource<bool>();
+			_adminUserCreated = new TaskCompletionSource<bool>();
+			HttpMessageHandler = _kestrelTestServer.CreateHandler();
+			HttpClient = new HttpClient(HttpMessageHandler) {
+				Timeout = TimeSpan.FromSeconds(httpClientTimeoutSec),
+				BaseAddress = new UriBuilder {
+					Scheme = Uri.UriSchemeHttps
+				}.Uri
+			};
 		}
 
 		public async Task Start() {
@@ -234,11 +232,10 @@ namespace EventStore.Core.Tests.Helpers {
 				Node.MainBus.Unsubscribe(waitForAdminUser);
 			}
 
-			await _host.StartAsync().WithTimeout();
-			await Node.StartAsync(true).WithTimeout(TimeSpan.FromSeconds(60)); //starts the node
+			await Node.StartAsync(true).WithTimeout(TimeSpan.FromSeconds(60));
 
 			await Started.WithTimeout();
-			
+
 			StartingTime.Stop();
 			Log.Information("MiniNode successfully started!");
 		}
@@ -247,7 +244,6 @@ namespace EventStore.Core.Tests.Helpers {
 
 			StoppingTime.Start();
 
-			_host?.Dispose();
 			_kestrelTestServer.Dispose();
 			HttpMessageHandler.Dispose();
 			HttpClient.Dispose();
@@ -273,6 +269,10 @@ namespace EventStore.Core.Tests.Helpers {
 				Debug.WriteLine("Failed to remove directory {0}", directory);
 				Debug.WriteLine(e);
 			}
+		}
+
+		public async ValueTask DisposeAsync() {
+			await Shutdown();
 		}
 	}
 }

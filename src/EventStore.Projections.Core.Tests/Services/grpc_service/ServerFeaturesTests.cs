@@ -27,14 +27,12 @@ namespace EventStore.Projections.Core.Tests.Services.grpc_service {
 		}
 
 		public override async Task When() {
-			using var channel = GrpcChannel.ForAddress(new Uri($"https://{_node.HttpEndPoint}"),
-			new GrpcChannelOptions {
-				HttpClient = new HttpClient(new SocketsHttpHandler {
-					SslOptions = {
-							RemoteCertificateValidationCallback = delegate { return true; }
-					}
-				}, true)
-			});
+
+			using var channel = GrpcChannel.ForAddress(
+				new Uri($"https://{_node.HttpEndPoint}"),
+				new GrpcChannelOptions {
+					HttpHandler = _node.HttpMessageHandler
+				});
 			var client = new ServerFeatures.ServerFeaturesClient(channel);
 
 			var resp = await client.GetSupportedMethodsAsync(new Empty());

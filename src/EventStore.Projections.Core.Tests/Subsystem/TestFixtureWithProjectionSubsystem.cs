@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
-using EventStore.Common;
+using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -9,14 +9,16 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Tests.TransactionLog;
-using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Projections.Core.Messages;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Subsystem {
 	public class TestFixtureWithProjectionSubsystem {
 		private StandardComponents _standardComponents;
-		
+
 		protected ProjectionsSubsystem Subsystem;
 		protected const int WaitTimeoutMs = 3000;
 
@@ -25,9 +27,11 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		private readonly ManualResetEvent _startReceived = new ManualResetEvent(false);
 		private ProjectionSubsystemMessage.StartComponents _lastStartMessage;
-	
+
+		protected Task Started { get; private set; }
+
 		private StandardComponents CreateStandardComponents() {
-			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(Path.GetTempPath(), 0));
+			var dbConfig = TFChunkHelper.CreateDbConfig(Path.GetTempPath(), 0); //qq use config directly
 			var mainQueue = QueuedHandler.CreateQueuedHandler
 			(new AdHocHandler<Message>(msg => {
 				/* Ignore messages */
@@ -36,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			var threadBasedScheduler = new ThreadBasedScheduler(new QueueStatsManager(), new());
 			var timerService = new TimerService(threadBasedScheduler);
 
-			return new StandardComponents(db, mainQueue, mainBus,
+			return new StandardComponents(dbConfig, mainQueue, mainBus,
 				timerService, timeProvider: null, httpForwarder: null, httpServices: new IHttpService[] { },
 				networkSendService: null, queueStatsManager: new QueueStatsManager(),
 				trackers: new());
@@ -46,13 +50,20 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 		public void SetUp() {
 			_standardComponents = CreateStandardComponents();
 
-			Subsystem = new ProjectionsSubsystem(new ProjectionSubsystemOptions(1, ProjectionType.All, true, TimeSpan.FromSeconds(3), true, 500, 250));
-			Subsystem.Create(_standardComponents);
+			var builder = WebApplication.CreateBuilder();
+			builder.Services.AddGrpc();
+			builder.Services.AddSingleton(_standardComponents);
+
+			Subsystem = new ProjectionsSubsystem(
+				new ProjectionSubsystemOptions(1, ProjectionType.All, true, TimeSpan.FromSeconds(3), true, 500, 250));
+
+			Subsystem.ConfigureServices(builder.Services, new ConfigurationBuilder().Build());
+			Subsystem.Configure(builder.Build().UseRouting());
 
 			// Unsubscribe from the actual components so we can test in isolation
 			Subsystem.LeaderMainBus.Unsubscribe<ProjectionSubsystemMessage.ComponentStarted>(Subsystem);
 			Subsystem.LeaderMainBus.Unsubscribe<ProjectionSubsystemMessage.ComponentStopped>(Subsystem);
-			
+
 			Subsystem.LeaderMainBus.Subscribe(new AdHocHandler<Message>(
 				msg => {
 					switch (msg) {
@@ -69,14 +80,13 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 					}
 				}));
 
-			Subsystem.Start();
+			Started = Subsystem.Start();
 
 			Given();
 		}
 
 		[OneTimeTearDown]
 		public void TearDown() {
-			_standardComponents.Db.Dispose();
 			_standardComponents.TimerService.Dispose();
 		}
 

@@ -16,6 +16,7 @@ using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
+using EventStore.Plugins.Subsystems;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Quickenshtein;

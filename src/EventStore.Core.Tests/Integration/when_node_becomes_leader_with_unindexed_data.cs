@@ -12,6 +12,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Plugins.Subsystems;
 using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Net.Client;

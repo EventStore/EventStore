@@ -53,7 +53,7 @@ namespace EventStore.ClusterNode {
 			var plugInContainer = FindPlugins();
 
 			options = LoadSubsystemsPlugins(pluginLoader, options);
-			
+
 			try {
 				ConfigureMD5();
 			} catch {
@@ -69,10 +69,10 @@ namespace EventStore.ClusterNode {
 			_options = projectionMode >= ProjectionType.System
 				? options.WithSubsystem(new ProjectionsSubsystem(
 					new ProjectionSubsystemOptions(
-						options.Projections.ProjectionThreads, 
+						options.Projections.ProjectionThreads,
 						projectionMode,
 						startStandardProjections,
-						TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry), 
+						TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry),
 						options.Projections.FaultOutOfOrderProjections,
 						options.Projections.ProjectionCompilationTimeout,
 						options.Projections.ProjectionExecutionTimeout)))
@@ -240,16 +240,14 @@ namespace EventStore.ClusterNode {
 			}
 
 			static ClusterVNodeOptions LoadSubsystemsPlugins(PluginLoader pluginLoader, ClusterVNodeOptions options) {
-				var plugins = pluginLoader.Load<ISubsystemsPlugin<(ISubscriber, IPublisher)>>().ToArray();
+				var plugins = pluginLoader.Load<ISubsystemsPlugin>().ToArray();
 				foreach (var plugin in plugins) {
 					Log.Information("Loaded SubsystemsPlugin plugin: {plugin} {version}.",
 						plugin.CommandLineName,
 						plugin.Version);
 					var subsystemFactories = plugin.GetSubsystemFactories(configPath: options.Application.Config);
 					foreach (var subsystemFactory in subsystemFactories) {
-						options = options.WithSubsystem(new SubsystemFactoryAdapter<(ISubscriber, IPublisher)>(
-							subsystemFactory,
-							components => (components.MainBus, components.MainQueue)));
+						options = options.WithSubsystem(subsystemFactory);
 					}
 				}
 				return options;

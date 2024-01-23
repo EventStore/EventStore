@@ -15,6 +15,7 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
+using EventStore.Plugins.Subsystems;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	[Category("ClientAPI")]
@@ -31,7 +32,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			
+
 			var projectionWorkerThreadCount = GivenWorkerThreadCount();
 			var configuration = new ProjectionSubsystemOptions(
 				projectionWorkerThreadCount,
