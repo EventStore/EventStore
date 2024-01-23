@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Upgrade Jint to version 3.0.0-beta-2059 [EventStore#4111](https://github.com/EventStore/EventStore/pull/4111)
 - Explicitly set the shutdown timeout to 5s, which was default in previous dotnet versions. Behaviour unchanged since previous release [EventStore#4110](https://github.com/EventStore/EventStore/pull/4110)
 - Re-authorize stream access in live subscriptions when stream metadata changes [EventStore#4104](https://github.com/EventStore/EventStore/pull/4104)
+- Re-authorize stream access in live subscriptions when default ACLs change [EventStore#4116](https://github.com/EventStore/EventStore/pull/4116)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
@@ -30,6 +31,7 @@ All notable changes to this project will be documented in this file.
 - Calls to /stats/replication on a single node cluster would hang forever. [EventStore#4102](https://github.com/EventStore/EventStore/pull/4102)
 - gRPC stream subscription now receives a stream deleted exception when subscribing to a tombstoned stream from `End` [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
 - gRPC stream subscription now receives `CaughtUp` message when subscribing to a non-existing or soft-deleted stream. Previously in such cases, the stream subscription enumerator was looping in catch-up mode until a new event is received (and thus it never sent `CaughtUp` to the subscription) [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
+- Initialize replication service heartbeat interval with `ReplicationHeartbeatInterval` instead of `NodeHeartbeatInterval `. [EventStore#4125](https://github.com/EventStore/EventStore/pull/4125)
 
 ### Removed
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
