@@ -387,6 +387,9 @@ namespace EventStore.Core.Services {
 
 			eventStreamId = SystemStreams.OriginalStreamOf(eventStreamId);
 
+			if (eventStreamId == SystemStreams.AllStream)
+				eventStreamId = string.Empty;
+
 			if (!_subscriptionTopics.TryGetValue(eventStreamId, out var subscriptions))
 				return;
 
