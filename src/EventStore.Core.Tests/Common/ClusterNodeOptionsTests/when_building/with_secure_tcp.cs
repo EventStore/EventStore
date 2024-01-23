@@ -17,14 +17,18 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		private readonly IPEndPoint _internalSecTcp = new(IPAddress.Parse("127.0.1.15"), 1114);
 		private readonly IPEndPoint _externalSecTcp = new(IPAddress.Parse("127.0.1.15"), 1115);
 
-		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
-			options.WithInternalSecureTcpOn(_internalSecTcp).WithExternalSecureTcpOn(_externalSecTcp) with {
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1115");
+
+			return options.WithInternalSecureTcpOn(_internalSecTcp).WithExternalSecureTcpOn(_externalSecTcp) with {
 				CertificateFile = new() {
 					CertificateFile = GetCertificatePath(),
 					CertificatePrivateKeyFile = string.Empty,
 					CertificatePassword = "password"
 				}
 			};
+		}
 
 
 		[Test]
@@ -66,10 +70,15 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		private readonly IPEndPoint _externalSecTcp = new(IPAddress.Parse("127.0.1.15"), 1115);
 		private readonly X509Certificate2 _certificate = ssl_connections.GetServerCertificate();
 
-		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1115");
+
+			return options
 				.WithInternalSecureTcpOn(_internalSecTcp)
 				.WithExternalSecureTcpOn(_externalSecTcp)
 				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()), _certificate);
+		}
 
 		[Test]
 		public void should_set_tls_to_enabled() {

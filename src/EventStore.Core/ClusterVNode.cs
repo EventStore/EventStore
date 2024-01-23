@@ -70,6 +70,11 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
 		protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
+		public static readonly string TcpApiEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_API_ENABLED";
+		public static readonly string TcpApiPortEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_API_PORT";
+		public static readonly string TcpApiAdvertisedPortEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_API_ADVERTISED_PORT";
+		public static readonly string TcpApiHeartbeatTimeoutEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_HEARTBEAT_TIMEOUT";
+		public static readonly string TcpApiHeartbeatIntervalEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_HEARTBEAT_INTERVAL";
 
 		public static ClusterVNode<TStreamId> Create<TStreamId>(
 			ClusterVNodeOptions options,
@@ -262,7 +267,8 @@ namespace EventStore.Core {
 #endif
 
 			var disableInternalTcpTls = options.Application.Insecure;
-			var disableExternalTcpTls = options.Application.Insecure || options.Interface.DisableExternalTcpTls;
+			var disableExternalTcpTls = options.Application.Insecure;
+			var enableExternalTcp = ExtTcpOptions.TryParse(out var extTcpOptions);
 
 			var httpEndPoint = new IPEndPoint(options.Interface.NodeIp, options.Interface.NodePort);
 			
@@ -275,23 +281,23 @@ namespace EventStore.Core {
 					options.Interface.ReplicationPort)
 				: null;
 
-			var extTcp = disableExternalTcpTls
+			var extTcp = disableExternalTcpTls && enableExternalTcp
 				? new IPEndPoint(options.Interface.NodeIp, 
-					options.Interface.NodeTcpPort)
+					extTcpOptions.Port)
 				: null;
-			var extSecIp = !disableExternalTcpTls
+			var extSecIp = !disableExternalTcpTls && enableExternalTcp
 				? new IPEndPoint(options.Interface.NodeIp, 
-					options.Interface.NodeTcpPort)
+					extTcpOptions.Port)
 				: null;
 
 			var intTcpPortAdvertiseAs = disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
 			var intSecTcpPortAdvertiseAs = !disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
-			
-			var extTcpPortAdvertiseAs = options.Interface.EnableExternalTcp && disableExternalTcpTls
-				? options.Interface.NodeTcpPortAdvertiseAs
+
+			var extTcpPortAdvertiseAs = enableExternalTcp && disableExternalTcpTls && extTcpOptions.AdvertisedPort.HasValue
+				? extTcpOptions.AdvertisedPort.Value!
 				: 0;
-			var extSecTcpPortAdvertiseAs = options.Interface.EnableExternalTcp && !disableExternalTcpTls
-				? options.Interface.NodeTcpPortAdvertiseAs
+			var extSecTcpPortAdvertiseAs = enableExternalTcp && !disableExternalTcpTls && extTcpOptions.AdvertisedPort.HasValue
+				? extTcpOptions.AdvertisedPort.Value!
 				: 0;
 
 			Log.Information("Quorum size set to {quorum}.", options.Cluster.QuorumSize);
@@ -919,13 +925,16 @@ namespace EventStore.Core {
 
 			AuthorizationGateway = new AuthorizationGateway(_authorizationProvider);
 			{
+				if (enableExternalTcp)
+					Log.Warning("The unsupported public tcp api feature has been enabled. Please be aware that this feature may not function as expected and could lead to potential issues. Use at your own risk");
+
 				// EXTERNAL TCP
-				if (NodeInfo.ExternalTcp != null && options.Interface.EnableExternalTcp) {
+				if (NodeInfo.ExternalTcp != null && enableExternalTcp) {
 					var extTcpService = new TcpService(_mainQueue, NodeInfo.ExternalTcp, _workersHandler,
 						TcpServiceType.External, TcpSecurityType.Normal,
 						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatInterval),
-						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatTimeout),
+						TimeSpan.FromMilliseconds(extTcpOptions.HeartbeatInterval),
+						TimeSpan.FromMilliseconds(extTcpOptions.HeartbeatTimeout),
 						_authenticationProvider, AuthorizationGateway, null, null, null,
 						options.Interface.ConnectionPendingSendBytesThreshold,
 						options.Interface.ConnectionQueueSizeThreshold);
@@ -934,12 +943,12 @@ namespace EventStore.Core {
 					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extTcpService);
 				}
 				// EXTERNAL SECURE TCP
-				if (NodeInfo.ExternalSecureTcp != null && options.Interface.EnableExternalTcp) {
+				if (NodeInfo.ExternalSecureTcp != null && enableExternalTcp) {
 					var extSecTcpService = new TcpService(_mainQueue, NodeInfo.ExternalSecureTcp, _workersHandler,
 						TcpServiceType.External, TcpSecurityType.Secure,
 						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatInterval),
-						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatTimeout),
+						TimeSpan.FromMilliseconds(extTcpOptions.HeartbeatInterval),
+						TimeSpan.FromMilliseconds(extTcpOptions.HeartbeatTimeout),
 						_authenticationProvider, AuthorizationGateway,
 						_certificateSelector, _intermediateCertsSelector, _externalClientCertificateValidator,
 						options.Interface.ConnectionPendingSendBytesThreshold,

@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
@@ -11,7 +12,12 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_default_node_as_single_node<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
-		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options;
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1113");
+
+			return options;
+		}
 
 		public with_default_node_as_single_node () : base(disableMemoryOptimization:true) {
 		}
@@ -70,12 +76,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.AreEqual(700, _options.Interface.ReplicationHeartbeatTimeout,
 				"ReplicationHeartbeatTimeout");
 			
-			Assert.AreEqual(2000, _options.Interface.NodeHeartbeatInterval,
-				"NodeHeartbeatInterval");
-			
-			Assert.AreEqual(1000, _options.Interface.NodeHeartbeatTimeout,
-				"NodeHeartbeatTimeout");
-
 			Assert.AreEqual(TFConsts.ChunkSize, _node.Db.Config.ChunkSize, "ChunkSize");
 			Assert.AreEqual(TFConsts.ChunksCacheSize, _node.Db.Config.MaxChunksCacheSize, "MaxChunksCacheSize");
 		}
@@ -113,7 +113,12 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.IsFalse(_options.Interface.DisableExternalTcpTls);
 		}
 
-		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options;
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1113");
+
+			return options;
+		}
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -142,8 +147,12 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.AreEqual(httpEndPoint.ToDnsEndPoint(), _node.GossipAdvertiseInfo.HttpEndPoint);
 		}
 		
-		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
-			options.Insecure();
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
+			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1113");
+
+			return options.Insecure();
+		}
 	}
 
 }
