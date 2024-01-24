@@ -145,7 +145,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 						(checkpoint, sequenceNumber) = await GoLive(checkpoint, sequenceNumber, ct);
 					}
 				} catch (Exception ex) {
-					if (ex is not OperationCanceledException)
+					if (ex is not (OperationCanceledException or ReadResponseException.InvalidPosition))
 						Log.Error(ex, "Subscription {subscriptionId} to $all experienced an error.", _subscriptionId);
 					_channel.Writer.TryComplete(ex);
 				} finally {
@@ -257,6 +257,8 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 								return;
 							case ReadAllResult.AccessDenied:
 								throw new ReadResponseException.AccessDenied();
+							case ReadAllResult.InvalidPosition:
+								throw new ReadResponseException.InvalidPosition();
 							default:
 								throw ReadResponseException.UnknownError.Create(completed.Result);
 						}
