@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_manager = manager;
 		}
 
-		public void ReplyWith<T>(T message) where T : Message {
+		public void ReplyWith<T>(T message) where T : class, Message {
 			if (_manager != null && !_manager.IsClosed) {
 				_networkSendQueue.Publish(new TcpMessage.TcpSend(_manager, message));
 			}

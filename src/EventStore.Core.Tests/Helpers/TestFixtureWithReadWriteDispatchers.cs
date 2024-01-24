@@ -5,7 +5,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Bus;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
@@ -13,18 +12,17 @@ using System.Linq;
 using EventStore.Core.Metrics;
 
 namespace EventStore.Core.Tests.Helpers {
+	public static class WhenStepExtensions {
+		public static TestFixtureWithReadWriteDispatchers.WhenStep AsWhenStep<T>(this T message) where T : class, Message => new(message);
+	}
+	
 	public abstract class TestFixtureWithReadWriteDispatchers {
 		protected InMemoryBus _bus;
 		protected IQueuedHandler _publisher;
-
-		protected RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted>
-			_streamDispatcher;
-
-		protected RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-			_writeDispatcher;
+		protected RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted> _streamDispatcher;
+		protected RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
 
 		protected ReadDispatcher _readDispatcher;
-
 		protected TestHandler<Message> _consumer;
 		protected IODispatcher _ioDispatcher;
 		protected ManualQueue _queue;
@@ -40,9 +38,7 @@ namespace EventStore.Core.Tests.Helpers {
 			}
 		}
 
-		protected List<Message> HandledMessages {
-			get { return _consumer.HandledMessages; }
-		}
+		protected List<Message> HandledMessages => _consumer.HandledMessages;
 
 		[SetUp]
 		public void setup0() {
@@ -74,25 +70,18 @@ namespace EventStore.Core.Tests.Helpers {
 			_bus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher);
 		}
 
-		protected virtual ManualQueue GiveInputQueue() {
-			return null;
-		}
+		protected virtual ManualQueue GiveInputQueue() => null;
 
-		protected IPublisher GetInputQueue() {
-			return (IPublisher)_queue ?? _bus;
-		}
+		protected IPublisher GetInputQueue() => (IPublisher)_queue ?? _bus;
 
-		protected void DisableTimer() {
-			_queue.DisableTimer();
-		}
+		protected void DisableTimer() => _queue.DisableTimer();
 
-		protected void EnableTimer() {
-			_queue.EnableTimer();
-		}
+		protected void EnableTimer() => _queue.EnableTimer();
 
 		protected void WhenLoop() {
 			_queue.Process();
-			var steps = PreWhen().Concat(When());
+			var steps = PreWhenSteps().Concat(PreWhen().Select(x => x.AsWhenStep()))
+				.Concat(WhenSteps()).Concat(When().Select(x => x.AsWhenStep()));
 			WhenLoop(steps);
 		}
 
@@ -167,9 +156,10 @@ namespace EventStore.Core.Tests.Helpers {
 			internal WhenStep() {
 			}
 
-			public static implicit operator WhenStep(Message message) {
-				return new WhenStep(message);
-			}
+			// // user-defined conversions to or from an interface are not allowed
+			// public static implicit operator WhenStep(Message message) {
+			// 	return new WhenStep(message);
+			// }
 
 			public IEnumerator<Message> GetEnumerator() {
 				return GetMessages().GetEnumerator();
@@ -189,11 +179,19 @@ namespace EventStore.Core.Tests.Helpers {
 			}
 		}
 
-		protected virtual IEnumerable<WhenStep> PreWhen() {
+		protected virtual IEnumerable<WhenStep> PreWhenSteps() {
 			yield break;
 		}
 
-		protected virtual IEnumerable<WhenStep> When() {
+		protected virtual IEnumerable<WhenStep> WhenSteps() {
+			yield break;
+		}
+		
+		protected virtual IEnumerable<Message> PreWhen() {
+			yield break;
+		}
+
+		protected virtual IEnumerable<Message> When() {
 			yield break;
 		}
 

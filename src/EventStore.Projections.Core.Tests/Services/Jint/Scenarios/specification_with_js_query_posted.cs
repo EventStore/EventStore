@@ -83,8 +83,8 @@ namespace EventStore.Projections.Core.Tests.Services.Jint.Scenarios
 				"INTERPRETED", source, enabled: true, checkpointsEnabled: true, trackEmittedStreams: true, emitEnabled: true);
 		}
 
-		protected override IEnumerable<WhenStep> When() {
-			yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
+		protected override IEnumerable<Message> When() {
+			yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 			if (_startSystemProjections) {
 				yield return
 					new ProjectionManagementMessage.Command.Enable(
@@ -108,21 +108,21 @@ namespace EventStore.Projections.Core.Tests.Services.Jint.Scenarios
 			var index = 0;
 			foreach (var source in otherProjections) {
 				yield return
-					(new ProjectionManagementMessage.Command.Post(
+					new ProjectionManagementMessage.Command.Post(
 						new PublishEnvelope(_bus), ProjectionMode.Continuous, "other_" + index,
 						ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: true,
 						trackEmittedStreams: true,
-						emitEnabled: true));
+						emitEnabled: true);
 				index++;
 			}
 
 			if (!string.IsNullOrEmpty(_projectionSource)) {
 				yield return
-					(new ProjectionManagementMessage.Command.Post(
+					new ProjectionManagementMessage.Command.Post(
 						new PublishEnvelope(_bus), _projectionMode, _projectionName,
 						ProjectionManagementMessage.RunAs.System, "JS", _projectionSource, enabled: true,
 						checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled,
-						trackEmittedStreams: _trackEmittedStreams));
+						trackEmittedStreams: _trackEmittedStreams);
 			}
 		}
 

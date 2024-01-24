@@ -12,33 +12,25 @@ namespace EventStore.Core.Tests.Services.VNode {
 	internal abstract class P : Message<P> {
 		private static readonly int TypeId = SequenceId.Next();
 
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
+		public new int MsgTypeId => TypeId;
 	}
 
 	internal class A : P {
 		private static readonly int TypeId = SequenceId.Next();
 
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
+		public new int MsgTypeId => TypeId;
 	}
 
 	internal class B : P {
 		private static readonly int TypeId = SequenceId.Next();
 
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
+		public new int MsgTypeId => TypeId;
 	}
 
 	internal class C : Message<C> {
 		private static readonly int TypeId = SequenceId.Next();
 
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
+		public new int MsgTypeId => TypeId;
 	}
 
 	[TestFixture]

@@ -15,6 +15,7 @@ using FilteredReadAllResult = EventStore.Core.Data.FilteredReadAllResult;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Messages {
+	
 	public enum OperationResult {
 		Success = 0,
 		PrepareTimeout = 1,
@@ -43,18 +44,20 @@ namespace EventStore.Core.Messages {
 		public partial class ReloadConfig : Message<ReloadConfig> {
 		}
 
+		public interface IWriteRequestMessage : Message {
+			Guid            InternalCorrId { get; }
+			Guid            CorrelationId  { get; }
+			IEnvelope       Envelope       { get; }
+			bool            RequireLeader  { get; }
+			ClaimsPrincipal User           { get; }
+			string          Login          { get; }
+			string          Password       { get; }
+
+			IReadOnlyDictionary<string, string> Tokens { get; }
+		}
+
 		[DerivedMessage]
-		public abstract partial class WriteRequestMessage<T> : Message<T> where T : Message {
-			public readonly Guid InternalCorrId;
-			public readonly Guid CorrelationId;
-			public readonly IEnvelope Envelope;
-			public readonly bool RequireLeader;
-
-			public readonly ClaimsPrincipal User;
-			public string Login => Tokens?.GetValueOrDefault("uid");
-			public string Password => Tokens?.GetValueOrDefault("pwd");
-			public readonly IReadOnlyDictionary<string, string> Tokens;
-
+		public class WriteRequestMessage<T> : Message<T>, IWriteRequestMessage where T : Message {
 			protected WriteRequestMessage(Guid internalCorrId,
 				Guid correlationId, IEnvelope envelope, bool requireLeader,
 				ClaimsPrincipal user, IReadOnlyDictionary<string, string> tokens) {
@@ -69,21 +72,37 @@ namespace EventStore.Core.Messages {
 
 				User = user;
 				Tokens = tokens;
+				
+				Login    = Tokens?.GetValueOrDefault("uid");
+				Password = Tokens?.GetValueOrDefault("pwd");
 			}
+			
+			public Guid            InternalCorrId { get; }
+			public Guid            CorrelationId  { get; }
+			public IEnvelope       Envelope       { get; }
+			public bool            RequireLeader  { get; }
+			public ClaimsPrincipal User           { get; }
+			public string          Login          { get; }
+			public string          Password       { get; }
+			// public string          Login          => Tokens?.GetValueOrDefault("uid");
+			// public string          Password       => Tokens?.GetValueOrDefault("pwd");
+
+			public IReadOnlyDictionary<string, string> Tokens { get; }
+		}
+
+		public interface IReadRequestMessage : Message {
+			Guid              InternalCorrId    { get; }
+			Guid              CorrelationId     { get; }
+			IEnvelope         Envelope          { get; }
+			ClaimsPrincipal   User              { get; }
+			DateTime          Expires           { get; }
+			CancellationToken CancellationToken { get; }
 		}
 
 		[DerivedMessage]
-		public abstract partial class ReadRequestMessage<T> : Message<T> where T : Message {
-			public readonly Guid InternalCorrId;
-			public readonly Guid CorrelationId;
-			public readonly IEnvelope Envelope;
-
-			public readonly ClaimsPrincipal User;
-
-			public readonly DateTime Expires;
-			public readonly CancellationToken CancellationToken;
-
-			protected ReadRequestMessage(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+		public abstract partial class ReadRequestMessage<T> : Message<T>, IReadRequestMessage where T : Message {
+			protected ReadRequestMessage(
+				Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				ClaimsPrincipal user, DateTime? expires,
 				CancellationToken cancellationToken = default) {
 				Ensure.NotEmptyGuid(internalCorrId, "internalCorrId");
@@ -99,6 +118,13 @@ namespace EventStore.Core.Messages {
 				CancellationToken = cancellationToken;
 			}
 
+			public Guid              InternalCorrId    { get; }
+			public Guid              CorrelationId     { get; }
+			public IEnvelope         Envelope          { get; }
+			public ClaimsPrincipal   User              { get; }
+			public DateTime          Expires           { get; }
+			public CancellationToken CancellationToken { get; }
+			
 			public override string ToString() =>
 				$"{GetType().Name} " +
 				$"InternalCorrId: {InternalCorrId}, " +

@@ -10,7 +10,7 @@ namespace EventStore.Core.Messaging {
 			_tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 		}
 
-		public void ReplyWith<T>(T message) where T : Message {
+		public void ReplyWith<T>(T message) where T : class, Message {
 			if (message is not TResult result) {
 				_tcs.TrySetException(new ArgumentException("Unexpected message type.", nameof(message)));
 				return;

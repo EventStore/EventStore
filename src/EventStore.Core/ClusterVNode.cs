@@ -524,7 +524,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
 
 			//SELF
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
+			_mainBus.Subscribe<SystemMessage.IStateChangeMessage>(this);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(this);
@@ -550,12 +550,12 @@ namespace EventStore.Core {
 				NodeInfo.ExternalSecureTcp,
 				statsHelper);
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
-			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
+			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.IStateChangeMessage, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShutdown, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.WriteEventsCompleted, Message>());
 			monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
-			monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
+			monitoringInnerBus.Subscribe<SystemMessage.IStateChangeMessage>(monitoring);
 			monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
 			monitoringInnerBus.Subscribe<SystemMessage.BecomeShutdown>(monitoring);
 			monitoringInnerBus.Subscribe<ClientMessage.WriteEventsCompleted>(monitoring);
@@ -730,7 +730,7 @@ namespace EventStore.Core {
 
 			// Node state listener
 			var nodeStatusListener = new NodeStateListenerService(_mainQueue);
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(nodeStatusListener);
+			_mainBus.Subscribe<SystemMessage.IStateChangeMessage>(nodeStatusListener);
 
 			var inMemReader = new InMemoryStreamReader(new Dictionary<string, IInMemoryStreamReader> {
 				[SystemStreams.NodeStateStream] = nodeStatusListener,
@@ -752,7 +752,7 @@ namespace EventStore.Core {
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: Db.Config.IndexCheckpoint,
 				statusTracker: trackers.InaugurationStatusTracker);
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(inaugurationManager);
+			_mainBus.Subscribe<SystemMessage.IStateChangeMessage>(inaugurationManager);
 			_mainBus.Subscribe<SystemMessage.ChaserCaughtUp>(inaugurationManager);
 			_mainBus.Subscribe<SystemMessage.EpochWritten>(inaugurationManager);
 			_mainBus.Subscribe<SystemMessage.CheckInaugurationConditions>(inaugurationManager);
@@ -768,7 +768,7 @@ namespace EventStore.Core {
 				Db.Config.WriterCheckpoint.AsReadOnly());
 			AddTask(replicationTracker.Task);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(replicationTracker);
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicationTracker);
+			_mainBus.Subscribe<SystemMessage.IStateChangeMessage>(replicationTracker);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(replicationTracker);
 			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicaWriteAck>(replicationTracker);
 			_mainBus.Subscribe<ReplicationTrackingMessage.WriterCheckpointFlushed>(replicationTracker);
@@ -814,7 +814,7 @@ namespace EventStore.Core {
 
 			var httpPipe = new HttpMessagePipe();
 			var httpSendService = new HttpSendService(httpPipe, true, _externalServerCertificateValidator);
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(httpSendService);
+			_mainBus.Subscribe<SystemMessage.IStateChangeMessage>(httpSendService);
 			SubscribeWorkers(bus => bus.Subscribe<HttpMessage.HttpSend>(httpSendService));
 
 			var grpcSendService = new GrpcSendService(_eventStoreClusterClientCache);
@@ -1049,7 +1049,7 @@ namespace EventStore.Core {
 
 			}, _authenticationProvider);
 
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
+			_mainBus.Subscribe<SystemMessage.IStateChangeMessage>(infoController);
 
 			_httpService.SetupController(persistentSubscriptionController);
 			if (!options.Interface.DisableAdminUi)
@@ -1090,7 +1090,7 @@ namespace EventStore.Core {
 				logFormat.SupportsExplicitTransactions);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
+			_mainBus.Subscribe<SystemMessage.IStateChangeMessage>(requestManagement);
 
 			_mainBus.Subscribe<ClientMessage.WriteEvents>(requestManagement);
 			_mainBus.Subscribe<ClientMessage.TransactionStart>(requestManagement);
@@ -1156,7 +1156,7 @@ namespace EventStore.Core {
 			perSubscrBus.Subscribe<ClientMessage.DeleteStreamCompleted>(psubDispatcher.StreamDeleter);
 			perSubscrBus.Subscribe<IODispatcherDelayedMessage>(psubDispatcher);
 			perSubscrBus.Subscribe<ClientMessage.NotHandled>(psubDispatcher);
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
+			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.IStateChangeMessage, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscriptionToStream, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UpdatePersistentSubscriptionToStream, Message>());
@@ -1191,7 +1191,7 @@ namespace EventStore.Core {
 				_mainQueue, consumerStrategyRegistry);
 			perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
 			perSubscrBus.Subscribe<SystemMessage.BecomeLeader>(persistentSubscription);
-			perSubscrBus.Subscribe<SystemMessage.StateChangeMessage>(persistentSubscription);
+			perSubscrBus.Subscribe<SystemMessage.IStateChangeMessage>(persistentSubscription);
 			perSubscrBus.Subscribe<TcpMessage.ConnectionClosed>(persistentSubscription);
 			perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscriptionToStream>(persistentSubscription);
 			perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscriptionToAll>(persistentSubscription);
@@ -1395,7 +1395,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
 			_mainBus.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
 			_mainBus.Subscribe<ClientMessage.GetDatabaseScavenge>(storageScavenger);
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
+			_mainBus.Subscribe<SystemMessage.IStateChangeMessage>(storageScavenger);
 			// ReSharper restore RedundantTypeArgumentsOfMethod
 
 			// REDACTION
@@ -1443,7 +1443,7 @@ namespace EventStore.Core {
 				new TelemetrySink(options.Application.TelemetryOptout),
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				memberInfo.InstanceId);
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(telemetryService);
+			_mainBus.Subscribe<SystemMessage.IStateChangeMessage>(telemetryService);
 			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(telemetryService);
 			// LEADER REPLICATION
 			var leaderReplicationService = new LeaderReplicationService(_mainQueue, NodeInfo.InstanceId, Db,
@@ -1455,7 +1455,7 @@ namespace EventStore.Core {
 
 			if (!isSingleNode) {
 				_mainBus.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);
-				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(leaderReplicationService);
+				_mainBus.Subscribe<SystemMessage.IStateChangeMessage>(leaderReplicationService);
 				_mainBus.Subscribe<SystemMessage.EnablePreLeaderReplication>(leaderReplicationService);				
 				_mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(leaderReplicationService);
 				_mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(leaderReplicationService);
@@ -1472,7 +1472,7 @@ namespace EventStore.Core {
 					TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatTimeout),
 					TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatInterval),
 					TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
-				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
+				_mainBus.Subscribe<SystemMessage.IStateChangeMessage>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.ReconnectToLeader>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.SubscribeToLeader>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.AckLogPosition>(replicaService);
@@ -1534,7 +1534,7 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<GossipMessage.GossipReceived>(gossip);
 				_mainBus.Subscribe<GossipMessage.ReadGossip>(gossip);
 				_mainBus.Subscribe<GossipMessage.ClientGossip>(gossip);
-				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(gossip);
+				_mainBus.Subscribe<SystemMessage.IStateChangeMessage>(gossip);
 				_mainBus.Subscribe<GossipMessage.GossipSendFailed>(gossip);
 				_mainBus.Subscribe<GossipMessage.UpdateNodePriority>(gossip);
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
@@ -1706,7 +1706,7 @@ namespace EventStore.Core {
 			_switchChunksLock?.Dispose();
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage message) {
+		public void Handle(SystemMessage.IStateChangeMessage message) {
 			OnNodeStatusChanged(new VNodeStatusChangeArgs(message.State));
 		}
 

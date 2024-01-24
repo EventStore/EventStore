@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 			protected override void GivenOtherEvents() {
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				var fromZeroPosition =
 					CheckpointTag.FromStreamPositions(0,
 						new Dictionary<string, long> {{"stream-a", -1}, {"stream-b", -1}});
@@ -126,11 +126,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 					new ClientMessage.TransactionCommit(
 						Guid.NewGuid(), correlationId, new PublishEnvelope(GetInputQueue()), true, transactionId, null);
 
-				yield return Yield;
+				yield return null;
 
 				_timeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(300));
 
-				yield return Yield;
+				yield return null;
 			}
 		}
 	}

@@ -480,9 +480,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				_receiver = new WeakReference(receiver);
 			}
 
-			public void ReplyWith<T>(T message) where T : Message {
-				var x = _receiver.Target as IHandle<T>;
-				if (x != null)
+			public void ReplyWith<T>(T message) where T : class, Message {
+				if (_receiver.Target is IHandle<T> x)
 					x.Handle(message);
 			}
 		}

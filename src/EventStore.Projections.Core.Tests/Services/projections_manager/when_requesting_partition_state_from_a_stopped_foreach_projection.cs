@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 
 		private string _projectionName;
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			_projectionName = "test-projection";
 			// when
 			yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));

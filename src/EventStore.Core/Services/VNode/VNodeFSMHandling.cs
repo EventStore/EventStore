@@ -60,7 +60,7 @@ namespace EventStore.Core.Services.VNode {
 
 		public VNodeFSMStatesDefinition ForwardTo(IPublisher publisher) {
 			Ensure.NotNull(publisher, "publisher");
-			return Do(publisher.Publish);
+			return Do(message => publisher.Publish(message));
 		}
 	}
 }

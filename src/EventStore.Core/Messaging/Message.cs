@@ -1,8 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Messaging;
 
@@ -21,14 +17,14 @@ public class DerivedMessageAttribute : Attribute {
 	}
 }
 
-public abstract class Message {
-	public virtual int    MsgTypeId => -1;
-	public virtual string Label     => "";
+public interface Message {
+	public int    MsgTypeId => -1;
+	public string Label     => "";
 }
 	
 public abstract class Message<T> : Message where T : Message {
 	static Message() => MessageRegistrationInfo<T>.Initialize();
 
-	public override int    MsgTypeId => MessageRegistrationInfo<T>.TypeId;
-	public override string Label     => MessageRegistrationInfo<T>.Label;
+	public int    MsgTypeId => MessageRegistrationInfo<T>.TypeId;
+	public string Label     => MessageRegistrationInfo<T>.Label;
 }

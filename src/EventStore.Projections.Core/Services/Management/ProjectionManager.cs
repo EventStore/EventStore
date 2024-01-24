@@ -291,9 +291,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			}
 		}
 		
-		private bool ValidateProjections(
-			PendingProjection[] projections,
-			ProjectionManagementMessage.Command.ControlMessage message) {
+		private bool ValidateProjections(PendingProjection[] projections, ProjectionManagementMessage.Command.IControlMessage message) {
 			var duplicateNames = new List<string>();
 			
 			foreach (var projection in projections) {

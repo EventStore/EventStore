@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -24,20 +25,20 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		private string _projectionName;
 		private string _newProjectionSource;
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			_projectionName = "$by_correlation_id";
-			yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
+			yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 			yield return
-				(new ProjectionManagementMessage.Command.Post(
+				new ProjectionManagementMessage.Command.Post(
 					new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
 					ProjectionManagementMessage.RunAs.System,"native:EventStore.Projections.Core.Standard.ByCorrelationId", "{\"correlationIdProperty\":\"$myCorrelationId\"}",
-					enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true));
+					enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true);
 			// when
 			_newProjectionSource = "{\"correlationIdProperty\":\"$updateCorrelationId\"}";
 			yield return
-				(new ProjectionManagementMessage.Command.UpdateQuery(
+				new ProjectionManagementMessage.Command.UpdateQuery(
 					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System,
-					_newProjectionSource, emitEnabled: null));
+					_newProjectionSource, emitEnabled: null);
 		}
 
 		[Test, Category("v8")]

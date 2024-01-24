@@ -84,7 +84,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				inputBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
 				inputBus.Subscribe<GossipMessage.Gossip>(gossip);
 				inputBus.Subscribe<GossipMessage.GossipReceived>(gossip);
-				inputBus.Subscribe<SystemMessage.StateChangeMessage>(gossip);
+				inputBus.Subscribe<SystemMessage.IStateChangeMessage>(gossip);
 				inputBus.Subscribe<GossipMessage.GossipSendFailed>(gossip);
 				inputBus.Subscribe<GossipMessage.UpdateNodePriority>(gossip);
 				inputBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);

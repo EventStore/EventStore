@@ -5,6 +5,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -90,7 +91,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 				NoStream("$et");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				var fromZeroPosition = CheckpointTag.FromEventTypeIndexPositions(
 					0, new TFPos(0, -1), new Dictionary<string, long> {{"type1", -1}, {"type2", -1}});
 				yield return
@@ -130,7 +131,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 				NoStream("$et");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				var fromZeroPosition = CheckpointTag.FromEventTypeIndexPositions(
 					0, new TFPos(0, -1), new Dictionary<string, long> {{"type1", -1}, {"type2", -1}});
 				yield return

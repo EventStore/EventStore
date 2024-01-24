@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			NoOtherStreams();
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			_projectionQuery = @"fromAll(); on_any(function(){});log(1);";
 			yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 			yield return

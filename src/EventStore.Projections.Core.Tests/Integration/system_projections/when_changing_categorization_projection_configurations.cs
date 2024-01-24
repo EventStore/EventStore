@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Tests;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -16,7 +18,7 @@ namespace EventStore.Projections.Core.Tests.Integration.system_projections {
 			ExistingEvent("account-000-02", "test", "", "{\"a\":10}", isJson: true);
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			foreach (var e in base.When()) yield return e;
 			string query = "first\r\n-";
 			yield return

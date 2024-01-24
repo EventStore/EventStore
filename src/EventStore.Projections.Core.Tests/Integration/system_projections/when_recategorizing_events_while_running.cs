@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Tests;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Integration.system_projections {
@@ -13,7 +15,7 @@ namespace EventStore.Projections.Core.Tests.Integration.system_projections {
 			ExistingEvent("account-02", "test", "", "{\"a\":10}", isJson: true);
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			foreach (var e in base.When()) yield return e;
 			yield return CreateWriteEvent("categorized-0", SystemEventTypes.LinkTo, "1@account-01", "{\"a\":2}");
 			yield return CreateWriteEvent("categorized-0", SystemEventTypes.LinkTo, "0@account-02", "{\"a\":10}");

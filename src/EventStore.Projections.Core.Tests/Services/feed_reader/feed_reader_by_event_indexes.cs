@@ -5,6 +5,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Services.Processing;
@@ -50,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 				return string.Format(@"{{""$c"":{0},""$p"":{1}}}", tfPos.CommitPosition, tfPos.PreparePosition);
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new FeedReaderMessage.ReadPage(
 						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
@@ -107,7 +108,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 				return string.Format(@"{{""$c"":{0},""$p"":{1}}}", tfPos.CommitPosition, tfPos.PreparePosition);
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new FeedReaderMessage.ReadPage(
 						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,

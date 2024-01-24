@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 				base.Given();
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 				var readerAssignedMessage =
 					_consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.ReaderAssignedReader>()
@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 						Guid.NewGuid(),
 						"type", false, new byte[0], new byte[0], 100, 33.3f));
 				_timeProvider.AddToUtcTime(TimeSpan.FromMinutes(6));
-				yield return Yield;
+				yield return null;
 				foreach (var m in _consumer.HandledMessages.OfType<TimerMessage.Schedule>().ToArray())
 					m.Envelope.ReplyWith(m.ReplyMessage);
 			}
@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_statistics<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var s in base.When()) yield return s;
 				_consumer.HandledMessages.Clear();
 				yield return (
@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_deleted_on_expiry<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var s in base.When()) yield return s;
 				_consumer.HandledMessages.Clear();
 			}

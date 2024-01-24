@@ -4,6 +4,8 @@ using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.UserManagement;
 using NUnit.Framework;
 using System.Linq;
+using EventStore.Core.Messaging;
+using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Core.Tests.Services.UserManagementService {
 	namespace password_change_notification_reader {
@@ -17,7 +19,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				_bus.Subscribe<SystemMessage.SystemStart>(_passwordChangeNotificationReader);
 			}
 
-			protected override IEnumerable<WhenStep> PreWhen() {
+			protected override IEnumerable<Message> PreWhen() {
 				foreach (var m in base.PreWhen()) yield return m;
 				yield return new SystemMessage.SystemStart();
 				yield return
@@ -31,6 +33,8 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			}
 		}
 
+		
+
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_notification_has_been_written<TLogFormat, TStreamId> : with_password_change_notification_reader<TLogFormat, TStreamId> {
@@ -41,7 +45,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			}
 
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new UserManagementMessage.ChangePassword(
 						Envelope, SystemAccounts.System, "user1", "password", "drowssap");

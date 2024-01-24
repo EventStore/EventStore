@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Tests;
 using NUnit.Framework;
@@ -17,7 +18,7 @@ namespace EventStore.Projections.Core.Tests.Integration.system_projections {
 			ExistingEvent("categorized-1", SystemEventTypes.LinkTo, "{\"a\":1}", "0@account-01");
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			foreach (var e in base.When()) yield return e;
 		}
 

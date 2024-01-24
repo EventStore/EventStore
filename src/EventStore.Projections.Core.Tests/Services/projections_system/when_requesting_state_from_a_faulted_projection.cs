@@ -4,7 +4,9 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 using System.Linq;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests;
+using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_system {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -20,14 +22,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 			_projectionSource = @"fromAll().when({message1: function(s,e){ throw 1; }});";
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			yield return
 				new ProjectionManagementMessage.Command.Post(
 					Envelope, ProjectionMode.Continuous, _projectionName, ProjectionManagementMessage.RunAs.System,
 					"js",
 					_projectionSource, enabled: true, checkpointsEnabled: true, emitEnabled: true,
 					trackEmittedStreams: true);
-			yield return Yield;
+			yield return null;
 			yield return new ProjectionManagementMessage.Command.GetState(Envelope, _projectionName, "");
 		}
 

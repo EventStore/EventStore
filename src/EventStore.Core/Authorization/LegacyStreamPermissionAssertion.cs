@@ -181,7 +181,7 @@ namespace EventStore.Core.Authorization {
 
 			public Task<string> Task => _tcs.Task;
 
-			public void ReplyWith<T>(T message) where T : Message {
+			public void ReplyWith<T>(T message) where T : class, Message {
 				if (message is StorageMessage.StreamIdFromTransactionIdResponse response)
 					_tcs.TrySetResult(response.StreamId);
 				else if (message is StorageMessage.OperationCancelledMessage cancelled)

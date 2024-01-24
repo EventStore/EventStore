@@ -9,6 +9,7 @@ using EventStore.Core.Tests.Authentication;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.Core.Messaging;
 using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.Services.UserManagementService {
@@ -54,13 +55,17 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[SetUp]
 			public void SetUp() {
-				WhenLoop(GivenCommands());
+				WhenLoop(GivenCommands().Select(x => x.AsWhenStep()));
 				_queue.Process();
 				HandledMessages.Clear();
 				WhenLoop();
 			}
 
-			protected virtual IEnumerable<WhenStep> GivenCommands() {
+			// protected virtual IEnumerable<WhenStep> GivenCommands() {
+			// 	yield break;
+			// }
+			
+			protected virtual IEnumerable<Message> GivenCommands() {
 				yield break;
 			}
 
@@ -89,7 +94,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_creating_a_user<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
@@ -139,7 +144,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_ordinary_user_attempts_to_create_a_user<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, _ordinaryUser, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
@@ -167,14 +172,14 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_creating_an_already_existing_user_account<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "Existing John", new[] {"admin", "other"},
 						"existing!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"bad"}, "Johny123!");
@@ -218,13 +223,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_updating_user_details<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new UserManagementMessage.Update(
 						Envelope, SystemAccounts.System, "user1", "Doe John", new[] {"good"});
@@ -284,13 +289,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_ordinary_user_attempts_to_update_its_own_details<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new UserManagementMessage.Update(Envelope, _ordinaryUser, "user1", "Doe John", new[] {"good"});
 			}
@@ -342,11 +347,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_updating_non_existing_user_details<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield break;
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new UserManagementMessage.Update(
 						Envelope, SystemAccounts.System, "user1", "Doe John", new[] {"admin", "other"});
@@ -382,7 +387,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_updating_a_disabled_user_account_details<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				var replyTo = Envelope;
 				yield return
 					new UserManagementMessage.Create(
@@ -390,7 +395,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				yield return new UserManagementMessage.Disable(replyTo, SystemAccounts.System, "user1");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new UserManagementMessage.Update(
 						Envelope, SystemAccounts.System, "user1", "Doe John", new[] {"good"});
@@ -416,13 +421,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_disabling_an_enabled_user_account<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return new UserManagementMessage.Disable(Envelope, SystemAccounts.System, "user1");
 			}
 
@@ -453,13 +458,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_an_ordinary_user_attempts_to_disable_a_user_account<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return new UserManagementMessage.Disable(Envelope, _ordinaryUser, "user1");
 			}
 
@@ -484,7 +489,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_disabling_a_disabled_user_account<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				var replyTo = Envelope;
 				yield return
 					new UserManagementMessage.Create(
@@ -492,7 +497,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				yield return new UserManagementMessage.Disable(replyTo, SystemAccounts.System, "user1");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return new UserManagementMessage.Disable(Envelope, SystemAccounts.System, "user1");
 			}
 
@@ -517,7 +522,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_enabling_a_disabled_user_account<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				var replyTo = Envelope;
 				yield return
 					new UserManagementMessage.Create(
@@ -525,7 +530,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				yield return new UserManagementMessage.Disable(replyTo, SystemAccounts.System, "user1");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return new UserManagementMessage.Enable(Envelope, SystemAccounts.System, "user1");
 			}
 
@@ -550,7 +555,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_an_ordinary_user_attempts_to_enable_a_user_account<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				var replyTo = Envelope;
 				yield return
 					new UserManagementMessage.Create(
@@ -558,7 +563,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				yield return new UserManagementMessage.Disable(replyTo, SystemAccounts.System, "user1");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return new UserManagementMessage.Enable(Envelope, _ordinaryUser, "user1");
 			}
 
@@ -583,13 +588,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_enabling_an_enabled_user_account<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return new UserManagementMessage.Enable(Envelope, SystemAccounts.System, "user1");
 			}
 
@@ -614,13 +619,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_resetting_the_password<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new UserManagementMessage.ResetPassword(Envelope, SystemAccounts.System, "user1", "new-password");
 			}
@@ -672,13 +677,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_resetting_the_password_twice<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				var replyTo = Envelope;
 				yield return
 					new UserManagementMessage.ResetPassword(replyTo, SystemAccounts.System, "user1", "new-password");
@@ -706,13 +711,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_ordinary_user_attempts_to_reset_its_own_password<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new UserManagementMessage.ResetPassword(Envelope, _ordinaryUser, "user1", "new-password");
 			}
@@ -741,13 +746,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_changing_a_password_with_correct_current_password<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new UserManagementMessage.ChangePassword(
 						Envelope, SystemAccounts.System, "user1", "Johny123!", "new-password");
@@ -808,13 +813,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_changing_a_password_with_incorrect_current_password<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new UserManagementMessage.ChangePassword(
 						Envelope, SystemAccounts.System, "user1", "incorrect", "new-password");
@@ -862,13 +867,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_deleting_an_existing_user_account<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
 						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return new UserManagementMessage.Delete(Envelope, SystemAccounts.System, "user1");
 			}
 
@@ -907,7 +912,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_getting_all_users<TLogFormat, TStreamId> : TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> GivenCommands() {
+			protected override IEnumerable<Message> GivenCommands() {
 				var replyTo = Envelope;
 				yield return
 					new UserManagementMessage.Create(
@@ -927,7 +932,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 						"Johny123!");
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return new UserManagementMessage.GetAll(Envelope, SystemAccounts.System);
 			}
 

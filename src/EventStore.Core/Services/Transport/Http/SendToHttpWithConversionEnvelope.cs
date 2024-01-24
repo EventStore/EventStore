@@ -37,7 +37,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			return _formatter(codec, convertedMessage);
 		}
 
-		public void ReplyWith<T>(T message) where T : Message {
+		public void ReplyWith<T>(T message) where T : class, Message {
 			_httpEnvelope.ReplyWith(message);
 		}
 	}

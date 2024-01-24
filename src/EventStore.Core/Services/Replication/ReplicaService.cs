@@ -22,7 +22,8 @@ using EndPoint = System.Net.EndPoint;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Replication {
-	public class ReplicaService : IHandle<SystemMessage.StateChangeMessage>,
+	public class ReplicaService : 
+		IHandle<SystemMessage.IStateChangeMessage>,
 		IHandle<ReplicationMessage.ReconnectToLeader>,
 		IHandle<ReplicationMessage.SubscribeToLeader>,
 		IHandle<ReplicationMessage.AckLogPosition>,
@@ -90,7 +91,7 @@ namespace EventStore.Core.Services.Replication {
 			_tcpDispatcher = new InternalTcpDispatcher(writeTimeout);
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage message) {
+		public void Handle(SystemMessage.IStateChangeMessage message) {
 			_state = message.State;
 
 			switch (message.State) {

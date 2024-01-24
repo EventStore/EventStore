@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Tests.Services.projections_manager;
@@ -31,14 +32,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				AllWritesSucceed();
 			}
 
-			protected override IEnumerable<WhenStep> When() {
-				yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
+			protected override IEnumerable<Message> When() {
+				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
-					(new ProjectionManagementMessage.Command.Post(
+					new ProjectionManagementMessage.Command.Post(
 						new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
 						ProjectionManagementMessage.RunAs.System, "native:" + typeof(FakeProjection).AssemblyQualifiedName,
 						@"", enabled: true, checkpointsEnabled: true,
-						emitEnabled: false, trackEmittedStreams: false));
+						emitEnabled: false, trackEmittedStreams: false);
 				yield return
 					new ProjectionManagementMessage.Command.Disable(new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System);
 				yield return new ProjectionManagementMessage.Command.Delete(new NoopEnvelope(), _projectionName, ProjectionManagementMessage.RunAs.System, 

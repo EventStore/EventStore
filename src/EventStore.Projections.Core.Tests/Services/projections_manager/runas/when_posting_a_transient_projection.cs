@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 				NoOtherStreams();
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(
@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 				NoOtherStreams();
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(

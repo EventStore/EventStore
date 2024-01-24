@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			ProjectionManagementMessage.Command.Post message = new ProjectionManagementMessage.Command.Post(
 				Envelope, ProjectionMode.Transient, _projectionName, ProjectionManagementMessage.RunAs.System,
 				typeof(FakeForeachStreamProjection), "", true, false, false, false);

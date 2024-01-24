@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using JetBrains.Annotations;
 using Serilog;
 
 namespace EventStore.Core.Messaging;
 
-internal static class MessageHierarchyResolver {
+public static class MessageHierarchyResolver {
 	private static readonly ILogger Log = Serilog.Log.ForContext("SourceContext", "MessageHierarchy");
 
 	public static readonly Dictionary<Type, List<Type>> Descendants;
@@ -117,4 +118,134 @@ public readonly record struct MessageHierarchy {
 	public IReadOnlyDictionary<Type, int>        MsgTypeIdByType     { get; init; }
 	public int                                   MaxMsgTypeId        { get; init; }
 }
+
+[PublicAPI]
+public class MessageHierarchyCatalog {
+	public MessageHierarchyCatalog(List<Type> messageTypes) {
+		foreach (var type in messageTypes) {
+			Descendants[type] = ResolveDescendants(type, messageTypes);
+			Ascendants[type]  = ResolveAscendants(type);
+		}
+	}
+
+	Dictionary<Type, List<Type>> Descendants { get; } = new();
+	Dictionary<Type, List<Type>> Ascendants  { get; } = new();
+
+	public List<Type> DescendantsOf(Type type) => 
+		Descendants.TryGetValue(type, out var descendants) ? descendants : [];
+
+	public List<Type> AscendantsOf(Type type) => 
+		Ascendants.TryGetValue(type, out var ascendants) ? ascendants : [];
+
+	public List<Type> DescendantsOf<T>() where T : Message => DescendantsOf(typeof(T));
+	public List<Type> AscendantsOf<T>()  where T : Message => AscendantsOf(typeof(T));
+	
+	
+	static List<Type> ResolveDescendants(Type type, List<Type> types) {
+		if (!typeof(Message).IsAssignableFrom(type))
+			throw new ArgumentException($"Type {type!.FullName} is not a message.");
+		
+		return types
+			.Where(p => type.IsAssignableFrom(p) && p != type && typeof(Message).IsAssignableFrom(p))
+			.ToList();
+	}
+
+	static List<Type> ResolveAscendants(Type inputType) {
+		if (!typeof(Message).IsAssignableFrom(inputType))
+			throw new ArgumentException($"Type {inputType!.FullName} is not a message.");
+		
+		var ascendants = new List<Type>();
+		var typesToProcess = new Stack<Type>();
+		typesToProcess.Push(inputType);
+
+		while (typesToProcess.Count > 0) {
+			var type = typesToProcess.Pop();
+			if (type == null || type == typeof(System.Object)) {
+				continue;
+			}
+
+			// Include IEventStoreMessage in the ascendants list
+			if (type == typeof(Message)) {
+				ascendants.Insert(0, type);
+				continue;
+			}
+
+			// Skip the input type, unless it's IEventStoreMessage
+			if (type == inputType && type != typeof(Message)) {
+				continue;
+			}
+
+			ascendants.Insert(0, type);
+
+			// Add base type to the stack
+			if (type.BaseType != null) {
+				typesToProcess.Push(type.BaseType);
+			}
+
+			// Add interfaces to the stack
+			foreach (var interfaceType in type.GetInterfaces()) {
+				typesToProcess.Push(interfaceType);
+			}
+		}
+
+		return ascendants;
+		
+		// var ascendants = new List<Type>();
+		// var typesToProcess = new Stack<Type>();
+		//
+		// typesToProcess.Push(type);
+		//
+		// while (typesToProcess.Count > 0) {
+		// 	type = typesToProcess.Pop();
+		// 	if (type == null || type == typeof(System.Object)) {
+		// 		continue;
+		// 	}
+		//
+		// 	// Include IEventStoreMessage in the ascendants list
+		// 	if (type == typeof(Message)) {
+		// 		ascendants.Insert(0, type);
+		// 		continue;
+		// 	}
+		//
+		// 	ascendants.Insert(0, type);
+		//
+		// 	// Add base type to the stack
+		// 	if (type.BaseType != null) typesToProcess.Push(type.BaseType);
+		//
+		// 	// Add interfaces to the stack
+		// 	foreach (var interfaceType in type.GetInterfaces()) typesToProcess.Push(interfaceType);
+		// }
+		//
+		// return ascendants;
+		
+		// var ascendants = new List<Type>();
+		// while (type.BaseType is not null) {
+		// 	if (typeof(Message).IsAssignableFrom(type.BaseType)) 
+		// 		ascendants.Add(type.BaseType);
+		// 	
+		// 	type = type.BaseType;
+		// }
+		//
+		// return ascendants;
+		
+		// var ascendants = new List<Type>();
+		// while (type.BaseType != null) {
+		// 	if (typeof(Message).IsAssignableFrom(type.BaseType) &&
+		// 	    !(type.BaseType.IsGenericType && type.BaseType.GetGenericTypeDefinition() == typeof(Message<>)))
+		// 	{
+		// 		ascendants.Insert(0, type.BaseType);
+		// 	}
+		// 	type = type.BaseType;
+		// }
+		//
+		// // Add interfaces
+		// foreach (var interfaceType in type.GetInterfaces())
+		// 	if (typeof(Message).IsAssignableFrom(interfaceType)) ascendants.Add(interfaceType);
+		//
+		// return ascendants;
+	}
+		
+	public static MessageHierarchyCatalog Build(List<Type> messageTypes) => new(messageTypes);
+}
+
 

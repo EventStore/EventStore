@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-		<Platforms>x64;ARM64</Platforms>
+		<!--<TargetFramework>net8.0</TargetFramework>-->
+		<!--<Platforms>x64;ARM64</Platforms>-->
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 	</PropertyGroup>
 	<ItemGroup>

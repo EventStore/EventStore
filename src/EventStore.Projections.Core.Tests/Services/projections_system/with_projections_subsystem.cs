@@ -4,6 +4,8 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Tests.Services.projections_manager;
 using System.Linq;
+using EventStore.Core.Messaging;
+using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_system {
 	public abstract class with_projections_subsystem<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
@@ -26,14 +28,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 			return false;
 		}
 
-		protected override IEnumerable<WhenStep> PreWhen() {
-			yield return (new ProjectionSubsystemMessage.StartComponents(_instanceCorrelation));
-			yield return Yield;
+		protected override IEnumerable<Message> PreWhen() {
+			yield return new ProjectionSubsystemMessage.StartComponents(_instanceCorrelation);
+			yield return null;
 			if (_startSystemProjections) {
 				yield return
 					new ProjectionManagementMessage.Command.GetStatistics(Envelope, ProjectionMode.AllNonTransient,
-						null, false)
-					;
+						null, false);
 				var statistics = HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Last();
 				foreach (var projection in statistics.Projections) {
 					if (projection.Status != "Running")

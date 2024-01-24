@@ -11,19 +11,20 @@ using EventStore.Common.Utils;
 namespace EventStore.Projections.Core.Messages {
 	public static partial class ProjectionManagementMessage {
 		public static partial class Command {
+			public interface IControlMessage : Message {
+				RunAs     RunAs    { get; }
+				IEnvelope Envelope { get; }
+			}
+			
 			[DerivedMessage]
-			public abstract partial class ControlMessage<T> : Message<T> where T : Message {
-				private readonly IEnvelope _envelope;
-				public readonly RunAs RunAs;
-
+			public abstract partial class ControlMessage<T> : Message<T>, IControlMessage where T : Message {
 				protected ControlMessage(IEnvelope envelope, RunAs runAs) {
-					_envelope = envelope;
+					Envelope = envelope;
 					RunAs = runAs;
 				}
-
-				public IEnvelope Envelope {
-					get { return _envelope; }
-				}
+				
+				public RunAs     RunAs    { get; }
+				public IEnvelope Envelope { get; }
 			}
 
 			[DerivedMessage(ProjectionMessage.Management)]
@@ -581,8 +582,10 @@ namespace EventStore.Projections.Core.Messages {
 			// }
 
 			public static bool ValidateRunAs<T>(
-				ProjectionMode mode, ReadWrite readWrite, ClaimsPrincipal existingRunAs,
-				T message, bool replace = false) where T : Command.ControlMessage<T> {
+				ProjectionMode mode, ReadWrite readWrite,
+				ClaimsPrincipal existingRunAs,
+				T message, bool replace = false
+			) where T : Command.IControlMessage {
 				if (mode > ProjectionMode.Transient
 				    && readWrite == ReadWrite.Write
 				    && (message.RunAs?.Principal == null || !(message.RunAs.Principal.LegacyRoleCheck(SystemRoles.Admins) ||

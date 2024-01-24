@@ -139,7 +139,7 @@ namespace EventStore.Projections.Core {
 
 			// self forward all
 			standardComponents.MainBus.Subscribe(
-				Forwarder.Create<SystemMessage.StateChangeMessage>(projectionsStandardComponents.LeaderInputQueue));
+				Forwarder.Create<SystemMessage.IStateChangeMessage>(projectionsStandardComponents.LeaderInputQueue));
 			standardComponents.MainBus.Subscribe(
 				Forwarder.Create<SystemMessage.SystemCoreReady>(projectionsStandardComponents.LeaderInputQueue));
 			standardComponents.MainBus.Subscribe(

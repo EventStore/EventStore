@@ -94,7 +94,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			return CreateWriteRequestPackage(TcpCommand.WriteEvents, msg, dto);
 		}
 
-		private static TcpPackage CreateWriteRequestPackage<T>(TcpCommand command, ClientMessage.WriteRequestMessage msg,
+		private static TcpPackage CreateWriteRequestPackage<T>(TcpCommand command, ClientMessage.IWriteRequestMessage msg,
 			T dto) where T: IMessage<T>{
 			// we forwarding with InternalCorrId, not client's CorrelationId!!!
 			if (msg.User == UserManagement.SystemAccounts.System) {

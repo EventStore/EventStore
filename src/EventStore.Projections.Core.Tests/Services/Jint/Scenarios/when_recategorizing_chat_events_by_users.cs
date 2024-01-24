@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests;
 using NUnit.Framework;
 
@@ -10,7 +11,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint.Scenarios
 		protected override void GivenEvents() {
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			foreach (var e in base.When()) yield return e;
 			yield return CreateWriteEvent("chat-1", "ChatMessage", @"
     {

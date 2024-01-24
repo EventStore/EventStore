@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 				NoOtherStreams();
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 				yield return
 					(new ProjectionManagementMessage.Command.Post(
@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_get_query<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 				yield return
 					(new ProjectionManagementMessage.Command.GetQuery(
@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_get_state<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 				yield return (
 					new ProjectionManagementMessage.Command.GetState(new PublishEnvelope(_bus), _projectionName, ""));
@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_failing<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 				var readerAssignedMessage =
 					_consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.ReaderAssignedReader>()

@@ -426,7 +426,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 		private void ProcessWrite<T>(IEnvelope envelope, Guid correlationId, string streamId, long expectedVersion,
 			Event[] events, Func<int, int, T> writeEventsCompleted, T wrongExpectedVersionResponse,
-			long[] positions = null, long? commitPosition = null) where T : Message {
+			long[] positions = null, long? commitPosition = null) where T : class, Message {
 			if (positions == null) {
 				positions = new long[events.Length];
 				for (int i = 0; i < positions.Length; i++) {

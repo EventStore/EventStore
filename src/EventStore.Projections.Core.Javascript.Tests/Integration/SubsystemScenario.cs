@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 		}
 
 		protected async Task<TResponse> SendProjectionMessage<TResponse>(Func<IEnvelope,
-			ProjectionManagementMessage.Command.ControlMessage> requestFactory)
+			ProjectionManagementMessage.Command.IControlMessage> requestFactory)
 			where TResponse : Message {
 			var tmwid = new TellMeWhenItsDone(TestTimeout);
 			_subsystemCommands.Publish(requestFactory(tmwid));
@@ -106,7 +106,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 
 			public Task<Message> Task => _completion.Task;
 
-			public void ReplyWith<T>(T message) where T : Message {
+			public void ReplyWith<T>(T message) where T : class, Message {
 				_completion.TrySetResult(message);
 			}
 		}
@@ -114,7 +114,6 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 		protected Task Notify(string streamName) {
 			return _notifications.GetOrAdd(streamName, new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
 		}
-
 		
 		public void Handle(Message message) {
 			switch (message) {

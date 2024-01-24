@@ -28,9 +28,9 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 			NoOtherStreams();
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			foreach (var m in base.When()) yield return m;
-			yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
+			yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 		}
 
 		protected override ManualQueue GiveInputQueue() {
@@ -62,22 +62,21 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 			this.shouldBatchCreate1 = shouldBatchCreate1;
 			this.shouldBatchCreate2 = shouldBatchCreate2;
 		}
-		
-		private WhenStep GetCreate(string name, bool batch) {
+
+		private IEnumerable<Message> GetCreate(string name, bool batch) {
 			if (batch) {
 				var projectionPost = new ProjectionManagementMessage.Command.PostBatch.ProjectionPost(
 					ProjectionMode.Continuous, ProjectionManagementMessage.RunAs.System, name,
 					"native:" + FakeProjectionType.AssemblyQualifiedName, enabled: true,
 					checkpointsEnabled: true, emitEnabled: false, trackEmittedStreams: false, query: _projectionSource, enableRunAs: true);
-				return (new ProjectionManagementMessage.Command.PostBatch(new PublishEnvelope(_bus),
-					ProjectionManagementMessage.RunAs.System, new[] { projectionPost }));
-			}
-
-			return (new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
-				name,
-				ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
-				_projectionSource, enabled: true, checkpointsEnabled: true,
-				emitEnabled: false, trackEmittedStreams: false));
+				yield return new ProjectionManagementMessage.Command.PostBatch(new PublishEnvelope(_bus),
+					ProjectionManagementMessage.RunAs.System, new[] { projectionPost });
+			} else
+				yield return new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
+					name,
+					ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
+					_projectionSource, enabled: true, checkpointsEnabled: true,
+					emitEnabled: false, trackEmittedStreams: false);
 		}
 		
 		protected override void Given() {
@@ -85,10 +84,10 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 			AllWritesQueueUp();
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			foreach (var m in base.When()) yield return m;
-			yield return GetCreate(_projection1, shouldBatchCreate1);
-			yield return GetCreate(_projection2, shouldBatchCreate2);
+			foreach (var message in GetCreate(_projection1, shouldBatchCreate1)) yield return message;
+			foreach (var message in GetCreate(_projection2, shouldBatchCreate2)) yield return message;
 		}
 
 		[Test]
@@ -131,37 +130,35 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 			AllWritesSucceed();
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			foreach (var m in base.When()) yield return m;
 			yield return
-				(new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
+				new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
 					_projection1,
 					ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
 					_projectionSource, enabled: true, checkpointsEnabled: true,
-					emitEnabled: false, trackEmittedStreams: false));
+					emitEnabled: false, trackEmittedStreams: false);
 		}
 
-		private IEnumerable<WhenStep> TestMessages(Guid projectionToDeletedId) {
-			yield return GetCreate(_projection2);
-			yield return
-				(new ProjectionManagementMessage.Internal.Deleted(_projection1, projectionToDeletedId));
+		private IEnumerable<Message> TestMessages(Guid projectionToDeletedId) {
+			foreach (var message in GetCreate(_projection2)) yield return message;
+			yield return new ProjectionManagementMessage.Internal.Deleted(_projection1, projectionToDeletedId);
 		}
-		
-		private WhenStep GetCreate(string name) {
+
+		private IEnumerable<Message> GetCreate(string name) {
 			if (shouldBatchCreate) {
 				var projectionPost = new ProjectionManagementMessage.Command.PostBatch.ProjectionPost(
 					ProjectionMode.Continuous, ProjectionManagementMessage.RunAs.System, name,
 					"native:" + FakeProjectionType.AssemblyQualifiedName, enabled: true,
 					checkpointsEnabled: true, emitEnabled: false, trackEmittedStreams: false, query: _projectionSource, enableRunAs: true);
-				return (new ProjectionManagementMessage.Command.PostBatch(new PublishEnvelope(_bus),
-					ProjectionManagementMessage.RunAs.System, new[] { projectionPost }));
-			}
-
-			return (new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
-				name,
-				ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
-				_projectionSource, enabled: true, checkpointsEnabled: true,
-				emitEnabled: false, trackEmittedStreams: false));
+				yield return new ProjectionManagementMessage.Command.PostBatch(new PublishEnvelope(_bus),
+					ProjectionManagementMessage.RunAs.System, new[] { projectionPost });
+			} else
+				yield return new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
+					name,
+					ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
+					_projectionSource, enabled: true, checkpointsEnabled: true,
+					emitEnabled: false, trackEmittedStreams: false);
 		}
 
 		private Guid GetProjectionId(string name) {
@@ -182,7 +179,7 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 			Guid projection1Id = GetProjectionId(_projection1);
 			AllWritesSucceed(false);
 			AllWritesQueueUp();
-			WhenLoop(TestMessages(projection1Id));
+			WhenLoop(TestMessages(projection1Id).Select(x => x.AsWhenStep()));
 			AllWriteComplete();
 			AllWritesSucceed();
 			while (_queue.TimerMessagesOfType<ProjectionManagementMessage.Internal.Deleted>().Count() > 0) {
@@ -222,37 +219,35 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 			AllWritesSucceed();
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			foreach (var m in base.When()) yield return m;
-			yield return (new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus),
+			yield return new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus),
 				ProjectionMode.Continuous,
 				_projection1,
 				ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
 				_projectionSource, enabled: true, checkpointsEnabled: true,
-				emitEnabled: false, trackEmittedStreams: false));
+				emitEnabled: false, trackEmittedStreams: false);
 		}
 
-		private WhenStep GetCreate(string name) {
+		private IEnumerable<Message> GetCreate(string name) {
 			if (shouldBatchCreate) {
 				var projectionPost = new ProjectionManagementMessage.Command.PostBatch.ProjectionPost(
 					ProjectionMode.Continuous, ProjectionManagementMessage.RunAs.System, name,
 					"native:" + FakeProjectionType.AssemblyQualifiedName, enabled: true,
 					checkpointsEnabled: true, emitEnabled: false, trackEmittedStreams: false, query: _projectionSource, enableRunAs: true);
-				return (new ProjectionManagementMessage.Command.PostBatch(new PublishEnvelope(_bus),
-					ProjectionManagementMessage.RunAs.System, new[] { projectionPost }));
-			}
-
-			return (new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
-				name,
-				ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
-				_projectionSource, enabled: true, checkpointsEnabled: true,
-				emitEnabled: false, trackEmittedStreams: false));
+				yield return new ProjectionManagementMessage.Command.PostBatch(new PublishEnvelope(_bus),
+					ProjectionManagementMessage.RunAs.System, new[] { projectionPost });
+			} else
+				yield return new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
+					name,
+					ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
+					_projectionSource, enabled: true, checkpointsEnabled: true,
+					emitEnabled: false, trackEmittedStreams: false);
 		}
 
-		private IEnumerable<WhenStep> TestMessages(Guid projectionToDeletedId) {
-			yield return
-				(new ProjectionManagementMessage.Internal.Deleted(_projection1, projectionToDeletedId));
-			yield return GetCreate(_projection2);
+		private IEnumerable<Message> TestMessages(Guid projectionToDeletedId) {
+			yield return new ProjectionManagementMessage.Internal.Deleted(_projection1, projectionToDeletedId);
+			foreach (var message in GetCreate(_projection2)) yield return message;
 		}
 
 		private Guid GetProjectionId(string name) {
@@ -273,7 +268,7 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 			Guid projection1Id = GetProjectionId(_projection1);
 			AllWritesSucceed(false);
 			AllWritesQueueUp();
-			WhenLoop(TestMessages(projection1Id));
+			WhenLoop(TestMessages(projection1Id).Select(x => x.AsWhenStep()));
 			AllWriteComplete();
 			AllWritesSucceed();
 			while (_queue.TimerMessagesOfType<ProjectionManagementMessage.Command.Post>().Count() + _queue.TimerMessagesOfType<ProjectionManagementMessage.Command.PostBatch>().Count() > 0) {
@@ -305,27 +300,27 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 			AllWritesSucceed();
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			foreach (var m in base.When()) yield return m;
 			yield return
-				(new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
+				new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
 					_projection1,
 					ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
 					_projectionSource, enabled: true, checkpointsEnabled: true,
-					emitEnabled: false, trackEmittedStreams: false));
+					emitEnabled: false, trackEmittedStreams: false);
 			yield return
-				(new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
+				new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
 					_projection2,
 					ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
 					_projectionSource, enabled: true, checkpointsEnabled: true,
-					emitEnabled: false, trackEmittedStreams: false));
+					emitEnabled: false, trackEmittedStreams: false);
 		}
 
-		private IEnumerable<WhenStep> TestMessages(Guid projectionToDeletedId1, Guid projectionToDeletedId2) {
+		private IEnumerable<Message> TestMessages(Guid projectionToDeletedId1, Guid projectionToDeletedId2) {
 			yield return
-				(new ProjectionManagementMessage.Internal.Deleted(_projection1, projectionToDeletedId1));
+				new ProjectionManagementMessage.Internal.Deleted(_projection1, projectionToDeletedId1);
 			yield return
-				(new ProjectionManagementMessage.Internal.Deleted(_projection2, projectionToDeletedId2));
+				new ProjectionManagementMessage.Internal.Deleted(_projection2, projectionToDeletedId2);
 		}
 
 		private Guid GetProjectionId(string name) {
@@ -347,7 +342,7 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 			Guid projection2Id = GetProjectionId(_projection2);
 			AllWritesSucceed(false);
 			AllWritesQueueUp();
-			WhenLoop(TestMessages(projection1Id, projection2Id));
+			WhenLoop(TestMessages(projection1Id, projection2Id).Select(x => x.AsWhenStep()));
 			AllWriteComplete();
 			AllWritesSucceed();
 			while (_queue.TimerMessagesOfType<ProjectionManagementMessage.Internal.Deleted>().Count() > 0) {

@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Services.Replication.LogReplication;
 
 internal class WriterInterceptor:
 	IHandle<SystemMessage.SystemInit>,
-	IHandle<SystemMessage.StateChangeMessage>,
+	IHandle<SystemMessage.IStateChangeMessage>,
 	IHandle<SystemMessage.WriteEpoch>,
 	IHandle<SystemMessage.WaitForChaserToCatchUp>,
 	IHandle<StorageMessage.WritePrepares>,
@@ -45,7 +45,7 @@ internal class WriterInterceptor:
 	public WriterInterceptor(ISubscriber subscriber) {
 		Bus = new InMemoryBus("outputBus");
 		subscriber.Subscribe<SystemMessage.SystemInit>(this);
-		subscriber.Subscribe<SystemMessage.StateChangeMessage>(this);
+		subscriber.Subscribe<SystemMessage.IStateChangeMessage>(this);
 		subscriber.Subscribe<SystemMessage.WriteEpoch>(this);
 		subscriber.Subscribe<SystemMessage.WaitForChaserToCatchUp>(this);
 		subscriber.Subscribe<StorageMessage.WritePrepares>(this);
@@ -62,7 +62,7 @@ internal class WriterInterceptor:
 	}
 
 	public void Handle(SystemMessage.SystemInit message) => Process(message);
-	public void Handle(SystemMessage.StateChangeMessage message) => Process(message);
+	public void Handle(SystemMessage.IStateChangeMessage message) => Process(message);
 	public void Handle(SystemMessage.WriteEpoch message) => Process(message);
 	public void Handle(SystemMessage.WaitForChaserToCatchUp message) => Process(message);
 	public void Handle(StorageMessage.WritePrepares message) => Process(message);

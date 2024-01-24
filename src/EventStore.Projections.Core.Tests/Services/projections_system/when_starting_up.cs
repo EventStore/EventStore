@@ -8,18 +8,19 @@ using System;
 using System.Net;
 using EventStore.Core.Cluster;
 using EventStore.Core.Data;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests;
+using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_system {
 	namespace startup {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_starting_with_empty_db<TLogFormat, TStreamId> : with_projections_subsystem<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new ProjectionManagementMessage.Command.GetStatistics(Envelope, ProjectionMode.AllNonTransient,
-						null, false)
-					;
+						null, false);
 			}
 
 			[Test]
@@ -49,8 +50,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_starting_as_follower<TLogFormat, TStreamId> : with_projections_subsystem<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> PreWhen() {
-				yield return (new SystemMessage.BecomeFollower(Guid.NewGuid(),
+			protected override IEnumerable<Message> PreWhen() {
+				yield return new SystemMessage.BecomeFollower(Guid.NewGuid(),
 					MemberInfo.Initial(Guid.NewGuid(), DateTime.UtcNow, VNodeState.Unknown, true,
 						new IPEndPoint(IPAddress.Loopback, 1111),
 						new IPEndPoint(IPAddress.Loopback, 1112),
@@ -59,14 +60,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 						new IPEndPoint(IPAddress.Loopback, 1115), null, 0, 0,
 						1,
 						false
-					)));
-				yield return (new SystemMessage.SystemCoreReady());
-				yield return Yield;
+					));
+				yield return new SystemMessage.SystemCoreReady();
+				yield return null;
 				if (_startSystemProjections) {
 					yield return
 						new ProjectionManagementMessage.Command.GetStatistics(Envelope, ProjectionMode.AllNonTransient,
-							null, false)
-						;
+							null, false);
 					var statistics = HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Last();
 					foreach (var projection in statistics.Projections) {
 						if (projection.Status != "Running")

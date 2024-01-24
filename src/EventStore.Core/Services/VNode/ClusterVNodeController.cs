@@ -120,7 +120,7 @@ namespace EventStore.Core.Services.VNode {
 		private VNodeFSM CreateFSM() {
 			var stm = new VNodeFSMBuilder(() => State)
 				.InAnyState()
-				.When<SystemMessage.StateChangeMessage>()
+				.When<SystemMessage.IStateChangeMessage>()
 					.Do(m => Application.Exit(ExitCode.Error,
 						string.Format("{0} message was unhandled in {1}. State: {2}", m.GetType().Name, GetType().Name, State)))
 				.When<AuthenticationMessage.AuthenticationProviderInitialized>().Do(Handle)
@@ -146,12 +146,12 @@ namespace EventStore.Core.Services.VNode {
 					VNodeState.PreLeader,
 					VNodeState.Leader, VNodeState.ResigningLeader, VNodeState.ReadOnlyLeaderless,
 					VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
-				.When<ClientMessage.ReadRequestMessage>()
+				.When<ClientMessage.IReadRequestMessage>()
 				.Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
 				.InAllStatesExcept(VNodeState.Leader, VNodeState.ResigningLeader,
 					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower,
 					VNodeState.ReadOnlyReplica, VNodeState.PreReadOnlyReplica)
-				.When<ClientMessage.WriteRequestMessage>()
+				.When<ClientMessage.IWriteRequestMessage>()
 				.Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
 				.InState(VNodeState.Leader)
 				.When<ClientMessage.ReadEvent>().ForwardTo(_outputBus)
@@ -833,7 +833,7 @@ namespace EventStore.Core.Services.VNode {
 			ForwardRequest(message, timeoutMessage);
 		}
 
-		private void ForwardRequest(ClientMessage.WriteRequestMessage msg, Message timeoutMessage) {
+		private void ForwardRequest(ClientMessage.IWriteRequestMessage msg, Message timeoutMessage) {
 			_forwardingProxy.Register(msg.InternalCorrId, msg.CorrelationId, msg.Envelope, _forwardingTimeout,
 				timeoutMessage);
 			_outputBus.Publish(new ClientMessage.TcpForwardMessage(msg));

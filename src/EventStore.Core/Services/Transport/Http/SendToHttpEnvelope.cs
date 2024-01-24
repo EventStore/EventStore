@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			_configurator = configurator;
 		}
 
-		public void ReplyWith<T>(T message) where T : Message {
+		public void ReplyWith<T>(T message) where T : class, Message {
 			Ensure.NotNull(message, "message");
 			var responseConfiguration = _configurator(_entity, message);
 			var data = _formatter(_entity, message);
@@ -105,7 +105,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			}
 		}
 
-		public void ReplyWith<T>(T message) where T : Message {
+		public void ReplyWith<T>(T message) where T : class, Message {
 			if (message is TExpectedResponseMessage || _notMatchingEnvelope == null)
 				_httpEnvelope.ReplyWith(message);
 			else

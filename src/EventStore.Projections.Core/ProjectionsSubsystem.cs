@@ -30,7 +30,7 @@ namespace EventStore.Projections.Core {
 
 	public sealed class ProjectionsSubsystem : ISubsystem, ISubsystemFactory,
 		IHandle<SystemMessage.SystemCoreReady>,
-		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.IStateChangeMessage>,
 		IHandle<CoreProjectionStatusMessage.Stopped>,
 		IHandle<CoreProjectionStatusMessage.Started>,
 		IHandle<ProjectionSubsystemMessage.RestartSubsystem>,
@@ -122,7 +122,7 @@ namespace EventStore.Projections.Core {
 			_leaderMainBus.Subscribe<ProjectionSubsystemMessage.ComponentStopped>(this);
 			_leaderMainBus.Subscribe<ProjectionSubsystemMessage.IODispatcherDrained>(this);
 			_leaderMainBus.Subscribe<SystemMessage.SystemCoreReady>(this);
-			_leaderMainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
+			_leaderMainBus.Subscribe<SystemMessage.IStateChangeMessage>(this);
 			
 			var projectionsStandardComponents = new ProjectionsStandardComponents(
 				_projectionWorkerThreadCount,
@@ -166,7 +166,7 @@ namespace EventStore.Projections.Core {
 			}
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage message) {
+		public void Handle(SystemMessage.IStateChangeMessage message) {
 			_nodeState = message.State;
 			if (_subsystemState == SubsystemState.NotReady) return;
 			

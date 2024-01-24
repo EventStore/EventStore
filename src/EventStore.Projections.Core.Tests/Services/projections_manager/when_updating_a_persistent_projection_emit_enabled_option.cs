@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
@@ -24,20 +25,20 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		private string _projectionName;
 		private string _source;
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			_projectionName = "test-projection";
 			_source = @"fromAll(); on_any(function(){});log(1);";
-			yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
+			yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 			yield return
-				(new ProjectionManagementMessage.Command.Post(
+				new ProjectionManagementMessage.Command.Post(
 					new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
 					ProjectionManagementMessage.RunAs.System, "JS", _source, enabled: true, checkpointsEnabled: true,
-					emitEnabled: true, trackEmittedStreams: true));
+					emitEnabled: true, trackEmittedStreams: true);
 			// when
 			yield return
-				(new ProjectionManagementMessage.Command.UpdateQuery(
+				new ProjectionManagementMessage.Command.UpdateQuery(
 					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System,
-					_source, emitEnabled: false));
+					_source, emitEnabled: false);
 		}
 
 		[Test, Category("v8")]

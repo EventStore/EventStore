@@ -2,11 +2,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-		<Platforms>x64;ARM64</Platforms>
+		<!--<TargetFramework>net8.0</TargetFramework>-->
+<!--		<Platforms>x64;ARM64</Platforms>-->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
 	</PropertyGroup>
 
 	<ItemGroup>

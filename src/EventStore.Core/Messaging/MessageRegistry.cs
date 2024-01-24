@@ -14,7 +14,7 @@ namespace EventStore.Core.Messaging;
 public static class EventStoreCore {
 	public static IReadOnlyList<Type>  MessageTypes     { get; private set; }
 	public static MessageRegistry      MessageRegistry  { get; private set; }
-	public static MessageHierarchy MessageHierarchy { get; private set; }
+	public static MessageHierarchy     MessageHierarchy { get; private set; }
 	
 	static bool IsInitialized { get; set; }
 

@@ -5,6 +5,7 @@ using EventStore.Core.Messages;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services.Processing;
 using System.Collections;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Messages;
@@ -34,7 +35,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			return false;
 		}
 
-		protected override IEnumerable<WhenStep> When() {
+		protected override IEnumerable<Message> When() {
 			yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 		}
 

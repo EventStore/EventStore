@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 				NoOtherStreams();
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 				var readerAssignedMessage =
 					_consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.ReaderAssignedReader>()
@@ -34,7 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_updating_query<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 				yield return
 					(new ProjectionManagementMessage.Command.UpdateQuery(
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_stopping<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 				yield return
 					(new ProjectionManagementMessage.Command.Disable(
@@ -115,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_starting<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 				yield return
 					(new ProjectionManagementMessage.Command.Enable(

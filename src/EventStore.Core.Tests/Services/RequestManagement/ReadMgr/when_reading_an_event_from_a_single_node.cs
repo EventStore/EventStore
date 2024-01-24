@@ -23,12 +23,12 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 
 		protected override void BeforeNodesStart() {
 			_nodes.ToList().ForEach(x =>
-				x.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.StateChangeMessage>(Handle)));
+				x.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.IStateChangeMessage>(Handle)));
 			_expectedNumberOfRoleAssignments = new CountdownEvent(3);
 			base.BeforeNodesStart();
 		}
 
-		private void Handle(SystemMessage.StateChangeMessage msg) {
+		private void Handle(SystemMessage.IStateChangeMessage msg) {
 			switch (msg.State) {
 				case Data.VNodeState.Leader:
 					_expectedNumberOfRoleAssignments.Signal();

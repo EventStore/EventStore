@@ -73,7 +73,7 @@ namespace EventStore.Core.Services {
 			SubscribeToMessage<ReplicationMessage.DataChunkBulk>();
 		}
 
-		public override void Handle(SystemMessage.StateChangeMessage message) {
+		public override void Handle(SystemMessage.IStateChangeMessage message) {
 			if (message.State == VNodeState.PreLeader) {
 				if (_activeChunk != null) {
 					_activeChunk.MarkForDeletion();

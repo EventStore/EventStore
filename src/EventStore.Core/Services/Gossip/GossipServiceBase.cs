@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.Gossip {
 		IHandle<GossipMessage.GossipReceived>,
 		IHandle<GossipMessage.ReadGossip>,
 		IHandle<GossipMessage.ClientGossip>,
-		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.IStateChangeMessage>,
 		IHandle<GossipMessage.GossipSendFailed>,
 		IHandle<SystemMessage.VNodeConnectionLost>,
 		IHandle<SystemMessage.VNodeConnectionEstablished>,
@@ -192,9 +192,9 @@ namespace EventStore.Core.Services.Gossip {
 			}
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage message) {
+		public void Handle(SystemMessage.IStateChangeMessage message) {
 			CurrentRole = message.State;
-			var replicaState = message as SystemMessage.ReplicaStateMessage;
+			var replicaState = message as SystemMessage.IReplicaStateMessage;
 			CurrentLeader = replicaState == null ? null : replicaState.Leader;
 			_cluster = UpdateCluster(_cluster, x => x.InstanceId == _memberInfo.InstanceId ? GetUpdatedMe(x) : x,
 				_timeProvider, DeadMemberRemovalPeriod, CurrentRole);

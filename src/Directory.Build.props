@@ -3,6 +3,8 @@
 		<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
 		<DebugType Condition=" '$(Configuration)' == 'Debug' ">full</DebugType>
 		<DebugType Condition=" '$(Configuration)' == 'Release' ">pdbonly</DebugType>
+		<TargetFrameworks>net8.0</TargetFrameworks>
+<!--		<ImplicitUsings>enable</ImplicitUsings>-->
 		<Authors>Event Store Ltd</Authors>
 		<PackageIconUrl>ouro.png</PackageIconUrl>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
@@ -14,6 +16,7 @@
 		<IsPackable>false</IsPackable>
 		<MinVerTagPrefix>oss-v</MinVerTagPrefix>
 		<MinVerMinimumMajorMinor>22.2</MinVerMinimumMajorMinor>
+		<NoWarn>$(NoWarn);NUnit2005;NUnit2006;NUnit2007;NUnit2015;NUnit2021;NUnit1027</NoWarn>
 	</PropertyGroup>
 	<Target Name="UpdateAssemblyVersion" AfterTargets="MinVer">
   		<PropertyGroup>
@@ -24,10 +27,10 @@
 		<None Include="..\..\LICENSE.md" Pack="true" PackagePath="\"/>
 		<None Include="..\..\ouro.png" Pack="true" PackagePath="\"/>
 	</ItemGroup>
-	<ItemGroup>
-		<PackageReference Include="MinVer" Version="4.3.0">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-		</PackageReference>
-	</ItemGroup>
+<!--	<ItemGroup>-->
+<!--		<PackageReference Include="MinVer" Version="4.3.0">-->
+<!--			<PrivateAssets>all</PrivateAssets>-->
+<!--			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>-->
+<!--		</PackageReference>-->
+<!--	</ItemGroup>-->
 </Project>

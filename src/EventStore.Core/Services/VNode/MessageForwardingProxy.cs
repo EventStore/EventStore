@@ -16,31 +16,23 @@ namespace EventStore.Core.Services.VNode {
 			_forwardings.AddOrUpdate(
 				internalCorrId,
 				new Forwarding(clientCorrId, envelope, _stopwatch.Elapsed + timeout, timeoutMessage),
-				(x, y) => {
-					throw new Exception(
-						string.Format("Forwarding for InternalCorrId {0:B} (ClientCorrId {1:B}) already exists.",
-							internalCorrId, clientCorrId));
-				});
+				(x, y) => throw new Exception(
+					string.Format("Forwarding for InternalCorrId {0:B} (ClientCorrId {1:B}) already exists.",
+						internalCorrId, clientCorrId)));
 		}
 
-		public bool TryForwardReply<TMessage>(Guid correlationId, TMessage originalMessage,
-			Func<Guid, TMessage, TMessage> getForwardMessage)
-			where TMessage : Message {
-			Forwarding forwarding;
-			if (_forwardings.TryRemove(correlationId, out forwarding)) {
-				forwarding.Envelope.ReplyWith(getForwardMessage(forwarding.ClientCorrId, originalMessage));
-				return true;
-			}
-
-			return false;
+		public bool TryForwardReply<TMessage>(Guid correlationId, TMessage originalMessage, Func<Guid, TMessage, TMessage> getForwardMessage)
+			where TMessage : class, Message {
+			if (!_forwardings.TryRemove(correlationId, out var forwarding)) return false;
+			forwarding.Envelope.ReplyWith(getForwardMessage(forwarding.ClientCorrId, originalMessage));
+			return true;
 		}
 
 		public void TimeoutForwardings() {
 			var now = _stopwatch.Elapsed;
 
-			foreach (var forwPair in _forwardings) {
-				Forwarding forwarding;
-				if (forwPair.Value.TimeoutTimestamp <= now && _forwardings.TryRemove(forwPair.Key, out forwarding))
+			foreach (var (key, value) in _forwardings) {
+				if (value.TimeoutTimestamp <= now && _forwardings.TryRemove(key, out var forwarding))
 					forwarding.Envelope.ReplyWith(forwarding.TimeoutMessage);
 			}
 		}

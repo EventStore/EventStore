@@ -12,7 +12,7 @@ namespace EventStore.Core.Services;
 // with those handlings and with other reads.
 public class NodeStateListenerService :
 	IInMemoryStreamReader,
-	IHandle<SystemMessage.StateChangeMessage> {
+	IHandle<SystemMessage.IStateChangeMessage> {
 	private readonly IPublisher _publisher;
 	public const string EventType = "$NodeStateChanged";
 	private const PrepareFlags Flags = PrepareFlags.Data | PrepareFlags.IsCommitted | PrepareFlags.IsJson;
@@ -114,7 +114,7 @@ public class NodeStateListenerService :
 			tfLastCommitPosition: tfLastCommitPosition);
 	}
 
-	public void Handle(SystemMessage.StateChangeMessage message) {
+	public void Handle(SystemMessage.IStateChangeMessage message) {
 		var payload = new { state = message.State.ToString() };
 		var data = JsonSerializer.SerializeToUtf8Bytes(payload);
 		var prepare = new PrepareLogRecord(

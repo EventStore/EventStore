@@ -19,7 +19,7 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {
 	public class HttpSendService : IHttpForwarder,
-		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.IStateChangeMessage>,
 		IHandle<HttpMessage.HttpSend> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<HttpSendService>();
 
@@ -51,7 +51,7 @@ namespace EventStore.Core.Services {
 			_forwardClient = new HttpClient(socketsHttpHandler);
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage message) {
+		public void Handle(SystemMessage.IStateChangeMessage message) {
 			switch (message.State) {
 				case VNodeState.PreReplica:
 				case VNodeState.CatchingUp:
@@ -59,7 +59,7 @@ namespace EventStore.Core.Services {
 				case VNodeState.Follower:
 				case VNodeState.PreReadOnlyReplica:
 				case VNodeState.ReadOnlyReplica:
-					_leaderInfo = ((SystemMessage.ReplicaStateMessage)message).Leader;
+					_leaderInfo = ((SystemMessage.IReplicaStateMessage)message).Leader;
 					break;
 				case VNodeState.Initializing:
 				case VNodeState.DiscoverLeader:
@@ -74,7 +74,7 @@ namespace EventStore.Core.Services {
 					_leaderInfo = null;
 					break;
 				default:
-					throw new Exception(string.Format("Unknown node state: {0}.", message.State));
+					throw new Exception($"Unknown node state: {message.State}.");
 			}
 		}
 

@@ -12,7 +12,7 @@ namespace EventStore.Core.Services.Monitoring {
 			Ensure.NotNull(statsContainer, "statsContainer");
 		}
 
-		public void ReplyWith<T>(T message) where T : Message {
+		public void ReplyWith<T>(T message) where T : class, Message {
 			var msg = message as MonitoringMessage.InternalStatsRequestResponse;
 			if (msg != null)
 				_statsContainer.Add(msg.Stats);

@@ -21,7 +21,7 @@ public class AsyncTaskEnvelope : IEnvelope {
 		_cancellationToken = cancellationToken;
 	}
 
-	public void ReplyWith<T>(T message) where T : Message {
+	public void ReplyWith<T>(T message) where T : class, Message {
 		try {
 			_onMessage(message, _cancellationToken);
 		} catch (OperationCanceledException) {

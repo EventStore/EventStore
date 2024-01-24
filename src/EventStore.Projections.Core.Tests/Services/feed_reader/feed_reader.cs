@@ -282,7 +282,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 				_maxEvents = 2;
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new FeedReaderMessage.ReadPage(
 						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
@@ -321,7 +321,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 				_maxEvents = 2;
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new FeedReaderMessage.ReadPage(
 						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,

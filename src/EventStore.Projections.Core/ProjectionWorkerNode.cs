@@ -127,9 +127,9 @@ namespace EventStore.Projections.Core {
 
 				// Forward messages back to projection manager
 				coreInputBus.Subscribe(
-					Forwarder.Create<ProjectionManagementMessage.Command.ControlMessage>(_leaderOutputBus));
+					Forwarder.Create<ProjectionManagementMessage.Command.IControlMessage>(_leaderOutputBus));
 				coreInputBus.Subscribe(
-					Forwarder.Create<CoreProjectionStatusMessage.CoreProjectionStatusMessageBase>(_leaderOutputBus));
+					Forwarder.Create<CoreProjectionStatusMessage.ICoreProjectionStatusMessage>(_leaderOutputBus));
 				coreInputBus.Subscribe(
 					Forwarder.Create<CoreProjectionStatusMessage.DataReportBase>(_leaderOutputBus));
 			}

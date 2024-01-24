@@ -57,7 +57,8 @@ public class MessagesAssemblyScanner : IEnumerable<MessagesAssemblyScanner.Assem
 		var baseType = typeof(Message);
 
 		var query = from type in _types
-			where !type.IsAbstract && type.IsAssignableTo(baseType)
+			where type.IsAssignableTo(baseType)
+			orderby type.FullName!
 			select new AssemblyScanResult(type);
 
 		return query;

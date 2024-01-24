@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-
+<!--		<TargetFramework>net8.0</TargetFramework>-->
 		<IsPackable>false</IsPackable>
-
-		<Platforms>x64;ARM64</Platforms>
+<!--		<Platforms>x64;ARM64</Platforms>-->
 		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
 	</PropertyGroup>
 
 	<ItemGroup>

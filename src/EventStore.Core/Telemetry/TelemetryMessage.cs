@@ -4,10 +4,12 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Telemetry;
 
+public interface ITelemetryMessage;
+
 [DerivedMessage]
-public abstract partial class TelemetryMessage<T> : Message<T> where T : Message {
+public static class TelemetryMessage {
 	[DerivedMessage(CoreMessage.Telemetry)]
-	public partial class Request : TelemetryMessage<Request> {
+	public partial class Request : Message<Request>, ITelemetryMessage {
 		public readonly IEnvelope<Response> Envelope;
 
 		public Request(IEnvelope<Response> envelope) {
@@ -18,7 +20,7 @@ public abstract partial class TelemetryMessage<T> : Message<T> where T : Message
 	}
 
 	[DerivedMessage(CoreMessage.Telemetry)]
-	public partial class Response : TelemetryMessage<Response> {
+	public partial class Response : Message<Response>, ITelemetryMessage {
 		public readonly string Key;
 		public readonly JsonNode Value;
 
@@ -32,8 +34,8 @@ public abstract partial class TelemetryMessage<T> : Message<T> where T : Message
 	}
 
 	[DerivedMessage(CoreMessage.Telemetry)]
-	public partial class Collect : TelemetryMessage<Collect> { }
+	public partial class Collect : Message<Collect>, ITelemetryMessage { }
 
 	[DerivedMessage(CoreMessage.Telemetry)]
-	public partial class Flush : TelemetryMessage<Flush> { }
+	public partial class Flush : Message<Flush>, ITelemetryMessage { }
 }

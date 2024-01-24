@@ -399,7 +399,7 @@ namespace EventStore.Core.Messages {
 				public RequestEffectiveAclEnvelope() {
 					_tcs = new TaskCompletionSource<EffectiveAcl>(TaskCreationOptions.RunContinuationsAsynchronously);
 				}
-				public void ReplyWith<T>(T message) where T : Message {
+				public void ReplyWith<T>(T message) where T : class, Message {
 					if (message == null) throw new ArgumentNullException(nameof(message));
 					if (message is EffectiveStreamAclResponse response) {
 						_tcs.TrySetResult(response.Acl);

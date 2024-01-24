@@ -14,7 +14,7 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core.Services.Replication {
 
 	public class ReplicationTrackingService :
-		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.IStateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<ReplicationTrackingMessage.ReplicaWriteAck>,
@@ -147,7 +147,7 @@ namespace EventStore.Core.Services.Replication {
 			UpdateReplicationPosition();
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage msg) {
+		public void Handle(SystemMessage.IStateChangeMessage msg) {
 			//switching to leader from non-leader
 			if (_state != msg.State) {
 				_replicaLogPositions.Clear();

@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.InvalidTransaction>,
 		IHandle<StorageMessage.StreamDeleted>,
 		IHandle<StorageMessage.RequestManagerTimerTick>,
-		IHandle<SystemMessage.StateChangeMessage> {
+		IHandle<SystemMessage.IStateChangeMessage> {
 		private readonly IPublisher _bus;
 		private readonly TimerMessage.Schedule _tickRequestMessage;
 		private readonly Dictionary<Guid, RequestManagerBase> _currentRequests = new Dictionary<Guid, RequestManagerBase>();
@@ -166,7 +166,7 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 		
 		
-		public void Handle(SystemMessage.StateChangeMessage message) {
+		public void Handle(SystemMessage.IStateChangeMessage message) {
 			
 			if (_nodeState == VNodeState.Leader && message.State is not VNodeState.Leader or VNodeState.ResigningLeader) {
 				var keys = _currentRequests.Keys;
@@ -205,7 +205,7 @@ namespace EventStore.Core.Services.RequestManager {
 
 			if (!_currentRequests.Remove(message.CorrelationId)) {
 				// noop. RequestManager guarantees not complete twice now.
-				// and we will legitimately get in here when StateChangeMessage removes
+				// and we will legitimately get in here when IStateChangeMessage removes
 				// entries from _currentRequests
 			}
 		}

@@ -17,7 +17,7 @@ using Serilog;
 namespace EventStore.Core.Telemetry;
 
 public sealed class TelemetryService : IDisposable,
-	IHandle<SystemMessage.StateChangeMessage>,
+	IHandle<SystemMessage.IStateChangeMessage>,
 	IHandle<ElectionMessage.ElectionsDone> {
 
 	private static readonly ILogger _log = Log.ForContext<TelemetryService>();
@@ -103,7 +103,7 @@ public sealed class TelemetryService : IDisposable,
 		}
 	}
 
-	public void Handle(SystemMessage.StateChangeMessage message) {
+	public void Handle(SystemMessage.IStateChangeMessage message) {
 		_nodeState = message.State;
 	}
 

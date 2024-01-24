@@ -6,9 +6,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 	public class DeferredExecutionTestMessage : Message<DeferredExecutionTestMessage> {
 		private static readonly int TypeId = SequenceId.Next();
 
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
+		public new int MsgTypeId => TypeId;
 
 		private readonly Action _action;
 
@@ -26,9 +24,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 	public class ExecutableTestMessage : Message<ExecutableTestMessage> {
 		private static readonly int TypeId = SequenceId.Next();
 
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
+		public new int MsgTypeId => TypeId;
 
 		private readonly Action _action;
 

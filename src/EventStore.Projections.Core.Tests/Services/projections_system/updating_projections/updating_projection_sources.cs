@@ -7,6 +7,7 @@ using System.Linq;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using EventStore.Common.Utils;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests;
 using Newtonsoft.Json.Linq;
 
@@ -26,7 +27,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
 				return true;
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return CreateWriteEvent("stream1", "type1", "{\"Data\": 1}");
 				yield return
 					new ProjectionManagementMessage.Command.Post(

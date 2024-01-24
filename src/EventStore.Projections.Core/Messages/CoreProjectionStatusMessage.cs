@@ -5,15 +5,19 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class CoreProjectionStatusMessage {
+		public interface ICoreProjectionStatusMessage : Message {
+			Guid ProjectionId { get; }
+		}
+
 		[DerivedMessage(ProjectionMessage.CoreStatus)]
-		public partial class CoreProjectionStatusMessageBase : CoreProjectionManagementMessageBase {
+		public partial class CoreProjectionStatusMessageBase<T> : CoreProjectionManagementMessageBase<T>, ICoreProjectionStatusMessage where T : Message {
 			protected CoreProjectionStatusMessageBase(Guid projectionId)
 				: base(projectionId) {
 			}
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreStatus)]
-		public partial class Started : CoreProjectionStatusMessageBase {
+		public partial class Started : CoreProjectionStatusMessageBase<Started> {
 			public string Name { get; }
 			public Started(Guid projectionId, string name)
 				: base(projectionId) {
@@ -22,7 +26,7 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreStatus)]
-		public partial class Faulted : CoreProjectionStatusMessageBase {
+		public partial class Faulted : CoreProjectionStatusMessageBase<Faulted> {
 			private readonly string _faultedReason;
 
 			public Faulted(Guid projectionId, string faultedReason)
@@ -36,7 +40,7 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage]
-		public abstract partial class DataReportBase : CoreProjectionStatusMessageBase {
+		public abstract partial class DataReportBase : CoreProjectionStatusMessageBase<DataReportBase> {
 			private readonly Guid _correlationId;
 			private readonly string _partition;
 			private readonly CheckpointTag _position;
@@ -100,7 +104,7 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreStatus)]
-		public partial class StatisticsReport : CoreProjectionStatusMessageBase {
+		public partial class StatisticsReport : CoreProjectionStatusMessageBase<StatisticsReport> {
 			private readonly ProjectionStatistics _statistics;
 			private readonly int _sequentialNumber;
 
@@ -120,7 +124,7 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreStatus)]
-		public partial class Prepared : CoreProjectionStatusMessageBase {
+		public partial class Prepared : CoreProjectionStatusMessageBase<Prepared> {
 			private readonly ProjectionSourceDefinition _sourceDefinition;
 
 			public Prepared(Guid projectionId, ProjectionSourceDefinition sourceDefinition)
@@ -134,14 +138,14 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreStatus)]
-		public partial class Suspended : CoreProjectionStatusMessageBase {
+		public partial class Suspended : CoreProjectionStatusMessageBase<Suspended> {
 			public Suspended(Guid projectionId)
 				: base(projectionId) {
 			}
 		}
 		
 		[DerivedMessage(ProjectionMessage.CoreStatus)]
-		public partial class Stopped : CoreProjectionStatusMessageBase {
+		public partial class Stopped : CoreProjectionStatusMessageBase<Stopped> {
 			private readonly bool _completed;
 			private readonly string _name;
 

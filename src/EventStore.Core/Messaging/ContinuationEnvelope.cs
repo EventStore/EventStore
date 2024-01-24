@@ -11,7 +11,7 @@ namespace EventStore.Core.Messaging {
 			_channel = channel;
 		}
 
-		public void ReplyWith<T>(T message) where T : Message {
+		public void ReplyWith<T>(T message) where T : class, Message {
 			_channel.Writer.TryWrite(message);
 		}
 	}
@@ -27,7 +27,7 @@ namespace EventStore.Core.Messaging {
 			_cancellationToken = cancellationToken;
 		}
 
-		public void ReplyWith<T>(T message) where T : Message {
+		public void ReplyWith<T>(T message) where T : class, Message {
 			try {
 				_semaphore.Wait(_cancellationToken);
 				_onMessage(message, _cancellationToken).ContinueWith(_ => _semaphore.Release(), _cancellationToken);

@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		IHandle<SubscriptionMessage.PersistentSubscriptionTimerTick>,
 		IHandle<ClientMessage.ReplayParkedMessages>,
 		IHandle<ClientMessage.ReplayParkedMessage>,
-		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.IStateChangeMessage>,
 		IHandle<ClientMessage.ConnectToPersistentSubscriptionToStream>,
 		IHandle<ClientMessage.ConnectToPersistentSubscriptionToAll>,
 		IHandle<StorageMessage.EventCommitted>,
@@ -88,7 +88,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_subscriptionsById = new Dictionary<string, PersistentSubscription>();
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage message) {
+		public void Handle(SystemMessage.IStateChangeMessage message) {
 			_state = message.State;
 
 			if (message.State == VNodeState.Leader) return;

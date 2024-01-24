@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Storage {
 	}
 
 	public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>,
-		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.IStateChangeMessage>,
 		IHandle<SystemMessage.WriteEpoch>,
 		IHandle<SystemMessage.WaitForChaserToCatchUp>,
 		IHandle<StorageMessage.WritePrepares>,
@@ -150,7 +150,7 @@ namespace EventStore.Core.Services.Storage {
 			_tasks.Add(StorageWriterQueue.Start());
 
 			SubscribeToMessage<SystemMessage.SystemInit>();
-			SubscribeToMessage<SystemMessage.StateChangeMessage>();
+			SubscribeToMessage<SystemMessage.IStateChangeMessage>();
 			SubscribeToMessage<SystemMessage.WriteEpoch>();
 			SubscribeToMessage<SystemMessage.WaitForChaserToCatchUp>();
 			SubscribeToMessage<StorageMessage.WritePrepares>();
@@ -182,7 +182,7 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		private void CommonHandle(Message message) {
-			if (BlockWriter && !(message is SystemMessage.StateChangeMessage)) {
+			if (BlockWriter && !(message is SystemMessage.IStateChangeMessage)) {
 				Log.Verbose("Blocking message {message} in StorageWriterService. Message:", message.GetType().Name);
 				Log.Verbose("{message}", message);
 				return;
@@ -211,7 +211,7 @@ namespace EventStore.Core.Services.Storage {
 			Bus.Publish(new SystemMessage.ServiceInitialized("StorageWriter"));
 		}
 
-		public virtual void Handle(SystemMessage.StateChangeMessage message) {
+		public virtual void Handle(SystemMessage.IStateChangeMessage message) {
 			_vnodeState = message.State;
 
 			switch (message.State) {

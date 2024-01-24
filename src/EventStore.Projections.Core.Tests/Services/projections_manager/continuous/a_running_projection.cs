@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 				base.Given();
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 				var readerAssignedMessage =
 					_consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.ReaderAssignedReader>()
@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_stopping<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 
 				yield return
@@ -100,7 +100,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_handling_event<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 				yield return
 					(ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
@@ -149,7 +149,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 				_projectionEnabled = false;
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 
 				yield return
@@ -218,7 +218,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 				_projectionEnabled = false;
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				foreach (var m in base.When()) yield return m;
 				yield return
 					(new ProjectionManagementMessage.Command.Reset(

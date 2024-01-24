@@ -155,7 +155,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		networkSendBus.Subscribe(tcpSendService);
 
 		subscribeBus.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);
-		subscribeBus.Subscribe<SystemMessage.StateChangeMessage>(leaderReplicationService);
+		subscribeBus.Subscribe<SystemMessage.IStateChangeMessage>(leaderReplicationService);
 		subscribeBus.Subscribe<SystemMessage.EnablePreLeaderReplication>(leaderReplicationService);
 		subscribeBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(leaderReplicationService);
 		subscribeBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(leaderReplicationService);
@@ -227,7 +227,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		var tcpSendService = new TcpSendService();
 		networkSendBus.Subscribe(tcpSendService);
 
-		subscribeBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
+		subscribeBus.Subscribe<SystemMessage.IStateChangeMessage>(replicaService);
 		subscribeBus.Subscribe<ReplicationMessage.ReconnectToLeader>(replicaService);
 		subscribeBus.Subscribe<ReplicationMessage.SubscribeToLeader>(replicaService);
 		subscribeBus.Subscribe<ReplicationMessage.AckLogPosition>(replicaService);

@@ -211,7 +211,7 @@ namespace EventStore.Core.Tests.Helpers {
 			StartingTime.Start();
 
 			Node.MainBus.Subscribe(
-				new AdHocHandler<SystemMessage.StateChangeMessage>(m => {
+				new AdHocHandler<SystemMessage.IStateChangeMessage>(m => {
 					NodeState = m.State;
 				}));
 			if (!_isReadOnlyReplica) {

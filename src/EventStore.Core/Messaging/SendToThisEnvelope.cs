@@ -9,9 +9,8 @@ namespace EventStore.Core.Messaging {
 			_receiver = receiver;
 		}
 
-		public void ReplyWith<T>(T message) where T : Message {
-			var x = _receiver as IHandle<T>;
-			if (x != null)
+		public void ReplyWith<T>(T message) where T : class, Message {
+			if (_receiver is IHandle<T> x)
 				x.Handle(message);
 		}
 	}

@@ -60,13 +60,13 @@ namespace EventStore.Core.Messages {
 		public partial class RequestQueueDrained : Message<RequestQueueDrained> {
 		}
 
-		public class StateChangeMessage {
+		public interface IStateChangeMessage : Message {
 			Guid       CorrelationId { get; }
 			VNodeState State         { get; }
 		}
 
 		[DerivedMessage]
-		public abstract partial class StateChangeMessage<T> : Message<T> where T : Message {
+		public abstract partial class StateChangeMessage<T> : Message<T>, IStateChangeMessage where T : Message {
 			protected StateChangeMessage(Guid correlationId, VNodeState state) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				CorrelationId = correlationId;
@@ -129,15 +129,19 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
-		public abstract partial class ReplicaStateMessage<T> : StateChangeMessage<T> where T : Message {
-			public readonly MemberInfo Leader;
+		public interface IReplicaStateMessage : IStateChangeMessage {
+			MemberInfo Leader { get; }
+		}
 
+		[DerivedMessage]
+		public abstract partial class ReplicaStateMessage<T> : StateChangeMessage<T>, IReplicaStateMessage where T : Message {
 			protected ReplicaStateMessage(Guid correlationId, VNodeState state, MemberInfo leader)
 				: base(correlationId, state) {
 				Ensure.NotNull(leader, "leader");
 				Leader = leader;
 			}
+
+			public MemberInfo Leader { get; }
 		}
 
 		[DerivedMessage(CoreMessage.System)]

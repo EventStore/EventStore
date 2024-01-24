@@ -10,7 +10,7 @@ namespace EventStore.Core.Messaging {
 			Ensure.NotNull(callback, "callback");
 		}
 
-		public void ReplyWith<T>(T message) where T : Message {
+		public void ReplyWith<T>(T message) where T : class, Message {
 			_callback(message);
 		}
 	}

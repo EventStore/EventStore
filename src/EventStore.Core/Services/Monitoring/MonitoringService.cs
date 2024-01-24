@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Monitoring {
 	}
 
 	public class MonitoringService : IHandle<SystemMessage.SystemInit>,
-		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.IStateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<ClientMessage.WriteEventsCompleted>,
@@ -170,7 +170,7 @@ namespace EventStore.Core.Services.Monitoring {
 			_mainBus.Publish(msg);
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage message) {
+		public void Handle(SystemMessage.IStateChangeMessage message) {
 			if ((_statsStorage & StatsStorage.Stream) == 0)
 				return;
 

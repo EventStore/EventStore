@@ -34,7 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 				NoOtherStreams();
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(
@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 				NoOtherStreams();
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(
@@ -129,7 +129,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 				NoOtherStreams();
 			}
 
-			protected override IEnumerable<WhenStep> PreWhen() {
+			protected override IEnumerable<Message> PreWhen() {
 				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(
@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class as_another_user<TLogFormat, TStreamId> : with_runas_projection<TLogFormat, TStreamId> {
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				yield return
 					new ProjectionManagementMessage.Command.SetRunAs(
 						Envelope, _projectionName, new ProjectionManagementMessage.RunAs(_testUserPrincipal2),

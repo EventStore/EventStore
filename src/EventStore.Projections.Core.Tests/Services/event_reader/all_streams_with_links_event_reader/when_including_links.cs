@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -55,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_wi
 					enableContentTypeValidation: true);
 			}
 
-			protected override IEnumerable<WhenStep> When() {
+			protected override IEnumerable<Message> When() {
 				var fromZeroPosition = CheckpointTag.FromPosition(0, 0, 0);
 				yield return
 					new ReaderSubscriptionManagement.Subscribe(

@@ -10,7 +10,7 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.VNode {
 	public class InaugurationManager :
-		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.IStateChangeMessage>,
 		IHandle<SystemMessage.ChaserCaughtUp>,
 		IHandle<SystemMessage.EpochWritten>,
 		IHandle<SystemMessage.CheckInaugurationConditions>,
@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.VNode {
 			Received(received, "currentEpochNumber {currentEpochNumber}.", _currentEpochNumber);
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage received) {
+		public void Handle(SystemMessage.IStateChangeMessage received) {
 			if (received is SystemMessage.BecomePreLeader becomePreLeader) {
 				HandleBecomePreLeader(becomePreLeader);
 			} else {
@@ -89,7 +89,7 @@ namespace EventStore.Core.Services.VNode {
 			_stateCorrelationId = received.CorrelationId;
 		}
 
-		private void HandleBecomeOtherNodeState(SystemMessage.StateChangeMessage received) {
+		private void HandleBecomeOtherNodeState(SystemMessage.IStateChangeMessage received) {
 			if (State != ManagerState.Idle) {
 				Received(received, "Inauguration process is now stopped.");
 				State = ManagerState.Idle;

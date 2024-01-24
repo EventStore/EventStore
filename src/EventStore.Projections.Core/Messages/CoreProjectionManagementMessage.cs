@@ -6,35 +6,35 @@ using EventStore.Projections.Core.Services.Processing;
 namespace EventStore.Projections.Core.Messages {
 	public static partial class CoreProjectionManagementMessage {
 		[DerivedMessage(ProjectionMessage.CoreManagement)]
-		public partial class Start : CoreProjectionManagementControlMessage {
+		public partial class Start : CoreProjectionManagementControlMessage<Start> {
 			public Start(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {
 			}
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreManagement)]
-		public partial class LoadStopped : CoreProjectionManagementControlMessage {
+		public partial class LoadStopped : CoreProjectionManagementControlMessage<LoadStopped> {
 			public LoadStopped(Guid correlationId, Guid workerId)
 				: base(correlationId, workerId) {
 			}
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreManagement)]
-		public partial class Stop : CoreProjectionManagementControlMessage {
+		public partial class Stop : CoreProjectionManagementControlMessage<Stop> {
 			public Stop(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {
 			}
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreManagement)]
-		public partial class Kill : CoreProjectionManagementControlMessage {
+		public partial class Kill : CoreProjectionManagementControlMessage<Kill> {
 			public Kill(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {
 			}
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreManagement)]
-		public partial class GetState : CoreProjectionManagementControlMessage {
+		public partial class GetState : CoreProjectionManagementControlMessage<GetState> {
 			private readonly Guid _correlationId;
 			private readonly string _partition;
 
@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreManagement)]
-		public partial class GetResult : CoreProjectionManagementControlMessage {
+		public partial class GetResult : CoreProjectionManagementControlMessage<GetResult> {
 			private readonly Guid _correlationId;
 			private readonly string _partition;
 
@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreManagement)]
-		public partial class CreateAndPrepare : CoreProjectionManagementControlMessage {
+		public partial class CreateAndPrepare : CoreProjectionManagementControlMessage<CreateAndPrepare> {
 			private readonly ProjectionConfig _config;
 			private readonly string _handlerType;
 			private readonly string _query;
@@ -128,7 +128,7 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreManagement)]
-		public partial class CreatePrepared : CoreProjectionManagementControlMessage {
+		public partial class CreatePrepared : CoreProjectionManagementControlMessage<CreatePrepared> {
 			private readonly ProjectionConfig _config;
 			private readonly QuerySourcesDefinition _sourceDefinition;
 			private readonly string _handlerType;
@@ -192,7 +192,7 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.CoreManagement)]
-		public partial class Dispose : CoreProjectionManagementControlMessage {
+		public partial class Dispose : CoreProjectionManagementControlMessage<Dispose> {
 			public Dispose(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {
 			}

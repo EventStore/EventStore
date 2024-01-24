@@ -18,7 +18,7 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<ClientMessage.ScavengeDatabase>,
 		IHandle<ClientMessage.StopDatabaseScavenge>,
 		IHandle<ClientMessage.GetDatabaseScavenge>,
-		IHandle<SystemMessage.StateChangeMessage> {
+		IHandle<SystemMessage.IStateChangeMessage> {
 
 		protected static ILogger Log { get; } = Serilog.Log.ForContext<StorageScavenger>();
 		private readonly ITFChunkScavengerLogManager _logManager;
@@ -46,7 +46,7 @@ namespace EventStore.Core.Services.Storage {
 			_switchChunksLock = switchChunksLock;
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage message) {
+		public void Handle(SystemMessage.IStateChangeMessage message) {
 			if (message.State == VNodeState.Leader || message.State == VNodeState.Follower) {
 				_logManager.Initialise();
 			}

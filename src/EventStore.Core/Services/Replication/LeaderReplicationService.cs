@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.Replication {
 
 	public class LeaderReplicationService : IMonitoredQueue,
 		IHandle<SystemMessage.SystemStart>,
-		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.IStateChangeMessage>,
 		IHandle<SystemMessage.EnablePreLeaderReplication>,
 		IHandle<ReplicationMessage.ReplicaSubscriptionRequest>,
 		IHandle<ReplicationMessage.ReplicaLogPositionAck>,
@@ -118,7 +118,7 @@ namespace EventStore.Core.Services.Replication {
 			_mainLoopThread.Start();
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage message) {
+		public void Handle(SystemMessage.IStateChangeMessage message) {
 			_state = message.State;
 
 			if (message.State == VNodeState.PreLeader) {
