@@ -38,7 +38,8 @@ public partial class EnumeratorTests {
 			AtZero = 2,
 			OneBeforeLast = 3,
 			AtLast = 4,
-			OneByteAfterLast = 5
+			OneByteAfterLast = 5,
+			InvalidPosition = 6
 		}
 
 		private const int NumEventsToFallBehind = 3 * 32;
@@ -78,6 +79,12 @@ public partial class EnumeratorTests {
 				"subscribe to $all at one byte after last event",
 				new StreamProperties(10),
 				new SubscriptionProperties(CheckpointType.OneByteAfterLast),
+				new LiveProperties(3)
+			),
+			CreateTestData(
+				"subscribe to $all at an invalid position",
+				new StreamProperties(10),
+				new SubscriptionProperties(CheckpointType.InvalidPosition),
 				new LiveProperties(3)
 			),
 			CreateTestData(
@@ -124,6 +131,11 @@ public partial class EnumeratorTests {
 		private Position GetPositionPlusOneByte(ResolvedEvent @event) {
 			var pos = GetPosition(@event);
 			return new Position(pos.CommitPosition + 1, pos.PreparePosition + 1);
+		}
+
+		private Position GetPositionMinusOneByte(ResolvedEvent @event) {
+			var pos = GetPosition(@event);
+			return new Position(pos.CommitPosition - 1, pos.PreparePosition - 1);
 		}
 
 		private async Task WriteExistingEvents() {
@@ -193,6 +205,7 @@ public partial class EnumeratorTests {
 				CheckpointType.OneBeforeLast => _events.Count - 1,
 				CheckpointType.AtLast => _events.Count,
 				CheckpointType.OneByteAfterLast => _events.Count,
+				CheckpointType.InvalidPosition => -1, // unused value as an exception should be thrown
 				_ => throw new ArgumentOutOfRangeException()
 			};
 		}
@@ -205,6 +218,7 @@ public partial class EnumeratorTests {
 				CheckpointType.OneBeforeLast => GetPosition(_events[^2]),
 				CheckpointType.AtLast => GetPosition(_events[^1]),
 				CheckpointType.OneByteAfterLast => GetPositionPlusOneByte(_events[^1]),
+				CheckpointType.InvalidPosition => GetPositionMinusOneByte(_events[^1]),
 				_ => throw new ArgumentOutOfRangeException()
 			};
 
@@ -271,6 +285,11 @@ public partial class EnumeratorTests {
 			var sub = Subscribe();
 
 			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
+
+			if (SubscriptionProps.CheckpointType == CheckpointType.InvalidPosition) {
+				Assert.ThrowsAsync<ReadResponseException.InvalidPosition>(async () => await sub.GetNext());
+				return;
+			}
 
 			_nextEventIndex = await ReadExpectedEvents(sub, _nextEventIndex, _events.Count - 1);
 
