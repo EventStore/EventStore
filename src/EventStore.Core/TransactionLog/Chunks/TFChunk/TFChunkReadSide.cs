@@ -567,12 +567,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 			}
 
-			private void ValidateSuffixLength(int length, int suffixLength, long actualPosition) {
+			private void ValidatePrefixSuffixLength(int prefixLength, int suffixLength, long actualPosition, string actualPositionType) {
 				// verify suffix length == prefix length
-				if (suffixLength != length) {
-					throw new Exception(
-						$"Prefix/suffix length inconsistency: prefix length({length}) != suffix length ({suffixLength}).\n" +
-						$"Actual pre-position: {actualPosition}. Something is seriously wrong in chunk {Chunk}.");
+				if (suffixLength != prefixLength) {
+					throw new InvalidReadException(
+						$"Prefix/suffix length inconsistency: prefix length ({prefixLength}) != suffix length ({suffixLength}).\n" +
+						$"Actual {actualPositionType}: {actualPosition}. Something is seriously wrong in chunk {Chunk}.");
 				}
 			}
 
@@ -589,11 +589,16 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				length = workItem.Reader.ReadInt32();
 				ValidateRecordLength(length, actualPosition);
 
-				record = LogRecord.ReadFrom(workItem.Reader, length);
+				try {
+					record = LogRecord.ReadFrom(workItem.Reader, length);
+				} catch (Exception exc) {
+					throw new InvalidReadException($"Error while reading log record forwards at actual position {actualPosition}. {exc.Message}");
+				}
+
 				_tracker.OnRead(record);
 
 				int suffixLength = workItem.Reader.ReadInt32();
-				ValidateSuffixLength(length, suffixLength, actualPosition);
+				ValidatePrefixSuffixLength(length, suffixLength, actualPosition, "pre-position");
 
 				return true;
 			}
@@ -615,7 +620,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				workItem.Reader.Read(record, 0, length);
 
 				int suffixLength = workItem.Reader.ReadInt32();
-				ValidateSuffixLength(length, suffixLength, actualPosition);
+				ValidatePrefixSuffixLength(length, suffixLength, actualPosition, "pre-position");
 
 				return true;
 			}
@@ -645,7 +650,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 
 				if (length > TFConsts.MaxLogRecordSize) {
-					throw new ArgumentException(
+					throw new InvalidReadException(
 						string.Format("Log record that ends at actual pos {0} has too large length: {1} bytes, "
 									  + "while limit is {2} bytes. In chunk {3}.",
 							actualPosition, length, TFConsts.MaxLogRecordSize, Chunk));
@@ -663,14 +668,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				// verify suffix length == prefix length
 				int prefixLength = workItem.Reader.ReadInt32();
-				if (prefixLength != length) {
-					throw new Exception(
-						string.Format("Prefix/suffix length inconsistency: prefix length({0}) != suffix length ({1})"
-									  + "Actual post-position: {2}. Something is seriously wrong in chunk {3}.",
-							prefixLength, length, actualPosition, Chunk));
+				ValidatePrefixSuffixLength(prefixLength, length, actualPosition, "post-position");
+
+				try {
+					record = LogRecord.ReadFrom(workItem.Reader, length);
+				} catch (Exception exc) {
+					throw new InvalidReadException($"Error while reading log record backwards at actual position {actualPosition}. {exc.Message}");
 				}
 
-				record = LogRecord.ReadFrom(workItem.Reader, length);
 				_tracker.OnRead(record);
 
 				return true;
