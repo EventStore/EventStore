@@ -150,7 +150,7 @@ namespace EventStore.Core.Services.Transport.Common {
 		/// A <see cref="T:System.String"/> containing a fully qualified type name.
 		/// </returns>
 		/// <filterpriority>2</filterpriority>
-		public override string ToString() => $"C:{CommitPosition}/P:{PreparePosition}";
+		public override string ToString() => this == End ? "End" : $"C:{CommitPosition}/P:{PreparePosition}";
 
 		internal readonly (long commitPosition, long preparePosition) ToInt64() => Equals(End)
 			? (-1, -1)

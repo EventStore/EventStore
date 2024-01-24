@@ -18,13 +18,13 @@ namespace EventStore.Core.Tests.Services.Transport.Enumerators;
 public partial class EnumeratorTests {
 	private static EnumeratorWrapper CreateAllSubscription(
 		IPublisher publisher,
-		Position? startPosition,
+		Position? checkpoint,
 		ClaimsPrincipal user = null) {
 
 		return new EnumeratorWrapper(new Enumerator.AllSubscription(
 			bus: publisher,
 			expiryStrategy: new DefaultExpiryStrategy(),
-			startPosition: startPosition,
+			checkpoint: checkpoint,
 			resolveLinks: false,
 			user: user ?? SystemAccounts.System,
 			requiresLeader: false,
@@ -45,7 +45,7 @@ public partial class EnumeratorTests {
 
 		[Test]
 		public async Task should_receive_live_caught_up_message_after_reading_existing_events() {
-			await using var sub = CreateAllSubscription(_publisher, startPosition: null);
+			await using var sub = CreateAllSubscription(_publisher, checkpoint: null);
 
 			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
 			Assert.AreEqual(_eventIds[0], ((Event)await sub.GetNext()).Id);
