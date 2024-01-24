@@ -141,7 +141,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 					try {
 						CatchUpFromCheckpoint(Position.FromInt64(commitPosition, preparePosition));
 					} catch (InvalidReadException ex) {
-						Fail(new ReadResponseException.InvalidPositionException());
+						Fail(new ReadResponseException.InvalidPosition());
 						Log.Error(ex, "Error starting catch-up subscription {subscriptionId} to $all:{eventFilter}@{position}",
 							_subscriptionId, _eventFilter, startPosition);
 					}
