@@ -15,6 +15,8 @@ All notable changes to this project will be documented in this file.
 - Explicitly set the shutdown timeout to 5s, which was default in previous dotnet versions. Behaviour unchanged since previous release [EventStore#4110](https://github.com/EventStore/EventStore/pull/4110)
 - Re-authorize stream access in live subscriptions when stream metadata changes [EventStore#4104](https://github.com/EventStore/EventStore/pull/4104)
 - Re-authorize stream access in live subscriptions when default ACLs change [EventStore#4116](https://github.com/EventStore/EventStore/pull/4116)
+- Re-authorize subscriptions to `$all` when its stream metadata (`$$$all`) changes [EventStore#4118](https://github.com/EventStore/EventStore/pull/4118)
+- Upgrade Jint to version 3.0.0 [EventStore#4121](https://github.com/EventStore/EventStore/pull/4121)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
@@ -22,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - Refactor gRPC enumerators  [EventStore#3998](https://github.com/EventStore/EventStore/pull/3998)
 - gRPC stream subscriptions with smooth transitions between live and catchup. Subscriptions no longer drop with "consumer too slow" reason. [EventStore#4093](https://github.com/EventStore/EventStore/pull/4093)
 - Additional stream subscription enumerator tests [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
+- $all subscription enumerator tests [EventStore#4119](https://github.com/EventStore/EventStore/pull/4119)
 
 ### Fixed
 - A way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
@@ -32,9 +35,11 @@ All notable changes to this project will be documented in this file.
 - gRPC stream subscription now receives a stream deleted exception when subscribing to a tombstoned stream from `End` [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
 - gRPC stream subscription now receives `CaughtUp` message when subscribing to a non-existing or soft-deleted stream. Previously in such cases, the stream subscription enumerator was looping in catch-up mode until a new event is received (and thus it never sent `CaughtUp` to the subscription) [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
 - Initialize replication service heartbeat interval with `ReplicationHeartbeatInterval` instead of `NodeHeartbeatInterval `. [EventStore#4125](https://github.com/EventStore/EventStore/pull/4125)
+- Use correct checkpoint in test `subscribe_all_from_start` [EventStore#4119](https://github.com/EventStore/EventStore/pull/4119)
 
 ### Removed
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
+- Remove the external TCP API and related configuration options. [EventStore#4113](https://github.com/EventStore/EventStore/pull/4113)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/4097 [EventStore#4100](https://github.com/EventStore/EventStore/pull/4100)
