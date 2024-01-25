@@ -4,6 +4,7 @@ using System.Security.Claims;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Exceptions;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -12,6 +13,7 @@ using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
@@ -193,6 +195,7 @@ namespace EventStore.Core.Services.Storage {
 						break;
 					case ReadAllResult.Error:
 					case ReadAllResult.AccessDenied:
+					case ReadAllResult.InvalidPosition:
 						msg.Envelope.ReplyWith(res);
 						break;
 					default:
@@ -431,7 +434,7 @@ namespace EventStore.Core.Services.Storage {
 					}
 
 					if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
-						return NoData(msg, ReadAllResult.Error, pos, lastIndexedPosition, "Invalid position.");
+						return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, "Invalid position.");
 					if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
 						return NoData(msg, ReadAllResult.NotModified, pos, lastIndexedPosition);
 
@@ -444,6 +447,9 @@ namespace EventStore.Core.Services.Storage {
 					return new ClientMessage.ReadAllEventsForwardCompleted(
 						msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, false, msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition);
+				} catch (Exception exc) when (exc is InvalidReadException or UnableToReadPastEndOfStreamException) {
+					Log.Warning(exc, "Error during processing ReadAllEventsBackward request. The read appears to be at an invalid position.");
+					return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, exc.Message);
 				} catch (Exception exc) {
 					Log.Error(exc, "Error during processing ReadAllEventsForward request.");
 					return NoData(msg, ReadAllResult.Error, pos, lastIndexedPosition, exc.Message);
@@ -467,7 +473,7 @@ namespace EventStore.Core.Services.Storage {
 					}
 
 					if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
-						return NoData(msg, ReadAllResult.Error, pos, lastIndexedPosition, "Invalid position.");
+						return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, "Invalid position.");
 					if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
 						return NoData(msg, ReadAllResult.NotModified, pos, lastIndexedPosition);
 
@@ -480,6 +486,9 @@ namespace EventStore.Core.Services.Storage {
 					return new ClientMessage.ReadAllEventsBackwardCompleted(
 						msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, false, msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition);
+				} catch (Exception exc) when (exc is InvalidReadException or UnableToReadPastEndOfStreamException) {
+					Log.Warning(exc, "Error during processing ReadAllEventsBackward request. The read appears to be at an invalid position.");
+					return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, exc.Message);
 				} catch (Exception exc) {
 					Log.Error(exc, "Error during processing ReadAllEventsBackward request.");
 					return NoData(msg, ReadAllResult.Error, pos, lastIndexedPosition, exc.Message);

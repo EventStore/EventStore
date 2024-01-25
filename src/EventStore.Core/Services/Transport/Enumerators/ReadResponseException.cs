@@ -14,7 +14,7 @@ public abstract class ReadResponseException : Exception {
 
 	public class AccessDenied : ReadResponseException { }
 
-	public class InvalidPositionException : ReadResponseException { }
+	public class InvalidPosition : ReadResponseException { }
 
 	public class Timeout : ReadResponseException {
 		public readonly string ErrorMessage;

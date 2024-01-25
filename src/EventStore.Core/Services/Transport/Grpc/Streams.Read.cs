@@ -298,7 +298,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw RpcExceptions.AccessDenied();
 				case ReadResponseException.Timeout timeout:
 					throw RpcExceptions.Timeout(timeout.ErrorMessage);
-				case ReadResponseException.InvalidPositionException:
+				case ReadResponseException.InvalidPosition:
 					throw RpcExceptions.InvalidPositionException();
 				case ReadResponseException.UnknownMessage unknownMessage:
 					throw RpcExceptions.UnknownMessage(unknownMessage.UnknownMessageType, unknownMessage.ExpectedMessageType);

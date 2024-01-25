@@ -5,5 +5,6 @@ namespace EventStore.Core.Data {
 		Error = 2,
 		AccessDenied = 3,
 		Expired = 4,
+		InvalidPosition = 5
 	}
 }
