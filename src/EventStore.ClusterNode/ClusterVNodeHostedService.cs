@@ -5,7 +5,6 @@ using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using EventStore.Common.Configuration;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
@@ -27,6 +26,7 @@ using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Subsystems;
 using EventStore.Projections.Core;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using EventStore.Core.LogAbstraction;
 using EventStore.Plugins.MD5;
@@ -44,7 +44,7 @@ namespace EventStore.ClusterNode {
 		public ClusterVNodeHostedService(
 			ClusterVNodeOptions options,
 			CertificateProvider certificateProvider,
-			MetricsConfiguration metricsConfiguration) {
+			IConfiguration configuration) {
 
 			if (options == null) throw new ArgumentNullException(nameof(options));
 
@@ -104,12 +104,12 @@ namespace EventStore.ClusterNode {
 				var logFormatFactory = new LogV2FormatAbstractorFactory();
             	Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
 	                GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
-					metricsConfiguration);
+					configuration);
 			} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
 				var logFormatFactory = new LogV3FormatAbstractorFactory();
 				Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
 					GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
-					metricsConfiguration);
+					configuration);
 			} else {
 				throw new ArgumentOutOfRangeException(nameof(_options.Database.DbLogFormat), "Unexpected log format specified.");
 			}

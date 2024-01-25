@@ -167,8 +167,17 @@ namespace EventStore.ClusterNode {
 					Application.Exit(0, "Cancelled.");
 				};
 
-				var metricsConfiguration = MetricsConfiguration.FromFile();
-				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, metricsConfiguration.Get<MetricsConfiguration>())) {
+				var configuration = new ConfigurationBuilder()
+					.AddSection(SectionNames.Core, b => b.AddConfiguration(options.ConfigurationRoot))
+					.AddSection(SectionNames.Metrics, b => b.AddConfigFile("metricsconfig.json"))
+					.AddConfigFile("kestrelsettings.json", optional: true, reloadOnChange: true)
+					.AddConfigFiles("*.eventstore.json")
+					.AddEnvironmentVariables()
+					//qq should plugin env var be prefixed? even OpenTelemetry? what about metrics
+					//.AddEnvironmentVariables(prefix: "HMMMMMMM")
+					.Build();
+
+				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, configuration)) {
 					using var signal = new ManualResetEventSlim(false);
 					_ = Run(hostedService, signal);
 					// ReSharper disable MethodSupportsCancellation
@@ -184,12 +193,11 @@ namespace EventStore.ClusterNode {
 							.ConfigureHostConfiguration(builder =>
 								builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
 							.ConfigureAppConfiguration(builder =>
-								builder.AddEnvironmentVariables().AddCommandLine(args))
+								builder.AddConfiguration(configuration))
 							.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
 							.ConfigureLogging(logging => logging.AddSerilog())
 							.ConfigureServices(services => services.Configure<KestrelServerOptions>(
-								EventStoreKestrelConfiguration.GetConfiguration()))
-							.ConfigureServices(services => services.Configure<MetricsConfiguration>(metricsConfiguration))
+								configuration.GetSection(SectionNames.Kestrel)))
 							.ConfigureServices(services => services.Configure<HostOptions>(
 							 	opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(5)))
 							.ConfigureWebHostDefaults(builder => builder

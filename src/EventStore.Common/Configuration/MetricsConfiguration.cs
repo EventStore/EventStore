@@ -1,37 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using EventStore.Common.Utils;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.FileProviders;
 
 namespace EventStore.Common.Configuration {
 	public class MetricsConfiguration {
-		public static IConfiguration FromFile(string metricsConfig = "metricsconfig.json") {
-			var configurationDirectory = Path.IsPathRooted(metricsConfig)
-				? Path.GetDirectoryName(metricsConfig)
-				: Locations
-					.GetPotentialConfigurationDirectories()
-					.FirstOrDefault(directory => File.Exists(Path.Combine(directory, metricsConfig)));
-
-			if (configurationDirectory == null) {
-				throw new FileNotFoundException(
-					$"Could not find {metricsConfig} in the following directories: {string.Join(", ", Locations.GetPotentialConfigurationDirectories())}");
-			}
-
-			var configurationRoot = new ConfigurationBuilder()
-				.AddJsonFile(config => {
-					config.Optional = false;
-					config.FileProvider = new PhysicalFileProvider(configurationDirectory);
-					config.OnLoadException = context => Serilog.Log.Error(context.Exception, "err");
-					config.Path = Path.GetFileName(metricsConfig);
-				})
-				.Build();
-
-			return configurationRoot;
-		}
-
 		public enum StatusTracker {
 			Index = 1,
 			Node,
