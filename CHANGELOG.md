@@ -25,6 +25,7 @@ All notable changes to this project will be documented in this file.
 - gRPC stream subscriptions with smooth transitions between live and catchup. Subscriptions no longer drop with "consumer too slow" reason. [EventStore#4093](https://github.com/EventStore/EventStore/pull/4093)
 - Additional stream subscription enumerator tests [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
 - $all subscription enumerator tests [EventStore#4119](https://github.com/EventStore/EventStore/pull/4119)
+- gRPC $all subscriptions with smooth transitions between live and catchup. Subscriptions no longer drop with "consumer too slow" reason. [EventStore#4117](https://github.com/EventStore/EventStore/pull/4117)
 
 ### Fixed
 - A way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
