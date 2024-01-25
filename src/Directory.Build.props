@@ -8,7 +8,7 @@
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<PackageProjectUrl>https://eventstore.com</PackageProjectUrl>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<Copyright>Copyright 2012-2020 Event Store Ltd</Copyright>
+		<Copyright>Copyright 2012-2024 Event Store Ltd</Copyright>
 		<PackageReleaseNotes>https://eventstore.com/blog/</PackageReleaseNotes>
 		<LangVersion>10.0</LangVersion>
 		<IsPackable>false</IsPackable>
