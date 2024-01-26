@@ -168,10 +168,14 @@ namespace EventStore.ClusterNode {
 				};
 
 				var configuration = new ConfigurationBuilder()
+					// these configs are mounted inside particular sections
 					.AddSection(SectionNames.Core, b => b.AddConfiguration(options.ConfigurationRoot))
 					.AddSection(SectionNames.Metrics, b => b.AddConfigFile("metricsconfig.json"))
+
+					// the other config files are added to the root, the files must contain the section information
 					.AddConfigFile("kestrelsettings.json", optional: true, reloadOnChange: true)
 					.AddConfigFiles("*.eventstore.json")
+
 					.AddEnvironmentVariables()
 					//qq should plugin env var be prefixed? even OpenTelemetry? what about metrics
 					//.AddEnvironmentVariables(prefix: "HMMMMMMM")
