@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - Re-authorize stream access in live subscriptions when default ACLs change [EventStore#4116](https://github.com/EventStore/EventStore/pull/4116)
 - Re-authorize subscriptions to `$all` when its stream metadata (`$$$all`) changes [EventStore#4118](https://github.com/EventStore/EventStore/pull/4118)
 - Upgrade Jint to version 3.0.0 [EventStore#4121](https://github.com/EventStore/EventStore/pull/4121)
+- Copyright year in assemblies [EventStore#4127](https://github.com/EventStore/EventStore/pull/4127)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
@@ -37,6 +38,7 @@ All notable changes to this project will be documented in this file.
 - gRPC stream subscription now receives `CaughtUp` message when subscribing to a non-existing or soft-deleted stream. Previously in such cases, the stream subscription enumerator was looping in catch-up mode until a new event is received (and thus it never sent `CaughtUp` to the subscription) [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
 - Initialize replication service heartbeat interval with `ReplicationHeartbeatInterval` instead of `NodeHeartbeatInterval `. [EventStore#4125](https://github.com/EventStore/EventStore/pull/4125)
 - Use correct checkpoint in test `subscribe_all_from_start` [EventStore#4119](https://github.com/EventStore/EventStore/pull/4119)
+- $all subscription enumerator returns `InvalidPosition` when subscribing at an invalid position [EventStore#4128](https://github.com/EventStore/EventStore/pull/4128)
 
 ### Removed
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
