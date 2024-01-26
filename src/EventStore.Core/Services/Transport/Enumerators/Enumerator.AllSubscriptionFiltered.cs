@@ -189,6 +189,11 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 						case FilteredReadAllResult.AccessDenied:
 							Fail(new ReadResponseException.AccessDenied());
 							return Task.CompletedTask;
+
+						case FilteredReadAllResult.InvalidPosition:
+							Fail(new ReadResponseException.InvalidPosition());
+							return Task.CompletedTask;
+
 						default:
 							Fail(ReadResponseException.UnknownError.Create(completed.Result));
 							return Task.CompletedTask;
@@ -273,6 +278,11 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 						case FilteredReadAllResult.AccessDenied:
 							Fail(new ReadResponseException.AccessDenied());
 							return;
+
+						case FilteredReadAllResult.InvalidPosition:
+							Fail(new ReadResponseException.InvalidPosition());
+							return;
+
 						default:
 							Fail(ReadResponseException.UnknownError.Create(completed.Result));
 							return;
@@ -415,6 +425,11 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 									case FilteredReadAllResult.AccessDenied:
 										Fail(new ReadResponseException.AccessDenied());
 										return;
+
+									case FilteredReadAllResult.InvalidPosition:
+										Fail(new ReadResponseException.InvalidPosition());
+										return;
+
 									default:
 										Fail(ReadResponseException.UnknownError.Create(completed.Result));
 										return;
