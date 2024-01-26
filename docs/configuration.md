@@ -317,6 +317,8 @@ machines.
 
 These options are `StreamInfoCacheCapacity`, `ReaderThreadsCount`, and `WorkerThreads`.
 
+Autoconfiguration does not apply in containerized environments.
+
 ### StreamInfoCacheCapacity
 
 This option sets the maximum number of entries to keep in the stream info cache. This is the lookup that
