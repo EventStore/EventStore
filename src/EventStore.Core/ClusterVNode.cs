@@ -314,7 +314,9 @@ namespace EventStore.Core {
 				out var workerThreadsCount);
 
 			var trackers = new Trackers();
-			var metricsConfiguration = configuration.GetSection(SectionNames.Metrics).Get<MetricsConfiguration>();
+			var metricsConfiguration = configuration
+				.GetSection(SectionNames.Metrics)
+				.Get<MetricsConfiguration>() ?? new();
 			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
 			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker);

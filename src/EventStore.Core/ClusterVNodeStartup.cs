@@ -33,6 +33,7 @@ using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
 using ServerFeatures = EventStore.Core.Services.Transport.Grpc.ServerFeatures;
 
+#nullable enable
 namespace EventStore.Core {
 	public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.SystemReady>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
@@ -183,7 +184,10 @@ namespace EventStore.Core {
 			.BuildServiceProvider();
 
 		public IServiceCollection ConfigureServices(IServiceCollection services) {
-			var metricsConfiguration = _configuration.GetSection(SectionNames.Metrics).Get<MetricsConfiguration>();
+			var metricsConfiguration = _configuration
+				.GetSection(SectionNames.Metrics)
+				.Get<MetricsConfiguration>() ?? new();
+
 			return _subsystems
 				.Aggregate(services
 						.AddRouting()
