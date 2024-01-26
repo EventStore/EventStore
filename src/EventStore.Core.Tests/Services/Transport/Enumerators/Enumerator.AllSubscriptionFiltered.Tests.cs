@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
@@ -17,8 +18,9 @@ namespace EventStore.Core.Tests.Services.Transport.Enumerators;
 public partial class EnumeratorTests {
 	private static EnumeratorWrapper CreateAllSubscriptionFiltered(
 		IPublisher publisher,
-		Position startPosition,
-		IEventFilter eventFilter = null) {
+		Position? startPosition,
+		IEventFilter eventFilter = null,
+		ClaimsPrincipal user = null) {
 
 		return new EnumeratorWrapper(new Enumerator.AllSubscriptionFiltered(
 			bus: publisher,
@@ -26,7 +28,7 @@ public partial class EnumeratorTests {
 			startPosition: startPosition,
 			resolveLinks: false,
 			eventFilter: eventFilter,
-			user: SystemAccounts.System,
+			user: user ?? SystemAccounts.System,
 			requiresLeader: false,
 			maxSearchWindow: null,
 			checkpointIntervalMultiplier: 1,
