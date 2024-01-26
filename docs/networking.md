@@ -20,8 +20,8 @@ HTTP is the primary protocol for EventStoreDB. It is used in gRPC communication 
 
 Unlike for [TCP protocol](#tcp-configuration), there is no separation between internal and external communication. The HTTP endpoint always binds to the IP address configured in the `NodeIp` setting (previously referred to as `ExtIp`).
 
-| Format               | Syntax              |
-|:---------------------|:--------------------|
+| Format               | Syntax               |
+|:---------------------|:---------------------|
 | Command line         | `--node-ip`          |
 | YAML                 | `NodeIp`             |
 | Environment variable | `EVENTSTORE_NODE_IP` |
@@ -64,11 +64,11 @@ You can customise the following Keepalive settings:
 
 After a duration of `keepAliveInterval` (in milliseconds), if the server doesn't see any activity, it pings the client to see if the transport is still alive.
 
-| Format               | Syntax                  |
-|:---------------------|:------------------------|
-| Command line         | `--keep-alive-interval` |
-| YAML                 | `KeepAliveInterval`     |
-| Environment variable | `KEEP_ALIVE_INTERVAL`   |
+| Format               | Syntax                           |
+|:---------------------|:---------------------------------|
+| Command line         | `--keep-alive-interval`          |
+| YAML                 | `KeepAliveInterval`              |
+| Environment variable | `EVENTSTORE_KEEP_ALIVE_INTERVAL` |
 
 **Default**: `10000` (ms, 10 sec)
 
@@ -76,11 +76,11 @@ After a duration of `keepAliveInterval` (in milliseconds), if the server doesn't
 
 After having pinged for keepalive check, the server waits for a duration of `keepAliveTimeout` (in milliseconds). If the connection doesn't have any activity even after that, it gets closed.
 
-| Format               | Syntax                 |
-|:---------------------|:-----------------------|
-| Command line         | `--keep-alive-timeout` |
-| YAML                 | `KeepAliveTimeout`     |
-| Environment variable | `KEEP_ALIVE_TIMEOUT`   |
+| Format               | Syntax                          |
+|:---------------------|:--------------------------------|
+| Command line         | `--keep-alive-timeout`          |
+| YAML                 | `KeepAliveTimeout`              |
+| Environment variable | `EVENTSTORE_KEEP_ALIVE_TIMEOUT` |
 
 **Default**: `10000` (ms, 10 sec)
 
@@ -92,11 +92,11 @@ The AtomPub application protocol over HTTP is disabled by default since v20. We 
 
 In Event Store Cloud, the AtomPub protocol is enabled. For self-hosted instances, use the configuration setting to enable AtomPub.
 
-| Format               | Syntax                        |
-|:---------------------|:------------------------------|
-| Command line         | `--enable-atom-pub-over-http` |
-| YAML                 | `EnableAtomPubOverHttp`       |
-| Environment variable | `ENABLE_ATOM_PUB_OVER_HTTP`   |
+| Format               | Syntax                                 |
+|:---------------------|:---------------------------------------|
+| Command line         | `--enable-atom-pub-over-http`          |
+| YAML                 | `EnableAtomPubOverHttp`                |
+| Environment variable | `EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP` |
 
 **Default**: `false` (AtomPub is disabled)
 
