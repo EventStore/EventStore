@@ -39,6 +39,7 @@ All notable changes to this project will be documented in this file.
 - Initialize replication service heartbeat interval with `ReplicationHeartbeatInterval` instead of `NodeHeartbeatInterval `. [EventStore#4125](https://github.com/EventStore/EventStore/pull/4125)
 - Use correct checkpoint in test `subscribe_all_from_start` [EventStore#4119](https://github.com/EventStore/EventStore/pull/4119)
 - $all subscription enumerator returns `InvalidPosition` when subscribing at an invalid position [EventStore#4128](https://github.com/EventStore/EventStore/pull/4128)
+- Build on ARM, AnyCPU solution settings was actually using X64 [EventStore#4129](https://github.com/EventStore/EventStore/pull/4129)
 
 ### Removed
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
