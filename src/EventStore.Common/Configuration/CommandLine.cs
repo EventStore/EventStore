@@ -12,7 +12,10 @@ namespace EventStore.Common.Configuration {
 		public override void Load() {
 			base.Load();
 
-			Data = Data.Keys.ToDictionary(StringExtensions.Computerize, x => Data[x], StringComparer.OrdinalIgnoreCase);
+			Data = Data.Keys
+				// ignore args in subsections. we will use these for plugins.
+				.Where(x => !x.Contains(':'))
+				.ToDictionary(StringExtensions.Computerize, x => Data[x], StringComparer.OrdinalIgnoreCase);
 		}
 	}
 }

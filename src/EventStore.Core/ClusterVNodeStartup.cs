@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -32,6 +33,7 @@ using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
 using ServerFeatures = EventStore.Core.Services.Transport.Grpc.ServerFeatures;
 
+#nullable enable
 namespace EventStore.Core {
 	public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.SystemReady>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
@@ -47,7 +49,7 @@ namespace EventStore.Core {
 		private readonly TimeSpan _writeTimeout;
 		private readonly IExpiryStrategy _expiryStrategy;
 		private readonly KestrelHttpService _httpService;
-		private readonly MetricsConfiguration _metricsConfiguration;
+		private readonly IConfiguration _configuration;
 		private readonly Trackers _trackers;
 		private readonly StatusCheck _statusCheck;
 
@@ -69,7 +71,7 @@ namespace EventStore.Core {
 			TimeSpan writeTimeout,
 			IExpiryStrategy expiryStrategy,
 			KestrelHttpService httpService,
-			MetricsConfiguration metricsConfiguration,
+			IConfiguration configuration,
 			Trackers trackers,
 			string clusterDns) {
 			if (subsystems == null) {
@@ -97,6 +99,8 @@ namespace EventStore.Core {
 				throw new ArgumentNullException(nameof(httpService));
 			}
 
+			ArgumentNullException.ThrowIfNull(configuration);
+
 			if (mainBus == null) {
 				throw new ArgumentNullException(nameof(mainBus));
 			}
@@ -117,7 +121,7 @@ namespace EventStore.Core {
 			_writeTimeout = writeTimeout;
 			_expiryStrategy = expiryStrategy;
 			_httpService = httpService;
-			_metricsConfiguration = metricsConfiguration;
+			_configuration = configuration;
 			_trackers = trackers;
 			_clusterDns = clusterDns;
 
@@ -179,8 +183,12 @@ namespace EventStore.Core {
 		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)
 			.BuildServiceProvider();
 
-		public IServiceCollection ConfigureServices(IServiceCollection services) =>
-			_subsystems
+		public IServiceCollection ConfigureServices(IServiceCollection services) {
+			var metricsConfiguration = _configuration
+				.GetSection(SectionNames.Metrics)
+				.Get<MetricsConfiguration>() ?? new();
+
+			return _subsystems
 				.Aggregate(services
 						.AddRouting()
 						.AddSingleton(_httpAuthenticationProviders)
@@ -210,7 +218,7 @@ namespace EventStore.Core {
 						.AddOpenTelemetry()
 						.WithMetrics(meterOptions => meterOptions
 							.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore"))
-							.AddMeter(_metricsConfiguration.Meters)
+							.AddMeter(metricsConfiguration.Meters)
 							.AddView(i => {
 								if (i.Name.StartsWith("eventstore-") &&
 									i.Name.EndsWith("-latency") &&
@@ -254,6 +262,7 @@ namespace EventStore.Core {
 							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
 						.Services,
 					(s, subsystem) => subsystem.ConfigureServices(s));
+		}
 
 		public void Handle(SystemMessage.SystemReady _) => _ready = true;
 

@@ -167,8 +167,36 @@ namespace EventStore.ClusterNode {
 					Application.Exit(0, "Cancelled.");
 				};
 
-				var metricsConfiguration = MetricsConfiguration.FromFile();
-				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, metricsConfiguration.Get<MetricsConfiguration>())) {
+				// Create a single IConfiguration object that contains the whole configuration, including 
+				// plugin configuration. We will add it to the DI and make it available to the plugins.
+				//
+				// Three json files are loaded explicitly for backwards compatibility
+				// - metricsconfig.json needs loading into the EventStore:Metrics section.
+				// - kestrelsettings.json is not located in a config/ directory
+				// - logconfig.json is not located in a config/ directory
+				var configuration = new ConfigurationBuilder()
+					.AddSection($"{SectionNames.EventStore}:{SectionNames.Metrics}", x => x
+						.AddEsdbConfigFile("metricsconfig.json"))
+
+					// The other config files are added to the root, and must put themselves in the appropriate sections
+					.AddEsdbConfigFile("kestrelsettings.json", optional: true, reloadOnChange: true)
+					.AddEsdbConfigFile("logconfig.json", optional: true, reloadOnChange: true)
+
+					// Load all json files in the  `config` subdirectory (if it exists) of each configuration
+					// directory. We use the subdirectory to ensure that we only load configuration files.
+					.AddEsdbConfigFiles(subdirectory: "config", pattern: "*.json")
+
+					.AddCommandLine(args)
+					.AddEnvironmentVariables()
+
+					// Core configuration goes last so that the IConfiguration shows these
+					// identically to ClusterVNodeOptions. 
+					.AddSection(SectionNames.EventStore, x => x
+						.AddConfiguration(options.ConfigurationRoot))
+
+					.Build();
+
+				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, configuration)) {
 					using var signal = new ManualResetEventSlim(false);
 					_ = Run(hostedService, signal);
 					// ReSharper disable MethodSupportsCancellation
@@ -184,12 +212,11 @@ namespace EventStore.ClusterNode {
 							.ConfigureHostConfiguration(builder =>
 								builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
 							.ConfigureAppConfiguration(builder =>
-								builder.AddEnvironmentVariables().AddCommandLine(args))
+								builder.AddConfiguration(configuration))
 							.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
 							.ConfigureLogging(logging => logging.AddSerilog())
 							.ConfigureServices(services => services.Configure<KestrelServerOptions>(
-								EventStoreKestrelConfiguration.GetConfiguration()))
-							.ConfigureServices(services => services.Configure<MetricsConfiguration>(metricsConfiguration))
+								configuration.GetSection(SectionNames.Kestrel)))
 							.ConfigureServices(services => services.Configure<HostOptions>(
 							 	opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(5)))
 							.ConfigureWebHostDefaults(builder => builder

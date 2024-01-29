@@ -91,5 +91,19 @@ namespace EventStore.Common.Utils {
 			DefaultConfigurationDirectory,
 			ApplicationDirectory,
 		}.Distinct().ToArray();
+
+		/// Tries to identify the name and path of the given config file.
+		/// Given a full path to a file it just splits the path into directory and file.
+		/// Given a only config file name, looks for that file in the potential directories.
+		public static bool TryLocateConfigFile(string configFilePath, out string directory, out string fileName) {
+			directory = Path.IsPathRooted(configFilePath)
+				? Path.GetDirectoryName(configFilePath)
+				: GetPotentialConfigurationDirectories().FirstOrDefault(d =>
+					File.Exists(Path.Combine(d, configFilePath)));
+
+			fileName = Path.GetFileName(configFilePath);
+
+			return directory is not null;
+		}
 	}
 }
