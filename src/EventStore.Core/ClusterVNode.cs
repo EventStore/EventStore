@@ -64,6 +64,7 @@ using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Configuration;
 using Mono.Unix.Native;
 using ILogger = Serilog.ILogger;
 
@@ -83,7 +84,7 @@ namespace EventStore.Core {
 			AuthorizationProviderFactory authorizationProviderFactory = null,
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory> factories = null,
 			CertificateProvider certificateProvider = null,
-			MetricsConfiguration metricsConfiguration = null,
+			IConfiguration configuration = null,
 			Guid? instanceId = null,
 			int debugIndex = 0) {
 
@@ -94,7 +95,7 @@ namespace EventStore.Core {
 				authorizationProviderFactory,
 				factories,
 				certificateProvider,
-				metricsConfiguration,
+				configuration,
 				instanceId: instanceId,
 				debugIndex: debugIndex);
 		}
@@ -235,9 +236,11 @@ namespace EventStore.Core {
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory>
 				additionalPersistentSubscriptionConsumerStrategyFactories = null,
 			CertificateProvider certificateProvider = null,
-			MetricsConfiguration metricsConfiguration = null,
+			IConfiguration configuration = null,
 			IExpiryStrategy expiryStrategy = null,
 			Guid? instanceId = null, int debugIndex = 0) {
+
+			configuration ??= new ConfigurationBuilder().Build();
 
 			_certificateProvider = certificateProvider;
 			
@@ -311,7 +314,9 @@ namespace EventStore.Core {
 				out var workerThreadsCount);
 
 			var trackers = new Trackers();
-			metricsConfiguration ??= new();
+			var metricsConfiguration = configuration
+				.GetSection(SectionNames.Metrics)
+				.Get<MetricsConfiguration>() ?? new();
 			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
 			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker);
@@ -1583,7 +1588,7 @@ namespace EventStore.Core {
 				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 				expiryStrategy ?? new DefaultExpiryStrategy(),
 				_httpService,
-				metricsConfiguration,
+				configuration,
 				trackers,
 				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);

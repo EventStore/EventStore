@@ -176,7 +176,7 @@ namespace EventStore.Core.Tests.Helpers {
 						options.Application.OverrideAnonymousEndpointAccessForGossip)),
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(),
 				new OptionsCertificateProvider(),
-				metricsConfiguration: null,
+				configuration: null,
 				expiryStrategy,
 				Guid.NewGuid(), debugIndex);
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));

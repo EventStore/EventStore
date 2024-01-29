@@ -25,7 +25,7 @@ namespace EventStore.Core {
 	public partial record ClusterVNodeOptions {
 		public static readonly ClusterVNodeOptions Default = new();
 
-		internal IConfigurationRoot? ConfigurationRoot { get; init; }
+		public IConfigurationRoot? ConfigurationRoot { get; init; }
 		[OptionGroup] public ApplicationOptions Application { get; init; } = new();
 		[OptionGroup] public DevModeOptions DevMode { get; init; } = new();
 		[OptionGroup] public DefaultUserOptions DefaultUser { get; init; } = new();

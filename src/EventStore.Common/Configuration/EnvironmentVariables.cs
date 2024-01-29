@@ -26,6 +26,11 @@ namespace EventStore.Common.Configuration {
 					continue;
 				}
 
+				// ignore env vars in subsections. we will use these for plugins.
+				if (key.Contains("__")) {
+					continue;
+				}
+
 				Data[StringExtensions.Computerize(key.Remove(0, _prefix.Length))] = _environment[k]?.ToString();
 			}
 		}

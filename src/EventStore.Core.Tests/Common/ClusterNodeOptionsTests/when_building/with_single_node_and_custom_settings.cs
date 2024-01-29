@@ -234,5 +234,20 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			
 			Assert.Null(clusterVNodeOptions.CheckForEnvironmentOnlyOptions());
 		}
+
+		[Test]
+		public void should_ignore_subsection_environment_variables() {
+			_configurationRoot = new ConfigurationBuilder()
+				.Add(new EnvironmentVariablesSource(new Dictionary<string, string> {
+					{ "EVENTSTORE__METRICS__A", "aaa" },
+					{ "EVENTSTORE__PLUGINS__B", "bbb" },
+				}))
+				.Build();
+
+			var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);
+
+			Assert.IsEmpty(clusterVNodeOptions.ConfigurationRoot.AsEnumerable());
+			Assert.IsEmpty(clusterVNodeOptions.Unknown.Options);
+		}
 	}
 }

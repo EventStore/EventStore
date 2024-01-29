@@ -2,7 +2,6 @@
 using System.Net;
 using System.Net.Http;
 using System.Threading;
-using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.LogV2;
@@ -19,6 +18,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using HttpResponse = EventStore.Transport.Http.HttpResponse;
 
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 						}, new TestAuthorizationProvider(),
 						new FakeReadIndex<LogFormat.V2, string>(_ => false, new LogV2SystemStreams()),
 						1024 * 1024, _timeout, expiryStrategy: null, _service,
-						new MetricsConfiguration(),
+						new ConfigurationBuilder().Build(),
 						new Trackers(),
 						null)));
 			_httpMessageHandler = _server.CreateHandler();

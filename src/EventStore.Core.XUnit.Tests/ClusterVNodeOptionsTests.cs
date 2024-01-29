@@ -34,6 +34,16 @@ public class ClusterVNodeOptionsTests {
 	}
 
 	[Fact]
+	public void ignores_subsection_arguments() {
+		var c = BuildConfiguration(
+			"--EventStore:Metrics:A aaa " +
+			"--EventStore:Plugins:B bbb");
+
+		Assert.Null(c.ConfigurationRoot["EventStore"]);
+		Assert.Empty(c.Unknown.Options);
+	}
+
+	[Fact]
 	public void four_characters_off() {
 		var c = BuildConfiguration("--cluse-ie 3");
 
