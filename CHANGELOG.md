@@ -410,7 +410,7 @@ All notable changes to this project will be documented in this file.
 
 ## [21.10.7] - 2022-07-29
 
-## Fixed
+### Fixed
 
 - Prevent gRPC subscriptions from hanging while catching up [EventStore#3532](https://github.com/EventStore/EventStore/pull/3532)
 - Fix "Known" and "Current" values showing as NaN in Persistent Subscriptions Commercial UI
