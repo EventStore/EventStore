@@ -154,24 +154,27 @@ closer to what you'd run in production.
 EventStoreDB has a Docker image available for any platform that supports Docker.
 
 The following command will start the EventStoreDB node using default HTTP port, without security. You can then
-connect to it using one of the clients and the `esdb://localhost:2113?tls=false` connection string. The Admin
-UI will be accessible, but the Stream Browser won't work (as it needs AtomPub to be enabled).
+connect to it using one of the clients and the `esdb://localhost:2113?tls=false` connection string. 
 
 ```bash:no-line-numbers
 docker run --name esdb-node -it -p 2113:2113 -p 1113:1113 \
     eventstore/eventstore:latest --insecure --run-projections=All
+    --enable-atom-pub-over-http
 ```
 
-If you want to start the node with legacy protocols enabled (TCP and AtomPub), you need to add a couple of
-other options:
+If you want to start the node with legacy TCP client protocol enabled, add the following:
 
 ```bash:no-line-numbers
 docker run --name esdb-node -it -p 2113:2113 -p 1113:1113 \
     eventstore/eventstore:latest --insecure --run-projections=All \
-    --enable-external-tcp --enable-atom-pub-over-http
+    --enable-external-tcp 
 ```
 
-The command above would run EventStoreDB as a single node without SSL and with the legacy TCP protocol
+::: warning
+The legacy TCP protocol will no longer be available from 24.2. 
+:::
+
+The command above runs EventStoreDB as a single node without SSL and with the legacy TCP protocol
 enabled, so you can try out your existing apps with the latest database version.
 
 Then, you'd be able to connect to EventStoreDB with gRPC and TCP clients. Also, the Stream Browser will work
@@ -197,8 +200,13 @@ Run the instance:
 docker-compose up
 ```
 
-The command above would run EventStoreDB as a single node without SSL and with the legacy TCP protocol
-enabled. You also get AtomPub protocol enabled, so you can get the stream browser to work in the Admin UI.
+The command above would run EventStoreDB as a single node without SSL. You also get AtomPub protocol enabled, so you can get the stream browser to work in the Admin UI.
+
+::: warning
+The legacy TCP client protocol is disabled by default and will no longer be available from 24.2. 
+To enable it, add the environment variable to the yaml file: 
+EVENTSTORE_ENABLE_EXTERNAL_TCP=true
+:::
 
 #### Secure cluster
 
