@@ -154,7 +154,7 @@ closer to what you'd run in production.
 EventStoreDB has a Docker image available for any platform that supports Docker.
 
 The following command will start the EventStoreDB node using default HTTP port, without security. You can then
-connect to it using one of the clients and the `esdb://localhost:2113?tls=false` connection string. 
+connect to it using one of the clients and the `esdb://localhost:2113?tls=false` connection string. You can also access the Admin UI by opening http://localhost:2113 in your browser.
 
 ```bash:no-line-numbers
 docker run --name esdb-node -it -p 2113:2113 -p 1113:1113 \
@@ -167,7 +167,7 @@ If you want to start the node with legacy TCP client protocol enabled, add the f
 ```bash:no-line-numbers
 docker run --name esdb-node -it -p 2113:2113 -p 1113:1113 \
     eventstore/eventstore:latest --insecure --run-projections=All \
-    --enable-external-tcp 
+    --enable-external-tcp  --enable-atom-pub-over-http
 ```
 
 ::: warning
@@ -204,7 +204,7 @@ The command above would run EventStoreDB as a single node without SSL. You also 
 
 ::: warning
 The legacy TCP client protocol is disabled by default and will no longer be available from 24.2. 
-To enable it, add the environment variable to the yaml file: 
+To enable it in versions lower than 24.2, add the environment variable to the yaml file: 
 EVENTSTORE_ENABLE_EXTERNAL_TCP=true
 :::
 
