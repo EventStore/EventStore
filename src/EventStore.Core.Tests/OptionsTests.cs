@@ -8,15 +8,23 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.Common.Configuration;
+using EventStore.Common.Configuration.Sources;
 using EventStore.Common.Utils;
+using EventStore.Core.Configuration;
+using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using NUnit.Framework;
 using DescriptionAttribute = System.ComponentModel.DescriptionAttribute;
+using TypeConverterAttribute = System.ComponentModel.TypeConverterAttribute;
 
 namespace EventStore.Core.Tests {
 	[TestFixture]
-	public class Options {
+	public class OptionsTests {
+		static OptionsTests() {
+			TypeDescriptor.AddAttributes(typeof(EndPoint[]), new TypeConverterAttribute(typeof(GossipSeedConverter)));
+		}
+
 		[TestCaseSource(typeof(ParseCaseData), nameof(ParseCaseData.TestCases))]
 		public object are_parsed_correctly_when_well_formed(string option, string[] args) {
 			var sut = new TestOptions(args);
@@ -67,9 +75,15 @@ namespace EventStore.Core.Tests {
 				nameof(ClusterVNodeOptions.Unknown.Options),
 			};
 			var actual = new List<string>();
-			ClusterVNodeOptions.FromConfiguration(new FakeConfigurationRoot(
-				new ConfigurationBuilder().Add(new DefaultSource(ClusterVNodeOptions.DefaultValues)).Build(),
-				actual.Add));
+
+			var config = new FakeConfigurationRoot(
+				new ConfigurationBuilder()
+					.AddEventStoreDefaultValues(ClusterVNodeOptions.DefaultValues)
+					.Build(),
+				actual.Add
+			);
+			
+			ClusterVNodeOptions.FromConfiguration(config);
 
 			var expected = typeof(ClusterVNodeOptions).GetProperties().Where(x => !excluded.Contains(x.Name))
 				.SelectMany(property => property.PropertyType.GetProperties().Where(x => !excluded.Contains(x.Name)))
@@ -132,12 +146,24 @@ namespace EventStore.Core.Tests {
 				await using var writer = configurationFile.CreateText();
 				await writer.WriteAsync(configurationFileContent);
 				await writer.FlushAsync();
-				var options = ClusterVNodeOptions.FromConfiguration(new ConfigurationBuilder()
-					.AddEventStore(nameof(ClusterVNodeOptions.ApplicationOptions.Config), args, environment, defaultValues.Concat(new[] {
-						new KeyValuePair<string, object>(nameof(ClusterVNodeOptions.Application.Config),
-							configurationFile.FullName)
+				
+				var config = new ConfigurationBuilder()
+					.AddEventStoreDefaultValues(defaultValues.Concat(new[] {
+						new KeyValuePair<string, object>(
+							nameof(ClusterVNodeOptions.Application.Config), configurationFile.FullName
+						)
 					}))
-					.Build());
+					.AddEventStoreCommandLine(args)
+					.Build();
+				
+				// var config = new ConfigurationBuilder()
+				// 	.AddEventStore(nameof(ClusterVNodeOptions.ApplicationOptions.Config), args, environment, defaultValues.Concat(new[] {
+				// 		new KeyValuePair<string, object>(nameof(ClusterVNodeOptions.Application.Config),
+				// 			configurationFile.FullName)
+				// 	}))
+				// 	.Build();
+				
+				var options = ClusterVNodeOptions.FromConfiguration(config);
 
 				Assert.AreEqual(expected, options.Application.StatsPeriodSec);
 			} finally {
@@ -153,9 +179,19 @@ namespace EventStore.Core.Tests {
 
 		[Test]
 		public void dump() {
-			var dumpedOptions = ClusterVNodeOptions.FromConfiguration(new[] {"--mem-db"}, new Hashtable {
-				["EVENTSTORE_MAX_APPEND_SIZE"] = "10"
-			}).DumpOptions();
+			Environment.SetEnvironmentVariable("EVENTSTORE_MAX_APPEND_SIZE", "10", EnvironmentVariableTarget.Process);
+			
+			var config = new ConfigurationBuilder()
+				.AddEventStoreCommandLine(new[] { "--mem-db" })
+				.AddEnvironmentVariables()
+				.Build();
+			
+			var dumpedOptions = ClusterVNodeOptions.FromConfiguration(config).DumpOptions();
+			
+			// var dumpedOptions = ClusterVNodeOptions.FromConfiguration(new[] { "--mem-db" }, new Hashtable {
+			// 	["EVENTSTORE_MAX_APPEND_SIZE"] = "10"
+			// }).DumpOptions();
+			
 			Console.WriteLine(dumpedOptions);
 		}
 
@@ -165,8 +201,15 @@ namespace EventStore.Core.Tests {
 			try {
 				await WriteConfiguration();
 
-				var options = ClusterVNodeOptions.FromConfiguration(new[] {"--config", yamlConfiguration.FullName},
-					new Hashtable());
+				var config = new ConfigurationBuilder()
+					.AddEventStoreCommandLine(new[] {"--config", yamlConfiguration.FullName})
+					.AddEnvironmentVariables()
+					.Build();
+			
+				var options = ClusterVNodeOptions.FromConfiguration(config);
+				
+				// var options = ClusterVNodeOptions.FromConfiguration(new[] {"--config", yamlConfiguration.FullName},
+				// 	new Hashtable());
 
 				Assert.AreEqual(yamlConfiguration.FullName, options.Application.Config);
 				Assert.IsTrue(options.Database.MemDb);
@@ -195,8 +238,10 @@ namespace EventStore.Core.Tests {
 			var optionsDumper = new OptionsDumper(new[] {typeof(TestOptions)});
 			var dumpedOptions = optionsDumper
 				.Dump(new ConfigurationBuilder()
-					.Add(new CommandLineSource(new[] {"--sensitive=123"}))
-					.Build());
+					.AddEventStoreCommandLine(["--sensitive=123"])
+					.Build()
+				);
+			
 			var certificatePasswordLine = dumpedOptions
 				.Split(Environment.NewLine)
 				.FirstOrDefault(x => x.Contains("SENSITIVE"));
@@ -204,6 +249,43 @@ namespace EventStore.Core.Tests {
 			Assert.NotNull(certificatePasswordLine);
 			Assert.False(certificatePasswordLine.Contains("123"));
 			Assert.True(certificatePasswordLine.Contains("****"));
+		}
+
+		[Test]
+		public void BindWorks() {
+			var config = new ConfigurationBuilder()
+				.AddEventStoreDefaultValues(ClusterVNodeOptions.DefaultValues)
+				.Build();
+			
+			var manual = ClusterVNodeOptions.FromConfiguration(config);
+			var binded = ClusterVNodeOptions.BindFromConfiguration(config);
+			
+			manual.Should().BeEquivalentTo(binded);
+		}
+		
+		[Test]
+		public void ConfigLoads() {
+			var config = EventStoreConfiguration.Build();
+			
+			
+		}
+		
+		[Test]
+		public void BindCommaSeparatedValuesOption() {
+			EndPoint[] endpoints = [new IPEndPoint(IPAddress.Loopback, 1113), new DnsEndPoint("some-host", 1114)];
+			
+			var values = string.Join(",", endpoints.Select(x => $"{x}"));
+
+			var config = new ConfigurationBuilder()
+				.AddInMemoryCollection(new KeyValuePair<string, string>[] {
+					new("GossipSeed", values),
+					new("FakeEndpoint", endpoints[0].ToString())
+				})
+				.Build();
+			
+			var options = config.Get<ClusterVNodeOptions.ClusterOptions>();
+
+			options.GossipSeed.Should().BeEquivalentTo(endpoints);
 		}
 		
 		private class ParseCaseData {
@@ -264,13 +346,13 @@ namespace EventStore.Core.Tests {
 
 			public TestOptions(string[] args) {
 				_configurationRoot = new ConfigurationBuilder()
-					.Add(new DefaultSource(new Dictionary<string, object> {
+					.AddEventStoreDefaultValues(new Dictionary<string, object> {
 						[nameof(Flag)] = false,
 						[nameof(ArrayOfStrings)] = null,
 						[nameof(IPEndPoints)] = null,
 						[nameof(Sensitive)] = null
-					}))
-					.Add(new CommandLineSource(args))
+					})
+					.AddEventStoreCommandLine(args)
 					.Build();
 			}
 		}

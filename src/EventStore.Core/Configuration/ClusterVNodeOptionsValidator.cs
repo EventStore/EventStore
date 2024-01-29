@@ -91,7 +91,7 @@ public static class ClusterVNodeOptionsValidator {
 		}
 	}
 
-	public static bool ValdiateForStartup(ClusterVNodeOptions options) {
+	public static bool ValidateForStartup(ClusterVNodeOptions options) {
 		if (!options.Cluster.DiscoverViaDns && options.Cluster.GossipSeed.Length == 0 &&
 		    options.Cluster.ClusterSize == 1) {
 			Log.Information(

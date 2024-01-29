@@ -23,21 +23,28 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using System.Runtime;
 using EventStore.Common.DevCertificates;
+using EventStore.Core.Configuration;
 using Serilog.Events;
+using Application = EventStore.Common.Utils.Application;
+#pragma warning disable CS0219 // Variable is assigned but its value is never used
 
 namespace EventStore.ClusterNode {
 	internal static class Program {
 		public static async Task<int> Main(string[] args) {
+			var configuration = EventStoreConfiguration.Build(args);
+			
 			ThreadPool.SetMaxThreads(1000, 1000);
 			var exitCodeSource = new TaskCompletionSource<int>();
 			var cts = new CancellationTokenSource();
 
 			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 			try {
-				var options = ClusterVNodeOptions.FromConfiguration(args, Environment.GetEnvironmentVariables());
+				var options = ClusterVNodeOptions.FromConfiguration(configuration);
+				
 				var logsDirectory = string.IsNullOrWhiteSpace(options.Log.Log)
 					? Locations.DefaultLogDirectory
 					: options.Log.Log;
+				
 				EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName(),
 					options.Log.LogConsoleFormat,
 					options.Log.LogFileSize,
@@ -142,7 +149,7 @@ namespace EventStore.ClusterNode {
 					Log.Warning($"DEPRECATED{Environment.NewLine}{deprecationWarnings}");
 				}
 
-				if (!ClusterVNodeOptionsValidator.ValdiateForStartup(options)) {
+				if (!ClusterVNodeOptionsValidator.ValidateForStartup(options)) {
 					return 1;
 				}
 
@@ -166,21 +173,7 @@ namespace EventStore.ClusterNode {
 				Console.CancelKeyPress += delegate {
 					Application.Exit(0, "Cancelled.");
 				};
-
-				var configuration = new ConfigurationBuilder()
-					// these configs are mounted inside particular sections
-					.AddSection(SectionNames.Core, b => b.AddConfiguration(options.ConfigurationRoot))
-					.AddSection(SectionNames.Metrics, b => b.AddConfigFile("metricsconfig.json"))
-
-					// the other config files are added to the root, the files must contain the section information
-					.AddConfigFile("kestrelsettings.json", optional: true, reloadOnChange: true)
-					.AddConfigFiles("*.eventstore.json")
-
-					.AddEnvironmentVariables()
-					//qq should plugin env var be prefixed? even OpenTelemetry? what about metrics
-					//.AddEnvironmentVariables(prefix: "HMMMMMMM")
-					.Build();
-
+				
 				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, configuration)) {
 					using var signal = new ManualResetEventSlim(false);
 					_ = Run(hostedService, signal);
@@ -194,14 +187,11 @@ namespace EventStore.ClusterNode {
 				async Task Run(ClusterVNodeHostedService hostedService, ManualResetEventSlim signal) {
 					try {
 						await new HostBuilder()
-							.ConfigureHostConfiguration(builder =>
-								builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
-							.ConfigureAppConfiguration(builder =>
-								builder.AddConfiguration(configuration))
+							.ConfigureHostConfiguration(builder => builder.AddConfiguration(configuration))
+							.ConfigureAppConfiguration(builder => builder.AddConfiguration(configuration))
 							.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
 							.ConfigureLogging(logging => logging.AddSerilog())
-							.ConfigureServices(services => services.Configure<KestrelServerOptions>(
-								configuration.GetSection(SectionNames.Kestrel)))
+							.ConfigureServices(services => services.Configure<KestrelServerOptions>(configuration.GetSection(SectionNames.Kestrel)))
 							.ConfigureServices(services => services.Configure<HostOptions>(
 							 	opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(5)))
 							.ConfigureWebHostDefaults(builder => builder
@@ -237,7 +227,7 @@ namespace EventStore.ClusterNode {
 				Log.Fatal(ex, "Host terminated unexpectedly.");
 				return 1;
 			} finally {
-				Log.CloseAndFlush();
+				await Log.CloseAndFlushAsync();
 			}
 		}
 

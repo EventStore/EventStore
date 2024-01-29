@@ -1,11 +1,12 @@
 using Microsoft.Extensions.Configuration;
 using EventStore.Common.Configuration;
+using EventStore.Common.Configuration.Sources;
 
 namespace EventStore.Common.Tests.Configuration;
 
 public class CommandLineSourceTest {
 	private static IConfigurationRoot BuildConfiguration(string args) {
-		var sut = new CommandLineSource(args.Split());
+		var sut = new EventStoreCommandLineConfigurationSource(args.Split());
 		var configurationRoot = new ConfigurationBuilder().Add(sut).Build();
 		return configurationRoot;
 	}

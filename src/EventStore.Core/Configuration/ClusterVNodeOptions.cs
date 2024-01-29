@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -7,11 +6,11 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-using EventStore.Common;
 using EventStore.Common.Configuration;
-using EventStore.Common.Exceptions;
+using EventStore.Common.Configuration.Sources;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
+using EventStore.Core.Configuration;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
@@ -23,23 +22,24 @@ using Quickenshtein;
 #nullable enable
 namespace EventStore.Core {
 	public partial record ClusterVNodeOptions {
-		public static readonly ClusterVNodeOptions Default = new();
+		// public static readonly ClusterVNodeOptions Default = new();
 
-		public IConfigurationRoot? ConfigurationRoot { get; init; }
-		[OptionGroup] public ApplicationOptions Application { get; init; } = new();
-		[OptionGroup] public DevModeOptions DevMode { get; init; } = new();
-		[OptionGroup] public DefaultUserOptions DefaultUser { get; init; } = new();
-		[OptionGroup] public LoggingOptions Log { get; init; } = new();
-		[OptionGroup] public AuthOptions Auth { get; init; } = new();
-		[OptionGroup] public CertificateOptions Certificate { get; init; } = new();
-		[OptionGroup] public CertificateFileOptions CertificateFile { get; init; } = new();
+		[OptionGroup] public ApplicationOptions      Application      { get; init; } = new();
+		[OptionGroup] public DevModeOptions          DevMode          { get; init; } = new();
+		[OptionGroup] public DefaultUserOptions      DefaultUser      { get; init; } = new();
+		[OptionGroup] public LoggingOptions          Log              { get; init; } = new();
+		[OptionGroup] public AuthOptions             Auth             { get; init; } = new();
+		[OptionGroup] public CertificateOptions      Certificate      { get; init; } = new();
+		[OptionGroup] public CertificateFileOptions  CertificateFile  { get; init; } = new();
 		[OptionGroup] public CertificateStoreOptions CertificateStore { get; init; } = new();
-		[OptionGroup] public ClusterOptions Cluster { get; init; } = new();
-		[OptionGroup] public DatabaseOptions Database { get; init; } = new();
-		[OptionGroup] public GrpcOptions Grpc { get; init; } = new();
-		[OptionGroup] public InterfaceOptions Interface { get; init; } = new();
-		[OptionGroup] public ProjectionOptions Projections { get; init; } = new();
-		public UnknownOptions Unknown { get; init; } = new(Array.Empty<(string, string)>());
+		[OptionGroup] public ClusterOptions          Cluster          { get; init; } = new();
+		[OptionGroup] public DatabaseOptions         Database         { get; init; } = new();
+		[OptionGroup] public GrpcOptions             Grpc             { get; init; } = new();
+		[OptionGroup] public InterfaceOptions        Interface        { get; init; } = new();
+		[OptionGroup] public ProjectionOptions       Projections      { get; init; } = new();
+		
+		public IConfigurationRoot? ConfigurationRoot { get; init; }
+		public UnknownOptions      Unknown           { get; init; } = new(Array.Empty<(string, string)>());
 
 		public byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
 
@@ -54,53 +54,80 @@ namespace EventStore.Core {
 		public X509Certificate2Collection? TrustedRootCertificates { get; init; }
 
 		internal string? DebugView => ConfigurationRoot?.GetDebugView();
-
-		public static ClusterVNodeOptions FromConfiguration(string[] args, IDictionary environment) {
-			if (args == null) throw new ArgumentNullException(nameof(args));
-			if (environment == null) throw new ArgumentNullException(nameof(environment));
-			
-			try {
-				var configurationRoot = new ConfigurationBuilder()
-					.AddEventStore(nameof(ApplicationOptions.Config), args, environment, DefaultValues)
-					.Build();
-				return FromConfiguration(configurationRoot);
-			} catch (Exception e) {
-				throw new InvalidConfigurationException(e.Message);
-			}
-		}
-
+		
 		public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
+			IConfiguration configuration = configurationRoot.GetRequiredSection("EventStore");
+			
 			return new ClusterVNodeOptions {
-				Application = ApplicationOptions.FromConfiguration(configurationRoot),
-				DevMode = DevModeOptions.FromConfiguration(configurationRoot),
-				DefaultUser = DefaultUserOptions.FromConfiguration(configurationRoot),
-				Log = LoggingOptions.FromConfiguration(configurationRoot),
-				Auth = AuthOptions.FromConfiguration(configurationRoot),
-				Certificate = CertificateOptions.FromConfiguration(configurationRoot),
-				CertificateFile = CertificateFileOptions.FromConfiguration(configurationRoot),
-				CertificateStore = CertificateStoreOptions.FromConfiguration(configurationRoot),
-				Cluster = ClusterOptions.FromConfiguration(configurationRoot),
-				Database = DatabaseOptions.FromConfiguration(configurationRoot),
-				Grpc = GrpcOptions.FromConfiguration(configurationRoot),
-				Interface = InterfaceOptions.FromConfiguration(configurationRoot),
-				Projections = ProjectionOptions.FromConfiguration(configurationRoot),
-				Unknown = UnknownOptions.FromConfiguration(configurationRoot),
+				Application       = ApplicationOptions.FromConfiguration(configuration),
+				DevMode           = DevModeOptions.FromConfiguration(configuration),
+				DefaultUser       = DefaultUserOptions.FromConfiguration(configuration),
+				Log               = LoggingOptions.FromConfiguration(configuration),
+				Auth              = AuthOptions.FromConfiguration(configuration),
+				Certificate       = CertificateOptions.FromConfiguration(configuration),
+				CertificateFile   = CertificateFileOptions.FromConfiguration(configuration),
+				CertificateStore  = CertificateStoreOptions.FromConfiguration(configuration),
+				Cluster           = ClusterOptions.FromConfiguration(configuration),
+				Database          = DatabaseOptions.FromConfiguration(configuration),
+				Grpc              = GrpcOptions.FromConfiguration(configuration),
+				Interface         = InterfaceOptions.FromConfiguration(configuration),
+				Projections       = ProjectionOptions.FromConfiguration(configuration),
+				Unknown           = UnknownOptions.FromConfiguration(configuration),
 				ConfigurationRoot = configurationRoot,
+			};
+		}
+		
+		public static ClusterVNodeOptions BindFromConfiguration(IConfigurationRoot configurationRoot) {
+			IConfiguration configuration = configurationRoot.GetRequiredSection("EventStore");
+			
+			// var properConfiguration = configurationRoot.AsEnumerable()
+			// 	.Where(x => x.Key != EventStoreConfigurationKeys.Prefix)
+			// 	.Select(x => new KeyValuePair<string, string?>(
+			// 		$"EventStore:{GetSectionNameBySettingsKey(x.Key)}:{EventStoreConfigurationKeys.StripConfigurationPrefix(x.Key)}", x.Value))
+			// 	.OrderBy(x => x.Key)
+			// 	.ToArray();
+			//
+			// static string GetSectionNameBySettingsKey(string key) {
+			// 	foreach (var section in OptionSections) {
+			// 		if (section.GetProperties().Any(x => key.EndsWith(x.Name)))
+			// 			return section.Name.Replace("Options", string.Empty);
+			// 	}
+			//
+			// 	return String.Empty;
+			// }
+			
+			TypeDescriptor.AddAttributes(typeof(EndPoint[]), new TypeConverterAttribute(typeof(GossipSeedConverter)));
+			
+			return new() {
+				Application       = configurationRoot.BindOptions<ApplicationOptions>(),
+				DevMode           = configurationRoot.BindOptions<DevModeOptions>(),
+				DefaultUser       = configurationRoot.BindOptions<DefaultUserOptions>(),
+				Log               = configurationRoot.BindOptions<LoggingOptions>(),
+				Auth              = configurationRoot.BindOptions<AuthOptions>(),
+				Certificate       = configurationRoot.BindOptions<CertificateOptions>(),
+				CertificateFile   = configurationRoot.BindOptions<CertificateFileOptions>(),
+				CertificateStore  = configurationRoot.BindOptions<CertificateStoreOptions>(),
+				Cluster           = configurationRoot.BindOptions<ClusterOptions>(),
+				Database          = configurationRoot.BindOptions<DatabaseOptions>(),
+				Grpc              = configurationRoot.BindOptions<GrpcOptions>(),
+				Interface         = configurationRoot.BindOptions<InterfaceOptions>(),
+				Projections       = configurationRoot.BindOptions<ProjectionOptions>(),
+				Unknown           = UnknownOptions.FromConfiguration(configuration),
+				ConfigurationRoot = configurationRoot
 			};
 		}
 
 		public ClusterVNodeOptions Reload() => ConfigurationRoot == null ? this : FromConfiguration(ConfigurationRoot);
-
+	
 		[Description("Default User Options")]
 		public record DefaultUserOptions {
-			
 			[Description("Admin Default password"), Sensitive, EnvironmentOnly("The Admin user password can only be set using Environment Variables")]
 			public string DefaultAdminPassword { get; init; } = "changeit";
 			
 			[Description("Ops Default password"), Sensitive, EnvironmentOnly("The Ops user password can only be set using Environment Variables")] 
 			public string DefaultOpsPassword { get; init; } = "changeit";
  
-			internal static DefaultUserOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static DefaultUserOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 				DefaultAdminPassword = configurationRoot.GetString(nameof(DefaultAdminPassword)),
 				DefaultOpsPassword = configurationRoot.GetString(nameof(DefaultOpsPassword))
 			};
@@ -114,7 +141,7 @@ namespace EventStore.Core {
 			[Description("Removes any dev certificates installed on this computer without starting EventStoreDB.")]
 			public bool RemoveDevCerts { get; init; } = false;
 
-			internal static DevModeOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static DevModeOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 				Dev = configurationRoot.GetValue<bool>(nameof(Dev)),
 				RemoveDevCerts = configurationRoot.GetValue<bool>(nameof(RemoveDevCerts))
 			};
@@ -128,7 +155,7 @@ namespace EventStore.Core {
 
 			[Description("Configuration files.")]
 			public string Config { get; init; } =
-				Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile);
+				Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile); //TODO SS: rethink this...
 
 			[Description("Print effective configuration to console and then exit.")]
 			public bool WhatIf { get; init; } = false;
@@ -177,7 +204,7 @@ namespace EventStore.Core {
 			[Description("Disable telemetry data collection."), EnvironmentOnly("You can only opt-out of telemetry using Environment Variables")]
 			public bool TelemetryOptout { get; init; } = false;
 
-			internal static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static ApplicationOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 				Config = configurationRoot.GetString(nameof(Config)),
 				Help = configurationRoot.GetValue<bool>(nameof(Help)),
 				Version = configurationRoot.GetValue<bool>(nameof(Version)),
@@ -226,7 +253,7 @@ namespace EventStore.Core {
 			[Description("Disable log to disk.")]
 			public bool DisableLogFile { get; init; } = false;
 
-			public static LoggingOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			public static LoggingOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 				Log = configurationRoot.GetString(nameof(Log)),
 				LogConfig = configurationRoot.GetString(nameof(LogConfig)),
 				LogLevel = configurationRoot.GetValue<LogLevel>(nameof(LogLevel)),
@@ -256,7 +283,7 @@ namespace EventStore.Core {
 			             "This option can be enabled for backwards compatibility with EventStore 5.0.1 or earlier.")]
 			public bool DisableFirstLevelHttpAuthorization { get; init; } = false;
 
-			internal static AuthOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static AuthOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 				AuthorizationType = configurationRoot.GetString(nameof(AuthorizationType)),
 				AuthenticationConfig = configurationRoot.GetValue<string>(nameof(AuthenticationConfig)),
 				AuthenticationType = configurationRoot.GetString(nameof(AuthenticationType)),
@@ -284,7 +311,7 @@ namespace EventStore.Core {
 			 Sensitive]
 			public string? CertificatePrivateKeyPassword { get; init; }
 
-			public static CertificateFileOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			public static CertificateFileOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 				CertificatePassword = configurationRoot.GetValue<string>(nameof(CertificatePassword)),
 				CertificatePrivateKeyPassword = configurationRoot.GetValue<string>(nameof(CertificatePrivateKeyPassword)),
 				CertificatePrivateKeyFile = configurationRoot.GetValue<string>(nameof(CertificatePrivateKeyFile)),
@@ -302,12 +329,12 @@ namespace EventStore.Core {
 			[Description("The pattern the CN (Common Name) of a connecting EventStoreDB node must match to be authenticated. A wildcard FQDN can be specified if using wildcard certificates or if the CN is not the same on all nodes. Leave empty to automatically use the CN of this node's certificate.")]
 			public string CertificateReservedNodeCommonName { get; init; } = string.Empty;
 
-			internal static CertificateOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static CertificateOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 				TrustedRootCertificatesPath = configurationRoot.GetValue<string>(nameof(TrustedRootCertificatesPath)),
 				CertificateReservedNodeCommonName = configurationRoot.GetString(nameof(CertificateReservedNodeCommonName))
 			};
 		}
-
+		
 		[Description("Certificate Options (from store)")]
 		public record CertificateStoreOptions {
 			[Description("The certificate store location name.")]
@@ -334,7 +361,7 @@ namespace EventStore.Core {
 			[Description("The trusted root certificate fingerprint/thumbprint.")]
 			public string TrustedRootCertificateThumbprint { get; init; } = string.Empty;
 
-			internal static CertificateStoreOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static CertificateStoreOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 				CertificateStoreLocation = configurationRoot.GetString(nameof(CertificateStoreLocation)),
 				CertificateStoreName = configurationRoot.GetString(nameof(CertificateStoreName)),
 				CertificateSubjectName = configurationRoot.GetString(nameof(CertificateSubjectName)),
@@ -367,7 +394,7 @@ namespace EventStore.Core {
 			public int ClusterGossipPort { get; init; } = 2113;
 
 			[Description("Endpoints for other cluster nodes from which to seed gossip.")]
-			public EndPoint[] GossipSeed { get; init; } = Array.Empty<EndPoint>();
+			public EndPoint[] GossipSeed { get; init; } = [];
 
 			[Description("The interval, in ms, nodes should try to gossip with each other.")]
 			public int GossipIntervalMs { get; init; } = 2_000;
@@ -394,23 +421,36 @@ namespace EventStore.Core {
 
 			public int QuorumSize => ClusterSize == 1 ? 1 : ClusterSize / 2 + 1;
 
-			internal static ClusterOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
-				GossipSeed = Array.ConvertAll(configurationRoot.GetCommaSeparatedValueAsArray(nameof(GossipSeed)),
-					ParseGossipEndPoint),
-				DiscoverViaDns = configurationRoot.GetValue<bool>(nameof(DiscoverViaDns)),
-				ClusterSize = configurationRoot.GetValue<int>(nameof(ClusterSize)),
-				NodePriority = configurationRoot.GetValue<int>(nameof(NodePriority)),
-				ClusterDns = configurationRoot.GetString(nameof(ClusterDns)),
-				ClusterGossipPort = configurationRoot.GetValue<int>(nameof(ClusterGossipPort)),
-				GossipIntervalMs = configurationRoot.GetValue<int>(nameof(GossipIntervalMs)),
-				GossipAllowedDifferenceMs = configurationRoot.GetValue<int>(nameof(GossipAllowedDifferenceMs)),
-				GossipTimeoutMs = configurationRoot.GetValue<int>(nameof(GossipTimeoutMs)),
-				ReadOnlyReplica = configurationRoot.GetValue<bool>(nameof(ReadOnlyReplica)),
-				UnsafeAllowSurplusNodes = configurationRoot.GetValue<bool>(nameof(UnsafeAllowSurplusNodes)),
+			internal static ClusterOptions FromConfiguration(IConfiguration configurationRoot) => new() {
+				GossipSeed                 = Array.ConvertAll(configurationRoot.GetCommaSeparatedValueAsArray(nameof(GossipSeed)), ParseGossipEndPoint),
+				DiscoverViaDns             = configurationRoot.GetValue<bool>(nameof(DiscoverViaDns)),
+				ClusterSize                = configurationRoot.GetValue<int>(nameof(ClusterSize)),
+				NodePriority               = configurationRoot.GetValue<int>(nameof(NodePriority)),
+				ClusterDns                 = configurationRoot.GetString(nameof(ClusterDns)),
+				ClusterGossipPort          = configurationRoot.GetValue<int>(nameof(ClusterGossipPort)),
+				GossipIntervalMs           = configurationRoot.GetValue<int>(nameof(GossipIntervalMs)),
+				GossipAllowedDifferenceMs  = configurationRoot.GetValue<int>(nameof(GossipAllowedDifferenceMs)),
+				GossipTimeoutMs            = configurationRoot.GetValue<int>(nameof(GossipTimeoutMs)),
+				ReadOnlyReplica            = configurationRoot.GetValue<bool>(nameof(ReadOnlyReplica)),
+				UnsafeAllowSurplusNodes    = configurationRoot.GetValue<bool>(nameof(UnsafeAllowSurplusNodes)),
 				DeadMemberRemovalPeriodSec = configurationRoot.GetValue<int>(nameof(DeadMemberRemovalPeriodSec)),
-				StreamInfoCacheCapacity = configurationRoot.GetValue<int>(nameof(StreamInfoCacheCapacity)),
-				LeaderElectionTimeoutMs = configurationRoot.GetValue<int>(nameof(LeaderElectionTimeoutMs))
+				StreamInfoCacheCapacity    = configurationRoot.GetValue<int>(nameof(StreamInfoCacheCapacity)),
+				LeaderElectionTimeoutMs    = configurationRoot.GetValue<int>(nameof(LeaderElectionTimeoutMs))
 			};
+			
+			private static EndPoint ParseGossipEndPoint(string val) {
+				var parts = val.Split(':', 2);
+				
+				if (parts.Length != 2)
+					throw new Exception("You must specify the ports in the gossip seed");
+			
+				if (!int.TryParse(parts[1], out var port))
+					throw new Exception($"Invalid format for gossip seed port: {parts[1]}");
+			
+				return IPAddress.TryParse(parts[0], out var ip)
+					? new IPEndPoint(ip, port)
+					: new DnsEndPoint(parts[0], port);
+			}
 		}
 
 		[Description("Database Options")]
@@ -451,15 +491,13 @@ namespace EventStore.Core {
 			[Description("The maximum number of entries to keep in each index cache.")]
 			public int IndexCacheSize { get; init; } = 0;
 
-			[Description("Bypasses the checking of file hashes of database during startup " +
-			             "(allows for faster startup).")]
+			[Description("Bypasses the checking of file hashes of database during startup (allows for faster startup).")]
 			public bool SkipDbVerify { get; init; } = false;
 
 			[Description("Enables Write Through when writing to the file system, this bypasses filesystem caches.")]
 			public bool WriteThrough { get; init; } = false;
 
-			[Description("Enables Unbuffered/DirectIO when writing to the file system, this bypasses filesystem " +
-			             "caches.")]
+			[Description("Enables Unbuffered/DirectIO when writing to the file system, this bypasses filesystem caches.")]
 			public bool Unbuffered { get; init; } = false;
 
 			[Description("The initial number of readers to start when opening a TFChunk.")]
@@ -481,7 +519,7 @@ namespace EventStore.Core {
 				get => _unsafeDisableFlushToDisk;
 				init {
 					_unsafeDisableFlushToDisk = value;
-					FileStreamExtensions.ConfigureFlush(value);
+					FileStreamExtensions.ConfigureFlush(value); // TODO SS: This should be done here but after the options are loaded
 				}
 			}
 
@@ -522,7 +560,7 @@ namespace EventStore.Core {
 			[Description("Set this option to write statistics to the database.")]
 			public bool WriteStatsToDb {
 				get => (StatsStorage.Stream & StatsStorage) != 0;
-				init => StatsStorage = value ? StatsStorage.StreamAndFile : StatsStorage.File;
+				init => StatsStorage = value ? StatsStorage.StreamAndFile : StatsStorage.File; // TODO SS: not sure if we should do this here
 			}
 
 			[Description("When truncate.chk is set, the database will be truncated on startup. " +
@@ -567,7 +605,6 @@ namespace EventStore.Core {
 				return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
 			}
 
-
 			public static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
 				var tfChunkMaxReaderCount =
 					GetPTableMaxReaderCount(readerThreadsCount) +
@@ -577,8 +614,7 @@ namespace EventStore.Core {
 				return Math.Max(tfChunkMaxReaderCount, chunkInitialReaderCount);
 			}
 
-
-			internal static DatabaseOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static DatabaseOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 				MinFlushDelayMs = configurationRoot.GetValue<double>(nameof(MinFlushDelayMs)),
 				DisableScavengeMerging = configurationRoot.GetValue<bool>(nameof(DisableScavengeMerging)),
 				MemDb = configurationRoot.GetValue<bool>(nameof(MemDb)),
@@ -630,7 +666,7 @@ namespace EventStore.Core {
 			             "it will close the connection.")]
 			public int KeepAliveTimeout { get; init; } = 10_000;
 
-			internal static GrpcOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static GrpcOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 				KeepAliveInterval = configurationRoot.GetValue<int>(nameof(KeepAliveInterval)),
 				KeepAliveTimeout = configurationRoot.GetValue<int>(nameof(KeepAliveTimeout))
 			};
@@ -859,14 +895,11 @@ namespace EventStore.Core {
 			 Deprecated("AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]
 			public bool EnableAtomPubOverHttp { get; init; } = false;
 
-			internal static InterfaceOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static InterfaceOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 				GossipOnSingleNode = configurationRoot.GetValue<bool?>(nameof(GossipOnSingleNode)),
-				IntIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(IntIp)) ??
-				                        IPAddress.Loopback.ToString()),
-				ReplicationIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ReplicationIp)) ??
-				                                IPAddress.Loopback.ToString()),
-				ExtIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ExtIp)) ??
-				                        IPAddress.Loopback.ToString()),
+				IntIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(IntIp)) ?? IPAddress.Loopback.ToString()),
+				ReplicationIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ReplicationIp)) ?? IPAddress.Loopback.ToString()),
+				ExtIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ExtIp)) ?? IPAddress.Loopback.ToString()),
 				NodeIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(NodeIp)) ??
 				                        IPAddress.Loopback.ToString()),
 				HttpPort = configurationRoot.GetValue<int>(nameof(HttpPort)),
@@ -895,7 +928,7 @@ namespace EventStore.Core {
 				DisableAdminUi = configurationRoot.GetValue<bool>(nameof(DisableAdminUi)),
 				DisableStatsOnHttp = configurationRoot.GetValue<bool>(nameof(DisableStatsOnHttp)),
 				DisableGossipOnHttp = configurationRoot.GetValue<bool>(nameof(DisableGossipOnHttp)),
-				EnableTrustedAuth = configurationRoot.GetValue<bool>(nameof(EnableTrustedAuth)),
+				EnableTrustedAuth = configurationRoot.GetValue<bool>(nameof(EnableTrustedAuth)), 
 				DisableInternalTcpTls = configurationRoot.GetValue<bool>(nameof(DisableInternalTcpTls)),
 				DisableExternalTcpTls = configurationRoot.GetValue<bool>(nameof(DisableExternalTcpTls)),
 				EnableAtomPubOverHttp = configurationRoot.GetValue<bool>(nameof(EnableAtomPubOverHttp))
@@ -929,7 +962,7 @@ namespace EventStore.Core {
 			[Description("The maximum execution time in milliseconds for executing a handler in a user projection. It can be overridden for a specific projection by setting ProjectionExecutionTimeout config for that projection")]
 			public int ProjectionExecutionTimeout { get; set; } = DefaultProjectionExecutionTimeout;
 
-			internal static ProjectionOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static ProjectionOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 				RunProjections = configurationRoot.GetValue<ProjectionType>(nameof(RunProjections)),
 				StartStandardProjections = configurationRoot.GetValue<bool>(nameof(StartStandardProjections)),
 				ProjectionThreads = configurationRoot.GetValue<int>(nameof(ProjectionThreads)),
@@ -940,14 +973,8 @@ namespace EventStore.Core {
 			};
 		}
 
-		public record UnknownOptions {
-			public IReadOnlyList<(string, string)> Options { get; init; }
-
-			public UnknownOptions(IReadOnlyList<(string, string)> keys) {
-				Options = keys;
-			}
-
-			internal static UnknownOptions FromConfiguration(IConfigurationRoot configurationRoot) {
+		public record UnknownOptions(IReadOnlyList<(string, string)> Options) {
+			internal static UnknownOptions FromConfiguration(IConfiguration configuration) {
 				var allKnownKeys = typeof(ClusterVNodeOptions).GetProperties()
 					.SelectMany(property => property
 						.PropertyType
@@ -955,10 +982,12 @@ namespace EventStore.Core {
 					.Select(x => x.Name)
 					.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-				var unknownKeys = configurationRoot
+				
+				// make sure we skipp all keys with a sub section. Ex: EventStore:Metrics
+				var unknownKeys = configuration
 					.AsEnumerable()
-					.Select(kvp => kvp.Key)
-					.Where(key => !allKnownKeys.Contains(key))
+					.Select(kvp => EventStoreConfigurationKeys.StripConfigurationPrefix(kvp.Key))
+					.Where(key => key != EventStoreConfigurationKeys.Prefix && !allKnownKeys.Contains(key))
 					.ToList();
 
 				var unknownOptions = unknownKeys
@@ -967,15 +996,23 @@ namespace EventStore.Core {
 							.Select(allowedKey => {
 								var distance = Levenshtein.GetDistance(unknownKey, allowedKey);
 								return (allowedKey, distance);
-							})
-							.OrderBy(x => x.distance)
-							.First();
+							}).MinBy(x => x.distance);
 						return (unknownKey, first.distance > 5 ? "" : first.allowedKey);
 					})
 					.ToList();
 
-				return new UnknownOptions(unknownOptions);
+				return new(unknownOptions);
 			}
+		}
+		
+		public static HashSet<string> AllKnownKeys(bool normalize = false) {
+			var allKnownKeys = typeof(ClusterVNodeOptions)
+				.GetProperties()
+				.SelectMany(property => property.PropertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+				.Select(x => normalize ? EventStoreConfigurationKeys.Normalize(x.Name) : x.Name)
+				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+			return allKnownKeys;
 		}
 	}
 }

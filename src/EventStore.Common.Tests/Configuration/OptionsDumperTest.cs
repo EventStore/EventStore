@@ -1,6 +1,7 @@
 using System.Collections;
 using System.ComponentModel;
 using EventStore.Common.Configuration;
+using EventStore.Common.Configuration.Sources;
 using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Common.Tests.Configuration;
@@ -45,12 +46,14 @@ public class OptionsDumperTest {
 		}
 
 		public TestOptions(Dictionary<string, string> environmentVariables, string[] commandLine) {
-			var defaultOptions = GetDefaultValues(typeof(FirstSection))
-				.Concat(GetDefaultValues(typeof(SecondSection)));
+			var defaultOptions = GetDefaultValues(typeof(FirstSection)).Concat(GetDefaultValues(typeof(SecondSection)))
+				.Select(x => new KeyValuePair<string, string?>(x.Key, x.Value?.ToString()))
+				.ToArray();
+			
 			ConfigurationRoot = new ConfigurationBuilder()
-				.Add(new DefaultSource(defaultOptions))
-				.Add(new EnvironmentVariablesSource(new Hashtable(environmentVariables)))
-				.Add(new CommandLineSource(commandLine))
+				.Add(new EventStoreDefaultValuesConfigurationSource(defaultOptions))
+				.Add(new EventStoreEnvironmentVariablesSource(new Hashtable(environmentVariables)))
+				.Add(new EventStoreCommandLineConfigurationSource(commandLine))
 				.Build();
 		}
 	}
@@ -120,7 +123,7 @@ public class OptionsDumperTest {
 		Assert.Equal("EnvironmentVariables", envVar.Source.Name);
 
 		Assert.True(printable.TryGetValue(nameof(TestOptions.FirstSection.ArrayOfStrings), out var defaultVar));
-		Assert.Equal(typeof(Default), defaultVar.Source);
+		Assert.Equal(typeof(EventStoreDefaultValuesConfigurationSource), defaultVar.Source);
 	}
 
 	[Fact]

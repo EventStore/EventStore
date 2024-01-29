@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using EventStore.Common.Configuration;
+using EventStore.Common.Configuration.Sources;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.Chunks;
 using Microsoft.Extensions.Configuration;
@@ -195,17 +196,17 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		
 		[Test]
 		public void should_return_error_when_default_password_options_pass_through_command_line() {
-
-			var args = new string[] {
+			var args = new[] {
 				"--DefaultAdminPassword=Admin#",
 				"--DefaultOpsPassword=Ops#"
 			};
+			
 			_configurationRoot = new ConfigurationBuilder()
-				.Add(new DefaultSource(new Dictionary<string, object> {
+				.AddInMemoryCollection(new Dictionary<string, string> {
 					[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
 					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
-				}))
-				.Add(new CommandLineSource(args))
+				})
+				.AddEventStoreCommandLine(args)
 				.Build();
 			
 			var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);
@@ -222,12 +223,12 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			environmentVariables.Add("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#");
 			
 			_configurationRoot = new ConfigurationBuilder()
-				.Add(new DefaultSource(new Dictionary<string, object> {
+				.AddEventStoreDefaultValues(new Dictionary<string, object> {
 					[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
-					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
-				}))
-				.Add(new CommandLineSource(args))
-				.Add(new EnvironmentVariablesSource(environmentVariables))
+					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)]   = SystemUsers.DefaultOpsPassword
+				})
+				.AddEventStoreCommandLine(args)
+				.AddEventStoreEnvironmentVariables(environmentVariables)
 				.Build();
 			
 			var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);

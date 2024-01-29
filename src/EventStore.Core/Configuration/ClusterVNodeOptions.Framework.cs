@@ -13,9 +13,8 @@ using ConfigurationRootExtensions = EventStore.Common.Configuration.Configuratio
 #nullable enable
 namespace EventStore.Core {
 	public partial record ClusterVNodeOptions {
-		private static readonly IEnumerable<Type> OptionSections;
+		public static readonly IEnumerable<Type> OptionSections;
 		public static readonly string HelpText;
-		public string GetComponentName() => $"{Interface.NodeIp}-{Interface.NodePort}-cluster-node";
 		static ClusterVNodeOptions() {
 			OptionSections = typeof(ClusterVNodeOptions)
 				.GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -23,6 +22,8 @@ namespace EventStore.Core {
 				.Select(p => p.PropertyType);
 			HelpText = GetHelpText();
 		}
+		
+		public string GetComponentName() => $"{Interface.NodeIp}-{Interface.NodePort}-cluster-node";
 
 		public static IEnumerable<KeyValuePair<string, object?>> DefaultValues =>
 			OptionSections.SelectMany(GetDefaultValues);
@@ -65,20 +66,6 @@ namespace EventStore.Core {
 		public string? CheckForEnvironmentOnlyOptions() {
 			return ConfigurationRootExtensions
 				.CheckProvidersForEnvironmentVariables(ConfigurationRoot, OptionSections);
-		}
-		
-		private static EndPoint ParseGossipEndPoint(string val) {
-			var parts = val.Split(':', 2);
-			
-			if (parts.Length != 2)
-				throw new Exception("You must specify the ports in the gossip seed");
-
-			if (!int.TryParse(parts[1], out var port))
-				throw new Exception($"Invalid format for gossip seed port: {parts[1]}");
-
-			return IPAddress.TryParse(parts[0], out var ip)
-				? new IPEndPoint(ip, port)
-				: new DnsEndPoint(parts[0], port);
 		}
 
 		private static string GetHelpText() {

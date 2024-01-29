@@ -4,11 +4,14 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using EventStore.Common.Configuration.Sources;
 using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Common.Configuration {
 
 	public class OptionsDumper {
+		private static readonly Type DefaultValuesProviderType = typeof(EventStoreDefaultValuesConfigurationProvider);
+		
 		private readonly IEnumerable<Type> _optionSections;
 		private readonly List<(string, List<string>)> _groups;
 
@@ -34,16 +37,22 @@ namespace EventStore.Common.Configuration {
 			var info = options
 				.Where(x => x.Value.Source is not null)
 				.ToDictionary(
-				x => FormatOptionKey(x.Key),
-				y => (y.Value.Source, y.Value.Value));
-
-			bool Modified(Type x) => x != typeof(Default);
-			bool Default(Type x) => x == typeof(Default);
+					x => FormatOptionKey(x.Key),
+					y => (y.Value.Source, y.Value.Value));
 			
+			var info2 = options
+				.Where(x => x.Value.Source is not null)
+				.ToDictionary(
+					x => x.Key,
+					y => (y.Value.Source, y.Value.Value));
+
 			var nameColumnWidth = info.Keys.Select(x => x.Length).Max() + 11;
 			
 			return PrintOptions(nameof(Modified), info, Modified) + Environment.NewLine +
 			       PrintOptions(nameof(Default), info, Default);
+			
+			bool Modified(Type x) => x != DefaultValuesProviderType;
+			bool Default(Type x) => x == DefaultValuesProviderType;
 
 			string PrintOptions(
 				string name,
@@ -76,8 +85,7 @@ namespace EventStore.Common.Configuration {
 			}
 			
 			static string FormatSourceName(Type source) =>
-				$"({(source == typeof(Default) ? "<DEFAULT>" : NameTranslators.CombineByPascalCase(source.Name, " "))})"
-			;
+				$"({(source == DefaultValuesProviderType ? "<DEFAULT>" : NameTranslators.CombineByPascalCase(source.Name, " "))})";
 		}
 		static string FormatOptionKey(string option) =>
 			NameTranslators.CombineByPascalCase(option, " ").ToUpper();
@@ -124,6 +132,9 @@ namespace EventStore.Common.Configuration {
 			foreach (var provider in configurationRoot.Providers) {
 				var source = provider.GetType();
 				foreach (var key in provider.GetChildKeys(Enumerable.Empty<string>(), default)) {
+					if (key == EventStoreConfigurationKeys.Prefix) {
+						continue;
+					}
 					if (provider.TryGet(key, out var value)) {
 						if(result.TryGetValue(key, out var opt)) {
 							result[key] = opt.WithValue(value, source);

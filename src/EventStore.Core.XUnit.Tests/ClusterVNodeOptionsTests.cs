@@ -1,17 +1,22 @@
+#nullable enable
+using System.Collections.Generic;
+using EventStore.Core.Configuration;
 using Xunit;
+
 namespace EventStore.Core.Tests;
 
 public class ClusterVNodeOptionsTests {
 	private static ClusterVNodeOptions BuildConfiguration(string args) {
-		var sut = ClusterVNodeOptions.FromConfiguration(args.Split(), System.Environment.GetEnvironmentVariables());
+		var configuration = EventStoreConfiguration.Build(args.Split());
+		var sut = ClusterVNodeOptions.FromConfiguration(configuration);
 		return sut;
 	}
 
 	[Fact]
 	public void confirm_suggested_option() {
-		var c = BuildConfiguration("--cluster-sze 3");
+		var options = BuildConfiguration("--cluster-sze 3");
 
-		var (key, value) = c.Unknown.Options[0];
+		var (key, value) = options.Unknown.Options[0];
 		Assert.Equal("ClusterSze", key);
 		Assert.Equal("ClusterSize", value);
 	}
