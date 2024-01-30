@@ -158,7 +158,7 @@ namespace EventStore.Core {
 		public override QueueStatsManager QueueStatsManager => _queueStatsManager;
 
 		public override IStartup Startup => _startup;
-		
+
 		public override IAuthenticationProvider AuthenticationProvider {
 			get { return _authenticationProvider; }
 		}
@@ -243,9 +243,9 @@ namespace EventStore.Core {
 			configuration ??= new ConfigurationBuilder().Build();
 
 			_certificateProvider = certificateProvider;
-			
+
 			ClusterVNodeOptionsValidator.Validate(options);
-			
+
 			ReloadLogOptions(options);
 
 			bool isRunningInContainer = ContainerizedEnvironment.IsRunningInContainer();
@@ -254,7 +254,7 @@ namespace EventStore.Core {
 			if (instanceId == Guid.Empty) {
 				throw new ArgumentException("InstanceId may not be empty.", nameof(instanceId));
 			}
-			
+
 			if (!options.Application.Insecure) {
 				ReloadCertificates(options);
 
@@ -262,7 +262,7 @@ namespace EventStore.Core {
 					throw new InvalidConfigurationException("A certificate is required unless insecure mode (--insecure) is set.");
 				}
 			}
-			
+
 			_options = options;
 
 #if DEBUG
@@ -274,22 +274,22 @@ namespace EventStore.Core {
 			var enableExternalTcp = ExtTcpOptions.TryParse(out var extTcpOptions);
 
 			var httpEndPoint = new IPEndPoint(options.Interface.NodeIp, options.Interface.NodePort);
-			
+
 			var intTcp = disableInternalTcpTls
-				? new IPEndPoint(options.Interface.ReplicationIp, 
+				? new IPEndPoint(options.Interface.ReplicationIp,
 					options.Interface.ReplicationPort)
 				: null;
 			var intSecIp = !disableInternalTcpTls
-				? new IPEndPoint(options.Interface.ReplicationIp, 
+				? new IPEndPoint(options.Interface.ReplicationIp,
 					options.Interface.ReplicationPort)
 				: null;
 
 			var extTcp = disableExternalTcpTls && enableExternalTcp
-				? new IPEndPoint(options.Interface.NodeIp, 
+				? new IPEndPoint(options.Interface.NodeIp,
 					extTcpOptions.Port)
 				: null;
 			var extSecIp = !disableExternalTcpTls && enableExternalTcp
-				? new IPEndPoint(options.Interface.NodeIp, 
+				? new IPEndPoint(options.Interface.NodeIp,
 					extTcpOptions.Port)
 				: null;
 
@@ -315,6 +315,7 @@ namespace EventStore.Core {
 
 			var trackers = new Trackers();
 			var metricsConfiguration = configuration
+				.GetSection(SectionNames.EventStore)
 				.GetSection(SectionNames.Metrics)
 				.Get<MetricsConfiguration>() ?? new();
 			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
@@ -506,16 +507,24 @@ namespace EventStore.Core {
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
 
+			void StartSubsystems() {
+				foreach (var subsystem in _subsystems) {
+					var subSystemName = subsystem.GetType().Name;
+					subsystem.Start().ContinueWith(t => {
+						if (t.IsCompletedSuccessfully)
+							_mainQueue.Publish(new SystemMessage.SubSystemInitialized(subSystemName));
+						else
+							Log.Error(t.Exception, "Failed to initialize subsystem {subSystemName}", subSystemName);
+					});
+				}
+			}
+
 			_controller =
 				new ClusterVNodeController<TStreamId>(
 					(IPublisher)_mainBus, NodeInfo, Db,
 					trackers.NodeStatusTracker,
 					options, this, forwardingProxy,
-					startSubsystems: () => {
-						foreach (var subsystem in _subsystems) {
-							AddTasks(subsystem.Start());
-						}
-					});
+					startSubsystems: StartSubsystems);
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager,
 				trackers.QueueTrackers);
 
@@ -878,7 +887,7 @@ namespace EventStore.Core {
 					: new DnsEndPoint(extHostToAdvertise, extSecTcpPortAdvertiseAs > 0
 						? extSecTcpPortAdvertiseAs
 						: NodeInfo.ExternalSecureTcp.Port);
-				
+
 				var httpEndPoint = new DnsEndPoint(extHostToAdvertise,
 					options.Interface.NodePortAdvertiseAs > 0
 						? options.Interface.NodePortAdvertiseAs
@@ -1469,7 +1478,7 @@ namespace EventStore.Core {
 			if (!isSingleNode) {
 				_mainBus.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(leaderReplicationService);
-				_mainBus.Subscribe<SystemMessage.EnablePreLeaderReplication>(leaderReplicationService);				
+				_mainBus.Subscribe<SystemMessage.EnablePreLeaderReplication>(leaderReplicationService);
 				_mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(leaderReplicationService);
 				_mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(leaderReplicationService);
 				_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(leaderReplicationService);
@@ -1556,10 +1565,10 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<GossipMessage.GetGossipReceived>(gossip);
 				_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
 			}
-			
+
 			var clusterStateChangeListener = new ClusterMultipleVersionsLogger();
 			_mainBus.Subscribe<GossipMessage.GossipUpdated>(clusterStateChangeListener);
-			
+
 			// kestrel
 			AddTasks(_workersHandler.Start());
 			AddTask(_mainQueue.Start());
@@ -1576,12 +1585,12 @@ namespace EventStore.Core {
 			}
 
 			// subsystems
-			var http = new[] { _httpService };
-			var standardComponents = new StandardComponents(Db, _mainQueue, _mainBus, _timerService, _timeProvider,
-					httpSendService, http, _workersHandler, _queueStatsManager, trackers.QueueTrackers);
 			_subsystems = options.Subsystems
-				.Select(factory => factory.Create(standardComponents))
+				.Select(factory => factory.Create())
 				.ToArray();
+
+			var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
+				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers);
 
 			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
@@ -1590,7 +1599,8 @@ namespace EventStore.Core {
 				_httpService,
 				configuration,
 				trackers,
-				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
+				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
+				standardComponents);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 			var certificateExpiryMonitor = new CertificateExpiryMonitor(_mainQueue, _certificateSelector, Log);
@@ -1706,7 +1716,7 @@ namespace EventStore.Core {
 
 			if (_subsystems != null) {
 				foreach (var subsystem in _subsystems) {
-					subsystem.Stop();
+					await subsystem.Stop();
 				}
 			}
 
@@ -1881,7 +1891,7 @@ namespace EventStore.Core {
 				Log.Information("Skipping reload of certificates since TLS is disabled.");
 				return;
 			}
-			
+
 			if (_certificateProvider?.LoadCertificates(options) == LoadCertificateResult.VerificationFailed){
 				throw new InvalidConfigurationException("Aborting certificate loading due to verification errors.");
 			}

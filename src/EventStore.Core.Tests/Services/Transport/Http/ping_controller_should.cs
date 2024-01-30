@@ -1,6 +1,4 @@
-﻿using System;
-using System.Net;
-using EventStore.Common.Utils;
+﻿using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http;
@@ -9,78 +7,52 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
 	[TestFixture, Category("LongRunning")]
-	public class ping_controller_should {
-		private readonly IPEndPoint _serverEndPoint;
-		private readonly PortableServer _portableServer;
+	public class ping_controller_should : SpecificationWithDirectory {
+		private MiniNode<LogFormat.V2,string> _node;
 
-		public ping_controller_should() {
-			var port = PortsHelper.GetAvailablePort(IPAddress.Loopback);
-			_serverEndPoint = new IPEndPoint(IPAddress.Loopback, port);
-			_portableServer = new PortableServer(_serverEndPoint);
+		[OneTimeSetUp]
+		public override async Task SetUp() {
+			await base.SetUp();
+
+			_node = new MiniNode<LogFormat.V2,string>(PathName);
+			await _node.Start();
 		}
 
-		[SetUp]
-		public void SetUp() {
-			_portableServer.SetUp(HttpBootstrap.RegisterPing);
-		}
-
-		[TearDown]
-		public void TearDown() {
-			_portableServer.TearDown();
-		}
-		
-		[Test]
-		public void respond_with_httpmessage_text_message() {
-			var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/ping?format=json");
-			Func<HttpResponse, bool> verifier = response =>
-				Codec.Json.From<HttpMessage.TextMessage>(response.Body) != null;
-
-			var result = _portableServer.StartServiceAndSendRequest(url, verifier);
-			Assert.IsTrue(result.Item1, result.Item2);
+		[OneTimeTearDown]
+		public override async Task TearDown() {
+			await base.TearDown();
+			await _node.Shutdown();
 		}
 
 		[Test]
-		public void return_response_in_json_if_requested_by_query_param_and_set_content_type_header() {
-			var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/ping?format=json");
-			Func<HttpResponse, bool> verifier = response => string.Equals(
-				StripAdditionalAttributes(response.ContentType),
-				ContentType.Json,
-				StringComparison.InvariantCultureIgnoreCase);
+		public async Task respond_with_httpmessage_text_message() {
+			var result = await _node.HttpClient.GetAsync("/ping?format=json");
 
-			var result = _portableServer.StartServiceAndSendRequest(url, verifier);
-			Assert.IsTrue(result.Item1, result.Item2);
+			Assert.True(result.IsSuccessStatusCode);
+
+			var body = await result.Content.ReadAsStringAsync();
+			Assert.NotNull(Codec.Json.From<HttpMessage.TextMessage>(body));
 		}
 
 		[Test]
-		public void return_response_in_xml_if_requested_by_query_param_and_set_content_type_header() {
-			var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/ping?format=xml");
-			Func<HttpResponse, bool> verifier = response => string.Equals(
-				StripAdditionalAttributes(response.ContentType),
-				ContentType.Xml,
-				StringComparison.InvariantCultureIgnoreCase);
+		public async Task return_response_in_json_if_requested_by_query_param_and_set_content_type_header() {
+			var result = await _node.HttpClient.GetAsync("/ping?format=json");
 
-			var result = _portableServer.StartServiceAndSendRequest(url, verifier);
-			Assert.IsTrue(result.Item1, result.Item2);
+			Assert.AreEqual(ContentType.Json, result.Content.Headers.ContentType!.MediaType);
 		}
 
 		[Test]
-		public void return_response_in_plaintext_if_requested_by_query_param_and_set_content_type_header() {
-			var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/ping?format=text");
-			Func<HttpResponse, bool> verifier = response => string.Equals(
-				StripAdditionalAttributes(response.ContentType),
-				ContentType.PlainText,
-				StringComparison.InvariantCultureIgnoreCase);
+		public async Task return_response_in_xml_if_requested_by_query_param_and_set_content_type_header() {
+			var result = await _node.HttpClient.GetAsync("/ping?format=xml");
 
-			var result = _portableServer.StartServiceAndSendRequest(url, verifier);
-			Assert.IsTrue(result.Item1, result.Item2);
+			Assert.AreEqual(ContentType.Xml, result.Content.Headers.ContentType!.MediaType);
 		}
 
-		private string StripAdditionalAttributes(string value) {
-			var index = value.IndexOf(';');
-			if (index < 0)
-				return value;
-			else
-				return value.Substring(0, index);
+		[Test]
+		public async Task return_response_in_plaintext_if_requested_by_query_param_and_set_content_type_header() {
+			var result = await _node.HttpClient.GetAsync("/ping?format=text");
+
+			Assert.AreEqual(ContentType.PlainText, result.Content.Headers.ContentType!.MediaType);
 		}
 	}
 }

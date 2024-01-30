@@ -87,7 +87,7 @@ namespace EventStore.ClusterNode {
 
 				foreach (var (option, suggestion) in options.Unknown.Options) {
 					if (string.IsNullOrEmpty(suggestion)) {
-						Log.Write(level, "The option {option} is not a known option.", option);	
+						Log.Write(level, "The option {option} is not a known option.", option);
 					} else {
 						Log.Write(level, "The option {option} is not a known option. Did you mean {suggestion}?", option, suggestion);
 					}
@@ -153,7 +153,7 @@ namespace EventStore.ClusterNode {
 						"INSECURE MODE WILL DISABLE ALL AUTHENTICATION, AUTHORIZATION AND TRANSPORT SECURITY FOR ALL CLIENTS AND NODES.\n" +
 						"==============================================================================================================\n");
 				}
-				
+
 				if (options.Application.WhatIf) {
 					return 0;
 				}
@@ -167,7 +167,7 @@ namespace EventStore.ClusterNode {
 					Application.Exit(0, "Cancelled.");
 				};
 
-				// Create a single IConfiguration object that contains the whole configuration, including 
+				// Create a single IConfiguration object that contains the whole configuration, including
 				// plugin configuration. We will add it to the DI and make it available to the plugins.
 				//
 				// Three json files are loaded explicitly for backwards compatibility
@@ -190,7 +190,7 @@ namespace EventStore.ClusterNode {
 					.AddEnvironmentVariables()
 
 					// Core configuration goes last so that the IConfiguration shows these
-					// identically to ClusterVNodeOptions. 
+					// identically to ClusterVNodeOptions.
 					.AddSection(SectionNames.EventStore, x => x
 						.AddConfiguration(options.ConfigurationRoot))
 
@@ -213,7 +213,6 @@ namespace EventStore.ClusterNode {
 								builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
 							.ConfigureAppConfiguration(builder =>
 								builder.AddConfiguration(configuration))
-							.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
 							.ConfigureLogging(logging => logging.AddSerilog())
 							.ConfigureServices(services => services.Configure<KestrelServerOptions>(
 								configuration.GetSection(SectionNames.Kestrel)))
@@ -233,6 +232,11 @@ namespace EventStore.ClusterNode {
 								})
 								.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
 								.Configure(hostedService.Node.Startup.Configure))
+							// Order is important, configure IHostedService after the WebHost to make the sure
+							// ClusterVNodeHostedService and the subsystems are started after configuration is finished.
+							// Allows the subsystems to resolve dependencies out of the DI in Configure() before being started.
+							// Later it may be possible to use constructor injection instead if it fits with the bootstrapping strategy.
+							.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
 							.RunConsoleAsync(options => options.SuppressStatusMessages = true, cts.Token);
 
 						exitCodeSource.TrySetResult(0);

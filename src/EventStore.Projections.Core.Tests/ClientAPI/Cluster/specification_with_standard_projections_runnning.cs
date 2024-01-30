@@ -18,6 +18,7 @@ using EventStore.ClientAPI.Projections;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.Core.Data;
+using EventStore.Plugins.Subsystems;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {

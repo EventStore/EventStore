@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core {
 
 		public ProjectionWorkerNode(
 			Guid workerId,
-			TFChunkDb db,
+			TFChunkDbConfig dbConfig,
 			IQueuedHandler inputQueue,
 			ITimeProvider timeProvider,
 			ISingletonTimeoutScheduler timeoutScheduler,
@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core {
 			IPublisher leaderOutputBus,
 			ProjectionsStandardComponents configuration) {
 			_runProjections = runProjections;
-			Ensure.NotNull(db, "db");
+			Ensure.NotNull(dbConfig, "dbConfig");
 
 			_coreOutput = new InMemoryBus("Core Output");
 			_leaderOutputBus = leaderOutputBus;
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core {
 				publisher,
 				_ioDispatcher,
 				10,
-				db.Config.WriterCheckpoint,
+				dbConfig.WriterCheckpoint,
 				runHeadingReader: runProjections >= ProjectionType.System,
 				faultOutOfOrderProjections: faultOutOfOrderProjections);
 

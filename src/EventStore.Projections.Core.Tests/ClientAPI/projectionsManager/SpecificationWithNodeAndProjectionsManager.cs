@@ -15,6 +15,7 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Services;
 using EventStore.Core.Util;
+using EventStore.Plugins.Subsystems;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
@@ -111,10 +112,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
                 .when({
                     ""$any"":function(s,e) {
                         emit(""" + emittingStream + @""", ""emittedEvent"", e);
-                    } 
+                    }
                 });";
 		}
-		
+
 		private List<string> _systemProjections =>
 			typeof(ProjectionNamesBuilder.StandardProjections).GetFields(
 					System.Reflection.BindingFlags.Public |

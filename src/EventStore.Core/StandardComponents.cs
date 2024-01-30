@@ -6,7 +6,7 @@ using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core {
 	public class StandardComponents {
-		private readonly TFChunkDb _db;
+		private readonly TFChunkDbConfig _dbConfig;
 		private readonly IQueuedHandler _mainQueue;
 		private readonly ISubscriber _mainBus;
 		private readonly TimerService _timerService;
@@ -17,7 +17,7 @@ namespace EventStore.Core {
 		private readonly QueueStatsManager _queueStatsManager;
 
 		public StandardComponents(
-			TFChunkDb db,
+			TFChunkDbConfig dbConfig,
 			IQueuedHandler mainQueue,
 			ISubscriber mainBus,
 			TimerService timerService,
@@ -27,7 +27,7 @@ namespace EventStore.Core {
 			IPublisher networkSendService,
 			QueueStatsManager queueStatsManager,
 			QueueTrackers trackers) {
-			_db = db;
+			_dbConfig = dbConfig;
 			_mainQueue = mainQueue;
 			_mainBus = mainBus;
 			_timerService = timerService;
@@ -39,8 +39,8 @@ namespace EventStore.Core {
 			QueueTrackers = trackers;
 		}
 
-		public TFChunkDb Db {
-			get { return _db; }
+		public TFChunkDbConfig DbConfig {
+			get { return _dbConfig; }
 		}
 
 		public IQueuedHandler MainQueue {
