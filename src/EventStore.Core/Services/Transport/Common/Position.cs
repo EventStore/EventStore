@@ -152,7 +152,7 @@ namespace EventStore.Core.Services.Transport.Common {
 		/// <filterpriority>2</filterpriority>
 		public override string ToString() => this == End ? "End" : $"C:{CommitPosition}/P:{PreparePosition}";
 
-		internal readonly (long commitPosition, long preparePosition) ToInt64() => Equals(End)
+		public readonly (long commitPosition, long preparePosition) ToInt64() => Equals(End)
 			? (-1, -1)
 			: ((long)CommitPosition, (long)PreparePosition);
 	}

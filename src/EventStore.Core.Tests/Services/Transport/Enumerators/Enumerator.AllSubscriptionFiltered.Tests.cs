@@ -20,6 +20,8 @@ public partial class EnumeratorTests {
 		IPublisher publisher,
 		Position? startPosition,
 		IEventFilter eventFilter = null,
+		uint? maxSearchWindow = null,
+		uint checkpointIntervalMultiplier = 1,
 		ClaimsPrincipal user = null) {
 
 		return new EnumeratorWrapper(new Enumerator.AllSubscriptionFiltered(
@@ -30,8 +32,8 @@ public partial class EnumeratorTests {
 			eventFilter: eventFilter,
 			user: user ?? SystemAccounts.System,
 			requiresLeader: false,
-			maxSearchWindow: null,
-			checkpointIntervalMultiplier: 1,
+			maxSearchWindow: maxSearchWindow,
+			checkpointIntervalMultiplier: checkpointIntervalMultiplier,
 			cancellationToken: CancellationToken.None));
 	}
 
