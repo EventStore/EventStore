@@ -261,6 +261,7 @@ namespace EventStore.Core.Services.Storage {
 						break;
 					case FilteredReadAllResult.Error:
 					case FilteredReadAllResult.AccessDenied:
+					case FilteredReadAllResult.InvalidPosition:
 						msg.Envelope.ReplyWith(res);
 						break;
 					default:
@@ -304,6 +305,7 @@ namespace EventStore.Core.Services.Storage {
 						break;
 					case FilteredReadAllResult.Error:
 					case FilteredReadAllResult.AccessDenied:
+					case FilteredReadAllResult.InvalidPosition:
 						msg.Envelope.ReplyWith(res);
 						break;
 					default:
@@ -512,7 +514,7 @@ namespace EventStore.Core.Services.Storage {
 					}
 
 					if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
-						return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
+						return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition,
 							"Invalid position.");
 					if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
 						return NoDataForFilteredCommand(msg, FilteredReadAllResult.NotModified, pos,
@@ -531,6 +533,9 @@ namespace EventStore.Core.Services.Storage {
 						msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition, res.IsEndOfStream,
 						res.ConsideredEventsCount);
+				} catch (Exception exc) when (exc is InvalidReadException or UnableToReadPastEndOfStreamException) {
+					Log.Warning(exc, "Error during processing ReadAllEventsForwardFiltered request. The read appears to be at an invalid position.");
+					return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition, exc.Message);
 				} catch (Exception exc) {
 					Log.Error(exc, "Error during processing ReadAllEventsForwardFiltered request.");
 					return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
@@ -555,7 +560,7 @@ namespace EventStore.Core.Services.Storage {
 					}
 
 					if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
-						return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
+						return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition,
 							"Invalid position.");
 					if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
 						return NoDataForFilteredCommand(msg, FilteredReadAllResult.NotModified, pos,
@@ -573,8 +578,11 @@ namespace EventStore.Core.Services.Storage {
 						msg.CorrelationId, FilteredReadAllResult.Success, null, resolved, metadata, false,
 						msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition, res.IsEndOfStream);
+				} catch (Exception exc) when (exc is InvalidReadException or UnableToReadPastEndOfStreamException) {
+					Log.Warning(exc, "Error during processing ReadAllEventsBackwardFiltered request. The read appears to be at an invalid position.");
+					return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition, exc.Message);
 				} catch (Exception exc) {
-					Log.Error(exc, "Error during processing ReadAllEventsForwardFiltered request.");
+					Log.Error(exc, "Error during processing ReadAllEventsBackwardFiltered request.");
 					return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
 						exc.Message);
 				}

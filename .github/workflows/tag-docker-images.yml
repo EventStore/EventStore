@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 jobs:
   tag-docker-images:
+    if: github.repository == 'EventStore/EventStore'
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx

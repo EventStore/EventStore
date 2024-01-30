@@ -138,13 +138,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 					CatchUp(Position.Start);
 				} else {
 					var (commitPosition, preparePosition) = startPosition.Value.ToInt64();
-					try {
-						CatchUpFromCheckpoint(Position.FromInt64(commitPosition, preparePosition));
-					} catch (InvalidReadException ex) {
-						Fail(new ReadResponseException.InvalidPosition());
-						Log.Error(ex, "Error starting catch-up subscription {subscriptionId} to $all:{eventFilter}@{position}",
-							_subscriptionId, _eventFilter, startPosition);
-					}
+					CatchUpFromCheckpoint(Position.FromInt64(commitPosition, preparePosition));
 				}
 			}
 
@@ -189,6 +183,11 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 						case FilteredReadAllResult.AccessDenied:
 							Fail(new ReadResponseException.AccessDenied());
 							return Task.CompletedTask;
+
+						case FilteredReadAllResult.InvalidPosition:
+							Fail(new ReadResponseException.InvalidPosition());
+							return Task.CompletedTask;
+
 						default:
 							Fail(ReadResponseException.UnknownError.Create(completed.Result));
 							return Task.CompletedTask;
@@ -273,6 +272,11 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 						case FilteredReadAllResult.AccessDenied:
 							Fail(new ReadResponseException.AccessDenied());
 							return;
+
+						case FilteredReadAllResult.InvalidPosition:
+							Fail(new ReadResponseException.InvalidPosition());
+							return;
+
 						default:
 							Fail(ReadResponseException.UnknownError.Create(completed.Result));
 							return;
@@ -415,6 +419,11 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 									case FilteredReadAllResult.AccessDenied:
 										Fail(new ReadResponseException.AccessDenied());
 										return;
+
+									case FilteredReadAllResult.InvalidPosition:
+										Fail(new ReadResponseException.InvalidPosition());
+										return;
+
 									default:
 										Fail(ReadResponseException.UnknownError.Create(completed.Result));
 										return;

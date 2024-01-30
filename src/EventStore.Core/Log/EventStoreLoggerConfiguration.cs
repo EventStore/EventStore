@@ -5,7 +5,6 @@ using System.Threading;
 using EventStore.Common.Configuration;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
-using EventStore.Core.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using Serilog;
@@ -62,7 +61,7 @@ namespace EventStore.Common.Log {
 			}
 
 			var configurationRoot = new ConfigurationBuilder()
-				.AddConfigFile(logConfig, reloadOnChange: true)
+				.AddEsdbConfigFile(logConfig, reloadOnChange: true)
 				.Build();
 
 			Serilog.Debugging.SelfLog.Enable(ConsoleLog.Information);

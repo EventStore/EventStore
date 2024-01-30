@@ -315,7 +315,7 @@ namespace EventStore.Core {
 
 			var trackers = new Trackers();
 			var metricsConfiguration = configuration
-				.GetSection("Metrics")
+				.GetSection(SectionNames.Metrics)
 				.Get<MetricsConfiguration>() ?? new();
 			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
@@ -1055,7 +1055,7 @@ namespace EventStore.Core {
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
 			var infoController = new InfoController(options, new Dictionary<string, bool> {
-				["projections"] = options.Projection.RunProjections != ProjectionType.None || options.DevMode.Dev,
+				["projections"] = options.Projections.RunProjections != ProjectionType.None || options.DevMode.Dev,
 				["userManagement"] = options.Auth.AuthenticationType == Opts.AuthenticationTypeDefault &&
 				                     !options.Application.Insecure,
 				["atomPub"] = options.Interface.EnableAtomPubOverHttp || options.DevMode.Dev

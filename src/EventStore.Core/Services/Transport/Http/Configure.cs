@@ -279,6 +279,7 @@ namespace EventStore.Core.Services.Transport.Http {
 					case FilteredReadAllResult.NotModified:
 						return NotModified();
 					case FilteredReadAllResult.Error:
+					case FilteredReadAllResult.InvalidPosition:
 						return InternalServerError(msg.Error);
 					case FilteredReadAllResult.AccessDenied:
 						return Unauthorized();
@@ -338,6 +339,7 @@ namespace EventStore.Core.Services.Transport.Http {
 					case FilteredReadAllResult.NotModified:
 						return NotModified();
 					case FilteredReadAllResult.Error:
+					case FilteredReadAllResult.InvalidPosition:
 						return InternalServerError(msg.Error);
 					case FilteredReadAllResult.AccessDenied:
 						return Unauthorized();
