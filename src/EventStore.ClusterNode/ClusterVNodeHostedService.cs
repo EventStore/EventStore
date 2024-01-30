@@ -245,9 +245,9 @@ namespace EventStore.ClusterNode {
 					Log.Information("Loaded SubsystemsPlugin plugin: {plugin} {version}.",
 						plugin.CommandLineName,
 						plugin.Version);
-					var subsystemFactories = plugin.GetSubsystemFactories(configPath: options.Application.Config);
-					foreach (var subsystemFactory in subsystemFactories) {
-						options = options.WithSubsystem(subsystemFactory);
+					var subsystems = plugin.GetSubsystems();
+					foreach (var subsystem in subsystems) {
+						options = options.WithSubsystem(subsystem);
 					}
 				}
 				return options;

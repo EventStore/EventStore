@@ -38,7 +38,7 @@ namespace EventStore.Core {
 	public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.SystemReady>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
 
-		private readonly ISubsystem[] _subsystems;
+		private readonly IReadOnlyList<ISubsystem> _subsystems;
 		private readonly IPublisher _mainQueue;
 		private readonly IPublisher _monitoringQueue;
 		private readonly ISubscriber _mainBus;
@@ -59,7 +59,8 @@ namespace EventStore.Core {
 		private readonly string _clusterDns;
 		private readonly StandardComponents _standardComponents;
 
-		public ClusterVNodeStartup(ISubsystem[] subsystems,
+		public ClusterVNodeStartup(
+			IReadOnlyList<ISubsystem> subsystems,
 			IPublisher mainQueue,
 			IPublisher monitoringQueue,
 			ISubscriber mainBus,

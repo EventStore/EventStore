@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,15 +6,12 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
-using EventStore.Core;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
-using EventStore.Plugins.Subsystems;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	[Category("ClientAPI")]
@@ -45,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			_projections = new ProjectionsSubsystem(configuration);
 			_node = new MiniNode<TLogFormat, TStreamId>(
 				PathName, inMemDb: true,
-				subsystems: new ISubsystemFactory[] {_projections});
+				subsystems: [_projections]);
 			_projectionsCreated = SystemProjections.Created(_projections.LeaderMainBus);
 
 			await _node.Start();

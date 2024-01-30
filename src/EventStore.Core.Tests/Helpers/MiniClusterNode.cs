@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.Helpers {
 		}
 
 		public MiniClusterNode(string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint externalTcp,
-			IPEndPoint httpEndPoint, EndPoint[] gossipSeeds, ISubsystemFactory[] subsystems = null,
+			IPEndPoint httpEndPoint, EndPoint[] gossipSeeds, ISubsystem[] subsystems = null,
 			bool enableTrustedAuth = false, int memTableSize = 1000, bool inMemDb = true,
 			bool disableFlushToDisk = false, bool readOnlyReplica = false, int nodePriority = 0,
 			string intHostAdvertiseAs = null, IExpiryStrategy expiryStrategy = null) {
@@ -143,7 +143,7 @@ namespace EventStore.Core.Tests.Helpers {
 				Projections = new() {
 					RunProjections = ProjectionType.None
 				},
-				Subsystems = subsystems ?? Array.Empty<ISubsystemFactory>()
+				Subsystems = subsystems ?? Array.Empty<ISubsystem>()
 			};
 
 			var serverCertificate = useHttps ? ssl_connections.GetServerCertificate() : null;

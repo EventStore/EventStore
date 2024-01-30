@@ -29,7 +29,7 @@ namespace EventStore.Projections.Core {
 		int CompilationTimeout,
 		int ExecutionTimeout);
 
-	public sealed class ProjectionsSubsystem : ISubsystem, ISubsystemFactory,
+	public sealed class ProjectionsSubsystem : ISubsystem,
 		IHandle<SystemMessage.SystemCoreReady>,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<CoreProjectionStatusMessage.Stopped>,
@@ -87,6 +87,8 @@ namespace EventStore.Projections.Core {
 			"$by_event_type",
 			"$by_correlation_id"
 		};
+
+		public string Name => "Projections";
 
 		public ProjectionsSubsystem(ProjectionSubsystemOptions projectionSubsystemOptions) {
 
@@ -152,8 +154,6 @@ namespace EventStore.Projections.Core {
 		public IServiceCollection ConfigureServices(IServiceCollection services, IConfiguration _) => services
 			.AddSingleton(provider =>
 				new ProjectionManagement(_leaderInputQueue, provider.GetRequiredService<IAuthorizationProvider>()));
-
-		public ISubsystem Create() => this;
 
 		private static void CreateAwakerService(StandardComponents standardComponents) {
 			var awakeReaderService = new AwakeService();
