@@ -1591,8 +1591,7 @@ namespace EventStore.Core {
 				configuration,
 				trackers,
 				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
-			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
-			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(_startup);
 			var certificateExpiryMonitor = new CertificateExpiryMonitor(_mainQueue, _certificateSelector, Log);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(certificateExpiryMonitor);
 			_mainBus.Subscribe<MonitoringMessage.CheckCertificateExpiry>(certificateExpiryMonitor);

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Grpc;
@@ -35,8 +36,7 @@ using ServerFeatures = EventStore.Core.Services.Transport.Grpc.ServerFeatures;
 
 #nullable enable
 namespace EventStore.Core {
-	public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.SystemReady>,
-		IHandle<SystemMessage.BecomeShuttingDown> {
+	public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.StateChangeMessage> {
 
 		private readonly ISubsystem[] _subsystems;
 		private readonly IPublisher _mainQueue;
@@ -264,9 +264,8 @@ namespace EventStore.Core {
 					(s, subsystem) => subsystem.ConfigureServices(s));
 		}
 
-		public void Handle(SystemMessage.SystemReady _) => _ready = true;
-
-		public void Handle(SystemMessage.BecomeShuttingDown _) => _ready = false;
+		public void Handle(SystemMessage.StateChangeMessage m) =>
+			_ready = m.State is VNodeState.Leader or VNodeState.Follower or VNodeState.ReadOnlyReplica;
 
 		private class StatusCheck {
 			private readonly ClusterVNodeStartup<TStreamId> _startup;
@@ -284,7 +283,7 @@ namespace EventStore.Core {
 					.UseRouter(router => router
 						.MapMiddlewareGet("live", inner => inner.Use(Live)));
 
-			private MidFunc Live => (context, next) => {
+			private MidFunc Live => (context, _) => {
 				context.Response.StatusCode = _startup._ready ? 204 : 503;
 				return Task.CompletedTask;
 			};
