@@ -3,8 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using EventStore.Common.Configuration;
-using EventStore.Common.Configuration.Sources;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.Chunks;
 using Microsoft.Extensions.Configuration;
@@ -204,7 +203,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			_configurationRoot = new ConfigurationBuilder()
 				.AddInMemoryCollection(new Dictionary<string, string> {
 					[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
-					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
+					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)]   = SystemUsers.DefaultOpsPassword
 				})
 				.AddEventStoreCommandLine(args)
 				.Build();

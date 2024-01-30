@@ -1,11 +1,6 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using EventStore.Common.Configuration.Sources;
 using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Common.Configuration;
@@ -27,61 +22,4 @@ public static class ConfigurationRootExtensions {
 
 		return value.Split(',', StringSplitOptions.RemoveEmptyEntries);
 	}
-		
-	// has the user specified what they want, or left it up to the default.
-	// specifying the same value as the default still counts as being used specified.
-	public static bool IsSettingUserSpecified(this IConfigurationRoot configurationRoot, string key) {
-		return configurationRoot.Providers
-			.Where(provider => provider.GetType() != typeof(EventStoreDefaultValuesConfigurationProvider))
-			.Any(provider => provider.TryGet(key, out _));
-	}
-
-	public static string? CheckProvidersForEnvironmentVariables(IConfigurationRoot? configurationRoot, IEnumerable<Type> OptionSections) {
-		if (configurationRoot 
-		    != null) {
-			var environmentOptionsOnly = OptionSections.SelectMany(section => section.GetProperties())
-				.Where(option => option.GetCustomAttribute<EnvironmentOnlyAttribute>() != null)
-				.Select(option => option)
-				.ToArray();
-
-			var errorBuilder = new StringBuilder();
-
-			foreach (var provider in configurationRoot.Providers) {
-				var source = provider.GetType();
-
-				if (source == typeof(EventStoreDefaultValuesConfigurationProvider) ||
-				    source == typeof(EventStoreEnvironmentVariablesConfigurationProvider)) 
-					continue;
-					
-				var errorDescriptions = from key in provider.GetChildKeys(Enumerable.Empty<string>(), default)
-					from property in environmentOptionsOnly
-					where string.Equals(property.Name, key, StringComparison.CurrentCultureIgnoreCase)
-					select property.GetCustomAttribute<EnvironmentOnlyAttribute>()?.Message;
-
-				var builder = errorDescriptions
-					.Aggregate(new StringBuilder(), (stringBuilder, errorDescription) => stringBuilder.AppendLine($"Provided by: {provider.GetType().Name}. {errorDescription}"));
-				errorBuilder.Append(builder);
-			}
-			return errorBuilder.Length != 0 ? errorBuilder.ToString() : null;
-		}
-		return null;
-	}
-
-	public static string GetEnvironmentOption(PropertyInfo property, int optionColumnWidth) {
-		var builder = new StringBuilder();
-		const string Prefix = "EVENTSTORE";
-
-		builder.Append($"{Prefix}_")
-			.Append(OptionsDumper.NameTranslators.CombineByPascalCase(property.Name, "_").ToUpper());
-		var description = property.GetCustomAttribute<EnvironmentOnlyAttribute>()?.Message;
-				
-		return builder.ToString().PadRight(optionColumnWidth, ' ') + description;
-	}
-
-	public static string GetString(this IConfiguration configurationRoot, string key) {
-		return configurationRoot.GetValue<string>(key) ?? string.Empty;
-	}
-	
-	public static T BindOptions<T>(this IConfiguration configuration) where T : new() => 
-		configuration.Get<T>() ?? new T();
 }

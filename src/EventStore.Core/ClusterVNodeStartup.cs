@@ -185,7 +185,7 @@ namespace EventStore.Core {
 
 		public IServiceCollection ConfigureServices(IServiceCollection services) {
 			var metricsConfiguration = _configuration
-				.GetSection(SectionNames.Metrics)
+				.GetSection("Metrics")
 				.Get<MetricsConfiguration>() ?? new();
 
 			return _subsystems

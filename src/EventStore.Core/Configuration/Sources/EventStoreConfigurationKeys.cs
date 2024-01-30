@@ -1,12 +1,12 @@
 #nullable enable
 
-using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
+using static System.String;
 using static System.StringComparison;
 
-namespace EventStore.Common.Configuration.Sources;
+namespace EventStore.Core.Configuration.Sources;
 
 public static class EventStoreConfigurationKeys {
 	public const string Prefix = "EventStore";
@@ -27,9 +27,10 @@ public static class EventStoreConfigurationKeys {
 
 	public static string Normalize(string key) {
 		// if the key doesn't contain any delimiters,
-		// it is assumed that it's already normalized
+		// we can just get out, pascalizing the key
+		// if needed because of cli lowercase args
 		if (!key.Any(Delimiters.Contains))
-			return $"{Prefix}:{key}";
+			return $"{Prefix}:{(char.IsLower(key[0]) ? Pascalize(key) : key)}";
 
 		// remove the prefix and normalize the key 
 		var keys = (key.StartsWith(Prefix, OrdinalIgnoreCase) ? key.Remove(0, Prefix.Length) : key)
@@ -39,10 +40,10 @@ public static class EventStoreConfigurationKeys {
 			.Where(x => x.Length > 0)
 			.Select(Pascalize);
 
-		return $"{Prefix}:{String.Join(ConfigurationPath.KeyDelimiter, keys)}";
+		return $"{Prefix}:{Join(ConfigurationPath.KeyDelimiter, keys)}";
 
 		static string Pascalize(string key) =>
-			String.Join(String.Empty, key
+			Join(Empty, key
 				.ToLowerInvariant()
 				.Split(EnvVarWordDelimiter)
 				.Select(word => new string(word.Select((c, i) => i == 0 ? char.ToUpper(c) : c).ToArray()))
@@ -65,7 +66,7 @@ public static class EventStoreConfigurationKeys {
 	/// Only normalizes the given key if it is an event store environment variable.
 	/// </summary>
 	public static bool TryNormalizeEnvVar(object? key, [MaybeNullWhen(false)] out string normalizedKey) => 
-		TryNormalizeEnvVar(key?.ToString() ?? String.Empty, out normalizedKey);
+		TryNormalizeEnvVar(key?.ToString() ?? Empty, out normalizedKey);
 	
 	public static string StripConfigurationPrefix(string key) =>
 		key.StartsWith($"{Prefix}:", OrdinalIgnoreCase) ? key.Remove(0, Prefix.Length + 1) : key;

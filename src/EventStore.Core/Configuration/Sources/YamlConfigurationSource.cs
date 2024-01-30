@@ -8,7 +8,7 @@ using Microsoft.Extensions.Configuration;
 using YamlDotNet.RepresentationModel;
 using static System.StringComparer;
 
-namespace EventStore.Common.Configuration.Sources;
+namespace EventStore.Core.Configuration.Sources;
 
 public class YamlConfigurationSource : FileConfigurationSource {
 	public string? Prefix { get; set; }

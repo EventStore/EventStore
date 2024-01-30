@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 
-namespace EventStore.Common.Configuration.Sources;
+namespace EventStore.Core.Configuration.Sources;
 
 public class EventStoreEnvironmentVariablesSource(IDictionary? environment = null) : IConfigurationSource {
 	IDictionary? Environment { get; } = environment;

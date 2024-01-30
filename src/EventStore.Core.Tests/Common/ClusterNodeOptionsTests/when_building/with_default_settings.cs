@@ -5,7 +5,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Util;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
@@ -62,7 +61,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.AreEqual(false, _options.Interface.DisableStatsOnHttp, "StatsOnPublic");
 			Assert.AreEqual(false, _options.Interface.DisableGossipOnHttp, "GossipOnPublic");
 			Assert.AreEqual(1_000_000, _options.Database.MaxMemTableSize, "MaxMemtableEntryCount");
-			Assert.AreEqual(false, _options.Projections.RunProjections > ProjectionType.System,
+			Assert.AreEqual(false, _options.Projection.RunProjections > ProjectionType.System,
 				"StartStandardProjections");
 			Assert.AreEqual(false, _options.Database.UnsafeIgnoreHardDelete,
 				"UnsafeIgnoreHardDeletes");

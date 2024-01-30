@@ -1,7 +1,8 @@
-﻿using System;
+﻿// ReSharper disable CheckNamespace
+
+using System;
 using System.IO;
 using EventStore.Common.Exceptions;
-using EventStore.Core;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;

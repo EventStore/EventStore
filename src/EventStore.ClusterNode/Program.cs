@@ -26,6 +26,7 @@ using EventStore.Common.DevCertificates;
 using EventStore.Core.Configuration;
 using Serilog.Events;
 using Application = EventStore.Common.Utils.Application;
+
 #pragma warning disable CS0219 // Variable is assigned but its value is never used
 
 namespace EventStore.ClusterNode {
@@ -191,7 +192,7 @@ namespace EventStore.ClusterNode {
 							.ConfigureAppConfiguration(builder => builder.AddConfiguration(configuration))
 							.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
 							.ConfigureLogging(logging => logging.AddSerilog())
-							.ConfigureServices(services => services.Configure<KestrelServerOptions>(configuration.GetSection(SectionNames.Kestrel)))
+							.ConfigureServices(services => services.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel")))
 							.ConfigureServices(services => services.Configure<HostOptions>(
 							 	opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(5)))
 							.ConfigureWebHostDefaults(builder => builder

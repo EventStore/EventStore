@@ -20,3 +20,9 @@ public class SectionSource : IConfigurationSource {
 		return new SectionProvider(_sectionName, configuration);
 	}
 }
+
+public static class SectionConfigurationExtensions {
+	// Allows configuration to be mounted inside a specified section
+	public static IConfigurationBuilder AddSection(this IConfigurationBuilder self, string sectionName, Action<IConfigurationBuilder> configure) =>
+		self.Add(new SectionSource(sectionName, configure));
+}

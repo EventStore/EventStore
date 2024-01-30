@@ -68,19 +68,26 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null && (entity.User.LegacyRoleCheck(SystemRoles.Operations) || entity.User.LegacyRoleCheck(SystemRoles.Admins))) {
-				var options = _options.GetPrintableOptions()?.Select(x => new OptionStructure {
-					Name = x.Name,
-					Description = x.Description,
-					Group = x.Group,
-					PossibleValues = x.AllowedValues,
-					Value = x.Value
-				});
-				entity.ReplyTextContent(Codec.Json.To(options),
-					HttpStatusCode.OK,
-					"OK",
-					entity.ResponseCodec.ContentType,
-					null,
-					e => Log.Error(e, "error while writing HTTP response (options)"));
+
+				throw new Exception("Fix it Sergio!");
+
+				// var options = _options.GetPrintableOptions()?.Select(
+				// 	x => new OptionStructure {
+				// 		Name           = x.Name,
+				// 		Description    = x.Description,
+				// 		Group          = x.Group,
+				// 		PossibleValues = x.AllowedValues,
+				// 		Value          = null //x.Value
+				// 	}
+				// );
+				// entity.ReplyTextContent(
+				// 	Codec.Json.To(options),
+				// 	HttpStatusCode.OK,
+				// 	"OK",
+				// 	entity.ResponseCodec.ContentType,
+				// 	null,
+				// 	e => Log.Error(e, "error while writing HTTP response (options)")
+				// );
 			} else {
 				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
 			}

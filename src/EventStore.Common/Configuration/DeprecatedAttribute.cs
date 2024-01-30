@@ -1,12 +1,8 @@
 using System;
 
-namespace EventStore.Common.Configuration {
-	[AttributeUsage(AttributeTargets.Property)]
-	public class DeprecatedAttribute : Attribute {
-		public string Message { get; }
+namespace EventStore.Common.Configuration;
 
-		public DeprecatedAttribute(string message) {
-			Message = message;
-		}
-	}
+[AttributeUsage(AttributeTargets.Property)]
+public class DeprecatedAttribute(string message) : Attribute {
+	public string Message { get; } = message;
 }

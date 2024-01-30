@@ -1,14 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
 using System.Net;
-using EventStore.Common.Configuration;
-using EventStore.Common.Configuration.Sources;
 using EventStore.Common.Utils;
 using EventStore.Core.Certificates;
-using EventStore.Core.LogAbstraction;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Services;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
@@ -195,8 +191,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class
-		with_0_0_0_0_for_internal_and_external_ips_with_advertise_info_set_for_external<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
+	public class with_0_0_0_0_for_internal_and_external_ips_with_advertise_info_set_for_external<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
 			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
@@ -256,7 +251,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		
 		[Test]
 		public void should_return_error_when_default_password_options_pass_through_command_line() {
-			var args = new string[] {
+			var args = new[] {
 				"--DefaultAdminPassword=Admin2023#",
 				"--DefaultOpsPassword=Ops2023#"
 			};
@@ -285,7 +280,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			_configurationRoot = new ConfigurationBuilder()
 				.AddEventStoreDefaultValues(new Dictionary<string, object> {
 					[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
-					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
+					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)]   = SystemUsers.DefaultOpsPassword
 				})
 				.AddEventStoreCommandLine(args)
 				.AddEventStoreEnvironmentVariables(environmentVariables)

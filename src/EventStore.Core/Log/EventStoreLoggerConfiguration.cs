@@ -5,6 +5,7 @@ using System.Threading;
 using EventStore.Common.Configuration;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
+using EventStore.Core.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using Serilog;

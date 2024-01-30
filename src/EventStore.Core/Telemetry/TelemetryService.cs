@@ -137,7 +137,7 @@ public sealed class TelemetryService : IDisposable,
 				["clusterSize"] = _nodeOptions.Cluster.ClusterSize,
 				["enableAtomPubOverHttp"] = _nodeOptions.Interface.EnableAtomPubOverHttp,
 				["insecure"] = _nodeOptions.Application.Insecure,
-				["runProjections"] = _nodeOptions.Projections.RunProjections.ToString(),
+				["runProjections"] = _nodeOptions.Projection.RunProjections.ToString(),
 			}));
 
 		message.Envelope.ReplyWith(new TelemetryMessage.Response(

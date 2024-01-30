@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests.Helpers {
 					ChunksCacheSize = MiniNode.CachedChunkSize,
 					StreamExistenceFilterSize = 10_000
 				},
-				Projections = new() {
+				Projection = new() {
 					RunProjections = ProjectionType.None
 				},
 				Subsystems = subsystems ?? Array.Empty<ISubsystemFactory>()

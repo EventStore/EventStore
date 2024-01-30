@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Memory;
 using static System.StringComparer;
 
-namespace EventStore.Common.Configuration.Sources;
+namespace EventStore.Core.Configuration.Sources;
 
 public class EventStoreDefaultValuesConfigurationSource(IEnumerable<KeyValuePair<string, string?>>? initialData = null) : IConfigurationSource {
 	IEnumerable<KeyValuePair<string, string?>> InitialData { get; } = initialData ?? new Dictionary<string, string?>();
@@ -28,15 +28,17 @@ public class EventStoreDefaultValuesConfigurationProvider(IEnumerable<KeyValuePa
 }
 
 public static class EventStoreDefaultValuesConfigurationExtensions {
-	public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder configurationBuilder) => 
-		configurationBuilder.Add(new EventStoreDefaultValuesConfigurationSource());
+	// public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder configurationBuilder) => 
+	// 	configurationBuilder.Add(new EventStoreDefaultValuesConfigurationSource());
 
 	public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder configurationBuilder, IEnumerable<KeyValuePair<string, string?>> initialData) =>
 		configurationBuilder.Add(new EventStoreDefaultValuesConfigurationSource(initialData));
-
-	public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder builder, IEnumerable<KeyValuePair<string, object?>>? initialData) {
-		return initialData is not null
+	
+	public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder builder, IEnumerable<KeyValuePair<string, object?>>? initialData) =>
+		initialData is not null
 			? builder.AddEventStoreDefaultValues(initialData.Select(x => new KeyValuePair<string, string?>(x.Key, x.Value?.ToString())).ToArray())
 			: builder;
-	}
+
+	public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder builder) => 
+		builder.AddEventStoreDefaultValues(ClusterVNodeOptions.DefaultValues);
 }
