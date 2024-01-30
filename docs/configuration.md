@@ -327,11 +327,11 @@ significantly improves write and read performance to cached streams on larger da
 
 By default, the cache dynamically resizes according to the amount of free memory. The minimum that it can be set to is 100,000 entries.
 
-| Format               | Syntax                         |
-|:---------------------|:-------------------------------|
-| Command line         | `--stream-info-cache-capacity` |
-| YAML                 | `StreamInfoCacheCapacity`      |
-| Environment variable | `STREAM_INFO_CACHE_CAPACITY`   | 
+| Format               | Syntax                                  |
+|:---------------------|:----------------------------------------|
+| Command line         | `--stream-info-cache-capacity`          |
+| YAML                 | `StreamInfoCacheCapacity`               |
+| Environment variable | `EVENTSTORE_STREAM_INFO_CACHE_CAPACITY` |
 
 The option is set to 0 by default, which enables dynamic resizing. The default on previous versions of
 EventStoreDb was 100,000 entries.
@@ -344,11 +344,11 @@ allows more concurrent reads to be processed.
 The reader threads count will be set at startup to twice the number of available processors, with a minimum of
 4 and a maximum of 16 threads.
 
-| Format               | Syntax                   |
-|:---------------------|:-------------------------|
-| Command line         | `--reader-threads-count` |
-| YAML                 | `ReaderThreadsCount`     |
-| Environment variable | `READER_THREADS_COUNT`   | 
+| Format               | Syntax                            |
+|:---------------------|:----------------------------------|
+| Command line         | `--reader-threads-count`          |
+| YAML                 | `ReaderThreadsCount`              |
+| Environment variable | `EVENTSTORE_READER_THREADS_COUNT` |
 
 The option is set to 0 by default, which enables autoconfiguration. The default on previous versions of
 EventStoreDb was 4 threads.
@@ -365,11 +365,11 @@ The `WorkerThreads` option configures the number of threads available to the poo
 At startup the number of worker threads will be set to 10 if there are more than 4 reader threads. Otherwise,
 it will be set to have 5 threads available.
 
-| Format               | Syntax             |
-|:---------------------|:-------------------|
-| Command line         | `--worker-threads` |
-| YAML                 | `WorkerThreads`    |
-| Environment variable | `WORKER_THREADS`   | 
+| Format               | Syntax                      |
+|:---------------------|:----------------------------|
+| Command line         | `--worker-threads`          |
+| YAML                 | `WorkerThreads`             |
+| Environment variable | `EVENTSTORE_WORKER_THREADS` |
 
 The option is set to 0 by default, which enables autoconfiguration. The default on previous versions of
 EventStoreDb was 5 threads.
