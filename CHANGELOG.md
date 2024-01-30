@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - Additional stream subscription enumerator tests [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
 - $all subscription enumerator tests [EventStore#4119](https://github.com/EventStore/EventStore/pull/4119)
 - gRPC $all subscriptions with smooth transitions between live and catchup. Subscriptions no longer drop with "consumer too slow" reason. [EventStore#4117](https://github.com/EventStore/EventStore/pull/4117)
+- General support for plugin configuration [EventStore#4130](https://github.com/EventStore/EventStore/pull/4130)
 
 ### Fixed
 - A way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
@@ -40,6 +41,7 @@ All notable changes to this project will be documented in this file.
 - Use correct checkpoint in test `subscribe_all_from_start` [EventStore#4119](https://github.com/EventStore/EventStore/pull/4119)
 - $all subscription enumerator returns `InvalidPosition` when subscribing at an invalid position [EventStore#4128](https://github.com/EventStore/EventStore/pull/4128)
 - Build on ARM, AnyCPU solution settings was actually using X64 [EventStore#4129](https://github.com/EventStore/EventStore/pull/4129)
+- filtered $all subscription enumerator returns InvalidPosition when subscribing at an invalid position [EventStore#4131](https://github.com/EventStore/EventStore/pull/4131)
 
 ### Removed
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
@@ -51,6 +53,9 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/4097 [EventStore#4098](https://github.com/EventStore/EventStore/pull/4098)
 - //github.com/EventStore/EventStore/pull/4105 [EventStore#4106](https://github.com/EventStore/EventStore/pull/4106)
 - //github.com/EventStore/EventStore/pull/4105 [EventStore#4107](https://github.com/EventStore/EventStore/pull/4107)
+
+### Now the nightly tagging happens also in forked repositories and fails every time
+- https://github.com/lahma/EventStore/actions/workflows/tag-docker-images.yml [EventStore#4136](https://github.com/EventStore/EventStore/pull/4136)
 
 ## [22.10.4] - 2023-11-22
 
