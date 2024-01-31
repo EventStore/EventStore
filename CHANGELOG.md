@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - Re-authorize subscriptions to `$all` when its stream metadata (`$$$all`) changes [EventStore#4118](https://github.com/EventStore/EventStore/pull/4118)
 - Upgrade Jint to version 3.0.0 [EventStore#4121](https://github.com/EventStore/EventStore/pull/4121)
 - Copyright year in assemblies [EventStore#4127](https://github.com/EventStore/EventStore/pull/4127)
+- Updated plugin API [EventStore#4126](https://github.com/EventStore/EventStore/pull/4126)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
