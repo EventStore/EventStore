@@ -9,7 +9,7 @@ public class DurationMaxMetric {
 	public DurationMaxMetric(Meter meter, string name) {
 		// gauge rather than updowncounter because the dimensions wont make sense to sum,
 		// because they are maxes and not necessarily from the same moment
-		meter.CreateObservableGauge(name, Observe, "seconds");
+		meter.CreateObservableGauge(name + "-seconds", Observe);
 	}
 
 	public void Add(DurationMaxTracker tracker) {

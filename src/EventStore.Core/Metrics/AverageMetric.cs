@@ -12,7 +12,7 @@ namespace EventStore.Core.Metrics {
 
 		public AverageMetric(Meter meter, string name, string unit, Func<string, Tag> genTag) {
 			_genTag = genTag;
-			meter.CreateObservableCounter(name, Observe, unit);
+			meter.CreateObservableCounter(name + "-" + unit, Observe);
 		}
 
 		public void Register(string group, Func<double> subMetric) {

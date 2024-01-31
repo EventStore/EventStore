@@ -66,7 +66,7 @@ public class SystemMetrics {
 		}
 
 		if (dims.AnyRegistered())
-			_meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
+			_meter.CreateObservableGauge(metricName + "-bytes", dims.GenObserve());
 	}
 
 	public void CreateDiskMetric(string metricName, string dbPath, Dictionary<SystemTracker, string> dimNames) {
@@ -91,6 +91,6 @@ public class SystemMetrics {
 		dims.Register(SystemTracker.DriveTotalBytes, GenMeasure(info => info.TotalBytes));
 
 		if (dims.AnyRegistered())
-			_meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
+			_meter.CreateObservableGauge(metricName + "-bytes", dims.GenObserve());
 	}
 }
