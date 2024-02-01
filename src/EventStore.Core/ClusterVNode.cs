@@ -181,7 +181,7 @@ namespace EventStore.Core {
 		private readonly TimerService _timerService;
 		private readonly KestrelHttpService _httpService;
 		private readonly ITimeProvider _timeProvider;
-		private readonly ISubsystem[] _subsystems;
+		private readonly IReadOnlyList<ISubsystem> _subsystems;
 		private readonly TaskCompletionSource<bool> _shutdownSource = new TaskCompletionSource<bool>();
 		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly IAuthorizationProvider _authorizationProvider;
@@ -514,16 +514,25 @@ namespace EventStore.Core {
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
 
+			void StartSubsystems() {
+				foreach (var subsystem in _subsystems) {
+					var subSystemName = subsystem.Name;
+					subsystem.Start().ContinueWith(t => {
+						if (t.IsCompletedSuccessfully)
+							_mainQueue.Publish(new SystemMessage.SubSystemInitialized(subSystemName));
+						else
+							Log.Error(t.Exception, "Failed to initialize subsystem {subSystemName}", subSystemName);
+					});
+				}
+			}
+			
 			_controller =
 				new ClusterVNodeController<TStreamId>(
 					(IPublisher)_mainBus, NodeInfo, Db,
 					trackers.NodeStatusTracker,
 					options, this, forwardingProxy,
-					startSubsystems: () => {
-						foreach (var subsystem in _subsystems) {
-							AddTasks(subsystem.Start());
-						}
-					});
+					startSubsystems: StartSubsystems);
+			
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager,
 				trackers.QueueTrackers);
 
@@ -1062,14 +1071,17 @@ namespace EventStore.Core {
 				trackers.GossipTrackers.ProcessingRequestFromHttpClient);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
-			var infoController = new InfoController(options, new Dictionary<string, bool> {
-				["projections"] = options.Projection.RunProjections != ProjectionType.None || options.DevMode.Dev,
-				["userManagement"] = options.Auth.AuthenticationType == Opts.AuthenticationTypeDefault &&
-				                     !options.Application.Insecure,
-				["atomPub"] = options.Interface.EnableAtomPubOverHttp || options.DevMode.Dev
 
-			}, _authenticationProvider);
-
+			var infoController = new InfoController(
+				options,
+				new Dictionary<string, bool> {
+					["projections"]    = options.Projection.RunProjections != ProjectionType.None || options.DevMode.Dev,
+					["userManagement"] = options.Auth.AuthenticationType == Opts.AuthenticationTypeDefault && !options.Application.Insecure,
+					["atomPub"]        = options.Interface.EnableAtomPubOverHttp || options.DevMode.Dev
+				},
+				_authenticationProvider
+			);
+			
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
 			_httpService.SetupController(persistentSubscriptionController);
@@ -1477,7 +1489,7 @@ namespace EventStore.Core {
 			if (!isSingleNode) {
 				_mainBus.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(leaderReplicationService);
-				_mainBus.Subscribe<SystemMessage.EnablePreLeaderReplication>(leaderReplicationService);				
+				_mainBus.Subscribe<SystemMessage.EnablePreLeaderReplication>(leaderReplicationService);
 				_mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(leaderReplicationService);
 				_mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(leaderReplicationService);
 				_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(leaderReplicationService);
@@ -1584,12 +1596,10 @@ namespace EventStore.Core {
 			}
 
 			// subsystems
-			var http = new[] { _httpService };
-			var standardComponents = new StandardComponents(Db, _mainQueue, _mainBus, _timerService, _timeProvider,
-					httpSendService, http, _workersHandler, _queueStatsManager, trackers.QueueTrackers);
-			_subsystems = options.Subsystems
-				.Select(factory => factory.Create(standardComponents))
-				.ToArray();
+			_subsystems = options.Subsystems;
+
+			var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
+				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers);
 
 			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
@@ -1598,7 +1608,10 @@ namespace EventStore.Core {
 				_httpService,
 				configuration,
 				trackers,
-				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
+				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
+				standardComponents
+			);
+			
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 			var certificateExpiryMonitor = new CertificateExpiryMonitor(_mainQueue, _certificateSelector, Log);
@@ -1727,7 +1740,7 @@ namespace EventStore.Core {
 
 			if (_subsystems != null) {
 				foreach (var subsystem in _subsystems) {
-					subsystem.Stop();
+					await subsystem.Stop();
 				}
 			}
 

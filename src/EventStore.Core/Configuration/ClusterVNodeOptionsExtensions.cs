@@ -7,6 +7,7 @@ using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Utils;
 using EventStore.Core.Configuration;
+using EventStore.Plugins.Subsystems;
 using Serilog;
 
 namespace EventStore.Core;
@@ -14,9 +15,9 @@ namespace EventStore.Core;
 public static class ClusterVNodeOptionsExtensions {
 	public static ClusterVNodeOptions Reload(this ClusterVNodeOptions options) => 
 		options.ConfigurationRoot == null ? options : ClusterVNodeOptions.FromConfiguration(options.ConfigurationRoot);
-		
-	public static ClusterVNodeOptions WithSubsystem(this ClusterVNodeOptions options, ISubsystemFactory subsystem) =>
-		options with { Subsystems = new List<ISubsystemFactory>(options.Subsystems) { subsystem } };
+
+	public static ClusterVNodeOptions WithSubsystem(this ClusterVNodeOptions options, ISubsystem subsystem) => 
+		options with { Subsystems = new List<ISubsystem>(options.Subsystems) { subsystem } };
 
 	public static ClusterVNodeOptions InCluster(this ClusterVNodeOptions options, int clusterSize) => options with {
 		Cluster = options.Cluster with {

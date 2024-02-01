@@ -62,20 +62,20 @@ namespace EventStore.ClusterNode {
 						"Failed to configure MD5. If FIPS mode is enabled, please use the FIPS commercial plugin or disable FIPS mode.");
 			}
 
-			var projectionMode = options.DevMode.Dev && options.Projections.RunProjections == ProjectionType.None
+			var projectionMode = options.DevMode.Dev && options.Projection.RunProjections == ProjectionType.None
 				? ProjectionType.System
-				: options.Projections.RunProjections;
-			var startStandardProjections = options.Projections.StartStandardProjections || options.DevMode.Dev;
+				: options.Projection.RunProjections;
+			var startStandardProjections = options.Projection.StartStandardProjections || options.DevMode.Dev;
 			_options = projectionMode >= ProjectionType.System
 				? options.WithSubsystem(new ProjectionsSubsystem(
 					new ProjectionSubsystemOptions(
-						options.Projections.ProjectionThreads,
+						options.Projection.ProjectionThreads,
 						projectionMode,
 						startStandardProjections,
-						TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry),
-						options.Projections.FaultOutOfOrderProjections,
-						options.Projections.ProjectionCompilationTimeout,
-						options.Projections.ProjectionExecutionTimeout)))
+						TimeSpan.FromMinutes(options.Projection.ProjectionsQueryExpiry),
+						options.Projection.FaultOutOfOrderProjections,
+						options.Projection.ProjectionCompilationTimeout,
+						options.Projection.ProjectionExecutionTimeout)))
 				: options;
 
 			if (!_options.Database.MemDb) {

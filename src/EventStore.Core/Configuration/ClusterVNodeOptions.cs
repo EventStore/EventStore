@@ -19,6 +19,7 @@ using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
+using EventStore.Plugins.Subsystems;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Serilog;
@@ -47,10 +48,10 @@ public partial record ClusterVNodeOptions {
 	public IConfigurationRoot? ConfigurationRoot { get; init; }
 	public UnknownOptions      Unknown           { get; init; } = new([]);
 
-	public X509Certificate2?                ServerCertificate       { get; init; }
-	public X509Certificate2Collection?      TrustedRootCertificates { get; init; }
-	public byte                             IndexBitnessVersion     { get; init; } = Index.PTableVersions.IndexV4;
-	public IReadOnlyList<ISubsystemFactory> Subsystems              { get; init; } = [];
+	public X509Certificate2?           ServerCertificate       { get; init; }
+	public X509Certificate2Collection? TrustedRootCertificates { get; init; }
+	public byte                        IndexBitnessVersion     { get; init; } = Index.PTableVersions.IndexV4;
+	public IReadOnlyList<ISubsystem>   Subsystems              { get; init; } = [];
 	
 	public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
 		IConfiguration configuration = configurationRoot.GetRequiredSection("EventStore");

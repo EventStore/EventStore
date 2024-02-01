@@ -6,7 +6,7 @@ namespace EventStore.Common.Configuration {
 	public class MetricsConfiguration {
 		public static MetricsConfiguration Get(IConfiguration configuration) =>
 			configuration
-				.GetSection("Metrics")
+				.GetSection("EventStore:Metrics")
 				.Get<MetricsConfiguration>() ?? new();
 
 		public enum StatusTracker {

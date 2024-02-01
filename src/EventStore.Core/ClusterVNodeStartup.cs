@@ -171,10 +171,7 @@ namespace EventStore.Core {
 			.BuildServiceProvider();
 
 		public IServiceCollection ConfigureServices(IServiceCollection services) {
-			var metricsConfiguration = _configuration
-				.GetSection(SectionNames.EventStore)
-				.GetSection(SectionNames.Metrics)
-				.Get<MetricsConfiguration>() ?? new();
+			var metricsConfiguration = MetricsConfiguration.Get(_configuration);
 
 			return _subsystems
 				.Aggregate(services
