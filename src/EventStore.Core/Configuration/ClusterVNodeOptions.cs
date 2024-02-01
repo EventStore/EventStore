@@ -58,7 +58,7 @@ public partial record ClusterVNodeOptions {
 	public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
 		IConfiguration configuration = configurationRoot.GetRequiredSection("EventStore");
 			
-		return new() {
+		var options = new ClusterVNodeOptions {
 			Application       = ApplicationOptions.FromConfiguration(configuration),
 			DevMode           = DevModeOptions.FromConfiguration(configuration),
 			DefaultUser       = DefaultUserOptions.FromConfiguration(configuration),
@@ -76,6 +76,10 @@ public partial record ClusterVNodeOptions {
 			ConfigurationRoot = configurationRoot,
 			DisplayOptions    = GetDisplayOptions(configurationRoot)
 		};
+		
+		FileStreamExtensions.ConfigureFlush(options.Database.UnsafeDisableFlushToDisk);
+		
+		return options;
 	}
 		
 	public static ClusterVNodeOptions BindFromConfiguration(IConfigurationRoot configurationRoot) {
@@ -84,7 +88,7 @@ public partial record ClusterVNodeOptions {
 		// maybe add this on static ctor...
 		TypeDescriptor.AddAttributes(typeof(EndPoint[]), new TypeConverterAttribute(typeof(GossipSeedConverter)));
 			
-		return new() {
+		var options = new ClusterVNodeOptions {
 			Application       = configurationRoot.BindOptions<ApplicationOptions>(),
 			DevMode           = configurationRoot.BindOptions<DevModeOptions>(),
 			DefaultUser       = configurationRoot.BindOptions<DefaultUserOptions>(),
@@ -102,6 +106,10 @@ public partial record ClusterVNodeOptions {
 			ConfigurationRoot = configurationRoot,
 			DisplayOptions    = GetDisplayOptions(configurationRoot)
 		};
+		
+		FileStreamExtensions.ConfigureFlush(options.Database.UnsafeDisableFlushToDisk);
+		
+		return options;
 	}
 
 	[Description("Default User Options")]

@@ -39,8 +39,6 @@ namespace EventStore.ClusterNode {
 			try {
 				var options = ClusterVNodeOptions.FromConfiguration(configuration);
 				
-				FileStreamExtensions.ConfigureFlush(options.Database.UnsafeDisableFlushToDisk);
-				
 				var logsDirectory = string.IsNullOrWhiteSpace(options.Log.Log)
 					? Locations.DefaultLogDirectory
 					: options.Log.Log;
