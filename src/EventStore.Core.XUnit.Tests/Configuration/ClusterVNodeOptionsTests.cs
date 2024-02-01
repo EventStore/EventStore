@@ -58,6 +58,18 @@ public class ClusterVNodeOptionsTests {
 	}
 
 	[Fact]
+	public void ignores_subsection_arguments() {
+		var options = GetOptions(
+			"--EventStore:Metrics:A aaa " +
+			"--EventStore:Plugins:B bbb"
+		);
+
+		Assert.Fail("Fix this sergio!");
+		Assert.Null(options.ConfigurationRoot["EventStore"]);
+		Assert.Empty(options.Unknown.Options);
+	}
+
+	[Fact]
 	public void BindWorks() {
 		var config = new ConfigurationBuilder()
 			.AddEventStoreDefaultValues()

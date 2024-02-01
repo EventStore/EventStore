@@ -17,22 +17,19 @@ public class ClusterVNodeOptionsPrinterTests {
 		var config = new ConfigurationBuilder()
 			.AddEventStoreDefaultValues()
 			.AddEventStoreEnvironmentVariables(
-				new Dictionary<string, string> {
-					{ "EVENTSTORE_CLUSTER_GOSSIP_PORT", "99" },
-					{ "EVENTSTORE_UNSAFE_ALLOW_SURPLUS_NODES", "true" },
-					{ "EVENTSTORE_CONFIG", "/path/to/config/envvar" },
-					{ "EVENTSTORE_RUN_PROJECTIONS", "All" }
-				}
+				("EVENTSTORE_CLUSTER_GOSSIP_PORT", "99"),
+				("EVENTSTORE_UNSAFE_ALLOW_SURPLUS_NODES", "true"),
+				("EVENTSTORE_CONFIG", "/path/to/config/envvar"),
+				("EVENTSTORE_RUN_PROJECTIONS", "All")
 			)
 			.AddEventStoreCommandLine(
-				"--config",
-				"/path/to/config/commandline",
+				"--config", "/path/to/config/commandline",
 				"--cluster-gossip-port=88"
 			)
 			.Build();
 
-		var printer = new ClusterVNodeOptionsPrinter(config);
-		var output = printer.Print();
+		var displayOptions = ClusterVNodeOptions.GetDisplayOptions(config);
+		var output = ClusterVNodeOptionsPrinter.Print(displayOptions);
 		
 #pragma warning disable CS0618 // Type or member is obsolete
 		var oldOutput = new OptionsDumper(ClusterVNodeOptions.OptionSections).Dump(config);
@@ -50,10 +47,9 @@ public class ClusterVNodeOptionsPrinterTests {
 			.AddEventStoreCommandLine($"--default-ops-password={secretText}")
 			.Build();
 		
-		
-		var printable = new ClusterVNodeOptionsPrinter(config).Options;
+		var displayOptions = ClusterVNodeOptions.GetDisplayOptions(config);
 
-		var option = printable["EventStore:DefaultOpsPassword"];
+		var option = displayOptions["EventStore:DefaultOpsPassword"];
 		
 		option.Value.Should().BeEquivalentTo(secretText);
 		option.DisplayValue.Should().BeEquivalentTo(new('*', 8));
@@ -65,9 +61,9 @@ public class ClusterVNodeOptionsPrinterTests {
 			.AddEventStoreDefaultValues()
 			.Build();
 		
-		var printable = new ClusterVNodeOptionsPrinter(config).Options;
-
-		var option = printable["EventStore:DbLogFormat"];
+		var displayOptions = ClusterVNodeOptions.GetDisplayOptions(config);
+		
+		var option = displayOptions["EventStore:DbLogFormat"];
 		
 		option.Metadata.AllowedValues.Should().BeEquivalentTo(Enum.GetNames(typeof(DbLogFormat)));
 	}
@@ -85,9 +81,9 @@ public class ClusterVNodeOptionsPrinterTests {
 			.AddEventStoreCommandLine($"--log-level={expectedValue}")
 			.Build();
 		
-		var printable = new ClusterVNodeOptionsPrinter(config).Options;
-
-		var option = printable["EventStore:LogLevel"];
+		var displayOptions = ClusterVNodeOptions.GetDisplayOptions(config);
+		
+		var option = displayOptions["EventStore:LogLevel"];
 		
 		option.Value.Should().BeEquivalentTo(expectedValue);
 		option.SourceDisplayName.Should().BeEquivalentTo(expectedSourceDisplayName);

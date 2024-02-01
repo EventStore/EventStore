@@ -1,10 +1,15 @@
+// using System;
 // using System.Collections;
+// using System.Collections.Generic;
 // using System.ComponentModel;
+// using System.Linq;
 // using EventStore.Common.Configuration;
-// using EventStore.Common.Configuration.Sources;
+// using EventStore.Core.Configuration;
+// using EventStore.Core.Configuration.Sources;
 // using Microsoft.Extensions.Configuration;
+// using Xunit;
 //
-// namespace EventStore.Common.Tests.Configuration;
+// namespace EventStore.Core.XUnit.Tests.Configuration;
 //
 // public class OptionsDumperTest {
 // 	internal class TestOptions {
@@ -34,7 +39,7 @@
 // 			public int SecretNumber { get; init; } = 7;
 // 		}
 //
-// 		private static IEnumerable<KeyValuePair<string, object?>> GetDefaultValues(Type type) {
+// 		private static IEnumerable<KeyValuePair<string, object>> GetDefaultValues(Type type) {
 // 			var defaultInstance = Activator.CreateInstance(type)!;
 //
 // 			return type.GetProperties().Select(property =>

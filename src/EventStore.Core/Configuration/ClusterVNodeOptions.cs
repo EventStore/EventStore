@@ -19,12 +19,14 @@ using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Quickenshtein;
 
 namespace EventStore.Core;
 
+[PublicAPI]
 public partial record ClusterVNodeOptions {
 	public static readonly ClusterVNodeOptions Default = new();
 
@@ -50,12 +52,10 @@ public partial record ClusterVNodeOptions {
 	public byte                             IndexBitnessVersion     { get; init; } = Index.PTableVersions.IndexV4;
 	public IReadOnlyList<ISubsystemFactory> Subsystems              { get; init; } = [];
 	
-	internal string? DebugView => ConfigurationRoot?.GetDebugView();
-	
 	public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
 		IConfiguration configuration = configurationRoot.GetRequiredSection("EventStore");
 			
-		return new ClusterVNodeOptions {
+		return new() {
 			Application       = ApplicationOptions.FromConfiguration(configuration),
 			DevMode           = DevModeOptions.FromConfiguration(configuration),
 			DefaultUser       = DefaultUserOptions.FromConfiguration(configuration),
@@ -68,31 +68,16 @@ public partial record ClusterVNodeOptions {
 			Database          = DatabaseOptions.FromConfiguration(configuration),
 			Grpc              = GrpcOptions.FromConfiguration(configuration),
 			Interface         = InterfaceOptions.FromConfiguration(configuration),
-			Projection       = ProjectionOptions.FromConfiguration(configuration),
+			Projection        = ProjectionOptions.FromConfiguration(configuration),
 			Unknown           = UnknownOptions.FromConfiguration(configuration),
 			ConfigurationRoot = configurationRoot,
+			DisplayOptions    = GetDisplayOptions(configurationRoot)
 		};
 	}
 		
 	public static ClusterVNodeOptions BindFromConfiguration(IConfigurationRoot configurationRoot) {
 		IConfiguration configuration = configurationRoot.GetRequiredSection("EventStore");
-			
-		// var properConfiguration = configurationRoot.AsEnumerable()
-		// 	.Where(x => x.Key != EventStoreConfigurationKeys.Prefix)
-		// 	.Select(x => new KeyValuePair<string, string?>(
-		// 		$"EventStore:{GetSectionNameBySettingsKey(x.Key)}:{EventStoreConfigurationKeys.StripConfigurationPrefix(x.Key)}", x.Value))
-		// 	.OrderBy(x => x.Key)
-		// 	.ToArray();
-		//
-		// static string GetSectionNameBySettingsKey(string key) {
-		// 	foreach (var section in OptionSections) {
-		// 		if (section.GetProperties().Any(x => key.EndsWith(x.Name)))
-		// 			return section.Name.Replace("Options", string.Empty);
-		// 	}
-		//
-		// 	return String.Empty;
-		// }
-			
+		
 		// maybe add this on static ctor...
 		TypeDescriptor.AddAttributes(typeof(EndPoint[]), new TypeConverterAttribute(typeof(GossipSeedConverter)));
 			
@@ -111,7 +96,8 @@ public partial record ClusterVNodeOptions {
 			Interface         = configurationRoot.BindOptions<InterfaceOptions>(),
 			Projection        = configurationRoot.BindOptions<ProjectionOptions>(),
 			Unknown           = UnknownOptions.FromConfiguration(configuration),
-			ConfigurationRoot = configurationRoot
+			ConfigurationRoot = configurationRoot,
+			DisplayOptions    = GetDisplayOptions(configurationRoot)
 		};
 	}
 
@@ -508,16 +494,8 @@ public partial record ClusterVNodeOptions {
 		[Description("Write timeout (in milliseconds).")]
 		public int WriteTimeoutMs { get; init; } = 2_000;
 
-		private readonly bool _unsafeDisableFlushToDisk = false;
-
 		[Description("Disable flushing to disk. (UNSAFE: on power off)")]
-		public bool UnsafeDisableFlushToDisk {
-			get => _unsafeDisableFlushToDisk;
-			init {
-				_unsafeDisableFlushToDisk = value;
-				FileStreamExtensions.ConfigureFlush(value); // TODO SS: This should be done here but after the options are loaded
-			}
-		}
+		public bool UnsafeDisableFlushToDisk { get; init; }
 
 		[Description("Disables Hard Deletes. (UNSAFE: use to remove hard deletes)")]
 		[Deprecated("This setting is unsafe and not recommended")]
@@ -589,26 +567,27 @@ public partial record ClusterVNodeOptions {
 		[Description("The number of stream hashes to remember when checking for collisions.")]
 		public int ScavengeHashUsersCacheCapacity { get; init; } = Opts.ScavengeHashUsersCacheCapacityDefault;
 
-		public static int GetPTableMaxReaderCount(int readerThreadsCount) {
-			var ptableMaxReaderCount = 1 /* StorageWriter */
-			                           + 1 /* StorageChaser */
-			                           + 1 /* Projections */
-			                           + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
-			                           + 1 /* Redaction */
-			                           + 1 /* Subscription LinkTos resolving */
-			                           + readerThreadsCount
-			                           + 5 /* just in case reserve :) */;
-			return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
-		}
-
-		public static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
-			var tfChunkMaxReaderCount =
-				GetPTableMaxReaderCount(readerThreadsCount) +
-				2 + /* for caching/uncaching, populating midpoints */
-				1 + /* for epoch manager usage of elections/replica service */
-				1 /* for epoch manager usage of leader replication service */;
-			return Math.Max(tfChunkMaxReaderCount, chunkInitialReaderCount);
-		}
+		// public static int GetPTableMaxReaderCount(int readerThreadsCount) {
+		// 	var ptableMaxReaderCount =
+		// 		1 /* StorageWriter */
+		// 		+ 1 /* StorageChaser */
+		// 		+ 1 /* Projections */
+		// 		+ TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
+		// 		+ 1 /* Redaction */
+		// 		+ 1 /* Subscription LinkTos resolving */
+		// 		+ readerThreadsCount
+		// 		+ 5 /* just in case reserve :) */;
+		// 	return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
+		// }
+		//
+		// public static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
+		// 	var tfChunkMaxReaderCount =
+		// 		GetPTableMaxReaderCount(readerThreadsCount) +
+		// 		2 + /* for caching/uncaching, populating midpoints */
+		// 		1 + /* for epoch manager usage of elections/replica service */
+		// 		1 /* for epoch manager usage of leader replication service */;
+		// 	return Math.Max(tfChunkMaxReaderCount, chunkInitialReaderCount);
+		// }
 
 		internal static DatabaseOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 			MinFlushDelayMs           = configurationRoot.GetValue<double>(nameof(MinFlushDelayMs)),

@@ -23,21 +23,28 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using System.Runtime;
 using EventStore.Common.DevCertificates;
+using EventStore.Core.Configuration;
 using Serilog.Events;
 
 namespace EventStore.ClusterNode {
 	internal static class Program {
 		public static async Task<int> Main(string[] args) {
+			var configuration = EventStoreConfiguration.Build(args);
+			
 			ThreadPool.SetMaxThreads(1000, 1000);
 			var exitCodeSource = new TaskCompletionSource<int>();
 			var cts = new CancellationTokenSource();
 
 			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 			try {
-				var options = ClusterVNodeOptions.FromConfiguration(args, Environment.GetEnvironmentVariables());
+				var options = ClusterVNodeOptions.FromConfiguration(configuration);
+				
+				FileStreamExtensions.ConfigureFlush(options.Database.UnsafeDisableFlushToDisk);
+				
 				var logsDirectory = string.IsNullOrWhiteSpace(options.Log.Log)
 					? Locations.DefaultLogDirectory
 					: options.Log.Log;
+				
 				EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName(),
 					options.Log.LogConsoleFormat,
 					options.Log.LogFileSize,
@@ -58,7 +65,7 @@ namespace EventStore.ClusterNode {
 
 				if (options.DevMode.RemoveDevCerts) {
 					Log.Information("Removing EventStoreDB dev certs.");
-					Common.DevCertificates.CertificateManager.Instance.CleanupHttpsCertificates();
+					CertificateManager.Instance.CleanupHttpsCertificates();
 					Log.Information("Dev certs removed. Exiting.");
 					return 0;
 				}
@@ -142,7 +149,7 @@ namespace EventStore.ClusterNode {
 					Log.Warning($"DEPRECATED{Environment.NewLine}{deprecationWarnings}");
 				}
 
-				if (!ClusterVNodeOptionsValidator.ValdiateForStartup(options)) {
+				if (!ClusterVNodeOptionsValidator.ValidateForStartup(options)) {
 					return 1;
 				}
 
@@ -167,35 +174,6 @@ namespace EventStore.ClusterNode {
 					Application.Exit(0, "Cancelled.");
 				};
 
-				// Create a single IConfiguration object that contains the whole configuration, including 
-				// plugin configuration. We will add it to the DI and make it available to the plugins.
-				//
-				// Three json files are loaded explicitly for backwards compatibility
-				// - metricsconfig.json needs loading into the EventStore:Metrics section.
-				// - kestrelsettings.json is not located in a config/ directory
-				// - logconfig.json is not located in a config/ directory
-				var configuration = new ConfigurationBuilder()
-					.AddSection($"{SectionNames.EventStore}:{SectionNames.Metrics}", x => x
-						.AddEsdbConfigFile("metricsconfig.json"))
-
-					// The other config files are added to the root, and must put themselves in the appropriate sections
-					.AddEsdbConfigFile("kestrelsettings.json", optional: true, reloadOnChange: true)
-					.AddEsdbConfigFile("logconfig.json", optional: true, reloadOnChange: true)
-
-					// Load all json files in the  `config` subdirectory (if it exists) of each configuration
-					// directory. We use the subdirectory to ensure that we only load configuration files.
-					.AddEsdbConfigFiles(subdirectory: "config", pattern: "*.json")
-
-					.AddCommandLine(args)
-					.AddEnvironmentVariables()
-
-					// Core configuration goes last so that the IConfiguration shows these
-					// identically to ClusterVNodeOptions. 
-					.AddSection(SectionNames.EventStore, x => x
-						.AddConfiguration(options.ConfigurationRoot))
-
-					.Build();
-
 				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, configuration)) {
 					using var signal = new ManualResetEventSlim(false);
 					_ = Run(hostedService, signal);
@@ -209,16 +187,15 @@ namespace EventStore.ClusterNode {
 				async Task Run(ClusterVNodeHostedService hostedService, ManualResetEventSlim signal) {
 					try {
 						await new HostBuilder()
-							.ConfigureHostConfiguration(builder =>
-								builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
-							.ConfigureAppConfiguration(builder =>
-								builder.AddConfiguration(configuration))
-							.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
+							.ConfigureHostConfiguration(builder => builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
+							.ConfigureAppConfiguration(builder => builder.AddConfiguration(configuration))
 							.ConfigureLogging(logging => logging.AddSerilog())
-							.ConfigureServices(services => services.Configure<KestrelServerOptions>(
-								configuration.GetSection(SectionNames.Kestrel)))
-							.ConfigureServices(services => services.Configure<HostOptions>(
-							 	opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(5)))
+							.ConfigureServices(services =>
+								services
+									.AddSingleton<IHostedService>(hostedService)
+									.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel"))
+									.Configure<HostOptions>(x => x.ShutdownTimeout = TimeSpan.FromSeconds(5))
+							)
 							.ConfigureWebHostDefaults(builder => builder
 								.UseKestrel(server => {
 									server.Limits.Http2.KeepAlivePingDelay =
@@ -233,7 +210,7 @@ namespace EventStore.ClusterNode {
 								})
 								.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
 								.Configure(hostedService.Node.Startup.Configure))
-							.RunConsoleAsync(options => options.SuppressStatusMessages = true, cts.Token);
+							.RunConsoleAsync(x => x.SuppressStatusMessages = true, cts.Token);
 
 						exitCodeSource.TrySetResult(0);
 					} catch (Exception ex) {
@@ -252,7 +229,7 @@ namespace EventStore.ClusterNode {
 				Log.Fatal(ex, "Host terminated unexpectedly.");
 				return 1;
 			} finally {
-				Log.CloseAndFlush();
+				await Log.CloseAndFlushAsync();
 			}
 		}
 

@@ -21,7 +21,7 @@ public partial record ClusterVNodeOptions {
 	public static readonly string HelpText;
 	public static readonly List<SectionMetadata> Metadata;
 	public static readonly IEnumerable<KeyValuePair<string, object?>> DefaultValues;
-	
+
 	static ClusterVNodeOptions() {
 		OptionSections = typeof(ClusterVNodeOptions)
 			.GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -52,11 +52,64 @@ public partial record ClusterVNodeOptions {
 				}));
 		}
 	}
+
+	public IReadOnlyDictionary<string, DisplayOption> DisplayOptions { get; init; } = new Dictionary<string, DisplayOption>();
+	
+	public static IReadOnlyDictionary<string, DisplayOption> GetDisplayOptions(IConfigurationRoot configurationRoot) {
+		var printableOptions = new Dictionary<string, DisplayOption>();
+		
+		// because we always start with defaults, we can just add them all first.
+		// then we can override them with the actual values.
+		foreach (var provider in configurationRoot.Providers) {
+			var providerType = provider.GetType();
+	
+			foreach (var option in ClusterVNodeOptions.Metadata.SelectMany(x => x.Options)) {
+				if (!provider.TryGet(option.Value.Key, out var value)) continue;
+				
+				var title             = GetTitle(option);
+				var sourceDisplayName = GetSourceDisplayName(providerType);
+				var isDefault         = providerType == typeof(EventStoreDefaultValuesConfigurationProvider);
+					
+				printableOptions[option.Value.Key] = new(
+					Metadata: option.Value,
+					Title: title,
+					Value: value,
+					SourceDisplayName: sourceDisplayName,
+					IsDefault: isDefault
+				);
+			}
+		}
+	
+		return printableOptions;
+		
+		static string CombineByPascalCase(string name, string token = " ") {
+			var regex = new System.Text.RegularExpressions.Regex(
+				@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
+			return regex.Replace(name, token);
+		}
+
+		static string GetSourceDisplayName(Type source) {
+			var name = source == typeof(EventStoreDefaultValuesConfigurationProvider)
+				? "<DEFAULT>"
+				: CombineByPascalCase(
+					source.Name
+						.Replace("EventStore", "")
+						.Replace("ConfigurationProvider", "")
+				);
+			
+			return $"({name})";
+		}
+
+		string GetTitle(KeyValuePair<string, OptionMetadata> option) => 
+			CombineByPascalCase(EventStoreConfigurationKeys.StripConfigurationPrefix(option.Value.Key)).ToUpper();
+	}
 		
 	public string GetComponentName() => $"{Interface.NodeIp}-{Interface.NodePort}-cluster-node";
 
 	public string? DumpOptions() =>
-		ConfigurationRoot == null ? null : new ClusterVNodeOptionsPrinter(ConfigurationRoot).Print();
+		ConfigurationRoot != null 
+			? ClusterVNodeOptionsPrinter.Print(DisplayOptions) 
+			: null;
 	
 	public string? GetDeprecationWarnings() {
 		var defaultValues = new Dictionary<string, object?>(DefaultValues, StringComparer.OrdinalIgnoreCase);
