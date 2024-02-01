@@ -31,8 +31,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration
 			var ts = new TimerService(new TimerBasedScheduler(new RealTimer(), timeProvider));
 			var sc = new StandardComponents(db.Config, mainQueue, mainBus, ts, timeProvider, null, new IHttpService[] { }, mainBus, qs, new());
 
-			var runtime = new ProjectionsSubsystem(options);
-			var subsystem = runtime.Create();
+			var subsystem = new ProjectionsSubsystem(options);
 
 			var builder = WebApplication.CreateBuilder();
 			builder.Services.AddGrpc();
@@ -43,9 +42,9 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration
 			subsystem.Start();
 
 			return (() => {
-				runtime.Stop();
+				subsystem.Stop();
 				db.Dispose();
-			}, runtime.LeaderQueue);
+			}, subsystem.LeaderQueue);
 		}
 	}
 }

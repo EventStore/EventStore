@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests.Integration {
 			int nodePriority, string intHostAdvertiseAs) => new(
 			PathName, index, endpoints.InternalTcp,
 			endpoints.ExternalTcp, endpoints.HttpEndPoint,
-			subsystems: Array.Empty<ISubsystemFactory>(), gossipSeeds: gossipSeeds, inMemDb: false,
+			subsystems: Array.Empty<ISubsystem>(), gossipSeeds: gossipSeeds, inMemDb: false,
 			nodePriority: nodePriority, intHostAdvertiseAs: intHostAdvertiseAs);
 
 		private Task StartNode(int i, int priority, string intHostAdvertiseAs = null) {

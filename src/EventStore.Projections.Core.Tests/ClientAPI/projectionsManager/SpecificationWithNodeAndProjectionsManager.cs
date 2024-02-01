@@ -9,13 +9,11 @@ using EventStore.ClientAPI.Projections;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
-using EventStore.Core;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Services;
 using EventStore.Core.Util;
-using EventStore.Plugins.Subsystems;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
@@ -76,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 			_systemProjectionsCreated = SystemProjections.Created(_projectionsSubsystem.LeaderMainBus);
 			return new MiniNode<TLogFormat, TStreamId>(
 				PathName, inMemDb: true,
-				subsystems: new ISubsystemFactory[] {_projectionsSubsystem});
+				subsystems: [_projectionsSubsystem]);
 		}
 
 		protected EventData CreateEvent(string eventType, string data) {

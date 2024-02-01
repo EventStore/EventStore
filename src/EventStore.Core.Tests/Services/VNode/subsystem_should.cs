@@ -28,11 +28,8 @@ public class subsystem_should : SpecificationWithDirectory {
 		await tcs.Task.WithTimeout(TimeSpan.FromSeconds(5));
 	}
 
-	private class FakeSubSystem : ISubsystemFactory, ISubsystem {
-		// ISubsystemFactory
-		public ISubsystem Create() => this;
-
-		// ISubsystem
+	private class FakeSubSystem : ISubsystem {
+		public string Name => "FakeSubSystem";
 		public IApplicationBuilder Configure(IApplicationBuilder builder) => builder;
 
 		public IServiceCollection ConfigureServices(IServiceCollection services, IConfiguration _) => services;

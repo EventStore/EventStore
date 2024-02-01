@@ -180,7 +180,7 @@ namespace EventStore.Core {
 		private readonly TimerService _timerService;
 		private readonly KestrelHttpService _httpService;
 		private readonly ITimeProvider _timeProvider;
-		private readonly ISubsystem[] _subsystems;
+		private readonly IReadOnlyList<ISubsystem> _subsystems;
 		private readonly TaskCompletionSource<bool> _shutdownSource = new TaskCompletionSource<bool>();
 		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly IAuthorizationProvider _authorizationProvider;
@@ -509,7 +509,7 @@ namespace EventStore.Core {
 
 			void StartSubsystems() {
 				foreach (var subsystem in _subsystems) {
-					var subSystemName = subsystem.GetType().Name;
+					var subSystemName = subsystem.Name;
 					subsystem.Start().ContinueWith(t => {
 						if (t.IsCompletedSuccessfully)
 							_mainQueue.Publish(new SystemMessage.SubSystemInitialized(subSystemName));
@@ -1585,9 +1585,7 @@ namespace EventStore.Core {
 			}
 
 			// subsystems
-			_subsystems = options.Subsystems
-				.Select(factory => factory.Create())
-				.ToArray();
+			_subsystems = options.Subsystems;
 
 			var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
 				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers);

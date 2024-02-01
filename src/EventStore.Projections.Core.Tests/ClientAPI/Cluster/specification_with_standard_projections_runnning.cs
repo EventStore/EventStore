@@ -1,24 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
-using EventStore.Core;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Common.Log;
-using EventStore.Core.Data;
-using EventStore.Plugins.Subsystems;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
@@ -121,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 			var node = new MiniClusterNode<TLogFormat, TStreamId>(
 				PathName, index, endpoints.InternalTcp,
 				endpoints.ExternalTcp, endpoints.HttpEndPoint,
-				subsystems: new ISubsystemFactory[] { _projections[index] }, gossipSeeds: gossipSeeds);
+				subsystems: [_projections[index]], gossipSeeds: gossipSeeds);
 			return node;
 		}
 
