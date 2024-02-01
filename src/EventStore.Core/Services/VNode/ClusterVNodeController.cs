@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Client.Messages;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -391,7 +392,7 @@ namespace EventStore.Core.Services.VNode {
 			var msg = new LeaderDiscoveryMessage.DiscoveryTimeout();
 			_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderDiscoveryTimeout, _publishEnvelope, msg));
 		}
-		
+
 		private void Handle(SystemMessage.InitiateLeaderResignation message) {
 			Log.Information("========== [{httpEndPoint}] IS INITIATING LEADER RESIGNATION...", _nodeInfo.HttpEndPoint);
 
@@ -583,7 +584,7 @@ namespace EventStore.Core.Services.VNode {
 			_outputBus.Publish(message);
 			_fsm.Handle(new SystemMessage.SystemCoreReady());
 		}
-		
+
 		private void Handle(AuthenticationMessage.AuthenticationProviderInitializationFailed message) {
 			Log.Error("Authentication Provider Initialization Failed. Shutting Down.");
 			_fsm.Handle(new SystemMessage.BecomeShutdown(Guid.NewGuid()));

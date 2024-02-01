@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - Re-authorize subscriptions to `$all` when its stream metadata (`$$$all`) changes [EventStore#4118](https://github.com/EventStore/EventStore/pull/4118)
 - Upgrade Jint to version 3.0.0 [EventStore#4121](https://github.com/EventStore/EventStore/pull/4121)
 - Copyright year in assemblies [EventStore#4127](https://github.com/EventStore/EventStore/pull/4127)
+- Updated plugin API [EventStore#4126](https://github.com/EventStore/EventStore/pull/4126)
 
 ### Added
 - documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
@@ -53,6 +54,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/4097 [EventStore#4098](https://github.com/EventStore/EventStore/pull/4098)
 - //github.com/EventStore/EventStore/pull/4105 [EventStore#4106](https://github.com/EventStore/EventStore/pull/4106)
 - //github.com/EventStore/EventStore/pull/4105 [EventStore#4107](https://github.com/EventStore/EventStore/pull/4107)
+- //github.com/EventStore/EventStore/pull/4133 [EventStore#4140](https://github.com/EventStore/EventStore/pull/4140)
 
 ### Now the nightly tagging happens also in forked repositories and fails every time
 - https://github.com/lahma/EventStore/actions/workflows/tag-docker-images.yml [EventStore#4136](https://github.com/EventStore/EventStore/pull/4136)

@@ -53,7 +53,7 @@ namespace EventStore.ClusterNode {
 			var plugInContainer = FindPlugins();
 
 			options = LoadSubsystemsPlugins(pluginLoader, options);
-			
+
 			try {
 				ConfigureMD5();
 			} catch {
@@ -62,20 +62,20 @@ namespace EventStore.ClusterNode {
 						"Failed to configure MD5. If FIPS mode is enabled, please use the FIPS commercial plugin or disable FIPS mode.");
 			}
 
-			var projectionMode = options.DevMode.Dev && options.Projection.RunProjections == ProjectionType.None
+			var projectionMode = options.DevMode.Dev && options.Projections.RunProjections == ProjectionType.None
 				? ProjectionType.System
-				: options.Projection.RunProjections;
-			var startStandardProjections = options.Projection.StartStandardProjections || options.DevMode.Dev;
+				: options.Projections.RunProjections;
+			var startStandardProjections = options.Projections.StartStandardProjections || options.DevMode.Dev;
 			_options = projectionMode >= ProjectionType.System
 				? options.WithSubsystem(new ProjectionsSubsystem(
 					new ProjectionSubsystemOptions(
-						options.Projection.ProjectionThreads, 
+						options.Projections.ProjectionThreads,
 						projectionMode,
 						startStandardProjections,
-						TimeSpan.FromMinutes(options.Projection.ProjectionsQueryExpiry), 
-						options.Projection.FaultOutOfOrderProjections,
-						options.Projection.ProjectionCompilationTimeout,
-						options.Projection.ProjectionExecutionTimeout)))
+						TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry),
+						options.Projections.FaultOutOfOrderProjections,
+						options.Projections.ProjectionCompilationTimeout,
+						options.Projections.ProjectionExecutionTimeout)))
 				: options;
 
 			if (!_options.Database.MemDb) {
@@ -240,16 +240,14 @@ namespace EventStore.ClusterNode {
 			}
 
 			static ClusterVNodeOptions LoadSubsystemsPlugins(PluginLoader pluginLoader, ClusterVNodeOptions options) {
-				var plugins = pluginLoader.Load<ISubsystemsPlugin<(ISubscriber, IPublisher)>>().ToArray();
+				var plugins = pluginLoader.Load<ISubsystemsPlugin>().ToArray();
 				foreach (var plugin in plugins) {
 					Log.Information("Loaded SubsystemsPlugin plugin: {plugin} {version}.",
 						plugin.CommandLineName,
 						plugin.Version);
-					var subsystemFactories = plugin.GetSubsystemFactories(configPath: options.Application.Config);
-					foreach (var subsystemFactory in subsystemFactories) {
-						options = options.WithSubsystem(new SubsystemFactoryAdapter<(ISubscriber, IPublisher)>(
-							subsystemFactory,
-							components => (components.MainBus, components.MainQueue)));
+					var subsystems = plugin.GetSubsystems();
+					foreach (var subsystem in subsystems) {
+						options = options.WithSubsystem(subsystem);
 					}
 				}
 				return options;

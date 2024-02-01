@@ -12,6 +12,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Plugins.Subsystems;
 using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Net.Client;
@@ -138,7 +139,7 @@ namespace EventStore.Core.Tests.Integration {
 			int nodePriority, string intHostAdvertiseAs) => new(
 			PathName, index, endpoints.InternalTcp,
 			endpoints.ExternalTcp, endpoints.HttpEndPoint,
-			subsystems: Array.Empty<ISubsystemFactory>(), gossipSeeds: gossipSeeds, inMemDb: false,
+			subsystems: Array.Empty<ISubsystem>(), gossipSeeds: gossipSeeds, inMemDb: false,
 			nodePriority: nodePriority, intHostAdvertiseAs: intHostAdvertiseAs);
 
 		private Task StartNode(int i, int priority, string intHostAdvertiseAs = null) {

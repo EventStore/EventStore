@@ -38,7 +38,7 @@ namespace EventStore.Core {
 	public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.SystemReady>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
 
-		private readonly ISubsystem[] _subsystems;
+		private readonly IReadOnlyList<ISubsystem> _subsystems;
 		private readonly IPublisher _mainQueue;
 		private readonly IPublisher _monitoringQueue;
 		private readonly ISubscriber _mainBus;
@@ -57,8 +57,10 @@ namespace EventStore.Core {
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private readonly MultiQueuedHandler _httpMessageHandler;
 		private readonly string _clusterDns;
+		private readonly StandardComponents _standardComponents;
 
-		public ClusterVNodeStartup(ISubsystem[] subsystems,
+		public ClusterVNodeStartup(
+			IReadOnlyList<ISubsystem> subsystems,
 			IPublisher mainQueue,
 			IPublisher monitoringQueue,
 			ISubscriber mainBus,
@@ -73,25 +75,8 @@ namespace EventStore.Core {
 			KestrelHttpService httpService,
 			IConfiguration configuration,
 			Trackers trackers,
-			string clusterDns) {
-			if (subsystems == null) {
-				throw new ArgumentNullException(nameof(subsystems));
-			}
-
-			if (mainQueue == null) {
-				throw new ArgumentNullException(nameof(mainQueue));
-			}
-
-			if (httpAuthenticationProviders == null) {
-				throw new ArgumentNullException(nameof(httpAuthenticationProviders));
-			}
-
-			if(authorizationProvider == null)
-				throw new ArgumentNullException(nameof(authorizationProvider));
-
-			if (readIndex == null) {
-				throw new ArgumentNullException(nameof(readIndex));
-			}
+			string clusterDns,
+			StandardComponents standardComponents) {
 
 			Ensure.Positive(maxAppendSize, nameof(maxAppendSize));
 
@@ -114,9 +99,9 @@ namespace EventStore.Core {
 			_mainBus = mainBus;
 			_httpMessageHandler = httpMessageHandler;
 			_authenticationProvider = authenticationProvider;
-			_httpAuthenticationProviders = httpAuthenticationProviders;
-			_authorizationProvider = authorizationProvider;
-			_readIndex = readIndex;
+			_httpAuthenticationProviders = httpAuthenticationProviders ?? throw new ArgumentNullException(nameof(httpAuthenticationProviders));
+			_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));
+			_readIndex = readIndex ?? throw new ArgumentNullException(nameof(readIndex));
 			_maxAppendSize = maxAppendSize;
 			_writeTimeout = writeTimeout;
 			_expiryStrategy = expiryStrategy;
@@ -124,7 +109,7 @@ namespace EventStore.Core {
 			_configuration = configuration;
 			_trackers = trackers;
 			_clusterDns = clusterDns;
-
+			_standardComponents = standardComponents ?? throw new ArgumentNullException(nameof(standardComponents));
 			_statusCheck = new StatusCheck(this);
 		}
 
@@ -132,10 +117,15 @@ namespace EventStore.Core {
 			var internalDispatcher = new InternalDispatcherEndpoint(_mainQueue, _httpMessageHandler);
 			_mainBus.Subscribe(internalDispatcher);
 
-			app.Map("/health", _statusCheck.Configure)
+			app = app.Map("/health", _statusCheck.Configure)
 				.UseMiddleware<AuthenticationMiddleware>()
-				.UseRouting()
-				.UseEndpoints(ep => {
+				.UseRouting();
+
+			// allow all subsystems to register their legacy controllers before calling MapLegacyHttp
+			foreach (var subsystem in _subsystems)
+				subsystem.Configure(app);
+
+			app.UseEndpoints(ep => {
 					_authenticationProvider.ConfigureEndpoints(ep);
 
 					ep.MapGrpcService<PersistentSubscriptions>();
@@ -175,23 +165,26 @@ namespace EventStore.Core {
 							.Build(),
 						_httpService);
 				});
-
-			foreach (var subsystem in _subsystems)
-				subsystem.Configure(app);
 		}
 
 		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)
 			.BuildServiceProvider();
 
 		public IServiceCollection ConfigureServices(IServiceCollection services) {
-			var metricsConfiguration =  MetricsConfiguration.Get(_configuration);
-				
+			var metricsConfiguration = _configuration
+				.GetSection(SectionNames.EventStore)
+				.GetSection(SectionNames.Metrics)
+				.Get<MetricsConfiguration>() ?? new();
+
 			return _subsystems
 				.Aggregate(services
 						.AddRouting()
 						.AddSingleton(_httpAuthenticationProviders)
 						.AddSingleton(_authenticationProvider)
 						.AddSingleton(_authorizationProvider)
+						.AddSingleton(_standardComponents)
+						.AddSingleton<ISubscriber>(_mainBus)
+						.AddSingleton<IPublisher>(_mainQueue)
 						.AddSingleton<AuthenticationMiddleware>()
 						.AddSingleton<AuthorizationMiddleware>()
 						.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
@@ -259,7 +252,7 @@ namespace EventStore.Core {
 						.AddServiceOptions<Streams<TStreamId>>(options =>
 							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
 						.Services,
-					(s, subsystem) => subsystem.ConfigureServices(s));
+					(s, subsystem) => subsystem.ConfigureServices(s, _configuration));
 		}
 
 		public void Handle(SystemMessage.SystemReady _) => _ready = true;

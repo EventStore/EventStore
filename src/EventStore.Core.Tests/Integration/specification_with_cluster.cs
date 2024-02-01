@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
+using EventStore.Plugins.Subsystems;
 
 namespace EventStore.Core.Tests.Integration {
 	public abstract class specification_with_cluster<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
@@ -65,7 +66,7 @@ namespace EventStore.Core.Tests.Integration {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			
+
 			MiniNodeLogging.Setup();
 
 			_nodeEndpoints[0] = new Endpoints();
@@ -120,7 +121,7 @@ namespace EventStore.Core.Tests.Integration {
 				onFail: MiniNodeLogging.WriteLogs,
 				msg: "Waiting for leader timed out!");
 
-			//flaky: most tests only need 1 follower, waiting for 2 causes timeouts 
+			//flaky: most tests only need 1 follower, waiting for 2 causes timeouts
 			AssertEx.IsOrBecomesTrue(() =>
 					_nodes.Any(x => x.NodeState is VNodeState.Follower or VNodeState.ReadOnlyReplica),
 				timeout: TimeSpan.FromSeconds(90),
@@ -147,7 +148,7 @@ namespace EventStore.Core.Tests.Integration {
 			bool wait = true) => new(
 			PathName, index, endpoints.InternalTcp,
 			endpoints.ExternalTcp, endpoints.HttpEndPoint,
-			subsystems: Array.Empty<ISubsystemFactory>(), gossipSeeds: gossipSeeds, inMemDb: false);
+			subsystems: Array.Empty<ISubsystem>(), gossipSeeds: gossipSeeds, inMemDb: false);
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
@@ -158,7 +159,7 @@ namespace EventStore.Core.Tests.Integration {
 				_nodes[2].Shutdown());
 
 			MiniNodeLogging.Clear();
-			
+
 			await base.TestFixtureTearDown();
 		}
 
