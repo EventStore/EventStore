@@ -353,7 +353,6 @@ public record SectionMetadata(string Key, string SectionName, string Description
 		var description = property.PropertyType.GetCustomAttribute<DescriptionAttribute>()?.Description ?? String.Empty;
 				
 		var options = property.PropertyType.GetProperties()
-			.OrderBy(x => x.Name)
 			.Select(OptionMetadata.FromPropertyInfo)
 			.ToDictionary(option => option.Key, x => x);
 

@@ -33,7 +33,7 @@ public static class ClusterVNodeOptionsPrinter {
 			
 			var firstOption = true;
 			
-			foreach (var option in options) {
+			foreach (var option in options.OrderBy(x => x.Value.Metadata.Name)) {
 				if (option.Value.IsDefault == modifiedOnly)
 					continue;
 

@@ -69,13 +69,12 @@ public static class EventStoreConfiguration {
 			.Build();
 		
 		var configFilePath = configuration.GetValue<string?>("EventStore:Config");
-
-		// still dont like how we get this path
+		
 		return string.IsNullOrEmpty(configFilePath) 
 			// get the default config file path	
-			? (Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile), false) 
-			// if the user has specified a config file make it optional
-			: (configFilePath, true);
+			? (Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile), true) 
+			// if the user has specified a config file make it non optional
+			: (configFilePath, false);
 	}
 	
 	static IConfigurationBuilder AddEventStoreConfigFile(this IConfigurationBuilder builder, string path, bool optional = true) {

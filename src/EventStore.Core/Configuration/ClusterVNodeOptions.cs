@@ -52,6 +52,8 @@ public partial record ClusterVNodeOptions {
 	public X509Certificate2Collection? TrustedRootCertificates { get; init; }
 	public byte                        IndexBitnessVersion     { get; init; } = Index.PTableVersions.IndexV4;
 	public IReadOnlyList<ISubsystem>   Subsystems              { get; init; } = [];
+
+	public bool UnknownOptionsDetected => Unknown.Options.Any();
 	
 	public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
 		IConfiguration configuration = configurationRoot.GetRequiredSection("EventStore");
@@ -950,44 +952,52 @@ public partial record ClusterVNodeOptions {
 
 	public record UnknownOptions(IReadOnlyList<(string, string)> Options) {
 		internal static UnknownOptions FromConfiguration(IConfiguration configuration) {
-			var allKnownKeys = typeof(ClusterVNodeOptions).GetProperties()
-				.SelectMany(property => property
-					.PropertyType
-					.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-				.Select(x => x.Name)
+			var knownKeys = Metadata
+				.SelectMany(x => x.Options)
+				.Select(x => x.Key)
 				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			
+			var unknownKeys = FindUnknownKeys(configuration, knownKeys);
 
-				
-			// TODO SS: make sure we skip all keys with a sub section. Ex: EventStore:Metrics
-				
-			var unknownKeys = configuration
-				.AsEnumerable()
-				.Select(kvp => EventStoreConfigurationKeys.StripConfigurationPrefix(kvp.Key))
-				.Where(key => key != EventStoreConfigurationKeys.Prefix && !allKnownKeys.Contains(key))
+			var result = unknownKeys
+				.Select(unknownKey => CreateUnknownOptionResult(knownKeys, unknownKey))
 				.ToList();
+			
+			return new(result);
 
-			var unknownOptions = unknownKeys
-				.Select(unknownKey => {
-					var first = allKnownKeys
-						.Select(allowedKey => {
-							var distance = Levenshtein.GetDistance(unknownKey, allowedKey);
-							return (allowedKey, distance);
-						}).MinBy(x => x.distance);
-					return (unknownKey, first.distance > 5 ? "" : first.allowedKey);
-				})
-				.ToList();
+			static HashSet<string> FindUnknownSections(IEnumerable<string> keys) {
+				// if it has more than 2 sections, we found a value with an unknown section
+				var hashSet = new HashSet<string>();
+				
+				foreach (var key in keys.Where(key => key.Split(":").Length > 2))
+					hashSet.Add(key[..key.LastIndexOf(':')]);
 
-			return new(unknownOptions);
+				return hashSet;
+			}
+
+			static IEnumerable<string> FindUnknownKeys(IConfiguration configuration, IReadOnlySet<string> knownKeys) {
+				var unknownKeys = configuration
+					.AsEnumerable()
+					.Select(kvp => kvp.Key)
+					.Where(key => key != EventStoreConfigurationKeys.Prefix && !knownKeys.Contains(key))
+					.ToList();
+
+				var unknownSections = FindUnknownSections(unknownKeys);
+ 
+				return unknownKeys
+					.Where(key => !unknownSections.Any(key.StartsWith));
+			}
+
+			static (string UnknownKey, string SuggestedKey) CreateUnknownOptionResult(HashSet<string> knownKeys, string unknownKey, int distanceThreshold = 5) {
+				var suggestion = knownKeys
+					.Select(key => (AllowedKey: key, Distance: Levenshtein.GetDistance(unknownKey, key)))
+					.MinBy(x => x.Distance);
+
+				return (
+					UnknownKey: EventStoreConfigurationKeys.StripConfigurationPrefix(unknownKey),
+					SuggestedKey: suggestion.Distance > distanceThreshold ? "" : EventStoreConfigurationKeys.StripConfigurationPrefix(suggestion.AllowedKey)
+				);
+			}
 		}
-	}
-		
-	public static HashSet<string> AllKnownKeys(bool normalize = false) {
-		var allKnownKeys = typeof(ClusterVNodeOptions)
-			.GetProperties()
-			.SelectMany(property => property.PropertyType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-			.Select(x => normalize ? EventStoreConfigurationKeys.Normalize(x.Name) : x.Name)
-			.ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-		return allKnownKeys;
 	}
 }
