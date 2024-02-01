@@ -54,6 +54,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/4097 [EventStore#4098](https://github.com/EventStore/EventStore/pull/4098)
 - //github.com/EventStore/EventStore/pull/4105 [EventStore#4106](https://github.com/EventStore/EventStore/pull/4106)
 - //github.com/EventStore/EventStore/pull/4105 [EventStore#4107](https://github.com/EventStore/EventStore/pull/4107)
+- //github.com/EventStore/EventStore/pull/4133 [EventStore#4140](https://github.com/EventStore/EventStore/pull/4140)
 
 ### Now the nightly tagging happens also in forked repositories and fails every time
 - https://github.com/lahma/EventStore/actions/workflows/tag-docker-images.yml [EventStore#4136](https://github.com/EventStore/EventStore/pull/4136)
