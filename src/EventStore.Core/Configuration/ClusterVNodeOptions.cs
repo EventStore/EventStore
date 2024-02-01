@@ -8,7 +8,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Configuration;
 using EventStore.Common.Options;
@@ -16,7 +15,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Configuration;
 using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Services.Monitoring;
-using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using EventStore.Plugins.Subsystems;
@@ -29,7 +27,8 @@ namespace EventStore.Core;
 
 [PublicAPI]
 public partial record ClusterVNodeOptions {
-	public static readonly ClusterVNodeOptions Default = new();
+
+	public ClusterVNodeOptions() => FileStreamExtensions.ConfigureFlush(Database.UnsafeDisableFlushToDisk);
 
 	[OptionGroup] public ApplicationOptions      Application      { get; init; } = new();
 	[OptionGroup] public DevModeOptions          DevMode          { get; init; } = new();

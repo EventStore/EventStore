@@ -1,6 +1,5 @@
 #nullable enable
 
-using System.Linq;
 using EventStore.Core.Configuration;
 using EventStore.Core.Configuration.Sources;
 using FluentAssertions;
@@ -13,6 +12,11 @@ public class ClusterVNodeOptionsTests {
 	static ClusterVNodeOptions GetOptions(string args) {
 		var configuration = EventStoreConfiguration.Build(args.Split());
 		return ClusterVNodeOptions.FromConfiguration(configuration);
+	}
+
+	[Fact]
+	public void builds_proper() {
+		var options = new ClusterVNodeOptions();
 	}
 
 	[Fact]
@@ -58,14 +62,55 @@ public class ClusterVNodeOptionsTests {
 
 	[Fact]
 	public void ignores_subsection_arguments() {
-		var options = GetOptions(
-			"--EventStore:Metrics:A aaa " +
-			"--EventStore:Plugins:B bbb"
-		);
+		var configuration = new ConfigurationBuilder()
+			.AddEventStoreDefaultValues()
+			.AddEventStoreEnvironmentVariables(
+				("EVENTSTORE__METRICS__X", "xxx"),
+				("EVENTSTORE__PLUGINS__Y", "yyy")
+			)
+			.AddEventStoreCommandLine(
+				"--EventStore:Metrics:A aaa " +
+				"--EventStore:Plugins:B bbb"
+			)
+			.Build();
+		
+		var options = ClusterVNodeOptions.FromConfiguration(configuration);
+		
+		options.Unknown.Options.Should().BeEmpty();
+	}
+	
+	[Fact]
+	public void validation_should_return_error_when_default_password_options_pass_through_command_line() {
+		var configuration =  new ConfigurationBuilder()
+			.AddEventStoreDefaultValues()
+			.AddEventStoreCommandLine(
+				"--DefaultAdminPassword=Admin#",
+				"--DefaultOpsPassword=Ops#")
+			.Build();
+			
+		var options = ClusterVNodeOptions.FromConfiguration(configuration);
 
-		// Assert.Fail("Fix this sergio!");
-		//Assert.Null(options.ConfigurationRoot["EventStore"]);
-		Assert.Empty(options.Unknown.Options);
+		var result = options.CheckForEnvironmentOnlyOptions();
+
+		result.Should().NotBeNull();
+	}
+	
+	[Fact]
+	public void validation_should_return_null_when_default_password_options_pass_through_environment_variables() {
+		var configuration = new ConfigurationBuilder()
+			.AddEventStoreDefaultValues()
+			.AddEventStoreEnvironmentVariables(
+				("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#"),
+				("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#")
+			)
+			.AddEventStoreCommandLine()
+			.Build();
+		
+		var options = ClusterVNodeOptions.FromConfiguration(configuration);
+		
+		var result = options.CheckForEnvironmentOnlyOptions();
+
+		result.Should().BeNull();
 	}
 
 	[Fact]

@@ -1,13 +1,11 @@
 #nullable enable
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using EventStore.Core.Configuration.Sources;
-using EventStore.Core.Services;
 using EventStore.Core.Tests;
-using EventStore.Core.Tests.Common.ClusterNodeOptionsTests;
 using EventStore.Core.TransactionLog.Chunks;
+using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 
@@ -188,68 +186,61 @@ public class with_custom_password_for_admin_and_ops_user<TLogFormat, TStreamId> 
 
 [TestFixture(typeof(LogFormat.V2), typeof(string))]
 [TestFixture(typeof(LogFormat.V3), typeof(uint))]
-public class with_custom_settings_check_for_environment_only_options<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat,
-	TStreamId> {
-	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
-		options with {
-		};
-		
-	private IConfigurationRoot _configurationRoot = null!;
+public class with_custom_settings_check_for_environment_only_options<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
+	
+	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options with { };
 		
 	[Test]
 	public void should_return_error_when_default_password_options_pass_through_command_line() {
-		var args = new[] {
-			"--DefaultAdminPassword=Admin#",
-			"--DefaultOpsPassword=Ops#"
-		};
-			
-		_configurationRoot = new ConfigurationBuilder()
-			.AddInMemoryCollection(new Dictionary<string, string?> {
-				[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
-				[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)]   = SystemUsers.DefaultOpsPassword
-			})
-			.AddEventStoreCommandLine(args)
+		var configuration =  new ConfigurationBuilder()
+			.AddEventStoreDefaultValues()
+			.AddEventStoreCommandLine(
+				"--DefaultAdminPassword=Admin#",
+				"--DefaultOpsPassword=Ops#")
 			.Build();
 			
-		var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);
-			
-		Assert.NotNull(clusterVNodeOptions.CheckForEnvironmentOnlyOptions());
+		var options = ClusterVNodeOptions.FromConfiguration(configuration);
+
+		var result = options.CheckForEnvironmentOnlyOptions();
+
+		result.Should().NotBeNull();
 	}
 		
-	// [Test]
-	// public void should_return_null_when_default_password_options_pass_through_environment_variables() {
-	//
-	// 	var args = Array.Empty<string>();
-	// 	IDictionary environmentVariables = new Dictionary<string, string>();
-	// 	environmentVariables.Add("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#");
-	// 	environmentVariables.Add("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#");
-	// 	
-	// 	_configurationRoot = new ConfigurationBuilder()
-	// 		.AddEventStoreDefaultValues(new Dictionary<string, object> {
-	// 			[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
-	// 			[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)]   = SystemUsers.DefaultOpsPassword
-	// 		})
-	// 		.AddEventStoreCommandLine(args)
-	// 		.AddEventStoreEnvironmentVariables(environmentVariables)
-	// 		.Build();
-	// 	
-	// 	var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);
-	// 	
-	// 	Assert.Null(clusterVNodeOptions.CheckForEnvironmentOnlyOptions());
-	// }
+	[Test]
+	public void should_return_null_when_default_password_options_pass_through_environment_variables() {
+		var configuration = new ConfigurationBuilder()
+			.AddEventStoreDefaultValues()
+			.AddEventStoreEnvironmentVariables(
+				("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#"),
+				("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#")
+			)
+			.AddEventStoreCommandLine()
+			.Build();
+		
+		var options = ClusterVNodeOptions.FromConfiguration(configuration);
+		
+		var result = options.CheckForEnvironmentOnlyOptions();
+
+		result.Should().BeNull();
+	}
 
 	[Test]
-	public void should_ignore_subsection_environment_variables() {
-		_configurationRoot = new ConfigurationBuilder()
+	public void ignores_subsection_arguments() {
+		var configuration = new ConfigurationBuilder()
+			// we should be able to stop doing this soon as long as we bind the options automatically
+			.AddEventStoreDefaultValues()
 			.AddEventStoreEnvironmentVariables(
-				("EVENTSTORE__METRICS__A", "aaa"),
-				("EVENTSTORE__PLUGINS__B", "bbb")
+				("EVENTSTORE__METRICS__X", "xxx"),
+				("EVENTSTORE__PLUGINS__Y", "yyy")
+			)
+			.AddEventStoreCommandLine(
+				"--EventStore:Metrics:A aaa " +
+				"--EventStore:Plugins:B bbb"
 			)
 			.Build();
+		
+		var options = ClusterVNodeOptions.FromConfiguration(configuration);
 
-		var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);
-
-		Assert.IsEmpty(clusterVNodeOptions.ConfigurationRoot?.AsEnumerable() ?? []);
-		Assert.IsEmpty(clusterVNodeOptions.Unknown.Options);
+		options.Unknown.Options.Should().BeEmpty();
 	}
 }

@@ -75,9 +75,7 @@ public class ClusterVNodeOptionsPrinterTests {
 		
 		var config = new ConfigurationBuilder()
 			.AddEventStoreDefaultValues()
-			.AddEventStoreEnvironmentVariables(new Dictionary<string, string> {
-				{ "EVENTSTORE_LOG_LEVEL", LogLevel.Fatal.ToString() },
-			})
+			.AddEventStoreEnvironmentVariables(("EVENTSTORE_LOG_LEVEL", LogLevel.Fatal.ToString()))
 			.AddEventStoreCommandLine($"--log-level={expectedValue}")
 			.Build();
 		

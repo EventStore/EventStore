@@ -5,7 +5,6 @@ using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Certificates;
 using EventStore.Core.Tests;
-using EventStore.Core.Tests.Common.ClusterNodeOptionsTests;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using NUnit.Framework;
 
@@ -30,8 +29,7 @@ public class with_ssl_enabled_and_using_a_security_certificate_from_file<TLogFor
 			}
 		};
 	}
-
-
+	
 	[Test]
 	public void should_set_tls_to_enabled() {
 		Assert.IsFalse(_options.Interface.DisableInternalTcpTls);
@@ -102,7 +100,6 @@ public class with_ssl_enabled_and_using_a_security_certificate<TLogFormat, TStre
 		Assert.AreEqual(_externalSecTcp, _node.NodeInfo.ExternalSecureTcp);
 	}
 }
-
 
 [TestFixture(typeof(LogFormat.V2), typeof(string))]
 [TestFixture(typeof(LogFormat.V3), typeof(uint))]

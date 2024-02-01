@@ -5,7 +5,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests;
-using EventStore.Core.Tests.Common.ClusterNodeOptionsTests;
 using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
 

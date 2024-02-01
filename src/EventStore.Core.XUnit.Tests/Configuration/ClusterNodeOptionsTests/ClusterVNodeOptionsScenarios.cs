@@ -6,10 +6,11 @@ using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Certificates;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests;
+namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests;
 
 [TestFixture]
 public abstract class SingleNodeScenario<TLogFormat, TStreamId> {
