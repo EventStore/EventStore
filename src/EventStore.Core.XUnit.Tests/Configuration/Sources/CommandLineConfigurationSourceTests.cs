@@ -7,26 +7,35 @@ namespace EventStore.Core.Tests.Configuration;
 
 public class CommandLineConfigurationSourceTests {
 	[Theory]
-	[InlineData("--stream_info_cache_capacity=99", "EventStore:StreamInfoCacheCapacity", "99")]
-	public void AddsArguments(string argument, string normalizedKey, string expectedValue) {
+	[InlineData(new[] { "--stream_info_cache_capacity=99" }, "EventStore:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--stream_info_cache_capacity", "99" }, "EventStore:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--stream-info-cache-capacity=99" }, "EventStore:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--stream-info-cache-capacity", "99" }, "EventStore:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--EventStore:StreamInfoCacheCapacity=99" }, "EventStore:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--EventStore:StreamInfoCacheCapacity", "99" }, "EventStore:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--EventStore:Stream-Info-Cache-Capacity=99" }, "EventStore:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--EventStore:Stream-Info-Cache-Capacity", "99" }, "EventStore:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--EventStore:Stream_Info_Cache_Capacity=99" }, "EventStore:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--EventStore:Stream_Info_Cache_Capacity", "99" }, "EventStore:StreamInfoCacheCapacity", "99")]
+	public void AddsArguments(string[] arguments, string normalizedKey, string expectedValue) {
 		// Act
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreCommandLine([argument])
+			.AddEventStoreCommandLine(arguments)
 			.Build();
-		
+
 		// Assert
 		configuration.GetValue<string>(normalizedKey).Should().Be(expectedValue);
 	}
 	
-	static IConfiguration BuildConfiguration(string args) => 
+	static IConfiguration BuildConfiguration(params string[] args) => 
 		new ConfigurationBuilder()
-			.AddEventStoreCommandLine(args.Split())
+			.AddEventStoreCommandLine(args)
 			.Build()
 			.GetSection(EventStoreConfigurationKeys.Prefix);
 
 	[Fact]
 	public void normalize_keys() {
-		var configuration = BuildConfiguration("--cluster-size 3 --log /tmp/eventstore/logs");
+		var configuration = BuildConfiguration("--cluster-size", "3", "--log", "/tmp/eventstore/logs");
 		Assert.Equal(3, configuration.GetValue<int>("ClusterSize"));
 		Assert.Equal("/tmp/eventstore/logs", configuration.GetValue<string>("Log"));
 	}
