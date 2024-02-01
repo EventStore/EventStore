@@ -16,7 +16,6 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 
