@@ -1,5 +1,9 @@
 #nullable enable
 
+using System;
+using System.IO;
+using System.Linq;
+using System.Net;
 using EventStore.Core.Configuration;
 using EventStore.Core.Configuration.Sources;
 using FluentAssertions;
@@ -114,7 +118,7 @@ public class ClusterVNodeOptionsTests {
 	}
 
 	[Fact]
-	public void BindWorks() {
+	public void bind_works() {
 		var config = new ConfigurationBuilder()
 			.AddEventStoreDefaultValues()
 			.Build();
@@ -123,23 +127,62 @@ public class ClusterVNodeOptionsTests {
 		var binded = ClusterVNodeOptions.BindFromConfiguration(config);
 			
 		manual.Should().BeEquivalentTo(binded);
+		
+		ClusterVNodeOptionsValidator.Validate(manual);
+		ClusterVNodeOptionsValidator.Validate(binded);
 	}
 
-	// [Fact]
-	// public void BindCommaSeparatedValuesOption() {
-	// 	EndPoint[] endpoints = [new IPEndPoint(IPAddress.Loopback, 1113), new DnsEndPoint("some-host", 1114)];
-	// 		
-	// 	var values = string.Join(",", endpoints.Select(x => $"{x}"));
-	//
-	// 	var config = new ConfigurationBuilder()
-	// 		.AddInMemoryCollection(new KeyValuePair<string, string>[] {
-	// 			new("GossipSeed", values),
-	// 			new("FakeEndpoint", endpoints[0].ToString())
-	// 		})
-	// 		.Build();
-	// 		
-	// 	var options = config.Get<ClusterVNodeOptions.ClusterOptions>();
-	//
-	// 	options.GossipSeed.Should().BeEquivalentTo(endpoints);
-	// }
+	[Fact]
+	public void can_set_gossip_seed_values() {
+		EndPoint[] endpoints = [
+			new IPEndPoint(IPAddress.Loopback, 1113), 
+			new DnsEndPoint("some-host", 1114), 
+			new DnsEndPoint("127.0.1.15", 1115)
+		];
+			
+		var values = string.Join(",", endpoints.Select(x => $"{x}"));
+	
+		var config = new ConfigurationBuilder()
+			.AddEventStoreEnvironmentVariables(("EVENTSTORE_GOSSIPSEED", values))
+			.Build();
+			
+		var options  = ClusterVNodeOptions.FromConfiguration(config);
+		
+		options.Cluster.GossipSeed.Should().BeEquivalentTo(endpoints);
+	}
+	
+	[Fact]
+	public void can_set_cluster_size_from_env_vars() {
+		var config = new ConfigurationBuilder()
+			.AddEventStoreEnvironmentVariables(("EVENTSTORE_CLUSTER_SIZE", "23"))
+			.Build();
+			
+		var options = ClusterVNodeOptions.FromConfiguration(config);
+		
+		options.Cluster.ClusterSize.Should().Be(23);
+	}
+	
+	[Fact]
+	public void can_set_cluster_size_from_args() {
+		var config = new ConfigurationBuilder()
+			.AddEventStoreCommandLine("--CLUSTER-SIZE=23")
+			.Build();
+			
+		var options = ClusterVNodeOptions.FromConfiguration(config);
+		
+		options.Cluster.ClusterSize.Should().Be(23);
+	}
+	
+	[Fact]
+	public void cab_set_cluster_size_from_config_file() {
+		var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configuration", "test.eventstore.conf");
+		
+		var config = new ConfigurationBuilder()
+			.AddEventStoreConfigFile(path, optional: false)
+			.Build();
+			
+		var options = ClusterVNodeOptions.FromConfiguration(config);
+		
+		options.Cluster.ClusterSize.Should().Be(23);
+	}
 }

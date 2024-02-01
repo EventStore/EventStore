@@ -8,6 +8,7 @@ namespace EventStore.Core.Tests.Configuration;
 
 public class EventStoreConfigurationKeysTests {
 	[Theory]
+	[InlineData("EVENTSTORE_StreamInfoCacheCapacity", "EventStore:StreamInfoCacheCapacity")]
 	[InlineData("EVENTSTORE_STREAM_INFO_CACHE_CAPACITY", "EventStore:StreamInfoCacheCapacity")]
 	[InlineData("EVENTSTORE__STREAM_INFO_CACHE_CAPACITY", "EventStore:StreamInfoCacheCapacity")]
 	[InlineData("EVENTSTORE__CLUSTER__STREAM_INFO_CACHE_CAPACITY", "EventStore:Cluster:StreamInfoCacheCapacity")]

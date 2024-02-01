@@ -61,7 +61,7 @@ public static class EventStoreConfiguration {
 
 		return Build(args, environment, defaultValues);
 	}
-	
+
 	static (string Path, bool Optional) ResolveConfigurationFile(string[] args, IDictionary environment) {
 		var configuration = new ConfigurationBuilder()
 			.AddEventStoreEnvironmentVariables(environment)
@@ -76,15 +76,16 @@ public static class EventStoreConfiguration {
 			// if the user has specified a config file make it non optional
 			: (configFilePath, false);
 	}
-	
-	static IConfigurationBuilder AddEventStoreConfigFile(this IConfigurationBuilder builder, string path, bool optional = true) {
+
+	public static IConfigurationBuilder AddEventStoreConfigFile(this IConfigurationBuilder builder, string path, bool optional = true) {
 		if (string.IsNullOrWhiteSpace(path)) 
 			throw new ArgumentException("Value cannot be null or whitespace.", nameof(path));
-		
+
 		var yamlSource = new YamlConfigurationSource {
 			Path           = path,
 			Optional       = optional,
-			ReloadOnChange = true
+			ReloadOnChange = true,
+			Prefix         = EventStoreConfigurationKeys.Prefix
 		};
 
 		yamlSource.ResolveFileProvider();
