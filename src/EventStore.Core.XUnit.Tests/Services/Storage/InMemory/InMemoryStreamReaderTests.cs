@@ -6,10 +6,10 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
-using EventStore.Core.Services.Storage;
+using EventStore.Core.Services.Storage.InMemory;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.Services.Storage;
+namespace EventStore.Core.XUnit.Tests.Services.Storage.InMemory;
 
 public class InMemoryStreamReaderTests {
 	private readonly InMemoryStreamReader _sut;
@@ -17,7 +17,9 @@ public class InMemoryStreamReaderTests {
 
 	public InMemoryStreamReaderTests() {
 		var channel = Channel.CreateUnbounded<Message>();
-		_listener = new NodeStateListenerService(new EnvelopePublisher(new ChannelEnvelope(channel)));
+		_listener = new NodeStateListenerService(
+			new EnvelopePublisher(new ChannelEnvelope(channel)),
+			new InMemoryLog());
 		_sut = new InMemoryStreamReader(new Dictionary<string, IInMemoryStreamReader> {
 			[SystemStreams.NodeStateStream] = _listener,
 		});
@@ -145,7 +147,7 @@ public class InMemoryStreamReaderTests {
 			// - not find event 49 (like we do for regular maxCount reads, even if old events have been scavenged)
 			//   and not reach the end of the stream (nextEventNumber <= 49 so that we can read it in subsequent pages)
 			// current implementation finds the event.
-			for (int i = 0; i < 50; i++)
+			for (var i = 0; i < 50; i++)
 				_listener.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			var correlation = Guid.NewGuid();
 
