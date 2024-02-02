@@ -118,8 +118,17 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(internalDispatcher);
 
 			app = app.Map("/health", _statusCheck.Configure)
+				// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
+				// the resulting ClaimsPrinciple to HttpContext.User
 				.UseMiddleware<AuthenticationMiddleware>()
-				.UseRouting();
+
+				// UseAuthentication/UseAuthorization allow the rest of the pipeline to access auth
+				// in a conventional way (e.g. with AuthorizeAttribute). The server doesn't make use
+				// of this yet but plugins may. The registered authentication scheme (es auth)
+				// is driven by the HttpContext.User established above
+				.UseAuthentication()
+				.UseRouting()
+				.UseAuthorization();
 
 			// allow all subsystems to register their legacy controllers before calling MapLegacyHttp
 			foreach (var subsystem in _subsystems)
@@ -179,6 +188,10 @@ namespace EventStore.Core {
 			return _subsystems
 				.Aggregate(services
 						.AddRouting()
+						.AddAuthentication(o => o
+							.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null))
+							.Services
+						.AddAuthorization()
 						.AddSingleton(_httpAuthenticationProviders)
 						.AddSingleton(_authenticationProvider)
 						.AddSingleton(_authorizationProvider)
