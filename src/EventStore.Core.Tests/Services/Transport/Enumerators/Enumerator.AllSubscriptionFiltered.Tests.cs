@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
@@ -17,8 +18,9 @@ namespace EventStore.Core.Tests.Services.Transport.Enumerators;
 public partial class EnumeratorTests {
 	private static EnumeratorWrapper CreateAllSubscriptionFiltered(
 		IPublisher publisher,
-		Position startPosition,
-		IEventFilter eventFilter = null) {
+		Position? startPosition,
+		IEventFilter eventFilter = null,
+		ClaimsPrincipal user = null) {
 
 		return new EnumeratorWrapper(new Enumerator.AllSubscriptionFiltered(
 			bus: publisher,
@@ -26,7 +28,7 @@ public partial class EnumeratorTests {
 			startPosition: startPosition,
 			resolveLinks: false,
 			eventFilter: eventFilter,
-			user: SystemAccounts.System,
+			user: user ?? SystemAccounts.System,
 			requiresLeader: false,
 			maxSearchWindow: null,
 			checkpointIntervalMultiplier: 1,
@@ -49,7 +51,7 @@ public partial class EnumeratorTests {
 		[Test]
 		public async Task should_receive_live_caught_up_message_after_reading_existing_events() {
 			await using var sub = CreateAllSubscriptionFiltered(
-				_publisher, Position.Start, EventFilter.EventType.Prefixes(false, "type1"));
+				_publisher, null, EventFilter.EventType.Prefixes(false, "type1"));
 
 			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
 			Assert.AreEqual(_eventIds[0], ((Event)await sub.GetNext()).Id);
