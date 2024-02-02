@@ -10,8 +10,8 @@ public class CacheResourcesMetrics {
 	private readonly ObservableUpDownMetric<long> _entriesMetric;
 
 	public CacheResourcesMetrics(Meter meter, string name) {
-		_bytesMetric = new ObservableUpDownMetric<long>(meter, name, "bytes");
-		_entriesMetric = new ObservableUpDownMetric<long>(meter, name, "entries");
+		_bytesMetric = new ObservableUpDownMetric<long>(meter, name + "-bytes");
+		_entriesMetric = new ObservableUpDownMetric<long>(meter, name + "-entries");
 	}
 
 	public void Register(string cache, ResizerUnit unit, Func<CacheStats> getStats) {
