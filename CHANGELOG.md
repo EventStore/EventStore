@@ -31,6 +31,10 @@ All notable changes to this project will be documented in this file.
 - $all subscription enumerator tests [EventStore#4119](https://github.com/EventStore/EventStore/pull/4119)
 - gRPC $all subscriptions with smooth transitions between live and catchup. Subscriptions no longer drop with "consumer too slow" reason. [EventStore#4117](https://github.com/EventStore/EventStore/pull/4117)
 - General support for plugin configuration [EventStore#4130](https://github.com/EventStore/EventStore/pull/4130)
+- internal changes [EventStore#4142](https://github.com/EventStore/EventStore/pull/4142)
+- Improved support for plugins to perform authorization checks [EventStore#4145](https://github.com/EventStore/EventStore/pull/4145)
+- $mem-gossip memory stream [EventStore#4123](https://github.com/EventStore/EventStore/pull/4123)
+- Filtered $all subscription enumerator tests [EventStore#4132](https://github.com/EventStore/EventStore/pull/4132)
 
 ### Fixed
 - A way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
@@ -45,6 +49,7 @@ All notable changes to this project will be documented in this file.
 - $all subscription enumerator returns `InvalidPosition` when subscribing at an invalid position [EventStore#4128](https://github.com/EventStore/EventStore/pull/4128)
 - Build on ARM, AnyCPU solution settings was actually using X64 [EventStore#4129](https://github.com/EventStore/EventStore/pull/4129)
 - filtered $all subscription enumerator returns InvalidPosition when subscribing at an invalid position [EventStore#4131](https://github.com/EventStore/EventStore/pull/4131)
+- Use correct checkpoint in test subscribe_filtered_all_from_start [EventStore#4132](https://github.com/EventStore/EventStore/pull/4132)
 
 ### Removed
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
