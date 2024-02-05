@@ -187,11 +187,9 @@ namespace EventStore.ClusterNode {
 							.ConfigureHostConfiguration(builder => builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
 							.ConfigureAppConfiguration(builder => builder.AddConfiguration(configuration))
 							.ConfigureLogging(logging => logging.AddSerilog())
-							.ConfigureServices(services =>
-								services
-									.AddSingleton<IHostedService>(hostedService)
-									.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel"))
-									.Configure<HostOptions>(x => x.ShutdownTimeout = TimeSpan.FromSeconds(5))
+							.ConfigureServices(services => services
+								.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel"))
+								.Configure<HostOptions>(x => x.ShutdownTimeout = TimeSpan.FromSeconds(5))
 							)
 							.ConfigureWebHostDefaults(builder => builder
 								.UseKestrel(server => {
@@ -206,7 +204,13 @@ namespace EventStore.ClusterNode {
 										TryListenOnUnixSocket(hostedService, server);
 								})
 								.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
-								.Configure(hostedService.Node.Startup.Configure))
+								.Configure(hostedService.Node.Startup.Configure)
+							)
+							// Order is important, configure IHostedService after the WebHost to make the sure
+							// ClusterVNodeHostedService and the subsystems are started after configuration is finished.
+							// Allows the subsystems to resolve dependencies out of the DI in Configure() before being started.
+							// Later it may be possible to use constructor injection instead if it fits with the bootstrapping strategy.
+							.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
 							.RunConsoleAsync(x => x.SuppressStatusMessages = true, cts.Token);
 
 						exitCodeSource.TrySetResult(0);
