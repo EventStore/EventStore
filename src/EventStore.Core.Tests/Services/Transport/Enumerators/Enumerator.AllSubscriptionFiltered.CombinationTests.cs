@@ -53,6 +53,7 @@ public partial class EnumeratorTests {
 		}
 
 		private const int NumEventsToFallBehind = 3 * 32;
+		private const int CheckpointInterval = 16;
 
 		public static object[] TestCases = {
 			// STREAM PREFIX FILTER
@@ -311,6 +312,68 @@ public partial class EnumeratorTests {
 				new LiveProperties(FallBehindThenCatchUp: true)
 			),
 			*/
+			// CHECKPOINTS DURING CATCH-UP
+			CreateTestData(
+				"subscription to filtered $all receives checkpoints during catch-up (1)",
+				new StreamProperties(0),
+				new SubscriptionProperties(CheckpointType.Start, EventFilterType.StreamPrefix),
+				new LiveProperties()
+			),
+			CreateTestData(
+				"subscription to filtered $all receives checkpoints during catch-up (2)",
+				new StreamProperties(CheckpointInterval),
+				new SubscriptionProperties(CheckpointType.Start, EventFilterType.StreamPrefix),
+				new LiveProperties()
+			),
+			CreateTestData(
+				"subscription to filtered $all receives checkpoints during catch-up (3)",
+				new StreamProperties(CheckpointInterval + 1),
+				new SubscriptionProperties(CheckpointType.Start, EventFilterType.StreamPrefix),
+				new LiveProperties()
+			),
+			CreateTestData(
+				"subscription to filtered $all receives checkpoints during catch-up (4)",
+				new StreamProperties(CheckpointInterval * 2),
+				new SubscriptionProperties(CheckpointType.Start, EventFilterType.StreamPrefix),
+				new LiveProperties()
+			),
+			CreateTestData(
+				"subscription to filtered $all receives checkpoints during catch-up (5)",
+				new StreamProperties(CheckpointInterval * 2 + 1),
+				new SubscriptionProperties(CheckpointType.Start, EventFilterType.StreamPrefix),
+				new LiveProperties()
+			),
+			// CHECKPOINTS WHEN LIVE
+			CreateTestData(
+				"subscription to filtered $all receives checkpoints when live (1)",
+				new StreamProperties(),
+				new SubscriptionProperties(CheckpointType.End, EventFilterType.StreamPrefix),
+				new LiveProperties(0)
+			),
+			CreateTestData(
+				"subscription to filtered $all receives checkpoints when live (2)",
+				new StreamProperties(),
+				new SubscriptionProperties(CheckpointType.End, EventFilterType.StreamPrefix),
+				new LiveProperties(CheckpointInterval)
+			),
+			CreateTestData(
+				"subscription to filtered $all receives checkpoints when live (3)",
+				new StreamProperties(),
+				new SubscriptionProperties(CheckpointType.End, EventFilterType.StreamPrefix),
+				new LiveProperties(CheckpointInterval + 1)
+			),
+			CreateTestData(
+				"subscription to filtered $all receives checkpoints when live (4)",
+				new StreamProperties(),
+				new SubscriptionProperties(CheckpointType.End, EventFilterType.StreamPrefix),
+				new LiveProperties(CheckpointInterval * 2)
+			),
+			CreateTestData(
+				"subscription to filtered $all receives checkpoints when live (5)",
+				new StreamProperties(),
+				new SubscriptionProperties(CheckpointType.End, EventFilterType.StreamPrefix),
+				new LiveProperties(CheckpointInterval * 2 + 1)
+			),
 		};
 
 		private readonly TestData _testData;
@@ -448,23 +511,34 @@ public partial class EnumeratorTests {
 				EventFilterType.EventTypeRegex => EventFilter.EventType.Regex(true, $"(.*?){_testGuid}(.*?)"),
 				_ => throw new ArgumentOutOfRangeException()
 			};
-			return CreateAllSubscriptionFiltered(Node.Node.MainQueue, checkpoint, eventFilter, SystemAccounts.Anonymous);
+
+			return CreateAllSubscriptionFiltered(
+				publisher: Node.Node.MainQueue,
+				startPosition: checkpoint,
+				eventFilter: eventFilter,
+				maxSearchWindow: CheckpointInterval,
+				checkpointIntervalMultiplier: 1,
+				user: SystemAccounts.Anonymous);
 		}
 
 		private async Task<int> ReadExpectedEvents(EnumeratorWrapper sub, int nextEventIndex, int lastEventIndex, bool shouldFallBehindThenCatchUp = false) {
 			var fellBehind = false;
 			var caughtUp = false;
+			var lastEventOrCheckpointPos = new TFPos(-1, -1);
+			var numEventsSinceLastCheckpoint = 0;
 
 			var numResponsesExpected = lastEventIndex - nextEventIndex + 1;
 			if (shouldFallBehindThenCatchUp)
 				numResponsesExpected += 2;
 
-			while (--numResponsesExpected >= 0) {
+			while (--numResponsesExpected >= 0 || numEventsSinceLastCheckpoint == CheckpointInterval) {
 				var response = await sub.GetNext();
 				switch (response) {
 					case Event evt:
 						var evtPos = _events[nextEventIndex++].OriginalPosition!.Value;
 						var evtTfPos = new TFPos(evtPos.CommitPosition, evtPos.PreparePosition);
+						lastEventOrCheckpointPos = evtTfPos;
+						numEventsSinceLastCheckpoint++;
 						Assert.AreEqual(evtTfPos, evt.EventPosition!.Value);
 						break;
 					case FellBehind:
@@ -482,6 +556,20 @@ public partial class EnumeratorTests {
 
 						caughtUp = true;
 						break;
+					case Checkpoint checkpoint:
+						// we don't count checkpoints as part of the number of expected responses as it's
+						// not always straightforward to calculate how many checkpoints we will receive.
+						numResponsesExpected++;
+
+						var checkpointPos = checkpoint.CheckpointPosition.ToInt64();
+						var checkpointTfPos = new TFPos(checkpointPos.commitPosition, checkpointPos.preparePosition);
+
+						Assert.True(checkpointTfPos >= lastEventOrCheckpointPos);
+						Assert.LessOrEqual(numEventsSinceLastCheckpoint, CheckpointInterval);
+
+						lastEventOrCheckpointPos = checkpointTfPos;
+						numEventsSinceLastCheckpoint = 0;
+						break;
 					default:
 						Assert.Fail($"Unexpected response: {response}");
 						break ;
@@ -495,6 +583,8 @@ public partial class EnumeratorTests {
 				if (!caughtUp)
 					Assert.Fail("Subscription fell behind but did not catch up.");
 			}
+
+			Assert.Less(numEventsSinceLastCheckpoint, CheckpointInterval);
 
 			return nextEventIndex;
 		}
