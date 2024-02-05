@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Services.Transport.Enumerators;
 public partial class EnumeratorTests {
 	private static EnumeratorWrapper CreateAllSubscriptionFiltered(
 		IPublisher publisher,
-		Position? startPosition,
+		Position? checkpoint,
 		IEventFilter eventFilter = null,
 		uint? maxSearchWindow = null,
 		uint checkpointIntervalMultiplier = 1,
@@ -27,7 +27,7 @@ public partial class EnumeratorTests {
 		return new EnumeratorWrapper(new Enumerator.AllSubscriptionFiltered(
 			bus: publisher,
 			expiryStrategy: new DefaultExpiryStrategy(),
-			startPosition: startPosition,
+			checkpoint: checkpoint,
 			resolveLinks: false,
 			eventFilter: eventFilter,
 			user: user ?? SystemAccounts.System,
@@ -57,6 +57,7 @@ public partial class EnumeratorTests {
 
 			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
 			Assert.AreEqual(_eventIds[0], ((Event)await sub.GetNext()).Id);
+			Assert.True(await sub.GetNext() is Checkpoint);
 			Assert.True(await sub.GetNext() is CaughtUp);
 		}
 	}
@@ -106,6 +107,7 @@ public partial class EnumeratorTests {
 
 			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
 			Assert.AreEqual(_eventIds[0], ((Event)await sub.GetNext()).Id);
+			Assert.True(await sub.GetNext() is Checkpoint);
 			Assert.True(await sub.GetNext() is CaughtUp);
 		}
 	}

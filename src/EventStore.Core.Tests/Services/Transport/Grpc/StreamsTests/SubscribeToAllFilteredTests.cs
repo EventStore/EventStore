@@ -451,7 +451,15 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			
 			[Test]
 			public void receives_the_checkpoints_on_correct_interval() {
-				_checkpointPositions.ForEach(p => Assert.Zero( p % CheckpointInterval, $"checkpoint at: {p}"));
+				// ideally the checkpoints should be issued after exactly every `CheckpointInterval` events.
+				// this is how things worked previously but the way the enumerator works has changed for more efficiency:
+				// the enumerator now starts a _permanent_ live subscription to the subscriptions service before catch up starts.
+				// this causes the checkpoints received from the subscriptions service to be offset.
+				// in this test it turns out that it's offset by exactly the number of events to catch up but this is not a strict requirement -
+				// the important thing being verified here is that the checkpoints are received after the correct interval when live.
+
+				var factor = 0L;
+				_checkpointPositions.ForEach(p => Assert.AreEqual(factor++ * CheckpointInterval + _numberOfEventsToCatchUp, p, $"checkpoint at: {p}"));
 			}
 			
 			[Test]
