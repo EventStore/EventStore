@@ -22,13 +22,11 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Quickenshtein;
-using IPAddressConverter = EventStore.Core.Configuration.IPAddressConverter;
 
 namespace EventStore.Core;
 
 [PublicAPI]
 public partial record ClusterVNodeOptions {
-
 	public ClusterVNodeOptions() => FileStreamExtensions.ConfigureFlush(Database.UnsafeDisableFlushToDisk);
 
 	[OptionGroup] public ApplicationOptions      Application      { get; init; } = new();
@@ -54,36 +52,12 @@ public partial record ClusterVNodeOptions {
 	public IReadOnlyList<ISubsystem>   Subsystems              { get; init; } = [];
 
 	public bool UnknownOptionsDetected => Unknown.Options.Any();
-
-	public static ClusterVNodeOptions FromConfigurationLegacy(IConfigurationRoot configurationRoot) {
-		IConfiguration configuration = configurationRoot.GetRequiredSection("EventStore");
-			
-		var options = new ClusterVNodeOptions {
-			Application       = ApplicationOptions.FromConfiguration(configuration),
-			DevMode           = DevModeOptions.FromConfiguration(configuration),
-			DefaultUser       = DefaultUserOptions.FromConfiguration(configuration),
-			Log               = LogOptions.FromConfiguration(configuration),
-			Auth              = AuthOptions.FromConfiguration(configuration),
-			Certificate       = CertificateOptions.FromConfiguration(configuration),
-			CertificateFile   = CertificateFileOptions.FromConfiguration(configuration),
-			CertificateStore  = CertificateStoreOptions.FromConfiguration(configuration),
-			Cluster           = ClusterOptions.FromConfiguration(configuration),
-			Database          = DatabaseOptions.FromConfiguration(configuration),
-			Grpc              = GrpcOptions.FromConfiguration(configuration),
-			Interface         = InterfaceOptions.FromConfiguration(configuration),
-			Projection        = ProjectionOptions.FromConfiguration(configuration),
-			
-			Unknown           = UnknownOptions.FromConfiguration(configuration),
-			ConfigurationRoot = configurationRoot,
-			LoadedOptions     = GetLoadedOptions(configurationRoot)
-		};
-		
-		return options;
-	}
-		
+	
 	public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
 		IConfiguration configuration = configurationRoot.GetRequiredSection("EventStore");
 		
+		// required because of a bug in the configuration system that
+		// is not reading the attribute from the property itself
 		TypeDescriptor.AddAttributes(typeof(EndPoint[]), new TypeConverterAttribute(typeof(GossipSeedConverter)));
 		TypeDescriptor.AddAttributes(typeof(IPAddress), new TypeConverterAttribute(typeof(IPAddressConverter)));
 		
@@ -120,11 +94,6 @@ public partial record ClusterVNodeOptions {
 			
 		[Description("Ops Default password"), Sensitive, EnvironmentOnly("The Ops user password can only be set using Environment Variables")] 
 		public string DefaultOpsPassword { get; init; } = "changeit";
- 
-		internal static DefaultUserOptions FromConfiguration(IConfiguration configurationRoot) => new() {
-			DefaultAdminPassword = configurationRoot.GetString(nameof(DefaultAdminPassword)),
-			DefaultOpsPassword   = configurationRoot.GetString(nameof(DefaultOpsPassword))
-		};
 	}
 		
 	[Description("Dev Mode Options")]
@@ -134,11 +103,6 @@ public partial record ClusterVNodeOptions {
 
 		[Description("Removes any dev certificates installed on this computer without starting EventStoreDB.")]
 		public bool RemoveDevCerts { get; init; } = false;
-
-		internal static DevModeOptions FromConfiguration(IConfiguration configurationRoot) => new() {
-			Dev            = configurationRoot.GetValue<bool>(nameof(Dev)),
-			RemoveDevCerts = configurationRoot.GetValue<bool>(nameof(RemoveDevCerts))
-		};
 	}
 
 	[Description("Application Options")]
@@ -197,28 +161,6 @@ public partial record ClusterVNodeOptions {
 
 		[Description("Disable telemetry data collection."), EnvironmentOnly("You can only opt-out of telemetry using Environment Variables")]
 		public bool TelemetryOptout { get; init; } = false;
-
-		internal static ApplicationOptions FromConfiguration(IConfiguration configurationRoot) => new() {
-			Config              = configurationRoot.GetString(nameof(Config)),
-			Help                = configurationRoot.GetValue<bool>(nameof(Help)),
-			Version             = configurationRoot.GetValue<bool>(nameof(Version)),
-			EnableHistograms    = configurationRoot.GetValue<bool>(nameof(EnableHistograms)),
-			WhatIf              = configurationRoot.GetValue<bool>(nameof(WhatIf)),
-			AllowUnknownOptions = configurationRoot.GetValue<bool>(nameof(AllowUnknownOptions)),
-			WorkerThreads       = configurationRoot.GetValue<int>(nameof(WorkerThreads)),
-			DisableHttpCaching  = configurationRoot.GetValue<bool>(nameof(DisableHttpCaching)),
-			LogHttpRequests     = configurationRoot.GetValue<bool>(nameof(LogHttpRequests)),
-			MaxAppendSize       = configurationRoot.GetValue<int>(nameof(MaxAppendSize)),
-			StatsPeriodSec      = configurationRoot.GetValue<int>(nameof(StatsPeriodSec)),
-			LogFailedAuthenticationAttempts =
-				configurationRoot.GetValue<bool>(nameof(LogFailedAuthenticationAttempts)),
-			SkipIndexScanOnReads                     = configurationRoot.GetValue<bool>(nameof(SkipIndexScanOnReads)),
-			Insecure                                 = configurationRoot.GetValue<bool>(nameof(Insecure)),
-			AllowAnonymousEndpointAccess             = configurationRoot.GetValue<bool>(key:nameof(AllowAnonymousEndpointAccess)),
-			AllowAnonymousStreamAccess               = configurationRoot.GetValue<bool>(key:nameof(AllowAnonymousStreamAccess)),
-			OverrideAnonymousEndpointAccessForGossip = configurationRoot.GetValue<bool>(key:nameof(OverrideAnonymousEndpointAccessForGossip)),
-			TelemetryOptout                          = configurationRoot.GetValue<bool>(key:nameof(TelemetryOptout))
-		};
 	}
 
 	[Description("Logging Options")]
@@ -246,17 +188,6 @@ public partial record ClusterVNodeOptions {
 
 		[Description("Disable log to disk.")]
 		public bool DisableLogFile { get; init; } = false;
-
-		public static LogOptions FromConfiguration(IConfiguration configurationRoot) => new() {
-			Log                   = configurationRoot.GetString(nameof(Log)),
-			LogConfig             = configurationRoot.GetString(nameof(LogConfig)),
-			LogLevel              = configurationRoot.GetValue<LogLevel>(nameof(LogLevel)),
-			LogConsoleFormat      = configurationRoot.GetValue<LogConsoleFormat>(nameof(LogConsoleFormat)),
-			LogFileSize           = configurationRoot.GetValue<int>(nameof(LogFileSize)),
-			LogFileInterval       = configurationRoot.GetValue<RollingInterval>(nameof(LogFileInterval)),
-			LogFileRetentionCount = configurationRoot.GetValue<int>(nameof(LogFileRetentionCount)),
-			DisableLogFile        = configurationRoot.GetValue<bool>(nameof(DisableLogFile))
-		};
 	}
 
 	[Description("Authentication/Authorization Options")]
@@ -276,15 +207,6 @@ public partial record ClusterVNodeOptions {
 		[Description("Disables first level authorization checks on all HTTP endpoints. " +
 		             "This option can be enabled for backwards compatibility with EventStore 5.0.1 or earlier.")]
 		public bool DisableFirstLevelHttpAuthorization { get; init; } = false;
-
-		internal static AuthOptions FromConfiguration(IConfiguration configurationRoot) => new() {
-			AuthorizationType    = configurationRoot.GetString(nameof(AuthorizationType)),
-			AuthenticationConfig = configurationRoot.GetValue<string>(nameof(AuthenticationConfig)),
-			AuthenticationType   = configurationRoot.GetString(nameof(AuthenticationType)),
-			AuthorizationConfig  = configurationRoot.GetValue<string>(nameof(AuthorizationConfig)),
-			DisableFirstLevelHttpAuthorization =
-				configurationRoot.GetValue<bool>(nameof(DisableFirstLevelHttpAuthorization))
-		};
 	}
 
 	[Description("Certificate Options (from file)")]
@@ -304,13 +226,6 @@ public partial record ClusterVNodeOptions {
 		[Description("The password to the certificate private key file if an encrypted PKCS #8 private key file is provided."),
 		 Sensitive]
 		public string? CertificatePrivateKeyPassword { get; init; }
-
-		public static CertificateFileOptions FromConfiguration(IConfiguration configurationRoot) => new() {
-			CertificatePassword           = configurationRoot.GetValue<string>(nameof(CertificatePassword)),
-			CertificatePrivateKeyPassword = configurationRoot.GetValue<string>(nameof(CertificatePrivateKeyPassword)),
-			CertificatePrivateKeyFile     = configurationRoot.GetValue<string>(nameof(CertificatePrivateKeyFile)),
-			CertificateFile               = configurationRoot.GetValue<string>(nameof(CertificateFile))
-		};
 	}
 
 	[Description("Certificate Options")]
@@ -322,11 +237,6 @@ public partial record ClusterVNodeOptions {
 
 		[Description("The pattern the CN (Common Name) of a connecting EventStoreDB node must match to be authenticated. A wildcard FQDN can be specified if using wildcard certificates or if the CN is not the same on all nodes. Leave empty to automatically use the CN of this node's certificate.")]
 		public string CertificateReservedNodeCommonName { get; init; } = string.Empty;
-
-		internal static CertificateOptions FromConfiguration(IConfiguration configurationRoot) => new() {
-			TrustedRootCertificatesPath       = configurationRoot.GetValue<string>(nameof(TrustedRootCertificatesPath)),
-			CertificateReservedNodeCommonName = configurationRoot.GetString(nameof(CertificateReservedNodeCommonName))
-		};
 	}
 		
 	[Description("Certificate Options (from store)")]
@@ -354,17 +264,6 @@ public partial record ClusterVNodeOptions {
 
 		[Description("The trusted root certificate fingerprint/thumbprint.")]
 		public string TrustedRootCertificateThumbprint { get; init; } = string.Empty;
-
-		internal static CertificateStoreOptions FromConfiguration(IConfiguration configurationRoot) => new() {
-			CertificateStoreLocation            = configurationRoot.GetString(nameof(CertificateStoreLocation)),
-			CertificateStoreName                = configurationRoot.GetString(nameof(CertificateStoreName)),
-			CertificateSubjectName              = configurationRoot.GetString(nameof(CertificateSubjectName)),
-			CertificateThumbprint               = configurationRoot.GetString(nameof(CertificateThumbprint)),
-			TrustedRootCertificateStoreLocation = configurationRoot.GetString(nameof(TrustedRootCertificateStoreLocation)),
-			TrustedRootCertificateStoreName     = configurationRoot.GetString(nameof(TrustedRootCertificateStoreName)),
-			TrustedRootCertificateThumbprint    = configurationRoot.GetString(nameof(TrustedRootCertificateThumbprint)),
-			TrustedRootCertificateSubjectName   = configurationRoot.GetString(nameof(TrustedRootCertificateSubjectName))
-		};
 	}
 
 	[Description("Cluster Options")]
@@ -414,37 +313,6 @@ public partial record ClusterVNodeOptions {
 		public int LeaderElectionTimeoutMs { get; init; } = 1_000;
 
 		public int QuorumSize => ClusterSize == 1 ? 1 : ClusterSize / 2 + 1;
-
-		internal static ClusterOptions FromConfiguration(IConfiguration configurationRoot) => new() {
-			GossipSeed                 = Array.ConvertAll(configurationRoot.GetCommaSeparatedValueAsArray(nameof(GossipSeed)), ParseGossipEndPoint),
-			DiscoverViaDns             = configurationRoot.GetValue<bool>(nameof(DiscoverViaDns)),
-			ClusterSize                = configurationRoot.GetValue<int>(nameof(ClusterSize)),
-			NodePriority               = configurationRoot.GetValue<int>(nameof(NodePriority)),
-			ClusterDns                 = configurationRoot.GetString(nameof(ClusterDns)),
-			ClusterGossipPort          = configurationRoot.GetValue<int>(nameof(ClusterGossipPort)),
-			GossipIntervalMs           = configurationRoot.GetValue<int>(nameof(GossipIntervalMs)),
-			GossipAllowedDifferenceMs  = configurationRoot.GetValue<int>(nameof(GossipAllowedDifferenceMs)),
-			GossipTimeoutMs            = configurationRoot.GetValue<int>(nameof(GossipTimeoutMs)),
-			ReadOnlyReplica            = configurationRoot.GetValue<bool>(nameof(ReadOnlyReplica)),
-			UnsafeAllowSurplusNodes    = configurationRoot.GetValue<bool>(nameof(UnsafeAllowSurplusNodes)),
-			DeadMemberRemovalPeriodSec = configurationRoot.GetValue<int>(nameof(DeadMemberRemovalPeriodSec)),
-			StreamInfoCacheCapacity    = configurationRoot.GetValue<int>(nameof(StreamInfoCacheCapacity)),
-			LeaderElectionTimeoutMs    = configurationRoot.GetValue<int>(nameof(LeaderElectionTimeoutMs))
-		};
-			
-		private static EndPoint ParseGossipEndPoint(string val) {
-			var parts = val.Split(':', 2);
-				
-			if (parts.Length != 2)
-				throw new Exception("You must specify the ports in the gossip seed");
-			
-			if (!int.TryParse(parts[1], out var port))
-				throw new Exception($"Invalid format for gossip seed port: {parts[1]}");
-			
-			return IPAddress.TryParse(parts[0], out var ip)
-				? new IPEndPoint(ip, port)
-				: new DnsEndPoint(parts[0], port);
-		}
 	}
 
 	[Description("Database Options")]
@@ -578,46 +446,6 @@ public partial record ClusterVNodeOptions {
 
 		[Description("The number of stream hashes to remember when checking for collisions.")]
 		public int ScavengeHashUsersCacheCapacity { get; init; } = Opts.ScavengeHashUsersCacheCapacityDefault;
-		
-		internal static DatabaseOptions FromConfiguration(IConfiguration configurationRoot) => new() {
-			MinFlushDelayMs           = configurationRoot.GetValue<double>(nameof(MinFlushDelayMs)),
-			DisableScavengeMerging    = configurationRoot.GetValue<bool>(nameof(DisableScavengeMerging)),
-			MemDb                     = configurationRoot.GetValue<bool>(nameof(MemDb)),
-			Db                        = configurationRoot.GetString(nameof(Db)),
-			ScavengeHistoryMaxAge     = configurationRoot.GetValue<int>(nameof(ScavengeHistoryMaxAge)),
-			CachedChunks              = configurationRoot.GetValue<int>(nameof(CachedChunks)),
-			ChunksCacheSize           = configurationRoot.GetValue<long>(nameof(ChunksCacheSize)),
-			MaxMemTableSize           = configurationRoot.GetValue<int>(nameof(MaxMemTableSize)),
-			HashCollisionReadLimit    = configurationRoot.GetValue<int>(nameof(HashCollisionReadLimit)),
-			Index                     = configurationRoot.GetValue<string?>(nameof(Index)),
-			UseIndexBloomFilters      = configurationRoot.GetValue<bool>(nameof(UseIndexBloomFilters)),
-			IndexCacheSize            = configurationRoot.GetValue<int>(nameof(IndexCacheSize)),
-			SkipDbVerify              = configurationRoot.GetValue<bool>(nameof(SkipDbVerify)),
-			WriteThrough              = configurationRoot.GetValue<bool>(nameof(WriteThrough)),
-			Unbuffered                = configurationRoot.GetValue<bool>(nameof(Unbuffered)),
-			ChunkInitialReaderCount   = configurationRoot.GetValue<int>(nameof(ChunkInitialReaderCount)),
-			PrepareTimeoutMs          = configurationRoot.GetValue<int>(nameof(PrepareTimeoutMs)),
-			CommitTimeoutMs           = configurationRoot.GetValue<int>(nameof(CommitTimeoutMs)),
-			WriteTimeoutMs            = configurationRoot.GetValue<int>(nameof(WriteTimeoutMs)),
-			UnsafeDisableFlushToDisk  = configurationRoot.GetValue<bool>(nameof(UnsafeDisableFlushToDisk)),
-			UnsafeIgnoreHardDelete    = configurationRoot.GetValue<bool>(nameof(UnsafeIgnoreHardDelete)),
-			SkipIndexVerify           = configurationRoot.GetValue<bool>(nameof(SkipIndexVerify)),
-			IndexCacheDepth           = configurationRoot.GetValue<int>(nameof(IndexCacheDepth)),
-			OptimizeIndexMerge        = configurationRoot.GetValue<bool>(nameof(OptimizeIndexMerge)),
-			AlwaysKeepScavenged       = configurationRoot.GetValue<bool>(nameof(AlwaysKeepScavenged)),
-			ReduceFileCachePressure   = configurationRoot.GetValue<bool>(nameof(ReduceFileCachePressure)),
-			InitializationThreads     = configurationRoot.GetValue<int>(nameof(InitializationThreads)),
-			ReaderThreadsCount        = configurationRoot.GetValue<int>(nameof(ReaderThreadsCount)),
-			MaxAutoMergeIndexLevel    = configurationRoot.GetValue<int>(nameof(MaxAutoMergeIndexLevel)),
-			WriteStatsToDb            = configurationRoot.GetValue<bool>(nameof(WriteStatsToDb)),
-			MaxTruncation             = configurationRoot.GetValue<long>(nameof(MaxTruncation)),
-			DbLogFormat               = configurationRoot.GetValue<DbLogFormat>(nameof(DbLogFormat)),
-			StreamExistenceFilterSize = configurationRoot.GetValue<long>(nameof(StreamExistenceFilterSize)),
-			ScavengeBackendPageSize   = configurationRoot.GetValue<int>(nameof(ScavengeBackendPageSize)),
-			ScavengeBackendCacheSize  = configurationRoot.GetValue<long>(nameof(ScavengeBackendCacheSize)),
-			ScavengeHashUsersCacheCapacity =
-				configurationRoot.GetValue<int>(nameof(ScavengeHashUsersCacheCapacity)),
-		};
 	}
 
 	[Description("gRPC Options")]
@@ -859,45 +687,6 @@ public partial record ClusterVNodeOptions {
 		[Description("Enable AtomPub over HTTP Interface."),
 		 Deprecated("AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]
 		public bool EnableAtomPubOverHttp { get; init; } = false;
-
-		internal static InterfaceOptions FromConfiguration(IConfiguration configurationRoot) => new() {
-			GossipOnSingleNode            = configurationRoot.GetValue<bool?>(nameof(GossipOnSingleNode)),
-			IntIp                         = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(IntIp)) ?? IPAddress.Loopback.ToString()),
-			ReplicationIp                 = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ReplicationIp)) ?? IPAddress.Loopback.ToString()),
-			ExtIp                         = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ExtIp)) ?? IPAddress.Loopback.ToString()),
-			NodeIp                        = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(NodeIp)) ?? IPAddress.Loopback.ToString()),
-			HttpPort                      = configurationRoot.GetValue<int>(nameof(HttpPort)),
-			NodePort                      = configurationRoot.GetValue<int>(nameof(NodePort)),
-			IntTcpPort                    = configurationRoot.GetValue<int>(nameof(IntTcpPort)),
-			ReplicationPort               = configurationRoot.GetValue<int>(nameof(ReplicationPort)),
-			NodeHostAdvertiseAs           = configurationRoot.GetValue<string?>(nameof(NodeHostAdvertiseAs)),
-			AdvertiseHostToClientAs       = configurationRoot.GetValue<string?>(nameof(AdvertiseHostToClientAs)),
-			AdvertiseHttpPortToClientAs   = configurationRoot.GetValue<int>(nameof(AdvertiseHttpPortToClientAs)),
-			AdvertiseNodePortToClientAs   = configurationRoot.GetValue<int>(nameof(AdvertiseNodePortToClientAs)),
-			AdvertiseTcpPortToClientAs    = configurationRoot.GetValue<int>(nameof(AdvertiseTcpPortToClientAs)),
-			IntHostAdvertiseAs            = configurationRoot.GetValue<string>(nameof(IntHostAdvertiseAs)),
-			ReplicationHostAdvertiseAs    = configurationRoot.GetValue<string>(nameof(ReplicationHostAdvertiseAs)),
-			HttpPortAdvertiseAs           = configurationRoot.GetValue<int>(nameof(HttpPortAdvertiseAs)),
-			NodePortAdvertiseAs           = configurationRoot.GetValue<int>(nameof(NodePortAdvertiseAs)),
-			IntTcpPortAdvertiseAs         = configurationRoot.GetValue<int>(nameof(IntTcpPortAdvertiseAs)),
-			ReplicationTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(ReplicationTcpPortAdvertiseAs)),
-			IntTcpHeartbeatTimeout        = configurationRoot.GetValue<int>(nameof(IntTcpHeartbeatTimeout)),
-			ReplicationHeartbeatTimeout   = configurationRoot.GetValue<int>(nameof(ReplicationHeartbeatTimeout)),
-			IntTcpHeartbeatInterval       = configurationRoot.GetValue<int>(nameof(IntTcpHeartbeatInterval)),
-			ReplicationHeartbeatInterval  = configurationRoot.GetValue<int>(nameof(ReplicationHeartbeatInterval)),
-			EnableUnixSocket              = configurationRoot.GetValue<bool>(nameof(EnableUnixSocket)),
-			ConnectionPendingSendBytesThreshold =
-				configurationRoot.GetValue<int>(nameof(ConnectionPendingSendBytesThreshold)),
-			ConnectionQueueSizeThreshold = configurationRoot.GetValue<int>(nameof(ConnectionQueueSizeThreshold)),
-			DisableAdminUi               = configurationRoot.GetValue<bool>(nameof(DisableAdminUi)),
-			DisableStatsOnHttp           = configurationRoot.GetValue<bool>(nameof(DisableStatsOnHttp)),
-			DisableGossipOnHttp          = configurationRoot.GetValue<bool>(nameof(DisableGossipOnHttp)),
-			EnableTrustedAuth            = configurationRoot.GetValue<bool>(nameof(EnableTrustedAuth)), 
-			DisableInternalTcpTls        = configurationRoot.GetValue<bool>(nameof(DisableInternalTcpTls)),
-			DisableExternalTcpTls        = configurationRoot.GetValue<bool>(nameof(DisableExternalTcpTls)),
-			EnableAtomPubOverHttp        = configurationRoot.GetValue<bool>(nameof(EnableAtomPubOverHttp))
-		};
-#pragma warning restore 0618
 	}
 
 	[Description("Projection Options")]
@@ -925,16 +714,6 @@ public partial record ClusterVNodeOptions {
 
 		[Description("The maximum execution time in milliseconds for executing a handler in a user projection. It can be overridden for a specific projection by setting ProjectionExecutionTimeout config for that projection")]
 		public int ProjectionExecutionTimeout { get; set; } = DefaultProjectionExecutionTimeout;
-
-		internal static ProjectionOptions FromConfiguration(IConfiguration configurationRoot) => new() {
-			RunProjections               = configurationRoot.GetValue<ProjectionType>(nameof(RunProjections)),
-			StartStandardProjections     = configurationRoot.GetValue<bool>(nameof(StartStandardProjections)),
-			ProjectionThreads            = configurationRoot.GetValue<int>(nameof(ProjectionThreads)),
-			ProjectionsQueryExpiry       = configurationRoot.GetValue<int>(nameof(ProjectionsQueryExpiry)),
-			FaultOutOfOrderProjections   = configurationRoot.GetValue<bool>(nameof(FaultOutOfOrderProjections)),
-			ProjectionCompilationTimeout = configurationRoot.GetValue<int>(nameof(ProjectionCompilationTimeout)),
-			ProjectionExecutionTimeout   = configurationRoot.GetValue<int>(nameof(ProjectionExecutionTimeout))
-		};
 	}
 
 	public record UnknownOptions(IReadOnlyList<(string, string)> Options) {

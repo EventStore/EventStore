@@ -23,19 +23,16 @@ public class ClusterVNodeOptionsPrinterTests {
 			)
 			.AddEventStoreCommandLine(
 				"--config", "/path/to/config/commandline",
-				"--cluster-gossip-port=88"
+				"--cluster-gossip-port=88",
+				$"--default-ops-password={Guid.NewGuid()}"
 			)
 			.Build();
 
 		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
 		
 		var output = ClusterVNodeOptionsPrinter.Print(loadedOptions);
-		
-#pragma warning disable CS0618 // Type or member is obsolete
-		var oldOutput = new OptionsDumper(ClusterVNodeOptions.OptionSections).Dump(config);
-#pragma warning restore CS0618 // Type or member is obsolete
-		
-		output.Should().BeEquivalentTo(oldOutput);
+
+		output.Should().NotBeEmpty();
 	}
 
 	[Fact]

@@ -3,26 +3,25 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using static System.String;
 
 namespace EventStore.Core.Configuration;
 
 public static class ClusterVNodeOptionsPrinter {
-	public static string Print(IReadOnlyDictionary<string, LoadedOption> displayOptions) {
-		var modified = Print(displayOptions, modifiedOnly: true);
-		var defaults = Print(displayOptions, modifiedOnly: false);
+	public static string Print(IReadOnlyDictionary<string, LoadedOption> loadedOptions) {
+		var modified = Print(loadedOptions, modifiedOnly: true);
+		var defaults = Print(loadedOptions, modifiedOnly: false);
 		return new StringBuilder().AppendLine(modified).Append(defaults).ToString();
 	}
 	
-	static string Print(IReadOnlyDictionary<string, LoadedOption> displayOptions, bool modifiedOnly) {
-		var nameColumnWidth = displayOptions.Keys.Select(x => x.Length).Max() + 11;
+	static string Print(IReadOnlyDictionary<string, LoadedOption> loadedOptions, bool modifiedOnly) {
+		var nameColumnWidth = loadedOptions.Keys.Select(x => x.Length).Max() + 11;
 
 		var output = new StringBuilder()
 			.AppendLine()
 			.Append($"{(modifiedOnly ? "MODIFIED" : "DEFAULT")} OPTIONS:");
 
 		foreach (var section in ClusterVNodeOptions.Metadata.OrderBy(x => x.SectionName)) {
-			var options = displayOptions
+			var options = loadedOptions
 				.Where(x => x.Value.Metadata.SectionName == section.SectionName).ToList();
 			
 			var firstOption = true;

@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
+using EventStore.Common.Options;
 using EventStore.Core.Configuration;
 using EventStore.Core.Configuration.Sources;
 using FluentAssertions;
@@ -124,12 +125,8 @@ public class ClusterVNodeOptionsTests {
 			.AddEventStoreEnvironmentVariables(("EVENTSTORE_CLUSTER_SIZE", "23")) // a value that is ont a default
 			.Build();
 			
-		var manual = ClusterVNodeOptions.FromConfigurationLegacy(config);
 		var binded = ClusterVNodeOptions.FromConfiguration(config);
-			
-		manual.Should().BeEquivalentTo(binded);
 		
-		ClusterVNodeOptionsValidator.Validate(manual);
 		ClusterVNodeOptionsValidator.Validate(binded);
 	}
 
@@ -185,5 +182,16 @@ public class ClusterVNodeOptionsTests {
 		var options = ClusterVNodeOptions.FromConfiguration(config);
 		
 		options.Cluster.ClusterSize.Should().Be(23);
+	}
+	
+	[Fact]
+	public void can_set_log_level_from_env_vars() {
+		var config = new ConfigurationBuilder()
+			.AddEventStoreEnvironmentVariables(("EVENTSTORE_LOG_LEVEL", LogLevel.Fatal.ToString()))
+			.Build();
+			
+		var options = ClusterVNodeOptions.FromConfiguration(config);
+
+		options.Log.LogLevel.Should().Be(LogLevel.Fatal);
 	}
 }
