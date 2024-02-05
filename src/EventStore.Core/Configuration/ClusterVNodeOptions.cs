@@ -22,6 +22,7 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Quickenshtein;
+using IPAddressConverter = EventStore.Core.Configuration.IPAddressConverter;
 
 namespace EventStore.Core;
 
@@ -53,8 +54,8 @@ public partial record ClusterVNodeOptions {
 	public IReadOnlyList<ISubsystem>   Subsystems              { get; init; } = [];
 
 	public bool UnknownOptionsDetected => Unknown.Options.Any();
-	
-	public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
+
+	public static ClusterVNodeOptions FromConfigurationLegacy(IConfigurationRoot configurationRoot) {
 		IConfiguration configuration = configurationRoot.GetRequiredSection("EventStore");
 			
 		var options = new ClusterVNodeOptions {
@@ -71,42 +72,43 @@ public partial record ClusterVNodeOptions {
 			Grpc              = GrpcOptions.FromConfiguration(configuration),
 			Interface         = InterfaceOptions.FromConfiguration(configuration),
 			Projection        = ProjectionOptions.FromConfiguration(configuration),
+			
 			Unknown           = UnknownOptions.FromConfiguration(configuration),
 			ConfigurationRoot = configurationRoot,
-			DisplayOptions    = GetDisplayOptions(configurationRoot)
+			LoadedOptions     = GetLoadedOptions(configurationRoot)
 		};
-		
-		FileStreamExtensions.ConfigureFlush(options.Database.UnsafeDisableFlushToDisk);
 		
 		return options;
 	}
 		
-	public static ClusterVNodeOptions BindFromConfiguration(IConfigurationRoot configurationRoot) {
+	public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
 		IConfiguration configuration = configurationRoot.GetRequiredSection("EventStore");
 		
-		// maybe add this on static ctor...
 		TypeDescriptor.AddAttributes(typeof(EndPoint[]), new TypeConverterAttribute(typeof(GossipSeedConverter)));
-			
+		TypeDescriptor.AddAttributes(typeof(IPAddress), new TypeConverterAttribute(typeof(IPAddressConverter)));
+		
+		// with full keys we would not even need to do all these binds, just a single one
+		// configurationRoot.BindOptions<ClusterVNodeOptions>();
+		
 		var options = new ClusterVNodeOptions {
-			Application       = configurationRoot.BindOptions<ApplicationOptions>(),
-			DevMode           = configurationRoot.BindOptions<DevModeOptions>(),
-			DefaultUser       = configurationRoot.BindOptions<DefaultUserOptions>(),
-			Log               = configurationRoot.BindOptions<LogOptions>(),
-			Auth              = configurationRoot.BindOptions<AuthOptions>(),
-			Certificate       = configurationRoot.BindOptions<CertificateOptions>(),
-			CertificateFile   = configurationRoot.BindOptions<CertificateFileOptions>(),
-			CertificateStore  = configurationRoot.BindOptions<CertificateStoreOptions>(),
-			Cluster           = configurationRoot.BindOptions<ClusterOptions>(),
-			Database          = configurationRoot.BindOptions<DatabaseOptions>(),
-			Grpc              = configurationRoot.BindOptions<GrpcOptions>(),
-			Interface         = configurationRoot.BindOptions<InterfaceOptions>(),
-			Projection        = configurationRoot.BindOptions<ProjectionOptions>(),
+			Application       = configuration.BindOptions<ApplicationOptions>(),
+			DevMode           = configuration.BindOptions<DevModeOptions>(),
+			DefaultUser       = configuration.BindOptions<DefaultUserOptions>(),
+			Log               = configuration.BindOptions<LogOptions>(),
+			Auth              = configuration.BindOptions<AuthOptions>(),
+			Certificate       = configuration.BindOptions<CertificateOptions>(),
+			CertificateFile   = configuration.BindOptions<CertificateFileOptions>(),
+			CertificateStore  = configuration.BindOptions<CertificateStoreOptions>(),
+			Cluster           = configuration.BindOptions<ClusterOptions>(),
+			Database          = configuration.BindOptions<DatabaseOptions>(),
+			Grpc              = configuration.BindOptions<GrpcOptions>(),
+			Interface         = configuration.BindOptions<InterfaceOptions>(),
+			Projection        = configuration.BindOptions<ProjectionOptions>(),
+			
 			Unknown           = UnknownOptions.FromConfiguration(configuration),
 			ConfigurationRoot = configurationRoot,
-			DisplayOptions    = GetDisplayOptions(configurationRoot)
+			LoadedOptions     = GetLoadedOptions(configurationRoot)
 		};
-		
-		FileStreamExtensions.ConfigureFlush(options.Database.UnsafeDisableFlushToDisk);
 		
 		return options;
 	}
@@ -576,29 +578,7 @@ public partial record ClusterVNodeOptions {
 
 		[Description("The number of stream hashes to remember when checking for collisions.")]
 		public int ScavengeHashUsersCacheCapacity { get; init; } = Opts.ScavengeHashUsersCacheCapacityDefault;
-
-		// public static int GetPTableMaxReaderCount(int readerThreadsCount) {
-		// 	var ptableMaxReaderCount =
-		// 		1 /* StorageWriter */
-		// 		+ 1 /* StorageChaser */
-		// 		+ 1 /* Projections */
-		// 		+ TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
-		// 		+ 1 /* Redaction */
-		// 		+ 1 /* Subscription LinkTos resolving */
-		// 		+ readerThreadsCount
-		// 		+ 5 /* just in case reserve :) */;
-		// 	return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
-		// }
-		//
-		// public static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
-		// 	var tfChunkMaxReaderCount =
-		// 		GetPTableMaxReaderCount(readerThreadsCount) +
-		// 		2 + /* for caching/uncaching, populating midpoints */
-		// 		1 + /* for epoch manager usage of elections/replica service */
-		// 		1 /* for epoch manager usage of leader replication service */;
-		// 	return Math.Max(tfChunkMaxReaderCount, chunkInitialReaderCount);
-		// }
-
+		
 		internal static DatabaseOptions FromConfiguration(IConfiguration configurationRoot) => new() {
 			MinFlushDelayMs           = configurationRoot.GetValue<double>(nameof(MinFlushDelayMs)),
 			DisableScavengeMerging    = configurationRoot.GetValue<bool>(nameof(DisableScavengeMerging)),
@@ -958,7 +938,7 @@ public partial record ClusterVNodeOptions {
 	}
 
 	public record UnknownOptions(IReadOnlyList<(string, string)> Options) {
-		internal static UnknownOptions FromConfiguration(IConfiguration configuration) {
+		public static UnknownOptions FromConfiguration(IConfiguration configuration) {
 			var knownKeys = Metadata
 				.SelectMany(x => x.Options)
 				.Select(x => x.Key)

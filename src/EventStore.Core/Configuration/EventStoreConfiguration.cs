@@ -20,7 +20,7 @@ public static class EventStoreConfiguration {
 		// identify the environment
 		var hostEnvironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? Environments.Development;
 		
-		// TODO SS: should the env affect the Cluster Dev mode by default?
+		// TODO SS: should the host environment (production, development,...) affect the Cluster Dev mode by default? and/or vice-versa?
 		
 		// resolve the main configuration file
 		var configFile = ResolveConfigurationFile(args, environment);
@@ -29,7 +29,7 @@ public static class EventStoreConfiguration {
 		var builder = new ConfigurationBuilder()
 			// we should be able to stop doing this soon as long as we bind the options automatically
 			.AddEventStoreDefaultValues(defaultValues)
-			.AddEventStoreConfigFile(configFile.Path, configFile.Optional)
+			.AddEventStoreYamlConfigFile(configFile.Path, configFile.Optional)
 			
 			// these 3 json files are loaded explicitly for backwards compatibility
 			// - metricsconfig.json needs loading into the EventStore:Metrics section.
@@ -77,7 +77,7 @@ public static class EventStoreConfiguration {
 			: (configFilePath, false);
 	}
 
-	public static IConfigurationBuilder AddEventStoreConfigFile(this IConfigurationBuilder builder, string path, bool optional = true) {
+	public static IConfigurationBuilder AddEventStoreYamlConfigFile(this IConfigurationBuilder builder, string path, bool optional = true) {
 		if (string.IsNullOrWhiteSpace(path)) 
 			throw new ArgumentException("Value cannot be null or whitespace.", nameof(path));
 

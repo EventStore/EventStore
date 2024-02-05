@@ -53,17 +53,46 @@ public partial record ClusterVNodeOptions {
 		}
 	}
 
-	public IReadOnlyDictionary<string, DisplayOption> DisplayOptions { get; init; } = new Dictionary<string, DisplayOption>();
+	public IReadOnlyDictionary<string, LoadedOption> LoadedOptions { get; init; } = new Dictionary<string, LoadedOption>();
 	
-	public static IReadOnlyDictionary<string, DisplayOption> GetDisplayOptions(IConfigurationRoot configurationRoot) {
-		var printableOptions = new Dictionary<string, DisplayOption>();
+	public string GetComponentName() => $"{Interface.NodeIp}-{Interface.NodePort}-cluster-node";
+
+	public string? DumpOptions() =>
+		ConfigurationRoot != null 
+			? ClusterVNodeOptionsPrinter.Print(LoadedOptions) 
+			: null;
+	
+	public string? GetDeprecationWarnings() {
+		var defaultValues = new Dictionary<string, object?>(DefaultValues, StringComparer.OrdinalIgnoreCase);
+
+		var deprecationWarnings = from section in OptionSections
+			from option in section.GetProperties()
+			let deprecationWarning = option.GetCustomAttribute<DeprecatedAttribute>()?.Message
+			where deprecationWarning is not null
+			let value = ConfigurationRoot?.GetValue<string?>(option.Name)
+			where defaultValues.TryGetValue(option.Name, out var defaultValue)
+			      && !string.Equals(value, defaultValue?.ToString(), StringComparison.OrdinalIgnoreCase)
+			select deprecationWarning;
+
+		var builder = deprecationWarnings
+			.Aggregate<string, StringBuilder>(new StringBuilder(), (builder, deprecationWarning) => builder.AppendLine(deprecationWarning));
+
+		return builder.Length != 0 ? builder.ToString() : null;
+	}
+
+	public string? CheckForEnvironmentOnlyOptions() => 
+		ConfigurationRoot.CheckProvidersForEnvironmentVariables(OptionSections);
+
+		
+	public static IReadOnlyDictionary<string, LoadedOption> GetLoadedOptions(IConfigurationRoot configurationRoot) {
+		var printableOptions = new Dictionary<string, LoadedOption>();
 		
 		// because we always start with defaults, we can just add them all first.
 		// then we can override them with the actual values.
 		foreach (var provider in configurationRoot.Providers) {
 			var providerType = provider.GetType();
 	
-			foreach (var option in ClusterVNodeOptions.Metadata.SelectMany(x => x.Options)) {
+			foreach (var option in Metadata.SelectMany(x => x.Options)) {
 				if (!provider.TryGet(option.Value.Key, out var value)) continue;
 				
 				var title             = GetTitle(option);
@@ -103,143 +132,10 @@ public partial record ClusterVNodeOptions {
 		string GetTitle(KeyValuePair<string, OptionMetadata> option) => 
 			CombineByPascalCase(EventStoreConfigurationKeys.StripConfigurationPrefix(option.Value.Key)).ToUpper();
 	}
-		
-	public string GetComponentName() => $"{Interface.NodeIp}-{Interface.NodePort}-cluster-node";
-
-	public string? DumpOptions() =>
-		ConfigurationRoot != null 
-			? ClusterVNodeOptionsPrinter.Print(DisplayOptions) 
-			: null;
-	
-	public string? GetDeprecationWarnings() {
-		var defaultValues = new Dictionary<string, object?>(DefaultValues, StringComparer.OrdinalIgnoreCase);
-
-		var deprecationWarnings = from section in OptionSections
-			from option in section.GetProperties()
-			let deprecationWarning = option.GetCustomAttribute<DeprecatedAttribute>()?.Message
-			where deprecationWarning is not null
-			let value = ConfigurationRoot?.GetValue<string?>(option.Name)
-			where defaultValues.TryGetValue(option.Name, out var defaultValue)
-			      && !string.Equals(value, defaultValue?.ToString(), StringComparison.OrdinalIgnoreCase)
-			select deprecationWarning;
-
-		var builder = deprecationWarnings
-			.Aggregate<string, StringBuilder>(new StringBuilder(), (builder, deprecationWarning) => builder.AppendLine(deprecationWarning));
-
-		return builder.Length != 0 ? builder.ToString() : null;
-	}
-
-	public string? CheckForEnvironmentOnlyOptions() => 
-		ConfigurationRoot.CheckProvidersForEnvironmentVariables(OptionSections);
-
-	// static string GetHelpText() {
-	// 	const string OPTION      = nameof(OPTION);
-	// 	const string DESCRIPTION = nameof(DESCRIPTION);
-	// 	const string DEFAULT     = nameof(DEFAULT);
-	//
-	// 	var optionColumnWidth = Options().Max(o => OptionHeaderColumnWidth(o.Name, DefaultValue(o)));
-	//
-	// 	var header = $"{OPTION.PadRight(optionColumnWidth, ' ')}{DESCRIPTION}";
-	// 	
-	// 	var environmentOnlyOptions = Metadata.SelectMany(section => section.Options.Values)
-	// 		.Where(option => option.IsEnvironmentOnly)
-	// 		.Select(option => option)
-	// 		.ToList();
-	// 	
-	// 	var environmentOnlyOptionsBuilder = environmentOnlyOptions
-	// 		.Aggregate(new StringBuilder(), (builder, option) => builder.Append(GetEnvironmentOptionHelpText(option, optionColumnWidth)).AppendLine())
-	// 		.ToString();
-	//
-	// 	var sections = Metadata.Select(
-	// 			section => section with {
-	// 				Options = section.Options.Values
-	// 					.Where(option => !option.IsEnvironmentOnly)
-	// 					.ToDictionary(option => option.Key, x => x)
-	// 			}
-	// 		)
-	// 		.ToList();
-	//
-	// 	var builder = new StringBuilder().Append(header).AppendLine();
-	// 	
-	// 	foreach (var section in sections) {
-	// 		builder.AppendLine().Append(section.Key).AppendLine();
-	// 		
-	// 	}
-	// 	
-	// 	//
-	// 	// var optionGroups = options.GroupBy(option =>
-	// 	// 	option.DeclaringType?.GetCustomAttribute<DescriptionAttribute>()?.Description ?? string.Empty);
-	//
-	// 	return optionGroups
-	// 		.Aggregate(new StringBuilder().Append(header).AppendLine(), (builder, optionGroup) =>
-	// 			optionGroup.Aggregate(
-	// 				builder.AppendLine().Append(optionGroup.Key).AppendLine(),
-	// 				(stringBuilder, property) => stringBuilder.Append(Line(property)).AppendLine()))
-	// 		.AppendLine().AppendLine("EnvironmentOnly Options").Append(environmentOnlyOptionsBuilder)
-	// 		.ToString();
-	// 		
-	//
-	// 	string Line(OptionMetadata option) {
-	// 		var description = option.Description;
-	// 		
-	// 		if (option.AllowedValues.Any()) 
-	// 			description += $" ({string.Join(", ", option.AllowedValues)})";
-	//
-	// 		return GetOption(option).PadRight(optionColumnWidth, ' ') + description;
-	// 	}
-	//
-	// 	static string GetOption(OptionMetadata option) {
-	// 		var builder = new StringBuilder();
-	// 		
-	// 		builder.AppendJoin(string.Empty, GnuOption(option.Name));
-	//
-	// 		var defaultValue = DefaultValue(option);
-	// 		if (defaultValue != string.Empty) {
-	// 			builder.Append(" (Default:").Append(defaultValue).Append(')');
-	// 		}
-	//
-	// 		return builder.ToString();
-	// 	}
-	// 		
-	// 	static IEnumerable<PropertyInfo> Options() => OptionSections.SelectMany(type => type.GetProperties());
-	//
-	// 	static int OptionWidth(string name, string @default) =>
-	// 		(name + @default).Count(char.IsUpper) + 1 + 1 + (name + @default).Length;
-	//
-	// 	int OptionHeaderColumnWidth(string name, string @default) =>
-	// 		Math.Max(OptionWidth(name, @default) + 1, OPTION.Length);
-	//
-	// 	static string DefaultValue(OptionMetadata option) {
-	// 		var value = option.GetValue(Activator.CreateInstance(option.DeclaringType!));
-	// 		return (value, Runtime.IsWindows) switch {
-	// 			(bool b, false) => b.ToString().ToLower(),
-	// 			(bool b, true) => b.ToString(),
-	// 			(Array {Length: 0}, _) => string.Empty,
-	// 			(Array {Length: >0} a, _) => string.Join(",", a.OfType<object>()),
-	// 			_ => value?.ToString() ?? string.Empty
-	// 		};
-	// 	}
-	//
-	// 	static IEnumerable<char> GnuOption(string x) {
-	// 		yield return '-';
-	// 		foreach (var c in x) {
-	// 			if (char.IsUpper(c))
-	// 				yield return '-';
-	//
-	// 			yield return char.ToLower(c);
-	// 		}
-	// 	}
-	// 	
-	// 	static string GetEnvironmentOptionHelpText(OptionMetadata option, int optionColumnWidth) {
-	// 		var envVar  = option.FullKey.Replace(":", "_").ToUpper();
-	// 		return envVar.PadRight(optionColumnWidth, ' ') + option.ErrorMessage;
-	// 	}
-	// }
 	
 	static string GetHelpText() {
 		const string OPTION      = nameof(OPTION);
 		const string DESCRIPTION = nameof(DESCRIPTION);
-		const string DEFAULT     = nameof(DEFAULT);
 	
 		var optionColumnWidth = Options().Max(o =>
 			OptionHeaderColumnWidth(o.Name, DefaultValue(o)));
@@ -402,4 +298,10 @@ public record OptionMetadata(
 			Sequence: sequence
 		);
 	}
+}
+
+public record LoadedOption(OptionMetadata Metadata, string Title, string? Value, string SourceDisplayName, bool IsDefault) {
+	public string DisplayValue { get; } = Metadata.IsSensitive ? new('*', 8) : Value ?? String.Empty;
+	
+	public override string ToString() => DisplayValue;
 }

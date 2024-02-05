@@ -1,7 +1,6 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
 using EventStore.Common.Options;
 using EventStore.Core.Configuration;
 using EventStore.Core.Configuration.Sources;
@@ -28,8 +27,9 @@ public class ClusterVNodeOptionsPrinterTests {
 			)
 			.Build();
 
-		var displayOptions = ClusterVNodeOptions.GetDisplayOptions(config);
-		var output = ClusterVNodeOptionsPrinter.Print(displayOptions);
+		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
+		
+		var output = ClusterVNodeOptionsPrinter.Print(loadedOptions);
 		
 #pragma warning disable CS0618 // Type or member is obsolete
 		var oldOutput = new OptionsDumper(ClusterVNodeOptions.OptionSections).Dump(config);
@@ -39,7 +39,7 @@ public class ClusterVNodeOptionsPrinterTests {
 	}
 
 	[Fact]
-	public void printable_options_do_not_contain_sensitive_values() {
+	public void loaded_options_do_not_contain_sensitive_values() {
 		var secretText = Guid.NewGuid().ToString();
 		
 		var config = new ConfigurationBuilder()
@@ -47,29 +47,29 @@ public class ClusterVNodeOptionsPrinterTests {
 			.AddEventStoreCommandLine($"--default-ops-password={secretText}")
 			.Build();
 		
-		var displayOptions = ClusterVNodeOptions.GetDisplayOptions(config);
+		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
 
-		var option = displayOptions["EventStore:DefaultOpsPassword"];
+		var option = loadedOptions["EventStore:DefaultOpsPassword"];
 		
 		option.Value.Should().BeEquivalentTo(secretText);
 		option.DisplayValue.Should().BeEquivalentTo(new('*', 8));
 	}
 
 	[Fact]
-	public void printable_options_show_allowed_values() {
+	public void loaded_options_show_allowed_values() {
 		var config = new ConfigurationBuilder()
 			.AddEventStoreDefaultValues()
 			.Build();
 		
-		var displayOptions = ClusterVNodeOptions.GetDisplayOptions(config);
+		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
 		
-		var option = displayOptions["EventStore:DbLogFormat"];
+		var option = loadedOptions["EventStore:DbLogFormat"];
 		
 		option.Metadata.AllowedValues.Should().BeEquivalentTo(Enum.GetNames(typeof(DbLogFormat)));
 	}
 	
 	[Fact]
-	public void printable_option_provided_by_another_source_shows_the_correct_source() {
+	public void loaded_option_provided_by_another_source_shows_the_correct_source() {
 		var expectedValue             = LogLevel.Information.ToString();
 		var expectedSourceDisplayName = "(Command Line)";
 		
@@ -79,9 +79,9 @@ public class ClusterVNodeOptionsPrinterTests {
 			.AddEventStoreCommandLine($"--log-level={expectedValue}")
 			.Build();
 		
-		var displayOptions = ClusterVNodeOptions.GetDisplayOptions(config);
+		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
 		
-		var option = displayOptions["EventStore:LogLevel"];
+		var option = loadedOptions["EventStore:LogLevel"];
 		
 		option.Value.Should().BeEquivalentTo(expectedValue);
 		option.SourceDisplayName.Should().BeEquivalentTo(expectedSourceDisplayName);

@@ -39,7 +39,8 @@ public class GossipSeedConverter : ArrayConverter {
 
 	static readonly GossipEndPointConverter _gossipEndPointConverter = new();
 
-	public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => true;
+	public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => 
+		sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
 
 	public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) {
 		if (value is not string stringValue)
@@ -58,15 +59,17 @@ public class GossipSeedConverter : ArrayConverter {
 	}
 }
 
-// public class CommaSeparatedValuesConverter<T>  : ArrayConverter {
-// 	public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => true;
-//
-// 	public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) {
-// 		if (value is string stringValue) {
-// 			var values = stringValue.Split(',', StringSplitOptions.RemoveEmptyEntries);
-// 			return ConvertTo(context, culture, values, typeof(T[]));
-// 		}
-//
-// 		return base.ConvertFrom(context, culture, value);
-// 	}
-// }
+public class IPAddressConverter : StringConverter {
+	public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => 
+		sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+
+	public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) {
+		try {
+			return value is string stringValue ? ParseIpAddress(stringValue) : base.ConvertFrom(context, culture, value);
+		} catch (Exception) {
+			return base.ConvertFrom(context, culture, value);
+		}
+	}
+
+	static IPAddress ParseIpAddress(string? value) => IPAddress.Parse(value ?? IPAddress.Loopback.ToString());
+}

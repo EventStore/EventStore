@@ -121,10 +121,11 @@ public class ClusterVNodeOptionsTests {
 	public void bind_works() {
 		var config = new ConfigurationBuilder()
 			.AddEventStoreDefaultValues()
+			.AddEventStoreEnvironmentVariables(("EVENTSTORE_CLUSTER_SIZE", "23")) // a value that is ont a default
 			.Build();
 			
-		var manual = ClusterVNodeOptions.FromConfiguration(config);
-		var binded = ClusterVNodeOptions.BindFromConfiguration(config);
+		var manual = ClusterVNodeOptions.FromConfigurationLegacy(config);
+		var binded = ClusterVNodeOptions.FromConfiguration(config);
 			
 		manual.Should().BeEquivalentTo(binded);
 		
@@ -146,7 +147,7 @@ public class ClusterVNodeOptionsTests {
 			.AddEventStoreEnvironmentVariables(("EVENTSTORE_GOSSIPSEED", values))
 			.Build();
 			
-		var options  = ClusterVNodeOptions.FromConfiguration(config);
+		var options = ClusterVNodeOptions.FromConfiguration(config);
 		
 		options.Cluster.GossipSeed.Should().BeEquivalentTo(endpoints);
 	}
@@ -174,11 +175,11 @@ public class ClusterVNodeOptionsTests {
 	}
 	
 	[Fact]
-	public void cab_set_cluster_size_from_config_file() {
+	public void can_set_cluster_size_from_config_file() {
 		var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configuration", "test.eventstore.conf");
 		
 		var config = new ConfigurationBuilder()
-			.AddEventStoreConfigFile(path, optional: false)
+			.AddEventStoreYamlConfigFile(path, optional: false)
 			.Build();
 			
 		var options = ClusterVNodeOptions.FromConfiguration(config);

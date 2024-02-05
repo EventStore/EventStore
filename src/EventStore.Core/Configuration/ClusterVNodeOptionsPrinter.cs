@@ -7,20 +7,14 @@ using static System.String;
 
 namespace EventStore.Core.Configuration;
 
-public record DisplayOption(OptionMetadata Metadata, string Title, string? Value, string SourceDisplayName, bool IsDefault) {
-	public string DisplayValue { get; } = Metadata.IsSensitive ? new('*', 8) : Value ?? Empty;
-	
-	public override string ToString() => DisplayValue;
-}
-
 public static class ClusterVNodeOptionsPrinter {
-	public static string Print(IReadOnlyDictionary<string, DisplayOption> displayOptions) {
+	public static string Print(IReadOnlyDictionary<string, LoadedOption> displayOptions) {
 		var modified = Print(displayOptions, modifiedOnly: true);
 		var defaults = Print(displayOptions, modifiedOnly: false);
 		return new StringBuilder().AppendLine(modified).Append(defaults).ToString();
 	}
 	
-	static string Print(IReadOnlyDictionary<string, DisplayOption> displayOptions, bool modifiedOnly) {
+	static string Print(IReadOnlyDictionary<string, LoadedOption> displayOptions, bool modifiedOnly) {
 		var nameColumnWidth = displayOptions.Keys.Select(x => x.Length).Max() + 11;
 
 		var output = new StringBuilder()

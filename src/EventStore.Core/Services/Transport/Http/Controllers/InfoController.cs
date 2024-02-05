@@ -75,7 +75,7 @@ public class InfoController : IHttpController, IHandle<SystemMessage.StateChange
 
 	void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match) {
 		if (entity.User != null && (entity.User.LegacyRoleCheck(SystemRoles.Operations) || entity.User.LegacyRoleCheck(SystemRoles.Admins))) {
-			var options = _options.DisplayOptions.Values.Select(
+			var options = _options.LoadedOptions.Values.Select(
 				x => new OptionStructure {
 					Name           = x.Title,
 					Description    = x.Metadata.Description,
