@@ -46,9 +46,12 @@ using [Event Store Cloud](https://www.eventstore.com/event-store-cloud).
 
 EventStoreDB has
 pre-built [packages available for Debian-based distributions](https://packagecloud.io/EventStore/EventStore-OSS)
-, [manual instructions for distributions that use RPM](https://packagecloud.io/EventStore/EventStore-OSS/install#bash-rpm)
 , or you can [build from source](https://github.com/EventStore/EventStore#linux). The final package name to
 install is `eventstore-oss`.
+
+::: tip
+RPM packages are not available as part of the [EventStore/EventStore-OSS](https://packagecloud.io/EventStore/EventStore-OSS/) Package Cloud repository
+::: 
 
 If you installed from a pre-built package, the server is registered as a service. Therefore, you can start
 EventStoreDB with:
