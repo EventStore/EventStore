@@ -50,7 +50,7 @@ pre-built [packages available for Debian-based distributions](https://packageclo
 install is `eventstore-oss`.
 
 ::: tip
-RPM packages are not available as part of the [EventStore/EventStore-OSS](https://packagecloud.io/EventStore/EventStore-OSS/)
+RPM packages are not available as part of the [EventStore/EventStore-OSS](https://packagecloud.io/EventStore/EventStore-OSS/) Package Cloud repository
 ::: 
 
 If you installed from a pre-built package, the server is registered as a service. Therefore, you can start
