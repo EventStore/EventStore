@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Plugins.Authentication;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http;
 using NUnit.Framework;

@@ -66,6 +66,7 @@ using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Mono.Unix.Native;
 using ILogger = Serilog.ILogger;
 
@@ -1036,9 +1037,6 @@ namespace EventStore.Core {
 					case "Insecure":
 						httpAuthenticationProviders.Add(new PassthroughHttpAuthenticationProvider(_authenticationProvider));
 						break;
-					default:
-						Log.Warning($"Unsupported Authentication Scheme: {authenticationScheme}");
-						break;
 				}
 			}
 
@@ -1049,7 +1047,7 @@ namespace EventStore.Core {
 			if (!options.Application.Insecure) {
 				//transport-level authentication providers
 				httpAuthenticationProviders.Add(
-					new ClientCertificateAuthenticationProvider(() => _certificateProvider.GetReservedNodeCommonName()));
+					new NodeCertificateAuthenticationProvider(() => _certificateProvider.GetReservedNodeCommonName()));
 
 				if (options.Interface.EnableTrustedAuth)
 					httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
@@ -1600,15 +1598,23 @@ namespace EventStore.Core {
 			var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
 				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers);
 
+			IServiceCollection ConfigureAdditionalServices(IServiceCollection services) => services
+				.AddSingleton(_readIndex)
+				.AddSingleton(standardComponents)
+				.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
+				.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates, X509Certificate2Collection Roots)>>
+					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()));
+
 			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
-				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
+				_authenticationProvider, _authorizationProvider,
 				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 				expiryStrategy ?? new DefaultExpiryStrategy(),
 				_httpService,
 				configuration,
 				trackers,
 				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
-				standardComponents);
+				ConfigureAdditionalServices);
+
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 			var certificateExpiryMonitor = new CertificateExpiryMonitor(_mainQueue, _certificateSelector, Log);

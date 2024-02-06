@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Helpers;
@@ -39,7 +40,10 @@ namespace EventStore.Core.Tests.Authentication {
 
 		public TestAuthenticationRequest(string name, string suppliedPassword, Action unauthorized,
 			Action<ClaimsPrincipal> authenticated, Action error, Action notReady)
-			: base("test", name, suppliedPassword) {
+			: base("test", new Dictionary<string, string> {
+				["uid"] = name,
+				["pwd"] = suppliedPassword
+			}) {
 			_unauthorized = unauthorized;
 			_authenticated = authenticated;
 			_error = error;

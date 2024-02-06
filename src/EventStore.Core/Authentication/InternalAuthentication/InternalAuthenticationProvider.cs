@@ -21,7 +21,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		private readonly IODispatcher _ioDispatcher;
 		private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
 		private readonly bool _logFailedAuthenticationAttempts;
-		private readonly LRUCache<string, Tuple<string, ClaimsPrincipal>> _userPasswordsCache;
+		private readonly LRUCache<string, (string hash, string salt, ClaimsPrincipal principal)> _userPasswordsCache;
 		private readonly TaskCompletionSource<bool> _tcs = new TaskCompletionSource<bool>();
 		private readonly ClusterVNodeOptions.DefaultUserOptions _defaultUserOptions;
 
@@ -29,10 +29,10 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			int cacheSize, bool logFailedAuthenticationAttempts, ClusterVNodeOptions.DefaultUserOptions defaultUserOptions) {
 			_ioDispatcher = ioDispatcher;
 			_passwordHashAlgorithm = passwordHashAlgorithm;
-			_userPasswordsCache = new LRUCache<string, Tuple<string, ClaimsPrincipal>>("UserPasswords", cacheSize);
+			_userPasswordsCache = new LRUCache<string, (string, string, ClaimsPrincipal)>("UserPasswords", cacheSize);
 			_logFailedAuthenticationAttempts = logFailedAuthenticationAttempts;
 			_defaultUserOptions = defaultUserOptions;
-			
+
 			var userManagement = new UserManagementService(ioDispatcher, _passwordHashAlgorithm,
 				skipInitializeStandardUsersCheck: false, _tcs, _defaultUserOptions);
 			subscriber.Subscribe<UserManagementMessage.Create>(userManagement);
@@ -51,7 +51,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 
 		public void Authenticate(AuthenticationRequest authenticationRequest) {
 			if (_userPasswordsCache.TryGet(authenticationRequest.Name, out var cached)) {
-				AuthenticateWithPassword(authenticationRequest, cached.Item1, cached.Item2);
+				AuthenticateCached(authenticationRequest, cached.hash, cached.salt, cached.principal);
 			} else {
 				var userStreamId = "$user-" + authenticationRequest.Name;
 				_ioDispatcher.ReadBackward(
@@ -73,21 +73,19 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 
 		public IReadOnlyList<string> GetSupportedAuthenticationSchemes() {
 			return new [] {
-				"Basic"
+				"Basic",
+				"UserCertificate",
 			};
 		}
 
-		private void AuthenticateWithPasswordHash(AuthenticationRequest authenticationRequest, UserData userData) {
-			if (!_passwordHashAlgorithm.Verify(authenticationRequest.SuppliedPassword, userData.Hash, userData.Salt)) {
-				if (_logFailedAuthenticationAttempts)
-					Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
-						"Invalid credentials supplied.");
+		private void AuthenticateUncached(AuthenticationRequest authenticationRequest, UserData userData) {
+			if (!AuthenticateImpl(authenticationRequest, userData.Hash, userData.Salt)) {
 				authenticationRequest.Unauthorized();
 				return;
 			}
 
 			var principal = CreatePrincipal(userData);
-			CachePassword(authenticationRequest.Name, authenticationRequest.SuppliedPassword, principal);
+			CachePassword(authenticationRequest.Name, userData.Hash, userData.Salt, principal);
 			authenticationRequest.Authenticated(principal);
 		}
 
@@ -97,27 +95,44 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 				claims.AddRange(userData.Groups.Select(x => new Claim(ClaimTypes.Role, x)));
 			}
 
-
 			var identity = new ClaimsIdentity(claims, "ES-Legacy");
 			var principal = new ClaimsPrincipal(identity);
 			return principal;
 		}
 
-		private void CachePassword(string loginName, string password, ClaimsPrincipal principal) {
-			_userPasswordsCache.Put(loginName, Tuple.Create(password, principal));
+		private void CachePassword(string loginName, string hash, string salt, ClaimsPrincipal principal) {
+			_userPasswordsCache.Put(loginName, (hash, salt, principal));
 		}
 
-		private void AuthenticateWithPassword(AuthenticationRequest authenticationRequest, string correctPassword,
-			ClaimsPrincipal principal) {
-			if (authenticationRequest.SuppliedPassword != correctPassword) {
-				if (_logFailedAuthenticationAttempts)
-					Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
-						"Invalid credentials supplied.");
+		private void AuthenticateCached(AuthenticationRequest authenticationRequest, string passwordHash,
+			string passwordSalt, ClaimsPrincipal principal) {
+
+			if (!AuthenticateImpl(authenticationRequest, passwordHash, passwordSalt)) {
 				authenticationRequest.Unauthorized();
 				return;
 			}
 
 			authenticationRequest.Authenticated(principal);
+		}
+
+		private bool AuthenticateImpl(AuthenticationRequest authenticationRequest, string passwordHash, string passwordSalt) {
+			if (authenticationRequest.HasValidClientCertificate) {
+				// a valid user certificate was supplied. we only needed to verify if the certificate's user
+				// exists and is enabled, which we have.
+				return true;
+			}
+
+			// otherwise default to password authentication
+			if (_passwordHashAlgorithm.Verify(authenticationRequest.SuppliedPassword, passwordHash, passwordSalt)) {
+				return true;
+			}
+
+			if (_logFailedAuthenticationAttempts) {
+				Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
+					"Invalid credentials supplied.");
+			}
+
+			return false;
 		}
 
 		public void Handle(InternalAuthenticationProviderMessages.ResetPasswordCache message) {
@@ -171,7 +186,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 								"The account is disabled.");
 						_authenticationRequest.Unauthorized();
 					} else {
-						_self.AuthenticateWithPasswordHash(_authenticationRequest, userData);
+						_self.AuthenticateUncached(_authenticationRequest, userData);
 					}
 				} catch {
 					_authenticationRequest.Unauthorized();

@@ -8,6 +8,8 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class PassthroughHttpAuthenticationProvider : IHttpAuthenticationProvider {
 		private readonly IAuthenticationProvider _passthroughAuthenticationProvider;
 
+		public string Name => "insecure";
+
 		public PassthroughHttpAuthenticationProvider(IAuthenticationProvider internalAuthenticationProvider) {
 			_passthroughAuthenticationProvider = GetProvider(internalAuthenticationProvider);
 		}
