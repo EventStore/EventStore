@@ -6,7 +6,7 @@ title: Networking
 
 EventStoreDB provides two interfaces: 
 - HTTP(S) for gRPC communication and REST APIs
-- TCP for cluster replication (internal) and legacy clients (external) 
+- TCP for cluster replication (internal)
 
 Nodes in the cluster replicate with each other using the TCP protocol, but use gRPC for [discovering other cluster nodes](cluster.md#discovering-cluster-members).
 
@@ -136,7 +136,7 @@ This is configured with `Kestrel.Limits.Http2.InitialStreamWindowSize` in the se
 
 ## TCP configuration
 
-The TCP protocol is used internally for cluster nodes to replicate with each other. It happens over the [internal](#internal) TCP communication. In addition, you can enable [external](#external) TCP if you use the TCP client library in your applications.
+The TCP protocol is used internally for cluster nodes to replicate with each other. It happens over the [internal](#internal) TCP communication.
 
 ### Internal
 
@@ -172,32 +172,6 @@ By default, EventStoreDB uses port `1112` for internal TCP. You can change this 
 Please note that the `IntTcpPort` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `ReplicationPort` parameter instead.
 :::
 
-### External
-
-By default, TCP protocol is not exposed externally. If you use a TCP client library in your applications, you need to enable external TCP explicitly using the setting below.
-
-| Format               | Syntax                           |
-|:---------------------|:---------------------------------|
-| Command line         | `--enable-external-tcp`          |
-| YAML                 | `EnableExternalTcp`              |
-| Environment variable | `EVENTSTORE_ENABLE_EXTERNAL_TCP` |
-
-**Default**: `false`, TCP is disabled externally.
-
-When enabled, the external TCP will be exposed on the `NodeIp` address (described [here](#http-configuration)) using port `1113`. You can change the external TCP port using the `NodeTcpPort` setting.
-
-| Format               | Syntax                    |
-|:---------------------|:--------------------------|
-| Command line         | `--node-tcp-port`         |
-| YAML                 | `NodeTcpPort`             |
-| Environment variable | `EVENTSTORE_NODE_TCP_PORT`|
-
-**Default**: `1113`
-
-::: warning
-Please note that the `ExtTcpPort` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `NodeTcpPort` parameter instead.
-:::
-
 ### Security
 
 When the node is secured (by default), all the TCP traffic will use TLS. You can disable TLS for TCP internally and externally using the settings described below.
@@ -210,15 +184,7 @@ When the node is secured (by default), all the TCP traffic will use TLS. You can
 
 **Default**: `false`
 
-| Format               | Syntax                                |
-|:---------------------|:--------------------------------------|
-| Command line         | `--disable-external-tcp-tls`          |
-| YAML                 | `DisableExternalTcpTls`               |
-| Environment variable | `EVENTSTORE_DISABLE_EXTERNAL_TCP_TLS` |
-
-**Default**: `false`
-
-If your network setup requires any kind of IP address, DNS name and port translation for internal or external communication, you can use available [address translation](#network-address-translation) settings.
+If your network setup requires any kind of IP address, DNS name and port translation for internal communication, you can use available [address translation](#network-address-translation) settings.
 
 ## Network address translation
 
@@ -268,14 +234,8 @@ Both internal and external TCP ports can be advertised using custom values:
 | YAML                 | `ReplicationTcpPortAdvertiseAs`               |
 | Environment variable | `EVENTSTORE_REPLICATION_TCP_PORT_ADVERTISE_AS`| 
 
-| Format               | Syntax                                 |
-|:---------------------|:---------------------------------------|
-| Command line         | `--node-tcp-port-advertise-as`         |
-| YAML                 | `NodeTcpPortAdvertiseAs`               |
-| Environment variable | `EVENTSTORE_NODE_TCP_PORT_ADVERTISE_AS`| 
-
 ::: warning
-Please note that the `IntTcpPortAdvertiseAs` and `ExtTcpPortAdvertiseAs` parameters have been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `ReplicationTcpPortAdvertiseAs` and `NodeTcpPortAdvertiseAs` parameters instead, respectively.
+Please note that the `IntTcpPortAdvertiseAs` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `ReplicationTcpPortAdvertiseAs` and `NodeTcpPortAdvertiseAs` parameters instead, respectively.
 :::
 
 If you want to change how the node TCP address is advertised internally, use the `ReplicationHostAdvertiseAs` setting (previously `IntHostAdvertiseAs` setting). You can use an IP address or a hostname.
@@ -289,8 +249,6 @@ If you want to change how the node TCP address is advertised internally, use the
 ::: warning
 Please note that the `IntHostAdvertiseAs` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `ReplicationHostAdvertiseAs` parameter instead.
 :::
-
-Externally, TCP is advertised using the address specified in the `NodeIp` or `NodeHostAdvertiseAs` (as for HTTP).
 
 ### Advertise to clients
 
@@ -317,14 +275,6 @@ Specify the advertised HTTP(S) port (previously `AdvertiseHttpPortToClientAs` se
 ::: warning
 Please note that the `AdvertiseHttpPortToClientAs` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `AdvertiseNodePortToClientAs` parameter instead.
 :::
-
-Specify the advertised TCP port (only if external TCP is enabled):
-
-| Format               | Syntax                                       |
-|:---------------------|:---------------------------------------------|
-| Command line         | `--advertise-tcp-port-to-client-as`          |
-| YAML                 | `AdvertiseTcpPortToClientAs`                 |
-| Environment variable | `EVENTSTORE_ADVERTISE_TCP_PORT_TO_CLIENT_AS` | 
 
 ## Heartbeat timeouts
 
@@ -363,28 +313,6 @@ Replication/Internal TCP heartbeat (between cluster nodes):
 
 ::: warning
 Please note that the `IntTcpHeartbeatInterval` and `IntTcpHeartbeatTimeout` parameters have been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `ReplicationHeartbeatInterval` and `ReplicationHeartbeatTimeout` parameters instead, respectively.
-:::
-
-Node/External TCP heartbeat (between client and server):
-
-| Format               | Syntax                              |
-|:---------------------|:------------------------------------|
-| Command line         | `--node-heartbeat-interval`         |
-| YAML                 | `NodeHeartbeatInterval`             |
-| Environment variable | `EVENTSTORE_NODE_HEARTBEAT_INTERVAL`| 
-
-**Default**: `2000` (ms)
-
-| Format               | Syntax                             |
-|:---------------------|:-----------------------------------|
-| Command line         | `--node-heartbeat-timeout`         |
-| YAML                 | `NodeHeartbeatTimeout`             |
-| Environment variable | `EVENTSTORE_NODE_HEARTBEAT_TIMEOUT`| 
-
-**Default**: `1000` (ms)
-
-::: warning
-Please note that the `ExtTcpHeartbeatInterval` and `ExtTcpHeartbeatTimeout` parameters have been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `NodeHeartbeatInterval` and `NodeHeartbeatTimeout` parameters instead, respectively.
 :::
 
 ### gRPC heartbeats

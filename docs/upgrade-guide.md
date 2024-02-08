@@ -88,19 +88,15 @@ Follow the [upgrade procedure](#upgrade-procedure) and ensure that the Leader no
 
 ### Deprecated configuration options
 
-Several options are deprecated and slated for removal in version 24.10 next year. See the table below for guidance.
+Several options are deprecated and slated for removal in future releases. See the table below for guidance.
 
 | Deprecated Option | Use Instead |
 |:------------------|:-------------|
 | ExtIp | NodeIp |
 | ExtPort | NodePort |
-| ExtTcpPort | NodeTcpPort |
 | HttpPortAdvertiseAs | NodePortAdvertiseAs |
 | ExtHostAdvertiseAs | NodeHostAdvertiseAs |
-| ExtTcpPortAdvertiseAs | NodeTcpPortAdvertiseAs |
 | AdvertiseHttpPortToClientAs | AdvertiseNodePortToClientAs |
-| ExtTcpHeartbeatTimeout | NodeHeartbeatTimeout |
-| ExtTcpHeartbeatInterval | NodeHeartbeatInterval |
 | IntIp | ReplicationIp |
 | IntTcpPort | ReplicationTcpPort |
 | IntTcpPortAdvertiseAs | ReplicationTcpPortAdvertiseAs |

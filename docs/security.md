@@ -571,14 +571,6 @@ You can, however, disable TLS for both internal and external TCP.
 
 **Default**: `false`
 
-| Format               | Syntax                                |
-|:---------------------|:--------------------------------------|
-| Command line         | `--disable-external-tcp-tls`          |
-| YAML                 | `DisableExternalTcpTls`               |
-| Environment variable | `EVENTSTORE_DISABLE_EXTERNAL_TCP_TLS` |
-
-**Default**: `false`
-
 ## Authentication
 
 EventStoreDB supports authentication based on usernames and passwords out of the box. The Enterprise version
