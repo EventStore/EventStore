@@ -11,7 +11,7 @@ The Administration UI includes a _Competing Consumers_ section where you are abl
 Before interacting with a subscription group, you need to create one. This requires [admin permissions](security.md). You will get an error if you try to create a subscription group more than once.
 
 ::: warning
-Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to create persistent subscriptions to `$all`, use the [appropriate client method](@server/persistent-subscriptions.md#subscribing-to-all).
+Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to create persistent subscriptions to `$all`, use the [appropriate client method](@clients/persistent-subscriptions.md#subscribing-to-all).
 :::
 
 <!-- TODO: File inclusion for the below? -->
@@ -25,7 +25,7 @@ Persistent subscriptions to `$all` are not supported over the HTTP API. If you w
 | Parameter           | Description                                   |
 | ------------------- | --------------------------------------------- |
 | `stream`            | The stream the persistent subscription is on. |
-| `subscription_name` | The name of the subscription group.          |
+| `subscription_name` | The name of the subscription group.           |
 
 ### Body
 
@@ -43,7 +43,7 @@ Persistent subscriptions to `$all` are not supported over the HTTP API. If you w
 | `maxSubscriberCount`          | Sets the maximum number of allowed TCP subscribers.                                                |
 | `messageTimeoutMilliseconds`  | Sets the timeout for a client before the message will be retried.                                  |
 | `minCheckPointCount`          | The minimum number of messages to write a checkpoint for.                                          |
-| `namedConsumerStrategy`       | Allowed values are `RoundRobin`, `DispatchToSingle`, `Pinned`, `PinnedByCorrelation`.                                     |
+| `namedConsumerStrategy`       | Allowed values are `RoundRobin`, `DispatchToSingle`, `Pinned`, `PinnedByCorrelation`.              |
 
 ## Updating a persistent subscription
 
@@ -54,15 +54,15 @@ You can edit the settings of an existing subscription while it is running. This 
 | `/subscriptions/{stream}/{subscription_name}` | `application/json`      | POST   |
 
 ::: warning
-Persistent subscriptions to `$all` are not supported over the HTTP API. To update persistent subscriptions to `$all`, use the [appropriate client method](@server/persistent-subscriptions.md#updating-a-subscription-group).
+Persistent subscriptions to `$all` are not supported over the HTTP API. To update persistent subscriptions to `$all`, use the [appropriate client method](@clients/persistent-subscriptions.md#updating-a-subscription-group).
 :::
 
 ### Query parameters
 
-| Parameter           | Description                                      |
-| ------------------- | ------------------------------------------------ |
+| Parameter           | Description                                   |
+| ------------------- | --------------------------------------------- |
 | `stream`            | The stream the persistent subscription is on. |
-| `subscription_name` | The name of the subscription group.              |
+| `subscription_name` | The name of the subscription group.           |
 
 ### Body
 
@@ -75,15 +75,15 @@ _Same parameters as [Creating a Persistent Subscription](#creating-a-persistent-
 | `/subscriptions/{stream}/{subscription_name}` | `application/json`      | DELETE |
 
 ::: warning
-Deleting persistent subscriptions to `$all` is not supported over the HTTP API. If you want to delete persistent subscriptions to `$all`, use the [appropriate client method](@server/persistent-subscriptions.md#deleting-a-subscription-group).
+Deleting persistent subscriptions to `$all` is not supported over the HTTP API. If you want to delete persistent subscriptions to `$all`, use the [appropriate client method](@clients/persistent-subscriptions.md#deleting-a-subscription-group).
 :::
 
 ### Query parameters
 
-| Parameter           | Description                                      |
-| ------------------- | ------------------------------------------------ |
+| Parameter           | Description                                   |
+| ------------------- | --------------------------------------------- |
 | `stream`            | The stream the persistent subscription is on. |
-| `subscription_name` | The name of the subscription group.              |
+| `subscription_name` | The name of the subscription group.           |
 
 ## Reading a stream via a persistent subscription
 
