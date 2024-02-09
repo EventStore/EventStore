@@ -59,7 +59,7 @@ namespace EventStore.Core {
 		public static ClusterVNodeOptions FromConfiguration(string[] args, IDictionary environment) {
 			if (args == null) throw new ArgumentNullException(nameof(args));
 			if (environment == null) throw new ArgumentNullException(nameof(environment));
-			
+
 			try {
 				var configurationRoot = new ConfigurationBuilder()
 					.AddEventStore(nameof(ApplicationOptions.Config), args, environment, DefaultValues)
@@ -94,19 +94,19 @@ namespace EventStore.Core {
 
 		[Description("Default User Options")]
 		public record DefaultUserOptions {
-			
+
 			[Description("Admin Default password"), Sensitive, EnvironmentOnly("The Admin user password can only be set using Environment Variables")]
 			public string DefaultAdminPassword { get; init; } = "changeit";
-			
-			[Description("Ops Default password"), Sensitive, EnvironmentOnly("The Ops user password can only be set using Environment Variables")] 
+
+			[Description("Ops Default password"), Sensitive, EnvironmentOnly("The Ops user password can only be set using Environment Variables")]
 			public string DefaultOpsPassword { get; init; } = "changeit";
- 
+
 			internal static DefaultUserOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				DefaultAdminPassword = configurationRoot.GetString(nameof(DefaultAdminPassword)),
 				DefaultOpsPassword = configurationRoot.GetString(nameof(DefaultOpsPassword))
 			};
 		}
-		
+
 		[Description("Dev mode Options")]
 		public record DevModeOptions {
 			[Description("Runs EventStoreDB in dev mode. This will create and add dev certificates to your certificate store, enable atompub over http, and run standard projections.")]
@@ -124,7 +124,7 @@ namespace EventStore.Core {
 		[Description("Application Options")]
 		public record ApplicationOptions {
 			[Description("Show help.")] public bool Help { get; init; } = false;
-			
+
 			[Description("Show version.")] public bool Version { get; init; } = false;
 
 			[Description("Configuration files.")]
@@ -280,7 +280,7 @@ namespace EventStore.Core {
 			[Description("The password to the certificate if a PKCS #12 (.p12/.pfx) certificate file is provided."),
 			 Sensitive]
 			public string? CertificatePassword { get; init; }
-			
+
 			[Description("The password to the certificate private key file if an encrypted PKCS #8 private key file is provided."),
 			 Sensitive]
 			public string? CertificatePrivateKeyPassword { get; init; }
@@ -645,7 +645,7 @@ namespace EventStore.Core {
 				 "The IntIp parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationIp parameter instead.")]
 			[Obsolete("IntIp is deprecated, use ReplicationIp instead")]
 			public IPAddress IntIp { get; init; } = IPAddress.Loopback;
-			
+
 			private readonly IPAddress _replicationIp = IPAddress.Loopback;
 			[Description("The IP Address used by internal replication between nodes in the cluster.")]
 			public IPAddress ReplicationIp {
@@ -660,7 +660,7 @@ namespace EventStore.Core {
 				 "The ExtIp parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeIp parameter instead.")]
 			[Obsolete("ExtIp is deprecated, use NodeIp instead")]
 			public IPAddress ExtIp { get; init; } = IPAddress.Loopback;
-			
+
 			private readonly IPAddress _nodeIp = IPAddress.Loopback;
 			[Description("The IP Address for the node.")]
 			public IPAddress NodeIp {
@@ -713,7 +713,7 @@ namespace EventStore.Core {
 				 "The IntHostAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHostAdvertiseAs parameter instead.")]
 			[Obsolete("IntHostAdvertiseAs is deprecated, use ReplicationHostAdvertiseAs instead")]
 			public string? IntHostAdvertiseAs { get; init; } = null;
-			
+
 			private readonly string? _replicationHostAdvertiseAs = null;
 			[Description("Advertise the Replication host name to other nodes in the cluster as.")]
 			public string? ReplicationHostAdvertiseAs {
@@ -748,15 +748,12 @@ namespace EventStore.Core {
 				}
 			}
 
-			[Description("Advertise TCP Port in Gossip to Client As.")]
-			public int AdvertiseTcpPortToClientAs { get; init; } = 0;
-
 			[Description("Advertise Http Port As."),
 			 Deprecated(
 				 "The HttpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the NodePortAdvertiseAs parameter instead.")]
 			[Obsolete("HttpPortAdvertiseAs is deprecated, use NodePortAdvertiseAs instead")]
 			public int HttpPortAdvertiseAs { get; init; } = 0;
-			
+
 			private readonly int _nodePortAdvertiseAs = 0;
 			[Description("Advertise Http Port As.")]
 			public int NodePortAdvertiseAs {
@@ -773,7 +770,7 @@ namespace EventStore.Core {
 				 "The IntTcpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationTcpPortAdvertiseAs parameter instead.")]
 			[Obsolete("IntTcpPortAdvertiseAs is deprecated, use ReplicationTcpPortAdvertiseAs instead")]
 			public int IntTcpPortAdvertiseAs { get; init; } = 0;
-			
+
 			private readonly int _replicationTcpPortAdvertiseAs = 0;
 			[Description("Advertise Replication Tcp Port As.")]
 			public int ReplicationTcpPortAdvertiseAs {
@@ -790,7 +787,7 @@ namespace EventStore.Core {
 				 "The IntTcpHeartbeatTimeout parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHeartbeatTimeout parameter instead.")]
 			[Obsolete("IntTcpHeartbeatTimeout is deprecated, use ReplicationHeartbeatTimeout instead")]
 			public int IntTcpHeartbeatTimeout { get; init; } = 700;
-			
+
 			private readonly int _replicationHeartbeatTimeout = 700;
 			[Description("Heartbeat timeout for Replication TCP sockets.")]
 			public int ReplicationHeartbeatTimeout {
@@ -852,10 +849,6 @@ namespace EventStore.Core {
 			            nameof(Application.Insecure) + "' option instead.")]
 			public bool DisableInternalTcpTls { get; init; } = false;
 
-			[Description("Whether to disable secure external TCP communication."),
-			 Deprecated("The '" + nameof(DisableExternalTcpTls) + "' option has been deprecated as of version 20.6.1.")]
-			public bool DisableExternalTcpTls { get; init; } = false;
-
 			[Description("Enable AtomPub over HTTP Interface."),
 			 Deprecated("AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]
 			public bool EnableAtomPubOverHttp { get; init; } = false;
@@ -878,7 +871,6 @@ namespace EventStore.Core {
 				AdvertiseHostToClientAs = configurationRoot.GetValue<string?>(nameof(AdvertiseHostToClientAs)),
 				AdvertiseHttpPortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseHttpPortToClientAs)),
 				AdvertiseNodePortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseNodePortToClientAs)),
-				AdvertiseTcpPortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseTcpPortToClientAs)),
 				IntHostAdvertiseAs = configurationRoot.GetValue<string>(nameof(IntHostAdvertiseAs)),
 				ReplicationHostAdvertiseAs = configurationRoot.GetValue<string>(nameof(ReplicationHostAdvertiseAs)),
 				HttpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(HttpPortAdvertiseAs)),
@@ -898,7 +890,6 @@ namespace EventStore.Core {
 				DisableGossipOnHttp = configurationRoot.GetValue<bool>(nameof(DisableGossipOnHttp)),
 				EnableTrustedAuth = configurationRoot.GetValue<bool>(nameof(EnableTrustedAuth)),
 				DisableInternalTcpTls = configurationRoot.GetValue<bool>(nameof(DisableInternalTcpTls)),
-				DisableExternalTcpTls = configurationRoot.GetValue<bool>(nameof(DisableExternalTcpTls)),
 				EnableAtomPubOverHttp = configurationRoot.GetValue<bool>(nameof(EnableAtomPubOverHttp))
 			};
 #pragma warning restore 0618
