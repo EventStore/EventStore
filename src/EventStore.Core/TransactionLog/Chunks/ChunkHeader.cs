@@ -1,11 +1,17 @@
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
+using DotNext.Buffers;
+using DotNext.Buffers.Binary;
 
 namespace EventStore.Core.TransactionLog.Chunks {
-	public class ChunkHeader {
+
+	// TODO: Consider struct instead of class
+	public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 		public const int Size = TFConsts.ChunkHeaderSize;
 
 		public readonly long ChunkStartPosition; // return ChunkStartNumber * (long)ChunkSize;
@@ -39,36 +45,66 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			ChunkEndPosition = (ChunkEndNumber + 1) * (long)ChunkSize;
 		}
 
+		public ChunkHeader(ReadOnlySpan<byte> source) {
+			Debug.Assert(source.Length >= Size);
+
+			SpanReader<byte> reader = new(source);
+
+			if ((FileType)reader.Read() is not FileType.ChunkFile)
+				throw new CorruptDatabaseException(new InvalidFileException());
+
+			Version = reader.Read();
+			Debug.Assert(Version >= 0);
+
+			ChunkSize = reader.ReadLittleEndian<int>();
+			Debug.Assert(ChunkSize >= 0);
+
+			ChunkStartNumber = reader.ReadLittleEndian<int>();
+			Debug.Assert(ChunkStartNumber >= 0);
+
+			ChunkEndNumber = reader.ReadLittleEndian<int>();
+			Debug.Assert(ChunkEndNumber >= 0);
+
+			IsScavenged = reader.ReadLittleEndian<int>() > 0;
+			ChunkId = new(reader.Read(16));
+
+			ChunkStartPosition = ChunkStartNumber * (long)ChunkSize;
+			ChunkEndPosition = (ChunkEndNumber + 1) * (long)ChunkSize;
+		}
+
+		static int IBinaryFormattable<ChunkHeader>.Size => Size;
+
+		public void Format(Span<byte> destination) {
+			Debug.Assert(destination.Length >= Size);
+
+			SpanWriter<byte> writer = new(destination);
+			writer.Add((byte)FileType.ChunkFile);
+			writer.Add(Version);
+			writer.WriteLittleEndian(ChunkSize);
+			writer.WriteLittleEndian(ChunkStartNumber);
+			writer.WriteLittleEndian(ChunkEndNumber);
+			writer.WriteLittleEndian<int>(Unsafe.BitCast<bool, byte>(IsScavenged));
+
+			Span<byte> guidBuffer = stackalloc byte[16];
+			ChunkId.TryWriteBytes(guidBuffer);
+			writer.Write(guidBuffer);
+		}
+
+		static ChunkHeader IBinaryFormattable<ChunkHeader>.Parse(ReadOnlySpan<byte> source)
+			=> new(source);
+
 		public byte[] AsByteArray() {
 			var array = new byte[Size];
-			using (var memStream = new MemoryStream(array))
-			using (var writer = new BinaryWriter(memStream)) {
-				writer.Write((byte)FileType.ChunkFile);
-				writer.Write(Version);
-				writer.Write(ChunkSize);
-				writer.Write(ChunkStartNumber);
-				writer.Write(ChunkEndNumber);
-				writer.Write(IsScavenged ? 1 : 0);
-				writer.Write(ChunkId.ToByteArray());
-			}
+			Format(array);
 
 			return array;
 		}
 
+		[SkipLocalsInit]
 		public static ChunkHeader FromStream(Stream stream) {
-			var reader = new BinaryReader(stream);
-
-			var fileType = (FileType)reader.ReadByte();
-			if (fileType != FileType.ChunkFile)
-				throw new CorruptDatabaseException(new InvalidFileException());
-
-			var version = reader.ReadByte();
-			var chunkSize = reader.ReadInt32();
-			var chunkStartNumber = reader.ReadInt32();
-			var chunkEndNumber = reader.ReadInt32();
-			var isScavenged = reader.ReadInt32() > 0;
-			var chunkId = new Guid(reader.ReadBytes(16));
-			return new ChunkHeader(version, chunkSize, chunkStartNumber, chunkEndNumber, isScavenged, chunkId);
+			Span<byte> buffer = stackalloc byte[Size];
+			stream.ReadExactly(buffer);
+			return new(buffer);
 		}
 
 		public long GetLocalLogPosition(long globalLogicalPosition) {

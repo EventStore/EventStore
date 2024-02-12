@@ -1,90 +1,74 @@
-using System;
 using System.IO;
 using System.Security.Cryptography;
-using EventStore.Common.Utils;
+using DotNext;
+using DotNext.IO;
+using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
-	internal class WriterWorkItem {
-		public Stream WorkingStream {
-			get { return _workingStream; }
-		}
+	internal sealed class WriterWorkItem : Disposable {
+		public const int BufferSize = 8192;
 
-		public long StreamLength {
-			get { return _workingStream.Length; }
-		}
-
-		public long StreamPosition {
-			get { return _workingStream.Position; }
-		}
+		public Stream WorkingStream { get; private set; }
 
 		private readonly Stream _fileStream;
 		private UnmanagedMemoryStream _memStream;
-		private Stream _workingStream;
 
 		public readonly MemoryStream Buffer;
 		public readonly BinaryWriter BufferWriter;
 		public readonly HashAlgorithm MD5;
 
-		public WriterWorkItem(Stream fileStream, UnmanagedMemoryStream memStream, HashAlgorithm md5) {
-			_fileStream = fileStream;
-			_memStream = memStream;
-			_workingStream = (Stream)fileStream ?? memStream;
-			Buffer = new MemoryStream(8192);
-			BufferWriter = new BinaryWriter(Buffer);
+		public unsafe WriterWorkItem(nint memoryPtr, int length, HashAlgorithm md5) {
+			WorkingStream = _memStream = new UnmanagedMemoryStream((byte*)memoryPtr, length, length, FileAccess.ReadWrite);
+			Buffer = new(BufferSize);
+			BufferWriter = new(Buffer);
+			MD5 = md5;
+		}
+
+		public WriterWorkItem(SafeFileHandle handle, HashAlgorithm md5, bool unbuffered) {
+			WorkingStream = _fileStream = unbuffered
+				? handle.AsUnbufferedStream(FileAccess.ReadWrite)
+				: new BufferedStream(handle.AsUnbufferedStream(FileAccess.ReadWrite), BufferSize);
+			Buffer = new(BufferSize);
+			BufferWriter = new(Buffer);
 			MD5 = md5;
 		}
 
 		public void SetMemStream(UnmanagedMemoryStream memStream) {
 			_memStream = memStream;
-			if (_fileStream == null)
-				_workingStream = memStream;
+			if (_fileStream is null)
+				WorkingStream = memStream;
 		}
 
 		public void AppendData(byte[] buf, int offset, int len) {
 			// as we are always append-only, stream's position should be right here
-			if (_fileStream != null)
-				_fileStream.Write(buf, 0, len);
+			_fileStream?.Write(buf, offset, len);
+
 			//MEMORY
-			var memStream = _memStream;
-			if (memStream != null)
-				memStream.Write(buf, 0, len);
+			_memStream?.Write(buf, offset, len);
 		}
 
 		public void ResizeStream(int fileSize) {
-			if (_fileStream != null)
-				_fileStream.SetLength(fileSize);
-			var memStream = _memStream;
-			if (memStream != null)
-				memStream.SetLength(fileSize);
+			_fileStream?.SetLength(fileSize);
+			_memStream?.SetLength(fileSize);
 		}
 
-		public void Dispose() {
-			if (_fileStream != null)
-				_fileStream.Dispose();
-
-			DisposeMemStream();
-		}
-
-		public void FlushToDisk() {
-			if (_fileStream == null) return;
-			var fs = _fileStream as FileStream;
-			if (fs != null)
-				fs.FlushToDisk(); //because of broken flush in filestream in 3.5
-			else {
-				_fileStream.Flush();
+		protected override void Dispose(bool disposing) {
+			if (disposing) {
+				_fileStream?.Dispose();
+				DisposeMemStream();
+				Buffer.Dispose();
+				BufferWriter.Dispose();
+				MD5.Dispose();
 			}
+
+			base.Dispose(disposing);
 		}
+
+		public void FlushToDisk() => _fileStream?.Flush();
 
 		public void DisposeMemStream() {
-			var memStream = _memStream;
-			if (memStream != null) {
-				memStream.Dispose();
-				_memStream = null;
-			}
-		}
-
-		public void EnsureMemStreamLength(long length) {
-			throw new NotSupportedException("Scavenging with in-mem DB is not supported.");
+			_memStream?.Dispose();
+			_memStream = null;
 		}
 	}
 }

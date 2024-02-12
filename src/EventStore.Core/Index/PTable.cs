@@ -290,7 +290,7 @@ namespace EventStore.Core.Index {
 				workItem = GetWorkItem();
 				stream = workItem.Stream;
 			} else {
-				stream = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, false,
+				stream = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.Read,
 					4096, 4096, false, 4096);
 			}
 
