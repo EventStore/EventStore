@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Plugins.Authentication;
 using EventStore.Transport.Http;
 using Grpc.Core;

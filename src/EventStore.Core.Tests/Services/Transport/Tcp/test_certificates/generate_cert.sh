@@ -34,7 +34,8 @@ openssl x509 \
     printf "
         authorityKeyIdentifier=keyid,issuer
         basicConstraints=CA:FALSE
-        keyUsage = digitalSignature, nonRepudiation, dataEncipherment
+        keyUsage = digitalSignature, nonRepudiation, keyEncipherment
+        extendedKeyUsage = serverAuth, clientAuth
         subjectAltName = IP:127.0.0.1,DNS:localhost"
     ) \
     -out "$certificate_name".crt &>/dev/null

@@ -6,22 +6,23 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Plugins.Authentication;
 using Microsoft.AspNetCore.Http;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
-	public class TestFixtureWithClientCertificateHttpAuthenticationProvider {
-		protected ClientCertificateAuthenticationProvider _provider;
+	public class TestFixtureWithNodeCertificateHttpAuthenticationProvider {
+		protected NodeCertificateAuthenticationProvider _provider;
 
 		protected void SetUpProvider() {
-			_provider = new ClientCertificateAuthenticationProvider(() => "eventstoredb-node");
+			_provider = new NodeCertificateAuthenticationProvider(() => "eventstoredb-node");
 		}
 	}
 
 	[TestFixture]
 	public class
 		when_handling_a_request_without_a_client_certificate :
-			TestFixtureWithClientCertificateHttpAuthenticationProvider {
+			TestFixtureWithNodeCertificateHttpAuthenticationProvider {
 		private bool _authenticateResult;
 
 		[SetUp]
@@ -41,7 +42,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 	[TestFixture]
 	public class
 		when_handling_a_request_with_a_client_certificate_having_no_san :
-			TestFixtureWithClientCertificateHttpAuthenticationProvider {
+			TestFixtureWithNodeCertificateHttpAuthenticationProvider {
 		private HttpAuthenticationRequest _authenticateRequest;
 		private bool _authenticateResult;
 		private HttpContext _context;
@@ -78,7 +79,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 	[TestFixture]
 	public class
 		when_handling_a_request_with_a_client_certificate_having_an_ip_san_but_without_node_cn :
-			TestFixtureWithClientCertificateHttpAuthenticationProvider {
+			TestFixtureWithNodeCertificateHttpAuthenticationProvider {
 		private HttpAuthenticationRequest _authenticateRequest;
 		private bool _authenticateResult;
 		private HttpContext _context;
@@ -121,7 +122,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 	[TestFixture]
 	public class
 		when_handling_a_request_with_a_client_certificate_having_an_ip_san_and_node_cn :
-			TestFixtureWithClientCertificateHttpAuthenticationProvider {
+			TestFixtureWithNodeCertificateHttpAuthenticationProvider {
 		private HttpAuthenticationRequest _authenticateRequest;
 		private bool _authenticateResult;
 		private HttpContext _context;
@@ -135,9 +136,21 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 			using (RSA rsa = RSA.Create())
 			{
 				var certReq = new CertificateRequest("CN=eventstoredb-node", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
 				var sanBuilder = new SubjectAlternativeNameBuilder();
 				sanBuilder.AddIpAddress(IPAddress.Loopback);
 				certReq.CertificateExtensions.Add(sanBuilder.Build());
+
+				certReq.CertificateExtensions.Add(new X509KeyUsageExtension(
+					X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, critical: false));
+
+				certReq.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(
+					[
+						new("1.3.6.1.5.5.7.3.1"), // serverAuth
+						new("1.3.6.1.5.5.7.3.2"), // clientAuth
+					],
+					critical: false));
+
 				certificate = certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1));
 			}
 
@@ -166,7 +179,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 	[TestFixture]
 	public class
 		when_handling_a_request_with_a_client_certificate_having_an_ip_san_and_node_cn_with_additional_subject_details :
-			TestFixtureWithClientCertificateHttpAuthenticationProvider {
+			TestFixtureWithNodeCertificateHttpAuthenticationProvider {
 		private HttpAuthenticationRequest _authenticateRequest;
 		private bool _authenticateResult;
 		private HttpContext _context;
@@ -180,9 +193,21 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 			using (RSA rsa = RSA.Create())
 			{
 				var certReq = new CertificateRequest("C=UK, O=Event Store Ltd, CN=eventstoredb-node", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
 				var sanBuilder = new SubjectAlternativeNameBuilder();
 				sanBuilder.AddIpAddress(IPAddress.Loopback);
 				certReq.CertificateExtensions.Add(sanBuilder.Build());
+
+				certReq.CertificateExtensions.Add(new X509KeyUsageExtension(
+					X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, critical: false));
+
+				certReq.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(
+					[
+						new("1.3.6.1.5.5.7.3.1"), // serverAuth
+						new("1.3.6.1.5.5.7.3.2"), // clientAuth
+					],
+					critical: false));
+
 				certificate = certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1));
 			}
 
@@ -212,7 +237,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 	[TestFixture]
 	public class
 		when_handling_a_request_with_a_client_certificate_having_a_dns_san_but_without_node_cn :
-			TestFixtureWithClientCertificateHttpAuthenticationProvider {
+			TestFixtureWithNodeCertificateHttpAuthenticationProvider {
 		private HttpAuthenticationRequest _authenticateRequest;
 		private bool _authenticateResult;
 		private HttpContext _context;
@@ -255,7 +280,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 	[TestFixture]
 	public class
 		when_handling_a_request_with_a_client_certificate_having_a_dns_san_and_node_cn :
-			TestFixtureWithClientCertificateHttpAuthenticationProvider {
+			TestFixtureWithNodeCertificateHttpAuthenticationProvider {
 		private HttpAuthenticationRequest _authenticateRequest;
 		private bool _authenticateResult;
 		private HttpContext _context;
@@ -269,9 +294,21 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 			using (RSA rsa = RSA.Create())
 			{
 				var certReq = new CertificateRequest("CN=eventstoredb-node", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
 				var sanBuilder = new SubjectAlternativeNameBuilder();
 				sanBuilder.AddDnsName("localhost");
 				certReq.CertificateExtensions.Add(sanBuilder.Build());
+
+				certReq.CertificateExtensions.Add(new X509KeyUsageExtension(
+					X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, critical: false));
+
+				certReq.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(
+					[
+						new("1.3.6.1.5.5.7.3.1"), // serverAuth
+						new("1.3.6.1.5.5.7.3.2"), // clientAuth
+					],
+					critical: false));
+
 				certificate = certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1));
 			}
 
@@ -300,7 +337,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 	[TestFixture]
 	public class
 		when_handling_a_request_with_a_client_certificate_having_a_non_dns_or_ip_san_with_node_cn :
-			TestFixtureWithClientCertificateHttpAuthenticationProvider {
+			TestFixtureWithNodeCertificateHttpAuthenticationProvider {
 		private HttpAuthenticationRequest _authenticateRequest;
 		private bool _authenticateResult;
 		private HttpContext _context;

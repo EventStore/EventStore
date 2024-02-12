@@ -7,6 +7,8 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class BasicHttpAuthenticationProvider : IHttpAuthenticationProvider {
 		private readonly IAuthenticationProvider _internalAuthenticationProvider;
 
+		public string Name => "basic";
+
 		public BasicHttpAuthenticationProvider(IAuthenticationProvider internalAuthenticationProvider) {
 			_internalAuthenticationProvider = internalAuthenticationProvider;
 		}
