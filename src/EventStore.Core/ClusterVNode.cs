@@ -908,7 +908,7 @@ namespace EventStore.Core {
 					extSecureTcpEndPoint, httpEndPoint, options.Interface.ReplicationHostAdvertiseAs,
 					options.Interface.NodeHostAdvertiseAs, options.Interface.NodePortAdvertiseAs,
 					options.Interface.AdvertiseHostToClientAs, options.Interface.AdvertiseNodePortToClientAs,
-					options.Interface.AdvertiseTcpPortToClientAs);
+					extTcpOptions?.AdvertisedPort ?? 0);
 			}
 
 			_httpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),

@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 
 		public with_default_node_as_single_node () : base(disableMemoryOptimization:true) {
 		}
-		
+
 		[Test]
 		public void should_create_single_cluster_node() {
 			Assert.IsNotNull(_node);
@@ -40,7 +40,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		[Test]
 		public void should_use_tls() {
 			Assert.IsFalse(_options.Interface.DisableInternalTcpTls);
-			Assert.IsFalse(_options.Interface.DisableExternalTcpTls);
 		}
 
 		[Test]
@@ -70,12 +69,12 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.AreEqual(2000, _options.Database.PrepareTimeoutMs, "PrepareTimeout");
 			Assert.AreEqual(2000, _options.Database.CommitTimeoutMs, "CommitTimeout");
 			Assert.AreEqual(2000, _options.Database.WriteTimeoutMs, "WriteTimeout");
-			
+
 			Assert.AreEqual(700, _options.Interface.ReplicationHeartbeatInterval, "ReplicationHeartbeatInterval");
-			
+
 			Assert.AreEqual(700, _options.Interface.ReplicationHeartbeatTimeout,
 				"ReplicationHeartbeatTimeout");
-			
+
 			Assert.AreEqual(TFConsts.ChunkSize, _node.Db.Config.ChunkSize, "ChunkSize");
 			Assert.AreEqual(TFConsts.ChunksCacheSize, _node.Db.Config.MaxChunksCacheSize, "MaxChunksCacheSize");
 		}
@@ -110,7 +109,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		[Test]
 		public void should_use_tls() {
 			Assert.IsFalse(_options.Interface.DisableInternalTcpTls);
-			Assert.IsFalse(_options.Interface.DisableExternalTcpTls);
 		}
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
@@ -146,7 +144,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.AreEqual(externalTcp.ToDnsEndPoint(), _node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(httpEndPoint.ToDnsEndPoint(), _node.GossipAdvertiseInfo.HttpEndPoint);
 		}
-		
+
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
 			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1113");

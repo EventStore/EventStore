@@ -48,9 +48,6 @@ namespace EventStore.Core {
 			Application = options.Application with {
 				Insecure = true
 			},
-			Interface = options.Interface with {
-				DisableExternalTcpTls = true
-			},
 			ServerCertificate = null,
 			TrustedRootCertificates = null
 		};
@@ -66,9 +63,6 @@ namespace EventStore.Core {
 			X509Certificate2Collection trustedRootCertificates, X509Certificate2 serverCertificate) => options with {
 			Application = options.Application with {
 				Insecure = false,
-			},
-			Interface = options.Interface with {
-				DisableExternalTcpTls = false
 			},
 			ServerCertificate = serverCertificate,
 			TrustedRootCertificates = trustedRootCertificates
@@ -100,7 +94,6 @@ namespace EventStore.Core {
 			options with {
 				Interface = options.Interface with {
 					NodeIp = endPoint.Address,
-					DisableExternalTcpTls = false,
 				}
 			};
 
@@ -131,7 +124,6 @@ namespace EventStore.Core {
 			options with {
 				Interface = options.Interface with {
 					NodeIp = endPoint.Address,
-					DisableExternalTcpTls = true
 				}
 			};
 
