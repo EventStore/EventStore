@@ -120,7 +120,7 @@ public sealed class TelemetryService : IDisposable,
 			"version", JsonValue.Create(VersionInfo.Version)));
 
 		message.Envelope.ReplyWith(new TelemetryMessage.Response(
-			"tag", JsonValue.Create(VersionInfo.Tag)));
+			"edition", JsonValue.Create(VersionInfo.Edition)));
 
 		message.Envelope.ReplyWith(new TelemetryMessage.Response(
 			"uptime", JsonValue.Create(DateTime.UtcNow - _startTime)));
