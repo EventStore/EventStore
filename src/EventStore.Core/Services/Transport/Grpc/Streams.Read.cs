@@ -38,6 +38,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				var user = context.GetHttpContext().User;
 				var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
+				var uuidOption = options.UuidOption;
+				if (uuidOption == null) {
+					throw RpcExceptions.RequiredArgument(nameof(uuidOption), uuidOption);
+				}
+
 				var op = streamOptionsCase switch {
 					StreamOptionOneofCase.Stream => ReadOperation.WithParameter(
 						Plugins.Authorization.Operations.Streams.Parameters.StreamId(
@@ -69,7 +74,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					await using (enumerator) {
 						await using (context.CancellationToken.Register(DisposeEnumerator)) {
 							while (await enumerator.MoveNextAsync()) {
-								if (TryConvertReadResponse(enumerator.Current, options.UuidOption, out var readResponse))
+								if (TryConvertReadResponse(enumerator.Current, uuidOption, out var readResponse))
 									await responseStream.WriteAsync(readResponse);
 							}
 						}
