@@ -54,6 +54,12 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
+		<None Include="..\EventStore.Common\Utils\version.properties">
+			<Link>version.properties</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	<ItemGroup>
 		<None Remove="FakePlugin\**" />
 		<Compile Remove="FakePlugin\**" />
 		<Content Include="FakePlugin\**" CopyToOutputDirectory="Always" />
