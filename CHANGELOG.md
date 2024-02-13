@@ -35,6 +35,7 @@ All notable changes to this project will be documented in this file.
 - Improved support for plugins to perform authorization checks [EventStore#4145](https://github.com/EventStore/EventStore/pull/4145)
 - $mem-gossip memory stream [EventStore#4123](https://github.com/EventStore/EventStore/pull/4123)
 - Filtered $all subscription enumerator tests [EventStore#4132](https://github.com/EventStore/EventStore/pull/4132)
+- Support for a wider range of authentication plugins (facilitates user X.509 certificates plugin) [EventStore#4148](https://github.com/EventStore/EventStore/pull/4148)
 
 ### Fixed
 - A way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
@@ -54,6 +55,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
 - Remove the external TCP API and related configuration options. [EventStore#4113](https://github.com/EventStore/EventStore/pull/4113)
+- Remove remaining external TCP interface options. [EventStore#4153](https://github.com/EventStore/EventStore/pull/4153)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/4097 [EventStore#4100](https://github.com/EventStore/EventStore/pull/4100)
@@ -65,6 +67,9 @@ All notable changes to this project will be documented in this file.
 
 ### Now the nightly tagging happens also in forked repositories and fails every time
 - https://github.com/lahma/EventStore/actions/workflows/tag-docker-images.yml [EventStore#4136](https://github.com/EventStore/EventStore/pull/4136)
+
+### follow up of https
+- //github.com/EventStore/EventStore/pull/4149. Applying fixes to 22.10. [EventStore#4154](https://github.com/EventStore/EventStore/pull/4154)
 
 ## [22.10.4] - 2023-11-22
 
