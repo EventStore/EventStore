@@ -36,6 +36,7 @@ All notable changes to this project will be documented in this file.
 - $mem-gossip memory stream [EventStore#4123](https://github.com/EventStore/EventStore/pull/4123)
 - Filtered $all subscription enumerator tests [EventStore#4132](https://github.com/EventStore/EventStore/pull/4132)
 - Support for a wider range of authentication plugins (facilitates user X.509 certificates plugin) [EventStore#4148](https://github.com/EventStore/EventStore/pull/4148)
+- Support for new packaging pipeline [EventStore#4157](https://github.com/EventStore/EventStore/pull/4157)
 
 ### Fixed
 - A way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
@@ -51,6 +52,7 @@ All notable changes to this project will be documented in this file.
 - Build on ARM, AnyCPU solution settings was actually using X64 [EventStore#4129](https://github.com/EventStore/EventStore/pull/4129)
 - filtered $all subscription enumerator returns InvalidPosition when subscribing at an invalid position [EventStore#4131](https://github.com/EventStore/EventStore/pull/4131)
 - Use correct checkpoint in test subscribe_filtered_all_from_start [EventStore#4132](https://github.com/EventStore/EventStore/pull/4132)
+- concurrency limits in tests [EventStore#4155](https://github.com/EventStore/EventStore/pull/4155)
 
 ### Removed
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
