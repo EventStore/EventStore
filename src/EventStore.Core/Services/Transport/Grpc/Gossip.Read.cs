@@ -20,8 +20,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				throw RpcExceptions.AccessDenied();
 			}
 			var tcs = new TaskCompletionSource<ClusterInfo>();
-			var duration = _tracker.Start();
-			_bus.Publish(new GossipMessage.ClientGossip(new CallbackEnvelope(msg => GossipResponse(msg, tcs, duration))));;
+			var duration = _durationTracker.Start();
+			_queue.Publish(new GossipMessage.ClientGossip(new CallbackEnvelope(msg => GossipResponse(msg, tcs, duration))));
 			return await tcs.Task;
 		}
 
