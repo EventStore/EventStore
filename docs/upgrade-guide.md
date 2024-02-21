@@ -2,7 +2,7 @@
 title: "Upgrade Guide"
 ---
 
-## Upgrade guide for EventStoreDB 23.10.0
+## Upgrade guide for EventStoreDB 23.10
 
 Packages are available on our [website](https://www.eventstore.com/downloads) and can be installed via [Packagecloud](https://packagecloud.io/EventStore/EventStore-OSS), [Chocolatey](https://chocolatey.org/packages/eventstore-oss), or [Docker](https://hub.docker.com/r/eventstore/eventstore/tags?page=1&name=23.10). See detailed commands/instructions for each platform.
 
@@ -11,12 +11,12 @@ Packages are available on our [website](https://www.eventstore.com/downloads) an
 As a Long-Term Support (LTS) release, we will support 23.10 for 2 years, concluding with the 25.10.0 release in October 2025.
 
 - Users on versions 23.6.0 should upgrade as support for this version has ceased.
-- Users on versions 22.10.x should update to at least 22.10.3 or to 23.10.0 to use new features.
-- Users on version 21.10.x or earlier versions should upgrade directly to 23.10.0 to maintain support.
+- Users on versions 22.10.x should update to at least 22.10.3 or to 23.10 to use new features.
+- Users on version 21.10.x or earlier versions should upgrade directly to 23.10 to maintain support.
 
 ### Upgrade procedure
 
-An online rolling upgrade can be done from these versions of EventStoreDB, directly to 23.10.0:
+An online rolling upgrade can be done from these versions of EventStoreDB, directly to 23.10:
 - 23.6
 - 22.10
 - 21.10
