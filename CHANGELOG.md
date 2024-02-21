@@ -59,19 +59,25 @@ All notable changes to this project will be documented in this file.
 - Remove the external TCP API and related configuration options. [EventStore#4113](https://github.com/EventStore/EventStore/pull/4113)
 - Remove remaining external TCP interface options. [EventStore#4153](https://github.com/EventStore/EventStore/pull/4153)
 
-### Cherry picked from https
-- //github.com/EventStore/EventStore/pull/4097 [EventStore#4100](https://github.com/EventStore/EventStore/pull/4100)
-- //github.com/EventStore/EventStore/pull/4097 [EventStore#4099](https://github.com/EventStore/EventStore/pull/4099)
-- //github.com/EventStore/EventStore/pull/4097 [EventStore#4098](https://github.com/EventStore/EventStore/pull/4098)
-- //github.com/EventStore/EventStore/pull/4105 [EventStore#4106](https://github.com/EventStore/EventStore/pull/4106)
-- //github.com/EventStore/EventStore/pull/4105 [EventStore#4107](https://github.com/EventStore/EventStore/pull/4107)
-- //github.com/EventStore/EventStore/pull/4133 [EventStore#4140](https://github.com/EventStore/EventStore/pull/4140)
+## [23.10.1] - 2023-02-20
 
-### Now the nightly tagging happens also in forked repositories and fails every time
-- https://github.com/lahma/EventStore/actions/workflows/tag-docker-images.yml [EventStore#4136](https://github.com/EventStore/EventStore/pull/4136)
+### Fixed
+- Addressed [CVE-2024-26133](https://github.com/EventStore/EventStore/security/advisories/GHSA-6r53-v8hj-x684): Potential password leak in the EventStoreDB Projections Subsystem.
 
-### follow up of https
-- //github.com/EventStore/EventStore/pull/4149. Applying fixes to 22.10. [EventStore#4154](https://github.com/EventStore/EventStore/pull/4154)
+## [22.10.5] - 2023-02-20
+
+### Fixed
+- Addressed [CVE-2024-26133](https://github.com/EventStore/EventStore/security/advisories/GHSA-6r53-v8hj-x684): Potential password leak in the EventStoreDB Projections Subsystem.
+
+## [21.10.11] - 2023-02-20
+
+### Fixed
+- Addressed [CVE-2024-26133](https://github.com/EventStore/EventStore/security/advisories/GHSA-6r53-v8hj-x684): Potential password leak in the EventStoreDB Projections Subsystem.
+
+## [20.10.6] - 2023-02-20
+
+### Fixed
+- Addressed [CVE-2024-26133](https://github.com/EventStore/EventStore/security/advisories/GHSA-6r53-v8hj-x684): Potential password leak in the EventStoreDB Projections Subsystem.
 
 ## [22.10.4] - 2023-11-22
 
