@@ -160,27 +160,12 @@ The following command will start the EventStoreDB node using default HTTP port, 
 connect to it using one of the clients and the `esdb://localhost:2113?tls=false` connection string. You can also access the Admin UI by opening http://localhost:2113 in your browser.
 
 ```bash:no-line-numbers
-docker run --name esdb-node -it -p 2113:2113 -p 1113:1113 \
+docker run --name esdb-node -it -p 2113:2113 \
     eventstore/eventstore:latest --insecure --run-projections=All
     --enable-atom-pub-over-http
 ```
 
-If you want to start the node with legacy TCP client protocol enabled, add the following:
-
-```bash:no-line-numbers
-docker run --name esdb-node -it -p 2113:2113 -p 1113:1113 \
-    eventstore/eventstore:latest --insecure --run-projections=All \
-    --enable-external-tcp  --enable-atom-pub-over-http
-```
-
-::: warning
-The legacy TCP protocol will no longer be available from 24.2. 
-:::
-
-The command above runs EventStoreDB as a single node without SSL and with the legacy TCP protocol
-enabled, so you can try out your existing apps with the latest database version.
-
-Then, you'd be able to connect to EventStoreDB with gRPC and TCP clients. Also, the Stream Browser will work
+Then, you'd be able to connect to EventStoreDB with gRPC clients. Also, the Stream Browser will work
 in the Admin UI.
 
 In order to sustainably keep the data, we also recommend mapping the database and index volumes.
@@ -241,22 +226,21 @@ docker-compose up
 
 Watching the log messages, you will see that after some time, the elections process completes. Then you're able to connect to each
 node using the Admin UI. Nodes should be accessible on the loopback address (`127.0.0.1` or `localhost`) over
-HTTP and TCP, using ports specified below:
+HTTP, using ports specified below:
 
-| Node  | TCP port | HTTP port |
-| :---- | :------- | :-------- |
-| node1 | 1111     | 2111      |
-| node2 | 1112     | 2112      |
-| node3 | 1113     | 2113      |
+| Node  | HTTP port |
+| :---- | :-------- |
+| node1 | 2111      |
+| node2 | 2112      |
+| node3 | 2113      |
 
-You have to tell your client to use secure connection for both TCP and gRPC.
+You have to tell your client to use secure connection.
 
 | Protocol | Connection string                                                                                     |
 | :------- | :---------------------------------------------------------------------------------------------------- |
-| TCP      | `GossipSeeds=localhost:1111,localhost:1112,localhost:1113;ValidateServer=False;UseSslConnection=True` |
 | gRPC     | `esdb://localhost:2111,localhost:2112,localhost:2113?tls=true&tlsVerifyCert=false`                    |
 
-As you might've noticed, both connection strings have a setting to disable the certificate validation (`ValidateServer=False` for `TCP` and `tlsVerifyCert=false` for `gRPC`). It would prevent the invalid certificate error since the cluster uses a private, auto-generated CA.
+As you might've noticed, the connection string has a setting to disable the certificate validation (`tlsVerifyCert=false`). It would prevent the invalid certificate error since the cluster uses a private, auto-generated CA.
 
 However, **we do not recommend using this setting in production**. Instead, you can either add the CA certificate to the trusted root CA store or instruct your application to use such a certificate. See the [security section](security.md#certificate-installation-on-a-client-environment) for detailed instructions.
 
@@ -266,7 +250,6 @@ Depending on how your EventStoreDB instance is configured, some features might n
 
 | Feature                       | Options impact                                                                                                                                                                          |
 | :---------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection for TCP clients    | External TCP is disabled by default. You need to enable it explicitly by using the `EnableExternalTcp` option.                                                                          |
 | Connection without SSL or TLS | EventStoreDB 20.6+ is secure by default. Your clients need to establish a secure connection, unless you use the `Insecure` option.                                                      |
 | Authentication and ACLs       | When using the `Insecure` option for the server, all security is disabled. The `Users` menu item is also disabled in the Admin UI.                                                      |
 | Projections                   | Running projections is disabled by default and the `Projections` menu item is disabled in the Admin UI. You need to enable projections explicitly by using the `RunProjections` option. |
