@@ -33,5 +33,16 @@ module.exports = [
             "diagnostics.md",
             "metrics.md"
         ]
+    },
+    {
+        text: "Plugins",
+        children: [
+            "/plugins/README.md",
+            "/plugins/OTLP-plugin.md",
+            "/plugins/LDAP-plugin.md",
+            "/plugins/Logs-endpoint-plugin.md",
+            "/plugins/User-certificates-plugin.md"
+        ]
     }
 ];
+
