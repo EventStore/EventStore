@@ -58,6 +58,7 @@ All notable changes to this project will be documented in this file.
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
 - Remove the external TCP API and related configuration options. [EventStore#4113](https://github.com/EventStore/EventStore/pull/4113)
 - Remove remaining external TCP interface options. [EventStore#4153](https://github.com/EventStore/EventStore/pull/4153)
+- Remove mentions of external TCP in the docs. [EventStore#4151](https://github.com/EventStore/EventStore/pull/4151)
 
 ## [23.10.1] - 2023-02-20
 
