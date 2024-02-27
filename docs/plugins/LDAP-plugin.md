@@ -59,7 +59,7 @@ If you encounter issues, check the server's log. Common problems include:
 -   Verify the `Host` and `Port` parameters
 -   Verify that the server certificate is valid. If it is a self-signed certificate, set `ValidateServerCertificate` to `false`.
 
-### Error authenticating with LDAPS server. System.AggregateException: 
+### Error authenticating with LDAP server. System.AggregateException: 
 
 - Example error message: `One or more errors occurred. ---> System.NullReferenceException: Object reference not set to an instance of an object. at Novell.Directory.Ldap.Connection.connect(String host, Int32 port, Int32 semaphoreId)`
 -   Due to a packaging bug, this error might occur when setting `UseSSL: true` on Windows. Extract `Mono.Security.dll` to the _EventStore_ folder (where _EventStore.ClusterNode.exe_ is located) as a workaround. 
