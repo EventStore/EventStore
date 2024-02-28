@@ -6,7 +6,7 @@ The User Certificates plugin is included in commercial versions of EventStoreDB.
 :::
 
 
-# Setup Instructions
+## Setup Instructions
 
 1. Download the User Certificates plugin.
 2. Place it in the `.\plugins` directory within your EventStoreDB installation. 
