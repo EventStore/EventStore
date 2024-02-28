@@ -55,7 +55,7 @@ If you encounter issues, check the server's log. Common problems include:
 
 ### The LDAP server is unavailable:
 
--   Verify connectivity to the LDAP server from an EventStoreDB node (e.g. using `netcat` or `telnet`)
+-   Verify connectivity to the LDAP server from an EventStoreDB node (e.g. using `netcat` or `telnet`).
 -   Verify the `Host` and `Port` parameters
 -   Verify that the server certificate is valid. If it is a self-signed certificate, set `ValidateServerCertificate` to `false`.
 
