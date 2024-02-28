@@ -187,7 +187,7 @@ Ensure the plugin is correctly placed in the subdirectory within the `plugins` d
 
 1. Go to the EventStoreDB installation directory where the executable is located. 
 2. Ensure there's a directory called `plugins`. If not, create one. 
-3. Inside `plugins`, create a subfolder for the OTLP Exporter Plugin (e.g.,`EventStore.Auth.UserCertificates` or any name you prefer), if it's missing.
+3. Inside `plugins`, create a subfolder for the User Certificates Plugin (e.g.,`EventStore.Auth.UserCertificates` or any name you prefer), if it's missing.
 4. Place the plugin binaries in this subfolder.
 
 You can verify which plugins have been found and loaded by looking for the following logs:
