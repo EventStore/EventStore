@@ -53,6 +53,7 @@ All notable changes to this project will be documented in this file.
 - filtered $all subscription enumerator returns InvalidPosition when subscribing at an invalid position [EventStore#4131](https://github.com/EventStore/EventStore/pull/4131)
 - Use correct checkpoint in test subscribe_filtered_all_from_start [EventStore#4132](https://github.com/EventStore/EventStore/pull/4132)
 - concurrency limits in tests [EventStore#4155](https://github.com/EventStore/EventStore/pull/4155)
+- upgraded package reference for CVE-2024-0057 [EventStore#4165](https://github.com/EventStore/EventStore/pull/4165)
 
 ### Removed
 - Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
