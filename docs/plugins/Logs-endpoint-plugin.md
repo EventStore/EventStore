@@ -62,7 +62,7 @@ This should show something similar to:
 ]
 ```
 
-The response is ordered as most recent change first and limited to a maximum of 1000 items, and include:
+The response is ordered from most recent change first, is limited to a maximum of 1000 items, and includes:
 
 | Name | Description |
 |---|---|
