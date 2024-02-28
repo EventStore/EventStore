@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_updateStatistics = updateStatistics;
 			_processingQueue = new CoreProjectionQueue(publisher,
 				projectionConfig.PendingEventsThreshold,
-				orderedPartitionProcessing);
+				orderedPartitionProcessing, projectionName);
 			_processingQueue.EnsureTickPending += EnsureTickPending;
 			_subscriptionDispatcher = subscriptionDispatcher;
 			_readerStrategy = readerStrategy;

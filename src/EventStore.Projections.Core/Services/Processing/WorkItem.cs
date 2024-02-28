@@ -3,10 +3,10 @@ using System;
 namespace EventStore.Projections.Core.Services.Processing {
 	public abstract class WorkItem : StagedTask {
 		private readonly int _lastStage;
-		private Action<int, object> _complete;
-		private int _onStage;
+		protected Action<int, object> _complete;
+		protected int _onStage;
 		private CheckpointTag _checkpointTag;
-		private object _lastStageCorrelationId;
+		protected object _lastStageCorrelationId;
 		private CoreProjectionQueue _queue;
 		protected bool _requiresRunning;
 
