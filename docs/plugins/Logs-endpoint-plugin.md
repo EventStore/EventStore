@@ -1,5 +1,5 @@
 # Logs Endpoint Plugin 
-The Logs Endpoint plugin provides HTPP access to EventStoreDB log files, facilitating easy log management. 
+The Logs Endpoint plugin provides HTTP access to EventStoreDB log files, facilitating easy log management. 
 
 ::: tip
 The Logs Endpoint plugin is included in commercial versions of EventStoreDB.
