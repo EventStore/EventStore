@@ -40,6 +40,7 @@ namespace EventStore.Core {
 		[OptionGroup] public GrpcOptions Grpc { get; init; } = new();
 		[OptionGroup] public InterfaceOptions Interface { get; init; } = new();
 		[OptionGroup] public ProjectionOptions Projections { get; init; } = new();
+		[OptionGroup] public ChaosOptions Chaos { get; init; } = new();
 		public UnknownOptions Unknown { get; init; } = new(Array.Empty<(string, string)>());
 
 		public byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
@@ -85,6 +86,7 @@ namespace EventStore.Core {
 				Grpc = GrpcOptions.FromConfiguration(configurationRoot),
 				Interface = InterfaceOptions.FromConfiguration(configurationRoot),
 				Projections = ProjectionOptions.FromConfiguration(configurationRoot),
+				Chaos = ChaosOptions.FromConfiguration(configurationRoot),
 				Unknown = UnknownOptions.FromConfiguration(configurationRoot),
 				ConfigurationRoot = configurationRoot,
 			};
@@ -929,6 +931,16 @@ namespace EventStore.Core {
 				FaultOutOfOrderProjections = configurationRoot.GetValue<bool>(nameof(FaultOutOfOrderProjections)),
 				ProjectionCompilationTimeout = configurationRoot.GetValue<int>(nameof(ProjectionCompilationTimeout)),
 				ProjectionExecutionTimeout = configurationRoot.GetValue<int>(nameof(ProjectionExecutionTimeout))
+			};
+		}
+
+		[Description("Chaos Options")]
+		public record ChaosOptions {
+			[Description("Enable Chaos Mode. Do not use in production.")]
+			public bool EnableChaos { get; init; } = false;
+
+			internal static ChaosOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				EnableChaos = configurationRoot.GetValue<bool>(nameof(EnableChaos))
 			};
 		}
 

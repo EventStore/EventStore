@@ -1714,7 +1714,7 @@ namespace EventStore.Core {
 		}
 
 		public override void Start() {
-			_mainQueue.Publish(new SystemMessage.SystemInit());
+			_mainQueue.Publish(new SystemMessage.SystemInit(NodeInfo.InstanceId));
 		}
 
 		public override async Task StopAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default) {

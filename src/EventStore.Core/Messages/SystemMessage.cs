@@ -10,6 +10,13 @@ namespace EventStore.Core.Messages {
 	public static partial class SystemMessage {
 		[DerivedMessage(CoreMessage.System)]
 		public partial class SystemInit : Message {
+			public readonly Guid InstanceId;
+
+			public SystemInit() { }
+
+			public SystemInit(Guid instanceId) {
+				InstanceId = instanceId;
+			}
 		}
 
 		[DerivedMessage(CoreMessage.System)]

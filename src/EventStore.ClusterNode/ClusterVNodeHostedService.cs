@@ -29,6 +29,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using EventStore.Core.LogAbstraction;
+using EventStore.Loki;
 using EventStore.Plugins.MD5;
 
 namespace EventStore.ClusterNode {
@@ -66,7 +67,7 @@ namespace EventStore.ClusterNode {
 				? ProjectionType.System
 				: options.Projections.RunProjections;
 			var startStandardProjections = options.Projections.StartStandardProjections || options.DevMode.Dev;
-			_options = projectionMode >= ProjectionType.System
+			options = projectionMode >= ProjectionType.System
 				? options.WithSubsystem(new ProjectionsSubsystem(
 					new ProjectionSubsystemOptions(
 						options.Projections.ProjectionThreads,
@@ -77,6 +78,11 @@ namespace EventStore.ClusterNode {
 						options.Projections.ProjectionCompilationTimeout,
 						options.Projections.ProjectionExecutionTimeout)))
 				: options;
+
+			Log.Information("Enab le chaos: {chaps}", options.Chaos.EnableChaos);
+			options = options.Chaos.EnableChaos ? options.WithSubsystem(new ChaosPlugin()) : options;
+
+			_options = options;
 
 			if (!_options.Database.MemDb) {
 				var absolutePath = Path.GetFullPath(_options.Database.Db);
