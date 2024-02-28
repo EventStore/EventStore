@@ -174,7 +174,7 @@ Signature Hash: 6d922badaba2372070f13c69b620286262eab1d8d2d2156a271a1d73aaaf64e4
 
 ## Restrictions
 
-There is currently a limitation with this plugin that requests authenticated with user certificates cannot be forwarded between nodes.
+There is currently a limitation with this plugin: requests authenticated with user certificates cannot be forwarded between nodes.
 
 This affects Writes, Persistent Subscription operations, and Projections operations. These requests will need to be performed on the Leader node only.
 
