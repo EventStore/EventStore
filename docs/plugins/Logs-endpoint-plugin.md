@@ -7,7 +7,7 @@ The Logs Endpoint plugin is included in commercial versions of EventStoreDB.
 
 ## Enabling the Plugin
 
-1. Download and Install: First, download the plugin and place it in the `plugins` folder within your EventStoreDB installation directory. 
+1. Download and install: First, download the plugin and place it in the `plugins` folder within your EventStoreDB installation directory. 
 2. Start EventStoreDB: Upon starting, EventStoreDB automatically loads the plugin. 
 
 After a successful installation, EventStoreDB logs a message indicating the logs are available:
