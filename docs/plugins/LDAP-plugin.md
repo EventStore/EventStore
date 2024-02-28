@@ -66,5 +66,5 @@ If you encounter issues, check the server's log. Common problems include:
 
 ### No errors in server logs but cannot login:
 
--   Verify the `ObjectClass` and `Filter` parameters
+-   Verify the `ObjectClass` and `Filter` parameters.
 -   If you have set `RequireGroupMembership` to `true`, verify that the user is part of the group specified by `RequiredGroupDn` and that the LDAP record has the `memberOf` attribute (specified by `GroupMembershipAttribute`).
