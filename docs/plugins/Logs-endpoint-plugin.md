@@ -93,7 +93,7 @@ To verify the plugin setup:
 
 ## Troubleshooting
 
-- **Plugin Not Loaded:** Ensure the plugin is correctly placed in the subdirectory within the `plugins` directory of your server's installation folder. If the `plugins` directory or the specific plugin subdirectory doesn't exist, you need to create them and    place the plugin binaries there. 
+- **Plugin Not Loaded:** Ensure the plugin is correctly placed in the subdirectory within the `plugins` directory of your server's installation folder. If the `plugins` directory or the specific plugin subdirectory doesn't exist, you need to create them and place the plugin binaries there. 
 
 - **404 Not Found:** Verify the plugin is loaded by checking the server startup logs.
 
