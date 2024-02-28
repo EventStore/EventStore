@@ -1,6 +1,6 @@
 ﻿# OTLP Exporter Plugin 
 
-The OTLP Exporter Plugin allows you to export EventStoreDB metrics to a specified endpoint using the OpenTelemetry Protocol (OTLP). This guide will help you set up the exporter and customize its configuration to meet your monitoring needs, so you can receive, process, and export metrics as desired. Learn more about the [OTEL collector here.](https://opentelemetry.io/docs/collector/)
+The OTLP Exporter Plugin allows you to export EventStoreDB metrics to a specified endpoint using the OpenTelemetry Protocol (OTLP). This guide will help you set up the exporter and customize its configuration so you can receive, process, and export and monitor metrics as desired. Learn more about the [OTEL collector here](https://opentelemetry.io/docs/collector/).
 
 ::: tip
 The OTLP Exporter plugin is included in commercial versions of EventStoreDB.
