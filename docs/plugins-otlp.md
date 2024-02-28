@@ -22,16 +22,14 @@ The configuration file should specify:
 
 | Name     | Description                                                 |
 |----------|-------------------------------------------------------------|
-| Endpoint | Destination where the OTLP exporter will send the data.     |
-| Headers  | Optional headers for the connection.                        |
+| Endpoint | Destination where the OTLP exporter will send the data      |
+| Headers  | Optional headers for the connection                         |
 
-Headers are key-value pairs separated by commas. To provide custom headers, you can add the `Headers` option in the JSON configuration file and set the value according to your requirements. For example:
+Headers are key-value pairs separated by commas. To provide custom headers, you can add the `Headers` option in the JSON configuration file and set the key values according to your requirements. For example:
 ```
 "Headers": "api-key=value,other-config-value=value"
 ```
-In the above example, we are adding two custom key value pairs to the `Headers` option.
 
-## Example Configuration File
 Here is the template for the JSON configuration file:
 ```
 {

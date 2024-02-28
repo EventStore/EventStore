@@ -44,27 +44,27 @@ Upon successful LDAP authentication, users are assigned roles based on their dom
 
 If you encounter issues, check the server's log. Common problems include: 
 
-### Invalid bind credentials specified: 
+### Invalid Bind Credentials Specified: 
 - Confirm the `BindUser` and `BindPassword`.
 
-### Exception during search - 'No such Object' or 'The object does not exist': 
+### Exception During Search - 'No such Object' or 'The object does not exist': 
 - Verify the `BaseDn`.
 
-### 'Server certificate error' or 'Connect Error - The authentication or decryption has failed': 
+### 'Server Certificate Error' or 'Connect Error - The authentication or decryption has failed': 
 - Verify that the server certificate is valid. If it is a self-signed certificate, set `ValidateServerCertificate` to `false`.
 
-### The LDAP server is unavailable:
+### LDAP Server Unavailable:
 
 -   Verify connectivity to the LDAP server from an EventStoreDB node (e.g. using `netcat` or `telnet`).
 -   Verify the `Host` and `Port` parameters.
 -   Verify that the server certificate is valid. If it is a self-signed certificate, set `ValidateServerCertificate` to `false`.
 
-### Error authenticating with LDAP server. System.AggregateException: 
+### Error Authenticating with LDAP server. System.AggregateException: 
 
 - Example error message: `One or more errors occurred. ---> System.NullReferenceException: Object reference not set to an instance of an object. at Novell.Directory.Ldap.Connection.connect(String host, Int32 port, Int32 semaphoreId)`
 -   This packaging error may occur when setting `UseSSL: true` on Windows. Extract `Mono.Security.dll` to the _EventStore_ folder (where _EventStore.ClusterNode.exe_ is located) as a workaround. 
 
-### No errors in server logs but cannot login:
+### No Errors in Server Logs But Cannot Login:
 
 -   Verify the `ObjectClass` and `Filter` parameters.
 -   If you have set `RequireGroupMembership` to `true`, verify that the user is part of the group specified by `RequiredGroupDn` and that the LDAP record has `GroupMembershipAttribute` set to `memberOf`.

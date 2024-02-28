@@ -49,7 +49,10 @@ The user certificate must adhere to the following requirements:
 - The certificate must be in date.
 - The CN is the username of a user that exists in the database.
 
-> Note: Certificates can also authenticate `admin` and `ops` users.
+::: tip
+Certificates can also authenticate `admin` and `ops` users.
+:::
+
 
 You can generate a user certificate with the [es-gencert-cli](https://github.com/EventStore/es-gencert-cli/pull/23) (currently in a branch):
 
@@ -216,7 +219,7 @@ The following log indicates that the plugin started correctly:
 [13260, 8,13:59:10.445,INF] UserCertificatesPlugin: user X.509 certificate authentication is enabled
 ```
 
-### The plugin is enabled but the user is not authenticated
+### Plugin Enabled And User Not Authenticated
 If the plugin has been enabled but there are still access denied errors, check the following:
 
 1. The user exists and is enabled in the EventStoreDB database. Can you log in with the username and password?

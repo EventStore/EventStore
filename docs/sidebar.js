@@ -37,11 +37,11 @@ module.exports = [
     {
         text: "Plugins",
         children: [
-            "/plugins/README.md",
-            "/plugins/OTLP-plugin.md",
-            "/plugins/LDAP-plugin.md",
-            "/plugins/Logs-endpoint-plugin.md",
-            "/plugins/User-certificates-plugin.md"
+            "plugins-readme.md",
+            "plugins-otlp.md",
+            "plugins-ldap.md",
+            "plugins-logs-endpoint.md",
+            "plugins-user-certificates.md"
         ]
     }
 ];
