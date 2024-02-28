@@ -46,7 +46,7 @@ Example:
 curl https://user:password@localhost:2113/admin/logs | jq
 ```
 
-This should show something similar to:
+Sample response:
 ```json
 [
   {
