@@ -1,6 +1,6 @@
 # Guide to setting up a 3-node cluster
 
-This quick start guide provides a step-by-step process for setting up a 3-node EventStoreDB cluster, including environment preparation, certificate generation, and cluster configuration. For additional help, use our [setup wizard](https://configurator.eventstore.com/) for customized installation assistance or refer to our video tutorial on [how to get started with EventStoreDB on Windows](https://www.eventstore.com/blog/getting-started-with-eventstoredb-our-how-to-guide), or [Linux](https://developers.eventstore.com/server/v23.10/installation.html#linux). 
+This quick start guide provides a step-by-step process for setting up a 3-node EventStoreDB cluster, including environment preparation, certificate generation, and cluster configuration. For additional help, use our [setup wizard](https://configurator.eventstore.com/) for customized installation assistance or refer to our tutorials on how to get started with EventStoreDB on [Windows](https://www.eventstore.com/blog/getting-started-with-eventstoredb-our-how-to-guide) or [Linux](https://developers.eventstore.com/server/v23.10/installation.html#linux). 
 
 
 
