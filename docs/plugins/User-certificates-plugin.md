@@ -200,7 +200,7 @@ You can verify which plugins have been found and loaded by looking for the follo
 ```
 
 ### Plugin Not Started
-The plugin has to be configured to start to authenticate user requests.
+The plugin has to be configured to start authenticating user requests.
 
 The following log indicates that the plugin was found but not started:
 
