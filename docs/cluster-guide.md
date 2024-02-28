@@ -19,7 +19,7 @@ This quick start guide provides a step-by-step process for setting up a 3-node E
 ## Generating certificates
 
 1. Create a folder named 'Generate_Certificate'.
-2. Download the latest version of the certificate generator from [EventStore 'es-gencert-cli'-releases](https://github.com/EventStore/es-gencert-cli/releases) and unzip it into the 'Generate_Certificate' folder.
+2. Download the latest version of the certificate generator from the [EventStore Certificate Generation CLI repo](https://github.com/EventStore/es-gencert-cli/releases) and unzip it into the 'Generate_Certificate' folder.
 3. In a terminal, change to the `es-gencert-cli` directory: 
 
 
