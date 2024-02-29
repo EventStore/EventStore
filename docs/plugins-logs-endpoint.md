@@ -73,7 +73,7 @@ The response is ordered from most recent change first, is limited to a maximum o
 
 ### Downloading Log Files
 
-To download a specific log file, append its name to the URL:
+To download a specific log file, append its name to the URL and name the downloaded file with an output flag:
 ```bash
 curl https://<USER>:<PASSWORD>@hostname-or-ip:2113/admin/logs/<name> --output <name>
 ```
