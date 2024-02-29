@@ -19,68 +19,72 @@ The installation procedure consists of the following steps:
 ### Default access
 
 | User  | Password |
-| ----- | -------- |
+|-------|----------|
 | admin | changeit |
 | ops   | changeit |
-
-### Configuration Wizard
-
-The [EventStore Configurator](https://configurator.eventstore.com) is an online tool that can help you to go through all the
-required steps.
-
-You can provide the details about your desired deployment topology, and get the following:
-
-- Generated configuration files
-- Instructions for obtaining or generating SSL certificates
-- Installation guidelines
-- Client connection details
-
-::: tip Event Store Cloud
-You can avoid deploying, configuring, and maintaining the EventStoreDB instance yourself by
-using [Event Store Cloud](https://www.eventstore.com/event-store-cloud).
-:::
 
 ## Linux
 
 ### Install from PackageCloud
 
-EventStoreDB has
-pre-built [packages available for Debian-based distributions](https://packagecloud.io/EventStore/EventStore-OSS)
-, or you can [build from source](https://github.com/EventStore/EventStore#linux). The final package name to
-install is `eventstore-oss`.
+EventStoreDB has pre-built [packages available for Debian-based distributions](https://packagecloud.io/EventStore/EventStore-OSS), or you can [build from source](https://github.com/EventStore/EventStore#linux). The package name to install is `eventstore-oss`.
+
+Commercial version with additional features is available as a separate package `eventstore-commercial`.
+
+Before installing the package from Packagecloud, add the repository to your system:
+
+```bash:no-line-numbers
+curl -s https://packagecloud.io/install/repositories/EventStore/EventStore-OSS/script.deb.sh | sudo bash
+```
+
+For the commercial version:
+
+```bash:no-line-numbers
+curl -s https://<key>@packagecloud.io/install/repositories/EventStore/EventStore-Commercial/script.deb.sh | sudo bash
+```
+
+Then, install the package:
+
+```bash:no-line-numbers
+sudo apt install eventstore-oss
+```
+
+For the commercial version:
+
+```bash:no-line-numbers
+sudo apt install eventstore-commercial
+```
 
 ::: tip
-RPM packages are not available as part of the [EventStore/EventStore-OSS](https://packagecloud.io/EventStore/EventStore-OSS/) Package Cloud repository
+RPM packages are not available as part of the [EventStore/EventStore-OSS](https://packagecloud.io/EventStore/EventStore-OSS/) Packagecloud repository
 ::: 
 
-If you installed from a pre-built package, the server is registered as a service. Therefore, you can start
-EventStoreDB with:
+If you installed from a pre-built package, the server is registered as a service. Therefore, you can start EventStoreDB with:
 
 ```bash:no-line-numbers
 sudo systemctl start eventstore
 ```
 
-When you install the EventStoreDB package, the service doesn't start by default. This allows you to
-change the configuration located at `etc/eventstore/eventstore.conf` and to prevent creating database and
-index files in the default location.
+When you install the EventStoreDB package, the service doesn't start by default. This allows you to change the configuration located at `etc/eventstore/eventstore.conf` and to prevent creating database and index files in the default location.
 
 ::: warning
-We recommend that when using Linux you set the 'open file limit' to a high number. The precise
-value depends on your use case, but at least between `30,000` and `60,000`.
+We recommend that when using Linux you set the 'open file limit' to a high number. The precise value depends on your use case, but at least between `30,000` and `60,000`.
 :::
 
 ### Building from source
 
-You can also build EventStoreDB from source. Before doing that, you need to install the .NET 6 SDK. EventStoreDB packages have the .NET Runtime embedded, so you don't need to install anything except the EventStoreDB package.
+You can also build EventStoreDB from source. Before doing that, you need to install the .NET 8 SDK. EventStoreDB packages have the .NET Runtime embedded, so you don't need to install anything except the EventStoreDB package.
 
 ### Uninstall
 
-If you installed one of
-the [pre-built packages for Debian based systems](https://packagecloud.io/EventStore/EventStore-OSS), you can
-remove it with:
+If you installed one of the [pre-built packages for Debian based systems](https://packagecloud.io/EventStore/EventStore-OSS), you can remove it with:
 
 ```bash:no-line-numbers
 sudo apt-get purge eventstore-oss
+```
+or
+```bash:no-line-numbers
+sudo apt-get purge eventstore-commercial
 ```
 
 This removes EventStoreDB completely, including any user settings.
@@ -211,7 +215,7 @@ So, add the `vars.env` file to the same location:
 @[code{curl}](@samples/vars.env)
 
 Containers will use the shared volume using the local `./certs` directory for certificates. However, if you
-let Docker to create the directory on startup, the container won't be able to get write access to it.
+let Docker create the directory on startup, the container won't be able to get write access to it.
 Therefore, you should create the `certs` directory manually. You only need to do it once.
 
 ```bash:no-line-numbers
@@ -229,16 +233,16 @@ node using the Admin UI. Nodes should be accessible on the loopback address (`12
 HTTP, using ports specified below:
 
 | Node  | HTTP port |
-| :---- | :-------- |
+|:------|:----------|
 | node1 | 2111      |
 | node2 | 2112      |
 | node3 | 2113      |
 
 You have to tell your client to use secure connection.
 
-| Protocol | Connection string                                                                                     |
-| :------- | :---------------------------------------------------------------------------------------------------- |
-| gRPC     | `esdb://localhost:2111,localhost:2112,localhost:2113?tls=true&tlsVerifyCert=false`                    |
+| Protocol | Connection string                                                                  |
+|:---------|:-----------------------------------------------------------------------------------|
+| gRPC     | `esdb://localhost:2111,localhost:2112,localhost:2113?tls=true&tlsVerifyCert=false` |
 
 As you might've noticed, the connection string has a setting to disable the certificate validation (`tlsVerifyCert=false`). It would prevent the invalid certificate error since the cluster uses a private, auto-generated CA.
 
@@ -249,7 +253,7 @@ However, **we do not recommend using this setting in production**. Instead, you 
 Depending on how your EventStoreDB instance is configured, some features might not work. Below are some features that are unavailable due to the specified options.
 
 | Feature                       | Options impact                                                                                                                                                                          |
-| :---------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|:------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Connection without SSL or TLS | EventStoreDB 20.6+ is secure by default. Your clients need to establish a secure connection, unless you use the `Insecure` option.                                                      |
 | Authentication and ACLs       | When using the `Insecure` option for the server, all security is disabled. The `Users` menu item is also disabled in the Admin UI.                                                      |
 | Projections                   | Running projections is disabled by default and the `Projections` menu item is disabled in the Admin UI. You need to enable projections explicitly by using the `RunProjections` option. |
