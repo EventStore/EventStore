@@ -2,32 +2,38 @@
 title: "Upgrade Guide"
 ---
 
-## Upgrade guide for EventStoreDB 23.10
+## Upgrade guide for EventStoreDB 24.2
 
-Packages are available on our [website](https://www.eventstore.com/downloads) and can be installed via [Packagecloud](https://packagecloud.io/EventStore/EventStore-OSS), [Chocolatey](https://chocolatey.org/packages/eventstore-oss), or [Docker](https://hub.docker.com/r/eventstore/eventstore/tags?page=1&name=23.10). See detailed commands/instructions for each platform.
+EventStoreDB 24.2 is now available for download. You can install it using [Packagecloud](https://packagecloud.io/EventStore/EventStore-OSS), [Chocolatey](https://chocolatey.org/packages/eventstore-oss), or [Docker](https://hub.docker.com/r/eventstore/eventstore/tags?page=1&name=24.2).  Packages are available on our [website](https://www.eventstore.com/downloads) with detailed instructions for each platform.
 
-### Should I upgrade?
+### Should You Upgrade?
 
-As a Long-Term Support (LTS) release, we will support 23.10 for 2 years, concluding with the 25.10.0 release in October 2025.
+Version 24.2 is an interim release that will be supported until the launch of version 24.6 in June 2024.
+We recommend upgrading to 24.2 if you are interested in utilizing the new features introduced in this release.
 
-- Users on versions 23.6.0 should upgrade as support for this version has ceased.
-- Users on versions 22.10.x should update to at least 22.10.3 or to 23.10 to use new features.
-- Users on version 21.10.x or earlier versions should upgrade directly to 23.10 to maintain support.
+### Security Update
+
+If you are not upgrading to 24.2, please ensure that you are running a patch of EventStoreDB with the security release addressing [CVE-2024-26133](https://www.eventstore.com/blog/eventstoredb-security-release-23.10-22.10-21.10-and-20.10-for-cve-2024-26133):
+
+- **Version 23.10.0:** Upgrade to at least 23.10.1.
+- **Versions 22.10.x:** Upgrade to at least 22.10.5 or 23.10.1.
+- **Versions 21.10.x:** Upgrade to at least 21.10.11 for the security fix, or 22.10.5 for ongoing support.
+- **Versions 20.10.x:** Upgrade to at least 20.10.6 for the security fix, or 22.10.5 for ongoing support.
 
 ### Upgrade procedure
 
-An online rolling upgrade can be done from these versions of EventStoreDB, directly to 23.10:
-- 23.6
+You can perform an online rolling upgrade directly to 24.2.x from these versions of EventStoreDB:
+- 23.10
 - 22.10
 - 21.10
 
 Follow the upgrade procedure below on each node, starting with a follower node:
 
 1. Stop the node.
-2. Upgrade EventstoreDB to 23.10 and update configuration.
+2. Upgrade EventstoreDB to 24.2 and update configuration.
 3. Start the node.
 4. Wait for the node to become a follower or read-only replica.
-5. Repeat on the next node. 
+5. Repeat the process for the next node.
 
 As illustrated below:
 
@@ -40,6 +46,26 @@ Upgrading the cluster in this manner keeps the cluster online and able to servic
 - Client connections may be disconnected when nodes go offline, or when elections take place.
 - The cluster is less fault tolerant while a node is offline for an upgrade because the cluster requires a quorum of nodes to be online to service write requests.
 - Replicating large amounts of data to a node can have a performance impact on the Leader in the cluster.
+
+### Breaking changes from version 23.10 and earlier
+
+#### External TCP API removed
+
+The external TCP API has been removed in 24.2.0. This affects external clients using the TCP API and configurations related to it.
+
+A number of configuration options have been removed as part of this. EventStoreDB will not start by default if any of the following options are present in the database configuration:
+- `AdvertiseTcpPortToClientAs`
+- `DisableExternalTcpTls`
+- `EnableExternalTcp`
+- `ExtHostAdvertiseAs`
+- `ExtTcpHeartbeatInterval`
+- `ExtTcpHeartbeatTimeout`
+- `ExtTcpPort`
+- `ExtTcpPortAdvertiseAs`
+- `NodeHeartbeatInterval`
+- `NodeHeartbeatTimeout`
+- `NodeTcpPort`
+- `NodeTcpPortAdvertiseAs`
 
 ### Breaking changes from version 22.10 and earlier
 
