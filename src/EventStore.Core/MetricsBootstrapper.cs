@@ -31,6 +31,7 @@ public class Trackers {
 	public IDurationMaxTracker WriterFlushDurationTracker { get; set; } = new DurationMaxTracker.NoOp();
 	public ICacheHitsMissesTracker CacheHitsMissesTracker { get; set; } = new CacheHitsMissesTracker.NoOp();
 	public ICacheResourcesTracker CacheResourcesTracker { get; set; } = new CacheResourcesTracker.NoOp();
+	public IElectionCounterTracker ElectionCounterTracker { get; set; } = new ElectionsCounterTracker.NoOp();
 }
 
 public class GrpcTrackers {
@@ -84,6 +85,7 @@ public static class MetricsBootstrapper {
 		var queueBusyMetric = new AverageMetric(coreMeter, "eventstore-queue-busy", "seconds", label => new("queue", label));
 		var byteMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "bytes");
 		var eventMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "events");
+		var electionsCounterMetric = new CounterMetric(coreMeter, "eventstore-elections-count", null);
 
 		// incoming grpc calls
 		var enabledCalls = conf.IncomingGrpcCalls.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToArray();
@@ -109,6 +111,11 @@ public static class MetricsBootstrapper {
 		if (conf.CacheResources) {
 			var metrics = new CacheResourcesMetrics(coreMeter, "eventstore-cache-resources");
 			trackers.CacheResourcesTracker = new CacheResourcesTracker(metrics);
+		}
+
+		// elections count
+		if (conf.ElectionsCount) {
+			trackers.ElectionCounterTracker = new ElectionsCounterTracker(new CounterSubMetric(electionsCounterMetric, Array.Empty<KeyValuePair<string, object>>()));
 		}
 
 		// events

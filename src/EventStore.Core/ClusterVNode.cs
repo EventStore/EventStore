@@ -52,6 +52,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Caching;
 using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.PeriodicLogs;
 using EventStore.Core.Synchronization;
@@ -1464,6 +1465,10 @@ namespace EventStore.Core {
 				GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
 				GossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
 				options.Cluster.NodePriority, options.Cluster.ReadOnlyReplica, VersionInfo.Version);
+
+			// ELECTIONS TRACKER
+			var electionsTracker = new ElectionsCounterTracker(trackers.ElectionCounterTracker);
+			_mainBus.Subscribe(electionsTracker);
 
 			// TELEMETRY
 			var telemetryService = new TelemetryService(

@@ -12,6 +12,8 @@
 		"Scavenge": true
 	},
 
+	"ElectionsCount": true,
+
 	"Checkpoints": {
 		"Writer": true,
 		"Index": true,
