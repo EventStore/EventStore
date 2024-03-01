@@ -4,12 +4,13 @@ EventStoreDB provides several ways to diagnose and troubleshoot issues.
 
 - [Logging](#logging): structured or plain-text logs on the console and in log files.
 - [Stats](#statistics): stats collection and HTTP endpoint.
+- [Metrics](metrics.md): collect standard metrics using Prometheus or OpenTelemetry.
 - [Histograms](#histograms): metrics collection and HTTP endpoints.
 
 You can also use external tools to measure the performance of EventStoreDB and monitor the cluster health.
 
 - [Vector](#vector): collect metrics and logs to your APM tool using Vector.
-- [Prometheus exporter](#prometheus): collect metrics in Prometheus.
+- [Prometheus exporter](#prometheus): collect metrics in Prometheus using a community exporter.
 - [Datadog integration](#datadog): monitor and measure the cluster with Datadog.
 
 ## Logging
@@ -20,7 +21,7 @@ the log files and the way to change it is described [below](#logs-location).
 There are a few options to change the way how EventStoreDB produces logs and how detailed the logs should be.
 
 ::: warning
-The EventStoreDB logs may contain sensitive information such as stream names, user names, and projection definitions.
+The EventStoreDB logs may contain sensitive information such as stream names, usernames, and projection definitions.
 :::
 
 ### Log format
@@ -90,7 +91,7 @@ verbose log level.
 :::
 
 | Format               | Syntax           |
-| :------------------- | :--------------- |
+|:---------------------|:-----------------|
 | Command line         | `--log`          |
 | YAML                 | `Log`            |
 | Environment variable | `EVENTSTORE_LOG` |
@@ -107,7 +108,7 @@ Log: /tmp/eventstore/logs
 You can change the level using the `LogLevel` setting:
 
 | Format               | Syntax                 |
-| :------------------- | :--------------------- |
+|:---------------------|:-----------------------|
 | Command line         | `--log-level`          |
 | YAML                 | `LogLevel`             |
 | Environment variable | `EVENTSTORE_LOG_LEVEL` |
@@ -123,7 +124,7 @@ You can tune the EventStoreDB logging further by using the logging options descr
 Specifies the location of the file which configures the logging levels of various components.
 
 | Format               | Syntax                  |
-| :------------------- | :---------------------- |
+|:---------------------|:------------------------|
 | Command line         | `--log-config`          |
 | YAML                 | `LogConfig`             |
 | Environment variable | `EVENTSTORE_LOG_CONFIG` |
@@ -139,7 +140,7 @@ before being processed, so unsuccessful requests are logged too.
 Use one of the following ways to enable the HTTP requests logging:
 
 | Format               | Syntax                         |
-| :------------------- | :----------------------------- |
+|:---------------------|:-------------------------------|
 | Command line         | `--log-http-requests`          |
 | YAML                 | `LogHttpRequests`              |
 | Environment variable | `EVENTSTORE_LOG_HTTP_REQUESTS` |
@@ -152,7 +153,7 @@ For security monitoring, you can enable logging failed authentication attempts b
 setting `LogFailedAuthenticationAttempts` setting to true.
 
 | Format               | Syntax                                          |
-| :------------------- | :---------------------------------------------- |
+|:---------------------|:------------------------------------------------|
 | Command line         | `--log-failed-authentication-attempts`          |
 | YAML                 | `LogFailedAuthenticationAttempts`               |
 | Environment variable | `EVENTSTORE_LOG_FAILED_AUTHENTICATION_ATTEMPTS` |
@@ -164,7 +165,7 @@ setting `LogFailedAuthenticationAttempts` setting to true.
 The format of the console logger. Use `Json` for structured log output.
 
 | Format               | Syntax                          |
-| :------------------- | :------------------------------ |
+|:---------------------|:--------------------------------|
 | Command line         | `--log-console-format`          |
 | YAML                 | `LogConsoleFormat`              |
 | Environment variable | `EVENTSTORE_LOG_CONSOLE_FORMAT` |
@@ -178,7 +179,7 @@ Acceptable values are: `Plain`, `Json`
 The maximum size of each log file, in bytes.
 
 | Format               | Syntax                     |
-| :------------------- | :------------------------- |
+|:---------------------|:---------------------------|
 | Command line         | `--log-file-size`          |
 | YAML                 | `LogFileSize`              |
 | Environment variable | `EVENTSTORE_LOG_FILE_SIZE` |
@@ -222,6 +223,83 @@ You can completely disable logging to a file by changing the `DisableLogFile` op
 | Environment variable | `EVENTSTORE_DISABLE_LOG_FILE` |
 
 **Default**: `false`
+
+## Logs download <Badge type="warning" vertical="middle" text="Commercial"/>
+
+The _Logs Download Plugin_ provides HTTP access to EventStoreDB logs so that they can be viewed without requiring file system access. 
+
+::: tip
+You can use this API to download log files from your managed EventStoreDB clusters in Event Store Cloud.
+:::
+
+On startup the server will log a message similar to:
+```:no-line-numbers
+LogsEndpoint: Serving logs from "<FULL-PATH-TO-LOGS>" at endpoint "/admin/logs"
+```
+
+Access the logs via the `/admin/logs` endpoint on your server. Construct the full URL as follows: 
+
+```:no-line-numbers
+http(s)://<node ip or hostname>:<node port>/admin/logs
+```
+
+Example:
+```:no-line-numbers
+https://localhost:2113/admin/logs
+```
+
+Only authenticated users belonging to the `$admins` or `$ops` groups can use this endpoint. 
+
+### Listing log files
+
+To list the current log files, issue a `GET` to the `/admin/logs` endpoint
+
+Example:
+```bash:no-line-numbers
+curl https://user:password@localhost:2113/admin/logs | jq
+```
+
+Sample response:
+```json
+[
+  {
+    "name": "log-stats20240205.json",
+    "lastModified": "2024-02-05T13:14:14.2789475+00:00",
+    "size": 1058614
+  },
+  {
+    "name": "log20240205.json",
+    "lastModified": "2024-02-05T13:14:37.0781601+00:00",
+    "size": 158542
+  }
+]
+```
+
+The response is ordered from most recent change first, is limited to a maximum of 1000 items, and includes:
+
+| Name         | Description                                                                                                                                                                                                                                       |
+|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name         | File name of the log file                                                                                                                                                                                                                         |
+| createdAt    | Timestamp of when the log file was created in [round-trip format](https://learn.microsoft.com/en-us/dotnet/standard/base-types/standard-date-and-time-format-strings#the-round-trip-o-o-format-specifier) (local time with time zone information) |
+| lastModified | Timestamp of the last modification in [round-trip format](https://learn.microsoft.com/en-us/dotnet/standard/base-types/standard-date-and-time-format-strings#the-round-trip-o-o-format-specifier) (local time with time zone information)         |
+| size         | Size of the log file in bytes                                                                                                                                                                                                                     |
+
+### Downloading log files
+
+To download a specific log file, append its name to the URL:
+
+Example:
+```bash:no-line-numbers
+curl https://user:password@localhost:2113/admin/logs/log20240205.json --output log20240205.json
+```
+
+### Troubleshooting
+
+- **404 Not Found:** The plugin is only available in commercial editions. Verify the plugin is loaded by checking the server startup logs.
+
+- **401 Unauthorized:** Confirm the credentials are correct and the user belongs to the `$ops` or `$admins` group.
+
+- **Log Files Directory Not Found:** Check the `NodeIp` and `NodePort` settings are current and not using the deprecated settings `HttpIp` or `HttpPort`.
 
 ## Statistics
 
