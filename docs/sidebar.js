@@ -1,14 +1,15 @@
 module.exports = [
     {
-        text:     "Getting started",
+        text: "Server Quick Start",
         children: [
             "README.md",
+            "whatsnew.md",
             "installation.md",
             "usage-telemetry.md"
         ]
     },
     {
-        text:     "Configuration",
+        text: "Configuration",
         children: [
             "configuration.md",
             "security.md",
@@ -17,7 +18,7 @@ module.exports = [
         ]
     },
     {
-        text:     "Features",
+        text: "Features",
         children: [
             "streams.md",
             "indexes.md",
@@ -26,7 +27,7 @@ module.exports = [
         ]
     },
     {
-        text:     "Operations",
+        text: "Operations",
         children: [
             "upgrade-guide.md",
             "operations.md",
