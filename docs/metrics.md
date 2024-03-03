@@ -478,7 +478,7 @@ EventStoreDB passively exposes metrics for scraping on the `/metrics` endpoint. 
 
 The OpenTelemetry Exporter plugin allows you to export EventStoreDB metrics to a specified endpoint using the [OpenTelemetry Protocol](https://opentelemetry.io/docs/specs/otel/protocol/) (OTLP). The following instructions will help you set up the exporter and customize its configuration, so you can receive, process, export and monitor metrics as needed. 
 
-A number of APM providers natively support ingesting metrics using the OTLP protocol, so you might be able to directly use the OpenTelemetry Exporter to send metrics to your APM provider. Alternatively, you can export metrics to the OpenTelemetry Collector, which can then be configured to send metrics to a variety of backends. You can find out more about the [OpeTelemetry collector](https://opentelemetry.io/docs/collector/).
+A number of APM providers natively support ingesting metrics using the OTLP protocol, so you might be able to directly use the OpenTelemetry Exporter to send metrics to your APM provider. Alternatively, you can export metrics to the OpenTelemetry Collector, which can then be configured to send metrics to a variety of backends. You can find out more about the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/).
 
 ### Configuration
 
