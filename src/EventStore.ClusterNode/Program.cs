@@ -41,7 +41,7 @@ namespace EventStore.ClusterNode {
 				var logsDirectory = string.IsNullOrWhiteSpace(options.Log.Log)
 					? Locations.DefaultLogDirectory
 					: options.Log.Log;
-				
+
 				EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName(),
 					options.Log.LogConsoleFormat,
 					options.Log.LogFileSize,
@@ -91,7 +91,7 @@ namespace EventStore.ClusterNode {
 
 				foreach (var (option, suggestion) in options.Unknown.Options) {
 					if (string.IsNullOrEmpty(suggestion)) {
-						Log.Write(level, "The option {option} is not a known option.", option);	
+						Log.Write(level, "The option {option} is not a known option.", option);
 					} else {
 						Log.Write(level, "The option {option} is not a known option. Did you mean {suggestion}?", option, suggestion);
 					}
@@ -157,7 +157,7 @@ namespace EventStore.ClusterNode {
 						"INSECURE MODE WILL DISABLE ALL AUTHENTICATION, AUTHORIZATION AND TRANSPORT SECURITY FOR ALL CLIENTS AND NODES.\n" +
 						"==============================================================================================================\n");
 				}
-				
+
 				if (options.Application.WhatIf) {
 					return 0;
 				}

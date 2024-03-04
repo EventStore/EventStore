@@ -131,7 +131,7 @@ namespace EventStore.Core {
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<ClientMessage.ReloadConfig>{
 		private readonly ClusterVNodeOptions _options;
-		
+
 		public override TFChunkDb Db { get; }
 
 		public override GossipAdvertiseInfo GossipAdvertiseInfo { get; }
@@ -161,7 +161,7 @@ namespace EventStore.Core {
 		public override QueueStatsManager QueueStatsManager => _queueStatsManager;
 
 		public override IStartup Startup => _startup;
-		
+
 		public override IAuthenticationProvider AuthenticationProvider {
 			get { return _authenticationProvider; }
 		}
@@ -246,9 +246,9 @@ namespace EventStore.Core {
 			configuration ??= new ConfigurationBuilder().Build();
 
 			_certificateProvider = certificateProvider;
-			
+
 			ClusterVNodeOptionsValidator.Validate(options);
-			
+
 			ReloadLogOptions(options);
 
 			bool isRunningInContainer = ContainerizedEnvironment.IsRunningInContainer();
@@ -257,7 +257,7 @@ namespace EventStore.Core {
 			if (instanceId == Guid.Empty) {
 				throw new ArgumentException("InstanceId may not be empty.", nameof(instanceId));
 			}
-			
+
 			if (!options.Application.Insecure) {
 				ReloadCertificates(options);
 
@@ -265,7 +265,7 @@ namespace EventStore.Core {
 					throw new InvalidConfigurationException("A certificate is required unless insecure mode (--insecure) is set.");
 				}
 			}
-			
+
 			_options = options;
 
 #if DEBUG
@@ -277,22 +277,22 @@ namespace EventStore.Core {
 			var enableExternalTcp = ExtTcpOptions.TryParse(out var extTcpOptions);
 
 			var httpEndPoint = new IPEndPoint(options.Interface.NodeIp, options.Interface.NodePort);
-			
+
 			var intTcp = disableInternalTcpTls
-				? new IPEndPoint(options.Interface.ReplicationIp, 
+				? new IPEndPoint(options.Interface.ReplicationIp,
 					options.Interface.ReplicationPort)
 				: null;
 			var intSecIp = !disableInternalTcpTls
-				? new IPEndPoint(options.Interface.ReplicationIp, 
+				? new IPEndPoint(options.Interface.ReplicationIp,
 					options.Interface.ReplicationPort)
 				: null;
 
 			var extTcp = disableExternalTcpTls && enableExternalTcp
-				? new IPEndPoint(options.Interface.NodeIp, 
+				? new IPEndPoint(options.Interface.NodeIp,
 					extTcpOptions.Port)
 				: null;
 			var extSecIp = !disableExternalTcpTls && enableExternalTcp
-				? new IPEndPoint(options.Interface.NodeIp, 
+				? new IPEndPoint(options.Interface.NodeIp,
 					extTcpOptions.Port)
 				: null;
 
@@ -527,14 +527,14 @@ namespace EventStore.Core {
 					});
 				}
 			}
-			
+
 			_controller =
 				new ClusterVNodeController<TStreamId>(
 					(IPublisher)_mainBus, NodeInfo, Db,
 					trackers.NodeStatusTracker,
 					options, this, forwardingProxy,
 					startSubsystems: StartSubsystems);
-			
+
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager,
 				trackers.QueueTrackers);
 
@@ -906,7 +906,7 @@ namespace EventStore.Core {
 					: new DnsEndPoint(extHostToAdvertise, extSecTcpPortAdvertiseAs > 0
 						? extSecTcpPortAdvertiseAs
 						: NodeInfo.ExternalSecureTcp.Port);
-				
+
 				var httpEndPoint = new DnsEndPoint(extHostToAdvertise,
 					options.Interface.NodePortAdvertiseAs > 0
 						? options.Interface.NodePortAdvertiseAs
@@ -1584,10 +1584,10 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<GossipMessage.GetGossipReceived>(gossip);
 				_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
 			}
-			
+
 			var clusterStateChangeListener = new ClusterMultipleVersionsLogger();
 			_mainBus.Subscribe<GossipMessage.GossipUpdated>(clusterStateChangeListener);
-			
+
 			// kestrel
 			AddTasks(_workersHandler.Start());
 			AddTask(_mainQueue.Start());
@@ -1625,7 +1625,7 @@ namespace EventStore.Core {
 				trackers,
 				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
 				ConfigureAdditionalServices);
-			
+
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 			var certificateExpiryMonitor = new CertificateExpiryMonitor(_mainQueue, _certificateSelector, Log);
@@ -1929,7 +1929,7 @@ namespace EventStore.Core {
 				Log.Information("Skipping reload of certificates since TLS is disabled.");
 				return;
 			}
-			
+
 			if (_certificateProvider?.LoadCertificates(options) == LoadCertificateResult.VerificationFailed){
 				throw new InvalidConfigurationException("Aborting certificate loading due to verification errors.");
 			}
