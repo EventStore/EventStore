@@ -1,29 +1,29 @@
 ﻿using System;
 using Microsoft.Extensions.Configuration;
 
-namespace EventStore.Common.Configuration {
-	public class SectionSource : IConfigurationSource {
-		private readonly string _sectionName;
-		private readonly Action<IConfigurationBuilder> _configure;
+namespace EventStore.Common.Configuration;
 
-		public SectionSource(string sectionName, Action<IConfigurationBuilder> configure) {
-			_sectionName = sectionName;
-			_configure = configure;
-		}
+public class SectionSource : IConfigurationSource {
+	private readonly string _sectionName;
+	private readonly Action<IConfigurationBuilder> _configure;
 
-		public IConfigurationProvider Build(IConfigurationBuilder builder) {
-			var subBuilder = new ConfigurationBuilder();
-			_configure(subBuilder);
-			var configuration = subBuilder.Build();
-
-			return new SectionProvider(_sectionName, configuration);
-		}
+	public SectionSource(string sectionName, Action<IConfigurationBuilder> configure) {
+		_sectionName = sectionName;
+		_configure = configure;
 	}
 
-	public static class SectionConfigurationExtensions {
-		// Allows configuration to be mounted inside a specified section
-		public static IConfigurationBuilder AddSection(this IConfigurationBuilder self, string sectionName,
-			Action<IConfigurationBuilder> configure) =>
-			self.Add(new SectionSource(sectionName, configure));
+	public IConfigurationProvider Build(IConfigurationBuilder builder) {
+		var subBuilder = new ConfigurationBuilder();
+		_configure(subBuilder);
+		var configuration = subBuilder.Build();
+
+		return new SectionProvider(_sectionName, configuration);
 	}
+}
+
+public static class SectionConfigurationExtensions {
+	// Allows configuration to be mounted inside a specified section
+	public static IConfigurationBuilder AddSection(this IConfigurationBuilder self, string sectionName,
+		Action<IConfigurationBuilder> configure) =>
+		self.Add(new SectionSource(sectionName, configure));
 }
