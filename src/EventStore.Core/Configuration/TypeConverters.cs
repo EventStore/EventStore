@@ -60,21 +60,13 @@ namespace EventStore.Core.Configuration {
 		}
 	}
 
-	public class IPAddressConverter : StringConverter {
+	public class IPAddressConverter : TypeConverter {
 		public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
 			sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
 
-		public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) {
-			try {
-				return value is string stringValue
-					? ParseIpAddress(stringValue)
-					: base.ConvertFrom(context, culture, value);
-			} catch (Exception) {
-				return base.ConvertFrom(context, culture, value);
-			}
-		}
-
-		private static IPAddress ParseIpAddress(string? value) =>
-			IPAddress.Parse(value ?? IPAddress.Loopback.ToString());
+		public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+			value is string stringValue
+				? IPAddress.Parse(stringValue)
+				: base.ConvertFrom(context, culture, value);
 	}
 }
