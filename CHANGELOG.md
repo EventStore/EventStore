@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/4151 [EventStore#4166](https://github.com/EventStore/EventStore/pull/4166)
+- //github.com/EventStore/EventStore/pull/4180 [EventStore#4181](https://github.com/EventStore/EventStore/pull/4181)
 
 ## [24.2.0] - 2024-02-25
 
