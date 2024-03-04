@@ -87,9 +87,9 @@ the scavenging operation progress and status.
 
 ### Backups
 
-Do not take [file-copy](#regular-file-copy) backups while scavenge is running. Stop the scavenge and resume it after the backup.
+Do not take [file-copy](#types-of-backups) backups while scavenge is running. Stop the scavenge and resume it after the backup.
 
-[Disk snapshot](#disk-snapshotting) backups can be taken while scavenge is running.
+[Disk snapshot](#types-of-backups) backups can be taken while scavenge is running.
 
 ### How often to scavenge
 

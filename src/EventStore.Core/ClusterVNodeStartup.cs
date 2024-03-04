@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using MidFunc = System.Func<
@@ -43,8 +44,6 @@ namespace EventStore.Core {
 		private readonly IPublisher _monitoringQueue;
 		private readonly ISubscriber _mainBus;
 		private readonly IAuthenticationProvider _authenticationProvider;
-		private readonly IReadOnlyList<IHttpAuthenticationProvider> _httpAuthenticationProviders;
-		private readonly IReadIndex<TStreamId> _readIndex;
 		private readonly int _maxAppendSize;
 		private readonly TimeSpan _writeTimeout;
 		private readonly IExpiryStrategy _expiryStrategy;
@@ -52,12 +51,12 @@ namespace EventStore.Core {
 		private readonly IConfiguration _configuration;
 		private readonly Trackers _trackers;
 		private readonly StatusCheck _statusCheck;
+		private readonly Func<IServiceCollection, IServiceCollection> _configureAdditionalServices;
 
 		private bool _ready;
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private readonly MultiQueuedHandler _httpMessageHandler;
 		private readonly string _clusterDns;
-		private readonly StandardComponents _standardComponents;
 
 		public ClusterVNodeStartup(
 			IReadOnlyList<ISubsystem> subsystems,
@@ -66,9 +65,7 @@ namespace EventStore.Core {
 			ISubscriber mainBus,
 			MultiQueuedHandler httpMessageHandler,
 			IAuthenticationProvider authenticationProvider,
-			IReadOnlyList<IHttpAuthenticationProvider> httpAuthenticationProviders,
 			IAuthorizationProvider authorizationProvider,
-			IReadIndex<TStreamId> readIndex,
 			int maxAppendSize,
 			TimeSpan writeTimeout,
 			IExpiryStrategy expiryStrategy,
@@ -76,7 +73,7 @@ namespace EventStore.Core {
 			IConfiguration configuration,
 			Trackers trackers,
 			string clusterDns,
-			StandardComponents standardComponents) {
+			Func<IServiceCollection, IServiceCollection> configureAdditionalServices) {
 
 			Ensure.Positive(maxAppendSize, nameof(maxAppendSize));
 
@@ -99,9 +96,7 @@ namespace EventStore.Core {
 			_mainBus = mainBus;
 			_httpMessageHandler = httpMessageHandler;
 			_authenticationProvider = authenticationProvider;
-			_httpAuthenticationProviders = httpAuthenticationProviders ?? throw new ArgumentNullException(nameof(httpAuthenticationProviders));
 			_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));
-			_readIndex = readIndex ?? throw new ArgumentNullException(nameof(readIndex));
 			_maxAppendSize = maxAppendSize;
 			_writeTimeout = writeTimeout;
 			_expiryStrategy = expiryStrategy;
@@ -109,7 +104,7 @@ namespace EventStore.Core {
 			_configuration = configuration;
 			_trackers = trackers;
 			_clusterDns = clusterDns;
-			_standardComponents = standardComponents ?? throw new ArgumentNullException(nameof(standardComponents));
+			_configureAdditionalServices = configureAdditionalServices ?? throw new ArgumentNullException(nameof(_configureAdditionalServices));
 			_statusCheck = new StatusCheck(this);
 		}
 
@@ -118,8 +113,17 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(internalDispatcher);
 
 			app = app.Map("/health", _statusCheck.Configure)
+				// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
+				// the resulting ClaimsPrinciple to HttpContext.User
 				.UseMiddleware<AuthenticationMiddleware>()
-				.UseRouting();
+
+				// UseAuthentication/UseAuthorization allow the rest of the pipeline to access auth
+				// in a conventional way (e.g. with AuthorizeAttribute). The server doesn't make use
+				// of this yet but plugins may. The registered authentication scheme (es auth)
+				// is driven by the HttpContext.User established above
+				.UseAuthentication()
+				.UseRouting()
+				.UseAuthorization();
 
 			// allow all subsystems to register their legacy controllers before calling MapLegacyHttp
 			foreach (var subsystem in _subsystems)
@@ -167,89 +171,92 @@ namespace EventStore.Core {
 				});
 		}
 
-		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)
-			.BuildServiceProvider();
-
-		public IServiceCollection ConfigureServices(IServiceCollection services) {
+		public IServiceProvider ConfigureServices(IServiceCollection services) {
 			var metricsConfiguration = MetricsConfiguration.Get(_configuration);
 
-			return _subsystems
-				.Aggregate(services
-						.AddRouting()
-						.AddSingleton(_httpAuthenticationProviders)
-						.AddSingleton(_authenticationProvider)
-						.AddSingleton(_authorizationProvider)
-						.AddSingleton(_standardComponents)
-						.AddSingleton<ISubscriber>(_mainBus)
-						.AddSingleton<IPublisher>(_mainQueue)
-						.AddSingleton<AuthenticationMiddleware>()
-						.AddSingleton<AuthorizationMiddleware>()
-						.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
-						.AddSingleton(_readIndex)
-						.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize,
-							_writeTimeout, _expiryStrategy,
-							_trackers.GrpcTrackers,
-							_authorizationProvider))
-						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
-						.AddSingleton(new Users(_mainQueue, _authorizationProvider))
-						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
-						.AddSingleton(new ClusterGossip(_mainQueue, _authorizationProvider, _clusterDns,
-							updateTracker: _trackers.GossipTrackers.ProcessingPushFromPeer,
-							readTracker: _trackers.GossipTrackers.ProcessingRequestFromPeer))
-						.AddSingleton(new Elections(_mainQueue, _authorizationProvider, _clusterDns))
-						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider, _trackers.GossipTrackers.ProcessingRequestFromGrpcClient))
-						.AddSingleton(new Monitoring(_monitoringQueue))
-						.AddSingleton(new Redaction(_mainQueue, _authorizationProvider))
-						.AddSingleton<ServerFeatures>()
+			services = services
+				.AddRouting()
+				.AddAuthentication(o => o
+					.AddScheme<EventStoreAuthenticationHandler>("es auth", displayName: null))
+					.Services
+				.AddAuthorization()
+				.AddSingleton(_authenticationProvider)
+				.AddSingleton(_authorizationProvider)
+				.AddSingleton<ISubscriber>(_mainBus)
+				.AddSingleton<IPublisher>(_mainQueue)
+				.AddSingleton<AuthenticationMiddleware>()
+				.AddSingleton<AuthorizationMiddleware>()
+				.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
+				.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize,
+					_writeTimeout, _expiryStrategy,
+					_trackers.GrpcTrackers,
+					_authorizationProvider))
+				.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
+				.AddSingleton(new Users(_mainQueue, _authorizationProvider))
+				.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
+				.AddSingleton(new ClusterGossip(_mainQueue, _authorizationProvider, _clusterDns,
+					updateTracker: _trackers.GossipTrackers.ProcessingPushFromPeer,
+					readTracker: _trackers.GossipTrackers.ProcessingRequestFromPeer))
+				.AddSingleton(new Elections(_mainQueue, _authorizationProvider, _clusterDns))
+				.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider, _trackers.GossipTrackers.ProcessingRequestFromGrpcClient))
+				.AddSingleton(new Monitoring(_monitoringQueue))
+				.AddSingleton(new Redaction(_mainQueue, _authorizationProvider))
+				.AddSingleton<ServerFeatures>()
 
-						// OpenTelemetry
-						.AddOpenTelemetry()
-						.WithMetrics(meterOptions => meterOptions
-							.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore"))
-							.AddMeter(metricsConfiguration.Meters)
-							.AddView(i => {
-								if (i.Name.StartsWith("eventstore-") &&
-									i.Name.EndsWith("-latency") &&
-									i.Unit == "seconds")
-									return new ExplicitBucketHistogramConfiguration {
-										Boundaries = new double[] {
-											0.001, //    1 ms
-											0.005, //    5 ms
-											0.01,  //   10 ms
-											0.05,  //   50 ms
-											0.1,   //  100 ms
-											0.5,   //  500 ms
-											1,     // 1000 ms
-											5,     // 5000 ms
-										}
-									};
-								else if (i.Name.StartsWith("eventstore-") && i.Unit == "seconds")
-									return new ExplicitBucketHistogramConfiguration {
-										Boundaries = new double[] {
-											0.000_001, // 1 microsecond
-											0.000_01,
-											0.000_1,
-											0.001, // 1 millisecond
-											0.01,
-											0.1,
-											1, // 1 second
-											10,
-										}
-									};
-								return default;
-							})
-							.AddPrometheusExporter())
-						.Services
+				// OpenTelemetry
+				.AddOpenTelemetry()
+				.WithMetrics(meterOptions => meterOptions
+					.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore"))
+					.AddMeter(metricsConfiguration.Meters)
+					.AddView(i => {
+						if (i.Name.StartsWith("eventstore-") &&
+							i.Name.EndsWith("-latency") &&
+							i.Unit == "seconds")
+							return new ExplicitBucketHistogramConfiguration {
+								Boundaries = new double[] {
+									0.001, //    1 ms
+									0.005, //    5 ms
+									0.01,  //   10 ms
+									0.05,  //   50 ms
+									0.1,   //  100 ms
+									0.5,   //  500 ms
+									1,     // 1000 ms
+									5,     // 5000 ms
+								}
+							};
+						else if (i.Name.StartsWith("eventstore-") && i.Unit == "seconds")
+							return new ExplicitBucketHistogramConfiguration {
+								Boundaries = new double[] {
+									0.000_001, // 1 microsecond
+									0.000_01,
+									0.000_1,
+									0.001, // 1 millisecond
+									0.01,
+									0.1,
+									1, // 1 second
+									10,
+								}
+							};
+						return default;
+					})
+					.AddPrometheusExporter())
+				.Services
 
-						// gRPC
-						.AddSingleton<RetryInterceptor>()
-						.AddGrpc(options => {
-							options.Interceptors.Add<RetryInterceptor>();
-						})
-						.AddServiceOptions<Streams<TStreamId>>(options =>
-							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
-						.Services,
-					(s, subsystem) => subsystem.ConfigureServices(s, _configuration));
+				// gRPC
+				.AddSingleton<RetryInterceptor>()
+				.AddGrpc(options => {
+					options.Interceptors.Add<RetryInterceptor>();
+				})
+				.AddServiceOptions<Streams<TStreamId>>(options =>
+					options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
+				.Services;
+
+			services = _configureAdditionalServices(services);
+
+			foreach (var subsystem in _subsystems)
+				services = subsystem.ConfigureServices(services, _configuration);
+
+			return services.BuildServiceProvider();
 		}
 
 		public void Handle(SystemMessage.SystemReady _) => _ready = true;

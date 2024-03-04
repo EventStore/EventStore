@@ -6,6 +6,8 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class BearerHttpAuthenticationProvider : IHttpAuthenticationProvider {
 		private readonly IAuthenticationProvider _internalAuthenticationProvider;
 
+		public string Name => "bearer";
+
 		public BearerHttpAuthenticationProvider(IAuthenticationProvider internalAuthenticationProvider) {
 			_internalAuthenticationProvider = internalAuthenticationProvider;
 		}

@@ -12,6 +12,7 @@ using NUnit.Framework;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EventStore.Plugins.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
+using EventStore.Core.Services.Transport.Common;
 using EventStore.Core.Services.Transport.Enumerators;
 using NUnit.Framework;
 
@@ -14,6 +15,7 @@ public partial class EnumeratorTests {
 	public record SubscriptionConfirmation() : SubscriptionResponse { }
 	public record CaughtUp : SubscriptionResponse { }
 	public record FellBehind : SubscriptionResponse { }
+	public record Checkpoint(Position CheckpointPosition) : SubscriptionResponse { }
 
 	public class EnumeratorWrapper : IAsyncDisposable {
 		private readonly IAsyncEnumerator<ReadResponse> _enumerator;
@@ -36,6 +38,7 @@ public partial class EnumeratorTests {
 				ReadResponse.SubscriptionConfirmed => new SubscriptionConfirmation(),
 				ReadResponse.SubscriptionCaughtUp => new CaughtUp(),
 				ReadResponse.SubscriptionFellBehind => new FellBehind(),
+				ReadResponse.CheckpointReceived checkpointReceived => new Checkpoint(new Position(checkpointReceived.CommitPosition, checkpointReceived.PreparePosition)),
 				_ => throw new ArgumentOutOfRangeException(nameof(resp), resp, null),
 			};
 		}

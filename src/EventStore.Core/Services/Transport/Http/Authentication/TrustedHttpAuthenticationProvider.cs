@@ -1,9 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Security.Claims;
+using EventStore.Plugins.Authentication;
 using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class TrustedHttpAuthenticationProvider : IHttpAuthenticationProvider {
+		public string Name => "trusted";
+
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
 			request = null;
 			if (!context.Request.Headers.TryGetValue(SystemHeaders.TrustedAuth, out var values)) {

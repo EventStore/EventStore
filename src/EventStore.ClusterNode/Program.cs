@@ -67,8 +67,8 @@ namespace EventStore.ClusterNode {
 					return 0;
 				}
 
-				Log.Information("\n{description,-25} {version} ({branch}/{hashtag}, {timestamp})", "ES VERSION:",
-					VersionInfo.Version, VersionInfo.Tag, VersionInfo.Hashtag, VersionInfo.Timestamp);
+				Log.Information("\n{description,-25} {version} {edition} ({buildId}/{commitSha}, {timestamp})", "ES VERSION:",
+					VersionInfo.Version, VersionInfo.Edition, VersionInfo.BuildId, VersionInfo.CommitSha, VersionInfo.Timestamp);
 				Log.Information("{description,-25} {osArchitecture} ", "OS ARCHITECTURE:",
 					RuntimeInformation.OSArchitecture);
 				Log.Information("{description,-25} {osFlavor} ({osVersion})", "OS:", OS.OsFlavor,

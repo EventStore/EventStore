@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 
-namespace EventStore.Core.Services.Storage;
+namespace EventStore.Core.Services.Storage.InMemory;
 
 public class InMemoryStreamReader : IInMemoryStreamReader {
 	private readonly Dictionary<string, IInMemoryStreamReader> _readers;

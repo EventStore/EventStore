@@ -27,7 +27,10 @@ namespace EventStore.Core.Services {
 		public const string ScavengesStream = "$scavenges";
 		public const string EpochInformationStream = "$epoch-information";
 		public const string ScavengePointsStream = "$scavengePoints";
+
+		// mem streams
 		public const string NodeStateStream = "$mem-node-state";
+		public const string GossipStream = "$mem-gossip";
 
 		public static bool IsSystemStream(string streamId) {
 			return streamId.Length != 0 && streamId[0] == '$';

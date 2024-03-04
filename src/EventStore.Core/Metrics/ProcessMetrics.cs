@@ -54,8 +54,10 @@ public class ProcessMetrics {
 		void CreateObservableUpDownCounter<T>(ProcessTracker tracker, Func<T> observe, string? unit = null)
 			where T : struct {
 
-			if (enabledNames.TryGetValue(tracker, out var name))
-				_meter.CreateObservableUpDownCounter(name, observe, unit);
+			if (enabledNames.TryGetValue(tracker, out var name)) {
+				unit = unit is null ? "" : "-" + unit;
+				_meter.CreateObservableUpDownCounter(name + unit, observe);
+			}
 		}
 
 		void CreateObservableCounter<T>(ProcessTracker tracker, Func<T> observe, string? unit = null)
@@ -104,7 +106,7 @@ public class ProcessMetrics {
 		dims.Register(ProcessTracker.MemVirtualBytes, () => _getCurrentProc().VirtualMemorySize64);
 
 		if (dims.AnyRegistered())
-			_meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");
+			_meter.CreateObservableGauge(metricName + "-bytes", dims.GenObserve());
 	}
 
 	public void CreateGcGenerationSizeMetric(string metricName, Dictionary<ProcessTracker, string> dimNames) {
@@ -120,7 +122,7 @@ public class ProcessMetrics {
 		dims.Register(ProcessTracker.LohSize, () => (long)getGcGenerationSize(3));
 
 		if (dims.AnyRegistered())
-			_meter.CreateObservableUpDownCounter(metricName, dims.GenObserve(), "bytes");
+			_meter.CreateObservableUpDownCounter(metricName + "-bytes", dims.GenObserve());
 	}
 
 	public void CreateGcCollectionCountMetric(string metricName, Dictionary<ProcessTracker, string> dimNames) {
@@ -141,7 +143,7 @@ public class ProcessMetrics {
 		dims.Register(ProcessTracker.DiskWrittenBytes, () => (long)(_getDiskIo()?.WrittenBytes ?? 0));
 
 		if (dims.AnyRegistered())
-			_meter.CreateObservableCounter(metricName, dims.GenObserve(), "bytes");
+			_meter.CreateObservableCounter(metricName + "-bytes", dims.GenObserve());
 	}
 
 	public void CreateDiskOpsMetric(string name, Dictionary<ProcessTracker, string> dimNames) {
@@ -151,6 +153,6 @@ public class ProcessMetrics {
 		dims.Register(ProcessTracker.DiskWrittenOps, () => (long)(_getDiskIo()?.WriteOps ?? 0));
 
 		if (dims.AnyRegistered())
-			_meter.CreateObservableCounter(name, dims.GenObserve(), "operations");
+			_meter.CreateObservableCounter(name + "-operations", dims.GenObserve());
 	}
 }

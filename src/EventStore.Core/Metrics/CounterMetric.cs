@@ -6,8 +6,8 @@ namespace EventStore.Core.Metrics {
 		private readonly List<CounterSubMetric> _subMetrics = new();
 		private readonly object _lock = new();
 
-		public CounterMetric(Meter meter, string name, string unit = null) {
-			meter.CreateObservableCounter(name, Observe, unit);
+		public CounterMetric(Meter meter, string name, string unit) {
+			meter.CreateObservableCounter(name + "-" + unit, Observe);
 		}
 		
 		public void Add(CounterSubMetric subMetric) {

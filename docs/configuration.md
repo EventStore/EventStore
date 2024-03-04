@@ -232,24 +232,17 @@ DEFAULT OPTIONS:
          ADVERTISE HOST TO CLIENT AS:             <empty> (<DEFAULT>)
          ADVERTISE HTTP PORT TO CLIENT AS:        0 (<DEFAULT>)
          ADVERTISE NODE PORT TO CLIENT AS:        0 (<DEFAULT>)
-         ADVERTISE TCP PORT TO CLIENT AS:         0 (<DEFAULT>)
          CONNECTION PENDING SEND BYTES THRESHOLD: 10485760 (<DEFAULT>)
          CONNECTION QUEUE SIZE THRESHOLD:         50000 (<DEFAULT>)
          DISABLE ADMIN UI:                        False (<DEFAULT>)
-         DISABLE EXTERNAL TCP TLS:                False (<DEFAULT>)
          DISABLE GOSSIP ON HTTP:                  False (<DEFAULT>)
          DISABLE INTERNAL TCP TLS:                False (<DEFAULT>)
          DISABLE STATS ON HTTP:                   False (<DEFAULT>)
          ENABLE ATOM PUB OVER HTTP:               False (<DEFAULT>)
-         ENABLE EXTERNAL TCP:                     False (<DEFAULT>)
          ENABLE TRUSTED AUTH:                     False (<DEFAULT>)
          ENABLE UNIX SOCKET:                      False (<DEFAULT>)
          EXT HOST ADVERTISE AS:                   <empty> (<DEFAULT>)
          EXT IP:                                  127.0.0.1 (<DEFAULT>)
-         EXT TCP HEARTBEAT INTERVAL:              2000 (<DEFAULT>)
-         EXT TCP HEARTBEAT TIMEOUT:               1000 (<DEFAULT>)
-         EXT TCP PORT:                            1113 (<DEFAULT>)
-         EXT TCP PORT ADVERTISE AS:               0 (<DEFAULT>)
          GOSSIP ON SINGLE NODE:                   <empty> (<DEFAULT>)
          HTTP PORT:                               2113 (<DEFAULT>)
          HTTP PORT ADVERTISE AS:                  0 (<DEFAULT>)
@@ -265,8 +258,6 @@ DEFAULT OPTIONS:
          NODE IP:                                 127.0.0.1 (<DEFAULT>)
          NODE PORT:                               2113 (<DEFAULT>)
          NODE PORT ADVERTISE AS:                  0 (<DEFAULT>)
-         NODE TCP PORT:                           1113 (<DEFAULT>)
-         NODE TCP PORT ADVERTISE AS:              0 (<DEFAULT>)
          REPLICATION HEARTBEAT INTERVAL:          700 (<DEFAULT>)
          REPLICATION HEARTBEAT TIMEOUT:           700 (<DEFAULT>)
          REPLICATION HOST ADVERTISE AS:           <empty> (<DEFAULT>)
@@ -373,3 +364,44 @@ it will be set to have 5 threads available.
 
 The option is set to 0 by default, which enables autoconfiguration. The default on previous versions of
 EventStoreDb was 5 threads.
+
+## Plugins configuration
+
+The commercial edition of EventStoreDB ships with several plugins that augment the behavior of the open source server. Each plugin is documented in relevant sections. For example, under Security, you will find the User Certificates plugin documentation.
+
+The plugins (apart from the `ldap` plugin) are configured separately to the main server configuration and can be configured via `json` files and `environment variables`.
+
+Environment variables take precedence.
+
+#### JSON files
+
+Each configurable plugin comes with a sample JSON file in the `<installation-directory>/plugins/<plugin-name>` directory.
+Here is an example file called `user-certificates-plugin-example.json` to enable the user certificates plugin.
+
+```json
+{
+  "EventStore": {
+    "Plugins": {
+      "UserCertificates": {
+        "Enabled": true
+      }
+    }
+  }
+}
+```
+
+The system looks for JSON configuration files in a `<installation-directory>/config/` directory, and on Linux and OS X, the server additionally looks in `/etc/eventstore/config/`. To take effect, JSON configuration must be saved to one of these locations.
+
+The JSON configuration may be split across multiple files or combined into a single file. Apart from the `.json` extension, the names of the files is not important.
+
+#### Environment variables
+
+Any configuration can alternatively be provided via environment variables.
+
+Use `__` as the level delimiter.
+
+For example, the key configured above in json can also be set with the following environment variable:
+
+```:no-line-numbers
+EventStore__Plugins__UserCertificates__Enabled
+```

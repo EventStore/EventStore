@@ -3,61 +3,93 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Cherry picked from https
+- //github.com/EventStore/EventStore/pull/4151 [EventStore#4166](https://github.com/EventStore/EventStore/pull/4166)
+- //github.com/EventStore/EventStore/pull/4180 [EventStore#4181](https://github.com/EventStore/EventStore/pull/4181)
+
+## [24.2.0] - 2024-02-25
+
 ### Changed
 - Set the default value of `CertificateReservedNodeCommonName` to empty string [EventStore#4001](https://github.com/EventStore/EventStore/pull/4001)
-- wording of telemetry message for clarity [EventStore#4026](https://github.com/EventStore/EventStore/pull/4026)
-- Upgrade to .NET 7. [EventStore#4031](https://github.com/EventStore/EventStore/pull/4031)
 - Upgrade to .NET 8. [EventStore#4046](https://github.com/EventStore/EventStore/pull/4046)
 - Don't require ReadIndex in the enumerators when subscribing from $all [EventStore#4057](https://github.com/EventStore/EventStore/pull/4057)
 - Simplified HTTP pipeline [EventStore#4088](https://github.com/EventStore/EventStore/pull/4088)
 - Do not autosize thread count and streaminfocache size in containerized environments [EventStore#4103](https://github.com/EventStore/EventStore/pull/4103)
-- Upgrade Jint to version 3.0.0-beta-2059 [EventStore#4111](https://github.com/EventStore/EventStore/pull/4111)
-- Explicitly set the shutdown timeout to 5s, which was default in previous dotnet versions. Behaviour unchanged since previous release [EventStore#4110](https://github.com/EventStore/EventStore/pull/4110)
-- Re-authorize stream access in live subscriptions when stream metadata changes [EventStore#4104](https://github.com/EventStore/EventStore/pull/4104)
-- Re-authorize stream access in live subscriptions when default ACLs change [EventStore#4116](https://github.com/EventStore/EventStore/pull/4116)
-- Re-authorize subscriptions to `$all` when its stream metadata (`$$$all`) changes [EventStore#4118](https://github.com/EventStore/EventStore/pull/4118)
-- Upgrade Jint to version 3.0.0 [EventStore#4121](https://github.com/EventStore/EventStore/pull/4121)
-- Copyright year in assemblies [EventStore#4127](https://github.com/EventStore/EventStore/pull/4127)
-- Updated plugin API [EventStore#4126](https://github.com/EventStore/EventStore/pull/4126)
+- Explicitly set the shutdown timeout to 5s, which was default in previous dotnet versions. Behaviour unchanged since previous release. [EventStore#4110](https://github.com/EventStore/EventStore/pull/4110)
+- Re-authorize stream access in live subscriptions when stream metadata changes. [EventStore#4104](https://github.com/EventStore/EventStore/pull/4104)
+- Re-authorize stream access in live subscriptions when default ACLs change. [EventStore#4116](https://github.com/EventStore/EventStore/pull/4116)
+- Re-authorize subscriptions to `$all` when its stream metadata (`$$$all`) changes. [EventStore#4118](https://github.com/EventStore/EventStore/pull/4118)
+- Upgrade Jint to version 3.0.0. [EventStore#4121](https://github.com/EventStore/EventStore/pull/4121)
+- Updated plugin API. [EventStore#4126](https://github.com/EventStore/EventStore/pull/4126)
+- Decouple the enumerators from gRPC so they can work directly with connectors. [EventStore#3998](https://github.com/EventStore/EventStore/pull/3998)
 
 ### Added
-- documentation for certificate improvements [EventStore#4000](https://github.com/EventStore/EventStore/pull/4000)
-- Support for multiple media types specified in one Accept header. [EventStore#4011](https://github.com/EventStore/EventStore/pull/4011)
-- Refactor gRPC enumerators  [EventStore#3998](https://github.com/EventStore/EventStore/pull/3998)
 - gRPC stream subscriptions with smooth transitions between live and catchup. Subscriptions no longer drop with "consumer too slow" reason. [EventStore#4093](https://github.com/EventStore/EventStore/pull/4093)
-- Additional stream subscription enumerator tests [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
-- $all subscription enumerator tests [EventStore#4119](https://github.com/EventStore/EventStore/pull/4119)
-- gRPC $all subscriptions with smooth transitions between live and catchup. Subscriptions no longer drop with "consumer too slow" reason. [EventStore#4117](https://github.com/EventStore/EventStore/pull/4117)
-- General support for plugin configuration [EventStore#4130](https://github.com/EventStore/EventStore/pull/4130)
+- gRPC `$all` subscriptions with smooth transitions between live and catchup. Subscriptions no longer drop with "consumer too slow" reason. [EventStore#4117](https://github.com/EventStore/EventStore/pull/4117)
+- General support for plugin configuration. [EventStore#4130](https://github.com/EventStore/EventStore/pull/4130)
+- Improved support for plugins to perform authorization checks. [EventStore#4145](https://github.com/EventStore/EventStore/pull/4145)
+- `$mem-gossip` memory stream. [EventStore#4123](https://github.com/EventStore/EventStore/pull/4123)
+- Support for a wider range of authentication plugins. (facilitates user X.509 certificates plugin) [EventStore#4148](https://github.com/EventStore/EventStore/pull/4148)
+- Support for new packaging pipeline. [EventStore#4157](https://github.com/EventStore/EventStore/pull/4157)
 
 ### Fixed
-- A way for unreplicated data to appear in a subscription or reads before being truncated [EventStore#3972](https://github.com/EventStore/EventStore/pull/3972)
+- Addressed [CVE-2024-26133](https://github.com/EventStore/EventStore/security/advisories/GHSA-6r53-v8hj-x684): Potential password leak in the EventStoreDB Projections Subsystem.
 - 'Unknown' error reported to client after successful idempotent write to deleted stream. [EventStore#4059](https://github.com/EventStore/EventStore/pull/4059)
 - Report same version info when using different kind of release tags (annotated or lightweight). [EventStore#4081](https://github.com/EventStore/EventStore/pull/4081)
-- Stream (hard) deletion when gRPC subscription is live [regression] [EventStore#4095](https://github.com/EventStore/EventStore/pull/4095)
-- Calls to /stats/replication on a single node cluster would hang forever. [EventStore#4102](https://github.com/EventStore/EventStore/pull/4102)
+- Calls to `/stats/replication` on a single node cluster would hang forever. [EventStore#4102](https://github.com/EventStore/EventStore/pull/4102)
 - gRPC stream subscription now receives a stream deleted exception when subscribing to a tombstoned stream from `End` [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
 - gRPC stream subscription now receives `CaughtUp` message when subscribing to a non-existing or soft-deleted stream. Previously in such cases, the stream subscription enumerator was looping in catch-up mode until a new event is received (and thus it never sent `CaughtUp` to the subscription) [EventStore#4108](https://github.com/EventStore/EventStore/pull/4108)
 - Initialize replication service heartbeat interval with `ReplicationHeartbeatInterval` instead of `NodeHeartbeatInterval `. [EventStore#4125](https://github.com/EventStore/EventStore/pull/4125)
-- Use correct checkpoint in test `subscribe_all_from_start` [EventStore#4119](https://github.com/EventStore/EventStore/pull/4119)
-- $all subscription enumerator returns `InvalidPosition` when subscribing at an invalid position [EventStore#4128](https://github.com/EventStore/EventStore/pull/4128)
-- Build on ARM, AnyCPU solution settings was actually using X64 [EventStore#4129](https://github.com/EventStore/EventStore/pull/4129)
-- filtered $all subscription enumerator returns InvalidPosition when subscribing at an invalid position [EventStore#4131](https://github.com/EventStore/EventStore/pull/4131)
+- `$all` subscription enumerator returns `InvalidPosition` when subscribing at an invalid position. [EventStore#4128](https://github.com/EventStore/EventStore/pull/4128)
+- Build on ARM, AnyCPU solution settings was actually using X64. [EventStore#4129](https://github.com/EventStore/EventStore/pull/4129)
+- Filtered `$all` subscription enumerator returns `InvalidPosition` when subscribing at an invalid position. [EventStore#4131](https://github.com/EventStore/EventStore/pull/4131)
+- upgraded package reference for CVE-2024-0057 [EventStore#4165](https://github.com/EventStore/EventStore/pull/4165)
 
 ### Removed
-- Unncessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
-- Remove the external TCP API and related configuration options. [EventStore#4113](https://github.com/EventStore/EventStore/pull/4113)
+- Unnecessary code [EventStore#4087](https://github.com/EventStore/EventStore/pull/4087)
+- Remove mentions of external TCP in the docs. [EventStore#4151](https://github.com/EventStore/EventStore/pull/4151)
 
-### Cherry picked from https
-- //github.com/EventStore/EventStore/pull/4097 [EventStore#4100](https://github.com/EventStore/EventStore/pull/4100)
-- //github.com/EventStore/EventStore/pull/4097 [EventStore#4099](https://github.com/EventStore/EventStore/pull/4099)
-- //github.com/EventStore/EventStore/pull/4097 [EventStore#4098](https://github.com/EventStore/EventStore/pull/4098)
-- //github.com/EventStore/EventStore/pull/4105 [EventStore#4106](https://github.com/EventStore/EventStore/pull/4106)
-- //github.com/EventStore/EventStore/pull/4105 [EventStore#4107](https://github.com/EventStore/EventStore/pull/4107)
-- //github.com/EventStore/EventStore/pull/4133 [EventStore#4140](https://github.com/EventStore/EventStore/pull/4140)
+### Breaking Changes
 
-### Now the nightly tagging happens also in forked repositories and fails every time
-- https://github.com/lahma/EventStore/actions/workflows/tag-docker-images.yml [EventStore#4136](https://github.com/EventStore/EventStore/pull/4136)
+- Remove the external TCP API and related configuration options. [EventStore#4113](https://github.com/EventStore/EventStore/pull/4113) and [EventStore#4153](https://github.com/EventStore/EventStore/pull/4153)
+- The following options have been removed:
+    - `AdvertiseTcpPortToClientAs`
+    - `DisableExternalTcpTls`
+    - `EnableExternalTcp`
+    - `ExtHostAdvertiseAs`
+    - `ExtTcpHeartbeatInterval`
+    - `ExtTcpHeartbeatTimeout`
+    - `ExtTcpPort`
+    - `ExtTcpPortAdvertiseAs`
+    - `NodeHeartbeatInterval`
+    - `NodeHeartbeatTimeout`
+    - `NodeTcpPort`
+    - `NodeTcpPortAdvertiseAs`
+- The behaviour for filtered `$all` checkpoints has changed ([EventStore#4131](https://github.com/EventStore/EventStore/pull/4131)). Instead of receiving a checkpoint exactly after the checkpoint interval, a checkpoint will be issued at least once per checkpoint interval:
+    - When live, checkpoints will still be issued after exactly checkpoint interval events.
+    - When catching up, checkpoints will still be issued after exactly checkpoint interval events (except that the first checkpoint will be offset by one event).
+    - When transitioning from catch-up to live, a checkpoint is issued.
+    - When falling behind from live to catch-up, a checkpoint is issued.
+
+## [23.10.1] - 2024-02-20
+
+### Fixed
+- Addressed [CVE-2024-26133](https://github.com/EventStore/EventStore/security/advisories/GHSA-6r53-v8hj-x684): Potential password leak in the EventStoreDB Projections Subsystem.
+
+## [22.10.5] - 2024-02-20
+
+### Fixed
+- Addressed [CVE-2024-26133](https://github.com/EventStore/EventStore/security/advisories/GHSA-6r53-v8hj-x684): Potential password leak in the EventStoreDB Projections Subsystem.
+
+## [21.10.11] - 2024-02-20
+
+### Fixed
+- Addressed [CVE-2024-26133](https://github.com/EventStore/EventStore/security/advisories/GHSA-6r53-v8hj-x684): Potential password leak in the EventStoreDB Projections Subsystem.
+
+## [20.10.6] - 2024-02-20
+
+### Fixed
+- Addressed [CVE-2024-26133](https://github.com/EventStore/EventStore/security/advisories/GHSA-6r53-v8hj-x684): Potential password leak in the EventStoreDB Projections Subsystem.
 
 ## [22.10.4] - 2023-11-22
 

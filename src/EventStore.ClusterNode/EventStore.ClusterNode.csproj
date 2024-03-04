@@ -18,8 +18,12 @@
 		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
 	</ItemGroup>
 	<ItemGroup>
+		<None Include="..\EventStore.Common\Utils\version.properties">
+			<Link>version.properties</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Include="..\EventStore.Core\Log\logconfig.json">
-			<Link>logconfig.json</Link>
+				<Link>logconfig.json</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="metricsconfig.json">

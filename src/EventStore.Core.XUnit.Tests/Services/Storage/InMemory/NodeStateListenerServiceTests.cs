@@ -1,15 +1,15 @@
 using System;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Services.Storage.InMemory;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.Services.VNode;
+namespace EventStore.Core.XUnit.Tests.Services.Storage.InMemory;
 
 public class NodeStateListenerServiceTests {
 	private readonly NodeStateListenerService _sut;
@@ -18,7 +18,9 @@ public class NodeStateListenerServiceTests {
 	public NodeStateListenerServiceTests() {
 		var channel = Channel.CreateUnbounded<Message>();
 		_channelReader = channel.Reader;
-		_sut = new NodeStateListenerService(new EnvelopePublisher(new ChannelEnvelope(channel)));
+		_sut = new NodeStateListenerService(
+			new EnvelopePublisher(new ChannelEnvelope(channel)),
+			new InMemoryLog());
 	}
 
 	[Fact]
@@ -30,7 +32,7 @@ public class NodeStateListenerServiceTests {
 		Assert.Equal(NodeStateListenerService.EventType, @event.Event.EventType);
 		Assert.Equal(0, @event.Event.EventNumber);
 		Assert.Equal(JsonSerializer.SerializeToUtf8Bytes(new {
-			state = VNodeState.Leader.ToString(),
+			State = VNodeState.Leader.ToString(),
 		}), @event.Event.Data.ToArray());
 	}
 }

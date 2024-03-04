@@ -5,15 +5,18 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Plugins.Authentication;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http;
 using Serilog;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
-	public class ClientCertificateAuthenticationProvider : IHttpAuthenticationProvider {
+	public class NodeCertificateAuthenticationProvider : IHttpAuthenticationProvider {
 		private readonly Func<string> _getCertificateReservedNodeCommonName;
 
-		public ClientCertificateAuthenticationProvider(Func<string> getCertificateReservedNodeCommonName) {
+		public string Name => "node-certificate";
+
+		public NodeCertificateAuthenticationProvider(Func<string> getCertificateReservedNodeCommonName) {
 			_getCertificateReservedNodeCommonName = getCertificateReservedNodeCommonName;
 		}
 
@@ -36,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 			bool authenticated;
 
 			var connectionItems = context.Features.Get<IConnectionItemsFeature>()?.Items;
-			const string connectionItemsKey = "ClientCertificateAuthenticationStatus";
+			const string connectionItemsKey = "NodeCertificateAuthenticationStatus";
 			if (TryGetDictionaryValue(connectionItems, connectionItemsKey, out var wasAuthenticated)) {
 				authenticated = (bool) wasAuthenticated;
 			} else {
@@ -74,6 +77,9 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 		}
 
 		private bool AuthenticateUncached(HttpContext context, X509Certificate2 clientCertificate) {
+			if (!clientCertificate.IsServerCertificate(out _))
+				return false;
+
 			var reservedNodeCN = _getCertificateReservedNodeCommonName();
 			bool hasReservedNodeCN;
 			try {
@@ -102,7 +108,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 				Log.Error("Connection from node: {ip} was denied because its certificate does not have any IP or DNS Subject Alternative Names (SAN).", ip);
 				return false;
 			}
-			
+
 			return true;
 		}
 	}
