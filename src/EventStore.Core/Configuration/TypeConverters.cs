@@ -6,70 +6,75 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 
-namespace EventStore.Core.Configuration;
+namespace EventStore.Core.Configuration {
+	public class GossipEndPointConverter : StringConverter {
+		public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => true;
 
-public class GossipEndPointConverter : StringConverter {
-	public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => true;
+		public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) {
+			try {
+				return value is string stringValue
+					? ParseGossipEndPoint(stringValue)
+					: base.ConvertFrom(context, culture, value);
+			} catch (Exception) {
+				return base.ConvertFrom(context, culture, value);
+			}
+		}
 
-	public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) {
-		try {
-			return value is string stringValue ? ParseGossipEndPoint(stringValue) : base.ConvertFrom(context, culture, value);
-		} catch (Exception) {
-			return base.ConvertFrom(context, culture, value);
+		private static EndPoint ParseGossipEndPoint(string value) {
+			var parts = value.Split(':', 2);
+
+			if (parts.Length != 2)
+				throw new("You must specify the ports in the gossip seed");
+
+			if (!int.TryParse(parts[1], out var port))
+				throw new($"Invalid format for gossip seed port: {parts[1]}");
+
+			return IPAddress.TryParse(parts[0], out var ip)
+				? new IPEndPoint(ip, port)
+				: new DnsEndPoint(parts[0], port);
 		}
 	}
 
-	static EndPoint ParseGossipEndPoint(string value) {
-		var parts = value.Split(':', 2);
+	public class GossipSeedConverter : ArrayConverter {
+		private static readonly char[] InvalidDelimiters = [';', '\t'];
 
-		if (parts.Length != 2)
-			throw new("You must specify the ports in the gossip seed");
+		private static readonly GossipEndPointConverter _gossipEndPointConverter = new();
 
-		if (!int.TryParse(parts[1], out var port))
-			throw new($"Invalid format for gossip seed port: {parts[1]}");
+		public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+			sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
 
-		return IPAddress.TryParse(parts[0], out var ip)
-			? new IPEndPoint(ip, port)
-			: new DnsEndPoint(parts[0], port);
-	}
-}
+		public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) {
+			if (value is not string stringValue)
+				return base.ConvertFrom(context, culture, value!);
 
-public class GossipSeedConverter : ArrayConverter {
-	static readonly char[] InvalidDelimiters = [';', '\t'];
+			if (stringValue.Any(c => InvalidDelimiters.Contains(c)))
+				throw new ArgumentException($"Invalid delimiter for gossip seed value: {stringValue}");
 
-	static readonly GossipEndPointConverter _gossipEndPointConverter = new();
+			var values = stringValue.Split(',', StringSplitOptions.RemoveEmptyEntries);
 
-	public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => 
-		sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+			var gossipEndPoints = values
+				.Select(x => (EndPoint)_gossipEndPointConverter.ConvertFrom(context, culture, x)!)
+				.ToArray();
 
-	public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) {
-		if (value is not string stringValue)
-			return base.ConvertFrom(context, culture, value!);
-
-		if (stringValue.Any(c => InvalidDelimiters.Contains(c)))
-			throw new ArgumentException($"Invalid delimiter for gossip seed value: {stringValue}");
-
-		var values = stringValue.Split(',', StringSplitOptions.RemoveEmptyEntries);
-
-		var gossipEndPoints = values
-			.Select(x => (EndPoint)_gossipEndPointConverter.ConvertFrom(context, culture, x)!)
-			.ToArray();
-
-		return gossipEndPoints;
-	}
-}
-
-public class IPAddressConverter : StringConverter {
-	public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => 
-		sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
-
-	public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) {
-		try {
-			return value is string stringValue ? ParseIpAddress(stringValue) : base.ConvertFrom(context, culture, value);
-		} catch (Exception) {
-			return base.ConvertFrom(context, culture, value);
+			return gossipEndPoints;
 		}
 	}
 
-	static IPAddress ParseIpAddress(string? value) => IPAddress.Parse(value ?? IPAddress.Loopback.ToString());
+	public class IPAddressConverter : StringConverter {
+		public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+			sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+
+		public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) {
+			try {
+				return value is string stringValue
+					? ParseIpAddress(stringValue)
+					: base.ConvertFrom(context, culture, value);
+			} catch (Exception) {
+				return base.ConvertFrom(context, culture, value);
+			}
+		}
+
+		private static IPAddress ParseIpAddress(string? value) =>
+			IPAddress.Parse(value ?? IPAddress.Loopback.ToString());
+	}
 }

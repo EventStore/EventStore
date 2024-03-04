@@ -9,10 +9,9 @@ using EventStore.Common.Configuration;
 using EventStore.Core.Configuration.Sources;
 using Microsoft.Extensions.Configuration;
 
-namespace EventStore.Core.Configuration;
-
-public static class ConfigurationRootExtensions {
-	public static string? CheckProvidersForEnvironmentVariables(this IConfigurationRoot? configurationRoot, IEnumerable<Type> optionSections) {
+namespace EventStore.Core.Configuration {
+	public static class ConfigurationRootExtensions {
+		public static string? CheckProvidersForEnvironmentVariables(this IConfigurationRoot? configurationRoot, IEnumerable<Type> optionSections) {
 		if (configurationRoot == null) return null;
 
 		var environmentOptionsOnly = optionSections.SelectMany(section => section.GetProperties())
@@ -46,10 +45,11 @@ public static class ConfigurationRootExtensions {
 		return errorBuilder.Length != 0 ? errorBuilder.ToString() : null;
 	}
 
-	public static string GetString(this IConfiguration configurationRoot, string key) {
+		public static string GetString(this IConfiguration configurationRoot, string key) {
 		return configurationRoot.GetValue<string>(key) ?? string.Empty;
 	}
 
-	public static T BindOptions<T>(this IConfiguration configuration) where T : new() =>
-		configuration.Get<T>() ?? new T();
+		public static T BindOptions<T>(this IConfiguration configuration) where T : new() =>
+			configuration.Get<T>() ?? new T();
+	}
 }

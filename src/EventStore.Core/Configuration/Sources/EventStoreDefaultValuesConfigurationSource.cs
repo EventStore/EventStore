@@ -5,40 +5,40 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Memory;
 using static System.StringComparer;
 
-namespace EventStore.Core.Configuration.Sources;
+namespace EventStore.Core.Configuration.Sources {
+	public class EventStoreDefaultValuesConfigurationSource(
+		IEnumerable<KeyValuePair<string, string?>>? initialData = null) : IConfigurationSource {
+		private IEnumerable<KeyValuePair<string, string?>> InitialData { get; } =
+			initialData ?? new Dictionary<string, string?>();
 
-public class EventStoreDefaultValuesConfigurationSource(IEnumerable<KeyValuePair<string, string?>>? initialData = null) : IConfigurationSource {
-	IEnumerable<KeyValuePair<string, string?>> InitialData { get; } = initialData ?? new Dictionary<string, string?>();
-
-	public IConfigurationProvider Build(IConfigurationBuilder builder) => 
-		new EventStoreDefaultValuesConfigurationProvider(InitialData);
-}
-
-public class EventStoreDefaultValuesConfigurationProvider(IEnumerable<KeyValuePair<string, string?>> initialData)
-	: MemoryConfigurationProvider(new() { InitialData = initialData }) {
-	const string Prefix = "EventStore";
-
-	public override void Load() {
-		Data = Data.Keys.ToDictionary(
-			key => $"{Prefix}:{key}", 
-			x => Data[x], 
-			OrdinalIgnoreCase
-		);
+		public IConfigurationProvider Build(IConfigurationBuilder builder) =>
+			new EventStoreDefaultValuesConfigurationProvider(InitialData);
 	}
-}
 
-public static class EventStoreDefaultValuesConfigurationExtensions {
-	// public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder configurationBuilder) => 
-	// 	configurationBuilder.Add(new EventStoreDefaultValuesConfigurationSource());
+	public class EventStoreDefaultValuesConfigurationProvider(IEnumerable<KeyValuePair<string, string?>> initialData)
+		: MemoryConfigurationProvider(new() { InitialData = initialData }) {
+		private const string Prefix = "EventStore";
 
-	public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder configurationBuilder, IEnumerable<KeyValuePair<string, string?>> initialData) =>
-		configurationBuilder.Add(new EventStoreDefaultValuesConfigurationSource(initialData));
-	
-	public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder builder, IEnumerable<KeyValuePair<string, object?>>? initialData) =>
-		initialData is not null
-			? builder.AddEventStoreDefaultValues(initialData.Select(x => new KeyValuePair<string, string?>(x.Key, x.Value?.ToString())).ToArray())
-			: builder;
+		public override void Load() =>
+			Data = Data.Keys.ToDictionary(key => $"{Prefix}:{key}", x => Data[x], OrdinalIgnoreCase);
+	}
 
-	public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder builder) => 
-		builder.AddEventStoreDefaultValues(ClusterVNodeOptions.DefaultValues);
+	public static class EventStoreDefaultValuesConfigurationExtensions {
+		// public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder configurationBuilder) =>
+		// 	configurationBuilder.Add(new EventStoreDefaultValuesConfigurationSource());
+
+		public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder configurationBuilder,
+			IEnumerable<KeyValuePair<string, string?>> initialData) =>
+			configurationBuilder.Add(new EventStoreDefaultValuesConfigurationSource(initialData));
+
+		public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder builder,
+			IEnumerable<KeyValuePair<string, object?>>? initialData) =>
+			initialData is not null
+				? builder.AddEventStoreDefaultValues(initialData
+					.Select(x => new KeyValuePair<string, string?>(x.Key, x.Value?.ToString())).ToArray())
+				: builder;
+
+		public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder builder) =>
+			builder.AddEventStoreDefaultValues(ClusterVNodeOptions.DefaultValues);
+	}
 }
