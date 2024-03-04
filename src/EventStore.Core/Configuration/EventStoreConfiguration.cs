@@ -26,19 +26,26 @@ namespace EventStore.Core.Configuration {
 			// resolve the main configuration file
 			var configFile = ResolveConfigurationFile(args, environment);
 
-			// load configuration
+			// Create a single IConfiguration object that contains the whole configuration, including
+			// plugin configuration. We will add it to the DI and make it available to the plugins.
+			//
+			// Three json files are loaded explicitly for backwards compatibility
+			// - metricsconfig.json needs loading into the EventStore:Metrics section.
+			// - kestrelsettings.json is not located in a config/ directory
+			// - logconfig.json is not located in a config/ directory
 			var builder = new ConfigurationBuilder()
 				// we should be able to stop doing this soon as long as we bind the options automatically
 				.AddEventStoreDefaultValues(defaultValues)
 				.AddEventStoreYamlConfigFile(configFile.Path, configFile.Optional)
 
-				// these 3 json files are loaded explicitly for backwards compatibility
-				// - metricsconfig.json needs loading into the EventStore:Metrics section.
-				// - kestrelsettings.json is not located in a config/ directory
-				// - logconfig.json is not located in a config/ directory
 				.AddSection("EventStore:Metrics", x => x.AddEsdbConfigFile("metricsconfig.json", true, true))
+
+				// The other config files are added to the root, and must put themselves in the appropriate sections
 				.AddEsdbConfigFile("kestrelsettings.json", true, true)
 				.AddEsdbConfigFile("logconfig.json", true, true)
+
+				// Load all json files in the  `config` subdirectory (if it exists) of each configuration
+				// directory. We use the subdirectory to ensure that we only load configuration files.
 				.AddEsdbConfigFiles("*.json")
 				.AddEsdbConfigFiles($"*.{hostEnvironment.ToLowerInvariant()}.json")
 				.AddEnvironmentVariables()
