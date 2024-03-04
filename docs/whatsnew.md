@@ -29,7 +29,7 @@ In this initial version of the plugin, X.509 certificate authentication works in
 
 This plugin is available in the commercial version of 24.2.0, but is disabled by default.
 
-Refer to the [documentation](security.md#user-x509-certificates) for instructions on how to enable and use this feature.
+Refer to the [documentation](security.md#user-x-509-certificates) for instructions on how to enable and use this feature.
 
 ### OpenTelemetry Exporter <Badge type="warning" text="Commercial" vertical="middle" />
 
@@ -38,7 +38,7 @@ This direct export capability simplifies integration with Application Performanc
 
 This feature empowers you to gain deeper insights into your EventStoreDB deployments, ultimately aiding in performance optimization and enhanced operational efficiency.
 
-Refer to the [documentation](metrics.md#otlp-exporter) for more information about using and configuring this plugin.
+Refer to the [documentation](metrics.md#opentelemetry-exporter) for more information about using and configuring this plugin.
 
 ### Logs download <Badge type="warning" text="Commercial" vertical="middle" />
 
@@ -48,7 +48,7 @@ This allows developers and users who don't have direct access to the machines wh
 
 This plugin is part of the commercial version in 24.2.0 and is enabled by default.
 
-Refer to the [documentation](diagnostics.md#downloading-log-files)
+Refer to the [documentation](diagnostics.md#logs-download)
 for more information on how to use this feature.
 
 ## Feature enhancements
@@ -94,4 +94,4 @@ NodeTcpPortAdvertiseAs
 
 The options for the internal TCP API (`ReplicationTcp*/IntTcp*`) are unchanged from version 23.10.0.
 
-You can read more about any breaking changes and what you should be aware of during an upgrade in the [Upgrade Guide](/upgrade-guide.md).
+You can read more about any breaking changes and what you should be aware of during an upgrade in the [Upgrade Guide](upgrade-guide.md).
