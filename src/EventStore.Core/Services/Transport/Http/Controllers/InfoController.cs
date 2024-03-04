@@ -85,16 +85,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					}
 				);
 
-				// var options = _options.GetPrintableOptions()?.Select(
-				// 	x => new OptionStructure {
-				// 		Name           = x.Name,
-				// 		Description    = x.Description,
-				// 		Group          = x.Group,
-				// 		PossibleValues = x.AllowedValues,
-				// 		Value          = null //x.Value
-				// 	}
-				// );
-
 				entity.ReplyTextContent(
 					Codec.Json.To(options),
 					HttpStatusCode.OK,
