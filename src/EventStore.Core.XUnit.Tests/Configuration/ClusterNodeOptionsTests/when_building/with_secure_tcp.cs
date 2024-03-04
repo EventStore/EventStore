@@ -33,7 +33,6 @@ public class with_ssl_enabled_and_using_a_security_certificate_from_file<TLogFor
 	[Test]
 	public void should_set_tls_to_enabled() {
 		Assert.IsFalse(_options.Interface.DisableInternalTcpTls);
-		Assert.IsFalse(_options.Interface.DisableExternalTcpTls);
 	}
 
 	[Test]
@@ -82,7 +81,6 @@ public class with_ssl_enabled_and_using_a_security_certificate<TLogFormat, TStre
 	[Test]
 	public void should_set_tls_to_enabled() {
 		Assert.IsFalse(_options.Interface.DisableInternalTcpTls);
-		Assert.IsFalse(_options.Interface.DisableExternalTcpTls);
 	}
 
 	[Test]

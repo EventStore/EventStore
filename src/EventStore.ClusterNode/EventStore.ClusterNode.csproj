@@ -23,7 +23,7 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Include="..\EventStore.Core\Log\logconfig.json">
-				<Link>logconfig.json</Link>
+			<Link>logconfig.json</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="metricsconfig.json">

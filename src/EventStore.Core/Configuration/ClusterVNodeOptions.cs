@@ -576,9 +576,6 @@ public partial record ClusterVNodeOptions {
 			}
 		}
 
-		[Description("Advertise TCP Port in Gossip to Client As.")]
-		public int AdvertiseTcpPortToClientAs { get; init; } = 0;
-
 		[Description("Advertise Http Port As."),
 		 Deprecated(
 			 "The HttpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the NodePortAdvertiseAs parameter instead.")]
@@ -679,10 +676,6 @@ public partial record ClusterVNodeOptions {
 		            "' option has been deprecated as of version 20.6.1 and currently has no effect. Please use the '" +
 		            nameof(Application.Insecure) + "' option instead.")]
 		public bool DisableInternalTcpTls { get; init; } = false;
-
-		[Description("Whether to disable secure external TCP communication."),
-		 Deprecated("The '" + nameof(DisableExternalTcpTls) + "' option has been deprecated as of version 20.6.1.")]
-		public bool DisableExternalTcpTls { get; init; } = false;
 
 		[Description("Enable AtomPub over HTTP Interface."),
 		 Deprecated("AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]

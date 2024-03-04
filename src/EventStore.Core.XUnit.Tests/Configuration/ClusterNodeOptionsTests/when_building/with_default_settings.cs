@@ -41,7 +41,6 @@ public class with_default_node_as_single_node<TLogFormat, TStreamId> : SingleNod
 	[Test]
 	public void should_use_tls() {
 		Assert.IsFalse(_options.Interface.DisableInternalTcpTls);
-		Assert.IsFalse(_options.Interface.DisableExternalTcpTls);
 	}
 
 	[Test]
@@ -111,7 +110,6 @@ public class with_default_node_as_node_in_a_cluster<TLogFormat, TStreamId> : Clu
 	[Test]
 	public void should_use_tls() {
 		Assert.IsFalse(_options.Interface.DisableInternalTcpTls);
-		Assert.IsFalse(_options.Interface.DisableExternalTcpTls);
 	}
 
 	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {

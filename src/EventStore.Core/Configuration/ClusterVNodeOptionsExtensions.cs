@@ -61,9 +61,6 @@ public static class ClusterVNodeOptionsExtensions {
 		Application = options.Application with {
 			Insecure = true
 		},
-		Interface = options.Interface with {
-			DisableExternalTcpTls = true
-		},
 		ServerCertificate = null,
 		TrustedRootCertificates = null
 	};
@@ -79,9 +76,6 @@ public static class ClusterVNodeOptionsExtensions {
 		X509Certificate2Collection trustedRootCertificates, X509Certificate2 serverCertificate) => options with {
 		Application = options.Application with {
 			Insecure = false,
-		},
-		Interface = options.Interface with {
-			DisableExternalTcpTls = false
 		},
 		ServerCertificate = serverCertificate,
 		TrustedRootCertificates = trustedRootCertificates
@@ -113,7 +107,6 @@ public static class ClusterVNodeOptionsExtensions {
 		options with {
 			Interface = options.Interface with {
 				NodeIp = endPoint.Address,
-				DisableExternalTcpTls = false,
 			}
 		};
 
@@ -144,7 +137,6 @@ public static class ClusterVNodeOptionsExtensions {
 		options with {
 			Interface = options.Interface with {
 				NodeIp = endPoint.Address,
-				DisableExternalTcpTls = true
 			}
 		};
 
