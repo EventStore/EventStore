@@ -26,4 +26,10 @@
 		<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
 		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
 	</ItemGroup>
+	<ItemGroup>
+		<None Include="..\EventStore.Core\Log\logconfig.json">
+			<Link>logconfig.json</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 </Project>
