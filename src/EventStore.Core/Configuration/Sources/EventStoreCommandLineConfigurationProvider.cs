@@ -13,8 +13,6 @@ namespace EventStore.Core.Configuration.Sources {
 			base.Load();
 
 			Data = Data.Keys
-				// // ignore args in subsections. we will use these for plugins.
-				// .Where(x => !x.Contains(':'))
 				.ToDictionary(
 					EventStoreConfigurationKeys.Normalize,
 					x => Data[x], OrdinalIgnoreCase
