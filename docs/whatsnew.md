@@ -77,20 +77,18 @@ The deprecated external TCP API has been removed in 24.2.0. This means that any 
 
 A number of configuration options have been removed as part of this. EventStoreDB will not start by default if any of the following options are present in the database configuration:
 
-```
-AdvertiseTcpPortToClientAs
-DisableExternalTcpTls
-EnableExternalTcp
-ExtHostAdvertiseAs
-ExtTcpHeartbeatInterval
-ExtTcpHeartbeatTimeout
-ExtTcpPort
-ExtTcpPortAdvertiseAs
-NodeHeartbeatInterval
-NodeHeartbeatTimeout
-NodeTcpPort
-NodeTcpPortAdvertiseAs
-```
+- `AdvertiseTcpPortToClientAs`
+- `DisableExternalTcpTls`
+- `EnableExternalTcp`
+- `ExtHostAdvertiseAs`
+- `ExtTcpHeartbeatInterval`
+- `ExtTcpHeartbeatTimeout`
+- `ExtTcpPort`
+- `ExtTcpPortAdvertiseAs`
+- `NodeHeartbeatInterval`
+- `NodeHeartbeatTimeout`
+- `NodeTcpPort`
+- `NodeTcpPortAdvertiseAs`
 
 The options for the internal TCP API (`ReplicationTcp*/IntTcp*`) are unchanged from version 23.10.0.
 
