@@ -1,4 +1,3 @@
-#pragma warning disable CS8846 // The switch expression does not handle all possible values of its input type (it is not exhaustive).
 #nullable enable
 
 using System;
@@ -11,17 +10,11 @@ using EventStore.Common.Utils;
 using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Util;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 
 namespace EventStore.Core.Configuration {
 	public static class EventStoreConfiguration {
 		public static IConfigurationRoot Build(string[] args, IDictionary environment,
 			KeyValuePair<string, string?>[] defaultValues) {
-			// identify the environment
-			var hostEnvironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ??
-			                      Environments.Development;
-
-			// TODO SS: should the host environment (production, development,...) affect the Cluster Dev mode by default? and/or vice-versa?
 
 			// resolve the main configuration file
 			var configFile = ResolveConfigurationFile(args, environment);
@@ -47,7 +40,7 @@ namespace EventStore.Core.Configuration {
 				// Load all json files in the  `config` subdirectory (if it exists) of each configuration
 				// directory. We use the subdirectory to ensure that we only load configuration files.
 				.AddEsdbConfigFiles("*.json")
-				.AddEsdbConfigFiles($"*.{hostEnvironment.ToLowerInvariant()}.json")
+
 				.AddEnvironmentVariables()
 				.AddEventStoreEnvironmentVariables(environment)
 
