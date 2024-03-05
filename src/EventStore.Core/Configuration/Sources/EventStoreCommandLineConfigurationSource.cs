@@ -3,8 +3,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.CommandLine;
-using static System.StringComparer;
 
 namespace EventStore.Core.Configuration.Sources {
 	public class EventStoreCommandLineConfigurationSource : IConfigurationSource {
@@ -39,26 +37,5 @@ namespace EventStore.Core.Configuration.Sources {
 
 		public IConfigurationProvider Build(IConfigurationBuilder builder) =>
 			new EventStoreCommandLineConfigurationProvider(Args);
-	}
-
-	public class EventStoreCommandLineConfigurationProvider(IEnumerable<string> args)
-		: CommandLineConfigurationProvider(args) {
-
-		public override void Load() {
-			base.Load();
-
-			Data = Data.Keys
-				// // ignore args in subsections. we will use these for plugins.
-				// .Where(x => !x.Contains(':'))
-				.ToDictionary(
-					EventStoreConfigurationKeys.Normalize,
-					x => Data[x], OrdinalIgnoreCase
-				);
-		}
-	}
-
-	public static class EventStoreCommandLineConfigurationExtensions {
-		public static IConfigurationBuilder AddEventStoreCommandLine(this IConfigurationBuilder builder, params string[] args) =>
-			builder.Add(new EventStoreCommandLineConfigurationSource(args));
 	}
 }
