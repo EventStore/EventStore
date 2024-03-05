@@ -9,10 +9,12 @@ using EventStore.Common.Configuration;
 using EventStore.Core.Configuration.Sources;
 using Microsoft.Extensions.Configuration;
 
-namespace EventStore.Core.Configuration {
-	public static class ConfigurationRootExtensions {
-		public static string? CheckProvidersForEnvironmentVariables(this IConfigurationRoot? configurationRoot, IEnumerable<Type> optionSections) {
-		if (configurationRoot == null) return null;
+namespace EventStore.Core.Configuration;
+
+public static class ConfigurationRootExtensions {
+	public static string? CheckProvidersForEnvironmentVariables(this IConfigurationRoot? configurationRoot, IEnumerable<Type> optionSections) {
+		if (configurationRoot == null)
+			return null;
 
 		var environmentOptionsOnly = optionSections.SelectMany(section => section.GetProperties())
 			.Where(option => option.GetCustomAttribute<EnvironmentOnlyAttribute>() != null)
@@ -25,10 +27,11 @@ namespace EventStore.Core.Configuration {
 			var source = provider.GetType();
 
 			if (source == typeof(EventStoreDefaultValuesConfigurationProvider) ||
-			    source == typeof(EventStoreEnvironmentVariablesConfigurationProvider))
+				source == typeof(EventStoreEnvironmentVariablesConfigurationProvider))
 				continue;
 
-			var errorDescriptions = from key in provider.GetChildKeys()
+			var errorDescriptions =
+				from key in provider.GetChildKeys()
 				from property in environmentOptionsOnly
 				where string.Equals(property.Name, key, StringComparison.CurrentCultureIgnoreCase)
 				select property.GetCustomAttribute<EnvironmentOnlyAttribute>()?.Message;
@@ -45,11 +48,10 @@ namespace EventStore.Core.Configuration {
 		return errorBuilder.Length != 0 ? errorBuilder.ToString() : null;
 	}
 
-		public static string GetString(this IConfiguration configurationRoot, string key) {
+	public static string GetString(this IConfiguration configurationRoot, string key) {
 		return configurationRoot.GetValue<string>(key) ?? string.Empty;
 	}
 
-		public static T BindOptions<T>(this IConfiguration configuration) where T : new() =>
-			configuration.Get<T>() ?? new T();
-	}
+	public static T BindOptions<T>(this IConfiguration configuration) where T : new() =>
+		configuration.Get<T>() ?? new T();
 }
