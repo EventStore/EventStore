@@ -6,7 +6,6 @@
 		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Humanizer.Core" Version="2.14.1" />
 		<PackageReference Include="SharpDotYaml.Extensions.Configuration" Version="0.3.0" />
 		<PackageReference Include="System.ComponentModel.Composition" Version="8.0.0" />
 	</ItemGroup>
