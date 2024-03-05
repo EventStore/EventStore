@@ -31,7 +31,6 @@ namespace EventStore.Core {
 			Metadata = typeof(ClusterVNodeOptions)
 				.GetProperties(BindingFlags.Public | BindingFlags.Instance)
 				.Where(prop => prop.GetCustomAttribute<OptionGroupAttribute>() != null)
-				// .Where(p => p.Name.EndsWith("Options", StringComparison.OrdinalIgnoreCase)
 				.Select(SectionMetadata.FromPropertyInfo)
 				.ToList();
 

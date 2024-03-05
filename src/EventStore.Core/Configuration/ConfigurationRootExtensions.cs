@@ -48,10 +48,6 @@ public static class ConfigurationRootExtensions {
 		return errorBuilder.Length != 0 ? errorBuilder.ToString() : null;
 	}
 
-	public static string GetString(this IConfiguration configurationRoot, string key) {
-		return configurationRoot.GetValue<string>(key) ?? string.Empty;
-	}
-
 	public static T BindOptions<T>(this IConfiguration configuration) where T : new() =>
 		configuration.Get<T>() ?? new T();
 }
