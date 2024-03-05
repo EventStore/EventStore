@@ -5,9 +5,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.Configuration.Sources {
 	public class EventStoreEnvironmentVariablesSource(IDictionary? environment = null) : IConfigurationSource {
-		private IDictionary? Environment { get; } = environment;
-
 		public IConfigurationProvider Build(IConfigurationBuilder builder) =>
-			new EventStoreEnvironmentVariablesConfigurationProvider(Environment);
+			new EventStoreEnvironmentVariablesConfigurationProvider(environment);
 	}
 }

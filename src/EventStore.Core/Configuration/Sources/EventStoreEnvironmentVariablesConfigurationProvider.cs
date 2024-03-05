@@ -11,17 +11,10 @@ namespace EventStore.Core.Configuration.Sources {
 
 		public override void Load() {
 			var data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-		
-			var enumerator = Environment.GetEnumerator();
-			try {
-				while (enumerator.MoveNext()) {
-					if (EventStoreConfigurationKeys.TryNormalizeEnvVar(enumerator.Entry.Key, out var normalizedKey)) 
-						data[normalizedKey] = enumerator.Entry.Value?.ToString();
-				}
-			}
-			finally {
-				if (enumerator is IDisposable disposable)
-					disposable.Dispose();
+
+			foreach (var k in Environment.Keys) {
+				if (EventStoreConfigurationKeys.TryNormalizeEnvVar(k, out var normalizedKey)) 
+					data[normalizedKey] = Environment[k]?.ToString();
 			}
 		
 			Data = data;
