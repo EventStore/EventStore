@@ -16,17 +16,17 @@ namespace EventStore.Core.Configuration.Sources {
 	}
 
 	public class EventStoreDefaultValuesConfigurationProvider(IEnumerable<KeyValuePair<string, string?>> initialData)
-		: MemoryConfigurationProvider(new() { InitialData = initialData }) {
-		private const string Prefix = "EventStore";
+		: MemoryConfigurationProvider(new(){
+			InitialData = initialData.ToDictionary(
+				kvp => $"{Prefix}:{kvp.Key}",
+				kvp => kvp.Value,
+				OrdinalIgnoreCase)
+		}) {
 
-		public override void Load() =>
-			Data = Data.Keys.ToDictionary(key => $"{Prefix}:{key}", x => Data[x], OrdinalIgnoreCase);
+		private const string Prefix = "EventStore";
 	}
 
 	public static class EventStoreDefaultValuesConfigurationExtensions {
-		// public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder configurationBuilder) =>
-		// 	configurationBuilder.Add(new EventStoreDefaultValuesConfigurationSource());
-
 		public static IConfigurationBuilder AddEventStoreDefaultValues(this IConfigurationBuilder configurationBuilder,
 			IEnumerable<KeyValuePair<string, string?>> initialData) =>
 			configurationBuilder.Add(new EventStoreDefaultValuesConfigurationSource(initialData));
