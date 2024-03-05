@@ -1,7 +1,5 @@
 // ReSharper disable CheckNamespace
 
-#nullable enable
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,12 +12,13 @@ using EventStore.Core.Configuration;
 using EventStore.Core.Configuration.Sources;
 using Microsoft.Extensions.Configuration;
 
+#nullable enable
 namespace EventStore.Core {
 	public partial record ClusterVNodeOptions {
-		public static readonly IEnumerable<Type> OptionSections;
+		private static readonly IEnumerable<Type> OptionSections;
 		public static readonly string HelpText;
+		public string GetComponentName() => $"{Interface.NodeIp}-{Interface.NodePort}-cluster-node";
 		public static readonly List<SectionMetadata> Metadata;
-		public static readonly IEnumerable<KeyValuePair<string, object?>> DefaultValues;
 
 		static ClusterVNodeOptions() {
 			OptionSections = typeof(ClusterVNodeOptions)
@@ -37,30 +36,26 @@ namespace EventStore.Core {
 				.ToList();
 
 			DefaultValues = OptionSections.SelectMany(GetDefaultValues);
-
-			return;
-
-			static IEnumerable<KeyValuePair<string, object?>> GetDefaultValues(Type type) {
-				var defaultInstance = Activator.CreateInstance(type)!;
-
-				return type.GetProperties().Select(property =>
-					new KeyValuePair<string, object?>(property.Name, property.PropertyType switch {
-						{ IsArray: true } => string.Join(",",
-							((Array)(property.GetValue(defaultInstance) ?? Array.Empty<object>())).OfType<object>()),
-						_ => property.GetValue(defaultInstance)
-					}));
-			}
 		}
+
+		public static IEnumerable<KeyValuePair<string, object?>> DefaultValues { get; }
+
+		private static IEnumerable<KeyValuePair<string, object?>> GetDefaultValues(Type type) {
+			var defaultInstance = Activator.CreateInstance(type)!;
+
+			return type.GetProperties().Select(property =>
+				new KeyValuePair<string, object?>(property.Name, property.PropertyType switch {
+					{IsArray: true} => string.Join(",",
+						((Array)(property.GetValue(defaultInstance) ?? Array.Empty<object>())).OfType<object>()),
+					_ => property.GetValue(defaultInstance)
+				}));
+		}
+
+		public string? DumpOptions() =>
+			ConfigurationRoot == null ? null : ClusterVNodeOptionsPrinter.Print(LoadedOptions);
 
 		public IReadOnlyDictionary<string, LoadedOption> LoadedOptions { get; init; } =
 			new Dictionary<string, LoadedOption>();
-
-		public string GetComponentName() => $"{Interface.NodeIp}-{Interface.NodePort}-cluster-node";
-
-		public string? DumpOptions() =>
-			ConfigurationRoot != null
-				? ClusterVNodeOptionsPrinter.Print(LoadedOptions)
-				: null;
 
 		public string? GetDeprecationWarnings() {
 			var defaultValues = new Dictionary<string, object?>(DefaultValues, StringComparer.OrdinalIgnoreCase);
@@ -72,11 +67,10 @@ namespace EventStore.Core {
 				let value = ConfigurationRoot?.GetValue<string?>(option.Name)
 				where defaultValues.TryGetValue(option.Name, out var defaultValue)
 				      && !string.Equals(value, defaultValue?.ToString(), StringComparison.OrdinalIgnoreCase)
-				select deprecationWarning;
+				      select deprecationWarning;
 
 			var builder = deprecationWarnings
-				.Aggregate<string, StringBuilder>(new StringBuilder(),
-					(builder, deprecationWarning) => builder.AppendLine(deprecationWarning));
+				.Aggregate(new StringBuilder(), (builder, deprecationWarning) => builder.AppendLine(deprecationWarning));
 
 			return builder.Length != 0 ? builder.ToString() : null;
 		}
@@ -111,12 +105,6 @@ namespace EventStore.Core {
 
 			return printableOptions;
 
-			static string CombineByPascalCase(string name, string token = " ") {
-				var regex = new System.Text.RegularExpressions.Regex(
-					@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
-				return regex.Replace(name, token);
-			}
-
 			static string GetSourceDisplayName(Type source) {
 				var name = source == typeof(EventStoreDefaultValuesConfigurationProvider)
 					? "<DEFAULT>"
@@ -141,7 +129,7 @@ namespace EventStore.Core {
 				OptionHeaderColumnWidth(o.Name, DefaultValue(o)));
 
 			var header = $"{OPTION.PadRight(optionColumnWidth, ' ')}{DESCRIPTION}";
-
+			
 			var environmentOnlyOptions = OptionSections.SelectMany(section => section.GetProperties())
 				.Where(option => option.GetCustomAttribute<EnvironmentOnlyAttribute>() != null)
 				.Select(option => option)
@@ -149,8 +137,7 @@ namespace EventStore.Core {
 
 			var environmentOnlyOptionsBuilder = environmentOnlyOptions
 				.Aggregate(new StringBuilder(),
-					(builder, property) =>
-						builder.Append(GetEnvironmentOption(property, optionColumnWidth)).AppendLine())
+					(builder, property) => builder.Append(GetEnvironmentOption(property, optionColumnWidth)).AppendLine())
 				.ToString();
 
 			var options = Options().Where(option =>
@@ -166,7 +153,7 @@ namespace EventStore.Core {
 						(stringBuilder, property) => stringBuilder.Append(Line(property)).AppendLine()))
 				.AppendLine().AppendLine("EnvironmentOnly Options").Append(environmentOnlyOptionsBuilder)
 				.ToString();
-
+			
 
 			string Line(PropertyInfo property) {
 				var description = property.GetCustomAttribute<DescriptionAttribute>()?.Description;
@@ -188,7 +175,7 @@ namespace EventStore.Core {
 
 				return builder.ToString();
 			}
-
+			
 			static IEnumerable<PropertyInfo> Options() => OptionSections.SelectMany(type => type.GetProperties());
 
 			static int OptionWidth(string name, string @default) =>
@@ -202,8 +189,8 @@ namespace EventStore.Core {
 				return (value, Runtime.IsWindows) switch {
 					(bool b, false) => b.ToString().ToLower(),
 					(bool b, true) => b.ToString(),
-					(Array { Length: 0 }, _) => string.Empty,
-					(Array { Length: > 0 } a, _) => string.Join(",", a.OfType<object>()),
+					(Array {Length: 0}, _) => string.Empty,
+					(Array {Length: >0} a, _) => string.Join(",", a.OfType<object>()),
 					_ => value?.ToString() ?? string.Empty
 				};
 			}
@@ -231,99 +218,16 @@ namespace EventStore.Core {
 
 				return builder.ToString().PadRight(optionColumnWidth, ' ') + description;
 
-				static string CombineByPascalCase(string name, string token = " ") {
-					var regex = new System.Text.RegularExpressions.Regex(
-						@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
-					return regex.Replace(name, token);
-				}
 			}
+		}
+
+		static string CombineByPascalCase(string name, string token = " ") {
+			var regex = new System.Text.RegularExpressions.Regex(
+				@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
+			return regex.Replace(name, token);
 		}
 
 		[AttributeUsage(AttributeTargets.Property)]
 		internal class OptionGroupAttribute : Attribute;
-	}
-
-	public record SectionMetadata(
-		string Key,
-		string SectionName,
-		string Description,
-		Type SectionType,
-		Dictionary<string, OptionMetadata> Options,
-		int Sequence) {
-		public static SectionMetadata FromPropertyInfo(PropertyInfo property, int sequence) {
-			var name = property.Name.Replace("Options", String.Empty);
-			var key = EventStoreConfigurationKeys.Normalize(name);
-			var description = property.PropertyType.GetCustomAttribute<DescriptionAttribute>()?.Description ??
-			                  String.Empty;
-
-			var options = property.PropertyType.GetProperties()
-				.Select(OptionMetadata.FromPropertyInfo)
-				.ToDictionary(option => option.Key, x => x);
-
-			return new(
-				Key: key,
-				SectionName: name,
-				Description: description,
-				SectionType: property.PropertyType,
-				Options: options,
-				Sequence: sequence
-			);
-		}
-	}
-
-	public record OptionMetadata(
-		string Key,
-		string FullKey,
-		string Name,
-		string Description,
-		string SectionName,
-		string[] AllowedValues,
-		bool IsSensitive,
-		bool IsEnvironmentOnly,
-		string? ErrorMessage,
-		int Sequence) {
-		public override string ToString() => FullKey;
-
-		public static OptionMetadata FromPropertyInfo(PropertyInfo property, int sequence) {
-			var sectionName = property.DeclaringType?.Name.Replace("Options", "") ?? String.Empty;
-			var key = EventStoreConfigurationKeys.Normalize(property.Name);
-			var fullKey =
-				$"EventStore:{sectionName}:{EventStoreConfigurationKeys.StripConfigurationPrefix(property.Name)}";
-
-			var description = property.GetCustomAttribute<DescriptionAttribute>()?.Description ?? String.Empty;
-			var isSensitive = property.GetCustomAttribute<SensitiveAttribute>() != null;
-
-			var environmentOnlyAttribute = property.GetCustomAttribute<EnvironmentOnlyAttribute>();
-			var isEnvironmentOnly = environmentOnlyAttribute != null;
-			var errorMessage = environmentOnlyAttribute?.Message;
-
-			string[] allowedValues = property.PropertyType.IsEnum
-				? property.PropertyType.GetEnumNames()
-				: [];
-
-			return new(
-				Key: key,
-				FullKey: fullKey,
-				Name: property.Name,
-				Description: description,
-				SectionName: sectionName,
-				AllowedValues: allowedValues,
-				IsSensitive: isSensitive,
-				IsEnvironmentOnly: isEnvironmentOnly,
-				ErrorMessage: errorMessage,
-				Sequence: sequence
-			);
-		}
-	}
-
-	public record LoadedOption(
-		OptionMetadata Metadata,
-		string Title,
-		string? Value,
-		string SourceDisplayName,
-		bool IsDefault) {
-		public string DisplayValue { get; } = Metadata.IsSensitive ? new('*', 8) : Value ?? string.Empty;
-
-		public override string ToString() => DisplayValue;
 	}
 }
