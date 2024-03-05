@@ -28,7 +28,6 @@ namespace EventStore.Core.Configuration.Sources {
 			Data = string.IsNullOrWhiteSpace(prefix)
 				? parsed
 				: parsed.ToDictionary(kvp => $"{prefix}:{kvp.Key}", kvp => kvp.Value, OrdinalIgnoreCase);
-			}
 		}
 	}
 
