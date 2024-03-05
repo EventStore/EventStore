@@ -115,8 +115,7 @@ namespace EventStore.Core {
 
 			[Description("Configuration files.")]
 			public string Config { get; init; } =
-				Path.Combine(Locations.DefaultConfigurationDirectory,
-					DefaultFiles.DefaultConfigFile); //TODO SS: rethink this...
+				Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile);
 
 			[Description("Print effective configuration to console and then exit.")]
 			public bool WhatIf { get; init; } = false;

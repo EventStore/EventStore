@@ -71,7 +71,7 @@ namespace EventStore.Core.Configuration {
 
 			return string.IsNullOrEmpty(configFilePath)
 				// get the default config file path
-				? (Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile), true)
+				? (new ClusterVNodeOptions.ApplicationOptions().Config, true)
 				// if the user has specified a config file make it non optional
 				: (configFilePath, false);
 		}
