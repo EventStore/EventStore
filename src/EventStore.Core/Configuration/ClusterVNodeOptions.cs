@@ -685,6 +685,7 @@ namespace EventStore.Core {
 			[Description("Enable AtomPub over HTTP Interface."),
 			 Deprecated("AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]
 			public bool EnableAtomPubOverHttp { get; init; } = false;
+#pragma warning restore 0618
 		}
 
 		[Description("Projection Options")]
