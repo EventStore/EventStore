@@ -3,7 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
-namespace EventStore.Core.Tests.Configuration {
+namespace EventStore.Core.XUnit.Tests.Configuration {
 	public class CommandLineConfigurationSourceTests {
 		[Theory]
 		[InlineData(new[] { "--stream_info_cache_capacity=99" }, "EventStore:StreamInfoCacheCapacity", "99")]

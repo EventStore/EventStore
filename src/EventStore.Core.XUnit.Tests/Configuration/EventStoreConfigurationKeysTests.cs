@@ -4,7 +4,7 @@ using EventStore.Core.Configuration.Sources;
 using FluentAssertions;
 using Xunit;
 
-namespace EventStore.Core.Tests.Configuration {
+namespace EventStore.Core.XUnit.Tests.Configuration {
 	public class EventStoreConfigurationKeysTests {
 		[Theory]
 		[InlineData("EVENTSTORE_StreamInfoCacheCapacity", "EventStore:StreamInfoCacheCapacity")]

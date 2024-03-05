@@ -4,7 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
-namespace EventStore.Core.Tests.Configuration {
+namespace EventStore.Core.XUnit.Tests.Configuration {
 	public class DefaultValuesConfigurationSourceTests {
 		[Fact]
 		public void Adds() {
