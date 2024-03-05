@@ -39,6 +39,7 @@ namespace EventStore.Core.Configuration.Sources {
 			AllKnownKeys = SectionKeys.Concat(OptionsKeys).Distinct(StringComparer.InvariantCultureIgnoreCase).ToList();
 		}
 
+		// outputs a key for IConfiguration e.g. EventStore:StreamInfoCacheCapacity
 		public static string Normalize(string key) {
 			// if the key doesn't contain any delimiters,
 			// we can just get out, transforming the key
@@ -66,7 +67,6 @@ namespace EventStore.Core.Configuration.Sources {
 				Join(Empty, key
 					.ToLowerInvariant()
 					.Split(EnvVarWordDelimiter)
-					.Select(x => x)
 					.Select(word => new string(word.Select((c, i) => i == 0 ? char.ToUpper(c) : c).ToArray()))
 				);
 		}
@@ -74,8 +74,13 @@ namespace EventStore.Core.Configuration.Sources {
 		/// <summary>
 		/// Determines if the given key is an event store environment variable.
 		/// </summary>
-		public static bool IsEventStoreEnvVar(string? key) =>
-			key?.StartsWith($"{Prefix}{EnvVarWordDelimiter}", OrdinalIgnoreCase) ?? false;
+		public static bool IsEventStoreEnvVar(string? key) {
+			if (key is null)
+				return false;
+
+			return key.StartsWith($"{Prefix}{EnvVarWordDelimiter}", OrdinalIgnoreCase) &&
+				  !key.StartsWith($"{Prefix}{EnvVarWordDelimiter}{EnvVarWordDelimiter}", OrdinalIgnoreCase);
+		}
 
 		/// <summary>
 		/// Only normalizes the given key if it is an event store environment variable.
