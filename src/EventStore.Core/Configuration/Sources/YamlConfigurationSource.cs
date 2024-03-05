@@ -10,7 +10,7 @@ using static System.StringComparer;
 
 namespace EventStore.Core.Configuration.Sources {
 	public class YamlConfigurationSource : FileConfigurationSource {
-		public string? Prefix { get; set; }
+		public string? Prefix { get; init; }
 
 		public override IConfigurationProvider Build(IConfigurationBuilder builder) {
 			FileProvider ??= builder.GetFileProvider();
@@ -20,14 +20,14 @@ namespace EventStore.Core.Configuration.Sources {
 
 	internal class YamlConfigurationProvider(YamlConfigurationSource configurationSource)
 		: FileConfigurationProvider(configurationSource) {
+
 		public override void Load(Stream stream) {
-			Data = new YamlConfigurationFileParser().Parse(stream);
+			var parsed = new YamlConfigurationFileParser().Parse(stream);
+			var prefix = configurationSource.Prefix;
 
-			var prefix = ((YamlConfigurationSource)Source).Prefix;
-
-			if (prefix is not null) {
-				Data = Data.Keys
-					.ToDictionary(key => $"{prefix}:{key}", x => Data[x], OrdinalIgnoreCase);
+			Data = string.IsNullOrWhiteSpace(prefix)
+				? parsed
+				: parsed.ToDictionary(kvp => $"{prefix}:{kvp.Key}", kvp => kvp.Value, OrdinalIgnoreCase);
 			}
 		}
 	}
