@@ -64,21 +64,30 @@ namespace EventStore.Core.XUnit.Tests.Configuration {
 
 		[Fact]
 		public void loaded_option_provided_by_another_source_shows_the_correct_source() {
-			var expectedValue = LogLevel.Information.ToString();
-			var expectedSourceDisplayName = "(Command Line)";
-
 			var config = new ConfigurationBuilder()
 				.AddEventStoreDefaultValues()
-				.AddEventStoreEnvironmentVariables(("EVENTSTORE_LOG_LEVEL", LogLevel.Fatal.ToString()))
-				.AddEventStoreCommandLine($"--log-level={expectedValue}")
+				.AddEventStoreEnvironmentVariables(
+					("EVENTSTORE_CLUSTER_SIZE", "15"),
+					("EVENTSTORE_LOG_LEVEL", "Fatal"))
+				.AddEventStoreCommandLine($"--log-level=Information")
 				.Build();
 
 			var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
 
-			var option = loadedOptions["EventStore:LogLevel"];
+			// default
+			var insecure = loadedOptions["EventStore:Insecure"];
+			insecure.Value.Should().BeEquivalentTo("false");
+			insecure.SourceDisplayName.Should().BeEquivalentTo("(<DEFAULT>)");
 
-			option.Value.Should().BeEquivalentTo(expectedValue);
-			option.SourceDisplayName.Should().BeEquivalentTo(expectedSourceDisplayName);
+			// environment variables
+			var clusterSize = loadedOptions["EventStore:ClusterSize"];
+			clusterSize.Value.Should().BeEquivalentTo("15");
+			clusterSize.SourceDisplayName.Should().BeEquivalentTo("(Environment Variables)");
+
+			// command line
+			var logLevel = loadedOptions["EventStore:LogLevel"];
+			logLevel.Value.Should().BeEquivalentTo("Information");
+			logLevel.SourceDisplayName.Should().BeEquivalentTo("(Command Line)");
 		}
 	}
 }
