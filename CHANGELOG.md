@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/4151 [EventStore#4166](https://github.com/EventStore/EventStore/pull/4166)
 - //github.com/EventStore/EventStore/pull/4180 [EventStore#4181](https://github.com/EventStore/EventStore/pull/4181)
 - //github.com/EventStore/EventStore/pull/4182 [EventStore#4183](https://github.com/EventStore/EventStore/pull/4183)
+- //github.com/EventStore/EventStore/pull/4184 [EventStore#4185](https://github.com/EventStore/EventStore/pull/4185)
 
 ## [24.2.0] - 2024-02-25
 
