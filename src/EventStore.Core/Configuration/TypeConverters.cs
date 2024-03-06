@@ -7,18 +7,14 @@ using System.Linq;
 using System.Net;
 
 namespace EventStore.Core.Configuration {
-	public class GossipEndPointConverter : StringConverter {
-		public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => true;
+	public class GossipEndPointConverter : TypeConverter {
+		public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+			sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
 
-		public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) {
-			try {
-				return value is string stringValue
-					? ParseGossipEndPoint(stringValue)
-					: base.ConvertFrom(context, culture, value);
-			} catch (Exception) {
-				return base.ConvertFrom(context, culture, value);
-			}
-		}
+		public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+			value is string stringValue
+				? ParseGossipEndPoint(stringValue)
+				: base.ConvertFrom(context, culture, value);
 
 		private static EndPoint ParseGossipEndPoint(string value) {
 			var parts = value.Split(':', 2);
@@ -45,7 +41,7 @@ namespace EventStore.Core.Configuration {
 
 		public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) {
 			if (value is not string stringValue)
-				return base.ConvertFrom(context, culture, value!);
+				return base.ConvertFrom(context, culture, value);
 
 			if (stringValue.Any(c => InvalidDelimiters.Contains(c)))
 				throw new ArgumentException($"Invalid delimiter for gossip seed value: {stringValue}");

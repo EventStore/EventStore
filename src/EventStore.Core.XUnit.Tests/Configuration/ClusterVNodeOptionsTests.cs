@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
+using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Core.Configuration;
 using EventStore.Core.Configuration.Sources;
@@ -140,12 +141,45 @@ namespace EventStore.Core.XUnit.Tests.Configuration {
 			var values = string.Join(",", endpoints.Select(x => $"{x}"));
 
 			var config = new ConfigurationBuilder()
-				.AddEventStoreEnvironmentVariables(("EVENTSTORE_GOSSIPSEED", values))
+				.AddEventStoreEnvironmentVariables(("EVENTSTORE_GOSSIP_SEED", values))
 				.Build();
 
 			var options = ClusterVNodeOptions.FromConfiguration(config);
 
 			options.Cluster.GossipSeed.Should().BeEquivalentTo(endpoints);
+		}
+
+		[Theory]
+		[InlineData("127.0.0.1", "You must specify the ports in the gossip seed.")]
+		[InlineData("127.0.0.1:3.1415", "Invalid format for gossip seed port: 3.1415.")]
+		[InlineData("hostA;hostB", "Invalid delimiter for gossip seed value: hostA;hostB.")]
+		[InlineData("hostA\thostB", "Invalid delimiter for gossip seed value: hostA\thostB.")]
+		public void reports_gossip_seed_errors(string gossipSeed, string expectedError) {
+			var config = new ConfigurationBuilder()
+				.AddEventStoreEnvironmentVariables(("EVENTSTORE_GOSSIP_SEED", gossipSeed))
+				.Build();
+
+			var ex = Assert.Throws<InvalidConfigurationException>(() =>
+				ClusterVNodeOptions.FromConfiguration(config));
+
+			Assert.Equal(
+				"Failed to convert configuration value at 'EventStore:GossipSeed' to type 'System.Net.EndPoint[]'. " + expectedError,
+				ex.Message);
+		}
+
+		[Theory]
+		[InlineData("127.0.0.1.0", "An invalid IP address was specified.")]
+		public void reports_ip_address_errors(string nodeIp, string expectedError) {
+			var config = new ConfigurationBuilder()
+				.AddEventStoreEnvironmentVariables(("EVENTSTORE_NODE_IP", nodeIp))
+				.Build();
+
+			var ex = Assert.Throws<InvalidConfigurationException>(() =>
+				ClusterVNodeOptions.FromConfiguration(config));
+
+			Assert.Equal(
+				"Failed to convert configuration value at 'EventStore:NodeIp' to type 'System.Net.IPAddress'. " + expectedError,
+				ex.Message);
 		}
 
 		[Fact]
