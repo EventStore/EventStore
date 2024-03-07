@@ -63,9 +63,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class
-		with_dns_discovery_disabled_and_gossip_seeds_defined<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat,
-		TStreamId> {
+	public class with_dns_discovery_disabled_and_gossip_seeds_defined<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		private EndPoint[] _gossipSeeds = {
 			new DnsEndPoint("127.0.1.10", 1111),
 			new DnsEndPoint("127.0.1.10", 1112),
@@ -106,9 +104,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class
-		with_custom_external_ip_address_as_advertise_info<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat,
-		TStreamId> {
+	public class with_custom_external_ip_address_as_advertise_info<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
 			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
@@ -132,16 +128,13 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 		[Test]
 		public void should_set_the_loopback_address_as_advertise_info_for_internal() {
-			Assert.AreEqual(new DnsEndPoint(IPAddress.Loopback.ToString(), 11120),
-				_node.GossipAdvertiseInfo.InternalTcp);
+			Assert.AreEqual(new DnsEndPoint(IPAddress.Loopback.ToString(), 11120), _node.GossipAdvertiseInfo.InternalTcp);
 		}
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class
-		with_0_0_0_0_as_external_ip_address_and_custom_advertise_info<TLogFormat, TStreamId> : ClusterMemberScenario<
-		TLogFormat, TStreamId> {
+	public class with_0_0_0_0_as_external_ip_address_and_custom_advertise_info<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
 			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
@@ -171,9 +164,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class
-		with_0_0_0_0_as_external_ip_address_with_no_explicit_advertise_info_set<TLogFormat, TStreamId> :
-		ClusterMemberScenario<TLogFormat, TStreamId> {
+	public class with_0_0_0_0_as_external_ip_address_with_no_explicit_advertise_info_set<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
 			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
@@ -195,16 +186,14 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 		[Test]
 		public void should_use_loopback_ip_as_advertise_info_for_internal() {
-			Assert.AreEqual(new DnsEndPoint(IPAddress.Loopback.ToString(), 11120),
-				_node.GossipAdvertiseInfo.InternalTcp);
+			Assert.AreEqual(new DnsEndPoint(IPAddress.Loopback.ToString(), 11120), _node.GossipAdvertiseInfo.InternalTcp);
 		}
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
-		with_0_0_0_0_for_internal_and_external_ips_with_advertise_info_set_for_external<TLogFormat, TStreamId> :
-		ClusterMemberScenario<TLogFormat, TStreamId> {
+		with_0_0_0_0_for_internal_and_external_ips_with_advertise_info_set_for_external<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
 			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
@@ -236,16 +225,13 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class
-		with_cluster_custom_password_for_admin_and_ops_user<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat,
-		TStreamId> {
+	public class with_cluster_custom_password_for_admin_and_ops_user<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		private const string _adminPassword = "Admin";
 		private const string _opsPassword = "Ops";
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options with {
-				DefaultUser = new ClusterVNodeOptions.DefaultUserOptions
-					{ DefaultAdminPassword = _adminPassword, DefaultOpsPassword = _opsPassword }
+				DefaultUser = new ClusterVNodeOptions.DefaultUserOptions { DefaultAdminPassword = _adminPassword, DefaultOpsPassword = _opsPassword }
 			};
 
 		[Test]
@@ -257,8 +243,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class with_cluster_custom_settings_check_for_environment_only_options<TLogFormat, TStreamId> :
-		SingleNodeScenario<TLogFormat,
+	public class with_cluster_custom_settings_check_for_environment_only_options<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat,
 			TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options with {

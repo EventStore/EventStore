@@ -52,8 +52,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 			Assert.AreEqual(false, _options.Application.EnableHistograms, "EnableHistograms");
 			Assert.AreEqual(false, _options.Application.DisableHttpCaching, "DisableHTTPCaching");
 			Assert.AreEqual(false, _options.Database.SkipDbVerify, "VerifyDbHash");
-			Assert.AreEqual(TFConsts.MinFlushDelayMs.TotalMilliseconds, _options.Database.MinFlushDelayMs,
-				"MinFlushDelay");
+			Assert.AreEqual(TFConsts.MinFlushDelayMs.TotalMilliseconds, _options.Database.MinFlushDelayMs, "MinFlushDelay");
 			Assert.AreEqual(30, _options.Database.ScavengeHistoryMaxAge,
 				"ScavengeHistoryMaxAge");
 			Assert.AreEqual(false, _options.Database.DisableScavengeMerging,
@@ -83,8 +82,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class
-		with_default_node_as_node_in_a_cluster<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
+	public class with_default_node_as_node_in_a_cluster<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		[Test]
 		public void should_create_single_cluster_node() {
 			Assert.IsNotNull(_node);
@@ -123,9 +121,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class
-		with_default_node_as_node_in_an_insecure_cluster<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat,
-		TStreamId> {
+	public class with_default_node_as_node_in_an_insecure_cluster<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		[Test]
 		public void should_create_single_cluster_node() {
 			Assert.IsNotNull(_node);
