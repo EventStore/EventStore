@@ -116,7 +116,7 @@ namespace EventStore.Core {
 				return $"({name})";
 			}
 
-			string GetTitle(KeyValuePair<string, OptionMetadata> option) =>
+			static string GetTitle(KeyValuePair<string, OptionMetadata> option) =>
 				CombineByPascalCase(EventStoreConfigurationKeys.StripConfigurationPrefix(option.Value.Key)).ToUpper();
 		}
 

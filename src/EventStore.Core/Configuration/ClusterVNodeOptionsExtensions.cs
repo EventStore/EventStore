@@ -6,7 +6,6 @@ using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Utils;
-using EventStore.Core.Configuration;
 using EventStore.Plugins.Subsystems;
 using Serilog;
 

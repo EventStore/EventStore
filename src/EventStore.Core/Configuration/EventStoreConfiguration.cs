@@ -13,8 +13,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.Configuration {
 	public static class EventStoreConfiguration {
-		public static IConfigurationRoot Build(string[] args, IDictionary environment,
-			KeyValuePair<string, string?>[] defaultValues) {
+		public static IConfigurationRoot Build(string[] args, IDictionary environment) {
 
 			// resolve the main configuration file
 			var configFile = ResolveConfigurationFile(args, environment);
@@ -28,7 +27,7 @@ namespace EventStore.Core.Configuration {
 			// - logconfig.json is not located in a config/ directory
 			var builder = new ConfigurationBuilder()
 				// we should be able to stop doing this soon as long as we bind the options automatically
-				.AddEventStoreDefaultValues(defaultValues)
+				.AddEventStoreDefaultValues()
 				.AddEventStoreYamlConfigFile(configFile.Path, configFile.Optional)
 
 				.AddSection("EventStore:Metrics", x => x.AddEsdbConfigFile("metricsconfig.json", true, true))
@@ -53,12 +52,7 @@ namespace EventStore.Core.Configuration {
 
 		public static IConfigurationRoot Build(params string[] args) {
 			var environment = Environment.GetEnvironmentVariables();
-
-			var defaultValues = ClusterVNodeOptions.DefaultValues
-				.Select(x => new KeyValuePair<string, string?>(x.Key, x.Value?.ToString()))
-				.ToArray();
-
-			return Build(args, environment, defaultValues);
+			return Build(args, environment);
 		}
 
 		private static (string Path, bool Optional) ResolveConfigurationFile(string[] args, IDictionary environment) {
