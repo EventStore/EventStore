@@ -13,16 +13,16 @@ namespace EventStore.Core.XUnit.Tests.Configuration {
 		
 			// Act
 			var configuration = new ConfigurationBuilder()
-				.AddEventStoreDefaultValues(defaults)
+				.AddEventStoreDefaultValues()
 				.Build()
 				.GetSection(EventStoreConfigurationKeys.Prefix);
 		
 			// Assert
-			foreach (var (key, value) in defaults) {
-				configuration.GetValue<object>(key)
-					?.ToString()
+			foreach (var (key, expectedValue) in defaults) {
+				var actualValue = configuration.GetValue<object>(key)?.ToString();
+				actualValue
 					.Should()
-					.BeEquivalentTo(value?.ToString(), $"because {key} should be {value}");
+					.BeEquivalentTo(expectedValue?.ToString(), $"because {key} should be {expectedValue}");
 			}
 		}
 	}
