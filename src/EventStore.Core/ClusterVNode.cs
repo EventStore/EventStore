@@ -1912,13 +1912,13 @@ namespace EventStore.Core {
 		}
 
 		private void ReloadLogOptions(ClusterVNodeOptions options) {
-			if (options.Log.LogLevel != LogLevel.Default) {
-				var changed = EventStoreLoggerConfiguration.AdjustMinimumLogLevel(options.Log.LogLevel);
+			if (options.Logging.LogLevel != LogLevel.Default) {
+				var changed = EventStoreLoggerConfiguration.AdjustMinimumLogLevel(options.Logging.LogLevel);
 				if (changed) {
-					Log.Information($"The log level was adjusted to: {options.Log.LogLevel}");
+					Log.Information($"The log level was adjusted to: {options.Logging.LogLevel}");
 
-					if (options.Log.LogLevel > LogLevel.Information) {
-						Console.WriteLine($"The log level was adjusted to: {options.Log.LogLevel}");
+					if (options.Logging.LogLevel > LogLevel.Information) {
+						Console.WriteLine($"The log level was adjusted to: {options.Logging.LogLevel}");
 					}
 				}
 			}

@@ -38,17 +38,17 @@ namespace EventStore.ClusterNode {
 			try {
 				var options = ClusterVNodeOptions.FromConfiguration(configuration);
 				
-				var logsDirectory = string.IsNullOrWhiteSpace(options.Log.Log)
+				var logsDirectory = string.IsNullOrWhiteSpace(options.Logging.Log)
 					? Locations.DefaultLogDirectory
-					: options.Log.Log;
+					: options.Logging.Log;
 
 				EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName(),
-					options.Log.LogConsoleFormat,
-					options.Log.LogFileSize,
-					options.Log.LogFileInterval,
-					options.Log.LogFileRetentionCount,
-					options.Log.DisableLogFile,
-					options.Log.LogConfig);
+					options.Logging.LogConsoleFormat,
+					options.Logging.LogFileSize,
+					options.Logging.LogFileInterval,
+					options.Logging.LogFileRetentionCount,
+					options.Logging.DisableLogFile,
+					options.Logging.LogConfig);
 
 				if (options.Application.Help) {
 					await Console.Out.WriteLineAsync(ClusterVNodeOptions.HelpText);

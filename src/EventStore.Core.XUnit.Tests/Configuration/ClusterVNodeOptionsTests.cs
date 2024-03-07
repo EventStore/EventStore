@@ -225,7 +225,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration {
 
 			var options = ClusterVNodeOptions.FromConfiguration(config);
 
-			options.Log.LogLevel.Should().Be(LogLevel.Fatal);
+			options.Logging.LogLevel.Should().Be(LogLevel.Fatal);
 		}
 	}
 }

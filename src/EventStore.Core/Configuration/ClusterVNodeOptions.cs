@@ -32,7 +32,7 @@ namespace EventStore.Core {
 		[OptionGroup] public ApplicationOptions Application { get; init; } = new();
 		[OptionGroup] public DevModeOptions DevMode { get; init; } = new();
 		[OptionGroup] public DefaultUserOptions DefaultUser { get; init; } = new();
-		[OptionGroup] public LogOptions Log { get; init; } = new();
+		[OptionGroup] public LoggingOptions Logging { get; init; } = new();
 		[OptionGroup] public AuthOptions Auth { get; init; } = new();
 		[OptionGroup] public CertificateOptions Certificate { get; init; } = new();
 		[OptionGroup] public CertificateFileOptions CertificateFile { get; init; } = new();
@@ -68,7 +68,7 @@ namespace EventStore.Core {
 				Application = configuration.BindOptions<ApplicationOptions>(),
 				DevMode = configuration.BindOptions<DevModeOptions>(),
 				DefaultUser = configuration.BindOptions<DefaultUserOptions>(),
-				Log = configuration.BindOptions<LogOptions>(),
+				Logging = configuration.BindOptions<LoggingOptions>(),
 				Auth = configuration.BindOptions<AuthOptions>(),
 				Certificate = configuration.BindOptions<CertificateOptions>(),
 				CertificateFile = configuration.BindOptions<CertificateFileOptions>(),
@@ -164,7 +164,7 @@ namespace EventStore.Core {
 		}
 
 		[Description("Logging Options")]
-		public record LogOptions {
+		public record LoggingOptions {
 			[Description("Path where to keep log files.")]
 			public string Log { get; init; } = Locations.DefaultLogDirectory;
 
