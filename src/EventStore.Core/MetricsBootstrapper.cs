@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Net;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Index;
@@ -61,10 +62,11 @@ public class GossipTrackers {
 public static class MetricsBootstrapper {
 	private static readonly ILogger Log = Serilog.Log.ForContext(typeof(MetricsBootstrapper));
 
-	public static void Bootstrap(
-		Conf conf,
+	public static void Bootstrap(Conf conf,
 		TFChunkDbConfig dbConfig,
-		Trackers trackers) {
+		Trackers trackers,
+		Guid instanceId,
+		DnsEndPoint httpEndPoint) {
 
 		LogConfig(conf);
 
