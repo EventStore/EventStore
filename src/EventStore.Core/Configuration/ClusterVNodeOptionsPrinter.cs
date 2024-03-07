@@ -22,7 +22,7 @@ public static class ClusterVNodeOptionsPrinter {
 
 		foreach (var section in ClusterVNodeOptions.Metadata.OrderBy(x => x.SectionName)) {
 			var options = loadedOptions
-				.Where(x => x.Value.Metadata.SectionName == section.SectionName).ToList();
+				.Where(x => x.Value.Metadata.SectionMetadata.SectionName == section.SectionName).ToList();
 
 			var firstOption = true;
 

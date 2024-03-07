@@ -14,15 +14,14 @@ public record OptionMetadata(
 	string Key,
 	string Name,
 	string Description,
-	string SectionName,
 	string[] AllowedValues,
 	bool IsSensitive,
 	bool IsEnvironmentOnly,
 	string? EnvironmentOnlyMessage,
+	SectionMetadata SectionMetadata,
 	int Sequence) {
 
-	public static OptionMetadata FromPropertyInfo(PropertyInfo property, int sequence) {
-		var sectionName = property.DeclaringType?.Name.Replace("Options", "") ?? "";
+	public static OptionMetadata FromPropertyInfo(SectionMetadata sectionMetadata, PropertyInfo property, int sequence) {
 		var key = EventStoreConfigurationKeys.Normalize(property.Name);
 
 		var description = property.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
@@ -40,11 +39,11 @@ public record OptionMetadata(
 			Key: key,
 			Name: property.Name,
 			Description: description,
-			SectionName: sectionName,
 			AllowedValues: allowedValues,
 			IsSensitive: isSensitive,
 			IsEnvironmentOnly: isEnvironmentOnly,
 			EnvironmentOnlyMessage: environmentOnlyMessage,
+			SectionMetadata: sectionMetadata,
 			Sequence: sequence
 		);
 	}

@@ -77,11 +77,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			                            entity.User.LegacyRoleCheck(SystemRoles.Admins))) {
 				var options = _options.LoadedOptions.Values.Select(
 					x => new OptionStructure {
-						Name = x.Title,
+						Name = x.Metadata.Name,
 						Description = x.Metadata.Description,
-						Group = x.Metadata.SectionName,
-						PossibleValues = x.Metadata.AllowedValues,
-						Value = x.Value
+						Group = x.Metadata.SectionMetadata.SectionType.Name,
+						PossibleValues = x.Metadata.AllowedValues.Length > 0 ? x.Metadata.AllowedValues : null,
+						Value = x.DisplayValue,
 					}
 				);
 

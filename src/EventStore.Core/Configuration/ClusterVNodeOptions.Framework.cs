@@ -93,11 +93,11 @@ namespace EventStore.Core {
 					var isDefault = providerType == typeof(EventStoreDefaultValuesConfigurationProvider);
 
 					printableOptions[option.Value.Key] = new(
-						Metadata: option.Value,
-						Title: title,
-						Value: value,
-						SourceDisplayName: sourceDisplayName,
-						IsDefault: isDefault
+						metadata: option.Value,
+						title: title,
+						value: value,
+						sourceDisplayName: sourceDisplayName,
+						isDefault: isDefault
 					);
 				}
 			}

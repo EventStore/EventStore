@@ -45,8 +45,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration {
 
 			var option = loadedOptions["EventStore:DefaultOpsPassword"];
 
-			option.Value.Should().BeEquivalentTo(secretText);
-			option.DisplayValue.Should().BeEquivalentTo(new('*', 8));
+			option.DisplayValue.Should().BeEquivalentTo("********");
 		}
 
 		[Fact]
@@ -76,17 +75,17 @@ namespace EventStore.Core.XUnit.Tests.Configuration {
 
 			// default
 			var insecure = loadedOptions["EventStore:Insecure"];
-			insecure.Value.Should().BeEquivalentTo("false");
+			insecure.DisplayValue.Should().BeEquivalentTo("false");
 			insecure.SourceDisplayName.Should().BeEquivalentTo("(<DEFAULT>)");
 
 			// environment variables
 			var clusterSize = loadedOptions["EventStore:ClusterSize"];
-			clusterSize.Value.Should().BeEquivalentTo("15");
+			clusterSize.DisplayValue.Should().BeEquivalentTo("15");
 			clusterSize.SourceDisplayName.Should().BeEquivalentTo("(Environment Variables)");
 
 			// command line
 			var logLevel = loadedOptions["EventStore:LogLevel"];
-			logLevel.Value.Should().BeEquivalentTo("Information");
+			logLevel.DisplayValue.Should().BeEquivalentTo("Information");
 			logLevel.SourceDisplayName.Should().BeEquivalentTo("(Command Line)");
 		}
 	}

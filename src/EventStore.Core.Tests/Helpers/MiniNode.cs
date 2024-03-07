@@ -18,6 +18,7 @@ using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Certificates;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Messages;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -26,6 +27,7 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
@@ -130,7 +132,12 @@ namespace EventStore.Core.Tests.Helpers {
 						UnsafeDisableFlushToDisk = disableFlushToDisk,
 						StreamExistenceFilterSize = streamExistenceFilterSize,
 					},
-					Subsystems = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>())
+					Subsystems = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>()),
+					// limitation: the LoadedOptions here will only reflect the defaults and not the rest
+					// of the config specified above. however we only use it for /info/options
+					LoadedOptions = ClusterVNodeOptions.GetLoadedOptions(new ConfigurationBuilder()
+						.AddEventStoreDefaultValues()
+						.Build()),
 				}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 					ssl_connections.GetServerCertificate())
 				.WithInternalSecureTcpOn(IntTcpEndPoint)

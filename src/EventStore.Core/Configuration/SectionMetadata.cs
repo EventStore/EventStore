@@ -20,16 +20,24 @@ public record SectionMetadata(
 	public static SectionMetadata FromPropertyInfo(PropertyInfo property, int sequence) {
 		var description = property.PropertyType.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
 
-		var options = property.PropertyType.GetProperties()
-			.Select(OptionMetadata.FromPropertyInfo)
-			.ToDictionary(option => option.Key, x => x);
-
-		return new(
+		var metadata = new SectionMetadata(
 			SectionName: property.Name,
 			Description: description,
 			SectionType: property.PropertyType,
-			Options: options,
+			Options: [],
 			Sequence: sequence
 		);
+
+		var optionProps = property.PropertyType.GetProperties();
+		for (var i = 0; i < optionProps.Length; i++) {
+			var optionMetadata = OptionMetadata.FromPropertyInfo(metadata, optionProps[i], i);
+			metadata.Options[optionMetadata.Key] = optionMetadata;
+		}
+	
+		var options = property.PropertyType.GetProperties()
+			.Select((p, i) => OptionMetadata.FromPropertyInfo(metadata, p, i))
+			.ToDictionary(option => option.Key, x => x);
+
+		return metadata;
 	}
 }
