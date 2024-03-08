@@ -8,6 +8,15 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/4180 [EventStore#4181](https://github.com/EventStore/EventStore/pull/4181)
 - //github.com/EventStore/EventStore/pull/4182 [EventStore#4183](https://github.com/EventStore/EventStore/pull/4183)
 - //github.com/EventStore/EventStore/pull/4184 [EventStore#4185](https://github.com/EventStore/EventStore/pull/4185)
+- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4193](https://github.com/EventStore/EventStore/pull/4193)
+- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4192](https://github.com/EventStore/EventStore/pull/4192)
+- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4191](https://github.com/EventStore/EventStore/pull/4191)
+- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4190](https://github.com/EventStore/EventStore/pull/4190)
+- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4189](https://github.com/EventStore/EventStore/pull/4189)
+
+### Changed
+- Version number [EventStore#4195](https://github.com/EventStore/EventStore/pull/4195)
+- version number [EventStore#4188](https://github.com/EventStore/EventStore/pull/4188)
 
 ## [24.2.0] - 2024-02-25
 
