@@ -97,7 +97,7 @@ namespace EventStore.Common.Configuration {
 				return name;
 			}
 		}
-
+		
 		public Dictionary<string, PrintableOption> GetOptionSourceInfo(IConfigurationRoot configurationRoot) {
 			if (configurationRoot is null) return null;
 
@@ -106,17 +106,37 @@ namespace EventStore.Common.Configuration {
 				foreach (var property in section.GetProperties()) {
 					var argumentDescriptionAttribute = property.GetCustomAttribute<DescriptionAttribute>();
 					var sensitiveAttribute = property.GetCustomAttribute<SensitiveAttribute>();
+					var timeAttributeMessage = property.GetCustomAttribute<OptionTypeForTimeAttribute>()?.Message;
+					string optionType = property.PropertyType.Name;
 					string[] allowedValues = null;
 					if (property.PropertyType.IsEnum) {
 						allowedValues = property.PropertyType.GetEnumNames();
-					}
-
+					} else if (property.PropertyType == typeof(bool)) {
+						allowedValues = new[] {
+							"False",
+							"True"
+						};
+					} else if (property.PropertyType == typeof(int)) {
+						if (timeAttributeMessage != null) {
+							optionType = timeAttributeMessage;
+						}
+					} else if (property.PropertyType == typeof(long)) {
+						if (timeAttributeMessage != null) {
+							optionType = timeAttributeMessage;
+						}
+					} else if (property.PropertyType == typeof(double)) {
+						if (timeAttributeMessage != null) {
+							optionType = timeAttributeMessage;
+						}
+					} 
+					
 					result[property.Name] = new PrintableOption(
 						property.Name,
 						argumentDescriptionAttribute?.Description,
 						section.Name,
 						allowedValues,
-						sensitiveAttribute != null
+						sensitiveAttribute != null,
+						optionType
 					);
 				}
 			}

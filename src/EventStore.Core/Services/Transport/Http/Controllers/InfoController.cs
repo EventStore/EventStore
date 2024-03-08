@@ -72,8 +72,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					Name = x.Name,
 					Description = x.Description,
 					Group = x.Group,
-					PossibleValues = x.AllowedValues,
-					Value = x.Value
+					AllowedValues = x.AllowedValues,
+					Value = x.Value,
+					OptionType = x.OptionType,
+					ConfigurationSource = x.Source.Name
 				});
 				entity.ReplyTextContent(Codec.Json.To(options),
 					HttpStatusCode.OK,
@@ -95,7 +97,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public string Description { get; set; }
 			public string Group { get; set; }
 			public string Value { get; set; }
-			public string[] PossibleValues { get; set; }
+			public string[] AllowedValues { get; set; }
+			public string OptionType { get; set; }
+
+			public string ConfigurationSource { get; set; }
 		}
 	}
 }
