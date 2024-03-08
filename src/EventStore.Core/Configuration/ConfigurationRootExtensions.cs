@@ -41,7 +41,7 @@ public static class ConfigurationRootExtensions {
 				errorDescriptions
 					.Aggregate(
 						new StringBuilder(),
-						(sb, err) => sb.AppendLine($"Provided by: {provider.GetType().Name}. {err}")
+						(sb, err) => sb.AppendLine($"Provided by: {ClusterVNodeOptions.GetSourceDisplayName(provider.GetType())}. {err}")
 					)
 			);
 		}

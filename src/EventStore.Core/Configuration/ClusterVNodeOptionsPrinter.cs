@@ -42,7 +42,7 @@ public static class ClusterVNodeOptionsPrinter {
 					.Append($"         {option.Value.Title}:".PadRight(nameColumnWidth, ' '))
 					.Append(option.Value)
 					.Append(' ')
-					.Append(option.Value.SourceDisplayName)
+					.Append($"({option.Value.SourceDisplayName})")
 					.AppendLine();
 			}
 		}

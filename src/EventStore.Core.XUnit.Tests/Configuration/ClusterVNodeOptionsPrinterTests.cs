@@ -106,17 +106,17 @@ DEFAULT OPTIONS:
 			// default
 			var insecure = loadedOptions["EventStore:Insecure"];
 			insecure.DisplayValue.Should().BeEquivalentTo("false");
-			insecure.SourceDisplayName.Should().BeEquivalentTo("(<DEFAULT>)");
+			insecure.SourceDisplayName.Should().BeEquivalentTo("<DEFAULT>");
 
 			// environment variables
 			var clusterSize = loadedOptions["EventStore:ClusterSize"];
 			clusterSize.DisplayValue.Should().BeEquivalentTo("15");
-			clusterSize.SourceDisplayName.Should().BeEquivalentTo("(Environment Variables)");
+			clusterSize.SourceDisplayName.Should().BeEquivalentTo("Environment Variables");
 
 			// command line
 			var logLevel = loadedOptions["EventStore:LogLevel"];
 			logLevel.DisplayValue.Should().BeEquivalentTo("Information");
-			logLevel.SourceDisplayName.Should().BeEquivalentTo("(Command Line)");
+			logLevel.SourceDisplayName.Should().BeEquivalentTo("Command Line");
 		}
 	}
 }

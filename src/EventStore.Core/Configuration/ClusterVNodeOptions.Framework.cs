@@ -104,20 +104,20 @@ namespace EventStore.Core {
 
 			return printableOptions;
 
-			static string GetSourceDisplayName(Type source) {
-				var name = source == typeof(EventStoreDefaultValuesConfigurationProvider)
-					? "<DEFAULT>"
-					: CombineByPascalCase(
-						source.Name
-							.Replace("EventStore", "")
-							.Replace("ConfigurationProvider", "")
-					);
-
-				return $"({name})";
-			}
-
 			static string GetTitle(KeyValuePair<string, OptionMetadata> option) =>
 				CombineByPascalCase(EventStoreConfigurationKeys.StripConfigurationPrefix(option.Value.Key)).ToUpper();
+		}
+
+		public static string GetSourceDisplayName(Type source) {
+			var name = source == typeof(EventStoreDefaultValuesConfigurationProvider)
+				? "<DEFAULT>"
+				: CombineByPascalCase(
+					source.Name
+						.Replace("EventStore", "")
+						.Replace("ConfigurationProvider", "")
+				);
+
+			return name;
 		}
 
 		private static string GetHelpText() {
