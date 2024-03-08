@@ -26,7 +26,7 @@ public static class ClusterVNodeOptionsPrinter {
 
 			var firstOption = true;
 
-			foreach (var option in options.OrderBy(x => x.Value.Metadata.Name)) {
+			foreach (var option in options.OrderBy(x => x.Value.Title)) {
 				if (option.Value.IsDefault == modifiedOnly)
 					continue;
 

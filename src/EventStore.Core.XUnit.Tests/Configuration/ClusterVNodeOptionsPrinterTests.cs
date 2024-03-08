@@ -15,6 +15,8 @@ namespace EventStore.Core.XUnit.Tests.Configuration {
 		public void prints_options() {
 			var config = new ConfigurationBuilder()
 				.AddEventStoreDefaultValues(new Dictionary<string, string?> {
+					{ "ChunkSize", "10000"},
+					{ "ChunksCacheSize", "20000" },
 					{ "ClusterSize", "1" },
 					{ "UnsafeAllowSurplusNodes", "false" },
 				})
@@ -53,6 +55,10 @@ MODIFIED OPTIONS:
 DEFAULT OPTIONS:
     CLUSTER OPTIONS:
          CLUSTER SIZE:                       1 (<DEFAULT>)
+
+    DATABASE OPTIONS:
+         CHUNK SIZE:                         10000 (<DEFAULT>)
+         CHUNKS CACHE SIZE:                  20000 (<DEFAULT>)
 ");
 		}
 
