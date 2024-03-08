@@ -30,13 +30,19 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			return new ResetResp();
 
 			void OnMessage(Message message) {
-				if (!(message is ProjectionManagementMessage.Updated)) {
-					resetSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
-					return;
+				switch (message) {
+					case ProjectionManagementMessage.Updated _:
+						resetSource.TrySetResult(true);
+						break;
+					case ProjectionManagementMessage.NotFound _:
+						resetSource.TrySetException(ProjectionManagement.ProjectionNotFound(name));
+						break;
+					default:
+						resetSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
+						break;
 				}
-
-				resetSource.TrySetResult(true);
 			}
+
 		}
 	}
 }
