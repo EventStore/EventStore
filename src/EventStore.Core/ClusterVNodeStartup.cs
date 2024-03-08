@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Grpc;
@@ -55,6 +57,8 @@ namespace EventStore.Core {
 
 		private bool _ready;
 		private readonly IAuthorizationProvider _authorizationProvider;
+		private readonly Guid _instanceId;
+		private readonly DnsEndPoint _httpEndPoint;
 		private readonly MultiQueuedHandler _httpMessageHandler;
 		private readonly string _clusterDns;
 
@@ -66,6 +70,8 @@ namespace EventStore.Core {
 			MultiQueuedHandler httpMessageHandler,
 			IAuthenticationProvider authenticationProvider,
 			IAuthorizationProvider authorizationProvider,
+			Guid instanceId,
+			DnsEndPoint httpEndPoint,
 			int maxAppendSize,
 			TimeSpan writeTimeout,
 			IExpiryStrategy expiryStrategy,
@@ -97,6 +103,8 @@ namespace EventStore.Core {
 			_httpMessageHandler = httpMessageHandler;
 			_authenticationProvider = authenticationProvider;
 			_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));
+			_instanceId = instanceId;
+			_httpEndPoint = httpEndPoint;
 			_maxAppendSize = maxAppendSize;
 			_writeTimeout = writeTimeout;
 			_expiryStrategy = expiryStrategy;
@@ -209,7 +217,9 @@ namespace EventStore.Core {
 				// OpenTelemetry
 				.AddOpenTelemetry()
 				.WithMetrics(meterOptions => meterOptions
-					.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore"))
+					.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore")
+						.AddAttributes(new KeyValuePair<string, object>[]
+							{ new("nodeId", _instanceId.ToString()), new("nodeAddress", _httpEndPoint.ToString()) }))
 					.AddMeter(metricsConfiguration.Meters)
 					.AddView(i => {
 						if (i.Name.StartsWith("eventstore-") &&

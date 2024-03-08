@@ -309,6 +309,63 @@ namespace EventStore.Core {
 
 			NodeInfo = new VNodeInfo(instanceId.Value, debugIndex, intTcp, intSecIp, extTcp, extSecIp,
 				httpEndPoint, options.Cluster.ReadOnlyReplica);
+			GossipAdvertiseInfo = GetGossipAdvertiseInfo();
+			GossipAdvertiseInfo GetGossipAdvertiseInfo() {
+				IPAddress intIpAddress = options.Interface.ReplicationIp;
+
+				IPAddress extIpAddress = options.Interface.NodeIp;
+
+				var intHostToAdvertise = options.Interface.ReplicationHostAdvertiseAs ?? intIpAddress.ToString();
+				var extHostToAdvertise = options.Interface.NodeHostAdvertiseAs ?? extIpAddress.ToString();
+
+				if (intIpAddress.Equals(IPAddress.Any) || extIpAddress.Equals(IPAddress.Any)) {
+					IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
+					IPAddress addressToAdvertise = options.Cluster.ClusterSize > 1 ? nonLoopbackAddress : IPAddress.Loopback;
+
+					if (intIpAddress.Equals(IPAddress.Any) && options.Interface.ReplicationHostAdvertiseAs == null) {
+						intHostToAdvertise = addressToAdvertise.ToString();
+					}
+
+					if (extIpAddress.Equals(IPAddress.Any) && options.Interface.NodeHostAdvertiseAs == null) {
+						extHostToAdvertise = addressToAdvertise.ToString();
+					}
+				}
+
+				var intTcpEndPoint = NodeInfo.InternalTcp == null
+					? null
+					: new DnsEndPoint(intHostToAdvertise, intTcpPortAdvertiseAs > 0
+						? (options.Interface.ReplicationTcpPortAdvertiseAs)
+						: NodeInfo.InternalTcp.Port);
+
+				var intSecureTcpEndPoint = NodeInfo.InternalSecureTcp == null
+					? null
+					: new DnsEndPoint(intHostToAdvertise, intSecTcpPortAdvertiseAs > 0
+						? intSecTcpPortAdvertiseAs
+						: NodeInfo.InternalSecureTcp.Port);
+
+				var extTcpEndPoint = NodeInfo.ExternalTcp == null
+					? null
+					: new DnsEndPoint(extHostToAdvertise, extTcpPortAdvertiseAs > 0
+						? extTcpPortAdvertiseAs
+						: NodeInfo.ExternalTcp.Port);
+
+				var extSecureTcpEndPoint = NodeInfo.ExternalSecureTcp == null
+					? null
+					: new DnsEndPoint(extHostToAdvertise, extSecTcpPortAdvertiseAs > 0
+						? extSecTcpPortAdvertiseAs
+						: NodeInfo.ExternalSecureTcp.Port);
+
+				var httpEndPoint = new DnsEndPoint(extHostToAdvertise,
+					options.Interface.NodePortAdvertiseAs > 0
+						? options.Interface.NodePortAdvertiseAs
+						: NodeInfo.HttpEndPoint.GetPort());
+
+				return new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint, extTcpEndPoint,
+					extSecureTcpEndPoint, httpEndPoint, options.Interface.ReplicationHostAdvertiseAs,
+					options.Interface.NodeHostAdvertiseAs, options.Interface.NodePortAdvertiseAs,
+					options.Interface.AdvertiseHostToClientAs, options.Interface.AdvertiseNodePortToClientAs,
+					extTcpOptions?.AdvertisedPort ?? 0);
+			}
 
 			var dbConfig = CreateDbConfig(
 				out var statsHelper,
@@ -320,7 +377,8 @@ namespace EventStore.Core {
 				.GetSection(SectionNames.EventStore)
 				.GetSection(SectionNames.Metrics)
 				.Get<MetricsConfiguration>() ?? new();
-			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
+			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers, NodeInfo.InstanceId,
+				GossipAdvertiseInfo.HttpEndPoint);
 
 			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker);
 
@@ -852,64 +910,6 @@ namespace EventStore.Core {
 			SubscribeWorkers(bus => {
 				bus.Subscribe<GrpcMessage.SendOverGrpc>(grpcSendService);
 			});
-
-			GossipAdvertiseInfo = GetGossipAdvertiseInfo();
-			GossipAdvertiseInfo GetGossipAdvertiseInfo() {
-				IPAddress intIpAddress = options.Interface.ReplicationIp;
-
-				IPAddress extIpAddress = options.Interface.NodeIp;
-
-				var intHostToAdvertise = options.Interface.ReplicationHostAdvertiseAs ?? intIpAddress.ToString();
-				var extHostToAdvertise = options.Interface.NodeHostAdvertiseAs ?? extIpAddress.ToString();
-
-				if (intIpAddress.Equals(IPAddress.Any) || extIpAddress.Equals(IPAddress.Any)) {
-					IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
-					IPAddress addressToAdvertise = options.Cluster.ClusterSize > 1 ? nonLoopbackAddress : IPAddress.Loopback;
-
-					if (intIpAddress.Equals(IPAddress.Any) && options.Interface.ReplicationHostAdvertiseAs == null) {
-						intHostToAdvertise = addressToAdvertise.ToString();
-					}
-
-					if (extIpAddress.Equals(IPAddress.Any) && options.Interface.NodeHostAdvertiseAs == null) {
-						extHostToAdvertise = addressToAdvertise.ToString();
-					}
-				}
-
-				var intTcpEndPoint = NodeInfo.InternalTcp == null
-					? null
-					: new DnsEndPoint(intHostToAdvertise, intTcpPortAdvertiseAs > 0
-						? (options.Interface.ReplicationTcpPortAdvertiseAs)
-						: NodeInfo.InternalTcp.Port);
-
-				var intSecureTcpEndPoint = NodeInfo.InternalSecureTcp == null
-					? null
-					: new DnsEndPoint(intHostToAdvertise, intSecTcpPortAdvertiseAs > 0
-						? intSecTcpPortAdvertiseAs
-						: NodeInfo.InternalSecureTcp.Port);
-
-				var extTcpEndPoint = NodeInfo.ExternalTcp == null
-					? null
-					: new DnsEndPoint(extHostToAdvertise, extTcpPortAdvertiseAs > 0
-						? extTcpPortAdvertiseAs
-						: NodeInfo.ExternalTcp.Port);
-
-				var extSecureTcpEndPoint = NodeInfo.ExternalSecureTcp == null
-					? null
-					: new DnsEndPoint(extHostToAdvertise, extSecTcpPortAdvertiseAs > 0
-						? extSecTcpPortAdvertiseAs
-						: NodeInfo.ExternalSecureTcp.Port);
-
-				var httpEndPoint = new DnsEndPoint(extHostToAdvertise,
-					options.Interface.NodePortAdvertiseAs > 0
-						? options.Interface.NodePortAdvertiseAs
-						: NodeInfo.HttpEndPoint.GetPort());
-
-				return new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint, extTcpEndPoint,
-					extSecureTcpEndPoint, httpEndPoint, options.Interface.ReplicationHostAdvertiseAs,
-					options.Interface.NodeHostAdvertiseAs, options.Interface.NodePortAdvertiseAs,
-					options.Interface.AdvertiseHostToClientAs, options.Interface.AdvertiseNodePortToClientAs,
-					extTcpOptions?.AdvertisedPort ?? 0);
-			}
 
 			_httpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
 				_workersHandler, options.Application.LogHttpRequests,
@@ -1606,7 +1606,7 @@ namespace EventStore.Core {
 					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()));
 
 			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
-				_authenticationProvider, _authorizationProvider,
+				_authenticationProvider, _authorizationProvider, instanceId.Value, GossipAdvertiseInfo.HttpEndPoint,
 				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 				expiryStrategy ?? new DefaultExpiryStrategy(),
 				_httpService,
