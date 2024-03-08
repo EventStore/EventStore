@@ -24,6 +24,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using Serilog;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
 	System.Func<System.Threading.Tasks.Task>,
@@ -126,8 +127,10 @@ namespace EventStore.Core {
 				.UseAuthorization();
 
 			// allow all subsystems to register their legacy controllers before calling MapLegacyHttp
-			foreach (var subsystem in _subsystems)
+			foreach (var subsystem in _subsystems) {
+				Log.Information("Configuring subsystem {subsystem}", subsystem.Name);
 				subsystem.Configure(app);
+			}
 
 			app.UseEndpoints(ep => {
 					_authenticationProvider.ConfigureEndpoints(ep);

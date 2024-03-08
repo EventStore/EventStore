@@ -61,6 +61,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Common.Tests", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.PluginHosting", "EventStore.PluginHosting\EventStore.PluginHosting.csproj", "{8B021F57-D4B1-47D6-85AA-DE2D20486840}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Loki", "EventStore.Loki\EventStore.Loki.csproj", "{19048183-1019-453C-A5CB-6E7C03F2B515}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -371,6 +373,18 @@ Global
 		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19048183-1019-453C-A5CB-6E7C03F2B515}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19048183-1019-453C-A5CB-6E7C03F2B515}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19048183-1019-453C-A5CB-6E7C03F2B515}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{19048183-1019-453C-A5CB-6E7C03F2B515}.Debug|ARM64.Build.0 = Debug|ARM64
+		{19048183-1019-453C-A5CB-6E7C03F2B515}.Debug|x64.ActiveCfg = Debug|x64
+		{19048183-1019-453C-A5CB-6E7C03F2B515}.Debug|x64.Build.0 = Debug|x64
+		{19048183-1019-453C-A5CB-6E7C03F2B515}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19048183-1019-453C-A5CB-6E7C03F2B515}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19048183-1019-453C-A5CB-6E7C03F2B515}.Release|ARM64.ActiveCfg = Release|ARM64
+		{19048183-1019-453C-A5CB-6E7C03F2B515}.Release|ARM64.Build.0 = Release|ARM64
+		{19048183-1019-453C-A5CB-6E7C03F2B515}.Release|x64.ActiveCfg = Release|x64
+		{19048183-1019-453C-A5CB-6E7C03F2B515}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
