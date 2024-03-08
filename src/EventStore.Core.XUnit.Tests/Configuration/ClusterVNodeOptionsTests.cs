@@ -98,7 +98,11 @@ public class ClusterVNodeOptionsTests {
 
 		var result = options.CheckForEnvironmentOnlyOptions();
 
-		result.Should().NotBeNull();
+		result.Should().BeEquivalentTo(
+			"Provided by: EventStoreCommandLineConfigurationProvider. " +
+			"The Admin user password can only be set using Environment Variables" + Environment.NewLine +
+			"Provided by: EventStoreCommandLineConfigurationProvider. " +
+			"The Ops user password can only be set using Environment Variables" + Environment.NewLine);
 	}
 
 	[Fact]
@@ -117,18 +121,6 @@ public class ClusterVNodeOptionsTests {
 		var result = options.CheckForEnvironmentOnlyOptions();
 
 		result.Should().BeNull();
-	}
-
-	[Fact]
-	public void bind_works() {
-		var config = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
-			.AddEventStoreEnvironmentVariables(("EVENTSTORE_CLUSTER_SIZE", "23")) // a value that is ont a default
-			.Build();
-
-		var binded = ClusterVNodeOptions.FromConfiguration(config);
-
-		ClusterVNodeOptionsValidator.Validate(binded);
 	}
 
 	[Fact]

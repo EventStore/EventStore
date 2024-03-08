@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using EventStore.Common.Options;
 using EventStore.Core.Configuration;
 using EventStore.Core.Configuration.Sources;
@@ -13,8 +14,12 @@ namespace EventStore.Core.XUnit.Tests.Configuration {
 		[Fact]
 		public void prints_options() {
 			var config = new ConfigurationBuilder()
-				.AddEventStoreDefaultValues()
+				.AddEventStoreDefaultValues(new Dictionary<string, string?> {
+					{ "ClusterSize", "1" },
+					{ "UnsafeAllowSurplusNodes", "false" },
+				})
 				.AddEventStoreEnvironmentVariables(
+					("EVENTSTORE_SOME_UNKNOWN_OPTION", "77"),
 					("EVENTSTORE_CLUSTER_GOSSIP_PORT", "99"),
 					("EVENTSTORE_UNSAFE_ALLOW_SURPLUS_NODES", "true"),
 					("EVENTSTORE_CONFIG", "/path/to/config/envvar"),
@@ -29,7 +34,26 @@ namespace EventStore.Core.XUnit.Tests.Configuration {
 
 			var output = ClusterVNodeOptionsPrinter.Print(loadedOptions);
 
-			output.Should().NotBeEmpty();
+			output.Should().Be(@"
+MODIFIED OPTIONS:
+    APPLICATION OPTIONS:
+         CONFIG:                             /path/to/config/commandline (Command Line)
+
+    CLUSTER OPTIONS:
+         CLUSTER GOSSIP PORT:                88 (Command Line)
+         UNSAFE ALLOW SURPLUS NODES:         true (Environment Variables)
+
+    DEFAULT USER OPTIONS:
+         DEFAULT OPS PASSWORD:               ******** (Command Line)
+
+    PROJECTION OPTIONS:
+         RUN PROJECTIONS:                    All (Environment Variables)
+
+
+DEFAULT OPTIONS:
+    CLUSTER OPTIONS:
+         CLUSTER SIZE:                       1 (<DEFAULT>)
+");
 		}
 
 		[Fact]
