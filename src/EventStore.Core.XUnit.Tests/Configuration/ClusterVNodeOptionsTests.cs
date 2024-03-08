@@ -220,4 +220,27 @@ public class ClusterVNodeOptionsTests {
 
 		options.Logging.LogLevel.Should().Be(LogLevel.Fatal);
 	}
+
+	[Fact]
+	public void no_defaults_are_deprecated() {
+		var config = new ConfigurationBuilder()
+			.AddEventStoreDefaultValues()
+			.Build();
+
+		var options = ClusterVNodeOptions.FromConfiguration(config);
+		options.GetDeprecationWarnings().Should().BeNullOrEmpty();
+	}
+
+	[Fact]
+	public void can_get_deprecation_warnings() {
+		var config = new ConfigurationBuilder()
+			.AddEventStoreDefaultValues()
+			.AddEventStoreEnvironmentVariables(("EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP", "true"))
+			.Build();
+
+		var options = ClusterVNodeOptions.FromConfiguration(config);
+		options.GetDeprecationWarnings().Should().Be(
+			"AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead" +
+			Environment.NewLine);
+	}
 }

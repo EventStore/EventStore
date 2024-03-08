@@ -63,7 +63,7 @@ namespace EventStore.Core {
 				from option in section.GetProperties()
 				let deprecationWarning = option.GetCustomAttribute<DeprecatedAttribute>()?.Message
 				where deprecationWarning is not null
-				let value = ConfigurationRoot?.GetValue<string?>(option.Name)
+				let value = ConfigurationRoot?.GetValue<string?>(EventStoreConfigurationKeys.Normalize(option.Name))
 				where defaultValues.TryGetValue(option.Name, out var defaultValue)
 				      && !string.Equals(value, defaultValue?.ToString(), StringComparison.OrdinalIgnoreCase)
 				      select deprecationWarning;
