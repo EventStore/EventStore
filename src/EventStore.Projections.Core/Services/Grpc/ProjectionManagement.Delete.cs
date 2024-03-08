@@ -33,12 +33,17 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			return new DeleteResp();
 
 			void OnMessage(Message message) {
-				if (!(message is ProjectionManagementMessage.Updated)) {
-					deletedSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
-					return;
+				switch (message) {
+					case ProjectionManagementMessage.Updated:
+						deletedSource.TrySetResult(true);
+						break;
+					case ProjectionManagementMessage.NotFound:
+						deletedSource.TrySetException(ProjectionNotFound(name));
+						break;
+					default:
+						deletedSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
+						break;
 				}
-
-				deletedSource.TrySetResult(true);
 			}
 		}
 	}

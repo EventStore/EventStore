@@ -58,12 +58,17 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			}
 
 			void OnMessage(Message message) {
-				if (!(message is ProjectionManagementMessage.Statistics statistics)) {
-					statsSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Statistics>(message));
-					return;
+				switch (message) {
+					case ProjectionManagementMessage.Statistics statistics:
+						statsSource.TrySetResult(statistics.Projections);
+						break;
+					case ProjectionManagementMessage.NotFound:
+						statsSource.TrySetException(ProjectionNotFound(name));
+						break;
+					default:
+						statsSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Statistics>(message));
+						break;
 				}
-
-				statsSource.TrySetResult(statistics.Projections);
 			}
 		}
 	}
