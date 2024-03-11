@@ -448,6 +448,25 @@ Example output:
 eventstore_sys_disk_bytes{disk="/home",kind="used"} 38947205120 1688070655500
 ```
 
+### Elections Count
+
+This metric tracks the number of elections that have been completed.
+
+| Time series                  | Type                     | Description                  |
+|:-----------------------------|:-------------------------|:-----------------------------|
+| `eventstore_elections_count` | [Counter](#common-types) | Elections count in a cluster |
+
+Example configuration:
+```json
+"ElectionsCount": true
+```
+
+Example output:
+```
+# TYPE eventstore_elections_count counter
+eventstore_elections_count 0 1710188996949
+```
+
 ## Metric types
 
 ### Common types
