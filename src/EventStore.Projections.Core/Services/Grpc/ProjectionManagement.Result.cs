@@ -7,6 +7,7 @@ using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Serilog;
 
 namespace EventStore.Projections.Core.Services.Grpc {
 	internal partial class ProjectionManagement {
@@ -34,21 +35,26 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			};
 
 			void OnMessage(Message message) {
-				if (!(message is ProjectionManagementMessage.ProjectionResult result)) {
-					resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionResult>(message));
-					return;
+				switch (message) {
+					case ProjectionManagementMessage.ProjectionState result:
+						if (string.IsNullOrEmpty(result.State)) {
+							resultSource.TrySetResult(new Value {
+								StructValue = new Struct()
+							});
+						} else {
+							var document = JsonDocument.Parse(result.State);
+							resultSource.TrySetResult(GetProtoValue(document.RootElement));
+						}
+						break;
+					case ProjectionManagementMessage.NotFound _:
+						resultSource.TrySetException(ProjectionManagement.ProjectionNotFound(name));
+						break;
+					default:
+						resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
+						break;
 				}
-
-				if (string.IsNullOrEmpty(result.Result)) {
-					resultSource.TrySetResult(new Value {
-						StructValue = new Struct()
-					});
-					return;
-				}
-				var document = JsonDocument.Parse(result.Result);
-
-				resultSource.TrySetResult(GetProtoValue(document.RootElement));
 			}
+
 		}
 
 		public override async Task<StateResp> State(StateReq request, ServerCallContext context) {
@@ -73,19 +79,24 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			};
 
 			void OnMessage(Message message) {
-				if (!(message is ProjectionManagementMessage.ProjectionState result)) {
-					resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionState>(message));
-					return;
+				switch (message) {
+					case ProjectionManagementMessage.ProjectionState result:
+						if (string.IsNullOrEmpty(result.State)) {
+							resultSource.TrySetResult(new Value {
+								StructValue = new Struct()
+							});
+						} else {
+							var document = JsonDocument.Parse(result.State);
+							resultSource.TrySetResult(GetProtoValue(document.RootElement));
+						}
+						break;
+					case ProjectionManagementMessage.NotFound _:
+						resultSource.TrySetException(ProjectionManagement.ProjectionNotFound(name));
+						break;
+					default:
+						resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
+						break;
 				}
-
-				if (string.IsNullOrEmpty(result.State)) {
-					resultSource.TrySetResult(new Value {
-						StructValue = new Struct()
-					});
-					return;
-				}
-				var document = JsonDocument.Parse(result.State);
-				resultSource.TrySetResult(GetProtoValue(document.RootElement));
 			}
 		}
 	}
