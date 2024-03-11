@@ -46,7 +46,6 @@ namespace EventStore.Core {
 
 		public byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
 
-
 		public X509Certificate2? ServerCertificate { get; init; }
 		public X509Certificate2Collection? TrustedRootCertificates { get; init; }
 		public IReadOnlyList<ISubsystem> Subsystems { get; init; } = [];
@@ -54,7 +53,7 @@ namespace EventStore.Core {
 		public bool UnknownOptionsDetected => Unknown.Options.Any();
 
 		public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
-			IConfiguration configuration = configurationRoot.GetRequiredSection("EventStore");
+			var configuration = configurationRoot.GetRequiredSection("EventStore");
 
 			// required because of a bug in the configuration system that
 			// is not reading the attribute from the property itself
@@ -65,23 +64,23 @@ namespace EventStore.Core {
 			// configurationRoot.BindOptions<ClusterVNodeOptions>();
 
 			var options = new ClusterVNodeOptions {
-				Application = configuration.BindOptions<ApplicationOptions>(),
-				DevMode = configuration.BindOptions<DevModeOptions>(),
-				DefaultUser = configuration.BindOptions<DefaultUserOptions>(),
-				Logging = configuration.BindOptions<LoggingOptions>(),
-				Auth = configuration.BindOptions<AuthOptions>(),
-				Certificate = configuration.BindOptions<CertificateOptions>(),
-				CertificateFile = configuration.BindOptions<CertificateFileOptions>(),
+				Application      = configuration.BindOptions<ApplicationOptions>(),
+				DevMode          = configuration.BindOptions<DevModeOptions>(),
+				DefaultUser      = configuration.BindOptions<DefaultUserOptions>(),
+				Logging          = configuration.BindOptions<LoggingOptions>(),
+				Auth             = configuration.BindOptions<AuthOptions>(),
+				Certificate      = configuration.BindOptions<CertificateOptions>(),
+				CertificateFile  = configuration.BindOptions<CertificateFileOptions>(),
 				CertificateStore = configuration.BindOptions<CertificateStoreOptions>(),
-				Cluster = configuration.BindOptions<ClusterOptions>(),
-				Database = configuration.BindOptions<DatabaseOptions>(),
-				Grpc = configuration.BindOptions<GrpcOptions>(),
-				Interface = configuration.BindOptions<InterfaceOptions>(),
-				Projection = configuration.BindOptions<ProjectionOptions>(),
+				Cluster          = configuration.BindOptions<ClusterOptions>(),
+				Database         = configuration.BindOptions<DatabaseOptions>(),
+				Grpc             = configuration.BindOptions<GrpcOptions>(),
+				Interface        = configuration.BindOptions<InterfaceOptions>(),
+				Projection       = configuration.BindOptions<ProjectionOptions>(),
 
-				Unknown = UnknownOptions.FromConfiguration(configuration),
+				Unknown           = UnknownOptions.FromConfiguration(configuration),
 				ConfigurationRoot = configurationRoot,
-				LoadedOptions = GetLoadedOptions(configurationRoot)
+				LoadedOptions     = GetLoadedOptions(configurationRoot)
 			};
 
 			return options;
@@ -716,6 +715,9 @@ namespace EventStore.Core {
 		}
 
 		public record UnknownOptions(IReadOnlyList<(string, string)> Options) {
+			/// <summary>
+			/// Identifies unknown options in the configuration and provides suggestions for known options.
+			/// </summary>
 			public static UnknownOptions FromConfiguration(IConfiguration configuration) {
 				var knownKeys = Metadata
 					.SelectMany(x => x.Options)
@@ -730,6 +732,20 @@ namespace EventStore.Core {
 
 				return new(result);
 
+				static IEnumerable<string> FindUnknownKeys(IConfiguration configuration, IReadOnlySet<string> knownKeys) {
+					var unknownKeys = configuration
+						.AsEnumerable()
+						.Select(kvp => kvp.Key)
+						.Where(key => key != EventStoreConfigurationKeys.Prefix 
+						              && !knownKeys.Contains(EventStoreConfigurationKeys.Normalize(key)))
+						.ToList();
+
+					var unknownSections = FindUnknownSections(unknownKeys);
+
+					return unknownKeys
+						.Where(key => !unknownSections.Any(key.StartsWith));
+				}
+				
 				static HashSet<string> FindUnknownSections(IEnumerable<string> keys) {
 					// if it has more than 2 sections, we found a value with an unknown section
 					var hashSet = new HashSet<string>();
@@ -740,31 +756,14 @@ namespace EventStore.Core {
 					return hashSet;
 				}
 
-				static IEnumerable<string> FindUnknownKeys(IConfiguration configuration,
-					IReadOnlySet<string> knownKeys) {
-					var unknownKeys = configuration
-						.AsEnumerable()
-						.Select(kvp => kvp.Key)
-						.Where(key => key != EventStoreConfigurationKeys.Prefix && !knownKeys.Contains(key))
-						.ToList();
-
-					var unknownSections = FindUnknownSections(unknownKeys);
-
-					return unknownKeys
-						.Where(key => !unknownSections.Any(key.StartsWith));
-				}
-
-				static (string UnknownKey, string SuggestedKey) CreateUnknownOptionResult(HashSet<string> knownKeys,
-					string unknownKey, int distanceThreshold = 5) {
+				static (string UnknownKey, string SuggestedKey) CreateUnknownOptionResult(IEnumerable<string> knownKeys, string unknownKey, int distanceThreshold = 5) {
 					var suggestion = knownKeys
 						.Select(key => (AllowedKey: key, Distance: Levenshtein.GetDistance(unknownKey, key)))
 						.MinBy(x => x.Distance);
 
 					return (
 						UnknownKey: EventStoreConfigurationKeys.StripConfigurationPrefix(unknownKey),
-						SuggestedKey: suggestion.Distance > distanceThreshold
-							? ""
-							: EventStoreConfigurationKeys.StripConfigurationPrefix(suggestion.AllowedKey)
+						SuggestedKey: suggestion.Distance > distanceThreshold ? "" : EventStoreConfigurationKeys.StripConfigurationPrefix(suggestion.AllowedKey)
 					);
 				}
 			}

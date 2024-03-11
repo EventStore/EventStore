@@ -74,13 +74,8 @@ namespace EventStore.Core.Configuration.Sources {
 		/// <summary>
 		/// Determines if the given key is an event store environment variable.
 		/// </summary>
-		public static bool IsEventStoreEnvVar(string? key) {
-			if (key is null)
-				return false;
-
-			return key.StartsWith($"{Prefix}{EnvVarWordDelimiter}", OrdinalIgnoreCase) &&
-				  !key.StartsWith($"{Prefix}{EnvVarWordDelimiter}{EnvVarWordDelimiter}", OrdinalIgnoreCase);
-		}
+		public static bool IsEventStoreEnvVar(string? key) => 
+			key is not null && key.StartsWith($"{Prefix}{EnvVarWordDelimiter}", OrdinalIgnoreCase);
 
 		/// <summary>
 		/// Only normalizes the given key if it is an event store environment variable.

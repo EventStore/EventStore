@@ -6,8 +6,7 @@ using Microsoft.Extensions.Configuration.Memory;
 using static System.StringComparer;
 
 namespace EventStore.Core.Configuration.Sources {
-	public class EventStoreDefaultValuesConfigurationSource(
-		IEnumerable<KeyValuePair<string, string?>>? initialData = null) : IConfigurationSource {
+	public class EventStoreDefaultValuesConfigurationSource(IEnumerable<KeyValuePair<string, string?>>? initialData = null) : IConfigurationSource {
 		private IEnumerable<KeyValuePair<string, string?>> InitialData { get; } =
 			initialData ?? new Dictionary<string, string?>();
 

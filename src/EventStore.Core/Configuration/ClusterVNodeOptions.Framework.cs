@@ -35,20 +35,22 @@ namespace EventStore.Core {
 				.ToList();
 
 			DefaultValues = OptionSections.SelectMany(GetDefaultValues);
+
+			return;
+
+			static IEnumerable<KeyValuePair<string, object?>> GetDefaultValues(Type type) {
+				var defaultInstance = Activator.CreateInstance(type)!;
+
+				return type.GetProperties().Select(property =>
+					new KeyValuePair<string, object?>(property.Name, property.PropertyType switch {
+						{IsArray: true} => string.Join(",",
+							((Array)(property.GetValue(defaultInstance) ?? Array.Empty<object>())).OfType<object>()),
+						_ => property.GetValue(defaultInstance)
+					}));
+			}
 		}
 
 		public static IEnumerable<KeyValuePair<string, object?>> DefaultValues { get; }
-
-		private static IEnumerable<KeyValuePair<string, object?>> GetDefaultValues(Type type) {
-			var defaultInstance = Activator.CreateInstance(type)!;
-
-			return type.GetProperties().Select(property =>
-				new KeyValuePair<string, object?>(property.Name, property.PropertyType switch {
-					{IsArray: true} => string.Join(",",
-						((Array)(property.GetValue(defaultInstance) ?? Array.Empty<object>())).OfType<object>()),
-					_ => property.GetValue(defaultInstance)
-				}));
-		}
 
 		public string? DumpOptions() =>
 			ConfigurationRoot == null ? null : ClusterVNodeOptionsPrinter.Print(LoadedOptions);
@@ -78,7 +80,7 @@ namespace EventStore.Core {
 			ConfigurationRoot.CheckProvidersForEnvironmentVariables(OptionSections);
 
 		public static IReadOnlyDictionary<string, LoadedOption> GetLoadedOptions(IConfigurationRoot configurationRoot) {
-			var printableOptions = new Dictionary<string, LoadedOption>();
+			var loadedOptions = new Dictionary<string, LoadedOption>();
 
 			// because we always start with defaults, we can just add them all first.
 			// then we can override them with the actual values.
@@ -92,7 +94,7 @@ namespace EventStore.Core {
 					var sourceDisplayName = GetSourceDisplayName(providerType);
 					var isDefault = providerType == typeof(EventStoreDefaultValuesConfigurationProvider);
 
-					printableOptions[option.Value.Key] = new(
+					loadedOptions[option.Value.Key] = new(
 						metadata: option.Value,
 						title: title,
 						value: value,
@@ -102,7 +104,7 @@ namespace EventStore.Core {
 				}
 			}
 
-			return printableOptions;
+			return loadedOptions;
 
 			static string GetTitle(KeyValuePair<string, OptionMetadata> option) =>
 				CombineByPascalCase(EventStoreConfigurationKeys.StripConfigurationPrefix(option.Value.Key)).ToUpper();

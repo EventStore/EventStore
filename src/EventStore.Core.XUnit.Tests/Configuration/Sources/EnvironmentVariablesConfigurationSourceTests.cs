@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Configuration.Sources;
@@ -30,7 +29,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration {
 		[InlineData("StreamInfoCacheCapacity")]
 		[InlineData("stream-info-cache-capacity")]
 		[InlineData("EventStore:Cluster:StreamInfoCacheCapacity")]
-		[InlineData("EVENTSTORE__PLUGINS__FOO_BAR")] // the normal environment provider will provide this differently so we dont want to
 		[InlineData("UNSUPPORTED_EVENTSTORE_TCP_API_ENABLED")]
 		public void IgnoresOtherEnvVars(string key) {
 			// Arrange

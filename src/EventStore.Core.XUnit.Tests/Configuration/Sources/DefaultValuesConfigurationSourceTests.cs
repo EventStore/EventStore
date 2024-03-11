@@ -19,8 +19,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration {
 		
 			// Assert
 			foreach (var (key, expectedValue) in defaults) {
-				var actualValue = configuration.GetValue<object>(key)?.ToString();
-				actualValue
+				configuration.GetValue<object>(key)
 					.Should()
 					.BeEquivalentTo(expectedValue?.ToString(), $"because {key} should be {expectedValue}");
 			}

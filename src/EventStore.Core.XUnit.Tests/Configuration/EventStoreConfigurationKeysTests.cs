@@ -23,4 +23,3 @@ namespace EventStore.Core.XUnit.Tests.Configuration {
 		}
 	}
 }
-

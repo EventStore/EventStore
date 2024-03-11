@@ -52,7 +52,7 @@ public class ClusterVNodeOptionsTests {
 	}
 
 	[Fact]
-	public void four_characters_off() {
+	public void unknown_options_suggests_option_with_four_characters_off() {
 		var options = GetOptions("--cluse-ie 3");
 
 		var (key, value) = options.Unknown.Options[0];
@@ -67,7 +67,7 @@ public class ClusterVNodeOptionsTests {
 	}
 
 	[Fact]
-	public void ignores_subsection_arguments() {
+	public void unknown_options_ignores_subsection_arguments() {
 		var configuration = new ConfigurationBuilder()
 			.AddEventStoreDefaultValues()
 			.AddEventStoreEnvironmentVariables(
@@ -78,6 +78,20 @@ public class ClusterVNodeOptionsTests {
 				"--EventStore:Metrics:A aaa " +
 				"--EventStore:Plugins:B bbb"
 			)
+			.Build();
+
+		var options = ClusterVNodeOptions.FromConfiguration(configuration);
+
+		options.Unknown.Options.Should().BeEmpty();
+	}
+	
+	[Fact]
+	public void unknown_options_ignores_repeated_keys_from_other_sources() {
+		Environment.SetEnvironmentVariable("EVENTSTORE__CLUSTER_SIZE", "3");
+		
+		var configuration = new ConfigurationBuilder()
+			.AddEnvironmentVariables()
+			.AddEventStoreEnvironmentVariables()
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(configuration);
