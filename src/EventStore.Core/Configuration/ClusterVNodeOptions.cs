@@ -64,23 +64,23 @@ namespace EventStore.Core {
 			// configurationRoot.BindOptions<ClusterVNodeOptions>();
 
 			var options = new ClusterVNodeOptions {
-				Application      = configuration.BindOptions<ApplicationOptions>(),
-				DevMode          = configuration.BindOptions<DevModeOptions>(),
-				DefaultUser      = configuration.BindOptions<DefaultUserOptions>(),
-				Logging          = configuration.BindOptions<LoggingOptions>(),
-				Auth             = configuration.BindOptions<AuthOptions>(),
-				Certificate      = configuration.BindOptions<CertificateOptions>(),
-				CertificateFile  = configuration.BindOptions<CertificateFileOptions>(),
+				Application = configuration.BindOptions<ApplicationOptions>(),
+				DevMode = configuration.BindOptions<DevModeOptions>(),
+				DefaultUser = configuration.BindOptions<DefaultUserOptions>(),
+				Logging = configuration.BindOptions<LoggingOptions>(),
+				Auth = configuration.BindOptions<AuthOptions>(),
+				Certificate = configuration.BindOptions<CertificateOptions>(),
+				CertificateFile = configuration.BindOptions<CertificateFileOptions>(),
 				CertificateStore = configuration.BindOptions<CertificateStoreOptions>(),
-				Cluster          = configuration.BindOptions<ClusterOptions>(),
-				Database         = configuration.BindOptions<DatabaseOptions>(),
-				Grpc             = configuration.BindOptions<GrpcOptions>(),
-				Interface        = configuration.BindOptions<InterfaceOptions>(),
-				Projection       = configuration.BindOptions<ProjectionOptions>(),
+				Cluster = configuration.BindOptions<ClusterOptions>(),
+				Database = configuration.BindOptions<DatabaseOptions>(),
+				Grpc = configuration.BindOptions<GrpcOptions>(),
+				Interface = configuration.BindOptions<InterfaceOptions>(),
+				Projection = configuration.BindOptions<ProjectionOptions>(),
 
-				Unknown           = UnknownOptions.FromConfiguration(configuration),
+				Unknown = UnknownOptions.FromConfiguration(configuration),
 				ConfigurationRoot = configurationRoot,
-				LoadedOptions     = GetLoadedOptions(configurationRoot)
+				LoadedOptions = GetLoadedOptions(configurationRoot)
 			};
 
 			return options;
@@ -88,16 +88,19 @@ namespace EventStore.Core {
 
 		[Description("Default User Options")]
 		public record DefaultUserOptions {
-			[Description("Admin Default password"), Sensitive, EnvironmentOnly("The Admin user password can only be set using Environment Variables")]
+			[Description("Admin Default password"), Sensitive,
+			 EnvironmentOnly("The Admin user password can only be set using Environment Variables")]
 			public string DefaultAdminPassword { get; init; } = "changeit";
 
-			[Description("Ops Default password"), Sensitive, EnvironmentOnly("The Ops user password can only be set using Environment Variables")]
+			[Description("Ops Default password"), Sensitive,
+			 EnvironmentOnly("The Ops user password can only be set using Environment Variables")]
 			public string DefaultOpsPassword { get; init; } = "changeit";
 		}
 
 		[Description("Dev Mode Options")]
 		public record DevModeOptions {
-			[Description("Runs EventStoreDB in dev mode. This will create and add dev certificates to your certificate store, enable atompub over http, and run standard projections.")]
+			[Description(
+				"Runs EventStoreDB in dev mode. This will create and add dev certificates to your certificate store, enable atompub over http, and run standard projections.")]
 			public bool Dev { get; init; } = false;
 
 			[Description("Removes any dev certificates installed on this computer without starting EventStoreDB.")]
@@ -125,7 +128,8 @@ namespace EventStore.Core {
 			[Description("The number of seconds between statistics gathers.")]
 			public int StatsPeriodSec { get; init; } = 30;
 
-			[Description("The number of threads to use for pool of worker services. Set to '0' to scale automatically (Default)")]
+			[Description(
+				"The number of threads to use for pool of worker services. Set to '0' to scale automatically (Default)")]
 			public int WorkerThreads { get; init; } = 0;
 
 			[Description("Enables the tracking of various histograms in the backend, " +
@@ -154,11 +158,13 @@ namespace EventStore.Core {
 			[Description("Allow anonymous access to streams.")]
 			public bool AllowAnonymousStreamAccess { get; init; } = false;
 
-			[Description("Overrides anonymous access for the gossip enpdoint. If set to true, the gossip endpoint will accept anonymous access. " +
-			             $"Otherwise anonymous access wil be dis/allowed based on the value of the '{nameof(AllowAnonymousEndpointAccess)}' option")]
+			[Description(
+				"Overrides anonymous access for the gossip enpdoint. If set to true, the gossip endpoint will accept anonymous access. " +
+				$"Otherwise anonymous access wil be dis/allowed based on the value of the '{nameof(AllowAnonymousEndpointAccess)}' option")]
 			public bool OverrideAnonymousEndpointAccessForGossip { get; init; } = true;
 
-			[Description("Disable telemetry data collection."), EnvironmentOnly("You can only opt-out of telemetry using Environment Variables")]
+			[Description("Disable telemetry data collection."),
+			 EnvironmentOnly("You can only opt-out of telemetry using Environment Variables")]
 			public bool TelemetryOptout { get; init; } = false;
 		}
 
@@ -185,8 +191,7 @@ namespace EventStore.Core {
 			[Description("How many log files to hold on to.")]
 			public int LogFileRetentionCount { get; init; } = 31;
 
-			[Description("Disable log to disk.")]
-			public bool DisableLogFile { get; init; } = false;
+			[Description("Disable log to disk.")] public bool DisableLogFile { get; init; } = false;
 		}
 
 		[Description("Authentication/Authorization Options")]
@@ -222,7 +227,8 @@ namespace EventStore.Core {
 			 Sensitive]
 			public string? CertificatePassword { get; init; }
 
-			[Description("The password to the certificate private key file if an encrypted PKCS #8 private key file is provided."),
+			[Description(
+				 "The password to the certificate private key file if an encrypted PKCS #8 private key file is provided."),
 			 Sensitive]
 			public string? CertificatePrivateKeyPassword { get; init; }
 		}
@@ -234,7 +240,8 @@ namespace EventStore.Core {
 			public string? TrustedRootCertificatesPath { get; init; } =
 				Locations.DefaultTrustedRootCertificateDirectory;
 
-			[Description("The pattern the CN (Common Name) of a connecting EventStoreDB node must match to be authenticated. A wildcard FQDN can be specified if using wildcard certificates or if the CN is not the same on all nodes. Leave empty to automatically use the CN of this node's certificate.")]
+			[Description(
+				"The pattern the CN (Common Name) of a connecting EventStoreDB node must match to be authenticated. A wildcard FQDN can be specified if using wildcard certificates or if the CN is not the same on all nodes. Leave empty to automatically use the CN of this node's certificate.")]
 			public string CertificateReservedNodeCommonName { get; init; } = string.Empty;
 		}
 
@@ -267,7 +274,8 @@ namespace EventStore.Core {
 
 		[Description("Cluster Options")]
 		public record ClusterOptions {
-			[Description("The maximum number of entries to keep in the stream info cache. Set to '0' to scale automatically (Default)")]
+			[Description(
+				"The maximum number of entries to keep in the stream info cache. Set to '0' to scale automatically (Default)")]
 			public int StreamInfoCacheCapacity { get; init; } = 0;
 
 			[Description("The number of nodes in the cluster.")]
@@ -390,11 +398,13 @@ namespace EventStore.Core {
 			public int IndexCacheDepth { get; init; } = 16;
 
 			[Description("Makes index merges faster and reduces disk pressure during merges.")]
-			[Deprecated("This setting is ignored by the new scavenge algorithm and will be removed in future versions.")]
+			[Deprecated(
+				"This setting is ignored by the new scavenge algorithm and will be removed in future versions.")]
 			public bool OptimizeIndexMerge { get; init; } = false;
 
 			[Description("Always keeps the newer chunks from a scavenge operation.")]
-			[Deprecated("This setting is ignored by the new scavenge algorithm and will be removed in future versions.")]
+			[Deprecated(
+				"This setting is ignored by the new scavenge algorithm and will be removed in future versions.")]
 			public bool AlwaysKeepScavenged { get; init; } = false;
 
 			[Description("Change the way the DB files are opened to reduce their stickiness in the system file cache.")]
@@ -404,7 +414,8 @@ namespace EventStore.Core {
 			             "Will be capped at host processor count.")]
 			public int InitializationThreads { get; init; } = 1;
 
-			[Description("The number of reader threads to use for processing reads. Set to '0' to scale automatically (Default)")]
+			[Description(
+				"The number of reader threads to use for processing reads. Set to '0' to scale automatically (Default)")]
 			public int ReaderThreadsCount { get; init; } = 0;
 
 			[Description("During large Index Merge operations, writes may be slowed down. Set this to the maximum " +
@@ -479,6 +490,7 @@ namespace EventStore.Core {
 			public IPAddress IntIp { get; init; } = IPAddress.Loopback;
 
 			private readonly IPAddress _replicationIp = IPAddress.Loopback;
+
 			[Description("The IP Address used by internal replication between nodes in the cluster.")]
 			public IPAddress ReplicationIp {
 				get {
@@ -494,6 +506,7 @@ namespace EventStore.Core {
 			public IPAddress ExtIp { get; init; } = IPAddress.Loopback;
 
 			private readonly IPAddress _nodeIp = IPAddress.Loopback;
+
 			[Description("The IP Address for the node.")]
 			public IPAddress NodeIp {
 				get {
@@ -527,6 +540,7 @@ namespace EventStore.Core {
 			public int IntTcpPort { get; init; } = 1112;
 
 			private readonly int _replicationPort = 1112;
+
 			[Description("The TCP port used by internal replication between nodes in the cluster.")]
 			public int ReplicationPort {
 				get {
@@ -547,6 +561,7 @@ namespace EventStore.Core {
 			public string? IntHostAdvertiseAs { get; init; } = null;
 
 			private readonly string? _replicationHostAdvertiseAs = null;
+
 			[Description("Advertise the Replication host name to other nodes in the cluster as.")]
 			public string? ReplicationHostAdvertiseAs {
 				get {
@@ -587,6 +602,7 @@ namespace EventStore.Core {
 			public int HttpPortAdvertiseAs { get; init; } = 0;
 
 			private readonly int _nodePortAdvertiseAs = 0;
+
 			[Description("Advertise Http Port As.")]
 			public int NodePortAdvertiseAs {
 				get {
@@ -604,6 +620,7 @@ namespace EventStore.Core {
 			public int IntTcpPortAdvertiseAs { get; init; } = 0;
 
 			private readonly int _replicationTcpPortAdvertiseAs = 0;
+
 			[Description("Advertise Replication Tcp Port As.")]
 			public int ReplicationTcpPortAdvertiseAs {
 				get {
@@ -621,6 +638,7 @@ namespace EventStore.Core {
 			public int IntTcpHeartbeatTimeout { get; init; } = 700;
 
 			private readonly int _replicationHeartbeatTimeout = 700;
+
 			[Description("Heartbeat timeout for Replication TCP sockets.")]
 			public int ReplicationHeartbeatTimeout {
 				get {
@@ -638,6 +656,7 @@ namespace EventStore.Core {
 			public int IntTcpHeartbeatInterval { get; init; } = 700;
 
 			private readonly int _replicationHeartbeatInterval = 700;
+
 			[Description("Heartbeat interval for Replication TCP sockets.")]
 			public int ReplicationHeartbeatInterval {
 				get {
@@ -682,7 +701,8 @@ namespace EventStore.Core {
 			public bool DisableInternalTcpTls { get; init; } = false;
 
 			[Description("Enable AtomPub over HTTP Interface."),
-			 Deprecated("AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]
+			 Deprecated(
+				 "AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]
 			public bool EnableAtomPubOverHttp { get; init; } = false;
 #pragma warning restore 0618
 		}
@@ -690,6 +710,7 @@ namespace EventStore.Core {
 		[Description("Projection Options")]
 		public record ProjectionOptions {
 			public const int DefaultProjectionExecutionTimeout = 250;
+
 			[Description("Enables the running of projections. System runs built-in projections, " +
 			             "All runs user projections.")]
 			public ProjectionType RunProjections { get; init; }
@@ -710,7 +731,8 @@ namespace EventStore.Core {
 			[Description("The time in milliseconds allowed for the compilation phase of user projections")]
 			public int ProjectionCompilationTimeout { get; set; } = 500;
 
-			[Description("The maximum execution time in milliseconds for executing a handler in a user projection. It can be overridden for a specific projection by setting ProjectionExecutionTimeout config for that projection")]
+			[Description(
+				"The maximum execution time in milliseconds for executing a handler in a user projection. It can be overridden for a specific projection by setting ProjectionExecutionTimeout config for that projection")]
 			public int ProjectionExecutionTimeout { get; set; } = DefaultProjectionExecutionTimeout;
 		}
 
@@ -732,11 +754,12 @@ namespace EventStore.Core {
 
 				return new(result);
 
-				static IEnumerable<string> FindUnknownKeys(IConfiguration configuration, IReadOnlySet<string> knownKeys) {
+				static IEnumerable<string> FindUnknownKeys(IConfiguration configuration,
+					IReadOnlySet<string> knownKeys) {
 					var unknownKeys = configuration
 						.AsEnumerable()
 						.Select(kvp => kvp.Key)
-						.Where(key => key != EventStoreConfigurationKeys.Prefix 
+						.Where(key => key != EventStoreConfigurationKeys.Prefix
 						              && !knownKeys.Contains(EventStoreConfigurationKeys.Normalize(key)))
 						.ToList();
 
@@ -745,7 +768,7 @@ namespace EventStore.Core {
 					return unknownKeys
 						.Where(key => !unknownSections.Any(key.StartsWith));
 				}
-				
+
 				static HashSet<string> FindUnknownSections(IEnumerable<string> keys) {
 					// if it has more than 2 sections, we found a value with an unknown section
 					var hashSet = new HashSet<string>();
@@ -756,14 +779,17 @@ namespace EventStore.Core {
 					return hashSet;
 				}
 
-				static (string UnknownKey, string SuggestedKey) CreateUnknownOptionResult(IEnumerable<string> knownKeys, string unknownKey, int distanceThreshold = 5) {
+				static (string UnknownKey, string SuggestedKey) CreateUnknownOptionResult(IEnumerable<string> knownKeys,
+					string unknownKey, int distanceThreshold = 5) {
 					var suggestion = knownKeys
 						.Select(key => (AllowedKey: key, Distance: Levenshtein.GetDistance(unknownKey, key)))
 						.MinBy(x => x.Distance);
 
 					return (
 						UnknownKey: EventStoreConfigurationKeys.StripConfigurationPrefix(unknownKey),
-						SuggestedKey: suggestion.Distance > distanceThreshold ? "" : EventStoreConfigurationKeys.StripConfigurationPrefix(suggestion.AllowedKey)
+						SuggestedKey: suggestion.Distance > distanceThreshold
+							? ""
+							: EventStoreConfigurationKeys.StripConfigurationPrefix(suggestion.AllowedKey)
 					);
 				}
 			}

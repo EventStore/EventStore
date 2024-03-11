@@ -20,18 +20,19 @@ public record OptionMetadata(
 	string? ErrorMessage,
 	SectionMetadata SectionMetadata,
 	int Sequence) {
-
-	public static OptionMetadata FromPropertyInfo(SectionMetadata sectionMetadata, PropertyInfo property, int sequence) {
+	public static OptionMetadata
+		FromPropertyInfo(SectionMetadata sectionMetadata, PropertyInfo property, int sequence) {
 		var sectionName = property.DeclaringType?.Name.Replace("Options", "") ?? "";
-		var key         = EventStoreConfigurationKeys.Normalize(property.Name);
-		var fullKey     = $"{EventStoreConfigurationKeys.Prefix}:{sectionName}:{EventStoreConfigurationKeys.StripConfigurationPrefix(property.Name)}";
-		
+		var key = EventStoreConfigurationKeys.Normalize(property.Name);
+		var fullKey =
+			$"{EventStoreConfigurationKeys.Prefix}:{sectionName}:{EventStoreConfigurationKeys.StripConfigurationPrefix(property.Name)}";
+
 		var description = property.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
 		var isSensitive = property.GetCustomAttribute<SensitiveAttribute>() != null;
 
-		var envOnlyAttribute  = property.GetCustomAttribute<EnvironmentOnlyAttribute>();
+		var envOnlyAttribute = property.GetCustomAttribute<EnvironmentOnlyAttribute>();
 		var isEnvironmentOnly = envOnlyAttribute != null;
-		var errorMessage      = envOnlyAttribute?.Message;
+		var errorMessage = envOnlyAttribute?.Message;
 
 		var allowedValues = property.PropertyType.IsEnum
 			? property.PropertyType.GetEnumNames()
