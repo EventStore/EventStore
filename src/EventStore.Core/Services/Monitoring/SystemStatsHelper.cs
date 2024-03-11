@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime;
 using System.Text.RegularExpressions;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -129,11 +130,20 @@ namespace EventStore.Core.Services.Monitoring {
 						stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
 						break;
 					case OsFlavor.Linux:
-					case OsFlavor.MacOS:
 						var loadAverages = _hostStat.GetLoadAverages();
 						stats["sys-loadavg-1m"] = loadAverages.Average1m;
 						stats["sys-loadavg-5m"] = loadAverages.Average5m;
 						stats["sys-loadavg-15m"] = loadAverages.Average15m;
+						break;
+					case OsFlavor.MacOS:
+						var macOsLoadAverages = SystemRuntimeStats.GetLoadAverages();
+						
+						stats["sys-loadavg-1m"]  = macOsLoadAverages.OneMinute;
+						stats["sys-loadavg-5m"]  = macOsLoadAverages.FiveMinutes;
+						stats["sys-loadavg-15m"] = macOsLoadAverages.FifteenMinutes;
+						
+						//stats["sys-cpu"] = -1; // not supported atm
+						
 						break;
 					default:
 						stats["sys-cpu"] = -1;
@@ -170,31 +180,24 @@ namespace EventStore.Core.Services.Monitoring {
 		///Free system memory in bytes
 		///</summary>
 		public ulong GetFreeMem() {
-			switch (OS.OsFlavor) {
-				case OsFlavor.Windows:
-					return (ulong)_perfCounter.GetFreeMemory();
-				case OsFlavor.Linux:
-				case OsFlavor.MacOS:
-					return _hostStat.GetFreeMemory();
-				default:
-					return 0;
-			}
+			return OS.OsFlavor switch {
+				OsFlavor.Windows => (ulong)_perfCounter.GetFreeMemory(),
+				OsFlavor.Linux   => _hostStat.GetFreeMemory(),
+				OsFlavor.MacOS   => SystemRuntimeStats.GetTotalFreeMemory(),
+				_                => 0
+			};
 		}
 
 		///<summary>
 		///Total system memory in bytes
 		///</summary>
-		public ulong GetTotalMem() {
-			switch (OS.OsFlavor) {
-				case OsFlavor.Windows:
-					return WinNativeMemoryStatus.GetTotalMemory();
-				case OsFlavor.Linux:
-				case OsFlavor.MacOS:
-					return _hostStat.GetTotalMemory();
-				default:
-					return 0;
-			}
-		}
+		public ulong GetTotalMem() =>
+			OS.OsFlavor switch {
+				OsFlavor.Windows => WinNativeMemoryStatus.GetTotalMemory(),
+				OsFlavor.Linux   => _hostStat.GetTotalMemory(),
+				OsFlavor.MacOS   => SystemRuntimeStats.GetTotalPhysicalMemory(),
+				_                => 0
+			};
 
 		public void Dispose() {
 			_eventCountersHelper.Dispose();

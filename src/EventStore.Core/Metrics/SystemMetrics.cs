@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using System.Runtime;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Monitoring.Utils;
@@ -38,10 +39,18 @@ public class SystemMetrics {
 
 		var dims = new Dimensions<SystemTracker, double>(_config, dimNames, tag => new("period", tag));
 
-		var getLoadAverages = Functions.Debounce(_stats.GetLoadAverages, _timeout);
-		dims.Register(SystemTracker.LoadAverage1m, () => getLoadAverages().Average1m);
-		dims.Register(SystemTracker.LoadAverage5m, () => getLoadAverages().Average5m);
-		dims.Register(SystemTracker.LoadAverage15m, () => getLoadAverages().Average15m);
+		if (OS.OsFlavor == OsFlavor.MacOS) {
+			var getLoadAverages = Functions.Debounce(SystemRuntimeStats.GetLoadAverages, _timeout);
+			dims.Register(SystemTracker.LoadAverage1m, () => getLoadAverages().OneMinute);
+			dims.Register(SystemTracker.LoadAverage5m, () => getLoadAverages().FiveMinutes);
+			dims.Register(SystemTracker.LoadAverage15m, () => getLoadAverages().FifteenMinutes);
+		}
+		else {
+			var getLoadAverages = Functions.Debounce(_stats.GetLoadAverages, _timeout);
+			dims.Register(SystemTracker.LoadAverage1m, () => getLoadAverages().Average1m);
+			dims.Register(SystemTracker.LoadAverage5m, () => getLoadAverages().Average5m);
+			dims.Register(SystemTracker.LoadAverage15m, () => getLoadAverages().Average15m);
+		}
 
 		if (dims.AnyRegistered())
 			_meter.CreateObservableGauge(metricName, dims.GenObserve());
@@ -57,7 +66,10 @@ public class SystemMetrics {
 	public void CreateMemoryMetric(string metricName, Dictionary<SystemTracker, string> dimNames) {
 		var dims = new Dimensions<SystemTracker, long>(_config, dimNames, tag => new("kind", tag));
 
-		if (OS.IsUnix) {
+		if (OS.OsFlavor == OsFlavor.MacOS) {
+			dims.Register(SystemTracker.FreeMem, () => (long)SystemRuntimeStats.GetTotalFreeMemory());
+			dims.Register(SystemTracker.TotalMem, () => (long)SystemRuntimeStats.GetTotalPhysicalMemory());
+		} else if (OS.IsUnix) {
 			dims.Register(SystemTracker.FreeMem, () => (long)_stats.GetFreeMemory());
 			dims.Register(SystemTracker.TotalMem, () => (long)_stats.GetTotalMemory());
 		} else {

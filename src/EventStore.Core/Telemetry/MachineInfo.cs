@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Native.Monitoring;
@@ -21,6 +22,9 @@ public class MachineInfo {
 	}
 
 	private static long GetTotalMemory() {
+		if (OS.OsFlavor == OsFlavor.MacOS)
+			return (long) SystemRuntimeStats.GetTotalPhysicalMemory();
+		
 		if (OS.IsUnix) {
 			var stats = new HostStat.HostStat();
 			return (long) stats.GetTotalMemory();

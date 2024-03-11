@@ -1585,11 +1585,14 @@ namespace EventStore.Core {
 			AddTask(perSubscrQueue.Start());
 			AddTask(redactionQueue.Start());
 
-			if (Runtime.IsUnixOrMac) {
+			if (Runtime.IsUnix) {
 				UnixSignalManager.GetInstance().Subscribe(Signum.SIGHUP, () => {
-					Log.Information("Reloading the node's configuration since the SIGHUP signal has been received.");
-					_mainQueue.Publish(new ClientMessage.ReloadConfig());
+					Log.Information("Reloading the node's configuration since the SIGHUP signal has been received."); 
+					_mainQueue.Publish(new ClientMessage.ReloadConfig()); 
 				});
+			}
+			else if (Runtime.IsMacOS) {
+				Log.Warning("Skipping SIGHUP signal registration on MacOS for dev purposes.");
 			}
 
 			// subsystems
