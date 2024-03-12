@@ -1467,7 +1467,12 @@ namespace EventStore.Core {
 				options.Cluster.NodePriority, options.Cluster.ReadOnlyReplica, VersionInfo.Version);
 
 			// ELECTIONS TRACKER
-			var electionsTracker = new ElectionsCounterTracker(trackers.ElectionCounterTracker);
+			var electionsTracker = new ElectionsCounterTracker(trackers.ElectionCounterTracker); // Here I am passing the tracker that I have created in MetricsBootStrapper. As soon as I created this,
+																								// I have a new instance for ElectionsCounterTracker and I can't access the CounterSubmetric in Hanlde() call.
+																								// In other CounterSubmetric cases, we are directly accessing it but here we need to access it in Hanlde()
+
+
+			// var electionsTracker = new ElectionsCounterTracker() // Same behaviour
 			_mainBus.Subscribe(electionsTracker);
 
 			// TELEMETRY

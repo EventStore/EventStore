@@ -1,36 +1,35 @@
 ﻿using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using Serilog;
 
 
 namespace EventStore.Core.Metrics;
 
-public interface IElectionCounterTracker {
-	void IncrementCounter();
+public interface IElectionCounterTracker : IHandle<ElectionMessage.ElectionsDone> {
 }
 
-public class ElectionsCounterTracker : IElectionCounterTracker,
-	IHandle<ElectionMessage.ElectionsDone> {
+public class ElectionsCounterTracker : IElectionCounterTracker{
 	private readonly CounterSubMetric _electionsCounter;
-	private readonly IElectionCounterTracker _tracker;
-
+	private readonly IElectionCounterTracker _electionsCounterTracker;
 	public ElectionsCounterTracker(CounterSubMetric electionsCounter) {
 		_electionsCounter = electionsCounter;
 	}
 
-	public ElectionsCounterTracker(IElectionCounterTracker tracker) {
-		_tracker = tracker;
-	}
+	// public ElectionsCounterTracker() {
+	// }
 
-	public void IncrementCounter() {
-		_electionsCounter.Add(1);
+	public ElectionsCounterTracker(IElectionCounterTracker tracker) {
+		_electionsCounterTracker = tracker;
 	}
 
 	public class NoOp : IElectionCounterTracker {
-		public void IncrementCounter() {
+		public void Handle(ElectionMessage.ElectionsDone message) {
+
 		}
 	}
 
 	public void Handle(ElectionMessage.ElectionsDone message) {
-		_tracker.IncrementCounter();
+		// Increment the counter
+		//_electionsCounter.Add(1);
 	}
 }
