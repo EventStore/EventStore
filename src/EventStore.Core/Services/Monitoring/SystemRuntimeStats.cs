@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace System.Runtime;
@@ -14,6 +15,10 @@ public enum RuntimeOSPlatform {
 	Linux,
 	FreeBSD
 }
+
+record LoadAverages(double OneMinute, double FiveMinutes, double FifteenMinutes);
+
+record CpuStats(float Usage, float IdleTime, float TotalTime, LoadAverages LoadAverages);
 
 public static class SystemRuntimeStats {
 	public static readonly RuntimeOSPlatform OsPlatform;
@@ -39,6 +44,12 @@ public static class SystemRuntimeStats {
 			throw new NotSupportedException("Operating system not supported");
 		}
 	}
+
+	public static ulong                                                         TotalPhysicalMemory  => GetTotalPhysicalMemory();
+	public static ulong                                                         TotalAvailableMemory => GetTotalAvailableMemory();
+	public static ulong                                                         TotalFreeMemory      => GetTotalFreeMemory();
+	public static (double OneMinute, double FiveMinutes, double FifteenMinutes) LoadAverages         => GetLoadAverages();
+	public static (float Usage, float IdleTime, float TotalTime)                CpuStats             => GetCpuStats();
 	
 	public static ulong GetTotalPhysicalMemory() {
 		return OsPlatform switch {
@@ -128,20 +139,10 @@ public static class SystemRuntimeStats {
 	
 	public static (double OneMinute, double FiveMinutes, double FifteenMinutes) GetLoadAverages() {
 		return OsPlatform switch {
-			RuntimeOSPlatform.Windows => GetLoadAveragesWindows(),
-			RuntimeOSPlatform.OSX     => GetLoadAveragesMac(),
-			RuntimeOSPlatform.Linux   => GetLoadAveragesLinux(),
+			RuntimeOSPlatform.Linux => GetLoadAveragesLinux(),
+			RuntimeOSPlatform.OSX   => GetLoadAveragesMac(),
 			_                       => throw new NotSupportedException("Operating system not supported")
 		};
-		
-		[SuppressMessage("Interoperability", "CA1416:Validate platform compatibility")]
-		static (double OneMinute, double FiveMinutes, double FifteenMinutes) GetLoadAveragesWindows() {
-			// windows only has the total cpu usage
-			using var counter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-			var value = counter.NextValue();
-			return (value, value, value);
-	
-		}
 
 		static (double OneMinute, double FiveMinutes, double FifteenMinutes) GetLoadAveragesMac() {
 			// example: 14:49  up 37 days,  3:27, 2 users, load averages: 1.57 2.09 2.26
@@ -151,9 +152,9 @@ public static class SystemRuntimeStats {
 				.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
 			return (
-				OneMinute: double.Parse(values[0], CultureInfo.InvariantCulture),
-				FiveMinutes: double.Parse(values[1], CultureInfo.InvariantCulture),
-				FifteenMinutes: double.Parse(values[2], CultureInfo.InvariantCulture)
+				OneMinute: Convert.ToDouble(values[0], CultureInfo.InvariantCulture),
+				FiveMinutes: Convert.ToDouble(values[1], CultureInfo.InvariantCulture),
+				FifteenMinutes: Convert.ToDouble(values[2], CultureInfo.InvariantCulture)
 			);
 		}
 	
@@ -162,11 +163,71 @@ public static class SystemRuntimeStats {
 			var values = output[(output.IndexOf("load average:", StringComparison.OrdinalIgnoreCase) + 13)..].Split(',');
 
 			return (
-				OneMinute: double.Parse(values[0], CultureInfo.InvariantCulture),
-				FiveMinutes: double.Parse(values[1], CultureInfo.InvariantCulture),
-				FifteenMinutes: double.Parse(values[2], CultureInfo.InvariantCulture)
+				OneMinute: Convert.ToDouble(values[0], CultureInfo.InvariantCulture),
+				FiveMinutes: Convert.ToDouble(values[1], CultureInfo.InvariantCulture),
+				FifteenMinutes: Convert.ToDouble(values[2], CultureInfo.InvariantCulture)
 			);
 		}
+	}
+	
+	public static (float Usage, float IdleTime, float TotalTime) GetCpuStats() {
+		return OsPlatform switch {
+			RuntimeOSPlatform.Linux   => GetCpuStatsLinux(),
+			RuntimeOSPlatform.OSX     => GetCpuStatsMacOs(),
+			RuntimeOSPlatform.Windows => GetCpuStatsWindows(),
+			_                         => throw new NotSupportedException("Operating system not supported")
+		};
+		
+		[SuppressMessage("Interoperability", "CA1416:Validate platform compatibility")]
+		static (float Usage, float IdleTime, float TotalTime) GetCpuStatsWindows() {
+			using var counter  = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+
+			var cpuUsage = counter.NextValue();
+			
+			// Windows does not provide direct idle time and total time, so we approximate
+			var idleTime  = 100 - cpuUsage;
+			var totalTime = 100;
+			
+			return (cpuUsage, idleTime, totalTime);
+		}
+
+		static (float Usage, float IdleTime, float TotalTime) GetCpuStatsMacOs() {
+			var output = ExecuteBashCommand("iostat -c 2 -w 1");
+			
+			// The second last line contains the CPU stats
+			var cpuStats = output.Split(Environment.NewLine)[^2].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			
+			var userTime   = Convert.ToSingle(cpuStats[0], CultureInfo.InvariantCulture);
+			var systemTime = Convert.ToSingle(cpuStats[1], CultureInfo.InvariantCulture);
+			var idleTime   = Convert.ToSingle(cpuStats[2], CultureInfo.InvariantCulture);
+
+			var totalTime = userTime + systemTime + idleTime;
+			var usage     = 100.0f * (totalTime - idleTime) / totalTime;
+			
+			return (usage, idleTime, totalTime);
+			
+			// static float GetCpuUsageMac() {
+			// 	var output = ExecuteBashCommand("ps -A -o %cpu");
+			//
+			// 	float total  = 0;
+			// 	// Skip the header
+			// 	foreach (var line in output.Split(Environment.NewLine).Skip(1))
+			// 		if (float.TryParse(line, out var cpuUsage)) total += cpuUsage;
+			//
+			// 	return total;
+			// }
+		}
+
+		static (float Usage, float IdleTime, float TotalTime) GetCpuStatsLinux() {
+	        var output = ExecuteBashCommand("cat /proc/stat | grep '^cpu '");
+	        
+	        var cpuTimes  = output.Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1).Select(long.Parse).ToList();
+	        var idleTime  = cpuTimes[3]; // idle time is 4th item
+	        var totalTime = cpuTimes.Sum();
+	        var usage     = 100.0f * (totalTime - idleTime) / totalTime;
+	        
+	        return (usage, idleTime, totalTime);
+        }
 	}
 	
 	static string ExecuteBashCommand(string command) {
