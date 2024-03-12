@@ -20,7 +20,7 @@ This quick start guide provides a step-by-step process for setting up a 3-node E
 
 1. Create a folder named 'Generate_certificate'.
 2. Download the latest version of the certificate generator from the [EventStore Certificate Generation CLI repo](https://github.com/EventStore/es-gencert-cli/releases) and unzip it into the 'Generate_certificate' folder.
-3. In a terminal, change to the `es-gencert-cli` directory: 
+3. In a terminal, change to the 'es-gencert-cli' directory: 
 
 
 Run this command to generate the root certificate and root private key on Linux: 
