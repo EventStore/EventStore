@@ -76,7 +76,6 @@ CertificatePrivateKeyFile: /path/to/folder/Cluster/Node1/certificates/node.key
 TrustedRootCertificatesPath: /path/to/folder/Generate_certificate/ca
 ```
 
-:::
 Adjust the paths based on the operating system.
 
 ## Running nodes
