@@ -9,7 +9,7 @@ This quick start guide provides a step-by-step process for setting up a 3-node E
 1. Create a folder named 'Cluster'. Within it, create three subfolders: 'Node1', 'Node2', and 'Node3'.
 2. In each node folder, add a configuration file (either .yml or .txt).
 3. Within each node folder, create the following subfolders:
-    - 'Certificates' to store the certificate and private key. 
+    - 'certificates' to store the certificate and private key. 
     - 'Data' for all data files.
     - 'Index' for node indexes.
     - 'Logs' for log files.
@@ -18,29 +18,29 @@ This quick start guide provides a step-by-step process for setting up a 3-node E
 
 ## Generating certificates
 
-1. Create a folder named 'Generate_Certificate'.
-2. Download the latest version of the certificate generator from the [EventStore Certificate Generation CLI repo](https://github.com/EventStore/es-gencert-cli/releases) and unzip it into the 'Generate_Certificate' folder.
+1. Create a folder named 'Generate_certificate'.
+2. Download the latest version of the certificate generator from the [EventStore Certificate Generation CLI repo](https://github.com/EventStore/es-gencert-cli/releases) and unzip it into the 'Generate_certificate' folder.
 3. In a terminal, change to the `es-gencert-cli` directory: 
 
 
 Run this command to generate the root certificate and root private key on Linux: 
-`./es-gencert-cli create-ca -out [Generate_Certificate Path]/ca`
+`./es-gencert-cli create-ca -out [Generate_certificate Path]/ca`
 
 On Windows:
 
-`.\es-gencert-cli.exe create-ca -out [Generate_Certificate Path]\ca`
+`.\es-gencert-cli.exe create-ca -out [Generate_certificate Path]\ca`
 
 
 
-4. In the 'Generate_Certificate' directory, run the following commands one at a time for each node (change the path and node number as needed) to generate the certificate and private keys for each node. Use your actual DNS names and recommended IP address configurations to align with production practices. For further details, check out our [cluster with DNS guide](https://developers.eventstore.com/server/v23.10/cluster.html#cluster-with-dns).
+4. In the 'Generate_certificate' directory, run the following commands one at a time for each node (change the path and node number as needed) to generate the certificate and private keys for each node. Use your actual DNS names and recommended IP address configurations to align with production practices. For further details, check out our [cluster with DNS guide](https://developers.eventstore.com/server/v23.10/cluster.html#cluster-with-dns).
 
 For example, if the certificate generator version is 1.2.1 and we’re generating the certificate and private keys for 'Node1' on Linux:
 
-`./es-gencert-cli create-node -ca-certificate /path/to/folder/Generate_Certificate/es-gencert-cli_1.2.1_Linux-x86_64/ca/ca.crt -ca-key` 
-`/path/to/folder/Generate_Certificate/es-gencert-cli_1.2.1_Linux-x86_64/ca/ca.key -out`
+`./es-gencert-cli create-node -ca-certificate /path/to/folder/Generate_certificate/es-gencert-cli_1.2.1_Linux-x86_64/ca/ca.crt -ca-key` 
+`/path/to/folder/Generate_certificate/es-gencert-cli_1.2.1_Linux-x86_64/ca/ca.key -out`
 `/path/to/folder/Cluster/Node1/certificates -dns-names your.node1.dns.com`
 
- The command line will create a folder named 'Certificates' containing the certificate and private key for each node in the directory where we created the folder for Node1 in the folder cluster. 
+ The command line will create a folder named 'certificates' containing the certificate and private key for each node in the directory where we created the folder for Node1 in the folder cluster. 
 
 :::
 Each command will automatically generate the security certificate and the private key for each node in their respective certificates file:
@@ -76,7 +76,7 @@ RunProjections: All
 # Certificates configuration
 CertificateFile: /path/to/folder/Cluster/Node1/certificates/node.crt
 CertificatePrivateKeyFile: /path/to/folder/Cluster/Node1/certificates/node.key
-TrustedRootCertificatesPath: /path/to/folder/Generate_Certificate/ca
+TrustedRootCertificatesPath: /path/to/folder/Generate_certificate/ca
 ```
 
 :::
