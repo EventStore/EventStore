@@ -172,10 +172,7 @@ namespace EventStore.Core {
 		}
 
 		public IServiceProvider ConfigureServices(IServiceCollection services) {
-			var metricsConfiguration = _configuration
-				.GetSection(SectionNames.EventStore)
-				.GetSection(SectionNames.Metrics)
-				.Get<MetricsConfiguration>() ?? new();
+			var metricsConfiguration = MetricsConfiguration.Get(_configuration);
 
 			services = services
 				.AddRouting()

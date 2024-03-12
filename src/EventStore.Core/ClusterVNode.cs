@@ -131,6 +131,7 @@ namespace EventStore.Core {
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<ClientMessage.ReloadConfig>{
 		private readonly ClusterVNodeOptions _options;
+
 		public override TFChunkDb Db { get; }
 
 		public override GossipAdvertiseInfo GossipAdvertiseInfo { get; }
@@ -316,11 +317,8 @@ namespace EventStore.Core {
 				out var workerThreadsCount);
 
 			var trackers = new Trackers();
-			var metricsConfiguration = configuration
-				.GetSection(SectionNames.EventStore)
-				.GetSection(SectionNames.Metrics)
-				.Get<MetricsConfiguration>() ?? new();
-			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
+
+			MetricsBootstrapper.Bootstrap(MetricsConfiguration.Get(configuration), dbConfig, trackers);
 
 			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker);
 
@@ -439,7 +437,7 @@ namespace EventStore.Core {
 					indexChk,
 					streamExistenceFilterChk,
 					options.Database.ChunkInitialReaderCount,
-					ClusterVNodeOptions.DatabaseOptions.GetTFChunkMaxReaderCount(
+					GetTFChunkMaxReaderCount(
 						readerThreadsCount: readerThreadsCount,
 						chunkInitialReaderCount: options.Database.ChunkInitialReaderCount),
 					options.Database.MemDb,
@@ -448,6 +446,15 @@ namespace EventStore.Core {
 					options.Database.OptimizeIndexMerge,
 					options.Database.ReduceFileCachePressure,
 					options.Database.MaxTruncation);
+				
+				static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
+					var tfChunkMaxReaderCount =
+						GetPTableMaxReaderCount(readerThreadsCount) +
+						2 + /* for caching/uncaching, populating midpoints */
+						1 + /* for epoch manager usage of elections/replica service */
+						1 /* for epoch manager usage of leader replication service */;
+					return Math.Max(tfChunkMaxReaderCount, chunkInitialReaderCount);
+				}
 			}
 
 			var writerCheckpoint = Db.Config.WriterCheckpoint.Read();
@@ -527,6 +534,7 @@ namespace EventStore.Core {
 					trackers.NodeStatusTracker,
 					options, this, forwardingProxy,
 					startSubsystems: StartSubsystems);
+
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager,
 				trackers.QueueTrackers);
 
@@ -598,7 +606,7 @@ namespace EventStore.Core {
 			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads);
 			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, ESConsts.DefaultIndexDirectoryName);
 
-			var pTableMaxReaderCount = ClusterVNodeOptions.DatabaseOptions.GetPTableMaxReaderCount(readerThreadsCount);
+			var pTableMaxReaderCount = GetPTableMaxReaderCount(readerThreadsCount);
 			var readerPool = new ObjectPool<ITransactionFileReader>(
 				"ReadIndex readers pool",
 				ESConsts.PTableInitialReaderCount,
@@ -1071,14 +1079,17 @@ namespace EventStore.Core {
 				trackers.GossipTrackers.ProcessingRequestFromHttpClient);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
-			var infoController = new InfoController(options, new Dictionary<string, bool> {
-				["projections"] = options.Projections.RunProjections != ProjectionType.None || options.DevMode.Dev,
-				["userManagement"] = options.Auth.AuthenticationType == Opts.AuthenticationTypeDefault &&
-				                     !options.Application.Insecure,
-				["atomPub"] = options.Interface.EnableAtomPubOverHttp || options.DevMode.Dev
 
-			}, _authenticationProvider);
-
+			var infoController = new InfoController(
+				options,
+				new Dictionary<string, bool> {
+					["projections"]    = options.Projection.RunProjections != ProjectionType.None || options.DevMode.Dev,
+					["userManagement"] = options.Auth.AuthenticationType == Opts.AuthenticationTypeDefault && !options.Application.Insecure,
+					["atomPub"]        = options.Interface.EnableAtomPubOverHttp || options.DevMode.Dev
+				},
+				_authenticationProvider
+			);
+			
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
 			_httpService.SetupController(persistentSubscriptionController);
@@ -1627,6 +1638,19 @@ namespace EventStore.Core {
 			dynamicCacheManager.Start();
 		}
 
+		static int GetPTableMaxReaderCount(int readerThreadsCount) {
+			var ptableMaxReaderCount =
+				1 /* StorageWriter */
+				+ 1 /* StorageChaser */
+				+ 1 /* Projections */
+				+ TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
+				+ 1 /* Redaction */
+				+ 1 /* Subscription LinkTos resolving */
+				+ readerThreadsCount
+				+ 5 /* just in case reserve :) */;
+			return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
+		}
+		
 		private static void CreateStaticStreamInfoCache(
 			int streamInfoCacheCapacity,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
@@ -1888,13 +1912,13 @@ namespace EventStore.Core {
 		}
 
 		private void ReloadLogOptions(ClusterVNodeOptions options) {
-			if (options.Log.LogLevel != LogLevel.Default) {
-				var changed = EventStoreLoggerConfiguration.AdjustMinimumLogLevel(options.Log.LogLevel);
+			if (options.Logging.LogLevel != LogLevel.Default) {
+				var changed = EventStoreLoggerConfiguration.AdjustMinimumLogLevel(options.Logging.LogLevel);
 				if (changed) {
-					Log.Information($"The log level was adjusted to: {options.Log.LogLevel}");
+					Log.Information($"The log level was adjusted to: {options.Logging.LogLevel}");
 
-					if (options.Log.LogLevel > LogLevel.Information) {
-						Console.WriteLine($"The log level was adjusted to: {options.Log.LogLevel}");
+					if (options.Logging.LogLevel > LogLevel.Information) {
+						Console.WriteLine($"The log level was adjusted to: {options.Logging.LogLevel}");
 					}
 				}
 			}

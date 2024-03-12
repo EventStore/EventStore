@@ -1,8 +1,14 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Common.Configuration {
 	public class MetricsConfiguration {
+		public static MetricsConfiguration Get(IConfiguration configuration) =>
+			configuration
+				.GetSection("EventStore:Metrics")
+				.Get<MetricsConfiguration>() ?? new();
+
 		public enum StatusTracker {
 			Index = 1,
 			Node,
