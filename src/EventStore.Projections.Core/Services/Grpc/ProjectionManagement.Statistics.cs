@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 						statsSource.TrySetException(ProjectionManagement.ProjectionNotFound(name));
 						break;
 					default:
-						statsSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
+						statsSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Statistics>(message));
 						break;
 				}
 			}

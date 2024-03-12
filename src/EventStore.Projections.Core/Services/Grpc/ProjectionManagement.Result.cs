@@ -36,13 +36,13 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			void OnMessage(Message message) {
 				switch (message) {
-					case ProjectionManagementMessage.ProjectionState result:
-						if (string.IsNullOrEmpty(result.State)) {
+					case ProjectionManagementMessage.ProjectionResult result:
+						if (string.IsNullOrEmpty(result.Result)) {
 							resultSource.TrySetResult(new Value {
 								StructValue = new Struct()
 							});
 						} else {
-							var document = JsonDocument.Parse(result.State);
+							var document = JsonDocument.Parse(result.Result);
 							resultSource.TrySetResult(GetProtoValue(document.RootElement));
 						}
 						break;
@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 						resultSource.TrySetException(ProjectionManagement.ProjectionNotFound(name));
 						break;
 					default:
-						resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
+						resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionResult>(message));
 						break;
 				}
 			}
@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 						resultSource.TrySetException(ProjectionManagement.ProjectionNotFound(name));
 						break;
 					default:
-						resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
+						resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionState>(message));
 						break;
 				}
 			}
