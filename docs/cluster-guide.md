@@ -40,8 +40,6 @@ For example, if the certificate generator version is 1.2.1 and we’re generatin
 `/path/to/folder/Generate_certificate/es-gencert-cli_1.2.1_Linux-x86_64/ca/ca.key -out`
 `/path/to/folder/Cluster/Node1/certificates -dns-names your.node1.dns.com`
 
- The command line will create a folder named 'certificates' containing the certificate and private key for each node in the directory where we created the folder for Node1 in the folder cluster. 
-
 Each command will automatically generate the security certificate and the private key for each node in their respective certificates file:
 
 Linux: `/path/to/folder/Cluster/Node1/certificates` 
