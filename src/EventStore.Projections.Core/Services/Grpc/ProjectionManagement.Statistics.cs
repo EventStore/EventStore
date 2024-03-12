@@ -62,8 +62,8 @@ namespace EventStore.Projections.Core.Services.Grpc {
 					case ProjectionManagementMessage.Statistics statistics:
 						statsSource.TrySetResult(statistics.Projections);
 						break;
-					case ProjectionManagementMessage.NotFound _:
-						statsSource.TrySetException(ProjectionManagement.ProjectionNotFound(name));
+					case ProjectionManagementMessage.NotFound:
+						statsSource.TrySetException(ProjectionNotFound(name));
 						break;
 					default:
 						statsSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Statistics>(message));

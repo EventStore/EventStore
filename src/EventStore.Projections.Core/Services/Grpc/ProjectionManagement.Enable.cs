@@ -31,11 +31,11 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			void OnMessage(Message message) {
 				switch (message) {
-					case ProjectionManagementMessage.Updated _:
+					case ProjectionManagementMessage.Updated:
 						enableSource.TrySetResult(true);
 						break;
-					case ProjectionManagementMessage.NotFound _:
-						enableSource.TrySetException(ProjectionManagement.ProjectionNotFound(name));
+					case ProjectionManagementMessage.NotFound:
+						enableSource.TrySetException(ProjectionNotFound(name));
 						break;
 					default:
 						enableSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));

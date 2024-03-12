@@ -7,7 +7,6 @@ using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Serilog;
 
 namespace EventStore.Projections.Core.Services.Grpc {
 	internal partial class ProjectionManagement {
@@ -46,15 +45,14 @@ namespace EventStore.Projections.Core.Services.Grpc {
 							resultSource.TrySetResult(GetProtoValue(document.RootElement));
 						}
 						break;
-					case ProjectionManagementMessage.NotFound _:
-						resultSource.TrySetException(ProjectionManagement.ProjectionNotFound(name));
+					case ProjectionManagementMessage.NotFound:
+						resultSource.TrySetException(ProjectionNotFound(name));
 						break;
 					default:
 						resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionResult>(message));
 						break;
 				}
 			}
-
 		}
 
 		public override async Task<StateResp> State(StateReq request, ServerCallContext context) {
@@ -90,8 +88,8 @@ namespace EventStore.Projections.Core.Services.Grpc {
 							resultSource.TrySetResult(GetProtoValue(document.RootElement));
 						}
 						break;
-					case ProjectionManagementMessage.NotFound _:
-						resultSource.TrySetException(ProjectionManagement.ProjectionNotFound(name));
+					case ProjectionManagementMessage.NotFound:
+						resultSource.TrySetException(ProjectionNotFound(name));
 						break;
 					default:
 						resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionState>(message));

@@ -34,11 +34,11 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			void OnMessage(Message message) {
 				switch (message) {
-					case ProjectionManagementMessage.Updated _:
+					case ProjectionManagementMessage.Updated:
 						deletedSource.TrySetResult(true);
 						break;
-					case ProjectionManagementMessage.NotFound _:
-						deletedSource.TrySetException(ProjectionManagement.ProjectionNotFound(name));
+					case ProjectionManagementMessage.NotFound:
+						deletedSource.TrySetException(ProjectionNotFound(name));
 						break;
 					default:
 						deletedSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
