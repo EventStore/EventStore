@@ -60,8 +60,6 @@ IntIp: your.node1.internal.dns.com
 ExtIp: your.node1.external.dns.com
 HttpPort: 21131
 IntTcpPort: 11121
-ExtTcpPort: 11131
-EnableExternalTcp: true
 EnableAtomPubOverHTTP: true
 
 # Cluster gossip
