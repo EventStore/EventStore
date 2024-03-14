@@ -1476,6 +1476,9 @@ namespace EventStore.Core {
 				GossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
 				options.Cluster.NodePriority, options.Cluster.ReadOnlyReplica, VersionInfo.Version);
 
+			// ELECTIONS TRACKER
+			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(trackers.ElectionCounterTracker);
+
 			// TELEMETRY
 			var telemetryService = new TelemetryService(
 				Db.Manager,
