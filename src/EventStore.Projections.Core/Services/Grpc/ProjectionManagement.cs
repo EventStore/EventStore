@@ -36,6 +36,9 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				new Status(StatusCode.FailedPrecondition,
 					$"Projection Subsystem cannot be restarted as it is in the wrong state: {state}"));
 
+		private static Exception ProjectionNotFound(string name) =>
+			new RpcException(new Status(StatusCode.NotFound, $"Projection '{name}' not found"));
+
 		private static Value GetProtoValue(JsonElement element) =>
 			element.ValueKind switch {
 				JsonValueKind.Null => new Value {NullValue = NullValue.NullValue},
