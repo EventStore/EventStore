@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -76,6 +77,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					}
 				} catch (ReadResponseException ex) {
 					ConvertReadResponseException(ex);
+				} catch (IOException) {
+					// ignored
+				} catch (TaskCanceledException) {
+					//ignored
+				} catch (InvalidOperationException) {
+					//ignored
+				} catch (OperationCanceledException) {
+					//ignored
 				}
 			} catch (Exception ex) {
 				duration.SetException(ex);
