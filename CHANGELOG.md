@@ -18,6 +18,12 @@ All notable changes to this project will be documented in this file.
 - Version number [EventStore#4195](https://github.com/EventStore/EventStore/pull/4195)
 - version number [EventStore#4188](https://github.com/EventStore/EventStore/pull/4188)
 
+### Fixed
+- Improve error messaging for non-existent projections in gRPC API [EventStore#4197](https://github.com/EventStore/EventStore/pull/4197)
+
+### Added
+- Add the elections counter metric so users can set alerts if the number of elections over a certain period of time exceeds some number. [EventStore#4179](https://github.com/EventStore/EventStore/pull/4179)
+
 ## [24.2.0] - 2024-02-25
 
 ### Changed
