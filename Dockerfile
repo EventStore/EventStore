@@ -16,7 +16,7 @@ RUN dotnet restore --runtime=${RUNTIME}
 COPY ./src .
 
 WORKDIR /build/.git
-COPY ./.git .
+COPY ./.git/ .
 
 WORKDIR /build/src
 RUN find /build/src -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -I{} -0 -n1 sh -c \
