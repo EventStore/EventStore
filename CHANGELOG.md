@@ -13,16 +13,24 @@ All notable changes to this project will be documented in this file.
 - //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4191](https://github.com/EventStore/EventStore/pull/4191)
 - //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4190](https://github.com/EventStore/EventStore/pull/4190)
 - //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4189](https://github.com/EventStore/EventStore/pull/4189)
+- //github.com/EventStore/EventStore/pull/4200 [EventStore#4203](https://github.com/EventStore/EventStore/pull/4203)
 
 ### Changed
 - Version number [EventStore#4195](https://github.com/EventStore/EventStore/pull/4195)
 - version number [EventStore#4188](https://github.com/EventStore/EventStore/pull/4188)
+- <internal changes> [EventStore#4202](https://github.com/EventStore/EventStore/pull/4202)
 
 ### Fixed
 - Improve error messaging for non-existent projections in gRPC API [EventStore#4197](https://github.com/EventStore/EventStore/pull/4197)
+- Add a check for the empty uuidOption.  [EventStore#4158](https://github.com/EventStore/EventStore/pull/4158)
+- Decrease grpc log level on the server. https://linear.app/eventstore/issue/DB-568/decrease-grpc-log-level-on-the-server [EventStore#4112](https://github.com/EventStore/EventStore/pull/4112)
 
 ### Added
 - Add the elections counter metric so users can set alerts if the number of elections over a certain period of time exceeds some number. [EventStore#4179](https://github.com/EventStore/EventStore/pull/4179)
+- Add documentation for the elections count metric [EventStore#4198](https://github.com/EventStore/EventStore/pull/4198)
+
+### Removed
+- Unnecessary code comment [EventStore#4200](https://github.com/EventStore/EventStore/pull/4200)
 
 ## [24.2.0] - 2024-02-25
 
