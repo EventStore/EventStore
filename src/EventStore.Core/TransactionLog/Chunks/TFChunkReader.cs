@@ -38,6 +38,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				_existsAtOptimizer = TFChunkReaderExistsAtOptimizer.Instance;
 		}
 
+		public TFChunkReader() {
+			//throw new NotImplementedException();
+		}
+
 		public void Reposition(long position) {
 			_curPos = position;
 		}

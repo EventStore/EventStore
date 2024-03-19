@@ -22,7 +22,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using System.Runtime;
+using EventStore.Client.PersistentSubscriptions;
 using EventStore.Common.DevCertificates;
+using EventStore.Core.DataStructures;
+using EventStore.Core.Index;
+using EventStore.Core.Index.Hashes;
+using EventStore.Core.Settings;
+using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Chunks;
 using Serilog.Events;
 
 namespace EventStore.ClusterNode {
@@ -33,8 +40,58 @@ namespace EventStore.ClusterNode {
 			var cts = new CancellationTokenSource();
 
 			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
+
+
+
 			try {
 				var options = ClusterVNodeOptions.FromConfiguration(args, Environment.GetEnvironmentVariables());
+
+				var indexPath = options.Database.Index ?? Path.Combine("D:\\ESDB24\\Index", ESConsts.DefaultIndexDirectoryName);
+
+				var pTableMaxReaderCount = ClusterVNodeOptions.DatabaseOptions.GetPTableMaxReaderCount(options.Database.ReaderThreadsCount);
+
+				var trackers = new Trackers();
+
+
+
+				var readerPool = new ObjectPool<ITransactionFileReader>(
+					"ReadIndex readers pool",
+					ESConsts.PTableInitialReaderCount,
+					pTableMaxReaderCount,
+					() => new TFChunkReader());
+
+				var _testTable = new TableIndex<String>(indexPath,
+					new XXHashUnsafe(),
+					new Murmur3AUnsafe(),
+					"",
+					() => new HashListMemTable(options.IndexBitnessVersion,
+						maxSize: options.Database.MaxMemTableSize * 2),
+					() => new TFReaderLease(readerPool),
+					options.IndexBitnessVersion,
+					maxSizeForMemory: options.Database.MaxMemTableSize,
+					maxTablesPerLevel: 2,
+					inMem: false,
+					skipIndexVerify: options.Database.SkipIndexVerify,
+					indexCacheDepth: options.Database.IndexCacheDepth,
+					useBloomFilter: options.Database.UseIndexBloomFilters,
+					lruCacheSize: options.Database.IndexCacheSize,
+					initializationThreads: options.Database.InitializationThreads,
+					additionalReclaim: false,
+					maxAutoMergeIndexLevel: options.Database.MaxAutoMergeIndexLevel,
+					pTableMaxReaderCount: pTableMaxReaderCount,
+					statusTracker: trackers.IndexStatusTracker);
+				_testTable.Initialize(long.MaxValue);
+
+
+
+				for (long i = 0; i < 1000000000; i++) {
+					Log.Information($"ADDING VALUES TO TABLE: {i}");
+					_testTable.Add(i, $"0xDEAD{i}", 0, 0xFF00);
+
+				}
+
+				Log.Warning("Done adding the entries to PTable");
+
 				var logsDirectory = string.IsNullOrWhiteSpace(options.Log.Log)
 					? Locations.DefaultLogDirectory
 					: options.Log.Log;
