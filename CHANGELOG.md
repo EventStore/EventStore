@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4190](https://github.com/EventStore/EventStore/pull/4190)
 - //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4189](https://github.com/EventStore/EventStore/pull/4189)
 - //github.com/EventStore/EventStore/pull/4200 [EventStore#4203](https://github.com/EventStore/EventStore/pull/4203)
+- //github.com/EventStore/EventStore/pull/4204 [EventStore#4205](https://github.com/EventStore/EventStore/pull/4205)
 
 ### Changed
 - Version number [EventStore#4195](https://github.com/EventStore/EventStore/pull/4195)
@@ -31,6 +32,9 @@ All notable changes to this project will be documented in this file.
 
 ### Removed
 - Unnecessary code comment [EventStore#4200](https://github.com/EventStore/EventStore/pull/4200)
+
+### Updated
+- dockerfile for newer buildkit [EventStore#4204](https://github.com/EventStore/EventStore/pull/4204)
 
 ## [24.2.0] - 2024-02-25
 
