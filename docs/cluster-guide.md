@@ -1,27 +1,28 @@
 # Guide to setting up a 3-node cluster
 
-This quick start guide provides a step-by-step process for setting up a 3-node EventStoreDB cluster, including environment preparation, certificate generation, and cluster configuration. For additional help, use our [setup wizard](https://configurator.eventstore.com/) for customized installation assistance or refer to our tutorials on how to get started with EventStoreDB on [Windows](https://www.eventstore.com/blog/getting-started-with-eventstoredb-our-how-to-guide) or [Linux](https://developers.eventstore.com/server/v23.10/installation.html#linux). 
+This guide provides a step-by-step process for setting up a 3-node EventStoreDB cluster, including environment preparation, certificate generation, and cluster configuration. For additional help, refer to our tutorials on how to get started with EventStoreDB on [Windows](https://www.eventstore.com/blog/getting-started-with-eventstoredb-our-how-to-guide) or [Linux](https://developers.eventstore.com/server/v23.10/installation.html#linux). 
 
 
 
 ## Preparing the environment
 
-1. Create a folder named 'Cluster'. Within it, create three subfolders: 'Node1', 'Node2', and 'Node3'.
-2. In each node folder, add a configuration file (either .yml or .txt).
-3. Within each node folder, create the following subfolders:
-    - 'certificates' to store the certificate and private key. 
-    - 'Data' for all data files.
-    - 'Index' for node indexes.
-    - 'Logs' for log files.
+1. Create a 'Cluster' folder. Inside, add three subfolders: 'Node1', 'Node2', and 'Node3'.
+2. Add an empty configuration file (.yml or .txt) to each node folder.
+3. In each node folder, create subfolders:
+    - 'certificates' for the certificate and private key. 
+    - 'data' for data files.
+    - 'index' for node indexes.
+    - 'logs' for logging.
 
 
 
 ## Generating certificates
 
-1. Create a folder named 'Generate_certificate'.
-2. Download the latest version of the certificate generator from the [EventStore Certificate Generation CLI repo](https://github.com/EventStore/es-gencert-cli/releases) and unzip it into the 'Generate_certificate' folder.
-3. In a terminal, change to the 'es-gencert-cli' directory: 
+1. Create a 'Generate_certificate' folder on your desktop.
+2. Download the latest certificate generator from the [EventStore Certificate Generation CLI repository](https://github.com/EventStore/es-gencert-cli/releases) and extract it into the 'Generate_certificate' folder.
+3. Open a terminal and navigate to the 'es-gencert-cli' directory: 
 
+For instructions on how to do this 
 
 Run this command to generate the root certificate and root private key on Linux: 
 `./es-gencert-cli create-ca -out [Generate_certificate Path]/ca`
