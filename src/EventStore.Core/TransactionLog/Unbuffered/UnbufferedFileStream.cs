@@ -56,7 +56,6 @@ namespace EventStore.Core.TransactionLog.Unbuffered {
 			FileMode mode,
 			FileAccess acc,
 			FileShare share,
-			bool sequential,
 			int internalWriteBufferSize,
 			int internalReadBufferSize,
 			bool writeThrough,

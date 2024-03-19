@@ -2,9 +2,15 @@ using System;
 using System.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
+using DotNext.Buffers;
+using DotNext.Buffers.Binary;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace EventStore.Core.TransactionLog.Chunks {
-	public class ChunkFooter {
+
+	// TODO: Consider struct instead of class
+	public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 		public const int Size = TFConsts.ChunkFooterSize;
 		public const int ChecksumSize = 16;
 
@@ -18,7 +24,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			LogicalDataSize; // the size of a logical data size (after scavenge LogicalDataSize can be > physicalDataSize)
 
 		public readonly int MapSize;
-		public readonly byte[] MD5Hash;
+		public readonly byte[] MD5Hash; // TODO: Allocation can be removed with InlineArray
 
 		public readonly int MapCount; // calculated, not stored
 
@@ -50,38 +56,67 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			MapCount = mapSize / posMapSize;
 		}
 
-		public byte[] AsByteArray() {
-			var array = new byte[Size];
-			using (var memStream = new MemoryStream(array))
-			using (var writer = new BinaryWriter(memStream)) {
-				var flags = (byte)((IsCompleted ? 1 : 0) | (IsMap12Bytes ? 2 : 0));
-				writer.Write(flags);
-				writer.Write(PhysicalDataSize);
-				if (IsMap12Bytes)
-					writer.Write(LogicalDataSize);
-				else
-					writer.Write((int)LogicalDataSize);
-				writer.Write(MapSize);
+		public ChunkFooter(ReadOnlySpan<byte> source) {
+			Debug.Assert(source.Length >= Size);
 
-				memStream.Position = Size - ChecksumSize;
-				writer.Write(MD5Hash);
+			SpanReader<byte> reader = new(source);
+			byte flags = reader.Read();
+
+			IsCompleted = (flags & 1) is not 0;
+			IsMap12Bytes = (flags & 2) is not 0;
+			PhysicalDataSize = reader.ReadLittleEndian<int>();
+			LogicalDataSize = IsMap12Bytes
+				? reader.ReadLittleEndian<long>()
+				: reader.ReadLittleEndian<int>();
+
+			MapSize = reader.ReadLittleEndian<int>();
+			reader.ConsumedCount = Size - ChecksumSize;
+			MD5Hash = reader.ReadToEnd().ToArray();
+
+			var posMapSize = IsMap12Bytes ? PosMap.FullSize : PosMap.DeprecatedSize;
+			if (MapSize % posMapSize is not 0) {
+				throw new Exception(string.Format("Wrong MapSize {0} -- not divisible by PosMap.Size {1}.", MapSize,
+					posMapSize));
 			}
 
+			MapCount = MapSize / posMapSize;
+		}
+
+		static int IBinaryFormattable<ChunkFooter>.Size => Size;
+
+		public void Format(Span<byte> destination) {
+			Debug.Assert(destination.Length >= Size);
+
+			SpanWriter<byte> writer = new(destination);
+			int flags = Unsafe.BitCast<bool, byte>(IsCompleted)
+				| Unsafe.BitCast<bool, byte>(IsMap12Bytes) << 1;
+
+			writer.Add((byte)flags);
+			writer.WriteLittleEndian(PhysicalDataSize);
+			if (IsMap12Bytes)
+				writer.WriteLittleEndian(LogicalDataSize);
+			else
+				writer.WriteLittleEndian((int)LogicalDataSize);
+
+			writer.WriteLittleEndian(MapSize);
+			writer.WrittenCount = Size - ChecksumSize;
+			writer.Write(MD5Hash);
+		}
+
+		static ChunkFooter IBinaryFormattable<ChunkFooter>.Parse(ReadOnlySpan<byte> source)
+			=> new(source);
+
+		public byte[] AsByteArray() {
+			var array = new byte[Size];
+			Format(array);
 			return array;
 		}
 
+		[SkipLocalsInit]
 		public static ChunkFooter FromStream(Stream stream) {
-			var reader = new BinaryReader(stream);
-			var flags = reader.ReadByte();
-			var isCompleted = (flags & 1) != 0;
-			var isMap12Bytes = (flags & 2) != 0;
-			var physicalDataSize = reader.ReadInt32();
-			var logicalDataSize = isMap12Bytes ? reader.ReadInt64() : reader.ReadInt32();
-			var mapSize = reader.ReadInt32();
-			stream.Seek(-ChecksumSize, SeekOrigin.End);
-			var hash = reader.ReadBytes(ChecksumSize);
-
-			return new ChunkFooter(isCompleted, isMap12Bytes, physicalDataSize, logicalDataSize, mapSize, hash);
+			Span<byte> buffer = stackalloc byte[Size];
+			stream.ReadExactly(buffer);
+			return new(buffer);
 		}
 	}
 }
