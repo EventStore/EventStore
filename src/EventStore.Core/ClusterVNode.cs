@@ -78,6 +78,7 @@ namespace EventStore.Core {
 		public static readonly string TcpApiAdvertisedPortEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_API_ADVERTISED_PORT";
 		public static readonly string TcpApiHeartbeatTimeoutEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_HEARTBEAT_TIMEOUT";
 		public static readonly string TcpApiHeartbeatIntervalEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_HEARTBEAT_INTERVAL";
+		public static readonly object _lock = new object();
 
 		public static ClusterVNode<TStreamId> Create<TStreamId>(
 			ClusterVNodeOptions options,
@@ -682,6 +683,38 @@ namespace EventStore.Core {
 				pTableMaxReaderCount: pTableMaxReaderCount,
 				statusTracker: trackers.IndexStatusTracker);
 			logFormat.StreamNamesProvider.SetTableIndex(tableIndex);
+
+			var _testTable = new TableIndex<String>(indexPath,
+				new XXHashUnsafe(),
+				new Murmur3AUnsafe(),
+				"",
+				() => new HashListMemTable(options.IndexBitnessVersion,
+					maxSize: options.Database.MaxMemTableSize * 2),
+				() => new TFReaderLease(readerPool),
+				options.IndexBitnessVersion,
+				maxSizeForMemory: options.Database.MaxMemTableSize,
+				maxTablesPerLevel: 2,
+				inMem: Db.Config.InMemDb,
+				skipIndexVerify: options.Database.SkipIndexVerify,
+				indexCacheDepth: options.Database.IndexCacheDepth,
+				useBloomFilter: options.Database.UseIndexBloomFilters,
+				lruCacheSize: options.Database.IndexCacheSize,
+				initializationThreads: options.Database.InitializationThreads,
+				additionalReclaim: false,
+				maxAutoMergeIndexLevel: options.Database.MaxAutoMergeIndexLevel,
+				pTableMaxReaderCount: pTableMaxReaderCount,
+				statusTracker: trackers.IndexStatusTracker);
+			_testTable.Initialize(long.MaxValue);
+
+
+
+			for (long i = 0; i < 10000000; i++) {
+				lock (_lock) {
+					Log.Information($"ADDING VALUES TO TABLE: {i}");
+					_testTable.Add(i, $"0xDEAD{i}", 0, 0xFF00);
+				}
+
+			}
 
 			var readIndex = new ReadIndex<TStreamId>(_mainQueue,
 				readerPool,
