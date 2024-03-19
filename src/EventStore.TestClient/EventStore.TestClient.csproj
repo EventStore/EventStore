@@ -20,7 +20,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="System.CommandLine.DragonFruit" Version="0.4.0-alpha.22272.1" />
+		<PackageReference Include="System.CommandLine.DragonFruit" Version="0.3.0-alpha.21216.1" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
