@@ -260,14 +260,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			var reader = GetReaderWorkItem();
 			try {
-				_chunkHeader = ReadHeader(reader.Stream);
+				_chunkHeader = ReadHeader(reader.BaseStream);
 				Log.Debug("Opened completed {chunk} as version {version}", _filename, _chunkHeader.Version);
 				if (_chunkHeader.Version != (byte)ChunkVersions.Unaligned &&
 				    _chunkHeader.Version != (byte)ChunkVersions.Aligned)
 					throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version,
 						CurrentChunkVersion));
 
-				_chunkFooter = ReadFooter(reader.Stream);
+				_chunkFooter = ReadFooter(reader.BaseStream);
 				if (!_chunkFooter.IsCompleted) {
 					throw new CorruptDatabaseException(new BadChunkInDatabaseException(
 						string.Format("Chunk file '{0}' should be completed, but is not.", _filename)));
@@ -277,13 +277,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				_physicalDataSize = _chunkFooter.PhysicalDataSize;
 				var expectedFileSize = _chunkFooter.PhysicalDataSize + _chunkFooter.MapSize + ChunkHeader.Size +
 				                       ChunkFooter.Size;
-				if (_chunkHeader.Version == (byte)ChunkVersions.Unaligned && reader.Stream.Length != expectedFileSize) {
+				if (_chunkHeader.Version == (byte)ChunkVersions.Unaligned && reader.BaseStream.Length != expectedFileSize) {
 					throw new CorruptDatabaseException(new BadChunkInDatabaseException(
 						string.Format(
 							"Chunk file '{0}' should have a file size of {1} bytes, but it has a size of {2} bytes.",
 							_filename,
 							expectedFileSize,
-							reader.Stream.Length)));
+							reader.BaseStream.Length)));
 				}
 			} finally {
 				ReturnReaderWorkItem(reader);
@@ -940,8 +940,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			ReaderWorkItem workItem;
 			while (_fileStreams.TryTake(out workItem)) {
-				workItem.Stream.Dispose();
-				workItem.Reader.Dispose();
+				workItem.Dispose();
 				fileStreamCount = Interlocked.Decrement(ref _fileStreamCount);
 			}
 
@@ -1000,8 +999,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				int memStreamCount = Interlocked.CompareExchange(ref _memStreamCount, 0, 0);
 
-				ReaderWorkItem workItem;
-				while (_memStreams.TryTake(out workItem)) {
+				while (_memStreams.TryTake(out ReaderWorkItem workItem)) {
+					workItem.Dispose();
 					memStreamCount = Interlocked.Decrement(ref _memStreamCount);
 				}
 
