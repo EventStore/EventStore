@@ -32,6 +32,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 					new byte[3]);
 				Assert.IsTrue(Writer.Write(r, out _));
 				Writer.CompleteChunk();
+				Writer.AddNewChunk();
 
 				_scavenged.Add(r);
 			}
@@ -40,16 +41,19 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			_survivors.Add(r2);
 
 			Writer.CompleteChunk();
+			Writer.AddNewChunk();
 
 			var r3 = WriteDeletePrepare("s1");
 			_survivors.Add(r3);
 
 			Writer.CompleteChunk();
+			Writer.AddNewChunk();
 
 			var r4 = WriteDeleteCommit(r3);
 			_survivors.Add(r4);
 
 			Writer.CompleteChunk();
+			Writer.AddNewChunk();
 
 			Scavenge(completeLast: false, mergeChunks: true);
 

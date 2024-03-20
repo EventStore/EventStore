@@ -100,7 +100,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 	}
 
 	private LeaderInfo<TStreamId> CreateLeader(TFChunkDb db) {
-		db.Open();
+		db.Open(createNewChunks: true);
 
 		// we don't need a controller here, so we use the same bus for subscribing and publishing
 		var subscribeBus = new InMemoryBus("subscribeBus");
@@ -190,7 +190,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 	}
 
 	private ReplicaInfo<TStreamId> CreateReplica(TFChunkDb db, LeaderInfo<TStreamId> leaderInfo) {
-		db.Open();
+		db.Open(createNewChunks: false);
 
 		var subscribeBus = new InMemoryBus("subscribeBus");
 		var adhocReplicaController = new AdHocReplicaController<TStreamId>(subscribeBus, leaderInfo);
@@ -470,8 +470,13 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 	protected void VerifyDB(int expectedLogicalChunks) {
 		var numChunksOnLeader = _leaderInfo.Db.Manager.ChunksCount;
 		var numChunksOnReplica = _replicaInfo.Db.Manager.ChunksCount;
+		var atChunkBoundary = _leaderInfo.Db.Config.WriterCheckpoint.Read() % _leaderInfo.Db.Config.ChunkSize == 0;
 
 		Assert.AreEqual(expectedLogicalChunks, numChunksOnLeader);
+
+		if (atChunkBoundary)
+			expectedLogicalChunks--;
+
 		Assert.AreEqual(expectedLogicalChunks, numChunksOnReplica);
 
 		for (var chunkNum = 0; chunkNum < expectedLogicalChunks;) {
@@ -485,16 +490,17 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 
 			chunkNum = leaderChunk.ChunkHeader.ChunkEndNumber + 1;
 		}
+
+		if (atChunkBoundary) {
+			// verify that the chunk data is empty on the leader
+			var leaderChunk = _leaderInfo.Db.Manager.GetChunk(expectedLogicalChunks);
+			var leaderData = ReadChunkData(leaderChunk.FileName, excludeChecksum: false);
+			Assert.True(leaderData.SequenceEqual(new byte[leaderData.Length]));
+		}
 	}
 
 	private void VerifyHeader(ChunkHeader header1, ChunkHeader header2) {
-		Assert.AreEqual(header1.Version, header2.Version);
-		Assert.AreEqual(header1.ChunkSize, header2.ChunkSize);
-		Assert.AreEqual(header1.ChunkStartNumber, header2.ChunkStartNumber);
-		Assert.AreEqual(header1.ChunkEndNumber, header2.ChunkEndNumber);
-		Assert.AreEqual(header1.ChunkStartPosition, header2.ChunkStartPosition);
-		Assert.AreEqual(header1.ChunkEndPosition, header2.ChunkEndPosition);
-		Assert.AreEqual(header1.IsScavenged, header2.IsScavenged);
+		Assert.True(header1.AsByteArray().SequenceEqual(header2.AsByteArray()));
 	}
 
 	private static ReadOnlySpan<byte> ReadChunkData(string fileName, bool excludeChecksum) {

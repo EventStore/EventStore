@@ -215,7 +215,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 					"Unable to connect to Remote EndPoint : {remoteEndPoint}. Connection is potentially blocked. Total bytes sent: {TotalBytesSent}, Total bytes received: {TotalBytesReceived}",
 					RemoteEndPoint, _connection.TotalBytesSent, _connection.TotalBytesReceived);
 			}
-			
+
 			if (_connectionClosed != null)
 				_connectionClosed(this, socketError);
 		}
@@ -294,7 +294,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 						reason = Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset,
 							package.Data.Count));
 					Log.Error(
-						"Bad request received from '{connectionName}{clientConnectionName}' [{remoteEndPoint}, L{localEndPoint}, {connectionId:B}], will stop server. CorrelationId: {correlationId:B}, Error: {e}.",
+						"Bad request received from '{connectionName}{clientConnectionName}' [{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]. CorrelationId: {correlationId:B}, Error: {e}.",
 						ConnectionName,
 						ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName,
 						RemoteEndPoint,

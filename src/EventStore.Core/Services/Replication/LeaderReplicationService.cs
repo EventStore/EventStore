@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -29,6 +28,12 @@ namespace EventStore.Core.Services.Replication {
 
 		// explicit writer checkpoint in acks
 		public const int V1 = 1;
+
+		// always replicate chunk headers
+		// (send CreateChunk message for DataChunkBulk not just RawChunkBulk)
+		public const int V2 = 2;
+
+		public const int V_CURRENT = V2;
 	}
 
 	public class LeaderReplicationService : IMonitoredQueue,
@@ -382,7 +387,7 @@ namespace EventStore.Core.Services.Replication {
 						sub.SubscriptionId,
 						chunk.ChunkHeader,
 						chunk.FileSize,
-						isCompletedChunk: true));
+						isScavengedChunk: true));
 				} else {
 					if (verbose)
 						Log.Information(
@@ -395,6 +400,16 @@ namespace EventStore.Core.Services.Replication {
 					if (replicationStart)
 						sub.SendMessage(new ReplicationMessage.ReplicaSubscribed(_instanceId, sub.SubscriptionId,
 							sub.LogPosition));
+
+					if (logPosition == chunk.ChunkHeader.ChunkStartPosition &&
+						sub.Version >= ReplicationSubscriptionVersions.V2) {
+
+						sub.SendMessage(new ReplicationMessage.CreateChunk(_instanceId,
+							sub.SubscriptionId,
+							chunk.ChunkHeader,
+							chunk.FileSize,
+							isScavengedChunk: false));
+					}
 				}
 
 				sub.EOFSent = false;

@@ -223,13 +223,16 @@ namespace EventStore.Core.Services.Replication {
 				_connection.ConnectionId, _connection.LocalEndPoint,
 				string.Join("\n", epochs.Select(x => x.AsString())));
 
-			var chunk = _db.Manager.GetChunkFor(logPosition);
-			if (chunk == null)
-				throw new Exception(string.Format("Chunk was null during subscribing at {0} (0x{0:X}).", logPosition));
+			var chunkId = Guid.Empty;
+
+			// the chunk may not exist if it's a new database or if we're at a chunk boundary
+			if (_db.Manager.TryGetChunkFor(logPosition, out var chunk))
+				chunkId = chunk.ChunkHeader.ChunkId;
+
 			SendTcpMessage(_connection,
 				new ReplicationMessage.SubscribeReplica(
-					version: ReplicationSubscriptionVersions.V1,
-					logPosition, chunk.ChunkHeader.ChunkId, epochs, _internalTcp,
+					version: ReplicationSubscriptionVersions.V_CURRENT,
+					logPosition, chunkId, epochs, _internalTcp,
 					message.LeaderId, message.SubscriptionId, isPromotable: !_isReadOnlyReplica));
 		}
 

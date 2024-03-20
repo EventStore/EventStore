@@ -9,14 +9,14 @@ service Gossip {
 	rpc Read (event_store.client.Empty) returns (ClusterInfo);
 }
 
-service Elections {	
+service Elections {
 	rpc ViewChange (ViewChangeRequest) returns (event_store.client.Empty);
 	rpc ViewChangeProof (ViewChangeProofRequest) returns (event_store.client.Empty);
 	rpc Prepare (PrepareRequest) returns (event_store.client.Empty);
 	rpc PrepareOk (PrepareOkRequest) returns (event_store.client.Empty);
 	rpc Proposal (ProposalRequest) returns (event_store.client.Empty);
 	rpc Accept (AcceptRequest) returns (event_store.client.Empty);
-	
+
 	rpc LeaderIsResigning (LeaderIsResigningRequest) returns (event_store.client.Empty);
 	rpc LeaderIsResigningOk (LeaderIsResigningOkRequest) returns (event_store.client.Empty);
 }
@@ -132,7 +132,7 @@ message MemberInfo {
 	EndPoint external_tcp = 7;
 	bool internal_tcp_uses_tls = 8;
 	bool external_tcp_uses_tls = 9;
-	
+
     int64 last_commit_position = 10;
     int64 writer_checkpoint = 11;
 	int64 chaser_checkpoint = 12;
@@ -197,7 +197,7 @@ message CreateChunk{
 	bytes subscription_id = 2;
 	bytes chunk_header_bytes = 3;
 	int32 file_size = 4;
-	bool is_completed_chunk = 5;
+	bool is_scavenged_chunk = 5;
 }
 
 message RawChunkBulk{

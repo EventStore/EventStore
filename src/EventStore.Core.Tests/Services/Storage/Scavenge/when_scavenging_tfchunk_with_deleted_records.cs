@@ -32,6 +32,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			_event4 = WriteSingleEvent(_eventStreamId, 3, "bla1");
 
 			Writer.CompleteChunk();
+			Writer.AddNewChunk();
 
 			Scavenge(completeLast: false, mergeChunks: true);
 		}

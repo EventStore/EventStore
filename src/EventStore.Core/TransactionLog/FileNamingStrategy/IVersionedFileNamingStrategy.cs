@@ -1,7 +1,7 @@
 namespace EventStore.Core.TransactionLog.FileNamingStrategy {
 	public interface IVersionedFileNamingStrategy {
 		string GetFilenameFor(int index, int version);
-		string DetermineBestVersionFilenameFor(int index);
+		string DetermineBestVersionFilenameFor(int index, int initialVersion);
 		string[] GetAllVersionsFor(int index);
 		string[] GetAllPresentFiles();
 		string GetTempFilename();

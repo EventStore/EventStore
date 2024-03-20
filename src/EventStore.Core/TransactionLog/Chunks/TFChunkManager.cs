@@ -13,7 +13,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		// MaxChunksCount is currently capped at 400,000 since:
 		// - the chunk file naming strategy supports only up to 6 digits for the chunk number.
 		// - this class uses a fixed size array to keep the chunk list
-		public const int MaxChunksCount = 400_000; 
+		public const int MaxChunksCount = 400_000;
 
 		public int ChunksCount {
 			get { return _chunksCount; }
@@ -36,9 +36,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public void EnableCaching() {
-			if (_chunksCount == 0)
-				throw new Exception("No chunks in DB.");
-
 			lock (_chunksLocker) {
 				_cachingEnabled = true;
 				TriggerBackgroundCaching();
@@ -188,7 +185,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				}
 
 				var newFileName =
-					_config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber);
+					_config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber, initialVersion: 1);
 				Log.Information("File {oldFileName} will be moved to file {newFileName}", Path.GetFileName(oldFileName),
 					Path.GetFileName(newFileName));
 				try {
@@ -285,6 +282,16 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			Interlocked.Increment(ref _backgroundPassesRemaining);
 			if (Interlocked.CompareExchange(ref _backgroundRunning, 1, 0) == 0)
 				ThreadPool.QueueUserWorkItem(BackgroundCachingProcess);
+		}
+
+		public bool TryGetChunkFor(long logPosition, out TFChunk.TFChunk chunk) {
+			try {
+				chunk = GetChunkFor(logPosition);
+				return true;
+			} catch {
+				chunk = null;
+				return false;
+			}
 		}
 
 		public TFChunk.TFChunk GetChunkFor(long logPosition) {

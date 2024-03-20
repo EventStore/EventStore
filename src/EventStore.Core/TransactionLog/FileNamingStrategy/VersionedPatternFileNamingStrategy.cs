@@ -27,10 +27,10 @@ namespace EventStore.Core.TransactionLog.FileNamingStrategy {
 			return Path.Combine(_path, string.Format("{0}{1:000000}.{2:000000}", _prefix, index, version));
 		}
 
-		public string DetermineBestVersionFilenameFor(int index) {
+		public string DetermineBestVersionFilenameFor(int index, int initialVersion) {
 			var allVersions = GetAllVersionsFor(index);
 			if (allVersions.Length == 0)
-				return GetFilenameFor(index, 0);
+				return GetFilenameFor(index, initialVersion);
 			int lastVersion;
 			if (!int.TryParse(allVersions[0].Substring(allVersions[0].LastIndexOf('.') + 1), out lastVersion))
 				throw new Exception(string.Format("Could not determine version from filename '{0}'.", allVersions[0]));
