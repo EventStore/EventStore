@@ -7,8 +7,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 	internal sealed class ReaderWorkItem : BinaryReader {
 		public const int BufferSize = 8192;
 
-		public unsafe ReaderWorkItem(nint memoryPtr, int length)
-			: base(new UnmanagedMemoryStream((byte*)memoryPtr, length, length, FileAccess.Read), Encoding.UTF8, leaveOpen: false) {
+		public unsafe ReaderWorkItem(Stream sharedStream)
+			: base(sharedStream, Encoding.UTF8, leaveOpen: true) {
 			IsMemory = true;
 		}
 

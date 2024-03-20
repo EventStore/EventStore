@@ -6,7 +6,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
+using DotNext.Buffers;
 using DotNext.Diagnostics;
+using DotNext.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -82,6 +84,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		private readonly int _maxReaderCount;
 		private readonly ConcurrentBag<ReaderWorkItem> _fileStreams = new();
 		private readonly ConcurrentBag<ReaderWorkItem> _memStreams = new();
+		private Stream _sharedMemStream;
 		private int _internalStreamsCount;
 		private int _fileStreamCount;
 		private int _memStreamCount;
@@ -402,14 +405,23 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			// READER STREAMS
 			Interlocked.Add(ref _memStreamCount, _maxReaderCount);
 
+			_sharedMemStream = CreateSharedMemoryStream();
 			for (int i = 0; i < _maxReaderCount; i++) {
-				_memStreams.Add(new ReaderWorkItem(_cachedData, _cachedLength));
+				_memStreams.Add(new ReaderWorkItem(_sharedMemStream));
 			}
 
 			// should never happen in practice because this function is called from the static TFChunk constructors
 			Debug.Assert(!_selfdestructin54321);
 
 			_writerWorkItem = writerWorkItem;
+		}
+
+		private Stream CreateSharedMemoryStream() {
+			Debug.Assert(_cachedData is not 0);
+			Debug.Assert(_cachedLength > 0);
+
+			ReadOnlyMemory<byte> memoryView = UnmanagedMemory.AsMemory((byte*)_cachedData, _cachedLength);
+			return StreamSource.AsSharedStream(new(memoryView), compatWithAsync: false);
 		}
 
 		private FileOptions WritableHandleOptions {
@@ -636,8 +648,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					writerWorkItem.SetMemStream(memStream);
 				}
 
+				_sharedMemStream = CreateSharedMemoryStream();
 				for (int i = 0; i < _maxReaderCount; i++) {
-					_memStreams.Add(new ReaderWorkItem(_cachedData, _cachedLength));
+					_memStreams.Add(new ReaderWorkItem(_sharedMemStream));
 				}
 
 				_readSide.Uncache();
@@ -1026,6 +1039,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					_cachedData = 0;
 					_cachedLength = 0;
 					_cacheStatus = CacheStatus.Uncached;
+					_sharedMemStream.Dispose();
+					_sharedMemStream = null; // help GC
 					Log.Debug("UNCACHED TFChunk {chunk}.", this);
 				}
 			}
