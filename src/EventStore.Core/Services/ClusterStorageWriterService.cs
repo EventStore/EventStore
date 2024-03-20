@@ -208,15 +208,18 @@ namespace EventStore.Core.Services {
 			if (message.IsCompletedChunk) {
 				_activeChunk = Db.Manager.CreateTempChunk(message.ChunkHeader, message.FileSize);
 			} else {
-				if (message.ChunkHeader.ChunkStartNumber != Db.Manager.ChunksCount) {
+				if (message.ChunkHeader.ChunkStartNumber == Db.Manager.ChunksCount) {
+					Writer.AddNewChunk(message.ChunkHeader); // note: we disregard the file size in the CreateChunk message
+				} else if (message.ChunkHeader.ChunkStartNumber + 1 == Db.Manager.ChunksCount) {
+					// the requested chunk was already created. this is fine, it can happen if the follower created the
+					// chunk in a previous run, was killed and re-subscribed to the leader at the beginning of the chunk.
+				} else {
 					ReplicationFail(
 						"Received request to create a new ongoing chunk #{0}-{1}, but current chunks count is {2}.",
 						"Received request to create a new ongoing chunk #{chunkStartNumber}-{chunkEndNumber}, but current chunks count is {chunksCount}.",
 						message.ChunkHeader.ChunkStartNumber, message.ChunkHeader.ChunkEndNumber,
 						Db.Manager.ChunksCount);
 				}
-
-				Db.Manager.AddNewChunk(message.ChunkHeader, message.FileSize);
 			}
 
 			_subscriptionPos = message.ChunkHeader.ChunkStartPosition;
