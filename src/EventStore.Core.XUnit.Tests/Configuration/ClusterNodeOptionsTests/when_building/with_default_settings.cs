@@ -13,9 +13,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_default_node_as_single_node<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1113");
-
 			return options;
 		}
 
@@ -33,7 +30,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 		[Test]
 		public void should_have_default_endpoints() {
 			Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 1112), _node.NodeInfo.InternalSecureTcp);
-			Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 1113), _node.NodeInfo.ExternalSecureTcp);
 			Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 2113), _node.NodeInfo.HttpEndPoint);
 		}
 
@@ -98,11 +94,9 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 			var httpEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
 
 			Assert.AreEqual(internalTcp, _node.NodeInfo.InternalSecureTcp);
-			Assert.AreEqual(externalTcp, _node.NodeInfo.ExternalSecureTcp);
 			Assert.AreEqual(httpEndPoint, _node.NodeInfo.HttpEndPoint);
 
 			Assert.AreEqual(internalTcp.ToDnsEndPoint(), _node.GossipAdvertiseInfo.InternalSecureTcp);
-			Assert.AreEqual(externalTcp.ToDnsEndPoint(), _node.GossipAdvertiseInfo.ExternalSecureTcp);
 			Assert.AreEqual(httpEndPoint.ToDnsEndPoint(), _node.GossipAdvertiseInfo.HttpEndPoint);
 		}
 
@@ -112,9 +106,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 		}
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1113");
-
 			return options;
 		}
 	}
@@ -137,18 +128,13 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 			var httpEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
 
 			Assert.AreEqual(internalTcp, _node.NodeInfo.InternalTcp);
-			Assert.AreEqual(externalTcp, _node.NodeInfo.ExternalTcp);
 			Assert.AreEqual(httpEndPoint, _node.NodeInfo.HttpEndPoint);
 
 			Assert.AreEqual(internalTcp.ToDnsEndPoint(), _node.GossipAdvertiseInfo.InternalTcp);
-			Assert.AreEqual(externalTcp.ToDnsEndPoint(), _node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(httpEndPoint.ToDnsEndPoint(), _node.GossipAdvertiseInfo.HttpEndPoint);
 		}
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1113");
-
 			return options.Insecure();
 		}
 	}

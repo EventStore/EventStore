@@ -64,4 +64,9 @@
 		<Compile Remove="FakePlugin\**" />
 		<Content Include="FakePlugin\**" CopyToOutputDirectory="Always" />
 	</ItemGroup>
+	<ItemGroup>
+	  <Reference Include="EventStore.TcpUnitTestPlugin">
+	    <HintPath>..\..\lib\EventStore.TcpUnitTestPlugin.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
 </Project>
