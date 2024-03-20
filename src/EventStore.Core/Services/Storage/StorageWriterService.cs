@@ -231,6 +231,10 @@ namespace EventStore.Core.Services.Storage {
 		void IHandle<SystemMessage.WriteEpoch>.Handle(SystemMessage.WriteEpoch message) {
 			if (_vnodeState != VNodeState.Leader && _vnodeState != VNodeState.PreLeader)
 				throw new Exception(string.Format("New Epoch request not in leader or preleader state. State: {0}.", _vnodeState));
+
+			if (Writer.NeedsNewChunk)
+				Writer.AddNewChunk();
+
 			EpochManager.WriteNewEpoch(message.EpochNumber);
 			PurgeNotProcessedInfo();
 		}
