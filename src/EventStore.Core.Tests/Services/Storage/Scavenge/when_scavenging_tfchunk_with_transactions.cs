@@ -46,6 +46,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				t1Commit.GetNextLogPosition(t1Commit.LogPosition, t1Commit.GetSizeWithLengthPrefixAndSuffix() - 2 * sizeof(int));
 
 			Writer.CompleteChunk();
+			Writer.AddNewChunk();
 
 			// Need to have a second chunk as otherwise the checkpoints will be off
 			_random1 = WriteSingleEvent("random-stream", 0, "bla");

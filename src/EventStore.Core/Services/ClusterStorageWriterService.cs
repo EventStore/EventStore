@@ -98,7 +98,7 @@ namespace EventStore.Core.Services {
 
 			_subscriptionId = message.SubscriptionId;
 			_ackedSubscriptionPos = _subscriptionPos = message.SubscriptionPosition;
-			
+
 			Log.Information(
 				"=== SUBSCRIBED to [{leaderEndPoint},{leaderId:B}] at {subscriptionPosition} (0x{subscriptionPosition:X}). SubscriptionId: {subscriptionId:B}.",
 				message.LeaderEndPoint, message.LeaderId, message.SubscriptionPosition, message.SubscriptionPosition,
@@ -290,6 +290,13 @@ namespace EventStore.Core.Services {
 						"Data chunk bulk received, but we have active chunk for receiving raw chunk bulks.");
 
 				var chunk = Writer.CurrentChunk;
+
+				if (chunk.IsReadOnly) {
+					// for backwards compatibility with leaders running an old version (in case it doesn't send the CreateChunk message)
+					Writer.AddNewChunk();
+					chunk = Writer.CurrentChunk;
+				}
+
 				if (chunk.ChunkHeader.ChunkStartNumber != message.ChunkStartNumber ||
 				    chunk.ChunkHeader.ChunkEndNumber != message.ChunkEndNumber) {
 					Log.Error(
