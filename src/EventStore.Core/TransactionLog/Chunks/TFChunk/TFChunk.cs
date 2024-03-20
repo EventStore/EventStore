@@ -664,20 +664,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				GC.AddMemoryPressure(_cachedLength);
 
 				try {
-					using (var unmanagedStream = new UnmanagedMemoryStream((byte*)cachedData, _cachedLength,
-						_cachedLength, FileAccess.ReadWrite)) {
-						workItem.Stream.Seek(0, SeekOrigin.Begin);
-						var buffer = new byte[65536];
-						// in ongoing chunk there is no need to read everything, it's enough to read just actual data written
-						int toRead = IsReadOnly ? _cachedLength : ChunkHeader.Size + _physicalDataSize;
-						while (toRead > 0) {
-							int read = workItem.Stream.Read(buffer, 0, Math.Min(toRead, buffer.Length));
-							if (read == 0)
-								break;
-							toRead -= read;
-							unmanagedStream.Write(buffer, 0, read);
-						}
-					}
+					// in ongoing chunk there is no need to read everything, it's enough to read just actual data written
+					Span<byte> memoryView = new(
+						cachedData.ToPointer(),
+						IsReadOnly ? _cachedLength : ChunkHeader.Size + _physicalDataSize);
+
+					workItem.Stream.Seek(0, SeekOrigin.Begin);
+					workItem.Stream.ReadExactly(memoryView);
 				} catch {
 					Marshal.FreeHGlobal(cachedData);
 					GC.RemoveMemoryPressure(_cachedLength);
