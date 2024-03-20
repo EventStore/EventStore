@@ -131,16 +131,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void CompleteReplicatedRawChunkInTransaction(TFChunk.TFChunk rawChunk) {
-			_currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
+			_currentChunk = null; // in case switching of raw chunk fails, we shouldn't use completed chunk for write
 
 			rawChunk.CompleteRaw();
-			_db.Manager.SwitchChunk(rawChunk, verifyHash: true, removeChunksWithGreaterNumbers: true);
+			_currentChunk = _db.Manager.SwitchChunk(rawChunk, verifyHash: true, removeChunksWithGreaterNumbers: true);
 
 			_nextRecordPosition = rawChunk.ChunkHeader.ChunkEndPosition;
-
-			var nextChunkNumber = rawChunk.ChunkHeader.ChunkEndNumber + 1;
-			VerifyChunkNumberLimits(nextChunkNumber);
-			_currentChunk = _db.Manager.AddNewChunk();
 		}
 
 		public void CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk) {
