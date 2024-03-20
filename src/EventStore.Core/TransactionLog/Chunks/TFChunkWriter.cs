@@ -96,13 +96,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public bool HasOpenTransaction() => _inTransaction;
 
-		public void AddNewChunk(ChunkHeader chunkHeader = null) {
-			OpenTransaction();
-			AddNewChunkInTransaction(chunkHeader);
-			CommitTransaction();
-			Flush();
-		}
-
 		private void AddNewChunkInTransaction(ChunkHeader chunkHeader = null) {
 			var chunk = _currentChunk;
 			_nextRecordPosition = _currentChunk.ChunkHeader.ChunkEndPosition;
@@ -116,6 +109,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				_currentChunk = _db.Manager.AddNewChunk();
 			else
 				_currentChunk = _db.Manager.AddNewChunk(chunkHeader, _db.Config.ChunkSize);
+		}
+
+		public void AddNewChunk(ChunkHeader chunkHeader = null) {
+			OpenTransaction();
+			AddNewChunkInTransaction(chunkHeader);
+			CommitTransaction();
+			Flush();
 		}
 
 		private void CompleteChunkInTransaction() {
