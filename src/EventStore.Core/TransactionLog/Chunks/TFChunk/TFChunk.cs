@@ -85,7 +85,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		private readonly ConcurrentBag<ReaderWorkItem> _fileStreams = new();
 		private readonly ConcurrentBag<ReaderWorkItem> _memStreams = new();
 		private Stream _sharedMemStream;
-		private int _internalStreamsCount;
+		private readonly int _initialReaderCount;
 		private int _fileStreamCount;
 		private int _memStreamCount;
 		private int _cleanedUpFileStreams;
@@ -151,7 +151,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			_filename = filename;
 			_maxReaderCount = maxReaderCount;
-			_internalStreamsCount = initialReaderCount;
+			_initialReaderCount = initialReaderCount;
 			MidpointsDepth = midpointsDepth;
 			_inMem = inMem;
 			_unbuffered = unbuffered;
@@ -372,12 +372,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		// We therefore only read from memory while the chunk is still being written to, and only create
 		// the file streams when the chunk is being completed.
 		private void CreateReaderStreams() {
-			Interlocked.Add(ref _fileStreamCount, _internalStreamsCount);
+			Interlocked.Add(ref _fileStreamCount, _initialReaderCount);
 
 			if (_selfdestructin54321)
 				throw new FileBeingDeletedException();
 
-			for (int i = 0; i < _internalStreamsCount; i++) {
+			for (int i = 0; i < _initialReaderCount; i++) {
 				_fileStreams.Add(CreateInternalReaderWorkItem());
 			}
 		}
@@ -1077,11 +1077,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			if (_selfdestructin54321)
 				throw new FileBeingDeletedException();
 
-			var internalStreamCount = Interlocked.Increment(ref _internalStreamsCount);
-			if (internalStreamCount > _maxReaderCount)
+			if (Interlocked.Increment(ref _fileStreamCount) > _maxReaderCount)
 				throw new Exception("Unable to acquire reader work item. Max reader count reached.");
 
-			Interlocked.Increment(ref _fileStreamCount);
 			if (_selfdestructin54321) {
 				if (Interlocked.Decrement(ref _fileStreamCount) == 0)
 					CleanUpFileStreamDestruction();
