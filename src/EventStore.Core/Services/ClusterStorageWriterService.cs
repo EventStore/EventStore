@@ -292,13 +292,12 @@ namespace EventStore.Core.Services {
 						"Data chunk bulk received, but we have active chunk for receiving raw chunk bulks.",
 						"Data chunk bulk received, but we have active chunk for receiving raw chunk bulks.");
 
-				var chunk = Writer.CurrentChunk;
-
-				if (chunk.IsReadOnly) {
+				if (Writer.NeedsNewChunk) {
 					// for backwards compatibility with leaders running an old version (in case it doesn't send the CreateChunk message)
 					Writer.AddNewChunk();
-					chunk = Writer.CurrentChunk;
 				}
+
+				var chunk = Writer.CurrentChunk;
 
 				if (chunk.ChunkHeader.ChunkStartNumber != message.ChunkStartNumber ||
 				    chunk.ChunkHeader.ChunkEndNumber != message.ChunkEndNumber) {
