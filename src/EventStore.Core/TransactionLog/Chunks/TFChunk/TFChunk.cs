@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -112,7 +111,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			Uncached = 0,
 
 			// UnCacheFromMemory can transition us to Uncaching
-			// invariants: _cachedData != IntPtr.Zero, _memStreamCount == _maxReaderCount
+			// invariants: _cachedData != IntPtr.Zero, _memStreamCount > 0
 			Cached,
 
 			// TryDestructMemStreams can transition us to Uncached
@@ -134,14 +133,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		private IChunkReadSide _readSide;
 
 		private TFChunk(string filename,
-			int maxReaderCount,
 			int midpointsDepth,
 			bool inMem,
 			bool unbuffered,
 			bool writethrough,
 			bool reduceFileCachePressure) {
 			Ensure.NotNullOrEmpty(filename, "filename");
-			Ensure.Positive(maxReaderCount, "maxReaderCount");
 			Ensure.Nonnegative(midpointsDepth, "midpointsDepth");
 
 			_filename = filename;
@@ -157,8 +154,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public static TFChunk FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead,
-			int maxReaderCount, ITransactionFileTracker tracker, bool optimizeReadSideCache = false, bool reduceFileCachePressure = false) {
-			var chunk = new TFChunk(filename, maxReaderCount,
+			ITransactionFileTracker tracker, bool optimizeReadSideCache = false, bool reduceFileCachePressure = false) {
+			var chunk = new TFChunk(filename,
 				TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure);
 			try {
 				chunk.InitCompleted(verifyHash, optimizeReadSideCache, tracker);
@@ -171,9 +168,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public static TFChunk FromOngoingFile(string filename, int writePosition, bool checkSize, bool unbuffered,
-			bool writethrough, int maxReaderCount, bool reduceFileCachePressure, ITransactionFileTracker tracker) {
+			bool writethrough, bool reduceFileCachePressure, ITransactionFileTracker tracker) {
 			var chunk = new TFChunk(filename,
-				maxReaderCount,
 				TFConsts.MidpointsDepth,
 				false,
 				unbuffered,
@@ -196,13 +192,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			bool inMem,
 			bool unbuffered,
 			bool writethrough,
-			int maxReaderCount,
 			bool reduceFileCachePressure,
 			ITransactionFileTracker tracker) {
 			var size = GetAlignedSize(chunkSize + ChunkHeader.Size + ChunkFooter.Size);
 			var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkSize, chunkStartNumber, chunkEndNumber,
 				isScavenged, Guid.NewGuid());
-			return CreateWithHeader(filename, chunkHeader, size, inMem, unbuffered, writethrough, maxReaderCount,
+			return CreateWithHeader(filename, chunkHeader, size, inMem, unbuffered, writethrough,
 				reduceFileCachePressure, tracker);
 		}
 
@@ -212,11 +207,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			bool inMem,
 			bool unbuffered,
 			bool writethrough,
-			int maxReaderCount,
 			bool reduceFileCachePressure,
 			ITransactionFileTracker tracker) {
 			var chunk = new TFChunk(filename,
-				maxReaderCount,
 				TFConsts.MidpointsDepth,
 				inMem,
 				unbuffered,
@@ -1022,6 +1015,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					throw new FileBeingDeletedException();
 				}
 
+				// The pool is empty, this is a worst case. Instead of throwing exception we create a work item out of the
+				// pool which will be disposed on return.
 				Interlocked.Increment(ref _memStreamCount);
 				return new(sharedMemStream);
 			}

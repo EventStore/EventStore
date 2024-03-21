@@ -40,7 +40,6 @@ namespace EventStore.Core.Tests.TransactionLog {
 				new InMemoryCheckpoint(-1), 
 				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
-				Constants.TFChunkMaxReaderCountDefault,
 				maxTruncation: maxTruncation);
 		}
 
@@ -63,14 +62,13 @@ namespace EventStore.Core.Tests.TransactionLog {
 				new InMemoryCheckpoint(-1),
 				replicationCheckpoint, 
 				new InMemoryCheckpoint(-1),
-				new InMemoryCheckpoint(-1),
-				Constants.TFChunkMaxReaderCountDefault);
+				new InMemoryCheckpoint(-1));
 		}
 
 		public static TFChunk CreateNewChunk(string fileName, int chunkSize = 4096, bool isScavenged = false) {
 			return TFChunk.CreateNew(fileName, chunkSize, 0, 0,
 				isScavenged: isScavenged, inMem: false, unbuffered: false,
-				writethrough: false, maxReaderCount: Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp());
+				writethrough: false, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp());
 		}
 	}
 }

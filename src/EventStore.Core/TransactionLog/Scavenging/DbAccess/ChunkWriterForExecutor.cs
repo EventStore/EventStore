@@ -42,7 +42,6 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				inMem: dbConfig.InMemDb,
 				unbuffered: dbConfig.Unbuffered,
 				writethrough: dbConfig.WriteThrough,
-				maxReaderCount: dbConfig.MaxReaderCount,
 				reduceFileCachePressure: dbConfig.ReduceFileCachePressure,
 				tracker: new TFChunkTracker.NoOp());
 		}

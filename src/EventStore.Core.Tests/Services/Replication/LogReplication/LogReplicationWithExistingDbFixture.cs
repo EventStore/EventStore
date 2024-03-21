@@ -44,7 +44,6 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 			inMem: false,
 			unbuffered: db.Config.Unbuffered,
 			writethrough: db.Config.WriteThrough,
-			maxReaderCount: db.Config.MaxReaderCount,
 			reduceFileCachePressure: db.Config.ReduceFileCachePressure,
 			tracker: new TFChunkTracker.NoOp());
 

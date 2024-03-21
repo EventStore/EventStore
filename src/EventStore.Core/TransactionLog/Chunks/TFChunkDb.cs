@@ -74,7 +74,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							if (footer.IsCompleted)
 								chunk = TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 									unbufferedRead: Config.Unbuffered,
-									maxReaderCount: Config.MaxReaderCount,
 									tracker: _tracker,
 									optimizeReadSideCache: Config.OptimizeReadSideCache,
 									reduceFileCachePressure: Config.ReduceFileCachePressure);
@@ -83,7 +82,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 									checkSize: false,
 									unbuffered: Config.Unbuffered,
 									writethrough: Config.WriteThrough,
-									maxReaderCount: Config.MaxReaderCount,
 									reduceFileCachePressure: Config.ReduceFileCachePressure,
 									tracker: _tracker);
 								// chunk is full with data, we should complete it right here
@@ -93,7 +91,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						} else {
 							chunk = TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 								unbufferedRead: Config.Unbuffered,
-								maxReaderCount: Config.MaxReaderCount,
 								optimizeReadSideCache: Config.OptimizeReadSideCache,
 								reduceFileCachePressure: Config.ReduceFileCachePressure,
 								tracker: _tracker);
@@ -121,7 +118,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				if (chunkHeader.IsScavenged) {
 					var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false,
 						unbufferedRead: Config.Unbuffered,
-						maxReaderCount: Config.MaxReaderCount,
 						optimizeReadSideCache: Config.OptimizeReadSideCache,
 						reduceFileCachePressure: Config.ReduceFileCachePressure,
 						tracker: _tracker);
@@ -148,7 +144,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false,
 						unbuffered: Config.Unbuffered,
 						writethrough: Config.WriteThrough,
-						maxReaderCount: Config.MaxReaderCount,
 						reduceFileCachePressure: Config.ReduceFileCachePressure,
 						tracker: _tracker);
 					Manager.AddChunk(lastChunk);

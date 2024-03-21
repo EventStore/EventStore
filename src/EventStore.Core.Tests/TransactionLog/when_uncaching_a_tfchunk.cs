@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_chunk.Flush();
 			_chunk.Complete();
 			_uncachedChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true, unbufferedRead: false,
-				maxReaderCount: Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp());
+				reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp());
 			_uncachedChunk.CacheInMemory();
 			_uncachedChunk.UnCacheFromMemory();
 		}

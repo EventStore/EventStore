@@ -711,7 +711,6 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					inMem: false,
 					unbuffered: false,
 					writethrough: false,
-					maxReaderCount: 1,
 					reduceFileCachePressure: false,
 					new TFChunkTracker.NoOp());
 
