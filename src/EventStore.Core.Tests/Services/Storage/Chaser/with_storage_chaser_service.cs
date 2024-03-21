@@ -88,7 +88,6 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 				_replicationCheckpoint,
 				_indexCheckpoint,
 				_streamExistenceFilterCheckpoint,
-				Constants.TFChunkInitialReaderCountDefault,
 				Constants.TFChunkMaxReaderCountDefault,
 				true);
 			return nodeConfig;

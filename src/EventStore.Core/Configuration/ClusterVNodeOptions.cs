@@ -364,6 +364,8 @@ namespace EventStore.Core {
 			public bool Unbuffered { get; init; } = false;
 
 			[Description("The initial number of readers to start when opening a TFChunk.")]
+			[Deprecated("This configuration property has no effect")]
+			[Obsolete("This configuration property has no effect")]
 			public int ChunkInitialReaderCount { get; init; } = 5;
 
 			[Description("Prepare timeout (in milliseconds).")]

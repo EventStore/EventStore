@@ -193,7 +193,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					inMem: _db.Config.InMemDb,
 					unbuffered: _db.Config.Unbuffered,
 					writethrough: _db.Config.WriteThrough,
-					initialReaderCount: _db.Config.InitialReaderCount,
 					maxReaderCount: _db.Config.MaxReaderCount,
 					reduceFileCachePressure: _db.Config.ReduceFileCachePressure,
 					tracker: new TFChunkTracker.NoOp());
@@ -429,7 +428,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					inMem: db.Config.InMemDb,
 					unbuffered: db.Config.Unbuffered,
 					writethrough: db.Config.WriteThrough,
-					initialReaderCount: db.Config.InitialReaderCount,
 					maxReaderCount: db.Config.MaxReaderCount,
 					reduceFileCachePressure: db.Config.ReduceFileCachePressure,
 					tracker: new TFChunkTracker.NoOp());
