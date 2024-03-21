@@ -85,7 +85,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		private readonly ConcurrentBag<ReaderWorkItem> _fileStreams = new();
 		private readonly ConcurrentBag<ReaderWorkItem> _memStreams = new();
 		private Stream _sharedMemStream;
-		private readonly int _initialReaderCount;
 		private int _fileStreamCount;
 		private int _memStreamCount;
 		private int _cleanedUpFileStreams;
@@ -151,7 +150,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			_filename = filename;
 			_maxReaderCount = maxReaderCount;
-			_initialReaderCount = initialReaderCount;
 			MidpointsDepth = midpointsDepth;
 			_inMem = inMem;
 			_unbuffered = unbuffered;
