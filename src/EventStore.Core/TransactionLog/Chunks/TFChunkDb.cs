@@ -45,14 +45,15 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		public void Open(bool verifyHash = true, bool readOnly = false, int threads = 1) {
+		public void Open(bool verifyHash = true, bool readOnly = false, int threads = 1, bool createNewChunks = true) {
 			Ensure.Positive(threads, "threads");
 
 			ValidateReaderChecksumsMustBeLess(Config);
 			var checkpoint = Config.WriterCheckpoint.Read();
 
 			if (Config.InMemDb) {
-				Manager.AddNewChunk();
+				if (createNewChunks)
+					Manager.AddNewChunk();
 				return;
 			}
 
@@ -114,7 +115,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				if (!onBoundary)
 					throw new CorruptDatabaseException(
 						new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(lastChunkNum, 0)));
-				if (!readOnly)
+
+				if (!readOnly && createNewChunks)
 					Manager.AddNewChunk();
 			} else {
 				var chunkFileName = lastChunkVersions[0];
@@ -145,7 +147,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							checkpoint, lastChunk.ChunkHeader.ChunkEndPosition);
 						Config.WriterCheckpoint.Write(lastChunk.ChunkHeader.ChunkEndPosition);
 						Config.WriterCheckpoint.Flush();
-						Manager.AddNewChunk();
+
+						if(createNewChunks)
+							Manager.AddNewChunk();
 					}
 				} else {
 					var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false,
