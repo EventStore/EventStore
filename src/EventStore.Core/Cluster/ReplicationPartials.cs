@@ -80,9 +80,14 @@ namespace EventStore.Cluster {
 
 			LeaderId = ByteString.CopyFrom(leaderId);
 			SubscriptionId = ByteString.CopyFrom(subscriptionId);
-			ChunkHeaderBytes = ByteString.CopyFrom(chunkHeaderBytes);
 			FileSize = fileSize;
 			IsCompletedChunk = isCompletedChunk;
+#pragma warning disable CS0612 // Type or member is obsolete
+			// for backwards compatibility with followers running an old version:
+			// sending an empty byte array will cause an error (BadRequest) on the follower without halting replication
+			ChunkHeaderBytes = ByteString.Empty;
+#pragma warning restore CS0612 // Type or member is obsolete
+			ChunkHeaderBytesV1 = ByteString.CopyFrom(chunkHeaderBytes);
 		}
 	}
 
