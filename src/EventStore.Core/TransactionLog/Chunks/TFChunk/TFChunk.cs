@@ -372,14 +372,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		// We therefore only read from memory while the chunk is still being written to, and only create
 		// the file streams when the chunk is being completed.
 		private void CreateReaderStreams() {
-			Interlocked.Add(ref _fileStreamCount, _initialReaderCount);
+			Interlocked.Add(ref _fileStreamCount, 1);
 
 			if (_selfdestructin54321)
 				throw new FileBeingDeletedException();
 
-			for (int i = 0; i < _initialReaderCount; i++) {
-				_fileStreams.Add(CreateInternalReaderWorkItem());
-			}
+			_fileStreams.Add(CreateInternalReaderWorkItem());
 		}
 
 		private ReaderWorkItem CreateInternalReaderWorkItem() {
