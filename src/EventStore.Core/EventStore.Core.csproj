@@ -31,6 +31,7 @@
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
 		<PackageReference Include="DotNext" Version="5.3.1" />
 		<PackageReference Include="DotNext.IO" Version="5.3.0" />
+		<PackageReference Include="DotNext.Threading" Version="5.3.0" />
 		<PackageReference Include="DotNext.Unsafe" Version="5.3.0" />
 		<PackageReference Include="NETStandard.Library" Version="2.0.3" />
 	</ItemGroup>

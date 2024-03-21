@@ -3,10 +3,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
 using DotNext.Buffers;
+using DotNext.Collections.Concurrent;
 using DotNext.Diagnostics;
 using DotNext.IO;
 using EventStore.Common.Utils;
@@ -81,10 +83,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		private ChunkHeader _chunkHeader;
 		private ChunkFooter _chunkFooter;
 
-		private readonly int _maxReaderCount;
-		private readonly ConcurrentBag<ReaderWorkItem> _fileStreams = new();
-		private readonly ConcurrentBag<ReaderWorkItem> _memStreams = new();
-		private Stream _sharedMemStream;
+		private ReaderWorkItemPool _fileStreams;
+		private ReaderWorkItemPool _memStreams;
+		private volatile Stream _sharedMemStream;
 		private int _fileStreamCount;
 		private int _memStreamCount;
 		private int _cleanedUpFileStreams;
@@ -144,7 +145,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			Ensure.Nonnegative(midpointsDepth, "midpointsDepth");
 
 			_filename = filename;
-			_maxReaderCount = maxReaderCount;
 			MidpointsDepth = midpointsDepth;
 			_inMem = inMem;
 			_unbuffered = unbuffered;
@@ -361,18 +361,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		// We therefore only read from memory while the chunk is still being written to, and only create
 		// the file streams when the chunk is being completed.
 		private void CreateReaderStreams() {
-			Interlocked.Add(ref _fileStreamCount, 1);
-
-			if (_selfdestructin54321)
-				throw new FileBeingDeletedException();
-
-			_fileStreams.Add(CreateInternalReaderWorkItem());
-		}
-
-		private ReaderWorkItem CreateInternalReaderWorkItem() {
-			Debug.Assert(_handle is not null);
-
-			return new(_handle);
+			_fileStreams = new();
+			Interlocked.Add(ref _fileStreamCount, _fileStreams.Count);
 		}
 
 		private void CreateInMemChunk(ChunkHeader chunkHeader, int fileSize) {
@@ -390,12 +380,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			writerWorkItem.WorkingStream.Position = ChunkHeader.Size;
 
 			// READER STREAMS
-			Interlocked.Add(ref _memStreamCount, _maxReaderCount);
-
+			_memStreams = new();
+			Interlocked.Add(ref _memStreamCount, _memStreams.Count);
 			_sharedMemStream = CreateSharedMemoryStream();
-			for (int i = 0; i < _maxReaderCount; i++) {
-				_memStreams.Add(new ReaderWorkItem(_sharedMemStream));
-			}
 
 			// should never happen in practice because this function is called from the static TFChunk constructors
 			Debug.Assert(!_selfdestructin54321);
@@ -620,9 +607,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					return;
 				}
 
-				Interlocked.Add(ref _memStreamCount, _maxReaderCount);
+				_memStreams = new();
+				int poolSize = _memStreams.Count;
+				Interlocked.Add(ref _memStreamCount, poolSize);
 				if (_selfdestructin54321) {
-					if (Interlocked.Add(ref _memStreamCount, -_maxReaderCount) == 0)
+					if (Interlocked.Add(ref _memStreamCount, -poolSize) == 0)
 						FreeCachedData();
 					Log.Debug("CACHING ABORTED for TFChunk {chunk} as TFChunk was probably marked for deletion.", this);
 					return;
@@ -636,9 +625,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 
 				_sharedMemStream = CreateSharedMemoryStream();
-				for (int i = 0; i < _maxReaderCount; i++) {
-					_memStreams.Add(new ReaderWorkItem(_sharedMemStream));
-				}
 
 				_readSide.Uncache();
 
@@ -936,23 +922,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		private bool TryDestructFileStreams() {
-			int fileStreamCount = Interlocked.CompareExchange(ref _fileStreamCount, 0, 0);
-
-			ReaderWorkItem workItem;
-			while (_fileStreams.TryTake(out workItem)) {
-				workItem.Dispose();
-				fileStreamCount = Interlocked.Decrement(ref _fileStreamCount);
+			switch (_fileStreams.Drain(ref _fileStreamCount)) {
+				case < 0:
+					throw new Exception("Count of file streams reduced below zero.");
+				case 0:
+					CleanUpFileStreamDestruction();
+					return true;
+				default:
+					return false;
 			}
-
-			if (fileStreamCount < 0)
-				throw new Exception("Count of file streams reduced below zero.");
-
-			if (fileStreamCount == 0) {
-				CleanUpFileStreamDestruction();
-				return true;
-			}
-
-			return false;
 		}
 
 		// Called when the filestreams have all been returned and disposed.
@@ -997,23 +975,16 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				_writerWorkItem?.DisposeMemStream();
 
-				int memStreamCount = Interlocked.CompareExchange(ref _memStreamCount, 0, 0);
-
-				while (_memStreams.TryTake(out ReaderWorkItem workItem)) {
-					workItem.Dispose();
-					memStreamCount = Interlocked.Decrement(ref _memStreamCount);
+				switch (_memStreams.Drain(ref _memStreamCount)) {
+					case < 0:
+						throw new Exception("Count of memory streams reduced below zero.");
+					case 0:
+						// make sure "the light is off" for memory streams
+						FreeCachedData();
+						return true;
+					default:
+						return false;
 				}
-
-				if (memStreamCount < 0)
-					throw new Exception("Count of memory streams reduced below zero.");
-
-				if (memStreamCount == 0) {
-					// make sure "the light is off" for memory streams
-					FreeCachedData();
-					return true;
-				}
-
-				return false;
 			}
 		}
 
@@ -1026,8 +997,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					_cachedData = 0;
 					_cachedLength = 0;
 					_cacheStatus = CacheStatus.Uncached;
-					_sharedMemStream.Dispose();
-					_sharedMemStream = null; // help GC
+					Interlocked.Exchange(ref _sharedMemStream, null)?.Dispose();
+					_memStreams = default;
 					Log.Debug("UNCACHED TFChunk {chunk}.", this);
 				}
 			}
@@ -1042,13 +1013,18 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			if (_selfdestructin54321)
 				throw new FileBeingDeletedException();
 
-			ReaderWorkItem item;
 			// try get memory stream reader first
-			if (_memStreams.TryTake(out item))
-				return item;
+			if (_sharedMemStream is { } sharedMemStream) {
+				if (_memStreams.TryTake(_sharedMemStream, &CreateMemoryStreamWorkItem) is { } memoryWorkItem)
+					return memoryWorkItem;
 
-			if (_inMem)
-				throw new Exception("Not enough memory streams during in-mem TFChunk mode.");
+				if (_selfdestructin54321) {
+					throw new FileBeingDeletedException();
+				}
+
+				Interlocked.Increment(ref _memStreamCount);
+				return new(sharedMemStream);
+			}
 
 			if (!IsReadOnly) {
 				// chunks cannot be read using filestreams while they can still be written to
@@ -1058,14 +1034,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 
 			// get a filestream from the pool, or create one if the pool is empty.
-			if (_fileStreams.TryTake(out item))
-				return item;
-
-			if (_selfdestructin54321)
-				throw new FileBeingDeletedException();
-
-			if (Interlocked.Increment(ref _fileStreamCount) > _maxReaderCount)
-				throw new Exception("Unable to acquire reader work item. Max reader count reached.");
+			if (_fileStreams.TryTake(_handle, &CreateFileStreamWorkItem) is { } fileStreamWorkItem)
+				return fileStreamWorkItem;
 
 			if (_selfdestructin54321) {
 				if (Interlocked.Decrement(ref _fileStreamCount) == 0)
@@ -1073,7 +1043,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				throw new FileBeingDeletedException();
 			}
 
-			return CreateInternalReaderWorkItem();
+			Interlocked.Increment(ref _fileStreamCount);
+			return new(_handle);
+
+			static ReaderWorkItem CreateFileStreamWorkItem(SafeFileHandle handle, int index)
+				=> new(handle) { PositionInPool = index };
+
+			static ReaderWorkItem CreateMemoryStreamWorkItem(Stream sharedMemStream, int index)
+				=> new(sharedMemStream) { PositionInPool = index };
 		}
 
 		private void ReturnReaderWorkItem(ReaderWorkItem item) {
@@ -1105,12 +1082,22 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				// low (or possibly none), because Caching is the only slow operation while holding
 				// the lock and it only occurs when there are no outstanding memory readers, but we know
 				// there is one currently because we are in the process of returning it.
-				_memStreams.Add(item);
+				if (!_memStreams.Return(item)) {
+					// item was not taken from the pool, destroy immediately
+					item.Dispose();
+					Interlocked.Decrement(ref _memStreamCount);
+				}
+
 				Thread.MemoryBarrier();
 				if (_cacheStatus == CacheStatus.Uncaching || _selfdestructin54321)
 					TryDestructMemStreams();
 			} else {
-				_fileStreams.Add(item);
+				if (!_fileStreams.Return(item)) {
+					// item was not taken from the pool, destroy immediately
+					item.Dispose();
+					Interlocked.Decrement(ref _fileStreamCount);
+				}
+
 				if (_selfdestructin54321)
 					TryDestructFileStreams();
 			}
@@ -1231,6 +1218,68 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			public override string ToString() {
 				return string.Format("ItemIndex: {0}, LogPos: {1}", ItemIndex, LogPos);
+			}
+		}
+
+		[StructLayout(LayoutKind.Auto)]
+		private struct ReaderWorkItemPool {
+			private readonly ReaderWorkItem[] _array;
+
+			// IndexPool supports up to 64 elements with O(1) take/return time complexity.
+			// It's a thread-safe data structure with no allocations that provide predictability about
+			// the indicies: smallest available index is always preferred.
+			private IndexPool _indicies;
+
+			public ReaderWorkItemPool() {
+				_indicies = new();
+				_array = new ReaderWorkItem[IndexPool.Capacity];
+			}
+
+			// releases all available slots in the pool
+			internal int Drain(ref int referenceCount) {
+				int localReferenceCount = Interlocked.CompareExchange(ref referenceCount, 0, 0);
+				Span<int> indicies = stackalloc int[IndexPool.Capacity];
+
+				int count = _indicies.Take(indicies);
+
+				foreach (var index in indicies.Slice(0, count)) {
+					ref ReaderWorkItem slot = ref this[index];
+					slot?.Dispose();
+					slot = null;
+
+					localReferenceCount = Interlocked.Decrement(ref referenceCount);
+				}
+
+				return localReferenceCount;
+			}
+
+			internal readonly int Count => _indicies.Count;
+
+			private readonly ref ReaderWorkItem this[int index] {
+				get {
+					Debug.Assert((uint)index < (uint)_array.Length);
+
+					// skip bounds and covariance check
+					return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_array), index);
+				}
+			}
+
+			internal ReaderWorkItem TryTake<T>(T arg, delegate*<T, int, ReaderWorkItem> factory) {
+				Debug.Assert(factory is not null);
+
+				return _indicies.TryTake(out int index)
+					? this[index] ??= factory(arg, index)
+					: null;
+			}
+
+			internal bool Return(ReaderWorkItem item) {
+				int index = item.PositionInPool;
+				if ((uint)index < (uint)_array.Length) {
+					_indicies.Return(item.PositionInPool);
+					return true;
+				}
+
+				return false;
 			}
 		}
 	}
