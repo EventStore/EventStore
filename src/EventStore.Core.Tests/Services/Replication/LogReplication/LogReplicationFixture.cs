@@ -490,13 +490,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 	}
 
 	private void VerifyHeader(ChunkHeader header1, ChunkHeader header2) {
-		Assert.AreEqual(header1.Version, header2.Version);
-		Assert.AreEqual(header1.ChunkSize, header2.ChunkSize);
-		Assert.AreEqual(header1.ChunkStartNumber, header2.ChunkStartNumber);
-		Assert.AreEqual(header1.ChunkEndNumber, header2.ChunkEndNumber);
-		Assert.AreEqual(header1.ChunkStartPosition, header2.ChunkStartPosition);
-		Assert.AreEqual(header1.ChunkEndPosition, header2.ChunkEndPosition);
-		Assert.AreEqual(header1.IsScavenged, header2.IsScavenged);
+		Assert.True(header1.AsByteArray().SequenceEqual(header2.AsByteArray()));
 	}
 
 	private static ReadOnlySpan<byte> ReadChunkData(string fileName, bool excludeChecksum) {
