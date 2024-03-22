@@ -102,7 +102,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 	}
 
 	private LeaderInfo<TStreamId> CreateLeader(TFChunkDb db) {
-		db.Open();
+		db.Open(createNewChunks: true);
 
 		// we don't need a controller here, so we use the same bus for subscribing and publishing
 		var subscribeBus = new InMemoryBus("subscribeBus");
@@ -192,7 +192,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 	}
 
 	private ReplicaInfo<TStreamId> CreateReplica(TFChunkDb db, LeaderInfo<TStreamId> leaderInfo) {
-		db.Open();
+		db.Open(createNewChunks: false);
 
 		var subscribeBus = new InMemoryBus("subscribeBus");
 		var adhocReplicaController = new AdHocReplicaController<TStreamId>(subscribeBus, leaderInfo);
