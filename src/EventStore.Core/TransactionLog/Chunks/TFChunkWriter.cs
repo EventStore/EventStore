@@ -107,10 +107,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public bool HasOpenTransaction() => _inTransaction;
 
 		public void AddNewChunk(ChunkHeader chunkHeader = null, int? chunkSize = null) {
-			var chunk = _currentChunk;
-			_currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
-
-			var nextChunkNumber = chunk?.ChunkHeader.ChunkEndNumber + 1 ?? 0;
+			var nextChunkNumber = _currentChunk?.ChunkHeader.ChunkEndNumber + 1 ?? 0;
 			VerifyChunkNumberLimits(nextChunkNumber);
 
 			if (chunkHeader == null)
@@ -132,8 +129,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void CompleteReplicatedRawChunkInTransaction(TFChunk.TFChunk rawChunk) {
-			_currentChunk = null; // in case switching of raw chunk fails, we shouldn't use completed chunk for write
-
 			rawChunk.CompleteRaw();
 			_currentChunk = _db.Manager.SwitchChunk(rawChunk, verifyHash: true, removeChunksWithGreaterNumbers: true);
 
