@@ -106,7 +106,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public bool HasOpenTransaction() => _inTransaction;
 
-		public void AddNewChunk(ChunkHeader chunkHeader = null) {
+		public void AddNewChunk(ChunkHeader chunkHeader = null, int? chunkSize = null) {
 			var chunk = _currentChunk;
 			_currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
 
@@ -116,7 +116,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			if (chunkHeader == null)
 				_currentChunk = _db.Manager.AddNewChunk();
 			else
-				_currentChunk = _db.Manager.AddNewChunk(chunkHeader, _db.Config.ChunkSize);
+				_currentChunk = _db.Manager.AddNewChunk(chunkHeader, chunkSize!.Value);
 		}
 
 		private void CompleteChunkInTransaction() {

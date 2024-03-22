@@ -209,7 +209,7 @@ namespace EventStore.Core.Services {
 				_activeChunk = Db.Manager.CreateTempChunk(message.ChunkHeader, message.FileSize);
 			} else {
 				if (message.ChunkHeader.ChunkStartNumber == Db.Manager.ChunksCount) {
-					Writer.AddNewChunk(message.ChunkHeader); // note: we disregard the file size in the CreateChunk message
+					Writer.AddNewChunk(message.ChunkHeader, message.FileSize);
 				} else if (message.ChunkHeader.ChunkStartNumber + 1 == Db.Manager.ChunksCount) {
 					// the requested chunk was already created. this is fine, it can happen if the follower created the
 					// chunk in a previous run, was killed and re-subscribed to the leader at the beginning of the chunk.
