@@ -1008,7 +1008,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			// try get memory stream reader first
 			if (_sharedMemStream is { } sharedMemStream) {
-				if (_memStreams.TryTake(_sharedMemStream, &CreateMemoryStreamWorkItem) is { } memoryWorkItem)
+				if (_memStreams.TryTake(sharedMemStream, &CreateMemoryStreamWorkItem) is { } memoryWorkItem)
 					return memoryWorkItem;
 
 				if (_selfdestructin54321) {
