@@ -61,7 +61,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			if (!TryWriteToTransaction(record, out newPos)) {
 				CompleteChunkInTransaction();
-				AddNewChunkInTransaction();
+				AddNewChunk();
 				CommitTransaction();
 				Flush();
 				newPos = _nextRecordPosition;
@@ -106,10 +106,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public bool HasOpenTransaction() => _inTransaction;
 
-		private void AddNewChunkInTransaction(ChunkHeader chunkHeader = null) {
+		public void AddNewChunk(ChunkHeader chunkHeader = null) {
 			var chunk = _currentChunk;
-			_nextRecordPosition = chunk?.ChunkHeader.ChunkEndPosition ?? 0L;
-
 			_currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
 
 			var nextChunkNumber = chunk?.ChunkHeader.ChunkEndNumber + 1 ?? 0;
@@ -119,13 +117,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				_currentChunk = _db.Manager.AddNewChunk();
 			else
 				_currentChunk = _db.Manager.AddNewChunk(chunkHeader, _db.Config.ChunkSize);
-		}
-
-		public void AddNewChunk(ChunkHeader chunkHeader = null) {
-			OpenTransaction();
-			AddNewChunkInTransaction(chunkHeader);
-			CommitTransaction();
-			Flush();
 		}
 
 		private void CompleteChunkInTransaction() {
