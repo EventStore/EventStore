@@ -472,8 +472,13 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 	protected void VerifyDB(int expectedLogicalChunks) {
 		var numChunksOnLeader = _leaderInfo.Db.Manager.ChunksCount;
 		var numChunksOnReplica = _replicaInfo.Db.Manager.ChunksCount;
+		var atChunkBoundary = _leaderInfo.Db.Config.WriterCheckpoint.Read() % _leaderInfo.Db.Config.ChunkSize == 0;
 
 		Assert.AreEqual(expectedLogicalChunks, numChunksOnLeader);
+
+		if (atChunkBoundary)
+			expectedLogicalChunks--;
+
 		Assert.AreEqual(expectedLogicalChunks, numChunksOnReplica);
 
 		for (var chunkNum = 0; chunkNum < expectedLogicalChunks;) {
@@ -486,6 +491,13 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			Assert.True(leaderData.SequenceEqual(replicaData));
 
 			chunkNum = leaderChunk.ChunkHeader.ChunkEndNumber + 1;
+		}
+
+		if (atChunkBoundary) {
+			// verify that the chunk data is empty on the leader
+			var leaderChunk = _leaderInfo.Db.Manager.GetChunk(expectedLogicalChunks);
+			var leaderData = ReadChunkData(leaderChunk.FileName, excludeChecksum: false);
+			Assert.True(leaderData.SequenceEqual(new byte[leaderData.Length]));
 		}
 	}
 
