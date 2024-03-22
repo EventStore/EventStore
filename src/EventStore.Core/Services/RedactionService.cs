@@ -247,8 +247,6 @@ namespace EventStore.Core.Services {
 					filename: newChunkPath,
 					verifyHash: true,
 					unbufferedRead: _db.Config.Unbuffered,
-					initialReaderCount: 1,
-					maxReaderCount: 1,
 					optimizeReadSideCache: false,
 					reduceFileCachePressure: true,
 					tracker: new TFChunkTracker.NoOp());

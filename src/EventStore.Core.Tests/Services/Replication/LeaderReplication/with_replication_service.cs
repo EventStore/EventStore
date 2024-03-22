@@ -147,8 +147,6 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				replicationCheckpoint,
 				indexCheckpoint,
 				streamExistenceFilterCheckpoint,
-				Constants.TFChunkInitialReaderCountDefault,
-				Constants.TFChunkMaxReaderCountDefault,
 				true);
 			return nodeConfig;
 		}

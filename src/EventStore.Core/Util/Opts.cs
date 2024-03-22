@@ -11,8 +11,6 @@ namespace EventStore.Core.Util {
 
 		public const int HashCollisionReadLimitDefault = 100;
 
-		public const int ChunkInitialReaderCountDefault = 5;
-
 		public const bool FaultOutOfOrderProjectionsDefault = false;
 
 		public const int ProjectionsQueryExpiryDefault = 5;

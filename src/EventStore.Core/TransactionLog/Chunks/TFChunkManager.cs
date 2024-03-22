@@ -101,8 +101,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				_config.InMemDb,
 				_config.Unbuffered,
 				_config.WriteThrough,
-				_config.InitialReaderCount,
-				_config.MaxReaderCount,
 				_config.ReduceFileCachePressure,
 				_tracker);
 		}
@@ -119,8 +117,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					inMem: _config.InMemDb,
 					unbuffered: _config.Unbuffered,
 					writethrough: _config.WriteThrough,
-					initialReaderCount: _config.InitialReaderCount,
-					maxReaderCount: _config.MaxReaderCount,
 					reduceFileCachePressure: _config.ReduceFileCachePressure,
 					tracker: _tracker);
 				AddChunk(chunk);
@@ -145,8 +141,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					_config.InMemDb,
 					unbuffered: _config.Unbuffered,
 					writethrough: _config.WriteThrough,
-					initialReaderCount: _config.InitialReaderCount,
-					maxReaderCount: _config.MaxReaderCount,
 					reduceFileCachePressure: _config.ReduceFileCachePressure,
 					tracker: _tracker);
 				AddChunk(chunk);
@@ -205,7 +199,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				}
 
 				newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash, _config.Unbuffered,
-					_config.InitialReaderCount, _config.MaxReaderCount, _tracker, _config.OptimizeReadSideCache, _config.ReduceFileCachePressure );
+					_tracker, _config.OptimizeReadSideCache, _config.ReduceFileCachePressure );
 			}
 
 			lock (_chunksLocker) {
