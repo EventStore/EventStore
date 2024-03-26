@@ -65,11 +65,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests {
 			_logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 			_quorumSize = _clusterSize / 2 + 1;
 
-			// Cleaning up previous runs that were using those variables.
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, null);
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, null);
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiAdvertisedPortEnvVar, null);
-
 			_options = WithOptions(new ClusterVNodeOptions()
 				.ReduceMemoryUsageForTests()
 				.InCluster(_clusterSize)
