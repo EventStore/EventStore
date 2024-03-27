@@ -2158,7 +2158,13 @@
               {
                 "id": 3,
                 "name": "chunk_header_bytes",
-                "type": "bytes"
+                "type": "bytes",
+                "options": [
+                  {
+                    "name": "deprecated",
+                    "value": "true"
+                  }
+                ]
               },
               {
                 "id": 4,
@@ -2169,6 +2175,11 @@
                 "id": 5,
                 "name": "is_completed_chunk",
                 "type": "bool"
+              },
+              {
+                "id": 6,
+                "name": "chunk_header_bytes_v1",
+                "type": "bytes"
               }
             ]
           },

@@ -29,6 +29,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			var oldLastChunkNum = (int)(writerChk / _config.ChunkSize);
 			var newLastChunkNum = (int)(truncateChk / _config.ChunkSize);
 			var chunkEnumerator = new TFChunkEnumerator(_config.FileNamingStrategy);
+			var truncatingToBoundary = truncateChk % _config.ChunkSize == 0;
 
 			var excessiveChunks = _config.FileNamingStrategy.GetAllVersionsFor(oldLastChunkNum + 1);
 			if (excessiveChunks.Length > 0)
@@ -63,6 +64,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						+ "as truncation position is in the middle of scavenged chunk.",
 						newLastChunkHeader.ChunkStartNumber);
 					chunkNumToDeleteFrom = newLastChunkHeader.ChunkStartNumber;
+				} else if (truncatingToBoundary) {
+					// we're truncating to a chunk boundary:
+					// delete the chunk after the boundary so that we can re-replicate the chunk header from the leader
+					chunkNumToDeleteFrom--;
 				}
 
 				foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(oldLastChunkNum)) {
@@ -87,7 +92,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					File.Delete(chunkFile);
 				}
 
-				if (!newLastChunkHeader.IsScavenged) {
+				if (!newLastChunkHeader.IsScavenged && !truncatingToBoundary) {
 					TruncateChunkAndFillWithZeros(newLastChunkHeader, newLastChunkFilename, truncateChk);
 				} else {
 					truncateChk = newLastChunkHeader.ChunkStartPosition;

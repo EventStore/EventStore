@@ -395,6 +395,13 @@ namespace EventStore.Core.Services.Replication {
 					if (replicationStart)
 						sub.SendMessage(new ReplicationMessage.ReplicaSubscribed(_instanceId, sub.SubscriptionId,
 							sub.LogPosition));
+
+					if (logPosition == chunk.ChunkHeader.ChunkStartPosition)
+						sub.SendMessage(new ReplicationMessage.CreateChunk(_instanceId,
+							sub.SubscriptionId,
+							chunk.ChunkHeader,
+							chunk.FileSize,
+							isCompletedChunk: false));
 				}
 
 				sub.EOFSent = false;

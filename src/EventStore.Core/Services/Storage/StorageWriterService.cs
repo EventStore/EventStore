@@ -231,6 +231,10 @@ namespace EventStore.Core.Services.Storage {
 		void IHandle<SystemMessage.WriteEpoch>.Handle(SystemMessage.WriteEpoch message) {
 			if (_vnodeState != VNodeState.Leader && _vnodeState != VNodeState.PreLeader)
 				throw new Exception(string.Format("New Epoch request not in leader or preleader state. State: {0}.", _vnodeState));
+
+			if (Writer.NeedsNewChunk)
+				Writer.AddNewChunk();
+
 			EpochManager.WriteNewEpoch(message.EpochNumber);
 			PurgeNotProcessedInfo();
 		}
@@ -385,7 +389,7 @@ namespace EventStore.Core.Services.Storage {
 				var result = WritePrepareWithRetry(eventTypeRecord);
 				logPosition = result.NewPos;
 			}
-			
+
 			return eventTypeId;
 		}
 
@@ -490,9 +494,9 @@ namespace EventStore.Core.Services.Storage {
 					const PrepareFlags flags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted |
 											   PrepareFlags.IsJson;
 					var data = new StreamMetadata(truncateBefore: EventNumber.DeletedStream).ToJsonBytes();
-					
+
 					var streamMetadataEventTypeId = GetOrWriteEventType(SystemEventTypes.StreamMetadata, ref logPosition);
-					
+
 					var res = WritePrepareWithRetry(
 						LogRecord.Prepare(_recordFactory, logPosition, message.CorrelationId, eventId, logPosition, 0,
 							metastreamId, expectedVersion, flags, streamMetadataEventTypeId,
@@ -702,6 +706,7 @@ namespace EventStore.Core.Services.Storage {
 
 			if (!Writer.CanWrite(prepareSizes)) {
 				Writer.CompleteChunk();
+				Writer.AddNewChunk();
 				if (!Writer.CanWrite(prepareSizes)) {
 					throw new Exception($"Transaction of size {prepareSizes:N0} cannot be written even after completing a chunk");
 				}
@@ -761,6 +766,7 @@ namespace EventStore.Core.Services.Storage {
 			if (StreamIdComparer.Equals(prepare.EventType, _scavengePointEventTypeId) &&
 				StreamIdComparer.Equals(prepare.EventStreamId, _scavengePointsStreamId)) {
 				Writer.CompleteChunk();
+				Writer.AddNewChunk();
 			}
 
 			return new WriteResult(writtenPos, newPos, record);

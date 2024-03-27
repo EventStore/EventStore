@@ -132,7 +132,7 @@ message MemberInfo {
 	EndPoint external_tcp = 7;
 	bool internal_tcp_uses_tls = 8;
 	bool external_tcp_uses_tls = 9;
-	
+
     int64 last_commit_position = 10;
     int64 writer_checkpoint = 11;
 	int64 chaser_checkpoint = 12;
@@ -195,9 +195,10 @@ message ReplicaLogPositionAck{
 message CreateChunk{
 	bytes leader_id = 1;
 	bytes subscription_id = 2;
-	bytes chunk_header_bytes = 3;
+	bytes chunk_header_bytes = 3 [deprecated = true];
 	int32 file_size = 4;
 	bool is_completed_chunk = 5;
+	bytes chunk_header_bytes_v1 = 6;
 }
 
 message RawChunkBulk{

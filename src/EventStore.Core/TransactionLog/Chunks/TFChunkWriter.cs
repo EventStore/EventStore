@@ -14,6 +14,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			get { return _currentChunk; }
 		}
 
+		public bool NeedsNewChunk =>
+			CurrentChunk == null || // new database
+			CurrentChunk.IsReadOnly; // database is at a chunk boundary
+
 		private readonly TFChunkDb _db;
 		private readonly ICheckpoint _writerCheckpoint;
 		private long _nextRecordPosition;
@@ -33,9 +37,15 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_db = db;
 			_writerCheckpoint = db.Config.WriterCheckpoint;
 			_nextRecordPosition = _writerCheckpoint.Read();
-			_currentChunk = db.Manager.GetChunkFor(_nextRecordPosition);
-			if (_currentChunk == null)
-				throw new InvalidOperationException("No chunk given for existing position.");
+
+			if (db.Manager.ChunksCount == 0) {
+				// new database
+				_currentChunk = null;
+			} else if (!db.Manager.TryGetChunkFor(_nextRecordPosition, out _currentChunk)) {
+				// we may have been at a chunk boundary and the new chunk wasn't yet created
+				if (!db.Manager.TryGetChunkFor(_nextRecordPosition - 1, out _currentChunk))
+					throw new Exception($"Failed to get chunk for log position: {_nextRecordPosition}");
+			}
 		}
 
 		public void Open() {
@@ -51,6 +61,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			if (!TryWriteToTransaction(record, out newPos)) {
 				CompleteChunkInTransaction();
+				AddNewChunk();
 				CommitTransaction();
 				Flush();
 				newPos = _nextRecordPosition;
@@ -95,17 +106,19 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public bool HasOpenTransaction() => _inTransaction;
 
-		private void CompleteChunkInTransaction() {
-			var chunk = _currentChunk;
-			_currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
-
-			chunk.Complete();
-
-			_nextRecordPosition = chunk.ChunkHeader.ChunkEndPosition;
-
-			var nextChunkNumber = chunk.ChunkHeader.ChunkEndNumber + 1;
+		public void AddNewChunk(ChunkHeader chunkHeader = null, int? chunkSize = null) {
+			var nextChunkNumber = _currentChunk?.ChunkHeader.ChunkEndNumber + 1 ?? 0;
 			VerifyChunkNumberLimits(nextChunkNumber);
-			_currentChunk = _db.Manager.AddNewChunk();
+
+			if (chunkHeader == null)
+				_currentChunk = _db.Manager.AddNewChunk();
+			else
+				_currentChunk = _db.Manager.AddNewChunk(chunkHeader, chunkSize!.Value);
+		}
+
+		private void CompleteChunkInTransaction() {
+			_currentChunk.Complete();
+			_nextRecordPosition = _currentChunk.ChunkHeader.ChunkEndPosition;
 		}
 
 		public void CompleteChunk() {
@@ -116,16 +129,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void CompleteReplicatedRawChunkInTransaction(TFChunk.TFChunk rawChunk) {
-			_currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
-
 			rawChunk.CompleteRaw();
-			_db.Manager.SwitchChunk(rawChunk, verifyHash: true, removeChunksWithGreaterNumbers: true);
+			_currentChunk = _db.Manager.SwitchChunk(rawChunk, verifyHash: true, removeChunksWithGreaterNumbers: true);
 
 			_nextRecordPosition = rawChunk.ChunkHeader.ChunkEndPosition;
-
-			var nextChunkNumber = rawChunk.ChunkHeader.ChunkEndNumber + 1;
-			VerifyChunkNumberLimits(nextChunkNumber);
-			_currentChunk = _db.Manager.AddNewChunk();
 		}
 
 		public void CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk) {
