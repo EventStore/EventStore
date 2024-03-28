@@ -11,7 +11,7 @@ using Range = EventStore.Core.Data.Range;
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 	public partial class TFChunk {
 		public interface IChunkReadSide {
-			void Cache();
+			void RequestCaching();
 			void Uncache();
 
 			bool ExistsAt(long logicalPosition);
@@ -30,7 +30,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					throw new ArgumentException("Scavenged TFChunk passed into unscavenged chunk read side.");
 			}
 
-			public void Cache() {
+			public void RequestCaching() {
 				// do nothing
 			}
 
@@ -131,6 +131,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		private class TFChunkReadSideScavenged : TFChunkReadSide, IChunkReadSide {
+			// must hold _lock to assign to _wantMidpoints and _midpoints
+			private readonly object _lock = new();
+			private bool _wantMidpoints;
 			private Midpoint[] _midpoints;
 			private bool _optimizeCache;
 			private InMemoryBloomFilter _logPositionsBloomFilter;
@@ -147,11 +150,45 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 
 			public void Uncache() {
-				_midpoints = null;
+				lock (_lock) {
+					_wantMidpoints = false;
+					_midpoints = null;
+				}
 			}
 
-			public void Cache() {
-				_midpoints = PopulateMidpoints(Chunk.MidpointsDepth);
+			public void RequestCaching() {
+				lock (_lock) {
+					_wantMidpoints = true;
+				}
+			}
+
+			private Midpoint[] GetOrCreateMidPoints(ReaderWorkItem workItem) {
+				// don't use mipoints when reading from memory
+				if (workItem.IsMemory)
+					return null;
+
+				// if we have midpoints we are happy. no synchronization required.
+				// this value may be stale but the midpoints are still valid
+				var midpoints = _midpoints;
+				if (midpoints != null)
+					return midpoints;
+
+				// if we don't want midpoints we are happy. no synchronization required.
+				// this value may be stale but this is rare and worst case we will perform the read
+				// without the midpoints which will still work.
+				if (!_wantMidpoints)
+					return null;
+
+				lock (_lock) {
+					// guaranteed up to date. we don't want to assign to _midpoints if we aren't supposed to
+					// because the midpoints will take up memory unnecessarily.
+					if (!_wantMidpoints)
+						return null;
+
+					// want midpoints but don't have them, get them. synchronization is ok here because rare
+					_midpoints = PopulateMidpoints(Chunk.MidpointsDepth, workItem);
+					return _midpoints;
+				}
 			}
 
 			public void OptimizeExistsAt() {
@@ -208,17 +245,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 			}
 
-			private Midpoint[] PopulateMidpoints(int depth) {
+			private Midpoint[] PopulateMidpoints(int depth, ReaderWorkItem workItem) {
 				if (depth > 31)
 					throw new ArgumentOutOfRangeException("depth", "Depth too for midpoints.");
 
 				if (Chunk.ChunkFooter.MapCount == 0) // empty chunk
 					return null;
 
-				ReaderWorkItem workItem = null;
 				try {
-					workItem = Chunk.GetReaderWorkItem();
-
 					int midPointsCnt = 1 << depth;
 					int segmentSize;
 					Midpoint[] midpoints;
@@ -242,18 +276,19 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					return null;
 				} catch (OutOfMemoryException) {
 					return null;
-				} finally {
-					if (workItem != null)
-						Chunk.ReturnReaderWorkItem(workItem);
 				}
 			}
 
 			private PosMap ReadPosMap(ReaderWorkItem workItem, long index) {
-				foreach (var posMap in ReadPosMap(workItem, index, 1)) {
-					return posMap;
+				if (Chunk.ChunkFooter.IsMap12Bytes) {
+					var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.FullSize;
+					workItem.Stream.Seek(pos, SeekOrigin.Begin);
+					return PosMap.FromNewFormat(workItem.Reader);
+				} else {
+					var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.DeprecatedSize;
+					workItem.Stream.Seek(pos, SeekOrigin.Begin);
+					return PosMap.FromOldFormat(workItem.Reader);
 				}
-
-				throw new ArgumentOutOfRangeException("Could not read PosMap at index: " + index);
 			}
 
 			private IEnumerable<PosMap> ReadPosMap(ReaderWorkItem workItem, long index, int count) {
@@ -323,8 +358,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 
 			private int TranslateExactPosition(ReaderWorkItem workItem, long pos) {
-				var midpoints = _midpoints;
-				if (workItem.IsMemory || midpoints == null)
+				var midpoints = GetOrCreateMidPoints(workItem);
+				if (midpoints == null)
 					return TranslateExactWithoutMidpoints(workItem, pos, 0, Chunk.ChunkFooter.MapCount - 1);
 				return TranslateExactWithMidpoints(workItem, midpoints, pos);
 			}
@@ -440,8 +475,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 
 			private int TranslateClosestForwardPosition(ReaderWorkItem workItem, long logicalPosition) {
-				var midpoints = _midpoints;
-				if (workItem.IsMemory || midpoints == null)
+				var midpoints = GetOrCreateMidPoints(workItem);
+				if (midpoints == null)
 					return TranslateClosestForwardWithoutMidpoints(workItem, logicalPosition, 0,
 						Chunk.ChunkFooter.MapCount - 1);
 				return TranslateClosestForwardWithMidpoints(workItem, midpoints, logicalPosition);
