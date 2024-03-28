@@ -293,7 +293,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			_readSide = _chunkHeader.IsScavenged
 				? (IChunkReadSide)new TFChunkReadSideScavenged(this, optimizeReadSideCache, tracker)
 				: new TFChunkReadSideUnscavenged(this, tracker);
-			_readSide.Cache();
+
+			// do not actually cache now because it is too slow when opening the database
+			_readSide.RequestCaching();
 
 			if (verifyHash)
 				VerifyFileHash();
@@ -730,7 +732,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					return;
 				if (_cacheStatus == CacheStatus.Cached) {
 					// we won the right to un-cache and chunk was cached
-					_readSide.Cache();
+					// possibly we could use a mem reader work item and do the actual midpoint caching now
+					_readSide.RequestCaching();
 
 					var writerWorkItem = _writerWorkItem;
 					if (writerWorkItem != null)
