@@ -6,6 +6,7 @@ import "shared.proto";
 
 service Gossip {
 	rpc Read (event_store.client.Empty) returns (ClusterInfo);
+	rpc Subscribe (event_store.client.Empty) returns (stream ClusterInfo);
 }
 
 message ClusterInfo {

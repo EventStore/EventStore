@@ -5,15 +5,18 @@ using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Gossip : EventStore.Client.Gossip.Gossip.GossipBase  {
-		private readonly IPublisher _bus;
+		private readonly IPublisher _queue;
 		private readonly IAuthorizationProvider _authorizationProvider;
-		private readonly IDurationTracker _tracker;
+		private readonly IDurationTracker _durationTracker;
+		private readonly GossipTracker _gossipTracker;
 
-		public Gossip(IPublisher bus, IAuthorizationProvider authorizationProvider, IDurationTracker tracker) {
-			_bus = bus;
+		public Gossip(IPublisher queue, ISubscriber bus, IAuthorizationProvider authorizationProvider,
+			IDurationTracker durationTracker) {
+			_queue = queue;
 			_authorizationProvider =
 				authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));
-			_tracker = tracker;
+			_durationTracker = durationTracker;
+			_gossipTracker = new GossipTracker(bus);
 		}
 	}
 }
