@@ -106,14 +106,14 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public bool HasOpenTransaction() => _inTransaction;
 
-		public void AddNewChunk(ChunkHeader chunkHeader = null, int? chunkSize = null) {
+		public void AddNewChunk(ChunkHeader chunkHeader = null, ReadOnlyMemory<byte> transformHeader = default, int? chunkSize = null) {
 			var nextChunkNumber = _currentChunk?.ChunkHeader.ChunkEndNumber + 1 ?? 0;
 			VerifyChunkNumberLimits(nextChunkNumber);
 
 			if (chunkHeader == null)
 				_currentChunk = _db.Manager.AddNewChunk();
 			else
-				_currentChunk = _db.Manager.AddNewChunk(chunkHeader, chunkSize!.Value);
+				_currentChunk = _db.Manager.AddNewChunk(chunkHeader, transformHeader, chunkSize!.Value);
 		}
 
 		private void CompleteChunkInTransaction() {

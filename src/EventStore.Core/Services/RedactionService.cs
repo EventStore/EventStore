@@ -10,6 +10,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
+using EventStore.Core.Transforms;
 using Serilog;
 
 namespace EventStore.Core.Services {
@@ -213,6 +214,11 @@ namespace EventStore.Core.Services {
 				return false;
 			}
 
+			if (targetChunk.ChunkHeader.TransformType != TransformType.Identity) {
+				failReason = SwitchChunkResult.TargetChunkFormatNotSupported;
+				return false;
+			}
+
 			ChunkHeader newChunkHeader;
 			ChunkFooter newChunkFooter;
 			try {
@@ -249,7 +255,8 @@ namespace EventStore.Core.Services {
 					unbufferedRead: _db.Config.Unbuffered,
 					optimizeReadSideCache: false,
 					reduceFileCachePressure: true,
-					tracker: new TFChunkTracker.NoOp());
+					tracker: new TFChunkTracker.NoOp(),
+					getTransformFactory: type => _db.TransformManager.GetFactoryForExistingChunk(type));
 			} catch (HashValidationException) {
 				failReason = SwitchChunkResult.NewChunkHashInvalid;
 				return false;

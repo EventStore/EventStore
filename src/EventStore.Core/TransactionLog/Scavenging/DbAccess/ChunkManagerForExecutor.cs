@@ -2,6 +2,7 @@
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Transforms;
 using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
@@ -9,17 +10,19 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private readonly ILogger _logger;
 		private readonly TFChunkManager _manager;
 		private readonly TFChunkDbConfig _dbConfig;
+		private readonly DbTransformManager _transformManager;
 
-		public ChunkManagerForExecutor(ILogger logger, TFChunkManager manager, TFChunkDbConfig dbConfig) {
+		public ChunkManagerForExecutor(ILogger logger, TFChunkManager manager, TFChunkDbConfig dbConfig, DbTransformManager transformManager) {
 			_logger = logger;
 			_manager = manager;
 			_dbConfig = dbConfig;
+			_transformManager = transformManager;
 		}
 
 		public IChunkWriterForExecutor<TStreamId, ILogRecord> CreateChunkWriter(
 			IChunkReaderForExecutor<TStreamId, ILogRecord> sourceChunk) {
 
-			return new ChunkWriterForExecutor<TStreamId>(_logger, this, _dbConfig, sourceChunk);
+			return new ChunkWriterForExecutor<TStreamId>(_logger, this, _dbConfig, sourceChunk, _transformManager);
 		}
 
 		public IChunkReaderForExecutor<TStreamId, ILogRecord> GetChunkReaderFor(long position) {

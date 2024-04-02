@@ -5,23 +5,27 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
+using EventStore.Core.Transforms;
+using EventStore.Core.Transforms.Identity;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkDb : IDisposable {
 		public readonly TFChunkDbConfig Config;
 		public readonly TFChunkManager Manager;
+		public readonly DbTransformManager TransformManager;
 
 		private readonly ILogger _log;
 		private readonly ITransactionFileTracker _tracker;
 		private int _closed;
 
-		public TFChunkDb(TFChunkDbConfig config, ITransactionFileTracker tracker = null, ILogger log = null) {
+		public TFChunkDb(TFChunkDbConfig config, ITransactionFileTracker tracker = null, ILogger log = null, DbTransformManager transformManager = null) {
 			Ensure.NotNull(config, "config");
 
 			Config = config;
+			TransformManager = transformManager ?? new DbTransformManager(new [] { new IdentityDbTransform() }, TransformType.Identity);
 			_tracker = tracker ?? new TFChunkTracker.NoOp();
-			Manager = new TFChunkManager(Config, _tracker);
+			Manager = new TFChunkManager(Config, _tracker, TransformManager);
 			_log = log ?? Serilog.Log.ForContext<TFChunkDb>();
 		}
 
@@ -77,14 +81,15 @@ namespace EventStore.Core.TransactionLog.Chunks {
 									unbufferedRead: Config.Unbuffered,
 									tracker: _tracker,
 									optimizeReadSideCache: Config.OptimizeReadSideCache,
-									reduceFileCachePressure: Config.ReduceFileCachePressure);
+									reduceFileCachePressure: Config.ReduceFileCachePressure,
+									getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type));
 							else {
 								chunk = TFChunk.TFChunk.FromOngoingFile(chunkInfo.ChunkFileName, Config.ChunkSize,
-									checkSize: false,
 									unbuffered: Config.Unbuffered,
 									writethrough: Config.WriteThrough,
 									reduceFileCachePressure: Config.ReduceFileCachePressure,
-									tracker: _tracker);
+									tracker: _tracker,
+									getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type));
 								// chunk is full with data, we should complete it right here
 								if (!readOnly)
 									chunk.Complete();
@@ -94,7 +99,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 								unbufferedRead: Config.Unbuffered,
 								optimizeReadSideCache: Config.OptimizeReadSideCache,
 								reduceFileCachePressure: Config.ReduceFileCachePressure,
-								tracker: _tracker);
+								tracker: _tracker,
+								getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type));
 						}
 
 						// This call is theadsafe.
@@ -138,7 +144,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						unbufferedRead: Config.Unbuffered,
 						optimizeReadSideCache: Config.OptimizeReadSideCache,
 						reduceFileCachePressure: Config.ReduceFileCachePressure,
-						tracker: _tracker);
+						tracker: _tracker,
+						getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type));
+
 					lastChunkNum = lastChunk.ChunkHeader.ChunkEndNumber + 1;
 
 					Manager.AddChunk(lastChunk);
@@ -159,11 +167,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							Manager.AddNewChunk();
 					}
 				} else {
-					var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false,
+					var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos,
 						unbuffered: Config.Unbuffered,
 						writethrough: Config.WriteThrough,
 						reduceFileCachePressure: Config.ReduceFileCachePressure,
-						tracker: _tracker);
+						tracker: _tracker,
+						getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type));
 					Manager.AddChunk(lastChunk);
 				}
 			}

@@ -3,6 +3,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog {
@@ -19,7 +20,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			return CreateDbConfigEx(pathName, writerCheckpointPosition,0,-1,-1,-1,chunkSize,-1);
 		}
 		public static TFChunkDbConfig CreateDbConfigEx(
-			string pathName, 
+			string pathName,
 			long writerCheckpointPosition,
 			long chaserCheckpointPosition,// Default 0
 			long epochCheckpointPosition ,// Default -1
@@ -37,17 +38,17 @@ namespace EventStore.Core.Tests.TransactionLog {
 				new InMemoryCheckpoint(epochCheckpointPosition),
 				new InMemoryCheckpoint(proposalCheckpointPosition),
 				new InMemoryCheckpoint(truncateCheckpoint),
-				new InMemoryCheckpoint(-1), 
+				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
 				maxTruncation: maxTruncation);
 		}
 
 		public static TFChunkDbConfig CreateDbConfig(
-			string pathName, 
+			string pathName,
 			ICheckpoint writerCheckpoint,
-			ICheckpoint chaserCheckpoint, 
-			int chunkSize = 10000, 
+			ICheckpoint chaserCheckpoint,
+			int chunkSize = 10000,
 			ICheckpoint replicationCheckpoint = null) {
 			if (replicationCheckpoint == null) replicationCheckpoint = new InMemoryCheckpoint(-1);
 			return new TFChunkDbConfig(
@@ -60,7 +61,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
-				replicationCheckpoint, 
+				replicationCheckpoint,
 				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1));
 		}
@@ -68,7 +69,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public static TFChunk CreateNewChunk(string fileName, int chunkSize = 4096, bool isScavenged = false) {
 			return TFChunk.CreateNew(fileName, chunkSize, 0, 0,
 				isScavenged: isScavenged, inMem: false, unbuffered: false,
-				writethrough: false, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp());
+				writethrough: false, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
+				transformFactory: new IdentityChunkTransformFactory());
 		}
 	}
 }
