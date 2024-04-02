@@ -187,17 +187,32 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		private void OnScavengeConfigurationRead(ClientMessage.ReadStreamEventsBackwardCompleted result) {
-			if (result.Result == ReadStreamResult.Success || result.Result == ReadStreamResult.NoStream) {
+			if (result.Result is ReadStreamResult.Success or ReadStreamResult.NoStream) {
 				if (result.Events.Length == 1) {
 					var conf = result.Events[0].OriginalEvent.Data.ParseJson<ScavengeConfiguration>();
 				}
 
-				_initialized = true;
+				_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, 0, 500, false, SystemAccounts.System,
+					res => OnReadingPastScavenges(0, res));
+
 				return;
 			}
 
 			_ioDispatcher.ReadBackward(SystemStreams.ScavengeConfigurationStream, -1, 1, false, SystemAccounts.System,
 				OnScavengeConfigurationRead);
+		}
+
+		private void OnReadingPastScavenges(int from, ClientMessage.ReadStreamEventsForwardCompleted result) {
+			if (result.Result is ReadStreamResult.Success or ReadStreamResult.NoStream) {
+
+				if (result.IsEndOfStream)
+					_initialized = true;
+
+				return;
+			}
+
+			_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, from, 500, false, SystemAccounts.System,
+				res => OnReadingPastScavenges(from, res));
 		}
 	}
 }
