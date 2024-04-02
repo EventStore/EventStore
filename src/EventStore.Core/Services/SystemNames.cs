@@ -27,6 +27,7 @@ namespace EventStore.Core.Services {
 		public const string ScavengesStream = "$scavenges";
 		public const string EpochInformationStream = "$epoch-information";
 		public const string ScavengePointsStream = "$scavengePoints";
+		public const string ScavengeConfigurationStream = "$scavengeConfiguration";
 
 		// mem streams
 		public const string NodeStateStream = "$mem-node-state";
@@ -164,13 +165,13 @@ namespace EventStore.Core.Services {
 		public const string RoundRobin = "RoundRobin";
 
 		/// <summary>
-		/// Distribute events of the same streamId to the same client until it disconnects on a best efforts basis. 
+		/// Distribute events of the same streamId to the same client until it disconnects on a best efforts basis.
 		/// Designed to be used with indexes such as the category projection.
 		/// </summary>
 		public const string Pinned = "Pinned";
 
 		/// <summary>
-		/// Distribute events of the same correlationId to the same client until it disconnects on a best efforts basis. 
+		/// Distribute events of the same correlationId to the same client until it disconnects on a best efforts basis.
 		/// </summary>
 		public const string PinnedByCorrelation = "PinnedByCorrelation";
 	}

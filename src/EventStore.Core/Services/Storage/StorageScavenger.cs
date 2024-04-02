@@ -5,8 +5,10 @@ using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Scavenging;
@@ -15,6 +17,7 @@ using Serilog;
 namespace EventStore.Core.Services.Storage {
 	// This tracks the current scavenge and starts/stops/creates it according to the client instructions
 	public class StorageScavenger :
+		IHandle<SystemMessage.SystemReady>,
 		IHandle<ClientMessage.ScavengeDatabase>,
 		IHandle<ClientMessage.StopDatabaseScavenge>,
 		IHandle<ClientMessage.GetDatabaseScavenge>,
@@ -24,6 +27,8 @@ namespace EventStore.Core.Services.Storage {
 		private readonly ITFChunkScavengerLogManager _logManager;
 		private readonly ScavengerFactory _scavengerFactory;
 		private readonly SemaphoreSlimLock _switchChunksLock;
+		private readonly IODispatcher _ioDispatcher;
+		private readonly TimerService.TimerService _timerService;
 		private Guid _switchChunksLockId = Guid.Empty;
 		private readonly object _lock = new object();
 
@@ -31,20 +36,36 @@ namespace EventStore.Core.Services.Storage {
 		// invariant: _currentScavenge is not null => _currentScavengeTask is the task of the current scavenge
 		private Task _currentScavengeTask;
 		private CancellationTokenSource _cancellationTokenSource;
+		private bool _initialized;
 
 		public StorageScavenger(
 			ITFChunkScavengerLogManager logManager,
 			ScavengerFactory scavengerFactory,
-			SemaphoreSlimLock switchChunksLock) {
+			SemaphoreSlimLock switchChunksLock,
+			IODispatcher ioDispatcher,
+			TimerService.TimerService timerService) {
 
 			Ensure.NotNull(logManager, nameof(logManager));
 			Ensure.NotNull(scavengerFactory, nameof(scavengerFactory));
 			Ensure.NotNull(switchChunksLock, nameof(switchChunksLock));
+			Ensure.NotNull(ioDispatcher, nameof(ioDispatcher));
+			Ensure.NotNull(timerService, nameof(timerService));
 
 			_logManager = logManager;
 			_scavengerFactory = scavengerFactory;
 			_switchChunksLock = switchChunksLock;
+			_ioDispatcher = ioDispatcher;
+			_timerService = timerService;
 		}
+
+		public void Handle(SystemMessage.SystemReady message) {
+			if (_initialized)
+				return;
+
+			_ioDispatcher.ReadBackward(SystemStreams.ScavengeConfigurationStream, -1, 1, false, SystemAccounts.System,
+				OnScavengeConfigurationRead);
+		}
+
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
 			if (message.State == VNodeState.Leader || message.State == VNodeState.Follower) {
@@ -163,6 +184,20 @@ namespace EventStore.Core.Services.Storage {
 			}
 
 			return true;
+		}
+
+		private void OnScavengeConfigurationRead(ClientMessage.ReadStreamEventsBackwardCompleted result) {
+			if (result.Result == ReadStreamResult.Success || result.Result == ReadStreamResult.NoStream) {
+				if (result.Events.Length == 1) {
+					var conf = result.Events[0].OriginalEvent.Data.ParseJson<ScavengeConfiguration>();
+				}
+
+				_initialized = true;
+				return;
+			}
+
+			_ioDispatcher.ReadBackward(SystemStreams.ScavengeConfigurationStream, -1, 1, false, SystemAccounts.System,
+				OnScavengeConfigurationRead);
 		}
 	}
 }

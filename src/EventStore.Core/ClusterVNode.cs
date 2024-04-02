@@ -446,7 +446,7 @@ namespace EventStore.Core {
 					options.Database.OptimizeIndexMerge,
 					options.Database.ReduceFileCachePressure,
 					options.Database.MaxTruncation);
-				
+
 				static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
 					var tfChunkMaxReaderCount =
 						GetPTableMaxReaderCount(readerThreadsCount) +
@@ -1089,7 +1089,7 @@ namespace EventStore.Core {
 				},
 				_authenticationProvider
 			);
-			
+
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
 			_httpService.SetupController(persistentSubscriptionController);
@@ -1430,12 +1430,15 @@ namespace EventStore.Core {
 			var storageScavenger = new StorageScavenger(
 				logManager: scavengerLogManager,
 				scavengerFactory: scavengerFactory,
-				switchChunksLock: _switchChunksLock);
+				switchChunksLock: _switchChunksLock,
+				ioDispatcher: scavengerDispatcher,
+				timerService: _timerService);
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod
 			_mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
 			_mainBus.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
 			_mainBus.Subscribe<ClientMessage.GetDatabaseScavenge>(storageScavenger);
+			_mainBus.Subscribe<SystemMessage.SystemReady>(storageScavenger);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
 			// ReSharper restore RedundantTypeArgumentsOfMethod
 
@@ -1653,7 +1656,7 @@ namespace EventStore.Core {
 				+ 5 /* just in case reserve :) */;
 			return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
 		}
-		
+
 		private static void CreateStaticStreamInfoCache(
 			int streamInfoCacheCapacity,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
