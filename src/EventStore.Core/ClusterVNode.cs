@@ -1432,7 +1432,7 @@ namespace EventStore.Core {
 				scavengerFactory: scavengerFactory,
 				switchChunksLock: _switchChunksLock,
 				ioDispatcher: scavengerDispatcher,
-				timerService: _timerService,
+				publisher: _mainQueue,
 				NodeInfo.HttpEndPoint.ToString());
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod

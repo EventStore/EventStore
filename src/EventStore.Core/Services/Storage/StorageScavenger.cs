@@ -10,6 +10,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Chunks;
@@ -31,7 +32,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly ScavengerFactory _scavengerFactory;
 		private readonly SemaphoreSlimLock _switchChunksLock;
 		private readonly IODispatcher _ioDispatcher;
-		private readonly TimerService.TimerService _timerService;
+		private readonly IPublisher _publisher;
 		private readonly string _nodeEndpoint;
 		private Guid _switchChunksLockId = Guid.Empty;
 		private readonly object _lock = new object();
@@ -42,7 +43,7 @@ namespace EventStore.Core.Services.Storage {
 		private Task _currentScavengeTask;
 		private CancellationTokenSource _cancellationTokenSource;
 		private bool _initialized;
-		private long _from;
+		private AutomatedScavengeState _autoScavengeState;
 		[CanBeNull] private ScavengeConfiguration _scavengeConfiguration;
 
 		public StorageScavenger(
@@ -50,23 +51,23 @@ namespace EventStore.Core.Services.Storage {
 			ScavengerFactory scavengerFactory,
 			SemaphoreSlimLock switchChunksLock,
 			IODispatcher ioDispatcher,
-			TimerService.TimerService timerService,
+			IPublisher publisher,
 			string nodeEndpoint) {
 
 			Ensure.NotNull(logManager, nameof(logManager));
 			Ensure.NotNull(scavengerFactory, nameof(scavengerFactory));
 			Ensure.NotNull(switchChunksLock, nameof(switchChunksLock));
 			Ensure.NotNull(ioDispatcher, nameof(ioDispatcher));
-			Ensure.NotNull(timerService, nameof(timerService));
+			Ensure.NotNull(publisher, nameof(publisher));
 			Ensure.NotNullOrEmpty(nodeEndpoint, nameof(nodeEndpoint));
 
 			_logManager = logManager;
 			_scavengerFactory = scavengerFactory;
 			_switchChunksLock = switchChunksLock;
 			_ioDispatcher = ioDispatcher;
-			_timerService = timerService;
+			_publisher = publisher;
 			_nodeEndpoint = nodeEndpoint;
-			_from = 0;
+			_autoScavengeState = new AutomatedScavengeState();
 		}
 
 		public void Handle(SystemMessage.SystemReady message) {
@@ -209,9 +210,8 @@ namespace EventStore.Core.Services.Storage {
 					_scavengeConfiguration = result.Events[0].OriginalEvent.Data.ParseJson<ScavengeConfiguration>();
 				}
 
-				var state = new PastScavengeState();
-				_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, 0, 500, true, SystemAccounts.System,
-					res => OnReadingPastScavenges(state, res));
+				_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, _autoScavengeState.From, 500, true, SystemAccounts.System,
+					OnReadingPastScavenges);
 
 				return;
 			}
@@ -220,7 +220,7 @@ namespace EventStore.Core.Services.Storage {
 				OnScavengeConfigurationRead);
 		}
 
-		private void OnReadingPastScavenges(PastScavengeState state, ClientMessage.ReadStreamEventsForwardCompleted result) {
+		private void OnReadingPastScavenges(ClientMessage.ReadStreamEventsForwardCompleted result) {
 			if (result.Result is ReadStreamResult.Success or ReadStreamResult.NoStream) {
 
 				foreach (var @event in result.Events) {
@@ -242,7 +242,7 @@ namespace EventStore.Core.Services.Storage {
 					var scavengeId = scavengeIdEntry.ToString();
 					switch (@event.OriginalEvent.EventType) {
 						case SystemEventTypes.ScavengeStarted:
-							state.IncompleteScavenges.Add(scavengeId, @event.OriginalEvent.TimeStamp);
+							_autoScavengeState.IncompleteScavenges.Add(scavengeId, @event.OriginalEvent.TimeStamp);
 							break;
 
 						case SystemEventTypes.ScavengeCompleted: {
@@ -250,35 +250,59 @@ namespace EventStore.Core.Services.Storage {
 							if (!dictionary.TryGetValue("timeTaken", out var timeTakenEntry))
 								continue;
 
-							if (!state.IncompleteScavenges.Remove(scavengeId, out var started))
+							if (!_autoScavengeState.IncompleteScavenges.Remove(scavengeId, out var started))
 								continue;
 
-							var timeTaken = TimeSpan.Parse(timeTakenEntry.ToString());
-							state.LastCompleteScavengeDate = started + timeTaken;
+							_autoScavengeState.LastCompletedScavengeStarted = started;
+							_autoScavengeState.LastCompleteScavengeTimeTaken = TimeSpan.Parse(timeTakenEntry.ToString());
 							break;
 						}
 					}
 				}
 
+				_autoScavengeState.From = result.NextEventNumber;
 				if (result.IsEndOfStream) {
-					if (state.IncompleteScavenges.Count == 0 && state.LastCompleteScavengeDate.HasValue && _scavengeConfiguration != null) {
+					if (_autoScavengeState.IncompleteScavenges.Count == 0 && _scavengeConfiguration != null) {
+						TimeSpan scheduleScavenge = TimeSpan.Zero;
+
+						if (_autoScavengeState.LastCompletedScavengeStarted != null) {
+							var ended = _autoScavengeState.LastCompletedScavengeStarted.Value +
+							            _autoScavengeState.LastCompleteScavengeTimeTaken;
+
+							var diff = DateTime.Now - ended;
+							if (diff >= _scavengeConfiguration.Schedule) {
+								OnScavengeScheduled();
+								return;
+							}
+
+							scheduleScavenge = _scavengeConfiguration.Schedule - diff;
+						} else {
+							scheduleScavenge = _scavengeConfiguration.Schedule;
+						}
+
+						_publisher.Publish(TimerMessage.Schedule.Create<Message>(scheduleScavenge, new CallbackEnvelope(_ => OnScavengeScheduled()), null));
 					}
 
 					_initialized = true;
 				} else {
-					_from = result.NextEventNumber;
-					_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, _from, 500, true,
-						SystemAccounts.System, res => OnReadingPastScavenges(state, res));
+					_autoScavengeState.From = result.NextEventNumber;
+					_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, _autoScavengeState.From, 500, true,
+						SystemAccounts.System, OnReadingPastScavenges);
 				}
 
 				return;
 			}
 
-			_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, _from, 500, true, SystemAccounts.System,
-				res => OnReadingPastScavenges(state, res));
+			_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, _autoScavengeState.From, 500, true, SystemAccounts.System,
+				OnReadingPastScavenges);
 		}
 
-		private struct PastScavengeState() {
+		private void OnScavengeScheduled() {
+			// TODO - Make sure that if the node is a leader that we resign first then proceed with the scavenging.
+		}
+
+		private struct AutomatedScavengeState() {
+			internal long From = 0;
 			internal Dictionary<string, DateTime> IncompleteScavenges = new();
 			internal DateTime? LastCompletedScavengeStarted;
 			internal TimeSpan LastCompleteScavengeTimeTaken = TimeSpan.Zero;
