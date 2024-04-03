@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -42,8 +43,7 @@ namespace EventStore.Core.Services.Storage {
 		private CancellationTokenSource _cancellationTokenSource;
 		private bool _initialized;
 		private long _from;
-		private string _lastCompletedScavangeId;
-		private string _onGoingScavengeId;
+		[CanBeNull] private ScavengeConfiguration _scavengeConfiguration;
 
 		public StorageScavenger(
 			ITFChunkScavengerLogManager logManager,
@@ -67,8 +67,6 @@ namespace EventStore.Core.Services.Storage {
 			_timerService = timerService;
 			_nodeEndpoint = nodeEndpoint;
 			_from = 0;
-			_lastCompletedScavangeId = string.Empty;
-			_onGoingScavengeId = string.Empty;
 		}
 
 		public void Handle(SystemMessage.SystemReady message) {
@@ -208,11 +206,12 @@ namespace EventStore.Core.Services.Storage {
 		private void OnScavengeConfigurationRead(ClientMessage.ReadStreamEventsBackwardCompleted result) {
 			if (result.Result is ReadStreamResult.Success or ReadStreamResult.NoStream) {
 				if (result.Events.Length == 1) {
-					var conf = result.Events[0].OriginalEvent.Data.ParseJson<ScavengeConfiguration>();
+					_scavengeConfiguration = result.Events[0].OriginalEvent.Data.ParseJson<ScavengeConfiguration>();
 				}
 
+				var state = new PastScavengeState();
 				_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, 0, 500, true, SystemAccounts.System,
-					OnReadingPastScavenges);
+					res => OnReadingPastScavenges(state, res));
 
 				return;
 			}
@@ -221,7 +220,7 @@ namespace EventStore.Core.Services.Storage {
 				OnScavengeConfigurationRead);
 		}
 
-		private void OnReadingPastScavenges(ClientMessage.ReadStreamEventsForwardCompleted result) {
+		private void OnReadingPastScavenges(PastScavengeState state, ClientMessage.ReadStreamEventsForwardCompleted result) {
 			if (result.Result is ReadStreamResult.Success or ReadStreamResult.NoStream) {
 
 				foreach (var @event in result.Events) {
@@ -229,7 +228,6 @@ namespace EventStore.Core.Services.Storage {
 						continue;
 
 					var dictionary = @event.Event.Data.ParseJson<Dictionary<string, object>>();
-					// object entryNode;
 					if (!dictionary.TryGetValue("nodeEndpoint", out var entryNode) ||
 					    entryNode.ToString() != _nodeEndpoint) {
 						continue;
@@ -242,21 +240,48 @@ namespace EventStore.Core.Services.Storage {
 					}
 
 					var scavengeId = scavengeIdEntry.ToString();
+					switch (@event.OriginalEvent.EventType) {
+						case SystemEventTypes.ScavengeStarted:
+							state.IncompleteScavenges.Add(scavengeId, @event.OriginalEvent.TimeStamp);
+							break;
+
+						case SystemEventTypes.ScavengeCompleted: {
+
+							if (!dictionary.TryGetValue("timeTaken", out var timeTakenEntry))
+								continue;
+
+							if (!state.IncompleteScavenges.Remove(scavengeId, out var started))
+								continue;
+
+							var timeTaken = TimeSpan.Parse(timeTakenEntry.ToString());
+							state.LastCompleteScavengeDate = started + timeTaken;
+							break;
+						}
+					}
 				}
 
-				if (result.IsEndOfStream)
+				if (result.IsEndOfStream) {
+					if (state.IncompleteScavenges.Count == 0 && state.LastCompleteScavengeDate.HasValue && _scavengeConfiguration != null) {
+					}
+
 					_initialized = true;
-				else {
+				} else {
 					_from = result.NextEventNumber;
 					_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, _from, 500, true,
-						SystemAccounts.System, OnReadingPastScavenges);
+						SystemAccounts.System, res => OnReadingPastScavenges(state, res));
 				}
 
 				return;
 			}
 
 			_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, _from, 500, true, SystemAccounts.System,
-				OnReadingPastScavenges);
+				res => OnReadingPastScavenges(state, res));
+		}
+
+		private struct PastScavengeState() {
+			internal Dictionary<string, DateTime> IncompleteScavenges = new();
+			internal DateTime? LastCompletedScavengeStarted;
+			internal TimeSpan LastCompleteScavengeTimeTaken = TimeSpan.Zero;
 		}
 	}
 }
