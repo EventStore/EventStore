@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Scavenging;
+using JetBrains.Annotations;
 using Serilog;
 
 namespace EventStore.Core.Services.Storage {
@@ -29,33 +31,44 @@ namespace EventStore.Core.Services.Storage {
 		private readonly SemaphoreSlimLock _switchChunksLock;
 		private readonly IODispatcher _ioDispatcher;
 		private readonly TimerService.TimerService _timerService;
+		private readonly string _nodeEndpoint;
 		private Guid _switchChunksLockId = Guid.Empty;
 		private readonly object _lock = new object();
 
 		private IScavenger _currentScavenge;
+
 		// invariant: _currentScavenge is not null => _currentScavengeTask is the task of the current scavenge
 		private Task _currentScavengeTask;
 		private CancellationTokenSource _cancellationTokenSource;
 		private bool _initialized;
+		private long _from;
+		private string _lastCompletedScavangeId;
+		private string _onGoingScavengeId;
 
 		public StorageScavenger(
 			ITFChunkScavengerLogManager logManager,
 			ScavengerFactory scavengerFactory,
 			SemaphoreSlimLock switchChunksLock,
 			IODispatcher ioDispatcher,
-			TimerService.TimerService timerService) {
+			TimerService.TimerService timerService,
+			string nodeEndpoint) {
 
 			Ensure.NotNull(logManager, nameof(logManager));
 			Ensure.NotNull(scavengerFactory, nameof(scavengerFactory));
 			Ensure.NotNull(switchChunksLock, nameof(switchChunksLock));
 			Ensure.NotNull(ioDispatcher, nameof(ioDispatcher));
 			Ensure.NotNull(timerService, nameof(timerService));
+			Ensure.NotNullOrEmpty(nodeEndpoint, nameof(nodeEndpoint));
 
 			_logManager = logManager;
 			_scavengerFactory = scavengerFactory;
 			_switchChunksLock = switchChunksLock;
 			_ioDispatcher = ioDispatcher;
 			_timerService = timerService;
+			_nodeEndpoint = nodeEndpoint;
+			_from = 0;
+			_lastCompletedScavangeId = string.Empty;
+			_onGoingScavengeId = string.Empty;
 		}
 
 		public void Handle(SystemMessage.SystemReady message) {
@@ -99,7 +112,8 @@ namespace EventStore.Core.Services.Storage {
 
 						HandleCleanupWhenFinished(_currentScavengeTask, _currentScavenge, logger);
 
-						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseStartedResponse(message.CorrelationId,
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseStartedResponse(
+							message.CorrelationId,
 							tfChunkScavengerLog.ScavengeId));
 					}
 				}
@@ -110,15 +124,17 @@ namespace EventStore.Core.Services.Storage {
 			if (IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
 				lock (_lock) {
 					if (_currentScavenge != null &&
-						(_currentScavenge.ScavengeId == message.ScavengeId || message.ScavengeId == "current")) {
+					    (_currentScavenge.ScavengeId == message.ScavengeId || message.ScavengeId == "current")) {
 						_cancellationTokenSource.Cancel();
 
 						_currentScavengeTask.ContinueWith(_ => {
-							message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseStoppedResponse(message.CorrelationId,
+							message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseStoppedResponse(
+								message.CorrelationId,
 								_currentScavenge.ScavengeId));
 						});
 					} else {
-						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseNotFoundResponse(message.CorrelationId,
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseNotFoundResponse(
+							message.CorrelationId,
 							_currentScavenge?.ScavengeId, "Scavenge Id does not exist"));
 					}
 				}
@@ -135,7 +151,8 @@ namespace EventStore.Core.Services.Storage {
 							_currentScavenge.ScavengeId));
 					} else {
 						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseGetResponse(
-							message.CorrelationId, ClientMessage.ScavengeDatabaseGetResponse.ScavengeResult.Stopped, scavengeId: null));
+							message.CorrelationId, ClientMessage.ScavengeDatabaseGetResponse.ScavengeResult.Stopped,
+							scavengeId: null));
 					}
 				}
 			}
@@ -178,8 +195,10 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		private bool IsAllowed(ClaimsPrincipal user, Guid correlationId, IEnvelope envelope) {
-			if (user == null || (!user.LegacyRoleCheck(SystemRoles.Admins) && !user.LegacyRoleCheck(SystemRoles.Operations))) {
-				envelope.ReplyWith(new ClientMessage.ScavengeDatabaseUnauthorizedResponse(correlationId, null, "User not authorized"));
+			if (user == null || (!user.LegacyRoleCheck(SystemRoles.Admins) &&
+			                     !user.LegacyRoleCheck(SystemRoles.Operations))) {
+				envelope.ReplyWith(
+					new ClientMessage.ScavengeDatabaseUnauthorizedResponse(correlationId, null, "User not authorized"));
 				return false;
 			}
 
@@ -192,8 +211,8 @@ namespace EventStore.Core.Services.Storage {
 					var conf = result.Events[0].OriginalEvent.Data.ParseJson<ScavengeConfiguration>();
 				}
 
-				_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, 0, 500, false, SystemAccounts.System,
-					res => OnReadingPastScavenges(0, res));
+				_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, 0, 500, true, SystemAccounts.System,
+					OnReadingPastScavenges);
 
 				return;
 			}
@@ -202,17 +221,42 @@ namespace EventStore.Core.Services.Storage {
 				OnScavengeConfigurationRead);
 		}
 
-		private void OnReadingPastScavenges(int from, ClientMessage.ReadStreamEventsForwardCompleted result) {
+		private void OnReadingPastScavenges(ClientMessage.ReadStreamEventsForwardCompleted result) {
 			if (result.Result is ReadStreamResult.Success or ReadStreamResult.NoStream) {
+
+				foreach (var @event in result.Events) {
+					if (@event.ResolveResult != ReadEventResult.Success)
+						continue;
+
+					var dictionary = @event.Event.Data.ParseJson<Dictionary<string, object>>();
+					// object entryNode;
+					if (!dictionary.TryGetValue("nodeEndpoint", out var entryNode) ||
+					    entryNode.ToString() != _nodeEndpoint) {
+						continue;
+					}
+
+
+					if (!dictionary.TryGetValue("scavengeId", out var scavengeIdEntry)) {
+						Log.Warning("An entry in the scavenge log has no scavengeId");
+						continue;
+					}
+
+					var scavengeId = scavengeIdEntry.ToString();
+				}
 
 				if (result.IsEndOfStream)
 					_initialized = true;
+				else {
+					_from = result.NextEventNumber;
+					_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, _from, 500, true,
+						SystemAccounts.System, OnReadingPastScavenges);
+				}
 
 				return;
 			}
 
-			_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, from, 500, false, SystemAccounts.System,
-				res => OnReadingPastScavenges(from, res));
+			_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, _from, 500, true, SystemAccounts.System,
+				OnReadingPastScavenges);
 		}
 	}
 }
