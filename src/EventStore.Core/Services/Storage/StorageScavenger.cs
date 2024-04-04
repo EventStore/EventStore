@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -80,8 +79,17 @@ namespace EventStore.Core.Services.Storage {
 
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
-			if (message.State == VNodeState.Leader || message.State == VNodeState.Follower) {
-				_logManager.Initialise();
+			switch (message.State)
+			{
+				case VNodeState.Follower when _autoScavengeState.Resigning:
+					_autoScavengeState.State = VNodeState.Follower;
+					OnScavengeScheduled();
+					break;
+
+				case VNodeState.Leader or VNodeState.Follower:
+					_autoScavengeState.State = message.State;
+					_logManager.Initialise();
+					break;
 			}
 		}
 
@@ -220,6 +228,9 @@ namespace EventStore.Core.Services.Storage {
 				OnScavengeConfigurationRead);
 		}
 
+		// TODO - We should probably also track if we already have a scavenge running in other nodes. Checking is only
+		// eventually consistent because it's possible that our node is lagging behind on replication and we just didn't
+		// receive the scavengeStarted event.
 		private void OnReadingPastScavenges(ClientMessage.ReadStreamEventsForwardCompleted result) {
 			if (result.Result is ReadStreamResult.Success or ReadStreamResult.NoStream) {
 
@@ -298,10 +309,33 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		private void OnScavengeScheduled() {
-			// TODO - Make sure that if the node is a leader that we resign first then proceed with the scavenging.
+			if (_autoScavengeState.State == VNodeState.Leader) {
+				_autoScavengeState.Resigning = true;
+				_publisher.Publish(new ClientMessage.ResignNode());
+				return;
+			}
+
+			Handle(new ClientMessage.ScavengeDatabase(new CallbackEnvelope(OnScavengeSubmitted), Guid.NewGuid(),
+				SystemAccounts.System, 0, 1, null, null, false));
 		}
 
+		private void OnScavengeSubmitted(Message message) {
+			switch (message)
+			{
+				case ClientMessage.ScavengeDatabaseInProgressResponse resp:
+					// TODO - Is it worth pulling the starting date from the DB? Right now I say no.
+					// TODO - If we reached the head of the scavenges stream then we can set the last completed date ot the moment we received the completion.
+					return;
+				case ClientMessage.ScavengeDatabaseStartedResponse resp:
+					_autoScavengeState.IncompleteScavenges.Add(resp.ScavengeId, DateTime.Now);
+					return;
+			}
+		}
+
+
 		private struct AutomatedScavengeState() {
+			internal VNodeState State = VNodeState.Unknown;
+			internal bool Resigning;
 			internal long From = 0;
 			internal Dictionary<string, DateTime> IncompleteScavenges = new();
 			internal DateTime? LastCompletedScavengeStarted;
