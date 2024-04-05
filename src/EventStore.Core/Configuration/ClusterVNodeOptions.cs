@@ -17,6 +17,7 @@ using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
+using EventStore.Plugins;
 using EventStore.Plugins.Subsystems;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
@@ -48,7 +49,9 @@ namespace EventStore.Core {
 
 		public X509Certificate2? ServerCertificate { get; init; }
 		public X509Certificate2Collection? TrustedRootCertificates { get; init; }
-		public IReadOnlyList<ISubsystem> Subsystems { get; init; } = [];
+		public IReadOnlyList<IPlugableComponent> PlugableComponents { get; init; } = [];
+
+		public IReadOnlyList<ISubsystem> Subsystems => PlugableComponents.OfType<ISubsystem>().ToArray();
 
 		public bool UnknownOptionsDetected => Unknown.Options.Any();
 

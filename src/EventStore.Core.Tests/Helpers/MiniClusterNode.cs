@@ -145,7 +145,7 @@ namespace EventStore.Core.Tests.Helpers {
 				Projection = new() {
 					RunProjections = ProjectionType.None
 				},
-				Subsystems = subsystems
+				PlugableComponents = subsystems
 			};
 
 			var inMemConf = new ConfigurationBuilder()
