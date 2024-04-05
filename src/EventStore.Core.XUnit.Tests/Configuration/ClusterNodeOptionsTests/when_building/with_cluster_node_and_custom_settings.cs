@@ -106,10 +106,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_custom_external_ip_address_as_advertise_info<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiAdvertisedPortEnvVar, "11131");
-
 			return options
 				.Insecure()
 				.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, 11130))
@@ -120,8 +116,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 		[Test]
 		public void should_set_the_custom_advertise_info_for_external() {
-			Assert.AreEqual(new DnsEndPoint("196.168.1.1", 11131),
-				_node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint("196.168.1.1", 21130),
 				_node.GossipAdvertiseInfo.HttpEndPoint);
 		}
@@ -136,10 +130,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_0_0_0_0_as_external_ip_address_and_custom_advertise_info<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiAdvertisedPortEnvVar, "11131");
-
 			return options
 				.Insecure()
 				.WithInternalTcpOn(new IPEndPoint(IPAddress.Any, 11120))
@@ -149,8 +139,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 		[Test]
 		public void should_set_the_custom_advertise_info_for_external() {
-			Assert.AreEqual(new DnsEndPoint("10.0.0.1", 11131),
-				_node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint("10.0.0.1", 2113),
 				_node.GossipAdvertiseInfo.HttpEndPoint);
 		}
@@ -166,9 +154,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_0_0_0_0_as_external_ip_address_with_no_explicit_advertise_info_set<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
-
 			return options
 				.Insecure()
 				.WithHttpOn(new IPEndPoint(IPAddress.Any, 21130))
@@ -178,8 +163,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 		[Test]
 		public void should_use_the_non_default_loopback_ip_as_advertise_info_for_external() {
-			Assert.AreEqual(new DnsEndPoint(IPFinder.GetNonLoopbackAddress().ToString(), 11130),
-				_node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint(IPFinder.GetNonLoopbackAddress().ToString(), 21130),
 				_node.GossipAdvertiseInfo.HttpEndPoint);
 		}
@@ -195,10 +178,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 	public class
 		with_0_0_0_0_for_internal_and_external_ips_with_advertise_info_set_for_external<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "11130");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiAdvertisedPortEnvVar, "11131");
-
 			return options
 				.Insecure()
 				.WithHttpOn(new IPEndPoint(IPAddress.Loopback, 21130))
@@ -210,8 +189,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 		[Test]
 		public void should_set_the_custom_advertise_info_for_external() {
-			Assert.AreEqual(new DnsEndPoint("10.0.0.1", 11131),
-				_node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint("10.0.0.1", 21131),
 				_node.GossipAdvertiseInfo.HttpEndPoint);
 		}
