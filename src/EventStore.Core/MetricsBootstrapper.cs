@@ -7,6 +7,8 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Index;
 using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
+using EventStore.Core.Services.RequestManager;
+using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Scavenging;
@@ -32,6 +34,7 @@ public class Trackers {
 	public ICacheHitsMissesTracker CacheHitsMissesTracker { get; set; } = new CacheHitsMissesTracker.NoOp();
 	public ICacheResourcesTracker CacheResourcesTracker { get; set; } = new CacheResourcesTracker.NoOp();
 	public IElectionCounterTracker ElectionCounterTracker { get; set; } = new ElectionsCounterTracker.NoOp();
+	public IWritesTracker WritesTracker { get; set; } = new WritesTracker.NoOp();
 }
 
 public class GrpcTrackers {
@@ -85,6 +88,9 @@ public static class MetricsBootstrapper {
 		var queueBusyMetric = new AverageMetric(coreMeter, "eventstore-queue-busy", "seconds", label => new("queue", label));
 		var byteMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "bytes");
 		var eventMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "events");
+		var writesMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "writes");
+		var writtenBytesMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "bytes");
+		var writtenEventsMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "events");
 		var electionsCounterMetric = new CounterMetric(coreMeter, "eventstore-elections-count", unit: "");
 
 		// incoming grpc calls
@@ -128,9 +134,15 @@ public static class MetricsBootstrapper {
 
 		// from a users perspective an event is written when it is indexed: thats when it can be read.
 		if (conf.Events.TryGetValue(Conf.EventTracker.Written, out var writtenEnabled) && writtenEnabled) {
+			var writtenTag = new KeyValuePair<string, object>("activity", "written");
 			trackers.IndexTracker = new IndexTracker(new CounterSubMetric(
 				eventMetric,
-				new[] {new KeyValuePair<string, object>("activity", "written")}));
+				[writtenTag]));
+
+			trackers.WritesTracker = new WritesTracker(
+				new CounterSubMetric(writtenBytesMetric, [writtenTag]),
+				new CounterSubMetric(writtenEventsMetric, [writtenTag]),
+				new CounterSubMetric(writesMetric, [writtenTag]));
 		}
 
 		// gossip

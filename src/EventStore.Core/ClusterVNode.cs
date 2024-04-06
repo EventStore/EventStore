@@ -1091,7 +1091,8 @@ namespace EventStore.Core {
 				_mainQueue,
 				TimeSpan.FromMilliseconds(options.Database.PrepareTimeoutMs),
 				TimeSpan.FromMilliseconds(options.Database.CommitTimeoutMs),
-				logFormat.SupportsExplicitTransactions);
+				logFormat.SupportsExplicitTransactions,
+				trackers.WritesTracker);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
