@@ -17,8 +17,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 		private readonly IPEndPoint _externalSecTcp = new(IPAddress.Parse("127.0.1.15"), 1115);
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1115");
 
 			return options.WithInternalSecureTcpOn(_internalSecTcp).WithExternalSecureTcpOn(_externalSecTcp) with {
 				CertificateFile = new() {
@@ -44,11 +42,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 			Assert.AreEqual(_internalSecTcp, _node.NodeInfo.InternalSecureTcp);
 		}
 
-		[Test]
-		public void should_set_external_secure_tcp_endpoint() {
-			Assert.AreEqual(_externalSecTcp, _node.NodeInfo.ExternalSecureTcp);
-		}
-
 		private string GetCertificatePath() {
 			var filePath = Path.Combine(Path.GetTempPath(), $"cert-{Guid.NewGuid()}.p12");
 			var cert = ssl_connections.GetUntrustedCertificate();
@@ -68,9 +61,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 		private readonly X509Certificate2 _certificate = ssl_connections.GetServerCertificate();
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1115");
-
 			return options
 				.WithInternalSecureTcpOn(_internalSecTcp)
 				.WithExternalSecureTcpOn(_externalSecTcp)
@@ -90,11 +80,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 		[Test]
 		public void should_set_internal_secure_tcp_endpoint() {
 			Assert.AreEqual(_internalSecTcp, _node.NodeInfo.InternalSecureTcp);
-		}
-
-		[Test]
-		public void should_set_external_secure_tcp_endpoint() {
-			Assert.AreEqual(_externalSecTcp, _node.NodeInfo.ExternalSecureTcp);
 		}
 	}
 

@@ -154,8 +154,8 @@ namespace EventStore.Core {
 			[Description("Allow anonymous access to streams.")]
 			public bool AllowAnonymousStreamAccess { get; init; } = false;
 
-			[Description("Overrides anonymous access for the gossip enpdoint. If set to true, the gossip endpoint will accept anonymous access. " +
-			             $"Otherwise anonymous access wil be dis/allowed based on the value of the '{nameof(AllowAnonymousEndpointAccess)}' option")]
+			[Description("Overrides anonymous access for the gossip endpoint. If set to true, the gossip endpoint will accept anonymous access. " +
+			             $"Otherwise anonymous access will be dis/allowed based on the value of the '{nameof(AllowAnonymousEndpointAccess)}' option")]
 			public bool OverrideAnonymousEndpointAccessForGossip { get; init; } = true;
 
 			[Description("Disable telemetry data collection."), EnvironmentOnly("You can only opt-out of telemetry using Environment Variables")]

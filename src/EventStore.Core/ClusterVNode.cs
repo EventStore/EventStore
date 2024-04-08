@@ -73,11 +73,6 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
 		protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
-		public static readonly string TcpApiEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_API_ENABLED";
-		public static readonly string TcpApiPortEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_API_PORT";
-		public static readonly string TcpApiAdvertisedPortEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_API_ADVERTISED_PORT";
-		public static readonly string TcpApiHeartbeatTimeoutEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_HEARTBEAT_TIMEOUT";
-		public static readonly string TcpApiHeartbeatIntervalEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_HEARTBEAT_INTERVAL";
 
 		public static ClusterVNode<TStreamId> Create<TStreamId>(
 			ClusterVNodeOptions options,
@@ -274,7 +269,8 @@ namespace EventStore.Core {
 
 			var disableInternalTcpTls = options.Application.Insecure;
 			var disableExternalTcpTls = options.Application.Insecure;
-			var enableExternalTcp = ExtTcpOptions.TryParse(out var extTcpOptions);
+			var nodeTcpOptions = configuration.GetSection("EventStore:TcpPlugin").Get<NodeTcpOptions>() ?? new();
+			var enableExternalTcp = nodeTcpOptions.EnableExternalTcp;
 
 			var httpEndPoint = new IPEndPoint(options.Interface.NodeIp, options.Interface.NodePort);
 
@@ -289,21 +285,21 @@ namespace EventStore.Core {
 
 			var extTcp = disableExternalTcpTls && enableExternalTcp
 				? new IPEndPoint(options.Interface.NodeIp,
-					extTcpOptions.Port)
+					nodeTcpOptions.NodeTcpPort)
 				: null;
 			var extSecIp = !disableExternalTcpTls && enableExternalTcp
 				? new IPEndPoint(options.Interface.NodeIp,
-					extTcpOptions.Port)
+					nodeTcpOptions.NodeTcpPort)
 				: null;
 
 			var intTcpPortAdvertiseAs = disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
 			var intSecTcpPortAdvertiseAs = !disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
 
-			var extTcpPortAdvertiseAs = enableExternalTcp && disableExternalTcpTls && extTcpOptions.AdvertisedPort.HasValue
-				? extTcpOptions.AdvertisedPort.Value!
+			var extTcpPortAdvertiseAs = enableExternalTcp && disableExternalTcpTls && nodeTcpOptions.NodeTcpPortAdvertiseAs.HasValue
+				? nodeTcpOptions.NodeTcpPortAdvertiseAs.Value!
 				: 0;
-			var extSecTcpPortAdvertiseAs = enableExternalTcp && !disableExternalTcpTls && extTcpOptions.AdvertisedPort.HasValue
-				? extTcpOptions.AdvertisedPort.Value!
+			var extSecTcpPortAdvertiseAs = enableExternalTcp && !disableExternalTcpTls && nodeTcpOptions.NodeTcpPortAdvertiseAs.HasValue
+				? nodeTcpOptions.NodeTcpPortAdvertiseAs.Value!
 				: 0;
 
 			Log.Information("Quorum size set to {quorum}.", options.Cluster.QuorumSize);
@@ -903,7 +899,7 @@ namespace EventStore.Core {
 					extSecureTcpEndPoint, httpEndPoint, options.Interface.ReplicationHostAdvertiseAs,
 					options.Interface.NodeHostAdvertiseAs, options.Interface.NodePortAdvertiseAs,
 					options.Interface.AdvertiseHostToClientAs, options.Interface.AdvertiseNodePortToClientAs,
-					extTcpOptions?.AdvertisedPort ?? 0);
+					nodeTcpOptions?.NodeTcpPortAdvertiseAs ?? 0);
 			}
 
 			_httpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
@@ -945,39 +941,6 @@ namespace EventStore.Core {
 
 			AuthorizationGateway = new AuthorizationGateway(_authorizationProvider);
 			{
-				if (enableExternalTcp)
-					Log.Warning("The unsupported public tcp api feature has been enabled. Please be aware that this feature may not function as expected and could lead to potential issues. Use at your own risk");
-
-				// EXTERNAL TCP
-				if (NodeInfo.ExternalTcp != null && enableExternalTcp) {
-					var extTcpService = new TcpService(_mainQueue, NodeInfo.ExternalTcp, _workersHandler,
-						TcpServiceType.External, TcpSecurityType.Normal,
-						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-						TimeSpan.FromMilliseconds(extTcpOptions.HeartbeatInterval),
-						TimeSpan.FromMilliseconds(extTcpOptions.HeartbeatTimeout),
-						_authenticationProvider, AuthorizationGateway, null, null, null,
-						options.Interface.ConnectionPendingSendBytesThreshold,
-						options.Interface.ConnectionQueueSizeThreshold);
-					_mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
-					_mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
-					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extTcpService);
-				}
-				// EXTERNAL SECURE TCP
-				if (NodeInfo.ExternalSecureTcp != null && enableExternalTcp) {
-					var extSecTcpService = new TcpService(_mainQueue, NodeInfo.ExternalSecureTcp, _workersHandler,
-						TcpServiceType.External, TcpSecurityType.Secure,
-						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-						TimeSpan.FromMilliseconds(extTcpOptions.HeartbeatInterval),
-						TimeSpan.FromMilliseconds(extTcpOptions.HeartbeatTimeout),
-						_authenticationProvider, AuthorizationGateway,
-						_certificateSelector, _intermediateCertsSelector, _externalClientCertificateValidator,
-						options.Interface.ConnectionPendingSendBytesThreshold,
-						options.Interface.ConnectionQueueSizeThreshold);
-					_mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
-					_mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
-					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extSecTcpService);
-				}
-
 				if (!isSingleNode) {
 					// INTERNAL TCP
 					if (NodeInfo.InternalTcp != null) {
@@ -1076,7 +1039,7 @@ namespace EventStore.Core {
 				},
 				_authenticationProvider
 			);
-			
+
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
 			_httpService.SetupController(persistentSubscriptionController);
@@ -1602,6 +1565,8 @@ namespace EventStore.Core {
 			IServiceCollection ConfigureAdditionalServices(IServiceCollection services) => services
 				.AddSingleton(_readIndex)
 				.AddSingleton(standardComponents)
+				.AddSingleton(AuthorizationGateway)
+				.AddSingleton(certificateProvider)
 				.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
 				.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates, X509Certificate2Collection Roots)>>
 					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()));
@@ -1640,7 +1605,7 @@ namespace EventStore.Core {
 				+ 5 /* just in case reserve :) */;
 			return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
 		}
-		
+
 		private static void CreateStaticStreamInfoCache(
 			int streamInfoCacheCapacity,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,

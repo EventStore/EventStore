@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -26,6 +27,8 @@ using Microsoft.AspNetCore.Server.Kestrel.Https;
 using ILogger = Serilog.ILogger;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Plugins.Subsystems;
+using EventStore.TcpUnitTestPlugin;
+using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode<TLogFormat, TStreamId> {
@@ -87,8 +90,8 @@ namespace EventStore.Core.Tests.Helpers {
 
 			var useHttps = EnableHttps();
 
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, $"{externalTcp.Port}");
+			subsystems ??= [];
+			subsystems = [..subsystems, new TcpApiTestPlugin()];
 
 			var options = new ClusterVNodeOptions {
 				Application = new() {
@@ -142,9 +145,18 @@ namespace EventStore.Core.Tests.Helpers {
 				Projection = new() {
 					RunProjections = ProjectionType.None
 				},
-				Subsystems = subsystems ?? Array.Empty<ISubsystem>()
+				Subsystems = subsystems
 			};
 
+			var inMemConf = new ConfigurationBuilder()
+				.AddInMemoryCollection(new KeyValuePair<string, string>[] {
+					new("EventStore:TcpPlugin:NodeTcpPort", externalTcp.Port.ToString()),
+					new("EventStore:TcpPlugin:EnableExternalTcp", "true"),
+					new("EventStore:TcpUnitTestPlugin:NodeTcpPort", externalTcp.Port.ToString()),
+					new("EventStore:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
+					new("EventStore:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
+					new("EventStore:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
+				}).Build();
 			var serverCertificate = useHttps ? ssl_connections.GetServerCertificate() : null;
 			var trustedRootCertificates =
 				useHttps ? new X509Certificate2Collection(ssl_connections.GetRootCertificate()) : null;
@@ -176,7 +188,7 @@ namespace EventStore.Core.Tests.Helpers {
 						options.Application.OverrideAnonymousEndpointAccessForGossip)),
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(),
 				new OptionsCertificateProvider(),
-				configuration: null,
+				configuration: inMemConf,
 				expiryStrategy,
 				Guid.NewGuid(), debugIndex);
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));

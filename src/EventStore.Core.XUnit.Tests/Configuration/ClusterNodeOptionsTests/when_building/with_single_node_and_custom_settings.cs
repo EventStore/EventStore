@@ -48,9 +48,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 		private readonly IPEndPoint _externalTcp = new(IPAddress.Parse("127.0.1.15"), 1115);
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, $"{_externalTcp.Port}");
-
 			return options
 				.WithHttpOn(_httpEndPoint)
 				.WithExternalSecureTcpOn(_externalTcp)
@@ -65,11 +62,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 		[Test]
 		public void should_set_internal_tcp_endpoint() {
 			Assert.AreEqual(_internalTcp, _node.NodeInfo.InternalSecureTcp);
-		}
-
-		[Test]
-		public void should_set_external_tcp_endpoint() {
-			Assert.AreEqual(_externalTcp, _node.NodeInfo.ExternalSecureTcp);
 		}
 	}
 
@@ -137,10 +129,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, "1113");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiAdvertisedPortEnvVar, "2113");
-
 			return options
 				.WithHttpOn(_httpEndpoint)
 				.WithExternalSecureTcpOn(_extTcpEndpoint)
@@ -156,8 +144,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 			Assert.AreEqual(null, _node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint($"{InternalIp}.com", _intTcpEndpoint.Port + 1000),
 				_node.GossipAdvertiseInfo.InternalSecureTcp);
-			Assert.AreEqual(new DnsEndPoint($"{ExternalIp}.com", _extTcpEndpoint.Port + 1000),
-				_node.GossipAdvertiseInfo.ExternalSecureTcp);
 			Assert.AreEqual(new DnsEndPoint($"{ExternalIp}.com", _httpEndpoint.Port + 1000),
 				_node.GossipAdvertiseInfo.HttpEndPoint);
 			Assert.AreEqual($"{InternalIp}.com", _node.GossipAdvertiseInfo.AdvertiseInternalHostAs);
