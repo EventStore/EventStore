@@ -1,10 +1,10 @@
 name: Build Ubuntu 20.04 ARM64
 on:
-  pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "samples/**"
-      - "**.md"
+  #pull_request:
+  #  paths-ignore:
+  #    - "docs/**"
+  #    - "samples/**"
+  #    - "**.md"
   push:
     branches:
       - master

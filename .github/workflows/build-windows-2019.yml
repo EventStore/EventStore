@@ -1,11 +1,11 @@
 name: Build Windows 2019
 
 on:
-  pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "samples/**"
-      - "**.md"
+  #pull_request:
+  #  paths-ignore:
+  #    - "docs/**"
+  #    - "samples/**"
+  #    - "**.md"
   push:
     branches:
       - master
