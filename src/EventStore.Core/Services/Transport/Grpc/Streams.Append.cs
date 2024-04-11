@@ -5,6 +5,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client.Streams;
+using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Common;
 using Grpc.Core;
 using Empty = EventStore.Client.Empty;
@@ -58,6 +59,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					var proposedMessage = requestStream.Current.ProposedMessage;
 					var data = proposedMessage.Data.ToByteArray();
 					var metadata = proposedMessage.CustomMetadata.ToByteArray();
+					var systemMetadata = proposedMessage.Metadata.ToJsonBytes();
 
 					if (!proposedMessage.Metadata.TryGetValue(Constants.Metadata.Type, out var eventType)) {
 						throw RpcExceptions.RequiredMetadataPropertyMissing(Constants.Metadata.Type);
@@ -67,7 +69,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						throw RpcExceptions.RequiredMetadataPropertyMissing(Constants.Metadata.ContentType);
 					}
 
-					size += Event.SizeOnDisk(eventType, data, metadata);
+					size += Event.SizeOnDisk(eventType, data, metadata, systemMetadata);
 
 					if (size > _maxAppendSize) {
 						throw RpcExceptions.MaxAppendSizeExceeded(_maxAppendSize);
@@ -78,7 +80,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						eventType,
 						contentType == Constants.Metadata.ContentTypes.ApplicationJson,
 						data,
-						metadata));
+						metadata,
+						systemMetadata));
 				}
 
 				var appendResponseSource = new TaskCompletionSource<AppendResp>(TaskCreationOptions.RunContinuationsAsynchronously);

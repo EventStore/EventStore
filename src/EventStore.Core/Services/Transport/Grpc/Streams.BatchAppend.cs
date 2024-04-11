@@ -306,7 +306,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						proposedMessage.Metadata[Constants.Metadata.Type],
 						proposedMessage.Metadata[Constants.Metadata.ContentType] ==
 						Constants.Metadata.ContentTypes.ApplicationJson, proposedMessage.Data.ToByteArray(),
-						proposedMessage.CustomMetadata.ToByteArray());
+						proposedMessage.CustomMetadata.ToByteArray(),
+						proposedMessage.Metadata.ToJsonBytes());
 
 				static ClientMessage.WriteEvents ToInternalMessage(ClientWriteRequest request, IEnvelope envelope,
 					bool requiresLeader, ClaimsPrincipal user, CancellationToken token) =>
@@ -345,7 +346,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public ClientWriteRequest AddEvents(IEnumerable<Event> events) {
 				foreach (var e in events) {
-					_size += Event.SizeOnDisk(e.EventType, e.Data, e.Metadata);
+					_size += Event.SizeOnDisk(e.EventType, e.Data, e.Metadata, e.SystemMetadata);
 					_events.Add(e);
 				}
 

@@ -50,7 +50,8 @@ namespace EventStore.Core.LogV2 {
 			PrepareFlags flags,
 			string eventType,
 			ReadOnlyMemory<byte> data,
-			ReadOnlyMemory<byte> metadata) {
+			ReadOnlyMemory<byte> metadata,
+			ReadOnlyMemory<byte>? systemMetadata = null) {
 
 			var result = new PrepareLogRecord(
 				logPosition: logPosition,
@@ -66,7 +67,8 @@ namespace EventStore.Core.LogV2 {
 				eventType: eventType,
 				eventTypeSize: null,
 				data: data,
-				metadata: metadata);
+				metadata: metadata,
+				systemMetadata: systemMetadata);
 			return result;
 		}
 	}

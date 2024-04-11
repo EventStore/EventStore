@@ -83,8 +83,10 @@ namespace EventStore.Core.LogV3 {
 			PrepareFlags flags,
 			StreamId eventType,
 			ReadOnlyMemory<byte> data,
-			ReadOnlyMemory<byte> metadata) {
+			ReadOnlyMemory<byte> metadata,
+			ReadOnlyMemory<byte>? systemMetadata = null) {
 
+			// TODO JC: How do we incorporate systemMetadata into V3 which already has EventSystemMetadata?
 			var result = new LogV3StreamWriteRecord(
 				logPosition: logPosition,
 				transactionPosition: transactionPosition,
@@ -107,7 +109,7 @@ namespace EventStore.Core.LogV3 {
 			Guid partitionTypeId,
 			Guid partitionId,
 			string name) {
-			
+
 			return new PartitionTypeLogRecord(
 				timeStamp: timeStamp,
 				logPosition: logPosition,
@@ -126,7 +128,7 @@ namespace EventStore.Core.LogV3 {
 			Raw.PartitionFlags flags,
 			ushort referenceNumber,
 			string name) {
-			
+
 			return new PartitionLogRecord(
 				timeStamp: timeStamp,
 				logPosition: logPosition,

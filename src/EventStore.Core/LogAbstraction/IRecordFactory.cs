@@ -38,6 +38,7 @@ namespace EventStore.Core.LogAbstraction {
 			PrepareFlags flags,
 			TStreamId eventType,
 			ReadOnlyMemory<byte> data,
-			ReadOnlyMemory<byte> metadata);
+			ReadOnlyMemory<byte> metadata,
+			ReadOnlyMemory<byte>? systemMetadata = null);
 	}
 }

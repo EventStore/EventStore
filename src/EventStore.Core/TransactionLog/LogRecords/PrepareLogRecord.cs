@@ -56,6 +56,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		private int? _eventTypeSize;
 		public ReadOnlyMemory<byte> Data { get; }
 		public ReadOnlyMemory<byte> Metadata { get; }
+		public ReadOnlyMemory<byte> SystemMetadata { get; }
 
 		private int? _sizeOnDisk;
 
@@ -74,7 +75,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				       + 8
 				       + IntPtr.Size + EventType.Length * 2
 				       + IntPtr.Size + Data.Length
-				       + IntPtr.Size + Metadata.Length;
+				       + IntPtr.Size + Metadata.Length
+				       + IntPtr.Size + SystemMetadata.Length;
 			}
 		}
 
@@ -104,7 +106,9 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 					+ sizeof(int) /* Data length */
 					+ Data.Length /* Data */
 					+ sizeof(int) /* Metadata length */
-					+ Metadata.Length; /* Metadata */
+					+ Metadata.Length /* Metadata */
+					+ sizeof(int) /* SystemMetadata length */
+					+ SystemMetadata.Length; /* SystemMetadata */
 
 				return _sizeOnDisk.Value;
 			}
@@ -135,7 +139,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			int? eventTypeSize,
 			ReadOnlyMemory<byte> data,
 			ReadOnlyMemory<byte> metadata,
-			byte prepareRecordVersion = PrepareRecordVersion)
+			byte prepareRecordVersion = PrepareRecordVersion,
+			ReadOnlyMemory<byte>? systemMetadata = null)
 			: base(LogRecordType.Prepare, prepareRecordVersion, logPosition) {
 			Ensure.NotEmptyGuid(correlationId, "correlationId");
 			Ensure.NotEmptyGuid(eventId, "eventId");
@@ -160,6 +165,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			_eventTypeSize = eventTypeSize;
 			Data = Flags.HasFlag(PrepareFlags.IsRedacted) ? NoData : data;
 			Metadata = metadata;
+			SystemMetadata = systemMetadata ?? NoData;
 			if (InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
 		}
 
@@ -191,6 +197,10 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 			var metadataCount = reader.ReadInt32();
 			Metadata = metadataCount == 0 ? NoData : reader.ReadBytes(metadataCount);
+
+			var systemMetadataCount = reader.ReadInt32();
+			SystemMetadata = systemMetadataCount == 0 ? NoData : reader.ReadBytes(systemMetadataCount);
+
 			if (InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
 		}
 
@@ -209,7 +219,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				eventType: EventType,
 				eventTypeSize: _eventTypeSize,
 				data: Data,
-				metadata: Metadata);
+				metadata: Metadata,
+				systemMetadata: SystemMetadata);
 		}
 
 		public override void WriteTo(BinaryWriter writer) {
@@ -235,6 +246,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			writer.Write(Data.Span);
 			writer.Write(Metadata.Length);
 			writer.Write(Metadata.Span);
+			writer.Write(SystemMetadata.Length);
+			writer.Write(SystemMetadata.Span);
 		}
 
 		public bool Equals(PrepareLogRecord other) {
@@ -251,7 +264,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			       && other.TimeStamp.Equals(TimeStamp)
 			       && other.EventType.Equals(EventType)
 			       && other.Data.Span.SequenceEqual(Data.Span)
-			       && other.Metadata.Span.SequenceEqual(Metadata.Span);
+			       && other.Metadata.Span.SequenceEqual(Metadata.Span)
+			       && other.SystemMetadata.Span.SequenceEqual(SystemMetadata.Span);
 		}
 
 		public override bool Equals(object obj) {
@@ -276,6 +290,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				result = (result * 397) ^ EventType.GetHashCode();
 				result = (result * 397) ^ Data.GetHashCode();
 				result = (result * 397) ^ Metadata.GetHashCode();
+				result = (result * 397) ^ SystemMetadata.GetHashCode();
 				return result;
 			}
 		}

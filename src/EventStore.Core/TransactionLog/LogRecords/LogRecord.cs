@@ -54,10 +54,10 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 				case LogRecordType.PartitionType:
 					return new PartitionTypeLogRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
-				
+
 				case LogRecordType.Partition:
 					return new PartitionLogRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
-				
+
 				default:
 					throw new ArgumentOutOfRangeException("recordType");
 			}
@@ -66,10 +66,10 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public static IPrepareLogRecord<TStreamId> Prepare<TStreamId>(IRecordFactory<TStreamId> factory, long logPosition, Guid correlationId, Guid eventId, long transactionPos,
 			int transactionOffset,
 			TStreamId eventStreamId, long expectedVersion, PrepareFlags flags, TStreamId eventType,
-			ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> metadata, DateTime? timeStamp = null) {
+			ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> metadata, DateTime? timeStamp = null, ReadOnlyMemory<byte>? systemMetadata = null) {
 			return factory.CreatePrepare(logPosition, correlationId, eventId, transactionPos, transactionOffset,
 				eventStreamId, expectedVersion, timeStamp ?? DateTime.UtcNow, flags, eventType,
-				data, metadata);
+				data, metadata, systemMetadata);
 		}
 
 		public static CommitLogRecord Commit(long logPosition, Guid correlationId, long startPosition,
@@ -98,11 +98,11 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 		public static IPrepareLogRecord<TStreamId> TransactionWrite<TStreamId>(IRecordFactory<TStreamId> factory, long logPosition, Guid correlationId, Guid eventId,
 			long transactionPos, int transactionOffset, TStreamId eventStreamId, TStreamId eventType, byte[] data,
-			byte[] metadata, bool isJson) {
+			byte[] metadata, bool isJson, byte[] systemMetadata = null) {
 			return factory.CreatePrepare(logPosition, correlationId, eventId, transactionPos, transactionOffset,
 				eventStreamId, ExpectedVersion.Any, DateTime.UtcNow,
 				PrepareFlags.Data | (isJson ? PrepareFlags.IsJson : PrepareFlags.None),
-				eventType, data, metadata);
+				eventType, data, metadata, systemMetadata);
 		}
 
 		public static IPrepareLogRecord<TStreamId> TransactionEnd<TStreamId>(IRecordFactory<TStreamId> factory, long logPos, Guid correlationId, Guid eventId,

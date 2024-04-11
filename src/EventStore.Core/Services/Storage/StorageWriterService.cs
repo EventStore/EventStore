@@ -385,7 +385,7 @@ namespace EventStore.Core.Services.Storage {
 				var result = WritePrepareWithRetry(eventTypeRecord);
 				logPosition = result.NewPos;
 			}
-			
+
 			return eventTypeId;
 		}
 
@@ -490,9 +490,9 @@ namespace EventStore.Core.Services.Storage {
 					const PrepareFlags flags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted |
 											   PrepareFlags.IsJson;
 					var data = new StreamMetadata(truncateBefore: EventNumber.DeletedStream).ToJsonBytes();
-					
+
 					var streamMetadataEventTypeId = GetOrWriteEventType(SystemEventTypes.StreamMetadata, ref logPosition);
-					
+
 					var res = WritePrepareWithRetry(
 						LogRecord.Prepare(_recordFactory, logPosition, message.CorrelationId, eventId, logPosition, 0,
 							metastreamId, expectedVersion, flags, streamMetadataEventTypeId,
@@ -556,7 +556,8 @@ namespace EventStore.Core.Services.Storage {
 							eventType,
 							evnt.Data,
 							evnt.Metadata,
-							evnt.IsJson);
+							evnt.IsJson,
+							evnt.SystemMetadata);
 						var res = WritePrepareWithRetry(record);
 						logPosition = res.NewPos;
 						lastLogPosition = res.WrittenPos;
