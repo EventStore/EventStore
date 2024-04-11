@@ -63,20 +63,23 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public long InMemorySize {
 			get {
 				return sizeof(LogRecordType)
-				       + 1
-				       + 8
-				       + sizeof(PrepareFlags)
-				       + 8
-				       + 4
-				       + 4
-				       + IntPtr.Size + EventStreamId.Length * 2
-				       + 16
-				       + 16
-				       + 8
-				       + IntPtr.Size + EventType.Length * 2
-				       + IntPtr.Size + Data.Length
-				       + IntPtr.Size + Metadata.Length
-				       + IntPtr.Size + SystemMetadata.Length;
+					+ 1
+					+ 8
+					+ sizeof(PrepareFlags)
+					+ 8
+					+ 4
+					+ 4
+					+ IntPtr.Size + EventStreamId.Length * 2
+					+ 16
+					+ 16
+					+ 8
+					+ IntPtr.Size + EventType.Length * 2
+					+ IntPtr.Size + Data.Length
+					+ IntPtr.Size + Metadata.Length
+					// Fix record length related tests
+					+ SystemMetadata.Length > 0
+						? IntPtr.Size + SystemMetadata.Length
+						: 0;
 			}
 		}
 
@@ -246,8 +249,12 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			writer.Write(Data.Span);
 			writer.Write(Metadata.Length);
 			writer.Write(Metadata.Span);
-			writer.Write(SystemMetadata.Length);
-			writer.Write(SystemMetadata.Span);
+
+			// Fix record length related tests
+			if (SystemMetadata.Length > 0) {
+				writer.Write(SystemMetadata.Length);
+				writer.Write(SystemMetadata.Span);
+			}
 		}
 
 		public bool Equals(PrepareLogRecord other) {
