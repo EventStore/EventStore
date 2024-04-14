@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Configuration;
@@ -59,7 +60,6 @@ using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
-using EventStore.Native.UnixSignalManager;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Subsystems;
@@ -67,7 +67,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Mono.Unix.Native;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core {
@@ -204,6 +203,7 @@ namespace EventStore.Core {
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
 		private int _stopCalled;
+		private PosixSignalRegistration _reloadConfigSignalRegistration;
 		private int _reloadingConfig;
 
 		public IEnumerable<Task> Tasks {
@@ -1562,12 +1562,11 @@ namespace EventStore.Core {
 			AddTask(perSubscrQueue.Start());
 			AddTask(redactionQueue.Start());
 
-			if (Runtime.IsUnixOrMac) {
-				UnixSignalManager.GetInstance().Subscribe(Signum.SIGHUP, () => {
-					Log.Information("Reloading the node's configuration since the SIGHUP signal has been received.");
-					_mainQueue.Publish(new ClientMessage.ReloadConfig());
-				});
-			}
+			// Signals
+			_reloadConfigSignalRegistration ??= PosixSignalRegistration.Create(PosixSignal.SIGHUP, c => {
+				Log.Information("Reloading the node's configuration since {Signal} has been received.", c.Signal);
+				_mainQueue.Publish(new ClientMessage.ReloadConfig());
+			});
 
 			// subsystems
 			_subsystems = options.Subsystems;
@@ -1718,7 +1717,10 @@ namespace EventStore.Core {
 			timeout ??= TimeSpan.FromSeconds(5);
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
-			UnixSignalManager.StopProcessing();
+			if (_reloadConfigSignalRegistration is not null) {
+				_reloadConfigSignalRegistration.Dispose();
+				_reloadConfigSignalRegistration = null;
+			}
 
 			if (_subsystems != null) {
 				foreach (var subsystem in _subsystems) {
@@ -1740,7 +1742,10 @@ namespace EventStore.Core {
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
-			UnixSignalManager.StopProcessing();
+			if (_reloadConfigSignalRegistration is not null) {
+				_reloadConfigSignalRegistration.Dispose();
+				_reloadConfigSignalRegistration = null;
+			}
 
 			if (_subsystems == null)
 				return;
