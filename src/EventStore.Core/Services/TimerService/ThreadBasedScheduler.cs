@@ -10,20 +10,20 @@ using EventStore.Core.Metrics;
 using Serilog;
 
 namespace EventStore.Core.Services.TimerService {
-	public class ThreadBasedScheduler : IMonitoredQueue, IScheduler, IDisposable {
+	public sealed class ThreadBasedScheduler : IMonitoredQueue, IScheduler {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ThreadBasedScheduler>();
 		public string Name {
 			get { return _queueStats.Name; }
 		}
 
 		private readonly ConcurrentQueueWrapper<ScheduledTask> _pending = new ConcurrentQueueWrapper<ScheduledTask>();
+		private readonly AutoResetEvent _pendingEvent = new AutoResetEvent(false);
 
 		private readonly PairingHeap<ScheduledTask> _tasks =
 			new PairingHeap<ScheduledTask>((x, y) => x.DueTime < y.DueTime);
 
 		private readonly IClock _timeProvider;
 
-		private readonly Thread _timerThread;
 		private volatile bool _stop;
 
 		private readonly QueueStatsCollector _queueStats;
@@ -38,15 +38,14 @@ namespace EventStore.Core.Services.TimerService {
 			QueueStatsManager queueStatsManager,
 			QueueTrackers trackers,
 			IClock timeProvider = null) {
-
 			_timeProvider = timeProvider ?? Clock.Instance;
 			_queueStats = queueStatsManager.CreateQueueStatsCollector("Timer");
 			_tracker = trackers.GetTrackerForQueue("Timer");
 
-			_timerThread = new Thread(DoTiming);
-			_timerThread.IsBackground = true;
-			_timerThread.Name = Name;
-			_timerThread.Start();
+			new Thread(DoTiming) {
+				IsBackground = true,
+				Name = Name
+			}.Start();
 		}
 
 		public void Stop() {
@@ -55,6 +54,7 @@ namespace EventStore.Core.Services.TimerService {
 
 		public void Schedule(TimeSpan after, Action<IScheduler, object> callback, object state) {
 			_pending.Enqueue(new ScheduledTask(_timeProvider.Now.Add(after), callback, state));
+			_pendingEvent.Set();
 		}
 
 		private void DoTiming() {
@@ -68,8 +68,7 @@ namespace EventStore.Core.Services.TimerService {
 					_queueStats.ProcessingStarted<SchedulePendingTasks>(_pending.Count);
 
 					int pending = 0;
-					ScheduledTask task;
-					while (_pending.TryDequeue(out task)) {
+					while (_pending.TryDequeue(out var task)) {
 						_tasks.Add(task);
 						pending += 1;
 					}
@@ -90,9 +89,23 @@ namespace EventStore.Core.Services.TimerService {
 					_queueStats.ProcessingEnded(processed);
 
 					if (processed == 0) {
-						_queueStats.EnterIdle();
+						var timeout = TimeSpan.FromSeconds(30);
 
-						Thread.Sleep(10);
+						if (_tasks.Count > 0) {
+							var ticksUntilNextDueTime = _tasks.FindMin().DueTime.ElapsedTicksSince(_timeProvider.Now);
+							var secondsUntilNextDueTime = (double)ticksUntilNextDueTime / Instant.TicksPerSecond;
+
+							if (secondsUntilNextDueTime <= 0)
+								continue;
+
+							var dueTimeSpan = TimeSpan.FromSeconds(secondsUntilNextDueTime);
+
+							if (dueTimeSpan < timeout)
+								timeout = dueTimeSpan;
+						}
+
+						_queueStats.EnterIdle();
+						_pendingEvent.WaitOne(timeout);
 					}
 
 				} catch (Exception ex) {
@@ -103,6 +116,7 @@ namespace EventStore.Core.Services.TimerService {
 
 			_queueStats.Stop();
 			QueueMonitor.Default.Unregister(this);
+			_pendingEvent.Dispose();
 		}
 
 		public void Dispose() {
@@ -125,10 +139,8 @@ namespace EventStore.Core.Services.TimerService {
 			}
 		}
 
-		private class SchedulePendingTasks {
-		}
+		private class SchedulePendingTasks;
 
-		private class ExecuteScheduledTasks {
-		}
+		private class ExecuteScheduledTasks;
 	}
 }
