@@ -106,7 +106,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					_logger.Information("SCAVENGING: Scavenge cancelled.");
 					result = ScavengeResult.Stopped;
 				} catch (Exception exc) {
-					result = ScavengeResult.Failed;
+					result = ScavengeResult.Interrupted;
 					_logger.Error(exc, "SCAVENGING: Error while scavenging DB.");
 					error = string.Format("Error while scavenging DB: {0}.", exc.Message);
 				} finally {
@@ -262,7 +262,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						// Since we replaced the ones we don't want with `default`, the success flag will only be true on the ones we want to keep.
 						var recordReadResult = threadLocalCache.Records[i];
 
-						// Check log record, if not present then assume we can skip. 
+						// Check log record, if not present then assume we can skip.
 						if (recordReadResult.LogRecord != null)
 							positionMapping.Add(WriteRecord(newChunk, recordReadResult.LogRecord));
 

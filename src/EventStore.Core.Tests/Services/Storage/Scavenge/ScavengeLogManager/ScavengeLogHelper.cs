@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge.ScavengeLogManager {
 			return new Dictionary<string, object> {
 				{ "scavengeId", scavengeId },
 				{ "nodeEndpoint", nodeEndpoint },
-				{ "result", ScavengeResult.Failed },
+				{ "result", ScavengeResult.Interrupted },
 				{ "error", "The node was restarted." },
 				{ "timeTaken", timeTaken },
 				{ "spaceSaved", spaceSaved },

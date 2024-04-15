@@ -97,7 +97,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					stopwatch.Elapsed);
 				result = ScavengeResult.Stopped;
 			} catch (Exception exc) {
-				result = ScavengeResult.Failed;
+				result = ScavengeResult.Interrupted;
 				_logger.Error(exc, "SCAVENGING: Scavenge Failed. Total time taken: {elapsed}.",
 					stopwatch.Elapsed);
 				error = string.Format("Error while scavenging DB: {0}.", exc.Message);

@@ -109,7 +109,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				.RunAsync();
 
 			Assert.True(logger.Completed);
-			Assert.Equal(EventStore.Core.TransactionLog.Chunks.ScavengeResult.Failed, logger.Result);
+			Assert.Equal(EventStore.Core.TransactionLog.Chunks.ScavengeResult.Interrupted, logger.Result);
 			Assert.Equal("Error while scavenging DB: Found Tombstone in metadata stream $$ab-1.", logger.Error);
 		}
 
@@ -132,7 +132,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				.RunAsync();
 
 			Assert.True(logger.Completed);
-			Assert.Equal(EventStore.Core.TransactionLog.Chunks.ScavengeResult.Failed, logger.Result);
+			Assert.Equal(EventStore.Core.TransactionLog.Chunks.ScavengeResult.Interrupted, logger.Result);
 			Assert.Equal("Error while scavenging DB: Found Tombstone in transaction in stream ab-1.", logger.Error);
 		}
 
