@@ -131,7 +131,7 @@ namespace EventStore.Core.Tests.Helpers {
 						UnsafeDisableFlushToDisk = disableFlushToDisk,
 						StreamExistenceFilterSize = streamExistenceFilterSize,
 					},
-					Subsystems = new List<ISubsystem>(subsystems),
+					PlugableComponents = new List<ISubsystem>(subsystems),
 					// limitation: the LoadedOptions here will only reflect the defaults and not the rest
 					// of the config specified above. however we only use it for /info/options
 					LoadedOptions = ClusterVNodeOptions.GetLoadedOptions(new ConfigurationBuilder()

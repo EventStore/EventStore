@@ -19,15 +19,21 @@ public abstract partial class TelemetryMessage : Message {
 
 	[DerivedMessage(CoreMessage.Telemetry)]
 	public partial class Response : TelemetryMessage {
+		public readonly string Root;
 		public readonly string Key;
 		public readonly JsonNode Value;
 
-		public Response(string key, JsonNode value) {
+		public Response(string root, string key, JsonNode value) {
+			Ensure.NotNull(root, "root");
 			Ensure.NotNullOrEmpty(key, "key");
 			Ensure.NotNull(value, "value");
 
+			Root = root;
 			Key = key;
 			Value = value;
+		}
+
+		public Response(string key, JsonNode value) : this("", key, value) {
 		}
 	}
 
