@@ -29,7 +29,8 @@ namespace EventStore.Core.Tests.Helpers {
 		IHandle<ClientMessage.TransactionCommit>,
 		IHandle<ClientMessage.SubscribeToStream>,
 		IHandle<ClientMessage.FilteredSubscribeToStream>,
-		IHandle<ClientMessage.DeleteStream> {
+		IHandle<ClientMessage.DeleteStream>,
+		IHandle<StorageMessage.EventCommitted>{
 		public class Transaction {
 			private readonly ClientMessage.TransactionStart _startMessage;
 
@@ -84,6 +85,7 @@ namespace EventStore.Core.Tests.Helpers {
 		private bool _noOtherStreams;
 		private bool _notReady;
 		private bool _readsTimeOut;
+		protected List<DateTime> EventTimeStamps = new List<DateTime>();
 
 		protected readonly HashSet<string> _readsToTimeOutOnce = new HashSet<string>();
 
@@ -97,7 +99,12 @@ namespace EventStore.Core.Tests.Helpers {
 			bool isJson = false) {
 			return WriteEvent(streamName, eventType, eventMetadata, eventData, isJson).Item2;
 		}
-		
+
+		protected EventRecord ExistingEventTimeStamp(string streamName, string eventType, string eventMetadata, string eventData,
+			bool isJson = false) {
+			return WriteEvent(streamName, eventType, eventMetadata, eventData, isJson).Item1;
+		}
+
 		protected (EventRecord, TFPos) WriteEvent(string streamName, string eventType, string eventMetadata, string eventData,
 			bool isJson = false) {
 			List<EventRecord> list;
@@ -230,6 +237,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_bus.Subscribe<ClientMessage.TransactionCommit>(this);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_readDispatcher);
 			_bus.Subscribe<ClientMessage.NotHandled>(_readDispatcher);
+			_bus.Subscribe<StorageMessage.EventCommitted>(this);
 			_bus.Subscribe(_writeDispatcher);
 			_bus.Subscribe(_ioDispatcher.StreamDeleter);
 			_bus.Subscribe(_ioDispatcher.Awaker);
@@ -462,7 +470,7 @@ namespace EventStore.Core.Tests.Helpers {
 								ExpectedVersion.Any, _timeProvider.UtcNow,
 								PrepareFlags.SingleWrite | (e.IsJson ? PrepareFlags.IsJson : PrepareFlags.None),
 								e.EventType, e.Data, e.Metadata)
-					}); //NOTE: DO NOT MAKE ARRAY 
+					}); //NOTE: DO NOT MAKE ARRAY
 			foreach (var eventRecord in eventRecords) {
 				list.Add(eventRecord.record);
 				var tfPos = new TFPos(commitPosition ?? eventRecord.position + 50, eventRecord.position);
@@ -476,6 +484,17 @@ namespace EventStore.Core.Tests.Helpers {
 			var firstEventNumber = list.Count - events.Length;
 			if (envelope != null)
 				envelope.ReplyWith(writeEventsCompleted(firstEventNumber, firstEventNumber + events.Length - 1));
+		}
+
+		public void Handle(StorageMessage.EventCommitted msg) {
+			var metadata = Json.ParseJson<ParkedMessageMetadata>(msg.Event.Metadata);
+			if(metadata != null) EventTimeStamps.Add(metadata.Added.ToUniversalTime());
+		}
+
+		class ParkedMessageMetadata {
+			public DateTime Added { get; set; }
+			public string Reason { get; set; }
+			public long SubscriptionEventNumber { get; set; }
 		}
 
 		public void Handle(ClientMessage.DeleteStream message) {
@@ -613,7 +632,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public void Handle(ClientMessage.SubscribeToStream msg) {
 			_streams.TryGetValue(msg.EventStreamId, out var list);
-			
+
 			var lastEventNumber = msg.EventStreamId.IsEmptyString()
 				? (long?)null
 				: list.Safe().Any() ? list.Safe().Last().EventNumber : -1;
@@ -623,10 +642,10 @@ namespace EventStore.Core.Tests.Helpers {
 				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
 			msg.Envelope.ReplyWith(subscribedMessage);
 		}
-		
+
 		public void Handle(ClientMessage.FilteredSubscribeToStream msg) {
 			_streams.TryGetValue(msg.EventStreamId, out var list);
-			
+
 			var lastEventNumber = msg.EventStreamId.IsEmptyString()
 				? (long?)null
 				: list.Safe().Any() ? list.Safe().Last().EventNumber : -1;

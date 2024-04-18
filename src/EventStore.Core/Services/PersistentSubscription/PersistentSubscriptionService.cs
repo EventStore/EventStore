@@ -8,6 +8,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
@@ -64,10 +65,15 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private VNodeState _state;
 		private Guid _timerTickCorrelationId;
 		private bool _handleTick;
+		private readonly IPersistentSubscriptionTracker _persistentSubscriptionTracker;
+		private static List<MonitoringMessage.PersistentSubscriptionInfo> SubscriptionStats = [];
+		private readonly TimeSpan _interval = TimeSpan.FromSeconds(1);
+		private readonly TimerMessage.Schedule _getStats;
 
 		public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex<TStreamId> readIndex,
 			IODispatcher ioDispatcher, IPublisher bus,
-			PersistentSubscriptionConsumerStrategyRegistry consumerStrategyRegistry) {
+			PersistentSubscriptionConsumerStrategyRegistry consumerStrategyRegistry,
+			IPersistentSubscriptionTracker persistentSubscriptionTracker) {
 			Ensure.NotNull(queuedHandler, "queuedHandler");
 			Ensure.NotNull(readIndex, "readIndex");
 			Ensure.NotNull(ioDispatcher, "ioDispatcher");
@@ -80,6 +86,22 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_checkpointReader = new PersistentSubscriptionCheckpointReader(_ioDispatcher);
 			_streamReader = new PersistentSubscriptionStreamReader(_ioDispatcher, 100);
 			_timerTickCorrelationId = Guid.NewGuid();
+			_persistentSubscriptionTracker = persistentSubscriptionTracker;
+			_getStats = TimerMessage.Schedule.Create(_interval, new PublishEnvelope(_bus),
+				new MonitoringMessage.GetAllPersistentSubscriptionStats(
+					new CallbackEnvelope(PushStatsToPersistentSubscriptionTracker)));
+		}
+
+		private void PushStatsToPersistentSubscriptionTracker(Message message) {
+			if (message is MonitoringMessage.GetPersistentSubscriptionStatsCompleted stats) {
+				SubscriptionStats = stats.SubscriptionStats;
+				_persistentSubscriptionTracker.Register(SubscriptionStats);
+			}
+			_bus.Publish(_getStats);
+		}
+
+		public List<MonitoringMessage.PersistentSubscriptionInfo> GetPersistentSubscriptionStats() {
+			return SubscriptionStats;
 		}
 
 		public void InitToEmpty() {
@@ -101,16 +123,16 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Log.Debug("Persistent subscriptions Became Leader so now handling subscriptions");
 			StartSubscriptions();
 		}
-		
+
 		public void Handle(SubscriptionMessage.PersistentSubscriptionsRestart message) {
 			if (!_started) {
 				message.ReplyEnvelope.ReplyWith(new SubscriptionMessage.InvalidPersistentSubscriptionsRestart("The Persistent Subscriptions subsystem cannot be restarted because it is not started."));
 				return;
 			}
-			
+
 			Log.Debug("Persistent Subscriptions are being restarted");
 			message.ReplyEnvelope.ReplyWith(new SubscriptionMessage.PersistentSubscriptionsRestarting());
-			
+
 			Stop();
 			ShutdownSubscriptions();
 			StartSubscriptions();
@@ -142,6 +164,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Start() {
 			_started = true;
 			_bus.Publish(new SubscriptionMessage.PersistentSubscriptionsStarted());
+			_bus.Publish(_getStats);
 			Log.Debug("Persistent Subscriptions have been started.");
 		}
 
@@ -234,7 +257,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				onFail(startFromValidationError);
 				return;
 			}
-			
+
 			var result = TryCreateSubscriptionGroup(eventSource,
 				groupName,
 				resolveLinkTos,
@@ -460,7 +483,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				onFail(startFromValidationError);
 				return;
 			}
-			
+
 			var eventSource = genEventSource(oldSubscription);
 			var subscription = new PersistentSubscription(
 				new PersistentSubscriptionParams(
@@ -508,7 +531,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				#pragma warning restore 612
 				StartPosition = startFrom.ToString()
 			};
-			
+
 			UpdateSubscription(stream, groupName, subscription);
 			UpdateSubscriptionConfig(user, stream, groupName, updateEntry);
 			SaveConfiguration(() => onSuccess(""));
@@ -671,7 +694,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 			if (_subscriptionsById.ContainsKey(key))
 				return false;
-			
+
 			var subscription = new PersistentSubscription(
 				new PersistentSubscriptionParams(
 					resolveLinkTos,
@@ -694,7 +717,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					_checkpointReader,
 					new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher),
 					new PersistentSubscriptionMessageParker(key, _ioDispatcher)));
-			
+
 			UpdateSubscription(stream, groupName, subscription);
 			return true;
 
@@ -816,7 +839,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				message.User?.Identity?.Name
 			);
 		}
-		
+
 		private void UpdateSubscriptionConfig(string username, string eventSource, string groupName, PersistentSubscriptionEntry replaceBy) {
 			_config.Updated = DateTime.Now;
 			_config.UpdatedBy = username;
@@ -1097,7 +1120,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Handle(ClientMessage.ReplayParkedMessages message) {
 			PersistentSubscription subscription;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
-			Log.Debug("Replaying parked messages for persistent subscription {subscriptionKey} {to}", 
+			Log.Debug("Replaying parked messages for persistent subscription {subscriptionKey} {to}",
 				key,
 				message.StopAt.HasValue ? $" (To: '{message.StopAt.ToString()}')" : " (All)");
 
@@ -1192,12 +1215,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 								entry.MaxSubscriberCount,
 								entry.NamedConsumerStrategy,
 								ToMessageTimeout(entry.MessageTimeout));
-							
+
 							if (!result) {
 								var key = BuildSubscriptionGroupKey(eventSource.ToString(), entry.Group);
 								Log.Warning("A duplicate persistent subscription: {subscriptionKey} was found in the configuration. Ignoring it.", key);
 							}
-							
+
 						}
 
 						continueWith();
@@ -1249,7 +1272,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				["count"] = _subscriptionsById?.Count ?? 0
 			}));
 		}
-		
+
 		public void Handle(MonitoringMessage.GetPersistentSubscriptionStats message) {
 			if (!_started) {
 				message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
@@ -1340,7 +1363,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 		}
 
-		
+
 		private TimeSpan ToCheckPointAfterTimeout(int milliseconds) {
 			return milliseconds == 0 ? TimeSpan.MaxValue : TimeSpan.FromMilliseconds(milliseconds);
 		}

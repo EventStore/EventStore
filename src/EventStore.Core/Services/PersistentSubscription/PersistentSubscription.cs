@@ -357,11 +357,11 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				if (!_pushClients.RemoveClientByConnectionId(connectionId,
 					    out var unconfirmedEvents))
 					return false;
-				
+
 				var lostMessages = unconfirmedEvents.OrderBy(v => v.ResolvedEvent.OriginalEventNumber);
 				foreach (var m in lostMessages) {
 					if (ActionTakenForRetriedMessage(m))
-						return true; 
+						return true;
 					RetryMessage(m);
 				}
 
@@ -522,7 +522,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			});
 		}
 
-		
+
 		public void RetryParkedMessages(long? stopAt) {
 			lock (_lock) {
 				if (_state == PersistentSubscriptionState.NotReady)
@@ -548,7 +548,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 			Ensure.Positive(stopAt - position, "count");
 
-			var count = (int)Math.Min(stopAt - position, _settings.ReadBatchSize);
+			var count = (int)Math.Min((stopAt + 1) - position, _settings.ReadBatchSize); // Reading an extra event to get the Timestamp for the stopAt EventNumber
 			_settings.StreamReader.BeginReadEvents(
 				new PersistentSubscriptionSingleStreamEventSource(_settings.ParkedMessageStream),
 				new PersistentSubscriptionSingleStreamPosition(position),
@@ -588,12 +588,28 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 				if (isEndofStream || stopAt <= newStreamPosition.StreamEventNumber) {
 					var replayedEnd = newStreamPosition.StreamEventNumber == -1 ? stopAt : Math.Min(stopAt, newStreamPosition.StreamEventNumber);
-					_settings.MessageParker.BeginMarkParkedMessagesReprocessed(replayedEnd);
+
+					if (isEndofStream) {
+						_settings.MessageParker.BeginMarkParkedMessagesReprocessed(replayedEnd, null, true);
+					} else {
+						var (replayedEndTimeStamp, updateOldestParkedMessageTimeStamp) = GetOldestParkedMessageTimeStamp(events, replayedEnd);
+						_settings.MessageParker.BeginMarkParkedMessagesReprocessed(replayedEnd, replayedEndTimeStamp, updateOldestParkedMessageTimeStamp);
+					}
+
 					_state ^= PersistentSubscriptionState.ReplayingParkedMessages;
-				} else {
+				}else {
 					TryReadingParkedMessagesFrom(newStreamPosition.StreamEventNumber, stopAt);
 				}
 			}
+		}
+
+		private static (DateTime?, bool) GetOldestParkedMessageTimeStamp(ResolvedEvent[] events, long replayedEnd) {
+			foreach (var resolvedEvent in events) {
+				if (resolvedEvent.OriginalEvent.EventNumber != replayedEnd) continue;
+					return (resolvedEvent.OriginalEvent.TimeStamp, true);
+			}
+
+			return (null, false);
 		}
 
 		private void StartMessage(OutstandingMessage message, DateTime expires) {

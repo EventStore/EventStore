@@ -38,6 +38,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public MonitoringMessage.PersistentSubscriptionInfo GetStatistics() {
+			long oldestParkedMessage = 0;
 			var totalTime = _totalTimeWatch.Elapsed;
 			var totalItems = Interlocked.Read(ref _totalItems);
 
@@ -75,6 +76,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 			long parkedMessageCount = _settings.MessageParker.ParkedMessageCount;
 
+			var timeStamp = _settings.MessageParker.GetOldestParkedMessage;
+
+			if (timeStamp.HasValue) {
+				oldestParkedMessage = (long)(DateTime.UtcNow - timeStamp.Value).TotalSeconds;
+			}
+
 			var gotBuffer = _parent.TryGetStreamBuffer(out var streamBuffer);
 
 			return new MonitoringMessage.PersistentSubscriptionInfo() {
@@ -105,7 +112,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				OutstandingMessagesCount = _parent.OutstandingMessageCount,
 				NamedConsumerStrategy = _settings.ConsumerStrategy.Name,
 				MaxSubscriberCount = _settings.MaxSubscriberCount,
-				ParkedMessageCount = parkedMessageCount
+				ParkedMessageCount = parkedMessageCount,
+				OldestParkedMessage = oldestParkedMessage
 			};
 		}
 	}

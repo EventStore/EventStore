@@ -3,8 +3,7 @@
 	"ExpectedScrapeIntervalSeconds": 15,
 
 	"Meters": [
-		"EventStore.Core",
-		"EventStore.Projections.Core"
+		"EventStore.Core"
 	],
 
 	"Statuses": {
@@ -16,6 +15,8 @@
 	"ElectionsCount": true,
 
 	"ProjectionStats": true,
+
+	"PersistentSubscriptionStats": true,
 
 	"Checkpoints": {
 		"Writer": true,
