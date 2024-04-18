@@ -43,6 +43,7 @@ namespace EventStore.Core {
 		[OptionGroup] public GrpcOptions Grpc { get; init; } = new();
 		[OptionGroup] public InterfaceOptions Interface { get; init; } = new();
 		[OptionGroup] public ProjectionOptions Projection { get; init; } = new();
+		[OptionGroup] public LicenseOptions License { get; init; } = new();
 		public UnknownOptions Unknown { get; init; } = new([]);
 
 		public byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
@@ -69,7 +70,6 @@ namespace EventStore.Core {
 			var options = new ClusterVNodeOptions {
 				Application = configuration.BindOptions<ApplicationOptions>(),
 				DevMode = configuration.BindOptions<DevModeOptions>(),
-				DefaultUser = configuration.BindOptions<DefaultUserOptions>(),
 				Logging = configuration.BindOptions<LoggingOptions>(),
 				Auth = configuration.BindOptions<AuthOptions>(),
 				Certificate = configuration.BindOptions<CertificateOptions>(),
@@ -80,7 +80,7 @@ namespace EventStore.Core {
 				Grpc = configuration.BindOptions<GrpcOptions>(),
 				Interface = configuration.BindOptions<InterfaceOptions>(),
 				Projection = configuration.BindOptions<ProjectionOptions>(),
-
+				License = configuration.BindOptions<LicenseOptions>(),
 				Unknown = UnknownOptions.FromConfiguration(configuration),
 				ConfigurationRoot = configurationRoot,
 				LoadedOptions = GetLoadedOptions(configurationRoot)
@@ -715,6 +715,18 @@ namespace EventStore.Core {
 
 			[Description("The maximum execution time in milliseconds for executing a handler in a user projection. It can be overridden for a specific projection by setting ProjectionExecutionTimeout config for that projection")]
 			public int ProjectionExecutionTimeout { get; set; } = DefaultProjectionExecutionTimeout;
+		}
+
+		[Description("License Options")]
+		public record LicenseOptions {
+			[Description("The path to the license file.")]
+			public string? LicenseFile { get; init; } = Locations.DefaultLicensePath;
+
+			[Description("The public key, in hexadecimal format.")]
+			public string? PublicKey { get; init; }
+
+			[Description("The license key.")]
+			public string? LicenseKey { get; init; }
 		}
 
 		public record UnknownOptions(IReadOnlyList<(string, string)> Options) {
