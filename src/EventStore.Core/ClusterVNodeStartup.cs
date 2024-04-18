@@ -10,11 +10,10 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.Transport.Grpc.Cluster;
 using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
-using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -39,7 +38,7 @@ namespace EventStore.Core {
 	public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.SystemReady>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
 
-		private readonly IReadOnlyList<ISubsystem> _subsystems;
+		private readonly IReadOnlyList<IPlugableComponent> _plugableComponents;
 		private readonly IPublisher _mainQueue;
 		private readonly IPublisher _monitoringQueue;
 		private readonly ISubscriber _mainBus;
@@ -59,7 +58,7 @@ namespace EventStore.Core {
 		private readonly string _clusterDns;
 
 		public ClusterVNodeStartup(
-			IReadOnlyList<ISubsystem> subsystems,
+			IReadOnlyList<IPlugableComponent> plugableComponents,
 			IPublisher mainQueue,
 			IPublisher monitoringQueue,
 			ISubscriber mainBus,
@@ -90,7 +89,7 @@ namespace EventStore.Core {
 			if (monitoringQueue == null) {
 				throw new ArgumentNullException(nameof(monitoringQueue));
 			}
-			_subsystems = subsystems;
+			_plugableComponents = plugableComponents;
 			_mainQueue = mainQueue;
 			_monitoringQueue = monitoringQueue;
 			_mainBus = mainBus;
@@ -126,8 +125,8 @@ namespace EventStore.Core {
 				.UseAuthorization();
 
 			// allow all subsystems to register their legacy controllers before calling MapLegacyHttp
-			foreach (var subsystem in _subsystems)
-				subsystem.Configure(app);
+			foreach (var plugableComponent in _plugableComponents)
+				plugableComponent.Configure(app);
 
 			app.UseEndpoints(ep => {
 					_authenticationProvider.ConfigureEndpoints(ep);
@@ -253,8 +252,8 @@ namespace EventStore.Core {
 
 			services = _configureAdditionalServices(services);
 
-			foreach (var subsystem in _subsystems)
-				services = subsystem.ConfigureServices(services, _configuration);
+			foreach (var plugableComponent in _plugableComponents)
+				services = plugableComponent.ConfigureServices(services, _configuration);
 
 			return services.BuildServiceProvider();
 		}
