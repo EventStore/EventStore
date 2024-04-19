@@ -2169,6 +2169,11 @@
                 "id": 5,
                 "name": "is_scavenged_chunk",
                 "type": "bool"
+              },
+              {
+                "id": 6,
+                "name": "transform_header_bytes",
+                "type": "bytes"
               }
             ]
           },

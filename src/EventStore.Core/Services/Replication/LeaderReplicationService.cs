@@ -388,7 +388,8 @@ namespace EventStore.Core.Services.Replication {
 						sub.SubscriptionId,
 						chunk.ChunkHeader,
 						chunk.FileSize,
-						isScavengedChunk: true));
+						isScavengedChunk: true,
+						chunk.TransformHeader));
 				} else {
 					if (verbose)
 						Log.Information(
@@ -409,7 +410,8 @@ namespace EventStore.Core.Services.Replication {
 							sub.SubscriptionId,
 							chunk.ChunkHeader,
 							chunk.FileSize,
-							isScavengedChunk: false));
+							isScavengedChunk: false,
+							chunk.TransformHeader));
 					}
 				}
 

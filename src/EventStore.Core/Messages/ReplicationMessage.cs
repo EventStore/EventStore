@@ -316,8 +316,10 @@ namespace EventStore.Core.Messages {
 			public readonly int FileSize;
 			public bool IsScavengedChunk;
 
+			public ReadOnlyMemory<byte> TransformHeader;
+
 			public CreateChunk(Guid leaderId, Guid subscriptionId, ChunkHeader chunkHeader, int fileSize,
-				bool isScavengedChunk) {
+				bool isScavengedChunk, ReadOnlyMemory<byte> transformHeader) {
 				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 				Ensure.NotNull(chunkHeader, "chunkHeader");
@@ -327,12 +329,13 @@ namespace EventStore.Core.Messages {
 				ChunkHeader = chunkHeader;
 				FileSize = fileSize;
 				IsScavengedChunk = isScavengedChunk;
+				TransformHeader = transformHeader;
 			}
 
 			public override string ToString() {
 				return string.Format(
-					"CreateChunk message: LeaderId: {0}, SubscriptionId: {1}, ChunkHeader: {2}, FileSize: {3}, IsScavengedChunk: {4}",
-					LeaderId, SubscriptionId, ChunkHeader, FileSize, IsScavengedChunk);
+					"CreateChunk message: LeaderId: {0}, SubscriptionId: {1}, ChunkHeader: {2}, FileSize: {3}, IsScavengedChunk: {4}, TransformHeader size: {5}",
+					LeaderId, SubscriptionId, ChunkHeader, FileSize, IsScavengedChunk, TransformHeader.Length);
 			}
 		}
 
