@@ -178,7 +178,11 @@ public sealed class TelemetryService : IDisposable,
 			message.Envelope.ReplyWith(new TelemetryMessage.Response("plugins", key, value));
 
 		foreach (var subsystem in _nodeOptions.PlugableComponents) {
-			subsystem.CollectTelemetry(collect);
+			try {
+				subsystem.CollectTelemetry(collect);
+			} catch (Exception ex) {
+				_log.Warning(ex, $"Failed to collect telemetry from a plugable component {subsystem.GetType().Name}");
+			}
 		}
 
 		_publisher.Publish(new GossipMessage.ReadGossip(new CallbackEnvelope(resp => OnGossipReceived(message.Envelope, resp))));
@@ -191,7 +195,7 @@ public sealed class TelemetryService : IDisposable,
 		var seeds = new JsonObject();
 
 		foreach (var member in gossip.ClusterInfo.Members) {
-			seeds.Add(new (member.InstanceId.ToString(), member.State.ToString()));
+			seeds[member.InstanceId.ToString()] = member.State.ToString();
 		}
 
 		envelope.ReplyWith(new TelemetryMessage.Response("gossip", seeds));
