@@ -32,11 +32,6 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Calculate Version
-      run: |
-        dotnet tool restore
-        version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ inputs.container-runtime }}
-        echo "VERSION=${version}" >> $GITHUB_ENV
     - name: Setup Variables
       id: variables
       uses: kanga333/variable-mapper@master
@@ -95,16 +90,3 @@ jobs:
       with:
         name: test-results-${{ inputs.container-runtime }}
         path: test-results
-    - name: Push GitHub Container Registry
-      if: always() && github.event_name == 'push'
-      shell: bash
-      run: |
-        docker tag eventstore ghcr.io/eventstore/eventstore:${{ env.VERSION }}
-        docker push ghcr.io/eventstore/eventstore:${{ env.VERSION }}
-    - name: Push GitHub Container Registry (CI)
-      if: always() && github.event_name == 'push' && inputs.container-runtime == 'jammy' && github.ref == 'refs/heads/master'
-      shell: bash
-      run: |
-        docker tag eventstore ghcr.io/eventstore/eventstore:ci
-        docker push ghcr.io/eventstore/eventstore:ci
-
