@@ -15,7 +15,7 @@ jobs:
     name: ci/github/build-${{ inputs.container-runtime }}
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Install net8.0
