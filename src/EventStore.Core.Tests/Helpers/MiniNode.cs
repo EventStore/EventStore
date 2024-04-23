@@ -26,6 +26,8 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using EventStore.Plugins.Authentication;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
@@ -71,6 +73,8 @@ namespace EventStore.Core.Tests.Helpers {
 			int streamExistenceFilterCheckpointIntervalMs = 30_000,
 			int streamExistenceFilterCheckpointDelayMs = 5_000,
 			int httpClientTimeoutSec = 60,
+			IAuthenticationProviderFactory authenticationProviderFactory = null,
+			IAuthorizationProviderFactory authorizationProviderFactory = null,
 			IExpiryStrategy expiryStrategy = null) {
 
 			RunningTime.Start();
@@ -167,13 +171,18 @@ namespace EventStore.Core.Tests.Helpers {
 					wrapped: x,
 					streamExistenceFilterCheckpointIntervalMs: streamExistenceFilterCheckpointIntervalMs,
 					streamExistenceFilterCheckpointDelayMs: streamExistenceFilterCheckpointDelayMs));
+
 			Node = new ClusterVNode<TStreamId>(options, logFormatFactory,
 				new AuthenticationProviderFactory(
-					c => new InternalAuthenticationProviderFactory(c, options.DefaultUser)),
-				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue,
-					options.Application.AllowAnonymousEndpointAccess,
-					options.Application.AllowAnonymousStreamAccess,
-					options.Application.OverrideAnonymousEndpointAccessForGossip)),
+					c => authenticationProviderFactory ?? new InternalAuthenticationProviderFactory(
+						c,
+						options.DefaultUser)),
+				new AuthorizationProviderFactory(
+					c => authorizationProviderFactory ?? new LegacyAuthorizationProviderFactory(
+						c.MainQueue,
+						options.Application.AllowAnonymousEndpointAccess,
+						options.Application.AllowAnonymousStreamAccess,
+						options.Application.OverrideAnonymousEndpointAccessForGossip)),
 				expiryStrategy: expiryStrategy,
 				certificateProvider: new OptionsCertificateProvider());
 			Db = Node.Db;
