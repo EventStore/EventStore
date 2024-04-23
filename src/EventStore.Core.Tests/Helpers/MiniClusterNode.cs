@@ -142,7 +142,7 @@ namespace EventStore.Core.Tests.Helpers {
 				Projections = new() {
 					RunProjections = ProjectionType.None
 				},
-				Subsystems = subsystems ?? Array.Empty<ISubsystem>()
+				PlugableComponents = subsystems ?? Array.Empty<ISubsystem>()
 			};
 
 			var serverCertificate = useHttps ? ssl_connections.GetServerCertificate() : null;

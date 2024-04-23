@@ -130,7 +130,7 @@ namespace EventStore.Core.Tests.Helpers {
 						UnsafeDisableFlushToDisk = disableFlushToDisk,
 						StreamExistenceFilterSize = streamExistenceFilterSize,
 					},
-					Subsystems = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>())
+					PlugableComponents = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>())
 				}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 					ssl_connections.GetServerCertificate())
 				.WithInternalSecureTcpOn(IntTcpEndPoint)

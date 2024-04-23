@@ -16,6 +16,7 @@ using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
+using EventStore.Plugins;
 using EventStore.Plugins.Subsystems;
 using Microsoft.Extensions.Configuration;
 using Serilog;
@@ -44,10 +45,12 @@ namespace EventStore.Core {
 
 		public byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
 
-		public IReadOnlyList<ISubsystem> Subsystems { get; init; } = Array.Empty<ISubsystem>();
+		public IReadOnlyList<IPlugableComponent> PlugableComponents { get; init; } = [];
 
-		public ClusterVNodeOptions WithSubsystem(ISubsystem subsystem) => this with {
-			Subsystems = new List<ISubsystem>(Subsystems) { subsystem }
+		public IReadOnlyList<ISubsystem> Subsystems => PlugableComponents.OfType<ISubsystem>().ToArray();
+
+		public ClusterVNodeOptions WithPlugableComponent(IPlugableComponent plugableComponent) => this with {
+			PlugableComponents = [.. PlugableComponents, plugableComponent]
 		};
 
 		public X509Certificate2? ServerCertificate { get; init; }
