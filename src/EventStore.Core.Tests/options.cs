@@ -58,6 +58,7 @@ namespace EventStore.Core.Tests {
 		public void all_keys_are_read_from_configuration() {
 			string[] excluded = new[] {
 				nameof(ClusterVNodeOptions.ConfigurationRoot),
+				nameof(ClusterVNodeOptions.PlugableComponents),
 				nameof(ClusterVNodeOptions.Subsystems),
 				nameof(ClusterVNodeOptions.ServerCertificate),
 				nameof(ClusterVNodeOptions.TrustedRootCertificates),

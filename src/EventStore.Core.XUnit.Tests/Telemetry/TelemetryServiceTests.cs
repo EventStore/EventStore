@@ -9,6 +9,7 @@ using EventStore.Core.Telemetry;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Plugins;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Telemetry;
@@ -29,7 +30,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		_sink = new InMemoryTelemetrySink();
 		_sut =  new TelemetryService(
 			_db.Manager,
-			new ClusterVNodeOptions(),
+			new ClusterVNodeOptions().WithPlugableComponent(new FakePlugableComponent()),
 			new EnvelopePublisher(new ChannelEnvelope(channel)),
 			_sink,
 			new InMemoryCheckpoint(0),
@@ -75,5 +76,23 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		Assert.NotNull(_sink.Data);
 		Assert.NotNull(_sink.Data["foo"]);
 		Assert.Equal(new JsonObject { ["bar"] = 42 }.ToString(), _sink.Data["foo"].ToString());
+
+		Assert.NotNull(_sink.Data["plugins"]);
+		Assert.Equal("""
+			{
+			  "fakeComponent": {
+			    "foo": "bar"
+			  }
+			}
+			""",
+			_sink.Data["plugins"].ToString());
+	}
+
+	private class FakePlugableComponent : IPlugableComponent {
+		public void CollectTelemetry(Action<string, JsonNode> reply) {
+			reply("fakeComponent", new JsonObject {
+				["foo"] = "bar"
+			});
+		}
 	}
 }

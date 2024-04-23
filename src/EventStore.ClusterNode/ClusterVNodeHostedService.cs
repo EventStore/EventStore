@@ -30,6 +30,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using EventStore.Core.LogAbstraction;
 using EventStore.Plugins.MD5;
+using EventStore.Plugins;
 
 namespace EventStore.ClusterNode {
 	internal class ClusterVNodeHostedService : IHostedService, IDisposable {
@@ -55,7 +56,7 @@ namespace EventStore.ClusterNode {
 			options = LoadSubsystemsPlugins(pluginLoader, options);
 
 			try {
-				ConfigureMD5();
+				options = options.WithPlugableComponent(ConfigureMD5());
 			} catch {
 				throw new
 					InvalidConfigurationException(
@@ -67,7 +68,7 @@ namespace EventStore.ClusterNode {
 				: options.Projections.RunProjections;
 			var startStandardProjections = options.Projections.StartStandardProjections || options.DevMode.Dev;
 			_options = projectionMode >= ProjectionType.System
-				? options.WithSubsystem(new ProjectionsSubsystem(
+				? options.WithPlugableComponent(new ProjectionsSubsystem(
 					new ProjectionSubsystemOptions(
 						options.Projections.ProjectionThreads,
 						projectionMode,
@@ -247,15 +248,16 @@ namespace EventStore.ClusterNode {
 						plugin.Version);
 					var subsystems = plugin.GetSubsystems();
 					foreach (var subsystem in subsystems) {
-						options = options.WithSubsystem(subsystem);
+						options = options.WithPlugableComponent(subsystem);
 					}
 				}
 				return options;
 			}
 
-			void ConfigureMD5() {
-				var md5Provider = GetMD5ProviderFactories().FirstOrDefault()?.Build();
-				MD5.UseProvider(md5Provider ?? new NetMD5Provider());
+			IPlugableComponent ConfigureMD5() {
+				var md5Provider = GetMD5ProviderFactories().FirstOrDefault()?.Build() ?? new NetMD5Provider();
+				MD5.UseProvider(md5Provider);
+				return md5Provider;
 			}
 
 			IEnumerable<IMD5ProviderFactory> GetMD5ProviderFactories() {
