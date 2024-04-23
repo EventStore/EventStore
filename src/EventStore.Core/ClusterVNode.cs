@@ -948,6 +948,10 @@ namespace EventStore.Core {
 				}).Build();
 			Ensure.NotNull(_authorizationProvider, "authorizationProvider");
 
+			var modifiedOptions = options
+				.WithPlugableComponent(_authorizationProvider)
+				.WithPlugableComponent(_authenticationProvider);
+
 			AuthorizationGateway = new AuthorizationGateway(_authorizationProvider);
 			{
 				if (enableExternalTcp)
@@ -1468,7 +1472,7 @@ namespace EventStore.Core {
 			// TELEMETRY
 			var telemetryService = new TelemetryService(
 				Db.Manager,
-				options,
+				modifiedOptions,
 				_mainQueue,
 				new TelemetrySink(options.Application.TelemetryOptout),
 				Db.Config.WriterCheckpoint.AsReadOnly(),
@@ -1605,7 +1609,9 @@ namespace EventStore.Core {
 				.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates, X509Certificate2Collection Roots)>>
 					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()));
 
-			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
+			_startup = new ClusterVNodeStartup<TStreamId>(
+				modifiedOptions.PlugableComponents,
+				_mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, _authorizationProvider,
 				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 				expiryStrategy ?? new DefaultExpiryStrategy(),

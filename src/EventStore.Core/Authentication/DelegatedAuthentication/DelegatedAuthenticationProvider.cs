@@ -1,9 +1,14 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using EventStore.Plugins.Authentication;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EventStore.Core.Authentication.DelegatedAuthentication {
 	public class DelegatedAuthenticationProvider : IAuthenticationProvider {
@@ -18,6 +23,13 @@ namespace EventStore.Core.Authentication.DelegatedAuthentication {
 
 		public void ConfigureEndpoints(IEndpointRouteBuilder endpointRouteBuilder) =>
 			Inner.ConfigureEndpoints(endpointRouteBuilder);
+
+		public IApplicationBuilder Configure(IApplicationBuilder builder) => Inner.Configure(builder);
+
+		public IServiceCollection ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
+			Inner.ConfigureServices(services, configuration);
+
+		public void CollectTelemetry(Action<string, JsonNode> reply) => Inner.CollectTelemetry(reply);
 
 		public IReadOnlyList<string> GetSupportedAuthenticationSchemes() => Inner.GetSupportedAuthenticationSchemes();
 
