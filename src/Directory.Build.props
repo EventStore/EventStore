@@ -14,7 +14,8 @@
 		<LangVersion>12.0</LangVersion>
 		<Platforms>AnyCPU;x64;ARM64</Platforms>
 		<IsPackable>false</IsPackable>
-		<Version>24.6.0</Version>
+		<VersionPrefix>24.6.0</VersionPrefix>
+		<VersionSuffix>prerelease</VersionSuffix>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" />

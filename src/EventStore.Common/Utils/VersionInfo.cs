@@ -23,8 +23,8 @@ namespace EventStore.Common.Utils {
 		public static string Text => $"EventStoreDB version {Version} {Edition} ({BuildId}/{CommitSha})";
 
 		static VersionInfo() {
-			// the prefix is baked into the assemblies but the suffix is not, so that they can be
-			// promoted. e.g. rc1 -> rtm
+			// the official release assemblies contain the version prefix (4 part number)
+			// but not the suffix (beta, rc1, rtm, etc) so that the same assembly can be promoted.
 			var versionPrefix = Assembly.GetEntryAssembly().GetName().Version.ToString();
 			if (versionPrefix.EndsWith(".0"))
 				versionPrefix = versionPrefix[..^2];
