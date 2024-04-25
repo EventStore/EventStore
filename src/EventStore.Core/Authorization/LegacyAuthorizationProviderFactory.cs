@@ -31,7 +31,7 @@ namespace EventStore.Core.Authorization {
 		public IAuthorizationProvider Build() {
 			var policy = new Policy("Legacy", 1, DateTimeOffset.MinValue);
 			var legacyStreamAssertion = new LegacyStreamPermissionAssertion(_mainQueue);
-			
+
 			// The Node.Ping is set to allow anonymous as it does not disclose any secure information.
 			policy.AllowAnonymous(Operations.Node.Ping);
 
@@ -83,6 +83,7 @@ namespace EventStore.Core.Authorization {
 			policy.AddMatchAnyAssertion(Operations.Node.Scavenge.Stop, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.Scavenge.Read, Grant.Allow, OperationsOrAdmins);
 			policy.Add(Operations.Node.Redaction.SwitchChunk, isSystem);
+			policy.Add(Operations.Node.Transform.Set, isSystem);
 
 			var subscriptionAccess =
 				new AndAssertion(

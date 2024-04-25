@@ -37,19 +37,17 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_db = db;
 			_writerCheckpoint = db.Config.WriterCheckpoint;
 			_nextRecordPosition = _writerCheckpoint.Read();
-
-			if (db.Manager.ChunksCount == 0) {
-				// new database
-				_currentChunk = null;
-			} else if (!db.Manager.TryGetChunkFor(_nextRecordPosition, out _currentChunk)) {
-				// we may have been at a chunk boundary and the new chunk wasn't yet created
-				if (!db.Manager.TryGetChunkFor(_nextRecordPosition - 1, out _currentChunk))
-					throw new Exception($"Failed to get chunk for log position: {_nextRecordPosition}");
-			}
 		}
 
 		public void Open() {
-			// DO NOTHING
+			if (_db.Manager.ChunksCount == 0) {
+				// new database
+				_currentChunk = null;
+			} else if (!_db.Manager.TryGetChunkFor(_nextRecordPosition, out _currentChunk)) {
+				// we may have been at a chunk boundary and the new chunk wasn't yet created
+				if (!_db.Manager.TryGetChunkFor(_nextRecordPosition - 1, out _currentChunk))
+					throw new Exception($"Failed to get chunk for log position: {_nextRecordPosition}");
+			}
 		}
 
 		public bool CanWrite(int numBytes) {

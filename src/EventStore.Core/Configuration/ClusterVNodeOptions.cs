@@ -354,6 +354,9 @@ namespace EventStore.Core {
 			[Description("The path the index should be loaded/saved to.")]
 			public string? Index { get; init; } = null;
 
+			[Description("The type of transformation to apply to the database.")]
+			public string Transform { get; init; } = "identity";
+
 			[Description("Keep everything in memory, no directories or files are created.")]
 			public bool MemDb { get; init; } = false;
 

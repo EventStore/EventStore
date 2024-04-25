@@ -60,6 +60,8 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Db.Open();
 
 			Writer = new TFChunkWriter(Db);
+			Writer.Open();
+
 			EpochManager = new EpochManager<TStreamId>(
 				Publisher,
 				5,

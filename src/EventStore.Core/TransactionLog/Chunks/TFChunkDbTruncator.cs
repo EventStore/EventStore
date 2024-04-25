@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using EventStore.Common.Utils;
-using EventStore.Core.Transforms;
+using EventStore.Plugins.Transforms;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {

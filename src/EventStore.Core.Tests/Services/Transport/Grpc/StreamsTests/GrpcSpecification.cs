@@ -23,9 +23,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 	public abstract class GrpcSpecification<TLogFormat, TStreamId> {
-		private readonly TestServer _server;
 		protected readonly GrpcChannel Channel;
-		private readonly IHost _host;
 		private readonly MiniNode<TLogFormat, TStreamId> _node;
 		protected MiniNode<TLogFormat, TStreamId> Node => _node;
 		internal Streams.StreamsClient StreamsClient { get; }
@@ -35,17 +33,12 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			_node = new MiniNode<TLogFormat, TStreamId>(GetType().FullName,
 				inMemDb: true,
 				expiryStrategy: expiryStrategy);
-			var builder = new HostBuilder()
-				.ConfigureWebHostDefaults(webHost => webHost.UseTestServer()
-					.ConfigureServices(services => _node.Node.Startup.ConfigureServices(services))
-					.Configure(_node.Node.Startup.Configure));
-			_host = builder.Start();
-			_server = _host.GetTestServer();
+
 			Channel = GrpcChannel.ForAddress(new UriBuilder {
 				Scheme = Uri.UriSchemeHttps
 			}.Uri, new GrpcChannelOptions {
-				HttpClient = _server.CreateClient(),
-				DisposeHttpClient = true
+				HttpClient = _node.HttpClient,
+				DisposeHttpClient = false,
 			});
 			StreamsClient = new Streams.StreamsClient(Channel);
 			_batchAppender = new BatchAppender(StreamsClient);
@@ -76,9 +69,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		[OneTimeTearDown]
 		public async Task TearDown() {
 			await _batchAppender.DisposeAsync();
-			_server?.Dispose();
 			Channel?.Dispose();
-			_host?.Dispose();
 			await _node.Shutdown();
 		}
 
