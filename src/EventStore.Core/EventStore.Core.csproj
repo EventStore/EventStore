@@ -7,7 +7,7 @@
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="EventStore.Plugins" Version="24.4.2-alpha3" />
+		<PackageReference Include="EventStore.Plugins" Version="24.4.2" />
 		<PackageReference Include="Google.Protobuf" Version="3.25.0" />
 		<PackageReference Include="Grpc.AspNetCore" Version="2.59.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.59.0">
