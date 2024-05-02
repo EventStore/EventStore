@@ -18,14 +18,19 @@ using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Certificates;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Messages;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
 using EventStore.Core.LogAbstraction;
 using EventStore.Plugins.Subsystems;
+using EventStore.TcpUnitTestPlugin;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Configuration;
+using EventStore.Plugins.Authentication;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
@@ -71,6 +76,8 @@ namespace EventStore.Core.Tests.Helpers {
 			int streamExistenceFilterCheckpointIntervalMs = 30_000,
 			int streamExistenceFilterCheckpointDelayMs = 5_000,
 			int httpClientTimeoutSec = 60,
+			IAuthenticationProviderFactory authenticationProviderFactory = null,
+			IAuthorizationProviderFactory authorizationProviderFactory = null,
 			IExpiryStrategy expiryStrategy = null) {
 
 			RunningTime.Start();
@@ -93,10 +100,8 @@ namespace EventStore.Core.Tests.Helpers {
 			IntTcpEndPoint = new IPEndPoint(ip, intTcpPort);
 			HttpEndPoint = new IPEndPoint(ip, httpEndPointPort);
 
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiEnvVar, "TRUE");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiPortEnvVar, $"{TcpEndPoint.Port}");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiHeartbeatTimeoutEnvVar, "10000");
-			Environment.SetEnvironmentVariable(ClusterVNode.TcpApiHeartbeatIntervalEnvVar, "10000");
+			subsystems ??= [];
+			subsystems = [..subsystems, new TcpApiTestPlugin()];
 
 			var options = new ClusterVNodeOptions {
 					IndexBitnessVersion = indexBitnessVersion,
@@ -130,12 +135,27 @@ namespace EventStore.Core.Tests.Helpers {
 						UnsafeDisableFlushToDisk = disableFlushToDisk,
 						StreamExistenceFilterSize = streamExistenceFilterSize,
 					},
-					Subsystems = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>())
+					PlugableComponents = subsystems,
+					// limitation: the LoadedOptions here will only reflect the defaults and not the rest
+					// of the config specified above. however we only use it for /info/options
+					LoadedOptions = ClusterVNodeOptions.GetLoadedOptions(new ConfigurationBuilder()
+						.AddEventStoreDefaultValues()
+						.Build()),
 				}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 					ssl_connections.GetServerCertificate())
 				.WithInternalSecureTcpOn(IntTcpEndPoint)
 				.WithExternalSecureTcpOn(TcpEndPoint)
 				.WithHttpOn(HttpEndPoint);
+
+			var inMemConf = new ConfigurationBuilder()
+				.AddInMemoryCollection(new KeyValuePair<string, string>[] {
+					new("EventStore:TcpPlugin:NodeTcpPort", extTcpPort.ToString()),
+					new("EventStore:TcpPlugin:EnableExternalTcp", "true"),
+					new("EventStore:TcpUnitTestPlugin:NodeTcpPort", extTcpPort.ToString()),
+					new("EventStore:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
+					new("EventStore:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
+					new("EventStore:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
+				}).Build();
 
 			if (advertisedExtHostAddress != null)
 				options = options.AdvertiseHttpHostAs(new DnsEndPoint(advertisedExtHostAddress, advertisedHttpPort));
@@ -167,15 +187,21 @@ namespace EventStore.Core.Tests.Helpers {
 					wrapped: x,
 					streamExistenceFilterCheckpointIntervalMs: streamExistenceFilterCheckpointIntervalMs,
 					streamExistenceFilterCheckpointDelayMs: streamExistenceFilterCheckpointDelayMs));
+
 			Node = new ClusterVNode<TStreamId>(options, logFormatFactory,
 				new AuthenticationProviderFactory(
-					c => new InternalAuthenticationProviderFactory(c, options.DefaultUser)),
-				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue,
-					options.Application.AllowAnonymousEndpointAccess,
-					options.Application.AllowAnonymousStreamAccess,
-					options.Application.OverrideAnonymousEndpointAccessForGossip)),
+					c => authenticationProviderFactory ?? new InternalAuthenticationProviderFactory(
+						c,
+						options.DefaultUser)),
+				new AuthorizationProviderFactory(
+					c => authorizationProviderFactory ?? new LegacyAuthorizationProviderFactory(
+						c.MainQueue,
+						options.Application.AllowAnonymousEndpointAccess,
+						options.Application.AllowAnonymousStreamAccess,
+						options.Application.OverrideAnonymousEndpointAccessForGossip)),
 				expiryStrategy: expiryStrategy,
-				certificateProvider: new OptionsCertificateProvider());
+				certificateProvider: new OptionsCertificateProvider(),
+				configuration: inMemConf);
 			Db = Node.Db;
 
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));

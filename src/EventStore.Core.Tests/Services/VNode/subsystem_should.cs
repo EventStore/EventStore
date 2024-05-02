@@ -4,9 +4,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Plugins.Subsystems;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.VNode;
@@ -30,9 +27,6 @@ public class subsystem_should : SpecificationWithDirectory {
 
 	private class FakeSubSystem : ISubsystem {
 		public string Name => "FakeSubSystem";
-		public IApplicationBuilder Configure(IApplicationBuilder builder) => builder;
-
-		public IServiceCollection ConfigureServices(IServiceCollection services, IConfiguration _) => services;
 
 		public Task Start() => Task.CompletedTask;
 

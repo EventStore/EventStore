@@ -73,11 +73,6 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
 		protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
-		public static readonly string TcpApiEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_API_ENABLED";
-		public static readonly string TcpApiPortEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_API_PORT";
-		public static readonly string TcpApiAdvertisedPortEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_API_ADVERTISED_PORT";
-		public static readonly string TcpApiHeartbeatTimeoutEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_HEARTBEAT_TIMEOUT";
-		public static readonly string TcpApiHeartbeatIntervalEnvVar = "UNSUPPORTED_EVENTSTORE_TCP_HEARTBEAT_INTERVAL";
 
 		public static ClusterVNode<TStreamId> Create<TStreamId>(
 			ClusterVNodeOptions options,
@@ -131,6 +126,7 @@ namespace EventStore.Core {
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<ClientMessage.ReloadConfig>{
 		private readonly ClusterVNodeOptions _options;
+
 		public override TFChunkDb Db { get; }
 
 		public override GossipAdvertiseInfo GossipAdvertiseInfo { get; }
@@ -273,7 +269,8 @@ namespace EventStore.Core {
 
 			var disableInternalTcpTls = options.Application.Insecure;
 			var disableExternalTcpTls = options.Application.Insecure;
-			var enableExternalTcp = ExtTcpOptions.TryParse(out var extTcpOptions);
+			var nodeTcpOptions = configuration.GetSection("EventStore:TcpPlugin").Get<NodeTcpOptions>() ?? new();
+			var enableExternalTcp = nodeTcpOptions.EnableExternalTcp;
 
 			var httpEndPoint = new IPEndPoint(options.Interface.NodeIp, options.Interface.NodePort);
 
@@ -288,21 +285,21 @@ namespace EventStore.Core {
 
 			var extTcp = disableExternalTcpTls && enableExternalTcp
 				? new IPEndPoint(options.Interface.NodeIp,
-					extTcpOptions.Port)
+					nodeTcpOptions.NodeTcpPort)
 				: null;
 			var extSecIp = !disableExternalTcpTls && enableExternalTcp
 				? new IPEndPoint(options.Interface.NodeIp,
-					extTcpOptions.Port)
+					nodeTcpOptions.NodeTcpPort)
 				: null;
 
 			var intTcpPortAdvertiseAs = disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
 			var intSecTcpPortAdvertiseAs = !disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
 
-			var extTcpPortAdvertiseAs = enableExternalTcp && disableExternalTcpTls && extTcpOptions.AdvertisedPort.HasValue
-				? extTcpOptions.AdvertisedPort.Value!
+			var extTcpPortAdvertiseAs = enableExternalTcp && disableExternalTcpTls && nodeTcpOptions.NodeTcpPortAdvertiseAs.HasValue
+				? nodeTcpOptions.NodeTcpPortAdvertiseAs.Value!
 				: 0;
-			var extSecTcpPortAdvertiseAs = enableExternalTcp && !disableExternalTcpTls && extTcpOptions.AdvertisedPort.HasValue
-				? extTcpOptions.AdvertisedPort.Value!
+			var extSecTcpPortAdvertiseAs = enableExternalTcp && !disableExternalTcpTls && nodeTcpOptions.NodeTcpPortAdvertiseAs.HasValue
+				? nodeTcpOptions.NodeTcpPortAdvertiseAs.Value!
 				: 0;
 
 			Log.Information("Quorum size set to {quorum}.", options.Cluster.QuorumSize);
@@ -316,11 +313,8 @@ namespace EventStore.Core {
 				out var workerThreadsCount);
 
 			var trackers = new Trackers();
-			var metricsConfiguration = configuration
-				.GetSection(SectionNames.EventStore)
-				.GetSection(SectionNames.Metrics)
-				.Get<MetricsConfiguration>() ?? new();
-			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
+
+			MetricsBootstrapper.Bootstrap(MetricsConfiguration.Get(configuration), dbConfig, trackers);
 
 			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker);
 
@@ -439,7 +433,7 @@ namespace EventStore.Core {
 					indexChk,
 					streamExistenceFilterChk,
 					options.Database.ChunkInitialReaderCount,
-					ClusterVNodeOptions.DatabaseOptions.GetTFChunkMaxReaderCount(
+					GetTFChunkMaxReaderCount(
 						readerThreadsCount: readerThreadsCount,
 						chunkInitialReaderCount: options.Database.ChunkInitialReaderCount),
 					options.Database.MemDb,
@@ -448,6 +442,15 @@ namespace EventStore.Core {
 					options.Database.OptimizeIndexMerge,
 					options.Database.ReduceFileCachePressure,
 					options.Database.MaxTruncation);
+
+				static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
+					var tfChunkMaxReaderCount =
+						GetPTableMaxReaderCount(readerThreadsCount) +
+						2 + /* for caching/uncaching, populating midpoints */
+						1 + /* for epoch manager usage of elections/replica service */
+						1 /* for epoch manager usage of leader replication service */;
+					return Math.Max(tfChunkMaxReaderCount, chunkInitialReaderCount);
+				}
 			}
 
 			var writerCheckpoint = Db.Config.WriterCheckpoint.Read();
@@ -527,6 +530,7 @@ namespace EventStore.Core {
 					trackers.NodeStatusTracker,
 					options, this, forwardingProxy,
 					startSubsystems: StartSubsystems);
+
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager,
 				trackers.QueueTrackers);
 
@@ -598,7 +602,7 @@ namespace EventStore.Core {
 			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads);
 			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, ESConsts.DefaultIndexDirectoryName);
 
-			var pTableMaxReaderCount = ClusterVNodeOptions.DatabaseOptions.GetPTableMaxReaderCount(readerThreadsCount);
+			var pTableMaxReaderCount = GetPTableMaxReaderCount(readerThreadsCount);
 			var readerPool = new ObjectPool<ITransactionFileReader>(
 				"ReadIndex readers pool",
 				ESConsts.PTableInitialReaderCount,
@@ -908,7 +912,7 @@ namespace EventStore.Core {
 					extSecureTcpEndPoint, httpEndPoint, options.Interface.ReplicationHostAdvertiseAs,
 					options.Interface.NodeHostAdvertiseAs, options.Interface.NodePortAdvertiseAs,
 					options.Interface.AdvertiseHostToClientAs, options.Interface.AdvertiseNodePortToClientAs,
-					extTcpOptions?.AdvertisedPort ?? 0);
+					nodeTcpOptions?.NodeTcpPortAdvertiseAs ?? 0);
 			}
 
 			_httpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
@@ -948,41 +952,12 @@ namespace EventStore.Core {
 				}).Build();
 			Ensure.NotNull(_authorizationProvider, "authorizationProvider");
 
+			var modifiedOptions = options
+				.WithPlugableComponent(_authorizationProvider)
+				.WithPlugableComponent(_authenticationProvider);
+
 			AuthorizationGateway = new AuthorizationGateway(_authorizationProvider);
 			{
-				if (enableExternalTcp)
-					Log.Warning("The unsupported public tcp api feature has been enabled. Please be aware that this feature may not function as expected and could lead to potential issues. Use at your own risk");
-
-				// EXTERNAL TCP
-				if (NodeInfo.ExternalTcp != null && enableExternalTcp) {
-					var extTcpService = new TcpService(_mainQueue, NodeInfo.ExternalTcp, _workersHandler,
-						TcpServiceType.External, TcpSecurityType.Normal,
-						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-						TimeSpan.FromMilliseconds(extTcpOptions.HeartbeatInterval),
-						TimeSpan.FromMilliseconds(extTcpOptions.HeartbeatTimeout),
-						_authenticationProvider, AuthorizationGateway, null, null, null,
-						options.Interface.ConnectionPendingSendBytesThreshold,
-						options.Interface.ConnectionQueueSizeThreshold);
-					_mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
-					_mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
-					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extTcpService);
-				}
-				// EXTERNAL SECURE TCP
-				if (NodeInfo.ExternalSecureTcp != null && enableExternalTcp) {
-					var extSecTcpService = new TcpService(_mainQueue, NodeInfo.ExternalSecureTcp, _workersHandler,
-						TcpServiceType.External, TcpSecurityType.Secure,
-						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-						TimeSpan.FromMilliseconds(extTcpOptions.HeartbeatInterval),
-						TimeSpan.FromMilliseconds(extTcpOptions.HeartbeatTimeout),
-						_authenticationProvider, AuthorizationGateway,
-						_certificateSelector, _intermediateCertsSelector, _externalClientCertificateValidator,
-						options.Interface.ConnectionPendingSendBytesThreshold,
-						options.Interface.ConnectionQueueSizeThreshold);
-					_mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
-					_mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
-					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extSecTcpService);
-				}
-
 				if (!isSingleNode) {
 					// INTERNAL TCP
 					if (NodeInfo.InternalTcp != null) {
@@ -1071,13 +1046,16 @@ namespace EventStore.Core {
 				trackers.GossipTrackers.ProcessingRequestFromHttpClient);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
-			var infoController = new InfoController(options, new Dictionary<string, bool> {
-				["projections"] = options.Projections.RunProjections != ProjectionType.None || options.DevMode.Dev,
-				["userManagement"] = options.Auth.AuthenticationType == Opts.AuthenticationTypeDefault &&
-				                     !options.Application.Insecure,
-				["atomPub"] = options.Interface.EnableAtomPubOverHttp || options.DevMode.Dev
 
-			}, _authenticationProvider);
+			var infoController = new InfoController(
+				options,
+				new Dictionary<string, bool> {
+					["projections"]    = options.Projection.RunProjections != ProjectionType.None || options.DevMode.Dev,
+					["userManagement"] = options.Auth.AuthenticationType == Opts.AuthenticationTypeDefault && !options.Application.Insecure,
+					["atomPub"]        = options.Interface.EnableAtomPubOverHttp || options.DevMode.Dev
+				},
+				_authenticationProvider
+			);
 
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
@@ -1465,10 +1443,13 @@ namespace EventStore.Core {
 				GossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
 				options.Cluster.NodePriority, options.Cluster.ReadOnlyReplica, VersionInfo.Version);
 
+			// ELECTIONS TRACKER
+			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(trackers.ElectionCounterTracker);
+
 			// TELEMETRY
 			var telemetryService = new TelemetryService(
 				Db.Manager,
-				options,
+				modifiedOptions,
 				_mainQueue,
 				new TelemetrySink(options.Application.TelemetryOptout),
 				Db.Config.WriterCheckpoint.AsReadOnly(),
@@ -1604,11 +1585,15 @@ namespace EventStore.Core {
 			IServiceCollection ConfigureAdditionalServices(IServiceCollection services) => services
 				.AddSingleton(_readIndex)
 				.AddSingleton(standardComponents)
+				.AddSingleton(AuthorizationGateway)
+				.AddSingleton(certificateProvider)
 				.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
 				.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates, X509Certificate2Collection Roots)>>
 					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()));
 
-			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
+			_startup = new ClusterVNodeStartup<TStreamId>(
+				modifiedOptions.PlugableComponents,
+				_mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, _authorizationProvider,
 				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 				expiryStrategy ?? new DefaultExpiryStrategy(),
@@ -1628,6 +1613,19 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<MonitoringMessage.CheckEsVersion>(periodicLogging);
 
 			dynamicCacheManager.Start();
+		}
+
+		static int GetPTableMaxReaderCount(int readerThreadsCount) {
+			var ptableMaxReaderCount =
+				1 /* StorageWriter */
+				+ 1 /* StorageChaser */
+				+ 1 /* Projections */
+				+ TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
+				+ 1 /* Redaction */
+				+ 1 /* Subscription LinkTos resolving */
+				+ readerThreadsCount
+				+ 5 /* just in case reserve :) */;
+			return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
 		}
 
 		private static void CreateStaticStreamInfoCache(
@@ -1891,13 +1889,13 @@ namespace EventStore.Core {
 		}
 
 		private void ReloadLogOptions(ClusterVNodeOptions options) {
-			if (options.Log.LogLevel != LogLevel.Default) {
-				var changed = EventStoreLoggerConfiguration.AdjustMinimumLogLevel(options.Log.LogLevel);
+			if (options.Logging.LogLevel != LogLevel.Default) {
+				var changed = EventStoreLoggerConfiguration.AdjustMinimumLogLevel(options.Logging.LogLevel);
 				if (changed) {
-					Log.Information($"The log level was adjusted to: {options.Log.LogLevel}");
+					Log.Information($"The log level was adjusted to: {options.Logging.LogLevel}");
 
-					if (options.Log.LogLevel > LogLevel.Information) {
-						Console.WriteLine($"The log level was adjusted to: {options.Log.LogLevel}");
+					if (options.Logging.LogLevel > LogLevel.Information) {
+						Console.WriteLine($"The log level was adjusted to: {options.Logging.LogLevel}");
 					}
 				}
 			}

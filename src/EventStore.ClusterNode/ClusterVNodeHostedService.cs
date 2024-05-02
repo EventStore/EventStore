@@ -21,15 +21,16 @@ using EventStore.Core.Hashing;
 using EventStore.Core.PluginModel;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.PluginHosting;
+using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Plugins.MD5;
 using EventStore.Plugins.Subsystems;
 using EventStore.Projections.Core;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using EventStore.Core.LogAbstraction;
-using EventStore.Plugins.MD5;
 
 namespace EventStore.ClusterNode {
 	internal class ClusterVNodeHostedService : IHostedService, IDisposable {
@@ -55,27 +56,27 @@ namespace EventStore.ClusterNode {
 			options = LoadSubsystemsPlugins(pluginLoader, options);
 
 			try {
-				ConfigureMD5();
+				options = options.WithPlugableComponent(ConfigureMD5());
 			} catch {
 				throw new
 					InvalidConfigurationException(
 						"Failed to configure MD5. If FIPS mode is enabled, please use the FIPS commercial plugin or disable FIPS mode.");
 			}
 
-			var projectionMode = options.DevMode.Dev && options.Projections.RunProjections == ProjectionType.None
+			var projectionMode = options.DevMode.Dev && options.Projection.RunProjections == ProjectionType.None
 				? ProjectionType.System
-				: options.Projections.RunProjections;
-			var startStandardProjections = options.Projections.StartStandardProjections || options.DevMode.Dev;
+				: options.Projection.RunProjections;
+			var startStandardProjections = options.Projection.StartStandardProjections || options.DevMode.Dev;
 			_options = projectionMode >= ProjectionType.System
-				? options.WithSubsystem(new ProjectionsSubsystem(
+				? options.WithPlugableComponent(new ProjectionsSubsystem(
 					new ProjectionSubsystemOptions(
-						options.Projections.ProjectionThreads,
+						options.Projection.ProjectionThreads,
 						projectionMode,
 						startStandardProjections,
-						TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry),
-						options.Projections.FaultOutOfOrderProjections,
-						options.Projections.ProjectionCompilationTimeout,
-						options.Projections.ProjectionExecutionTimeout)))
+						TimeSpan.FromMinutes(options.Projection.ProjectionsQueryExpiry),
+						options.Projection.FaultOutOfOrderProjections,
+						options.Projection.ProjectionCompilationTimeout,
+						options.Projection.ProjectionExecutionTimeout)))
 				: options;
 
 			if (!_options.Database.MemDb) {
@@ -247,15 +248,16 @@ namespace EventStore.ClusterNode {
 						plugin.Version);
 					var subsystems = plugin.GetSubsystems();
 					foreach (var subsystem in subsystems) {
-						options = options.WithSubsystem(subsystem);
+						options = options.WithPlugableComponent(subsystem);
 					}
 				}
 				return options;
 			}
 
-			void ConfigureMD5() {
-				var md5Provider = GetMD5ProviderFactories().FirstOrDefault()?.Build();
-				MD5.UseProvider(md5Provider ?? new NetMD5Provider());
+			IPlugableComponent ConfigureMD5() {
+				var md5Provider = GetMD5ProviderFactories().FirstOrDefault()?.Build() ?? new NetMD5Provider();
+				MD5.UseProvider(md5Provider);
+				return md5Provider;
 			}
 
 			IEnumerable<IMD5ProviderFactory> GetMD5ProviderFactories() {

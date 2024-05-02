@@ -1,8 +1,14 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Common.Configuration {
 	public class MetricsConfiguration {
+		public static MetricsConfiguration Get(IConfiguration configuration) =>
+			configuration
+				.GetSection("EventStore:Metrics")
+				.Get<MetricsConfiguration>() ?? new();
+
 		public enum StatusTracker {
 			Index = 1,
 			Node,
@@ -137,7 +143,9 @@ namespace EventStore.Common.Configuration {
 		public Dictionary<EventTracker, bool> Events { get; set; } = new();
 
 		public Dictionary<Cache, bool> CacheHitsMisses { get; set; } = new();
-		
+
+		public bool ElectionsCount { get; set; } = false;
+
 		public bool CacheResources { get; set; } = false;
 
 		// must be 0, 1, 5, 10 or a multiple of 15

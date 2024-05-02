@@ -1,0 +1,10 @@
+{
+	"Logging": {
+		"LogLevel": {
+			"Default": "Debug",
+			"System": "Warning",
+			"Microsoft": "Warning",
+			"Grpc": "Warning"
+		}
+	}
+}

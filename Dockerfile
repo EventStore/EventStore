@@ -3,6 +3,9 @@ ARG CONTAINER_RUNTIME=jammy
 FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
 ARG RUNTIME=linux-x64
 
+WORKDIR /build/lib
+COPY ./lib ./
+
 WORKDIR /build/ci
 COPY ./ci ./
 
@@ -16,7 +19,7 @@ RUN dotnet restore --runtime=${RUNTIME}
 COPY ./src .
 
 WORKDIR /build/.git
-COPY ./.git .
+COPY ./.git/ .
 
 WORKDIR /build/src
 RUN find /build/src -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -I{} -0 -n1 sh -c \

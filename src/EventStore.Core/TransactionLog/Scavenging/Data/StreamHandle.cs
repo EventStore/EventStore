@@ -46,7 +46,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				case StreamHandle.Kind.None:
 				default:
 					return $"None";
-			};
+			}
 		}
 
 		public override bool Equals(object other) {

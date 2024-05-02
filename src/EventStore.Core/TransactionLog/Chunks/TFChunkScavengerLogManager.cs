@@ -240,7 +240,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			var log = CreateLogInternal(incompleteScavengeStats.ScavengeId);
 
-			log.ScavengeCompleted(ScavengeResult.Failed,
+			log.ScavengeCompleted(ScavengeResult.Interrupted,
 				"The node was restarted.",
 				incompleteScavengeStats.TimeTaken,
 				incompleteScavengeStats.SpaceSaved,

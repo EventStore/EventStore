@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 		protected Task Started { get; private set; }
 
 		private StandardComponents CreateStandardComponents() {
-			var dbConfig = TFChunkHelper.CreateDbConfig(Path.GetTempPath(), 0); //qq use config directly
+			var dbConfig = TFChunkHelper.CreateDbConfig(Path.GetTempPath(), 0);
 			var mainQueue = QueuedHandler.CreateQueuedHandler
 			(new AdHocHandler<Message>(msg => {
 				/* Ignore messages */

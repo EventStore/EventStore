@@ -7,9 +7,13 @@ namespace EventStore.Core.Metrics {
 		private readonly object _lock = new();
 
 		public CounterMetric(Meter meter, string name, string unit) {
-			meter.CreateObservableCounter(name + "-" + unit, Observe);
+			if (!string.IsNullOrWhiteSpace(unit)) {
+				name = name + "-" + unit;
+			}
+
+			meter.CreateObservableCounter(name, Observe);
 		}
-		
+
 		public void Add(CounterSubMetric subMetric) {
 			lock (_lock) {
 				_subMetrics.Add(subMetric);
