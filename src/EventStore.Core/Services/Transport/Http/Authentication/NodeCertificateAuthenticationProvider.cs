@@ -95,8 +95,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 				.IsNotEmpty();
 
 			if (!isServerCertificate && !hasReservedNodeCN && !hasIpOrDnsSan) {
-				// We are sure that this is a client certificate,
-				// Not a misconfigured server certificate with incorrect EKUs
+				// We are sure that this is not a misconfigured node certificate with incorrect EKUs, missing SANs, etc. It could be a user certificate.
 				return false;
 			}
 			if (!hasReservedNodeCN) {
@@ -104,20 +103,17 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 				Log.Error(
 					"Connection from node: {ip} was denied because its CN: {clientCertificateCN} does not match with the reserved node CN: {reservedNodeCN}",
 					ip, clientCertificateCN, reservedNodeCN);
-				return false;
 			}
 			if (!hasIpOrDnsSan) {
 				Log.Error("Connection from node: {ip} was denied because its certificate does not have any IP or DNS Subject Alternative Names (SAN).", ip);
-				return false;
 			}
 			if (!isServerCertificate) {
 				Log.Error(
 					"Connection from node: {ip} was denied because it is not configured as a server certificate: {failReason}",
 					ip, serverCertReason);
-				return false;
 			}
 
-			return true;
+			return hasReservedNodeCN && hasIpOrDnsSan && isServerCertificate;
 		}
 	}
 }
