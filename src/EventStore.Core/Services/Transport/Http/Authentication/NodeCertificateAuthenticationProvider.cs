@@ -77,8 +77,8 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 		}
 
 		private bool AuthenticateUncached(HttpContext context, X509Certificate2 clientCertificate) {
-			if (!clientCertificate.IsServerCertificate(out _))
-				return false;
+			var ip = context.Connection.RemoteIpAddress?.ToString() ?? "<unknown>";
+			var isServerCertificate = clientCertificate.IsServerCertificate(out var serverCertReason);
 
 			var reservedNodeCN = _getCertificateReservedNodeCommonName();
 			bool hasReservedNodeCN;
@@ -90,22 +90,30 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 				return false;
 			}
 
+			bool hasIpOrDnsSan = clientCertificate.GetSubjectAlternativeNames()
+				.Where(x => x.type is CertificateNameType.DnsName or CertificateNameType.IpAddress)
+				.IsNotEmpty();
+
+			if (!isServerCertificate && !hasReservedNodeCN && !hasIpOrDnsSan) {
+				// We are sure that this is a client certificate,
+				// Not a misconfigured server certificate with incorrect EKUs
+				return false;
+			}
 			if (!hasReservedNodeCN) {
 				var clientCertificateCN = clientCertificate.GetCommonName();
-				var ip = context.Connection.RemoteIpAddress?.ToString() ?? "<unknown>";
 				Log.Error(
 					"Connection from node: {ip} was denied because its CN: {clientCertificateCN} does not match with the reserved node CN: {reservedNodeCN}",
 					ip, clientCertificateCN, reservedNodeCN);
 				return false;
 			}
-
-			bool hasIpOrDnsSan = clientCertificate.GetSubjectAlternativeNames()
-				.Where(x => x.type is CertificateNameType.DnsName or CertificateNameType.IpAddress)
-				.IsNotEmpty();
-
 			if (!hasIpOrDnsSan) {
-				var ip = context.Connection.RemoteIpAddress?.ToString() ?? "<unknown>";
 				Log.Error("Connection from node: {ip} was denied because its certificate does not have any IP or DNS Subject Alternative Names (SAN).", ip);
+				return false;
+			}
+			if (!isServerCertificate) {
+				Log.Error(
+					"Connection from node: {ip} was denied because it is not configured as a server certificate: {failReason}",
+					ip, serverCertReason);
 				return false;
 			}
 
