@@ -73,8 +73,7 @@ namespace EventStore.Core.Services.Storage {
 			if (_initialized)
 				return;
 
-			_ioDispatcher.ReadBackward(SystemStreams.ScavengeConfigurationStream, -1, 1, false, SystemAccounts.System,
-				OnScavengeConfigurationRead);
+			ReadBackwards(SystemStreams.ScavengeConfigurationStream, -1, 1, false, OnScavengeConfigurationRead);
 		}
 
 
@@ -212,100 +211,143 @@ namespace EventStore.Core.Services.Storage {
 			return true;
 		}
 
-		private void OnScavengeConfigurationRead(ClientMessage.ReadStreamEventsBackwardCompleted result) {
-			if (result.Result is ReadStreamResult.Success or ReadStreamResult.NoStream) {
-				if (result.Events.Length == 1) {
-					_scavengeConfiguration = result.Events[0].OriginalEvent.Data.ParseJson<ScavengeConfiguration>();
+		private void ReadBackwards(
+			string streamName,
+			long from,
+			int maxCount,
+			bool resolveLink,
+			Action<ClientMessage.ReadStreamEventsBackwardCompleted> iteratee) {
+			ReadBackwards(streamName, from, maxCount, resolveLink, result => {
+				iteratee(result);
+				return null;
+			});
+		}
+
+		// Utility function to easily loop over a stream in the forwards direction.
+		private void ReadBackwards(
+			string streamName,
+			long from,
+			int maxCount,
+			bool resolveLink,
+			Func<ClientMessage.ReadStreamEventsBackwardCompleted, long?> iteratee) {
+
+			_ioDispatcher.ReadBackward(streamName, from, maxCount, resolveLink, SystemAccounts.System, result => {
+				if (result.Result is ReadStreamResult.Success or ReadStreamResult.NoStream) {
+					var next = iteratee(result);
+
+					if (!next.HasValue)
+						return;
+
+					ReadBackwards(streamName, next.Value, maxCount, resolveLink, iteratee);
 				}
 
-				_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, _autoScavengeState.From, 500, true, SystemAccounts.System,
-					OnReadingPastScavenges);
+				// We simply retry the same request if an error happened.
+				// TODO - Should we wait for some time before re-issuing?
+				ReadBackwards(streamName, from, maxCount, resolveLink, iteratee);
+			});
+		}
 
-				return;
-			}
+		// Utility function to easily loop over a stream in the forwards direction.
+		private void ReadForwards(
+			string streamName,
+			long from,
+			int maxCount,
+			bool resolveLink,
+			Func<ClientMessage.ReadStreamEventsForwardCompleted, long?> iteratee) {
 
-			_ioDispatcher.ReadBackward(SystemStreams.ScavengeConfigurationStream, -1, 1, false, SystemAccounts.System,
-				OnScavengeConfigurationRead);
+			_ioDispatcher.ReadForward(streamName, from, maxCount, resolveLink, SystemAccounts.System, result => {
+				if (result.Result is ReadStreamResult.Success or ReadStreamResult.NoStream) {
+					var next = iteratee(result);
+
+					if (!next.HasValue)
+						return;
+
+					ReadForwards(streamName, next.Value, maxCount, resolveLink, iteratee);
+				}
+
+				// We simply retry the same request if an error happened.
+				// TODO - Should we wait for some time before re-issuing?
+				ReadForwards(streamName, from, maxCount, resolveLink, iteratee);
+			});
+		}
+
+		private void OnScavengeConfigurationRead(ClientMessage.ReadStreamEventsBackwardCompleted result) {
+			if (result.Events.Length == 1)
+				_scavengeConfiguration = result.Events[0].OriginalEvent.Data.ParseJson<ScavengeConfiguration>();
+
+			ReadForwards(SystemStreams.ScavengesStream, _autoScavengeState.From, 500, true, OnReadingPastScavenges);
 		}
 
 		// TODO - We should probably also track if we already have a scavenge running in other nodes. Checking is only
 		// eventually consistent because it's possible that our node is lagging behind on replication and we just didn't
 		// receive the scavengeStarted event.
-		private void OnReadingPastScavenges(ClientMessage.ReadStreamEventsForwardCompleted result) {
-			if (result.Result is ReadStreamResult.Success or ReadStreamResult.NoStream) {
+		private long? OnReadingPastScavenges(ClientMessage.ReadStreamEventsForwardCompleted result) {
 
-				foreach (var @event in result.Events) {
-					if (@event.ResolveResult != ReadEventResult.Success)
-						continue;
+			foreach (var @event in result.Events) {
+				if (@event.ResolveResult != ReadEventResult.Success)
+					continue;
 
-					var dictionary = @event.Event.Data.ParseJson<Dictionary<string, object>>();
-					if (!dictionary.TryGetValue("nodeEndpoint", out var entryNode) ||
-					    entryNode.ToString() != _nodeEndpoint) {
-						continue;
-					}
-
-
-					if (!dictionary.TryGetValue("scavengeId", out var scavengeIdEntry)) {
-						Log.Warning("An entry in the scavenge log has no scavengeId");
-						continue;
-					}
-
-					var scavengeId = scavengeIdEntry.ToString();
-					switch (@event.OriginalEvent.EventType) {
-						case SystemEventTypes.ScavengeStarted:
-							_autoScavengeState.IncompleteScavenges.Add(scavengeId, @event.OriginalEvent.TimeStamp);
-							break;
-
-						case SystemEventTypes.ScavengeCompleted: {
-
-							if (!dictionary.TryGetValue("timeTaken", out var timeTakenEntry))
-								continue;
-
-							if (!_autoScavengeState.IncompleteScavenges.Remove(scavengeId, out var started))
-								continue;
-
-							_autoScavengeState.LastCompletedScavengeStarted = started;
-							_autoScavengeState.LastCompleteScavengeTimeTaken = TimeSpan.Parse(timeTakenEntry.ToString());
-							break;
-						}
-					}
+				var dictionary = @event.Event.Data.ParseJson<Dictionary<string, object>>();
+				if (!dictionary.TryGetValue("nodeEndpoint", out var entryNode) ||
+				    entryNode.ToString() != _nodeEndpoint) {
+					continue;
 				}
 
-				_autoScavengeState.From = result.NextEventNumber;
-				if (result.IsEndOfStream) {
-					if (_autoScavengeState.IncompleteScavenges.Count == 0 && _scavengeConfiguration != null) {
-						TimeSpan scheduleScavenge = TimeSpan.Zero;
 
-						if (_autoScavengeState.LastCompletedScavengeStarted != null) {
-							var ended = _autoScavengeState.LastCompletedScavengeStarted.Value +
-							            _autoScavengeState.LastCompleteScavengeTimeTaken;
-
-							var diff = DateTime.Now - ended;
-							if (diff >= _scavengeConfiguration.Schedule) {
-								OnScavengeScheduled();
-								return;
-							}
-
-							scheduleScavenge = _scavengeConfiguration.Schedule - diff;
-						} else {
-							scheduleScavenge = _scavengeConfiguration.Schedule;
-						}
-
-						_publisher.Publish(TimerMessage.Schedule.Create<Message>(scheduleScavenge, new CallbackEnvelope(_ => OnScavengeScheduled()), null));
-					}
-
-					_initialized = true;
-				} else {
-					_autoScavengeState.From = result.NextEventNumber;
-					_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, _autoScavengeState.From, 500, true,
-						SystemAccounts.System, OnReadingPastScavenges);
+				if (!dictionary.TryGetValue("scavengeId", out var scavengeIdEntry)) {
+					Log.Warning("An entry in the scavenge log has no scavengeId");
+					continue;
 				}
 
-				return;
+				var scavengeId = scavengeIdEntry.ToString();
+				switch (@event.OriginalEvent.EventType) {
+					case SystemEventTypes.ScavengeStarted:
+						_autoScavengeState.IncompleteScavenges.Add(scavengeId, @event.OriginalEvent.TimeStamp);
+						break;
+
+					case SystemEventTypes.ScavengeCompleted: {
+
+						if (!dictionary.TryGetValue("timeTaken", out var timeTakenEntry))
+							continue;
+
+						if (!_autoScavengeState.IncompleteScavenges.Remove(scavengeId, out var started))
+							continue;
+
+						_autoScavengeState.LastCompletedScavengeStarted = started;
+						_autoScavengeState.LastCompleteScavengeTimeTaken = TimeSpan.Parse(timeTakenEntry.ToString());
+						break;
+					}
+				}
 			}
 
-			_ioDispatcher.ReadForward(SystemStreams.ScavengesStream, _autoScavengeState.From, 500, true, SystemAccounts.System,
-				OnReadingPastScavenges);
+			_autoScavengeState.From = result.NextEventNumber;
+			if (!result.IsEndOfStream)
+				return result.NextEventNumber;
+
+			if (_autoScavengeState.IncompleteScavenges.Count == 0 && _scavengeConfiguration != null) {
+				TimeSpan scheduleScavenge = TimeSpan.Zero;
+
+				if (_autoScavengeState.LastCompletedScavengeStarted != null) {
+					var ended = _autoScavengeState.LastCompletedScavengeStarted.Value +
+					            _autoScavengeState.LastCompleteScavengeTimeTaken;
+
+					var diff = DateTime.Now - ended;
+					if (diff >= _scavengeConfiguration.Schedule) {
+						OnScavengeScheduled();
+						return null;
+					}
+
+					scheduleScavenge = _scavengeConfiguration.Schedule - diff;
+				} else {
+					scheduleScavenge = _scavengeConfiguration.Schedule;
+				}
+
+				_publisher.Publish(TimerMessage.Schedule.Create<Message>(scheduleScavenge,
+					new CallbackEnvelope(_ => OnScavengeScheduled()), null));
+			}
+
+			_initialized = true;
+			return null;
 		}
 
 		private void OnScavengeScheduled() {
