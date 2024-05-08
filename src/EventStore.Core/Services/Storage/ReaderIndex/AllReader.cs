@@ -131,7 +131,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							}
 
 							reader.Reposition(commit.TransactionPosition);
-							while (consideredEventsCount < maxCount) {
+							while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
 								result = reader.TryReadNext();
 								if (!result.Success) // no more records in TF
 									break;
@@ -266,7 +266,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							var commitPostPos = result.RecordPostPosition;
 							// as we don't know exact position of the last record of transaction,
 							// we have to sequentially scan backwards, so no need to reposition
-							while (consideredEventsCount < maxCount) {
+							while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
 								result = reader.TryReadPrev();
 								if (!result.Success) // no more records in TF
 									break;
