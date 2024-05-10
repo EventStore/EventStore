@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
@@ -15,7 +16,7 @@ namespace EventStore.Common.DevCertificates {
 		private const string CertificateSubjectRegex = "CN=(.*[^,]+).*";
 
 		private static readonly string MacOSUserKeyChain =
-			Environment.GetEnvironmentVariable("HOME") + "/Library/Keychains/login.keychain-db";
+            $"{RuntimeInformation.HomeFolder}/Library/Keychains/login.keychain-db";
 
 		private const string MacOSSystemKeyChain = "/Library/Keychains/System.keychain";
 		private const string MacOSFindCertificateCommandLine = "security";
@@ -97,7 +98,7 @@ namespace EventStore.Common.DevCertificates {
 
 		internal override CheckCertificateStateResult CheckCertificateState(X509Certificate2 candidate,
 			bool interactive) {
-			var sentinelPath = Path.Combine(Environment.GetEnvironmentVariable("HOME")!, ".dotnet",
+			var sentinelPath = Path.Combine(RuntimeInformation.HomeFolder, ".dotnet",
 				$"certificates.{candidate.GetCertHashString(HashAlgorithmName.SHA256)}.sentinel");
 			if (!interactive && !File.Exists(sentinelPath)) {
 				return new CheckCertificateStateResult(false, KeyNotAccessibleWithoutUserInteraction);

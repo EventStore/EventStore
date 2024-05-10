@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using EventStore.Common.Options;
@@ -29,6 +28,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Plugins.Subsystems;
 using EventStore.TcpUnitTestPlugin;
 using Microsoft.Extensions.Configuration;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode<TLogFormat, TStreamId> {
@@ -58,17 +58,15 @@ namespace EventStore.Core.Tests.Helpers {
 		public VNodeState NodeState = VNodeState.Unknown;
 		private readonly IWebHost _host;
 
-		private static bool EnableHttps() {
-			return !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-		}
+		private static bool EnableHttps() => !RuntimeInformation.IsOSX;
 
-		public MiniClusterNode(string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint externalTcp,
+        public MiniClusterNode(string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint externalTcp,
 			IPEndPoint httpEndPoint, EndPoint[] gossipSeeds, ISubsystem[] subsystems = null,
 			bool enableTrustedAuth = false, int memTableSize = 1000, bool inMemDb = true,
 			bool disableFlushToDisk = false, bool readOnlyReplica = false, int nodePriority = 0,
 			string intHostAdvertiseAs = null, IExpiryStrategy expiryStrategy = null) {
 
-			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+			if (RuntimeInformation.IsOSX) {
 				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
 					true); //TODO JPB Remove this sadness when dotnet core supports kestrel + http2 on macOS
 			}
@@ -170,8 +168,8 @@ namespace EventStore.Core.Tests.Helpers {
 				"\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
 				+ "{11,-25} {12}\n" + "{13,-25} {14}\n" + "{15,-25} {16}\n" + "{17,-25} {18}\n\n",
 				"ES VERSION:", VersionInfo.Version, VersionInfo.Edition, VersionInfo.CommitSha, VersionInfo.Timestamp,
-				"OS:", OS.OsFlavor, Environment.OSVersion, "RUNTIME:", OS.GetRuntimeVersion(),
-				Marshal.SizeOf(typeof(IntPtr)) * 8, "GC:",
+				"OS:", RuntimeInformation.OsFlavor, Environment.OSVersion, "RUNTIME:", RuntimeInformation.RuntimeVersion,
+				RuntimeInformation.RuntimeMode, "GC:",
 				GC.MaxGeneration == 0
 					? "NON-GENERATION (PROBABLY BOEHM)"
 					: $"{GC.MaxGeneration + 1} GENERATIONS", "DBPATH:", _dbPath, "ExTCP ENDPOINT:",
@@ -196,7 +194,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_host = new WebHostBuilder()
 				.UseKestrel(o => {
 					o.Listen(HttpEndPoint, options => {
-						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+						if (RuntimeInformation.IsOSX) {
 							options.Protocols = HttpProtocols.Http2;
 						} else {
 							options.UseHttps(new HttpsConnectionAdapterOptions {

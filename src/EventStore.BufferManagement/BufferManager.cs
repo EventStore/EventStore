@@ -2,7 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using ILogger = Serilog.ILogger;
+// using ILogger = Serilog.ILogger;
 
 namespace EventStore.BufferManagement {
 	/// <summary>
@@ -34,7 +34,7 @@ namespace EventStore.BufferManagement {
 
 		private readonly List<byte[]> _segments;
 		private readonly object _creatingNewSegmentLock = new object();
-		private static readonly ILogger Log = Serilog.Log.ForContext<BufferManager>();
+		// private static readonly ILogger Log = Serilog.Log.ForContext<BufferManager>();
 
 		/// <summary>
 		/// Gets the default buffer manager
@@ -151,10 +151,10 @@ namespace EventStore.BufferManagement {
 					_buffers.Push(chunk);
 				}
 
-				Log.Debug("Segments count: {segments}, buffers count: {buffers}, should be when full: {full}",
-					_segments.Count,
-					_buffers.Count,
-					_segments.Count * _segmentChunks);
+				// Log.Debug("Segments count: {segments}, buffers count: {buffers}, should be when full: {full}",
+				// 	_segments.Count,
+				// 	_buffers.Count,
+				// 	_segments.Count * _segmentChunks);
 			}
 		}
 

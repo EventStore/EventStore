@@ -2,9 +2,11 @@ using System;
 using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using ILogger = Serilog.ILogger;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Common.Utils {
 	public static class FileStreamExtensions {
@@ -35,7 +37,7 @@ namespace EventStore.Common.Utils {
 				return;
 			}
 
-			if (!Runtime.IsWindows)
+			if (!RuntimeInformation.IsWindows)
 				FlushSafe = f => f.Flush(flushToDisk: true);
 			else {
 				FlushSafe = f => {

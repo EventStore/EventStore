@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Configuration;
@@ -59,7 +62,6 @@ using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
-using EventStore.Native.UnixSignalManager;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Subsystems;
@@ -69,6 +71,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Mono.Unix.Native;
 using ILogger = Serilog.ILogger;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
@@ -373,7 +376,7 @@ namespace EventStore.Core {
 					var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
 					var streamExistenceFilterCheckFilename = Path.Combine(streamExistencePath, Checkpoint.StreamExistenceFilter + ".chk");
 
-					if (OS.IsUnix) {
+					if (RuntimeInformation.IsUnix) {
 						Log.Debug("Using File Checkpoints");
 						writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer);
 						chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser);
@@ -625,7 +628,7 @@ namespace EventStore.Core {
 			ICacheResizer streamInfoCacheResizer;
 			ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache;
 			ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache;
-			var totalMem = (long)statsHelper.GetTotalMem();
+			var totalMem = RuntimeStats.GetTotalMemorySync();
 
 			if (options.Cluster.StreamInfoCacheCapacity > 0)
 				CreateStaticStreamInfoCache(
@@ -649,7 +652,7 @@ namespace EventStore.Core {
 
 			var dynamicCacheManager = new DynamicCacheManager(
 				bus: _mainQueue,
-				getFreeSystemMem: () => (long) statsHelper.GetFreeMem(),
+				getFreeSystemMem: RuntimeStats.GetFreeMemorySync,
 				getFreeHeapMem: () => GC.GetGCMemoryInfo().FragmentedBytes,
 				getGcCollectionCount: () => GC.CollectionCount(GC.MaxGeneration),
 				totalMem: totalMem,
@@ -1566,12 +1569,10 @@ namespace EventStore.Core {
 			AddTask(perSubscrQueue.Start());
 			AddTask(redactionQueue.Start());
 
-			if (Runtime.IsUnixOrMac) {
-				UnixSignalManager.GetInstance().Subscribe(Signum.SIGHUP, () => {
-					Log.Information("Reloading the node's configuration since the SIGHUP signal has been received.");
-					_mainQueue.Publish(new ClientMessage.ReloadConfig());
-				});
-			}
+            UnixSignalManager.OnSIGHUP(() => {
+                Log.Information("Reloading the node's configuration since the SIGHUP signal has been received.");
+                _mainQueue.Publish(new ClientMessage.ReloadConfig()); 
+            });
 
 			// subsystems
 			_subsystems = options.Subsystems;
@@ -1724,7 +1725,7 @@ namespace EventStore.Core {
 			timeout ??= TimeSpan.FromSeconds(5);
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
-			UnixSignalManager.StopProcessing();
+			UnixSignalManager.Stop();
 
 			if (_subsystems != null) {
 				foreach (var subsystem in _subsystems) {
@@ -1746,10 +1747,11 @@ namespace EventStore.Core {
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
-			UnixSignalManager.StopProcessing();
+			UnixSignalManager.Stop();
 
-			if (_subsystems == null)
+			if (_subsystems is null)
 				return;
+            
 			foreach (var subsystem in _subsystems)
 				subsystem.Stop();
 		}

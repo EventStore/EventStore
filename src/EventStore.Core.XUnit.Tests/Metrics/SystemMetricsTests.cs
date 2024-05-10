@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using System.Runtime;
 using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using EventStore.Core.Metrics;
@@ -58,7 +59,7 @@ public class SystemMetricsTests : IDisposable {
 
 	[Fact]
 	public void can_collect_sys_load_avg() {
-		if (!OS.IsUnix)
+		if (!RuntimeInformation.IsUnix)
 			return;
 
 		Assert.Collection(
@@ -94,7 +95,7 @@ public class SystemMetricsTests : IDisposable {
 
 	[Fact]
 	public void can_collect_sys_cpu() {
-		if (OS.IsUnix)
+		if (RuntimeInformation.IsUnix)
 			return;
 
 		Assert.Collection(

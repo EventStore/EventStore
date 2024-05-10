@@ -1,8 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using EventStore.Common.Utils;
 using Microsoft.Win32.SafeHandles;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core.TransactionLog.Unbuffered {
 	//NOTE THIS DOES NOT SUPPORT ALL STREAM OPERATIONS AS YOU MIGHT EXPECT IT SUPPORTS WHAT WE USE!
@@ -24,15 +24,10 @@ namespace EventStore.Core.TransactionLog.Unbuffered {
 		private long _readLocation = -1;
 		private bool _needsRead;
 
-		static UnbufferedFileStream() {
-			if (Runtime.IsWindows) {
-				NativeFile = new NativeFileWindows();
-			} else {
-				NativeFile = new NativeFileUnix();
-			}
-		}
+		static UnbufferedFileStream() => 
+            NativeFile = RuntimeInformation.IsWindows ? new NativeFileWindows() : new NativeFileUnix();
 
-		private UnbufferedFileStream(SafeFileHandle handle, uint blockSize, int internalWriteBufferSize,
+        private UnbufferedFileStream(SafeFileHandle handle, uint blockSize, int internalWriteBufferSize,
 			int internalReadBufferSize) {
 			_handle = handle;
 			_readBufferSize = internalReadBufferSize;

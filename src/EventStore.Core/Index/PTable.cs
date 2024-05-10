@@ -13,6 +13,7 @@ using EventStore.Core.DataStructures.ProbabilisticFilter;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using MD5 = EventStore.Core.Hashing.MD5;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core.Index {
 	public class PTableVersions {
@@ -286,7 +287,7 @@ namespace EventStore.Core.Index {
 
 			Stream stream = null;
 			WorkItem workItem = null;
-			if (Runtime.IsUnixOrMac) {
+			if (RuntimeInformation.IsUnix) {
 				workItem = GetWorkItem();
 				stream = workItem.Stream;
 			} else {
@@ -421,13 +422,12 @@ namespace EventStore.Core.Index {
 				Dispose();
 				throw;
 			} finally {
-				if (Runtime.IsUnixOrMac) {
+				if (RuntimeInformation.IsUnix) {
 					if (workItem != null)
 						ReturnWorkItem(workItem);
 				} else {
-					if (stream != null)
-						stream.Dispose();
-				}
+                    stream?.Dispose();
+                }
 			}
 		}
 

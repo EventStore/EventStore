@@ -24,12 +24,13 @@ using System.Runtime;
 using EventStore.Common.DevCertificates;
 using EventStore.Core.Configuration;
 using Serilog.Events;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.ClusterNode {
 	internal static class Program {
 		public static async Task<int> Main(string[] args) {
 			var configuration = EventStoreConfiguration.Build(args);
-			
+
 			ThreadPool.SetMaxThreads(1000, 1000);
 			var exitCodeSource = new TaskCompletionSource<int>();
 			var cts = new CancellationTokenSource();
@@ -37,7 +38,7 @@ namespace EventStore.ClusterNode {
 			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 			try {
 				var options = ClusterVNodeOptions.FromConfiguration(configuration);
-				
+
 				var logsDirectory = string.IsNullOrWhiteSpace(options.Logging.Log)
 					? Locations.DefaultLogDirectory
 					: options.Logging.Log;
@@ -67,21 +68,18 @@ namespace EventStore.ClusterNode {
 					return 0;
 				}
 
-				Log.Information("\n{description,-25} {version} {edition} ({buildId}/{commitSha}, {timestamp})", "ES VERSION:",
-					VersionInfo.Version, VersionInfo.Edition, VersionInfo.BuildId, VersionInfo.CommitSha, VersionInfo.Timestamp);
-				Log.Information("{description,-25} {osArchitecture} ", "OS ARCHITECTURE:",
-					RuntimeInformation.OSArchitecture);
-				Log.Information("{description,-25} {osFlavor} ({osVersion})", "OS:", OS.OsFlavor,
-					Environment.OSVersion);
-				Log.Information("{description,-25} {osRuntimeVersion} ({architecture}-bit)", "RUNTIME:",
-					OS.GetRuntimeVersion(),
-					Marshal.SizeOf(typeof(IntPtr)) * 8);
-				Log.Information("{description,-25} {maxGeneration} {isServerGC} {latencyMode}", "GC:",
-					GC.MaxGeneration == 0
-						? "NON-GENERATION (PROBABLY BOEHM)"
-						: $"{GC.MaxGeneration + 1} GENERATIONS",
-					$"IsServerGC: {GCSettings.IsServerGC}",
-					$"Latency Mode: {GCSettings.LatencyMode}");
+				Log.Information(
+                    "{description,-25} {version} {edition} ({buildId}/{commitSha}, {timestamp})", "ES VERSION:",
+					VersionInfo.Version, VersionInfo.Edition, VersionInfo.BuildId, VersionInfo.CommitSha, VersionInfo.Timestamp
+                );
+
+				Log.Information("{description,-25} {osArchitecture} ", "OS ARCHITECTURE:", System.Runtime.InteropServices.RuntimeInformation.OSArchitecture);
+				Log.Information("{description,-25} {osFlavor} ({osVersion})", "OS:", RuntimeInformation.OsFlavor, Environment.OSVersion);
+				Log.Information("{description,-25} {osRuntimeVersion} ({architecture}-bit)", "RUNTIME:", RuntimeInformation.RuntimeVersion, RuntimeInformation.RuntimeMode);
+				Log.Information("{description,-25} {maxGeneration} IsServerGC: {isServerGC} Latency Mode: {latencyMode}", "GC:",
+					GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : $"{GC.MaxGeneration + 1} GENERATIONS",
+					GCSettings.IsServerGC,
+					GCSettings.LatencyMode);
 				Log.Information("{description,-25} {logsDirectory}", "LOGS:", logsDirectory);
 				Log.Information(options.DumpOptions());
 
@@ -127,7 +125,7 @@ namespace EventStore.ClusterNode {
 						Log.Fatal("Could not create dev certificate.");
 						return 1;
 					}
-					if (!manager.IsTrusted(certs[0]) && OperatingSystem.IsWindows()) {
+					if (!manager.IsTrusted(certs[0]) && RuntimeInformation.IsWindows) {
 						Log.Information("Dev certificate {cert} is not trusted. Adding it to the trusted store.", certs[0]);
 						manager.TrustCertificate(certs[0]);
 					} else {
@@ -248,7 +246,7 @@ namespace EventStore.ClusterNode {
 				return;
 			}
 
-			if (!OperatingSystem.IsLinux() && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 17063)) {
+			if (!RuntimeInformation.IsLinux && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 17063)) {
 				Log.Error("Not listening on a UNIX domain socket since it is not supported by the operating system.");
 				return;
 			}

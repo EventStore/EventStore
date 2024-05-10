@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
@@ -31,6 +30,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
@@ -172,8 +172,8 @@ namespace EventStore.Core.Tests.Helpers {
 					 + "{15,-25} {16}\n"
 					 + "{17,-25} {18}\n\n",
 				"ES VERSION:", VersionInfo.Version, VersionInfo.Edition, VersionInfo.CommitSha, VersionInfo.Timestamp,
-				"OS:", OS.OsFlavor, Environment.OSVersion,
-				"RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
+				"OS:", RuntimeInformation.OsFlavor, Environment.OSVersion,
+				"RUNTIME:", RuntimeInformation.RuntimeVersion, RuntimeInformation.RuntimeMode,
 				"GC:",
 				GC.MaxGeneration == 0
 					? "NON-GENERATION (PROBABLY BOEHM)"
@@ -208,7 +208,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_kestrelTestServer = new TestServer(new WebHostBuilder()
 				.UseKestrel(o => {
 					o.Listen(HttpEndPoint, options => {
-						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+						if (RuntimeInformation.IsOSX) {
 							options.Protocols = HttpProtocols.Http2;
 						} else {
 							options.UseHttps(new HttpsConnectionAdapterOptions {

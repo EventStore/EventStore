@@ -27,12 +27,12 @@
 		<PackageReference Include="YamlDotnet" Version="13.7.1" />
 	</ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\EventStore.Common.Utils\EventStore.Common.Utils.csproj" />
-	</ItemGroup>
-	<ItemGroup>
 	  <None Update="Utils\version.properties">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\EventStore.SystemRuntime\EventStore.SystemRuntime.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -3,11 +3,11 @@ using System.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Common.Utils;
 using ILogger = Serilog.ILogger;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 /*Courtesy of Eric Johannsen: https://stackoverflow.com/a/20623311*/
-static public class ProcessUtil {
+public static class ProcessUtil {
 	[StructLayout(LayoutKind.Sequential)]
 	struct RM_UNIQUE_PROCESS {
 		public int dwProcessId;
@@ -76,7 +76,7 @@ static public class ProcessUtil {
 	/// http://wyupdate.googlecode.com/svn-history/r401/trunk/frmFilesInUse.cs (no copyright in code at time of viewing)
 	///
 	/// </remarks>
-	static private List<Process> WhoIsLocking(string path) {
+	private static List<Process> WhoIsLocking(string path) {
 		uint handle;
 		string key = Guid.NewGuid().ToString();
 		List<Process> processes = new List<Process>();
@@ -131,17 +131,17 @@ static public class ProcessUtil {
 		return processes;
 	}
 
-	static public void PrintWhoIsLocking(string path, ILogger logger) {
-		if (!Runtime.IsWindows) return;
+	public static void PrintWhoIsLocking(string path, ILogger logger) {
+		if (!RuntimeInformation.IsWindows) return;
 		try {
 			logger.Error(
 				"Trying to retrieve list of processes having a file handle open on {path} (requires admin privileges)",
 				path);
-			var processes = ProcessUtil.WhoIsLocking(path);
+			var processes = WhoIsLocking(path);
 			var processList = processes.Count == 0
 				? "None"
 				: string.Join(Environment.NewLine,
-					processes.Select(x => string.Format("[{0}] {1}", x.Id, x.MainModule.FileName)));
+					processes.Select(x => $"[{x.Id}] {x.MainModule.FileName}"));
 			logger.Error("Processes locking {path}:" + Environment.NewLine + "{processList}", path, processList);
 		} catch (Exception e) {
 			logger.Error(e, "Could not retrieve list of processes using file handle {path}", path);

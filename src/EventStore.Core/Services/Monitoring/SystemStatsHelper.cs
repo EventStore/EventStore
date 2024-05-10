@@ -2,27 +2,26 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Text.RegularExpressions;
+using System.Runtime;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Monitoring.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Native.Monitoring;
 using EventStore.Transport.Tcp;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Monitoring {
 	public class SystemStatsHelper : IDisposable {
-		internal static readonly Regex SpacesRegex = new Regex(@"[\s\t]+", RegexOptions.Compiled);
+		// internal static readonly Regex SpacesRegex = new Regex(@"[\s\t]+", RegexOptions.Compiled);
 
-		private readonly Serilog.ILogger _log;
+		private readonly ILogger _log;
 		private readonly IReadOnlyCheckpoint _writerCheckpoint;
 		private readonly string _dbPath;
-		private PerfCounterHelper _perfCounter;
+		// private PerfCounterHelper _perfCounter;
 		private readonly EventCountersHelper _eventCountersHelper;
-		private readonly HostStat.HostStat _hostStat;
-		private readonly ulong _totalMem;
+		// private readonly HostStat.HostStat _hostStat;
+		private readonly long _totalMem;
 		private bool _giveup;
 
 		public SystemStatsHelper(ILogger log, IReadOnlyCheckpoint writerCheckpoint, string dbPath, long collectIntervalMs) {
@@ -31,30 +30,24 @@ namespace EventStore.Core.Services.Monitoring {
 
 			_log = log;
 			_writerCheckpoint = writerCheckpoint;
-			_perfCounter = new PerfCounterHelper(_log);
 			_eventCountersHelper = new EventCountersHelper(collectIntervalMs);
-			_hostStat = new HostStat.HostStat();
 			_dbPath = dbPath;
-			_totalMem = GetTotalMem();
+			_totalMem = RuntimeStats.GetTotalMemorySync();
 		}
 
-		public void Start() {
-			_eventCountersHelper.Start();
-		}
+		public void Start() => _eventCountersHelper.Start();
 
-		public IDictionary<string, object> GetSystemStats() {
+        public IDictionary<string, object> GetSystemStats() {
 			var stats = new Dictionary<string, object>();
 			GetPerfCounterInformation(stats, 0);
-			var process = Process.GetCurrentProcess();
-
-			var diskIo = DiskIo.GetDiskIo(process.Id, _log);
-			if (diskIo != null) {
-				stats["proc-diskIo-readBytes"] = diskIo.ReadBytes;
-				stats["proc-diskIo-writtenBytes"] = diskIo.WrittenBytes;
-				stats["proc-diskIo-readOps"] = diskIo.ReadOps;
-				stats["proc-diskIo-writeOps"] = diskIo.WriteOps;
-			}
-
+			
+			var diskIo = ProcessStats.GetDiskIoSync();
+		
+			stats["proc-diskIo-readBytes"] = diskIo.ReadBytes;
+			stats["proc-diskIo-writtenBytes"] = diskIo.WrittenBytes;
+			stats["proc-diskIo-readOps"] = diskIo.ReadOps;
+			stats["proc-diskIo-writeOps"] = diskIo.WriteOps;
+            
 			var tcp = TcpConnectionMonitor.Default.GetTcpStats();
 			stats["proc-tcp-connections"] = tcp.Connections;
 			stats["proc-tcp-receivingSpeed"] = tcp.ReceivingSpeed;
@@ -71,15 +64,13 @@ namespace EventStore.Core.Services.Monitoring {
 			stats["es-checksum"] = _writerCheckpoint.Read();
 			stats["es-checksumNonFlushed"] = _writerCheckpoint.ReadNonFlushed();
 
-			var drive = EsDriveInfo.FromDirectory(_dbPath, _log);
-			if (drive != null) {
-				Func<string, string, string> driveStat = (diskName, stat) =>
-					string.Format("sys-drive-{0}-{1}", diskName.Replace("\\", "").Replace(":", ""), stat);
-				stats[driveStat(drive.DiskName, "availableBytes")] = drive.AvailableBytes;
-				stats[driveStat(drive.DiskName, "totalBytes")] = drive.TotalBytes;
-				stats[driveStat(drive.DiskName, "usage")] = drive.Usage;
-				stats[driveStat(drive.DiskName, "usedBytes")] = drive.UsedBytes;
-			}
+            var drive = DriveStats.GetDriveInfo(_dbPath);
+            
+            Func<string, string, string> driveStat = (diskName, stat) => $"sys-drive-{diskName.Replace("\\", "").Replace(":", "")}-{stat}";
+            stats[driveStat(drive.DiskName, "availableBytes")] = drive.AvailableBytes;
+            stats[driveStat(drive.DiskName, "totalBytes")]     = drive.TotalBytes;
+            stats[driveStat(drive.DiskName, "usage")]          = drive.Usage;
+            stats[driveStat(drive.DiskName, "usedBytes")]      = drive.UsedBytes;
 
 			Func<string, string, string> queueStat = (queueName, stat) =>
 				string.Format("es-queue-{0}-{1}", queueName, stat);
@@ -124,23 +115,25 @@ namespace EventStore.Core.Services.Monitoring {
 				stats["proc-contentionsRate"] = _eventCountersHelper.GetContentionsRateCount();
 				stats["proc-thrownExceptionsRate"] = _eventCountersHelper.GetThrownExceptionsRate();
 
-				switch (OS.OsFlavor) {
+				switch (RuntimeInformation.OsFlavor) {
 					case OsFlavor.Windows:
-						stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
+						stats["sys-cpu"] = RuntimeStats.GetCpuUsage();
 						break;
 					case OsFlavor.Linux:
+                    case OsFlavor.BSD:
 					case OsFlavor.MacOS:
-						var loadAverages = _hostStat.GetLoadAverages();
-						stats["sys-loadavg-1m"] = loadAverages.Average1m;
-						stats["sys-loadavg-5m"] = loadAverages.Average5m;
-						stats["sys-loadavg-15m"] = loadAverages.Average15m;
+                        stats["sys-cpu"] = RuntimeStats.GetCpuUsage();
+						var loadAverages = RuntimeStats.GetCpuLoadAveragesSync();
+						stats["sys-loadavg-1m"] = loadAverages.OneMinute;
+						stats["sys-loadavg-5m"] = loadAverages.FiveMinutes;
+						stats["sys-loadavg-15m"] = loadAverages.FifteenMinutes;
 						break;
 					default:
 						stats["sys-cpu"] = -1;
 						break;
 				}
 
-				stats["sys-freeMem"] = GetFreeMem();
+				stats["sys-freeMem"]  = RuntimeStats.GetFreeMemorySync();
 				stats["sys-totalMem"] = _totalMem;
 
 				var gcStats = _eventCountersHelper.GetGcStats();
@@ -157,7 +150,6 @@ namespace EventStore.Core.Services.Monitoring {
 				stats["proc-gc-totalBytesInHeaps"] = gcStats.TotalBytesInHeaps;
 			} catch (InvalidOperationException) {
 				_log.Information("Received error reading counters. Attempting to rebuild.");
-				_perfCounter = new PerfCounterHelper(_log);
 				_giveup = count > 10;
 				if (_giveup)
 					_log.Error("Maximum rebuild attempts reached. Giving up on rebuilds.");
@@ -166,39 +158,8 @@ namespace EventStore.Core.Services.Monitoring {
 			}
 		}
 
-		///<summary>
-		///Free system memory in bytes
-		///</summary>
-		public ulong GetFreeMem() {
-			switch (OS.OsFlavor) {
-				case OsFlavor.Windows:
-					return (ulong)_perfCounter.GetFreeMemory();
-				case OsFlavor.Linux:
-				case OsFlavor.MacOS:
-					return _hostStat.GetFreeMemory();
-				default:
-					return 0;
-			}
-		}
-
-		///<summary>
-		///Total system memory in bytes
-		///</summary>
-		public ulong GetTotalMem() {
-			switch (OS.OsFlavor) {
-				case OsFlavor.Windows:
-					return WinNativeMemoryStatus.GetTotalMemory();
-				case OsFlavor.Linux:
-				case OsFlavor.MacOS:
-					return _hostStat.GetTotalMemory();
-				default:
-					return 0;
-			}
-		}
-
 		public void Dispose() {
 			_eventCountersHelper.Dispose();
-			_perfCounter.Dispose();
 		}
 	}
 }
