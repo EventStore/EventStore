@@ -1,10 +1,8 @@
 using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using ILogger = Serilog.ILogger;
+using Serilog;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
+
+namespace System.Diagnostics;
 
 /*Courtesy of Eric Johannsen: https://stackoverflow.com/a/20623311*/
 public static class ProcessUtil {
@@ -76,30 +74,31 @@ public static class ProcessUtil {
 	/// http://wyupdate.googlecode.com/svn-history/r401/trunk/frmFilesInUse.cs (no copyright in code at time of viewing)
 	///
 	/// </remarks>
-	private static List<Process> WhoIsLocking(string path) {
+    static List<Process> WhoIsLocking(string path) {
 		uint handle;
-		string key = Guid.NewGuid().ToString();
-		List<Process> processes = new List<Process>();
+		var key = Guid.NewGuid().ToString();
+		List<Process> processes = [];
 
-		int res = RmStartSession(out handle, 0, key);
+		var res = RmStartSession(out handle, 0, key);
 		if (res != 0) throw new Exception("Could not begin restart session.  Unable to determine file locker.");
 
 		try {
 			const int ERROR_MORE_DATA = 234;
+            
 			uint pnProcInfoNeeded = 0,
 				pnProcInfo = 0,
 				lpdwRebootReasons = RmRebootReasonNone;
 
-			string[] resources = new string[] {path}; // Just checking on one resource.
+			var resources = new string[] {path}; // Just checking on one resource.
 
-			res = RmRegisterResources(handle, (uint)resources.Length, resources, 0, null, 0, null);
+			res = RmRegisterResources(handle, (uint)resources.Length, resources, 0, null!, 0, null!);
 
 			if (res != 0) throw new Exception("Could not register resource.");
 
 			//Note: there's a race condition here -- the first call to RmGetList() returns
 			//      the total number of process. However, when we call RmGetList() again to get
 			//      the actual processes this number may have increased.
-			res = RmGetList(handle, out pnProcInfoNeeded, ref pnProcInfo, null, ref lpdwRebootReasons);
+			res = RmGetList(handle, out pnProcInfoNeeded, ref pnProcInfo, null!, ref lpdwRebootReasons);
 
 			if (res == ERROR_MORE_DATA) {
 				// Create an array to store the process results
@@ -109,11 +108,11 @@ public static class ProcessUtil {
 				// Get the list
 				res = RmGetList(handle, out pnProcInfoNeeded, ref pnProcInfo, processInfo, ref lpdwRebootReasons);
 				if (res == 0) {
-					processes = new List<Process>((int)pnProcInfo);
+					processes = new ((int)pnProcInfo);
 
-					// Enumerate all of the results and add them to the
+					// Enumerate all the results and add them to the
 					// list to be returned
-					for (int i = 0; i < pnProcInfo; i++) {
+					for (var i = 0; i < pnProcInfo; i++) {
 						try {
 							processes.Add(Process.GetProcessById(processInfo[i].Process.dwProcessId));
 						}
@@ -131,20 +130,32 @@ public static class ProcessUtil {
 		return processes;
 	}
 
-	public static void PrintWhoIsLocking(string path, ILogger logger) {
-		if (!RuntimeInformation.IsWindows) return;
-		try {
-			logger.Error(
-				"Trying to retrieve list of processes having a file handle open on {path} (requires admin privileges)",
-				path);
-			var processes = WhoIsLocking(path);
-			var processList = processes.Count == 0
-				? "None"
-				: string.Join(Environment.NewLine,
-					processes.Select(x => $"[{x.Id}] {x.MainModule.FileName}"));
-			logger.Error("Processes locking {path}:" + Environment.NewLine + "{processList}", path, processList);
-		} catch (Exception e) {
-			logger.Error(e, "Could not retrieve list of processes using file handle {path}", path);
-		}
-	}
+    public static bool TryGetWhoIsLocking(string path, out List<Process> processes, out Exception? error) {
+        if (!RuntimeInformation.IsWindows) {
+            processes = [];
+            error = null;
+            return false;
+        }
+        
+        try {
+             processes = WhoIsLocking(path);
+             error = null;
+             return true;
+        } catch (Exception ex) {
+            processes = [];
+            error = ex;
+            return false;
+        }
+    }
+    
+    public static void PrintWhoIsLocking(string path, ILogger logger) {
+        logger.Information("Trying to retrieve list of processes having a file handle open on {Path} (requires admin privileges)", path);
+        if (TryGetWhoIsLocking(path, out var processes, out var error))
+            logger.Information(
+                $"Processes locking {{Path}}:{Environment.NewLine}{{ProcessList}}",
+                path, string.Join(Environment.NewLine, processes.Select(x => $"[{x.Id}] {x.MainModule?.FileName}"))
+            );
+        else
+            logger.Error(error, "Could not retrieve list of processes using file handle {Path}", path);
+    }
 }

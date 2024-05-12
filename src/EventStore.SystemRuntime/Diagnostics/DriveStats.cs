@@ -1,16 +1,14 @@
-using System.IO;
-
 namespace System.Diagnostics;
 
 public static class DriveStats {
-    public static DriveInfoData GetDriveInfo(string path) {
+    public static DriveData GetDriveInfo(string path) {
         var info = new DriveInfo(Directory.GetDirectoryRoot(path));
-        var data = new DriveInfoData(info.Name, info.TotalSize, info.AvailableFreeSpace);
+        var data = new DriveData(info.Name, info.TotalSize, info.AvailableFreeSpace);
         return data;
     }
 }
 
-public readonly record struct DriveInfoData(string DiskName, long TotalBytes, long AvailableBytes) {
+public readonly record struct DriveData(string DiskName, long TotalBytes, long AvailableBytes) {
     ///<summary>
     /// Total bytes of space used by Event Store
     ///</summary>

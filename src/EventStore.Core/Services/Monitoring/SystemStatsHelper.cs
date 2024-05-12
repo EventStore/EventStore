@@ -13,14 +13,10 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Monitoring {
 	public class SystemStatsHelper : IDisposable {
-		// internal static readonly Regex SpacesRegex = new Regex(@"[\s\t]+", RegexOptions.Compiled);
-
 		private readonly ILogger _log;
 		private readonly IReadOnlyCheckpoint _writerCheckpoint;
 		private readonly string _dbPath;
-		// private PerfCounterHelper _perfCounter;
 		private readonly EventCountersHelper _eventCountersHelper;
-		// private readonly HostStat.HostStat _hostStat;
 		private readonly long _totalMem;
 		private bool _giveup;
 
@@ -32,7 +28,7 @@ namespace EventStore.Core.Services.Monitoring {
 			_writerCheckpoint = writerCheckpoint;
 			_eventCountersHelper = new EventCountersHelper(collectIntervalMs);
 			_dbPath = dbPath;
-			_totalMem = RuntimeStats.GetTotalMemorySync();
+			_totalMem = RuntimeStats.GetTotalMemory();
 		}
 
 		public void Start() => _eventCountersHelper.Start();
@@ -41,7 +37,7 @@ namespace EventStore.Core.Services.Monitoring {
 			var stats = new Dictionary<string, object>();
 			GetPerfCounterInformation(stats, 0);
 			
-			var diskIo = ProcessStats.GetDiskIoSync();
+			var diskIo = ProcessStats.GetDiskIo();
 		
 			stats["proc-diskIo-readBytes"] = diskIo.ReadBytes;
 			stats["proc-diskIo-writtenBytes"] = diskIo.WrittenBytes;
@@ -115,25 +111,16 @@ namespace EventStore.Core.Services.Monitoring {
 				stats["proc-contentionsRate"] = _eventCountersHelper.GetContentionsRateCount();
 				stats["proc-thrownExceptionsRate"] = _eventCountersHelper.GetThrownExceptionsRate();
 
-				switch (RuntimeInformation.OsFlavor) {
-					case OsFlavor.Windows:
-						stats["sys-cpu"] = RuntimeStats.GetCpuUsage();
-						break;
-					case OsFlavor.Linux:
-                    case OsFlavor.BSD:
-					case OsFlavor.MacOS:
-                        stats["sys-cpu"] = RuntimeStats.GetCpuUsage();
-						var loadAverages = RuntimeStats.GetCpuLoadAveragesSync();
-						stats["sys-loadavg-1m"] = loadAverages.OneMinute;
-						stats["sys-loadavg-5m"] = loadAverages.FiveMinutes;
-						stats["sys-loadavg-15m"] = loadAverages.FifteenMinutes;
-						break;
-					default:
-						stats["sys-cpu"] = -1;
-						break;
-				}
+                stats["sys-cpu"] = RuntimeStats.GetCpuUsage();
 
-				stats["sys-freeMem"]  = RuntimeStats.GetFreeMemorySync();
+                if (RuntimeInformation.IsUnix) {
+                    var loadAverages = RuntimeStats.GetCpuLoadAverages();
+                    stats["sys-loadavg-1m"]  = loadAverages.OneMinute;
+                    stats["sys-loadavg-5m"]  = loadAverages.FiveMinutes;
+                    stats["sys-loadavg-15m"] = loadAverages.FifteenMinutes;
+                }
+
+				stats["sys-freeMem"]  = RuntimeStats.GetFreeMemory();
 				stats["sys-totalMem"] = _totalMem;
 
 				var gcStats = _eventCountersHelper.GetGcStats();

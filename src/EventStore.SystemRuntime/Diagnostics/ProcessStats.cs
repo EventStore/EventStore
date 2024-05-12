@@ -1,30 +1,27 @@
-using System.IO;
 using System.Runtime;
-using System.Threading.Tasks;
 using OsxNative = System.Diagnostics.Interop.OsxNative;
 using WindowsNative = System.Diagnostics.Interop.WindowsNative;
 
 namespace System.Diagnostics;
 
+[PublicAPI]
 public static class ProcessStats {
-    public static ValueTask<DiskIoData> GetDiskIo(int processId) {
+    public static DiskIoData GetDiskIo(Process process) {
         return RuntimeInformation.OsPlatform switch {
-            RuntimeOSPlatform.Linux   => GetDiskIoLinux(processId),
-            RuntimeOSPlatform.OSX     => GetDiskIoOsx(processId),
-            RuntimeOSPlatform.Windows => GetDiskIoWindows(processId),
+            RuntimeOSPlatform.Linux   => GetDiskIoLinux(process),
+            RuntimeOSPlatform.OSX     => GetDiskIoOsx(process),
+            RuntimeOSPlatform.Windows => GetDiskIoWindows(process),
+            RuntimeOSPlatform.FreeBSD => default,
             _                         => throw new NotSupportedException("Operating system not supported")
         };
 
-        static async ValueTask<DiskIoData> GetDiskIoLinux(int processId) {
-            var procIoFile = $"/proc/{processId}/io";
+        static DiskIoData GetDiskIoLinux(Process process) {
+            var procIoFile = $"/proc/{process.Id}/io";
 
             try {
-                if (!File.Exists(procIoFile))
-                    throw new FileNotFoundException("Process I/O info file does not exist.");
-
                 var result = new DiskIoData();
 
-                await foreach (var line in File.ReadLinesAsync(procIoFile)) {
+                foreach (var line in File.ReadLines(procIoFile)) {
                     if (TryExtractIoValue(line, "read_bytes", out var readBytes))
                         result = result with { ReadBytes = readBytes };
                     else if (TryExtractIoValue(line, "write_bytes", out var writeBytes))
@@ -40,7 +37,7 @@ public static class ProcessStats {
                 return result;
             }
             catch (Exception ex) {
-                throw new ApplicationException("Failed to read process I/O info.", ex);
+                throw new ApplicationException($"Failed to read process I/O info from {procIoFile}", ex);
             }
 
             static bool TryExtractIoValue(string line, string key, out ulong value) {
@@ -54,21 +51,16 @@ public static class ProcessStats {
                 return false;
             }
         }
+        
+        static DiskIoData GetDiskIoOsx(Process process) => 
+            OsxNative.IO.GetDiskIo(process.Id);
 
-        static ValueTask<DiskIoData> GetDiskIoOsx(int processId) {
-            var value = OsxNative.IO.GetDiskIo(processId);
-            return ValueTask.FromResult(new DiskIoData(value.ReadBytes, value.WrittenBytes, 0, 0));
-        }
-
-        static ValueTask<DiskIoData> GetDiskIoWindows(int processId) =>
-            ValueTask.FromResult(WindowsNative.IO.GetDiskIo(processId));
+        static DiskIoData GetDiskIoWindows(Process process) =>
+            WindowsNative.IO.GetDiskIo(process);
     }
 
-    public static ValueTask<DiskIoData> GetDiskIo() =>
-        GetDiskIo(Environment.ProcessId);
-
-    public static DiskIoData GetDiskIoSync() =>
-        GetDiskIo().AsTask().GetAwaiter().GetResult();
+    public static DiskIoData GetDiskIo() => 
+        GetDiskIo(Process.GetCurrentProcess());
 }
 
 public readonly record struct DiskIoData {

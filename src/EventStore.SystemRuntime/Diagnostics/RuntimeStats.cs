@@ -1,13 +1,13 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Interop;
 using System.Runtime;
-using System.Threading.Tasks;
 using static System.Convert;
 using static System.Globalization.CultureInfo;
 using static System.Reflection.BindingFlags;
 
 namespace System.Diagnostics;
 
+[PublicAPI]
 public static class RuntimeStats {
     static RuntimeStats() {
         GetCpuUsageInternal = typeof(GC)
@@ -35,50 +35,50 @@ public static class RuntimeStats {
 
     public static int GetLastGCPercentTimeInGC() => GetLastGCPercentTimeInGCInternal();
 
-    public static ValueTask<long> GetTotalMemory() {
-        // return GetTotalMemoryFromGC();
-        //
+    public static long GetTotalMemory() {
+        return GC.GetGCMemoryInfo(GCKind.Background).TotalAvailableMemoryBytes;
+        
         // static ValueTask<long> GetTotalMemoryFromGC() {
         //     var value = GC.GetGCMemoryInfo(GCKind.Background).TotalAvailableMemoryBytes;
         //     return ValueTask.FromResult(value);
         // }
-
-        return RuntimeInformation.OsPlatform switch {
-            RuntimeOSPlatform.Linux   => GetTotalMemoryLinux(),
-            RuntimeOSPlatform.FreeBSD => GetTotalMemoryFreeBSD(),
-            RuntimeOSPlatform.OSX     => GetTotalMemoryOSX(),
-            RuntimeOSPlatform.Windows => GetTotalMemoryWindows(),
-            _                         => throw new NotSupportedException("Operating system not supported")
-        };
-
-        static async ValueTask<long> GetTotalMemoryLinux() {
-            var output = await ExecuteBashCommandAsync("grep MemTotal /proc/meminfo");
-            var parts  = output.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var value  = ToInt64(parts[1]) * 1024; // Convert from KB to bytes
-            return value;
-        }
-
-        static async ValueTask<long> GetTotalMemoryFreeBSD() {
-            var output = await ExecuteBashCommandAsync("sysctl -n hw.physmem");
-            var value  = ToInt64(output.Trim());
-            return value;
-        }
-
-
-        static async ValueTask<long> GetTotalMemoryOSX() {
-            var output = await ExecuteBashCommandAsync("sysctl -n hw.memsize");
-            var value  = ToInt64(output);
-            return value;
-        }
-
-
-        static ValueTask<long> GetTotalMemoryWindows() {
-            var value = (long) WindowsNative.Memory.GetTotalMemory();
-            return ValueTask.FromResult(value);
-        }
+        //
+        // return RuntimeInformation.OsPlatform switch {
+        //     RuntimeOSPlatform.Linux   => GetTotalMemoryLinux(),
+        //     RuntimeOSPlatform.FreeBSD => GetTotalMemoryFreeBSD(),
+        //     RuntimeOSPlatform.OSX     => GetTotalMemoryOSX(),
+        //     RuntimeOSPlatform.Windows => GetTotalMemoryWindows(),
+        //     _                         => throw new NotSupportedException("Operating system not supported")
+        // };
+        //
+        // static async ValueTask<long> GetTotalMemoryLinux() {
+        //     var output = await ExecuteBashCommandAsync("grep MemTotal /proc/meminfo");
+        //     var parts  = output.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        //     var value  = ToInt64(parts[1]) * 1024; // Convert from KB to bytes
+        //     return value;
+        // }
+        //
+        // static async ValueTask<long> GetTotalMemoryFreeBSD() {
+        //     var output = await ExecuteBashCommandAsync("sysctl -n hw.physmem");
+        //     var value  = ToInt64(output.Trim());
+        //     return value;
+        // }
+        //
+        //
+        // static async ValueTask<long> GetTotalMemoryOSX() {
+        //     var output = await ExecuteBashCommandAsync("sysctl -n hw.memsize");
+        //     var value  = ToInt64(output);
+        //     return value;
+        // }
+        //
+        //
+        // static ValueTask<long> GetTotalMemoryWindows() {
+        //     var value = (long) WindowsNative.Memory.GetTotalMemory();
+        //     return ValueTask.FromResult(value);
+        // }
     }
 
-    public static ValueTask<long> GetFreeMemory() {
+    public static ValueTask<long> GetFreeMemoryAsync() {
         return RuntimeInformation.OsPlatform switch {
             RuntimeOSPlatform.Linux   => GetFreeMemoryLinux(),
             RuntimeOSPlatform.FreeBSD => GetFreeMemoryLinux(),
@@ -120,7 +120,7 @@ public static class RuntimeStats {
         }
     }
 
-    public static ValueTask<(double OneMinute, double FiveMinutes, double FifteenMinutes)> GetCpuLoadAverages() {
+    public static ValueTask<(double OneMinute, double FiveMinutes, double FifteenMinutes)> GetCpuLoadAveragesAsync() {
         return RuntimeInformation.OsPlatform switch {
             RuntimeOSPlatform.Linux   => GetLoadAveragesLinux(),
             RuntimeOSPlatform.FreeBSD => GetLoadAveragesFreeBSD(),
@@ -190,18 +190,15 @@ public static class RuntimeStats {
         }
     }
 
-    public static long GetTotalMemorySync() =>
-        GetTotalMemory().AsTask().GetAwaiter().GetResult();
+    public static long GetFreeMemory() =>
+        GetFreeMemoryAsync().AsTask().GetAwaiter().GetResult();
 
-    public static long GetFreeMemorySync() =>
-        GetFreeMemory().AsTask().GetAwaiter().GetResult();
-
-    public static (double OneMinute, double FiveMinutes, double FifteenMinutes) GetCpuLoadAveragesSync() =>
-        GetCpuLoadAverages().AsTask().GetAwaiter().GetResult();
-
+    public static (double OneMinute, double FiveMinutes, double FifteenMinutes) GetCpuLoadAverages() =>
+        GetCpuLoadAveragesAsync().AsTask().GetAwaiter().GetResult();
+    
     static async ValueTask<string> ExecuteBashCommandAsync(string command) {
         var escapedArgs = command.Replace(@"\", @"\\");
-
+    
         var psi = new ProcessStartInfo {
             FileName               = "/bin/bash",
             Arguments              = $"-c \"{escapedArgs}\"",
@@ -209,16 +206,16 @@ public static class RuntimeStats {
             UseShellExecute        = false,
             CreateNoWindow         = true,
         };
-
+    
         using var process = Process.Start(psi);
-
+    
         if (process is null)
             throw new InvalidOperationException($"Could not start bash process to execute: {psi.FileName} {psi.Arguments}");
-
+    
         var result = await process.StandardOutput.ReadToEndAsync();
-
+    
         await process.WaitForExitAsync();
-
+    
         return result.Trim();
     }
 }

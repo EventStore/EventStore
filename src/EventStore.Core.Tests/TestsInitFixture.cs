@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests {
 					 + "{8,-25} {9} ({10}-bit)\n"
 					 + "{11,-25} {12}\n\n",
 				"ES VERSION:", VersionInfo.Version, VersionInfo.Edition, VersionInfo.CommitSha, VersionInfo.Timestamp,
-				"OS:", RuntimeInformation.OsFlavor, Environment.OSVersion,
+				"OS:", RuntimeInformation.RuntimeOsPlatform, Environment.OSVersion,
 				"RUNTIME:", RuntimeInformation.RuntimeVersion, RuntimeInformation.RuntimeMode,
 				"GC:",
 				GC.MaxGeneration == 0

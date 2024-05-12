@@ -168,7 +168,7 @@ namespace EventStore.Core.Tests.Helpers {
 				"\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
 				+ "{11,-25} {12}\n" + "{13,-25} {14}\n" + "{15,-25} {16}\n" + "{17,-25} {18}\n\n",
 				"ES VERSION:", VersionInfo.Version, VersionInfo.Edition, VersionInfo.CommitSha, VersionInfo.Timestamp,
-				"OS:", RuntimeInformation.OsFlavor, Environment.OSVersion, "RUNTIME:", RuntimeInformation.RuntimeVersion,
+				"OS:", RuntimeInformation.RuntimeOsPlatform, Environment.OSVersion, "RUNTIME:", RuntimeInformation.RuntimeVersion,
 				RuntimeInformation.RuntimeMode, "GC:",
 				GC.MaxGeneration == 0
 					? "NON-GENERATION (PROBABLY BOEHM)"

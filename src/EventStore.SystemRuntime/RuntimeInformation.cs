@@ -32,26 +32,10 @@ public static class RuntimeInformation {
 
         IsUnix = IsLinux || IsFreeBSD || IsOSX;
 
-        OsFlavor = OsPlatform switch {
-            RuntimeOSPlatform.Windows => OsFlavor.Windows,
-            RuntimeOSPlatform.Linux   => OsFlavor.Linux,
-            RuntimeOSPlatform.OSX     => OsFlavor.MacOS,
-            RuntimeOSPlatform.FreeBSD => OsFlavor.BSD,
-            _                         => OsFlavor.Unknown
-        };
-
         IsRunningInContainer  = !IsNullOrEmpty(GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"));
         IsRunningInKubernetes = !IsNullOrEmpty(GetEnvironmentVariable("KUBERNETES_SERVICE_HOST"));
         
-        try
-        {
-            Host = DotNetHostInfo.Collect();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+        Host = DotNetHostInfo.Collect();
 
         HomeFolder = GetFolderPath(SpecialFolder.UserProfile);
     }
@@ -96,8 +80,16 @@ public static class RuntimeInformation {
     /// </summary>
     public static readonly bool IsUnix;
 
-    public static readonly OsFlavor OsFlavor;
+    /// <summary>
+    /// The operating system platform the current process is running on.
+    /// This is determined at runtime based on the underlying OS APIs.
+    /// </summary>
+    public static readonly RuntimeOSPlatform RuntimeOsPlatform;
 
+    /// <summary>
+    /// Information about the .NET host environment.
+    /// This includes details such as the version of the .NET runtime, the architecture, the mode (e.g., 64 for a 64-bit runtime), the commit hash of the .NET runtime, and a custom runtime version of the .NET host.
+    /// </summary>
     public static readonly DotNetHostInfo Host;
     
     /// <summary>
@@ -108,8 +100,15 @@ public static class RuntimeInformation {
     /// </remarks>
     public static readonly string HomeFolder;
 
+    /// <summary>
+    /// Custom runtime version of the .NET host.
+    /// </summary>
     public static readonly string RuntimeVersion = Host.RuntimeVersion;
-    public static readonly int    RuntimeMode    = Host.Mode;
+
+    /// <summary>
+    /// The mode of the .NET runtime, represented as the size of a pointer (e.g., 64 for a 64-bit runtime).
+    /// </summary>
+    public static readonly int RuntimeMode = Host.Mode;
 }
 
 /// <summary>
@@ -120,7 +119,7 @@ public static class RuntimeInformation {
 /// <param name="Mode">The mode of the .NET runtime, represented as the size of a pointer (e.g., 64 for a 64-bit runtime).</param>
 /// <param name="Commit">The commit hash of the .NET runtime.</param>
 /// <param name="RuntimeVersion">Custom runtime version of the .NET host.</param>
-public readonly record struct DotNetHostInfo(string Version, string Architecture, int Mode, string Commit, string RuntimeVersion) {
+public readonly record struct DotNetHostInfo(string Version, Architecture Architecture, int Mode, string Commit, string RuntimeVersion) {
     public override string ToString() => RuntimeVersion;
     
     public static DotNetHostInfo Collect() {
@@ -132,20 +131,10 @@ public readonly record struct DotNetHostInfo(string Version, string Architecture
 
         return new () {
             Version      = Environment.Version.ToString(),
-            Architecture = OSArchitecture.ToString().ToLowerInvariant(),
+            Architecture = OSArchitecture,
             Mode         = IntPtr.Size * 8,
             Commit       = commit,
             RuntimeVersion = $"{FrameworkDescription}/{commit}"
         };
     }
 }
-
-public enum OsFlavor {
-    Unknown,
-    Windows,
-    Linux,
-    BSD,
-    MacOS
-}
-
-public enum RuntimeOSPlatform { Windows, OSX, Linux, FreeBSD, Unknown }

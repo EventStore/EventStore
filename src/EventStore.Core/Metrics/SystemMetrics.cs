@@ -17,7 +17,7 @@ public class SystemMetrics (Meter meter, TimeSpan timeout, Dictionary<SystemTrac
 
 		var dims = new Dimensions<SystemTracker, double>(config, dimNames, tag => new("period", tag));
 
-		var getLoadAverages = Functions.Debounce(RuntimeStats.GetCpuLoadAveragesSync, timeout);
+		var getLoadAverages = Functions.Debounce(RuntimeStats.GetCpuLoadAverages, timeout);
 		dims.Register(SystemTracker.LoadAverage1m, () => getLoadAverages().OneMinute);
 		dims.Register(SystemTracker.LoadAverage5m, () => getLoadAverages().FiveMinutes);
 		dims.Register(SystemTracker.LoadAverage15m, () => getLoadAverages().FifteenMinutes);
@@ -36,8 +36,8 @@ public class SystemMetrics (Meter meter, TimeSpan timeout, Dictionary<SystemTrac
 	public void CreateMemoryMetric(string metricName, Dictionary<SystemTracker, string> dimNames) {
 		var dims = new Dimensions<SystemTracker, long>(config, dimNames, tag => new("kind", tag));
 
-        dims.Register(SystemTracker.FreeMem, RuntimeStats.GetFreeMemorySync);
-        dims.Register(SystemTracker.TotalMem, RuntimeStats.GetTotalMemorySync);
+        dims.Register(SystemTracker.FreeMem, RuntimeStats.GetFreeMemory);
+        dims.Register(SystemTracker.TotalMem, RuntimeStats.GetTotalMemory);
 
 		if (dims.AnyRegistered())
 			meter.CreateObservableGauge($"{metricName}-bytes", dims.GenObserve());
@@ -56,7 +56,7 @@ public class SystemMetrics (Meter meter, TimeSpan timeout, Dictionary<SystemTrac
         
         return;
 
-        Func<string, Measurement<long>> GenMeasure(Func<DriveInfoData, long> func) => tag => {
+        Func<string, Measurement<long>> GenMeasure(Func<DriveData, long> func) => tag => {
             var info = getDriveInfo();
 
             return new(

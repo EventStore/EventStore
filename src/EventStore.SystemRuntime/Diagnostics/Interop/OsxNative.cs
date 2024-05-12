@@ -5,7 +5,7 @@ namespace System.Diagnostics.Interop;
 
 public static partial class OsxNative {
     public static partial class IO {
-        public static (ulong ReadBytes, ulong WrittenBytes) GetDiskIo(int processId) {
+        public static DiskIoData GetDiskIo(int processId) {
             const int PROC_PID_RUSAGE      = 2;
             const int PROC_PID_RUSAGE_SIZE = 232;
 
@@ -15,7 +15,7 @@ public static partial class OsxNative {
                 var bytes = proc_pidinfo(processId, PROC_PID_RUSAGE, 0, buffer, PROC_PID_RUSAGE_SIZE);
                 if (bytes == PROC_PID_RUSAGE_SIZE) {
                     var info = Marshal.PtrToStructure<rusage_info_v4>(buffer);
-                    return (info.ri_diskio_bytesread, info.ri_diskio_byteswritten);
+                    return new (info.ri_diskio_bytesread, info.ri_diskio_byteswritten, 0, 0);
                 }
                 else {
                     var error = Marshal.GetLastWin32Error();
@@ -28,6 +28,8 @@ public static partial class OsxNative {
             }
         }
 
+        #region . native .
+        
         [LibraryImport("libproc.dylib", SetLastError = true)]
         private static partial int proc_pidinfo(int pid, int flavor, ulong arg, IntPtr buffer, int buffersize);
 
@@ -65,6 +67,8 @@ public static partial class OsxNative {
             public ulong ri_serviced_system_time;
             public ulong ri_logical_writes;
         }
+        
+        #endregion
     }
 
     public static partial class Memory {
@@ -83,6 +87,8 @@ public static partial class OsxNative {
             return (long)vmStats.free_count * page_size;
         }
   
+        #region . native .
+        
         [LibraryImport("libSystem.dylib", SetLastError = true)]
         private static partial IntPtr mach_host_self();
 
@@ -119,5 +125,7 @@ public static partial class OsxNative {
             public uint  internal_page_count;                    // # of pages that are anonymous
             public uint  total_uncompressed_pages_in_compressor; // # of pages (uncompressed) held within the compressor.
         }
+        
+        #endregion
     }
 }

@@ -14,7 +14,7 @@ using static EventStore.Common.Configuration.MetricsConfiguration;
 namespace EventStore.Core.Metrics;
 
 public class ProcessMetrics (Meter meter, TimeSpan timeout, int scrapingPeriodInSeconds, Dictionary<ProcessTracker, bool> config) {
-    private readonly Func<DiskIoData> _getDiskIo      = Functions.Debounce(ProcessStats.GetDiskIoSync, timeout);
+    private readonly Func<DiskIoData> _getDiskIo      = Functions.Debounce(ProcessStats.GetDiskIo, timeout);
     private readonly Func<Process>    _getCurrentProc = Functions.Debounce(Process.GetCurrentProcess, timeout);
 
     public void CreateObservableMetrics(Dictionary<ProcessTracker, string> metricNames) {

@@ -577,7 +577,8 @@ namespace EventStore.Core {
 				NodeInfo.ExternalTcp,
 				NodeInfo.ExternalSecureTcp,
 				statsHelper);
-			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
+
+            _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShutdown, Message>());
@@ -628,7 +629,7 @@ namespace EventStore.Core {
 			ICacheResizer streamInfoCacheResizer;
 			ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache;
 			ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache;
-			var totalMem = RuntimeStats.GetTotalMemorySync();
+			var totalMem = RuntimeStats.GetTotalMemory();
 
 			if (options.Cluster.StreamInfoCacheCapacity > 0)
 				CreateStaticStreamInfoCache(
@@ -652,7 +653,7 @@ namespace EventStore.Core {
 
 			var dynamicCacheManager = new DynamicCacheManager(
 				bus: _mainQueue,
-				getFreeSystemMem: RuntimeStats.GetFreeMemorySync,
+				getFreeSystemMem: RuntimeStats.GetFreeMemory,
 				getFreeHeapMem: () => GC.GetGCMemoryInfo().FragmentedBytes,
 				getGcCollectionCount: () => GC.CollectionCount(GC.MaxGeneration),
 				totalMem: totalMem,
@@ -1725,7 +1726,7 @@ namespace EventStore.Core {
 			timeout ??= TimeSpan.FromSeconds(5);
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
-			UnixSignalManager.Stop();
+			UnixSignalManager.Unregister();
 
 			if (_subsystems != null) {
 				foreach (var subsystem in _subsystems) {
@@ -1747,7 +1748,7 @@ namespace EventStore.Core {
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
-			UnixSignalManager.Stop();
+			UnixSignalManager.Unregister();
 
 			if (_subsystems is null)
 				return;
