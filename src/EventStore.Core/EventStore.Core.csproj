@@ -29,6 +29,7 @@
 		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.6" />
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
 		<PackageReference Include="DotNext.IO" Version="5.1.0" />
+		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
