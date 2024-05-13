@@ -367,8 +367,8 @@ namespace EventStore.Core.Index {
 				} catch (IOException exc) {
 					errorHandler(exc);
 					if (trial >= maxTrials) {
-						ProcessUtil.PrintWhoIsLocking(tmpIndexMap, Log);
-						ProcessUtil.PrintWhoIsLocking(filename, Log);
+						WindowsProcessUtil.PrintWhoIsLocking(tmpIndexMap, Log);
+						WindowsProcessUtil.PrintWhoIsLocking(filename, Log);
 					}
 				} catch (UnauthorizedAccessException exc) {
 					errorHandler(exc);

@@ -1,3 +1,6 @@
+// ReSharper disable CheckNamespace
+// ReSharper disable InconsistentNaming
+
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
@@ -14,18 +17,9 @@ public static partial class WindowsNative {
                     WriteOps     = counters.WriteOperationCount
                 };
             }
-
-            var errorCode = Marshal.GetLastWin32Error();
-            if (errorCode != 0)
-                throw new Win32Exception(errorCode);
-
-            return new();
+            
+            throw new Win32Exception();
         }
-
-        // public static DiskIoData GetDiskIo(int processId) {
-        //     using var process = Process.GetProcessById(processId);
-        //     return GetDiskIo(process);
-        // }
 
         public static DiskIoData GetDiskIo() =>
             GetDiskIo(Process.GetCurrentProcess());

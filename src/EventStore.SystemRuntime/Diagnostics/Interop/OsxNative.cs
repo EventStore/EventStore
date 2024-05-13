@@ -1,4 +1,7 @@
-using System.ComponentModel;
+// ReSharper disable InconsistentNaming
+// ReSharper disable CheckNamespace
+
+using System.Runtime;
 using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.Interop;
@@ -6,24 +9,18 @@ namespace System.Diagnostics.Interop;
 public static partial class OsxNative {
     public static partial class IO {
         public static DiskIoData GetDiskIo(int processId) {
-            const int PROC_PID_RUSAGE      = 2;
+            const int PROC_PID_RUSAGE = 2;
             const int PROC_PID_RUSAGE_SIZE = 232;
-
-            // var size   = Marshal.SizeOf(new rusage_info_v4());
+            
             var buffer = Marshal.AllocHGlobal(PROC_PID_RUSAGE_SIZE);
             try {
-                var bytes = proc_pidinfo(processId, PROC_PID_RUSAGE, 0, buffer, PROC_PID_RUSAGE_SIZE);
-                if (bytes == PROC_PID_RUSAGE_SIZE) {
-                    var info = Marshal.PtrToStructure<rusage_info_v4>(buffer);
-                    return new (info.ri_diskio_bytesread, info.ri_diskio_byteswritten, 0, 0);
-                }
-                else {
-                    var error = Marshal.GetLastWin32Error();
-                    throw new Win32Exception(error, "Failed to get page size using 'proc_pidinfo'");
-                }
+                if (proc_pidinfo(processId, PROC_PID_RUSAGE, 0, buffer, PROC_PID_RUSAGE_SIZE) != PROC_PID_RUSAGE_SIZE)
+                    throw GetLastExternalException($"Failed to get {RuntimeOSPlatform.OSX} usage info to extract disk I/O");
+
+                var info = Marshal.PtrToStructure<rusage_info_v4>(buffer);
+                return new(info.ri_diskio_bytesread, info.ri_diskio_byteswritten, 0 , 0);
             }
             finally {
-                Marshal.DestroyStructure<rusage_info_v4>(buffer);
                 Marshal.FreeHGlobal(buffer);
             }
         }
@@ -74,15 +71,16 @@ public static partial class OsxNative {
     public static partial class Memory {
         public static long GetFreeMemory() {
             const int HOST_VM_INFO64 = 4;
-            const int KERN_SUCCESS   = 0;
+            const int KERN_SUCCESS = 0;
 
             var host = mach_host_self();
-            if (host_page_size(host, out var page_size) != KERN_SUCCESS)
-                throw new Exception("Failed to get page size");
+            
+            if (host_page_size(host, out var page_size) != KERN_SUCCESS) 
+                throw GetLastExternalException($"Failed to get {RuntimeOSPlatform.OSX} host page size to calculate free memory");
 
             var count = (uint)Marshal.SizeOf<vm_statistics64>() / sizeof(uint);
-            if (host_statistics64(host, HOST_VM_INFO64, out var vmStats, ref count) != KERN_SUCCESS)
-                throw new Exception("Failed to get VM statistics");
+            if (host_statistics64(host, HOST_VM_INFO64, out var vmStats, ref count) != KERN_SUCCESS) 
+                throw GetLastExternalException($"Failed to get {RuntimeOSPlatform.OSX} host statistics to calculate free memory");
 
             return (long)vmStats.free_count * page_size;
         }
@@ -127,5 +125,12 @@ public static partial class OsxNative {
         }
         
         #endregion
+    }
+    
+    static ExternalException GetLastExternalException(string errorMessage) {
+        var errorCode = Marshal.GetLastPInvokeError();
+        return errorCode != 0
+            ? new ExternalException($"{errorMessage}. P/Invoke error code: {errorCode}. Message: {Marshal.GetLastPInvokeErrorMessage()}")
+            : new ExternalException(errorMessage);
     }
 }

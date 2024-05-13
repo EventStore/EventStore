@@ -200,8 +200,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				try {
 					File.Move(oldFileName, newFileName);
 				} catch (IOException) {
-					ProcessUtil.PrintWhoIsLocking(oldFileName, Log);
-					ProcessUtil.PrintWhoIsLocking(newFileName, Log);
+					WindowsProcessUtil.PrintWhoIsLocking(oldFileName, Log);
+					WindowsProcessUtil.PrintWhoIsLocking(newFileName, Log);
 					throw;
 				}
 

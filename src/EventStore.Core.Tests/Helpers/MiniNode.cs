@@ -172,7 +172,7 @@ namespace EventStore.Core.Tests.Helpers {
 					 + "{15,-25} {16}\n"
 					 + "{17,-25} {18}\n\n",
 				"ES VERSION:", VersionInfo.Version, VersionInfo.Edition, VersionInfo.CommitSha, VersionInfo.Timestamp,
-				"OS:", RuntimeInformation.RuntimeOsPlatform, Environment.OSVersion,
+				"OS:", RuntimeInformation.OsPlatform, Environment.OSVersion,
 				"RUNTIME:", RuntimeInformation.RuntimeVersion, RuntimeInformation.RuntimeMode,
 				"GC:",
 				GC.MaxGeneration == 0

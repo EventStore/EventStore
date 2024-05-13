@@ -37,7 +37,7 @@ public static class ProcessStats {
                 return result;
             }
             catch (Exception ex) {
-                throw new ApplicationException($"Failed to read process I/O info from {procIoFile}", ex);
+                throw new ApplicationException("Failed to get Linux process I/O info", ex);
             }
 
             static bool TryExtractIoValue(string line, string key, out ulong value) {
@@ -63,18 +63,36 @@ public static class ProcessStats {
         GetDiskIo(Process.GetCurrentProcess());
 }
 
+/// <summary>
+/// Represents a record struct for Disk I/O data.
+/// </summary>
 public readonly record struct DiskIoData {
     public DiskIoData() { }
 
     public DiskIoData(ulong readBytes, ulong writtenBytes, ulong readOps, ulong writeOps) {
-        ReadBytes    = readBytes;
+        ReadBytes = readBytes;
         WrittenBytes = writtenBytes;
-        ReadOps      = readOps;
-        WriteOps     = writeOps;
+        ReadOps = readOps;
+        WriteOps = writeOps;
     }
 
-    public ulong ReadBytes    { get; init; }
+    /// <summary>
+    /// Gets or sets the number of bytes read.
+    /// </summary>
+    public ulong ReadBytes { get; init; }
+
+    /// <summary>
+    /// Gets or sets the number of bytes written.
+    /// </summary>
     public ulong WrittenBytes { get; init; }
-    public ulong ReadOps      { get; init; }
-    public ulong WriteOps     { get; init; }
+
+    /// <summary>
+    /// Gets or sets the number of read operations.
+    /// </summary>
+    public ulong ReadOps { get; init; }
+
+    /// <summary>
+    /// Gets or sets the number of write operations.
+    /// </summary>
+    public ulong WriteOps { get; init; }
 }

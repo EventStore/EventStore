@@ -533,7 +533,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					logger.Error("Failed to delete the temp chunk. Retry limit of {maxRetryCount} reached. Reason: {e}",
 						MaxRetryCount, ex);
 					if (ex is System.IO.IOException)
-						ProcessUtil.PrintWhoIsLocking(tmpChunkPath, logger);
+						WindowsProcessUtil.PrintWhoIsLocking(tmpChunkPath, logger);
 					throw;
 				}
 			}

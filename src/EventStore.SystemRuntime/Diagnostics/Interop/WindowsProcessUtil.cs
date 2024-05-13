@@ -1,3 +1,5 @@
+// ReSharper disable CheckNamespace
+
 using System.Runtime.InteropServices;
 using Serilog;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
@@ -5,7 +7,7 @@ using RuntimeInformation = System.Runtime.RuntimeInformation;
 namespace System.Diagnostics;
 
 /*Courtesy of Eric Johannsen: https://stackoverflow.com/a/20623311*/
-public static class ProcessUtil {
+public static class WindowsProcessUtil {
 	[StructLayout(LayoutKind.Sequential)]
 	struct RM_UNIQUE_PROCESS {
 		public int dwProcessId;
@@ -71,8 +73,6 @@ public static class ProcessUtil {
 	/// <returns>Processes locking the file</returns>
 	/// <remarks>See also:
 	/// http://msdn.microsoft.com/en-us/library/windows/desktop/aa373661(v=vs.85).aspx
-	/// http://wyupdate.googlecode.com/svn-history/r401/trunk/frmFilesInUse.cs (no copyright in code at time of viewing)
-	///
 	/// </remarks>
     static List<Process> WhoIsLocking(string path) {
 		uint handle;

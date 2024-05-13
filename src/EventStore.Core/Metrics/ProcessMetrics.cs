@@ -31,10 +31,7 @@ public class ProcessMetrics (Meter meter, TimeSpan timeout, int scrapingPeriodIn
 
 		if (enabledNames.TryGetValue(ProcessTracker.GcPauseDuration, out var gcMaxPauseName)) {
 			var maxGcPauseDurationMetric = new DurationMaxMetric(meter, gcMaxPauseName);
-			var maxGcPauseDurationTracker = new DurationMaxTracker(
-				maxGcPauseDurationMetric,
-				name: null,
-				expectedScrapeIntervalSeconds: scrapingPeriodInSeconds);
+			var maxGcPauseDurationTracker = new DurationMaxTracker(maxGcPauseDurationMetric, null, scrapingPeriodInSeconds);
 			_ = new GcSuspensionMetric(maxGcPauseDurationTracker);
 		}
 

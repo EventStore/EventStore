@@ -9,23 +9,24 @@ using static System.String;
 
 namespace System.Runtime;
 
+[PublicAPI]
 public static class RuntimeInformation {
     static RuntimeInformation() {
         if (IsOSPlatform(OSPlatform.OSX)) {
             OsPlatform = RuntimeOSPlatform.OSX;
-            IsOSX      = true;
+            IsOSX = true;
         }
         else if (IsOSPlatform(OSPlatform.Linux)) {
             OsPlatform = RuntimeOSPlatform.Linux;
-            IsLinux    = true;
+            IsLinux = true;
         }
         else if (IsOSPlatform(OSPlatform.Windows)) {
             OsPlatform = RuntimeOSPlatform.Windows;
-            IsWindows  = true;
+            IsWindows = true;
         }
         else if (IsOSPlatform(OSPlatform.FreeBSD)) {
             OsPlatform = RuntimeOSPlatform.FreeBSD;
-            IsFreeBSD  = true;
+            IsFreeBSD = true;
         }
         else
             OsPlatform = RuntimeOSPlatform.Unknown;
@@ -49,7 +50,7 @@ public static class RuntimeInformation {
     /// Indicates if the current process is running in a Kubernetes cluster.
     /// </summary>
     public static readonly bool IsRunningInKubernetes;
-    
+
     /// <summary>
     /// The operating system platform the current process is running on.
     /// </summary>
@@ -79,12 +80,6 @@ public static class RuntimeInformation {
     /// Indicates if the current operating system is a Unix-based system (Linux, FreeBSD or macOS).
     /// </summary>
     public static readonly bool IsUnix;
-
-    /// <summary>
-    /// The operating system platform the current process is running on.
-    /// This is determined at runtime based on the underlying OS APIs.
-    /// </summary>
-    public static readonly RuntimeOSPlatform RuntimeOsPlatform;
 
     /// <summary>
     /// Information about the .NET host environment.
@@ -130,10 +125,10 @@ public readonly record struct DotNetHostInfo(string Version, Architecture Archit
         var commit = assemblyVersion.Substring(assemblyVersion.IndexOf('+') + 1, 9);
 
         return new () {
-            Version      = Environment.Version.ToString(),
+            Version = Environment.Version.ToString(),
             Architecture = OSArchitecture,
-            Mode         = IntPtr.Size * 8,
-            Commit       = commit,
+            Mode = IntPtr.Size * 8,
+            Commit = commit,
             RuntimeVersion = $"{FrameworkDescription}/{commit}"
         };
     }

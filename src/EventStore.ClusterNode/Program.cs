@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Security;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -74,7 +73,7 @@ namespace EventStore.ClusterNode {
                 );
 
 				Log.Information("{description,-25} {osArchitecture} ", "OS ARCHITECTURE:", System.Runtime.InteropServices.RuntimeInformation.OSArchitecture);
-				Log.Information("{description,-25} {osFlavor} ({osVersion})", "OS:", RuntimeInformation.RuntimeOsPlatform, Environment.OSVersion);
+				Log.Information("{description,-25} {osFlavor} ({osVersion})", "OS:", RuntimeInformation.OsPlatform, Environment.OSVersion);
 				Log.Information("{description,-25} {osRuntimeVersion} ({architecture}-bit)", "RUNTIME:", RuntimeInformation.RuntimeVersion, RuntimeInformation.RuntimeMode);
 				Log.Information("{description,-25} {maxGeneration} IsServerGC: {isServerGC} Latency Mode: {latencyMode}", "GC:",
 					GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : $"{GC.MaxGeneration + 1} GENERATIONS",

@@ -27,8 +27,8 @@ public class SystemMetrics (Meter meter, TimeSpan timeout, Dictionary<SystemTrac
 	}
 
 	public void CreateCpuMetric(string name) {
-		if (RuntimeInformation.IsUnix || !config.TryGetValue(SystemTracker.Cpu, out var enabled) || !enabled)
-			return;
+        if (!config.TryGetValue(SystemTracker.Cpu, out var enabled) || !enabled)
+            return;
 
 		meter.CreateObservableUpDownCounter(name, RuntimeStats.GetCpuUsage);
 	}

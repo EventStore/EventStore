@@ -25,9 +25,9 @@ public static class RuntimeStats {
             .CreateDelegate<Func<int>>();
     }
 
-    static Func<double> GetCpuUsageInternal              { get; }
-    static Func<uint>   GetExceptionCountInternal        { get; }
-    static Func<int>    GetLastGCPercentTimeInGCInternal { get; }
+    static Func<double> GetCpuUsageInternal { get; }
+    static Func<uint> GetExceptionCountInternal { get; }
+    static Func<int> GetLastGCPercentTimeInGCInternal { get; }
 
     public static double GetCpuUsage() => GetCpuUsageInternal();
 
@@ -35,48 +35,8 @@ public static class RuntimeStats {
 
     public static int GetLastGCPercentTimeInGC() => GetLastGCPercentTimeInGCInternal();
 
-    public static long GetTotalMemory() {
-        return GC.GetGCMemoryInfo(GCKind.Background).TotalAvailableMemoryBytes;
-        
-        // static ValueTask<long> GetTotalMemoryFromGC() {
-        //     var value = GC.GetGCMemoryInfo(GCKind.Background).TotalAvailableMemoryBytes;
-        //     return ValueTask.FromResult(value);
-        // }
-        //
-        // return RuntimeInformation.OsPlatform switch {
-        //     RuntimeOSPlatform.Linux   => GetTotalMemoryLinux(),
-        //     RuntimeOSPlatform.FreeBSD => GetTotalMemoryFreeBSD(),
-        //     RuntimeOSPlatform.OSX     => GetTotalMemoryOSX(),
-        //     RuntimeOSPlatform.Windows => GetTotalMemoryWindows(),
-        //     _                         => throw new NotSupportedException("Operating system not supported")
-        // };
-        //
-        // static async ValueTask<long> GetTotalMemoryLinux() {
-        //     var output = await ExecuteBashCommandAsync("grep MemTotal /proc/meminfo");
-        //     var parts  = output.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        //     var value  = ToInt64(parts[1]) * 1024; // Convert from KB to bytes
-        //     return value;
-        // }
-        //
-        // static async ValueTask<long> GetTotalMemoryFreeBSD() {
-        //     var output = await ExecuteBashCommandAsync("sysctl -n hw.physmem");
-        //     var value  = ToInt64(output.Trim());
-        //     return value;
-        // }
-        //
-        //
-        // static async ValueTask<long> GetTotalMemoryOSX() {
-        //     var output = await ExecuteBashCommandAsync("sysctl -n hw.memsize");
-        //     var value  = ToInt64(output);
-        //     return value;
-        // }
-        //
-        //
-        // static ValueTask<long> GetTotalMemoryWindows() {
-        //     var value = (long) WindowsNative.Memory.GetTotalMemory();
-        //     return ValueTask.FromResult(value);
-        // }
-    }
+    public static long GetTotalMemory() => 
+        GC.GetGCMemoryInfo(GCKind.Background).TotalAvailableMemoryBytes;
 
     public static ValueTask<long> GetFreeMemoryAsync() {
         return RuntimeInformation.OsPlatform switch {
@@ -164,10 +124,10 @@ public static class RuntimeStats {
             // - 2.72 is the 5-minute load average.
             // - 2.89 is the 15-minute load average.
 
-            var output       = await ExecuteBashCommandAsync("uptime");
-            var startIndex   = output.LastIndexOf(':') + 1; // find the last colon and start right after it
+            var output = await ExecuteBashCommandAsync("uptime");
+            var startIndex = output.LastIndexOf(':') + 1; // find the last colon and start right after it
             var loadAverages = output[startIndex..].Trim();
-            var values       = loadAverages.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var values = loadAverages.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
             return (
                 OneMinute: ToDouble(values[0], InvariantCulture),
@@ -198,13 +158,13 @@ public static class RuntimeStats {
     
     static async ValueTask<string> ExecuteBashCommandAsync(string command) {
         var escapedArgs = command.Replace(@"\", @"\\");
-    
+
         var psi = new ProcessStartInfo {
-            FileName               = "/bin/bash",
-            Arguments              = $"-c \"{escapedArgs}\"",
+            FileName = "/bin/bash",
+            Arguments = $"-c \"{escapedArgs}\"",
             RedirectStandardOutput = true,
-            UseShellExecute        = false,
-            CreateNoWindow         = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
         };
     
         using var process = Process.Start(psi);

@@ -1,3 +1,6 @@
+// ReSharper disable InconsistentNaming
+// ReSharper disable CheckNamespace
+
 namespace System.Runtime;
 
 /// <summary>
@@ -20,7 +23,7 @@ public enum RuntimeOSPlatform {
     Linux, 
 
     /// <summary>
-    /// Represents the OSX (MacOS) operating system platform.
+    /// Represents the OSX (macOS) operating system platform.
     /// </summary>
     OSX, 
     
