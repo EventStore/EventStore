@@ -78,12 +78,18 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		private readonly string _filename;
 		private SafeFileHandle _handle;
 		private int _fileSize;
+
+		// This field establishes happens-before relationship with _fileStreams as follows:
+		// if _isReadOnly is not 0, then _fileStreams fully initialized
 		private int _isReadOnly;
 		private ChunkHeader _chunkHeader;
 		private ChunkFooter _chunkFooter;
 
 		private ReaderWorkItemPool _fileStreams;
 		private ReaderWorkItemPool _memStreams;
+
+		// This field established happens-before relationship with _memStreams as follows:
+		// if _sharedMemStream is not null, then _memStreams fully initialized
 		private volatile Stream _sharedMemStream;
 		private int _fileStreamCount;
 		private int _memStreamCount;
