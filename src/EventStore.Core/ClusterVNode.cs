@@ -1390,7 +1390,7 @@ namespace EventStore.Core {
 			}
 
 			var scavengerLogManager = new TFChunkScavengerLogManager(
-				nodeEndpoint: NodeInfo.HttpEndPoint.ToString(),
+				nodeEndpoint: $"{GossipAdvertiseInfo.HttpEndPoint.Host}:{GossipAdvertiseInfo.HttpEndPoint.Port}",
 				scavengeHistoryMaxAge: TimeSpan.FromDays(options.Database.ScavengeHistoryMaxAge),
 				ioDispatcher: scavengerDispatcher);
 
