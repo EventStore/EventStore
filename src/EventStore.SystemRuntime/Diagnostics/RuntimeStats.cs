@@ -1,3 +1,5 @@
+// ReSharper disable CheckNamespace
+
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Interop;
 using System.Runtime;
@@ -48,7 +50,7 @@ public static class RuntimeStats {
         };
 
         static async ValueTask<long> GetFreeMemoryLinux() {
-            var output = await ExecuteBashCommandAsync("grep MemFree /proc/meminfo"); // old code uses MemAvailable
+            var output = await ExecuteShellCommandAsync("grep MemFree /proc/meminfo"); // old code uses MemAvailable
             var parts  = output.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var value  = ToInt64(parts[1]) * 1024; // Convert KB to bytes
             return value;
@@ -58,7 +60,7 @@ public static class RuntimeStats {
             if (native)
                 return OsxNative.Memory.GetFreeMemory();
 
-            var output = await ExecuteBashCommandAsync("vm_stat | head -n 2");
+            var output = await ExecuteShellCommandAsync("vm_stat | head -n 2");
 
             var lines = output.Split('\n');
             var value = ParseFreePages(lines[1]) * ParsePageSize(lines[0]);
@@ -103,7 +105,7 @@ public static class RuntimeStats {
             // - 1/789 indicates the number of currently running processes over the total number of processes.
             // - 12345 is the last process ID used.
 
-            var output = await ExecuteBashCommandAsync("grep -Eo '^[^ ]+ [^ ]+ [^ ]+' /proc/loadavg");
+            var output = await ExecuteShellCommandAsync("grep -Eo '^[^ ]+ [^ ]+ [^ ]+' /proc/loadavg");
             var values = output.Split(' ');
 
             return (
@@ -124,7 +126,7 @@ public static class RuntimeStats {
             // - 2.72 is the 5-minute load average.
             // - 2.89 is the 15-minute load average.
 
-            var output = await ExecuteBashCommandAsync("uptime");
+            var output = await ExecuteShellCommandAsync("uptime");
             var startIndex = output.LastIndexOf(':') + 1; // find the last colon and start right after it
             var loadAverages = output[startIndex..].Trim();
             var values = loadAverages.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -139,7 +141,7 @@ public static class RuntimeStats {
         static async ValueTask<(double OneMinute, double FiveMinutes, double FifteenMinutes)> GetLoadAveragesFreeBSD() {
             // works on macOS as well
             // Example output: "{ 0.12 0.26 0.21 }"
-            var output = await ExecuteBashCommandAsync("sysctl -n vm.loadavg");
+            var output = await ExecuteShellCommandAsync("sysctl -n vm.loadavg");
             var values = output.Trim('{', '}', ' ').Split(' ');
 
             return (
@@ -156,7 +158,7 @@ public static class RuntimeStats {
     public static (double OneMinute, double FiveMinutes, double FifteenMinutes) GetCpuLoadAverages() =>
         GetCpuLoadAveragesAsync().AsTask().GetAwaiter().GetResult();
     
-    static async ValueTask<string> ExecuteBashCommandAsync(string command) {
+    static async ValueTask<string> ExecuteShellCommandAsync(string command) {
         var escapedArgs = command.Replace(@"\", @"\\");
 
         var psi = new ProcessStartInfo {

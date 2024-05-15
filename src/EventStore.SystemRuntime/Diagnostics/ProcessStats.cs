@@ -1,3 +1,5 @@
+// ReSharper disable CheckNamespace
+
 using System.Runtime;
 using OsxNative = System.Diagnostics.Interop.OsxNative;
 using WindowsNative = System.Diagnostics.Interop.WindowsNative;

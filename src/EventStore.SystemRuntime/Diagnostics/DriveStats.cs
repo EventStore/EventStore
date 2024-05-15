@@ -1,3 +1,5 @@
+// ReSharper disable CheckNamespace
+
 namespace System.Diagnostics;
 
 public static class DriveStats {
