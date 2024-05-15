@@ -105,7 +105,7 @@ public class SystemMetricsTests : IDisposable {
 	}
     
     [Fact]
-    public void can_collect_sys_cpu_proper() {
+    public void can_collect_sys_cpu_using_metrics_collector() {
         // Arrange
         using var collector = new MetricCollector<double>(
             null, _meter.Name, "eventstore-sys-cpu"
