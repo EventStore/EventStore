@@ -4,6 +4,8 @@ using System.Diagnostics.Metrics;
 using System.Runtime;
 using EventStore.Common.Configuration;
 using EventStore.Core.Metrics;
+using FluentAssertions;
+using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Metrics;
@@ -14,19 +16,19 @@ public class SystemMetricsTests : IDisposable {
 	private readonly TestMeterListener<long> _longListener;
 	private readonly FakeClock _clock = new();
 	private readonly SystemMetrics _sut;
-
+    private readonly Meter _meter;
 	public SystemMetricsTests() {
-		var meter = new Meter($"{typeof(ProcessMetricsTests)}");
-		_floatListener = new TestMeterListener<float>(meter);
-		_doubleListener = new TestMeterListener<double>(meter);
-		_longListener = new TestMeterListener<long>(meter);
+        _meter = new Meter($"{typeof(ProcessMetricsTests)}");
+		_floatListener = new TestMeterListener<float>(_meter);
+		_doubleListener = new TestMeterListener<double>(_meter);
+		_longListener = new TestMeterListener<long>(_meter);
 
 		var config = new Dictionary<MetricsConfiguration.SystemTracker, bool>();
 
 		foreach (var value in Enum.GetValues<MetricsConfiguration.SystemTracker>()) {
 			config[value] = true;
 		}
-		_sut = new SystemMetrics(meter, TimeSpan.FromSeconds(42), config);
+		_sut = new SystemMetrics(_meter, TimeSpan.FromSeconds(42), config);
 		_sut.CreateLoadAverageMetric("eventstore-sys-load-avg", new() {
 			{ MetricsConfiguration.SystemTracker.LoadAverage1m, "1m" },
 			{ MetricsConfiguration.SystemTracker.LoadAverage5m, "5m" },
@@ -101,6 +103,23 @@ public class SystemMetricsTests : IDisposable {
 				Assert.Empty(m.Tags);
 			});
 	}
+    
+    [Fact]
+    public void can_collect_sys_cpu_proper() {
+        // Arrange
+        using var collector = new MetricCollector<double>(
+            null, _meter.Name, "eventstore-sys-cpu"
+        );
+
+        // Act
+        collector.RecordObservableInstruments();
+        
+        // Assert
+        collector.LastMeasurement.Should().NotBeNull();
+        collector.LastMeasurement!.Value.Should().BeGreaterOrEqualTo(0);
+    }
+    
+   
 
 	[Fact]
 	public void can_collect_sys_mem() {

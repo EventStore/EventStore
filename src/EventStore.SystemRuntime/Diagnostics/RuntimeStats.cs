@@ -160,7 +160,7 @@ public static class RuntimeStats {
         var escapedArgs = command.Replace(@"\", @"\\");
 
         var psi = new ProcessStartInfo {
-            FileName = "/bin/bash",
+            FileName = "/bin/sh",
             Arguments = $"-c \"{escapedArgs}\"",
             RedirectStandardOutput = true,
             UseShellExecute = false,
@@ -170,7 +170,7 @@ public static class RuntimeStats {
         using var process = Process.Start(psi);
     
         if (process is null)
-            throw new InvalidOperationException($"Could not start bash process to execute: {psi.FileName} {psi.Arguments}");
+            throw new InvalidOperationException($"Could not start sh process to execute: {psi.FileName} {psi.Arguments}");
     
         var result = await process.StandardOutput.ReadToEndAsync();
     

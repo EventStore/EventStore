@@ -10,7 +10,7 @@ using static EventStore.Common.Configuration.MetricsConfiguration;
 
 namespace EventStore.Core.Metrics;
 
-public class SystemMetrics (Meter meter, TimeSpan timeout, Dictionary<SystemTracker, bool> config) {
+public class SystemMetrics(Meter meter, TimeSpan timeout, Dictionary<SystemTracker, bool> config) {
     public void CreateLoadAverageMetric(string metricName, Dictionary<SystemTracker, string> dimNames) {
 		if (RuntimeInformation.IsWindows)
 			return;
