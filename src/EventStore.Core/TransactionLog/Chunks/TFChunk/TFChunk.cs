@@ -1232,7 +1232,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			private IndexPool _indices;
 
 			public ReaderWorkItemPool() {
-				_indicies = new();
+				_indices = new();
 				_array = new ReaderWorkItem[IndexPool.Capacity];
 			}
 
@@ -1241,7 +1241,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				int localReferenceCount = Interlocked.CompareExchange(ref referenceCount, 0, 0);
 				Span<int> indicies = stackalloc int[IndexPool.Capacity];
 
-				int count = _indicies.Take(indicies);
+				int count = _indices.Take(indicies);
 
 				foreach (var index in indicies.Slice(0, count)) {
 					ref ReaderWorkItem slot = ref this[index];
@@ -1254,7 +1254,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				return localReferenceCount;
 			}
 
-			internal readonly int Count => _indicies.Count;
+			internal readonly int Count => _indices.Count;
 
 			private readonly ref ReaderWorkItem this[int index] {
 				get {
@@ -1268,7 +1268,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			internal ReaderWorkItem TryTake<T>(T arg, delegate*<T, int, ReaderWorkItem> factory) {
 				Debug.Assert(factory is not null);
 
-				return _indicies.TryTake(out int index)
+				return _indices.TryTake(out int index)
 					? this[index] ??= factory(arg, index)
 					: null;
 			}
@@ -1278,7 +1278,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				if (index < 0)
 					return false;
 
-				_indicies.Return(index);
+				_indices.Return(index);
 				return true;
 			}
 		}
