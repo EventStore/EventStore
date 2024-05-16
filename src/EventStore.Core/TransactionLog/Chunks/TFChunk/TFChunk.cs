@@ -1275,12 +1275,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			internal bool Return(ReaderWorkItem item) {
 				int index = item.PositionInPool;
-				if ((uint)index < (uint)_array.Length) {
-					_indicies.Return(index);
-					return true;
-				}
+				if (index < 0)
+					return false;
 
-				return false;
+				_indicies.Return(index);
+				return true;
 			}
 		}
 	}
