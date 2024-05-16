@@ -15,6 +15,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
+using EventStore.Projections.Core.Metrics;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -95,6 +96,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				ProjectionType.All,
 				_ioDispatcher,
 				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+				new ProjectionTracker.NoOp(),
 				_initializeSystemProjections);
 
 			_coordinator = new ProjectionCoreCoordinator(

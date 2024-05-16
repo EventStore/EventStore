@@ -322,8 +322,8 @@ namespace EventStore.Core {
 				out var workerThreadsCount);
 
 			var trackers = new Trackers();
-
-			MetricsBootstrapper.Bootstrap(MetricsConfiguration.Get(configuration), dbConfig, trackers);
+			var metricsConfiguration = MetricsConfiguration.Get((configuration));
+			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
 			var dbIdentityTransform = new IdentityDbTransform();
 			var dbTransformManager = new DbTransformManager(new [] { dbIdentityTransform }, activeTransformType: dbIdentityTransform.Type);
@@ -1581,7 +1581,7 @@ namespace EventStore.Core {
 			_subsystems = options.Subsystems;
 
 			var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
-				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers);
+				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
 
 			IServiceCollection ConfigureAdditionalServices(IServiceCollection services) =>
 				services

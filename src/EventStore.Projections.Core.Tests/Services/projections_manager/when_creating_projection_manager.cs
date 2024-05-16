@@ -11,6 +11,7 @@ using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 using EventStore.Core.Helpers;
+using EventStore.Projections.Core.Metrics;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 	[TestFixture]
@@ -45,7 +46,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 					_timeProvider,
 					ProjectionType.All,
 					_ioDispatcher,
-					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault))) {
+					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+					new ProjectionTracker.NoOp())) {
 			}
 		}
 
@@ -60,7 +62,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 						_timeProvider,
 						ProjectionType.All,
 						_ioDispatcher,
-						TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault))) {
+						TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+						new ProjectionTracker.NoOp())) {
 				}
 			});
 		}
@@ -76,7 +79,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 						_timeProvider,
 						ProjectionType.All,
 						_ioDispatcher,
-						TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault))) {
+						TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+						new ProjectionTracker.NoOp())) {
 				}
 			});
 		}
@@ -92,7 +96,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 						_timeProvider,
 						ProjectionType.All,
 						_ioDispatcher,
-						TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault))) {
+						TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+						new ProjectionTracker.NoOp())) {
 				}
 			});
 		}
@@ -108,7 +113,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 						_timeProvider,
 						ProjectionType.All,
 						_ioDispatcher,
-						TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault))) {
+						TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+						new ProjectionTracker.NoOp())) {
 				}
 			});
 		}
