@@ -1,16 +1,21 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace EventStore.Common.Utils {
 	public static class VersionInfo {
-		public const string DefaultVersion = "0.0.0-prerelease";
+		public const string DefaultVersion = "default_version";
 		public const string OldVersion = "old_version";
 		public const string UnknownVersion = "unknown_version";
 
 		public static string BuildId { get; private set; } = "";
 		public static string Edition { get; private set; } = "";
-		public static string Version { get; private set; } = DefaultVersion;
+		public static string VersionPrefix { get; private set; } = "";
+		public static string VersionSuffix { get; private set; } = "";
+		public static string Version => string.IsNullOrWhiteSpace(VersionSuffix)
+			? VersionPrefix
+			: VersionPrefix + "-" + VersionSuffix;
 
 		public static string CommitSha { get; private set; } = ThisAssembly.Git.Commit;
 		public static string Timestamp { get; private set; } = ThisAssembly.Git.CommitDate;
@@ -18,13 +23,20 @@ namespace EventStore.Common.Utils {
 		public static string Text => $"EventStoreDB version {Version} {Edition} ({BuildId}/{CommitSha})";
 
 		static VersionInfo() {
+			// the official release assemblies contain the version prefix (4 part number)
+			// but not the suffix (beta, rc1, rtm, etc) so that the same assembly can be promoted.
+			var versionPrefix = Assembly.GetEntryAssembly().GetName().Version.ToString();
+			if (versionPrefix.EndsWith(".0"))
+				versionPrefix = versionPrefix[..^2];
+			VersionPrefix = versionPrefix;
+
 			var versionFilePath = Path.Join(
 				Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory),
 				"version.properties");
 			var properties = LoadProperties(versionFilePath);
 
-			if (properties.TryGetValue("version", out var version))
-				Version = version;
+			if (properties.TryGetValue("version_suffix", out var versionSuffix))
+				VersionSuffix = versionSuffix;
 
 			if (properties.TryGetValue("commit_sha", out var commitSha))
 				CommitSha = commitSha;

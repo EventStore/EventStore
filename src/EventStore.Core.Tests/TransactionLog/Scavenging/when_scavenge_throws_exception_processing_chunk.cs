@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		[Test]
 		public void no_exception_is_thrown_to_caller() {
 			Assert.That(Log.Completed);
-			Assert.That(Log.Result, Is.EqualTo(ScavengeResult.Failed));
+			Assert.That(Log.Result, Is.EqualTo(ScavengeResult.Interrupted));
 		}
 
 		[Test]

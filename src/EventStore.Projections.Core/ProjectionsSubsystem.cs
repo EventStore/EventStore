@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Options;
@@ -154,6 +155,10 @@ namespace EventStore.Projections.Core {
 		public IServiceCollection ConfigureServices(IServiceCollection services, IConfiguration _) => services
 			.AddSingleton(provider =>
 				new ProjectionManagement(_leaderInputQueue, provider.GetRequiredService<IAuthorizationProvider>()));
+
+		public void CollectTelemetry(Action<string, JsonNode> reply) {
+			// For projections subsystem, the telemetry data is coming from the ProjectionManager.cs file
+		}
 
 		private static void CreateAwakerService(StandardComponents standardComponents) {
 			var awakeReaderService = new AwakeService();

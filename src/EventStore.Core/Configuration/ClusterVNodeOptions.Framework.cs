@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using System.Runtime;
 using System.Text;
 using EventStore.Common.Configuration;
-using EventStore.Common.Utils;
 using EventStore.Core.Configuration;
 using EventStore.Core.Configuration.Sources;
 using Microsoft.Extensions.Configuration;
@@ -187,7 +187,7 @@ namespace EventStore.Core {
 
 			static string DefaultValue(PropertyInfo option) {
 				var value = option.GetValue(Activator.CreateInstance(option.DeclaringType!));
-				return (value, Runtime.IsWindows) switch {
+				return (value, RuntimeInformation.IsWindows) switch {
 					(bool b, false) => b.ToString().ToLower(),
 					(bool b, true) => b.ToString(),
 					(Array {Length: 0}, _) => string.Empty,

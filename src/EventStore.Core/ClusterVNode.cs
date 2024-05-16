@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Configuration;
@@ -59,7 +62,6 @@ using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
-using EventStore.Native.UnixSignalManager;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Subsystems;
@@ -69,6 +71,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Mono.Unix.Native;
 using ILogger = Serilog.ILogger;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
@@ -373,7 +376,7 @@ namespace EventStore.Core {
 					var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
 					var streamExistenceFilterCheckFilename = Path.Combine(streamExistencePath, Checkpoint.StreamExistenceFilter + ".chk");
 
-					if (OS.IsUnix) {
+					if (RuntimeInformation.IsUnix) {
 						Log.Debug("Using File Checkpoints");
 						writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer);
 						chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser);
@@ -561,7 +564,8 @@ namespace EventStore.Core {
 				NodeInfo.ExternalTcp,
 				NodeInfo.ExternalSecureTcp,
 				statsHelper);
-			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
+
+            _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShutdown, Message>());
@@ -612,7 +616,7 @@ namespace EventStore.Core {
 			ICacheResizer streamInfoCacheResizer;
 			ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache;
 			ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache;
-			var totalMem = (long)statsHelper.GetTotalMem();
+			var totalMem = RuntimeStats.GetTotalMemory();
 
 			if (options.Cluster.StreamInfoCacheCapacity > 0)
 				CreateStaticStreamInfoCache(
@@ -636,7 +640,7 @@ namespace EventStore.Core {
 
 			var dynamicCacheManager = new DynamicCacheManager(
 				bus: _mainQueue,
-				getFreeSystemMem: () => (long) statsHelper.GetFreeMem(),
+				getFreeSystemMem: RuntimeStats.GetFreeMemory,
 				getFreeHeapMem: () => GC.GetGCMemoryInfo().FragmentedBytes,
 				getGcCollectionCount: () => GC.CollectionCount(GC.MaxGeneration),
 				totalMem: totalMem,
@@ -938,6 +942,10 @@ namespace EventStore.Core {
 					MainQueue = _mainQueue
 				}).Build();
 			Ensure.NotNull(_authorizationProvider, "authorizationProvider");
+
+			var modifiedOptions = options
+				.WithPlugableComponent(_authorizationProvider)
+				.WithPlugableComponent(_authenticationProvider);
 
 			AuthorizationGateway = new AuthorizationGateway(_authorizationProvider);
 			{
@@ -1373,7 +1381,7 @@ namespace EventStore.Core {
 			}
 
 			var scavengerLogManager = new TFChunkScavengerLogManager(
-				nodeEndpoint: NodeInfo.HttpEndPoint.ToString(),
+				nodeEndpoint: $"{GossipAdvertiseInfo.HttpEndPoint.Host}:{GossipAdvertiseInfo.HttpEndPoint.Port}",
 				scavengeHistoryMaxAge: TimeSpan.FromDays(options.Database.ScavengeHistoryMaxAge),
 				ioDispatcher: scavengerDispatcher);
 
@@ -1432,7 +1440,7 @@ namespace EventStore.Core {
 			// TELEMETRY
 			var telemetryService = new TelemetryService(
 				Db.Manager,
-				options,
+				modifiedOptions,
 				_mainQueue,
 				new TelemetrySink(options.Application.TelemetryOptout),
 				Db.Config.WriterCheckpoint.AsReadOnly(),
@@ -1549,12 +1557,10 @@ namespace EventStore.Core {
 			AddTask(perSubscrQueue.Start());
 			AddTask(redactionQueue.Start());
 
-			if (Runtime.IsUnixOrMac) {
-				UnixSignalManager.GetInstance().Subscribe(Signum.SIGHUP, () => {
-					Log.Information("Reloading the node's configuration since the SIGHUP signal has been received.");
-					_mainQueue.Publish(new ClientMessage.ReloadConfig());
-				});
-			}
+            UnixSignalManager.OnSIGHUP(() => {
+                Log.Information("Reloading the node's configuration since the SIGHUP signal has been received.");
+                _mainQueue.Publish(new ClientMessage.ReloadConfig()); 
+            });
 
 			// subsystems
 			_subsystems = options.Subsystems;
@@ -1571,7 +1577,9 @@ namespace EventStore.Core {
 				.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates, X509Certificate2Collection Roots)>>
 					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()));
 
-			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
+			_startup = new ClusterVNodeStartup<TStreamId>(
+				modifiedOptions.PlugableComponents,
+				_mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, _authorizationProvider,
 				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 				expiryStrategy ?? new DefaultExpiryStrategy(),
@@ -1705,7 +1713,7 @@ namespace EventStore.Core {
 			timeout ??= TimeSpan.FromSeconds(5);
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
-			UnixSignalManager.StopProcessing();
+			UnixSignalManager.Unregister();
 
 			if (_subsystems != null) {
 				foreach (var subsystem in _subsystems) {
@@ -1727,10 +1735,11 @@ namespace EventStore.Core {
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
-			UnixSignalManager.StopProcessing();
+			UnixSignalManager.Unregister();
 
-			if (_subsystems == null)
+			if (_subsystems is null)
 				return;
+            
 			foreach (var subsystem in _subsystems)
 				subsystem.Stop();
 		}

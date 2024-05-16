@@ -10,7 +10,7 @@
 	<ItemGroup>
 		<PackageReference Include="EventStore.Client" Version="21.2.0" />
 		<PackageReference Include="EventStore.Client.Grpc.Streams" Version="22.0.0" />
-		<PackageReference Include="EventStore.Plugins" Version="24.2.1" />
+		<PackageReference Include="EventStore.Plugins" Version="24.4.2" />
 		<PackageReference Include="Google.Protobuf" Version="3.25.0" />
 		<PackageReference Include="Grpc.Net.Client" Version="2.59.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.59.0">
@@ -27,7 +27,8 @@
 		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
 	</ItemGroup>
 	<ItemGroup>
-		<None Update="logconfig.json">
+		<None Include="..\EventStore.ClusterNode\logconfig.json">
+			<Link>logconfig.json</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>

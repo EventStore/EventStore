@@ -16,6 +16,7 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
+		<PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" Version="9.0.0-preview.3.24209.3" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj" />

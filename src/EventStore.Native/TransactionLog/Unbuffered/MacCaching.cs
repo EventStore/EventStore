@@ -1,8 +1,7 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using EventStore.Common.Utils;
+﻿using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using Mono.Unix;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core.TransactionLog.Unbuffered {
 	internal static class MacCaching {
@@ -13,9 +12,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered {
 		static extern int fcntl(int fd, uint command, int arg);
 
 		public static void Disable(SafeFileHandle handle) {
-			if (!Runtime.IsMacOS) {
-				return;
-			}
+			if (!RuntimeInformation.IsOSX)
+                return;
 
 			long r;
 			do {

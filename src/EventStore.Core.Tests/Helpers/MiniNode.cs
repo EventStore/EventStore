@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
@@ -29,6 +28,9 @@ using EventStore.TcpUnitTestPlugin;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
+using EventStore.Plugins.Authentication;
+using EventStore.Plugins.Authorization;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
@@ -74,6 +76,8 @@ namespace EventStore.Core.Tests.Helpers {
 			int streamExistenceFilterCheckpointIntervalMs = 30_000,
 			int streamExistenceFilterCheckpointDelayMs = 5_000,
 			int httpClientTimeoutSec = 60,
+			IAuthenticationProviderFactory authenticationProviderFactory = null,
+			IAuthorizationProviderFactory authorizationProviderFactory = null,
 			IExpiryStrategy expiryStrategy = null) {
 
 			RunningTime.Start();
@@ -131,7 +135,7 @@ namespace EventStore.Core.Tests.Helpers {
 						UnsafeDisableFlushToDisk = disableFlushToDisk,
 						StreamExistenceFilterSize = streamExistenceFilterSize,
 					},
-					Subsystems = new List<ISubsystem>(subsystems),
+					PlugableComponents = subsystems,
 					// limitation: the LoadedOptions here will only reflect the defaults and not the rest
 					// of the config specified above. however we only use it for /info/options
 					LoadedOptions = ClusterVNodeOptions.GetLoadedOptions(new ConfigurationBuilder()
@@ -168,8 +172,8 @@ namespace EventStore.Core.Tests.Helpers {
 					 + "{15,-25} {16}\n"
 					 + "{17,-25} {18}\n\n",
 				"ES VERSION:", VersionInfo.Version, VersionInfo.Edition, VersionInfo.CommitSha, VersionInfo.Timestamp,
-				"OS:", OS.OsFlavor, Environment.OSVersion,
-				"RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
+				"OS:", RuntimeInformation.OsPlatform, Environment.OSVersion,
+				"RUNTIME:", RuntimeInformation.RuntimeVersion, RuntimeInformation.RuntimeMode,
 				"GC:",
 				GC.MaxGeneration == 0
 					? "NON-GENERATION (PROBABLY BOEHM)"
@@ -183,13 +187,18 @@ namespace EventStore.Core.Tests.Helpers {
 					wrapped: x,
 					streamExistenceFilterCheckpointIntervalMs: streamExistenceFilterCheckpointIntervalMs,
 					streamExistenceFilterCheckpointDelayMs: streamExistenceFilterCheckpointDelayMs));
+
 			Node = new ClusterVNode<TStreamId>(options, logFormatFactory,
 				new AuthenticationProviderFactory(
-					c => new InternalAuthenticationProviderFactory(c, options.DefaultUser)),
-				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue,
-					options.Application.AllowAnonymousEndpointAccess,
-					options.Application.AllowAnonymousStreamAccess,
-					options.Application.OverrideAnonymousEndpointAccessForGossip)),
+					c => authenticationProviderFactory ?? new InternalAuthenticationProviderFactory(
+						c,
+						options.DefaultUser)),
+				new AuthorizationProviderFactory(
+					c => authorizationProviderFactory ?? new LegacyAuthorizationProviderFactory(
+						c.MainQueue,
+						options.Application.AllowAnonymousEndpointAccess,
+						options.Application.AllowAnonymousStreamAccess,
+						options.Application.OverrideAnonymousEndpointAccessForGossip)),
 				expiryStrategy: expiryStrategy,
 				certificateProvider: new OptionsCertificateProvider(),
 				configuration: inMemConf);
@@ -199,7 +208,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_kestrelTestServer = new TestServer(new WebHostBuilder()
 				.UseKestrel(o => {
 					o.Listen(HttpEndPoint, options => {
-						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+						if (RuntimeInformation.IsOSX) {
 							options.Protocols = HttpProtocols.Http2;
 						} else {
 							options.UseHttps(new HttpsConnectionAdapterOptions {

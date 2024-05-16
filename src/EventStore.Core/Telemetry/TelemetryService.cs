@@ -91,7 +91,21 @@ public sealed class TelemetryService : IDisposable,
 					break;
 
 				case TelemetryMessage.Response response:
-					data[response.Key] = response.Value;
+					if (string.IsNullOrWhiteSpace(response.Root)) {
+						data[response.Key] = response.Value;
+						break;
+					}
+
+					if (data.TryGetPropertyValue(response.Root, out var existing) &&
+						existing is JsonObject existingObject) {
+
+						existingObject[response.Key] = response.Value;
+						break;
+					}
+
+					data[response.Root] = new JsonObject {
+						[response.Key] = response.Value
+					};
 					break;
 
 				case TelemetryMessage.Flush:
@@ -138,6 +152,8 @@ public sealed class TelemetryService : IDisposable,
 				["enableAtomPubOverHttp"] = _nodeOptions.Interface.EnableAtomPubOverHttp,
 				["insecure"] = _nodeOptions.Application.Insecure,
 				["runProjections"] = _nodeOptions.Projection.RunProjections.ToString(),
+				["authorizationType"] = _nodeOptions.Auth.AuthorizationType,
+				["authenticationType"] = _nodeOptions.Auth.AuthenticationType
 			}));
 
 		message.Envelope.ReplyWith(new TelemetryMessage.Response(
@@ -158,6 +174,17 @@ public sealed class TelemetryService : IDisposable,
 				["totalMemory"] = env.Machine.TotalMemory,
 			}));
 
+		Action<string, JsonNode> collect = (key, value) =>
+			message.Envelope.ReplyWith(new TelemetryMessage.Response("plugins", key, value));
+
+		foreach (var subsystem in _nodeOptions.PlugableComponents) {
+			try {
+				subsystem.CollectTelemetry(collect);
+			} catch (Exception ex) {
+				_log.Warning(ex, $"Failed to collect telemetry from a plugable component {subsystem.GetType().Name}");
+			}
+		}
+
 		_publisher.Publish(new GossipMessage.ReadGossip(new CallbackEnvelope(resp => OnGossipReceived(message.Envelope, resp))));
 	}
 
@@ -168,7 +195,7 @@ public sealed class TelemetryService : IDisposable,
 		var seeds = new JsonObject();
 
 		foreach (var member in gossip.ClusterInfo.Members) {
-			seeds.Add(new (member.InstanceId.ToString(), member.State.ToString()));
+			seeds[member.InstanceId.ToString()] = member.State.ToString();
 		}
 
 		envelope.ReplyWith(new TelemetryMessage.Response("gossip", seeds));

@@ -1,4 +1,5 @@
 using System;
+using System.Runtime;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using Serilog;
@@ -132,7 +133,7 @@ namespace EventStore.Core.Certificates {
 				if (chainStatus != X509ChainStatusFlags.NoError) {
 					Log.Warning(
 						"For correct functioning and optimal performance, please add your intermediate certificates to the current user's " +
-							(Runtime.IsWindows ?
+							(RuntimeInformation.IsWindows ?
 							"'Intermediate Certification Authorities' certificate store." :
 							"'CertificateAuthority' certificate store using the dotnet-certificate-tool.")
 					);
