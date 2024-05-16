@@ -119,7 +119,21 @@ Anonymous access is still always granted to `/ping`, `/info`, the static content
 
 ### Certificates configuration
 
-In this section, you can find settings related to protocol security (HTTPS and TLS).
+To run a cluster securely, you will need to generate and configure certificates for the nodes.
+
+The node certificate must adhere to the following requirements:
+- All node certificates in a cluster share a common root CA.
+- The root CA is trusted by the node.
+- The certificate Extended Key Usages (EKUs) either:
+  - Contains both the ClientAuth EKU and the ServerAuth EKU, or
+  - Is empty.
+- The certificate Key Usages contains either:
+  - DigitalSignature and KeyEncipherment, or
+  - DigitalSignature and KeyAgreement.
+- The certificate must be in date.
+- The CN matches the [CertificateReservedNodeCommonName](#certificate-common-name).
+
+You can generate a certificate that meets these requirements with the [Certificate Generation Tool](#certificate-generation-tool).
 
 #### Certificate common name
 
