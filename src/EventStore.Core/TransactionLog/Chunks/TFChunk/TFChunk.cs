@@ -1229,7 +1229,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			// IndexPool supports up to 64 elements with O(1) take/return time complexity.
 			// It's a thread-safe data structure with no allocations that provide predictability about
 			// the indicies: smallest available index is always preferred.
-			private IndexPool _indicies;
+			private IndexPool _indices;
 
 			public ReaderWorkItemPool() {
 				_indicies = new();
