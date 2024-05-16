@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime;
 
 namespace EventStore.Common.Utils {
 	public class Locations {
@@ -26,8 +26,8 @@ namespace EventStore.Common.Utils {
 			PluginsDirectory = Path.Combine(ApplicationDirectory, "plugins");
 			FallbackDefaultDataDirectory = Path.Combine(ApplicationDirectory, "data");
 
-			switch (Platforms.GetPlatform()) {
-				case Platform.Linux:
+			switch (RuntimeInformation.OsPlatform) {
+				case RuntimeOSPlatform.Linux:
 					DefaultContentDirectory = "/usr/share/eventstore";
 					DefaultConfigurationDirectory = "/etc/eventstore";
 					DefaultDataDirectory = "/var/lib/eventstore";
@@ -37,7 +37,7 @@ namespace EventStore.Common.Utils {
 					if (!Directory.Exists(PluginsDirectory))
 						PluginsDirectory = Path.Combine(DefaultContentDirectory, "plugins");
 					break;
-				case Platform.Mac:
+				case RuntimeOSPlatform.OSX:
 					DefaultContentDirectory = "/usr/local/share/eventstore";
 					DefaultConfigurationDirectory = "/etc/eventstore";
 					DefaultDataDirectory = "/var/lib/eventstore";

@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Runtime;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
 using System.Text;
@@ -25,16 +26,14 @@ namespace EventStore.Common.DevCertificates {
 
 		public const int RSAMinimumKeySizeInBits = 2048;
 
-		public static CertificateManager Instance { get; } = OperatingSystem.IsWindows()
-			?
 #pragma warning disable CA1416 // Validate platform compatibility
-			new WindowsCertificateManager()
-			:
+        public static CertificateManager Instance { get; } = RuntimeInformation.IsWindows
+            ? new WindowsCertificateManager()
+            : RuntimeInformation.IsOSX
+                ? new MacOSCertificateManager() as CertificateManager
+                : new UnixCertificateManager();
 #pragma warning restore CA1416 // Validate platform compatibility
-			OperatingSystem.IsMacOS()
-				? new MacOSCertificateManager() as CertificateManager
-				: new UnixCertificateManager();
-
+        
 		public static CertificateManagerEventSource Log { get; set; } = new CertificateManagerEventSource();
 
 		// Setting to 0 means we don't append the version byte,

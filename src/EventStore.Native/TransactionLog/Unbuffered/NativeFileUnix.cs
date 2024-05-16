@@ -1,10 +1,10 @@
-﻿using EventStore.Common.Utils;
-using Microsoft.Win32.SafeHandles;
+﻿using Microsoft.Win32.SafeHandles;
 using Mono.Unix;
 using Mono.Unix.Native;
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime;
 
 namespace EventStore.Core.TransactionLog.Unbuffered {
 	public unsafe class NativeFileUnix : INativeFile {
@@ -83,7 +83,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered {
 		public SafeFileHandle CreateUnbufferedRW(string path, FileAccess acc, FileShare share, FileMode mode,
 			bool writeThrough) {
 			//O_RDONLY is 0
-			var direct = Runtime.IsMacOS ? OpenFlags.O_RDONLY : OpenFlags.O_DIRECT;
+			var direct = RuntimeInformation.IsOSX ? OpenFlags.O_RDONLY : OpenFlags.O_DIRECT;
 			var flags = GetFlags(acc, mode) | direct;
 			var han = Syscall.open(path, flags, FilePermissions.S_IRWXU);
 			if (han < 0) {

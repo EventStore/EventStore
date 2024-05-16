@@ -4,6 +4,7 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
+using System.Runtime;
 using System.Threading;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
@@ -81,7 +82,7 @@ namespace EventStore.ClusterNode {
 
 			if (!_options.Database.MemDb) {
 				var absolutePath = Path.GetFullPath(_options.Database.Db);
-				if (Runtime.IsWindows)
+				if (RuntimeInformation.IsWindows)
 					absolutePath = absolutePath.ToLower();
 
 				_dbLock = new ExclusiveDbLock(absolutePath);

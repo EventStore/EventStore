@@ -238,7 +238,7 @@ namespace EventStore.Core {
 							};
 						return default;
 					})
-					.AddPrometheusExporter())
+					.AddPrometheusExporter(options => options.ScrapeResponseCacheDurationMilliseconds = 1000))
 				.Services
 
 				// gRPC

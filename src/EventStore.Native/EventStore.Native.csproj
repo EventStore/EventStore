@@ -5,6 +5,8 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
-		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\EventStore.SystemRuntime\EventStore.SystemRuntime.csproj" />
 	</ItemGroup>
 </Project>

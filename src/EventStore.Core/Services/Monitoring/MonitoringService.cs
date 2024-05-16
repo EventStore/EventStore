@@ -9,7 +9,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
-using EventStore.Core.Services.Monitoring.Utils;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Transport.Tcp;

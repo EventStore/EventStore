@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Net;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core.Tests {
 	[SetUpFixture]
@@ -22,12 +24,13 @@ namespace EventStore.Core.Tests {
 					 + "{8,-25} {9} ({10}-bit)\n"
 					 + "{11,-25} {12}\n\n",
 				"ES VERSION:", VersionInfo.Version, VersionInfo.Edition, VersionInfo.CommitSha, VersionInfo.Timestamp,
-				"OS:", OS.OsFlavor, Environment.OSVersion,
-				"RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
+				"OS:", RuntimeInformation.OsPlatform, Environment.OSVersion,
+				"RUNTIME:", RuntimeInformation.RuntimeVersion, RuntimeInformation.RuntimeMode,
 				"GC:",
 				GC.MaxGeneration == 0
 					? "NON-GENERATION (PROBABLY BOEHM)"
-					: string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
+					: $"{GC.MaxGeneration + 1} GENERATIONS"
+            );
 		}
 
 		[OneTimeTearDown]

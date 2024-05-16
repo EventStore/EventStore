@@ -1,15 +1,15 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
+using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture]
 	public class when_writing_a_memorymappedpoint_to_a_file : SpecificationWithFile {
 		public override void SetUp() {
 			base.SetUp();
-			if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+			if (!RuntimeInformation.IsWindows) {
 				Assert.Ignore($"{nameof(MemoryMappedFileCheckpoint)} is for windows only.");
 			}
 		}
