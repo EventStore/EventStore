@@ -1240,16 +1240,19 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			// releases all available slots in the pool
 			internal int Drain(ref int referenceCount) {
 				int localReferenceCount = Interlocked.CompareExchange(ref referenceCount, 0, 0);
-				Span<int> indicies = stackalloc int[IndexPool.Capacity];
 
-				int count = _indices.Take(indicies);
+				if (localReferenceCount > 0) {
+					Span<int> indicies = stackalloc int[IndexPool.Capacity];
 
-				foreach (var index in indicies.Slice(0, count)) {
-					ref ReaderWorkItem slot = ref this[index];
-					slot?.Dispose();
-					slot = null;
+					int count = _indices.Take(indicies);
 
-					localReferenceCount = Interlocked.Decrement(ref referenceCount);
+					foreach (var index in indicies.Slice(0, count)) {
+						ref ReaderWorkItem slot = ref this[index];
+						slot?.Dispose();
+						slot = null;
+
+						localReferenceCount = Interlocked.Decrement(ref referenceCount);
+					}
 				}
 
 				return localReferenceCount;
