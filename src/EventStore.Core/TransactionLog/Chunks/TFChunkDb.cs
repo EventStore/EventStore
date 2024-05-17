@@ -121,6 +121,22 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				var chunkHeader = ReadChunkHeader(chunkFileName);
 				var chunkLocalPos = chunkHeader.GetLocalLogPosition(checkpoint);
 				if (chunkHeader.IsScavenged) {
+					// scavenged chunks are first replicated to a temporary file before being atomically switched in.
+					// thus, the writer checkpoint can point to either the beginning or the end of a scavenged chunk.
+					//
+					// if it was pointing to the end of the scavenged chunk, it would be "inside" the next chunk, and we
+					// wouldn't be here (as the next chunk wouldn't exist yet or would not be scavenged)
+					//
+					// thus, the current case is possible only when a scavenged chunk was switched in but
+					// the writer checkpoint wasn't yet updated & flushed. therefore, we expect the writer checkpoint to
+					// point exactly to the beginning of the scavenged chunk. (i.e chunkLocalPos = 0)
+
+					if (chunkLocalPos != 0) {
+						throw new CorruptDatabaseException(new BadChunkInDatabaseException(
+							$"Chunk {chunkFileName} is corrupted. Expected local chunk position: 0 but was {chunkLocalPos}. " +
+							$"Writer checkpoint: {checkpoint}."));
+					}
+
 					var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false,
 						unbufferedRead: Config.Unbuffered,
 						initialReaderCount: Config.InitialReaderCount,
@@ -128,23 +144,22 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						optimizeReadSideCache: Config.OptimizeReadSideCache,
 						reduceFileCachePressure: Config.ReduceFileCachePressure,
 						tracker: _tracker);
-					if (lastChunk.ChunkFooter.LogicalDataSize != chunkLocalPos) {
-						lastChunk.Dispose();
-						throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-							string.Format("Chunk {0} is corrupted. Expected local chunk position: {1}, "
-							              + "but Chunk.LogicalDataSize is {2} (Chunk.PhysicalDataSize is {3}). Writer checkpoint: {4}.",
-								chunkFileName, chunkLocalPos, lastChunk.LogicalDataSize, lastChunk.PhysicalDataSize,
-								checkpoint)));
-					}
+					lastChunkNum = lastChunk.ChunkHeader.ChunkEndNumber + 1;
 
 					Manager.AddChunk(lastChunk);
 					if (!readOnly) {
 						_log.Information(
-							"Moving WriterCheckpoint from {checkpoint} to {chunkEndPosition}, as it points to the scavenged chunk. "
-							+ "If that was not caused by replication of scavenged chunks, that could be a bug.",
+							"Moving the writer checkpoint from {checkpoint} to {chunkEndPosition}, as it points to a scavenged chunk.",
 							checkpoint, lastChunk.ChunkHeader.ChunkEndPosition);
 						Config.WriterCheckpoint.Write(lastChunk.ChunkHeader.ChunkEndPosition);
 						Config.WriterCheckpoint.Flush();
+
+						// as of recent versions, it's possible that a new chunk was already created as the writer checkpoint
+						// is updated & flushed _after_ the new chunk is created. if that's the case, we remove and re-create it.
+						var newChunk = Config.FileNamingStrategy.GetFilenameFor(lastChunkNum, 0);
+						if (File.Exists(newChunk))
+							RemoveFile("Removing excessive chunk: {chunk}", newChunk);
+
 						Manager.AddNewChunk();
 					}
 				} else {
