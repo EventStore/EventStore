@@ -1038,13 +1038,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			if (_fileStreams.TryTake(_handle, &CreateFileStreamWorkItem) is { } fileStreamWorkItem)
 				return fileStreamWorkItem;
 
+			Interlocked.Increment(ref _fileStreamCount);
+
 			if (_selfdestructin54321) {
 				if (Interlocked.Decrement(ref _fileStreamCount) == 0)
 					CleanUpFileStreamDestruction();
 				throw new FileBeingDeletedException();
 			}
 
-			Interlocked.Increment(ref _fileStreamCount);
 			return new(_handle);
 
 			static ReaderWorkItem CreateFileStreamWorkItem(SafeFileHandle handle, int index)
