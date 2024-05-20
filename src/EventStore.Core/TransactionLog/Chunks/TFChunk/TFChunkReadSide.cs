@@ -282,12 +282,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			private PosMap ReadPosMap(ReaderWorkItem workItem, long index) {
 				if (Chunk.ChunkFooter.IsMap12Bytes) {
 					var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.FullSize;
-					workItem.Stream.Seek(pos, SeekOrigin.Begin);
-					return PosMap.FromNewFormat(workItem.Reader);
+					workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
+					return PosMap.FromNewFormat(workItem);
 				} else {
 					var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.DeprecatedSize;
-					workItem.Stream.Seek(pos, SeekOrigin.Begin);
-					return PosMap.FromOldFormat(workItem.Reader);
+					workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
+					return PosMap.FromOldFormat(workItem);
 				}
 			}
 
