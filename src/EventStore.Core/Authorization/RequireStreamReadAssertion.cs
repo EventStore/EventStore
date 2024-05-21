@@ -6,9 +6,9 @@ using EventStore.Plugins.Authorization;
 namespace EventStore.Core.Authorization {
 	public class RequireStreamReadAssertion : IAssertion {
 		private static readonly Operation StreamRead = new Operation(Operations.Streams.Read);
-		private readonly LegacyStreamPermissionAssertion _streamAssertion;
+		private readonly IStreamPermissionAssertion _streamAssertion;
 
-		public RequireStreamReadAssertion(LegacyStreamPermissionAssertion streamAssertion) {
+		public RequireStreamReadAssertion(IStreamPermissionAssertion streamAssertion) {
 			_streamAssertion = streamAssertion;
 			Information = streamAssertion.Information;
 		}

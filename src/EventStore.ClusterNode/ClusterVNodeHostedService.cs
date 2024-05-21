@@ -105,12 +105,14 @@ namespace EventStore.ClusterNode {
 			if (_options.Database.DbLogFormat == DbLogFormat.V2) {
 				var logFormatFactory = new LogV2FormatAbstractorFactory();
             	Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-	                GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
+	                GetAuthorizationProviderFactory(GetPolicySelectorsFactory()),
+	                GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 					configuration);
 			} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
 				var logFormatFactory = new LogV3FormatAbstractorFactory();
 				Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-					GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
+					GetAuthorizationProviderFactory(GetPolicySelectorsFactory()),
+					GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 					configuration);
 			} else {
 				throw new ArgumentOutOfRangeException(nameof(_options.Database.DbLogFormat), "Unexpected log format specified.");
@@ -121,19 +123,62 @@ namespace EventStore.ClusterNode {
 				: Array.Empty<NodeSubsystems>();
 
 			RegisterWebControllers(enabledNodeSubsystems);
+			return;
 
-			AuthorizationProviderFactory GetAuthorizationProviderFactory() {
+			PolicySelectorsFactory GetPolicySelectorsFactory() {
+				if (_options.Application.Insecure) {
+					return new PolicySelectorsFactory();
+				}
+
+				var defaultPolicySelector = new LegacyPolicySelectorFactory(
+					_options.Application.AllowAnonymousEndpointAccess,
+					_options.Application.AllowAnonymousStreamAccess,
+					_options.Application.OverrideAnonymousEndpointAccessForGossip);
+
+				// Temporary: get the policy plugin configuration
+				// TODO: Allow specifying multiple policy selectors
+				var policyPluginType =
+					_options.ConfigurationRoot!.GetValue<string>("EventStore:Plugins:Authorization:PolicyType") ??
+					string.Empty;
+
+				var policyPlugins = pluginLoader.Load<IPolicySelectorFactory>().ToArray();
+				var policySelectors = new Dictionary<string, IPolicySelectorFactory>();
+				foreach (var policyPlugin in policyPlugins)
+				{
+					try {
+						var commandLine = policyPlugin.Name.Replace("Plugin", "").ToLowerInvariant();
+						Log.Information(
+							"Loaded authorization policy plugin: {plugin} version {version} (Command Line: {commandLine})",
+							policyPlugin.Name, policyPlugin.Version, commandLine);
+						policySelectors.Add(commandLine, policyPlugin);
+					} catch (CompositionException ex) {
+						Log.Error(ex, "Error loading authorization policy plugin.");
+					}
+				}
+
+				if (policyPluginType == string.Empty) {
+					return new PolicySelectorsFactory(defaultPolicySelector);
+				}
+				if (!policySelectors.TryGetValue(policyPluginType, out var selectedPolicy)) {
+					throw new ApplicationInitializationException(
+						$"The authorization policy plugin type {policyPluginType} is not recognised. If this is supposed " +
+						$"to be provided by an authorization policy plugin, confirm the plugin DLL is located in {Locations.PluginsDirectory}." +
+						Environment.NewLine +
+						$"Valid options for authorization policies are: {string.Join(", ", policySelectors.Keys)}.");
+				}
+				// Policies will be applied in order, so the default should always be last
+				return new PolicySelectorsFactory([selectedPolicy, defaultPolicySelector]);
+			}
+
+			AuthorizationProviderFactory GetAuthorizationProviderFactory(PolicySelectorsFactory policySelectorsFactory) {
 				if (_options.Application.Insecure) {
 					return new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory());
 				}
-
 				var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
 					{
 						"internal", new AuthorizationProviderFactory(components =>
-							new LegacyAuthorizationProviderFactory(components.MainQueue,
-								_options.Application.AllowAnonymousEndpointAccess,
-								_options.Application.AllowAnonymousStreamAccess,
-								_options.Application.OverrideAnonymousEndpointAccessForGossip))
+							new InternalAuthorizationProviderFactory(policySelectorsFactory.Create(components))
+						)
 					}
 				};
 

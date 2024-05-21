@@ -10,7 +10,7 @@ using Serilog;
 namespace EventStore.Core.Authorization;
 
 public class PolicyAuthorizationProvider(IPolicyEvaluator policyEvaluator, bool logAuthorization = true, bool logSuccesses = false) : AuthorizationProviderBase {
-	static readonly ILogger Logger = Log.ForContext<PolicyEvaluator>();
+	static readonly ILogger Logger = Log.ForContext<IPolicyEvaluator>();
 	static readonly TimeProvider Time = TimeProvider.System;
 
 	bool LogAccessDenied  => logAuthorization;
