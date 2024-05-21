@@ -1235,22 +1235,39 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			// the indicies: smallest available index is always preferred.
 			private IndexPool _indices;
 
+			// Roslyn uses 'call' IL instead of 'newobj' for structs because struct ctor
+			// MUST initialize all fields in contrast to classes. 'newobj' has side effect: it zeroes
+			// all the fields and then calls ctor. `call` doesn't have this side effect. Therefore,
+			// 'readonly' modifier is not enough, it doesn't produce read and write barriers.
+			// This is not acceptable because the fields of struct can be accessed without calling of ctor.
+			// For classes, read/write barrier for 'readonly' field is not needed.
 			public ReaderWorkItemPool() {
 				_indices = new();
-				_array = new ReaderWorkItem[IndexPool.Capacity];
+
+				Volatile.Write(ref _array, new ReaderWorkItem[IndexPool.Capacity]);
+			}
+
+			private readonly ReaderWorkItem[] Array => Volatile.Read(in _array);
+
+			// Skip index and type variance checks which is inserted by runtime typically because
+			// the array element is of reference type.
+			private static ref ReaderWorkItem UnsafeGetElement(ReaderWorkItem[] array, int index)
+			{
+				Debug.Assert((uint)index < (uint)array.Length);
+
+				return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
 			}
 
 			// releases all available slots in the pool
 			internal int Drain(ref int referenceCount) {
 				int localReferenceCount = Interlocked.CompareExchange(ref referenceCount, 0, 0);
 
-				if (localReferenceCount > 0) {
+				if (Array is { } array) {
 					Span<int> indicies = stackalloc int[IndexPool.Capacity];
-
 					int count = _indices.Take(indicies);
 
 					foreach (var index in indicies.Slice(0, count)) {
-						ref ReaderWorkItem slot = ref this[index];
+						ref ReaderWorkItem slot = ref UnsafeGetElement(array, index);
 						slot?.Dispose();
 						slot = null;
 
@@ -1263,20 +1280,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			internal readonly int Count => _indices.Count;
 
-			private readonly ref ReaderWorkItem this[int index] {
-				get {
-					Debug.Assert((uint)index < (uint)_array.Length);
-
-					// skip bounds and covariance check
-					return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_array), index);
-				}
-			}
-
 			internal ReaderWorkItem TryTake<T>(T arg, delegate*<T, int, ReaderWorkItem> factory) {
 				Debug.Assert(factory is not null);
 
-				return _indices.TryTake(out int index)
-					? this[index] ??= factory(arg, index)
+				return Array is { } array && _indices.TryTake(out int index)
+					? array[index] ??= factory(arg, index)
 					: null;
 			}
 
