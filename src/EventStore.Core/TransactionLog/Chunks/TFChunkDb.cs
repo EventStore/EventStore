@@ -244,13 +244,19 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			return chunkFooter;
 		}
 
-		private static void EnsureNoExcessiveChunks(TFChunkEnumerator chunkEnumerator, int lastChunkNum) {
+		private void EnsureNoExcessiveChunks(TFChunkEnumerator chunkEnumerator, int lastChunkNum) {
 			var extraneousFiles = new List<string>();
 
 			foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum)) {
 				switch (chunkInfo) {
-					case LatestVersion(var fileName, var start, _):
-						if (start > lastChunkNum)
+					case LatestVersion(var fileName, var start, var end):
+						// there can be at most one excessive chunk at startup:
+						// when a new chunk was created but the writer checkpoint was not yet committed and flushed
+						if (start == lastChunkNum + 1 &&
+						    start == end &&
+						    Config.FileNamingStrategy.GetVersionFor(Path.GetFileName(fileName)) == 0)
+							RemoveFile("Removing excessive chunk: {chunk}", fileName);
+						else if (start > lastChunkNum)
 							extraneousFiles.Add(fileName);
 						break;
 					case OldVersion(var fileName, var start):
