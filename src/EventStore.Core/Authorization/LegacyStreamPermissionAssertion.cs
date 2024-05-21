@@ -11,7 +11,7 @@ using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Authorization {
 	public class
-		LegacyStreamPermissionAssertion : IAssertion {
+		LegacyStreamPermissionAssertion : IStreamPermissionAssertion {
 		private readonly IPublisher _publisher;
 
 		public LegacyStreamPermissionAssertion(IPublisher publisher) {
@@ -121,7 +121,7 @@ namespace EventStore.Core.Authorization {
 			for (int i = 0; i < roles.Length; i++) {
 				var role = roles[i];
 				if (cp.FindFirst(x => (x.Type == ClaimTypes.Name || x.Type == ClaimTypes.Role) && x.Value == role)
-					is Claim matched) {
+				    is Claim matched) {
 					context.Add(new AssertionMatch(policy, new AssertionInformation("role match", role, Grant.Allow),
 						matched));
 					return true;

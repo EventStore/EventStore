@@ -38,10 +38,11 @@ namespace EventStore.Core.Tests.Authorization {
 			_allowAnonymousEndpointAccess = allowAnonymousEndpointAccess;
 			_allowAnonymousStreamAccess = allowAnonymousStreamAccess;
 			_overrideAnonymousGossipEndpointAccess = overrideAnonymousGossipEndpointAccess;
-			_authorizationProvider = new LegacyAuthorizationProviderFactory(_aclResponder,
+			_authorizationProvider = new InternalAuthorizationProviderFactory([new LegacyPolicySelectorFactory(
 				allowAnonymousEndpointAccess,
 				allowAnonymousStreamAccess,
-				overrideAnonymousGossipEndpointAccess).Build();
+				overrideAnonymousGossipEndpointAccess).Create(_aclResponder, default)])
+				.Build();
 		}
 
 		public abstract class PolicyVerificationParameters {

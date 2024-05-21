@@ -938,7 +938,8 @@ namespace EventStore.Core {
 
 			_authorizationProvider = authorizationProviderFactory
 				.GetFactory(new AuthorizationProviderFactoryComponents {
-					MainQueue = _mainQueue
+					MainQueue = _mainQueue,
+					MainBus = _mainBus
 				}).Build();
 			Ensure.NotNull(_authorizationProvider, "authorizationProvider");
 
