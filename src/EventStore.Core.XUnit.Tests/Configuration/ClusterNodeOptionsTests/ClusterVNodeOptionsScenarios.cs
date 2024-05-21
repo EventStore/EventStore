@@ -37,10 +37,11 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests {
 			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
 				new AuthenticationProviderFactory(c =>
 					new InternalAuthenticationProviderFactory(c, _options.DefaultUser)),
-				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue,
+				new AuthorizationProviderFactory(c => new InternalAuthorizationProviderFactory([
+				new LegacyAuthorizationPolicyFactory(c.MainQueue,
 					_options.Application.AllowAnonymousEndpointAccess,
 					_options.Application.AllowAnonymousStreamAccess,
-					_options.Application.OverrideAnonymousEndpointAccessForGossip)),
+					_options.Application.OverrideAnonymousEndpointAccessForGossip).Build()])),
 				certificateProvider: new OptionsCertificateProvider());
 			_node.Start();
 		}
@@ -74,10 +75,11 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests {
 			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
 				new AuthenticationProviderFactory(_ =>
 					new InternalAuthenticationProviderFactory(_, _options.DefaultUser)),
-				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue,
+				new AuthorizationProviderFactory(c => new InternalAuthorizationProviderFactory([
+				new LegacyAuthorizationPolicyFactory(c.MainQueue,
 					_options.Application.AllowAnonymousEndpointAccess,
 					_options.Application.AllowAnonymousStreamAccess,
-					_options.Application.OverrideAnonymousEndpointAccessForGossip)),
+					_options.Application.OverrideAnonymousEndpointAccessForGossip).Build()])),
 				certificateProvider: new OptionsCertificateProvider());
 			_node.Start();
 		}

@@ -1,36 +1,39 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Authorization {
-	public class PolicyEvaluator : IPolicyEvaluator {
+	public class MultiPolicyEvaluator : IPolicyEvaluator {
 		private static readonly AssertionInformation DeniedByDefault =
 			new AssertionInformation("default", "denied by default", Grant.Deny);
 
-		private readonly ReadOnlyPolicy _policy;
+		private readonly ReadOnlyPolicy[] _policies;
 		private readonly PolicyInformation _policyInfo;
 
-		public PolicyEvaluator(ReadOnlyPolicy policy) {
-			_policy = policy;
-			_policyInfo = policy.Information;
+		public MultiPolicyEvaluator(ReadOnlyPolicy[] policies) {
+			_policies = policies;
+			_policyInfo = new PolicyInformation("multi", 1, DateTimeOffset.MinValue);
 		}
 
 		public ValueTask<EvaluationResult>
 			EvaluateAsync(ClaimsPrincipal cp, Operation operation, CancellationToken ct) {
 			var evaluation = new EvaluationContext(operation, ct);
 
-			if (_policy.TryGetAssertions(operation, out var assertions))
-				while (!assertions.IsEmpty && evaluation.Grant != Grant.Deny) {
-					if (ct.IsCancellationRequested) break;
-					var assertion = assertions.Span[0];
-					assertions = assertions.Slice(1);
-					var evaluate = assertion.Evaluate(cp, operation, _policyInfo, evaluation);
-					if (!evaluate.IsCompleted)
-						return EvaluateAsync(evaluate, cp, operation, assertions, evaluation, ct);
-				}
-
+			foreach (var policy in _policies) {
+				var policyInfo = policy.Information;
+				if (policy.TryGetAssertions(operation, out var assertions))
+					while (!assertions.IsEmpty && evaluation.Grant != Grant.Deny) {
+						if (ct.IsCancellationRequested) break;
+						var assertion = assertions.Span[0];
+						assertions = assertions.Slice(1);
+						var evaluate = assertion.Evaluate(cp, operation, policyInfo, evaluation);
+						if (!evaluate.IsCompleted)
+							return EvaluateAsync(evaluate, cp, operation, assertions, evaluation, ct);
+					}
+			}
 			if (evaluation.Grant == Grant.Unknown) evaluation.Add(new AssertionMatch(_policyInfo, DeniedByDefault));
 
 			return new ValueTask<EvaluationResult>(evaluation.ToResult());

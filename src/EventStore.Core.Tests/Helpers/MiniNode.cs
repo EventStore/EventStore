@@ -194,11 +194,12 @@ namespace EventStore.Core.Tests.Helpers {
 						c,
 						options.DefaultUser)),
 				new AuthorizationProviderFactory(
-					c => authorizationProviderFactory ?? new LegacyAuthorizationProviderFactory(
+					c => authorizationProviderFactory ?? new InternalAuthorizationProviderFactory([
+					new LegacyAuthorizationPolicyFactory(
 						c.MainQueue,
 						options.Application.AllowAnonymousEndpointAccess,
 						options.Application.AllowAnonymousStreamAccess,
-						options.Application.OverrideAnonymousEndpointAccessForGossip)),
+						options.Application.OverrideAnonymousEndpointAccessForGossip).Build()])),
 				expiryStrategy: expiryStrategy,
 				certificateProvider: new OptionsCertificateProvider(),
 				configuration: inMemConf);

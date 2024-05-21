@@ -7,7 +7,18 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Authorization {
-	public class LegacyAuthorizationProviderFactory : IAuthorizationProviderFactory {
+	// TODO: This should be moved into EventStore.Plugins
+	public interface IAuthorizationPolicyFactory {
+		public string CommandLineName { get; }
+		public string Name { get; }
+		public string Version { get; }
+		public ReadOnlyPolicy Build();
+	}
+
+	public class LegacyAuthorizationPolicyFactory : IAuthorizationPolicyFactory {
+		public string CommandLineName { get; } = "legacy";
+		public string Name { get; } = "legacy";
+		public string Version { get; } = "1";
 		private readonly IPublisher _mainQueue;
 		private readonly bool _allowAnonymousEndpointAccess;
 		private readonly bool _allowAnonymousStreamAccess;
@@ -21,17 +32,21 @@ namespace EventStore.Core.Authorization {
 			new Claim(ClaimTypes.Role, SystemRoles.Operations), new Claim(ClaimTypes.Name, SystemUsers.Operations)
 		};
 
-		public LegacyAuthorizationProviderFactory(IPublisher mainQueue, bool allowAnonymousEndpointAccess, bool allowAnonymousStreamAccess, bool overrideAnonymousGossipEndpointAccess) {
+		public LegacyAuthorizationPolicyFactory(
+			IPublisher mainQueue,
+			bool allowAnonymousEndpointAccess,
+			bool allowAnonymousStreamAccess,
+			bool overrideAnonymousGossipEndpointAccess) {
 			_mainQueue = mainQueue;
 			_allowAnonymousEndpointAccess = allowAnonymousEndpointAccess;
 			_allowAnonymousStreamAccess = allowAnonymousStreamAccess;
 			_overrideAnonymousGossipEndpointAccess = overrideAnonymousGossipEndpointAccess;
 		}
 
-		public IAuthorizationProvider Build() {
+		public ReadOnlyPolicy Build() {
 			var policy = new Policy("Legacy", 1, DateTimeOffset.MinValue);
 			var legacyStreamAssertion = new LegacyStreamPermissionAssertion(_mainQueue);
-			
+
 			// The Node.Ping is set to allow anonymous as it does not disclose any secure information.
 			policy.AllowAnonymous(Operations.Node.Ping);
 
@@ -61,7 +76,8 @@ namespace EventStore.Core.Authorization {
 			policy.AddMatchAnyAssertion(Operations.Node.Information.Histogram, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.Information.Options, Grant.Allow, OperationsOrAdmins);
 
-			var isSystem = new MultipleClaimMatchAssertion(Grant.Allow, MultipleMatchMode.All, SystemAccounts.System.Claims.ToArray());
+			var isSystem = new MultipleClaimMatchAssertion(Grant.Allow, MultipleMatchMode.All,
+				SystemAccounts.System.Claims.ToArray());
 			policy.Add(Operations.Node.Elections.Prepare, isSystem);
 			policy.Add(Operations.Node.Elections.PrepareOk, isSystem);
 			policy.Add(Operations.Node.Elections.ViewChange, isSystem);
@@ -142,7 +158,23 @@ namespace EventStore.Core.Authorization {
 			policy.RequireAuthenticated(Operations.Projections.Statistics);
 			policy.AddMatchAnyAssertion(Operations.Projections.Restart, Grant.Allow, OperationsOrAdmins);
 
-			return new PolicyAuthorizationProvider(new PolicyEvaluator(policy.AsReadOnly()));
+			return policy.AsReadOnly();
+		}
+	}
+
+	public interface IStreamPermissionAssertion : IAssertion {
+	}
+
+	public class InternalAuthorizationProviderFactory : IAuthorizationProviderFactory {
+		private readonly ReadOnlyPolicy[] _policies;
+
+		public InternalAuthorizationProviderFactory(ReadOnlyPolicy[] policies) {
+			_policies = policies;
+		}
+
+		public IAuthorizationProvider Build() {
+			return new PolicyAuthorizationProvider(
+			new MultiPolicyEvaluator(_policies), true, false);
 		}
 	}
 }

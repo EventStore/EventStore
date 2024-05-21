@@ -180,10 +180,10 @@ namespace EventStore.Core.Tests.Helpers {
 					components =>
 						new InternalAuthenticationProviderFactory(components, options.DefaultUser)),
 				new AuthorizationProviderFactory(components =>
-					new LegacyAuthorizationProviderFactory(components.MainQueue,
+					new InternalAuthorizationProviderFactory([new LegacyAuthorizationPolicyFactory(components.MainQueue,
 						options.Application.AllowAnonymousEndpointAccess,
 						options.Application.AllowAnonymousStreamAccess,
-						options.Application.OverrideAnonymousEndpointAccessForGossip)),
+						options.Application.OverrideAnonymousEndpointAccessForGossip).Build()])),
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(),
 				new OptionsCertificateProvider(),
 				configuration: inMemConf,

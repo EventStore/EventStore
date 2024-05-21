@@ -105,12 +105,14 @@ namespace EventStore.ClusterNode {
 			if (_options.Database.DbLogFormat == DbLogFormat.V2) {
 				var logFormatFactory = new LogV2FormatAbstractorFactory();
             	Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-	                GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
+	                GetAuthorizationProviderFactory(GetAuthorizationProviderPolicies()),
+	                GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 					configuration);
 			} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
 				var logFormatFactory = new LogV3FormatAbstractorFactory();
 				Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-					GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
+					GetAuthorizationProviderFactory(GetAuthorizationProviderPolicies()),
+					GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 					configuration);
 			} else {
 				throw new ArgumentOutOfRangeException(nameof(_options.Database.DbLogFormat), "Unexpected log format specified.");
@@ -122,18 +124,46 @@ namespace EventStore.ClusterNode {
 
 			RegisterWebControllers(enabledNodeSubsystems);
 
-			AuthorizationProviderFactory GetAuthorizationProviderFactory() {
+			AuthorizationPolicyFactory GetAuthorizationProviderPolicies() {
+				if (_options.Application.Insecure) {
+					return new AuthorizationPolicyFactory(_ => default);
+				}
+
+				var policyPlugins = pluginLoader.Load<IAuthorizationPolicyFactory>().ToArray();
+				var authorizationPolicyFactories = new Func<AuthorizationProviderFactoryComponents, IAuthorizationPolicyFactory>[policyPlugins.Length + 1];
+				// TODO: Load the policies in a more structured/safe way
+				// Policies will be applied in order, so the load order matters here
+				for (var i = 0; i < policyPlugins.Length;i++) {
+					try {
+						var policyPlugin = policyPlugins[i];
+						var commandLine = policyPlugin.CommandLineName.ToLowerInvariant();
+						Log.Information(
+							"Loaded authorization policy plugin: {plugin} version {version} (Command Line: {commandLine})",
+							policyPlugin.Name, policyPlugin.Version, commandLine);
+						authorizationPolicyFactories[i] = _ => policyPlugin;
+					} catch (CompositionException ex) {
+						Log.Error(ex, "Error loading authorization policy plugin.");
+					}
+				}
+
+				// The default should be last
+				authorizationPolicyFactories[^1] = components =>
+						new LegacyAuthorizationPolicyFactory(components.MainQueue,
+							_options.Application.AllowAnonymousEndpointAccess,
+							_options.Application.AllowAnonymousStreamAccess,
+							_options.Application.OverrideAnonymousEndpointAccessForGossip);
+				return new AuthorizationPolicyFactory(authorizationPolicyFactories);
+			};
+
+			AuthorizationProviderFactory GetAuthorizationProviderFactory(AuthorizationPolicyFactory policyFactory) {
 				if (_options.Application.Insecure) {
 					return new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory());
 				}
-
 				var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
 					{
 						"internal", new AuthorizationProviderFactory(components =>
-							new LegacyAuthorizationProviderFactory(components.MainQueue,
-								_options.Application.AllowAnonymousEndpointAccess,
-								_options.Application.AllowAnonymousStreamAccess,
-								_options.Application.OverrideAnonymousEndpointAccessForGossip))
+							new InternalAuthorizationProviderFactory(policyFactory.GetPolicies(components))
+						)
 					}
 				};
 
