@@ -1232,7 +1232,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			// IndexPool supports up to 64 elements with O(1) take/return time complexity.
 			// It's a thread-safe data structure with no allocations that provide predictability about
-			// the indicies: smallest available index is always preferred.
+			// the indices: smallest available index is always preferred.
 			private IndexPool _indices;
 
 			// Roslyn uses 'call' IL instead of 'newobj' for structs because struct ctor
@@ -1263,10 +1263,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				int localReferenceCount = Interlocked.CompareExchange(ref referenceCount, 0, 0);
 
 				if (Array is { } array) {
-					Span<int> indicies = stackalloc int[IndexPool.Capacity];
-					int count = _indices.Take(indicies);
+					Span<int> indices = stackalloc int[IndexPool.Capacity];
+					int count = _indices.Take(indices);
 
-					foreach (var index in indicies.Slice(0, count)) {
+					foreach (var index in indices.Slice(0, count)) {
 						ref ReaderWorkItem slot = ref UnsafeGetElement(array, index);
 						slot?.Dispose();
 						slot = null;
