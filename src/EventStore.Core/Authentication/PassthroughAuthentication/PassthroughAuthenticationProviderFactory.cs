@@ -1,9 +1,8 @@
 ﻿using EventStore.Plugins.Authentication;
-using Serilog;
+using Microsoft.Extensions.Logging;
 
-namespace EventStore.Core.Authentication.PassthroughAuthentication {
-	public class PassthroughAuthenticationProviderFactory : IAuthenticationProviderFactory {
-		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts, ILogger logger) =>
-			new PassthroughAuthenticationProvider();
-	}
+namespace EventStore.Core.Authentication.PassthroughAuthentication;
+
+public class PassthroughAuthenticationProviderFactory : IAuthenticationProviderFactory {
+	public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts, ILogger logger) => new PassthroughAuthenticationProvider();
 }

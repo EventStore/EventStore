@@ -5,7 +5,6 @@ using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Plugins.Authentication;
 
@@ -25,45 +24,28 @@ namespace EventStore.Core.Tests.Authentication {
 			_bus.Subscribe<IODispatcherDelayedMessage>(_ioDispatcher);
 			_bus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher);
 
-			PasswordHashAlgorithm passwordHashAlgorithm = new StubPasswordHashAlgorithm();
-			_internalAuthenticationProvider =
-				new InternalAuthenticationProvider(_bus, _ioDispatcher, passwordHashAlgorithm, 1000, false, DefaultData.DefaultUserOptions);
+			_internalAuthenticationProvider = new(_bus, _ioDispatcher, new StubPasswordHashAlgorithm(), 1000, false, DefaultData.DefaultUserOptions);
 			_bus.Subscribe(_internalAuthenticationProvider);
 		}
 	}
 
-	class TestAuthenticationRequest : AuthenticationRequest {
-		private readonly Action _unauthorized;
-		private readonly Action<ClaimsPrincipal> _authenticated;
-		private readonly Action _error;
-		private readonly Action _notReady;
+	class TestAuthenticationRequest(
+		string name,
+		string suppliedPassword,
+		Action unauthorized,
+		Action<ClaimsPrincipal> authenticated,
+		Action error,
+		Action notReady
+	) : AuthenticationRequest("test", new Dictionary<string, string> {
+			["uid"] = name,
+			["pwd"] = suppliedPassword
+		}) {
+		public override void Unauthorized() => unauthorized();
 
-		public TestAuthenticationRequest(string name, string suppliedPassword, Action unauthorized,
-			Action<ClaimsPrincipal> authenticated, Action error, Action notReady)
-			: base("test", new Dictionary<string, string> {
-				["uid"] = name,
-				["pwd"] = suppliedPassword
-			}) {
-			_unauthorized = unauthorized;
-			_authenticated = authenticated;
-			_error = error;
-			_notReady = notReady;
-		}
+		public override void Authenticated(ClaimsPrincipal principal) => authenticated(principal);
 
-		public override void Unauthorized() {
-			_unauthorized();
-		}
+		public override void Error() => error();
 
-		public override void Authenticated(ClaimsPrincipal principal) {
-			_authenticated(principal);
-		}
-
-		public override void Error() {
-			_error();
-		}
-
-		public override void NotReady() {
-			_notReady();
-		}
+		public override void NotReady() => notReady();
 	}
 }

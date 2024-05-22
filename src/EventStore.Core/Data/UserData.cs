@@ -1,39 +1,31 @@
-﻿namespace EventStore.Core.Data {
-	public class UserData {
-		public readonly string LoginName;
-		public readonly string FullName;
-		public readonly string Salt;
-		public readonly string Hash;
-		public readonly bool Disabled;
-		public readonly string[] Groups;
+﻿#nullable enable
 
-		public UserData(string loginName, string fullName, string[] groups, string hash, string salt, bool disabled) {
-			LoginName = loginName;
-			FullName = fullName;
-			Groups = groups;
-			Salt = salt;
-			Hash = hash;
-			Disabled = disabled;
-		}
+namespace EventStore.Core.Data;
 
-		public UserData SetFullName(string fullName) {
-			return new UserData(LoginName, fullName, Groups, Hash, Salt, Disabled);
-		}
-
-		public UserData SetGroups(string[] groups) {
-			return new UserData(LoginName, FullName, groups, Hash, Salt, Disabled);
-		}
-
-		public UserData SetPassword(string hash, string salt) {
-			return new UserData(LoginName, FullName, Groups, hash, salt, Disabled);
-		}
-
-		public UserData SetEnabled() {
-			return new UserData(LoginName, FullName, Groups, Hash, Salt, disabled: false);
-		}
-
-		public UserData SetDisabled() {
-			return new UserData(LoginName, FullName, Groups, Hash, Salt, disabled: true);
-		}
+public record UserData {
+	public UserData(string loginName, string fullName, string[]? groups, string hash, string salt, bool disabled) {
+		LoginName = loginName;
+		FullName = fullName;
+		Groups = groups ?? [];
+		Hash = hash;
+		Salt = salt;
+		Disabled = disabled;
 	}
+
+	public string LoginName { get; init; }
+	public string FullName { get; init; }
+	public string[] Groups { get; init; }
+	public string Hash { get; init; }
+	public string Salt { get; init; }
+	public bool Disabled { get; init; }
+
+	public UserData SetFullName(string fullName) => this with { FullName = fullName };
+	
+	public UserData SetGroups(params string[] groups) => this with { Groups = groups };
+	
+	public UserData SetPassword(string hash, string salt) => this with { Hash = hash, Salt = salt };
+	
+	public UserData SetEnabled() => this with { Disabled = false };
+	
+	public UserData SetDisabled() => this with { Disabled = true };
 }

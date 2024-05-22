@@ -3,15 +3,16 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Authentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NUnit.Framework;
-using Serilog;
 
 namespace EventStore.Core.Tests.Services.VNode;
 
@@ -36,76 +37,38 @@ public class auth_providers_should : SpecificationWithDirectory {
 		await authorizationConfigured.Task.WithTimeout(TimeSpan.FromSeconds(5));
 		await authorizationServicesConfigured.Task.WithTimeout(TimeSpan.FromSeconds(5));
 	}
-
-	private class FakeAuthenticationProviderFactory(
-		TaskCompletionSource ConfigureTcs,
-		TaskCompletionSource ConfigureServicesTcs)
-		: IAuthenticationProviderFactory {
+	
+	class FakeAuthenticationProviderFactory(TaskCompletionSource configureAppTcs, TaskCompletionSource configureServicesTcs) : IAuthenticationProviderFactory {
 		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts, ILogger logger) =>
-			new FakeAuthenticationProvider(ConfigureTcs, ConfigureServicesTcs);
+			new FakeAuthenticationProvider(configureAppTcs, configureServicesTcs);
 
-		private class FakeAuthenticationProvider(
-			TaskCompletionSource ConfigureTcs,
-			TaskCompletionSource ConfigureServicesTcs)
-			: IAuthenticationProvider {
+		class FakeAuthenticationProvider(TaskCompletionSource configureAppTcs, TaskCompletionSource configureServicesTcs) : AuthenticationProviderBase {
+			public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) => 
+				configureServicesTcs.TrySetResult();
 
-			public string Name => throw new NotImplementedException();
+			public override void ConfigureApplication(IApplicationBuilder app, IConfiguration configuration) => 
+				configureAppTcs.TrySetResult();
 
-			public IApplicationBuilder Configure(IApplicationBuilder builder) {
-				ConfigureTcs.TrySetResult();
-				return builder;
-			}
-
-			public IServiceCollection ConfigureServices(IServiceCollection services, IConfiguration configuration) {
-				ConfigureServicesTcs.TrySetResult();
-				return services;
-			}
-
-			public void Authenticate(AuthenticationRequest authenticationRequest) {
+			public override void Authenticate(AuthenticationRequest authenticationRequest) => 
 				throw new NotImplementedException();
-			}
 
-			public void ConfigureEndpoints(IEndpointRouteBuilder endpointRouteBuilder) {
-			}
-
-			public IEnumerable<KeyValuePair<string, string>> GetPublicProperties() {
-				throw new NotImplementedException();
-			}
-
-			public IReadOnlyList<string> GetSupportedAuthenticationSchemes() =>
+			public override IReadOnlyList<string> GetSupportedAuthenticationSchemes() =>
 				["Basic"];
-
-			public Task Initialize() {
-				throw new NotImplementedException();
-			}
 		}
 	}
 
-	private class FakeAuthorizationProviderFactory(
-		TaskCompletionSource ConfigureTcs,
-		TaskCompletionSource ConfigureServicesTcs)
-		: IAuthorizationProviderFactory {
+	class FakeAuthorizationProviderFactory(TaskCompletionSource configureAppTcs, TaskCompletionSource configureServicesTcs) : IAuthorizationProviderFactory {
+		public IAuthorizationProvider Build() => new FakeAuthorizationProvider(configureAppTcs, configureServicesTcs);
 
-		public IAuthorizationProvider Build() =>
-			new FakeAuthorizationProvider(ConfigureTcs, ConfigureServicesTcs);
+		class FakeAuthorizationProvider(TaskCompletionSource configureAppTcs, TaskCompletionSource configureServicesTcs) : AuthorizationProviderBase {
+			public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) => 
+				configureServicesTcs.TrySetResult();
 
-		private class FakeAuthorizationProvider(
-			TaskCompletionSource ConfigureTcs,
-			TaskCompletionSource ConfigureServicesTcs)
-			: IAuthorizationProvider {
-			public IApplicationBuilder Configure(IApplicationBuilder builder) {
-				ConfigureTcs.TrySetResult();
-				return builder;
-			}
+			public override void ConfigureApplication(IApplicationBuilder app, IConfiguration configuration) => 
+				configureAppTcs.TrySetResult();
 
-			public IServiceCollection ConfigureServices(IServiceCollection services, IConfiguration configuration) {
-				ConfigureServicesTcs.TrySetResult();
-				return services;
-			}
-
-			public ValueTask<bool> CheckAccessAsync(ClaimsPrincipal cp, Operation operation, CancellationToken ct) {
+			public override ValueTask<bool> CheckAccessAsync(ClaimsPrincipal cp, Operation operation, CancellationToken ct) => 
 				throw new NotImplementedException();
-			}
 		}
 	}
 }

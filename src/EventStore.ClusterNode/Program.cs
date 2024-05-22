@@ -167,7 +167,7 @@ namespace EventStore.ClusterNode {
 				Console.CancelKeyPress += delegate {
 					Application.Exit(0, "Cancelled.");
 				};
-
+				
 				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, configuration)) {
 					using var signal = new ManualResetEventSlim(false);
 					_ = Run(hostedService, signal);

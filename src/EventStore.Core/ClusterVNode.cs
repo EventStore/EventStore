@@ -64,13 +64,17 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Plugins.Diagnostics;
 using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Mono.Unix.Native;
+using Serilog.Extensions.Logging;
 using ILogger = Serilog.ILogger;
+using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core {
@@ -249,7 +253,7 @@ namespace EventStore.Core {
 
 			ReloadLogOptions(options);
 
-			bool isRunningInContainer = ContainerizedEnvironment.IsRunningInContainer();
+			var isRunningInContainer = ContainerizedEnvironment.IsRunningInContainer();
 
 			instanceId ??= Guid.NewGuid();
 			if (instanceId == Guid.Empty) {
@@ -944,10 +948,14 @@ namespace EventStore.Core {
 				: new AuthenticationProviderFactory(_ => new PassthroughAuthenticationProviderFactory());
 			additionalPersistentSubscriptionConsumerStrategyFactories ??=
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>();
-
+			
+			ILoggerFactory loggerFactory = new SerilogLoggerFactory();
+			
 			_authenticationProvider = new DelegatedAuthenticationProvider(
-				authenticationProviderFactory.GetFactory(components).Build(
-					options.Application.LogFailedAuthenticationAttempts, Log));
+				authenticationProviderFactory
+					.GetFactory(components)
+					.Build(options.Application.LogFailedAuthenticationAttempts, loggerFactory.CreateLogger<ClusterVNode>())
+			);
 			Ensure.NotNull(_authenticationProvider, nameof(_authenticationProvider));
 
 			_authorizationProvider = authorizationProviderFactory
@@ -1457,9 +1465,12 @@ namespace EventStore.Core {
 				_mainQueue,
 				new TelemetrySink(options.Application.TelemetryOptout),
 				Db.Config.WriterCheckpoint.AsReadOnly(),
-				memberInfo.InstanceId);
+				memberInfo.InstanceId
+			);
+			
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(telemetryService);
 			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(telemetryService);
+			
 			// LEADER REPLICATION
 			var leaderReplicationService = new LeaderReplicationService(_mainQueue, NodeInfo.InstanceId, Db,
 				_workersHandler,
@@ -1581,20 +1592,23 @@ namespace EventStore.Core {
 			var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
 				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers);
 
-			IServiceCollection ConfigureAdditionalServices(IServiceCollection services) => services
-				.AddSingleton(_readIndex)
-				.AddSingleton(standardComponents)
-				.AddSingleton(AuthorizationGateway)
-				.AddSingleton(certificateProvider)
-				.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
-				.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates, X509Certificate2Collection Roots)>>
-					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()));
+			IServiceCollection ConfigureAdditionalServices(IServiceCollection services) =>
+				services
+					.AddSingleton(telemetryService)
+					.AddSingleton(_readIndex)
+					.AddSingleton(standardComponents)
+					.AddSingleton(AuthorizationGateway)
+					.AddSingleton(certificateProvider)
+					.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
+					.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates, X509Certificate2Collection Roots)>>
+						(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()));
 
 			_startup = new ClusterVNodeStartup<TStreamId>(
 				modifiedOptions.PlugableComponents,
 				_mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, _authorizationProvider,
-				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
+				options.Application.MaxAppendSize, 
+				TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 				expiryStrategy ?? new DefaultExpiryStrategy(),
 				_httpService,
 				configuration,
@@ -1604,9 +1618,11 @@ namespace EventStore.Core {
 
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
+			
 			var certificateExpiryMonitor = new CertificateExpiryMonitor(_mainQueue, _certificateSelector, Log);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(certificateExpiryMonitor);
 			_mainBus.Subscribe<MonitoringMessage.CheckCertificateExpiry>(certificateExpiryMonitor);
+			
 			var periodicLogging = new PeriodicallyLoggingService(_mainQueue, VersionInfo.Version, Log);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(periodicLogging);
 			_mainBus.Subscribe<MonitoringMessage.CheckEsVersion>(periodicLogging);

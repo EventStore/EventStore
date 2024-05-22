@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Plugins.Subsystems;
+using EventStore.Plugins;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
@@ -69,36 +69,38 @@ public class http_pipeline_should : SpecificationWithDirectory {
 		});
 	}
 
-	private class FakeProtectedSubSystem : ISubsystem {
-		public string Name => nameof(FakeProtectedSubSystem);
-		public IApplicationBuilder Configure(IApplicationBuilder builder) => builder
-			.UseEndpoints(ep => {
-				ep.MapControllers();
-				ep.MapGet(SubsystemProtectedEndpoint, context => {
+	class FakeProtectedSubSystem() : SubsystemsPlugin(name: "FakeProtectedSubSystem") {
+		protected override void ConfigureServices(IServiceCollection services, IConfiguration _) => 
+			services.AddControllers().AddApplicationPart(typeof(FakeController).Assembly);
 
+		protected override void ConfigureApplication(IApplicationBuilder app, IConfiguration _) =>
+			app.UseEndpoints(ep => {
+				ep.MapControllers();
+
+				ep.MapGet(SubsystemProtectedEndpoint, context => {
 					if (context.User.IsInRole("$ops") || context.User.IsInRole("$admins")) {
 						context.Response.StatusCode = (int)HttpStatusCode.OK;
-					} else {
+					}
+					else {
 						context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
 					}
 
 					return Task.CompletedTask;
 				});
-				ep.MapGet(SubsystemUnprotectedEndpoint, context => {
 
+				ep.MapGet(SubsystemUnprotectedEndpoint, context => {
 					context.Response.StatusCode = (int)HttpStatusCode.OK;
 					return Task.CompletedTask;
 				});
 			});
 
-		public IServiceCollection ConfigureServices(IServiceCollection services, IConfiguration _) => services
-			.AddControllers()
-			.AddApplicationPart(typeof(FakeController).Assembly)
-			.Services;
-
-		public Task Start() => Task.CompletedTask;
-
-		public Task Stop() => Task.CompletedTask;
+		// // TODO SS: fix visibility on EventStore.Plugins, but we might not even need this method
+		// public new virtual void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
+		// 	base.ConfigureServices(services, configuration);
+		//
+		// // TODO SS: fix visibility on EventStore.Plugins, but we might not even need this method
+		// public new virtual void ConfigureApplication(IApplicationBuilder app, IConfiguration configuration) =>
+		// 	base.ConfigureApplication(app, configuration);
 	}
 }
 

@@ -23,6 +23,8 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 	private readonly TFChunkDb _db;
 	private readonly DirectoryFixture<TelemetryServiceTests> _fixture = new();
 
+	readonly FakePlugableComponent _plugin;
+	
 	public TelemetryServiceTests() {
 		var config = TFChunkHelper.CreateSizedDbConfig(_fixture.Directory, 0, chunkSize: 4096);
 		_db = new TFChunkDb(config);
@@ -30,9 +32,12 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		var channel = Channel.CreateUnbounded<Message>();
 		_channelReader = channel.Reader;
 		_sink = new InMemoryTelemetrySink();
-		_sut =  new TelemetryService(
+		
+		_plugin = new();
+		
+		_sut = new TelemetryService(
 			_db.Manager,
-			new ClusterVNodeOptions().WithPlugableComponent(new FakePlugableComponent()),
+			new ClusterVNodeOptions().WithPlugableComponent(_plugin),
 			new EnvelopePublisher(new ChannelEnvelope(channel)),
 			_sink,
 			new InMemoryCheckpoint(0),
@@ -77,6 +82,8 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 
 	[Fact]
 	public async Task can_collect_and_flush_telemetry() {
+		_plugin.PublishSomeTelemetry();
+		
 		// receive schedule of collect trigger it
 		var schedule = Assert.IsType<TimerMessage.Schedule>(await _channelReader.ReadAsync());
 		Assert.IsType<TelemetryMessage.Collect>(schedule.ReplyMessage);
@@ -123,9 +130,13 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 			_sink.Data["plugins"].ToString());
 	}
 
-	private class FakePlugableComponent : IPlugableComponent {
-		public void CollectTelemetry(Action<string, JsonNode> reply) {
-			reply("fakeComponent", new JsonObject {
+	class FakePlugableComponent(string name = "fakeComponent") : Plugin(name) {
+		public void PublishSomeTelemetry() {
+			PublishDiagnostics(new() {
+				["enabled"] = Enabled
+			});
+			
+			PublishDiagnostics(new() {
 				["foo"] = "bar"
 			});
 		}

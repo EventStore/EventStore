@@ -5,7 +5,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Plugins.Authorization;
-using Serilog;
 
 namespace EventStore.Core.Authorization {
 	public class LegacyAuthorizationProviderFactory : IAuthorizationProviderFactory {
@@ -143,8 +142,7 @@ namespace EventStore.Core.Authorization {
 			policy.RequireAuthenticated(Operations.Projections.Statistics);
 			policy.AddMatchAnyAssertion(Operations.Projections.Restart, Grant.Allow, OperationsOrAdmins);
 
-			return new PolicyAuthorizationProvider(new PolicyEvaluator(policy.AsReadOnly()),
-				Log.ForContext<PolicyEvaluator>(), true, false);
+			return new PolicyAuthorizationProvider(new PolicyEvaluator(policy.AsReadOnly()));
 		}
 	}
 }
