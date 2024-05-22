@@ -13,7 +13,7 @@ namespace EventStore.TcpUnitTestPlugin;
 public class TcpApiTestPlugin() : SubsystemsPlugin(name: "TcpTestApi") {
 	static readonly ILogger Logger = Log.ForContext<TcpApiTestPlugin>();
 
-	protected override void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
+	public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
 		var options = configuration.GetSection("EventStore:TcpUnitTestPlugin").Get<TcpApiTestOptions>() ?? new();
 		
 		services.AddHostedService<PublicTcpApiTestService>(serviceProvider => {

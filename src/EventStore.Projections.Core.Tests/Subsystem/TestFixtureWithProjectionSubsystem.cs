@@ -30,6 +30,8 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		protected Task Started { get; private set; }
 
+		static readonly IConfiguration EmptyConfiguration = new ConfigurationBuilder().AddInMemoryCollection().Build();
+		
 		private StandardComponents CreateStandardComponents() {
 			var dbConfig = TFChunkHelper.CreateDbConfig(Path.GetTempPath(), 0);
 			var mainQueue = QueuedHandler.CreateQueuedHandler
@@ -58,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 				new ProjectionSubsystemOptions(1, ProjectionType.All, true, TimeSpan.FromSeconds(3), true, 500, 250));
 
 			Subsystem.ConfigureServices(builder.Services, new ConfigurationBuilder().Build());
-			Subsystem.Configure(builder.Build().UseRouting());
+			Subsystem.ConfigureApplication(builder.Build().UseRouting(), EmptyConfiguration);
 
 			// Unsubscribe from the actual components so we can test in isolation
 			Subsystem.LeaderMainBus.Unsubscribe<ProjectionSubsystemMessage.ComponentStarted>(Subsystem);

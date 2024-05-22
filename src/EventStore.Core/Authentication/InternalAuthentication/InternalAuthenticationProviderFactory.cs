@@ -5,7 +5,6 @@ using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Settings;
 using EventStore.Plugins.Authentication;
-using Microsoft.Extensions.Logging;
 
 namespace EventStore.Core.Authentication.InternalAuthentication;
 
@@ -41,7 +40,7 @@ public class InternalAuthenticationProviderFactory : IAuthenticationProviderFact
 		components.HttpService.SetupController(usersController);
 	}
 
-	public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts, ILogger logger) {
+	public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts) {
 		var provider = new InternalAuthenticationProvider(
 			subscriber: _components.MainBus, 
 			ioDispatcher: _dispatcher,

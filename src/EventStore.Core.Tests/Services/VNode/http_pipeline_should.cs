@@ -70,10 +70,10 @@ public class http_pipeline_should : SpecificationWithDirectory {
 	}
 
 	class FakeProtectedSubSystem() : SubsystemsPlugin(name: "FakeProtectedSubSystem") {
-		protected override void ConfigureServices(IServiceCollection services, IConfiguration _) => 
+		public override void ConfigureServices(IServiceCollection services, IConfiguration _) => 
 			services.AddControllers().AddApplicationPart(typeof(FakeController).Assembly);
 
-		protected override void ConfigureApplication(IApplicationBuilder app, IConfiguration _) =>
+		public override void ConfigureApplication(IApplicationBuilder app, IConfiguration _) =>
 			app.UseEndpoints(ep => {
 				ep.MapControllers();
 

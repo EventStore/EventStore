@@ -3,15 +3,12 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Authentication;
-using EventStore.Core.Authorization;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.VNode;
@@ -39,7 +36,7 @@ public class auth_providers_should : SpecificationWithDirectory {
 	}
 	
 	class FakeAuthenticationProviderFactory(TaskCompletionSource configureAppTcs, TaskCompletionSource configureServicesTcs) : IAuthenticationProviderFactory {
-		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts, ILogger logger) =>
+		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts) =>
 			new FakeAuthenticationProvider(configureAppTcs, configureServicesTcs);
 
 		class FakeAuthenticationProvider(TaskCompletionSource configureAppTcs, TaskCompletionSource configureServicesTcs) : AuthenticationProviderBase {

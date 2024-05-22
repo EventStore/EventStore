@@ -114,8 +114,9 @@ namespace EventStore.Projections.Core {
 		public KeyValuePair<string, object>[] DiagnosticsTags => [];
 		public string Version => VERSION.ToString();
 		public bool Enabled => true;
-		
-		public IApplicationBuilder Configure(IApplicationBuilder builder) {
+		public string LicensePublicKey => string.Empty;
+
+		public void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {
 			var standardComponents = builder.ApplicationServices.GetRequiredService<StandardComponents>();
 
 			_leaderInputQueue = QueuedHandler.CreateQueuedHandler(
@@ -151,13 +152,11 @@ namespace EventStore.Projections.Core {
 			LeaderMainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
 			LeaderMainBus.Subscribe<CoreProjectionStatusMessage.Started>(this);
 
-			return builder
-				.UseEndpoints(endpoints => endpoints.MapGrpcService<ProjectionManagement>());
+			 builder.UseEndpoints(endpoints => endpoints.MapGrpcService<ProjectionManagement>());
 		}
 
-		public IServiceCollection ConfigureServices(IServiceCollection services, IConfiguration _) => services
-			.AddSingleton(provider =>
-				new ProjectionManagement(_leaderInputQueue, provider.GetRequiredService<IAuthorizationProvider>()));
+		public void ConfigureServices(IServiceCollection services, IConfiguration configuration) => 
+			services.AddSingleton(provider => new ProjectionManagement(_leaderInputQueue, provider.GetRequiredService<IAuthorizationProvider>()));
 
 		private static void CreateAwakerService(StandardComponents standardComponents) {
 			var awakeReaderService = new AwakeService();

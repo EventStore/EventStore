@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests;
 
 public class TestAuthenticationProviderFactory : IAuthenticationProviderFactory {
-	public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts, ILogger logger) => 
+	public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts) => 
 		new TestAuthenticationProvider();
 }
 

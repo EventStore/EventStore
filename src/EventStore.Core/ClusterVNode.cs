@@ -949,12 +949,10 @@ namespace EventStore.Core {
 			additionalPersistentSubscriptionConsumerStrategyFactories ??=
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>();
 			
-			ILoggerFactory loggerFactory = new SerilogLoggerFactory();
-			
 			_authenticationProvider = new DelegatedAuthenticationProvider(
 				authenticationProviderFactory
 					.GetFactory(components)
-					.Build(options.Application.LogFailedAuthenticationAttempts, loggerFactory.CreateLogger<ClusterVNode>())
+					.Build(options.Application.LogFailedAuthenticationAttempts)
 			);
 			Ensure.NotNull(_authenticationProvider, nameof(_authenticationProvider));
 

@@ -125,8 +125,8 @@ namespace EventStore.Core {
 				.UseAuthorization();
 
 			// allow all subsystems to register their legacy controllers before calling MapLegacyHttp
-			foreach (var plugableComponent in _plugableComponents)
-				plugableComponent.Configure(app);
+			foreach (var component in _plugableComponents)
+				component.ConfigureApplication(app, _configuration);
 
 			app.UseEndpoints(ep => {
 					_authenticationProvider.ConfigureEndpoints(ep);
@@ -252,8 +252,8 @@ namespace EventStore.Core {
 
 			services = _configureAdditionalServices(services);
 
-			foreach (var plugableComponent in _plugableComponents)
-				services = plugableComponent.ConfigureServices(services, _configuration);
+			foreach (var component in _plugableComponents)
+				component.ConfigureServices(services, _configuration);
 
 			return services.BuildServiceProvider();
 		}
