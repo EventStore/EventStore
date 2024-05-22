@@ -14,7 +14,7 @@ public record UserData {
 
 	public string LoginName { get; init; }
 	public string FullName { get; init; }
-	public string[] Groups { get; init; }
+	public string[] Groups { get; init; } = [];
 	public string Hash { get; init; }
 	public string Salt { get; init; }
 	public bool Disabled { get; init; }

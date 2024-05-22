@@ -92,26 +92,13 @@ public class InternalAuthenticationProvider : AuthenticationProviderBase, IHandl
 		authenticationRequest.Authenticated(principal);
 	}
 
-	static ClaimsPrincipal CreatePrincipalNew(UserData userData) {
+	static ClaimsPrincipal CreatePrincipal(UserData userData) {
 		var claims = userData.Groups
 			.Select(role => new Claim(ClaimTypes.Role, role))
 			.Prepend(new(ClaimTypes.Name, userData.LoginName))
 			.ToList();
 		
 		return new(new ClaimsIdentity(claims, "ES-Legacy"));
-	}
-	
-	static ClaimsPrincipal CreatePrincipal(UserData userData) {
-		var claims = new List<Claim> {new Claim(ClaimTypes.Name, userData.LoginName)};
-		if (userData.Groups != null) {
-			claims.AddRange(userData.Groups.Select(x => new Claim(ClaimTypes.Role, x)));
-		}
-	
-		var temp = CreatePrincipalNew(userData);
-		
-		var identity = new ClaimsIdentity(claims, "ES-Legacy");
-		var principal = new ClaimsPrincipal(identity);
-		return principal;
 	}
 
 	void CachePassword(string loginName, string hash, string salt, ClaimsPrincipal principal) => 
