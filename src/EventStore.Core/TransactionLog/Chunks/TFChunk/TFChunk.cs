@@ -1284,7 +1284,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				Debug.Assert(factory is not null);
 
 				return Array is { } array && _indices.TryTake(out int index)
-					? array[index] ??= factory(arg, index)
+					? UnsafeGetElement(array, index) ??= factory(arg, index)
 					: null;
 			}
 
