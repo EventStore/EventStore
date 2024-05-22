@@ -358,7 +358,7 @@ namespace EventStore.Core.Services.Replication {
 					"Chunk for LogPosition {0} (0x{0:X}) is null in LeaderReplicationService! Replica: [{1},C:{2},S:{3}]",
 					logPosition, sub.ReplicaEndPoint, sub.ConnectionId, sub.SubscriptionId));
 				var bulkReader = chunk.AcquireReader();
-				if (chunk.ChunkHeader.IsScavenged && (chunkId == Guid.Empty || chunkId != chunk.ChunkHeader.ChunkId)) {
+				if (chunk.ChunkHeader.IsScavenged) {
 					var chunkStartPos = chunk.ChunkHeader.ChunkStartPosition;
 					if (verbose) {
 						Log.Information(
