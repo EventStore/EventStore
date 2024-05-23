@@ -23,14 +23,6 @@ public class PolicyAuthorizationProvider(IPolicyEvaluator policyEvaluator, bool 
 			var elapsedTime = Time.GetElapsedTime(startedAt);
 
 			var accessGranted = result.Grant == Grant.Allow;
-			
-			// if (logAuthorization && ((accessGranted && logSuccesses) || !accessGranted)) {
-			// 	logger.Write(
-			// 		accessGranted ? LogEventLevel.Information : LogEventLevel.Warning,
-			// 		"{ResultPrefix} authorization check for {Identity} in {Duration} with {EvaluationResult}",
-			// 		accessGranted ? "Successful" : "Failed", principal.FindFirst(ClaimTypes.Name)?.Value ?? "(anonymous)", elapsedTime, result
-			// 	);
-			// }
 
 			if (!logAuthorization)
 				return accessGranted;
