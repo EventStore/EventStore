@@ -264,6 +264,7 @@ namespace EventStore.Core {
 
 		private class StatusCheck {
 			private readonly ClusterVNodeStartup<TStreamId> _startup;
+			private readonly int _livecode = 204;
 
 			public StatusCheck(ClusterVNodeStartup<TStreamId> startup) {
 				if (startup == null) {
@@ -279,7 +280,16 @@ namespace EventStore.Core {
 						.MapMiddlewareGet("live", inner => inner.Use(Live)));
 
 			private MidFunc Live => (context, next) => {
-				context.Response.StatusCode = _startup._ready ? 204 : 503;
+				if (_startup._ready) {
+					if (context.Request.Query.TryGetValue("liveCode", out var expected) &&
+						int.TryParse(expected, out var statusCode)) {
+						context.Response.StatusCode = statusCode;
+					} else {
+						context.Response.StatusCode = _livecode;
+					}
+				} else {
+					context.Response.StatusCode = 503;
+				}
 				return Task.CompletedTask;
 			};
 

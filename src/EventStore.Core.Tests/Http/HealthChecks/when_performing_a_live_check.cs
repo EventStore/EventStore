@@ -59,6 +59,18 @@ namespace EventStore.Core.Tests.Http.HealthChecks {
 		}
 
 		[TestCaseSource(nameof(MethodAllowedTestCases))]
+		public async Task with_liveCode_parameter_returns_the_same_liveCode(HttpMethod method) {
+			await _node.Start()
+				.WithTimeout();
+			_nodeStarted = true;
+			using var response = await _node.HttpClient.SendAsync(new HttpRequestMessage(method, "/health/live?liveCode=200") {
+				Version = new Version(2, 0)
+			});
+
+			Assert.AreEqual((int)response.StatusCode, 200);
+		}
+
+		[TestCaseSource(nameof(MethodAllowedTestCases))]
 		public async Task after_shutdown_returns_error(HttpMethod method) {
 			await _node.Start()
 				.WithTimeout();
