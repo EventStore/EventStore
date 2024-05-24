@@ -334,6 +334,13 @@ By default, the cache dynamically resizes according to the amount of free memory
 The option is set to 0 by default, which enables dynamic resizing. The default on previous versions of
 EventStoreDb was 100,000 entries.
 
+::: note
+The default value of 0 for `StreamInfoCacheCapacity` might not always be the best value for optimal performance. Ideally, it should be set to double the number of streams in the anticipated working set.
+
+The number of streams can be obtained from the `$streams` system projection. Firstly, the `$streams` system projection would need to be enabled. Once it is complete to 100% (which can be verified from the UI on the Projections page under the "Done" column),
+open the event stream "$streams", and the most recent event number in that stream would indicate the total number of streams in the database.
+:::
+
 ### ReaderThreadsCount
 
 This option configures the number of reader threads available to EventStoreDb. Having more reader threads
