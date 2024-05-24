@@ -42,7 +42,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		private void PublishCheckpoint(IPersistentSubscriptionStreamPosition state) {
 			_outstandingWrite = true;
-			var evnt = new Event(Guid.NewGuid(), "SubscriptionCheckpoint", true, state.ToString().ToJson(), null);
+			var evnt = new Event(Guid.NewGuid(), "$SubscriptionCheckpoint", true, state.ToString().ToJson(), null);
 			_ioDispatcher.WriteEvent(_subscriptionStateStream, _version, evnt, SystemAccounts.System,
 				WriteStateCompleted);
 		}
