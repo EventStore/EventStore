@@ -1592,7 +1592,7 @@ namespace EventStore.Core {
 
 			IServiceCollection ConfigureAdditionalServices(IServiceCollection services) =>
 				services
-					.AddSingleton(telemetryService)
+					.AddSingleton(telemetryService) // for correct disposal
 					.AddSingleton(_readIndex)
 					.AddSingleton(standardComponents)
 					.AddSingleton(AuthorizationGateway)
