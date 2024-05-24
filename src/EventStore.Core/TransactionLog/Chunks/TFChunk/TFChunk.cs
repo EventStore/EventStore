@@ -1262,7 +1262,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			internal int Drain(ref int referenceCount) {
 				int localReferenceCount = Interlocked.CompareExchange(ref referenceCount, 0, 0);
 
-				if (Array is { } array) {
+				if (Array is { } array && localReferenceCount > 0) {
 					Span<int> indices = stackalloc int[IndexPool.Capacity];
 					int count = _indices.Take(indices);
 
