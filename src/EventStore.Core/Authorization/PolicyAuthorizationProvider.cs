@@ -13,40 +13,44 @@ public class PolicyAuthorizationProvider(IPolicyEvaluator policyEvaluator, bool 
 	static readonly ILogger Logger = Log.ForContext<PolicyEvaluator>();
 	
 	static readonly TimeProvider Time = TimeProvider.System;
+	
+	public override ValueTask<bool> CheckAccessAsync(ClaimsPrincipal principal, Operation operation, CancellationToken ct) {
+		var startedAt = Time.GetTimestamp();
+		
+		var evaluateTask = policyEvaluator.EvaluateAsync(principal, operation, ct);
 
-	public override async ValueTask<bool> CheckAccessAsync(ClaimsPrincipal principal, Operation operation, CancellationToken ct) {
-		try {
-			var startedAt = Time.GetTimestamp();
-			
-			var result = await policyEvaluator.EvaluateAsync(principal, operation, ct);
-
-			var elapsedTime = Time.GetElapsedTime(startedAt);
-
+		if (evaluateTask.IsCompletedSuccessfully) {
+			var result = evaluateTask.Result;
 			var accessGranted = result.Grant == Grant.Allow;
 
 			if (!logAuthorization)
-				return accessGranted;
-			
-			var identity = principal.FindFirstValue(ClaimTypes.Name) ?? "(anonymous)";
+				return new(accessGranted);
 
-			if (!accessGranted)
-				Logger.Warning(
-					"Failed authorization check for {Identity} in {Duration} with {EvaluationResult}",
-					identity, elapsedTime, result
-				);
-			else if (logSuccesses)
+			if (accessGranted && logSuccesses)
 				Logger.Information(
 					"Successful authorization check for {Identity} in {Duration} with {EvaluationResult}",
-					identity, elapsedTime, result
+					GetIdentity(principal), Time.GetElapsedTime(startedAt), result
+				);
+			else if (!accessGranted)
+				Logger.Warning(
+					"Failed authorization check for {Identity} in {Duration} with {EvaluationResult}",
+					GetIdentity(principal), Time.GetElapsedTime(startedAt), result
 				);
 
-			return accessGranted;
+			return new(accessGranted);
 		}
-		catch (Exception ex) when (ex is not OperationCanceledException) {
-			Logger.Error(
-				ex, "Error performing permission check for {Identity}",
-				principal.FindFirstValue(ClaimTypes.Name) ?? "unknown" // TODO SS: why "unknown" and not "(anonymous)"?!?
-			);
+
+		return CaptureError(evaluateTask, GetIdentity(principal));
+
+		static string GetIdentity(ClaimsPrincipal principal) => principal.FindFirstValue(ClaimTypes.Name) ?? "(anonymous)";
+		
+		static async ValueTask<bool> CaptureError(ValueTask<EvaluationResult> evaluateTask, string identity) {
+			try {
+				await evaluateTask;
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException) {
+				Logger.Error(ex, "Error performing permission check for {Identity}", identity);
+			}
 			
 			return false;
 		}
