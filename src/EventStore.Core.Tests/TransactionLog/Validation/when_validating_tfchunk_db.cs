@@ -442,6 +442,80 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 		}
 
 		[Test]
+		public void when_last_chunk_is_scavenged_and_checkpoint_is_on_boundary_of_new_chunk() {
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 300, chunkSize: 100);
+			using (var db = new TFChunkDb(config)) {
+				DbUtil.CreateMultiChunk(config, 0, 2, GetFilePathFor("chunk-000000.000001"));
+
+				Assert.DoesNotThrow(() => db.Open(verifyHash: false));
+
+				Assert.IsNotNull(db.Manager.GetChunk(3));
+				Assert.AreEqual(300, db.Config.WriterCheckpoint.Read());
+
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000001")));
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000003.000000")));
+				Assert.AreEqual(2, Directory.GetFiles(PathName, "*").Length);
+			}
+		}
+
+		[Test]
+		public void when_last_chunk_is_scavenged_and_checkpoint_is_at_the_start_of_the_scavenged_chunk() {
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 100, chunkSize: 100);
+			using (var db = new TFChunkDb(config)) {
+				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+				DbUtil.CreateMultiChunk(config, 1, 3, GetFilePathFor("chunk-000001.000001"));
+
+				Assert.DoesNotThrow(() => db.Open(verifyHash: false));
+
+				Assert.IsNotNull(db.Manager.GetChunk(4));
+				Assert.AreEqual(400, db.Config.WriterCheckpoint.Read());
+
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000001.000001")));
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000004.000000")));
+				Assert.AreEqual(3, Directory.GetFiles(PathName, "*").Length);
+			}
+		}
+
+		[Test]
+		public void when_last_chunk_is_scavenged_and_checkpoint_is_at_the_start_of_the_scavenged_chunk_and_new_chunk_already_exists() {
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 100, chunkSize: 100);
+			using (var db = new TFChunkDb(config)) {
+				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+				DbUtil.CreateMultiChunk(config, 1, 3, GetFilePathFor("chunk-000001.000001"));
+				DbUtil.CreateSingleChunk(config, 4, GetFilePathFor("chunk-000004.000000"));
+
+				Assert.DoesNotThrow(() => db.Open(verifyHash: false));
+
+				Assert.IsNotNull(db.Manager.GetChunk(4));
+				Assert.AreEqual(400, db.Config.WriterCheckpoint.Read());
+
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000001.000001")));
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000004.000000")));
+				Assert.AreEqual(3, Directory.GetFiles(PathName, "*").Length);
+			}
+		}
+
+		[Test]
+		public void when_last_chunk_is_scavenged_and_checkpoint_is_in_the_middle_of_the_scavenged_chunk() {
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 150, chunkSize: 100);
+			using (var db = new TFChunkDb(config)) {
+				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+				DbUtil.CreateMultiChunk(config, 1, 3, GetFilePathFor("chunk-000001.000001"));
+
+				Assert.Throws<CorruptDatabaseException>(() => db.Open(verifyHash: false));
+
+				Assert.Throws<ArgumentOutOfRangeException>(() => db.Manager.GetChunk(4));
+				Assert.AreEqual(150, db.Config.WriterCheckpoint.Read());
+
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000001.000001")));
+				Assert.AreEqual(2, Directory.GetFiles(PathName, "*").Length);
+			}
+		}
+
+		[Test]
 		public void temporary_files_are_removed() {
 			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 150, chunkSize: 100);
 			using (var db = new TFChunkDb(config)) {
