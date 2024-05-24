@@ -30,17 +30,20 @@ public class PolicyAuthorizationProvider(IPolicyEvaluator policyEvaluator, bool 
 		static bool HasAccess(EvaluationResult result, ClaimsPrincipal principal, long startedAt, bool logAccessDenied, bool logAccessGranted) {
 			var accessGranted = result.Grant == Grant.Allow;
 			
-			if (logAccessGranted)
-				Logger.Information(
-					"Successful authorization check for {Identity} in {Duration} with {EvaluationResult}",
-					GetIdentity(principal), Time.GetElapsedTime(startedAt), result
-				);
-			
-			if (logAccessDenied)
-				Logger.Warning(
-					"Failed authorization check for {Identity} in {Duration} with {EvaluationResult}",
-					GetIdentity(principal), Time.GetElapsedTime(startedAt), result
-				);
+			switch (accessGranted) {
+				case true when logAccessGranted:
+					Logger.Information(
+						"Successful authorization check for {Identity} in {Duration} with {EvaluationResult}",
+						GetIdentity(principal), Time.GetElapsedTime(startedAt), result
+					);
+					break;
+				case false when logAccessDenied:
+					Logger.Warning(
+						"Failed authorization check for {Identity} in {Duration} with {EvaluationResult}",
+						GetIdentity(principal), Time.GetElapsedTime(startedAt), result
+					);
+					break;
+			}
 
 			return accessGranted;
 		}
