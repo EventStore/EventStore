@@ -1,63 +1,64 @@
-﻿using System;
-using System.Diagnostics;
+﻿#nullable enable
+
+using System;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Plugins.Authorization;
 using Serilog;
 
-namespace EventStore.Core.Authorization {
-	public class PolicyAuthorizationProvider : IAuthorizationProvider {
-		private static readonly Stopwatch sw = Stopwatch.StartNew();
-		private readonly bool _logAuthorization;
-		private readonly ILogger _logger;
-		private readonly bool _logSuccesses;
-		private readonly IPolicyEvaluator _policyEvaluator;
+namespace EventStore.Core.Authorization;
 
-		public PolicyAuthorizationProvider(IPolicyEvaluator policyEvaluator, ILogger logger, bool logAuthorization,
-			bool logSuccesses) {
-			_policyEvaluator = policyEvaluator;
-			_logger = logger;
-			_logAuthorization = logAuthorization;
-			_logSuccesses = logSuccesses;
+public class PolicyAuthorizationProvider(IPolicyEvaluator policyEvaluator, bool logAuthorization = true, bool logSuccesses = false) : AuthorizationProviderBase {
+	static readonly ILogger Logger = Log.ForContext<PolicyEvaluator>();
+	static readonly TimeProvider Time = TimeProvider.System;
+
+	bool LogAccessDenied  => logAuthorization;
+	bool LogAccessGranted => LogAccessDenied && logSuccesses;
+	
+	public override ValueTask<bool> CheckAccessAsync(ClaimsPrincipal principal, Operation operation, CancellationToken ct) {
+		var startedAt = Time.GetTimestamp();
+		
+		var evaluateTask = policyEvaluator.EvaluateAsync(principal, operation, ct);
+
+		return evaluateTask.IsCompletedSuccessfully 
+			? new(HasAccess(evaluateTask.Result, principal, startedAt, LogAccessDenied, LogAccessGranted)) 
+			: EnforceCheck(evaluateTask, principal, startedAt, LogAccessDenied, LogAccessGranted);
+
+		static string GetIdentity(ClaimsPrincipal principal) => principal.FindFirstValue(ClaimTypes.Name) ?? "(anonymous)";
+		
+		static bool HasAccess(EvaluationResult result, ClaimsPrincipal principal, long startedAt, bool logAccessDenied, bool logAccessGranted) {
+			var accessGranted = result.Grant == Grant.Allow;
+			
+			switch (accessGranted) {
+				case true when logAccessGranted:
+					Logger.Information(
+						"Successful authorization check for {Identity} in {Duration} with {EvaluationResult}",
+						GetIdentity(principal), Time.GetElapsedTime(startedAt), result
+					);
+					break;
+				case false when logAccessDenied:
+					Logger.Warning(
+						"Failed authorization check for {Identity} in {Duration} with {EvaluationResult}",
+						GetIdentity(principal), Time.GetElapsedTime(startedAt), result
+					);
+					break;
+			}
+
+			return accessGranted;
 		}
-
-		public ValueTask<bool> CheckAccessAsync(ClaimsPrincipal cp, Operation operation, CancellationToken ct) {
-			if (cp == null) cp = SystemAccounts.Anonymous;
-
-			var startedAt = sw.Elapsed;
-			var evaluationTask = _policyEvaluator.EvaluateAsync(cp, operation, ct);
-			if (evaluationTask.IsCompletedSuccessfully)
-				return new ValueTask<bool>(LogAndCheck(startedAt, cp, evaluationTask.Result));
-
-			return CheckAccessAsync(startedAt, cp, evaluationTask);
-		}
-
-		private async ValueTask<bool> CheckAccessAsync(TimeSpan startedAt, ClaimsPrincipal cp,
-			ValueTask<EvaluationResult> evaluationTask) {
+		
+		static async ValueTask<bool> EnforceCheck(
+			ValueTask<EvaluationResult> evaluate, ClaimsPrincipal principal,
+			long startedAt, bool logAccessDenied, bool logAccessGranted
+		) {
 			try {
-				return LogAndCheck(startedAt, cp, await evaluationTask);
-			} catch (Exception ex) when (ex is not OperationCanceledException) {
-				_logger.Error(ex, "Error performing permission check for {identity}",
-					cp.FindFirst(ClaimTypes.Name)?.Value ?? "unknown");
+				return HasAccess(await evaluate, principal, startedAt, logAccessDenied, logAccessGranted);
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException) {
+				Logger.Error(ex, "Error performing permission check for {Identity}", GetIdentity(principal));
 				return false;
 			}
-		}
-
-		private bool LogAndCheck(TimeSpan startedAt, ClaimsPrincipal cp, EvaluationResult result) {
-			if (_logAuthorization) {
-				if (result.Grant == Grant.Allow && _logSuccesses)
-					_logger.Information(
-						"Successful authorization check for {identity} in {duration} with {evaluationResult}",
-						cp.FindFirst(ClaimTypes.Name)?.Value ?? "(anonymous)", sw.Elapsed.Subtract(startedAt), result);
-				else if (result.Grant != Grant.Allow)
-					_logger.Warning(
-						"Failed authorization check for {identity} in {duration} with {evaluationResult}",
-						cp.FindFirst(ClaimTypes.Name)?.Value ?? "(anonymous)", sw.Elapsed.Subtract(startedAt), result);
-			}
-
-			return result.Grant == Grant.Allow;
 		}
 	}
 }

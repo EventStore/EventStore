@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Plugins;
 using EventStore.Plugins.Subsystems;
 using NUnit.Framework;
 
@@ -25,12 +26,5 @@ public class subsystem_should : SpecificationWithDirectory {
 		await tcs.Task.WithTimeout(TimeSpan.FromSeconds(5));
 	}
 
-	private class FakeSubSystem : ISubsystem {
-		public string Name => "FakeSubSystem";
-
-		public Task Start() => Task.CompletedTask;
-
-		public Task Stop() => Task.CompletedTask;
-
-	}
+	class FakeSubSystem() : SubsystemsPlugin("FakeSubSystem");
 }

@@ -1,8 +1,11 @@
 using System;
+using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using DotNext.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -12,50 +15,59 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Plugins.Diagnostics;
 using Serilog;
 
 namespace EventStore.Core.Telemetry;
 
-public sealed class TelemetryService : IDisposable,
+public sealed class TelemetryService :
 	IHandle<SystemMessage.StateChangeMessage>,
-	IHandle<ElectionMessage.ElectionsDone> {
-
-	private static readonly ILogger _log = Log.ForContext<TelemetryService>();
-	private static readonly TimeSpan _initialInterval = TimeSpan.FromHours(1);
-	private static readonly TimeSpan _interval = TimeSpan.FromHours(24);
-	private static readonly TimeSpan _flushDelay = TimeSpan.FromSeconds(10);
+	IHandle<ElectionMessage.ElectionsDone>,
+	IDisposable 
+{
+	private static readonly ILogger Logger = Log.ForContext<TelemetryService>();
+	
+	private static readonly TimeSpan InitialInterval = TimeSpan.FromHours(1);
+	private static readonly TimeSpan Interval = TimeSpan.FromHours(24);
+	private static readonly TimeSpan FlushDelay = TimeSpan.FromSeconds(10);
 
 	private readonly ClusterVNodeOptions _nodeOptions;
 	private readonly CancellationTokenSource _cts = new();
 	private readonly IPublisher _publisher;
 	private readonly IReadOnlyCheckpoint _writerCheckpoint;
-	private readonly DateTime _startTime = DateTime.UtcNow;
+	private readonly long _startTime = TimeProvider.System.GetTimestamp();
 	private readonly Guid _nodeId;
 	private readonly TFChunkManager _manager;
+	private readonly PluginDiagnosticsDataCollector _pluginDiagnosticsDataCollector;
 
 	private VNodeState _nodeState;
 	private int _epochNumber;
 	private Guid _leaderId = Guid.Empty;
 	private Guid _firstEpochId = Guid.Empty;
-
+	
 	public TelemetryService(
 		TFChunkManager manager,
 		ClusterVNodeOptions nodeOptions,
 		IPublisher publisher,
 		ITelemetrySink sink,
 		IReadOnlyCheckpoint writerCheckpoint,
-		Guid nodeId) {
-
+		Guid nodeId
+	) {
 		_manager = manager;
 		_nodeOptions = nodeOptions;
 		_publisher = publisher;
 		_writerCheckpoint = writerCheckpoint;
 		_nodeId = nodeId;
-		Task.Run(async () => {
+		
+		_pluginDiagnosticsDataCollector = PluginDiagnosticsDataCollector.Start(
+			_nodeOptions.PlugableComponents.Select(x => x.DiagnosticsName).ToArray()
+		);
+		
+		_ = Task.Run(async () => {
 			try {
 				await ProcessAsync(publisher, sink);
 			} catch (Exception ex) when (ex is not OperationCanceledException) {
-				_log.Error(ex, "Telemetry loop stopped");
+				Logger.Error(ex, "Telemetry loop stopped");
 			}
 		});
 	}
@@ -74,9 +86,9 @@ public sealed class TelemetryService : IDisposable,
 		});
 
 		var envelope = new ChannelEnvelope(channel);
-		var scheduleInitialCollect = TimerMessage.Schedule.Create(_initialInterval, envelope, new TelemetryMessage.Collect());
-		var scheduleCollect = TimerMessage.Schedule.Create(_interval - _flushDelay, envelope, new TelemetryMessage.Collect());
-		var scheduleFlush = TimerMessage.Schedule.Create(_flushDelay, envelope, new TelemetryMessage.Flush());
+		var scheduleInitialCollect = TimerMessage.Schedule.Create(InitialInterval, envelope, new TelemetryMessage.Collect());
+		var scheduleCollect = TimerMessage.Schedule.Create(Interval - FlushDelay, envelope, new TelemetryMessage.Collect());
+		var scheduleFlush = TimerMessage.Schedule.Create(FlushDelay, envelope, new TelemetryMessage.Flush());
 		var usageRequest = new TelemetryMessage.Request(envelope);
 
 		publisher.Publish(scheduleInitialCollect);
@@ -137,7 +149,7 @@ public sealed class TelemetryService : IDisposable,
 			"edition", JsonValue.Create(VersionInfo.Edition)));
 
 		message.Envelope.ReplyWith(new TelemetryMessage.Response(
-			"uptime", JsonValue.Create(DateTime.UtcNow - _startTime)));
+			"uptime", JsonValue.Create(TimeProvider.System.GetElapsedTime(_startTime))));
 
 		message.Envelope.ReplyWith(new TelemetryMessage.Response(
 			"cluster", new JsonObject {
@@ -173,17 +185,16 @@ public sealed class TelemetryService : IDisposable,
 				["totalDiskSpace"] = env.Machine.TotalDiskSpace,
 				["totalMemory"] = env.Machine.TotalMemory,
 			}));
-
-		Action<string, JsonNode> collect = (key, value) =>
-			message.Envelope.ReplyWith(new TelemetryMessage.Response("plugins", key, value));
-
-		foreach (var subsystem in _nodeOptions.PlugableComponents) {
+		
+		_pluginDiagnosticsDataCollector.CollectedEvents.ForEach(x => {
 			try {
-				subsystem.CollectTelemetry(collect);
-			} catch (Exception ex) {
-				_log.Warning(ex, $"Failed to collect telemetry from a plugable component {subsystem.GetType().Name}");
+				var node = JsonSerializer.SerializeToNode(x.Data);
+				message.Envelope.ReplyWith(new TelemetryMessage.Response("plugins", x.Source, node));
 			}
-		}
+			catch (Exception ex) {
+				Logger.Warning(ex, "Failed to collect telemetry from pluggable component {Source}", x.Source);
+			}
+		});
 
 		_publisher.Publish(new GossipMessage.ReadGossip(new CallbackEnvelope(resp => OnGossipReceived(message.Envelope, resp))));
 	}

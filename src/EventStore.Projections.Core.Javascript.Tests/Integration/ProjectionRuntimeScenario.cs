@@ -18,6 +18,8 @@ using Xunit.Abstractions;
 namespace EventStore.Projections.Core.Javascript.Tests.Integration
 {
 	public abstract class ProjectionRuntimeScenario: SubsystemScenario {
+		static readonly IConfiguration EmptyConfiguration = new ConfigurationBuilder().AddInMemoryCollection().Build();
+
 		protected ProjectionRuntimeScenario() : base(CreateRuntime, "$et", new CancellationTokenSource(System.Diagnostics.Debugger.IsAttached?5*60*1000: 5*1000).Token){
 
 		}
@@ -38,7 +40,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration
 			builder.Services.AddSingleton(sc);
 			subsystem.ConfigureServices(builder.Services, new ConfigurationBuilder().Build());
 
-			subsystem.Configure(builder.Build().UseRouting());
+			subsystem.ConfigureApplication(builder.Build().UseRouting(), EmptyConfiguration);
 			subsystem.Start();
 
 			return (() => {
