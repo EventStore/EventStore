@@ -58,9 +58,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			truncateCheckpoint: new InMemoryCheckpoint(),
 			replicationCheckpoint: new InMemoryCheckpoint(-1),
 			indexCheckpoint: new InMemoryCheckpoint(-1),
-			streamExistenceFilterCheckpoint: new InMemoryCheckpoint(),
-			initialReaderCount: 1,
-			maxReaderCount: 10);
+			streamExistenceFilterCheckpoint: new InMemoryCheckpoint());
 
 		return new TFChunkDb(config: dbConfig);
 	}

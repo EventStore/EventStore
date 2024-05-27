@@ -282,26 +282,26 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			private PosMap ReadPosMap(ReaderWorkItem workItem, long index) {
 				if (Chunk.ChunkFooter.IsMap12Bytes) {
 					var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.FullSize;
-					workItem.Stream.Seek(pos, SeekOrigin.Begin);
-					return PosMap.FromNewFormat(workItem.Reader);
+					workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
+					return PosMap.FromNewFormat(workItem);
 				} else {
 					var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.DeprecatedSize;
-					workItem.Stream.Seek(pos, SeekOrigin.Begin);
-					return PosMap.FromOldFormat(workItem.Reader);
+					workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
+					return PosMap.FromOldFormat(workItem);
 				}
 			}
 
 			private IEnumerable<PosMap> ReadPosMap(ReaderWorkItem workItem, long index, int count) {
 				if (Chunk.ChunkFooter.IsMap12Bytes) {
 					var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.FullSize;
-					workItem.Stream.Seek(pos, SeekOrigin.Begin);
+					workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
 					for (int i = 0; i < count; i++)
-						yield return PosMap.FromNewFormat(workItem.Reader);
+						yield return PosMap.FromNewFormat(workItem);
 				} else {
 					var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.DeprecatedSize;
-					workItem.Stream.Seek(pos, SeekOrigin.Begin);
+					workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
 					for (int i = 0; i < count; i++)
-						yield return PosMap.FromOldFormat(workItem.Reader);
+						yield return PosMap.FromOldFormat(workItem);
 				}
 			}
 
@@ -617,22 +617,22 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				length = -1;
 				record = null;
 
-				workItem.Stream.Position = GetRawPosition(actualPosition);
+				workItem.BaseStream.Position = GetRawPosition(actualPosition);
 				if (!ValidateRecordPosition(actualPosition))
 					return false;
 
-				length = workItem.Reader.ReadInt32();
+				length = workItem.ReadInt32();
 				ValidateRecordLength(length, actualPosition);
 
 				try {
-					record = LogRecord.ReadFrom(workItem.Reader, length);
+					record = LogRecord.ReadFrom(workItem, length);
 				} catch (Exception exc) {
 					throw new InvalidReadException($"Error while reading log record forwards at actual position {actualPosition}. {exc.Message}");
 				}
 
 				_tracker.OnRead(record);
 
-				int suffixLength = workItem.Reader.ReadInt32();
+				int suffixLength = workItem.ReadInt32();
 				ValidatePrefixSuffixLength(length, suffixLength, actualPosition, "pre-position");
 
 				return true;
@@ -643,18 +643,18 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				length = -1;
 				record = null;
 
-				workItem.Stream.Position = GetRawPosition(actualPosition);
+				workItem.BaseStream.Position = GetRawPosition(actualPosition);
 				if (!ValidateRecordPosition(actualPosition))
 					return false;
 
-				length = workItem.Reader.ReadInt32();
+				length = workItem.ReadInt32();
 				ValidateRecordLength(length, actualPosition);
 
 				record = getBuffer(length);
 
-				workItem.Reader.Read(record, 0, length);
+				workItem.Read(record, 0, length);
 
-				int suffixLength = workItem.Reader.ReadInt32();
+				int suffixLength = workItem.ReadInt32();
 				ValidatePrefixSuffixLength(length, suffixLength, actualPosition, "pre-position");
 
 				return true;
@@ -674,9 +674,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 
 				var realPos = GetRawPosition(actualPosition);
-				workItem.Stream.Position = realPos - sizeof(int);
+				workItem.BaseStream.Position = realPos - sizeof(int);
 
-				length = workItem.Reader.ReadInt32();
+				length = workItem.ReadInt32();
 				if (length <= 0) {
 					throw new InvalidReadException(
 						string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "
@@ -699,14 +699,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 							length, actualPosition, Chunk));
 				}
 
-				workItem.Stream.Position = realPos - length - 2 * sizeof(int);
+				workItem.BaseStream.Position = realPos - length - 2 * sizeof(int);
 
 				// verify suffix length == prefix length
-				int prefixLength = workItem.Reader.ReadInt32();
+				int prefixLength = workItem.ReadInt32();
 				ValidatePrefixSuffixLength(prefixLength, length, actualPosition, "post-position");
 
 				try {
-					record = LogRecord.ReadFrom(workItem.Reader, length);
+					record = LogRecord.ReadFrom(workItem, length);
 				} catch (Exception exc) {
 					throw new InvalidReadException($"Error while reading log record backwards at actual position {actualPosition}. {exc.Message}");
 				}

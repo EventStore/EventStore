@@ -439,25 +439,12 @@ namespace EventStore.Core {
 					replicationChk,
 					indexChk,
 					streamExistenceFilterChk,
-					options.Database.ChunkInitialReaderCount,
-					GetTFChunkMaxReaderCount(
-						readerThreadsCount: readerThreadsCount,
-						chunkInitialReaderCount: options.Database.ChunkInitialReaderCount),
 					options.Database.MemDb,
 					options.Database.Unbuffered,
 					options.Database.WriteThrough,
 					options.Database.OptimizeIndexMerge,
 					options.Database.ReduceFileCachePressure,
 					options.Database.MaxTruncation);
-
-				static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
-					var tfChunkMaxReaderCount =
-						GetPTableMaxReaderCount(readerThreadsCount) +
-						2 + /* for caching/uncaching, populating midpoints */
-						1 + /* for epoch manager usage of elections/replica service */
-						1 /* for epoch manager usage of leader replication service */;
-					return Math.Max(tfChunkMaxReaderCount, chunkInitialReaderCount);
-				}
 			}
 
 			var writerCheckpoint = Db.Config.WriterCheckpoint.Read();

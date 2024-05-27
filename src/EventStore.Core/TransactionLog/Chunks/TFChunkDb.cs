@@ -74,8 +74,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							if (footer.IsCompleted)
 								chunk = TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 									unbufferedRead: Config.Unbuffered,
-									initialReaderCount: Config.InitialReaderCount,
-									maxReaderCount: Config.MaxReaderCount,
 									tracker: _tracker,
 									optimizeReadSideCache: Config.OptimizeReadSideCache,
 									reduceFileCachePressure: Config.ReduceFileCachePressure);
@@ -83,8 +81,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 								chunk = TFChunk.TFChunk.FromOngoingFile(chunkInfo.ChunkFileName, Config.ChunkSize,
 									checkSize: false,
 									unbuffered: Config.Unbuffered,
-									writethrough: Config.WriteThrough, initialReaderCount: Config.InitialReaderCount,
-									maxReaderCount: Config.MaxReaderCount,
+									writethrough: Config.WriteThrough,
 									reduceFileCachePressure: Config.ReduceFileCachePressure,
 									tracker: _tracker);
 								// chunk is full with data, we should complete it right here
@@ -94,8 +91,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						} else {
 							chunk = TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 								unbufferedRead: Config.Unbuffered,
-								initialReaderCount: Config.InitialReaderCount,
-								maxReaderCount: Config.MaxReaderCount,
 								optimizeReadSideCache: Config.OptimizeReadSideCache,
 								reduceFileCachePressure: Config.ReduceFileCachePressure,
 								tracker: _tracker);
@@ -139,8 +134,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 					var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false,
 						unbufferedRead: Config.Unbuffered,
-						initialReaderCount: Config.InitialReaderCount,
-						maxReaderCount: Config.MaxReaderCount,
 						optimizeReadSideCache: Config.OptimizeReadSideCache,
 						reduceFileCachePressure: Config.ReduceFileCachePressure,
 						tracker: _tracker);
@@ -165,8 +158,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				} else {
 					var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false,
 						unbuffered: Config.Unbuffered,
-						writethrough: Config.WriteThrough, initialReaderCount: Config.InitialReaderCount,
-						maxReaderCount: Config.MaxReaderCount,
+						writethrough: Config.WriteThrough,
 						reduceFileCachePressure: Config.ReduceFileCachePressure,
 						tracker: _tracker);
 					Manager.AddChunk(lastChunk);
