@@ -206,7 +206,7 @@ public class InternalClient : IClient {
 	}
 }
 
-public static class IAsyncEnumerableExtenions {
+public static partial class IAsyncEnumerableExtenions {
 	public static bool TryMap(this Exception ex, out Exception mapped) {
 		mapped = ex.Map();
 		return mapped != ex;

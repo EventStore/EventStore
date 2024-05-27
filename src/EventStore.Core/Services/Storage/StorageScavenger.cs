@@ -44,6 +44,7 @@ namespace EventStore.Core.Services.Storage {
 		private CancellationTokenSource _cancellationTokenSource;
 		private AutomatedScavengeState _autoScavengeState;
 		[CanBeNull] private ScavengeConfiguration _scavengeConfiguration;
+		[CanBeNull] private CancellationTokenSource _tokenSource = null;
 
 		public StorageScavenger(
 			ITFChunkScavengerLogManager logManager,
@@ -81,9 +82,17 @@ namespace EventStore.Core.Services.Storage {
 				case VNodeState.Leader or VNodeState.Follower:
 					_autoScavengeState.State = message.State;
 					_logManager.Initialise();
-					ReloadConfiguration();
+
+					_tokenSource = new CancellationTokenSource();
+					Task.Run(() => AutoScavengeProcess(_tokenSource.Token));
 					break;
 			}
+		}
+
+		private Task AutoScavengeProcess(CancellationToken token) {
+			token.ThrowIfCancellationRequested();
+
+			return Task.CompletedTask;
 		}
 
 		public void Handle(ClientMessage.ScavengeDatabase message) {
