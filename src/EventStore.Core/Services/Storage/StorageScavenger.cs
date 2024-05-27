@@ -9,6 +9,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Protocol;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Synchronization;
@@ -34,6 +35,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly string _nodeEndpoint;
 		private Guid _switchChunksLockId = Guid.Empty;
 		private readonly object _lock = new object();
+		private readonly IClient _client;
 
 		private IScavenger _currentScavenge;
 
@@ -65,6 +67,7 @@ namespace EventStore.Core.Services.Storage {
 			_publisher = publisher;
 			_nodeEndpoint = nodeEndpoint;
 			_autoScavengeState = new AutomatedScavengeState();
+			_client = new InternalClient(publisher);
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
