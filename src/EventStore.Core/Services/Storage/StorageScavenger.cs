@@ -122,6 +122,8 @@ namespace EventStore.Core.Services.Storage {
 							break;
 						case SystemEventTypes.AutoScavengeCompleted:
 							break;
+						case SystemEventTypes.AutoScavengeNodeDesignated:
+							break;
 					}
 				}
 			}
