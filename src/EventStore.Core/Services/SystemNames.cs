@@ -27,7 +27,8 @@ namespace EventStore.Core.Services {
 		public const string ScavengesStream = "$scavenges";
 		public const string EpochInformationStream = "$epoch-information";
 		public const string ScavengePointsStream = "$scavengePoints";
-		public const string ScavengeConfigurationStream = "$scavengeConfiguration";
+		public const string ClusterAutoScavengesStream = "$cluster-auto-scavenges";
+		public const string ClusterAutoScavengeConfigurationStream = "$cluster-auto-scavenge-configuration";
 
 		// mem streams
 		public const string NodeStateStream = "$mem-node-state";
@@ -95,6 +96,11 @@ namespace EventStore.Core.Services {
 		public const string EmptyEventType = "";
 		public const string EventTypeDefined = "$event-type";
 		public const string ScavengePoint = "$scavengePoint";
+		public const string AutoScavengeProcessStarted = "$autoScavengeProcessStarted";
+		public const string AutoScavengeProcessCompleted = "$autoScavengeProcessCompleted";
+		public const string AutoScavengeStarted = "$autoScavengeStarted";
+		public const string AutoScavengeCompleted = "$autoScavengeCompleted";
+		public const string AutoScavengeNodeDesignated = "$autoScavengeNodeDesignated";
 
 		public static string StreamReferenceEventToStreamId(string eventType, ReadOnlyMemory<byte> data) {
 			string streamId = null;

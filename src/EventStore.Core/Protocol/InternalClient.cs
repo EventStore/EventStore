@@ -107,13 +107,13 @@ public class InternalClient : IClient {
 		}
 	}
 
-	public IAsyncEnumerable<Event> ReadStreamForwards(string stream, long maxCount, CancellationToken token) =>
+	public IAsyncEnumerable<Event> ReadStreamForwards(string stream, StreamRevision start, long maxCount, CancellationToken token) =>
     		Create(
     			$"Reading stream {stream} forwards for max {maxCount} events",
     			() => new Enumerator.ReadStreamForwards(
     				bus: _publisher,
     				streamName: stream,
-    				startRevision: StreamRevision.Start,
+    				startRevision: start,
     				maxCount: (ulong)maxCount,
     				resolveLinks: false,
     				user: SystemAccounts.System,

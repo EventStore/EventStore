@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -11,6 +13,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Protocol;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.Transport.Common;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Chunks;
@@ -90,10 +93,38 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private Task AutoScavengeProcess(CancellationToken token) {
-			token.ThrowIfCancellationRequested();
+		private async Task AutoScavengeProcess(CancellationToken token) {
+			while (!token.IsCancellationRequested) {
+				token.ThrowIfCancellationRequested();
 
-			return Task.CompletedTask;
+				var eventConfiguration = await _client.ReadStreamBackwards(SystemStreams.ClusterAutoScavengeConfigurationStream, 1, token)
+					.FirstOrNoneAsync(token);
+
+				if (eventConfiguration == null) {
+					Log.Information("No auto-scavenge configuration set up");
+					await Task.Delay(TimeSpan.FromSeconds(30), token);
+					continue;
+				}
+
+				Log.Information("Loading past auto scavenges to rebuild state");
+				var start = StreamRevision.FromInt64(_autoScavengeState.From);
+
+				await foreach (var @event in _client.ReadStreamForwards(SystemStreams.ClusterAutoScavengesStream, start,
+					               long.MaxValue, token)) {
+					token.ThrowIfCancellationRequested();
+
+					switch (@event.EventType) {
+						case SystemEventTypes.AutoScavengeProcessStarted:
+							break;
+						case SystemEventTypes.AutoScavengeProcessCompleted:
+							break;
+						case SystemEventTypes.AutoScavengeStarted:
+							break;
+						case SystemEventTypes.AutoScavengeCompleted:
+							break;
+					}
+				}
+			}
 		}
 
 		public void Handle(ClientMessage.ScavengeDatabase message) {
@@ -172,7 +203,7 @@ namespace EventStore.Core.Services.Storage {
 			if (_autoScavengeState.State != VNodeState.Leader)
 				return;
 
-			ReadBackwards(SystemStreams.ScavengeConfigurationStream, -1, 1, false, OnReadScavengeConfiguration);
+			ReadBackwards(SystemStreams.ClusterAutoScavengeConfigurationStream, -1, 1, false, OnReadScavengeConfiguration);
 		}
 
 		private async void HandleCleanupWhenFinished(Task newScavengeTask, IScavenger newScavenge, ILogger logger) {
