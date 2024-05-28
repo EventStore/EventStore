@@ -17,6 +17,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Scavenging;
 using JetBrains.Annotations;
 using Serilog;
+using Message = EventStore.Core.Messaging.Message;
 
 namespace EventStore.Core.Services.Storage {
 	// This tracks the current scavenge and starts/stops/creates it according to the client instructions

@@ -13,7 +13,6 @@ using EventStore.Core.Services.Transport.Enumerators;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.LogRecords;
 using Serilog;
-
 namespace EventStore.Core.Protocol;
 
 public class InternalClient : IClient {
@@ -59,7 +58,7 @@ public class InternalClient : IClient {
 
 		return await appendResponseSource.Task.ConfigureAwait(false);
 
-		void HandleWriteEventsCompleted(Message message) {
+		void HandleWriteEventsCompleted(EventStore.Core.Messaging.Message message) {
 			if (message is ClientMessage.NotHandled notHandled) {
 				Exception ex = notHandled.Reason switch {
 					ClientMessage.NotHandled.Types.NotHandledReason.NotReady => new ResponseException.ServerNotReady(),
