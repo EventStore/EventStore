@@ -935,7 +935,7 @@ namespace EventStore.Core {
 				: new AuthenticationProviderFactory(_ => new PassthroughAuthenticationProviderFactory());
 			additionalPersistentSubscriptionConsumerStrategyFactories ??=
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>();
-			
+
 			_authenticationProvider = new DelegatedAuthenticationProvider(
 				authenticationProviderFactory
 					.GetFactory(components)
@@ -1452,10 +1452,12 @@ namespace EventStore.Core {
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				memberInfo.InstanceId
 			);
-			
+			if(modifiedOptions.Cluster.ReadOnlyReplica)
+				_mainBus.Subscribe<SystemMessage.ReplicaStateMessage>(telemetryService);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(telemetryService);
 			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(telemetryService);
-			
+			_mainBus.Subscribe<LeaderDiscoveryMessage.LeaderFound>(telemetryService);
+
 			// LEADER REPLICATION
 			var leaderReplicationService = new LeaderReplicationService(_mainQueue, NodeInfo.InstanceId, Db,
 				_workersHandler,
@@ -1568,7 +1570,7 @@ namespace EventStore.Core {
 
             UnixSignalManager.OnSIGHUP(() => {
                 Log.Information("Reloading the node's configuration since the SIGHUP signal has been received.");
-                _mainQueue.Publish(new ClientMessage.ReloadConfig()); 
+                _mainQueue.Publish(new ClientMessage.ReloadConfig());
             });
 
 			// subsystems
@@ -1592,7 +1594,7 @@ namespace EventStore.Core {
 				modifiedOptions.PlugableComponents,
 				_mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, _authorizationProvider,
-				options.Application.MaxAppendSize, 
+				options.Application.MaxAppendSize,
 				TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 				expiryStrategy ?? new DefaultExpiryStrategy(),
 				_httpService,
@@ -1603,11 +1605,11 @@ namespace EventStore.Core {
 
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
-			
+
 			var certificateExpiryMonitor = new CertificateExpiryMonitor(_mainQueue, _certificateSelector, Log);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(certificateExpiryMonitor);
 			_mainBus.Subscribe<MonitoringMessage.CheckCertificateExpiry>(certificateExpiryMonitor);
-			
+
 			var periodicLogging = new PeriodicallyLoggingService(_mainQueue, VersionInfo.Version, Log);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(periodicLogging);
 			_mainBus.Subscribe<MonitoringMessage.CheckEsVersion>(periodicLogging);
@@ -1753,7 +1755,7 @@ namespace EventStore.Core {
 
 			if (_subsystems is null)
 				return;
-            
+
 			foreach (var subsystem in _subsystems)
 				subsystem.Stop();
 		}
