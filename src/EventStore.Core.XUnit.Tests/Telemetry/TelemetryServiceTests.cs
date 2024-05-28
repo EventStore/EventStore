@@ -37,7 +37,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		
 		_sut = new TelemetryService(
 			_db.Manager,
-			new ClusterVNodeOptions().WithPlugableComponent(_plugin),
+			new ClusterVNodeOptions().WithPlugin(_plugin),
 			new EnvelopePublisher(new ChannelEnvelope(channel)),
 			_sink,
 			new InMemoryCheckpoint(0),

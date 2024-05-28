@@ -949,9 +949,7 @@ namespace EventStore.Core {
 				}).Build();
 			Ensure.NotNull(_authorizationProvider, "authorizationProvider");
 
-			var modifiedOptions = options
-				.WithPlugableComponent(_authorizationProvider)
-				.WithPlugableComponent(_authenticationProvider);
+			var modifiedOptions = options.WithPlugins(_authorizationProvider, _authenticationProvider);
 
 			AuthorizationGateway = new AuthorizationGateway(_authorizationProvider);
 			{

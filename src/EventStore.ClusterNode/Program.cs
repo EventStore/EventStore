@@ -26,7 +26,7 @@ using Serilog.Events;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.ClusterNode {
-	internal static class Program {
+	public static class Program {
 		public static async Task<int> Main(string[] args) {
 			var configuration = EventStoreConfiguration.Build(args);
 

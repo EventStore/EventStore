@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Exceptions;
@@ -16,8 +17,14 @@ namespace EventStore.Core {
 				? options
 				: ClusterVNodeOptions.FromConfiguration(options.ConfigurationRoot);
 
-		public static ClusterVNodeOptions WithPlugableComponent(this ClusterVNodeOptions options, IPlugableComponent plugableComponent) =>
-			options with { PlugableComponents = [..options.PlugableComponents, plugableComponent] };
+		public static ClusterVNodeOptions WithPlugins(this ClusterVNodeOptions options, IEnumerable<IPlugableComponent> plugins) =>
+			options with { PlugableComponents = options.PlugableComponents.Concat(options.PlugableComponents).ToList() };
+
+		public static ClusterVNodeOptions WithPlugins(this ClusterVNodeOptions options, params IPlugableComponent[] plugins) =>
+			options with { PlugableComponents = options.PlugableComponents.Concat(options.PlugableComponents).ToList() };
+
+		public static ClusterVNodeOptions WithPlugin(this ClusterVNodeOptions options, IPlugableComponent plugin) => 
+			WithPlugins(options, plugin);
 
 		public static ClusterVNodeOptions InCluster(this ClusterVNodeOptions options, int clusterSize) => options with {
 			Cluster = options.Cluster with {

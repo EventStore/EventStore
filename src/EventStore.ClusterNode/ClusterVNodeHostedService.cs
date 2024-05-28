@@ -1,3 +1,5 @@
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -11,7 +13,6 @@ using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core;
 using EventStore.Core.Authentication;
-using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication.InternalAuthentication;
@@ -33,273 +34,301 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using EventStore.Core.LogAbstraction;
 
-namespace EventStore.ClusterNode {
-	internal class ClusterVNodeHostedService : IHostedService, IDisposable {
-		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeHostedService>();
+namespace EventStore.ClusterNode;
 
-		private readonly ClusterVNodeOptions _options;
-		private readonly ExclusiveDbLock _dbLock;
-		private readonly ClusterNodeMutex _clusterNodeMutex;
+public class ClusterVNodeHostedService : IHostedService, IDisposable {
+	static readonly ILogger Logger = Log.ForContext<ClusterVNodeHostedService>();
 
-		public ClusterVNode Node { get; }
+	readonly ExclusiveDbLock? _dbLock;
 
-		public ClusterVNodeHostedService(
-			ClusterVNodeOptions options,
-			CertificateProvider certificateProvider,
-			IConfiguration configuration) {
+	public ClusterVNodeHostedService(ClusterVNodeOptions? options, CertificateProvider certificateProvider, IConfiguration configuration) {
+		if (options is null) 
+			throw new ArgumentNullException(nameof(options));
 
-			if (options == null) throw new ArgumentNullException(nameof(options));
+		// two plugin mechanisms; pluginLoader is the new one
+		var pluginLoader = new PluginLoader(new(Locations.PluginsDirectory));
+		
+		options = options.WithPlugins(pluginLoader.GetSubsystemsPlugins());
+		
+		ConfigureMD5();
 
-			// two plugin mechanisms; pluginLoader is the new one
-			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
-			var plugInContainer = FindPlugins();
+		ConfigureProjections(out var projectionType);
 
-			options = LoadSubsystemsPlugins(pluginLoader, options);
+		_dbLock = AcquireDbLock();
 
+		AcquireNodeMutex();
+
+		var logFormatFactory = GetLogFormatFactory();
+
+		Options = options;
+		
+		Node = ClusterVNode.Create(
+			Options, logFormatFactory, 
+			pluginLoader.GetAuthenticationProviderFactory(Options),
+			pluginLoader.GetAuthorizationProviderFactory(Options), 
+			GetPersistentSubscriptionConsumerStrategyFactories(),
+			certificateProvider,
+			configuration
+		);
+
+		Node.RegisterWebUiControllers(projectionType, Options.Interface.DisableAdminUi);
+		
+		return;
+
+		void ConfigureMD5() {
+			var md5Provider = pluginLoader.GetMD5ProviderFactories()
+				.FirstOrDefault()?.Build() ?? new NetMD5Provider();
+			
+			MD5.UseProvider(md5Provider);
+		
 			try {
-				options = options.WithPlugableComponent(ConfigureMD5());
+				options = options.WithPlugin(md5Provider);
 			} catch {
-				throw new
-					InvalidConfigurationException(
-						"Failed to configure MD5. If FIPS mode is enabled, please use the FIPS commercial plugin or disable FIPS mode.");
+				throw new InvalidConfigurationException("Failed to configure MD5. If FIPS mode is enabled, please use the FIPS commercial plugin or disable FIPS mode.");
 			}
+		}
 
-			var projectionMode = options.DevMode.Dev && options.Projection.RunProjections == ProjectionType.None
+		void ConfigureProjections(out ProjectionType runProjections) {
+			runProjections = options.DevMode.Dev && options.Projection.RunProjections == ProjectionType.None
 				? ProjectionType.System
 				: options.Projection.RunProjections;
+			
 			var startStandardProjections = options.Projection.StartStandardProjections || options.DevMode.Dev;
-			_options = projectionMode >= ProjectionType.System
-				? options.WithPlugableComponent(new ProjectionsSubsystem(
-					new ProjectionSubsystemOptions(
-						options.Projection.ProjectionThreads,
-						projectionMode,
-						startStandardProjections,
-						TimeSpan.FromMinutes(options.Projection.ProjectionsQueryExpiry),
-						options.Projection.FaultOutOfOrderProjections,
-						options.Projection.ProjectionCompilationTimeout,
-						options.Projection.ProjectionExecutionTimeout)))
-				: options;
 
-			if (!_options.Database.MemDb) {
-				var absolutePath = Path.GetFullPath(_options.Database.Db);
-				if (RuntimeInformation.IsWindows)
-					absolutePath = absolutePath.ToLower();
+			if (runProjections >= ProjectionType.System) {
+				options = options.WithPlugin(new ProjectionsSubsystem(new(
+					options.Projection.ProjectionThreads,
+					runProjections,
+					startStandardProjections,
+					TimeSpan.FromMinutes(options.Projection.ProjectionsQueryExpiry),
+					options.Projection.FaultOutOfOrderProjections,
+					options.Projection.ProjectionCompilationTimeout,
+					options.Projection.ProjectionExecutionTimeout
+				)));
+			}
+		}
 
-				_dbLock = new ExclusiveDbLock(absolutePath);
-				if (!_dbLock.Acquire())
-					throw new InvalidConfigurationException($"Couldn't acquire exclusive lock on DB at '{_options.Database.Db}'.");
+		ExclusiveDbLock? AcquireDbLock() {
+			if (options.Database.MemDb)
+				return null;
+
+			var absolutePath = RuntimeInformation.IsWindows
+				? Path.GetFullPath(options.Database.Db).ToLower()
+				: Path.GetFullPath(options.Database.Db);
+
+			var dbLock = new ExclusiveDbLock(absolutePath);
+			if (!dbLock.Acquire())
+				throw new InvalidConfigurationException($"Couldn't acquire exclusive lock on DB at '{options.Database.Db}'.");
+
+			return dbLock;
+		}
+		
+		void AcquireNodeMutex() {
+			var clusterNodeMutex = new ClusterNodeMutex();
+			if (!clusterNodeMutex.Acquire())
+				throw new InvalidConfigurationException($"Couldn't acquire exclusive Cluster Node mutex '{clusterNodeMutex.MutexName}'.");
+		}
+
+		dynamic GetLogFormatFactory() {
+			return options.Database.DbLogFormat switch {
+				DbLogFormat.V2 => new LogV2FormatAbstractorFactory(),
+				DbLogFormat.ExperimentalV3 => new LogV3FormatAbstractorFactory(),
+				_ => throw new ArgumentOutOfRangeException(nameof(options.Database.DbLogFormat), "Unexpected log format specified.")
+			};
+		}
+
+		static List<IPersistentSubscriptionConsumerStrategyFactory> GetPersistentSubscriptionConsumerStrategyFactories() {
+			var result = new List<IPersistentSubscriptionConsumerStrategyFactory>();
+
+			foreach (var potentialPlugin in AllPlugins()) {
+				try {
+					var plugin = potentialPlugin.Value;
+				
+					Logger.Information(
+						"Loaded consumer strategy plugin: {Plugin} version {Version}.", 
+						plugin.Name, plugin.Version
+					);
+				
+					result.Add(plugin.GetConsumerStrategyFactory());
+				}
+				catch (CompositionException ex) {
+					Logger.Error(ex, "Error loading consumer strategy plugin.");
+				}
 			}
 
-			_clusterNodeMutex = new ClusterNodeMutex();
-			if (!_clusterNodeMutex.Acquire())
-				throw new InvalidConfigurationException($"Couldn't acquire exclusive Cluster Node mutex '{_clusterNodeMutex.MutexName}'.");
-
-			var authorizationConfig = string.IsNullOrEmpty(_options.Auth.AuthorizationConfig)
-				? _options.Application.Config
-				: _options.Auth.AuthorizationConfig;
-
-			var authenticationConfig = string.IsNullOrEmpty(_options.Auth.AuthenticationConfig)
-				? _options.Application.Config
-				: _options.Auth.AuthenticationConfig;
-
-			if (_options.Database.DbLogFormat == DbLogFormat.V2) {
-				var logFormatFactory = new LogV2FormatAbstractorFactory();
-            	Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-	                GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
-					configuration);
-			} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
-				var logFormatFactory = new LogV3FormatAbstractorFactory();
-				Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-					GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
-					configuration);
-			} else {
-				throw new ArgumentOutOfRangeException(nameof(_options.Database.DbLogFormat), "Unexpected log format specified.");
-			}
-
-			var enabledNodeSubsystems = projectionMode >= ProjectionType.System
-				? new[] {NodeSubsystems.Projections}
-				: Array.Empty<NodeSubsystems>();
-
-			RegisterWebControllers(enabledNodeSubsystems);
-
-			AuthorizationProviderFactory GetAuthorizationProviderFactory() {
-				if (_options.Application.Insecure) {
-					return new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory());
-				}
-
-				var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
-					{
-						"internal", new AuthorizationProviderFactory(components =>
-							new LegacyAuthorizationProviderFactory(components.MainQueue,
-								_options.Application.AllowAnonymousEndpointAccess,
-								_options.Application.AllowAnonymousStreamAccess,
-								_options.Application.OverrideAnonymousEndpointAccessForGossip))
-					}
-				};
-
-				foreach (var potentialPlugin in pluginLoader.Load<IAuthorizationPlugin>()) {
-					try {
-						var commandLine = potentialPlugin.CommandLineName.ToLowerInvariant();
-						Log.Information(
-							"Loaded authorization plugin: {plugin} version {version} (Command Line: {commandLine})",
-							potentialPlugin.Name, potentialPlugin.Version, commandLine);
-						authorizationTypeToPlugin.Add(commandLine,
-							new AuthorizationProviderFactory(_ =>
-								potentialPlugin.GetAuthorizationProviderFactory(authorizationConfig)));
-					} catch (CompositionException ex) {
-						Log.Error(ex, "Error loading authentication plugin.");
-					}
-				}
-
-				if (!authorizationTypeToPlugin.TryGetValue(_options.Auth.AuthorizationType.ToLowerInvariant(),
-					out var factory)) {
-					throw new ApplicationInitializationException(
-						$"The authorization type {_options.Auth.AuthorizationType} is not recognised. If this is supposed " +
-						$"to be provided by an authorization plugin, confirm the plugin DLL is located in {Locations.PluginsDirectory}." +
-						Environment.NewLine +
-						$"Valid options for authorization are: {string.Join(", ", authorizationTypeToPlugin.Keys)}.");
-				}
-
-				return factory;
-			}
-
-			static CompositionContainer FindPlugins() {
+			return result;
+		
+			static IEnumerable<Lazy<IPersistentSubscriptionConsumerStrategyPlugin>> AllPlugins() {
 				var catalog = new AggregateCatalog();
 
 				catalog.Catalogs.Add(new AssemblyCatalog(typeof(ClusterVNodeHostedService).Assembly));
 
 				if (Directory.Exists(Locations.PluginsDirectory)) {
-					Log.Information("Plugins path: {pluginsDirectory}", Locations.PluginsDirectory);
+					Logger.Information("Plugins path: {PluginsDirectory}", Locations.PluginsDirectory);
 
-					Log.Information("Adding: {pluginsDirectory} to the plugin catalog.", Locations.PluginsDirectory);
+					Logger.Information("Adding: {PluginsDirectory} to the plugin catalog.", Locations.PluginsDirectory);
 					catalog.Catalogs.Add(new DirectoryCatalog(Locations.PluginsDirectory));
 
-					foreach (string dirPath in Directory.GetDirectories(Locations.PluginsDirectory, "*",
-						SearchOption.TopDirectoryOnly)) {
-						Log.Information("Adding: {pluginsDirectory} to the plugin catalog.", dirPath);
+					foreach (var dirPath in Directory.GetDirectories(Locations.PluginsDirectory, "*", SearchOption.TopDirectoryOnly)) {
+						Logger.Information("Adding: {PluginsDirectory} to the plugin catalog.", dirPath);
 						catalog.Catalogs.Add(new DirectoryCatalog(dirPath));
 					}
-				} else {
-					Log.Information("Cannot find plugins path: {pluginsDirectory}", Locations.PluginsDirectory);
+				}
+				else {
+					Logger.Information("Cannot find plugins path: {PluginsDirectory}", Locations.PluginsDirectory);
 				}
 
-				return new CompositionContainer(catalog);
+				return new CompositionContainer(catalog).GetExports<IPersistentSubscriptionConsumerStrategyPlugin>();
 			}
+		}
+	}
+	
+	public ClusterVNode Node { get; }
+	public ClusterVNodeOptions Options { get; }
+	
+	public Task StartAsync(CancellationToken cancellationToken) =>
+		Options.Application.WhatIf ? Task.CompletedTask : Node.StartAsync(false);
 
-			IPersistentSubscriptionConsumerStrategyFactory[] GetPersistentSubscriptionConsumerStrategyFactories() {
-				var allPlugins = plugInContainer.GetExports<IPersistentSubscriptionConsumerStrategyPlugin>();
+	public Task StopAsync(CancellationToken cancellationToken) =>
+		Node.StopAsync(cancellationToken: cancellationToken);
 
-				var strategyFactories = new List<IPersistentSubscriptionConsumerStrategyFactory>();
+	public void Dispose() {
+		if (_dbLock is not {IsAcquired: true})
+			return;
+		
+		using (_dbLock) _dbLock.Release();
+	}
+}
 
-				foreach (var potentialPlugin in allPlugins) {
-					try {
-						var plugin = potentialPlugin.Value;
-						Log.Information("Loaded consumer strategy plugin: {plugin} version {version}.", plugin.Name,
-							plugin.Version);
-						strategyFactories.Add(plugin.GetConsumerStrategyFactory());
-					} catch (CompositionException ex) {
-						Log.Error(ex, "Error loading consumer strategy plugin.");
-					}
-				}
+public static class PluginLoaderExtensions {
+	public static IEnumerable<IPlugableComponent> GetSubsystemsPlugins(this PluginLoader pluginLoader) {
+		foreach (var plugin in pluginLoader.Load<ISubsystemsPlugin>()) {
+			Log.Information(
+				"Loaded SubsystemsPlugin plugin: {Plugin} {Version}.",
+				plugin.CommandLineName, plugin.Version
+			);
+		
+			foreach (var subsystem in plugin.GetSubsystems())
+				yield return subsystem;
+		}
+	}
 
-				return strategyFactories.ToArray();
+	public static AuthorizationProviderFactory GetAuthorizationProviderFactory(this PluginLoader pluginLoader, ClusterVNodeOptions options) {
+		if (options.Application.Insecure)
+			return new(_ => new PassthroughAuthorizationProviderFactory());
+
+		var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
+			{
+				"internal", new AuthorizationProviderFactory(components =>
+					new LegacyAuthorizationProviderFactory(components.MainQueue,
+						options.Application.AllowAnonymousEndpointAccess,
+						options.Application.AllowAnonymousStreamAccess,
+						options.Application.OverrideAnonymousEndpointAccessForGossip))
 			}
+		};
+		
+		var authorizationConfig = string.IsNullOrEmpty(options.Auth.AuthorizationConfig)
+			? options.Application.Config
+			: options.Auth.AuthorizationConfig;
 
-			AuthenticationProviderFactory GetAuthenticationProviderFactory() {
-				if (_options.Application.Insecure) {
-					return new AuthenticationProviderFactory(_ => new PassthroughAuthenticationProviderFactory());
-				}
-
-				var authenticationTypeToPlugin = new Dictionary<string, AuthenticationProviderFactory> {
-					{
-						"internal", new AuthenticationProviderFactory(components =>
-							new InternalAuthenticationProviderFactory(components, _options.DefaultUser))
-					}
-				};
-
-				foreach (var potentialPlugin in pluginLoader.Load<IAuthenticationPlugin>()) {
-					try {
-						var commandLine = potentialPlugin.CommandLineName.ToLowerInvariant();
-						Log.Information(
-							"Loaded authentication plugin: {plugin} version {version} (Command Line: {commandLine})",
-							potentialPlugin.Name, potentialPlugin.Version, commandLine);
-						authenticationTypeToPlugin.Add(commandLine,
-							new AuthenticationProviderFactory(_ =>
-								potentialPlugin.GetAuthenticationProviderFactory(authenticationConfig)));
-					} catch (CompositionException ex) {
-						Log.Error(ex, "Error loading authentication plugin.");
-					}
-				}
-
-				return authenticationTypeToPlugin.TryGetValue(_options.Auth.AuthenticationType.ToLowerInvariant(),
-					out var factory)
-					? factory
-					: throw new ApplicationInitializationException(
-						$"The authentication type {_options.Auth.AuthenticationType} is not recognised. If this is supposed " +
-						$"to be provided by an authentication plugin, confirm the plugin DLL is located in {Locations.PluginsDirectory}." +
-						Environment.NewLine +
-						$"Valid options for authentication are: {string.Join(", ", authenticationTypeToPlugin.Keys)}.");
+		foreach (var plugin in pluginLoader.Load<IAuthorizationPlugin>()) {
+			try {
+				Log.Information(
+					"Loaded authorization plugin: {Plugin} version {Version} (Command Line: {CommandLine})",
+					plugin.Name, plugin.Version, plugin.CommandLineName
+				);
+				
+				authorizationTypeToPlugin.Add(
+					plugin.CommandLineName,
+					new(_ => plugin.GetAuthorizationProviderFactory(authorizationConfig))
+				);
 			}
-
-			static ClusterVNodeOptions LoadSubsystemsPlugins(PluginLoader pluginLoader, ClusterVNodeOptions options) {
-				var plugins = pluginLoader.Load<ISubsystemsPlugin>().ToArray();
-				foreach (var plugin in plugins) {
-					Log.Information("Loaded SubsystemsPlugin plugin: {plugin} {version}.",
-						plugin.CommandLineName,
-						plugin.Version);
-					var subsystems = plugin.GetSubsystems();
-					foreach (var subsystem in subsystems) {
-						options = options.WithPlugableComponent(subsystem);
-					}
-				}
-				return options;
-			}
-
-			IPlugableComponent ConfigureMD5() {
-				var md5Provider = GetMD5ProviderFactories().FirstOrDefault()?.Build() ?? new NetMD5Provider();
-				MD5.UseProvider(md5Provider);
-				return md5Provider;
-			}
-
-			IEnumerable<IMD5ProviderFactory> GetMD5ProviderFactories() {
-				var md5ProviderFactories = new List<IMD5ProviderFactory>();
-
-				foreach (var plugin in pluginLoader.Load<IMD5Plugin>()) {
-					try {
-						var commandLine = plugin.CommandLineName.ToLowerInvariant();
-						Log.Information(
-							"Loaded MD5 plugin: {plugin} version {version} (Command Line: {commandLine})",
-							plugin.Name, plugin.Version, commandLine);
-						md5ProviderFactories.Add(plugin.GetMD5ProviderFactory());
-					} catch (CompositionException ex) {
-						Log.Error(ex, "Error loading MD5 plugin: {plugin}.", plugin.Name);
-					}
-				}
-
-				return md5ProviderFactories.ToArray();
+			catch (CompositionException ex) {
+				Log.Error(ex, "Error loading authentication plugin.");
 			}
 		}
 
-		private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems) {
-			if (!_options.Interface.DisableAdminUi) {
-				Node.HttpService.SetupController(new ClusterWebUiController(Node.MainQueue,
-					enabledNodeSubsystems));
+		if (!authorizationTypeToPlugin.TryGetValue(options.Auth.AuthorizationType.ToLowerInvariant(), out var factory)) {
+			throw new ApplicationInitializationException(
+				$"The authorization type {options.Auth.AuthorizationType} is not recognised. If this is supposed " +
+				$"to be provided by an authorization plugin, confirm the plugin DLL is located in {Locations.PluginsDirectory}." +
+				Environment.NewLine +
+				$"Valid options for authorization are: {string.Join(", ", authorizationTypeToPlugin.Keys)}.");
+		}
+
+		return factory;
+	}
+
+	public static AuthenticationProviderFactory GetAuthenticationProviderFactory(this PluginLoader pluginLoader, ClusterVNodeOptions options) {
+		if (options.Application.Insecure)
+			return new(_ => new PassthroughAuthenticationProviderFactory());
+
+		var authenticationTypeToPlugin = new Dictionary<string, AuthenticationProviderFactory> {
+			{
+				"internal", new AuthenticationProviderFactory(components =>
+					new InternalAuthenticationProviderFactory(components, options.DefaultUser))
+			}
+		};
+
+		var authenticationConfig = string.IsNullOrEmpty(options.Auth.AuthenticationConfig)
+			? options.Application.Config
+			: options.Auth.AuthenticationConfig;
+
+		foreach (var plugin in pluginLoader.Load<IAuthenticationPlugin>()) {
+			try {
+				Log.Information(
+					"Loaded authentication plugin: {Plugin} version {Version} (Command Line: {CommandLine})",
+					plugin.Name, plugin.Version, plugin.CommandLineName
+				);
+				authenticationTypeToPlugin.Add(
+					plugin.CommandLineName, new(_ => plugin.GetAuthenticationProviderFactory(authenticationConfig))
+				);
+			}
+			catch (CompositionException ex) {
+				Log.Error(ex, "Error loading authentication plugin.");
 			}
 		}
 
-		public Task StartAsync(CancellationToken cancellationToken) =>
-			_options.Application.WhatIf ? Task.CompletedTask : Node.StartAsync(false);
+		return authenticationTypeToPlugin.TryGetValue(options.Auth.AuthenticationType.ToLowerInvariant(), out var factory)
+			? factory
+			: throw new ApplicationInitializationException(
+				$"The authentication type {options.Auth.AuthenticationType} is not recognised. If this is supposed " +
+				$"to be provided by an authentication plugin, confirm the plugin DLL is located in {Locations.PluginsDirectory}." +
+				Environment.NewLine +
+				$"Valid options for authentication are: {string.Join(", ", authenticationTypeToPlugin.Keys)}.");
+	}
 
-		public Task StopAsync(CancellationToken cancellationToken) =>
-			Node.StopAsync(cancellationToken: cancellationToken);
+	public static List<IMD5ProviderFactory> GetMD5ProviderFactories(this PluginLoader pluginLoader) {
+		var result = new List<IMD5ProviderFactory>();
 
-		public void Dispose() {
-			if (_dbLock is not {IsAcquired: true}) {
-				return;
+		foreach (var plugin in pluginLoader.Load<IMD5Plugin>()) {
+			try {
+				Log.Information(
+					"Loaded MD5 plugin: {Plugin} version {Version} (Command Line: {CommandLine})",
+					plugin.Name, plugin.Version, plugin.CommandLineName
+				);
+				
+				result.Add(plugin.GetMD5ProviderFactory());
 			}
-			using (_dbLock) {
-				_dbLock.Release();
+			catch (CompositionException ex) {
+				Log.Error(ex, "Error loading MD5 plugin: {Plugin}.", plugin.Name);
 			}
 		}
+
+		return result;
+	}
+}
+
+public static class ClusterVNodeExtensions {
+	public static void RegisterWebUiControllers(this ClusterVNode node, ProjectionType projectionType, bool disableAdminUi) {
+		if (disableAdminUi) return;
+				
+		NodeSubsystems[] enabledNodeSubsystems = projectionType >= ProjectionType.System
+			? [NodeSubsystems.Projections]
+			: [];
+			
+		node.HttpService.SetupController(
+			new ClusterWebUiController(node.MainQueue, enabledNodeSubsystems)
+		);
 	}
 }
