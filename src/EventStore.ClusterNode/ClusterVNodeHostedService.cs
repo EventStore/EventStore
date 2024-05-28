@@ -56,14 +56,12 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 
 		_dbLock = AcquireDbLock();
 
-		AcquireNodeMutex();
-
-		var logFormatFactory = GetLogFormatFactory();
-
+		AcquireExclusiveNodeMutex();
+		
 		Options = options;
 		
 		Node = ClusterVNode.Create(
-			Options, logFormatFactory, 
+			Options, GetLogFormatFactory(), 
 			pluginLoader.GetAuthenticationProviderFactory(Options),
 			pluginLoader.GetAuthorizationProviderFactory(Options), 
 			GetPersistentSubscriptionConsumerStrategyFactories(),
@@ -123,7 +121,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			return dbLock;
 		}
 		
-		void AcquireNodeMutex() {
+		void AcquireExclusiveNodeMutex() {
 			var clusterNodeMutex = new ClusterNodeMutex();
 			if (!clusterNodeMutex.Acquire())
 				throw new InvalidConfigurationException($"Couldn't acquire exclusive Cluster Node mutex '{clusterNodeMutex.MutexName}'.");
@@ -200,10 +198,12 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 	}
 }
 
-public static class PluginLoaderExtensions {
+static class PluginLoaderExtensions {
+	static readonly ILogger Logger = Log.ForContext<ClusterVNodeHostedService>();
+	
 	public static IEnumerable<IPlugableComponent> GetSubsystemsPlugins(this PluginLoader pluginLoader) {
 		foreach (var plugin in pluginLoader.Load<ISubsystemsPlugin>()) {
-			Log.Information(
+			Logger.Information(
 				"Loaded SubsystemsPlugin plugin: {Plugin} {Version}.",
 				plugin.CommandLineName, plugin.Version
 			);
@@ -233,7 +233,7 @@ public static class PluginLoaderExtensions {
 
 		foreach (var plugin in pluginLoader.Load<IAuthorizationPlugin>()) {
 			try {
-				Log.Information(
+				Logger.Information(
 					"Loaded authorization plugin: {Plugin} version {Version} (Command Line: {CommandLine})",
 					plugin.Name, plugin.Version, plugin.CommandLineName
 				);
@@ -276,16 +276,17 @@ public static class PluginLoaderExtensions {
 
 		foreach (var plugin in pluginLoader.Load<IAuthenticationPlugin>()) {
 			try {
-				Log.Information(
+				Logger.Information(
 					"Loaded authentication plugin: {Plugin} version {Version} (Command Line: {CommandLine})",
 					plugin.Name, plugin.Version, plugin.CommandLineName
 				);
+				
 				authenticationTypeToPlugin.Add(
 					plugin.CommandLineName, new(_ => plugin.GetAuthenticationProviderFactory(authenticationConfig))
 				);
 			}
 			catch (CompositionException ex) {
-				Log.Error(ex, "Error loading authentication plugin.");
+				Logger.Error(ex, "Error loading authentication plugin.");
 			}
 		}
 
@@ -303,7 +304,7 @@ public static class PluginLoaderExtensions {
 
 		foreach (var plugin in pluginLoader.Load<IMD5Plugin>()) {
 			try {
-				Log.Information(
+				Logger.Information(
 					"Loaded MD5 plugin: {Plugin} version {Version} (Command Line: {CommandLine})",
 					plugin.Name, plugin.Version, plugin.CommandLineName
 				);
@@ -319,7 +320,7 @@ public static class PluginLoaderExtensions {
 	}
 }
 
-public static class ClusterVNodeExtensions {
+static class ClusterVNodeExtensions {
 	public static void RegisterWebUiControllers(this ClusterVNode node, ProjectionType projectionType, bool disableAdminUi) {
 		if (disableAdminUi) return;
 				
