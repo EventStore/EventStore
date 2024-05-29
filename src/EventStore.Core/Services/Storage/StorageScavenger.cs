@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Protocol;
+using EventStore.Core.Services.Storage.Scavenge;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Common;
 using EventStore.Core.Services.UserManagement;
@@ -20,6 +22,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Scavenging;
 using JetBrains.Annotations;
 using Serilog;
+using Event = EventStore.Core.Data.Event;
 using Message = EventStore.Core.Messaging.Message;
 
 namespace EventStore.Core.Services.Storage {
@@ -97,10 +100,23 @@ namespace EventStore.Core.Services.Storage {
 			while (!token.IsCancellationRequested) {
 				token.ThrowIfCancellationRequested();
 
-				var eventConfiguration = await _client.ReadStreamBackwards(SystemStreams.ClusterAutoScavengeConfigurationStream, 1, token)
-					.FirstOrNoneAsync(token);
+				AutoScavengeConfigurationUpdated? configuration = null;
+				await foreach (var @event in _client.ReadStreamBackwards(
+					               SystemStreams.ClusterAutoScavengeConfigurationStream, 500, token)) {
 
-				if (eventConfiguration == null) {
+					if (@event.EventType != SystemEventTypes.AutoScavengeConfigurationUpdated) {
+						Log.Debug($"Skipping event {@event.EventType} when loading cluster auto scavenge configuration");
+						continue;
+					}
+
+					try {
+						configuration = @event.Data.ParseJson<AutoScavengeConfigurationUpdated>();
+					} catch (Exception e) {
+						Log.Error(e, "Error when parsing cluster auto scavenge configuration");
+					}
+				}
+
+				if (configuration == null) {
 					Log.Information("No auto-scavenge configuration set up");
 					await Task.Delay(TimeSpan.FromSeconds(30), token);
 					continue;
