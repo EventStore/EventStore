@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using DotNext.Collections.Generic;
+using EventStore.Cluster;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -31,7 +33,8 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<ClientMessage.ScavengeDatabase>,
 		IHandle<ClientMessage.StopDatabaseScavenge>,
 		IHandle<ClientMessage.GetDatabaseScavenge>,
-		IHandle<SystemMessage.StateChangeMessage> {
+		IHandle<SystemMessage.StateChangeMessage>,
+	    IHandle<GossipMessage.GossipReceived> {
 
 		protected static ILogger Log { get; } = Serilog.Log.ForContext<StorageScavenger>();
 		private readonly ITFChunkScavengerLogManager _logManager;
@@ -43,15 +46,16 @@ namespace EventStore.Core.Services.Storage {
 		private Guid _switchChunksLockId = Guid.Empty;
 		private readonly object _lock = new object();
 		private readonly IClient _client;
+		private readonly Channel<Msg> _msgChannel;
 
-		private IScavenger _currentScavenge;
+		private IScavenger? _currentScavenge;
 
 		// invariant: _currentScavenge is not null => _currentScavengeTask is the task of the current scavenge
-		private Task _currentScavengeTask;
-		private CancellationTokenSource _cancellationTokenSource;
-		private AutomatedScavengeState _autoScavengeState;
-		[CanBeNull] private ScavengeConfiguration _scavengeConfiguration;
-		[CanBeNull] private CancellationTokenSource _tokenSource = null;
+		private Task? _currentScavengeTask;
+		private CancellationTokenSource? _cancellationTokenSource;
+		private AutomatedScavengeState? _autoScavengeState;
+		private ScavengeConfiguration? _scavengeConfiguration;
+		private CancellationTokenSource? _tokenSource;
 
 		public StorageScavenger(
 			ITFChunkScavengerLogManager logManager,
@@ -76,22 +80,25 @@ namespace EventStore.Core.Services.Storage {
 			_nodeEndpoint = nodeEndpoint;
 			_autoScavengeState = new AutomatedScavengeState();
 			_client = new InternalClient(publisher);
+			_msgChannel = Channel.CreateBounded<Msg>(new BoundedChannelOptions(10) {
+				FullMode = BoundedChannelFullMode.DropOldest,
+				SingleReader = true,
+			});
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
 			switch (message.State)
 			{
-				case VNodeState.Follower when _autoScavengeState.Resigning:
-					_autoScavengeState.State = VNodeState.Follower;
-					OnScavengeScheduled();
-					break;
-
 				case VNodeState.Leader or VNodeState.Follower:
-					_autoScavengeState.State = message.State;
 					_logManager.Initialise();
 
-					_tokenSource = new CancellationTokenSource();
-					Task.Run(() => AutoScavengeProcess(_tokenSource.Token));
+					if (message.State == VNodeState.Follower && _tokenSource != null) {
+						_tokenSource!.Cancel();
+						_tokenSource = null;
+					} else {
+						_tokenSource = new CancellationTokenSource();
+						Task.Run(() => AutoScavengeProcess(_tokenSource.Token));
+					}
 					break;
 			}
 		}
@@ -123,22 +130,46 @@ namespace EventStore.Core.Services.Storage {
 				}
 
 				Log.Information("Loading past auto scavenges to rebuild state");
-				var start = StreamRevision.FromInt64(_autoScavengeState.From);
+				_autoScavengeState ??= new AutomatedScavengeState();
+				var start = StreamRevision.FromInt64(_autoScavengeState.Value.From);
 
+				AutoScavengeProcessState? last = null;
 				await foreach (var @event in _client.ReadStreamForwards(SystemStreams.ClusterAutoScavengesStream, start,
 					               long.MaxValue, token)) {
 					token.ThrowIfCancellationRequested();
 
 					switch (@event.EventType) {
 						case SystemEventTypes.AutoScavengeProcessStarted:
+							var processStarted = @event.Data.ParseJson<AutoScavengeProcessStarted>();
+							last = new AutoScavengeProcessState {
+								Started = processStarted.Started,
+								Nodes = processStarted.Nodes,
+							};
 							break;
 						case SystemEventTypes.AutoScavengeProcessCompleted:
+							var processCompleted = @event.Data.ParseJson<AutoScavengeProcessCompleted>();
+							last!.Ended = processCompleted.Ended;
+							break;
+						case SystemEventTypes.AutoScavengeClusterNodesChanged:
+							var nodesChanged = @event.Data.ParseJson<AutoScavengeClusterNodesChanged>();
+							last!.Nodes = nodesChanged.Nodes;
 							break;
 						case SystemEventTypes.AutoScavengeStarted:
+							var scavengeStarted = @event.Data.ParseJson<AutoScavengeStarted>();
+							last!.DesignatedNode = new DesignatedNode {
+								Node = scavengeStarted.Node,
+								Started = true,
+							};
 							break;
 						case SystemEventTypes.AutoScavengeCompleted:
+							var scavengeCompleted = @event.Data.ParseJson<AutoScavengeCompleted>();
+							last = null;
 							break;
 						case SystemEventTypes.AutoScavengeNodeDesignated:
+							var nodeDesignated = @event.Data.ParseJson<AutoScavengeNodeDesignated>();
+							last!.DesignatedNode = new DesignatedNode {
+								Node = nodeDesignated.Node,
+							};
 							break;
 					}
 				}
@@ -184,9 +215,9 @@ namespace EventStore.Core.Services.Storage {
 				lock (_lock) {
 					if (_currentScavenge != null &&
 					    (_currentScavenge.ScavengeId == message.ScavengeId || message.ScavengeId == "current")) {
-						_cancellationTokenSource.Cancel();
+						_cancellationTokenSource?.Cancel();
 
-						_currentScavengeTask.ContinueWith(_ => {
+						_currentScavengeTask?.ContinueWith(_ => {
 							message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseStoppedResponse(
 								message.CorrelationId,
 								_currentScavenge.ScavengeId));
@@ -217,12 +248,16 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private void ReloadConfiguration() {
-			if (_autoScavengeState.State != VNodeState.Leader)
-				return;
-
-			ReadBackwards(SystemStreams.ClusterAutoScavengeConfigurationStream, -1, 1, false, OnReadScavengeConfiguration);
+		public void Handle(GossipMessage.GossipReceived message) {
+			_msgChannel.Writer.TryWrite(new Msg.GossipReceived(message));
 		}
+
+		// private void ReloadConfiguration() {
+		// 	if (_autoScavengeState.State != VNodeState.Leader)
+		// 		return;
+		//
+		// 	ReadBackwards(SystemStreams.ClusterAutoScavengeConfigurationStream, -1, 1, false, OnReadScavengeConfiguration);
+		// }
 
 		private async void HandleCleanupWhenFinished(Task newScavengeTask, IScavenger newScavenge, ILogger logger) {
 			// Clean up the reference to the TfChunkScavenger once it's finished.
@@ -331,108 +366,108 @@ namespace EventStore.Core.Services.Storage {
 			});
 		}
 
-		private void OnReadScavengeConfiguration(ClientMessage.ReadStreamEventsBackwardCompleted result) {
-			if (_autoScavengeState.State != VNodeState.Leader)
-				return;
-
-			if (result.Events.Length == 1)
-				_scavengeConfiguration = result.Events[0].OriginalEvent.Data.ParseJson<ScavengeConfiguration>();
-
-			ReadForwards(SystemStreams.ScavengesStream, _autoScavengeState.From, 500, true, OnReadPastScavenges);
-		}
+		// private void OnReadScavengeConfiguration(ClientMessage.ReadStreamEventsBackwardCompleted result) {
+		// 	if (_autoScavengeState.State != VNodeState.Leader)
+		// 		return;
+		//
+		// 	if (result.Events.Length == 1)
+		// 		_scavengeConfiguration = result.Events[0].OriginalEvent.Data.ParseJson<ScavengeConfiguration>();
+		//
+		// 	ReadForwards(SystemStreams.ScavengesStream, _autoScavengeState.From, 500, true, OnReadPastScavenges);
+		// }
 
 		// TODO - We should probably also track if we already have a scavenge running in other nodes. Checking is only
 		// eventually consistent because it's possible that our node is lagging behind on replication and we just didn't
 		// receive the scavengeStarted event.
-		private long? OnReadPastScavenges(ClientMessage.ReadStreamEventsForwardCompleted result) {
-			if (_autoScavengeState.State != VNodeState.Leader)
-				return null;
+		// private long? OnReadPastScavenges(ClientMessage.ReadStreamEventsForwardCompleted result) {
+		// 	if (_autoScavengeState.State != VNodeState.Leader)
+		// 		return null;
+		//
+		// 	foreach (var @event in result.Events) {
+		// 		if (@event.ResolveResult != ReadEventResult.Success)
+		// 			continue;
+		//
+		// 		var dictionary = @event.Event.Data.ParseJson<Dictionary<string, object>>();
+		// 		if (!dictionary.TryGetValue("nodeEndpoint", out var entryNode) ||
+		// 		    entryNode.ToString() != _nodeEndpoint) {
+		// 			continue;
+		// 		}
+		//
+		//
+		// 		if (!dictionary.TryGetValue("scavengeId", out var scavengeIdEntry)) {
+		// 			Log.Warning("An entry in the scavenge log has no scavengeId");
+		// 			continue;
+		// 		}
+		//
+		// 		var scavengeId = scavengeIdEntry.ToString();
+		// 		switch (@event.OriginalEvent.EventType) {
+		// 			case SystemEventTypes.ScavengeStarted:
+		// 				_autoScavengeState.IncompleteScavenges.Add(scavengeId, @event.OriginalEvent.TimeStamp);
+		// 				break;
+		//
+		// 			case SystemEventTypes.ScavengeCompleted: {
+		//
+		// 				if (!dictionary.TryGetValue("timeTaken", out var timeTakenEntry))
+		// 					continue;
+		//
+		// 				if (!_autoScavengeState.IncompleteScavenges.Remove(scavengeId, out var started))
+		// 					continue;
+		//
+		// 				_autoScavengeState.LastCompletedScavengeStarted = started;
+		// 				_autoScavengeState.LastCompleteScavengeTimeTaken = TimeSpan.Parse(timeTakenEntry.ToString());
+		// 				break;
+		// 			}
+		// 		}
+		// 	}
+		//
+		// 	_autoScavengeState.From = result.NextEventNumber;
+		// 	if (!result.IsEndOfStream)
+		// 		return result.NextEventNumber;
+		//
+		// 	// Means we either have ongoing scavenges or we don't have any scavenge schedule in place.
+		// 	if (_autoScavengeState.IncompleteScavenges.Count != 0 || _scavengeConfiguration == null) {
+		// 		// We reload the configuration at a later time to see if some progress was made.
+		// 		_publisher.Publish(TimerMessage.Schedule.Create<Message>(TimeSpan.FromSeconds(30),
+		// 			new CallbackEnvelope(_ => ReloadConfiguration()), null));
+		//
+		// 		return null;
+		// 	}
+		//
+		// 	TimeSpan scheduleScavenge = TimeSpan.Zero;
+		//
+		// 	if (_autoScavengeState.LastCompletedScavengeStarted != null) {
+		// 		var ended = _autoScavengeState.LastCompletedScavengeStarted.Value +
+		// 		            _autoScavengeState.LastCompleteScavengeTimeTaken;
+		//
+		// 		var diff = DateTime.Now - ended;
+		// 		if (diff >= _scavengeConfiguration.Schedule) {
+		// 			OnScavengeScheduled();
+		// 			return null;
+		// 		}
+		//
+		// 		scheduleScavenge = _scavengeConfiguration.Schedule - diff;
+		// 	} else {
+		// 		scheduleScavenge = _scavengeConfiguration.Schedule;
+		// 	}
+		//
+		// 	_publisher.Publish(TimerMessage.Schedule.Create<Message>(scheduleScavenge,
+		// 		new CallbackEnvelope(_ => OnScavengeScheduled()), null));
+		//
+		// 	return null;
+		// }
 
-			foreach (var @event in result.Events) {
-				if (@event.ResolveResult != ReadEventResult.Success)
-					continue;
+		// private void OnScavengeScheduled() {
+		// 	if (_autoScavengeState.State != VNodeState.Leader)
+		// 		return;
+		//
+		// 	_autoScavengeState.Resigning = true;
+		// 	_publisher.Publish(new ClientMessage.ResignNode());
+		//
+		// 	Handle(new ClientMessage.ScavengeDatabase(new CallbackEnvelope(OnScavengeSubmitted), Guid.NewGuid(),
+		// 		SystemAccounts.System, 0, 1, null, null, false));
+		// }
 
-				var dictionary = @event.Event.Data.ParseJson<Dictionary<string, object>>();
-				if (!dictionary.TryGetValue("nodeEndpoint", out var entryNode) ||
-				    entryNode.ToString() != _nodeEndpoint) {
-					continue;
-				}
-
-
-				if (!dictionary.TryGetValue("scavengeId", out var scavengeIdEntry)) {
-					Log.Warning("An entry in the scavenge log has no scavengeId");
-					continue;
-				}
-
-				var scavengeId = scavengeIdEntry.ToString();
-				switch (@event.OriginalEvent.EventType) {
-					case SystemEventTypes.ScavengeStarted:
-						_autoScavengeState.IncompleteScavenges.Add(scavengeId, @event.OriginalEvent.TimeStamp);
-						break;
-
-					case SystemEventTypes.ScavengeCompleted: {
-
-						if (!dictionary.TryGetValue("timeTaken", out var timeTakenEntry))
-							continue;
-
-						if (!_autoScavengeState.IncompleteScavenges.Remove(scavengeId, out var started))
-							continue;
-
-						_autoScavengeState.LastCompletedScavengeStarted = started;
-						_autoScavengeState.LastCompleteScavengeTimeTaken = TimeSpan.Parse(timeTakenEntry.ToString());
-						break;
-					}
-				}
-			}
-
-			_autoScavengeState.From = result.NextEventNumber;
-			if (!result.IsEndOfStream)
-				return result.NextEventNumber;
-
-			// Means we either have ongoing scavenges or we don't have any scavenge schedule in place.
-			if (_autoScavengeState.IncompleteScavenges.Count != 0 || _scavengeConfiguration == null) {
-				// We reload the configuration at a later time to see if some progress was made.
-				_publisher.Publish(TimerMessage.Schedule.Create<Message>(TimeSpan.FromSeconds(30),
-					new CallbackEnvelope(_ => ReloadConfiguration()), null));
-
-				return null;
-			}
-
-			TimeSpan scheduleScavenge = TimeSpan.Zero;
-
-			if (_autoScavengeState.LastCompletedScavengeStarted != null) {
-				var ended = _autoScavengeState.LastCompletedScavengeStarted.Value +
-				            _autoScavengeState.LastCompleteScavengeTimeTaken;
-
-				var diff = DateTime.Now - ended;
-				if (diff >= _scavengeConfiguration.Schedule) {
-					OnScavengeScheduled();
-					return null;
-				}
-
-				scheduleScavenge = _scavengeConfiguration.Schedule - diff;
-			} else {
-				scheduleScavenge = _scavengeConfiguration.Schedule;
-			}
-
-			_publisher.Publish(TimerMessage.Schedule.Create<Message>(scheduleScavenge,
-				new CallbackEnvelope(_ => OnScavengeScheduled()), null));
-
-			return null;
-		}
-
-		private void OnScavengeScheduled() {
-			if (_autoScavengeState.State != VNodeState.Leader)
-				return;
-
-			_autoScavengeState.Resigning = true;
-			_publisher.Publish(new ClientMessage.ResignNode());
-
-			Handle(new ClientMessage.ScavengeDatabase(new CallbackEnvelope(OnScavengeSubmitted), Guid.NewGuid(),
-				SystemAccounts.System, 0, 1, null, null, false));
-		}
-
-		private void OnScavengeSubmitted(Message message) {
+		/*private void OnScavengeSubmitted(Message message) {
 			switch (message)
 			{
 				case ClientMessage.ScavengeDatabaseInProgressResponse resp:
@@ -443,8 +478,23 @@ namespace EventStore.Core.Services.Storage {
 					_autoScavengeState.IncompleteScavenges.Add(resp.ScavengeId, DateTime.Now);
 					return;
 			}
+		}*/
+
+		private class AutoScavengeProcessState {
+			public DateTime Started { get; init; }
+			public DateTime? Ended { get; set; }
+
+			public List<EndPoint> Nodes { get; set; }
+
+			public DesignatedNode? DesignatedNode { get; set; }
+
+			public bool IsCompleted => Ended != null;
 		}
 
+		public class DesignatedNode {
+			public EndPoint Node { get; init; }
+			public bool Started { get; set; }
+		}
 
 		private struct AutomatedScavengeState() {
 			internal VNodeState State = VNodeState.Unknown;
@@ -453,6 +503,16 @@ namespace EventStore.Core.Services.Storage {
 			internal Dictionary<string, DateTime> IncompleteScavenges = new();
 			internal DateTime? LastCompletedScavengeStarted;
 			internal TimeSpan LastCompleteScavengeTimeTaken = TimeSpan.Zero;
+		}
+
+		private abstract class Msg {
+			public class GossipReceived(GossipMessage.GossipReceived Gossip) : Msg {
+				public GossipMessage.GossipReceived Gossip { get; init; } = Gossip;
+
+				public void Deconstruct(out GossipMessage.GossipReceived Gossip) {
+					Gossip = this.Gossip;
+				}
+			}
 		}
 	}
 }

@@ -1,3 +1,5 @@
+using System;
+
 namespace EventStore.Core.Services.Storage.Scavenge;
 
-public record AutoScavengeProcessCompleted();
+public record AutoScavengeProcessCompleted(DateTime Ended);

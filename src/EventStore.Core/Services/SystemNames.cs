@@ -102,6 +102,7 @@ namespace EventStore.Core.Services {
 		public const string AutoScavengeCompleted = "$autoScavengeCompleted";
 		public const string AutoScavengeNodeDesignated = "$autoScavengeNodeDesignated";
 		public const string AutoScavengeConfigurationUpdated = "$autoScavengeConfigurationUpdated";
+		public const string AutoScavengeClusterNodesChanged = "$autoScavengeClusterNodesChanged";
 
 		public static string StreamReferenceEventToStreamId(string eventType, ReadOnlyMemory<byte> data) {
 			string streamId = null;

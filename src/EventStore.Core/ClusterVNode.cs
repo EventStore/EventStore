@@ -1440,6 +1440,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
 			_mainBus.Subscribe<ClientMessage.GetDatabaseScavenge>(storageScavenger);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
+			_mainBus.Subscribe<GossipMessage.GossipReceived>(storageScavenger);
 			// ReSharper restore RedundantTypeArgumentsOfMethod
 
 			// REDACTION
