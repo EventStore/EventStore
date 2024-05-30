@@ -3,20 +3,6 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Cherry picked from https
-- //github.com/EventStore/EventStore/pull/4151 [EventStore#4166](https://github.com/EventStore/EventStore/pull/4166)
-- //github.com/EventStore/EventStore/pull/4180 [EventStore#4181](https://github.com/EventStore/EventStore/pull/4181)
-- //github.com/EventStore/EventStore/pull/4182 [EventStore#4183](https://github.com/EventStore/EventStore/pull/4183)
-- //github.com/EventStore/EventStore/pull/4184 [EventStore#4185](https://github.com/EventStore/EventStore/pull/4185)
-- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4193](https://github.com/EventStore/EventStore/pull/4193)
-- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4192](https://github.com/EventStore/EventStore/pull/4192)
-- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4191](https://github.com/EventStore/EventStore/pull/4191)
-- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4190](https://github.com/EventStore/EventStore/pull/4190)
-- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4189](https://github.com/EventStore/EventStore/pull/4189)
-- //github.com/EventStore/EventStore/pull/4200 [EventStore#4203](https://github.com/EventStore/EventStore/pull/4203)
-- //github.com/EventStore/EventStore/pull/4204 [EventStore#4205](https://github.com/EventStore/EventStore/pull/4205)
-- //github.com/EventStore/EventStore/pull/4207 [EventStore#4208](https://github.com/EventStore/EventStore/pull/4208)
-
 ### Changed
 - Version number [EventStore#4195](https://github.com/EventStore/EventStore/pull/4195)
 - version number [EventStore#4188](https://github.com/EventStore/EventStore/pull/4188)
@@ -38,6 +24,17 @@ All notable changes to this project will be documented in this file.
 
 ### Updated
 - dockerfile for newer buildkit [EventStore#4204](https://github.com/EventStore/EventStore/pull/4204)
+
+## [23.10.2] - 2024-05-30
+
+### Changed
+- Upgrade to .NET 8. [EventStore#4046](https://github.com/EventStore/EventStore/pull/4046)
+- Explicitly set the shutdown timeout to 5s, which was default in previous dotnet versions. Behaviour unchanged since previous release. [EventStore#4110](https://github.com/EventStore/EventStore/pull/4110)
+
+### Fixed
+- Upgraded package reference for [CVE-2024-0057](https://github.com/advisories/GHSA-68w7-72jg-6qpp). [EventStore#4164](https://github.com/EventStore/EventStore/pull/4164)
+- Events written in explicit transactions via TCP can be missing from $all reads/subscriptions [EventStore#4253](https://github.com/EventStore/EventStore/pull/4253)
+- TestClient package dependencies [EventStore#4207](https://github.com/EventStore/EventStore/pull/4207)
 
 ## [24.2.0] - 2024-02-25
 
