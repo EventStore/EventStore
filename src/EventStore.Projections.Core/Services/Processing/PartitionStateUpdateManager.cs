@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				}
 
 				//NOTE: order yb is required to satisfy internal emit events validation
-				// which ensures that events are ordered by causedBy tag.  
+				// which ensures that events are ordered by causedBy tag.
 				// it is too strong check, but ...
 				eventWriter.ValidateOrderAndEmitEvents(list.OrderBy(v => v.Event.CausedByTag).ToArray());
 			}

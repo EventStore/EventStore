@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.Contracts;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
+using Serilog;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
@@ -34,6 +35,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		protected bool _stopped;
 
 		private PartitionState _currentProjectionState;
+		private bool _largeStateWarningLogged = false;
 
 		protected CoreProjectionCheckpointManager(
 			IPublisher publisher,
@@ -166,15 +168,33 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (_stopping)
 				throw new InvalidOperationException("Stopping");
 
+			if (partition == "" && newState.State == null) // ignore non-root partitions and non-changed states
+				throw new NotSupportedException("Internal check");
+
+			CheckStateSize(newState , partition);
 
 			if (_usePersistentCheckpoints && partition != "")
 				CapturePartitionStateUpdated(partition, oldState, newState);
 
-			if (partition == "" && newState.State == null) // ignore non-root partitions and non-changed states
-				throw new NotSupportedException("Internal check");
-
 			if (partition == "")
 				_currentProjectionState = newState;
+		}
+
+		private void CheckStateSize(PartitionState result , string partition) {
+			if (!_largeStateWarningLogged && result.Size >= 8_000_000 && !partition.Equals("")) {
+				Log.Warning(
+					"State size for the Projection {projectionName} for Partition {partitionName} is greater than 8 MB. State size for a projection must be less than 16 MB. Current state size for Partition {partitionName} is {stateSize} MB.",
+					_namingBuilder.EffectiveProjectionName, partition, partition,
+					result.Size / Math.Pow(10, 6));
+				_largeStateWarningLogged = true;
+			}
+			else if (!_largeStateWarningLogged && result.Size >= 8_000_000 && partition.Equals("") ) {
+				Log.Warning(
+					"State size for the Projection {projectionName} is greater than 8 MB. State size for a projection must be less than 16 MB. Current state size for Projection {projectionName} is {stateSize} MB.",
+					_namingBuilder.EffectiveProjectionName, _namingBuilder.EffectiveProjectionName,
+					result.Size / Math.Pow(10, 6));
+				_largeStateWarningLogged = true;
+			}
 		}
 
 		public void EventProcessed(CheckpointTag checkpointTag, float progress) {

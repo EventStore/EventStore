@@ -7,6 +7,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using Serilog;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
@@ -27,6 +28,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private const int MinAttemptWarnThreshold = 5;
 		private bool _metaStreamWritten;
 		private Random _random = new Random();
+		private bool _largeCheckpointStateWarningLogged = false;
 
 		public CoreProjectionCheckpointWriter(
 			string projectionCheckpointStreamId, IODispatcher ioDispatcher, ProjectionVersion projectionVersion,
@@ -161,10 +163,21 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		private void PublishWriteCheckpointEvent() {
+			CheckpointStateSizeCheck();
 			_writeRequestId = _ioDispatcher.WriteEvent(
 				_projectionCheckpointStreamId, _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished,
 				SystemAccounts.System,
 				msg => WriteCheckpointEventCompleted(_projectionCheckpointStreamId, msg.Result, msg.FirstEventNumber));
+		}
+
+		private void CheckpointStateSizeCheck() {
+			if (!_largeCheckpointStateWarningLogged && _checkpointEventToBePublished.Data.Length >= 8_000_000) {
+				Log.Warning(
+					"State size for the Projection {projectionName} is greater than 8 MB. State size for a projection should be less than 16 MB. Current state size for Projection {projectionName} is {stateSize} MB.",
+					_name, _name,
+					_checkpointEventToBePublished.Data.Length / Math.Pow(10, 6));
+				_largeCheckpointStateWarningLogged = true;
+			}
 		}
 
 		public void Initialize() {
