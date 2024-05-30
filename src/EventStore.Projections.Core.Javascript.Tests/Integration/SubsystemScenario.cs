@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 			_mainBus = new InMemoryBus("main");
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_mainBus, "bossQ", new QueueStatsManager(), new());
 			_writerCheckpoint = new InMemoryCheckpoint(0);
-			_miniStore = new MiniStore(_writerCheckpoint, _mainBus);
+			_miniStore = new MiniStore(_writerCheckpoint, _mainQueue);
 			TestTimeout = testTimeout;
 			_complete = _miniStore.NotifyAll(TestTimeout);
 			_notifications = new ConcurrentDictionary<string, TaskCompletionSource<bool>>();

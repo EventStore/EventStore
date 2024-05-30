@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<Platforms>x64;ARM64</Platforms>
 	</PropertyGroup>
@@ -9,9 +9,6 @@
 		<Content Include="projections\es.projections.environment.js">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
-	</ItemGroup>
-	<ItemGroup>
-		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="clusternode-web\apple-touch-icon.png">

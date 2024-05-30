@@ -11,7 +11,7 @@ namespace EventStore.Core.LogV3.FASTER {
 
 		public void CheckpointCompletionCallback(string sessionId, CommitPoint commitPoint) {
 		}
-		
+
 		#region not needed
 		public void ConcurrentReader(ref SpanByte key, ref TValue input, ref TValue value, ref TValue dst) =>
 			throw new NotImplementedException();
@@ -19,13 +19,13 @@ namespace EventStore.Core.LogV3.FASTER {
 		public bool ConcurrentWriter(ref SpanByte key, ref TValue src, ref TValue dst) =>
 			throw new NotImplementedException();
 
-		public void CopyUpdater(ref SpanByte key, ref TValue input, ref TValue oldValue, ref TValue newValue) =>
+		public void CopyUpdater(ref SpanByte key, ref TValue input, ref TValue oldValue, ref TValue newValue, ref TValue output) =>
 			throw new NotImplementedException();
 
-		public void InitialUpdater(ref SpanByte key, ref TValue input, ref TValue value) =>
+		public void InitialUpdater(ref SpanByte key, ref TValue input, ref TValue value, ref TValue output) =>
 			throw new NotImplementedException();
 
-		public bool InPlaceUpdater(ref SpanByte key, ref TValue input, ref TValue value) =>
+		public bool InPlaceUpdater(ref SpanByte key, ref TValue input, ref TValue value, ref TValue output) =>
 			throw new NotImplementedException();
 
 		public void Lock(ref RecordInfo recordInfo, ref SpanByte key, ref TValue value, LockType lockType, ref long lockContext) =>
@@ -34,7 +34,7 @@ namespace EventStore.Core.LogV3.FASTER {
 		public void ReadCompletionCallback(ref SpanByte key, ref TValue input, ref TValue output, Empty ctx, Status status) =>
 			throw new NotImplementedException();
 
-		public void RMWCompletionCallback(ref SpanByte key, ref TValue input, Empty ctx, Status status) =>
+		public void RMWCompletionCallback(ref SpanByte key, ref TValue input, ref TValue output, Empty ctx, Status status) =>
 			throw new NotImplementedException();
 
 		public void SingleReader(ref SpanByte key, ref TValue input, ref TValue value, ref TValue dst) =>

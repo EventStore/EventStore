@@ -130,7 +130,7 @@ namespace EventStore.Core.Tests.Integration {
 			_conn = CreateConnection();
 			await _conn.ConnectAsync();
 
-			await Given().WithTimeout(TimeSpan.FromMinutes(2));
+			await Given().WithTimeout(TimeSpan.FromMinutes(2), onFail: MiniNodeLogging.WriteLogs);
 		}
 
 		protected virtual IEventStoreConnection CreateConnection() =>

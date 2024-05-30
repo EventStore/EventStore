@@ -13,7 +13,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 		[Ignore("Persistent projections are admin only")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class authenticated<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
+		public class Authenticated<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 			private string _projectionName;
 			private ClaimsPrincipal _testUserPrincipal;
 
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class anonymous<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
+		public class Anonymous<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 			private string _projectionName;
 
 			private string _projectionBody = @"fromAll().when({$any:function(s,e){return s;}});";

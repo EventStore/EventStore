@@ -55,5 +55,23 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 				Assert.That(_hash1 != _hash2);
 			}
 		}
+		
+		[TestFixture]
+		public class when_upgrading_the_hashes {
+			private Rfc2898PasswordHashAlgorithm _algorithm;
+			private readonly string _password = "Pa55w0rd!";
+			private readonly string _hash = "HKoq6xw3Oird4KqU4RyoY9aFFRc=";
+			private readonly string _salt = "+6eoSEkays/BOpzGMLE6Uw==";
+
+			[SetUp]
+			public void SetUp() {
+				_algorithm = new Rfc2898PasswordHashAlgorithm();
+			}
+
+			[Test]
+			public void old_hashes_should_successfully_verify() {
+				Assert.True(_algorithm.Verify(_password, _hash, _salt));
+			}
+		}
 	}
 }

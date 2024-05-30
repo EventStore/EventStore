@@ -13,7 +13,6 @@ using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Certificates;
-using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Http;
@@ -24,7 +23,6 @@ using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
-using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
@@ -55,8 +53,6 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public VNodeState NodeState = VNodeState.Unknown;
 		private readonly IWebHost _host;
-
-		private readonly TestServer _kestrelTestServer;
 
 		private static bool EnableHttps() {
 			return !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
@@ -168,8 +164,7 @@ namespace EventStore.Core.Tests.Helpers {
 				GC.MaxGeneration == 0
 					? "NON-GENERATION (PROBABLY BOEHM)"
 					: $"{GC.MaxGeneration + 1} GENERATIONS", "DBPATH:", _dbPath, "ExTCP ENDPOINT:",
-				ExternalTcpEndPoint, "ExHTTP ENDPOINT:",
-				HttpEndPoint);
+				ExternalTcpEndPoint, "ExHTTP ENDPOINT:", HttpEndPoint);
 
 			var logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 			Node = new ClusterVNode<TStreamId>(options, logFormatFactory, new AuthenticationProviderFactory(
@@ -210,10 +205,6 @@ namespace EventStore.Core.Tests.Helpers {
 				})
 				.UseStartup(Node.Startup)
 				.Build();
-
-			_kestrelTestServer = new TestServer(new WebHostBuilder()
-				.UseKestrel()
-				.UseStartup(Node.Startup));
 		}
 
 		public void Start() {
@@ -257,24 +248,31 @@ namespace EventStore.Core.Tests.Helpers {
 
 			_host.Start();
 			Node.Start();
-
 		}
-
+		
 		public HttpClient CreateHttpClient() {
-			return new HttpClient(_kestrelTestServer.CreateHandler());
+			var httpClient = new HttpClient(new SocketsHttpHandler {
+				AllowAutoRedirect = false,
+				SslOptions = {
+					RemoteCertificateValidationCallback = delegate { return true; }
+				}
+			}, true);
+			
+			var scheme = Node.DisableHttps ? "http://" : "https://";
+			httpClient.BaseAddress = new Uri($"{scheme}{HttpEndPoint}");
+			return httpClient;
 		}
 
 		public async Task Shutdown(bool keepDb = false) {
 			StoppingTime.Start();
-			_kestrelTestServer?.Dispose();
-			await Node.StopAsync().WithTimeout(TimeSpan.FromSeconds(20));
+			_host?.Dispose();
+			await Node.StopAsync().WithTimeout(TimeSpan.FromSeconds(20));			
 
 			// the same message 'BecomeShutdown' triggers the disposal of the ReadIndex
 			// and also the notification here that the node as stopped so there is a race.
 			// For now let's wait for a moment before we try to delete the directory.
 			await Task.Delay(500);
-
-			_host?.Dispose();
+			
 			if (!keepDb)
 				TryDeleteDirectory(_dbPath);
 

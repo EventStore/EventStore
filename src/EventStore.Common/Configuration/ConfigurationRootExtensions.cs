@@ -78,5 +78,9 @@ namespace EventStore.Common.Configuration {
 				
 			return builder.ToString().PadRight(optionColumnWidth, ' ') + description;
 		}
+
+		public static string GetString(this IConfigurationRoot configurationRoot, string key) {
+			return configurationRoot.GetValue<string>(key) ?? string.Empty;
+		}
 	}
 }

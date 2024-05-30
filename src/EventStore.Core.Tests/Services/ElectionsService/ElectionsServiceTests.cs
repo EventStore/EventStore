@@ -10,6 +10,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.Checkpoint;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.ElectionsService {
@@ -86,7 +87,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new PublishEnvelope(_publisher),
 					new ElectionMessage.ElectionsTimedOut(0)),
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -104,7 +106,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new PublishEnvelope(_publisher),
 					new ElectionMessage.SendViewChangeProof()),
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -213,7 +215,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new PublishEnvelope(_publisher),
 					new ElectionMessage.ElectionsTimedOut(1)),
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -256,7 +258,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new PublishEnvelope(_publisher),
 					new ElectionMessage.SendViewChangeProof()),
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -296,7 +298,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new PublishEnvelope(_publisher),
 					new ElectionMessage.SendViewChangeProof()),
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -388,7 +390,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new ElectionMessage.ElectionsTimedOut(10)),
 			};
 
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -436,7 +438,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new ElectionMessage.Prepare(_node.InstanceId, _node.HttpEndPoint, 0),
 					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout))
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -539,7 +541,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_node.InstanceId, _node.HttpEndPoint, -1, -1, Guid.Empty, Guid.Empty, 0, 0, 0, 0, _clusterInfo),
 					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -660,7 +662,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						proposalMessage.LeaderHttpEndPoint, 0, 0, 0, _epochId, Guid.Empty, 0, 0, 0, 0),
 					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout))
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -835,7 +837,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_nodeThree.HttpEndPoint, 0),
 					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -963,7 +965,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_nodeTwo.HttpEndPoint, null, 0, 0, 0, 0, 0, 0, 0, _epochId, 0,
 						_nodeTwo.IsReadOnlyReplica)),
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -1011,7 +1013,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var expected = new Message[] {
 				new GossipMessage.UpdateNodePriority(nodePriority)
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -1071,7 +1073,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new ElectionMessage.LeaderIsResigning(_node.InstanceId, _node.HttpEndPoint),
 					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -1095,7 +1097,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_node.InstanceId, _node.HttpEndPoint),
 					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -1128,7 +1130,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var expected = new Message[] {
 				new SystemMessage.InitiateLeaderResignation(),
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -1179,7 +1181,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_nodeTwo.HttpEndPoint, null, 0, 0, 0, 0, 0, 0, 0, _epochId, 0,
 						_nodeTwo.IsReadOnlyReplica)),
 			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -1263,7 +1265,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_nodeThree.IsReadOnlyReplica)),
 			};
 
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+			_publisher.Messages.Should().BeEquivalentTo(expected);
 		}
 	}
 
@@ -1352,7 +1354,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 							_nodeTwo.IsReadOnlyReplica)),
 				};
 
-				AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+				_publisher.Messages.Should().BeEquivalentTo(expected);
 			}
 		}
 
@@ -1385,7 +1387,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 							_nodeTwo.IsReadOnlyReplica)),
 				};
 
-				AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+				_publisher.Messages.Should().BeEquivalentTo(expected);
 			}
 		}
 
@@ -1436,7 +1438,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 							_nodeTwo.IsReadOnlyReplica)),
 				};
 
-				AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+				_publisher.Messages.Should().BeEquivalentTo(expected);
 			}
 		}
 
@@ -1469,7 +1471,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 							_nodeTwo.IsReadOnlyReplica)),
 				};
 
-				AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+				_publisher.Messages.Should().BeEquivalentTo(expected);
 			}
 		}
 	}
