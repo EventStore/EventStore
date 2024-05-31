@@ -205,6 +205,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					FilterOptionOneofCase.NoFilter) => new Enumerator.StreamSubscription<TStreamId>(
 						_publisher,
 						_expiryStrategy,
+						_subscriptionTracker,
 						request.Options.Stream.StreamIdentifier,
 						request.Options.Stream.ToSubscriptionStreamRevision(),
 						request.Options.ResolveLinks,
@@ -217,6 +218,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					FilterOptionOneofCase.NoFilter) => new Enumerator.AllSubscription(
 						_publisher,
 						_expiryStrategy,
+						_subscriptionTracker,
 						request.Options.All.ToSubscriptionPosition(),
 						request.Options.ResolveLinks,
 						user,
@@ -228,6 +230,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					FilterOptionOneofCase.Filter) => new Enumerator.AllSubscriptionFiltered(
 						_publisher,
 						_expiryStrategy,
+						_subscriptionTracker,
 						request.Options.All.ToSubscriptionPosition(),
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(true, request.Options.Filter),

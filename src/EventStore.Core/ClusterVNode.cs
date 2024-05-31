@@ -55,6 +55,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Caching;
 using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.PeriodicLogs;
 using EventStore.Core.Synchronization;
@@ -65,15 +66,11 @@ using EventStore.Core.Transforms;
 using EventStore.Core.Util;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
-using EventStore.Plugins.Diagnostics;
 using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Mono.Unix.Native;
-using Serilog.Extensions.Logging;
 using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
@@ -322,7 +319,8 @@ namespace EventStore.Core {
 
 			var trackers = new Trackers();
 
-			MetricsBootstrapper.Bootstrap(MetricsConfiguration.Get(configuration), dbConfig, trackers);
+			var metricsConfiguration = MetricsConfiguration.Get(configuration);
+			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
 			var dbIdentityTransform = IDbTransform.Identity;
 			var dbTransformManager = new DbTransformManager([dbIdentityTransform], activeTransformType: dbIdentityTransform.Type);
@@ -1445,6 +1443,10 @@ namespace EventStore.Core {
 
 			// ELECTIONS TRACKER
 			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(trackers.ElectionCounterTracker);
+
+			// SUBSCRIPTIONS TRACKER
+			var subscriptionsTracker = new SubscriptionMetricHandler(trackers.SubscriptionTracker);
+			_mainBus.Subscribe<StorageMessage.EventCommitted>(subscriptionsTracker);
 
 			// TELEMETRY
 			var telemetryService = new TelemetryService(

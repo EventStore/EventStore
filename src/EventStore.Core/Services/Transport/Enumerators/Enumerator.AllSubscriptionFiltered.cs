@@ -8,6 +8,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Common;
 using Serilog;
@@ -18,6 +19,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			private static readonly ILogger Log = Serilog.Log.ForContext<AllSubscriptionFiltered>();
 
 			private readonly IExpiryStrategy _expiryStrategy;
+			private readonly ISubscriptionTracker _tracker;
 			private readonly Guid _subscriptionId;
 			private readonly IPublisher _bus;
 			private readonly bool _resolveLinks;
@@ -40,6 +42,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 			public AllSubscriptionFiltered(IPublisher bus,
 				IExpiryStrategy expiryStrategy,
+				ISubscriptionTracker tracker,
 				Position? checkpoint,
 				bool resolveLinks,
 				IEventFilter eventFilter,
@@ -53,6 +56,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				ArgumentOutOfRangeException.ThrowIfZero(checkpointIntervalMultiplier);
 
 				_expiryStrategy = expiryStrategy;
+				_tracker = tracker;
 				_subscriptionId = Guid.NewGuid();
 				_bus = bus;
 				_resolveLinks = resolveLinks;
@@ -83,6 +87,8 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				_cts.Cancel();
 				_cts.Dispose();
 
+				_tracker.RemoveSubscription(_subscriptionId);
+
 				return ValueTask.CompletedTask;
 			}
 
@@ -109,7 +115,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 					Log.Verbose(
 						"Subscription {subscriptionId} to $all:{eventFilter} seen event {position}.",
 						_subscriptionId, _eventFilter, position);
-					
+
 					_currentPosition = position;
 				} else if (readResponse is ReadResponse.CheckpointReceived checkpointReceived) {
 					var checkpointPos = new Position(checkpointReceived.CommitPosition, checkpointReceived.PreparePosition);
@@ -339,6 +345,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 			private async Task SendEventToSubscription(ResolvedEvent @event, CancellationToken ct) {
 				await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct);
+				_tracker.ProcessEvent(@event);
 			}
 
 			private async Task SendCheckpointToSubscription(TFPos checkpoint, CancellationToken ct) {
@@ -374,6 +381,9 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 									_subscriptionId, _eventFilter, caughtUp);
 
 								confirmationPositionTcs.TrySetResult(new TFPos(caughtUp, caughtUp));
+
+								_tracker.AddSubscription(_subscriptionId, null, caughtUp);
+
 								return;
 							case ClientMessage.SubscriptionDropped dropped:
 								Log.Debug(

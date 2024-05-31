@@ -120,7 +120,7 @@ namespace EventStore.Common.Configuration {
 			public string Label { get; set; }
 		}
 
-		public string[] Meters { get; set; } = Array.Empty<string>();
+		public string[] Meters { get; set; } = [];
 
 		public Dictionary<StatusTracker, bool> Statuses { get; set; } = new ();
 
@@ -143,6 +143,8 @@ namespace EventStore.Common.Configuration {
 		public Dictionary<EventTracker, bool> Events { get; set; } = new();
 
 		public Dictionary<Cache, bool> CacheHitsMisses { get; set; } = new();
+
+		public bool Subscriptions { get; set; } = false;
 
 		public bool ElectionsCount { get; set; } = false;
 

@@ -163,6 +163,8 @@
 		}
 	],
 
+	"Subscriptions": true,
+
 	"MessageTypes": [
 		{
 			"Regex": "CoreMessage-Authentication-.*",

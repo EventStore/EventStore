@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Channels;
@@ -9,6 +8,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Common;
 using Serilog;
@@ -25,6 +25,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 		public class StreamSubscription<TStreamId> : StreamSubscription {
 			private readonly IExpiryStrategy _expiryStrategy;
+			private readonly ISubscriptionTracker _tracker;
 			private readonly Guid _subscriptionId;
 			private readonly IPublisher _bus;
 			private readonly string _streamName;
@@ -45,6 +46,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			public StreamSubscription(
 				IPublisher bus,
 				IExpiryStrategy expiryStrategy,
+				ISubscriptionTracker tracker,
 				string streamName,
 				StreamRevision? checkpoint,
 				bool resolveLinks,
@@ -55,6 +57,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				ArgumentNullException.ThrowIfNull(streamName);
 
 				_expiryStrategy = expiryStrategy;
+				_tracker = tracker;
 				_subscriptionId = Guid.NewGuid();
 				_bus = bus;
 				_streamName = streamName;
@@ -84,6 +87,8 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 				_cts.Cancel();
 				_cts.Dispose();
+
+				_tracker.RemoveSubscription(_subscriptionId);
 
 				return ValueTask.CompletedTask;
 			}
@@ -290,6 +295,8 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 				if (@event.OriginalEvent.EventType == SystemEventTypes.StreamDeleted)
 					throw new ReadResponseException.StreamDeleted(_streamName);
+
+				_tracker.ProcessEvent(@event);
 			}
 
 			private Task<long> SubscribeToLive() {
@@ -319,6 +326,8 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 									_subscriptionId, _streamName, caughtUp);
 
 								confirmationEventNumberTcs.TrySetResult(caughtUp);
+
+								_tracker.AddSubscription(_subscriptionId, _streamName, caughtUp);
 								return;
 							case ClientMessage.SubscriptionDropped dropped:
 								Log.Debug(
