@@ -33,7 +33,7 @@ using static EventStore.Core.XUnit.Tests.Scavenge.StreamMetadatas;
 namespace EventStore.Core.XUnit.Tests.Scavenge {
 	public class Scenario {
 		protected const int Threads = 1;
-		public const bool CollideEverything = false;
+		public static bool CollideEverything => false;
 	}
 
 	// sort of similar to ScavengeTestScenario
