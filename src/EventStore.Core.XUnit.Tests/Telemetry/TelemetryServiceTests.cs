@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using EventStore.Core.Cluster;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -24,7 +25,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 	private readonly DirectoryFixture<TelemetryServiceTests> _fixture = new();
 
 	readonly FakePlugableComponent _plugin;
-	
+
 	public TelemetryServiceTests() {
 		var config = TFChunkHelper.CreateSizedDbConfig(_fixture.Directory, 0, chunkSize: 4096);
 		_db = new TFChunkDb(config);
@@ -32,9 +33,9 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		var channel = Channel.CreateUnbounded<Message>();
 		_channelReader = channel.Reader;
 		_sink = new InMemoryTelemetrySink();
-		
+
 		_plugin = new();
-		
+
 		_sut = new TelemetryService(
 			_db.Manager,
 			new ClusterVNodeOptions().WithPlugableComponent(_plugin),
@@ -52,13 +53,13 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		await _fixture.DisposeAsync();
 	}
 
-	private static MemberInfo CreateMemberInfo(Guid instanceId) {
+	private static MemberInfo CreateMemberInfo(Guid instanceId, VNodeState state, bool isReadOnly) {
 		static int random() => Random.Shared.Next(65000);
 
 		var memberInfo = MemberInfo.ForVNode(
 				instanceId: instanceId,
 				timeStamp: DateTime.Now,
-				state: Data.VNodeState.DiscoverLeader,
+				state: state,
 				isAlive: true,
 				internalTcpEndPoint: default,
 				internalSecureTcpEndPoint: new DnsEndPoint("myhost", random()),
@@ -75,7 +76,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 				epochNumber: random(),
 				epochId: Guid.NewGuid(),
 				nodePriority: random(),
-				isReadOnlyReplica: true);
+				isReadOnlyReplica: isReadOnly);
 
 		return memberInfo;
 	}
@@ -83,7 +84,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 	[Fact]
 	public async Task can_collect_and_flush_telemetry() {
 		_plugin.PublishSomeTelemetry();
-		
+
 		// receive schedule of collect trigger it
 		var schedule = Assert.IsType<TimerMessage.Schedule>(await _channelReader.ReadAsync());
 		Assert.IsType<TelemetryMessage.Collect>(schedule.ReplyMessage);
@@ -93,8 +94,8 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		var gossipRequest = Assert.IsType<GossipMessage.ReadGossip>(await _channelReader.ReadAsync());
 		gossipRequest.Envelope.ReplyWith(new GossipMessage.SendGossip(
 			new ClusterInfo(
-				CreateMemberInfo(Guid.Empty),
-				CreateMemberInfo(Guid.Empty)),
+				CreateMemberInfo(Guid.Empty, VNodeState.DiscoverLeader, true),
+				CreateMemberInfo(Guid.Empty, VNodeState.DiscoverLeader, true)),
 			new DnsEndPoint("localhost", 123)));
 
 		// receive usage request and send response
@@ -130,12 +131,67 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 			_sink.Data["plugins"].ToString());
 	}
 
+	[Fact]
+
+	public async Task check_for_leaderid_and_epochid() {
+		_plugin.PublishSomeTelemetry();
+		// receive schedule of collect trigger it
+		var schedule = Assert.IsType<TimerMessage.Schedule>(await _channelReader.ReadAsync());
+		var mem1 = CreateMemberInfo(Guid.NewGuid(), VNodeState.Leader, false);
+		var mem2 = CreateMemberInfo(Guid.NewGuid(), VNodeState.Follower, false);
+		var _electionsDoneMessage = new ElectionMessage.ElectionsDone(1, mem1.EpochNumber, mem1);
+		var _leaderFoundMessage = new LeaderDiscoveryMessage.LeaderFound(mem1);
+		var _replicaStateMessage = new SystemMessage.BecomeReadOnlyReplica(mem1.InstanceId, mem1);
+		_sut.Handle(_electionsDoneMessage);
+		_sut.Handle(_leaderFoundMessage);
+		_sut.Handle(_replicaStateMessage);
+		Assert.IsType<TelemetryMessage.Collect>(schedule.ReplyMessage);
+		schedule.Reply();
+
+		// receive the gossip request the telemetry service sends.
+		var gossipRequest = Assert.IsType<GossipMessage.ReadGossip>(await _channelReader.ReadAsync());
+		gossipRequest.Envelope.ReplyWith(new GossipMessage.SendGossip(
+			new ClusterInfo(
+				mem1 , mem2),
+			new DnsEndPoint("localhost", 123)));
+
+		// receive usage request and send response
+		var request = Assert.IsType<TelemetryMessage.Request>(await _channelReader.ReadAsync());
+		request.Envelope.ReplyWith(new TelemetryMessage.Response(
+			"foo",
+			new JsonObject {
+				["bar"] = 42,
+			}));
+
+		// receive schedule of flush and trigger it
+		schedule = Assert.IsType<TimerMessage.Schedule>(await _channelReader.ReadAsync());
+		Assert.IsType<TelemetryMessage.Flush>(schedule.ReplyMessage);
+		schedule.Reply();
+
+		// receive schedule of collect indicating flush is complete
+		schedule = Assert.IsType<TimerMessage.Schedule>(await _channelReader.ReadAsync());
+		Assert.IsType<TelemetryMessage.Collect>(schedule.ReplyMessage);
+
+		// check sink has received the data
+		Assert.NotNull(_sink.Data);
+		Assert.Equal(Guid.Parse(_sink.Data["cluster"]["leaderId"].ToString()), _electionsDoneMessage.Leader.InstanceId);
+		Assert.Equal(Int32.Parse(_sink.Data["database"]["epochNumber"].ToString()), _electionsDoneMessage.ProposalNumber);
+
+		Assert.Equal(Guid.Parse(_sink.Data["cluster"]["leaderId"].ToString()), _leaderFoundMessage.Leader.InstanceId);
+		Assert.Equal(Int32.Parse(_sink.Data["database"]["epochNumber"].ToString()), _leaderFoundMessage.Leader.EpochNumber);
+
+		Assert.Equal(Guid.Parse(_sink.Data["cluster"]["leaderId"].ToString()), _replicaStateMessage.Leader.InstanceId);
+		Assert.Equal(Int32.Parse(_sink.Data["database"]["epochNumber"].ToString()), _replicaStateMessage.Leader.EpochNumber);
+
+		Assert.NotNull(_sink.Data["plugins"]);
+	}
+
 	class FakePlugableComponent(string name = "fakeComponent") : Plugin(name) {
 		public void PublishSomeTelemetry() {
 			PublishDiagnostics(new() {
 				["enabled"] = Enabled
 			});
-			
+
 			PublishDiagnostics(new() {
 				["foo"] = "bar"
 			});

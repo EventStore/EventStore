@@ -23,10 +23,12 @@ namespace EventStore.Core.Telemetry;
 public sealed class TelemetryService :
 	IHandle<SystemMessage.StateChangeMessage>,
 	IHandle<ElectionMessage.ElectionsDone>,
-	IDisposable 
+	IHandle<SystemMessage.ReplicaStateMessage>,
+	IHandle<LeaderDiscoveryMessage.LeaderFound>,
+	IDisposable
 {
 	private static readonly ILogger Logger = Log.ForContext<TelemetryService>();
-	
+
 	private static readonly TimeSpan InitialInterval = TimeSpan.FromHours(1);
 	private static readonly TimeSpan Interval = TimeSpan.FromHours(24);
 	private static readonly TimeSpan FlushDelay = TimeSpan.FromSeconds(10);
@@ -44,7 +46,7 @@ public sealed class TelemetryService :
 	private int _epochNumber;
 	private Guid _leaderId = Guid.Empty;
 	private Guid _firstEpochId = Guid.Empty;
-	
+
 	public TelemetryService(
 		TFChunkManager manager,
 		ClusterVNodeOptions nodeOptions,
@@ -58,11 +60,11 @@ public sealed class TelemetryService :
 		_publisher = publisher;
 		_writerCheckpoint = writerCheckpoint;
 		_nodeId = nodeId;
-		
+
 		_pluginDiagnosticsDataCollector = PluginDiagnosticsDataCollector.Start(
 			_nodeOptions.PlugableComponents.Select(x => x.DiagnosticsName).ToArray()
 		);
-		
+
 		_ = Task.Run(async () => {
 			try {
 				await ProcessAsync(publisher, sink);
@@ -137,6 +139,14 @@ public sealed class TelemetryService :
 		_epochNumber = message.ProposalNumber;
 		_leaderId = message.Leader.InstanceId;
 	}
+	public void Handle(SystemMessage.ReplicaStateMessage message) {
+		_epochNumber = message.Leader.EpochNumber;
+		_leaderId = message.Leader.InstanceId;
+	}
+	public void Handle(LeaderDiscoveryMessage.LeaderFound message) {
+		_epochNumber = message.Leader.EpochNumber;
+		_leaderId = message.Leader.InstanceId;
+	}
 
 	private void Handle(TelemetryMessage.Request message) {
 		if (_firstEpochId == Guid.Empty)
@@ -185,7 +195,7 @@ public sealed class TelemetryService :
 				["totalDiskSpace"] = env.Machine.TotalDiskSpace,
 				["totalMemory"] = env.Machine.TotalMemory,
 			}));
-		
+
 		_pluginDiagnosticsDataCollector.CollectedEvents.ForEach(x => {
 			try {
 				var node = JsonSerializer.SerializeToNode(x.Data);
