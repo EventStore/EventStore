@@ -183,7 +183,7 @@ namespace EventStore.Core.Tests.Helpers {
 					new InternalAuthorizationProviderFactory([new LegacyAuthorizationPolicySelectorFactory(components.MainQueue,
 						options.Application.AllowAnonymousEndpointAccess,
 						options.Application.AllowAnonymousStreamAccess,
-						options.Application.OverrideAnonymousEndpointAccessForGossip).Build()])),
+						options.Application.OverrideAnonymousEndpointAccessForGossip).Create()])),
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(),
 				new OptionsCertificateProvider(),
 				configuration: inMemConf,

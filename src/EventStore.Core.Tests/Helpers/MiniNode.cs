@@ -199,7 +199,7 @@ namespace EventStore.Core.Tests.Helpers {
 						c.MainQueue,
 						options.Application.AllowAnonymousEndpointAccess,
 						options.Application.AllowAnonymousStreamAccess,
-						options.Application.OverrideAnonymousEndpointAccessForGossip).Build()])),
+						options.Application.OverrideAnonymousEndpointAccessForGossip).Create()])),
 				expiryStrategy: expiryStrategy,
 				certificateProvider: new OptionsCertificateProvider(),
 				configuration: inMemConf);

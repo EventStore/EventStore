@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.ClientOperations {
 				new LegacyAuthorizationPolicySelectorFactory(c.MainQueue,
 					options.Application.AllowAnonymousEndpointAccess,
 					options.Application.AllowAnonymousStreamAccess,
-					options.Application.OverrideAnonymousEndpointAccessForGossip).Build()])),
+					options.Application.OverrideAnonymousEndpointAccessForGossip).Create()])),
 				certificateProvider: new OptionsCertificateProvider());
 			_node.StartAsync(true).Wait();
 		}

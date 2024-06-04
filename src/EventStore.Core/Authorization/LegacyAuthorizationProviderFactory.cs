@@ -12,7 +12,7 @@ namespace EventStore.Core.Authorization {
 		public string CommandLineName { get; }
 		public string Name { get; }
 		public string Version { get; }
-		public IPolicySelector Build();
+		public IPolicySelector Create();
 	}
 
 	public interface IPolicySelector {
@@ -47,7 +47,7 @@ namespace EventStore.Core.Authorization {
 			_overrideAnonymousGossipEndpointAccess = overrideAnonymousGossipEndpointAccess;
 		}
 
-		public IPolicySelector Build() {
+		public IPolicySelector Create() {
 			var policy = new Policy("Legacy", 1, DateTimeOffset.MinValue);
 			var legacyStreamAssertion = new LegacyStreamPermissionAssertion(_mainQueue);
 

@@ -31,7 +31,7 @@ namespace EventStore.Core.Authorization {
 		public IPolicySelector[] Create(
 			AuthorizationProviderFactoryComponents authorizationProviderFactoryComponents) =>
 			_authorizationPolicySelectorFactories
-					.Select(p => p(authorizationProviderFactoryComponents).Build())
+					.Select(p => p(authorizationProviderFactoryComponents).Create())
 					.ToArray();
 	}
 }
