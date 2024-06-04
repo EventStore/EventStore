@@ -10,11 +10,11 @@ namespace EventStore.Core.Authorization {
 		private static readonly AssertionInformation DeniedByDefault =
 			new AssertionInformation("default", "denied by default", Grant.Deny);
 
-		private readonly ReadOnlyPolicy[] _policies;
+		private readonly IPolicySelector[] _policySelectors;
 		private readonly PolicyInformation _policyInfo;
 
-		public MultiPolicyEvaluator(ReadOnlyPolicy[] policies) {
-			_policies = policies;
+		public MultiPolicyEvaluator(IPolicySelector[] policySelectors) {
+			_policySelectors = policySelectors;
 			_policyInfo = new PolicyInformation("multi", 1, DateTimeOffset.MinValue);
 		}
 
@@ -22,7 +22,8 @@ namespace EventStore.Core.Authorization {
 			EvaluateAsync(ClaimsPrincipal cp, Operation operation, CancellationToken ct) {
 			var evaluation = new EvaluationContext(operation, ct);
 
-			foreach (var policy in _policies) {
+			foreach (var policySelector in _policySelectors) {
+				var policy = policySelector.Select();
 				var policyInfo = policy.Information;
 				if (policy.TryGetAssertions(operation, out var assertions))
 					while (!assertions.IsEmpty && evaluation.Grant != Grant.Deny) {

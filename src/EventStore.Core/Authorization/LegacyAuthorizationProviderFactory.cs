@@ -8,14 +8,18 @@ using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Authorization {
 	// TODO: This should be moved into EventStore.Plugins
-	public interface IAuthorizationPolicyFactory {
+	public interface IAuthorizationPolicySelectorFactory {
 		public string CommandLineName { get; }
 		public string Name { get; }
 		public string Version { get; }
-		public ReadOnlyPolicy Build();
+		public IPolicySelector Build();
 	}
 
-	public class LegacyAuthorizationPolicyFactory : IAuthorizationPolicyFactory {
+	public interface IPolicySelector {
+		ReadOnlyPolicy Select();
+	}
+
+	public class LegacyAuthorizationPolicySelectorFactory : IAuthorizationPolicySelectorFactory {
 		public string CommandLineName { get; } = "legacy";
 		public string Name { get; } = "legacy";
 		public string Version { get; } = "1";
@@ -32,7 +36,7 @@ namespace EventStore.Core.Authorization {
 			new Claim(ClaimTypes.Role, SystemRoles.Operations), new Claim(ClaimTypes.Name, SystemUsers.Operations)
 		};
 
-		public LegacyAuthorizationPolicyFactory(
+		public LegacyAuthorizationPolicySelectorFactory(
 			IPublisher mainQueue,
 			bool allowAnonymousEndpointAccess,
 			bool allowAnonymousStreamAccess,
@@ -43,7 +47,7 @@ namespace EventStore.Core.Authorization {
 			_overrideAnonymousGossipEndpointAccess = overrideAnonymousGossipEndpointAccess;
 		}
 
-		public ReadOnlyPolicy Build() {
+		public IPolicySelector Build() {
 			var policy = new Policy("Legacy", 1, DateTimeOffset.MinValue);
 			var legacyStreamAssertion = new LegacyStreamPermissionAssertion(_mainQueue);
 
@@ -158,7 +162,7 @@ namespace EventStore.Core.Authorization {
 			policy.RequireAuthenticated(Operations.Projections.Statistics);
 			policy.AddMatchAnyAssertion(Operations.Projections.Restart, Grant.Allow, OperationsOrAdmins);
 
-			return policy.AsReadOnly();
+			return new StaticPolicySelector(policy.AsReadOnly());
 		}
 	}
 
@@ -166,15 +170,15 @@ namespace EventStore.Core.Authorization {
 	}
 
 	public class InternalAuthorizationProviderFactory : IAuthorizationProviderFactory {
-		private readonly ReadOnlyPolicy[] _policies;
+		private readonly IPolicySelector[] _policySelectors;
 
-		public InternalAuthorizationProviderFactory(ReadOnlyPolicy[] policies) {
-			_policies = policies;
+		public InternalAuthorizationProviderFactory(IPolicySelector[] policySelectors) {
+			_policySelectors = policySelectors;
 		}
 
 		public IAuthorizationProvider Build() {
 			return new PolicyAuthorizationProvider(
-			new MultiPolicyEvaluator(_policies), true, false);
+			new MultiPolicyEvaluator(_policySelectors), true, false);
 		}
 	}
 }

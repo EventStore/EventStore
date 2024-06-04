@@ -105,13 +105,13 @@ namespace EventStore.ClusterNode {
 			if (_options.Database.DbLogFormat == DbLogFormat.V2) {
 				var logFormatFactory = new LogV2FormatAbstractorFactory();
             	Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-	                GetAuthorizationProviderFactory(GetAuthorizationProviderPolicies()),
+	                GetAuthorizationProviderFactory(GetPolicySelectorsFactory()),
 	                GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 					configuration);
 			} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
 				var logFormatFactory = new LogV3FormatAbstractorFactory();
 				Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-					GetAuthorizationProviderFactory(GetAuthorizationProviderPolicies()),
+					GetAuthorizationProviderFactory(GetPolicySelectorsFactory()),
 					GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 					configuration);
 			} else {
@@ -124,13 +124,13 @@ namespace EventStore.ClusterNode {
 
 			RegisterWebControllers(enabledNodeSubsystems);
 
-			AuthorizationPolicyFactory GetAuthorizationProviderPolicies() {
+			AuthorizationPolicySelectorsFactory GetPolicySelectorsFactory() {
 				if (_options.Application.Insecure) {
-					return new AuthorizationPolicyFactory(_ => default);
+					return new AuthorizationPolicySelectorsFactory(_ => default);
 				}
 
-				var policyPlugins = pluginLoader.Load<IAuthorizationPolicyFactory>().ToArray();
-				var authorizationPolicyFactories = new Func<AuthorizationProviderFactoryComponents, IAuthorizationPolicyFactory>[policyPlugins.Length + 1];
+				var policyPlugins = pluginLoader.Load<IAuthorizationPolicySelectorFactory>().ToArray();
+				var policySelectorFactories = new Func<AuthorizationProviderFactoryComponents, IAuthorizationPolicySelectorFactory>[policyPlugins.Length + 1];
 				// TODO: Load the policies in a more structured/safe way
 				// Policies will be applied in order, so the load order matters here
 				for (var i = 0; i < policyPlugins.Length;i++) {
@@ -140,29 +140,29 @@ namespace EventStore.ClusterNode {
 						Log.Information(
 							"Loaded authorization policy plugin: {plugin} version {version} (Command Line: {commandLine})",
 							policyPlugin.Name, policyPlugin.Version, commandLine);
-						authorizationPolicyFactories[i] = _ => policyPlugin;
+						policySelectorFactories[i] = _ => policyPlugin;
 					} catch (CompositionException ex) {
 						Log.Error(ex, "Error loading authorization policy plugin.");
 					}
 				}
 
 				// The default should be last
-				authorizationPolicyFactories[^1] = components =>
-						new LegacyAuthorizationPolicyFactory(components.MainQueue,
+				policySelectorFactories[^1] = components =>
+						new LegacyAuthorizationPolicySelectorFactory(components.MainQueue,
 							_options.Application.AllowAnonymousEndpointAccess,
 							_options.Application.AllowAnonymousStreamAccess,
 							_options.Application.OverrideAnonymousEndpointAccessForGossip);
-				return new AuthorizationPolicyFactory(authorizationPolicyFactories);
+				return new AuthorizationPolicySelectorsFactory(policySelectorFactories);
 			};
 
-			AuthorizationProviderFactory GetAuthorizationProviderFactory(AuthorizationPolicyFactory policyFactory) {
+			AuthorizationProviderFactory GetAuthorizationProviderFactory(AuthorizationPolicySelectorsFactory policySelectorsFactory) {
 				if (_options.Application.Insecure) {
 					return new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory());
 				}
 				var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
 					{
 						"internal", new AuthorizationProviderFactory(components =>
-							new InternalAuthorizationProviderFactory(policyFactory.GetPolicies(components))
+							new InternalAuthorizationProviderFactory(policySelectorsFactory.Create(components))
 						)
 					}
 				};

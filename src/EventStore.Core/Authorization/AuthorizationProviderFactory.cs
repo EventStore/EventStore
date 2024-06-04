@@ -18,19 +18,19 @@ namespace EventStore.Core.Authorization {
 			_authorizationProviderFactory(authorizationProviderFactoryComponents);
 	}
 
-	public class AuthorizationPolicyFactory {
-		private readonly Func<AuthorizationProviderFactoryComponents, IAuthorizationPolicyFactory>[]
-			_authorizationPolicyFactories;
+	public class AuthorizationPolicySelectorsFactory {
+		private readonly Func<AuthorizationProviderFactoryComponents, IAuthorizationPolicySelectorFactory>[]
+			_authorizationPolicySelectorFactories;
 
-		public AuthorizationPolicyFactory(params
-			Func<AuthorizationProviderFactoryComponents, IAuthorizationPolicyFactory>[]
-				authorizationPolicyFactory) {
-			_authorizationPolicyFactories = authorizationPolicyFactory;
+		public AuthorizationPolicySelectorsFactory(params
+			Func<AuthorizationProviderFactoryComponents, IAuthorizationPolicySelectorFactory>[]
+				authorizationPolicySelectorFactory) {
+			_authorizationPolicySelectorFactories = authorizationPolicySelectorFactory;
 		}
 
-		public ReadOnlyPolicy[] GetPolicies(
+		public IPolicySelector[] Create(
 			AuthorizationProviderFactoryComponents authorizationProviderFactoryComponents) =>
-				_authorizationPolicyFactories
+			_authorizationPolicySelectorFactories
 					.Select(p => p(authorizationProviderFactoryComponents).Build())
 					.ToArray();
 	}
