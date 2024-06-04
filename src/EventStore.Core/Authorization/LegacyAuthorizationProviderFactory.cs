@@ -12,7 +12,7 @@ namespace EventStore.Core.Authorization {
 		public string CommandLineName { get; }
 		public string Name { get; }
 		public string Version { get; }
-		public IPolicySelector Create();
+		public IPolicySelector Create(IPublisher bus);
 	}
 
 	public interface IPolicySelector {
@@ -23,7 +23,6 @@ namespace EventStore.Core.Authorization {
 		public string CommandLineName { get; } = "legacy";
 		public string Name { get; } = "legacy";
 		public string Version { get; } = "1";
-		private readonly IPublisher _mainQueue;
 		private readonly bool _allowAnonymousEndpointAccess;
 		private readonly bool _allowAnonymousStreamAccess;
 		private readonly bool _overrideAnonymousGossipEndpointAccess;
@@ -37,19 +36,17 @@ namespace EventStore.Core.Authorization {
 		};
 
 		public LegacyAuthorizationPolicySelectorFactory(
-			IPublisher mainQueue,
 			bool allowAnonymousEndpointAccess,
 			bool allowAnonymousStreamAccess,
 			bool overrideAnonymousGossipEndpointAccess) {
-			_mainQueue = mainQueue;
 			_allowAnonymousEndpointAccess = allowAnonymousEndpointAccess;
 			_allowAnonymousStreamAccess = allowAnonymousStreamAccess;
 			_overrideAnonymousGossipEndpointAccess = overrideAnonymousGossipEndpointAccess;
 		}
 
-		public IPolicySelector Create() {
+		public IPolicySelector Create(IPublisher bus) {
 			var policy = new Policy("Legacy", 1, DateTimeOffset.MinValue);
-			var legacyStreamAssertion = new LegacyStreamPermissionAssertion(_mainQueue);
+			var legacyStreamAssertion = new LegacyStreamPermissionAssertion(bus);
 
 			// The Node.Ping is set to allow anonymous as it does not disclose any secure information.
 			policy.AllowAnonymous(Operations.Node.Ping);

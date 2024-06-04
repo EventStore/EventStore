@@ -126,11 +126,11 @@ namespace EventStore.ClusterNode {
 
 			AuthorizationPolicySelectorsFactory GetPolicySelectorsFactory() {
 				if (_options.Application.Insecure) {
-					return new AuthorizationPolicySelectorsFactory(_ => default);
+					return new AuthorizationPolicySelectorsFactory();
 				}
 
 				var policyPlugins = pluginLoader.Load<IAuthorizationPolicySelectorFactory>().ToArray();
-				var policySelectorFactories = new Func<AuthorizationProviderFactoryComponents, IAuthorizationPolicySelectorFactory>[policyPlugins.Length + 1];
+				var policySelectorFactories = new IAuthorizationPolicySelectorFactory[policyPlugins.Length + 1];
 				// TODO: Load the policies in a more structured/safe way
 				// Policies will be applied in order, so the load order matters here
 				for (var i = 0; i < policyPlugins.Length;i++) {
@@ -140,15 +140,14 @@ namespace EventStore.ClusterNode {
 						Log.Information(
 							"Loaded authorization policy plugin: {plugin} version {version} (Command Line: {commandLine})",
 							policyPlugin.Name, policyPlugin.Version, commandLine);
-						policySelectorFactories[i] = _ => policyPlugin;
+						policySelectorFactories[i] = policyPlugin;
 					} catch (CompositionException ex) {
 						Log.Error(ex, "Error loading authorization policy plugin.");
 					}
 				}
 
 				// The default should be last
-				policySelectorFactories[^1] = components =>
-						new LegacyAuthorizationPolicySelectorFactory(components.MainQueue,
+				policySelectorFactories[^1] = new LegacyAuthorizationPolicySelectorFactory(
 							_options.Application.AllowAnonymousEndpointAccess,
 							_options.Application.AllowAnonymousStreamAccess,
 							_options.Application.OverrideAnonymousEndpointAccessForGossip);
