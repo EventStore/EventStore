@@ -123,14 +123,15 @@ namespace EventStore.ClusterNode {
 				: Array.Empty<NodeSubsystems>();
 
 			RegisterWebControllers(enabledNodeSubsystems);
+			return;
 
-			AuthorizationPolicySelectorsFactory GetPolicySelectorsFactory() {
+			PolicySelectorsFactory GetPolicySelectorsFactory() {
 				if (_options.Application.Insecure) {
-					return new AuthorizationPolicySelectorsFactory();
+					return new PolicySelectorsFactory();
 				}
 
-				var policyPlugins = pluginLoader.Load<IAuthorizationPolicySelectorFactory>().ToArray();
-				var policySelectorFactories = new IAuthorizationPolicySelectorFactory[policyPlugins.Length + 1];
+				var policyPlugins = pluginLoader.Load<IPolicySelectorFactory>().ToArray();
+				var policySelectorFactories = new IPolicySelectorFactory[policyPlugins.Length + 1];
 				// TODO: Load the policies in a more structured/safe way
 				// Policies will be applied in order, so the load order matters here
 				for (var i = 0; i < policyPlugins.Length;i++) {
@@ -147,14 +148,14 @@ namespace EventStore.ClusterNode {
 				}
 
 				// The default should be last
-				policySelectorFactories[^1] = new LegacyAuthorizationPolicySelectorFactory(
+				policySelectorFactories[^1] = new LegacyPolicySelectorFactory(
 							_options.Application.AllowAnonymousEndpointAccess,
 							_options.Application.AllowAnonymousStreamAccess,
 							_options.Application.OverrideAnonymousEndpointAccessForGossip);
-				return new AuthorizationPolicySelectorsFactory(policySelectorFactories);
-			};
+				return new PolicySelectorsFactory(policySelectorFactories);
+			}
 
-			AuthorizationProviderFactory GetAuthorizationProviderFactory(AuthorizationPolicySelectorsFactory policySelectorsFactory) {
+			AuthorizationProviderFactory GetAuthorizationProviderFactory(PolicySelectorsFactory policySelectorsFactory) {
 				if (_options.Application.Insecure) {
 					return new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory());
 				}

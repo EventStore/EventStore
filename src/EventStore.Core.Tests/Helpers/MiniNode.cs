@@ -195,7 +195,7 @@ namespace EventStore.Core.Tests.Helpers {
 						options.DefaultUser)),
 				new AuthorizationProviderFactory(
 					c => authorizationProviderFactory ?? new InternalAuthorizationProviderFactory([
-					new LegacyAuthorizationPolicySelectorFactory(
+					new LegacyPolicySelectorFactory(
 						options.Application.AllowAnonymousEndpointAccess,
 						options.Application.AllowAnonymousStreamAccess,
 						options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue)])),

@@ -8,7 +8,7 @@ using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Authorization {
 	// TODO: This should be moved into EventStore.Plugins
-	public interface IAuthorizationPolicySelectorFactory {
+	public interface IPolicySelectorFactory {
 		public string CommandLineName { get; }
 		public string Name { get; }
 		public string Version { get; }
@@ -19,7 +19,7 @@ namespace EventStore.Core.Authorization {
 		ReadOnlyPolicy Select();
 	}
 
-	public class LegacyAuthorizationPolicySelectorFactory : IAuthorizationPolicySelectorFactory {
+	public class LegacyPolicySelectorFactory : IPolicySelectorFactory {
 		public string CommandLineName { get; } = "legacy";
 		public string Name { get; } = "legacy";
 		public string Version { get; } = "1";
@@ -35,7 +35,7 @@ namespace EventStore.Core.Authorization {
 			new Claim(ClaimTypes.Role, SystemRoles.Operations), new Claim(ClaimTypes.Name, SystemUsers.Operations)
 		};
 
-		public LegacyAuthorizationPolicySelectorFactory(
+		public LegacyPolicySelectorFactory(
 			bool allowAnonymousEndpointAccess,
 			bool allowAnonymousStreamAccess,
 			bool overrideAnonymousGossipEndpointAccess) {

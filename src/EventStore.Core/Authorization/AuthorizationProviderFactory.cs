@@ -18,10 +18,10 @@ namespace EventStore.Core.Authorization {
 			_authorizationProviderFactory(authorizationProviderFactoryComponents);
 	}
 
-	public class AuthorizationPolicySelectorsFactory(params IAuthorizationPolicySelectorFactory[] authorizationPolicySelectorFactory) {
+	public class PolicySelectorsFactory(params IPolicySelectorFactory[] policySelectorFactories) {
 		public IPolicySelector[] Create(
 			AuthorizationProviderFactoryComponents authorizationProviderFactoryComponents) =>
-			authorizationPolicySelectorFactory
+			policySelectorFactories
 					.Select(
 						p => p.Create(authorizationProviderFactoryComponents.MainQueue))
 					.ToArray();
