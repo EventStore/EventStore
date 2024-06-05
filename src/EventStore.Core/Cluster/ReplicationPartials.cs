@@ -73,7 +73,7 @@ namespace EventStore.Cluster {
 
 	partial class CreateChunk {
 		public CreateChunk(byte[] leaderId, byte[] subscriptionId, byte[] chunkHeaderBytes, int fileSize,
-			bool isCompletedChunk) {
+			bool isScavengedChunk) {
 			Ensure.NotNull(leaderId, "leaderId");
 			Ensure.NotNull(subscriptionId, "subscriptionId");
 			Ensure.NotNull(chunkHeaderBytes, "chunkHeaderBytes");
@@ -82,7 +82,7 @@ namespace EventStore.Cluster {
 			SubscriptionId = ByteString.CopyFrom(subscriptionId);
 			ChunkHeaderBytes = ByteString.CopyFrom(chunkHeaderBytes);
 			FileSize = fileSize;
-			IsCompletedChunk = isCompletedChunk;
+			IsScavengedChunk = isScavengedChunk;
 		}
 	}
 

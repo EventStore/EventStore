@@ -43,8 +43,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void flush_throws_invalid_operation_exception() {
-			Assert.Throws<InvalidOperationException>(() => _testChunk.Flush());
+		public void flush_does_not_throw_any_exception() {
+			Assert.DoesNotThrow(() => _testChunk.Flush());
 		}
 	}
 }

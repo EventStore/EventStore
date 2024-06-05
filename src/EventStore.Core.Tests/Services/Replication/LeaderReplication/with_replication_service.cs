@@ -73,9 +73,9 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Service.Handle(new SystemMessage.SystemStart());
 			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
-			ReplicaSubscriptionId = AddSubscription(ReplicaId, ReplicationSubscriptionVersions.V1, true, out ReplicaManager1);
-			ReplicaSubscriptionId2 = AddSubscription(ReplicaId2, ReplicationSubscriptionVersions.V1, true, out ReplicaManager2);
-			ReadOnlyReplicaSubscriptionId = AddSubscription(ReadOnlyReplicaId, ReplicationSubscriptionVersions.V1, false, out ReadOnlyReplicaManager);
+			ReplicaSubscriptionId = AddSubscription(ReplicaId, ReplicationSubscriptionVersions.V_CURRENT, true, out ReplicaManager1);
+			ReplicaSubscriptionId2 = AddSubscription(ReplicaId2, ReplicationSubscriptionVersions.V_CURRENT, true, out ReplicaManager2);
+			ReadOnlyReplicaSubscriptionId = AddSubscription(ReadOnlyReplicaId, ReplicationSubscriptionVersions.V_CURRENT, false, out ReadOnlyReplicaManager);
 			ReplicaSubscriptionIdV0 = AddSubscription(ReplicaIdV0, ReplicationSubscriptionVersions.V0, true, out ReplicaManagerV0);
 
 			When();

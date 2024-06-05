@@ -36,7 +36,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			AddUnwrapper(TcpCommand.DropSubscription, UnwrapDropSubscription, ClientVersion.V2);
 			AddWrapper<ReplicationMessage.DropSubscription>(WrapDropSubscription, ClientVersion.V2);
 		}
-		
+
 
 		private TcpPackage WrapReplicatedTo(ReplicationTrackingMessage.ReplicatedTo msg) {
 			var dto = new ReplicatedTo(msg.LogPosition);
@@ -105,7 +105,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 
 			return new ReplicationMessage.CreateChunk(new Guid(dto.LeaderId.Span), new Guid(dto.SubscriptionId.Span), chunkHeader,
-				dto.FileSize, dto.IsCompletedChunk);
+				dto.FileSize, dto.IsScavengedChunk);
 		}
 
 		private TcpPackage WrapCreateChunk(ReplicationMessage.CreateChunk msg) {
@@ -113,7 +113,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				msg.SubscriptionId.ToByteArray(),
 				msg.ChunkHeader.AsByteArray(),
 				msg.FileSize,
-				msg.IsCompletedChunk);
+				msg.IsScavengedChunk);
 			return new TcpPackage(TcpCommand.CreateChunk, Guid.NewGuid(), dto.Serialize());
 		}
 

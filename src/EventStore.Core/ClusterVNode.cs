@@ -594,7 +594,7 @@ namespace EventStore.Core {
 			}
 
 			// DYNAMIC CACHE MANAGER
-			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads);
+			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads, createNewChunks: false);
 			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, ESConsts.DefaultIndexDirectoryName);
 
 			var pTableMaxReaderCount = GetPTableMaxReaderCount(readerThreadsCount);

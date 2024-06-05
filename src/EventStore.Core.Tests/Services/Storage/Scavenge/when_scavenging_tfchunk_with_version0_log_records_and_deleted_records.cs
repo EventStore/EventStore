@@ -40,6 +40,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				3);
 
 			Writer.CompleteChunk();
+			Writer.AddNewChunk();
 
 			Scavenge(completeLast: false, mergeChunks: true);
 		}

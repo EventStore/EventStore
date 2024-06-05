@@ -788,7 +788,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			if (_inMem)
 				return;
 			if (IsReadOnly)
-				throw new InvalidOperationException("Cannot write to a read-only TFChunk.");
+				return;
 			_writerWorkItem.FlushToDisk();
 		}
 

@@ -45,14 +45,15 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		public void Open(bool verifyHash = true, bool readOnly = false, int threads = 1) {
+		public void Open(bool verifyHash = true, bool readOnly = false, int threads = 1, bool createNewChunks = true) {
 			Ensure.Positive(threads, "threads");
 
 			ValidateReaderChecksumsMustBeLess(Config);
 			var checkpoint = Config.WriterCheckpoint.Read();
 
 			if (Config.InMemDb) {
-				Manager.AddNewChunk();
+				if (createNewChunks)
+					Manager.AddNewChunk();
 				return;
 			}
 
@@ -109,7 +110,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				if (!onBoundary)
 					throw new CorruptDatabaseException(
 						new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(lastChunkNum, 0)));
-				if (!readOnly)
+
+				if (!readOnly && createNewChunks)
 					Manager.AddNewChunk();
 			} else {
 				var chunkFileName = lastChunkVersions[0];
@@ -148,12 +150,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						Config.WriterCheckpoint.Flush();
 
 						// as of recent versions, it's possible that a new chunk was already created as the writer checkpoint
-						// is updated & flushed _after_ the new chunk is created. if that's the case, we remove and re-create it.
+						// is updated & flushed _after_ the new chunk is created. if that's the case, we remove it.
 						var newChunk = Config.FileNamingStrategy.GetFilenameFor(lastChunkNum, 0);
 						if (File.Exists(newChunk))
 							RemoveFile("Removing excessive chunk: {chunk}", newChunk);
 
-						Manager.AddNewChunk();
+						if (createNewChunks)
+							Manager.AddNewChunk();
 					}
 				} else {
 					var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false,

@@ -49,6 +49,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				t1.EventStreamId, 0, out _postCommitPos);
 
 			Writer.CompleteChunk();
+			Writer.AddNewChunk();
 
 			// Need to have a second chunk as otherwise the checkpoints will be off
 			_random1 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), "random-stream",
