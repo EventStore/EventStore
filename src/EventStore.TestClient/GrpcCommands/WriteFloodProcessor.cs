@@ -100,8 +100,8 @@ namespace EventStore.TestClient.GrpcCommands {
 				var rnd = new Random();
 				List<Task> pending = new List<Task>(capacity);
 				await start.Task;
-				var events = new EventData[batchSize];
 				for (int j = 0; j < count; ++j) {
+					var events = new EventData[batchSize];
 
 					for (int q = 0; q < batchSize; q++) {
 						events[q] = new EventData(Uuid.FromGuid(Guid.NewGuid()), "TakeSomeSpaceEvent", data, metadata);
