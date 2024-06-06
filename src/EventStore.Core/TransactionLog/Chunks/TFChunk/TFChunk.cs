@@ -10,6 +10,7 @@ using DotNext.Buffers;
 using DotNext.Collections.Concurrent;
 using DotNext.Diagnostics;
 using DotNext.IO;
+using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -362,8 +363,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		// We therefore only read from memory while the chunk is still being written to, and only create
 		// the file streams when the chunk is being completed.
 		private void CreateReaderStreams() {
-			_fileStreams = new();
-			Interlocked.Add(ref _fileStreamCount, _fileStreams.Count);
+			_fileStreams.Reuse();
+			Interlocked.Add(ref _fileStreamCount, IndexPool.Capacity);
 		}
 
 		private void CreateInMemChunk(ChunkHeader chunkHeader, int fileSize) {
@@ -381,8 +382,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			writerWorkItem.WorkingStream.Position = ChunkHeader.Size;
 
 			// READER STREAMS
-			_memStreams = new();
-			Interlocked.Add(ref _memStreamCount, _memStreams.Count);
+			_memStreams.Reuse();
+			Interlocked.Add(ref _memStreamCount, IndexPool.Capacity);
 			_sharedMemStream = CreateSharedMemoryStream();
 
 			// should never happen in practice because this function is called from the static TFChunk constructors
@@ -608,11 +609,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					return;
 				}
 
-				_memStreams = new();
-				int poolSize = _memStreams.Count;
-				Interlocked.Add(ref _memStreamCount, poolSize);
+				_memStreams.Reuse();
+				Interlocked.Add(ref _memStreamCount, IndexPool.Capacity);
 				if (_selfdestructin54321) {
-					if (Interlocked.Add(ref _memStreamCount, -poolSize) == 0)
+					if (Interlocked.Add(ref _memStreamCount, -IndexPool.Capacity) == 0)
 						FreeCachedData();
 					Log.Debug("CACHING ABORTED for TFChunk {chunk} as TFChunk was probably marked for deletion.", this);
 					return;
@@ -1000,7 +1000,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					_cachedLength = 0;
 					_cacheStatus = CacheStatus.Uncached;
 					Interlocked.Exchange(ref _sharedMemStream, null)?.Dispose();
-					_memStreams = default;
 					Log.Debug("UNCACHED TFChunk {chunk}.", this);
 				}
 			}
@@ -1016,7 +1015,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				throw new FileBeingDeletedException();
 
 			// try get memory stream reader first
-			if (_sharedMemStream is { } sharedMemStream) {
+			for (var sharedMemStream = _sharedMemStream; sharedMemStream is not null;) {
 				if (_memStreams.TryTake(sharedMemStream, &CreateMemoryStreamWorkItem) is { } memoryWorkItem)
 					return memoryWorkItem;
 
@@ -1026,8 +1025,24 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				// The pool is empty, this is a worst case. Instead of throwing exception we create a work item out of the
 				// pool which will be disposed on return.
-				Interlocked.Increment(ref _memStreamCount);
-				return new(sharedMemStream);
+				// The pool can be empty in the following scenarios:
+				// 1. It's really empty
+				// 2. It's empty because Drain was called, a concurrency with TryDestructMemStreams() occurred
+				// Case #2 is dangerous because at the time of constructing new ReaderWorkItem out of the pool
+				// 'sharedMemStream' can be disposed already. It is not disposed if we have at least one active mem stream (_memStreamCount > 0).
+				// If so, we need to check a version of shared mem stream (by comparing references) to avoid situation when concurrent thread
+				// calls UnCacheFromMemory() and CacheInMemory() sequentially. A loop helps to acquire a fresh version of mem stream
+				// and try again, which is very rare.
+				if (Atomic.UpdateAndGet(ref _memStreamCount, IncrementIfGreaterThanZero) > 0) {
+					var tmp = _sharedMemStream;
+
+					if (ReferenceEquals(tmp, sharedMemStream))
+						return new(sharedMemStream);
+
+					sharedMemStream = tmp;
+				} else {
+					break;
+				}
 			}
 
 			if (!IsReadOnly) {
@@ -1056,6 +1071,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			static ReaderWorkItem CreateMemoryStreamWorkItem(Stream sharedMemStream, int index)
 				=> new(sharedMemStream) { PositionInPool = index };
+
+			static int IncrementIfGreaterThanZero(int value)
+				=> value + Unsafe.BitCast<bool, byte>(value > 0);
 		}
 
 		private void ReturnReaderWorkItem(ReaderWorkItem item) {
@@ -1228,26 +1246,22 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		[StructLayout(LayoutKind.Auto)]
 		private struct ReaderWorkItemPool {
-			private readonly ReaderWorkItem[] _array;
+			private volatile ReaderWorkItem[] _array;
 
 			// IndexPool supports up to 64 elements with O(1) take/return time complexity.
 			// It's a thread-safe data structure with no allocations that provide predictability about
 			// the indices: smallest available index is always preferred.
 			private IndexPool _indices;
 
-			// Roslyn uses 'call' IL instead of 'newobj' for structs because struct ctor
-			// MUST initialize all fields in contrast to classes. 'newobj' has side effect: it zeroes
-			// all the fields and then calls ctor. `call` doesn't have this side effect. Therefore,
-			// 'readonly' modifier is not enough, it doesn't produce read and write barriers.
-			// This is not acceptable because the fields of struct can be accessed without calling of ctor.
-			// For classes, read/write barrier for 'readonly' field is not needed.
-			public ReaderWorkItemPool() {
-				_indices = new();
+			public ReaderWorkItemPool() => _indices = new() { IsEmpty = true };
 
-				Volatile.Write(ref _array, new ReaderWorkItem[IndexPool.Capacity]);
+			public void Reuse() {
+				if (_array is null) {
+					Interlocked.CompareExchange(ref _array, new ReaderWorkItem[IndexPool.Capacity], null);
+				}
+
+				_indices.Reset();
 			}
-
-			private readonly ReaderWorkItem[] Array => Volatile.Read(in _array);
 
 			// Skip index and type variance checks which is inserted by runtime typically because
 			// the array element is of reference type.
@@ -1262,7 +1276,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			internal int Drain(ref int referenceCount) {
 				int localReferenceCount = Interlocked.CompareExchange(ref referenceCount, 0, 0);
 
-				if (Array is { } array && localReferenceCount > 0) {
+				if (_array is { } array && localReferenceCount > 0) {
 					Span<int> indices = stackalloc int[IndexPool.Capacity];
 					int count = _indices.Take(indices);
 
@@ -1283,7 +1297,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			internal ReaderWorkItem TryTake<T>(T arg, delegate*<T, int, ReaderWorkItem> factory) {
 				Debug.Assert(factory is not null);
 
-				return Array is { } array && _indices.TryTake(out int index)
+				return _array is { } array && _indices.TryTake(out int index)
 					? UnsafeGetElement(array, index) ??= factory(arg, index)
 					: null;
 			}
