@@ -1017,7 +1017,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				throw new FileBeingDeletedException();
 
 			// try get memory stream reader first
-			for (var sharedMemStream = _sharedMemStream; sharedMemStream is not null;) {
+			for (Stream sharedMemStream = _sharedMemStream, tmp; sharedMemStream is not null; sharedMemStream = tmp) {
 				if (_memStreams.TryTake(sharedMemStream, &CreateMemoryStreamWorkItem) is { } memoryWorkItem)
 					return memoryWorkItem;
 
@@ -1036,13 +1036,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				// calls UnCacheFromMemory() and CacheInMemory() sequentially. A loop helps to acquire a fresh version of mem stream
 				// and try again, which is very rare.
 				if (Atomic.UpdateAndGet(ref _memStreamCount, IncrementIfGreaterThanZero) > 0) {
-					var tmp = _sharedMemStream;
+					tmp = _sharedMemStream;
 
 					if (ReferenceEquals(tmp, sharedMemStream))
 						return new(sharedMemStream);
 
 					Interlocked.Decrement(ref _memStreamCount);
-					sharedMemStream = tmp;
 				} else {
 					break;
 				}
