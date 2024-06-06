@@ -1041,6 +1041,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					if (ReferenceEquals(tmp, sharedMemStream))
 						return new(sharedMemStream);
 
+					Interlocked.Decrement(ref _memStreamCount);
 					sharedMemStream = tmp;
 				} else {
 					break;
