@@ -154,6 +154,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			_unbuffered = unbuffered;
 			_writeThrough = writethrough;
 			_reduceFileCachePressure = reduceFileCachePressure;
+			_memStreams = new();
+			_fileStreams = new();
 		}
 
 		~TFChunk() {
