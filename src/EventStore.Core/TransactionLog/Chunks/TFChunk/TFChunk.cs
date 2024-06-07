@@ -1046,6 +1046,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					// Loop and try again.
 					Interlocked.Decrement(ref _memStreamCount);
 				} else {
+					// There are no other mem readers (the pool must have been drained), so
+					// _sharedMemStream is due to be disposed and reset to null, do not use it.
+					// Fall back to filestream instead.
 					break;
 				}
 			}
