@@ -1025,22 +1025,25 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					throw new FileBeingDeletedException();
 				}
 
-				// The pool is empty, this is a worst case. Instead of throwing exception we create a work item out of the
-				// pool which will be disposed on return.
-				// The pool can be empty in the following scenarios:
-				// 1. It's really empty
-				// 2. It's empty because Drain was called, a concurrency with TryDestructMemStreams() occurred
-				// Case #2 is dangerous because at the time of constructing new ReaderWorkItem out of the pool
-				// 'sharedMemStream' can be disposed already. It is not disposed if we have at least one active mem stream (_memStreamCount > 0).
-				// If so, we need to check a version of shared mem stream (by comparing references) to avoid situation when concurrent thread
-				// calls UnCacheFromMemory() and CacheInMemory() sequentially. A loop helps to acquire a fresh version of mem stream
-				// and try again, which is very rare.
+				// We have a sharedMemStream, but the memory pool is empty. This is rare.
+				// Either the readers are all in use, or the pool has been drained.
 				if (Atomic.UpdateAndGet(ref _memStreamCount, IncrementIfGreaterThanZero) > 0) {
+
+					// There are other mem readers, so we can create one more as long as we make sure
+					// our new reader uses the same _sharedMemStream.
 					tmp = _sharedMemStream;
 
-					if (ReferenceEquals(tmp, sharedMemStream))
-						return new(sharedMemStream);
+					if (ReferenceEquals(tmp, sharedMemStream)) {
 
+						// _sharedMemStream hasn't changed and there are other readers.
+						// The reason we couldn't get one from the pool is that they are all already in
+						// use. We create a new one separate to the pool.
+						return new(sharedMemStream);
+					}
+
+					// _sharedMemStream has changed. This is extremely rare but possible if the pool
+					// was drained and then repopulated again with another call to CacheInMemory.
+					// Loop and try again.
 					Interlocked.Decrement(ref _memStreamCount);
 				} else {
 					break;
