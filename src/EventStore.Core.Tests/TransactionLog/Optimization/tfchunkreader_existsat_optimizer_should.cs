@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Transforms.Identity;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Optimization {
@@ -90,7 +91,8 @@ namespace EventStore.Core.Tests.TransactionLog.Optimization {
 			var chunk = TFChunk.CreateNew(GetFilePathFor("chunk-" + chunkNumber + "-" + Guid.NewGuid()), 1024 * 1024,
 				chunkNumber, chunkNumber, scavenged, false, false, false,
 				false,
-				new TFChunkTracker.NoOp());
+				new TFChunkTracker.NoOp(),
+				new IdentityChunkTransformFactory());
 			long offset = chunkNumber * 1024 * 1024;
 			long logPos = 0 + offset;
 			for (int i = 0, n = ChunkFooter.Size / PosMap.FullSize + 1; i < n; ++i) {

@@ -14,7 +14,8 @@ namespace EventStore.Core.Data.Redaction {
 		NewChunkHashInvalid = 11,
 		NewChunkOpenFailed = 12,
 		ChunkRangeDoesNotMatch = 13,
-		UnexpectedError = 14
+		UnexpectedError = 14,
+		TargetChunkFormatNotSupported = 15,
 	}
 
 	public static class SwitchChunkResultExtensions {
@@ -33,6 +34,7 @@ namespace EventStore.Core.Data.Redaction {
 				SwitchChunkResult.NewChunkOpenFailed => "An error has occurred when opening the new chunk.",
 				SwitchChunkResult.ChunkRangeDoesNotMatch => "The target chunk's range and the new chunk's range do not match.",
 				SwitchChunkResult.UnexpectedError => "An unexpected error has occurred.",
+				SwitchChunkResult.TargetChunkFormatNotSupported => "The target chunk's file format is not supported.",
 				_ => result.ToString()
 			};
 		}

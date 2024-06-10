@@ -6,7 +6,9 @@ using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Validation;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Core.Transforms.Identity;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation {
@@ -31,7 +33,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			DbUtil.CreateSingleChunk(_config, 0, GetFilePathFor("chunk-000000.000001"), contents: _file1Contents);
 			DbUtil.CreateOngoingChunk(_config, 1, GetFilePathFor("chunk-000001.000002"), contents: _file2Contents);
 
-			var truncator = new TFChunkDbTruncator(_config);
+			var truncator = new TFChunkDbTruncator(_config, _ => new IdentityChunkTransformFactory());
 			truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed());
 		}
 
@@ -92,7 +94,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		[Test]
 		public void ongoing_chunk_should_have_full_size_and_filled_with_zeros_after_writer_checkpoint() {
 			var fileInfo = new FileInfo(GetFilePathFor("chunk-000001.000002"));
-			Assert.AreEqual(ChunkHeader.Size + 1000 + ChunkFooter.Size, fileInfo.Length);
+			Assert.AreEqual(TFChunk.GetAlignedSize(ChunkHeader.Size + 1000 + ChunkFooter.Size), fileInfo.Length);
 
 			using (var fs = File.OpenRead(fileInfo.FullName)) {
 				var leftDataSize = (int)(_config.WriterCheckpoint.Read() % _config.ChunkSize);

@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Transforms;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.TransactionLog.Chunks;
@@ -15,7 +16,8 @@ public class ChunkHeaderTests {
 			chunkStartNumber: Random.Shared.Next(500, 600),
 			chunkEndNumber: Random.Shared.Next(700, 800),
 			isScavenged: isScavenged,
-			chunkId: Guid.NewGuid());
+			chunkId: Guid.NewGuid(),
+			transformType: TransformType.Identity);
 
 		var destination = new ChunkHeader(source.AsByteArray());
 
@@ -25,5 +27,6 @@ public class ChunkHeaderTests {
 		Assert.Equal(source.ChunkEndNumber, destination.ChunkEndNumber);
 		Assert.Equal(source.IsScavenged, destination.IsScavenged);
 		Assert.Equal(source.ChunkId, destination.ChunkId);
+		Assert.Equal(source.TransformType, destination.TransformType);
 	}
 }

@@ -23,6 +23,8 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.Transforms;
+using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
 using Xunit;
 using static EventStore.Core.XUnit.Tests.Scavenge.StreamMetadatas;
@@ -209,6 +211,8 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			});
 
 			var dbConfig = TFChunkHelper.CreateSizedDbConfig(_dbPath, 0, chunkSize: 1024 * 1024);
+			var dbTransformManager = new DbTransformManager(new[] { new IdentityDbTransform() }, TransformType.Identity);
+
 			var dbResult = _getDb(dbConfig, logFormat);
 			var keptRecords = getExpectedKeptRecords != null
 				? getExpectedKeptRecords(dbResult)
@@ -402,7 +406,8 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 						new ChunkManagerForExecutor<TStreamId>(
 							logger,
 							dbResult.Db.Manager,
-							dbConfig),
+							dbConfig,
+							dbTransformManager),
 						Tracer),
 					chunkSize: dbConfig.ChunkSize,
 					unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes,
@@ -659,7 +664,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					Assert.Equal(eventNumber, info.EventNumber);
 				}
 			}
-		
+
 			// check we don't have anything extra
 			// (we can't easily check that there aren't unexpected streams in the index, but risk of this
 			// is low)
@@ -702,8 +707,10 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					chunkStartNumber: header.ChunkStartNumber,
 					chunkEndNumber: header.ChunkEndNumber,
 					isScavenged: true,
-					chunkId: Guid.NewGuid());
+					chunkId: Guid.NewGuid(),
+					transformType: header.TransformType);
 
+				var transformFactory = db.TransformManager.GetFactoryForExistingChunk(header.TransformType);
 				var newChunk = TFChunk.CreateWithHeader(
 					filename: $"{chunk.FileName}.tmp",
 					header: newChunkHeader,
@@ -712,7 +719,9 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					unbuffered: false,
 					writethrough: false,
 					reduceFileCachePressure: false,
-					new TFChunkTracker.NoOp());
+					tracker: new TFChunkTracker.NoOp(),
+					transformFactory: transformFactory,
+					transformHeader: transformFactory.CreateTransformHeader());
 
 				newChunk.CompleteScavenge(null);
 

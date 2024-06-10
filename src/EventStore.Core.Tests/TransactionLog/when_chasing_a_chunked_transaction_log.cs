@@ -6,6 +6,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Transforms;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
@@ -89,7 +90,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			using (var fs = new FileStream(GetFilePathFor("chunk-000000.000000"), FileMode.CreateNew,
 				FileAccess.Write)) {
 				fs.SetLength(ChunkHeader.Size + ChunkFooter.Size + 10000);
-				var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid())
+				var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid(), TransformType.Identity)
 					.AsByteArray();
 				var writer = new BinaryWriter(fs);
 				writer.Write(chunkHeader);
@@ -235,17 +236,17 @@ namespace EventStore.Core.Tests.TransactionLog {
 		           recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
 		           fs.Close();
 		       }
-   
+
 		       var reader = new MultifileTransactionFileChaser(config, "reader");
 		       reader.Open();
 		       LogRecord record = null;
 		       var readRecord = reader.TryReadNext(out record);
 		       reader.Close();
-   
+
 		       Assert.IsFalse(readRecord);
 		       Assert.AreEqual(0, readerchk.Read());
 		   }
-   
+
 		   [Test]
 		   public void try_read_returns_false_when_writer_checksum_is_ahead_but_not_enough_to_read_length()
 		   {
@@ -270,7 +271,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		           recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
 		           fs.Close();
 		       }
-   
+
 		       var reader = new MultifileTransactionFileChaser(config, "reader");
 		       reader.Open();
 		       LogRecord record = null;
@@ -279,23 +280,23 @@ namespace EventStore.Core.Tests.TransactionLog {
 		       Assert.IsFalse(readRecord);
 		       Assert.AreEqual(0, readerchk.Read());
 		   }
-   
+
 		   [Test]
 		   public void try_read_returns_properly_when_writer_is_written_to_while_chasing()
 		   {
 		       var writerchk = new InMemoryCheckpoint(0);
 		       var readerchk = new InMemoryCheckpoint("reader", 0);
 		       var config = new TransactionFileDatabaseConfig(PathName, "prefix.tf", 10000, writerchk, new[] { readerchk });
-   
+
 		       var fileName = GetFilePathFor("prefix.tf0");
 		       File.Create(fileName).Close();
-   
+
 		       var reader = new MultifileTransactionFileChaser(config, "reader");
 		       reader.Open();
-   
+
 		       LogRecord record;
 		       Assert.IsFalse(reader.TryReadNext(out record));
-   
+
 		       var recordToWrite = LogRecord.Prepare(logPosition: 0,
 		                                                correlationId: _correlationId,
 		                                                eventId: _eventId,
@@ -310,17 +311,17 @@ namespace EventStore.Core.Tests.TransactionLog {
 		       var memstream = new MemoryStream();
 		       var writer = new BinaryWriter(memstream);
 		       recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
-   
+
 		       using (var fs = new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
 		       {
 		           fs.Write(memstream.ToArray(), 0, (int)memstream.Length);
 		           fs.Flush(flushToDisk: true);
 		       }
 		       writerchk.Write(memstream.Length);
-   
+
 		       Assert.IsTrue(reader.TryReadNext(out record));
 		       Assert.AreEqual(record, recordToWrite);
-   
+
 		       var recordToWrite2 = LogRecord.Prepare(logPosition: 0,
 		                                                 correlationId: _correlationId,
 		                                                 eventId: _eventId,
@@ -334,17 +335,17 @@ namespace EventStore.Core.Tests.TransactionLog {
 		                                                 metadata: new byte[] { 9 });
 		       memstream.SetLength(0);
 		       recordToWrite2.WriteWithLengthPrefixAndSuffixTo(writer);
-   
+
 		       using (var fs = new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
 		       {
 		           fs.Write(memstream.ToArray(), 0, (int)memstream.Length);
 		           fs.Flush(flushToDisk: true);
 		       }
 		       writerchk.Write(writerchk.Read() + memstream.Length);
-   
+
 		       Assert.IsTrue(reader.TryReadNext(out record));
 		       Assert.AreEqual(record, recordToWrite2);
-   
+
 		       reader.Close();
 		   }*/
 	}
