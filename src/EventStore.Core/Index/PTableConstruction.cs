@@ -28,16 +28,26 @@ namespace EventStore.Core.Index {
 		public static PersistentBloomFilter ConstructBloomFilter(
 			bool useBloomFilter,
 			string filename,
-			long indexEntryCount) {
+			long indexEntryCount,
+			Func<long, long> genBloomFilterSizeBytes = null) {
 
 			if (!useBloomFilter)
 				return null;
 
-			return new PersistentBloomFilter(
-				new FileStreamPersistence(
-					path: GenBloomFilterFilename(filename),
-					create: true,
-					size: GenBloomFilterSizeBytes(indexEntryCount)));
+			try {
+				genBloomFilterSizeBytes ??= GenBloomFilterSizeBytes;
+				return new PersistentBloomFilter(
+					new FileStreamPersistence(
+						path: GenBloomFilterFilename(filename),
+						create: true,
+						size: genBloomFilterSizeBytes(indexEntryCount)));
+			} catch (OutOfMemoryException ex) {
+				Log.Warning(ex, "Could not allocate enough memory for Bloom filter for index file {file}. Performance will be degraded", filename);
+				return null;
+			} catch (Exception ex) {
+				Log.Error(ex, "Could not create Bloom filter for index file {file}. Performance will be degraded", filename);
+				return null;
+			}
 		}
 
 		public static PTable FromMemtable(IMemTable table, string filename, int initialReaders, int maxReaders,
