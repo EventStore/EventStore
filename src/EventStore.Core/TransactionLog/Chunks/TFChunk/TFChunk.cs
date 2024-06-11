@@ -15,7 +15,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Transforms;
-using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
 using Microsoft.Win32.SafeHandles;
 using ILogger = Serilog.ILogger;
@@ -1062,7 +1061,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				if (slot.ValueRef is not { } memoryWorkItem) {
 					memoryWorkItem = slot.ValueRef = new(
 						_sharedMemStream,
-						_cachedDataTransformed ? _transform.Read : IdentityChunkReadTransform.Instance) { PositionInPool = slot.Index };
+						_cachedDataTransformed ? _transform.Read : IChunkReadTransform.Identity) { PositionInPool = slot.Index };
 				}
 
 				return memoryWorkItem;
@@ -1080,7 +1079,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				// change or become invalid, so we don't use them. Instead fallback to filestream.
 				Debug.Assert(_sharedMemStream is not null);
 
-				return new(_sharedMemStream, _cachedDataTransformed ? _transform.Read : IdentityChunkReadTransform.Instance);
+				return new(_sharedMemStream, _cachedDataTransformed ? _transform.Read : IChunkReadTransform.Identity);
 			}
 
 			if (!IsReadOnly) {
@@ -1262,7 +1261,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				var streamToUse = new ChunkDataReadStream(stream);
 				streamToUse = (_cachedDataTransformed
 					? _transform.Read
-					: IdentityChunkReadTransform.Instance).TransformData(streamToUse);
+					: IChunkReadTransform.Identity).TransformData(streamToUse);
 
 				reader = new TFChunkBulkDataReader(chunk: this, streamToUse: streamToUse, isMemory: true);
 

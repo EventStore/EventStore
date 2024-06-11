@@ -5,7 +5,6 @@ using System.Threading;
 using EventStore.Common.Utils;
 using System.Linq;
 using EventStore.Core.Transforms;
-using EventStore.Core.Transforms.Identity;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
@@ -110,7 +109,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				// since the raw data being replicated is already transformed, we use
 				// the identity transform as we don't want to transform the data again
 				// when appending raw data to the chunk.
-				new IdentityChunkTransformFactory(),
+				IChunkTransformFactory.Identity,
 				ReadOnlyMemory<byte>.Empty);
 		}
 
