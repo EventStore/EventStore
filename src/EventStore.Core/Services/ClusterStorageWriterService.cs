@@ -216,9 +216,8 @@ namespace EventStore.Core.Services {
 			if (message.IsScavengedChunk) {
 				_activeChunk = Db.Manager.CreateTempChunk(message.ChunkHeader, message.FileSize);
 			} else {
-				var identityTransformHeader = ReadOnlyMemory<byte>.Empty;
 				if (message.ChunkHeader.ChunkStartNumber == Db.Manager.ChunksCount) {
-					Writer.AddNewChunk(message.ChunkHeader, identityTransformHeader, message.FileSize);
+					Writer.AddNewChunk(message.ChunkHeader, message.TransformHeader, message.FileSize);
 				} else if (message.ChunkHeader.ChunkStartNumber + 1 == Db.Manager.ChunksCount) {
 					// the requested chunk was already created. this is fine, it can happen if the follower created the
 					// chunk in a previous run, was killed and re-subscribed to the leader at the beginning of the chunk.
