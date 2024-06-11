@@ -150,7 +150,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		private IChunkTransform _transform;
 		private ReadOnlyMemory<byte> _transformHeader;
-		private readonly IdentityChunkReadTransform _identityReadTransform = IdentityChunkReadTransform.Instance;
 
 		private TFChunk(string filename,
 			int midpointsDepth,
@@ -1059,7 +1058,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				if (slot.ValueRef is not { } memoryWorkItem) {
 					memoryWorkItem = slot.ValueRef = new(
 						_sharedMemStream,
-						_cachedDataTransformed ? _transform.Read : _identityReadTransform) { PositionInPool = slot.Index };
+						_cachedDataTransformed ? _transform.Read : IdentityChunkReadTransform.Instance) { PositionInPool = slot.Index };
 				}
 
 				return memoryWorkItem;
@@ -1072,7 +1071,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				// Either the readers are all in use, or the pool has been drained.
 				// To distingiush that situation, we need to check whether the counter for mem streams is not zero
 				// at the time of increment. If so, TryDestructMemStreams cannot destroy the memory stream.
-				return new(_sharedMemStream, _cachedDataTransformed ? _transform.Read : _identityReadTransform);
+				return new(_sharedMemStream, _cachedDataTransformed ? _transform.Read : IdentityChunkReadTransform.Instance);
 			}
 
 			if (!IsReadOnly) {
@@ -1252,9 +1251,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 
 				var streamToUse = new ChunkDataReadStream(stream);
-				streamToUse = _cachedDataTransformed
-					? _transform.Read.TransformData(streamToUse)
-					: _identityReadTransform.TransformData(streamToUse);
+				streamToUse = (_cachedDataTransformed
+					? _transform.Read
+					: IdentityChunkReadTransform.Instance).TransformData(streamToUse);
 
 				reader = new TFChunkBulkDataReader(chunk: this, streamToUse: streamToUse, isMemory: true);
 
@@ -1356,14 +1355,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				slot = default;
 				return false;
-			}
-
-			internal bool Return(in Slot slot) {
-				if (slot.Index < 0)
-					return false;
-
-				_indices.Return(slot.Index);
-				return true;
 			}
 
 			internal bool Return(ReaderWorkItem item) {
