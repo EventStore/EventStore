@@ -61,6 +61,8 @@ using EventStore.Core.Synchronization;
 using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Core.Transforms;
+using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
@@ -323,7 +325,9 @@ namespace EventStore.Core {
 
 			MetricsBootstrapper.Bootstrap(MetricsConfiguration.Get(configuration), dbConfig, trackers);
 
-			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker);
+			var dbIdentityTransform = new IdentityDbTransform();
+			var dbTransformManager = new DbTransformManager(new [] { dbIdentityTransform }, activeTransformType: dbIdentityTransform.Type);
+			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker, transformManager: dbTransformManager);
 
 			TFChunkDbConfig CreateDbConfig(
 				out SystemStatsHelper statsHelper,
@@ -589,7 +593,7 @@ namespace EventStore.Core {
 					"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
 					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
 					epochCheckpoint, epochCheckpoint);
-				var truncator = new TFChunkDbTruncator(Db.Config);
+				var truncator = new TFChunkDbTruncator(Db.Config, type => Db.TransformManager.GetFactoryForExistingChunk(type));
 				truncator.TruncateDb(truncPos);
 			}
 
@@ -1315,7 +1319,7 @@ namespace EventStore.Core {
 					var chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
 						logger,
 						logFormat.Metastreams,
-						new ChunkManagerForExecutor<TStreamId>(logger, Db.Manager, Db.Config),
+						new ChunkManagerForExecutor<TStreamId>(logger, Db.Manager, Db.Config, Db.TransformManager),
 						chunkSize: Db.Config.ChunkSize,
 						unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
 						cancellationCheckPeriod: cancellationCheckPeriod,

@@ -17,6 +17,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Transforms;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {
@@ -205,11 +206,18 @@ namespace EventStore.Core.Services {
 
 			_framer.Reset();
 
+			if (!Db.TransformManager.SupportsTransform(message.ChunkHeader.TransformType)) {
+				ReplicationFail(
+					"Unsupported chunk transform: {0}",
+					"Unsupported chunk transform: {transformType}.",
+					message.ChunkHeader.TransformType);
+			}
+
 			if (message.IsScavengedChunk) {
 				_activeChunk = Db.Manager.CreateTempChunk(message.ChunkHeader, message.FileSize);
 			} else {
 				if (message.ChunkHeader.ChunkStartNumber == Db.Manager.ChunksCount) {
-					Writer.AddNewChunk(message.ChunkHeader, message.FileSize);
+					Writer.AddNewChunk(message.ChunkHeader, message.TransformHeader, message.FileSize);
 				} else if (message.ChunkHeader.ChunkStartNumber + 1 == Db.Manager.ChunksCount) {
 					// the requested chunk was already created. this is fine, it can happen if the follower created the
 					// chunk in a previous run, was killed and re-subscribed to the leader at the beginning of the chunk.

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using DotNext.IO;
+using EventStore.Core.Transforms;
 using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
@@ -11,13 +12,23 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		// if item was taken from the pool, the field contains position within the array (>= 0)
 		private readonly int _positionInPool = -1;
 
-		public unsafe ReaderWorkItem(Stream sharedStream)
-			: base(sharedStream, Encoding.UTF8, leaveOpen: true) {
+		public unsafe ReaderWorkItem(Stream sharedStream, IChunkReadTransform chunkReadTransform)
+			: base(CreateTransformedMemoryStream(sharedStream, chunkReadTransform), Encoding.UTF8, leaveOpen: true) {
 			IsMemory = true;
 		}
 
-		public ReaderWorkItem(SafeFileHandle handle)
-			: base(new BufferedStream(handle.AsUnbufferedStream(FileAccess.Read), BufferSize), Encoding.UTF8, leaveOpen: false) {
+		public ReaderWorkItem(SafeFileHandle handle, IChunkReadTransform chunkReadTransform)
+			: base(CreateTransformedFileStream(handle, chunkReadTransform), Encoding.UTF8, leaveOpen: false) {
+			IsMemory = false;
+		}
+
+		private static Stream CreateTransformedMemoryStream(Stream memStream, IChunkReadTransform chunkReadTransform) {
+			return chunkReadTransform.TransformData(new ChunkDataReadStream(memStream));
+		}
+
+		private static ChunkDataReadStream CreateTransformedFileStream(SafeFileHandle handle, IChunkReadTransform chunkReadTransform) {
+			var fileStream = new BufferedStream(handle.AsUnbufferedStream(FileAccess.Read), BufferSize);
+			return chunkReadTransform.TransformData(new ChunkDataReadStream(fileStream));
 		}
 
 		public bool IsMemory { get; }

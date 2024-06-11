@@ -5,6 +5,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Transforms;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
@@ -15,7 +16,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private TFChunkDb _db;
 
 		private static void CreateChunk(string path, int size) {
-			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, size, 0, 0, false, Guid.NewGuid());
+			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, size, 0, 0, false, Guid.NewGuid(), TransformType.Identity);
 			var chunkBytes = chunkHeader.AsByteArray();
 			var buf = new byte[ChunkHeader.Size + ChunkFooter.Size + chunkHeader.ChunkSize];
 			Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
@@ -67,7 +68,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void checkpoints_should_be_flushed_only_when_chunks_are_properly_closed(bool chunksClosed) {
 			if (!chunksClosed) {
 				// acquire a reader to prevent the chunk from being properly closed
-				_db.Manager.GetChunk(0).AcquireReader();
+				_db.Manager.GetChunk(0).AcquireRawReader();
 			}
 
 			var writer = new TFChunkWriter(_db);

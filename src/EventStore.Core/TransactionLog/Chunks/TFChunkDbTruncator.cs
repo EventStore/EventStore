@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using EventStore.Common.Utils;
+using EventStore.Core.Transforms;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
@@ -9,10 +10,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunkDbTruncator>();
 
 		private readonly TFChunkDbConfig _config;
+		private readonly Func<TransformType, IChunkTransformFactory> _getTransformFactory;
 
-		public TFChunkDbTruncator(TFChunkDbConfig config) {
+		public TFChunkDbTruncator(TFChunkDbConfig config, Func<TransformType, IChunkTransformFactory> getTransformFactory) {
 			Ensure.NotNull(config, "config");
+			Ensure.NotNull(getTransformFactory, "getTransformFactory");
 			_config = config;
+			_getTransformFactory = getTransformFactory;
 		}
 
 		public void TruncateDb(long truncateChk) {
@@ -25,7 +29,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				throw new Exception(
 					string.Format("MaxTruncation is set ({0}) and truncate checkpoint is out of bounds (requested truncation is {1} [{2} => {3}]).", _config.MaxTruncation, requestedTruncation, writerChk, truncateChk));
 			}
-			
+
 			var oldLastChunkNum = (int)(writerChk / _config.ChunkSize);
 			var newLastChunkNum = (int)(truncateChk / _config.ChunkSize);
 			var chunkEnumerator = new TFChunkEnumerator(_config.FileNamingStrategy);
@@ -150,10 +154,15 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						chunkHeader));
 			}
 
+			var transformFactory = _getTransformFactory(chunkHeader.TransformType);
+			var newDataSize = transformFactory.TransformDataPosition(chunkHeader.ChunkSize);
+			var newFileSize = TFChunk.TFChunk.GetAlignedSize(ChunkHeader.Size + newDataSize + ChunkFooter.Size);
+			var dataTruncatePos = transformFactory.TransformDataPosition((int) chunkHeader.GetLocalLogPosition(truncateChk));
+
 			File.SetAttributes(chunkFilename, FileAttributes.Normal);
 			using (var fs = new FileStream(chunkFilename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read)) {
-				fs.SetLength(ChunkHeader.Size + chunkHeader.ChunkSize + ChunkFooter.Size);
-				fs.Position = ChunkHeader.Size + chunkHeader.GetLocalLogPosition(truncateChk);
+				fs.SetLength(newFileSize);
+				fs.Position = ChunkHeader.Size + dataTruncatePos;
 				var zeros = new byte[65536];
 				var leftToWrite = fs.Length - fs.Position;
 				while (leftToWrite > 0) {

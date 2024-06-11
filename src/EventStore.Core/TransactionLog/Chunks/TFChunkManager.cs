@@ -4,6 +4,8 @@ using System.IO;
 using System.Threading;
 using EventStore.Common.Utils;
 using System.Linq;
+using EventStore.Core.Transforms;
+using EventStore.Core.Transforms.Identity;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
@@ -22,6 +24,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly TFChunkDbConfig _config;
 		private readonly TFChunk.TFChunk[] _chunks = new TFChunk.TFChunk[MaxChunksCount];
 		private readonly ITransactionFileTracker _tracker;
+		private readonly DbTransformManager _transformManager;
+
 		private volatile int _chunksCount;
 		private volatile bool _cachingEnabled;
 
@@ -29,10 +33,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private int _backgroundPassesRemaining;
 		private int _backgroundRunning;
 
-		public TFChunkManager(TFChunkDbConfig config, ITransactionFileTracker tracker) {
+		public TFChunkManager(TFChunkDbConfig config, ITransactionFileTracker tracker, DbTransformManager transformManager) {
 			Ensure.NotNull(config, "config");
 			_config = config;
 			_tracker = tracker;
+			_transformManager = transformManager;
 		}
 
 		public void EnableCaching() {
@@ -100,7 +105,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				_config.Unbuffered,
 				_config.WriteThrough,
 				_config.ReduceFileCachePressure,
-				_tracker);
+				_tracker,
+				// temporary chunks are used for replicating raw (scavenged) chunks.
+				// since the raw data being replicated is already transformed, we use
+				// the identity transform as we don't want to transform the data again
+				// when appending raw data to the chunk.
+				new IdentityChunkTransformFactory(),
+				ReadOnlyMemory<byte>.Empty);
 		}
 
 		public TFChunk.TFChunk AddNewChunk() {
@@ -116,13 +127,14 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					unbuffered: _config.Unbuffered,
 					writethrough: _config.WriteThrough,
 					reduceFileCachePressure: _config.ReduceFileCachePressure,
-					tracker: _tracker);
+					tracker: _tracker,
+					transformFactory: _transformManager.GetFactoryForNewChunk());
 				AddChunk(chunk);
 				return chunk;
 			}
 		}
 
-		public TFChunk.TFChunk AddNewChunk(ChunkHeader chunkHeader, int fileSize) {
+		public TFChunk.TFChunk AddNewChunk(ChunkHeader chunkHeader, ReadOnlyMemory<byte> transformHeader, int fileSize) {
 			Ensure.NotNull(chunkHeader, "chunkHeader");
 			Ensure.Positive(fileSize, "fileSize");
 
@@ -140,7 +152,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					unbuffered: _config.Unbuffered,
 					writethrough: _config.WriteThrough,
 					reduceFileCachePressure: _config.ReduceFileCachePressure,
-					tracker: _tracker);
+					tracker: _tracker,
+					transformFactory: _transformManager.GetFactoryForExistingChunk(chunkHeader.TransformType),
+					transformHeader: transformHeader);
 				AddChunk(chunk);
 				return chunk;
 			}
@@ -197,7 +211,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				}
 
 				newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash, _config.Unbuffered,
-					_tracker, _config.OptimizeReadSideCache, _config.ReduceFileCachePressure );
+					_tracker, type => _transformManager.GetFactoryForExistingChunk(type),
+					_config.OptimizeReadSideCache, _config.ReduceFileCachePressure);
 			}
 
 			lock (_chunksLocker) {

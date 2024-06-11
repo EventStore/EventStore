@@ -1,4 +1,5 @@
-﻿using EventStore.Common.Utils;
+﻿using System;
+using EventStore.Common.Utils;
 using Google.Protobuf;
 
 // ReSharper disable once CheckNamespace
@@ -73,7 +74,7 @@ namespace EventStore.Cluster {
 
 	partial class CreateChunk {
 		public CreateChunk(byte[] leaderId, byte[] subscriptionId, byte[] chunkHeaderBytes, int fileSize,
-			bool isScavengedChunk) {
+			bool isScavengedChunk, ReadOnlySpan<byte> transformHeaderBytes) {
 			Ensure.NotNull(leaderId, "leaderId");
 			Ensure.NotNull(subscriptionId, "subscriptionId");
 			Ensure.NotNull(chunkHeaderBytes, "chunkHeaderBytes");
@@ -83,6 +84,7 @@ namespace EventStore.Cluster {
 			ChunkHeaderBytes = ByteString.CopyFrom(chunkHeaderBytes);
 			FileSize = fileSize;
 			IsScavengedChunk = isScavengedChunk;
+			TransformHeaderBytes = ByteString.CopyFrom(transformHeaderBytes);
 		}
 	}
 

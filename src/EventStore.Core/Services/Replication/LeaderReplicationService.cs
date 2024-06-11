@@ -362,8 +362,9 @@ namespace EventStore.Core.Services.Replication {
 				Debug.Assert(chunk != null, string.Format(
 					"Chunk for LogPosition {0} (0x{0:X}) is null in LeaderReplicationService! Replica: [{1},C:{2},S:{3}]",
 					logPosition, sub.ReplicaEndPoint, sub.ConnectionId, sub.SubscriptionId));
-				var bulkReader = chunk.AcquireReader();
-				if (chunk.ChunkHeader.IsScavenged) {
+				var rawSend = chunk.ChunkHeader.IsScavenged;
+				var bulkReader = rawSend ? chunk.AcquireRawReader() : chunk.AcquireDataReader();
+				if (rawSend) {
 					var chunkStartPos = chunk.ChunkHeader.ChunkStartPosition;
 					if (verbose) {
 						Log.Information(
@@ -379,7 +380,7 @@ namespace EventStore.Core.Services.Replication {
 
 					sub.LogPosition = chunkStartPos;
 					sub.RawSend = true;
-					bulkReader.SetRawPosition(ChunkHeader.Size);
+					bulkReader.SetPosition(ChunkHeader.Size);
 					if (replicationStart)
 						sub.SendMessage(new ReplicationMessage.ReplicaSubscribed(_instanceId, sub.SubscriptionId,
 							sub.LogPosition));
@@ -387,7 +388,8 @@ namespace EventStore.Core.Services.Replication {
 						sub.SubscriptionId,
 						chunk.ChunkHeader,
 						chunk.FileSize,
-						isScavengedChunk: true));
+						isScavengedChunk: true,
+						chunk.TransformHeader));
 				} else {
 					if (verbose)
 						Log.Information(
@@ -396,7 +398,7 @@ namespace EventStore.Core.Services.Replication {
 
 					sub.LogPosition = logPosition;
 					sub.RawSend = false;
-					bulkReader.SetDataPosition(chunk.ChunkHeader.GetLocalLogPosition(logPosition));
+					bulkReader.SetPosition(chunk.ChunkHeader.GetLocalLogPosition(logPosition));
 					if (replicationStart)
 						sub.SendMessage(new ReplicationMessage.ReplicaSubscribed(_instanceId, sub.SubscriptionId,
 							sub.LogPosition));
@@ -408,7 +410,8 @@ namespace EventStore.Core.Services.Replication {
 							sub.SubscriptionId,
 							chunk.ChunkHeader,
 							chunk.FileSize,
-							isScavengedChunk: false));
+							isScavengedChunk: false,
+							chunk.TransformHeader));
 					}
 				}
 
@@ -539,11 +542,11 @@ namespace EventStore.Core.Services.Replication {
 
 			BulkReadResult bulkResult;
 			if (subscription.RawSend) {
-				bulkResult = bulkReader.ReadNextRawBytes(subscription.DataBuffer.Length, subscription.DataBuffer);
+				bulkResult = bulkReader.ReadNextBytes(subscription.DataBuffer.Length, subscription.DataBuffer);
 			} else {
 				var bytesToRead = (int)Math.Min(subscription.DataBuffer.Length,
 					leaderCheckpoint - subscription.LogPosition);
-				bulkResult = bulkReader.ReadNextDataBytes(bytesToRead, subscription.DataBuffer);
+				bulkResult = bulkReader.ReadNextBytes(bytesToRead, subscription.DataBuffer);
 			}
 
 			bool dataFound = false;

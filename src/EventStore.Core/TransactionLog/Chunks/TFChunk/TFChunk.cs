@@ -14,6 +14,8 @@ using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Transforms;
+using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
 using Microsoft.Win32.SafeHandles;
 using ILogger = Serilog.ILogger;
@@ -28,6 +30,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public const byte CurrentChunkVersion = 3;
+		private const int AlignmentSize = 4096;
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunk>();
 
@@ -40,12 +43,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			get { return _cacheStatus == CacheStatus.Cached; }
 		}
 
-		// the logical size of data (could be > PhysicalDataSize if scavenged chunk)
+		// the logical size of (untransformed) data (could be > PhysicalDataSize if scavenged chunk)
 		public long LogicalDataSize {
 			get { return Interlocked.Read(ref _logicalDataSize); }
 		}
 
-		// the physical size of data size of data
+		// the physical size of (untransformed) data
 		public int PhysicalDataSize {
 			get { return _physicalDataSize; }
 		}
@@ -64,6 +67,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		public ChunkFooter ChunkFooter {
 			get { return _chunkFooter; }
+		}
+
+		public ReadOnlyMemory<byte> TransformHeader {
+			get { return _transformHeader; }
 		}
 
 		public readonly int MidpointsDepth;
@@ -108,6 +115,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		// potentially causing problems.
 		private readonly object _cachedDataLock = new();
 		private volatile nint _cachedData;
+		// When the chunk is Cached/Uncaching, _cachedDataTransformed indicates whether _cachedData has had the transformation applied
+		private bool _cachedDataTransformed;
 		private int _cachedLength;
 		private volatile CacheStatus _cacheStatus;
 
@@ -139,6 +148,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		private IChunkReadSide _readSide;
 
+		private IChunkTransform _transform;
+		private ReadOnlyMemory<byte> _transformHeader;
+		private readonly IdentityChunkReadTransform _identityReadTransform = IdentityChunkReadTransform.Instance;
+
 		private TFChunk(string filename,
 			int midpointsDepth,
 			bool inMem,
@@ -163,11 +176,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public static TFChunk FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead,
-			ITransactionFileTracker tracker, bool optimizeReadSideCache = false, bool reduceFileCachePressure = false) {
+			ITransactionFileTracker tracker, Func<TransformType, IChunkTransformFactory> getTransformFactory,
+			bool optimizeReadSideCache = false, bool reduceFileCachePressure = false) {
 			var chunk = new TFChunk(filename,
 				TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure);
 			try {
-				chunk.InitCompleted(verifyHash, optimizeReadSideCache, tracker);
+				chunk.InitCompleted(verifyHash, optimizeReadSideCache, tracker, getTransformFactory);
 			} catch {
 				chunk.Dispose();
 				throw;
@@ -176,15 +190,17 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return chunk;
 		}
 
-		public static TFChunk FromOngoingFile(string filename, int writePosition, bool checkSize, bool unbuffered,
-			bool writethrough, bool reduceFileCachePressure, ITransactionFileTracker tracker) {
+		public static TFChunk FromOngoingFile(string filename, int writePosition, bool unbuffered,
+			bool writethrough, bool reduceFileCachePressure, ITransactionFileTracker tracker,
+			Func<TransformType, IChunkTransformFactory> getTransformFactory) {
 			var chunk = new TFChunk(filename,
 				TFConsts.MidpointsDepth,
 				false,
 				unbuffered,
-				writethrough, reduceFileCachePressure);
+				writethrough,
+				reduceFileCachePressure);
 			try {
-				chunk.InitOngoing(writePosition, checkSize, tracker);
+				chunk.InitOngoing(writePosition, tracker, getTransformFactory);
 			} catch {
 				chunk.Dispose();
 				throw;
@@ -194,7 +210,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public static TFChunk CreateNew(string filename,
-			int chunkSize,
+			int chunkDataSize,
 			int chunkStartNumber,
 			int chunkEndNumber,
 			bool isScavenged,
@@ -202,12 +218,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			bool unbuffered,
 			bool writethrough,
 			bool reduceFileCachePressure,
-			ITransactionFileTracker tracker) {
-			var size = GetAlignedSize(chunkSize + ChunkHeader.Size + ChunkFooter.Size);
-			var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkSize, chunkStartNumber, chunkEndNumber,
-				isScavenged, Guid.NewGuid());
-			return CreateWithHeader(filename, chunkHeader, size, inMem, unbuffered, writethrough,
-				reduceFileCachePressure, tracker);
+			ITransactionFileTracker tracker,
+			IChunkTransformFactory transformFactory) {
+			var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkDataSize, chunkStartNumber, chunkEndNumber,
+				isScavenged, Guid.NewGuid(), transformFactory.Type);
+			var fileSize = GetAlignedSize(transformFactory.TransformDataPosition(chunkDataSize) + ChunkHeader.Size + ChunkFooter.Size);
+
+			return CreateWithHeader(filename, chunkHeader, fileSize, inMem, unbuffered, writethrough,
+				reduceFileCachePressure, tracker, transformFactory, transformFactory.CreateTransformHeader());
 		}
 
 		public static TFChunk CreateWithHeader(string filename,
@@ -217,7 +235,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			bool unbuffered,
 			bool writethrough,
 			bool reduceFileCachePressure,
-			ITransactionFileTracker tracker) {
+			ITransactionFileTracker tracker,
+			IChunkTransformFactory transformFactory,
+			ReadOnlyMemory<byte> transformHeader) {
 			var chunk = new TFChunk(filename,
 				TFConsts.MidpointsDepth,
 				inMem,
@@ -225,7 +245,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				writethrough,
 				reduceFileCachePressure);
 			try {
-				chunk.InitNew(header, fileSize, tracker);
+				chunk.InitNew(header, fileSize, tracker, transformFactory, transformHeader);
 			} catch {
 				chunk.Dispose();
 				throw;
@@ -234,7 +254,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return chunk;
 		}
 
-		private void InitCompleted(bool verifyHash, bool optimizeReadSideCache, ITransactionFileTracker tracker) {
+		private void InitCompleted(bool verifyHash, bool optimizeReadSideCache, ITransactionFileTracker tracker,
+			Func<TransformType, IChunkTransformFactory> getTransformFactory) {
 			var fileInfo = new FileInfo(_filename);
 			if (!fileInfo.Exists)
 				throw new CorruptDatabaseException(new ChunkNotFoundException(_filename));
@@ -250,18 +271,20 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			IsReadOnly = true;
 			SetAttributes(_filename, true);
-			CreateReaderStreams();
 
-			var reader = GetReaderWorkItem();
-			try {
-				_chunkHeader = ReadHeader(reader.BaseStream);
+			using (var stream = _handle.AsUnbufferedStream(FileAccess.Read)) {
+				_chunkHeader = ReadHeader(stream);
 				Log.Debug("Opened completed {chunk} as version {version}", _filename, _chunkHeader.Version);
 				if (_chunkHeader.Version != (byte)ChunkVersions.Unaligned &&
 				    _chunkHeader.Version != (byte)ChunkVersions.Aligned)
 					throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version,
 						CurrentChunkVersion));
 
-				_chunkFooter = ReadFooter(reader.BaseStream);
+				var transformFactory = getTransformFactory(_chunkHeader.TransformType);
+				_transformHeader = transformFactory.ReadTransformHeader(stream);
+				_transform = transformFactory.CreateTransform(_transformHeader);
+
+				_chunkFooter = ReadFooter(stream);
 				if (!_chunkFooter.IsCompleted) {
 					throw new CorruptDatabaseException(new BadChunkInDatabaseException(
 						string.Format("Chunk file '{0}' should be completed, but is not.", _filename)));
@@ -269,19 +292,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				_logicalDataSize = _chunkFooter.LogicalDataSize;
 				_physicalDataSize = _chunkFooter.PhysicalDataSize;
-				var expectedFileSize = _chunkFooter.PhysicalDataSize + _chunkFooter.MapSize + ChunkHeader.Size +
-				                       ChunkFooter.Size;
-				if (_chunkHeader.Version == (byte)ChunkVersions.Unaligned && reader.BaseStream.Length != expectedFileSize) {
-					throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-						string.Format(
-							"Chunk file '{0}' should have a file size of {1} bytes, but it has a size of {2} bytes.",
-							_filename,
-							expectedFileSize,
-							reader.BaseStream.Length)));
-				}
-			} finally {
-				ReturnReaderWorkItem(reader);
 			}
+
+			CreateReaderStreams();
 
 			_readSide = _chunkHeader.IsScavenged
 				? new TFChunkReadSideScavenged(this, optimizeReadSideCache, tracker)
@@ -294,7 +307,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				VerifyFileHash();
 		}
 
-		private void InitNew(ChunkHeader chunkHeader, int fileSize, ITransactionFileTracker tracker) {
+		private void InitNew(ChunkHeader chunkHeader, int fileSize, ITransactionFileTracker tracker,
+			IChunkTransformFactory transformFactory, ReadOnlyMemory<byte> transformHeader) {
 			Ensure.NotNull(chunkHeader, "chunkHeader");
 			Ensure.Positive(fileSize, "fileSize");
 
@@ -303,11 +317,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			_chunkHeader = chunkHeader;
 			_physicalDataSize = 0;
 			_logicalDataSize = 0;
+			_transformHeader = transformHeader;
+			_transform = transformFactory.CreateTransform(_transformHeader);
 
 			if (_inMem)
-				CreateInMemChunk(chunkHeader, fileSize);
+				CreateInMemChunk(chunkHeader, fileSize, transformHeader);
 			else {
-				CreateWriterWorkItemForNewChunk(chunkHeader, fileSize);
+				CreateWriterWorkItemForNewChunk(chunkHeader, fileSize, transformHeader);
 				SetAttributes(_filename, false);
 			}
 
@@ -322,7 +338,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 		}
 
-		private void InitOngoing(int writePosition, bool checkSize, ITransactionFileTracker tracker) {
+		private void InitOngoing(int writePosition, ITransactionFileTracker tracker,
+			Func<TransformType, IChunkTransformFactory> getTransformFactory) {
 			Ensure.Nonnegative(writePosition, "writePosition");
 			var fileInfo = new FileInfo(_filename);
 			if (!fileInfo.Exists)
@@ -334,24 +351,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			_logicalDataSize = writePosition;
 
 			SetAttributes(_filename, false);
-			CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
+			CreateWriterWorkItemForExistingChunk(writePosition, getTransformFactory, out _chunkHeader);
 			Log.Debug("Opened ongoing {chunk} as version {version}", _filename, _chunkHeader.Version);
 			if (_chunkHeader.Version != (byte)ChunkVersions.Aligned &&
 			    _chunkHeader.Version != (byte)ChunkVersions.Unaligned)
 				throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version,
 					CurrentChunkVersion));
-
-			if (checkSize) {
-				var expectedFileSize = _chunkHeader.ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
-				if (_writerWorkItem.WorkingStream.Length != expectedFileSize) {
-					throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-						string.Format(
-							"Chunk file '{0}' should have file size {1} bytes, but instead has {2} bytes length.",
-							_filename,
-							expectedFileSize,
-							_writerWorkItem.WorkingStream.Length)));
-				}
-			}
 
 			_readSide = new TFChunkReadSideUnscavenged(this, tracker);
 
@@ -369,19 +374,25 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			Interlocked.Add(ref _fileStreamCount, IndexPool.Capacity);
 		}
 
-		private void CreateInMemChunk(ChunkHeader chunkHeader, int fileSize) {
+		private void CreateInMemChunk(ChunkHeader chunkHeader, int fileSize, ReadOnlyMemory<byte> transformHeader) {
 			var md5 = MD5.Create();
 
 			// ALLOCATE MEM
 			_cacheStatus = CacheStatus.Cached;
 			_cachedLength = fileSize;
 			_cachedData = Marshal.AllocHGlobal(_cachedLength);
+			_cachedDataTransformed = true;
 			GC.AddMemoryPressure(_cachedLength);
 
+
+			// WRITE HEADERS
+			using (var headerStream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite)) {
+				WriteHeader(md5, headerStream, chunkHeader);
+				WriteTransformHeader(md5, headerStream, transformHeader);
+			}
+
 			// WRITER STREAM
-			var writerWorkItem = new WriterWorkItem(_cachedData, _cachedLength, md5);
-			WriteHeader(writerWorkItem.MD5, writerWorkItem.WorkingStream, chunkHeader);
-			writerWorkItem.WorkingStream.Position = ChunkHeader.Size;
+			var writerWorkItem = new WriterWorkItem(_cachedData, _cachedLength, md5, _transform.Write, ChunkHeader.Size + transformHeader.Length);
 
 			// READER STREAMS
 			_memStreams.Reuse();
@@ -412,7 +423,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 		}
 
-		private void CreateWriterWorkItemForNewChunk(ChunkHeader chunkHeader, int fileSize) {
+		private void CreateWriterWorkItemForNewChunk(ChunkHeader chunkHeader, int fileSize, ReadOnlyMemory<byte> transformHeader) {
 			var md5 = MD5.Create();
 
 			// create temp file first and set desired length
@@ -434,22 +445,24 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			// we need to write header into temp file before moving it into correct chunk place, so in case of crash
 			// we don't end up with seemingly valid chunk file with no header at all...
 			WriteHeader(md5, tempFile, chunkHeader);
+			WriteTransformHeader(md5, tempFile, transformHeader);
 
 			tempFile.FlushToDisk();
 			tempFile.Close();
 			File.Move(tempFilename, _filename);
+
 			_handle = File.OpenHandle(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read, WritableHandleOptions);
-			_writerWorkItem = new(_handle, md5, _unbuffered);
-			_writerWorkItem.WorkingStream.Position = ChunkHeader.Size;
+			_writerWorkItem = new(_handle, md5, _unbuffered, _transform.Write, ChunkHeader.Size + transformHeader.Length);
 			Flush(); // persist file move result
 		}
 
-		private void CreateWriterWorkItemForExistingChunk(int writePosition, out ChunkHeader chunkHeader) {
+		private void CreateWriterWorkItemForExistingChunk(int writePosition,
+			Func<TransformType, IChunkTransformFactory> getTransformFactory, out ChunkHeader chunkHeader) {
 			_handle = File.OpenHandle(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read, WritableHandleOptions);
-			var workItem = new WriterWorkItem(_handle, MD5.Create(), _unbuffered);
 
 			try {
-				chunkHeader = ReadHeader(workItem.WorkingStream);
+				using var stream = _handle.AsUnbufferedStream(FileAccess.ReadWrite);
+				chunkHeader = ReadHeader(stream);
 				if (chunkHeader.Version == (byte)ChunkVersions.Unaligned) {
 					Log.Debug("Upgrading ongoing file {chunk} to version 3", _filename);
 					var newHeader = new ChunkHeader((byte)ChunkVersions.Aligned,
@@ -457,22 +470,26 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 						chunkHeader.ChunkStartNumber,
 						chunkHeader.ChunkEndNumber,
 						false,
-						chunkHeader.ChunkId);
-					workItem.WorkingStream.Seek(0, SeekOrigin.Begin);
+						chunkHeader.ChunkId,
+						chunkHeader.TransformType);
+					stream.Seek(0, SeekOrigin.Begin);
 					chunkHeader = newHeader;
 					var head = newHeader.AsByteArray();
-					workItem.WorkingStream.Write(head, 0, head.Length);
-					workItem.FlushToDisk();
-					workItem.WorkingStream.Seek(0, SeekOrigin.Begin);
+					stream.Write(head, 0, head.Length);
+					stream.Flush();
 				}
+
+				var transformFactory = getTransformFactory(chunkHeader.TransformType);
+				_transformHeader = transformFactory.ReadTransformHeader(stream);
+				_transform = transformFactory.CreateTransform(_transformHeader);
 			} catch {
 				_handle.Dispose();
-				workItem.Dispose();
 				throw;
 			}
 
+			var workItem = new WriterWorkItem(_handle, MD5.Create(), _unbuffered, _transform.Write, 0);
 			var realPosition = GetRawPosition(writePosition);
-			MD5Hash.ContinuousHashFor(workItem.MD5, workItem.WorkingStream, 0, realPosition);
+			// the writer work item's stream is responsible for computing the current checksum when the position is set
 			workItem.WorkingStream.Position = realPosition;
 			_writerWorkItem = workItem;
 		}
@@ -481,6 +498,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			var chunkHeaderBytes = chunkHeader.AsByteArray();
 			md5.TransformBlock(chunkHeaderBytes, 0, ChunkHeader.Size, null, 0);
 			stream.Write(chunkHeaderBytes, 0, ChunkHeader.Size);
+		}
+
+		private void WriteTransformHeader(HashAlgorithm md5, Stream stream, ReadOnlyMemory<byte> transformHeader) {
+			if (transformHeader.IsEmpty)
+				return;
+
+			var transformHeaderBytes = transformHeader.ToArray();
+			md5.TransformBlock(transformHeaderBytes, 0, transformHeaderBytes.Length, null, 0);
+			stream.Write(transformHeaderBytes);
 		}
 
 		private void SetAttributes(string filename, bool isReadOnly) {
@@ -500,20 +526,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
 
 			Log.Debug("Verifying hash for TFChunk '{chunk}'...", _filename);
-			using (var reader = AcquireReader()) {
+			using (var reader = AcquireRawReader()) {
 				reader.Stream.Seek(0, SeekOrigin.Begin);
 				var stream = reader.Stream;
 				var footer = _chunkFooter;
 
 				byte[] hash;
 				using (var md5 = MD5.Create()) {
-					// hash header and data
-					MD5Hash.ContinuousHashFor(md5, stream, 0, ChunkHeader.Size + footer.PhysicalDataSize);
-					// hash mapping and footer except MD5 hash sum which should always be last
-					MD5Hash.ContinuousHashFor(md5,
-						stream,
-						ChunkHeader.Size + footer.PhysicalDataSize,
-						stream.Length - ChunkHeader.Size - footer.PhysicalDataSize - ChunkFooter.ChecksumSize);
+					// hash whole chunk except MD5 hash sum which should always be last
+					MD5Hash.ContinuousHashFor(md5, stream, 0, _fileSize - ChunkFooter.ChecksumSize);
 					md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
 					hash = md5.Hash;
 				}
@@ -600,7 +621,27 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				// we won the right to cache
 				var sw = new Timestamp();
 				try {
-					BuildCacheArray();
+					// note: we do not want to cache transformed data for the active chunk as we would be incurring the cost of
+					// transformation twice - once when writing to the filestream and once when writing to the memory stream.
+					// however, we want to cache (already) transformed data for completed/read-only chunks as we would otherwise
+					// incur the cost of transforming the whole chunk when loading data from the file into memory.
+
+					if (!IsReadOnly)
+						// we do not cache the header for the active chunk -
+						// it's not necessary as the cache is used only for reading data.
+						BuildCacheArray(
+							size: GetAlignedSize(ChunkHeader.Size + _chunkHeader.ChunkSize + ChunkFooter.Size),
+							reader: AcquireFileReader(raw: false),
+							offset: ChunkHeader.Size,
+							count: _physicalDataSize,
+							transformed: false);
+					else
+						BuildCacheArray(
+							size: _fileSize,
+							reader: AcquireFileReader(raw: true),
+							offset: 0,
+							count: _fileSize,
+							transformed: true);
 				} catch (OutOfMemoryException) {
 					Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk {chunk}.", this);
 					return;
@@ -640,26 +681,20 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 		}
 
-		private void BuildCacheArray() {
-			var workItem = AcquireFileReader();
+		private void BuildCacheArray(int size, TFChunkBulkReader reader, int offset, int count, bool transformed) {
 			try {
-				if (workItem.IsMemory)
+				if (reader.IsMemory)
 					throw new InvalidOperationException(
 						"When trying to build cache, reader worker is already in-memory reader.");
 
-				var dataSize = IsReadOnly ? _physicalDataSize + ChunkFooter.MapSize : _chunkHeader.ChunkSize;
-				_cachedLength = GetAlignedSize(ChunkHeader.Size + dataSize + ChunkFooter.Size);
+				_cachedLength = size;
 				var cachedData = Marshal.AllocHGlobal(_cachedLength);
 				GC.AddMemoryPressure(_cachedLength);
 
 				try {
-					// in ongoing chunk there is no need to read everything, it's enough to read just actual data written
-					Span<byte> memoryView = new(
-						cachedData.ToPointer(),
-						IsReadOnly ? _cachedLength : ChunkHeader.Size + _physicalDataSize);
-
-					workItem.Stream.Seek(0, SeekOrigin.Begin);
-					workItem.Stream.ReadExactly(memoryView);
+					Span<byte> memoryView = new(IntPtr.Add(cachedData, offset).ToPointer(), count);
+					reader.Stream.Seek(offset, SeekOrigin.Begin);
+					reader.Stream.ReadExactly(memoryView);
 				} catch {
 					Marshal.FreeHGlobal(cachedData);
 					GC.RemoveMemoryPressure(_cachedLength);
@@ -667,8 +702,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 
 				_cachedData = cachedData;
+				_cachedDataTransformed = transformed;
 			} finally {
-				workItem.Dispose();
+				reader.Dispose();
 			}
 		}
 
@@ -781,14 +817,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		private static long WriteRawData(WriterWorkItem workItem, byte[] buf, int len) {
 			var curPos = GetDataPosition(workItem);
-			workItem.MD5.TransformBlock(buf, 0, len, null, 0);
+			// the writer work item's stream is responsible for updating the checksum
 			workItem.AppendData(buf, 0, len);
 			return curPos;
 		}
 
 		public void Flush() {
-			if (_inMem)
-				return;
 			if (IsReadOnly)
 				return;
 			_writerWorkItem.FlushToDisk();
@@ -835,13 +869,19 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			if (!_inMem)
 				CreateReaderStreams();
 
-			_chunkFooter = ReadFooter(_writerWorkItem.WorkingStream);
 			IsReadOnly = true;
 
 			_writerWorkItem?.Dispose();
 			_writerWorkItem = null;
 
 			SetAttributes(_filename, true);
+
+			if (!_inMem) {
+				using var stream = _handle.AsUnbufferedStream(FileAccess.Read);
+				_chunkFooter = ReadFooter(stream);
+			} else {
+				_chunkFooter = ReadFooter(_sharedMemStream);
+			}
 		}
 
 		private ChunkFooter WriteFooter(ICollection<PosMap> mapping) {
@@ -873,15 +913,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			workItem.FlushToDisk();
 
-			if (_chunkHeader.Version >= (byte)ChunkVersions.Aligned) {
-				var alignedSize = GetAlignedSize(ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size);
-				var bufferSize = alignedSize - workItem.WorkingStream.Position - ChunkFooter.Size;
-				Log.Debug("Buffer size is {bufferSize}", bufferSize);
-				if (bufferSize > 0) {
-					byte[] buffer = new byte[bufferSize];
-					WriteRawData(workItem, buffer, buffer.Length);
-				}
-			}
+			_transform.Write.CompleteData(
+				footerSize: ChunkFooter.Size,
+				alignmentSize: _chunkHeader.Version >= (byte)ChunkVersions.Aligned ? AlignmentSize : 1);
 
 			Flush();
 
@@ -893,11 +927,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			//FILE
 			var footerWithHash =
 				new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5.Hash);
-			workItem.AppendData(footerWithHash.AsByteArray(), 0, ChunkFooter.Size);
+			_transform.Write.WriteFooter(footerWithHash.AsByteArray(), out var fileSize);
 
 			Flush();
 
-			_fileSize = (int)workItem.WorkingStream.Length;
+			_fileSize = fileSize;
 			return footerWithHash;
 		}
 
@@ -968,8 +1002,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public static int GetAlignedSize(int size) {
-			if (size % 4096 == 0) return size;
-			return (size / 4096 + 1) * 4096;
+			if (size % AlignmentSize == 0) return size;
+			return (size / AlignmentSize + 1) * AlignmentSize;
 		}
 
 		private bool TryDestructMemStreams() {
@@ -1018,7 +1052,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			// try get memory stream reader first
 			for (Stream sharedMemStream = _sharedMemStream, tmp; sharedMemStream is not null; sharedMemStream = tmp) {
-				if (_memStreams.TryTake(sharedMemStream, &CreateMemoryStreamWorkItem) is { } memoryWorkItem)
+				var transform = _cachedDataTransformed
+					? _transform.Read
+					: _identityReadTransform;
+
+				if (_memStreams.TryTake(sharedMemStream, transform, &CreateMemoryStreamWorkItem) is { } memoryWorkItem)
 					return memoryWorkItem;
 
 				if (_selfdestructin54321) {
@@ -1038,7 +1076,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 						// _sharedMemStream hasn't changed and there are other readers.
 						// The reason we couldn't get one from the pool is that they are all already in
 						// use. We create a new one separate to the pool.
-						return new(sharedMemStream);
+						return new(sharedMemStream, transform);
 					}
 
 					// _sharedMemStream has changed. This is extremely rare but possible if the pool
@@ -1061,7 +1099,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 
 			// get a filestream from the pool, or create one if the pool is empty.
-			if (_fileStreams.TryTake(_handle, &CreateFileStreamWorkItem) is { } fileStreamWorkItem)
+			if (_fileStreams.TryTake(_handle, _transform.Read, &CreateFileStreamWorkItem) is { } fileStreamWorkItem)
 				return fileStreamWorkItem;
 
 			Interlocked.Increment(ref _fileStreamCount);
@@ -1072,16 +1110,16 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				throw new FileBeingDeletedException();
 			}
 
-			return new(_handle);
+			return new(_handle, _transform.Read);
 
-			static ReaderWorkItem CreateFileStreamWorkItem(SafeFileHandle handle, int index)
-				=> new(handle) { PositionInPool = index };
-
-			static ReaderWorkItem CreateMemoryStreamWorkItem(Stream sharedMemStream, int index)
-				=> new(sharedMemStream) { PositionInPool = index };
+			static ReaderWorkItem CreateFileStreamWorkItem(SafeFileHandle handle, IChunkReadTransform transform, int index)
+				=> new(handle, transform) { PositionInPool = index };
 
 			static int IncrementIfGreaterThanZero(int value)
 				=> value + Unsafe.BitCast<bool, byte>(value > 0);
+
+			static ReaderWorkItem CreateMemoryStreamWorkItem(Stream sharedMemStream, IChunkReadTransform transform, int index)
+				=> new(sharedMemStream, transform) { PositionInPool = index };
 		}
 
 		private void ReturnReaderWorkItem(ReaderWorkItem item) {
@@ -1134,14 +1172,21 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 		}
 
-		public TFChunkBulkReader AcquireReader() {
-			if (TryAcquireBulkMemReader(out var reader))
+		public TFChunkBulkReader AcquireDataReader() {
+			if (TryAcquireBulkMemReader(raw: false, out var reader))
 				return reader;
 
-			return AcquireFileReader();
+			return AcquireFileReader(raw: false);
 		}
 
-		private TFChunkBulkReader AcquireFileReader() {
+		public TFChunkBulkReader AcquireRawReader() {
+			if (TryAcquireBulkMemReader(raw: true, out var reader))
+				return reader;
+
+			return AcquireFileReader(raw: true);
+		}
+
+		private TFChunkBulkReader AcquireFileReader(bool raw) {
 			Interlocked.Increment(ref _fileStreamCount);
 			if (_selfdestructin54321) {
 				if (Interlocked.Decrement(ref _fileStreamCount) == 0) {
@@ -1153,7 +1198,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			// if we get here, then we reserved TFChunk for sure so no one should dispose of chunk file
 			// until client returns dedicated reader
-			return new TFChunkBulkReader(this, CreateFileStreamForBulkReader(), isMemory: false);
+			var stream = CreateFileStreamForBulkReader();
+
+			if (raw) {
+				return new TFChunkBulkRawReader(this, stream, isMemory: false);
+			}
+
+			var streamToUse = _transform.Read.TransformData(new ChunkDataReadStream(stream));
+			return new TFChunkBulkDataReader(this, streamToUse, isMemory: false);
 		}
 
 		private Stream CreateFileStreamForBulkReader() => _inMem
@@ -1165,7 +1217,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		// (a) doesn't block if a file reader would be acceptable instead
 		//     (we might be in the middle of caching which could take a while)
 		// (b) _does_ throw if we can't get a memstream and a filestream is not acceptable
-		private bool TryAcquireBulkMemReader(out TFChunkBulkReader reader) {
+		private bool TryAcquireBulkMemReader(bool raw, out TFChunkBulkReader reader) {
 			reader = null;
 
 			if (IsReadOnly) {
@@ -1176,7 +1228,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					return false;
 
 				try {
-					return TryCreateBulkMemReader(out reader);
+					return TryCreateBulkMemReader(raw, out reader);
 				} finally {
 					Monitor.Exit(_cachedDataLock);
 				}
@@ -1184,7 +1236,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			// chunk is not readonly so it should be cached and let us create a mem reader
 			// (but might become readonly at any moment!)
-			if (TryCreateBulkMemReader(out reader))
+			if (TryCreateBulkMemReader(raw, out reader))
 				return true;
 
 			// we couldn't get a memreader, maybe we just became readonly and got uncached.
@@ -1199,7 +1251,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		// creates a bulk reader over a memstream as long as we are cached
-		private bool TryCreateBulkMemReader(out TFChunkBulkReader reader) {
+		private bool TryCreateBulkMemReader(bool raw, out TFChunkBulkReader reader) {
 			lock (_cachedDataLock) {
 				if (_cacheStatus != CacheStatus.Cached) {
 					reader = null;
@@ -1211,7 +1263,19 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				Interlocked.Increment(ref _memStreamCount);
 				var stream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength);
-				reader = new TFChunkBulkReader(this, stream, isMemory: true);
+
+				if (raw) {
+					reader = new TFChunkBulkRawReader(chunk: this, streamToUse: stream, isMemory: true);
+					return true;
+				}
+
+				var streamToUse = new ChunkDataReadStream(stream);
+				streamToUse = _cachedDataTransformed
+					? _transform.Read.TransformData(streamToUse)
+					: _identityReadTransform.TransformData(streamToUse);
+
+				reader = new TFChunkBulkDataReader(chunk: this, streamToUse: streamToUse, isMemory: true);
+
 				return true;
 			}
 		}
@@ -1302,11 +1366,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			internal readonly int Count => _indices.Count;
 
-			internal ReaderWorkItem TryTake<T>(T arg, delegate*<T, int, ReaderWorkItem> factory) {
+			internal ReaderWorkItem TryTake<T1, T2>(T1 arg1, T2 arg2, delegate*<T1, T2, int, ReaderWorkItem> factory) {
 				Debug.Assert(factory is not null);
 
 				return _array is { } array && _indices.TryTake(out int index)
-					? UnsafeGetElement(array, index) ??= factory(arg, index)
+					? UnsafeGetElement(array, index) ??= factory(arg1, arg2, index)
 					: null;
 			}
 

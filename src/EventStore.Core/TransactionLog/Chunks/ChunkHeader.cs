@@ -7,6 +7,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using DotNext.Buffers;
 using DotNext.Buffers.Binary;
+using EventStore.Core.Transforms;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 
@@ -23,9 +24,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public readonly int ChunkEndNumber;
 		public readonly bool IsScavenged; // uses 4 bytes (legacy)
 		public readonly Guid ChunkId;
+		public readonly TransformType TransformType;
 
 		public ChunkHeader(byte version, int chunkSize, int chunkStartNumber, int chunkEndNumber, bool isScavenged,
-			Guid chunkId) {
+			Guid chunkId, TransformType transformType) {
 			Ensure.Nonnegative(version, "version");
 			Ensure.Positive(chunkSize, "chunkSize");
 			Ensure.Nonnegative(chunkStartNumber, "chunkStartNumber");
@@ -40,6 +42,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			ChunkEndNumber = chunkEndNumber;
 			IsScavenged = isScavenged;
 			ChunkId = chunkId;
+			TransformType = transformType;
 
 			ChunkStartPosition = ChunkStartNumber * (long)ChunkSize;
 			ChunkEndPosition = (ChunkEndNumber + 1) * (long)ChunkSize;
@@ -67,6 +70,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			IsScavenged = reader.ReadLittleEndian<int>() > 0;
 			ChunkId = new(reader.Read(16));
+			TransformType = (TransformType) reader.Read();
 
 			ChunkStartPosition = ChunkStartNumber * (long)ChunkSize;
 			ChunkEndPosition = (ChunkEndNumber + 1) * (long)ChunkSize;
@@ -88,6 +92,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			Span<byte> guidBuffer = stackalloc byte[16];
 			ChunkId.TryWriteBytes(guidBuffer);
 			writer.Write(guidBuffer);
+
+			writer.Add((byte)TransformType);
 		}
 
 		static ChunkHeader IBinaryFormattable<ChunkHeader>.Parse(ReadOnlySpan<byte> source)
@@ -128,13 +134,14 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public override string ToString() {
 			return string.Format(
 				"Version: {0}, ChunkSize: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, IsScavenged: {4}, ChunkId: {5}\n" +
-				"ChunkStartPosition: {6}, ChunkEndPosition: {7}, ChunkFullSize: {8}",
+				"TransformType: {6}, ChunkStartPosition: {7}, ChunkEndPosition: {8}, ChunkFullSize: {9}",
 				Version,
 				ChunkSize,
 				ChunkStartNumber,
 				ChunkEndNumber,
 				IsScavenged,
 				ChunkId,
+				TransformType,
 				ChunkStartPosition,
 				ChunkEndPosition,
 				ChunkEndPosition - ChunkStartPosition);

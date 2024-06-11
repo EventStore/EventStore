@@ -198,6 +198,7 @@ message CreateChunk{
 	bytes chunk_header_bytes = 3;
 	int32 file_size = 4;
 	bool is_scavenged_chunk = 5;
+	bytes transform_header_bytes = 6;
 }
 
 message RawChunkBulk{

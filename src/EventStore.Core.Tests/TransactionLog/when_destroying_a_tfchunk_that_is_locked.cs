@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_chunk = TFChunkHelper.CreateNewChunk(Filename, 1000);
 			_chunk.Complete();
 			_chunk.UnCacheFromMemory();
-			_reader = _chunk.AcquireReader();
+			_reader = _chunk.AcquireRawReader();
 			_chunk.MarkForDeletion();
 		}
 

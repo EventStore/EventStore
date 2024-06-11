@@ -105,7 +105,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 
 			return new ReplicationMessage.CreateChunk(new Guid(dto.LeaderId.Span), new Guid(dto.SubscriptionId.Span), chunkHeader,
-				dto.FileSize, dto.IsScavengedChunk);
+				dto.FileSize, dto.IsScavengedChunk, dto.TransformHeaderBytes.Memory);
 		}
 
 		private TcpPackage WrapCreateChunk(ReplicationMessage.CreateChunk msg) {
@@ -113,7 +113,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				msg.SubscriptionId.ToByteArray(),
 				msg.ChunkHeader.AsByteArray(),
 				msg.FileSize,
-				msg.IsScavengedChunk);
+				msg.IsScavengedChunk,
+				msg.TransformHeader.Span);
 			return new TcpPackage(TcpCommand.CreateChunk, Guid.NewGuid(), dto.Serialize());
 		}
 
