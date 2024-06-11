@@ -34,7 +34,7 @@ using Serilog;
 using EventStore.Core.LogAbstraction;
 
 namespace EventStore.ClusterNode {
-	internal class ClusterVNodeHostedService : IHostedService, IDisposable {
+	public class ClusterVNodeHostedService : IHostedService, IDisposable {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeHostedService>();
 
 		private readonly ClusterVNodeOptions _options;

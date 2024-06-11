@@ -1,5 +1,7 @@
+using System;
+
 namespace EventStore.Core.Data {
-	public struct ResolvedEvent {
+	public struct ResolvedEvent : IEquatable<ResolvedEvent> {
 		public static readonly ResolvedEvent[] EmptyArray = new ResolvedEvent[0];
 		public static readonly ResolvedEvent EmptyEvent = new ResolvedEvent();
 
@@ -71,5 +73,21 @@ namespace EventStore.Core.Data {
 			// we don't know where this event was committed
 			return null;
 		}
+
+
+		public bool Equals(ResolvedEvent other) =>
+			Equals(Event, other.Event) && Equals(Link, other.Link) &&
+			_originalEventCommitPosition == other._originalEventCommitPosition &&
+			ResolveResult == other.ResolveResult;
+
+		public override bool Equals(object obj) =>
+			obj is ResolvedEvent other && Equals(other);
+
+		public override int GetHashCode() =>
+			HashCode.Combine(Event, Link, _originalEventCommitPosition, (int)ResolveResult);
+
+		public static bool operator ==(ResolvedEvent left, ResolvedEvent right) => left.Equals(right);
+
+		public static bool operator !=(ResolvedEvent left, ResolvedEvent right) => !left.Equals(right);
 	}
 }
