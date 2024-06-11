@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Transforms;
-using EventStore.Core.Transforms.Identity;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
@@ -23,7 +22,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			Ensure.NotNull(config, "config");
 
 			Config = config;
-			TransformManager = transformManager ?? new DbTransformManager(new [] { new IdentityDbTransform() }, TransformType.Identity);
+			TransformManager = transformManager ?? new DbTransformManager([IDbTransform.Identity], IDbTransform.Identity.Type);
 			_tracker = tracker ?? new TFChunkTracker.NoOp();
 			Manager = new TFChunkManager(Config, _tracker, TransformManager);
 			_log = log ?? Serilog.Log.ForContext<TFChunkDb>();

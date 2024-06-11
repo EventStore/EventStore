@@ -62,7 +62,6 @@ using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Transforms;
-using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
@@ -325,8 +324,8 @@ namespace EventStore.Core {
 
 			MetricsBootstrapper.Bootstrap(MetricsConfiguration.Get(configuration), dbConfig, trackers);
 
-			var dbIdentityTransform = new IdentityDbTransform();
-			var dbTransformManager = new DbTransformManager(new [] { dbIdentityTransform }, activeTransformType: dbIdentityTransform.Type);
+			var dbIdentityTransform = IDbTransform.Identity;
+			var dbTransformManager = new DbTransformManager([dbIdentityTransform], activeTransformType: dbIdentityTransform.Type);
 			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker, transformManager: dbTransformManager);
 
 			TFChunkDbConfig CreateDbConfig(
