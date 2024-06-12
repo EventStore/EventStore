@@ -1,4 +1,5 @@
-﻿using EventStore.Core.DataStructures.ProbabilisticFilter;
+﻿using System;
+using EventStore.Core.DataStructures.ProbabilisticFilter;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.DataStructures.ProbabilisticFilter {
@@ -18,6 +19,13 @@ namespace EventStore.Core.XUnit.Tests.DataStructures.ProbabilisticFilter {
 				Assert.Equal(size, sut.AsSpan().Length);
 				sut.AsSpan().Clear(); // can write to the span
 			}
+		}
+
+		[Fact]
+		public void finalizer_does_not_crash_process_when_oom() {
+			Assert.Throws<OutOfMemoryException>(() => new AlignedMemory(1_000_000_000_000, 1));
+			GC.Collect();
+			GC.WaitForPendingFinalizers();
 		}
 	}
 }
