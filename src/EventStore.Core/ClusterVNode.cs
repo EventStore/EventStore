@@ -213,6 +213,7 @@ namespace EventStore.Core {
 
 		private int _stopCalled;
 		private int _reloadingConfig;
+		private PosixSignalRegistration _reloadConfigSignalRegistration;
 
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
@@ -1571,10 +1572,11 @@ namespace EventStore.Core {
 			AddTask(perSubscrQueue.Start());
 			AddTask(redactionQueue.Start());
 
-            UnixSignalManager.OnSIGHUP(() => {
-                Log.Information("Reloading the node's configuration since the SIGHUP signal has been received.");
-                _mainQueue.Publish(new ClientMessage.ReloadConfig());
-            });
+			_reloadConfigSignalRegistration = PosixSignalRegistration.Create(PosixSignal.SIGHUP, c => {
+				c.Cancel = true;
+				Log.Information("Reloading the node's configuration since {Signal} has been received.", c.Signal);
+				_mainQueue.Publish(new ClientMessage.ReloadConfig());
+			});
 
 			// subsystems
 			_subsystems = options.Subsystems;
@@ -1732,7 +1734,8 @@ namespace EventStore.Core {
 			timeout ??= TimeSpan.FromSeconds(5);
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
-			UnixSignalManager.Unregister();
+			_reloadConfigSignalRegistration?.Dispose();
+			_reloadConfigSignalRegistration = null;
 
 			if (_subsystems != null) {
 				foreach (var subsystem in _subsystems) {
@@ -1754,7 +1757,8 @@ namespace EventStore.Core {
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
-			UnixSignalManager.Unregister();
+			_reloadConfigSignalRegistration?.Dispose();
+			_reloadConfigSignalRegistration = null;
 
 			if (_subsystems is null)
 				return;
