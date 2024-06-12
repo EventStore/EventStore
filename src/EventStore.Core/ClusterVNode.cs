@@ -444,7 +444,7 @@ namespace EventStore.Core {
 					indexChk,
 					streamExistenceFilterChk,
 					options.Database.MemDb,
-					options.Database.Unbuffered,
+					unbuffered: false,
 					options.Database.WriteThrough,
 					options.Database.OptimizeIndexMerge,
 					options.Database.ReduceFileCachePressure,
