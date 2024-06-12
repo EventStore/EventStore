@@ -345,7 +345,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 			private async Task SendEventToSubscription(ResolvedEvent @event, CancellationToken ct) {
 				await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct);
-				_tracker.ProcessEvent(@event);
+				_tracker.ProcessEvent(_subscriptionId, @event);
 			}
 
 			private async Task SendCheckpointToSubscription(TFPos checkpoint, CancellationToken ct) {

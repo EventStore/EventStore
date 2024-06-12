@@ -6,6 +6,7 @@ using System.Text.Unicode;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.DataStructures;
+using EventStore.Core.Helpers;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogAbstraction.Common;
 using FASTER.core;

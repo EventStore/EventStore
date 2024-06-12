@@ -296,7 +296,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				if (@event.OriginalEvent.EventType == SystemEventTypes.StreamDeleted)
 					throw new ReadResponseException.StreamDeleted(_streamName);
 
-				_tracker.ProcessEvent(@event);
+				_tracker.ProcessEvent(_subscriptionId, @event);
 			}
 
 			private Task<long> SubscribeToLive() {

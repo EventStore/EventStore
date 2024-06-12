@@ -217,35 +217,5 @@ namespace EventStore.Core.Messages {
 		[DerivedMessage(CoreMessage.Misc)]
 		public partial class CheckEsVersion : Message {
 		}
-
-		[DerivedMessage(CoreMessage.Monitoring)]
-		public partial class CollectSubscriptionStats : Message {
-		}
-
-		[DerivedMessage(CoreMessage.Monitoring)]
-		public partial class SubscriptionStatsCollected : Message {
-			public ICollection<SubscriptionStats> Stats { get; }
-
-			public SubscriptionStatsCollected(ICollection<SubscriptionStats> stats) {
-				Stats = stats;
-				Ensure.NotNull(stats, nameof(stats));
-			}
-		}
-
-		public record struct SubscriptionStats(
-			Guid SubscriptionId,
-			string StreamName,
-			long SubscriptionPosition = 0L,
-			long EndOfStream = 0L) {
-			private const string StreamNameTagKey = "streamName";
-			private const string SubscriptionIdTagKey = "subscriptionId";
-
-			public double PercentageComplete =>
-				EndOfStream == 0L ? double.NaN : SubscriptionPosition / (double)EndOfStream;
-
-			public KeyValuePair<string, object> StreamNameTag { get; } =
-				new(StreamNameTagKey, StreamName ?? SystemStreams.AllStream);
-			public KeyValuePair<string, object> SubscriptionIdTag { get; } = new(SubscriptionIdTagKey, SubscriptionId);
-		}
 	}
 }
