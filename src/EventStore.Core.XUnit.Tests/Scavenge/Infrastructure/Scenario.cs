@@ -24,7 +24,6 @@ using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
 using EventStore.Core.Transforms;
-using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
 using Xunit;
 using static EventStore.Core.XUnit.Tests.Scavenge.StreamMetadatas;
@@ -211,7 +210,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			});
 
 			var dbConfig = TFChunkHelper.CreateSizedDbConfig(_dbPath, 0, chunkSize: 1024 * 1024);
-			var dbTransformManager = new DbTransformManager(new[] { new IdentityDbTransform() }, TransformType.Identity);
+			var dbTransformManager = new DbTransformManager([IDbTransform.Identity], IDbTransform.Identity.Type);
 
 			var dbResult = _getDb(dbConfig, logFormat);
 			var keptRecords = getExpectedKeptRecords != null

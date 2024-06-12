@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Transforms.Identity;
+using EventStore.Core.Transforms;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging {
@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 			var chunk = TFChunk.CreateNew(Filename, 1024 * 1024, 0, 0, true, false, false, false,
 				false,
 				new TFChunkTracker.NoOp(),
-				new IdentityChunkTransformFactory());
+				IChunkTransformFactory.Identity);
 			long logPos = 0;
 			for (int i = 0, n = ChunkFooter.Size / PosMap.FullSize + 1; i < n; ++i) {
 				map.Add(new PosMap(logPos, (int)logPos));

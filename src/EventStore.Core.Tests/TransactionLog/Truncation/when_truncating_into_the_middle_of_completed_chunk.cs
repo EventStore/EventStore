@@ -8,7 +8,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
-using EventStore.Core.Transforms.Identity;
+using EventStore.Core.Transforms;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation {
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			DbUtil.CreateSingleChunk(_config, 2, GetFilePathFor("chunk-000002.000000"));
 			DbUtil.CreateSingleChunk(_config, 3, GetFilePathFor("chunk-000003.000000"));
 
-			var truncator = new TFChunkDbTruncator(_config, _ => new IdentityChunkTransformFactory());
+			var truncator = new TFChunkDbTruncator(_config, _ => IChunkTransformFactory.Identity);
 			truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed());
 		}
 
