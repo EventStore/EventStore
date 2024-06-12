@@ -11,6 +11,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private readonly int _maxAppendSize;
 		private readonly TimeSpan _writeTimeout;
 		private readonly IExpiryStrategy _expiryStrategy;
+		private readonly ISubscriptionTracker _subscriptionTracker;
 		private readonly IDurationTracker _readTracker;
 		private readonly IDurationTracker _appendTracker;
 		private readonly IDurationTracker _batchAppendTracker;
@@ -23,19 +24,20 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		public Streams(IPublisher publisher, int maxAppendSize, TimeSpan writeTimeout,
 			IExpiryStrategy expiryStrategy,
-			GrpcTrackers trackers,
+			GrpcTrackers grpcTrackers, ISubscriptionTracker subscriptionTracker,
 			IAuthorizationProvider provider) {
-	
+
 			if (publisher == null) throw new ArgumentNullException(nameof(publisher));
 			_publisher = publisher;
 			_maxAppendSize = maxAppendSize;
 			_writeTimeout = writeTimeout;
 			_expiryStrategy = expiryStrategy;
-			_readTracker = trackers[MetricsConfiguration.GrpcMethod.StreamRead];
-			_appendTracker = trackers[MetricsConfiguration.GrpcMethod.StreamAppend];
-			_batchAppendTracker = trackers[MetricsConfiguration.GrpcMethod.StreamBatchAppend];
-			_deleteTracker = trackers[MetricsConfiguration.GrpcMethod.StreamDelete];
-			_tombstoneTracker = trackers[MetricsConfiguration.GrpcMethod.StreamTombstone];
+			_subscriptionTracker = subscriptionTracker;
+			_readTracker = grpcTrackers[MetricsConfiguration.GrpcMethod.StreamRead];
+			_appendTracker = grpcTrackers[MetricsConfiguration.GrpcMethod.StreamAppend];
+			_batchAppendTracker = grpcTrackers[MetricsConfiguration.GrpcMethod.StreamBatchAppend];
+			_deleteTracker = grpcTrackers[MetricsConfiguration.GrpcMethod.StreamDelete];
+			_tombstoneTracker = grpcTrackers[MetricsConfiguration.GrpcMethod.StreamTombstone];
 			_provider = provider;
 		}
 	}

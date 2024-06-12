@@ -8,6 +8,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Common;
 using Serilog;
@@ -18,6 +19,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			private static readonly ILogger Log = Serilog.Log.ForContext<AllSubscription>();
 
 			private readonly IExpiryStrategy _expiryStrategy;
+			private readonly ISubscriptionTracker _tracker;
 			private readonly Guid _subscriptionId;
 			private readonly IPublisher _bus;
 			private readonly bool _resolveLinks;
@@ -37,6 +39,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			public AllSubscription(
 				IPublisher bus,
 				IExpiryStrategy expiryStrategy,
+				ISubscriptionTracker tracker,
 				Position? checkpoint,
 				bool resolveLinks,
 				ClaimsPrincipal user,
@@ -45,6 +48,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				ArgumentNullException.ThrowIfNull(bus);
 
 				_expiryStrategy = expiryStrategy;
+				_tracker = tracker;
 				_subscriptionId = Guid.NewGuid();
 				_bus = bus;
 				_resolveLinks = resolveLinks;
@@ -71,6 +75,8 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 				_cts.Cancel();
 				_cts.Dispose();
+
+				_tracker.RemoveSubscription(_subscriptionId);
 
 				return ValueTask.CompletedTask;
 			}
@@ -270,6 +276,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 			private async Task SendEventToSubscription(ResolvedEvent @event, CancellationToken ct) {
 				await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct);
+				_tracker.ProcessEvent(_subscriptionId, @event);
 			}
 
 			private Task<TFPos> SubscribeToLive() {
@@ -297,6 +304,8 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 									_subscriptionId, caughtUp);
 
 								confirmationPositionTcs.TrySetResult(new TFPos(caughtUp, caughtUp));
+
+								_tracker.AddSubscription(_subscriptionId, null, caughtUp);
 								return;
 							case ClientMessage.SubscriptionDropped dropped:
 								Log.Debug(

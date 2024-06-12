@@ -11,7 +11,6 @@ using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core;
 using EventStore.Core.Authentication;
-using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication.InternalAuthentication;

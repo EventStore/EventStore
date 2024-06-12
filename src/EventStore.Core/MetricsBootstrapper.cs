@@ -7,6 +7,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Index;
 using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
+using EventStore.Core.Services;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Scavenging;
@@ -32,6 +33,7 @@ public class Trackers {
 	public ICacheHitsMissesTracker CacheHitsMissesTracker { get; set; } = new CacheHitsMissesTracker.NoOp();
 	public ICacheResourcesTracker CacheResourcesTracker { get; set; } = new CacheResourcesTracker.NoOp();
 	public IElectionCounterTracker ElectionCounterTracker { get; set; } = new ElectionsCounterTracker.NoOp();
+	public ISubscriptionTracker SubscriptionTracker { get; set; } = new SubscriptionTracker.NoOp();
 }
 
 public class GrpcTrackers {
@@ -302,6 +304,12 @@ public static class MetricsBootstrapper {
 			{ Conf.ProcessTracker.DiskReadOps, "read" },
 			{ Conf.ProcessTracker.DiskWrittenOps, "written" },
 		});
+
+		// subscriptions
+		if (conf.Subscriptions) {
+			var metric = new SubscriptionMetric(coreMeter, "eventstore-subscriptions");
+			trackers.SubscriptionTracker = new SubscriptionTracker(metric);
+		}
 	}
 
 	private static void LogConfig(Conf conf) {

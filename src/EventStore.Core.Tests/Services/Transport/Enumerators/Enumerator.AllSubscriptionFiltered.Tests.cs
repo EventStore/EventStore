@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Common;
 using EventStore.Core.Services.Transport.Enumerators;
@@ -27,6 +28,7 @@ public partial class EnumeratorTests {
 		return new EnumeratorWrapper(new Enumerator.AllSubscriptionFiltered(
 			bus: publisher,
 			expiryStrategy: new DefaultExpiryStrategy(),
+			tracker: new SubscriptionTracker.NoOp(),
 			checkpoint: checkpoint,
 			resolveLinks: false,
 			eventFilter: eventFilter,

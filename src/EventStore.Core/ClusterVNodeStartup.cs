@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
@@ -186,10 +185,8 @@ namespace EventStore.Core {
 				.AddSingleton<AuthenticationMiddleware>()
 				.AddSingleton<AuthorizationMiddleware>()
 				.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
-				.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize,
-					_writeTimeout, _expiryStrategy,
-					_trackers.GrpcTrackers,
-					_authorizationProvider))
+				.AddSingleton(new Streams<TStreamId>(_mainQueue, _maxAppendSize, _writeTimeout, _expiryStrategy,
+					_trackers.GrpcTrackers, _trackers.SubscriptionTracker, _authorizationProvider))
 				.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
 				.AddSingleton(new Users(_mainQueue, _authorizationProvider))
 				.AddSingleton(new Operations(_mainQueue, _authorizationProvider))

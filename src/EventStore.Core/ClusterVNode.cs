@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
@@ -65,15 +64,11 @@ using EventStore.Core.Transforms;
 using EventStore.Core.Util;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
-using EventStore.Plugins.Diagnostics;
 using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Mono.Unix.Native;
-using Serilog.Extensions.Logging;
 using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
@@ -210,6 +205,7 @@ namespace EventStore.Core {
 		private readonly CertificateProvider _certificateProvider;
 		private readonly ClusterVNodeStartup<TStreamId> _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
+		private readonly Trackers _trackers;
 
 		private int _stopCalled;
 		private int _reloadingConfig;
@@ -320,13 +316,14 @@ namespace EventStore.Core {
 				out var readerThreadsCount,
 				out var workerThreadsCount);
 
-			var trackers = new Trackers();
+			_trackers = new Trackers();
 
-			MetricsBootstrapper.Bootstrap(MetricsConfiguration.Get(configuration), dbConfig, trackers);
+			var metricsConfiguration = MetricsConfiguration.Get(configuration);
+			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, _trackers);
 
 			var dbIdentityTransform = IDbTransform.Identity;
 			var dbTransformManager = new DbTransformManager([dbIdentityTransform], activeTransformType: dbIdentityTransform.Type);
-			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker, transformManager: dbTransformManager);
+			Db = new TFChunkDb(dbConfig, tracker: _trackers.TransactionFileTracker, transformManager: dbTransformManager);
 
 			TFChunkDbConfig CreateDbConfig(
 				out SystemStatsHelper statsHelper,
@@ -504,7 +501,7 @@ namespace EventStore.Core {
 				queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
 					$"Worker #{queueNum + 1}",
 					_queueStatsManager,
-					trackers.QueueTrackers,
+					_trackers.QueueTrackers,
 					groupName: "Workers",
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
@@ -524,12 +521,12 @@ namespace EventStore.Core {
 			_controller =
 				new ClusterVNodeController<TStreamId>(
 					(IPublisher)_mainBus, NodeInfo, Db,
-					trackers.NodeStatusTracker,
+					_trackers.NodeStatusTracker,
 					options, this, forwardingProxy,
 					startSubsystems: StartSubsystems);
 
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager,
-				trackers.QueueTrackers);
+				_trackers.QueueTrackers);
 
 			_controller.SetMainQueue(_mainQueue);
 
@@ -539,8 +536,8 @@ namespace EventStore.Core {
 						options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps,
 						endpoint, options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
 						publisher, _internalServerCertificateValidator, _certificateSelector,
-						gossipSendTracker: trackers.GossipTrackers.PushToPeer,
-						gossipGetTracker: trackers.GossipTrackers.PullFromPeer));
+						gossipSendTracker: _trackers.GossipTrackers.PushToPeer,
+						gossipGetTracker: _trackers.GossipTrackers.PullFromPeer));
 
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
@@ -556,7 +553,7 @@ namespace EventStore.Core {
 			var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
 			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager,
-				trackers.QueueTrackers,
+				_trackers.QueueTrackers,
 				true,
 				TimeSpan.FromMilliseconds(800));
 
@@ -657,7 +654,7 @@ namespace EventStore.Core {
 				minResizeInterval: TimeSpan.FromMinutes(10),
 				minResizeThreshold: 200L * 1024 * 1024, // 200 MiB
 				rootCacheResizer: new CompositeCacheResizer("cache", 100, streamInfoCacheResizer),
-				cacheResourcesTracker: trackers.CacheResourcesTracker);
+				cacheResourcesTracker: _trackers.CacheResourcesTracker);
 
 			_mainBus.Subscribe<MonitoringMessage.DynamicCacheManagerTick>(dynamicCacheManager);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(dynamicCacheManager);
@@ -682,7 +679,7 @@ namespace EventStore.Core {
 				additionalReclaim: false,
 				maxAutoMergeIndexLevel: options.Database.MaxAutoMergeIndexLevel,
 				pTableMaxReaderCount: pTableMaxReaderCount,
-				statusTracker: trackers.IndexStatusTracker);
+				statusTracker: _trackers.IndexStatusTracker);
 			logFormat.StreamNamesProvider.SetTableIndex(tableIndex);
 
 			var readIndex = new ReadIndex<TStreamId>(_mainQueue,
@@ -705,9 +702,9 @@ namespace EventStore.Core {
 				options.Application.SkipIndexScanOnReads,
 				Db.Config.ReplicationCheckpoint.AsReadOnly(),
 				Db.Config.IndexCheckpoint,
-				trackers.IndexStatusTracker,
-				trackers.IndexTracker,
-				trackers.CacheHitsMissesTracker);
+				_trackers.IndexStatusTracker,
+				_trackers.IndexTracker,
+				_trackers.CacheHitsMissesTracker);
 			_readIndex = readIndex;
 			var writer = new TFChunkWriter(Db);
 
@@ -742,9 +739,9 @@ namespace EventStore.Core {
 				logFormat.EmptyEventTypeId,
 				logFormat.SystemStreams,
 				epochManager, _queueStatsManager,
-				trackers.QueueTrackers,
-				trackers.WriterFlushSizeTracker,
-				trackers.WriterFlushDurationTracker,
+				_trackers.QueueTrackers,
+				_trackers.WriterFlushSizeTracker,
+				_trackers.WriterFlushDurationTracker,
 				() => readIndex.LastIndexedPosition);
 			// subscribes internally
 			AddTasks(storageWriter.Tasks);
@@ -771,7 +768,7 @@ namespace EventStore.Core {
 			var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
 				logFormat.SystemStreams,
 				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), inMemReader, _queueStatsManager,
-				trackers.QueueTrackers);
+				_trackers.QueueTrackers);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
@@ -783,7 +780,7 @@ namespace EventStore.Core {
 				publisher: _mainQueue,
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: Db.Config.IndexCheckpoint,
-				statusTracker: trackers.InaugurationStatusTracker);
+				statusTracker: _trackers.InaugurationStatusTracker);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(inaugurationManager);
 			_mainBus.Subscribe<SystemMessage.ChaserCaughtUp>(inaugurationManager);
 			_mainBus.Subscribe<SystemMessage.EpochWritten>(inaugurationManager);
@@ -1043,7 +1040,7 @@ namespace EventStore.Core {
 			var atomController = new AtomController(_mainQueue, _workersHandler,
 				options.Application.DisableHttpCaching, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
 			var gossipController = new GossipController(_mainQueue, _workersHandler,
-				trackers.GossipTrackers.ProcessingRequestFromHttpClient);
+				_trackers.GossipTrackers.ProcessingRequestFromHttpClient);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
 
@@ -1123,7 +1120,7 @@ namespace EventStore.Core {
 			// SUBSCRIPTIONS
 			var subscrBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
 			var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", _queueStatsManager,
-				trackers.QueueTrackers, false);
+				_trackers.QueueTrackers, false);
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.SystemStart, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
@@ -1153,7 +1150,7 @@ namespace EventStore.Core {
 			// IO DISPATCHER
 			var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
 			var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", _queueStatsManager,
-				trackers.QueueTrackers, false);
+				_trackers.QueueTrackers, false);
 			var psubDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(perSubscrQueue));
 			perSubscrBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(psubDispatcher.BackwardReader);
 			perSubscrBus.Subscribe<ClientMessage.NotHandled>(psubDispatcher.BackwardReader);
@@ -1363,7 +1360,7 @@ namespace EventStore.Core {
 						cleaner: cleaner,
 						scavengePointSource: scavengePointSource,
 						scavengerLogger: scavengerLogger,
-						statusTracker: trackers.ScavengeStatusTracker,
+						statusTracker: _trackers.ScavengeStatusTracker,
 						// threshold < 0: execute all chunks, even those with no weight
 						// threshold = 0: execute all chunks with weight greater than 0
 						// threshold > 0: execute all chunks above a certain weight
@@ -1409,7 +1406,7 @@ namespace EventStore.Core {
 			// REDACTION
 			var redactionBus = new InMemoryBus("RedactionBus", true, TimeSpan.FromSeconds(2));
 			var redactionQueue = new QueuedHandlerThreadPool(redactionBus, "Redaction", _queueStatsManager,
-				trackers.QueueTrackers, false);
+				_trackers.QueueTrackers, false);
 
 			_mainBus.Subscribe(redactionQueue.WidenFrom<RedactionMessage.GetEventPosition, Message>());
 			_mainBus.Subscribe(redactionQueue.WidenFrom<RedactionMessage.AcquireChunksLock, Message>());
@@ -1426,7 +1423,7 @@ namespace EventStore.Core {
 
 			// TIMER
 			_timeProvider = new RealTimeProvider();
-			var threadBasedScheduler = new ThreadBasedScheduler(_queueStatsManager, trackers.QueueTrackers);
+			var threadBasedScheduler = new ThreadBasedScheduler(_queueStatsManager, _trackers.QueueTrackers);
 			AddTask(threadBasedScheduler.Task);
 			_timerService = new TimerService(threadBasedScheduler);
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(_timerService);
@@ -1444,7 +1441,19 @@ namespace EventStore.Core {
 				options.Cluster.NodePriority, options.Cluster.ReadOnlyReplica, VersionInfo.Version);
 
 			// ELECTIONS TRACKER
-			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(trackers.ElectionCounterTracker);
+			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(_trackers.ElectionCounterTracker);
+
+			// SUBSCRIPTIONS TRACKER
+			if (metricsConfiguration.ExpectedScrapeIntervalSeconds > 0) {
+				_ = new Debouncer(
+					TimeSpan.FromSeconds(Math.Max(metricsConfiguration.ExpectedScrapeIntervalSeconds, 2) / 2),
+					UpdateStreamPositions, CancellationToken.None);
+
+				Task UpdateStreamPositions(CancellationToken ct) {
+					_trackers.SubscriptionTracker.UpdateStreamPositions(_readIndex);
+					return Task.CompletedTask;
+				}
+			}
 
 			// TELEMETRY
 			var telemetryService = new TelemetryService(
@@ -1580,7 +1589,7 @@ namespace EventStore.Core {
 			_subsystems = options.Subsystems;
 
 			var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
-				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers);
+				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, _trackers.QueueTrackers);
 
 			IServiceCollection ConfigureAdditionalServices(IServiceCollection services) =>
 				services
@@ -1602,7 +1611,7 @@ namespace EventStore.Core {
 				expiryStrategy ?? new DefaultExpiryStrategy(),
 				_httpService,
 				configuration,
-				trackers,
+				_trackers,
 				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
 				ConfigureAdditionalServices);
 

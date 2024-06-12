@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Services.PersistentSubscription;
 
 namespace EventStore.Core.Messages {
@@ -208,7 +209,7 @@ namespace EventStore.Core.Messages {
 		[DerivedMessage(CoreMessage.Misc)]
 		public partial class DynamicCacheManagerTick : Message {
 		}
-		
+
 		[DerivedMessage(CoreMessage.Misc)]
 		public partial class CheckCertificateExpiry : Message {
 		}
