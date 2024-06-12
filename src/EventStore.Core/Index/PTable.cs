@@ -153,7 +153,7 @@ namespace EventStore.Core.Index {
 					(header.Version != PTableVersions.IndexV2) &&
 					(header.Version != PTableVersions.IndexV3) &&
 					(header.Version != PTableVersions.IndexV4))
-					throw new CorruptIndexException(new WrongFileVersionException(_filename, header.Version, Version));
+					throw new CorruptIndexException(new UnsupportedFileVersionException(_filename, header.Version, Version));
 				_version = header.Version;
 
 				if (_version == PTableVersions.IndexV1) {

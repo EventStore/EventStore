@@ -11,7 +11,8 @@ public class ChunkHeaderTests {
 	[InlineData(false)]
 	public void can_round_trip(bool isScavenged) {
 		var source = new ChunkHeader(
-			version: (byte)Random.Shared.Next(8),
+			version: (byte)Random.Shared.Next(4, 8),
+			minCompatibleVersion: (byte)Random.Shared.Next(8),
 			chunkSize: Random.Shared.Next(500, 600),
 			chunkStartNumber: Random.Shared.Next(500, 600),
 			chunkEndNumber: Random.Shared.Next(700, 800),
@@ -22,6 +23,7 @@ public class ChunkHeaderTests {
 		var destination = new ChunkHeader(source.AsByteArray());
 
 		Assert.Equal(source.Version, destination.Version);
+		Assert.Equal(source.MinCompatibleVersion, destination.MinCompatibleVersion);
 		Assert.Equal(source.ChunkSize, destination.ChunkSize);
 		Assert.Equal(source.ChunkStartNumber, destination.ChunkStartNumber);
 		Assert.Equal(source.ChunkEndNumber, destination.ChunkEndNumber);
