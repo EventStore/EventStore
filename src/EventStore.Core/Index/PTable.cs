@@ -449,6 +449,9 @@ namespace EventStore.Core.Index {
 			} catch (CorruptedHashException ex) {
 				Log.Error(ex, "Bloom filter contents for index file {file} are corrupt. Performance will be degraded", _filename);
 				return null;
+			} catch (OutOfMemoryException ex) {
+				Log.Warning(ex, "Could not allocate enough memory for Bloom filter for index file {file}. Performance will be degraded", _filename);
+				return null;
 			} catch (Exception ex) {
 				Log.Error(ex, "Unexpected error opening bloom filter for index file {file}. Performance will be degraded", _filename);
 				return null;
