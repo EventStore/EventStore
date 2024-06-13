@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void a_record_can_be_written() {
 			var filename = GetFilePathFor("chunk-000000.000000");
-			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid(), TransformType.Identity);
+			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid(), TransformType.Identity);
 			var chunkBytes = chunkHeader.AsByteArray();
 			var buf = new byte[ChunkHeader.Size + ChunkFooter.Size + chunkHeader.ChunkSize];
 			Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);

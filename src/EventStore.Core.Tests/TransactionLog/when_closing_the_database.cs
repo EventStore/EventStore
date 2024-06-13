@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private TFChunkDb _db;
 
 		private static void CreateChunk(string path, int size) {
-			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, size, 0, 0, false, Guid.NewGuid(), TransformType.Identity);
+			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, TFChunk.CurrentChunkVersion, size, 0, 0, false, Guid.NewGuid(), TransformType.Identity);
 			var chunkBytes = chunkHeader.AsByteArray();
 			var buf = new byte[ChunkHeader.Size + ChunkFooter.Size + chunkHeader.ChunkSize];
 			Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);

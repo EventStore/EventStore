@@ -153,7 +153,7 @@ namespace EventStore.Core.Index {
 					(header.Version != PTableVersions.IndexV2) &&
 					(header.Version != PTableVersions.IndexV3) &&
 					(header.Version != PTableVersions.IndexV4))
-					throw new CorruptIndexException(new WrongFileVersionException(_filename, header.Version, Version));
+					throw new CorruptIndexException(new UnsupportedFileVersionException(_filename, header.Version, Version));
 				_version = header.Version;
 
 				if (_version == PTableVersions.IndexV1) {
@@ -426,8 +426,8 @@ namespace EventStore.Core.Index {
 					if (workItem != null)
 						ReturnWorkItem(workItem);
 				} else {
-                    stream?.Dispose();
-                }
+					stream?.Dispose();
+				}
 			}
 		}
 
@@ -448,6 +448,9 @@ namespace EventStore.Core.Index {
 				return null;
 			} catch (CorruptedHashException ex) {
 				Log.Error(ex, "Bloom filter contents for index file {file} are corrupt. Performance will be degraded", _filename);
+				return null;
+			} catch (OutOfMemoryException ex) {
+				Log.Warning(ex, "Could not allocate enough memory for Bloom filter for index file {file}. Performance will be degraded", _filename);
 				return null;
 			} catch (Exception ex) {
 				Log.Error(ex, "Unexpected error opening bloom filter for index file {file}. Performance will be degraded", _filename);

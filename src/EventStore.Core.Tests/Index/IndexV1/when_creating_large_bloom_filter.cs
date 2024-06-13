@@ -21,5 +21,16 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 				PTable.GenBloomFilterFilename(file)));
 			filter.Dispose();
 		}
+
+		[Test]
+		public void out_of_memory_returns_null() {
+			var filter = PTable.ConstructBloomFilter(
+				useBloomFilter: true,
+				filename: GetTempFilePath(),
+				indexEntryCount: 1,
+				genBloomFilterSizeBytes: _ => 1_000_000_000_000); // rly big
+
+			Assert.Null(filter);
+		}
 	}
 }

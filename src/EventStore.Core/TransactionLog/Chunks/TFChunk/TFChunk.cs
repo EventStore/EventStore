@@ -25,10 +25,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		public enum ChunkVersions : byte {
 			OriginalNotUsed = 1,
 			Unaligned = 2,
-			Aligned = 3
+			Aligned = 3,
+			Transformed = 4,
 		}
 
-		public const byte CurrentChunkVersion = 3;
+		public const byte CurrentChunkVersion = (byte) ChunkVersions.Transformed;
 		private const int AlignmentSize = 4096;
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunk>();
@@ -218,7 +219,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			bool reduceFileCachePressure,
 			ITransactionFileTracker tracker,
 			IChunkTransformFactory transformFactory) {
-			var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkDataSize, chunkStartNumber, chunkEndNumber,
+			var version = CurrentChunkVersion;
+			var minCompatibleVersion = transformFactory.Type == TransformType.Identity
+				? (byte) ChunkVersions.Aligned
+				: version;
+
+			var chunkHeader = new ChunkHeader(version, minCompatibleVersion, chunkDataSize, chunkStartNumber, chunkEndNumber,
 				isScavenged, Guid.NewGuid(), transformFactory.Type);
 			var fileSize = GetAlignedSize(transformFactory.TransformDataPosition(chunkDataSize) + ChunkHeader.Size + ChunkFooter.Size);
 
@@ -272,10 +278,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			using (var stream = _handle.AsUnbufferedStream(FileAccess.Read)) {
 				_chunkHeader = ReadHeader(stream);
-				Log.Debug("Opened completed {chunk} as version {version}", _filename, _chunkHeader.Version);
-				if (_chunkHeader.Version != (byte)ChunkVersions.Unaligned &&
-				    _chunkHeader.Version != (byte)ChunkVersions.Aligned)
-					throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version,
+				Log.Debug("Opened completed {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", _filename, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
+
+				if (_chunkHeader.MinCompatibleVersion > CurrentChunkVersion)
+					throw new CorruptDatabaseException(new UnsupportedFileVersionException(_filename, _chunkHeader.MinCompatibleVersion,
 						CurrentChunkVersion));
 
 				var transformFactory = getTransformFactory(_chunkHeader.TransformType);
@@ -350,10 +356,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			SetAttributes(_filename, false);
 			CreateWriterWorkItemForExistingChunk(writePosition, getTransformFactory, out _chunkHeader);
-			Log.Debug("Opened ongoing {chunk} as version {version}", _filename, _chunkHeader.Version);
-			if (_chunkHeader.Version != (byte)ChunkVersions.Aligned &&
-			    _chunkHeader.Version != (byte)ChunkVersions.Unaligned)
-				throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version,
+			Log.Debug("Opened ongoing {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", _filename, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
+
+			if (_chunkHeader.MinCompatibleVersion > CurrentChunkVersion)
+				throw new CorruptDatabaseException(new UnsupportedFileVersionException(_filename, _chunkHeader.MinCompatibleVersion,
 					CurrentChunkVersion));
 
 			_readSide = new TFChunkReadSideUnscavenged(this, tracker);
@@ -464,6 +470,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				if (chunkHeader.Version == (byte)ChunkVersions.Unaligned) {
 					Log.Debug("Upgrading ongoing file {chunk} to version 3", _filename);
 					var newHeader = new ChunkHeader((byte)ChunkVersions.Aligned,
+						(byte)ChunkVersions.Aligned,
 						chunkHeader.ChunkSize,
 						chunkHeader.ChunkStartNumber,
 						chunkHeader.ChunkEndNumber,
@@ -1048,10 +1055,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			if (_selfdestructin54321)
 				throw new FileBeingDeletedException();
 
-			ReaderWorkItemPool.Slot slot;
-
 			// try get memory stream reader first
-			if (_memStreams.TryTake(out slot)) {
+			if (_memStreams.TryTake(out var slot)) {
+				// When caching, _cachedDataTransformed and _sharedMemStream are both set before
+				// _memStreams.Reuse() (which repopulates the pool that was definitely empty)
+				// The Interlocked.Add(_memStreamCount) barrier guarantees the order.
+				// So since we have got a slot from the pool, we are guaranteed that _sharedMemStream and
+				// _cachedDataTransformed are populated with the correct values and further more their
+				// values will not change because we have the slot, preventing any uncaching.
 				Debug.Assert(_sharedMemStream is not null);
 
 				if (slot.ValueRef is not { } memoryWorkItem) {
@@ -1066,10 +1077,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			} else if (Atomic.UpdateAndGet(ref _memStreamCount, IncrementIfGreaterThanZero) > 0) {
 				Debug.Assert(_sharedMemStream is not null);
 
-				// Memory pool is empty. This is rare.
-				// Either the readers are all in use, or the pool has been drained.
-				// To distingiush that situation, we need to check whether the counter for mem streams is not zero
-				// at the time of increment. If so, TryDestructMemStreams cannot destroy the memory stream.
+				// We did not get a slot from the pool, but we incremented _memStreamCount from an
+				// already positive number. This means there are other mem readers in existence so we can
+				// create a new one separate to the pool because their existence guarantees that
+				// _sharedMemStream and _cachedDataTransformed are populated and will not change until
+				// _memStreamCount returns to 0.
+				//
+				// If the number of mem readers in existence had dropped to 0 then the uncaching
+				// procedure may be in progress and _sharedMemStream and _cachedDataTransformed may
+				// change or become invalid, so we don't use them. Instead fallback to filestream.
 				return new(_sharedMemStream, _cachedDataTransformed ? _transform.Read : IChunkReadTransform.Identity);
 			}
 
