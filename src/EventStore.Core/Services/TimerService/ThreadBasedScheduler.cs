@@ -89,19 +89,19 @@ namespace EventStore.Core.Services.TimerService {
 					_queueStats.ProcessingEnded(processed);
 
 					if (processed == 0) {
-						var timeout = TimeSpan.FromSeconds(30);
+						var timeout = TimeSpan.FromSeconds(5);
 
 						if (_tasks.Count > 0) {
-							var ticksUntilNextDueTime = _tasks.FindMin().DueTime.ElapsedTicksSince(_timeProvider.Now);
-							var secondsUntilNextDueTime = (double)ticksUntilNextDueTime / Instant.TicksPerSecond;
+							var timeLeftBeforeNextTask = _tasks.FindMin().DueTime.ElapsedTimeSince(_timeProvider.Now);
 
-							if (secondsUntilNextDueTime <= 0)
+							if (timeLeftBeforeNextTask <= TimeSpan.Zero)
+								// we have already reached the due time of the next task, so we process it immediately
 								continue;
 
-							var dueTimeSpan = TimeSpan.FromSeconds(secondsUntilNextDueTime);
-
-							if (dueTimeSpan < timeout)
-								timeout = dueTimeSpan;
+							if (timeLeftBeforeNextTask < timeout)
+								// the next task is less than the default timeout (5 seconds) from now, so we want to
+								// wake up just on time for the next task (if no new and earlier task is scheduled)
+								timeout = timeLeftBeforeNextTask;
 						}
 
 						_queueStats.EnterIdle();
