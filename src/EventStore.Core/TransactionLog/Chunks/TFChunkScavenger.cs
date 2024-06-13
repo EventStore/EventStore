@@ -237,7 +237,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				if (newChunk.ChunkHeader.Version >= (byte)TFChunk.TFChunk.ChunkVersions.Aligned)
 					newSize = TFChunk.TFChunk.GetAlignedSize((int)newSize);
 
-				bool oldVersion = oldChunk.ChunkHeader.Version != TFChunk.TFChunk.CurrentChunkVersion;
+				bool oldVersion = oldChunk.ChunkHeader.Version < (byte) TFChunk.TFChunk.ChunkVersions.Aligned;
 				long oldSize = oldChunk.FileSize;
 
 				if (oldSize <= newSize && !alwaysKeepScavenged && !_unsafeIgnoreHardDeletes && !oldVersion) {
@@ -438,7 +438,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 
 			try {
-				var oldVersion = oldChunks.Any(x => x.ChunkHeader.Version != TFChunk.TFChunk.CurrentChunkVersion);
+				var oldVersion = oldChunks.Any(x => x.ChunkHeader.Version < (byte) TFChunk.TFChunk.ChunkVersions.Aligned);
 
 				var positionMapping = new List<PosMap>();
 				foreach (var oldChunk in oldChunks) {

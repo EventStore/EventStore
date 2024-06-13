@@ -703,6 +703,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 				var newChunkHeader = new ChunkHeader(
 					version: header.Version,
+					minCompatibleVersion: header.MinCompatibleVersion,
 					chunkSize: header.ChunkSize,
 					chunkStartNumber: header.ChunkStartNumber,
 					chunkEndNumber: header.ChunkEndNumber,

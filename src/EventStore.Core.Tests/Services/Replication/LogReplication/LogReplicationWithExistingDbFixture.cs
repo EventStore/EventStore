@@ -33,6 +33,7 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 
 		var header = new ChunkHeader(
 			version: TFChunk.CurrentChunkVersion,
+			minCompatibleVersion: TFChunk.CurrentChunkVersion,
 			chunkSize: ChunkSize,
 			chunkStartNumber: chunkStartNumber,
 			chunkEndNumber: chunkEndNumber,

@@ -26,10 +26,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		public enum ChunkVersions : byte {
 			OriginalNotUsed = 1,
 			Unaligned = 2,
-			Aligned = 3
+			Aligned = 3,
+			Transformed = 4,
 		}
 
-		public const byte CurrentChunkVersion = 3;
+		public const byte CurrentChunkVersion = (byte) ChunkVersions.Transformed;
 		private const int AlignmentSize = 4096;
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunk>();
@@ -219,7 +220,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			bool reduceFileCachePressure,
 			ITransactionFileTracker tracker,
 			IChunkTransformFactory transformFactory) {
-			var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkDataSize, chunkStartNumber, chunkEndNumber,
+			var version = CurrentChunkVersion;
+			var minCompatibleVersion = transformFactory.Type == TransformType.Identity
+				? (byte) ChunkVersions.Aligned
+				: version;
+
+			var chunkHeader = new ChunkHeader(version, minCompatibleVersion, chunkDataSize, chunkStartNumber, chunkEndNumber,
 				isScavenged, Guid.NewGuid(), transformFactory.Type);
 			var fileSize = GetAlignedSize(transformFactory.TransformDataPosition(chunkDataSize) + ChunkHeader.Size + ChunkFooter.Size);
 
@@ -273,10 +279,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			using (var stream = _handle.AsUnbufferedStream(FileAccess.Read)) {
 				_chunkHeader = ReadHeader(stream);
-				Log.Debug("Opened completed {chunk} as version {version}", _filename, _chunkHeader.Version);
-				if (_chunkHeader.Version != (byte)ChunkVersions.Unaligned &&
-				    _chunkHeader.Version != (byte)ChunkVersions.Aligned)
-					throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version,
+				Log.Debug("Opened completed {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", _filename, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
+
+				if (_chunkHeader.MinCompatibleVersion > CurrentChunkVersion)
+					throw new CorruptDatabaseException(new UnsupportedFileVersionException(_filename, _chunkHeader.MinCompatibleVersion,
 						CurrentChunkVersion));
 
 				var transformFactory = getTransformFactory(_chunkHeader.TransformType);
@@ -351,10 +357,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			SetAttributes(_filename, false);
 			CreateWriterWorkItemForExistingChunk(writePosition, getTransformFactory, out _chunkHeader);
-			Log.Debug("Opened ongoing {chunk} as version {version}", _filename, _chunkHeader.Version);
-			if (_chunkHeader.Version != (byte)ChunkVersions.Aligned &&
-			    _chunkHeader.Version != (byte)ChunkVersions.Unaligned)
-				throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version,
+			Log.Debug("Opened ongoing {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", _filename, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
+
+			if (_chunkHeader.MinCompatibleVersion > CurrentChunkVersion)
+				throw new CorruptDatabaseException(new UnsupportedFileVersionException(_filename, _chunkHeader.MinCompatibleVersion,
 					CurrentChunkVersion));
 
 			_readSide = new TFChunkReadSideUnscavenged(this, tracker);
@@ -465,6 +471,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				if (chunkHeader.Version == (byte)ChunkVersions.Unaligned) {
 					Log.Debug("Upgrading ongoing file {chunk} to version 3", _filename);
 					var newHeader = new ChunkHeader((byte)ChunkVersions.Aligned,
+						(byte)ChunkVersions.Aligned,
 						chunkHeader.ChunkSize,
 						chunkHeader.ChunkStartNumber,
 						chunkHeader.ChunkEndNumber,
