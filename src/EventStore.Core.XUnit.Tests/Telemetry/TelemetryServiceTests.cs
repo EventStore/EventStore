@@ -188,11 +188,11 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 
 	class FakePlugableComponent(string name = "fakeComponent") : Plugin(name) {
 		public void PublishSomeTelemetry() {
-			PublishDiagnostics(new() {
+			PublishDiagnosticsData(new() {
 				["enabled"] = Enabled
 			});
 
-			PublishDiagnostics(new() {
+			PublishDiagnosticsData(new() {
 				["foo"] = "bar"
 			});
 		}

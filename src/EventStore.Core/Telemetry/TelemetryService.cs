@@ -41,6 +41,7 @@ public sealed class TelemetryService :
 	private readonly Guid _nodeId;
 	private readonly TFChunkManager _manager;
 	private readonly PluginDiagnosticsDataCollector _pluginDiagnosticsDataCollector;
+	private readonly string[] _sources;
 
 	private VNodeState _nodeState;
 	private int _epochNumber;
@@ -61,9 +62,8 @@ public sealed class TelemetryService :
 		_writerCheckpoint = writerCheckpoint;
 		_nodeId = nodeId;
 
-		_pluginDiagnosticsDataCollector = PluginDiagnosticsDataCollector.Start(
-			_nodeOptions.PlugableComponents.Select(x => x.DiagnosticsName).ToArray()
-		);
+		_sources = _nodeOptions.PlugableComponents.Select(x => x.DiagnosticsName).ToArray();
+		_pluginDiagnosticsDataCollector = PluginDiagnosticsDataCollector.Start(_sources);
 
 		_ = Task.Run(async () => {
 			try {
@@ -196,15 +196,16 @@ public sealed class TelemetryService :
 				["totalMemory"] = env.Machine.TotalMemory,
 			}));
 
-		_pluginDiagnosticsDataCollector.CollectedEvents.ForEach(x => {
-			try {
-				var node = JsonSerializer.SerializeToNode(x.Data);
-				message.Envelope.ReplyWith(new TelemetryMessage.Response("plugins", x.Source, node));
-			}
-			catch (Exception ex) {
-				Logger.Warning(ex, "Failed to collect telemetry from pluggable component {Source}", x.Source);
-			}
-		});
+		foreach (var source in _sources) {
+			_pluginDiagnosticsDataCollector.CollectedEvents(source).ForEach(x => {
+				try {
+					var node = JsonSerializer.SerializeToNode(x.Data);
+					message.Envelope.ReplyWith(new TelemetryMessage.Response("plugins", x.Source, node));
+				} catch (Exception ex) {
+					Logger.Warning(ex, "Failed to collect telemetry from pluggable component {Source}", x.Source);
+				}
+			});
+		}
 
 		_publisher.Publish(new GossipMessage.ReadGossip(new CallbackEnvelope(resp => OnGossipReceived(message.Envelope, resp))));
 	}
