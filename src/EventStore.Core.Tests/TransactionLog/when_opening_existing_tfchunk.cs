@@ -2,7 +2,7 @@ using System;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Transforms;
+using EventStore.Core.Transforms.Identity;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_chunk.Complete();
 			_testChunk = TFChunk.FromCompletedFile(Filename, true, false,
 				reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
-				getTransformFactory: _ => IChunkTransformFactory.Identity);
+				getTransformFactory: _ => new IdentityChunkTransformFactory());
 		}
 
 		[TearDown]
