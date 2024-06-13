@@ -114,14 +114,14 @@ public class SubscriptionTrackerTests : IDisposable {
 	[Fact]
 	public void event_committed_stream() {
 		_sut.AddSubscription(_subscriptionId, StreamName, EndOfStream);
-		_sut.UpdateStreamPositions(_readIndex);
+		_sut.UpdateLastIndexedPositions(_readIndex);
 
 		Observe();
 
 		var actual = RetrieveMeasurements();
 
 		Assert.Equivalent(new[] {
-			new { Value = 0L, Tags = _streamTags },
+			new { Value = EndOfStream, Tags = _streamTags },
 			new { Value = EventNumber, Tags = _streamTags },
 			new { Value = 1L, Tags = Array.Empty<KeyValuePair<string, object>>() }
 		}, actual);
@@ -130,14 +130,14 @@ public class SubscriptionTrackerTests : IDisposable {
 	[Fact]
 	public void event_committed_all() {
 		_sut.AddSubscription(_subscriptionId, null, EndOfAllStream);
-		_sut.UpdateStreamPositions(_readIndex);
+		_sut.UpdateLastIndexedPositions(_readIndex);
 
 		Observe();
 
 		var actual = RetrieveMeasurements();
 
 		Assert.Equivalent(new[] {
-			new { Value = 0L, Tags = _allStreamTags },
+			new { Value = EndOfAllStream, Tags = _allStreamTags },
 			new { Value = LogPosition, Tags = _allStreamTags },
 			new { Value = 1L, Tags = Array.Empty<KeyValuePair<string, object>>() }
 		}, actual);
@@ -146,8 +146,8 @@ public class SubscriptionTrackerTests : IDisposable {
 	[Fact]
 	public void event_processed_stream() {
 		_sut.AddSubscription(_subscriptionId, StreamName, EndOfStream);
-		_sut.UpdateStreamPositions(_readIndex);
-		_sut.ProcessEvent(_subscriptionId, _resolvedEvent);
+		_sut.UpdateLastIndexedPositions(_readIndex);
+		_sut.UpdateSubscriptionPosition(_subscriptionId, StreamName, EventNumber);
 
 		Observe();
 
@@ -163,8 +163,8 @@ public class SubscriptionTrackerTests : IDisposable {
 	[Fact]
 	public void event_processed_all() {
 		_sut.AddSubscription(_subscriptionId, null, EndOfAllStream);
-		_sut.UpdateStreamPositions(_readIndex);
-		_sut.ProcessEvent(_subscriptionId, _resolvedEvent);
+		_sut.UpdateLastIndexedPositions(_readIndex);
+		_sut.UpdateSubscriptionPosition(_subscriptionId, null, LogPosition);
 
 		Observe();
 

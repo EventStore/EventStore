@@ -31,6 +31,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			private readonly CancellationTokenSource _cts;
 			private readonly Channel<ReadResponse> _channel;
 			private readonly Channel<(ulong SequenceNumber, ResolvedEvent? ResolvedEvent, TFPos? Checkpoint)> _liveEvents;
+			private readonly PeriodicTimer _metricsTimer;
 
 			private ReadResponse _current;
 			private bool _disposed;
@@ -68,6 +69,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				_cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 				_channel = Channel.CreateBounded<ReadResponse>(BoundedChannelOptions);
 				_liveEvents = Channel.CreateBounded<(ulong, ResolvedEvent?, TFPos?)>(LiveChannelOptions);
+				_metricsTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
 
 				SubscriptionId = _subscriptionId.ToString();
 
@@ -83,6 +85,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 				_disposed = true;
 				Unsubscribe();
+				_metricsTimer.Dispose();
 
 				_cts.Cancel();
 				_cts.Dispose();
@@ -142,6 +145,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 			private void Subscribe(Position? checkpoint, CancellationToken ct) {
 				Task.Factory.StartNew(() => MainLoop(checkpoint, ct), ct);
+				Task.Factory.StartNew(() => UpdateSubscriptionPositions(ct), ct);
 			}
 
 			private static TFPos ConvertCheckpoint(Position? checkpoint, TFPos lastLivePos) {
@@ -345,7 +349,6 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 			private async Task SendEventToSubscription(ResolvedEvent @event, CancellationToken ct) {
 				await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct);
-				_tracker.ProcessEvent(_subscriptionId, @event);
 			}
 
 			private async Task SendCheckpointToSubscription(TFPos checkpoint, CancellationToken ct) {
@@ -353,6 +356,12 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				await _channel.Writer.WriteAsync(new ReadResponse.CheckpointReceived(
 					commitPosition: checkpointPos.CommitPosition,
 					preparePosition: checkpointPos.PreparePosition), ct);
+			}
+
+			private async Task UpdateSubscriptionPositions(CancellationToken ct) {
+				while (await _metricsTimer.WaitForNextTickAsync(ct)) {
+					_tracker.UpdateSubscriptionPosition(_subscriptionId, null, (long)(_currentPosition?.CommitPosition ?? 0));
+				}
 			}
 
 			private Task<TFPos> SubscribeToLive() {

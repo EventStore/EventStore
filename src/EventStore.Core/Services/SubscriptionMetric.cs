@@ -18,16 +18,16 @@ public class SubscriptionMetric {
 		meter.CreateObservableUpDownCounter($"{name}-subscription-count", SubscriptionCount);
 	}
 
-	public void Add(Guid subscriptionId, string? streamName, long endOfStream) =>
-		_subscriptionStats.TryAdd(subscriptionId, new(subscriptionId, streamName, EndOfStream: endOfStream));
+	public void Add(Guid subscriptionId, string? streamName, long end) =>
+		_subscriptionStats.TryAdd(subscriptionId, new(subscriptionId, streamName, end));
 
 	public void Remove(Guid subscriptionId) => _subscriptionStats.TryRemove(subscriptionId, out _);
 
-	public void UpdateStreamPositions<T>(IReadIndex<T> readIndex) {
+	public void UpdateLastIndexedPositions<T>(IReadIndex<T> readIndex) {
 		foreach (var (_, stats) in _subscriptionStats) {
 			if (stats.StreamName is null) {
 				_subscriptionStats.TryUpdate(stats.SubscriptionId, stats with {
-					EndOfStream = readIndex.LastIndexedPosition
+					End = readIndex.LastIndexedPosition
 				}, stats);
 			} else {
 				var streamId = readIndex.GetStreamId(stats.StreamName);
@@ -35,40 +35,39 @@ public class SubscriptionMetric {
 				var eventPosition = readIndex.GetStreamLastEventNumber(streamId);
 
 				_subscriptionStats.TryUpdate(stats.SubscriptionId, stats with {
-					EndOfStream = eventPosition
+					End = eventPosition
 				}, stats);
 			}
 		}
 	}
 
-	public void ProcessEvent(Guid subscriptionId, string? streamName, long commitPosition, long eventPosition) {
+	public void UpdateSubscriptionPosition(Guid subscriptionId, string? streamName, long position) {
 		foreach (var (_, stats) in _subscriptionStats) {
 			if (stats.SubscriptionId != subscriptionId) {
 				continue;
 			}
-			if (stats.StreamName == streamName) {
-				_subscriptionStats.TryUpdate(stats.SubscriptionId, stats with {
-					SubscriptionPosition = eventPosition
-				}, stats);
-			} else if (stats.StreamName is null) {
-				_subscriptionStats.TryUpdate(stats.SubscriptionId, stats with {
-					SubscriptionPosition = commitPosition
-				}, stats);
+
+			if (stats.StreamName != streamName) {
+				continue;
 			}
+
+			_subscriptionStats.TryUpdate(stats.SubscriptionId, stats with {
+				Current = position
+			}, stats);
 		}
 	}
 
 	private IEnumerable<Measurement<long>> SubscriptionPosition() {
 		foreach (var (_, stats) in _subscriptionStats) {
 			ReadOnlySpan<KeyValuePair<string, object?>> tags = [stats.StreamNameTag, stats.SubscriptionIdTag];
-			yield return new Measurement<long>(stats.SubscriptionPosition, tags);
+			yield return new Measurement<long>(stats.Current, tags);
 		}
 	}
 
 	private IEnumerable<Measurement<long>> StreamPosition() {
 		foreach (var (_, stats) in _subscriptionStats) {
 			ReadOnlySpan<KeyValuePair<string, object?>> tags = [stats.StreamNameTag, stats.SubscriptionIdTag];
-			yield return new Measurement<long>(stats.EndOfStream, tags);
+			yield return new Measurement<long>(stats.End, tags);
 		}
 	}
 
@@ -77,8 +76,8 @@ public class SubscriptionMetric {
 	private readonly record struct SubscriptionStats(
 		Guid SubscriptionId,
 		string? StreamName,
-		long SubscriptionPosition = 0L,
-		long EndOfStream = 0L) {
+		long Current = 0,
+		long End = 0) {
 		private const string StreamNameTagKey = "stream-name";
 		private const string SubscriptionIdTagKey = "subscription-id";
 

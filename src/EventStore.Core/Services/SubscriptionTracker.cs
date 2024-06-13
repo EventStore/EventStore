@@ -1,39 +1,38 @@
 #nullable enable
 using System;
-using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services;
 
 public interface ISubscriptionTracker {
-	void AddSubscription(Guid subscriptionId, string? streamName, long endOfStream);
+	void AddSubscription(Guid subscriptionId, string? streamName, long end);
 	void RemoveSubscription(Guid subscriptionId);
-	void ProcessEvent(Guid subscriptionId, ResolvedEvent @event);
-	void UpdateStreamPositions<T>(IReadIndex<T> readIndex);
+	void UpdateSubscriptionPosition(Guid subscriptionId, string? streamName, long position);
+	void UpdateLastIndexedPositions<T>(IReadIndex<T> readIndex);
 }
 
 public class SubscriptionTracker(SubscriptionMetric metric) : ISubscriptionTracker {
-	public void AddSubscription(Guid subscriptionId, string? streamName, long endOfStream) =>
-		metric.Add(subscriptionId, streamName, endOfStream);
+	public void AddSubscription(Guid subscriptionId, string? streamName, long end) =>
+		metric.Add(subscriptionId, streamName, end);
 
 	public void RemoveSubscription(Guid subscriptionId) => metric.Remove(subscriptionId);
 
-	public void ProcessEvent(Guid subscriptionId, ResolvedEvent @event) => metric.ProcessEvent(subscriptionId, @event.OriginalStreamId,
-		@event.OriginalPosition?.CommitPosition ?? 0L, @event.OriginalEventNumber);
+	public void UpdateSubscriptionPosition(Guid subscriptionId, string? streamName, long position) =>
+		metric.UpdateSubscriptionPosition(subscriptionId, streamName, position);
 
-	public void UpdateStreamPositions<T>(IReadIndex<T> readIndex) => metric.UpdateStreamPositions(readIndex);
+	public void UpdateLastIndexedPositions<T>(IReadIndex<T> readIndex) => metric.UpdateLastIndexedPositions(readIndex);
 
 	public class NoOp : ISubscriptionTracker {
-		public void AddSubscription(Guid subscriptionId, string? streamName, long endOfStream) {
+		public void AddSubscription(Guid subscriptionId, string? streamName, long end) {
 		}
 
 		public void RemoveSubscription(Guid subscriptionId) {
 		}
 
-		public void UpdateStreamPositions<T>(IReadIndex<T> readIndex) {
+		public void UpdateLastIndexedPositions<T>(IReadIndex<T> readIndex) {
 		}
 
-		public void ProcessEvent(Guid subscriptionId, ResolvedEvent @event) {
+		public void UpdateSubscriptionPosition(Guid subscriptionId, string? streamName, long position) {
 		}
 	}
 }

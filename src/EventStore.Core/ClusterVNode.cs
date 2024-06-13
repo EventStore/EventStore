@@ -1450,7 +1450,7 @@ namespace EventStore.Core {
 					UpdateStreamPositions, CancellationToken.None);
 
 				Task UpdateStreamPositions(CancellationToken ct) {
-					_trackers.SubscriptionTracker.UpdateStreamPositions(_readIndex);
+					_trackers.SubscriptionTracker.UpdateLastIndexedPositions(_readIndex);
 					return Task.CompletedTask;
 				}
 			}

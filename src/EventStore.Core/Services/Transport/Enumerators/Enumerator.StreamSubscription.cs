@@ -35,6 +35,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 			private readonly CancellationTokenSource _cts;
 			private readonly Channel<ReadResponse> _channel;
 			private readonly Channel<(ulong SequenceNumber, ResolvedEvent ResolvedEvent)> _liveEvents;
+			private readonly PeriodicTimer _metricsTimer;
 
 			private ReadResponse _current;
 			private bool _disposed;
@@ -67,6 +68,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				_cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 				_channel = Channel.CreateBounded<ReadResponse>(BoundedChannelOptions);
 				_liveEvents = Channel.CreateBounded<(ulong, ResolvedEvent)>(LiveChannelOptions);
+				_metricsTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
 				_currentRevision = null;
 
 				SubscriptionId = _subscriptionId.ToString();
@@ -84,6 +86,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 				_disposed = true;
 
 				Unsubscribe();
+				_metricsTimer.Dispose();
 
 				_cts.Cancel();
 				_cts.Dispose();
@@ -129,6 +132,7 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 			private void Subscribe(StreamRevision? checkpoint, CancellationToken ct) {
 				Task.Factory.StartNew(() => MainLoop(checkpoint, ct), ct);
+				Task.Factory.StartNew(() => UpdateSubscriptionPositions(ct), ct);
 			}
 
 			private static long ConvertCheckpoint(StreamRevision? checkpoint, long lastLiveEventNumber) {
@@ -295,8 +299,12 @@ namespace EventStore.Core.Services.Transport.Enumerators {
 
 				if (@event.OriginalEvent.EventType == SystemEventTypes.StreamDeleted)
 					throw new ReadResponseException.StreamDeleted(_streamName);
+			}
 
-				_tracker.ProcessEvent(_subscriptionId, @event);
+			private async Task UpdateSubscriptionPositions(CancellationToken ct) {
+				while (await _metricsTimer.WaitForNextTickAsync(ct)) {
+					_tracker.UpdateSubscriptionPosition(_subscriptionId, null, _currentRevision?.ToInt64() ?? 0L);
+				}
 			}
 
 			private Task<long> SubscribeToLive() {
