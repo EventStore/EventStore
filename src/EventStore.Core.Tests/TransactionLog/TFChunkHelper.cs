@@ -3,7 +3,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
-using EventStore.Core.Transforms;
+using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog {
@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			return TFChunk.CreateNew(fileName, chunkSize, 0, 0,
 				isScavenged: isScavenged, inMem: false, unbuffered: false,
 				writethrough: false, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
-				transformFactory: IChunkTransformFactory.Identity);
+				transformFactory: new IdentityChunkTransformFactory());
 		}
 	}
 }

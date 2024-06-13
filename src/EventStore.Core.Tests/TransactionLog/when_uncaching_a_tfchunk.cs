@@ -3,7 +3,7 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Transforms;
+using EventStore.Core.Transforms.Identity;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_chunk.Complete();
 			_uncachedChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true, unbufferedRead: false,
 				reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
-				getTransformFactory: _ => IChunkTransformFactory.Identity);
+				getTransformFactory: _ => new IdentityChunkTransformFactory());
 			_uncachedChunk.CacheInMemory();
 			_uncachedChunk.UnCacheFromMemory();
 		}
