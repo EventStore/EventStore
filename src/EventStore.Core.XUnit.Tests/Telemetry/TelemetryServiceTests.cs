@@ -14,6 +14,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
 using Xunit;
+using static EventStore.Plugins.Diagnostics.PluginDiagnosticsDataCollectionMode;
 
 namespace EventStore.Core.XUnit.Tests.Telemetry;
 
@@ -48,6 +49,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 	public Task InitializeAsync() => _fixture.InitializeAsync();
 
 	public async Task DisposeAsync() {
+		_plugin.Dispose();
 		_sut.Dispose();
 		_db.Close();
 		await _fixture.DisposeAsync();
@@ -116,7 +118,6 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		Assert.IsType<TelemetryMessage.Collect>(schedule.ReplyMessage);
 
 		// check sink has received the data
-		Assert.NotNull(_sink.Data);
 		Assert.NotNull(_sink.Data["foo"]);
 		Assert.Equal(new JsonObject { ["bar"] = 42 }.ToString(), _sink.Data["foo"].ToString());
 
@@ -188,13 +189,13 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 
 	class FakePlugableComponent(string name = "fakeComponent") : Plugin(name) {
 		public void PublishSomeTelemetry() {
-			PublishDiagnostics(new() {
+			PublishDiagnosticsData(new() {
 				["enabled"] = Enabled
-			});
+			}, Snapshot);
 
-			PublishDiagnostics(new() {
+			PublishDiagnosticsData(new() {
 				["foo"] = "bar"
-			});
+			}, Snapshot);
 		}
 	}
 }
