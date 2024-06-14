@@ -17,7 +17,7 @@ namespace EventStore.Core.Services.TimerService {
 		}
 
 		private readonly ConcurrentQueueWrapper<ScheduledTask> _pending = new ConcurrentQueueWrapper<ScheduledTask>();
-		private readonly AutoResetEvent _pendingEvent = new AutoResetEvent(false);
+		private readonly ManualResetEventSlim _pendingEvent = new ManualResetEventSlim(false);
 
 		private readonly PairingHeap<ScheduledTask> _tasks =
 			new PairingHeap<ScheduledTask>((x, y) => x.DueTime < y.DueTime);
@@ -90,6 +90,7 @@ namespace EventStore.Core.Services.TimerService {
 
 					if (processed == 0) {
 						var timeout = TimeSpan.FromSeconds(5);
+						_pendingEvent.Reset();
 
 						if (_tasks.Count > 0) {
 							var timeLeftBeforeNextTask = _tasks.FindMin().DueTime.ElapsedTimeSince(_timeProvider.Now);
@@ -105,7 +106,7 @@ namespace EventStore.Core.Services.TimerService {
 						}
 
 						_queueStats.EnterIdle();
-						_pendingEvent.WaitOne(timeout);
+						_pendingEvent.Wait(timeout);
 					}
 
 				} catch (Exception ex) {
