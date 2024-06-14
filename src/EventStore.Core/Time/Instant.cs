@@ -63,7 +63,9 @@ public struct Instant : IEquatable<Instant> {
 
 	public TimeSpan ElapsedTimeSince(Instant since) {
 		var elapsedTicks = ElapsedTicksSince(since);
-		elapsedTicks /= TicksPerTimeSpanTick;
+		// since we're decreasing the resolution when converting to TimeSpan, we round up to make sure that something
+		// using the TimeSpan doesn't wait for less time than it should.
+		elapsedTicks = (elapsedTicks + TicksPerTimeSpanTick - 1) / TicksPerTimeSpanTick;
 		return new TimeSpan(elapsedTicks);
 	}
 }
