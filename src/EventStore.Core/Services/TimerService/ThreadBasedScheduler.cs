@@ -77,7 +77,20 @@ namespace EventStore.Core.Services.TimerService {
 
 					_queueStats.ProcessingStarted<ExecuteScheduledTasks>(_tasks.Count);
 					int processed = 0;
-					while (_tasks.Count > 0 && _tasks.FindMin().DueTime <= _timeProvider.Now) {
+
+					Instant? nextTaskDueTime;
+					while (true) {
+						_pendingEvent.Reset();
+
+						if (_tasks.Count == 0) {
+							nextTaskDueTime = null;
+							break;
+						}
+
+						nextTaskDueTime = _tasks.FindMin().DueTime;
+						if (nextTaskDueTime > _timeProvider.Now)
+							break;
+
 						processed += 1;
 						var scheduledTask = _tasks.DeleteMin();
 						var now = _tracker.RecordMessageDequeued(enqueuedAt: scheduledTask.DueTime);
@@ -90,10 +103,9 @@ namespace EventStore.Core.Services.TimerService {
 
 					if (processed == 0) {
 						var timeout = TimeSpan.FromSeconds(5);
-						_pendingEvent.Reset();
 
-						if (_tasks.Count > 0) {
-							var timeLeftBeforeNextTask = _tasks.FindMin().DueTime.ElapsedTimeSince(_timeProvider.Now);
+						if (nextTaskDueTime.HasValue) {
+							var timeLeftBeforeNextTask = nextTaskDueTime.Value.ElapsedTimeSince(_timeProvider.Now);
 
 							if (timeLeftBeforeNextTask <= TimeSpan.Zero)
 								// we have already reached the due time of the next task, so we process it immediately
