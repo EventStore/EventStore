@@ -144,6 +144,8 @@ namespace EventStore.Common.Configuration {
 
 		public Dictionary<Cache, bool> CacheHitsMisses { get; set; } = new();
 
+		public bool ProjectionStats { get; set; }
+
 		public bool ElectionsCount { get; set; } = false;
 
 		public bool CacheResources { get; set; } = false;

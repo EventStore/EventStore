@@ -11,6 +11,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Telemetry;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
+using EventStore.Projections.Core.Metrics;
 using EventStore.Projections.Core.Services.Http;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -21,7 +22,8 @@ namespace EventStore.Projections.Core {
 			StandardComponents standardComponents,
 			ProjectionsStandardComponents projectionsStandardComponents,
 			IDictionary<Guid, IPublisher> queues,
-			TimeSpan projectionQueryExpiry) {
+			TimeSpan projectionQueryExpiry,
+			IProjectionTracker projectionTracker) {
 			IQueuedHandler inputQueue = projectionsStandardComponents.LeaderInputQueue;
 			IBus outputBus = projectionsStandardComponents.LeaderOutputBus;
 			var ioDispatcher = new IODispatcher(outputBus, new PublishEnvelope(inputQueue), true);
@@ -50,7 +52,9 @@ namespace EventStore.Projections.Core {
 				new RealTimeProvider(),
 				projectionsStandardComponents.RunProjections,
 				ioDispatcher,
-				projectionQueryExpiry, defaultProjectionExecutionTimeout: projectionsStandardComponents.ProjectionExecutionTimeout);
+				projectionQueryExpiry,
+				projectionTracker,
+				defaultProjectionExecutionTimeout: projectionsStandardComponents.ProjectionExecutionTimeout);
 
 			SubscribeMainBus(
 				projectionsStandardComponents.LeaderMainBus,

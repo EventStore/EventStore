@@ -1,3 +1,4 @@
+using EventStore.Common.Configuration;
 using EventStore.Core.Bus;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.TimerService;
@@ -26,7 +27,8 @@ namespace EventStore.Core {
 			IHttpService[] httpServices,
 			IPublisher networkSendService,
 			QueueStatsManager queueStatsManager,
-			QueueTrackers trackers) {
+			QueueTrackers trackers,
+			bool projectionStats) {
 			_dbConfig = dbConfig;
 			_mainQueue = mainQueue;
 			_mainBus = mainBus;
@@ -37,6 +39,7 @@ namespace EventStore.Core {
 			_networkSendService = networkSendService;
 			_queueStatsManager = queueStatsManager;
 			QueueTrackers = trackers;
+			ProjectionStats = projectionStats;
 		}
 
 		public TFChunkDbConfig DbConfig {
@@ -74,6 +77,8 @@ namespace EventStore.Core {
 		public QueueStatsManager QueueStatsManager {
 			get { return _queueStatsManager; }
 		}
+
+		public bool ProjectionStats { get; }
 
 		public QueueTrackers QueueTrackers { get; private set; }
 	}
