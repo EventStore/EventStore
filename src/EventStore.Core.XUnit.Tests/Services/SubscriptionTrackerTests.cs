@@ -5,7 +5,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.XUnit.Tests.Metrics;
 using Xunit;
 
@@ -20,14 +19,13 @@ public class SubscriptionTrackerTests : IDisposable {
 
 	private readonly TestMeterListener<long> _subscriptionPositionListener;
 	private readonly TestMeterListener<long> _streamPositionListener;
+	private readonly TestMeterListener<long> _subscriptionCountListener;
 	private readonly Meter _meter;
 	private readonly SubscriptionTracker _sut;
 	private readonly Guid _subscriptionId;
 	private readonly KeyValuePair<string, object>[] _streamTags;
 	private readonly KeyValuePair<string, object>[] _allStreamTags;
-	private readonly ResolvedEvent _resolvedEvent;
 	private readonly FakeReadIndex _readIndex;
-	private readonly TestMeterListener<long> _subscriptionCountListener;
 
 	public SubscriptionTrackerTests() {
 		_meter = new Meter("eventstore");
@@ -43,9 +41,6 @@ public class SubscriptionTrackerTests : IDisposable {
 
 		_streamTags = [new("stream-name", StreamName), new("subscription-id", _subscriptionId)];
 		_allStreamTags = [new("stream-name", SystemStreams.AllStream), new("subscription-id", _subscriptionId)];
-		_resolvedEvent = ResolvedEvent.ForUnresolvedEvent(
-			new EventRecord(EventNumber, LogPosition, Guid.NewGuid(), Guid.NewGuid(), LogPosition, 0, StreamName, 1L,
-				DateTime.Now, PrepareFlags.SingleWrite, "-", [], []), LogPosition);
 		_readIndex = new FakeReadIndex();
 	}
 
