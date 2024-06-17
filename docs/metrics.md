@@ -467,6 +467,47 @@ Example output:
 eventstore_elections_count 0 1710188996949
 ```
 
+### Projections
+
+The projection metrics track the statistics for the projections.
+
+| Time series                  | Type                     | Description                  |
+|:-----------------------------|:-------------------------|:-----------------------------|
+| `eventstore_projection_running` | [Counter](#common-types) | If 1, projection is in 'Running' state |
+| `eventstore_projection_status` | [Counter](#common-types) | If 1, projection is in specified state |
+| `eventstore_projection_progress` | [Counter](#common-types) | Projection progress 0 - 1, where 1 = projection progress at 100% |
+| `eventstore_projection_events_processed_after_restart_total` | [Counter](#common-types) | Projection event processed count after restart |
+
+Example configuration:
+```json
+"ProjectionStats": true
+```
+
+Example output:
+```
+# TYPE eventstore_projection_stats gauge
+eventstore_projection_stats{kind="eventstore-projection-status",projection="$streams",status="Stopped"} 1 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-running",projection="$streams"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-progress",projection="$streams"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-events-processed-after-restart-total",projection="$streams"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-status",projection="$stream_by_category",status="Stopped"} 1 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-running",projection="$stream_by_category"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-progress",projection="$stream_by_category"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-events-processed-after-restart-total",projection="$stream_by_category"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-status",projection="$by_category",status="Stopped"} 1 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-running",projection="$by_category"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-progress",projection="$by_category"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-events-processed-after-restart-total",projection="$by_category"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-status",projection="$by_event_type",status="Stopped"} 1 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-running",projection="$by_event_type"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-progress",projection="$by_event_type"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-events-processed-after-restart-total",projection="$by_event_type"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-status",projection="$by_correlation_id",status="Stopped"} 1 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-running",projection="$by_correlation_id"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-progress",projection="$by_correlation_id"} 0 1718655312731
+eventstore_projection_stats{kind="eventstore-projection-events-processed-after-restart-total",projection="$by_correlation_id"} 0 1718655312731
+```
+
 ## Metric types
 
 ### Common types
