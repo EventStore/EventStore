@@ -1,9 +1,22 @@
 ﻿using System;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Transport.Common;
 
 namespace EventStore.Core.Services.Transport.Enumerators;
 
 public abstract class ReadResponseException : Exception {
+	public class StreamNotFound(string streamName) : ReadResponseException {
+		public string StreamName { get; } = streamName;
+	}
+
+	public class WrongExpectedRevision(string stream, long expectedRevision, long actualRevision) : ReadResponseException {
+		public string Stream { get; } = stream;
+		
+		public StreamRevision ExpectedStreamRevision { get; } = StreamRevision.FromInt64(expectedRevision);
+		
+		public StreamRevision ActualStreamRevision { get; } = StreamRevision.FromInt64(actualRevision);
+	}
+	
 	public class StreamDeleted : ReadResponseException {
 		public readonly string StreamName;
 
