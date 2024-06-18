@@ -74,7 +74,6 @@ namespace EventStore.Core.Data {
 			return null;
 		}
 
-
 		public bool Equals(ResolvedEvent other) =>
 			Equals(Event, other.Event) && Equals(Link, other.Link) &&
 			_originalEventCommitPosition == other._originalEventCommitPosition &&
