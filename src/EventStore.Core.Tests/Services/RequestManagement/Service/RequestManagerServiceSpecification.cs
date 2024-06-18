@@ -45,7 +45,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 				Dispatcher,
 				TimeSpan.FromSeconds(2),
 				TimeSpan.FromSeconds(2),
-				explicitTransactionsSupported: true);
+				explicitTransactionsSupported: true,
+				new WritesTracker.NoOp());
 			Dispatcher.Subscribe<ClientMessage.WriteEvents>(Service);
 			Dispatcher.Subscribe<StorageMessage.PrepareAck>(Service);
 			Dispatcher.Subscribe<StorageMessage.InvalidTransaction>(Service);
@@ -68,7 +69,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 			Publisher.Messages.Clear();
 
 			Dispatcher.Publish(When());
-			
+
 		}
 
 
@@ -91,10 +92,10 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 				LogPosition += 100;
 			}
 			Dispatcher.Publish(new StorageMessage.CommitIndexed(
-									message.CorrelationId, 
-									LogPosition, 
+									message.CorrelationId,
+									LogPosition,
 									transactionPosition,
-									0, 
+									0,
 									message.Events.Length));
 		}
 
