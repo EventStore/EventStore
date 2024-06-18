@@ -357,11 +357,11 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				if (!_pushClients.RemoveClientByConnectionId(connectionId,
 					    out var unconfirmedEvents))
 					return false;
-				
+
 				var lostMessages = unconfirmedEvents.OrderBy(v => v.ResolvedEvent.OriginalEventNumber);
 				foreach (var m in lostMessages) {
 					if (ActionTakenForRetriedMessage(m))
-						return true; 
+						return true;
 					RetryMessage(m);
 				}
 
@@ -522,7 +522,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			});
 		}
 
-		
+
 		public void RetryParkedMessages(long? stopAt) {
 			lock (_lock) {
 				if (_state == PersistentSubscriptionState.NotReady)
@@ -573,6 +573,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				foreach (var ev in events) {
 					if (ev.OriginalEventNumber == stopAt) {
 						break;
+					}
+
+					if (ev.Event == null) {
+						continue;
 					}
 
 					Log.Debug("Replaying parked message: {eventId} {stream}/{eventNumber} on subscription {subscriptionId}",
