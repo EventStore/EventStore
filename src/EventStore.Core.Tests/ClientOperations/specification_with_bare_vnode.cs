@@ -9,6 +9,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Certificates;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Services.Transport.Tcp;
+using Microsoft.AspNetCore.Builder;
 
 namespace EventStore.Core.Tests.ClientOperations {
 	public abstract class specification_with_bare_vnode<TLogFormat, TStreamId> : IPublisher, ISubscriber, IDisposable {
@@ -29,6 +30,12 @@ namespace EventStore.Core.Tests.ClientOperations {
 					options.Application.AllowAnonymousStreamAccess,
 					options.Application.OverrideAnonymousEndpointAccessForGossip)),
 				certificateProvider: new OptionsCertificateProvider());
+
+			var builder = WebApplication.CreateBuilder();
+			_node.Startup.ConfigureServices(builder.Services);
+			var app = builder.Build();
+			_node.Startup.Configure(app);
+
 			_node.StartAsync(true).Wait();
 		}
 		public void Publish(Message message) {

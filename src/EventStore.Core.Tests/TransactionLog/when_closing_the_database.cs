@@ -5,7 +5,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Transforms;
+using EventStore.Plugins.Transforms;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
@@ -72,6 +72,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			}
 
 			var writer = new TFChunkWriter(_db);
+			writer.Open();
 			Assert.IsTrue(writer.Write(CreateRecord(), out _));
 
 			_db.Config.ChaserCheckpoint.Write(1); // any non-zero value just to test if the checkpoint is flushed

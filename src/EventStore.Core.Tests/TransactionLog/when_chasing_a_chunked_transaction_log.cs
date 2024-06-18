@@ -6,7 +6,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Transforms;
+using EventStore.Plugins.Transforms;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {

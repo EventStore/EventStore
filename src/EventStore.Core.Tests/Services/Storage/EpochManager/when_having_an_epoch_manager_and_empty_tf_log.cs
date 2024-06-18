@@ -85,6 +85,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_db.Open();
 			_reader = new TFChunkReader(_db, _db.Config.WriterCheckpoint);
 			_writer = new TFChunkWriter(_db);
+			_writer.Open();
 
 			_epochManager = GetManager();
 			_epochManager.Init();

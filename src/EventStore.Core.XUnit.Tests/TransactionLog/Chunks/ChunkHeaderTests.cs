@@ -1,6 +1,6 @@
 ﻿using System;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Transforms;
+using EventStore.Plugins.Transforms;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.TransactionLog.Chunks;

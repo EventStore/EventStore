@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.Transforms;
+using EventStore.Plugins.Transforms;
 
 namespace EventStore.Core.Tests.TransactionLog.Validation {
 	public static class DbUtil {

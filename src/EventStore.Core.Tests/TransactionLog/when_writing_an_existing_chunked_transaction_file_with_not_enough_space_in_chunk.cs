@@ -7,7 +7,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Transforms;
+using EventStore.Plugins.Transforms;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
@@ -33,6 +33,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, _checkpoint, new InMemoryCheckpoint()));
 			db.Open();
 			var tf = new TFChunkWriter(db);
+			tf.Open();
 			long pos;
 
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;

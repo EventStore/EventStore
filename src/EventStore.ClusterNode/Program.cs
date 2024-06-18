@@ -160,14 +160,15 @@ namespace EventStore.ClusterNode {
 				}
 
 				Application.RegisterExitAction(code => {
-					cts.Cancel();
+					// add a small delay to allow the host to start up in case there's a premature shutdown
+					cts.CancelAfter(TimeSpan.FromSeconds(1));
 					exitCodeSource.SetResult(code);
 				});
 
 				Console.CancelKeyPress += delegate {
 					Application.Exit(0, "Cancelled.");
 				};
-				
+
 				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, configuration)) {
 					using var signal = new ManualResetEventSlim(false);
 					_ = Run(hostedService, signal);

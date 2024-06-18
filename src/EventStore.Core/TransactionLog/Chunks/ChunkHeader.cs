@@ -7,7 +7,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using DotNext.Buffers;
 using DotNext.Buffers.Binary;
-using EventStore.Core.Transforms;
+using EventStore.Plugins.Transforms;
 using ChunkVersions = EventStore.Core.TransactionLog.Chunks.TFChunk.TFChunk.ChunkVersions;
 
 namespace EventStore.Core.TransactionLog.Chunks {

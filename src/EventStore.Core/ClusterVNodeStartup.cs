@@ -50,7 +50,8 @@ namespace EventStore.Core {
 		private readonly IConfiguration _configuration;
 		private readonly Trackers _trackers;
 		private readonly StatusCheck _statusCheck;
-		private readonly Func<IServiceCollection, IServiceCollection> _configureAdditionalServices;
+		private readonly Func<IServiceCollection, IServiceCollection> _configureNodeServices;
+		private readonly Action<IApplicationBuilder> _configureNode;
 
 		private bool _ready;
 		private readonly IAuthorizationProvider _authorizationProvider;
@@ -72,7 +73,8 @@ namespace EventStore.Core {
 			IConfiguration configuration,
 			Trackers trackers,
 			string clusterDns,
-			Func<IServiceCollection, IServiceCollection> configureAdditionalServices) {
+			Func<IServiceCollection, IServiceCollection> configureNodeServices,
+			Action<IApplicationBuilder> configureNode) {
 
 			Ensure.Positive(maxAppendSize, nameof(maxAppendSize));
 
@@ -103,11 +105,14 @@ namespace EventStore.Core {
 			_configuration = configuration;
 			_trackers = trackers;
 			_clusterDns = clusterDns;
-			_configureAdditionalServices = configureAdditionalServices ?? throw new ArgumentNullException(nameof(_configureAdditionalServices));
+			_configureNodeServices = configureNodeServices ?? throw new ArgumentNullException(nameof(configureNodeServices));
+			_configureNode = configureNode ?? throw new ArgumentNullException(nameof(configureNode));
 			_statusCheck = new StatusCheck(this);
 		}
 
 		public void Configure(IApplicationBuilder app) {
+			_configureNode(app);
+
 			var internalDispatcher = new InternalDispatcherEndpoint(_mainQueue, _httpMessageHandler);
 			_mainBus.Subscribe(internalDispatcher);
 
@@ -250,7 +255,7 @@ namespace EventStore.Core {
 					options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
 				.Services;
 
-			services = _configureAdditionalServices(services);
+			services = _configureNodeServices(services);
 
 			foreach (var component in _plugableComponents)
 				component.ConfigureServices(services, _configuration);

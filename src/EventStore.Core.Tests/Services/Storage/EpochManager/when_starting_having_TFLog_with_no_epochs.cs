@@ -75,8 +75,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
 			_db.Open();
 			_reader = new TFChunkReader(_db, _db.Config.WriterCheckpoint);
-			_writer = new TFChunkWriter(_db);			
-			
+			_writer = new TFChunkWriter(_db);
+			_writer.Open();
 		}
 
 		[OneTimeTearDown]

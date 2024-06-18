@@ -5,8 +5,8 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
+using EventStore.Plugins.Transforms;
 
 namespace EventStore.Core.Tests.Services.Replication.LogReplication;
 

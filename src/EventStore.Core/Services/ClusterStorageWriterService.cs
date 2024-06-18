@@ -17,7 +17,6 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Transforms;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {
