@@ -53,7 +53,7 @@
 		<Protobuf Include="../Protos/Grpc/cluster.proto" GrpcServices="Both" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc">
 			<Link>Services\Transport\Grpc\Protos\cluster.proto</Link>
 		</Protobuf>
-		<Protobuf Include="..\Protos\Grpc\gossip.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc">
+		<Protobuf Include="..\Protos\Grpc\gossip.proto" GrpcServices="Both" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc">
 			<Link>Services\Transport\Grpc\Protos\gossip.proto</Link>
 		</Protobuf>
 		<Protobuf Include="..\Protos\Grpc\operations.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc">

@@ -2624,6 +2624,12 @@
                 "name": "Read",
                 "in_type": "event_store.client.Empty",
                 "out_type": "ClusterInfo"
+              },
+              {
+                "name": "Subscribe",
+                "in_type": "event_store.client.Empty",
+                "out_type": "ClusterInfo",
+                "out_streamed": true
               }
             ]
           }

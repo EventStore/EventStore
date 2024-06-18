@@ -202,7 +202,7 @@ namespace EventStore.Core {
 					updateTracker: _trackers.GossipTrackers.ProcessingPushFromPeer,
 					readTracker: _trackers.GossipTrackers.ProcessingRequestFromPeer))
 				.AddSingleton(new Elections(_mainQueue, _authorizationProvider, _clusterDns))
-				.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider, _trackers.GossipTrackers.ProcessingRequestFromGrpcClient))
+				.AddSingleton(new ClientGossip(_mainQueue, _mainBus, _authorizationProvider, _trackers.GossipTrackers.ProcessingRequestFromGrpcClient))
 				.AddSingleton(new Monitoring(_monitoringQueue))
 				.AddSingleton(new Redaction(_mainQueue, _authorizationProvider))
 				.AddSingleton<ServerFeatures>()
