@@ -34,5 +34,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId);
 
 		EventProcessedResult ProcessPartitionDeleted(string partition, CheckpointTag deletedPosition);
+
+		void Failed(EventReaderSubscriptionMessage.CommittedEventReceived message, Exception ex);
 	}
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Serilog;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	/// <summary>
@@ -13,6 +14,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 	/// it and store.  But no subprojection can process events prior to preceding projections has completed processing. 
 	/// </summary>
 	public class StagedProcessingQueue {
+		private static readonly ILogger Log = Serilog.Log.ForContext<StagedProcessingQueue>();
 		private class TaskEntry {
 			public readonly StagedTask Task;
 			public readonly long Sequence;
@@ -22,17 +24,17 @@ namespace EventStore.Projections.Core.Services.Processing {
 			public TaskEntry NextByCorrelation;
 			public TaskEntry Next;
 			public bool Completed;
-			public int ReadForStage;
+			public int ReadyForStage;
 
 			public TaskEntry(StagedTask task, long sequence) {
 				Task = task;
-				ReadForStage = -1;
+				ReadyForStage = -1;
 				Sequence = sequence;
 			}
 
 			public override string ToString() {
 				return string.Format("ReadForStage: {3},  Busy: {1}, Completed: {2} => {0}", Task, Busy, Completed,
-					ReadForStage);
+					ReadyForStage);
 			}
 		}
 
@@ -51,14 +53,16 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private TaskEntry _last;
 		private int _count;
 		private readonly int _maxStage;
+		private string _projectionName;
 		public event Action EnsureTickPending;
 
-		public StagedProcessingQueue(bool[] orderedStage) {
+		public StagedProcessingQueue(bool[] orderedStage, string projectionName = "") {
 			_orderedStage = orderedStage.ToArray();
 			_byUnorderedStageFirst = new StageEntry[_orderedStage.Length];
 			_byUnorderedStageLast = new StageEntry[_orderedStage.Length];
 			_byOrderedStageLast = new TaskEntry[_orderedStage.Length];
 			_maxStage = _orderedStage.Length - 1;
+			_projectionName = projectionName;
 		}
 
 		public bool IsEmpty {
@@ -99,7 +103,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				if (entry == null)
 					break;
 				ProcessEntry(entry);
-				fromStage = entry.ReadForStage;
+				fromStage = entry.ReadyForStage;
 				processed++;
 			}
 
@@ -109,9 +113,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void ProcessEntry(TaskEntry entry) {
 			// here we should be at the first StagedTask of current processing level which is not busy
 			entry.Busy = true;
-			AdvanceStage(entry.ReadForStage, entry);
 			entry.Task.Process(
-				entry.ReadForStage,
+				entry.ReadyForStage,
 				(readyForStage, newCorrelationId) => CompleteTaskProcessing(entry, readyForStage, newCorrelationId));
 		}
 
@@ -122,28 +125,24 @@ namespace EventStore.Projections.Core.Services.Processing {
 				if (!_orderedStage[stageIndex]) {
 					if (_byUnorderedStageFirst[stageIndex] != null
 					    && _byUnorderedStageFirst[stageIndex].Entry.PreviousByCorrelation == null) {
-						var stageEntry = _byUnorderedStageFirst[stageIndex];
-						task = stageEntry.Entry;
+						task = _byUnorderedStageFirst[stageIndex].Entry;
 					}
 				} else {
-					var taskEntry = _byOrderedStageLast[stageIndex];
-					if (taskEntry != null && taskEntry.ReadForStage == stageIndex && !taskEntry.Busy
-					    && !taskEntry.Completed && taskEntry.PreviousByCorrelation == null)
-						task = taskEntry;
+					task = _byOrderedStageLast[stageIndex];
 				}
 
-				if (task == null) {
-					stageIndex--;
-					continue;
+				if (CanProcessTaskAt(task, stageIndex)) {
+					return task;
 				}
-
-				if (task.ReadForStage != stageIndex)
-					throw new Exception();
-				return task;
+				stageIndex--;
 			}
 
 			return null;
 		}
+
+		private static bool CanProcessTaskAt(TaskEntry taskEntry, int stageIndex) => taskEntry != null &&
+			taskEntry.ReadyForStage == stageIndex && !taskEntry.Busy
+			&& !taskEntry.Completed && taskEntry.PreviousByCorrelation == null && taskEntry.Task.IsReady;
 
 		private void RemoveCompleted() {
 			while (_first != null && _first.Completed) {
@@ -159,8 +158,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 							throw new Exception("Invalid linked list by correlation");
 						task.NextByCorrelation = null;
 						nextByCorrelation.PreviousByCorrelation = null;
-						if (!_orderedStage[nextByCorrelation.ReadForStage])
-							EnqueueForStage(nextByCorrelation, nextByCorrelation.ReadForStage);
+						if (!_orderedStage[nextByCorrelation.ReadyForStage])
+							EnqueueForStage(nextByCorrelation, nextByCorrelation.ReadyForStage);
 					} else {
 						// remove the last one
 						_correlationLastEntries.Remove(task.BusyCorrelationId);
@@ -173,20 +172,28 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (!entry.Busy)
 				throw new InvalidOperationException("Task was not in progress");
 			entry.Busy = false;
-			SetEntryCorrelation(entry, newCorrelationId);
-			if (readyForStage < 0) {
-				MarkCompletedTask(entry);
-				if (entry == _first)
-					RemoveCompleted();
-			} else
-				EnqueueForStage(entry, readyForStage);
-
+			int currStage = entry.ReadyForStage;
+			int nextStage = readyForStage;
+			//task advanced
+			if (currStage != nextStage) {
+				SetEntryCorrelation(entry, newCorrelationId);
+				if (readyForStage < 0) {
+					MarkCompletedTask(entry);
+					if (entry == _first)
+						RemoveCompleted();
+					entry.ReadyForStage = readyForStage;
+				} else
+					EnqueueForStage(entry, readyForStage);
+				AdvanceStage(currStage, entry);
+			} else {
+				Log.Error($"Projection : {_projectionName} failed to process event  <{entry.Task.Id}>. It will be retried");
+			}
 			if (EnsureTickPending != null)
 				EnsureTickPending();
 		}
 
 		private void EnqueueForStage(TaskEntry entry, int readyForStage) {
-			entry.ReadForStage = readyForStage;
+			entry.ReadyForStage = readyForStage;
 			if (!_orderedStage[readyForStage] && (entry.PreviousByCorrelation == null)) {
 				var stageEntry = new StageEntry {Entry = entry, Next = null};
 				if (_byUnorderedStageFirst[readyForStage] != null) {
@@ -217,7 +224,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void SetEntryCorrelation(TaskEntry entry, object newCorrelationId) {
 			if (!Equals(entry.BusyCorrelationId, newCorrelationId)) {
-				if (entry.ReadForStage != -1 && !_orderedStage[entry.ReadForStage])
+				if (entry.ReadyForStage != -1 && !_orderedStage[entry.ReadyForStage])
 					throw new InvalidOperationException("Cannot set busy correlation id at non-ordered stage");
 				if (entry.BusyCorrelationId != null)
 					throw new InvalidOperationException("Busy correlation id has been already set");
@@ -256,7 +263,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 	public abstract class StagedTask {
 		public readonly object InitialCorrelationId;
-
+		public virtual bool IsReady => true;
+		public virtual string Id => string.Empty;
+		
 		protected StagedTask(object initialCorrelationId) {
 			InitialCorrelationId = initialCorrelationId;
 		}
