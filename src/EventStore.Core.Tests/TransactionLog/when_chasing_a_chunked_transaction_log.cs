@@ -6,7 +6,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Transforms;
+using EventStore.Plugins.Transforms;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			using (var fs = new FileStream(GetFilePathFor("chunk-000000.000000"), FileMode.CreateNew,
 				FileAccess.Write)) {
 				fs.SetLength(ChunkHeader.Size + ChunkFooter.Size + 10000);
-				var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid(), TransformType.Identity)
+				var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid(), TransformType.Identity)
 					.AsByteArray();
 				var writer = new BinaryWriter(fs);
 				writer.Write(chunkHeader);

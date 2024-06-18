@@ -68,6 +68,8 @@ using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Diagnostics;
 using EventStore.Plugins.Subsystems;
+using EventStore.Plugins.Transforms;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
@@ -122,6 +124,8 @@ namespace EventStore.Core {
 		abstract public Func<X509Certificate2Collection> IntermediateCertificatesSelector { get; }
 		abstract public bool DisableHttps { get; }
 		abstract public bool EnableUnixSocket { get; }
+		abstract public bool IsShutdown { get; }
+
 		abstract public void Start();
 		abstract public Task<ClusterVNode> StartAsync(bool waitUntilRead);
 		abstract public Task StopAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
@@ -214,6 +218,7 @@ namespace EventStore.Core {
 
 		private int _stopCalled;
 		private int _reloadingConfig;
+		private PosixSignalRegistration _reloadConfigSignalRegistration;
 
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
@@ -224,6 +229,7 @@ namespace EventStore.Core {
 		public override Func<X509Certificate2Collection> IntermediateCertificatesSelector => _intermediateCertsSelector;
 		public override bool DisableHttps => _disableHttps;
 		public sealed override bool EnableUnixSocket => _enableUnixSocket;
+		public override bool IsShutdown => _shutdownSource.Task.IsCompleted;
 
 #if DEBUG
 		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
@@ -322,12 +328,10 @@ namespace EventStore.Core {
 				out var workerThreadsCount);
 
 			var trackers = new Trackers();
+			var metricsConfiguration = MetricsConfiguration.Get((configuration));
+			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
-			MetricsBootstrapper.Bootstrap(MetricsConfiguration.Get(configuration), dbConfig, trackers);
-
-			var dbIdentityTransform = new IdentityDbTransform();
-			var dbTransformManager = new DbTransformManager(new [] { dbIdentityTransform }, activeTransformType: dbIdentityTransform.Type);
-			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker, transformManager: dbTransformManager);
+			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker, transformManager: new DbTransformManager());
 
 			TFChunkDbConfig CreateDbConfig(
 				out SystemStatsHelper statsHelper,
@@ -444,7 +448,7 @@ namespace EventStore.Core {
 					indexChk,
 					streamExistenceFilterChk,
 					options.Database.MemDb,
-					options.Database.Unbuffered,
+					unbuffered: false,
 					options.Database.WriteThrough,
 					options.Database.OptimizeIndexMerge,
 					options.Database.ReduceFileCachePressure,
@@ -586,19 +590,6 @@ namespace EventStore.Core {
 			monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
 			monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshTcpConnectionStats>(monitoring);
 
-			// TRUNCATE IF NECESSARY
-			var truncPos = Db.Config.TruncateCheckpoint.Read();
-			if (truncPos != -1) {
-				Log.Information(
-					"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
-					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
-					epochCheckpoint, epochCheckpoint);
-				var truncator = new TFChunkDbTruncator(Db.Config, type => Db.TransformManager.GetFactoryForExistingChunk(type));
-				truncator.TruncateDb(truncPos);
-			}
-
-			// DYNAMIC CACHE MANAGER
-			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads, createNewChunks: false);
 			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, ESConsts.DefaultIndexDirectoryName);
 
 			var pTableMaxReaderCount = GetPTableMaxReaderCount(readerThreadsCount);
@@ -733,7 +724,6 @@ namespace EventStore.Core {
 				logFormat.EventTypeIndex,
 				partitionManager,
 				NodeInfo.InstanceId);
-			epochManager.Init();
 
 			var storageWriter = new ClusterStorageWriterService<TStreamId>(_mainQueue, _mainBus,
 				TimeSpan.FromMilliseconds(options.Database.MinFlushDelayMs), Db, writer, readIndex.IndexWriter,
@@ -747,8 +737,6 @@ namespace EventStore.Core {
 				trackers.WriterFlushSizeTracker,
 				trackers.WriterFlushDurationTracker,
 				() => readIndex.LastIndexedPosition);
-			// subscribes internally
-			AddTasks(storageWriter.Tasks);
 
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
@@ -1564,35 +1552,75 @@ namespace EventStore.Core {
 			var clusterStateChangeListener = new ClusterMultipleVersionsLogger();
 			_mainBus.Subscribe<GossipMessage.GossipUpdated>(clusterStateChangeListener);
 
-			// kestrel
-			AddTasks(_workersHandler.Start());
-			AddTask(_mainQueue.Start());
-			AddTask(monitoringQueue.Start());
-			AddTask(subscrQueue.Start());
-			AddTask(perSubscrQueue.Start());
-			AddTask(redactionQueue.Start());
-
-            UnixSignalManager.OnSIGHUP(() => {
-                Log.Information("Reloading the node's configuration since the SIGHUP signal has been received.");
-                _mainQueue.Publish(new ClientMessage.ReloadConfig());
-            });
+			_reloadConfigSignalRegistration = PosixSignalRegistration.Create(PosixSignal.SIGHUP, c => {
+				c.Cancel = true;
+				Log.Information("Reloading the node's configuration since {Signal} has been received.", c.Signal);
+				_mainQueue.Publish(new ClientMessage.ReloadConfig());
+			});
 
 			// subsystems
 			_subsystems = options.Subsystems;
 
 			var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
-				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers);
+				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
 
-			IServiceCollection ConfigureAdditionalServices(IServiceCollection services) =>
+			IServiceCollection ConfigureNodeServices(IServiceCollection services) =>
 				services
 					.AddSingleton(telemetryService) // for correct disposal
 					.AddSingleton(_readIndex)
 					.AddSingleton(standardComponents)
 					.AddSingleton(AuthorizationGateway)
 					.AddSingleton(certificateProvider)
+					.AddSingleton<IList<IDbTransform>>(new List<IDbTransform> { new IdentityDbTransform() })
 					.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
 					.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates, X509Certificate2Collection Roots)>>
 						(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()));
+
+			void ConfigureNode(IApplicationBuilder app) {
+				var dbTransforms = app.ApplicationServices.GetService<IList<IDbTransform>>();
+				Db.TransformManager.LoadTransforms((IReadOnlyList<IDbTransform>) dbTransforms);
+
+				if (!Db.TransformManager.TrySetActiveTransform(options.Database.Transform))
+					throw new InvalidConfigurationException(
+						$"Unknown {nameof(options.Database.Transform)} specified: {options.Database.Transform}");
+
+				// TRUNCATE IF NECESSARY
+				var truncPos = Db.Config.TruncateCheckpoint.Read();
+				if (truncPos != -1) {
+					Log.Information(
+						"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
+						truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
+						epochCheckpoint, epochCheckpoint);
+					var truncator = new TFChunkDbTruncator(Db.Config, type => Db.TransformManager.GetFactoryForExistingChunk(type));
+					truncator.TruncateDb(truncPos);
+
+					// The truncator has moved the checkpoints but it is possible that other components in the startup have
+					// already read the old values. If we ensure all checkpoint reads are performed after the truncation
+					// then we can remove this extra restart
+					Log.Information("Truncation successful. Shutting down.");
+					var shutdownGuid = Guid.NewGuid();
+					Handle(new SystemMessage.BecomeShuttingDown(shutdownGuid, exitProcess: true, shutdownHttp: true));
+					Handle(new SystemMessage.BecomeShutdown(shutdownGuid));
+					Application.Exit(0, "Shutting down after successful truncation.");
+					return;
+				}
+
+				Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads, createNewChunks: false);
+
+				epochManager.Init();
+
+				storageWriter.Start();
+				AddTasks(storageWriter.Tasks);
+
+				AddTasks(_workersHandler.Start());
+				AddTask(_mainQueue.Start());
+				AddTask(monitoringQueue.Start());
+				AddTask(subscrQueue.Start());
+				AddTask(perSubscrQueue.Start());
+				AddTask(redactionQueue.Start());
+
+				dynamicCacheManager.Start();
+			}
 
 			_startup = new ClusterVNodeStartup<TStreamId>(
 				modifiedOptions.PlugableComponents,
@@ -1605,7 +1633,8 @@ namespace EventStore.Core {
 				configuration,
 				trackers,
 				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
-				ConfigureAdditionalServices);
+				ConfigureNodeServices,
+				ConfigureNode);
 
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
@@ -1617,8 +1646,6 @@ namespace EventStore.Core {
 			var periodicLogging = new PeriodicallyLoggingService(_mainQueue, VersionInfo.Version, Log);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(periodicLogging);
 			_mainBus.Subscribe<MonitoringMessage.CheckEsVersion>(periodicLogging);
-
-			dynamicCacheManager.Start();
 		}
 
 		static int GetPTableMaxReaderCount(int readerThreadsCount) {
@@ -1733,7 +1760,8 @@ namespace EventStore.Core {
 			timeout ??= TimeSpan.FromSeconds(5);
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
-			UnixSignalManager.Unregister();
+			_reloadConfigSignalRegistration?.Dispose();
+			_reloadConfigSignalRegistration = null;
 
 			if (_subsystems != null) {
 				foreach (var subsystem in _subsystems) {
@@ -1755,7 +1783,8 @@ namespace EventStore.Core {
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
-			UnixSignalManager.Unregister();
+			_reloadConfigSignalRegistration?.Dispose();
+			_reloadConfigSignalRegistration = null;
 
 			if (_subsystems is null)
 				return;
@@ -1818,6 +1847,9 @@ namespace EventStore.Core {
 			}
 
 			Start();
+
+			if (IsShutdown)
+				tcs.TrySetResult(this);
 
 			return await tcs.Task;
 		}
@@ -1886,6 +1918,7 @@ namespace EventStore.Core {
 					var options = _options.Reload();
 					ReloadLogOptions(options);
 					ReloadCertificates(options);
+					ReloadTransform(options);
 					Log.Information("The node's configuration was successfully reloaded");
 				} catch (Exception exc) {
 					Log.Error(exc, "An error has occurred while reloading the configuration");
@@ -1893,6 +1926,12 @@ namespace EventStore.Core {
 					Interlocked.Exchange(ref _reloadingConfig, 0);
 				}
 			});
+		}
+
+		private void ReloadTransform(ClusterVNodeOptions options) {
+			var transform = options.Database.Transform;
+			if (!Db.TransformManager.TrySetActiveTransform(transform))
+				Log.Error($"Unknown {nameof(options.Database.Transform)} specified: {options.Database.Transform}");
 		}
 
 		private void ReloadLogOptions(ClusterVNodeOptions options) {

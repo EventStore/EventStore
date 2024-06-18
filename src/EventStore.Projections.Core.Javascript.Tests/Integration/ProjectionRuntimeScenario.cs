@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration
 			var qs = new QueueStatsManager();
 			var timeProvider = new RealTimeProvider();
 			var ts = new TimerService(new TimerBasedScheduler(new RealTimer(), timeProvider));
-			var sc = new StandardComponents(db.Config, mainQueue, mainBus, ts, timeProvider, null, new IHttpService[] { }, mainBus, qs, new());
+			var sc = new StandardComponents(db.Config, mainQueue, mainBus, ts, timeProvider, null, new IHttpService[] { }, mainBus, qs, new(), true);
 
 			var subsystem = new ProjectionsSubsystem(options);
 

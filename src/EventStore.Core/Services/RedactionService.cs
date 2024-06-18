@@ -10,7 +10,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.Transforms;
+using EventStore.Plugins.Transforms;
 using Serilog;
 
 namespace EventStore.Core.Services {

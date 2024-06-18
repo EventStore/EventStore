@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			return new StandardComponents(dbConfig, mainQueue, mainBus,
 				timerService, timeProvider: null, httpForwarder: null, httpServices: new IHttpService[] { },
 				networkSendService: null, queueStatsManager: new QueueStatsManager(),
-				trackers: new());
+				trackers: new(), true);
 		}
 
 		[OneTimeSetUp]

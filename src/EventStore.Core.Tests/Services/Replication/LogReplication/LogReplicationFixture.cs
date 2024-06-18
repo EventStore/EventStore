@@ -96,6 +96,8 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			flushDurationTracker: new ZeroDurationTracker(), // to force a flush on each write to easily detect when a write is complete
 			getLastIndexedPosition: () => -1);
 
+		storageWriterService.Start();
+
 		return storageWriterService;
 	}
 

@@ -2,14 +2,14 @@ using System;
 using System.IO;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.Transforms;
+using EventStore.Plugins.Transforms;
 
 namespace EventStore.Core.Tests.TransactionLog.Validation {
 	public static class DbUtil {
 		public static void CreateSingleChunk(TFChunkDbConfig config, int chunkNum, string filename,
 			int? actualDataSize = null, bool isScavenged = false, byte[] contents = null) {
-			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, config.ChunkSize, chunkNum, chunkNum,
-				isScavenged, Guid.NewGuid(), TransformType.Identity);
+			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, TFChunk.CurrentChunkVersion,
+				config.ChunkSize,chunkNum, chunkNum, isScavenged, Guid.NewGuid(), TransformType.Identity);
 			var chunkBytes = chunkHeader.AsByteArray();
 			var dataSize = actualDataSize ?? config.ChunkSize;
 			var buf = new byte[ChunkHeader.Size + dataSize + ChunkFooter.Size];
@@ -31,8 +31,8 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 			int? physicalSize = null, long? logicalSize = null) {
 			if (chunkStartNum > chunkEndNum) throw new ArgumentException("chunkStartNum");
 
-			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, config.ChunkSize, chunkStartNum, chunkEndNum,
-				true, Guid.NewGuid(), TransformType.Identity);
+			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, TFChunk.CurrentChunkVersion,
+				config.ChunkSize, chunkStartNum, chunkEndNum, true, Guid.NewGuid(), TransformType.Identity);
 			var chunkBytes = chunkHeader.AsByteArray();
 			var physicalDataSize = physicalSize ?? config.ChunkSize;
 			var logicalDataSize = logicalSize ?? (chunkEndNum - chunkStartNum + 1) * config.ChunkSize;
@@ -47,7 +47,8 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 
 		public static void CreateOngoingChunk(TFChunkDbConfig config, int chunkNum, string filename,
 			int? actualSize = null, byte[] contents = null) {
-			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, config.ChunkSize, chunkNum, chunkNum, false,
+			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, TFChunk.CurrentChunkVersion,
+				config.ChunkSize, chunkNum, chunkNum, false,
 				Guid.NewGuid(), TransformType.Identity);
 			var chunkBytes = chunkHeader.AsByteArray();
 			var dataSize = actualSize ?? config.ChunkSize;

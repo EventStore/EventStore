@@ -17,6 +17,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Plugins.Diagnostics;
 using Serilog;
+using static EventStore.Plugins.Diagnostics.PluginDiagnosticsDataCollectionMode;
 
 namespace EventStore.Core.Telemetry;
 
@@ -196,15 +197,19 @@ public sealed class TelemetryService :
 				["totalMemory"] = env.Machine.TotalMemory,
 			}));
 
-		_pluginDiagnosticsDataCollector.CollectedEvents.ForEach(x => {
-			try {
-				var node = JsonSerializer.SerializeToNode(x.Data);
-				message.Envelope.ReplyWith(new TelemetryMessage.Response("plugins", x.Source, node));
-			}
-			catch (Exception ex) {
-				Logger.Warning(ex, "Failed to collect telemetry from pluggable component {Source}", x.Source);
-			}
-		});
+		_nodeOptions.PlugableComponents
+			.SelectMany(plugin => _pluginDiagnosticsDataCollector
+				.CollectedEvents(plugin.DiagnosticsName)
+				.Where(evt => evt.CollectionMode == Snapshot))
+			.ForEach(evt => {
+				try {
+					var payload = JsonSerializer.SerializeToNode(evt.Data);
+					message.Envelope.ReplyWith(new TelemetryMessage.Response("plugins", evt.Source, payload));
+				}
+				catch (Exception ex) {
+					Logger.Warning(ex, "Failed to collect telemetry from pluggable component {Source}", evt.Source);
+				}
+			});
 
 		_publisher.Publish(new GossipMessage.ReadGossip(new CallbackEnvelope(resp => OnGossipReceived(message.Envelope, resp))));
 	}

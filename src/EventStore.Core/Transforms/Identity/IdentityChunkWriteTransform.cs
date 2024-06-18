@@ -1,4 +1,5 @@
 using System;
+using EventStore.Plugins.Transforms;
 
 namespace EventStore.Core.Transforms.Identity;
 

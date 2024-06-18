@@ -42,6 +42,12 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 
 			_disposed = true;
 			GC.SuppressFinalize(this);
+
+			if (_intPtr == IntPtr.Zero) {
+				// didn't manage to allocate or add pressure (OOM), so do not free.
+				return;
+			}
+
 			Marshal.FreeHGlobal(_intPtr);
 			GC.RemoveMemoryPressure(_bytesAllocated);
 		}

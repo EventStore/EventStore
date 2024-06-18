@@ -354,6 +354,9 @@ namespace EventStore.Core {
 			[Description("The path the index should be loaded/saved to.")]
 			public string? Index { get; init; } = null;
 
+			[Description("The type of transformation to apply to the database.")]
+			public string Transform { get; init; } = "identity";
+
 			[Description("Keep everything in memory, no directories or files are created.")]
 			public bool MemDb { get; init; } = false;
 
@@ -372,6 +375,8 @@ namespace EventStore.Core {
 
 			[Description("Enables Unbuffered/DirectIO when writing to the file system, this bypasses filesystem " +
 			             "caches.")]
+			[Deprecated("The Unbuffered setting has been deprecated as of version 24.6.0 and currently has no effect. " +
+			            "Please contact EventStore if this feature is of interest to you.")]
 			public bool Unbuffered { get; init; } = false;
 
 			[Description("The initial number of readers to start when opening a TFChunk.")]

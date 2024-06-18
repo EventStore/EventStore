@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Common.Options;
@@ -12,6 +13,7 @@ using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Subsystems;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Metrics;
 using EventStore.Projections.Core.Services.Grpc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -39,15 +41,15 @@ namespace EventStore.Projections.Core {
 		IHandle<ProjectionSubsystemMessage.IODispatcherDrained> {
 
 		static readonly ILogger Logger = Serilog.Log.ForContext<ProjectionsSubsystem>();
-		
+
 		public const int VERSION = 4;
 		public const int CONTENT_TYPE_VALIDATION_VERSION = 4;
-		
+
 		private readonly int _projectionWorkerThreadCount;
 		private readonly ProjectionType _runProjections;
 		private readonly bool _startStandardProjections;
 		private readonly TimeSpan _projectionsQueryExpiry;
-		
+
 		private IQueuedHandler _leaderInputQueue;
 		private IDictionary<Guid, IQueuedHandler> _coreQueues;
 		private Dictionary<Guid, IPublisher> _queueMap;
@@ -69,6 +71,7 @@ namespace EventStore.Projections.Core {
 		private VNodeState _nodeState;
 		private SubsystemState _subsystemState = SubsystemState.NotReady;
 		private Guid _instanceCorrelationId;
+		private IProjectionTracker _projectionTracker { get; set; } = new ProjectionTracker.NoOp();
 
 		private readonly List<string> _standardProjections = new List<string> {
 			"$by_category",
@@ -77,7 +80,7 @@ namespace EventStore.Projections.Core {
 			"$by_event_type",
 			"$by_correlation_id"
 		};
-		
+
 		public ProjectionsSubsystem(ProjectionSubsystemOptions projectionSubsystemOptions) {
 			if (projectionSubsystemOptions.RunProjections <= ProjectionType.System)
 				_projectionWorkerThreadCount = 1;
@@ -98,12 +101,12 @@ namespace EventStore.Projections.Core {
 
 			LeaderMainBus = new InMemoryBus("manager input bus");
 			LeaderOutputBus = new InMemoryBus("ProjectionManagerAndCoreCoordinatorOutput");
-			
+
 			_subsystemInitialized = new();
 			_executionTimeout = projectionSubsystemOptions.ExecutionTimeout;
 			_compilationTimeout = projectionSubsystemOptions.CompilationTimeout;
 		}
-		
+
 		public InMemoryBus LeaderMainBus { get; }
 		public InMemoryBus LeaderOutputBus { get; }
 
@@ -120,12 +123,12 @@ namespace EventStore.Projections.Core {
 			var standardComponents = builder.ApplicationServices.GetRequiredService<StandardComponents>();
 
 			_leaderInputQueue = QueuedHandler.CreateQueuedHandler(
-				LeaderMainBus, 
+				LeaderMainBus,
 				"Projections Leader",
-				standardComponents.QueueStatsManager, 
+				standardComponents.QueueStatsManager,
 				standardComponents.QueueTrackers
 			);
-			
+
 			LeaderMainBus.Subscribe<ProjectionSubsystemMessage.RestartSubsystem>(this);
 			LeaderMainBus.Subscribe<ProjectionSubsystemMessage.ComponentStarted>(this);
 			LeaderMainBus.Subscribe<ProjectionSubsystemMessage.ComponentStopped>(this);
@@ -147,15 +150,24 @@ namespace EventStore.Projections.Core {
 			_coreQueues = ProjectionCoreWorkersNode.CreateCoreWorkers(standardComponents, projectionsStandardComponents);
 			_queueMap = _coreQueues.ToDictionary(v => v.Key, v => (IPublisher)v.Value);
 
+			ConfigureProjectionMetrics(standardComponents.ProjectionStats);
+
 			ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap,
-				_projectionsQueryExpiry);
+				_projectionsQueryExpiry, _projectionTracker);
 			LeaderMainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
 			LeaderMainBus.Subscribe<CoreProjectionStatusMessage.Started>(this);
 
 			 builder.UseEndpoints(endpoints => endpoints.MapGrpcService<ProjectionManagement>());
 		}
 
-		public void ConfigureServices(IServiceCollection services, IConfiguration configuration) => 
+		private void ConfigureProjectionMetrics(bool isEnabled) {
+			if (!isEnabled) return;
+			var projectionMeter = new Meter("EventStore.Projections.Core", version: "1.0.0");
+			var projectionMetric = new ProjectionMetrics(projectionMeter, "eventstore-projection-stats");
+			_projectionTracker = new ProjectionTracker(projectionMetric);
+		}
+
+		public void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
 			services.AddSingleton(provider => new ProjectionManagement(_leaderInputQueue, provider.GetRequiredService<IAuthorizationProvider>()));
 
 		private static void CreateAwakerService(StandardComponents standardComponents) {

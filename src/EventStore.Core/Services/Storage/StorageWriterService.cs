@@ -138,7 +138,6 @@ namespace EventStore.Core.Services.Storage {
 			_lastFlushTimestamp = _clock.Now;
 
 			Writer = writer;
-			Writer.Open();
 
 			_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
 			StorageWriterQueue = QueuedHandler.CreateQueuedHandler(new AdHocHandler<Message>(CommonHandle),
@@ -147,7 +146,6 @@ namespace EventStore.Core.Services.Storage {
 				queueTrackers,
 				true,
 				TimeSpan.FromMilliseconds(500));
-			_tasks.Add(StorageWriterQueue.Start());
 
 			SubscribeToMessage<SystemMessage.SystemInit>();
 			SubscribeToMessage<SystemMessage.StateChangeMessage>();
@@ -159,6 +157,11 @@ namespace EventStore.Core.Services.Storage {
 			SubscribeToMessage<StorageMessage.WriteTransactionData>();
 			SubscribeToMessage<StorageMessage.WriteTransactionEnd>();
 			SubscribeToMessage<StorageMessage.WriteCommit>();
+		}
+
+		public void Start() {
+			Writer.Open();
+			_tasks.Add(StorageWriterQueue.Start());
 		}
 
 		protected void SubscribeToMessage<T>() where T : Message {

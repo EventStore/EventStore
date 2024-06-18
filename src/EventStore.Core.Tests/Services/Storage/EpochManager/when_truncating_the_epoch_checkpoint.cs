@@ -47,6 +47,7 @@ namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
 			_db.Open();
 			_writer = new TFChunkWriter(_db);
+			_writer.Open();
 			_epochManager = new EpochManager<TStreamId>(_mainBus,
 				CachedEpochCount,
 				_db.Config.EpochCheckpoint,

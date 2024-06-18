@@ -1,3 +1,5 @@
+using EventStore.Plugins.Transforms;
+
 namespace EventStore.Core.Transforms.Identity;
 
 public sealed class IdentityDbTransform : IDbTransform {

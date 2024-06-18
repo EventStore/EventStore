@@ -6,7 +6,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Transforms;
+using EventStore.Plugins.Transforms;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void a_record_can_be_written() {
 			var filename = GetFilePathFor("chunk-000000.000000");
-			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, chunkId: Guid.NewGuid(), TransformType.Identity);
+			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, TFChunk.CurrentChunkVersion, 10000, 0, 0, false, chunkId: Guid.NewGuid(), TransformType.Identity);
 			var chunkBytes = chunkHeader.AsByteArray();
 			var bytes = new byte[ChunkHeader.Size + 10000 + ChunkFooter.Size];
 			Buffer.BlockCopy(chunkBytes, 0, bytes, 0, chunkBytes.Length);
@@ -35,6 +35,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 			var tf = new TFChunkWriter(db);
+			tf.Open();
 			var record = LogRecord.Prepare(
 				factory: recordFactory,
 				logPosition: _checkpoint.Read(),

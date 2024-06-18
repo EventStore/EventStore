@@ -258,6 +258,9 @@ namespace EventStore.Core.Tests.Helpers {
 				Node.MainBus.Unsubscribe(waitForAdminUser);
 			}
 
+			if (Node.IsShutdown)
+				_started.TrySetResult(true);
+
 			await Node.StartAsync(true).WithTimeout(TimeSpan.FromSeconds(60));
 
 			await Started.WithTimeout();

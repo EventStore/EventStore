@@ -40,7 +40,11 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 
 			// --- first restart and truncation
 			miniNode = new MiniNode<TLogFormat, TStreamId>(PathName, tcpPort, httpPort, inMemDb: false);
+			await miniNode.Start();
+			await miniNode.Shutdown(keepDb: true);
 
+			// --- second restart after truncation
+			miniNode = new MiniNode<TLogFormat, TStreamId>(PathName, tcpPort, httpPort, inMemDb: false);
 			await miniNode.Start();
 			Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
 			Assert.That(miniNode.Db.Config.WriterCheckpoint.Read(), Is.GreaterThanOrEqualTo(truncatePosition));
@@ -52,7 +56,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 
 			await miniNode.Shutdown(keepDb: true);
 
-			// -- second restart
+			// -- third restart
 			miniNode = new MiniNode<TLogFormat, TStreamId>(PathName, tcpPort, httpPort, inMemDb: false);
 			Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
 			await miniNode.Start();
@@ -95,7 +99,12 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			// --- first restart and truncation
 			miniNode = new MiniNode<TLogFormat, TStreamId>(PathName, tcpPort, httpPort, chunkSize: chunkSize,
 				cachedChunkSize: cachedSize, inMemDb: false);
+			await miniNode.Start();
+			await miniNode.Shutdown(keepDb: true);
 
+			// --- second restart after truncation
+			miniNode = new MiniNode<TLogFormat, TStreamId>(PathName, tcpPort, httpPort, chunkSize: chunkSize,
+				cachedChunkSize: cachedSize, inMemDb: false);
 			await miniNode.Start();
 			Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
 			Assert.That(miniNode.Db.Config.WriterCheckpoint.Read(), Is.GreaterThanOrEqualTo(truncatePosition));

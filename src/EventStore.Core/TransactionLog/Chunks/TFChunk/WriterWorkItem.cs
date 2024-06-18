@@ -2,7 +2,7 @@ using System.IO;
 using System.Security.Cryptography;
 using DotNext;
 using DotNext.IO;
-using EventStore.Core.Transforms;
+using EventStore.Plugins.Transforms;
 using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
