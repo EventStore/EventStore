@@ -1383,14 +1383,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 
 			[StructLayout(LayoutKind.Auto)]
-			internal readonly ref struct Slot {
-				internal readonly ref ReaderWorkItem ValueRef;
-				internal readonly int Index;
+			internal readonly ref struct Slot(ReaderWorkItem[] array, int index) {
+				public int Index => index;
 
-				public Slot(ReaderWorkItem[] array, int index) {
-					ValueRef = ref UnsafeGetElement(array, index);
-					Index = index;
-				}
+				public ref ReaderWorkItem ValueRef => ref UnsafeGetElement(array, index);
 			}
 		}
 	}
