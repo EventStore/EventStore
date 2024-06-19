@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
@@ -30,6 +31,8 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Plugins.Transforms;
+using Microsoft.Extensions.DependencyInjection;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core.Tests.Helpers {
@@ -77,7 +80,9 @@ namespace EventStore.Core.Tests.Helpers {
 			int httpClientTimeoutSec = 60,
 			IAuthenticationProviderFactory authenticationProviderFactory = null,
 			IAuthorizationProviderFactory authorizationProviderFactory = null,
-			IExpiryStrategy expiryStrategy = null) {
+			IExpiryStrategy expiryStrategy = null,
+			string transform = "identity",
+			IReadOnlyList<IDbTransform> newTransforms = null) {
 
 			RunningTime.Start();
 			RunCount += 1;
@@ -133,6 +138,7 @@ namespace EventStore.Core.Tests.Helpers {
 						PrepareTimeoutMs = 10_000,
 						UnsafeDisableFlushToDisk = disableFlushToDisk,
 						StreamExistenceFilterSize = streamExistenceFilterSize,
+						Transform = transform
 					},
 					PlugableComponents = subsystems,
 					// limitation: the LoadedOptions here will only reflect the defaults and not the rest
@@ -200,7 +206,8 @@ namespace EventStore.Core.Tests.Helpers {
 						options.Application.OverrideAnonymousEndpointAccessForGossip)),
 				expiryStrategy: expiryStrategy,
 				certificateProvider: new OptionsCertificateProvider(),
-				configuration: inMemConf);
+				configuration: inMemConf,
+				configureAdditionalNodeServices: services => ConfigureMiniNodeServices(services, newTransforms));
 			Db = Node.Db;
 
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));
@@ -235,6 +242,24 @@ namespace EventStore.Core.Tests.Helpers {
 					Scheme = Uri.UriSchemeHttps
 				}.Uri
 			};
+		}
+
+		private static void ConfigureMiniNodeServices(
+			IServiceCollection services,
+			IReadOnlyList<IDbTransform> newTransforms) {
+			if (newTransforms == null)
+				return;
+
+			services.Decorate<IReadOnlyList<IDbTransform>>(existingTransforms =>
+				DecorateTransforms(existingTransforms, newTransforms));
+		}
+
+		private static IReadOnlyList<IDbTransform> DecorateTransforms(
+			IReadOnlyList<IDbTransform> existingTransforms,
+			IReadOnlyList<IDbTransform> newTransforms) {
+			var transforms = existingTransforms.ToList();
+			transforms.AddRange(newTransforms);
+			return transforms;
 		}
 
 		public async Task Start() {
