@@ -55,6 +55,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public string EventType { get; }
 		private int? _eventTypeSize;
 		public ReadOnlyMemory<byte> Data { get; }
+		private readonly ReadOnlyMemory<byte> _dataOnDisk;
 		public ReadOnlyMemory<byte> Metadata { get; }
 
 		private int? _sizeOnDisk;
@@ -73,7 +74,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				       + 16
 				       + 8
 				       + IntPtr.Size + EventType.Length * 2
-				       + IntPtr.Size + Data.Length
+				       + IntPtr.Size + _dataOnDisk.Length
 				       + IntPtr.Size + Metadata.Length;
 			}
 		}
@@ -102,7 +103,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 					+ sizeof(long) /* TimeStamp */
 					+ StringSizeWithLengthPrefix(_eventTypeSize.Value) /* EventType */
 					+ sizeof(int) /* Data length */
-					+ Data.Length /* Data */
+					+ _dataOnDisk.Length /* Data */
 					+ sizeof(int) /* Metadata length */
 					+ Metadata.Length; /* Metadata */
 
@@ -158,7 +159,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			TimeStamp = timeStamp;
 			EventType = eventType ?? string.Empty;
 			_eventTypeSize = eventTypeSize;
-			Data = Flags.HasFlag(PrepareFlags.IsRedacted) ? NoData : data;
+			_dataOnDisk = data;
+			Data = Flags.HasFlag(PrepareFlags.IsRedacted) ? NoData : _dataOnDisk;
 			Metadata = metadata;
 			if (InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
 		}
@@ -185,9 +187,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			EventType = reader.ReadString();
 
 			var dataCount = reader.ReadInt32();
-			Data = dataCount == 0 ? NoData : reader.ReadBytes(dataCount);
-			if (Flags.HasFlag(PrepareFlags.IsRedacted))
-				Data = NoData;
+			_dataOnDisk = dataCount == 0 ? NoData : reader.ReadBytes(dataCount);
+			Data = Flags.HasFlag(PrepareFlags.IsRedacted) ? NoData : _dataOnDisk;
 
 			var metadataCount = reader.ReadInt32();
 			Metadata = metadataCount == 0 ? NoData : reader.ReadBytes(metadataCount);
@@ -208,7 +209,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				flags: Flags,
 				eventType: EventType,
 				eventTypeSize: _eventTypeSize,
-				data: Data,
+				data: _dataOnDisk,
 				metadata: Metadata);
 		}
 
@@ -231,8 +232,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			writer.Write(CorrelationId.ToByteArray());
 			writer.Write(TimeStamp.Ticks);
 			writer.Write(EventType);
-			writer.Write(Data.Length);
-			writer.Write(Data.Span);
+			writer.Write(_dataOnDisk.Length);
+			writer.Write(_dataOnDisk.Span);
 			writer.Write(Metadata.Length);
 			writer.Write(Metadata.Span);
 		}
@@ -251,6 +252,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			       && other.TimeStamp.Equals(TimeStamp)
 			       && other.EventType.Equals(EventType)
 			       && other.Data.Span.SequenceEqual(Data.Span)
+			       && other._dataOnDisk.Span.SequenceEqual(_dataOnDisk.Span)
 			       && other.Metadata.Span.SequenceEqual(Metadata.Span);
 		}
 
@@ -274,7 +276,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				result = (result * 397) ^ CorrelationId.GetHashCode();
 				result = (result * 397) ^ TimeStamp.GetHashCode();
 				result = (result * 397) ^ EventType.GetHashCode();
-				result = (result * 397) ^ Data.GetHashCode();
+				result = (result * 397) ^ _dataOnDisk.GetHashCode();
 				result = (result * 397) ^ Metadata.GetHashCode();
 				return result;
 			}
