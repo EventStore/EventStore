@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -117,6 +118,39 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.DoesNotThrow(() =>
 				LogRecord.Prepare(_recordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, _streamId, 0,
 					PrepareFlags.None, emptyEventTypeId, new byte[0], null,  DateTime.UtcNow));
+		}
+
+		[Test]
+		public void return_empty_data_when_event_is_redacted() {
+			if (typeof(TLogFormat) == typeof(LogFormat.V3)) {
+				Assert.Ignore("Log V3 does not handle redacted events yet");
+				return;
+			}
+
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
+
+			var prepare = LogRecord.Prepare(_recordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, _streamId, 0,
+				PrepareFlags.IsRedacted, eventTypeId, new byte[100], null,  DateTime.UtcNow);
+			Assert.AreEqual(0, prepare.Data.Length);
+		}
+
+		[Test]
+		public void write_redacted_data_when_event_is_redacted() {
+			if (typeof(TLogFormat) == typeof(LogFormat.V3)) {
+				Assert.Ignore("Log V3 does not handle redacted events yet");
+				return;
+			}
+
+			var memStream = new MemoryStream();
+			var binaryWriter = new BinaryWriter(memStream);
+
+			const int dataSize = 10000;
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
+			var prepare = LogRecord.Prepare(_recordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, _streamId, 0,
+				PrepareFlags.IsRedacted, eventTypeId, new byte[dataSize], null,  DateTime.UtcNow);
+
+			prepare.WriteTo(binaryWriter);
+			Assert.True(memStream.Length >= dataSize);
 		}
 	}
 }
