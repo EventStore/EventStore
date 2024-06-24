@@ -6,9 +6,6 @@ ARG RUNTIME=linux-x64
 WORKDIR /build/ci
 COPY ./ci ./
 
-WORKDIR /build/docs
-COPY ./docs ./
-
 WORKDIR /build/src
 COPY ./src/EventStore.sln ./src/*/*.csproj ./src/Directory.Build.* ./
 RUN for file in $(ls *.csproj); do mkdir -p ./${file%.*}/ && mv $file ./${file%.*}/; done
