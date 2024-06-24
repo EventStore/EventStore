@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using EventStore.Core.Bus;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Index;
@@ -32,6 +33,8 @@ public class Trackers {
 	public ICacheHitsMissesTracker CacheHitsMissesTracker { get; set; } = new CacheHitsMissesTracker.NoOp();
 	public ICacheResourcesTracker CacheResourcesTracker { get; set; } = new CacheResourcesTracker.NoOp();
 	public IElectionCounterTracker ElectionCounterTracker { get; set; } = new ElectionsCounterTracker.NoOp();
+	public IPersistentSubscriptionTracker PersistentSubscriptionTracker { get; set; } =
+		new PersistentSubscriptionTracker.NoOp();
 }
 
 public class GrpcTrackers {
@@ -152,6 +155,15 @@ public static class MetricsBootstrapper {
 
 			if (conf.Gossip.TryGetValue(Conf.GossipTracker.ProcessingRequestFromHttpClient, out var processingRequestFromHttpClient) && processingRequestFromHttpClient)
 				trackers.GossipTrackers.ProcessingRequestFromHttpClient = new DurationTracker(gossipProcessingMetric, "request-from-http-client");
+		}
+
+		// persistent subscriptions
+
+		if (conf.PersistentSubscriptionStats) {
+			var metric =
+				new PersistentSubscriptionMetric(coreMeter, "eventstore-persistent-subscriptions-stats");
+			trackers.PersistentSubscriptionTracker =
+				new PersistentSubscriptionTracker(metric);
 		}
 
 		// checkpoints

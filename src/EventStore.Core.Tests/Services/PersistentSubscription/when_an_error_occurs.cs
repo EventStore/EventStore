@@ -28,13 +28,14 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 				_expectedResult = expectedResult;
 				_replySource = new TaskCompletionSource<Message>();
 				var bus = new InMemoryBus("bus");
+				var trackers = new Trackers();
 				_sut = new PersistentSubscriptionService<TStreamId>(
 					QueuedHandler.CreateQueuedHandler(bus, "test",
 						new QueueStatsManager(), new QueueTrackers()),
 					new FakeReadIndex<TLogFormat, TStreamId>(_ => false, new MetaStreamLookup()),
 					new IODispatcher(bus, new PublishEnvelope(bus)), bus,
 					new PersistentSubscriptionConsumerStrategyRegistry(bus, bus,
-						Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()));
+						Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()), trackers.PersistentSubscriptionTracker);
 				_envelope = new CallbackEnvelope(_replySource.SetResult);
 				_sut.Start();
 			}

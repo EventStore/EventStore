@@ -146,6 +146,8 @@ namespace EventStore.Common.Configuration {
 
 		public bool ProjectionStats { get; set; }
 
+		public bool PersistentSubscriptionStats { get; set; } = false;
+
 		public bool ElectionsCount { get; set; } = false;
 
 		public bool CacheResources { get; set; } = false;

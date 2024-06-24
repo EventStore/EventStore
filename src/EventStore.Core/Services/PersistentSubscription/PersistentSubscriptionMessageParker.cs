@@ -14,7 +14,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public readonly string ParkedStreamId;
 		private long _lastTruncateBefore = -1;
 		private long _lastParkedEventNumber = -1;
-
+		private DateTime? _oldestParkedMessage;
 		public long ParkedMessageCount {
 			get {
 				return _lastParkedEventNumber == -1 ? 0 :
@@ -29,7 +29,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			ParkedStreamId = "$persistentsubscription-" + subscriptionId + "-parked";
 			_ioDispatcher = ioDispatcher;
 		}
-		
+
+		public DateTime? GetOldestParkedMessage {
+			get {
+				return _oldestParkedMessage;
+			}
+		}
+
 		public void BeginLoadStats(Action completed) {
 			BeginReadParkedMessageStats(completed);
 		}
@@ -48,22 +54,24 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		private void WriteStateCompleted(Action<ResolvedEvent, OperationResult> completed, ResolvedEvent ev,
-			ClientMessage.WriteEventsCompleted msg) {
+			ClientMessage.WriteEventsCompleted msg, DateTime parkedMessageAdded) {
 			_lastParkedEventNumber = msg.LastEventNumber;
+			if (_oldestParkedMessage == null) _oldestParkedMessage = parkedMessageAdded.ToUniversalTime();
 			completed?.Invoke(ev, msg.Result);
 		}
 
 		public void BeginParkMessage(ResolvedEvent ev, string reason,
 			Action<ResolvedEvent, OperationResult> completed) {
 			var metadata = new ParkedMessageMetadata
-				{Added = DateTime.Now, Reason = reason, SubscriptionEventNumber = ev.OriginalEventNumber};
+				{ Added = DateTime.Now, Reason = reason, SubscriptionEventNumber = ev.OriginalEventNumber };
 
 			string data = GetLinkToFor(ev);
 
 			var parkedEvent = new Event(Guid.NewGuid(), SystemEventTypes.LinkTo, false, data, metadata.ToJson());
 
 			_ioDispatcher.WriteEvent(ParkedStreamId, ExpectedVersion.Any, parkedEvent, SystemAccounts.System,
-				x => WriteStateCompleted(completed, ev, x));
+				x => WriteStateCompleted(completed, ev, x,
+					metadata.Added));
 		}
 
 		private string GetLinkToFor(ResolvedEvent ev) {
@@ -83,9 +91,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private void BeginReadParkedMessageStats(Action completed) {
 			BeginReadLastEvent(lastEventNumber => {
 				if (lastEventNumber is null) completed();
-				BeginReadFirstEvent(0, firstEventNumber => {
+				BeginReadFirstEvent(0, (firstEventNumber, oldestParkedMessageTimeStamp) => {
 					_lastTruncateBefore = firstEventNumber ?? -1;
 					_lastParkedEventNumber = lastEventNumber ?? -1;
+					_oldestParkedMessage = oldestParkedMessageTimeStamp;
 					completed?.Invoke();
 				});
 			});
@@ -114,7 +123,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				});
 		}
 
-		private void BeginReadFirstEvent(long fromEventNumber, Action<long?> completed) {
+		private void BeginReadFirstEvent(long fromEventNumber, Action<long?, DateTime?> completed) {
 			_ioDispatcher.ReadForward(
 				ParkedStreamId,
 				fromEventNumber,
@@ -123,28 +132,28 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					switch (comp.Result) {
 						case ReadStreamResult.Success:
 							if (comp.Events.Any()) {
-								completed?.Invoke(comp.Events.First().OriginalEventNumber);
+								completed?.Invoke(comp.Events.First().OriginalEventNumber, comp.Events.First().OriginalEvent.TimeStamp);
 							} else if (!comp.IsEndOfStream) {
 								BeginReadFirstEvent(comp.NextEventNumber, completed);
 							} else {
-								completed?.Invoke(null);
+								completed?.Invoke(null, null);
 							}
 
 							break;
 						case ReadStreamResult.NoStream:
 						case ReadStreamResult.StreamDeleted:
-							completed?.Invoke(null);
+							completed?.Invoke(null, null);
 							break;
 						default:
 							Log.Error(
 								$"An error occured reading the first event in the parked message stream {ParkedStreamId} due to {comp.Result}.");
-							completed?.Invoke(null);
+							completed?.Invoke(null, null);
 							break;
 					}
 				}, () => {
 					Log.Error(
 						$"Timed out reading the first event in the parked message stream {ParkedStreamId}. Parked message stats may be incorrect.");
-					completed?.Invoke(null);
+					completed?.Invoke(null, null);
 				}, Guid.NewGuid());
 		}
 
@@ -182,11 +191,11 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				}, Guid.NewGuid());
 		}
 
-		public void BeginMarkParkedMessagesReprocessed(long sequence) {
-			BeginMarkParkedMessagesReprocessed(sequence, null);
+		public void BeginMarkParkedMessagesReprocessed(long sequence, DateTime? timestamp, bool updateOldestParkedMessage) {
+			BeginMarkParkedMessagesReprocessed(sequence, timestamp, updateOldestParkedMessage, null);
 		}
 
-		public void BeginMarkParkedMessagesReprocessed(long sequence, Action completed) {
+		public void BeginMarkParkedMessagesReprocessed(long sequence, DateTime? timestamp, bool updateOldestParkedMessage, Action completed) {
 			var metaStreamId = SystemStreams.MetastreamOf(ParkedStreamId);
 			_ioDispatcher.WriteEvent(
 				metaStreamId, ExpectedVersion.Any, CreateStreamMetadataEvent(sequence), SystemAccounts.System,
@@ -194,6 +203,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					switch (msg.Result) {
 						case OperationResult.Success:
 							_lastTruncateBefore = sequence;
+							if (updateOldestParkedMessage) _oldestParkedMessage = timestamp;
 							completed?.Invoke();
 							break;
 						default:

@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -58,7 +58,6 @@ namespace EventStore.Core.Tests.Helpers {
 		private readonly TestServer _kestrelTestServer;
 		private readonly TaskCompletionSource<bool> _started;
 		private readonly TaskCompletionSource<bool> _adminUserCreated;
-
 		public Task Started => _started.Task;
 		public Task AdminUserCreated => _adminUserCreated.Task;
 
