@@ -1571,14 +1571,14 @@ namespace EventStore.Core {
 					.AddSingleton(standardComponents)
 					.AddSingleton(AuthorizationGateway)
 					.AddSingleton(certificateProvider)
-					.AddSingleton<IList<IDbTransform>>(new List<IDbTransform> { new IdentityDbTransform() })
+					.AddSingleton<IReadOnlyList<IDbTransform>>(new List<IDbTransform> { new IdentityDbTransform() })
 					.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
 					.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates, X509Certificate2Collection Roots)>>
 						(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()));
 
 			void ConfigureNode(IApplicationBuilder app) {
-				var dbTransforms = app.ApplicationServices.GetService<IList<IDbTransform>>();
-				Db.TransformManager.LoadTransforms((IReadOnlyList<IDbTransform>) dbTransforms);
+				var dbTransforms = app.ApplicationServices.GetService<IReadOnlyList<IDbTransform>>();
+				Db.TransformManager.LoadTransforms(dbTransforms);
 
 				if (!Db.TransformManager.TrySetActiveTransform(options.Database.Transform))
 					throw new InvalidConfigurationException(
