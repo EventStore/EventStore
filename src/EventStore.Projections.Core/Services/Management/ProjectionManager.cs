@@ -191,7 +191,7 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		private void PushStatsToProjectionTracker(Message message) {
 			if (message is ProjectionManagementMessage.Statistics stats) {
-				_projectionTracker.Register(stats.Projections);
+				_projectionTracker.OnNewStats(stats.Projections);
 			}
 			_publisher.Publish(_getStats);
 		}
