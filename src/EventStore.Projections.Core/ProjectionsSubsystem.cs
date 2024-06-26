@@ -71,7 +71,13 @@ namespace EventStore.Projections.Core {
 		private VNodeState _nodeState;
 		private SubsystemState _subsystemState = SubsystemState.NotReady;
 		private Guid _instanceCorrelationId;
-		private IProjectionTracker _projectionTracker { get; set; } = new ProjectionTracker.NoOp();
+		//private IProjectionTracker _projectionTracker { get; set; } = new ProjectionTracker.NoOp();
+		private IProjectionEventsProcessedAfterRestartTracker _projectionEventsProcessedTracker { get; set; } =
+			new ProjectionEventsProcessedAfterRestartTracker.NoOp();
+		private IProjectionProgressTracker _projectionProgressTracker { get; set; } =
+			new ProjectionProgressTracker.NoOp();
+		private IProjectionRunningTracker _projectionRunningTracker { get; set; } = new ProjectionRunningTracker.NoOp();
+		private IProjectionStatusTracker _projectionStatusTracker { get; set; } = new ProjectionStatusTracker.NoOp();
 
 		private readonly List<string> _standardProjections = new List<string> {
 			"$by_category",
@@ -152,8 +158,10 @@ namespace EventStore.Projections.Core {
 
 			ConfigureProjectionMetrics(standardComponents.ProjectionStats);
 
+			// ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap,
+			// 	_projectionsQueryExpiry, _projectionTracker);
 			ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap,
-				_projectionsQueryExpiry, _projectionTracker);
+				_projectionsQueryExpiry, _projectionEventsProcessedTracker, _projectionProgressTracker, _projectionRunningTracker, _projectionStatusTracker);
 			LeaderMainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
 			LeaderMainBus.Subscribe<CoreProjectionStatusMessage.Started>(this);
 
@@ -163,8 +171,23 @@ namespace EventStore.Projections.Core {
 		private void ConfigureProjectionMetrics(bool isEnabled) {
 			if (!isEnabled) return;
 			var projectionMeter = new Meter("EventStore.Projections.Core", version: "1.0.0");
-			var projectionMetric = new ProjectionMetrics(projectionMeter, "eventstore-projection-stats");
-			_projectionTracker = new ProjectionTracker(projectionMetric);
+			// var projectionMetric = new ProjectionMetrics(projectionMeter, "eventstore-projection-stats");
+			// _projectionTracker = new ProjectionTracker(projectionMetric);
+
+			var projectionEventsProcessedAfterRestartMetric =
+				new ProjectionEventsProcessedAfterRestartMetric(projectionMeter,
+					"eventstore-projection-events-processed-after-restart-total");
+			var projectionProgressMetric =
+				new ProjectionProgressMetric(projectionMeter, "eventstore-projection-progress");
+			var projectionRunningMetric = new ProjectionRunningMetric(projectionMeter, "eventstore-projection-running");
+			var projectionStatusMetric = new ProjectionStatusMetric(projectionMeter, "eventstore-projection-status");
+
+			_projectionEventsProcessedTracker =
+				new ProjectionEventsProcessedAfterRestartTracker(projectionEventsProcessedAfterRestartMetric);
+			_projectionProgressTracker = new ProjectionProgressTracker(projectionProgressMetric);
+			_projectionRunningTracker = new ProjectionRunningTracker(projectionRunningMetric);
+			_projectionStatusTracker = new ProjectionStatusTracker(projectionStatusMetric);
+
 		}
 
 		public void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>

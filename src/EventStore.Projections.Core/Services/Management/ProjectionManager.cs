@@ -110,7 +110,11 @@ namespace EventStore.Projections.Core.Services.Management {
 		private readonly int _defaultProjectionExecutionTimeout;
 
 		private Guid _instanceCorrelationId = Guid.Empty;
-		private IProjectionTracker _projectionTracker;
+		// private IProjectionTracker _projectionTracker;
+		private IProjectionEventsProcessedAfterRestartTracker _projectionEventsProcessedTracker;
+		private IProjectionProgressTracker _projectionProgressTracker;
+		private IProjectionRunningTracker _projectionRunningTracker;
+		private IProjectionStatusTracker _projectionStatusTracker;
 		private readonly TimeSpan _interval = TimeSpan.FromMilliseconds(2000);
 		private readonly TimerMessage.Schedule _getStats;
 
@@ -122,7 +126,11 @@ namespace EventStore.Projections.Core.Services.Management {
 			ProjectionType runProjections,
 			IODispatcher ioDispatcher,
 			TimeSpan projectionQueryExpiry,
-			IProjectionTracker projectionTracker,
+			// IProjectionTracker projectionTracker,
+			IProjectionEventsProcessedAfterRestartTracker projectionEventsProcessedTracker,
+			IProjectionProgressTracker projectionProgressTracker,
+			IProjectionRunningTracker projectionRunningTracker,
+			IProjectionStatusTracker projectionStatusTracker,
 			bool initializeSystemProjections = true, int defaultProjectionExecutionTimeout = ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout) {
 			if (inputQueue == null) throw new ArgumentNullException("inputQueue");
 			if (publisher == null) throw new ArgumentNullException("publisher");
@@ -139,7 +147,11 @@ namespace EventStore.Projections.Core.Services.Management {
 			_initializeSystemProjections = initializeSystemProjections;
 			_ioDispatcher = ioDispatcher;
 			_projectionsQueryExpiry = projectionQueryExpiry;
-			_projectionTracker = projectionTracker;
+			//_projectionTracker = projectionTracker;
+			_projectionEventsProcessedTracker = projectionEventsProcessedTracker;
+			_projectionProgressTracker = projectionProgressTracker;
+			_projectionRunningTracker = projectionRunningTracker;
+			_projectionStatusTracker = projectionStatusTracker;
 
 			_writeDispatcher =
 				new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
@@ -191,7 +203,13 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		private void PushStatsToProjectionTracker(Message message) {
 			if (message is ProjectionManagementMessage.Statistics stats) {
-				_projectionTracker.Register(stats.Projections);
+				// _projectionTracker.Register(stats.Projections);
+				foreach (var projectionStat in stats.Projections) {
+					_projectionEventsProcessedTracker.Register(projectionStat);
+					_projectionProgressTracker.Register(projectionStat);
+					_projectionRunningTracker.Register(projectionStat);
+					_projectionStatusTracker.Register(projectionStat);
+				}
 			}
 			_publisher.Publish(_getStats);
 		}

@@ -23,7 +23,11 @@ namespace EventStore.Projections.Core {
 			ProjectionsStandardComponents projectionsStandardComponents,
 			IDictionary<Guid, IPublisher> queues,
 			TimeSpan projectionQueryExpiry,
-			IProjectionTracker projectionTracker) {
+			// IProjectionTracker projectionTracker) {
+			IProjectionEventsProcessedAfterRestartTracker projectionEventsProcessedTracker,
+			IProjectionProgressTracker projectionProgressTracker,
+			IProjectionRunningTracker projectionRunningTracker,
+			IProjectionStatusTracker projectionStatusTracker) {
 			IQueuedHandler inputQueue = projectionsStandardComponents.LeaderInputQueue;
 			IBus outputBus = projectionsStandardComponents.LeaderOutputBus;
 			var ioDispatcher = new IODispatcher(outputBus, new PublishEnvelope(inputQueue), true);
@@ -53,7 +57,10 @@ namespace EventStore.Projections.Core {
 				projectionsStandardComponents.RunProjections,
 				ioDispatcher,
 				projectionQueryExpiry,
-				projectionTracker,
+				projectionEventsProcessedTracker,
+				projectionProgressTracker,
+				projectionRunningTracker,
+				projectionStatusTracker,
 				defaultProjectionExecutionTimeout: projectionsStandardComponents.ProjectionExecutionTimeout);
 
 			SubscribeMainBus(
