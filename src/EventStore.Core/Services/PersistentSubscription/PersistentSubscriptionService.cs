@@ -95,7 +95,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private void PushStatsToPersistentSubscriptionTracker(Message message) {
 			if (message is MonitoringMessage.GetPersistentSubscriptionStatsCompleted stats) {
 				SubscriptionStats = stats.SubscriptionStats;
-				_persistentSubscriptionTracker.Register(SubscriptionStats);
+				if (SubscriptionStats != null) {
+					_persistentSubscriptionTracker.OnNewStats(SubscriptionStats);
+				}
 			}
 			_bus.Publish(_getStats);
 		}

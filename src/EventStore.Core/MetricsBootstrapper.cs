@@ -158,12 +158,18 @@ public static class MetricsBootstrapper {
 		}
 
 		// persistent subscriptions
-
 		if (conf.PersistentSubscriptionStats) {
-			var metric =
-				new PersistentSubscriptionMetric(coreMeter, "eventstore-persistent-subscriptions-stats");
 			trackers.PersistentSubscriptionTracker =
-				new PersistentSubscriptionTracker(metric);
+				new PersistentSubscriptionTracker(
+					new PersistentSubscriptionItemsProcessedMetric(coreMeter, "eventstore-persistent-sub-items-processed"),
+					new PersistentSubscriptionConnectionCountMetric(coreMeter, "eventstore-persistent-sub-connections"),
+					new PersistentSubscriptionInFlightMessagesMetric(coreMeter, "eventstore-persistent-sub-in-flight-messages"),
+					new PersistentSubscriptionParkedMessagesMetric(coreMeter, "eventstore-persistent-sub-parked-messages"),
+					new PersistentSubscriptionOldestParkedMessageMetric(coreMeter, "eventstore-persistent-sub-oldest-parked-message-seconds"),
+					new PersistentSubscriptionLastCheckpointedEventMetric(coreMeter, "eventstore-persistent-sub-checkpointed-event-number"),
+					new PersistentSubscriptionLastKnownEventMetric(coreMeter, "eventstore-persistent-sub-last-known-event-number"),
+					new PersistentSubscriptionLastCheckpointedEventCommitPositionMetric(coreMeter, "eventstore-persistent-sub-checkpointed-event-commit-position"),
+					new PersistentSubscriptionLastKnownEventCommitPositionMetric(coreMeter, "eventstore-persistent-sub-last-known-event-commit-position"));
 		}
 
 		// checkpoints
