@@ -5,12 +5,17 @@ using System.Diagnostics.Metrics;
 namespace EventStore.Core.Metrics;
 
 // Registered providers can return multiple measurements
-public class ObservableUpDownMetricMulti<T> where T : struct {
+public class ObservableCounterMetricMulti<T> where T : struct {
 	private readonly List<Func<IEnumerable<Measurement<T>>>> _measurementProviders = [];
 	private readonly object _lock = new();
 
-	public ObservableUpDownMetricMulti(Meter meter, string name, string unit = null) {
-		meter.CreateObservableUpDownCounter(name, Observe, unit);
+	public ObservableCounterMetricMulti(Meter meter, bool upDown, string name, string unit = null,
+		string description = null) {
+
+		if (upDown)
+			meter.CreateObservableUpDownCounter(name, Observe, unit, description);
+		else
+			meter.CreateObservableCounter(name, Observe, unit, description);
 	}
 
 	public void Register(Func<IEnumerable<Measurement<T>>> measurementProvider) {
