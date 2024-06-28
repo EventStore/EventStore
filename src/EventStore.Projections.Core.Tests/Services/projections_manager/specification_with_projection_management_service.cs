@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				ProjectionType.All,
 				_ioDispatcher,
 				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
-				new ProjectionTracker.NoOp(),
+				IProjectionTracker.NoOp,
 				_initializeSystemProjections);
 
 			IPublisher inputQueue = GetInputQueue();
