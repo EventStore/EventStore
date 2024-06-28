@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core {
 		private VNodeState _nodeState;
 		private SubsystemState _subsystemState = SubsystemState.NotReady;
 		private Guid _instanceCorrelationId;
-		private IProjectionTracker _projectionTracker { get; set; } = new ProjectionTracker.NoOp();
+		private IProjectionTracker _projectionTracker = new ProjectionTracker.NoOp();
 
 		private readonly List<string> _standardProjections = new List<string> {
 			"$by_category",
@@ -161,10 +161,16 @@ namespace EventStore.Projections.Core {
 		}
 
 		private void ConfigureProjectionMetrics(bool isEnabled) {
-			if (!isEnabled) return;
+			if (!isEnabled)
+				return;
+
 			var projectionMeter = new Meter("EventStore.Projections.Core", version: "1.0.0");
-			var projectionMetric = new ProjectionMetrics(projectionMeter, "eventstore-projection-stats");
-			_projectionTracker = new ProjectionTracker(projectionMetric);
+
+			_projectionTracker = new ProjectionTracker(
+				new ProjectionEventsProcessedMetric(projectionMeter, "eventstore-projection-events-processed-after-restart-total"),
+				new ProjectionProgressMetric(projectionMeter, "eventstore-projection-progress"),
+				new ProjectionRunningMetric(projectionMeter, "eventstore-projection-running"),
+				new ProjectionStatusMetric(projectionMeter, "eventstore-projection-status"));
 		}
 
 		public void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
