@@ -7,10 +7,10 @@ using EventStore.Projections.Core.Services;
 namespace EventStore.Projections.Core.Metrics;
 
 public class ProjectionProgressMetric {
-	private readonly ObservableUpDownMetricMulti<float> _statsMetric;
+	private readonly ObservableCounterMetricMulti<float> _statsMetric;
 
 	public ProjectionProgressMetric(Meter meter, string name) {
-		_statsMetric = new ObservableUpDownMetricMulti<float>(meter, name);
+		_statsMetric = new ObservableCounterMetricMulti<float>(meter, upDown: true, name);
 	}
 
 	public void Register(Func<ProjectionStatistics[]> getCurrentStatsList) {

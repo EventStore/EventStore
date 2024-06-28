@@ -11,12 +11,11 @@ using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Metrics;
 
-
-public class PersistentSubscriptionTrackerTests : IDisposable {
+public class PersistentSubscriptionLastKnownEventMetricTests : IDisposable {
 	private readonly Disposables _disposables = new();
-	private readonly List<MonitoringMessage.PersistentSubscriptionInfo> _fakeStatsList = [];
+	private readonly List<MonitoringMessage.PersistentSubscriptionInfo> _fakeStatistics = [];
 
-	public PersistentSubscriptionTrackerTests() {
+	public PersistentSubscriptionLastKnownEventMetricTests() {
 		var statsSampleOne = new MonitoringMessage.PersistentSubscriptionInfo() {
 			EventSource = "test",
 			GroupName = "testGroup",
@@ -73,7 +72,7 @@ public class PersistentSubscriptionTrackerTests : IDisposable {
 			RetryBufferCount = 0,
 			LiveBufferCount = 0,
 			ExtraStatistics = false,
-			TotalInFlightMessages = 10,
+			TotalInFlightMessages = 5,
 			OutstandingMessagesCount = 2,
 			NamedConsumerStrategy = "Round Robin",
 			MaxSubscriberCount = 10,
@@ -81,21 +80,20 @@ public class PersistentSubscriptionTrackerTests : IDisposable {
 			OldestParkedMessage = 50
 		};
 
-		_fakeStatsList.Add(statsSampleOne);
-		_fakeStatsList.Add(statsSampleTwo);
+		_fakeStatistics.Add(statsSampleOne);
+		_fakeStatistics.Add(statsSampleTwo);
 	}
 
 	public void Dispose() {
 		_disposables?.Dispose();
 	}
 
-	private (PersistentSubscriptionTracker, TestMeterListener<long>) GenSut(
+	private (PersistentSubscriptionLastKnownEventMetric, TestMeterListener<long>) GenSut(
 		[CallerMemberName] string callerName = "") {
 
-		var meter = new Meter($"{typeof(PersistentSubscriptionTrackerTests)}-{callerName}").DisposeWith(_disposables);
+		var meter = new Meter($"{typeof(PersistentSubscriptionConnectionCountMetricTests)}-{callerName}").DisposeWith(_disposables);
 		var listener = new TestMeterListener<long>(meter).DisposeWith(_disposables);
-		var metric = new PersistentSubscriptionMetric(meter, "test-metric");
-		var sut = new PersistentSubscriptionTracker(metric);
+		var sut = new PersistentSubscriptionLastKnownEventMetric(meter, "test-metric");
 
 		return (sut, listener);
 	}
@@ -103,56 +101,22 @@ public class PersistentSubscriptionTrackerTests : IDisposable {
 	[Fact]
 	public void number_of_instruments_to_observe() {
 		var (sut, listener) = GenSut();
-		sut.Register(_fakeStatsList);
+		sut.Register(() => _fakeStatistics);
 
 		listener.Observe();
 
 		var measurements = listener.RetrieveMeasurements("test-metric");
-		Assert.Equal(14 , measurements.Count);
+		Assert.Single(measurements);
 	}
 
 	[Fact]
-	public void observe_all_metrics() {
+	public void observe_metrics_data() {
 		var (sut, listener) = GenSut();
-		sut.Register(_fakeStatsList);
+		sut.Register(() => _fakeStatistics);
 
 		AssertMeasurements(listener,
-			AssertMeasurement("test/testGroup", "subscription-total-items-processed", 30),
-			AssertMeasurement("test/testGroup", "subscription-connection-count", 0),
-			AssertMeasurement("test/testGroup", "subscription-total-in-flight-messages", 10),
-			AssertMeasurement("test/testGroup", "subscription-total-number-of-parked-messages", 10),
-			AssertMeasurement("test/testGroup", "subscription-oldest-parked-message", 50),
-			AssertMeasurement("test/testGroup", "subscription-last-processed-event-number", 10),
-			AssertMeasurement("test/testGroup", "subscription-last-known-event-number", 20),
-			AssertMeasurement("$all/testGroup", "subscription-total-items-processed", 30),
-			AssertMeasurement("$all/testGroup", "subscription-connection-count", 0),
-			AssertMeasurement("$all/testGroup", "subscription-total-in-flight-messages", 10),
-			AssertMeasurement("$all/testGroup", "subscription-total-number-of-parked-messages", 10),
-			AssertMeasurement("$all/testGroup", "subscription-oldest-parked-message", 50),
-			AssertMeasurement("$all/testGroup", "subscription-last-checkpointed-event-commit-position", 211845),
-			AssertMeasurement("$all/testGroup", "subscription-last-known-event-commit-position", 211200));
+			AssertMeasurement("test", "testGroup", 20));
 	}
-
-	static Action<TestMeterListener<long>.TestMeasurement> AssertMeasurement(
-		string subscriptionName,
-		string metricName,
-		long expectedValue) =>
-
-		actualMeasurement => {
-			Assert.Equal(expectedValue, actualMeasurement.Value);
-			Assert.Collection(
-				actualMeasurement.Tags.ToArray(),
-				tag => {
-					Assert.Equal("subscription", tag.Key);
-					Assert.Equal(subscriptionName, tag.Value);
-				},
-				tag => {
-					Assert.Equal("kind", tag.Key);
-					Assert.Equal(metricName, tag.Value);
-				}
-			);
-		};
-
 
 	static void AssertMeasurements(
 		TestMeterListener<long> listener,
@@ -162,4 +126,24 @@ public class PersistentSubscriptionTrackerTests : IDisposable {
 
 		Assert.Collection(listener.RetrieveMeasurements("test-metric"), actions);
 	}
+
+	static Action<TestMeterListener<long>.TestMeasurement> AssertMeasurement(
+		string sourceName,
+		string groupName,
+		long expectedValue) =>
+
+		actualMeasurement => {
+			Assert.Equal(expectedValue, actualMeasurement.Value);
+			Assert.Collection(
+				actualMeasurement.Tags.ToArray(),
+				tag => {
+					Assert.Equal("event_stream_id", tag.Key);
+					Assert.Equal(sourceName, tag.Value);
+				},
+				tag => {
+					Assert.Equal("group_name", tag.Key);
+					Assert.Equal(groupName, tag.Value);
+				}
+			);
+		};
 }

@@ -1,26 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
-using EventStore.Core.Metrics;
-using EventStore.Projections.Core.Services;
+using EventStore.Core.Messages;
 
-namespace EventStore.Projections.Core.Metrics;
+namespace EventStore.Core.Metrics;
 
-public class ProjectionEventsProcessedMetric {
+public class PersistentSubscriptionItemsProcessedMetric {
 	private readonly ObservableCounterMetricMulti<long> _statsMetric;
 
-	public ProjectionEventsProcessedMetric(Meter meter, string name) {
+	public PersistentSubscriptionItemsProcessedMetric(Meter meter, string name) {
 		_statsMetric = new ObservableCounterMetricMulti<long>(meter, upDown: false, name);
 	}
 
-	public void Register(Func<ProjectionStatistics[]> getCurrentStatsList) {
+	public void Register(Func<IReadOnlyList<MonitoringMessage.PersistentSubscriptionInfo>> getCurrentStatsList) {
 		_statsMetric.Register(GetMeasurements);
 
 		IEnumerable<Measurement<long>> GetMeasurements() {
 			var currentStatsList = getCurrentStatsList();
 			foreach (var statistics in currentStatsList) {
-				yield return new(statistics.EventsProcessedAfterRestart, [
-					new("projection", statistics.Name)
+				yield return new(statistics.TotalItems, [
+					new("event_stream_id", statistics.EventSource),
+					new("group_name", statistics.GroupName)
 				]);
 			}
 		}
