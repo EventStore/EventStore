@@ -3,41 +3,66 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Cherry picked from https
-- //github.com/EventStore/EventStore/pull/4151 [EventStore#4166](https://github.com/EventStore/EventStore/pull/4166)
-- //github.com/EventStore/EventStore/pull/4180 [EventStore#4181](https://github.com/EventStore/EventStore/pull/4181)
-- //github.com/EventStore/EventStore/pull/4182 [EventStore#4183](https://github.com/EventStore/EventStore/pull/4183)
-- //github.com/EventStore/EventStore/pull/4184 [EventStore#4185](https://github.com/EventStore/EventStore/pull/4185)
-- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4193](https://github.com/EventStore/EventStore/pull/4193)
-- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4192](https://github.com/EventStore/EventStore/pull/4192)
-- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4191](https://github.com/EventStore/EventStore/pull/4191)
-- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4190](https://github.com/EventStore/EventStore/pull/4190)
-- //github.com/thefringeninja/EventStore/pull/4187 [EventStore#4189](https://github.com/EventStore/EventStore/pull/4189)
-- //github.com/EventStore/EventStore/pull/4200 [EventStore#4203](https://github.com/EventStore/EventStore/pull/4203)
-- //github.com/EventStore/EventStore/pull/4204 [EventStore#4205](https://github.com/EventStore/EventStore/pull/4205)
-- //github.com/EventStore/EventStore/pull/4207 [EventStore#4208](https://github.com/EventStore/EventStore/pull/4208)
+## [24.6.0] - 2024-06-26
 
 ### Changed
-- Version number [EventStore#4195](https://github.com/EventStore/EventStore/pull/4195)
-- version number [EventStore#4188](https://github.com/EventStore/EventStore/pull/4188)
 - <internal changes> [EventStore#4202](https://github.com/EventStore/EventStore/pull/4202)
 - Reduced FileHandle usage by 80%. Now 1 per chunk instead of 5+. [EventStore#4174](https://github.com/EventStore/EventStore/pull/4174)
+- Automate and Unify Configuration. [EventStore#4144](https://github.com/EventStore/EventStore/pull/4144)
+- Change status for incomplete scavenges from "Failed" to "Interrupted". [EventStore#4225](https://github.com/EventStore/EventStore/pull/4225)
+- Wire up Authorization/Authentication/MD5 plugins to DI. [EventStore#4229](https://github.com/EventStore/EventStore/pull/4229)
+- The EventStore.TestClient to use the logconfig.json from EventStore.ClusterNode. [EventStore#4243](https://github.com/EventStore/EventStore/pull/4243)
+- Runtime and Process stats such as CPU Usage and Disk IO. [EventStore#4257](https://github.com/EventStore/EventStore/pull/4257)
+- Open the database faster by building the midpoints for scavenged chunks later on demand. [EventStore#4214](https://github.com/EventStore/EventStore/pull/4214)
+- Allow an extra chunk at startup. [EventStore#4263](https://github.com/EventStore/EventStore/pull/4263)
+- Refactored Authentication and Authorization plugins. [EventStore#4266](https://github.com/EventStore/EventStore/pull/4266)
+- Always replicate the chunk header. [EventStore#4211](https://github.com/EventStore/EventStore/pull/4211)
+- Index merge now continues even if there is not enough memory to store the Bloom filter. [EventStore#4285](https://github.com/EventStore/EventStore/pull/4285)
+- Changed telemetry service to reflect plugin changes. [EventStore#4290](https://github.com/EventStore/EventStore/pull/4290)
 
 ### Fixed
-- Improve error messaging for non-existent projections in gRPC API [EventStore#4197](https://github.com/EventStore/EventStore/pull/4197)
-- Add a check for the empty uuidOption.  [EventStore#4158](https://github.com/EventStore/EventStore/pull/4158)
-- Decrease grpc log level on the server. https://linear.app/eventstore/issue/DB-568/decrease-grpc-log-level-on-the-server [EventStore#4112](https://github.com/EventStore/EventStore/pull/4112)
-- TestClient package dependencies [EventStore#4207](https://github.com/EventStore/EventStore/pull/4207)
+- Improve error messaging for non-existent projections in gRPC API. [EventStore#4197](https://github.com/EventStore/EventStore/pull/4197)
+- Handle UUIDOption being null in gRPC calls. [EventStore#4158](https://github.com/EventStore/EventStore/pull/4158)
+- TestClient package dependencies. [EventStore#4207](https://github.com/EventStore/EventStore/pull/4207)
+- Error sending usage telemetry in certain circumstances. [EventStore#4231](https://github.com/EventStore/EventStore/pull/4231)
+- Events written in explicit transactions via TCP can be missing from $all reads/subscriptions. [EventStore#4251](https://github.com/EventStore/EventStore/pull/4251)
+- Use the advertised addresses for identifying nodes in the scavenge log. [EventStore#4247](https://github.com/EventStore/EventStore/pull/4247)
+- Properly handle startup corner case where a scavenged chunk was replicated and switched in but the writer checkpoint wasn't yet updated. [EventStore#4264](https://github.com/EventStore/EventStore/pull/4264)
+- Test client `wrflgrpc` no longer produces accidental idempotent writes. [EventStore#4280](https://github.com/EventStore/EventStore/pull/4280)
+- Finalizer bug no longer causes process exit if a memory allocation fails. [EventStore#4284](https://github.com/EventStore/EventStore/pull/4284)
+- Incorrect handling of SIGHUP. [EventStore#4293](https://github.com/EventStore/EventStore/pull/4293)
+- Plugin loader wrongly loaded interfaces and abstract classes. [EventStore#4290](https://github.com/EventStore/EventStore/pull/4290)
+- Version numbering of EventStore.Common.dll. [EventStore#4298](https://github.com/EventStore/EventStore/pull/4298)
+- Redacted events break replication on a follower node. [EventStore#4291](https://github.com/EventStore/EventStore/pull/4291)
 
 ### Added
 - Add the elections counter metric so users can set alerts if the number of elections over a certain period of time exceeds some number. [EventStore#4179](https://github.com/EventStore/EventStore/pull/4179)
-- Add documentation for the elections count metric [EventStore#4198](https://github.com/EventStore/EventStore/pull/4198)
-
-### Removed
-- Unnecessary code comment [EventStore#4200](https://github.com/EventStore/EventStore/pull/4200)
+- Log an error when the node certificate is not a valid server certificate. [EventStore#4249](https://github.com/EventStore/EventStore/pull/4249)
+- New UnixSignalManager using PosixSignalRegistration. [EventStore#4257](https://github.com/EventStore/EventStore/pull/4257)
+- EventStore.SystemRuntime project. [EventStore#4257](https://github.com/EventStore/EventStore/pull/4257)
+- Add more information to the current database options API response. [EventStore#3934](https://github.com/EventStore/EventStore/pull/3934)
+- Allow statusCode for health requests to be provided in query string. e.g. `/health/live?liveCode=200`. [EventStore#4268](https://github.com/EventStore/EventStore/pull/4268)
+- Refactoring to support chunk data transformation. [EventStore#4217](https://github.com/EventStore/EventStore/pull/4217)
+- Replicate the transform header to followers. [EventStore#4242](https://github.com/EventStore/EventStore/pull/4242)
+- Chunk version 4 (Transformed) file format. [EventStore#4289](https://github.com/EventStore/EventStore/pull/4289)
+- Support for forward compatibility in chunks. [EventStore#4289](https://github.com/EventStore/EventStore/pull/4289)
+- Support for chunk data transformation plugins. [EventStore#4258](https://github.com/EventStore/EventStore/pull/4258)
+- More read response exceptions. [EventStore#4301](https://github.com/EventStore/EventStore/pull/4301)
+- New metrics for projection subsystem. [EventStore#4267](https://github.com/EventStore/EventStore/pull/4267)
+- Extend metrics for Persistent Subscriptions. [EventStore#4248](https://github.com/EventStore/EventStore/pull/4248)
+- A warning to the log when a projection state size becomes greater than 8 MB. [EventStore#4276](https://github.com/EventStore/EventStore/pull/4276)
 
 ### Updated
-- dockerfile for newer buildkit [EventStore#4204](https://github.com/EventStore/EventStore/pull/4204)
+- Dockerfile for newer buildkit. [EventStore#4204](https://github.com/EventStore/EventStore/pull/4204)
+
+### Removed
+- EventStore.Common.Utils project and other unused code. [EventStore#4257](https://github.com/EventStore/EventStore/pull/4257)
+- Remove redundant check which is always true in LeaderReplicationService. [EventStore#4265](https://github.com/EventStore/EventStore/pull/4265)
+
+### Breaking Changes
+- The database now restarts a second time to complete a truncation operation. [EventStore#4258](https://github.com/EventStore/EventStore/pull/4258)
+- Unbuffered config setting now has no effect. Let us know if you're using this feature. [EventStore#4286](https://github.com/EventStore/EventStore/pull/4286)
+- Change event type of Persistent Subscription checkpoint to `$SubscriptionCheckpoint`. [EventStore#4213](https://github.com/EventStore/EventStore/pull/4213)
 
 ## [24.2.0] - 2024-02-25
 
