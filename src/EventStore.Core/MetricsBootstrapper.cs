@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
-using EventStore.Core.Bus;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Index;
@@ -34,7 +33,7 @@ public class Trackers {
 	public ICacheResourcesTracker CacheResourcesTracker { get; set; } = new CacheResourcesTracker.NoOp();
 	public IElectionCounterTracker ElectionCounterTracker { get; set; } = new ElectionsCounterTracker.NoOp();
 	public IPersistentSubscriptionTracker PersistentSubscriptionTracker { get; set; } =
-		new PersistentSubscriptionTracker.NoOp();
+		IPersistentSubscriptionTracker.NoOp;
 }
 
 public class GrpcTrackers {
@@ -159,17 +158,19 @@ public static class MetricsBootstrapper {
 
 		// persistent subscriptions
 		if (conf.PersistentSubscriptionStats) {
-			trackers.PersistentSubscriptionTracker =
-				new PersistentSubscriptionTracker(
-					new PersistentSubscriptionItemsProcessedMetric(coreMeter, "eventstore-persistent-sub-items-processed"),
-					new PersistentSubscriptionConnectionCountMetric(coreMeter, "eventstore-persistent-sub-connections"),
-					new PersistentSubscriptionInFlightMessagesMetric(coreMeter, "eventstore-persistent-sub-in-flight-messages"),
-					new PersistentSubscriptionParkedMessagesMetric(coreMeter, "eventstore-persistent-sub-parked-messages"),
-					new PersistentSubscriptionOldestParkedMessageMetric(coreMeter, "eventstore-persistent-sub-oldest-parked-message-seconds"),
-					new PersistentSubscriptionLastCheckpointedEventMetric(coreMeter, "eventstore-persistent-sub-checkpointed-event-number"),
-					new PersistentSubscriptionLastKnownEventMetric(coreMeter, "eventstore-persistent-sub-last-known-event-number"),
-					new PersistentSubscriptionLastCheckpointedEventCommitPositionMetric(coreMeter, "eventstore-persistent-sub-checkpointed-event-commit-position"),
-					new PersistentSubscriptionLastKnownEventCommitPositionMetric(coreMeter, "eventstore-persistent-sub-last-known-event-commit-position"));
+			var tracker = new PersistentSubscriptionTracker();
+			trackers.PersistentSubscriptionTracker = tracker;
+
+			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-connections", tracker.ObserveConnectionsCount);
+			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-parked-messages", tracker.ObserveParkedMessages);
+			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-in-flight-messages", tracker.ObserveInFlightMessages);
+			coreMeter.CreateObservableUpDownCounter("eventstore-persistent-sub-oldest-parked-message-seconds", tracker.ObserveOldestParkedMessage);
+
+			coreMeter.CreateObservableCounter("eventstore-persistent-sub-items-processed", tracker.ObserveItemsProcessed);
+			coreMeter.CreateObservableCounter("eventstore-persistent-sub-last-known-event-number", tracker.ObserveLastKnownEvent);
+			coreMeter.CreateObservableCounter("eventstore-persistent-sub-last-known-event-commit-position", tracker.ObserveLastKnownEventCommitPosition);
+			coreMeter.CreateObservableCounter("eventstore-persistent-sub-checkpointed-event-number", tracker.ObserveLastCheckpointedEvent);
+			coreMeter.CreateObservableCounter("eventstore-persistent-sub-checkpointed-event-commit-position", tracker.ObserveLastCheckpointedEventCommitPosition);
 		}
 
 		// checkpoints
