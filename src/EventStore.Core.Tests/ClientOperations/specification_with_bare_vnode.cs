@@ -25,10 +25,11 @@ namespace EventStore.Core.Tests.ClientOperations {
 			_node = new ClusterVNode<TStreamId>(options, logFormatFactory,
 				new AuthenticationProviderFactory(
 					c => new InternalAuthenticationProviderFactory(c, options.DefaultUser)),
-				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue,
+				new AuthorizationProviderFactory(c => new InternalAuthorizationProviderFactory([
+				new LegacyPolicySelectorFactory(
 					options.Application.AllowAnonymousEndpointAccess,
 					options.Application.AllowAnonymousStreamAccess,
-					options.Application.OverrideAnonymousEndpointAccessForGossip)),
+					options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue, default)])),
 				certificateProvider: new OptionsCertificateProvider());
 
 			var builder = WebApplication.CreateBuilder();
@@ -49,7 +50,7 @@ namespace EventStore.Core.Tests.ClientOperations {
 		public void Unsubscribe<T>(IHandle<T> handler) where T : Message {
 			_node.MainBus.Unsubscribe(handler);
 		}
-		public Task<T> WaitForNext<T>() where T : Message {			
+		public Task<T> WaitForNext<T>() where T : Message {
 			var handler = new TaskHandler<T>(_node.MainBus);
 			_disposables.Add(handler);
 			return handler.Message;
@@ -79,11 +80,11 @@ namespace EventStore.Core.Tests.ClientOperations {
 		private bool _disposed;
 		protected virtual void Dispose(bool disposing) {
 			if (!_disposed) {
-				if (disposing) {					
+				if (disposing) {
 					_disposables?.ForEach(d => d?.Dispose());
 					_disposables?.Clear();
 					_node?.StopAsync().Wait();
-				}				
+				}
 				_disposed = true;
 			}
 		}
