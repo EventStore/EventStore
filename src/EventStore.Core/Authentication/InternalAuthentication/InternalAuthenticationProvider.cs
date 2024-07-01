@@ -31,7 +31,7 @@ public class InternalAuthenticationProvider : AuthenticationProviderBase, IHandl
 		PasswordHashAlgorithm passwordHashAlgorithm,
 		int cacheSize, bool logFailedAuthenticationAttempts, 
 		ClusterVNodeOptions.DefaultUserOptions defaultUserOptions
-	) : base(name: "internal") {
+	) : base(name: "internal", diagnosticsName: "InternalAuthentication") {
 		_ioDispatcher = ioDispatcher;
 		_passwordHashAlgorithm = passwordHashAlgorithm;
 		_userPasswordsCache = new LRUCache<string, (string, string, ClaimsPrincipal)>("UserPasswords", cacheSize);
