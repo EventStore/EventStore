@@ -831,8 +831,12 @@ namespace EventStore.Core.Index {
 		}
 
 		public static long GetMidpointIndex(long k, long numIndexEntries, long numMidpoints) {
-			if (numIndexEntries == 1 && numMidpoints == 2 && (k == 0 || k == 1)) return 0;
-			return (long)k * (numIndexEntries - 1) / (numMidpoints - 1);
+			if (numIndexEntries == 1 && numMidpoints == 2 && (k == 0 || k == 1))
+				return 0;
+
+			// float so that we don't overflow the long in large ptables
+			var index = (float)k * (numIndexEntries - 1) / (numMidpoints - 1);
+			return (long)index;
 		}
 
 		public static bool IsMidpointIndex(long index, long numIndexEntries, long numMidpoints) {
