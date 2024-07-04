@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
@@ -711,7 +712,11 @@ namespace EventStore.Core.Index {
 
 		public static long GetMidpointIndex(long k, long numIndexEntries, long numMidpoints) {
 			if (numIndexEntries == 1 && numMidpoints == 2 && (k == 0 || k == 1)) return 0;
-			return (long)k * (numIndexEntries - 1) / (numMidpoints - 1);
+
+			// BigInteger for quick fix and sheer obviousness
+			// It is relatively slow though, ~20s extra on top of 7m to open a 1tb ptable
+			var index = (BigInteger)k * (numIndexEntries - 1) / (numMidpoints - 1);
+			return (long)index;
 		}
 
 		public static bool IsMidpointIndex(long index, long numIndexEntries, long numMidpoints) {
