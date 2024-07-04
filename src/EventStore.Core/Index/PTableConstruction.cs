@@ -731,10 +731,10 @@ namespace EventStore.Core.Index {
 			//index = floor (k * (numIndexEntries - 1) / (numMidpoints - 1));    for k = 0 to numMidpoints-1
 			//we need to find if there exists an integer x, such that:
 			//index*(numMidpoints-1)/(numIndexEntries-1) <= x < (index+1)*(numMidpoints-1)/(numIndexEntries-1)
-			var lower = index * (numMidpoints - 1) / (numIndexEntries - 1);
-			if ((index * (numMidpoints - 1)) % (numIndexEntries - 1) != 0) lower++;
-			var upper = (index + 1) * (numMidpoints - 1) / (numIndexEntries - 1);
-			if (((index + 1) * (numMidpoints - 1)) % (numIndexEntries - 1) == 0) upper--;
+			var lower = (BigInteger)index * (numMidpoints - 1) / (numIndexEntries - 1);
+			if (((BigInteger)index * (numMidpoints - 1)) % (numIndexEntries - 1) != 0) lower++;
+			var upper = (BigInteger)(index + 1) * (numMidpoints - 1) / (numIndexEntries - 1);
+			if (((BigInteger)(index + 1) * (numMidpoints - 1)) % (numIndexEntries - 1) == 0) upper--;
 			return lower <= upper;
 		}
 	}
