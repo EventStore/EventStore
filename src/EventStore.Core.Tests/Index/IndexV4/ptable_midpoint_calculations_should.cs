@@ -65,12 +65,16 @@ namespace EventStore.Core.Tests.Index.IndexV4 {
 		[Test]
 		public void return_a_positive_index_even_for_really_big_ptables() {
 			var depth = 28;
+			var numMidpoints = 1 << depth;
+			var numIndexEntries = 46_000_000_000;
+
 			var index = PTable.GetMidpointIndex(
 				k: 265_000_000,
-				numIndexEntries: 46_000_000_000,
-				numMidpoints: 2L << depth);
+				numIndexEntries: numIndexEntries,
+				numMidpoints: numMidpoints);
 
 			Assert.Positive(index);
+			Assert.True(PTable.IsMidpointIndex(index, numIndexEntries, numMidpoints));
 		}
 	}
 }
