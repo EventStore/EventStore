@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Index.IndexV4 {
 
 					List<long> calculatedMidpoints = new List<long>();
 					for (var k = 0; k < numIndexEntries; k++) {
-						if (PTable.IsMidpointIndex(k, numIndexEntries, requiredMidpointsCount)) {
+						if (Utils.IsMidpointIndex(k, numIndexEntries, requiredMidpointsCount)) {
 							calculatedMidpoints.Add(k);
 						}
 					}
