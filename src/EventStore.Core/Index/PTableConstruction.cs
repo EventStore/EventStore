@@ -556,7 +556,7 @@ namespace EventStore.Core.Index {
 		}
 
 		private static void ComputeMidpoints(BufferedStream bs, FileStream fs, byte version,
-			int indexEntrySize, long numIndexEntries, long requiredMidpointCount, UnmanagedMemoryAppendOnlyList<Midpoint> midpoints,
+			int indexEntrySize, long numIndexEntries, int requiredMidpointCount, UnmanagedMemoryAppendOnlyList<Midpoint> midpoints,
 			CancellationToken ct = default(CancellationToken)) {
 			int indexKeySize;
 			if (version == PTableVersions.IndexV4)
@@ -803,25 +803,36 @@ namespace EventStore.Core.Index {
 			return minDepth;
 		}
 
-		private static uint GetRequiredMidpointCount(long numIndexEntries, byte version, int minDepth) {
+		private static int GetRequiredMidpointCount(long numIndexEntries, byte version, int minDepth) {
 			if (numIndexEntries == 0) return 0;
 			if (numIndexEntries == 1) return 2;
 
 			int indexEntrySize = GetIndexEntrySize(version);
 			var depth = GetDepth(numIndexEntries * indexEntrySize, minDepth);
-			return (uint)Math.Max(2L, Math.Min((long)1 << depth, numIndexEntries));
+			return (int)Math.Max(2L, Math.Min((long)1 << depth, numIndexEntries));
 		}
 
 
-		public static uint GetRequiredMidpointCountCached(long numIndexEntries, byte version, int minDepth = 16) {
+		public static int GetRequiredMidpointCountCached(long numIndexEntries, byte version, int minDepth = 16) {
 			if (version >= PTableVersions.IndexV4)
 				return GetRequiredMidpointCount(numIndexEntries, version, minDepth);
 			return 0;
 		}
 
-		public static long GetMidpointIndex(long k, long numIndexEntries, long numMidpoints) {
-			if (numIndexEntries == 1 && numMidpoints == 2 && (k == 0 || k == 1)) return 0;
-			return (long)k * (numIndexEntries - 1) / (numMidpoints - 1);
+		public static long GetMidpointIndex(int k, long numIndexEntries, int numMidpoints) {
+			ArgumentOutOfRangeException.ThrowIfNegativeOrZero(numIndexEntries);
+			ArgumentOutOfRangeException.ThrowIfNegative(k);
+			ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(k, numMidpoints);
+
+			if (k == 0)
+				return 0;
+
+			if (k == numMidpoints - 1)
+				return numIndexEntries - 1;
+
+			// k * (numIndexEntries - 1) / (numMidpoints - 1), avoiding 64-bit integer overflows
+			var (q, r) = long.DivRem(numIndexEntries - 1, numMidpoints - 1);
+			return k * q + k * r / (numMidpoints - 1);
 		}
 
 		public static bool IsMidpointIndex(long index, long numIndexEntries, long numMidpoints) {
