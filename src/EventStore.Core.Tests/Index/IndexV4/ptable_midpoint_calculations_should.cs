@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using EventStore.Core.Index;
 using NUnit.Framework;
 using ILogger = Serilog.ILogger;
@@ -60,6 +61,41 @@ namespace EventStore.Core.Tests.Index.IndexV4 {
 		[Test]
 		public void construct_same_midpoint_indexes_for_any_combination_of_params_small() {
 			construct_same_midpoint_indexes_for_any_combination_of_params(200);
+		}
+
+		[Test]
+		public void return_a_positive_index_even_for_really_big_ptables() {
+			var depth = 28;
+			var index = PTable.GetMidpointIndex(
+				k: 265_000_000,
+				numIndexEntries: 46_000_000_000,
+				numMidpoints: 1 << depth);
+
+			Assert.Positive(index);
+		}
+
+		[Test]
+		public void return_correct_indexes_for_really_big_ptables() {
+			var numIndexEntries = 46_000_000_000;
+			var numMidpoints = 1 << 28;
+
+			for (var k = numMidpoints - 1000; k < numMidpoints; k++) {
+				var index = PTable.GetMidpointIndex(k, numIndexEntries, numMidpoints);
+				var correctIndex = GetMidpointIndexBigInt(k, numIndexEntries, numMidpoints);
+				Assert.Positive(correctIndex);
+				Assert.AreEqual(correctIndex, index);
+			}
+		}
+
+		private static long GetMidpointIndexBigInt(int k, long numIndexEntries, int numMidpoints) {
+			if (k == 0)
+				return 0;
+
+			if (k == numMidpoints - 1)
+				return numIndexEntries - 1;
+
+			var res = (BigInteger)k * (numIndexEntries - 1) / (numMidpoints - 1);
+			return (long)res;
 		}
 	}
 }
