@@ -74,14 +74,17 @@ namespace EventStore.Core.Index {
 					var requiredMidpointCount = GetRequiredMidpointCountCached(table.Count, table.Version, cacheDepth);
 					using var midpoints = new UnmanagedMemoryAppendOnlyList<Midpoint>((int)requiredMidpointCount + MidpointsOverflowSafetyNet);
 
+					var midpointCalculator = new MidpointIndexCalculator(table.Count, requiredMidpointCount);
 					long indexEntry = 0L;
+
 					ulong? previousHash = null;
 					foreach (var rec in records) {
 						AppendRecordTo(bs, buffer, table.Version, rec, indexEntrySize);
 						dumpedEntryCount += 1;
 						if (table.Version >= PTableVersions.IndexV4 &&
-						    IsMidpointIndex(indexEntry, table.Count, requiredMidpointCount)) {
+							indexEntry == midpointCalculator.NextMidpointIndex) {
 							midpoints.Add(new Midpoint(new IndexEntryKey(rec.Stream, rec.Version), indexEntry));
+							midpointCalculator.Advance();
 						}
 
 						// WRITE BLOOM FILTER ENTRY
@@ -105,6 +108,13 @@ namespace EventStore.Core.Index {
 								GetRequiredMidpointCount(numIndexEntries, table.Version, cacheDepth);
 							ComputeMidpoints(bs, fs, table.Version, indexEntrySize, numIndexEntries,
 								requiredMidpointCount, midpoints);
+						}
+
+						if (midpoints.Count > 0) {
+							if (midpoints[0].ItemIndex != 0)
+								throw new Exception("First midpoint was not the first index entry");
+							if (midpoints[^1].ItemIndex != numIndexEntries - 1)
+								throw new Exception("Last midpoint was not the last index entry");
 						}
 
 						WriteMidpointsTo(bs, fs, table.Version, indexEntrySize, buffer, dumpedEntryCount,
@@ -179,10 +189,12 @@ namespace EventStore.Core.Index {
 						cs.Write(headerBytes, 0, headerBytes.Length);
 
 						var buffer = new byte[indexEntrySize];
-						long indexEntry = 0L;
-						var requiredMidpointCount =
-							GetRequiredMidpointCountCached(numIndexEntries, version, cacheDepth);
+
+						var requiredMidpointCount = GetRequiredMidpointCountCached(numIndexEntries, version, cacheDepth);
 						using var midpoints = new UnmanagedMemoryAppendOnlyList<Midpoint>((int)requiredMidpointCount + MidpointsOverflowSafetyNet);
+
+						var midpointCalculator = new MidpointIndexCalculator(numIndexEntries, requiredMidpointCount);
+						long indexEntry = 0L;
 
 						// WRITE INDEX ENTRIES
 						ulong? previousHash = null;
@@ -191,9 +203,9 @@ namespace EventStore.Core.Index {
 							var current = enumerators[idx].Current;
 							AppendRecordTo(bs, buffer, version, current, indexEntrySize);
 							if (version >= PTableVersions.IndexV4 &&
-								IsMidpointIndex(indexEntry, numIndexEntries, requiredMidpointCount)) {
-								midpoints.Add(new Midpoint(new IndexEntryKey(current.Stream, current.Version),
-									indexEntry));
+								indexEntry == midpointCalculator.NextMidpointIndex) {
+								midpoints.Add(new Midpoint(new IndexEntryKey(current.Stream, current.Version), indexEntry));
+								midpointCalculator.Advance();
 							}
 
 							// WRITE BLOOM FILTER ENTRY
@@ -221,6 +233,13 @@ namespace EventStore.Core.Index {
 								requiredMidpointCount = GetRequiredMidpointCount(numIndexEntries, version, cacheDepth);
 								ComputeMidpoints(bs, f, version, indexEntrySize, numIndexEntries,
 									requiredMidpointCount, midpoints);
+							}
+
+							if (midpoints.Count > 0) {
+								if (midpoints[0].ItemIndex != 0)
+									throw new Exception("First midpoint was not the first index entry");
+								if (midpoints[^1].ItemIndex != numIndexEntries - 1)
+									throw new Exception("Last midpoint was not the last index entry");
 							}
 
 							WriteMidpointsTo(bs, f, version, indexEntrySize, buffer, dumpedEntryCount, numIndexEntries,
@@ -299,10 +318,12 @@ namespace EventStore.Core.Index {
 
 						// WRITE INDEX ENTRIES
 						var buffer = new byte[indexEntrySize];
-						long indexEntry = 0L;
 						var requiredMidpointCount =
 							GetRequiredMidpointCountCached(numIndexEntries, version, cacheDepth);
 						using var midpoints = new UnmanagedMemoryAppendOnlyList<Midpoint>((int)requiredMidpointCount + MidpointsOverflowSafetyNet);
+
+						var midpointCalculator = new MidpointIndexCalculator(numIndexEntries, requiredMidpointCount);
+						long indexEntry = 0L;
 
 						var enum1 = enumerators[0];
 						var enum2 = enumerators[1];
@@ -326,9 +347,10 @@ namespace EventStore.Core.Index {
 
 							AppendRecordTo(bs, buffer, version, current, indexEntrySize);
 							if (version >= PTableVersions.IndexV4 &&
-							    IsMidpointIndex(indexEntry, numIndexEntries, requiredMidpointCount)) {
+								indexEntry == midpointCalculator.NextMidpointIndex) {
 								midpoints.Add(new Midpoint(new IndexEntryKey(current.Stream, current.Version),
 									indexEntry));
+								midpointCalculator.Advance();
 							}
 
 							// WRITE BLOOM FILTER ENTRY
@@ -351,6 +373,13 @@ namespace EventStore.Core.Index {
 								requiredMidpointCount = GetRequiredMidpointCount(numIndexEntries, version, cacheDepth);
 								ComputeMidpoints(bs, f, version, indexEntrySize, numIndexEntries,
 									requiredMidpointCount, midpoints);
+							}
+
+							if (midpoints.Count > 0) {
+								if (midpoints[0].ItemIndex != 0)
+									throw new Exception("First midpoint was not the first index entry");
+								if (midpoints[^1].ItemIndex != numIndexEntries - 1)
+									throw new Exception("Last midpoint was not the last index entry");
 							}
 
 							WriteMidpointsTo(bs, f, version, indexEntrySize, buffer, dumpedEntryCount, numIndexEntries,
@@ -556,7 +585,7 @@ namespace EventStore.Core.Index {
 		}
 
 		private static void ComputeMidpoints(BufferedStream bs, FileStream fs, byte version,
-			int indexEntrySize, long numIndexEntries, long requiredMidpointCount, UnmanagedMemoryAppendOnlyList<Midpoint> midpoints,
+			int indexEntrySize, long numIndexEntries, int requiredMidpointCount, UnmanagedMemoryAppendOnlyList<Midpoint> midpoints,
 			CancellationToken ct = default(CancellationToken)) {
 			int indexKeySize;
 			if (version == PTableVersions.IndexV4)
@@ -803,44 +832,70 @@ namespace EventStore.Core.Index {
 			return minDepth;
 		}
 
-		private static uint GetRequiredMidpointCount(long numIndexEntries, byte version, int minDepth) {
+		private static int GetRequiredMidpointCount(long numIndexEntries, byte version, int minDepth) {
 			if (numIndexEntries == 0) return 0;
 			if (numIndexEntries == 1) return 2;
 
 			int indexEntrySize = GetIndexEntrySize(version);
 			var depth = GetDepth(numIndexEntries * indexEntrySize, minDepth);
-			return (uint)Math.Max(2L, Math.Min((long)1 << depth, numIndexEntries));
+			return (int)Math.Max(2L, Math.Min((long)1 << depth, numIndexEntries));
 		}
 
 
-		public static uint GetRequiredMidpointCountCached(long numIndexEntries, byte version, int minDepth = 16) {
+		public static int GetRequiredMidpointCountCached(long numIndexEntries, byte version, int minDepth = 16) {
 			if (version >= PTableVersions.IndexV4)
 				return GetRequiredMidpointCount(numIndexEntries, version, minDepth);
 			return 0;
 		}
 
-		public static long GetMidpointIndex(long k, long numIndexEntries, long numMidpoints) {
-			if (numIndexEntries == 1 && numMidpoints == 2 && (k == 0 || k == 1)) return 0;
-			return (long)k * (numIndexEntries - 1) / (numMidpoints - 1);
+		public static long GetMidpointIndex(int k, long numIndexEntries, int numMidpoints) {
+			Ensure.Positive(numIndexEntries, nameof(numIndexEntries));
+			Ensure.Nonnegative(k, nameof(k));
+			if (k >= numMidpoints)
+				throw new ArgumentOutOfRangeException($"{nameof(k)} ('{k}') must be less than '{nameof(numMidpoints)}'.");
+
+			if (k == 0)
+				return 0;
+
+			if (k == numMidpoints - 1)
+				return numIndexEntries - 1;
+
+			// k * (numIndexEntries - 1) / (numMidpoints - 1), avoiding 64-bit integer overflows
+			var (q, r) = Math.DivRem(numIndexEntries - 1, numMidpoints - 1);
+			return k * q + k * r / (numMidpoints - 1);
 		}
 
-		public static bool IsMidpointIndex(long index, long numIndexEntries, long numMidpoints) {
-			//special cases
-			if (numIndexEntries < 1) return false;
-			if (numIndexEntries == 1) {
-				if (numMidpoints == 2 && index == 0) return true;
-				return false;
+		public class MidpointIndexCalculator {
+			private readonly long _numIndexEntries;
+			private readonly int _numMidpoints;
+			private int _midpointNumber;
+
+			public MidpointIndexCalculator(long numIndexEntries, int numMidpoints, int initialMidpointNumber = 0) {
+				Ensure.Nonnegative(numIndexEntries, nameof(numIndexEntries));
+				Ensure.Nonnegative(numMidpoints, nameof(numMidpoints));
+
+				_numIndexEntries = numIndexEntries;
+				_numMidpoints = numMidpoints;
+				_midpointNumber = initialMidpointNumber;
+				Advance();
 			}
 
-			//a midpoint index entry satisfies:
-			//index = floor (k * (numIndexEntries - 1) / (numMidpoints - 1));    for k = 0 to numMidpoints-1
-			//we need to find if there exists an integer x, such that:
-			//index*(numMidpoints-1)/(numIndexEntries-1) <= x < (index+1)*(numMidpoints-1)/(numIndexEntries-1)
-			var lower = index * (numMidpoints - 1) / (numIndexEntries - 1);
-			if ((index * (numMidpoints - 1)) % (numIndexEntries - 1) != 0) lower++;
-			var upper = (index + 1) * (numMidpoints - 1) / (numIndexEntries - 1);
-			if (((index + 1) * (numMidpoints - 1)) % (numIndexEntries - 1) == 0) upper--;
-			return lower <= upper;
+			public long? NextMidpointIndex { get; private set; }
+
+			public void Advance() {
+				if (_numIndexEntries == 0) {
+					NextMidpointIndex = null;
+					return;
+				}
+
+				if (_midpointNumber >= _numMidpoints) {
+					// no more midpoints
+					NextMidpointIndex = null;
+					return;
+				}
+
+				NextMidpointIndex = GetMidpointIndex(_midpointNumber++, _numIndexEntries, _numMidpoints);
+			}
 		}
 	}
 }
