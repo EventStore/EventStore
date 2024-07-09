@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			else if (version == PTableVersions.IndexV4)
 				indexEntryKeySize = PTable.IndexKeyV4Size;
 
-			uint numMidpoints = PTable.GetRequiredMidpointCountCached(numIndexEntries, version);
+			int numMidpoints = PTable.GetRequiredMidpointCountCached(numIndexEntries, version);
 
 			byte[] data = new byte[255];
 
