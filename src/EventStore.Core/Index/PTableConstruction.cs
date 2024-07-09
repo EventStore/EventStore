@@ -849,9 +849,10 @@ namespace EventStore.Core.Index {
 		}
 
 		public static long GetMidpointIndex(int k, long numIndexEntries, int numMidpoints) {
-			ArgumentOutOfRangeException.ThrowIfNegativeOrZero(numIndexEntries);
-			ArgumentOutOfRangeException.ThrowIfNegative(k);
-			ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(k, numMidpoints);
+			Ensure.Positive(numIndexEntries, nameof(numIndexEntries));
+			Ensure.Nonnegative(k, nameof(k));
+			if (k >= numMidpoints)
+				throw new ArgumentOutOfRangeException($"{nameof(k)} ('{k}') must be less than '{nameof(numMidpoints)}'.");
 
 			if (k == 0)
 				return 0;
@@ -860,7 +861,7 @@ namespace EventStore.Core.Index {
 				return numIndexEntries - 1;
 
 			// k * (numIndexEntries - 1) / (numMidpoints - 1), avoiding 64-bit integer overflows
-			var (q, r) = long.DivRem(numIndexEntries - 1, numMidpoints - 1);
+			var (q, r) = Math.DivRem(numIndexEntries - 1, numMidpoints - 1);
 			return k * q + k * r / (numMidpoints - 1);
 		}
 
@@ -870,8 +871,8 @@ namespace EventStore.Core.Index {
 			private int _midpointNumber;
 
 			public MidpointIndexCalculator(long numIndexEntries, int numMidpoints, int initialMidpointNumber = 0) {
-				ArgumentOutOfRangeException.ThrowIfNegative(numIndexEntries);
-				ArgumentOutOfRangeException.ThrowIfNegative(numMidpoints);
+				Ensure.Nonnegative(numIndexEntries, nameof(numIndexEntries));
+				Ensure.Nonnegative(numMidpoints, nameof(numMidpoints));
 
 				_numIndexEntries = numIndexEntries;
 				_numMidpoints = numMidpoints;

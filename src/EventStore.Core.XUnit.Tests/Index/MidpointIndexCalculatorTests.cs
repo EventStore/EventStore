@@ -21,19 +21,19 @@ public class MidpointIndexCalculatorTests {
 	[Fact]
 	public void return_correct_result_when_num_midpoints_is_zero() {
 		var sut = new PTable.MidpointIndexCalculator(numIndexEntries: 10, numMidpoints: 0);
-		Assert.Equal([], ConsumeAll(sut));
+		Assert.Equal(new long[] {}, ConsumeAll(sut));
 	}
 
 	[Fact]
 	public void return_correct_result_when_num_index_entries_is_zero() {
 		var sut = new PTable.MidpointIndexCalculator(numIndexEntries: 0, numMidpoints: 2);
-		Assert.Equal([], ConsumeAll(sut));
+		Assert.Equal(new long[] {}, ConsumeAll(sut));
 	}
 
 	[Fact]
 	public void return_correct_result_when_num_index_entries_is_one() {
 		var sut = new PTable.MidpointIndexCalculator(numIndexEntries: 1, numMidpoints: 2);
-		Assert.Equal([0, 0], ConsumeAll(sut));
+		Assert.Equal(new[] {0L, 0L}, ConsumeAll(sut));
 	}
 
 	[Fact]
@@ -43,10 +43,10 @@ public class MidpointIndexCalculatorTests {
 
 		var sut = new PTable.MidpointIndexCalculator(numIndexEntries, numMidpoints, numMidpoints - 2);
 		Assert.Equal(
-			[
+			new[] {
 				45_999_999_827,
 				45_999_999_999,
-			],
+			},
 			ConsumeAll(sut));
 	}
 
