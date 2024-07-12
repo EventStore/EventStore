@@ -4,7 +4,7 @@ title: "Upgrade Guide"
 
 # Upgrade guide for EventStoreDB 24.6
 
-EventStoreDB 24.6 is now available for download. You can install it using [Packagecloud](https://packagecloud.io/EventStore/EventStore-OSS), [Chocolatey](https://chocolatey.org/packages/eventstore-oss), or [Docker](https://hub.docker.com/r/eventstore/eventstore/tags?page=1&name=24.2).  Packages are available on our [website](https://www.eventstore.com/downloads) with detailed instructions for each platform.
+EventStoreDB 24.6 is now available for download. You can install it using [Packagecloud](https://packagecloud.io/EventStore/EventStore-OSS), [Chocolatey](https://chocolatey.org/packages/eventstore-oss), or [Docker](https://hub.docker.com/r/eventstore/eventstore/tags?page=1&name=24.6).  Packages are available on our [website](https://www.eventstore.com/downloads) with detailed instructions for each platform.
 
 ### Should you upgrade?
 

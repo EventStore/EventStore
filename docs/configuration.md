@@ -334,7 +334,7 @@ EventStoreDb was 100,000 entries.
 ::: note
 The default value of 0 for `StreamInfoCacheCapacity` might not always be the best value for optimal performance. Ideally, it should be set to double the number of streams in the anticipated working set.
 
-The total number of streams can be obtained by checking the event count in the `$streams` system stream. This stream is created by the [$streams system projection](https://developers.eventstore.com/server/v24.2/projections.html#streams-projection).
+The total number of streams can be obtained by checking the event count in the `$streams` system stream. This stream is created by the [$streams system projection](projections.md#streams-projection).
 
 It should be noted that the total number of streams does not necessarily give you the anticipated working set. The working set of streams is the set of streams that you intend on actively reading, writing, and/or subscribing to. This can be much lower than the total number of streams in certain cases, especially in systems that have many short-lived streams.
 :::

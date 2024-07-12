@@ -35,7 +35,7 @@ When opening an issue, follow our [guidelines](https://github.com/EventStore/Eve
 
 ## Protocols, clients, and SDKs
 
-EventStoreDB supports one client protocol, which is described below. The older TCP client API has been deprecated in version 20.2 and removed in version 24.2. The final version with TCP API support is 23.10. More information can be found in our [blog post](https://www.eventstore.com/blog/sunsetting-eventstoredb-tcp-based-client-protocol).
+EventStoreDB supports one client protocol, which is described below. The older TCP client API has been deprecated in version 20.2 and removed in version 24.6. The final version with TCP API support is 23.10. More information can be found in our [blog post](https://www.eventstore.com/blog/sunsetting-eventstoredb-tcp-based-client-protocol).
 
 ### Client protocol
 
@@ -70,7 +70,7 @@ The current AtomPub-based HTTP application API is disabled by default since v20 
 You need to enable the AtomPub protocol to have a fully-functioning database user interface.
 :::
 
-Learn more about EventStoreDB HTTP interface in the [HTTP documentation](/clients/http-api/v24.2/). 
+Learn more about EventStoreDB HTTP interface in the [HTTP documentation](@http-api/). 
 
 #### Community developed clients
 

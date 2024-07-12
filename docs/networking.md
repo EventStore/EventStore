@@ -162,21 +162,21 @@ Value must be greater than or equal to 65,535 and less than 2^31. See the docs [
 
 This is configured with `Kestrel.Limits.Http2.InitialStreamWindowSize` in the settings file.
 
-## TCP configuration
+## Replication protocol
 
 The TCP protocol is used internally for cluster nodes to replicate with each other. It happens over the [internal](#internal) TCP communication.
 
-### Internal
+### Interface and port
 
 Internal TCP binds to the IP address specified in the `ReplicationIp` setting (previously `IntIp`). It must be configured if you run a multi-node cluster.
 
 By default, EventStoreDB binds its internal networking on the loopback interface only (`127.0.0.1`). You can change this behaviour and tell EventStoreDB to listen on a specific internal IP address. To do that set the `ReplicationIp` to `0.0.0.0` or the IP address of the network interface.
 
-| Format               | Syntax                     |
-|:---------------------|:---------------------------|
-| Command line         | `--replication-ip`         |
-| YAML                 | `ReplicationIp`            |
-| Environment variable | `EVENTSTORE_REPLICATION_IP`|
+| Format               | Syntax                      |
+|:---------------------|:----------------------------|
+| Command line         | `--replication-ip`          |
+| YAML                 | `ReplicationIp`             |
+| Environment variable | `EVENTSTORE_REPLICATION_IP` |
 
 **Default**: `127.0.0.1` (loopback).
 
@@ -188,11 +188,11 @@ Please note that the `IntIp` parameter has been deprecated as of version 23.10.0
 
 By default, EventStoreDB uses port `1112` for internal TCP. You can change this by specifying the `ReplicationPort` setting (previously `IntTcpPort` setting).
 
-| Format               | Syntax                       |
-|:---------------------|:-----------------------------|
-| Command line         | `--replication-port`         |
-| YAML                 | `ReplicationPort`            |
-| Environment variable | `EVENTSTORE_REPLICATION_PORT`|
+| Format               | Syntax                        |
+|:---------------------|:------------------------------|
+| Command line         | `--replication-port`          |
+| YAML                 | `ReplicationPort`             |
+| Environment variable | `EVENTSTORE_REPLICATION_PORT` |
 
 **Default**: `1112`
 
@@ -230,11 +230,11 @@ The only place where these settings make any effect is the [gossip](cluster.md#g
 
 By default, a cluster node will advertise itself using `NodeIp` and `NodePort`. You can override the advertised HTTP port using the  `NodePortAdvertiseAs` setting (previously `HttpPortAdvertiseAs` setting).
 
-| Format               | Syntax                             |
-|:---------------------|:-----------------------------------|
-| Command line         | `--node-port-advertise-as`         |
-| YAML                 | `NodePortAdvertiseAs`              |
-| Environment variable | `EVENTSTORE_NODE_PORT_ADVERTISE_AS`| 
+| Format               | Syntax                              |
+|:---------------------|:------------------------------------|
+| Command line         | `--node-port-advertise-as`          |
+| YAML                 | `NodePortAdvertiseAs`               |
+| Environment variable | `EVENTSTORE_NODE_PORT_ADVERTISE_AS` | 
 
 ::: warning
 Please note that the `HttpPortAdvertiseAs` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `NodePortAdvertiseAs` parameter instead.
@@ -256,11 +256,11 @@ Please note that the `ExtHostAdvertiseAs` parameter has been deprecated as of ve
 
 Both internal and external TCP ports can be advertised using custom values:
 
-| Format               | Syntax                                        |
-|:---------------------|:----------------------------------------------|
-| Command line         | `--replication-tcp-port-advertise-as`         |
-| YAML                 | `ReplicationTcpPortAdvertiseAs`               |
-| Environment variable | `EVENTSTORE_REPLICATION_TCP_PORT_ADVERTISE_AS`| 
+| Format               | Syntax                                         |
+|:---------------------|:-----------------------------------------------|
+| Command line         | `--replication-tcp-port-advertise-as`          |
+| YAML                 | `ReplicationTcpPortAdvertiseAs`                |
+| Environment variable | `EVENTSTORE_REPLICATION_TCP_PORT_ADVERTISE_AS` | 
 
 ::: warning
 Please note that the `IntTcpPortAdvertiseAs` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `ReplicationTcpPortAdvertiseAs` and `NodeTcpPortAdvertiseAs` parameters instead, respectively.
@@ -323,19 +323,19 @@ If in doubt, choose higher numbers. This adds a small period of time to discover
 
 Replication/Internal TCP heartbeat (between cluster nodes):
 
-| Format               | Syntax                                     |
-|:---------------------|:-------------------------------------------|
-| Command line         | `--replication-heartbeat-interval`         |
-| YAML                 | `ReplicationHeartbeatInterval`             |
-| Environment variable | `EVENTSTORE_REPLICATION_HEARTBEAT_INTERVAL`| 
+| Format               | Syntax                                      |
+|:---------------------|:--------------------------------------------|
+| Command line         | `--replication-heartbeat-interval`          |
+| YAML                 | `ReplicationHeartbeatInterval`              |
+| Environment variable | `EVENTSTORE_REPLICATION_HEARTBEAT_INTERVAL` | 
 
 **Default**: `700` (ms)
 
-| Format               | Syntax                                    |
-|:---------------------|:------------------------------------------|
-| Command line         | `--replication-heartbeat-timeout`         |
-| YAML                 | `ReplicationHeartbeatTimeout`             |
-| Environment variable | `EVENTSTORE_REPLICATION_HEARTBEAT_TIMEOUT`| 
+| Format               | Syntax                                     |
+|:---------------------|:-------------------------------------------|
+| Command line         | `--replication-heartbeat-timeout`          |
+| YAML                 | `ReplicationHeartbeatTimeout`              |
+| Environment variable | `EVENTSTORE_REPLICATION_HEARTBEAT_TIMEOUT` | 
 
 **Default**: `700` (ms)
 
@@ -381,6 +381,97 @@ You can also disable the gossip protocol in the external HTTP interface. If you 
 
 **Default**: `true`, gossip is enabled on the external HTTP.
 
+## External TCP <Badge type="warning" text="Commercial" vertical="middle" />
+
+The TCP API plugin enables client applications based on the external TCP API to run without any changes. This provides developers a mechanism to migrate to gRPC clients. This bridge solution enables development teams to plan for the End Of Life (EOL) of the external TCP API. Past the EOL, the external TCP API will no longer be supported.
+
+### Enabling the plugin
+
+Refer to the general [plugins configuration](configuration#plugins-configuration) guide to see how to configure plugins with JSON files and environment variables.
+
+To enable the TCP API plugin, save the following configuration in a JSON file, for example `<esdb-installation-directory>/config/tcp-plugin-config.json`, in the EventStoreDB installation directory for a node:
+
+```json
+{
+  "EventStore": {
+    "TcpPlugin": {
+      "EnableExternalTcp": true
+    }
+  }
+}
+```
+
+Once the plugin is enabled, the server will log a message similar to the one below:
+
+```
+[11212, 1,18:44:34.070,INF] "TcpApi" "24.6.0.0" plugin enabled.
+```
+
+### Other parameters
+
+The following options can be set in the json configuration:
+
+1. `NodeHeartbeatTimeout` - defaults to: 1000
+2. `NodeHeartbeatInterval` - defaults to: 2000
+3. `NodeTcpPort` - defaults to: 1113
+4. `NodeTcpPortAdvertiseAs` - defaults to: 1113
+
+The above default values can be overridden, for example:
+
+```json
+{
+  "EventStore": {
+    "TcpPlugin": {
+      "EnableExternalTcp": true,
+      "NodeTcpPort": 8113,
+      "NodeTcpPortAdvertiseAs": 8113,
+      "NodeHeartbeatInterval": 2000,
+      "NodeHeartbeatTimeout": 1000
+    }
+  }
+}
+```
+
+### Troubleshooting
+
+#### Plugin not loaded
+
+The plugin has to be located in a subdirectory of the server's plugins directory. To check this:
+
+1. Go to the installation directory of a node, the directory containing the EventStoreDb executable.
+2. In this directory, there should be a directory called `plugins`, create it if this is not the case.
+3. The `plugins` directory should have a subdirectory for the TCP API plugin, for example `EventStore.TcpPlugin`. Create it if it doesn't exist.
+4. The binaries of the plugin should be located in that same subdirectory.
+
+You can verify which plugins have been found and loaded by searching for log entries similar to the following:
+
+```
+[11212, 1,18:44:30.420,INF] Plugins path: "C:\\EventStore\\plugins"
+[11212, 1,18:44:30.420,INF] Adding: "C:\\EventStore\\plugins" to the plugin catalog.
+[11212, 1,18:44:30.422,INF] Adding: "C:\\EventStore\\plugins\\EventStore.Licensing" to the plugin catalog.
+[11212, 1,18:44:30.432,INF] Adding: "C:\\plugins\\EventStore.POC.ConnectedSubsystemsPlugin" to the plugin catalog.
+[11212, 1,18:44:30.433,INF] Adding: "C:\\plugins\\EventStore.POC.ConnectorsPlugin" to the plugin catalog.
+[11212, 1,18:44:30.436,INF] Adding: "C:\\plugins\\EventStore.TcpPlugin" to the plugin catalog.
+[11212, 1,18:44:30.479,INF] Loaded SubsystemsPlugin plugin: "licensing" "24.10.0.0".
+[11212, 1,18:44:30.483,INF] Loaded SubsystemsPlugin plugin: "connected" "0.0.5".
+[11212, 1,18:44:30.496,INF] Loaded ConnectedSubsystemsPlugin plugin: "connectors" "0.0.5".
+[11212, 1,18:44:30.504,INF] Loaded SubsystemsPlugin plugin: "tcp-api" "24.10.0.0".
+```
+
+#### Plugin not started
+
+The plugin has to be configured to be enabled.
+If you see the following log it means the plugin was found but not started:
+
+```
+[ 5104, 1,19:03:13.807,INF] "TcpApi" "24.6.0.0" plugin disabled. "Set 'EventStore:TcpPlugin:EnableExternalTcp' to 'true' to enable"
+```
+
+When the plugin starts, you should see a log similar to the following:
+
+```
+[11212, 1,18:44:34.070,INF] "TcpApi" "24.6.0.0" plugin enabled.
+```
 
 
 
