@@ -36,9 +36,9 @@ The buttons on the top right when you are viewing an event stream are:
 
 - _Pause_: Stop showing events arriving into this stream.
 - _Resume_: Resume showing events arriving into this stream.
-- _Edit ACL_: Edit [the access control lists](./security.md#access-control-lists) for a stream.
-- _Add Event_: [Add a new event](/http-api/#appending-events) to the stream.
-- _Delete_: [Delete a stream](/http-api/#deleting-a-stream) to the stream.
+- _Edit ACL_: Edit [the access control lists](security.md#access-control-lists) for a stream.
+- _Add Event_: [Add a new event](@http-api/README.md#appending-events) to the stream.
+- _Delete_: [Delete a stream](@http-api/README.md#deleting-a-stream) to the stream.
 - _Query_:
 
 The buttons on the left above the events when you are viewing an event stream are:
@@ -58,7 +58,7 @@ The _Projections_ tab shows system and user created projections defined in Event
 - _Disable All_: Disable all running projections.
 - _Enable All_: Enable all stopped projections.
 - _Include Queries_: Toggle displaying queries in the Projections table.
-- _New Projection_: [Create a user-defined projection](./projections.md#user-defined-projections) with the Admin UI.
+- _New Projection_: [Create a user-defined projection](projections.md#user-defined-projections) with the Admin UI.
 
 Clicking an individual projection shows further details.
 
@@ -69,8 +69,8 @@ On the left is the projection definition. On the right are the stats, results, a
 - _Start_: Start a stopped projection.
 - _Stop_: Stop a running projection.
 - _Edit_: Edit the projection definition.
-- _Config_: [Set configuration options](./projections.md#configuring-projections) for a projection.
-- _Debug_: Opens [the debugging interface](./projections.md#debugging) to debug what effect a projection is having on events.
+- _Config_: [Set configuration options](projections.md#configuring-projections) for a projection.
+- _Debug_: Opens [the debugging interface](projections.md#debugging) to debug what effect a projection is having on events.
 - _Delete_: Delete a projection.
 - _Reset_: Reset a projection.
 - _Back_: Returns you to the parent screen.
@@ -98,13 +98,13 @@ Clicking the _+_ icon next to a stream name reveals the subscription name and mo
 
 ![Web admin interface projections tab](./images/wai-admin.png)
 
-The _Admin_ tab shows sub systems enabled (currently only [projections](./projections.md)) on EventStoreDB and [scavenges](./operations.md#scavenging) run. You can start a new scavenge operation by clicking the _Scavenge_ button, and shut EventStoreDB down by clicking the _Shutdown Server_ button.
+The _Admin_ tab shows sub systems enabled (currently only [projections](projections.md)) on EventStoreDB and [scavenges](operations.md#scavenging) run. You can start a new scavenge operation by clicking the _Scavenge_ button, and shut EventStoreDB down by clicking the _Shutdown Server_ button.
 
 ## Users
 
 ![Web admin interface projections tab](./images/wai-users.png)
 
-The _Users_ tab shows [the users defined in EventStoreDB](./security.md#authentication), clicking an individual user shows a JSON representation of that users details.
+The _Users_ tab shows [the users defined in EventStoreDB](security.md#authentication), clicking an individual user shows a JSON representation of that users details.
 
 ## Log out
 

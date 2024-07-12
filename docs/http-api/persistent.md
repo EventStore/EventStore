@@ -11,7 +11,7 @@ The Administration UI includes a _Competing Consumers_ section where you are abl
 Before interacting with a subscription group, you need to create one. This requires [admin permissions](security.md). You will get an error if you try to create a subscription group more than once.
 
 ::: warning
-Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to create persistent subscriptions to `$all`, use the [appropriate client method](@clients/persistent-subscriptions.md#subscribing-to-all).
+Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to create persistent subscriptions to `$all`, use the [appropriate client method](@clients/grpc/persistent-subscriptions.md#subscribing-to-all).
 :::
 
 <!-- TODO: File inclusion for the below? -->
@@ -54,7 +54,7 @@ You can edit the settings of an existing subscription while it is running. This 
 | `/subscriptions/{stream}/{subscription_name}` | `application/json`      | POST   |
 
 ::: warning
-Persistent subscriptions to `$all` are not supported over the HTTP API. To update persistent subscriptions to `$all`, use the [appropriate client method](@clients/persistent-subscriptions.md#updating-a-subscription-group).
+Persistent subscriptions to `$all` are not supported over the HTTP API. To update persistent subscriptions to `$all`, use the [appropriate client method](@clients/grpc/persistent-subscriptions.md#updating-a-subscription-group).
 :::
 
 ### Query parameters
@@ -75,7 +75,7 @@ _Same parameters as [Creating a Persistent Subscription](#creating-a-persistent-
 | `/subscriptions/{stream}/{subscription_name}` | `application/json`      | DELETE |
 
 ::: warning
-Deleting persistent subscriptions to `$all` is not supported over the HTTP API. If you want to delete persistent subscriptions to `$all`, use the [appropriate client method](@clients/persistent-subscriptions.md#deleting-a-subscription-group).
+Deleting persistent subscriptions to `$all` is not supported over the HTTP API. If you want to delete persistent subscriptions to `$all`, use the [appropriate client method](@clients/grpc/persistent-subscriptions.md#deleting-a-subscription-group).
 :::
 
 ### Query parameters
