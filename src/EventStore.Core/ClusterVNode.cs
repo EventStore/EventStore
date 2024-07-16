@@ -251,7 +251,8 @@ namespace EventStore.Core {
 			CertificateProvider certificateProvider = null,
 			IConfiguration configuration = null,
 			IExpiryStrategy expiryStrategy = null,
-			Guid? instanceId = null, int debugIndex = 0) {
+			Guid? instanceId = null, int debugIndex = 0,
+			Action<IServiceCollection> configureAdditionalNodeServices = null) {
 
 			configuration ??= new ConfigurationBuilder().Build();
 
@@ -1564,7 +1565,7 @@ namespace EventStore.Core {
 			var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
 				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
 
-			IServiceCollection ConfigureNodeServices(IServiceCollection services) =>
+			IServiceCollection ConfigureNodeServices(IServiceCollection services) {
 				services
 					.AddSingleton(telemetryService) // for correct disposal
 					.AddSingleton(_readIndex)
@@ -1573,8 +1574,13 @@ namespace EventStore.Core {
 					.AddSingleton(certificateProvider)
 					.AddSingleton<IReadOnlyList<IDbTransform>>(new List<IDbTransform> { new IdentityDbTransform() })
 					.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
-					.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates, X509Certificate2Collection Roots)>>
+					.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates,
+							X509Certificate2Collection Roots)>>
 						(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()));
+
+				configureAdditionalNodeServices?.Invoke(services);
+				return services;
+			}
 
 			void ConfigureNode(IApplicationBuilder app) {
 				var dbTransforms = app.ApplicationServices.GetService<IReadOnlyList<IDbTransform>>();
