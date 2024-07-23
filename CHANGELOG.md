@@ -64,6 +64,21 @@ All notable changes to this project will be documented in this file.
 - Unbuffered config setting now has no effect. Let us know if you're using this feature. [EventStore#4286](https://github.com/EventStore/EventStore/pull/4286)
 - Change event type of Persistent Subscription checkpoint to `$SubscriptionCheckpoint`. [EventStore#4213](https://github.com/EventStore/EventStore/pull/4213)
 
+## [23.10.2] - 2024-07-10
+
+### Changed
+- Upgrade to .NET 8. [EventStore#4046](https://github.com/EventStore/EventStore/pull/4046)
+- Explicitly set the shutdown timeout to 5s, which was default in previous dotnet versions. Behaviour unchanged since previous release. [EventStore#4110](https://github.com/EventStore/EventStore/pull/4110)
+- Index merge now continues even if there is not enough memory to store the Bloom filter. [EventStore#4296](https://github.com/EventStore/EventStore/pull/4296)
+
+### Fixed
+- Upgraded package reference for [CVE-2024-0057](https://github.com/advisories/GHSA-68w7-72jg-6qpp). [EventStore#4164](https://github.com/EventStore/EventStore/pull/4164)
+- Events written in explicit transactions via TCP can be missing from $all reads/subscriptions [EventStore#4253](https://github.com/EventStore/EventStore/pull/4253)
+- TestClient package dependencies [EventStore#4207](https://github.com/EventStore/EventStore/pull/4207)
+- Finalizer bug no longer causes process exit if a memory allocation fails. [EventStore#4292](https://github.com/EventStore/EventStore/pull/4292)
+- Redacted events break replication on a follower node. [EventStore#4304](https://github.com/EventStore/EventStore/pull/4304)
+- Prevent 64-bit integer overflow in `GetMidpointIndex()` / `IsMidpointIndex()`. [EventStore#4333](https://github.com/EventStore/EventStore/pull/4333)
+
 ## [24.2.0] - 2024-02-25
 
 ### Changed
