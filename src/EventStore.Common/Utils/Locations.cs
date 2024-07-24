@@ -18,7 +18,7 @@ namespace EventStore.Common.Utils {
 		public static readonly string DefaultTestClientLogDirectory;
 		public static readonly string FallbackDefaultDataDirectory;
 		public static readonly string DefaultTrustedRootCertificateDirectory;
-
+		public static readonly string DefaultLicensePath;
 		static Locations() {
 			ApplicationDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
 			                       Path.GetFullPath(".");
@@ -68,6 +68,10 @@ namespace EventStore.Common.Utils {
 				Path.Combine(DefaultContentDirectory, "Prelude")
 			);
 			PreludeResourcesPath = "EventStore.Projections.Core.Prelude";
+
+			DefaultLicensePath = GetPrecededLocation(
+				Path.Combine(ApplicationDirectory, "eventstore.lic"),
+				Path.Combine(DefaultConfigurationDirectory, "eventstore.lic"));
 		}
 
 		/// <summary>
