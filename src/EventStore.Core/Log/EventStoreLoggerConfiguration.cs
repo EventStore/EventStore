@@ -77,10 +77,11 @@ namespace EventStore.Common.Log {
 
 		public static bool AdjustMinimumLogLevel(LogLevel logLevel) {
 			lock (_defaultLogLevelSwitchLock) {
+#if !DEBUG
 				if (_defaultLogLevelSwitch == null) {
 					throw new InvalidOperationException("The logger configuration has not yet been initialized.");
 				}
-
+#endif
 				if (!Enum.TryParse<LogEventLevel>(logLevel.ToString(), out var serilogLogLevel)) {
 					throw new ArgumentException($"'{logLevel}' is not a valid log level.");
 				}

@@ -3,6 +3,6 @@
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 	</PropertyGroup>
 	<ItemGroup>
-	  <PackageReference Include="Serilog" Version="3.1.1" />
+	  <PackageReference Include="Serilog" Version="4.0.0" />
 	</ItemGroup>
 </Project>
