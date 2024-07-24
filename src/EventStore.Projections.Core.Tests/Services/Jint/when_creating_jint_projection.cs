@@ -1,5 +1,4 @@
 ﻿using System;
-using EventStore.Common;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -29,7 +28,8 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
 				using (_stateHandlerFactory.Create(_projectionType, @"log(1;", true, logger: (s, _) => { })) {
 				}
 			} catch (Exception ex) {
-				Assert.IsInstanceOf<Esprima.ParserException>(ex);
+				Assert.IsInstanceOf<JavaScriptException>(ex);
+				Assert.True(((JavaScriptException) ex).Message.Contains("Unexpected token ';'"));
 			}
 		}
 
