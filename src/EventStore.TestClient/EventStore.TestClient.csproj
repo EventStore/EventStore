@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
@@ -12,11 +12,11 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="EventStore.Client" Version="21.2.0" />
-		<PackageReference Include="EventStore.Client.Grpc.Streams" Version="22.0.0" />
+		<PackageReference Include="EventStore.Client.Grpc.Streams" Version="23.3.3" />
 		<PackageReference Include="EventStore.Plugins" Version="23.10.1" />
-		<PackageReference Include="Google.Protobuf" Version="3.25.0" />
-		<PackageReference Include="Grpc.Net.Client" Version="2.59.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.59.0">
+		<PackageReference Include="Google.Protobuf" Version="3.27.2" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.64.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.65.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
