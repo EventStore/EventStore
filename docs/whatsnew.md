@@ -18,15 +18,15 @@ This is a stop-gap solution for customers who have not yet upgraded to the gRPC 
 
 Read more about enabling and configuration of the TCP API plugin in the [documentation](networking.md#external-tcp).
 
-### macOS arm64 support for development
+### Apple Silicon support for development
 
 An alpha build was available for running EventStoreDB on arm64 processors since EventStoreDB v22.10 using a [Docker image](https://hub.docker.com/r/eventstore/eventstore/tags?page=&page_size=&ordering=&name=arm64).
 
-Since version 24.6 EventStoreDB can now be built from source and executed on macOS for Apple Silicon.
+Since version 24.6, EventStoreDB can now be built from source and executed on macOS with Apple Silicon.
 
 ### Additional metrics
 
-Continuing the work on observability the following [metrics](metrics.md) are now available.
+Continuing the work on observability, the following [metrics](metrics.md) are now available.
 
 * [Election counter](metrics.md#elections-count): `eventstore_elections_count`
 * [Projections](metrics.md#projections).
@@ -51,44 +51,42 @@ Continuing the work on observability the following [metrics](metrics.md) are now
 - **Performance improvements**
 - **X.509 authentication in client libraries**
 - **Metric support for Linux, FreeBSD, macOS**
-- **Allow to specify the status Code for health requests**
+- **Allow specifying the status Code for health requests**
 - **Fix: Events in explicit transactions can be missing in `$all` reads**
 - **Miscellaneous**
 
 ### Performance improvements
 
-Several performance improvements have been made to EventStoreDB.
+Several performance and compatibility improvements have been made to EventStoreDB and client SDKs, described below.
 
 #### Reduced FileHandle usage by 80%
 
-The number of file handles used by the database has been reduced by 80%.
-
-This improvement will mostly benefit large databases
-* Reduces the likelihood of hitting the default OS file handle limit
-* Lower the overall memory footprint
+The number of file handles used by the database has been reduced by 80%. On large databases it results in:
+* Reduced likelihood of hitting the default OS file handle limit
+* Lower overall memory footprint
 
 #### Faster Startup For Scavenged databases
 
-Large database with thousands of scavenged chunks now start faster.
+Large database with thousands of scavenged chunks now starts faster.
 A 10x improvement has been observed in testing.
 
 ### X.509 authentication in client APIs <Badge type="warning" text="Commercial" vertical="middle" />
 
-Refer to the [clients documentation](@clients/authentication.md) for instructions on how to enable and use X.509 certificates with the EventStoreDB clients.
+Refer to the [clients documentation](@clients/grpc/authentication.md) for instructions on how to enable and use X.509 certificates with the EventStoreDB clients.
 
 ### Metrics support for Linux, FreeBSD, OSX
 
 The following [System metrics](metrics.md#system) are now available on the following platforms:
-* `eventstore_sys_load_avg`: Linux, FreeBSD, OSX, Windows
-* `eventstore_sys_cpu`: Linux, FreeBSD, OSX
+* `eventstore_sys_load_avg`: Linux, FreeBSD, macOS, Windows
+* `eventstore_sys_cpu`: Linux, FreeBSD, macOS
 
-The following [Process metrics](metrics.md#process) is now available on the following platforms:
-* `eventstore_disk_io_bytes`: Linux, Windows and OSX
+The following [Process metrics](metrics.md#process) are now available on the following platforms:
+* `eventstore_disk_io_bytes`: Linux, Windows and macOS
 
-### Allow to specify the HTTP status Code for health requests
+### Allow specifying the HTTP status Code for health requests
 
-The HTTP status code to be returned by the `/health/live` endpoint can be provided in the query string.
-E.g. `/health/live?liveCode=200`.
+The HTTP status code to be returned by the `/health/live` endpoint can be provided using the `liveCode` query parameter.
+For example, making a `GET` HTTP call to `/health/live?liveCode=200` will return an empty response with `200 OK` status code.
 
 This is useful for liveness probe expecting specific status code.
 
@@ -97,16 +95,16 @@ This is useful for liveness probe expecting specific status code.
 This bug only appears with events written in explicit transactions with the deprecated TCP API.
 They will not appear on filtered $all reads and subscriptions under specific circumstances.
 
-This [fix](https://github.com/EventStore/EventStore/pull/4251) will also be back ported to v23.10.2 and v22.10.6
+This [fix](https://github.com/EventStore/EventStore/pull/4251) will also be back ported to v23.10.2 and v22.10.6.
 
 ### Miscellaneous
 
 * Index merge will now continue without bloom filters if there is not enough memory to store them.
-* Use the advertised addresses for identifying nodes in the scavenge log.
-* Change status of incomplete scavenges from `Failed` to `Interrupted`.
-* Log an error when the node certificate does not have the necessary usages.
-* Add more information to the current database options API response.
-* Projections will now log a  warning when the projection state size becomes greater than 8 MB.
+* Node advertise address is used for identifying nodes in the scavenge log.
+* Incomplete scavenges that previously got status `Failed` will now be marked as `Interrupted`.
+* Error will be logged when the node certificate does not have the necessary usages.
+* More information made available in the current database options API response.
+* Projections will now log a warning when the projection state size becomes greater than 8 MB.
 
 ## Breaking changes
 
@@ -147,6 +145,6 @@ This will affect nodes that run under a Service Manager configured to disallow s
 ### Unbuffered config setting
 
 The `--unbuffered` config setting is deprecated and has no effect when set to `true`.
-This used to enable unbuffered and direct IO when writing to the file system and is no longer supported.
+This option was used to enable unbuffered and direct IO when writing to the file system, and it is no longer supported.
 
 You can read more about any breaking changes and what you should be aware of during an upgrade in the [Upgrade Guide](upgrade-guide.md).

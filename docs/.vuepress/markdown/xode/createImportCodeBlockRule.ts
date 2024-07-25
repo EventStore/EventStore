@@ -1,13 +1,16 @@
+// @ts-ignore
 import type {RuleBlock} from "markdown-it/lib/parser_block"
-import {path} from "@vuepress/utils"
-import {ExtendedCodeImportPluginOptions, ImportCodePluginOptions, ImportCodeTokenMeta, ResolvedImport} from "./types";
+import {path} from "vuepress/utils"
+import type {ExtendedCodeImportPluginOptions, ImportCodeTokenMeta, ResolvedImport} from "./types";
+// @ts-ignore
+import type {StateBlock} from "markdown-it";
 
 // min length of the import code syntax, i.e. '@[code]()'
 const MIN_LENGTH = 9;
 
 const startSequence = "@[code";
 
-const knownPrismIssues = {
+const knownPrismIssues: Record<string, string> = {
     "rs": "rust"
 };
 
@@ -17,12 +20,12 @@ const replaceKnownPrismExtensions = (ext: string): string => knownPrismIssues[ex
 const SYNTAX_RE = /^@\[code(?:{(\d+)?-(\d+)?})?(?:{(.+)?})?(?: ([^\]]+))?]\(([^)]*)\)/;
 
 export const createImportCodeBlockRule = ({
-                                              handleImportPath = (str) => [{ importPath: str }],
+                                              handleImportPath = (str) => [{importPath: str}],
                                           }: ExtendedCodeImportPluginOptions): RuleBlock => (
-    state,
-    startLine,
-    endLine,
-    silent
+    state: StateBlock,
+    startLine: number,
+    endLine: number,
+    silent: boolean
 ): boolean => {
     // if it's indented more than 3 spaces, it should be a code block
     /* istanbul ignore if */

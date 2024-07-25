@@ -4,7 +4,7 @@ title: "Security"
 
 ## Security
 
-For production use it is important to configure EventStoreDB security features to prevent unauthorised access
+For production use, it is important to configure EventStoreDB security features to prevent unauthorised access
 to your data.
 
 Security features of EventStoreDB include:
@@ -48,12 +48,12 @@ For this to work, you can use the `Insecure` option:
 **Default**: `false`
 
 ::: warning
-When running with protocol security disabled, everything is sent unencrypted over the wire. In the previous version it included the server credentials. Sending username and password over the wire without encryption is not secure by definition, but it might give a false sense of security. In order to make things explicit, EventStoreDB v20+ **does not use any authentication and authorisation** (including ACLs) when running insecure.
+When running with protocol security disabled, everything is sent unencrypted over the wire. In the previous version it included the server credentials. Sending username and password over the wire without encryption is not secure by definition, but it might give a false sense of security. To make things explicit, EventStoreDB v20+ **does not use any authentication and authorisation** (including ACLs) when running insecure.
 :::
 
-### Running with default admin and ops password
+### Set initial passwords
 
-We are adding an ability to set default admin and ops passwords on first run of the database. It will not impact the existing credentials, the user can log into their accounts with exising passwords.
+We are adding an ability to set default admin and ops passwords on the first run of the database. It will not impact the existing credentials, the user can log into their accounts with exising passwords.
 
 For this to work, you can use the `DefaultAdminPassword` option:
 

@@ -8,7 +8,7 @@ EventStoreDB 24.6 is now available for download. You can install it using [Packa
 
 ### Should you upgrade?
 
-Version 24.6 is an interim release that will be supported until the launch of version 24.6 in June 2024.
+Version 24.6 is an interim release that will be supported until the launch of version 24.10 in October 2024.
 We recommend upgrading to 24.6 if you are interested in using the new features introduced in this release.
 
 ::: warning
@@ -44,9 +44,7 @@ Follow the upgrade procedure below on each node, starting with a follower node:
 
 As illustrated below:
 
-::: card
 ![EventStoreDB upgrade procedure for each node](./images/upgrade-procedure.png)
-:::
 
 Upgrading the cluster in this manner keeps the cluster online and able to service requests. There may still be disruptions to your services during the upgrade, namely:
 - Client connections may be disconnected when nodes go offline, or when elections take place.
@@ -128,16 +126,16 @@ Follow the [upgrade procedure](#upgrade-procedure) and ensure that the Leader no
 
 Several options are deprecated and slated for removal in future releases. See the table below for guidance.
 
-| Deprecated Option           | Use Instead                   |
-|:----------------------------|:------------------------------|
-| ExtIp                       | NodeIp                        |
-| ExtPort                     | NodePort                      |
-| HttpPortAdvertiseAs         | NodePortAdvertiseAs           |
-| ExtHostAdvertiseAs          | NodeHostAdvertiseAs           |
-| AdvertiseHttpPortToClientAs | AdvertiseNodePortToClientAs   |
-| IntIp                       | ReplicationIp                 |
-| IntTcpPort                  | ReplicationTcpPort            |
-| IntTcpPortAdvertiseAs       | ReplicationTcpPortAdvertiseAs |
-| IntHostAdvertiseAs          | ReplicationHostAdvertiseAs    |
-| IntTcpHeartbeatTimeout      | ReplicationHeartbeatTimeout   |
-| IntTcpHeartbeatInterval     | ReplicationHeartbeatInterval  |
+| Deprecated Option             | Use Instead                     |
+|:------------------------------|:--------------------------------|
+| `ExtIp`                       | `NodeIp`                        |
+| `ExtPort`                     | `NodePort`                      |
+| `HttpPortAdvertiseAs`         | `NodePortAdvertiseAs`           |
+| `ExtHostAdvertiseAs`          | `NodeHostAdvertiseAs`           |
+| `AdvertiseHttpPortToClientAs` | `AdvertiseNodePortToClientAs`   |
+| `IntIp`                       | `ReplicationIp`                 |
+| `IntTcpPort`                  | `ReplicationTcpPort`            |
+| `IntTcpPortAdvertiseAs`       | `ReplicationTcpPortAdvertiseAs` |
+| `IntHostAdvertiseAs`          | `ReplicationHostAdvertiseAs`    |
+| `IntTcpHeartbeatTimeout`      | `ReplicationHeartbeatTimeout`   |
+| `IntTcpHeartbeatInterval`     | `ReplicationHeartbeatInterval`  |

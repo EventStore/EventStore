@@ -20,11 +20,9 @@ Persistent subscriptions serve the same purpose as catch-up or volatile subscrip
 
 Since it is the server who decides from where the subscription should start receiving events and knows where events are delivered, subscribers that use a persistent subscription can be load-balanced and process events in parallel. In contrast, catch-up subscriptions, which are client-driven, always receive and process events sequentially and can only be load-balanced on the client side. Therefore, persistent subscriptions allow using the competing consumers pattern that is common in the world of message brokers.
 
-In order for the server to load-balance subscribers, it uses the concept of consumer groups. All clients that belong to a single consumer group will get a portion of events and that's how load balancing works inside a group. It is possible to create multiple consumer groups for the same stream and they will be completely independent of each other, receiving and processing events at their own pace and having their own last known position handled by the server.
+In order for the server to load-balance subscribers, it uses the concept of consumer groups. All clients that belong to a single consumer group will get a portion of events, and that's how load balancing works inside a group. It is possible to create multiple consumer groups for the same stream and they will be completely independent of each other, receiving and processing events at their own pace and having their own last known position handled by the server.
 
-::: card
 ![Consumer groups](./images/consumer-groups.jpg)
-:::
 
 ::: warning
 Just as in the world of message brokers, processing events in a group of consumers running in parallel processes will most likely get events out of order within a certain window. For example, if a consumer group has ten consumers, ten messages will be distributed among the available consumers, based on the [strategy](#consumer-strategies) of the group. Even though some strategies make an attempt to consistently deliver ordered events to a single consumer, it's done on the best effort basis and there is no guarantee of events coming in order with any strategy.

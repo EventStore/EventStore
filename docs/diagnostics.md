@@ -851,9 +851,7 @@ compression = "gzip"
 
 You can export EventStoreDB metrics to Prometheus and configure Grafana dashboards to monitor your deployment.
 
-::: card
 ![Grafana dashboard](./images/grafana.png)
-:::
 
 Event Store doesn't provide Prometheus support out of the box, but you can use the community-supported
 exporter available in the [GitHub repository](https://github.com/marcinbudny/eventstore_exporter).
@@ -865,7 +863,6 @@ integration to collect EventStoreDB logs and metrics in Datadog.
 
 Find out more details about the integration
 in [Datadog documentation](https://docs.datadoghq.com/integrations/eventstore/).
-
 
 [Vector]: https://vector.dev/docs/
 

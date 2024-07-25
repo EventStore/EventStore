@@ -33,9 +33,7 @@ or `ops` user:
 
 You can also start scavenges from the _Admin_ page of the Admin UI.
 
-::: card
 ![Start a scavenge in the Admin UI](./images/admin-scavenge.png)
-:::
 
 Each node in a cluster has its own independent copy of the database. As such, when you run a scavenge, you need to issue a
 scavenge request to each node. The scavenges can be run concurrently, but can also be run in series to spread the load.
@@ -304,7 +302,7 @@ The default value is 100000.
 | YAML                 | `ScavengeHashUsersCacheCapacity`                |
 | Environment variable | `EVENTSTORE_SCAVENGE_HASH_USERS_CACHE_CAPACITY` |
 
-## Redaction
+## Redaction <Badge text="Commercial" type="warning" vertical="middle"/>
 
 In EventStoreDB, events are immutable and cannot be changed after they are written. Usually, when you have an event with data that needs to be deleted you should take the following steps:
 
@@ -346,15 +344,11 @@ Specify `--help` to see the full list of options.
 
 The redactor will blank out the data section of the specified events with one bits (0xFF bytes) keeping the data size exactly the same as it was before. It will also set a flag (`IsRedacted`) on the event's record to indicate that the event has been redacted. All other properties of the event such as the event type, event metadata, and timestamp will remain unchanged.
 
-::: card
 ![Redactor run](./images/redaction-run.png)
-:::
 
 If you read the data of a redacted event from an external client, you should see data composed of only 0xFF bytes. The UI will also label redacted events.
 
-::: card
 ![Redacted event in UI](./images/redaction-ui.png)
-:::
 
 ::: tip
 The redactor is not an offline tool. The EventStoreDB server must be running, as the redactor needs to communicate with it to obtain information about the events to be redacted and replace the chunk files with the redacted ones.

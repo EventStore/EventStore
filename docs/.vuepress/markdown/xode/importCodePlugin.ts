@@ -2,7 +2,8 @@ import type {PluginWithOptions} from "markdown-it";
 import type {MarkdownEnv} from "../types";
 import {resolveImportCode} from "./resolveImportCode";
 import {createImportCodeBlockRule} from "./createImportCodeBlockRule";
-import {ExtendedCodeImportPluginOptions} from "./types";
+import {type ExtendedCodeImportPluginOptions} from "./types";
+import { normalizeWhitespace } from "./normalizeWhitespace";
 
 export const importCodePlugin: PluginWithOptions<ExtendedCodeImportPluginOptions> = (
     md,
@@ -30,7 +31,7 @@ export const importCodePlugin: PluginWithOptions<ExtendedCodeImportPluginOptions
 
         // use imported code as token content
         const {importFilePath, importCode} = resolveImportCode(token.meta, env);
-        token.content = importCode;
+        token.content = normalizeWhitespace(importCode);
 
         // extract imported files to env
         if (importFilePath) {
