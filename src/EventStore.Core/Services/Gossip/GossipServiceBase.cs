@@ -196,6 +196,10 @@ namespace EventStore.Core.Services.Gossip {
 			CurrentRole = message.State;
 			var replicaState = message as SystemMessage.ReplicaStateMessage;
 			CurrentLeader = replicaState == null ? null : replicaState.Leader;
+
+			if (_cluster is null)
+				return;
+
 			_cluster = UpdateCluster(_cluster, x => x.InstanceId == _memberInfo.InstanceId ? GetUpdatedMe(x) : x,
 				_timeProvider, DeadMemberRemovalPeriod, CurrentRole);
 

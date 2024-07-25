@@ -10,7 +10,7 @@
 	<ItemGroup>
 		<PackageReference Include="EventStore.Client" Version="21.2.0" />
 		<PackageReference Include="EventStore.Client.Grpc.Streams" Version="23.3.3" />
-		<PackageReference Include="EventStore.Plugins" Version="24.6.1" />
+		<PackageReference Include="EventStore.Plugins" Version="24.10.0-alpha1" />
 		<PackageReference Include="Google.Protobuf" Version="3.27.2" />
 		<PackageReference Include="Grpc.Net.Client" Version="2.64.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.65.0">
