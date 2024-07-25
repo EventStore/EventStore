@@ -33,6 +33,8 @@
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<!-- upgrade because of transitive dependency vulnerability -->
 		<PackageReference Include="NuGet.Protocol" Version="6.7.1" />
+		<!-- upgrade because of transitive dependency vulnerability https://github.com/advisories/GHSA-447r-wph3-92pm -->
+		<PackageReference Include="System.Formats.Asn1" Version="8.0.1" />
 		<PackageReference Include="System.Linq.Async" Version="6.0.1" />
 		<!-- upgrade because of transitive dependency vulnerability -->
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
