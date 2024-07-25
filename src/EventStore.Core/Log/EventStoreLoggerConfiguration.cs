@@ -13,16 +13,19 @@ using Serilog.Core;
 using Serilog.Events;
 using Serilog.Filters;
 using Serilog.Templates;
+using Serilog.Templates.Themes;
 
 namespace EventStore.Common.Log {
 	public class EventStoreLoggerConfiguration {
-		private const string ConsoleOutputTemplate =
-			"[{ProcessId,5},{ThreadId,2},{Timestamp:HH:mm:ss.fff},{Level:u3}] {Message}{NewLine}{Exception}";
+		static readonly ExpressionTemplate ConsoleOutputExpressionTemplate = new(
+			"[{ProcessId,5},{ThreadId,2},{@t:HH:mm:ss.fff},{@l:u3}] {Substring(SourceContext, LastIndexOf(SourceContext, '.') + 1)} {@m}\n{@x}",
+			theme: TemplateTheme.Literate
+		);
 
 		private const string CompactJsonTemplate = "{ {@t, @mt, @r, @l, @i, @x, ..@p} }\n";
 
 		public static readonly Logger ConsoleLog = StandardLoggerConfiguration
-			.WriteTo.Console(outputTemplate: ConsoleOutputTemplate)
+			.WriteTo.Console(ConsoleOutputExpressionTemplate)
 			.CreateLogger();
 
 		private static readonly Func<LogEvent, bool> RegularStats = Matching.FromSource("REGULAR-STATS-LOGGER");
@@ -67,7 +70,9 @@ namespace EventStore.Common.Log {
 			Serilog.Debugging.SelfLog.Enable(ConsoleLog.Information);
 
 			Serilog.Log.Logger = (configurationRoot.GetSection("Serilog").Exists()
-					? FromConfiguration(configurationRoot)
+					? new LoggerConfiguration()
+						.Enrich.WithProperty(Constants.SourceContextPropertyName, "EventStore")
+						.ReadFrom.Configuration(configurationRoot)
 					: Default(logsDirectory, componentName, configurationRoot, logConsoleFormat, logFileInterval,
 						logFileSize, logFileRetentionCount, disableLogFile))
 				.CreateLogger();
@@ -77,10 +82,11 @@ namespace EventStore.Common.Log {
 
 		public static bool AdjustMinimumLogLevel(LogLevel logLevel) {
 			lock (_defaultLogLevelSwitchLock) {
+				#if !DEBUG
 				if (_defaultLogLevelSwitch == null) {
 					throw new InvalidOperationException("The logger configuration has not yet been initialized.");
 				}
-
+				#endif
 				if (!Enum.TryParse<LogEventLevel>(logLevel.ToString(), out var serilogLogLevel)) {
 					throw new ArgumentException($"'{logLevel}' is not a valid log level.");
 				}
@@ -90,9 +96,6 @@ namespace EventStore.Common.Log {
 				return true;
 			}
 		}
-
-		private static LoggerConfiguration FromConfiguration(IConfiguration configuration) =>
-			new LoggerConfiguration().ReadFrom.Configuration(configuration);
 
 		private static LoggerConfiguration Default(string logsDirectory, string componentName,
 			IConfigurationRoot logLevelConfigurationRoot, LogConsoleFormat logConsoleFormat,
@@ -149,11 +152,10 @@ namespace EventStore.Common.Log {
 			}
 
 			void Default(LoggerConfiguration configuration) {
-				if (logConsoleFormat == LogConsoleFormat.Plain) {
-					configuration.WriteTo.Console(outputTemplate: ConsoleOutputTemplate);
-				} else {
-					configuration.WriteTo.Console(new ExpressionTemplate(CompactJsonTemplate));
-				}
+				configuration.WriteTo.Console(
+					logConsoleFormat == LogConsoleFormat.Plain
+						? ConsoleOutputExpressionTemplate
+						: new(CompactJsonTemplate));
 
 				if (!disableLogFile) {
 					configuration.WriteTo
@@ -198,6 +200,7 @@ namespace EventStore.Common.Log {
 
 		private static LoggerConfiguration StandardLoggerConfiguration =>
 			new LoggerConfiguration()
+				.Enrich.WithProperty(Constants.SourceContextPropertyName, "EventStore")
 				.Enrich.WithProcessId()
 				.Enrich.WithThreadId()
 				.Enrich.FromLogContext();

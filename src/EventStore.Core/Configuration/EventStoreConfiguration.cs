@@ -2,13 +2,8 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using EventStore.Common.Configuration;
-using EventStore.Common.Utils;
 using EventStore.Core.Configuration.Sources;
-using EventStore.Core.Util;
 using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.Configuration {
@@ -39,6 +34,12 @@ namespace EventStore.Core.Configuration {
 				// Load all json files in the  `config` subdirectory (if it exists) of each configuration
 				// directory. We use the subdirectory to ensure that we only load configuration files.
 				.AddEsdbConfigFiles("*.json")
+
+				#if DEBUG
+				// load all json files in the current directory
+				.AddJsonFile("appsettings.json", true)
+				.AddJsonFile("appsettings.Development.json", true)
+				#endif
 
 				.AddEnvironmentVariables()
 				.AddEventStoreEnvironmentVariables(environment)

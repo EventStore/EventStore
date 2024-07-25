@@ -41,7 +41,7 @@ public abstract class ReadResponseException : Exception {
 		public readonly Type UnknownMessageType;
 		public readonly Type ExpectedMessageType;
 
-		private UnknownMessage(Type unknownMessageType, Type expectedMessageType) {
+		public UnknownMessage(Type unknownMessageType, Type expectedMessageType) {
 			UnknownMessageType = unknownMessageType;
 			ExpectedMessageType = expectedMessageType;
 		}

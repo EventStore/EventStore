@@ -22,6 +22,7 @@ using Serilog;
 using System.Runtime;
 using EventStore.Common.DevCertificates;
 using EventStore.Core.Configuration;
+using Microsoft.Extensions.Logging;
 using Serilog.Events;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 
@@ -184,17 +185,21 @@ namespace EventStore.ClusterNode {
 						await new HostBuilder()
 							.ConfigureHostConfiguration(builder => builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
 							.ConfigureAppConfiguration(builder => builder.AddConfiguration(configuration))
-							.ConfigureLogging(logging => logging.AddSerilog())
+							.ConfigureLogging(logging => logging.ClearProviders().AddSerilog())
 							.ConfigureServices(services => services
 								.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel"))
-								.Configure<HostOptions>(x => x.ShutdownTimeout = TimeSpan.FromSeconds(5))
+								.Configure<HostOptions>(x => {
+									x.ShutdownTimeout = TimeSpan.FromSeconds(5);
+									#if DEBUG
+									x.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
+									#endif
+								})
 							)
 							.ConfigureWebHostDefaults(builder => builder
 								.UseKestrel(server => {
-									server.Limits.Http2.KeepAlivePingDelay =
-										TimeSpan.FromMilliseconds(options.Grpc.KeepAliveInterval);
-									server.Limits.Http2.KeepAlivePingTimeout =
-										TimeSpan.FromMilliseconds(options.Grpc.KeepAliveTimeout);
+									server.Limits.Http2.KeepAlivePingDelay = TimeSpan.FromMilliseconds(options.Grpc.KeepAliveInterval);
+									server.Limits.Http2.KeepAlivePingTimeout = TimeSpan.FromMilliseconds(options.Grpc.KeepAliveTimeout);
+
 									server.Listen(options.Interface.NodeIp, options.Interface.NodePort, listenOptions =>
 										ConfigureHttpOptions(listenOptions, hostedService, useHttps: !hostedService.Node.DisableHttps));
 
