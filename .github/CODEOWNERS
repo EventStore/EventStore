@@ -1,0 +1,14 @@
+# Each line is a file pattern followed by one or more owners.
+
+# database-mergers team is the default owner for everything in
+# the repo. Unless a later match takes precedence.
+*       @EventStore/database-mergers
+
+# documentation team owns any files in the 'docs'
+# directory at the root of the repository and any of its
+# subdirectories.
+/docs/ @EventStore/documentation
+
+# eventstore-admin team owns the codeowners file to prevent
+# unauthorized changes to it
+/.github/CODEOWNERS	@EventStore/eventstore-admin
