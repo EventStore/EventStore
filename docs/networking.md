@@ -10,15 +10,14 @@ EventStoreDB provides two interfaces:
 
 Nodes in the cluster replicate with each other using the TCP protocol, but use gRPC for [discovering other cluster nodes](cluster.md#discovering-cluster-members).
 
-Server nodes separate internal and external TCP communication explicitly, but use a single HTTP binding. Replication between the cluster nodes is considered internal and all the TCP clients that connect to the database are external. EventStoreDB allows you to separate network configurations for internal and external communication. For example, you can use different network interfaces on the node. All the internal communication can go over the isolated private network but access for external clients can be configured on another interface, which is connected to a more open network. You can set restrictions on those external interfaces to make your deployment more secure.
+Server nodes separate internal and external TCP communication explicitly, but use a single HTTP binding. Replication between the cluster nodes is considered internal, and all the TCP clients that connect to the database are external. EventStoreDB allows you to separate network configurations for internal and external communication. For example, you can use different network interfaces on the node. All the internal communication can go over the isolated private network, but access for external clients can be configured on another interface, which is connected to a more open network. You can set restrictions on those external interfaces to make your deployment more secure.
 
 For gRPC and HTTP, there's no internal vs external separation of traffic.
 
 ## HTTP configuration
 
 HTTP is the primary protocol for EventStoreDB. It is used in gRPC communication and HTTP APIs (management, gossip and diagnostics).
-
-Unlike for [TCP protocol](#tcp-configuration), there is no separation between internal and external communication. The HTTP endpoint always binds to the IP address configured in the `NodeIp` setting (previously referred to as `ExtIp`).
+The HTTP endpoint always binds to the IP address configured in the `NodeIp` setting (previously referred to as `ExtIp`).
 
 | Format               | Syntax               |
 |:---------------------|:---------------------|
@@ -164,7 +163,7 @@ This is configured with `Kestrel.Limits.Http2.InitialStreamWindowSize` in the se
 
 ## Replication protocol
 
-The TCP protocol is used internally for cluster nodes to replicate with each other. It happens over the [internal](#internal) TCP communication.
+Replication between cluster nodes uses a proprietary TCP-based protocol. Options for configuring the internal replication protocol are described below.
 
 ### Interface and port
 
@@ -254,7 +253,7 @@ Please note that the `ExtHostAdvertiseAs` parameter has been deprecated as of ve
 
 ### TCP translations
 
-Both internal and external TCP ports can be advertised using custom values:
+TCP ports used for replication can be advertised using custom values:
 
 | Format               | Syntax                                         |
 |:---------------------|:-----------------------------------------------|
@@ -308,7 +307,7 @@ Please note that the `AdvertiseHttpPortToClientAs` parameter has been deprecated
 
 EventStoreDB uses heartbeats over all TCP connections to discover dead clients and nodes. Heartbeat timeouts should not be too short, as short timeouts will produce false positives. At the same time, setting too long timeouts will prevent discovering dead nodes and clients in time.
 
-Each heartbeat has two points of configuration. The first is the _interval_, this represents how often the system should consider a heartbeat. EventStoreDB doesn't send a heartbeat for every interval, but only if it has not heard from a node within the configured interval. On a busy cluster, you may never see any heartbeats.
+Each heartbeat has two points of configuration. The first is the _interval;_ this represents how often the system should consider a heartbeat. EventStoreDB doesn't send a heartbeat for every interval, but only if it has not heard from a node within the configured interval. In a busy cluster, you may never see any heartbeats.
 
 The second point of configuration is the _timeout_. This determines how long EventStoreDB server waits for a client or node to respond to a heartbeat request.
 
@@ -387,7 +386,7 @@ The TCP API plugin enables client applications based on the external TCP API to 
 
 ### Enabling the plugin
 
-Refer to the general [plugins configuration](configuration#plugins-configuration) guide to see how to configure plugins with JSON files and environment variables.
+Refer to the general [plugins configuration](./configuration.md#plugins-configuration) guide to see how to configure plugins with JSON files and environment variables.
 
 To enable the TCP API plugin, save the following configuration in a JSON file, for example `<esdb-installation-directory>/config/tcp-plugin-config.json`, in the EventStoreDB installation directory for a node:
 
@@ -434,7 +433,7 @@ The above default values can be overridden, for example:
 
 ### Troubleshooting
 
-#### Plugin not loaded
+#### Plugin doesn't load
 
 The plugin has to be located in a subdirectory of the server's plugins directory. To check this:
 
@@ -449,16 +448,16 @@ You can verify which plugins have been found and loaded by searching for log ent
 [11212, 1,18:44:30.420,INF] Plugins path: "C:\\EventStore\\plugins"
 [11212, 1,18:44:30.420,INF] Adding: "C:\\EventStore\\plugins" to the plugin catalog.
 [11212, 1,18:44:30.422,INF] Adding: "C:\\EventStore\\plugins\\EventStore.Licensing" to the plugin catalog.
-[11212, 1,18:44:30.432,INF] Adding: "C:\\plugins\\EventStore.POC.ConnectedSubsystemsPlugin" to the plugin catalog.
-[11212, 1,18:44:30.433,INF] Adding: "C:\\plugins\\EventStore.POC.ConnectorsPlugin" to the plugin catalog.
-[11212, 1,18:44:30.436,INF] Adding: "C:\\plugins\\EventStore.TcpPlugin" to the plugin catalog.
+[11212, 1,18:44:30.432,INF] Adding: "C:\\EventStore\\plugins\\EventStore.POC.ConnectedSubsystemsPlugin" to the plugin catalog.
+[11212, 1,18:44:30.433,INF] Adding: "C:\\EventStore\\plugins\\EventStore.POC.ConnectorsPlugin" to the plugin catalog.
+[11212, 1,18:44:30.436,INF] Adding: "C:\\EventStore\\plugins\\EventStore.TcpPlugin" to the plugin catalog.
 [11212, 1,18:44:30.479,INF] Loaded SubsystemsPlugin plugin: "licensing" "24.10.0.0".
 [11212, 1,18:44:30.483,INF] Loaded SubsystemsPlugin plugin: "connected" "0.0.5".
 [11212, 1,18:44:30.496,INF] Loaded ConnectedSubsystemsPlugin plugin: "connectors" "0.0.5".
 [11212, 1,18:44:30.504,INF] Loaded SubsystemsPlugin plugin: "tcp-api" "24.10.0.0".
 ```
 
-#### Plugin not started
+#### Plugin doesn't start
 
 The plugin has to be configured to be enabled.
 If you see the following log it means the plugin was found but not started:

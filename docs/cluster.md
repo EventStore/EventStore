@@ -6,6 +6,11 @@ title: Clustering
 
 EventStoreDB allows you to run more than one node in a cluster for high availability.
 
+::: info Cluster member authentication
+EventStoreDB starts in secure mode by default, which requires configuration [settings for certificates](security.md#certificates-configuration).
+Cluster members authenticate each other using the certificate Common Name. All the cluster nodes must have the same common name in their certificates.
+:::
+
 ### Cluster nodes
 
 EventStoreDB clusters follow a "shared nothing" philosophy, meaning that clustering requires no shared disks. Instead, each node has a copy of the data to ensure it is not lost in case of a drive failure or a node crashing. 
