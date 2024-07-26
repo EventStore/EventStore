@@ -569,7 +569,7 @@ Accepted values are `Interpreted` and `Legacy`.
 ### Run projections
 
 The `RunProjections` option tells the server if you want to run all projections, only system projections or no
-projections at all. Keep in mind that the `StartSystemProjections` setting has no effect on custom
+projections at all. Keep in mind that the `StartStandardProjections` setting has no effect on custom
 projections.
 
 The option accepts three values: `None`, `System` and `All`.
@@ -579,7 +579,7 @@ and the Projections menu in the Admin UI will be disabled.
 
 By using the `System` value for this option, you can instruct the server to enable system projections when the
 server starts. However, system projections will only start if the `StartStandardProjections` option is set
-to `true`. When the `RunProjections` option value is `System` (or `All`) but the `StartSystemProjections`
+to `true`. When the `RunProjections` option value is `System` (or `All`) but the `StartStandardProjections`
 option value is `false`, system projections will be enabled but not start. You can start them later manually
 via the Admin UI or via an API call.
 
