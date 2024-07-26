@@ -4,7 +4,7 @@ title: "Security"
 
 ## Security
 
-For production use it is important to configure EventStoreDB security features to prevent unauthorised access
+For production use, it is important to configure EventStoreDB security features to prevent unauthorised access
 to your data.
 
 Security features of EventStoreDB include:
@@ -53,7 +53,7 @@ When running with protocol security disabled, everything is sent unencrypted ove
 
 ### Running with default admin and ops password
 
-We are adding an ability to set default admin and ops passwords on first run of the database. It will not impact the existing credentials, the user can log into their accounts with exising passwords.
+We are adding an ability to set default admin and ops passwords on the first run of the database. It will not impact the existing credentials, the user can log into their accounts with exising passwords.
 
 For this to work, you can use the `DefaultAdminPassword` option:
 
@@ -91,7 +91,7 @@ This is now disabled by default but can be enabled by setting `AllowAnonymousStr
 
 ### Anonymous access to endpoints
 
-Similarly to streams above, anonymous access has historically been available to some http endpoints.
+Similarly to the streams above, anonymous access has historically been available to some http endpoints.
 
 Anonymous access to `/gossip`, `/stats` and the `HTTP OPTIONS` method can now be configured with the following two options. By default `/gossip` is still accessible anonymously but the others are not. Some clients currently rely on anonymous access to `/gossip`. This will likely change in the future.
 
@@ -224,7 +224,7 @@ If using the thumbprint, the server expects to only find one certificate file ma
 | Environment variable | `EVENTSTORE_CERTIFICATE_THUMBPRINT` |
 
 The subject name matches any certificate that contains the specified name. This means that multiple matching certificates could be found.
-To match any certificate made by the es-gencert-cli, you can set the subject name to `eventstoredb-node`.
+To match any certificate made by the `es-gencert-cli`, you can set the subject name to `eventstoredb-node`.
 
 If multiple matching certificates are found, then the certificate with the latest expiry date will be selected.
 

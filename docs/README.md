@@ -2,7 +2,7 @@
 
 Welcome to the EventStoreDB documentation.
 
-EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration and operational concerns.
+EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration, and operational concerns.
 
 EventStoreDB is available in both an Open-Source and a Commercial version:
 
@@ -21,7 +21,7 @@ Check the [getting started guide](/getting-started.md) for resources on the prin
 
 ### EventStoreDB community
 
-Users of the OSS version of EventStoreDB can use the [community forum](https://discuss.eventstore.com) for questions, discussions and getting help from community members.
+Users of EventStoreDB OSS can use the [community forum](https://discuss.eventstore.com) for questions, discussions and getting help from community members.
 
 ### Enterprise customers
 
@@ -67,7 +67,7 @@ Find out more about configuring the HTTP protocol on the [HTTP configuration](ne
 
 ::: warning Deprecation Note
 The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](networking.md#atompub) to the server configuration. Although we plan to remove AtomPub support from future server versions, the server management HTTP API will remain available.
-You need to enable the AtomPub protocol to have a fully-functioning database user interface.
+You need to enable the AtomPub protocol to have a fully functioning database user interface.
 :::
 
 Learn more about EventStoreDB HTTP interface in the [HTTP documentation](@http-api/). 
