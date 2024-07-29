@@ -10,26 +10,26 @@ using Serilog;
 namespace EventStore.Core.Authorization;
 
 public class PolicyAuthorizationProvider(IPolicyEvaluator policyEvaluator, bool logAuthorization = true, bool logSuccesses = false) : AuthorizationProviderBase {
-	static readonly ILogger Logger = Log.ForContext<PolicyEvaluator>();
+	static readonly ILogger Logger = Log.ForContext<PolicyAuthorizationProvider>();
 	static readonly TimeProvider Time = TimeProvider.System;
 
 	bool LogAccessDenied  => logAuthorization;
 	bool LogAccessGranted => LogAccessDenied && logSuccesses;
-	
+
 	public override ValueTask<bool> CheckAccessAsync(ClaimsPrincipal principal, Operation operation, CancellationToken ct) {
 		var startedAt = Time.GetTimestamp();
-		
+
 		var evaluateTask = policyEvaluator.EvaluateAsync(principal, operation, ct);
 
-		return evaluateTask.IsCompletedSuccessfully 
-			? new(HasAccess(evaluateTask.Result, principal, startedAt, LogAccessDenied, LogAccessGranted)) 
+		return evaluateTask.IsCompletedSuccessfully
+			? new(HasAccess(evaluateTask.Result, principal, startedAt, LogAccessDenied, LogAccessGranted))
 			: EnforceCheck(evaluateTask, principal, startedAt, LogAccessDenied, LogAccessGranted);
 
 		static string GetIdentity(ClaimsPrincipal principal) => principal.FindFirstValue(ClaimTypes.Name) ?? "(anonymous)";
-		
+
 		static bool HasAccess(EvaluationResult result, ClaimsPrincipal principal, long startedAt, bool logAccessDenied, bool logAccessGranted) {
 			var accessGranted = result.Grant == Grant.Allow;
-			
+
 			switch (accessGranted) {
 				case true when logAccessGranted:
 					Logger.Information(
@@ -47,7 +47,7 @@ public class PolicyAuthorizationProvider(IPolicyEvaluator policyEvaluator, bool 
 
 			return accessGranted;
 		}
-		
+
 		static async ValueTask<bool> EnforceCheck(
 			ValueTask<EvaluationResult> evaluate, ClaimsPrincipal principal,
 			long startedAt, bool logAccessDenied, bool logAccessGranted
