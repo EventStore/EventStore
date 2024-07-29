@@ -70,7 +70,7 @@ The current AtomPub-based HTTP application API is disabled by default since v20 
 You need to enable the AtomPub protocol to have a fully-functioning database user interface.
 :::
 
-Learn more about EventStoreDB HTTP interface in the [HTTP documentation](@http-api/). 
+Learn more about the EventStoreDB HTTP interface in the [HTTP documentation](@http-api/). 
 
 #### Community developed clients
 
