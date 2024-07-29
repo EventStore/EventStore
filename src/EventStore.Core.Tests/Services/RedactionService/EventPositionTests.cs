@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 			var chunk = Db.Manager.GetChunkFor(eventRecord.LogPosition);
 			var eventOffset = chunk.GetActualRawPosition(eventRecord.LogPosition);
 			var eventPosition = new EventPosition(
-				eventRecord.LogPosition, Path.GetFileName(chunk.FileName), chunk.ChunkHeader.Version, chunk.IsReadOnly, (uint)eventOffset);
+				eventRecord.LogPosition, Path.GetFileName(chunk.FileName), chunk.ChunkHeader.MinCompatibleVersion, chunk.IsReadOnly, (uint)eventOffset);
 			_positions[eventNumber].Add(eventPosition);
 		}
 
