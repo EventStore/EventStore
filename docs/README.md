@@ -2,7 +2,7 @@
 
 Welcome to the EventStoreDB documentation.
 
-EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration and operational concerns.
+EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration, and operational concerns.
 
 EventStoreDB is available in both an Open-Source and a Commercial version:
 
@@ -21,7 +21,7 @@ Check the [getting started guide](/getting-started.md) for resources on the prin
 
 ### EventStoreDB community
 
-Users of the OSS version of EventStoreDB can use the [community forum](https://discuss.eventstore.com) for questions, discussions and getting help from community members.
+Users of EventStoreDB OSS can use the [community forum](https://discuss.eventstore.com) for questions, discussions and getting help from community members.
 
 ### Enterprise customers
 
@@ -35,7 +35,9 @@ When opening an issue, follow our [guidelines](https://github.com/EventStore/Eve
 
 ## Protocols, clients, and SDKs
 
-EventStoreDB supports one client protocol, which is described below. The older TCP client API has been deprecated in version 20.2 and removed in version 24.6. The final version with TCP API support is 23.10. More information can be found in our [blog post](https://www.eventstore.com/blog/sunsetting-eventstoredb-tcp-based-client-protocol).
+EventStoreDB supports one client protocol, which is described below. The older TCP client API has been deprecated in version 20.2 and removed in version 24.2. The final version with TCP API support is 23.10. More information can be found in our [blog post](https://www.eventstore.com/blog/sunsetting-eventstoredb-tcp-based-client-protocol).
+
+Since version 24.6, the legacy protocol is available as a [commercial plugin](networking.md#external-tcp) available for Event Store customers.
 
 ### Client protocol
 
@@ -67,10 +69,11 @@ Find out more about configuring the HTTP protocol on the [HTTP configuration](ne
 
 ::: warning Deprecation Note
 The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](networking.md#atompub) to the server configuration. Although we plan to remove AtomPub support from future server versions, the server management HTTP API will remain available.
-You need to enable the AtomPub protocol to have a fully-functioning database user interface.
+You need to enable the AtomPub protocol to have a fully functioning database user interface.
 :::
 
-Learn more about the EventStoreDB HTTP interface in the [HTTP documentation](@http-api/). 
+Learn more about the EventStoreDB HTTP interface in the [HTTP documentation](@clients/http-api/README.md). 
+
 
 #### Community developed clients
 

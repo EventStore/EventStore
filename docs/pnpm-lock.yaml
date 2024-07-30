@@ -29,15 +29,6 @@ importers:
       '@vuepress/utils':
         specifier: ^2.0.0-rc.14
         version: 2.0.0-rc.14
-      primeflex:
-        specifier: 2.0.0
-        version: 2.0.0
-      primeicons:
-        specifier: 4.1.0
-        version: 4.1.0
-      primevue:
-        specifier: 3.8.1
-        version: 3.8.1
       sass-loader:
         specifier: ^14.2.1
         version: 14.2.1(sass@1.77.8)
@@ -63,6 +54,9 @@ importers:
       eslint-config-vuepress-typescript:
         specifier: ^4.10.1
         version: 4.10.1(eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.16.0(eslint@8.57.0)(typescript@5.5.3))(eslint@8.57.0))(eslint-plugin-n@16.6.2(eslint@8.57.0))(eslint-plugin-promise@6.4.0(eslint@8.57.0))(eslint@8.57.0)(typescript@5.5.3)
+      markdown-it:
+        specifier: ^14.1.0
+        version: 14.1.0
       tsconfig-vuepress:
         specifier: ^4.5.0
         version: 4.5.0
@@ -1994,15 +1988,6 @@ packages:
   pretty-ms@9.0.0:
     resolution: {integrity: sha512-E9e9HJ9R9NasGOgPaPE8VMeiPKAyWR5jcFpNnwIejslIhWqdqOrb2wShBsncMPUb+BcCd2OPYfh7p2W6oemTng==}
     engines: {node: '>=18'}
-
-  primeflex@2.0.0:
-    resolution: {integrity: sha512-t6AG3iRI1rh04uI+9nC4JSlbKfA8PnpRDFtjyqi3rDSLRgdfOuhIiunJbjVQ4alnnCfuQAAbVyde1AKN9QxT/w==}
-
-  primeicons@4.1.0:
-    resolution: {integrity: sha512-uEv2pSPk1zQCfaB2VgnUfnUxxlGryYi+5rbdxmZBBt5v9S/pscIQYS5YDLxsQZ7D9jn5c76+Tx5wX/2J1nK6sA==}
-
-  primevue@3.8.1:
-    resolution: {integrity: sha512-YVP6uVFlLqvpqvmW0gK408+gvCODZrFt++Qmm/VZnInyT4xVntvtzbzXqhhAXxQ0aVppSHD7exXhWpeIVffZXw==}
 
   prismjs@1.29.0:
     resolution: {integrity: sha512-Kx/1w86q/epKcmte75LNrEoT+lX8pBpavuAbvJWRXar7Hz8jrtF+e3vY751p0R8H9HdArwaCTNDDzHg/ScJK1Q==}
@@ -4658,12 +4643,6 @@ snapshots:
   pretty-ms@9.0.0:
     dependencies:
       parse-ms: 4.0.0
-
-  primeflex@2.0.0: {}
-
-  primeicons@4.1.0: {}
-
-  primevue@3.8.1: {}
 
   prismjs@1.29.0: {}
 
