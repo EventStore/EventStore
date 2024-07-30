@@ -30,15 +30,15 @@ The _Stream Browser_ tab gives an overview of recently created and changed strea
 
 ![Web admin interface stream details](./images/wai-stream-details.png)
 
-Each individual stream shows pages of the events in a stream with an overview of the event. Click the _Name_ to see the EventId, and _JSON_ to the see the event data. The buttons above change depending on what you are viewing in the interface. The _Back_ button takes you to the parent screen.
+Each stream shows pages of the events in a stream with an overview of the event. Click the _Name_ to see the EventId, and _JSON_ to see the event data. The buttons above change depending on what you are viewing in the interface. The _Back_ button takes you to the parent screen.
 
 The buttons on the top right when you are viewing an event stream are:
 
 - _Pause_: Stop showing events arriving into this stream.
 - _Resume_: Resume showing events arriving into this stream.
 - _Edit ACL_: Edit [the access control lists](security.md#access-control-lists) for a stream.
-- _Add Event_: [Add a new event](@http-api/README.md#appending-events) to the stream.
-- _Delete_: [Delete a stream](@http-api/README.md#deleting-a-stream) to the stream.
+- _Add Event_: [Add a new event](@clients/http-api/README.md#appending-events) to the stream.
+- _Delete_: [Delete a stream](@clients/http-api/README.md#deleting-a-stream) to the stream.
 - _Query_:
 
 The buttons on the left above the events when you are viewing an event stream are:
@@ -98,13 +98,13 @@ Clicking the _+_ icon next to a stream name reveals the subscription name and mo
 
 ![Web admin interface projections tab](./images/wai-admin.png)
 
-The _Admin_ tab shows sub systems enabled (currently only [projections](projections.md)) on EventStoreDB and [scavenges](operations.md#scavenging) run. You can start a new scavenge operation by clicking the _Scavenge_ button, and shut EventStoreDB down by clicking the _Shutdown Server_ button.
+The _Admin_ tab shows subsystems enabled (currently only [projections](projections.md)) on EventStoreDB and [scavenges](operations.md#scavenging) run. You can start a new scavenge operation by clicking the _Scavenge_ button, and shut EventStoreDB down by clicking the _Shutdown Server_ button.
 
 ## Users
 
 ![Web admin interface projections tab](./images/wai-users.png)
 
-The _Users_ tab shows [the users defined in EventStoreDB](security.md#authentication), clicking an individual user shows a JSON representation of that users details.
+The _Users_ tab shows [the users defined in EventStoreDB](security.md#authentication), clicking an individual user shows a JSON representation of that user's details.
 
 ## Log out
 

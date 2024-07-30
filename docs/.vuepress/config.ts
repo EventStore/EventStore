@@ -26,7 +26,7 @@ export default defineUserConfig({
                 .replace("@clients/http-api/", "/http-api/")
                 .replace("@clients/httpapi/", "/http-api/")
                 .replace("@httpapi/data/", projectionSamplesPath)
-                .replace("@httpapi", "../../samples/http-api")
+                .replace("@httpapi", "/http-api")
         });
     },
     theme: defaultTheme({

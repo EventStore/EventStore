@@ -2,13 +2,13 @@
   "name": "esdb-docs",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "author": "Event Store Ltd",
   "devDependencies": {
     "@types/markdown-it": "^14.1.2",
     "eslint": "^8.57.0",
     "eslint-config-vuepress": "^4.10.1",
     "eslint-config-vuepress-typescript": "^4.10.1",
+    "markdown-it": "^14.1.0",
     "tsconfig-vuepress": "^4.5.0",
     "typescript": "^5.5.3"
   },
