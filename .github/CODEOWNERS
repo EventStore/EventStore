@@ -7,8 +7,13 @@
 # documentation team owns any files in the 'docs'
 # directory at the root of the repository and any of its
 # subdirectories.
-/docs/ @EventStore/documentation
+/docs/ 	@EventStore/documentation
+
+# documentation and database mergers teams own any markdown files
+# in the root of the repository (README, CONTRIBUTING, LICENSING, etc.)
+# Either team will be able to approve PRs changing these files.
+/*.md 	@EventStore/documentation @EventStore/database-mergers
 
 # eventstore-admin team owns the codeowners file to prevent
-# unauthorized changes to it
+# unauthorized changes to it.
 /.github/CODEOWNERS	@EventStore/eventstore-admin
