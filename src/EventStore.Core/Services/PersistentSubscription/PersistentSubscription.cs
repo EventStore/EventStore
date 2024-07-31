@@ -575,6 +575,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 						break;
 					}
 
+					if (ev.Event == null) {
+						continue;
+					}
+
 					Log.Debug("Replaying parked message: {eventId} {stream}/{eventNumber} on subscription {subscriptionId}",
 						ev.OriginalEvent.EventId, ev.OriginalStreamId, ev.OriginalEventNumber,
 						_settings.SubscriptionId);
