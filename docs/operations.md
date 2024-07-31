@@ -6,7 +6,7 @@ EventStoreDB requires regular maintenance with three operational concerns:
 - [Backup and restore](#backup-and-restore) for disaster recovery.
 - [Certificate update](#certificate-update-upon-expiry) to renew certificates.
 
-You might also be interested learning about EventStoreDB [diagnostics](diagnostics.md)
+You might also be interested learning about EventStoreDB [diagnostics](diagnostics/README.md)
 and [indexes](./indexes.md), which might require some Ops attention.
 
 ## Scavenging
@@ -73,7 +73,7 @@ A scavenge can be stopped at any time. The next time a scavenge is started, it w
 
 The logs contain detailed information about the progress of the scavenge.
 
-The current state of the scavenge can also be tracked in the [metrics](metrics.md).
+The current state of the scavenge can also be tracked in the [metrics](diagnostics/metrics.md).
 
 The [execution phase](#execution-phase) of the scavenge emits events into streams.
 Each scavenge operation will generate a new stream and the stream will contain events related to that

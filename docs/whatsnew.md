@@ -26,14 +26,14 @@ Since version 24.6, EventStoreDB can now be built from source and executed on ma
 
 ### Additional metrics
 
-Continuing the work on observability, the following [metrics](metrics.md) are now available.
+Continuing the work on observability, the following [metrics](diagnostics/metrics.md) are now available.
 
-* [Election counter](metrics.md#elections-count): `eventstore_elections_count`
-* [Projections](metrics.md#projections).
+* [Election counter](diagnostics/metrics.md#elections-count): `eventstore_elections_count`
+* [Projections](diagnostics/metrics.md#projections).
     * Projection status: `eventstore_projection_status`
     * Percent progress: `eventstore_projection_progress`
     * Events processed since restart: `eventstore_projection_events_processed_after_restart_total`
-* [Persistent Subscriptions](metrics.md#persistent-subscriptions):
+* [Persistent Subscriptions](diagnostics/metrics.md#persistent-subscriptions):
     * Connection count: `eventstore_persistent_sub_connections`
     * Total in-flight messages : `eventstore_persistent_sub_in_flight_messages`
     * Total number of parked messages: `eventstore_persistent_sub_parked_messages`
@@ -76,11 +76,11 @@ Refer to the [clients documentation](@clients/grpc/authentication.md) for instru
 
 ### Metrics support for Linux, FreeBSD, OSX
 
-The following [System metrics](metrics.md#system) are now available on the following platforms:
+The following [System metrics](diagnostics/metrics.md#system) are now available on the following platforms:
 * `eventstore_sys_load_avg`: Linux, FreeBSD, macOS, Windows
 * `eventstore_sys_cpu`: Linux, FreeBSD, macOS
 
-The following [Process metrics](metrics.md#process) are now available on the following platforms:
+The following [Process metrics](diagnostics/metrics.md#process) are now available on the following platforms:
 * `eventstore_disk_io_bytes`: Linux, Windows and macOS
 
 ### Allow specifying the HTTP status Code for health requests

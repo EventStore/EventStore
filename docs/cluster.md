@@ -57,7 +57,7 @@ The multi-address DNS name cluster discovery only works for clusters that use ce
 
 When setting up a cluster, the nodes must be able to reach each other over both the HTTP channel, and the internal TCP channel. You should ensure that these ports are open on firewalls on the machines and between the machines.
 
-Learn more about [internal TCP configuration](networking.md#tcp-configuration) and [HTTP configuration](networking.md#http-configuration) to set up the cluster properly.
+Learn more about [internal TCP configuration](networking.md#replication-protocol) and [HTTP configuration](networking.md#http-configuration) to set up the cluster properly.
 
 ## Cluster with DNS
 

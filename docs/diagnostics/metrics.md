@@ -254,17 +254,17 @@ eventstore_kestrel_connections 1 1688070655500
 
 Persistent subscription metrics track the statistics for the persistent subscriptions.
 
-| Time series                                                                                                          | Type                     | Description                                                    |
-|:---------------------------------------------------------------------------------------------------------------------|:-------------------------|:---------------------------------------------------------------|
-| `eventstore_persistent_sub_connections{event_stream_id<STREAM_NAME>,group_name=<GROUP_NAME>}`                        | [Gauge](#common-types)   | Number of connections                                          |
-| `eventstore_persistent_sub_parked_messages{event_stream_id<STREAM_NAME>,group_name=<GROUP_NAME>}`                    | [Gauge](#common-types)   | Number of parked messages                                      |
-| `eventstore_persistent_sub_in_flight_messages{event_stream_id<STREAM_NAME>,group_name=<GROUP_NAME>}`                 | [Gauge](#common-types)   | Number of messages in flight                                   |
-| `eventstore_persistent_sub_oldest_parked_message_seconds{event_stream_id<STREAM_NAME>,group_name=<GROUP_NAME>}`      | [Gauge](#common-types)   | Oldest parked message age in seconds                           |
-| `eventstore_persistent_sub_items_processed{event_stream_id<STREAM_NAME>,group_name=<GROUP_NAME>}`                    | [Counter](#common-types) | Total items processed                                          |
-| `eventstore_persistent_sub_last_known_event_number{event_stream_id<STREAM_NAME>,group_name=<GROUP_NAME>}`            | [Counter](#common-types) | Last known event number (streams other than `$all`)            |
-| `eventstore_persistent_sub_last_known_event_commit_position{event_stream_id<STREAM_NAME>,group_name=<GROUP_NAME>}`   | [Counter](#common-types) | Last known event's commit position (`$all` stream only)        |
-| `eventstore_persistent_sub_checkpointed_event_number{event_stream_id<STREAM_NAME>,group_name=<GROUP_NAME>}`          | [Counter](#common-types) | Last checkpointed event number (streams other than `$all)`     |
-| `eventstore_persistent_sub_checkpointed_event_commit_position{event_stream_id<STREAM_NAME>,group_name=<GROUP_NAME>}` | [Counter](#common-types) | Last checkpointed event's commit position (`$all` stream only) |
+| Time series                                                                                                           | Type                     | Description                                                    |
+|:----------------------------------------------------------------------------------------------------------------------|:-------------------------|:---------------------------------------------------------------|
+| `eventstore_persistent_sub_connections{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                        | [Gauge](#common-types)   | Number of connections                                          |
+| `eventstore_persistent_sub_parked_messages{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                    | [Gauge](#common-types)   | Number of parked messages                                      |
+| `eventstore_persistent_sub_in_flight_messages{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                 | [Gauge](#common-types)   | Number of messages in flight                                   |
+| `eventstore_persistent_sub_oldest_parked_message_seconds{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`      | [Gauge](#common-types)   | Oldest parked message age in seconds                           |
+| `eventstore_persistent_sub_items_processed{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                    | [Counter](#common-types) | Total items processed                                          |
+| `eventstore_persistent_sub_last_known_event_number{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`            | [Counter](#common-types) | Last known event number (streams other than `$all`)            |
+| `eventstore_persistent_sub_last_known_event_commit_position{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`   | [Counter](#common-types) | Last known event's commit position (`$all` stream only)        |
+| `eventstore_persistent_sub_checkpointed_event_number{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`          | [Counter](#common-types) | Last checkpointed event number (streams other than `$all)`     |
+| `eventstore_persistent_sub_checkpointed_event_commit_position{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}` | [Counter](#common-types) | Last checkpointed event's commit position (`$all` stream only) |
 
 Example configuration:
 
@@ -492,7 +492,7 @@ For a given _NAME_, the current status can be determined by taking the max of al
 - Cleaning
 - Idle
 
-`Node` can be one of the [node roles](cluster.md#node-roles).
+`Node` can be one of the [node roles](../cluster.md#node-roles).
 
 Example configuration:
 ```json
@@ -584,56 +584,3 @@ eventstore_writer_flush_size_max{range="16-20 seconds"} 1854 1688070655500
 ```
 In above example, maximum reported is `1854`. It is not a maximum measurement in last `15s` but rather maximum measurement in last `16` to last `20` seconds i.e. the maximum measurement could have been recorded in last `16s`, last `17s`, …, upto last `20s`.
 
-## OpenTelemetry Exporter <Badge type="warning" vertical="middle" text="Commercial"/>
-
-EventStoreDB passively exposes metrics for scraping on the `/metrics` endpoint. If you would like EventStoreDB to actively export the metrics, the _OpenTelemetry Exporter Plugin_ can be used.
-
-The OpenTelemetry Exporter plugin allows you to export EventStoreDB metrics to a specified endpoint using the [OpenTelemetry Protocol](https://opentelemetry.io/docs/specs/otel/protocol/) (OTLP). The following instructions will help you set up the exporter and customize its configuration, so you can receive, process, export and monitor metrics as needed. 
-
-A number of APM providers natively support ingesting metrics using the OTLP protocol, so you might be able to directly use the OpenTelemetry Exporter to send metrics to your APM provider. Alternatively, you can export metrics to the OpenTelemetry Collector, which can then be configured to send metrics to a variety of backends. You can find out more about the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/).
-
-### Configuration
-
-Refer to the general [plugins configuration](configuration.md#plugins-configuration) guide to see how to configure plugins with JSON files and environment variables.
-
-Sample JSON configuration:
-```json
-{
-  "OpenTelemetry": {
-    "Otlp": {
-      "Endpoint": "http://localhost:4317",
-      "Headers": ""
-    }
-  }
-}
-```
-
-The configuration can specify: 
-
-| Name                          | Description                                            |
-|-------------------------------|--------------------------------------------------------|
-| OpenTelemetry__Otlp__Endpoint | Destination where the OTLP exporter will send the data |
-| OpenTelemetry__Otlp__Headers  | Optional headers for the connection                    |
-
-Headers are key-value pairs separated by commas. For example:
-```:no-line-numbers
-"Headers": "api-key=value,other-config-value=value"
-```
-
-EventStoreDB will log a message on startup confirming the metrics export to your specified endpoint:
-```:no-line-numbers
-OtlpExporter: Exporting metrics to http://localhost:4317/ every 15.0 seconds
-```
-
-The interval is taken from the `ExpectedScrapeIntervalSeconds` value in `metricsconfig.json` in the server installation directory:
-
-```:no-line-numbers
-"ExpectedScrapeIntervalSeconds": 15
-```
-
-### Troubleshooting
-
-| Symptom                                                                      | Solution                                                                                                                                                                                                                                                                                    |
-|------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| The OpenTelemetry Exporter plugin is not loaded                              | The OpenTelemetry Exporter plugin is only available in commercial editions. Check that it is present in `<installation-directory>/plugins`. <br/><br/> If it is present, on startup the server will log a message similar to: `Loaded SubsystemsPlugin plugin: "otlp-exporter" "24.6.0.0".` |
-| EventStoreDB logs a message on startup that it cannot find the configuration | The server logs a message: `OtlpExporter: No OpenTelemetry:Otlp configuration found. Not exporting metrics.`.<br/><br/> Check the configuration steps above.                                                                                                                                |

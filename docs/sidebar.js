@@ -33,8 +33,18 @@ module.exports = [
         children: [
             "upgrade-guide.md",
             "operations.md",
-            "diagnostics.md",
-            "metrics.md"
+        ]
+    },
+    {
+        text: "Diagnostics",
+        group: "Diagnostics",
+        prefix: "/diagnostics/",
+        link: "/diagnostics/",
+        children: [
+            "README.md",
+            "logs.md",
+            "metrics.md",
+            "integrations.md",
         ]
     }
 ];
