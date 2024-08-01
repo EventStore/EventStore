@@ -84,7 +84,7 @@ namespace EventStore.Core.Services {
 				eventPositions[i] = new EventPosition(
 					logPosition: logPos,
 					chunkFile: Path.GetFileName(chunk.FileName),
-					chunkVersion: chunk.ChunkHeader.Version,
+					chunkVersion: chunk.ChunkHeader.MinCompatibleVersion,
 					chunkComplete: chunk.ChunkFooter is { IsCompleted: true },
 					chunkEventOffset: (uint) chunkEventOffset);
 			}
