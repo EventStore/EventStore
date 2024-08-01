@@ -46,7 +46,7 @@ You can also specify the number of parked messages to replay over the HTTP endpo
 curl -i -X POST -d {} https://localhost:2113/subscriptions/{stream}/{groupnanme}/replayParked?stopAt={numberofevents} -u "admin:changeit"
 ```
 
-If you don't want to replay any of the parked messages for a subscription and want to clear them out, you can do this by deleting the parked stream like a normal stream.
+If you want to delete parked messages without replaying them, you can delete the parked messages stream. However, the parkedMessageCount parameter from the subscriptions/{stream}/{subscription}/info does not reset and will continue from the previous number even after restarting the node. To fully reset the count, delete the parked messages stream and then resign the leader node. This forces a new election and will reset the count if a new leader is chosen.
 
 ## Checkpointing
 
