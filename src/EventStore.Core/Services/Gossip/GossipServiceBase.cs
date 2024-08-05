@@ -40,6 +40,7 @@ namespace EventStore.Core.Services.Gossip {
 		private readonly TimeSpan GossipTimeout;
 
 		private readonly IPublisher _bus;
+		private readonly int _clusterSize;
 		private readonly IEnvelope _publishEnvelope;
 		private readonly IGossipSeedSource _gossipSeedSource;
 
@@ -50,6 +51,7 @@ namespace EventStore.Core.Services.Gossip {
 		private readonly Func<MemberInfo[], MemberInfo> _getNodeToGossipTo;
 
 		protected GossipServiceBase(IPublisher bus,
+			int clusterSize,
 			IGossipSeedSource gossipSeedSource,
 			MemberInfo memberInfo,
 			TimeSpan gossipInterval,
@@ -64,6 +66,7 @@ namespace EventStore.Core.Services.Gossip {
 			Ensure.NotNull(timeProvider, nameof(timeProvider));
 
 			_bus = bus;
+			_clusterSize = clusterSize;
 			_publishEnvelope = new PublishEnvelope(bus);
 			_gossipSeedSource = gossipSeedSource;
 			_memberInfo = memberInfo;
@@ -112,11 +115,11 @@ namespace EventStore.Core.Services.Gossip {
 			var now = _timeProvider.UtcNow;
 			var dnsCluster = new ClusterInfo(
 				message.GossipSeeds.Select(x => MemberInfo.ForManager(Guid.Empty, now, true, x)).ToArray());
-			
+
 			var oldCluster = _cluster;
 			_cluster = MergeClusters(_cluster, dnsCluster, null, x => x, _timeProvider.UtcNow, _memberInfo,
 				CurrentLeader?.InstanceId, AllowedTimeDifference, DeadMemberRemovalPeriod);
-			
+
 			LogClusterChange(oldCluster, _cluster, null);
 
 			_state = GossipState.Working;
@@ -127,17 +130,28 @@ namespace EventStore.Core.Services.Gossip {
 			if (_state != GossipState.Working)
 				return;
 
-			var node = _getNodeToGossipTo(_cluster.Members);
-			if (node != null) {
+			TimeSpan interval;
+			int gossipRound;
+
+			if (_clusterSize == 1) {
 				_cluster = UpdateCluster(_cluster, x => x.InstanceId == _memberInfo.InstanceId ? GetUpdatedMe(x) : x,
 					_timeProvider, DeadMemberRemovalPeriod, CurrentRole);
-				_bus.Publish(new GrpcMessage.SendOverGrpc(node.HttpEndPoint,
-					new GossipMessage.SendGossip(_cluster, _memberInfo.HttpEndPoint),
-					_timeProvider.LocalTime.Add(GossipTimeout)));
+				interval = GossipInterval;
+				gossipRound = Math.Min(int.MaxValue - 1, message.GossipRound + 1);
+			} else {
+				var node = _getNodeToGossipTo(_cluster.Members);
+				if (node != null) {
+					_cluster = UpdateCluster(_cluster, x => x.InstanceId == _memberInfo.InstanceId ? GetUpdatedMe(x) : x,
+						_timeProvider, DeadMemberRemovalPeriod, CurrentRole);
+					_bus.Publish(new GrpcMessage.SendOverGrpc(node.HttpEndPoint,
+						new GossipMessage.SendGossip(_cluster, _memberInfo.HttpEndPoint),
+						_timeProvider.LocalTime.Add(GossipTimeout)));
+				}
+
+				interval = message.GossipRound < GossipRoundStartupThreshold ? GossipStartupInterval : GossipInterval;
+				gossipRound = Math.Min(int.MaxValue - 1, node == null ? message.GossipRound : message.GossipRound + 1);
 			}
 
-			var interval = message.GossipRound < GossipRoundStartupThreshold ? GossipStartupInterval : GossipInterval;
-			var gossipRound = Math.Min(int.MaxValue - 1, node == null ? message.GossipRound : message.GossipRound + 1);
 			_bus.Publish(
 				TimerMessage.Schedule.Create(interval, _publishEnvelope, new GossipMessage.Gossip(gossipRound)));
 		}
@@ -311,7 +325,7 @@ namespace EventStore.Core.Services.Gossip {
 			EndPoint peerEndPoint, Func<MemberInfo, MemberInfo> update, DateTime utcNow,
 			MemberInfo me, Guid? currentLeaderInstanceId, TimeSpan allowedTimeDifference,
 			TimeSpan deadMemberRemovalTimeout) {
-			var members = myCluster.Members.ToDictionary(member => member.HttpEndPoint, 
+			var members = myCluster.Members.ToDictionary(member => member.HttpEndPoint,
 				new EndPointEqualityComparer());
 			MemberInfo peerNode = peerEndPoint != null
 				? othersCluster.Members.SingleOrDefault(member => member.Is(peerEndPoint), null) : null;
