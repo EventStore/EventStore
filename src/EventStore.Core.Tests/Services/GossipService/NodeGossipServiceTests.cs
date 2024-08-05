@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 
 		[SetUp]
 		public void Setup() {
-			SUT = new NodeGossipService(_bus, _gossipSeedSource, MemberInfoForVNode(_currentNode, DateTime.UtcNow),
+			SUT = new NodeGossipService(_bus, 3, _gossipSeedSource, MemberInfoForVNode(_currentNode, DateTime.UtcNow),
 				new InMemoryCheckpoint(0), new InMemoryCheckpoint(0), new FakeEpochManager(), () => 0L, 0,
 				_gossipInterval, _allowedTimeDifference, _gossipTimeout, _deadMemberRemovalPeriod, _timeProvider, _getNodeToGossipTo);
 
@@ -349,7 +349,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow))));
 		}
 	}
-	
+
 	public class if_gossip_reply_includes_es_version : NodeGossipServiceTestFixture {
 		private Message _capturedMessage;
 		protected override Message[] Given() =>
@@ -424,7 +424,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.2"),
 				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3")), _currentNode.HttpEndPoint.GetHost(), _currentNode.HttpEndPoint.GetPort());
 		}
-		
+
 		[Test]
 		public void reply_should_have_version_info() {
 			_capturedMessage.Should()

@@ -18,6 +18,7 @@ namespace EventStore.Core.Services.Gossip {
 		private readonly ITimeProvider _timeProvider;
 
 		public NodeGossipService(IPublisher bus,
+			int clusterSize,
 			IGossipSeedSource gossipSeedSource,
 			MemberInfo memberInfo,
 			IReadOnlyCheckpoint writerCheckpoint,
@@ -31,7 +32,7 @@ namespace EventStore.Core.Services.Gossip {
 			TimeSpan deadMemberRemovalPeriod,
 			ITimeProvider timeProvider,
 			Func<MemberInfo[], MemberInfo> getNodeToGossipTo = null)
-			: base(bus, gossipSeedSource, memberInfo, gossipInterval, allowedTimeDifference, gossipTimeout, deadMemberRemovalPeriod, timeProvider, getNodeToGossipTo) {
+			: base(bus, clusterSize, gossipSeedSource, memberInfo, gossipInterval, allowedTimeDifference, gossipTimeout, deadMemberRemovalPeriod, timeProvider, getNodeToGossipTo) {
 			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
 			Ensure.NotNull(chaserCheckpoint, nameof(chaserCheckpoint));
 			Ensure.NotNull(epochManager, nameof(epochManager));

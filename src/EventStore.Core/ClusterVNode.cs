@@ -1524,6 +1524,7 @@ namespace EventStore.Core {
 
 				var gossip = new NodeGossipService(
 					_mainQueue,
+					options.Cluster.ClusterSize,
 					gossipSeedSource,
 					memberInfo,
 					Db.Config.WriterCheckpoint.AsReadOnly(),
