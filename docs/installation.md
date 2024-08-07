@@ -194,7 +194,7 @@ Create file `docker-compose.yaml` with following content:
 Run the instance:
 
 ```bash:no-line-numbers
-docker-compose up
+docker compose up
 ```
 
 The command above would run EventStoreDB as a single node without SSL and with the legacy TCP protocol
