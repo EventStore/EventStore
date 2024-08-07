@@ -114,54 +114,55 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class ChoosingLeaderTests {
 		static IEnumerable<TestCase> CreateCases() {
-			//Basic cases
+			// Tiebreaker: If all else is equal, pick the node with the highest server id
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 2,
 				ProposingNode = 0,
 			};
 
+			// If checkpoints are equal, pick the node with the highest priority
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 0,
 				NodePriorities = new[] { 3, 2, 1 }
 			};
 
+			// Don't pick the last elected leader if it is resigning
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 1,
-				NodePriorities = new[] { 0, 0, int.MinValue },
+				NodePriorities = new[] { 0, 0, 0 },
 				LastElectedLeader = new int?[] { 2, 2, 2 },
 				ResigningLeader = 2
 			};
 
+			// Pick the last elected leader if all else is equal
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 0,
 				NodePriorities = new[] { int.MinValue, int.MinValue, int.MinValue },
 				LastElectedLeader = new int?[] { 0, 0, 0 },
 			};
 
+			// Pick the non-resigning node with the highest chaser checkpoint
+			// instead of the resigning leader
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 0,
 				LastElectedLeader = new int?[] { 2, 2, 2 },
 				ResigningLeader = 2,
 				ChaserCheckpoints = new long[] { 1, 0, 1 },
-				NodePriorities = new[] { 0, 0, int.MinValue },
+				NodePriorities = new[] { 0, 0, 0 },
 			};
 
+			// Pick the non-resigning node with the highest writer checkpoint
+			// instead of the resigning leader
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 1,
 				LastElectedLeader = new int?[] { 2, 2, 2 },
 				ResigningLeader = 2,
 				WriterCheckpoints = new long[] { 0, 1, 1 },
-				NodePriorities = new[] { 0, 0, int.MinValue },
+				NodePriorities = new[] { 0, 0, 0 },
 			};
 
-			yield return new TestCase {
-				ExpectedLeaderCandidateNode = 0,
-				LastElectedLeader = new int?[] { 2, 2, 2 },
-				ResigningLeader = 2,
-				ChaserCheckpoints = new long[] { 1, 0, 1 },
-				NodePriorities = new[] { 0, 0, int.MinValue },
-			};
-
+			// Pick the node with the highest chaser checkpoint
+			// regardless of node priority
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 0,
 				LastElectedLeader = new int?[] { 0, 0, 0 },
@@ -169,6 +170,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				NodePriorities = new[] { int.MinValue, 0, 0 },
 			};
 
+			// Pick the node with the highest writer checkpoint
+			// regardless of node priority
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 1,
 				LastElectedLeader = new int?[] { 1, 1, 1 },
@@ -176,13 +179,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				NodePriorities = new[] { 0, int.MinValue, 0 },
 			};
 
-			yield return new TestCase {
-				ExpectedLeaderCandidateNode = 2,
-				LastElectedLeader = new int?[] { 2, 2, 2 },
-				ChaserCheckpoints = new long[] { 0, 0, 1 },
-				NodePriorities = new[] { 0, 0, int.MinValue },
-			};
-
+			// Pick the node with the highest priority over the resigning leader
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 0,
 				ResigningLeader = 1,
@@ -190,21 +187,18 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				NodePriorities = new[] { 0, int.MinValue, int.MinValue },
 			};
 
-			yield return new TestCase {
-				ExpectedLeaderCandidateNode = 1,
-				LastElectedLeader = new int?[] { 0, 0, 0 },
-				ResigningLeader = 0,
-				NodePriorities = new[] { int.MinValue, 0, int.MinValue },
-			};
-
+			// Pick the node with the highest priority between non-resigning nodes
+			// over the resigning leader
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 2,
-				ResigningLeader = 1,
-				LastElectedLeader = new int?[] { 1, 1, 1 },
-				NodePriorities = new[] { int.MinValue, int.MinValue, 0 },
-
+				ResigningLeader = 0,
+				LastElectedLeader = new int?[] { 0, 0, 0 },
+				ChaserCheckpoints = new long[] { 1, 1, 1 },
+				NodePriorities = new[] { int.MaxValue, 0, 1 },
 			};
 
+			// Pick the node with the highest chaser checkpoint
+			// over the resigning leader, despite node priority
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 2,
 				ResigningLeader = 0,
@@ -213,6 +207,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				NodePriorities = new[] { int.MinValue, 0, int.MinValue },
 			};
 
+			// Pick the node with the highest writer checkpoint
+			// over the resigning leader, despite node priority
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 2,
 				WriterCheckpoints = new long[] { 1, 0, 1 },
@@ -221,13 +217,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				ResigningLeader = 0
 			};
 
-			yield return new TestCase {
-				ExpectedLeaderCandidateNode = 2,
-				ChaserCheckpoints = new long[] { 1, 0, 1 },
-				NodePriorities = new[] { int.MinValue, 0, int.MinValue },
-				LastElectedLeader = new int?[] { 0, 0, 0 },
-				ResigningLeader = 0
-			};
+			// Prefer the majority last leader, highest epoch, chaser, and priority
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 2,
 				LastElectedLeader = new int?[] { 0, 2, 2 },
@@ -235,6 +225,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				ChaserCheckpoints = new long[] { 0, 0, 5 },
 				NodePriorities = new[] { 0, 0, 1 },
 			};
+
+			// Prefer the majority last leader, highest chaser, and priority
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 2,
 				LastElectedLeader = new int?[] { 0, 2, 2 },
@@ -242,6 +234,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				ChaserCheckpoints = new long[] { 0, 0, 5 },
 				NodePriorities = new[] { 0, 0, 1 },
 			};
+
+			// Prefer the majority last leader, highest epoch, chaser, writer, and priority
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 2,
 				LastElectedLeader = new int?[] { 0, 2, 2 },
@@ -250,6 +244,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				ChaserCheckpoints = new long[] { 0, 5, 5 },
 				NodePriorities = new[] { 0, 0, 1 },
 			};
+
+			// Prefer the majority last leader, highest epoch, chaser, writer
+			// despite priority
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 1,
 				LastElectedLeader = new int?[] { 0, 1, 1 },
@@ -258,6 +255,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				ChaserCheckpoints = new long[] { 0, 5, 5 },
 				NodePriorities = new[] { 0, 0, 1 },
 			};
+
+			// Prefer the majority last leader, highest epoch, and chaser,
+			// despite writer checkpoint
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 2,
 				LastElectedLeader = new int?[] { 0, 2, 2 },
@@ -293,9 +293,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				prepareOks.Add(prepareOk.ServerId, prepareOk);
 			}
 
-			//var lastElectedLeader = tc.LastElectedLeader.HasValue
-			//	? (Guid?)IdForNode(tc.LastElectedLeader.Value)
-			//	: null;
 			var resigningLeadership = tc.ResigningLeader.HasValue
 				? (Guid?)IdForNode(tc.ResigningLeader.Value)
 				: null;
