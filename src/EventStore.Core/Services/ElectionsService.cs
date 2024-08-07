@@ -458,11 +458,12 @@ namespace EventStore.Core.Services {
 
 		public static LeaderCandidate GetBestLeaderCandidate(Dictionary<Guid, ElectionMessage.PrepareOk> received,
 			MemberInfo[] servers, Guid? resigningLeaderInstanceId, int lastAttemptedView) {
-			
+
 			var best = received.Values
 				.OrderByDescending(x => x.EpochNumber) // latest election
 				.ThenByDescending(x => x.WriterCheckpoint) // log length (if not re-electing leader pick the most complete replica)
 				.ThenByDescending(x => x.ChaserCheckpoint) // in memory index position
+				.ThenBy(x => x.ServerId == resigningLeaderInstanceId) // pick other nodes over a resigning leader
 				.ThenByDescending(x => x.NodePriority) // indicated node priority from settings
 				.ThenByDescending(x => x.ServerId) // tie breaker
 				.FirstOrDefault();
