@@ -189,7 +189,7 @@ Create file `docker-compose.yaml` with following content:
 Run the instance:
 
 ```bash:no-line-numbers
-docker-compose up
+docker compose up
 ```
 
 The command above would run EventStoreDB as a single node without SSL. You also get AtomPub protocol enabled, so you can get the stream browser to work in the Admin UI.
