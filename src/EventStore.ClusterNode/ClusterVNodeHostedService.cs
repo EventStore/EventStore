@@ -157,6 +157,7 @@ namespace EventStore.ClusterNode {
 				}
 
 				if (policyPluginType == string.Empty) {
+					Log.Information("Using default authorization policy");
 					return new PolicySelectorsFactory(defaultPolicySelector);
 				}
 				if (!policySelectors.TryGetValue(policyPluginType, out var selectedPolicy)) {
@@ -166,6 +167,8 @@ namespace EventStore.ClusterNode {
 						Environment.NewLine +
 						$"Valid options for authorization policies are: {string.Join(", ", policySelectors.Keys)}.");
 				}
+				Log.Information("Using authorization policy plugin: {plugin} version {version}", selectedPolicy.Name,
+					selectedPolicy.Version);
 				// Policies will be applied in order, so the default should always be last
 				return new PolicySelectorsFactory([selectedPolicy, defaultPolicySelector]);
 			}
