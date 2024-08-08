@@ -18,7 +18,7 @@ using Serilog.Templates.Themes;
 namespace EventStore.Common.Log {
 	public class EventStoreLoggerConfiguration {
 		static readonly ExpressionTemplate ConsoleOutputExpressionTemplate = new(
-			"[{ProcessId,5},{ThreadId,2},{@t:HH:mm:ss.fff},{@l:u3}] {Substring(SourceContext, LastIndexOf(SourceContext, '.') + 1)} {@m}\n{@x}",
+			"[{ProcessId,5},{ThreadId,2},{@t:HH:mm:ss.fff},{@l:u3}] {Substring(SourceContext, LastIndexOf(SourceContext, '.') + 1), -30} {@m}\n{@x}",
 			theme: TemplateTheme.Literate
 		);
 
