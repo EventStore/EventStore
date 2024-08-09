@@ -51,7 +51,11 @@ namespace EventStore.PluginHosting {
 				_resolver = new AssemblyDependencyResolver(directory.FullName);
 				foreach (var library in directory.GetFiles("*.dll")
 					.Where(file => !Shared.Contains(Path.GetFileNameWithoutExtension(file.Name)))) {
-					LoadFromAssemblyPath(library.FullName);
+					try {
+						LoadFromAssemblyPath(library.FullName);
+					} catch (BadImageFormatException) {
+						// We shouldn't be loading this dll. Ignore it
+					}
 				}
 				_shared = shared;
 			}
