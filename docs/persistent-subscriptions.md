@@ -54,6 +54,14 @@ Once a persistent subscription has handled enough events, it will write a checkp
 
 If a persistent subscription has a filter, then the persistent subscription will checkpoint when enough events are either handled or skipped by the filter.
 
+Checkpoint events have an Event Type of `$SubscriptionCheckpoint`, and are written to system streams that are named according to this format:
+
+`$persistentsubscription-STREAMNAME::GROUPNAME-checkpoint`
+
+For example, if you have a Persistent Subscription group name of `LoanProcessing`, on top of the stream `$et-LoanRequested`, the system stream where checkpoints are written is called:
+
+`$persistentsubscription-$et-LoanRequested::LoanProcessing-checkpoint`
+
 ::: note
 Persistent Subscriptions won't write a new checkpoint if there's one already in the process of being written. This means that even if you configure the subscription with a max checkpoint count of 1, it's not guaranteed to write a checkpoint after every event.
 :::
