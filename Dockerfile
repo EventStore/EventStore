@@ -1,7 +1,7 @@
 # "build" image
 ARG CONTAINER_RUNTIME=jammy
 FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
-ARG RUNTIME=linux-x64
+ARG RUNTIME=linux-arm64
 
 WORKDIR /build/ci
 COPY ./ci ./
@@ -39,14 +39,14 @@ CMD ["/build/test.sh"]
 
 # "publish" image
 FROM build as publish
-ARG RUNTIME=linux-x64
+ARG RUNTIME=linux-arm64
 
 RUN dotnet publish --configuration=Release --runtime=${RUNTIME} --self-contained \
      --framework=net8.0 --output /publish EventStore.ClusterNode
 
 # "runtime" image
 FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-${CONTAINER_RUNTIME} AS runtime
-ARG RUNTIME=linux-x64
+ARG RUNTIME=linux-arm64
 ARG UID=1000
 ARG GID=1000
 

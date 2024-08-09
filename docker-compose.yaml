@@ -1,0 +1,19 @@
+version: '3'
+services:
+  eventstore:
+    image: connectorsplugintesting
+    environment:
+      - EVENTSTORE_CLUSTER_SIZE=1
+      - EVENTSTORE_RUN_PROJECTIONS=All
+      - EVENTSTORE_START_STANDARD_PROJECTIONS=true
+      - EVENTSTORE_HTTP_PORT=2113
+      - EVENTSTORE_INSECURE=true
+      - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=true
+      - EVENTSTORE_ADVERTISE_HOST_TO_CLIENT_AS=localhost
+      - EVENTSTORE_ADVERTISE_NODE_PORT_TO_CLIENT_AS=2113
+      - EVENTSTORE_GOSSIP_SEED=localhost:2113
+      - EVENTSTORE_MAX_APPEND_SIZE=10000000
+    ports:
+      - "2113:2113"
+    volumes:
+      - ./src/EventStore.ClusterNode/bin/Debug/net8.0/plugins:/opt/eventstore/plugins
