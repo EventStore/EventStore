@@ -152,14 +152,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private EventProcessedResult InternalProcessCommittedEvent(
 			string partition, EventReaderSubscriptionMessage.CommittedEventReceived message) {
-			string newState;
-			string projectionResult;
-			EmittedEventEnvelope[] emittedEvents;
-			//TODO: support shared state
-			string newSharedState;
-			var hasBeenProcessed = SafeProcessEventByHandler(
-				partition, message, out newState, out newSharedState, out projectionResult, out emittedEvents);
-			if (hasBeenProcessed) {
+			if (ProcessEventByHandler(partition, message, out var newState, out var newSharedState, out var projectionResult, out var emittedEvents)) {
+				newState ??= "";
 				var newPartitionState = new PartitionState(newState, projectionResult, message.CheckpointTag);
 				var newSharedPartitionState = newSharedState != null
 					? new PartitionState(newSharedState, null, message.CheckpointTag)
@@ -170,6 +164,15 @@ namespace EventStore.Projections.Core.Services.Processing {
 			}
 
 			return null;
+		}
+
+		public void Failed(EventReaderSubscriptionMessage.CommittedEventReceived message, Exception ex) {
+			// update progress to reflect exact fault position
+			_checkpointManager.Progress(message.Progress);
+			SetFaulting(
+				String.Format(
+					"The {0} projection failed to process an event.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
+					_projectionName, GetHandlerTypeName(), message.CheckpointTag, ex.Message), ex);
 		}
 
 		private EventProcessedResult InternalProcessPartitionDeleted(
@@ -185,32 +188,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			}
 
 			return null;
-		}
-
-		private bool SafeProcessEventByHandler(
-			string partition, EventReaderSubscriptionMessage.CommittedEventReceived message, out string newState,
-			out string newSharedState, out string projectionResult, out EmittedEventEnvelope[] emittedEvents) {
-			projectionResult = null;
-			//TODO: not emitting (optimized) projection handlers can skip serializing state on each processed event
-			bool hasBeenProcessed;
-			try {
-				hasBeenProcessed = ProcessEventByHandler(
-					partition, message, out newState, out newSharedState, out projectionResult, out emittedEvents);
-			} catch (Exception ex) {
-				// update progress to reflect exact fault position
-				_checkpointManager.Progress(message.Progress);
-				SetFaulting(
-					String.Format(
-						"The {0} projection failed to process an event.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
-						_projectionName, GetHandlerTypeName(), message.CheckpointTag, ex.Message), ex);
-				newState = null;
-				newSharedState = null;
-				emittedEvents = null;
-				hasBeenProcessed = false;
-			}
-
-			newState = newState ?? "";
-			return hasBeenProcessed;
 		}
 
 		private bool SafeProcessPartitionDeletedByHandler(

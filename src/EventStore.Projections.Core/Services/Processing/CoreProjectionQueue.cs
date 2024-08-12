@@ -18,7 +18,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			remove { _queuePendingEvents.EnsureTickPending -= value; }
 		}
 
-		public CoreProjectionQueue(IPublisher publisher, int pendingEventsThreshold, bool orderedPartitionProcessing) {
+		public CoreProjectionQueue(IPublisher publisher, int pendingEventsThreshold, bool orderedPartitionProcessing, string projectionName = "") {
 			_queuePendingEvents =
 				new StagedProcessingQueue(
 					new[] {
@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 						true
 						/* write emits - ordered - async ordered completion*/,
 						false /* complete item */
-					});
+					}, projectionName);
 			_publisher = publisher;
 			_pendingEventsThreshold = pendingEventsThreshold;
 		}
