@@ -58,7 +58,7 @@ Checkpoint events have an Event Type of `$SubscriptionCheckpoint`, and are writt
 
 `$persistentsubscription-STREAMNAME::GROUPNAME-checkpoint`
 
-For example, if you have a Persistent Subscription group name of `LoanProcessing`, on top of the stream `$et-LoanRequested`, the system stream where checkpoints are written is called:
+For example, if you have a persistent subscription `LoanProcessing` on top of the stream `$et-LoanRequested`, the checkpoints stream name would be:
 
 `$persistentsubscription-$et-LoanRequested::LoanProcessing-checkpoint`
 
