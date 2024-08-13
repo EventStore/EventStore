@@ -130,6 +130,12 @@ public partial class InMemoryBus {
 
 			for (IHandle<T>[] newArray;; Array.Clear(newArray)) {
 				var currentArray = _handlers;
+
+				// Perf: array is preferred over ImmutableHashSet because enumeration speed is much more important
+				// (for Publish method) than perf of subscription methods.
+				if (Array.IndexOf(currentArray, handler) >= 0)
+					break;
+
 				newArray = new IHandle<T>[currentArray.Length + 1];
 				Array.Copy(currentArray, newArray, currentArray.Length);
 				newArray[currentArray.Length] = handler;
