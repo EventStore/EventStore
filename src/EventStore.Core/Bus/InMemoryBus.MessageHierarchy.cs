@@ -13,7 +13,11 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Bus;
 
 public partial class InMemoryBus {
-	private static readonly FrozenSet<Type> MessageTypes;
+
+	/// <summary>
+	/// Gets all discovered message types.
+	/// </summary>
+	public static IReadOnlySet<Type> MessageTypes { get; }
 
 	static InMemoryBus() {
 		ReadOnlySpan<string> systemPrefixes = ["System.", "Microsoft."];
