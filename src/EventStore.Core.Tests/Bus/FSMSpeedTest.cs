@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Bus {
 
 		[Test, Category("LongRunning"), Explicit]
 		public void FSMSpeedTest2() {
-			var bus = new InMemoryBus("a", true);
+			var bus = InMemoryBus.CreateTest();
 			bus.Subscribe(new AdHocHandler<StorageMessage.WriteCommit>(x => { }));
 			bus.Subscribe(new AdHocHandler<Message>(x => { }));
 
@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.Bus {
 		}
 
 		private VNodeFSM CreateFSM() {
-			var outputBus = new InMemoryBus("a", false);
+			var outputBus = InMemoryBus.CreateTest(false);
 			var state = VNodeState.Leader;
 			var stm = new VNodeFSMBuilder(() => state)
 				.InAnyState()
