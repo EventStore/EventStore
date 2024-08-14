@@ -98,13 +98,13 @@ public class VNodeFSM : IHandle<Message> {
 		}
 	}
 
-	[InlineArray(16)] // must be equal to max of VNodeState + 1
+	[InlineArray((int)VNodeState.MaxValue + 1)]
 	[StructLayout(LayoutKind.Auto)]
 	private struct DefaultHandlersBuffer {
 		private Action<VNodeState, Message> _handler;
 	}
 
-	[InlineArray(16)]
+	[InlineArray((int)VNodeState.MaxValue + 1)]
 	[StructLayout(LayoutKind.Auto)]
 	private struct HandlersBuffer {
 		private IReadOnlyDictionary<Type, MessageTypeHandler> _handler;
