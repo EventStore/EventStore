@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using DotNext.Reflection;
-using DotNext.Runtime.ExceptionServices;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Bus;
@@ -97,15 +96,9 @@ public partial class InMemoryBus {
 	}
 
 	private abstract class MessageTypeHandler {
-		public MessageTypeHandler Parent; // can be null
+		public abstract MessageTypeHandler Parent { get; set; }
 
-		public abstract void Invoke(Message message, ref ExceptionAggregator exceptions);
-
-		public void Invoke(Message message) {
-			var exceptions = new ExceptionAggregator();
-			Invoke(message, ref exceptions);
-			exceptions.ThrowIfNeeded();
-		}
+		public abstract void Invoke(Message message);
 	}
 
 	private sealed class MessageTypeHandler<T> : MessageTypeHandler where T : Message {
@@ -113,21 +106,20 @@ public partial class InMemoryBus {
 		// Devirtualized method is stored as a delegate
 		private Action<T>[] _handlers = [];
 
-		public override void Invoke(Message message, ref ExceptionAggregator exceptions) {
+		// Compat: assume that we have message types A > B with handlers handler(A) and handler(B).
+		// Some parts of ESDB relies on the following behavior: if message B is published, the order of
+		// handlers must be handler(A) -> handler(B) instead of handler(B) -> handler(A). That compat
+		// issue prevents us from using tail call, because we need to call parent handlers first.
+		public override MessageTypeHandler Parent {
+			get => _handlers is [{ Target: MessageTypeHandler handler }, ..] ? handler : null;
+			set => _handlers = value is null ? [] : [value.Invoke];
+		}
+
+		public override void Invoke(Message message) {
 			Debug.Assert(message is T);
 
-			// Compat: assume that we have message types A > B with handlers handler(A) and handler(B).
-			// Some parts of ESDB relies on the following behavior: if message B is published, the order of
-			// handlers must be handler(A) -> handler(B) instead of handler(B) -> handler(A). That compat
-			// issue prevents us from using tail call, because we need to call parent handlers first.
-			Parent?.Invoke(message, ref exceptions);
-
 			foreach (var handler in Volatile.Read(in _handlers)) {
-				try {
-					handler.Invoke(Unsafe.As<T>(message));
-				} catch (Exception e) {
-					exceptions.Add(e);
-				}
+				handler.Invoke(Unsafe.As<T>(message));
 			}
 		}
 
