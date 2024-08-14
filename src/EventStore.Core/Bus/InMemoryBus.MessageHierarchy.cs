@@ -17,7 +17,7 @@ public partial class InMemoryBus {
 	/// <summary>
 	/// Gets all discovered message types.
 	/// </summary>
-	public static IReadOnlySet<Type> MessageTypes { get; }
+	public static IReadOnlySet<Type> KnownMessageTypes { get; }
 
 	static InMemoryBus() {
 		ReadOnlySpan<string> systemPrefixes = ["System.", "Microsoft."];
@@ -32,7 +32,7 @@ public partial class InMemoryBus {
 			}
 		}
 
-		MessageTypes = messageTypes.ToFrozenSet();
+		KnownMessageTypes = messageTypes.ToFrozenSet();
 		messageTypes.Clear(); // help GC
 
 		static bool IsSystemAssembly(Assembly candidate, ReadOnlySpan<string> systemPrefixes) {
@@ -68,9 +68,9 @@ public partial class InMemoryBus {
 	}
 
 	private static FrozenDictionary<Type, MessageTypeHandler> CreateMessageTypeHandlers() {
-		var handlers = new Dictionary<Type, MessageTypeHandler>(MessageTypes.Count);
+		var handlers = new Dictionary<Type, MessageTypeHandler>(KnownMessageTypes.Count);
 
-		foreach (var messageType in MessageTypes) {
+		foreach (var messageType in KnownMessageTypes) {
 			var handler =
 				(MessageTypeHandler)Activator.CreateInstance(typeof(MessageTypeHandler<>).MakeGenericType(messageType));
 			handlers.Add(messageType, handler);
@@ -85,7 +85,7 @@ public partial class InMemoryBus {
 
 		static void RegisterMessageType(Dictionary<Type, MessageTypeHandler> messageTypes, Type messageType,
 			MessageTypeHandler handler) {
-			while (messageType.GetBaseTypes().FirstOrDefault(MessageTypes.Contains) is { } baseType && handler.Parent is null) {
+			while (messageType.GetBaseTypes().FirstOrDefault(KnownMessageTypes.Contains) is { } baseType && handler.Parent is null) {
 				if (!messageTypes.TryGetValue(baseType, out var parent))
 					Debug.Fail($"Unexpected message type {messageType}");
 

@@ -72,7 +72,7 @@ public static class MetricsBootstrapper {
 		LogConfig(conf);
 
 		MessageLabelConfigurator.ConfigureMessageLabels(
-			conf.MessageTypes, InMemoryBus.MessageTypes);
+			conf.MessageTypes, InMemoryBus.KnownMessageTypes);
 
 		if (conf.ExpectedScrapeIntervalSeconds <= 0)
 			return;
