@@ -9,6 +9,21 @@ EventStoreDB requires regular maintenance with three operational concerns:
 You might also be interested learning about EventStoreDB [diagnostics](diagnostics.md)
 and [indexes](./indexes.md), which might require attention.
 
+## Resigning leader
+Steps to Force a Leadership Change in an EventStoreDB Cluster
+
+1.  Reduce the current leader node's priority by issuing the following command, so that during the next election it becomes a Follower node
+
+```bash:no-line-numbers
+curl -X POST -d {} https://{leader_address}:2113/admin/node/priority/-1 -u admin:changeit
+```
+2. Issue a resignation command on the Leader node which will explicitly start a round of elections by issuing the following command:
+
+```bash:no-line-numbers
+curl -X POST -d {} https://{leader_address}:2113/admin/node/resign -u admin:changeit
+```
+
+
 ## Scavenging
 
 In EventStoreDB, events are no longer present in stream reads or subscriptions after they have been deleted or they have expired according to the metadata of the stream.
