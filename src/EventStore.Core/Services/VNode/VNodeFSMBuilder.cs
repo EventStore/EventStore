@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.VNode {
 		public VNodeFSMBuilder(ReadOnlyValueReference<VNodeState> stateRef) {
 			_stateRef = stateRef;
 
-			var maxState = Enum.GetValues(typeof(VNodeState)).Cast<int>().Max();
+			var maxState = (int)Enum.GetValues<VNodeState>().Max();
 			_handlers = new Dictionary<Type, Action<VNodeState, Message>>[maxState + 1];
 			_defaultHandlers = new Action<VNodeState, Message>[maxState + 1];
 		}
@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		public VNodeFSMStatesDefinition InAnyState() {
-			var allStates = Enum.GetValues(typeof(VNodeState)).Cast<VNodeState>().ToArray();
+			var allStates = Enum.GetValues<VNodeState>().Distinct().ToArray();
 			return new VNodeFSMStatesDefinition(this, allStates);
 		}
 
@@ -82,7 +82,7 @@ namespace EventStore.Core.Services.VNode {
 		public VNodeFSMStatesDefinition InAllStatesExcept(VNodeState[] states) {
 			Ensure.Positive(states.Length, "states.Length");
 
-			var s = Enum.GetValues(typeof(VNodeState)).Cast<VNodeState>().Except(states).ToArray();
+			var s = Enum.GetValues<VNodeState>().Except(states).Distinct().ToArray();
 			return new VNodeFSMStatesDefinition(this, s);
 		}
 
