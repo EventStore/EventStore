@@ -6,8 +6,6 @@ namespace EventStore.SourceGenerators.Tests.Messaging.Simple
 {
 	public partial class A
 	{
-		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-		public override int MsgTypeId => TypeId;
 		public static string OriginalLabelStatic { get; } = "TestMessageGroup-Simple-A";
 		public static string LabelStatic { get; set; } = "TestMessageGroup-Simple-A";
 		public override string Label => LabelStatic;
@@ -15,8 +13,6 @@ namespace EventStore.SourceGenerators.Tests.Messaging.Simple
 
 	public partial class B
 	{
-		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-		public override int MsgTypeId => TypeId;
 		public static string OriginalLabelStatic { get; } = "TestMessageGroup-Simple-B";
 		public static string LabelStatic { get; set; } = "TestMessageGroup-Simple-B";
 		public override string Label => LabelStatic;

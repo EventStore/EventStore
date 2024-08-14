@@ -6,7 +6,5 @@ namespace EventStore.SourceGenerators.Tests.Messaging.AbstractWithGroup
 {
 	public abstract partial class A
 	{
-		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-		public override int MsgTypeId => TypeId;
 	}
 }
