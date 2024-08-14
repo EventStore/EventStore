@@ -33,11 +33,22 @@ You can perform an online rolling upgrade directly to 24.2.x from these versions
 
 Follow the upgrade procedure below on each node, starting with a follower node:
 
-1. Stop the node.
-2. Upgrade EventstoreDB to 24.2 and update configuration.
-3. Start the node.
-4. Wait for the node to become a follower or read-only replica.
-5. Repeat the process for the next node.
+1. Select a Follower Node.
+2. Stop the Follower node.
+3. Upgrade the Follower node to 24.6 and update configuration.
+4. Turn on the Follower node and wait for the node to join the cluster.
+5. Proceed to the next Follower node and repeat steps 2 through 4 until all Follower nodes are upgraded.
+6. Reduce the current leader node's priority by issuing the following command to ensure the current Leader node becomes a Follower node during the next election:
+
+```
+curl -X POST -d {} https://{leader_address}:2113/admin/node/priority/-1 -u admin:changeit
+```
+
+7. Issue a resignation command on the Leader node which will explicitly start a round of elections by issuing the following command:
+```
+curl -X POST -d {} https://{leader_address}:2113/admin/node/resign -u admin:changeit
+```
+8. Once a new Leader node has been elected, the old Leader should now be a Follower node. Upgrade this node as you have done with the other Follower nodes. At this point, the entire cluster should be fully upgraded.
 
 As illustrated below:
 
