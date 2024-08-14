@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using DotNext.Runtime;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
@@ -10,16 +12,25 @@ namespace EventStore.Core.Services.VNode {
 	/// Builder syntax for constructing <see cref="VNodeFSM"/> in the code
 	/// </summary>
 	public class VNodeFSMBuilder {
-		private readonly Func<VNodeState> _getState;
+		private readonly ReadOnlyValueReference<VNodeState> _stateRef;
 		private readonly Dictionary<Type, Action<VNodeState, Message>>[] _handlers;
 		private readonly Action<VNodeState, Message>[] _defaultHandlers;
 
-		public VNodeFSMBuilder(Func<VNodeState> getState) {
-			_getState = getState;
+		public VNodeFSMBuilder(ReadOnlyValueReference<VNodeState> stateRef) {
+			_stateRef = stateRef;
 
 			var maxState = Enum.GetValues(typeof(VNodeState)).Cast<int>().Max();
 			_handlers = new Dictionary<Type, Action<VNodeState, Message>>[maxState + 1];
 			_defaultHandlers = new Action<VNodeState, Message>[maxState + 1];
+		}
+
+		public VNodeFSMBuilder(VNodeState state)
+			: this(Constant(state)) {
+		}
+
+		private static ReadOnlyValueReference<VNodeState> Constant(VNodeState state) {
+			var box = new StrongBox<VNodeState> { Value = state };
+			return new(box, ref box.Value);
 		}
 
 		internal void AddHandler<TActualMessage>(VNodeState state, Action<VNodeState, Message> handler)
@@ -76,7 +87,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		public VNodeFSM Build() {
-			return new VNodeFSM(_getState, _handlers, _defaultHandlers);
+			return new VNodeFSM(_stateRef, _handlers, _defaultHandlers);
 		}
 	}
 }

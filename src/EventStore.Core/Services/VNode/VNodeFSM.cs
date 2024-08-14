@@ -1,5 +1,15 @@
 ﻿using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
+using DotNext.Collections.Specialized;
+using DotNext.Reflection;
+using DotNext.Runtime;
+using DotNext.Runtime.ExceptionServices;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
@@ -7,55 +17,96 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Services.VNode;
 
 public class VNodeFSM : IHandle<Message> {
-	private readonly Func<VNodeState> _getState;
-	private readonly Action<VNodeState, Message>[][] _handlers;
-	private readonly Action<VNodeState, Message>[] _defaultHandlers;
+	private readonly ReadOnlyValueReference<VNodeState> _stateRef;
+	private readonly HandlersBuffer _handlers;
+	private readonly DefaultHandlersBuffer _defaultHandlers;
 
-	internal VNodeFSM(Func<VNodeState> getState,
-		Dictionary<Type, Action<VNodeState, Message>>[] handlers,
+	internal VNodeFSM(ReadOnlyValueReference<VNodeState> stateRef,
+		IReadOnlyDictionary<Type, Action<VNodeState, Message>>[] handlers,
 		Action<VNodeState, Message>[] defaultHandlers) {
-		_getState = getState;
+		_stateRef = stateRef;
 
-		_handlers = new Action<VNodeState, Message>[handlers.Length][];
-		for (int i = 0; i < _handlers.Length; ++i) {
-			_handlers[i] = new Action<VNodeState, Message>[MessageHierarchy.MaxMsgTypeId + 1];
-			if (handlers[i] != null) {
-				foreach (var handler in handlers[i]) {
-					_handlers[i][MessageHierarchy.MsgTypeIdByType[handler.Key]] = handler.Value;
-				}
+		for (var i = 0; i < handlers.Length; i++) {
+			var collection = _handlers[i] = CreateMessageTypeHandlers();
+
+			foreach (var (messageType, handler) in handlers[i]) {
+				collection[messageType].Handler = handler;
 			}
 		}
 
-		_defaultHandlers = defaultHandlers;
+		defaultHandlers.CopyTo(_defaultHandlers);
 	}
 
 	public void Handle(Message message) {
-		var state = _getState();
-		var stateNum = (int)state;
-		var handlers = _handlers[stateNum];
+		var state = _stateRef.Value;
 
-		var parents = MessageHierarchy.ParentsByTypeId[message.MsgTypeId];
-		for (int i = 0; i < parents.Length; ++i) {
-			if (TryHandle(state, handlers, message, parents[i]))
-				return;
-		}
-
-		if (_defaultHandlers[stateNum] != null) {
-			_defaultHandlers[stateNum](state, message);
+		if (_handlers[(int)state] is { } stateHandler
+		    && stateHandler.TryGetValue(message.GetType(), out var handlers)
+		    && handlers.Invoke(state, message)) {
 			return;
 		}
 
-		throw new Exception(string.Format("Unhandled message: {0} occurred in state: {1}.", message, state));
+		if (_defaultHandlers[(int)state] is { } defaultHandler) {
+			defaultHandler(state, message);
+		} else {
+			throw new Exception($"Unhandled message: {message} occurred in state: {state}.");
+		}
 	}
 
-	private static bool TryHandle(VNodeState state, Action<VNodeState, Message>[] handlers, Message message,
-		int msgTypeId) {
-		Action<VNodeState, Message> handler = handlers[msgTypeId];
-		if (handler != null) {
-			handler(state, message);
-			return true;
+	private static FrozenDictionary<Type, MessageTypeHandler> CreateMessageTypeHandlers() {
+		var handlers = new Dictionary<Type, MessageTypeHandler>(InMemoryBus.KnownMessageTypes.Count);
+
+		foreach (var messageType in InMemoryBus.KnownMessageTypes) {
+			var handler = new MessageTypeHandler();
+			handlers.Add(messageType, handler);
 		}
 
-		return false;
+		foreach (var (messageType, handler) in handlers) {
+			RegisterMessageType(handlers, messageType, handler);
+		}
+
+		// establish relationships between nodes
+		return handlers.ToFrozenDictionary();
+
+		static void RegisterMessageType(Dictionary<Type, MessageTypeHandler> messageTypes, Type messageType,
+			MessageTypeHandler handler) {
+			while (messageType.GetBaseTypes().FirstOrDefault(InMemoryBus.KnownMessageTypes.Contains) is { } baseType
+			       && handler.Parent is null) {
+				if (!messageTypes.TryGetValue(baseType, out var parent))
+					Debug.Fail($"Unexpected message type {messageType}");
+
+				handler.Parent = parent;
+				handler = parent;
+				messageType = baseType;
+			}
+		}
+	}
+
+	private sealed class MessageTypeHandler {
+		public MessageTypeHandler Parent; // can be null
+		public Action<VNodeState, Message> Handler;
+
+		public bool Invoke(VNodeState state, Message message) {
+			var result = Parent?.Invoke(state, message) ?? false;
+
+			if (Handler is not null) {
+				result = true;
+				Handler.Invoke(state, message);
+			}
+
+			return result;
+		}
+	}
+
+	[InlineArray(16)] // must be equal to max of VNodeState + 1
+	[StructLayout(LayoutKind.Auto)]
+	private struct DefaultHandlersBuffer {
+		private Action<VNodeState, Message> _handler;
+	}
+
+	[InlineArray(16)]
+	[StructLayout(LayoutKind.Auto)]
+	private struct HandlersBuffer {
+		private IReadOnlyDictionary<Type, MessageTypeHandler> _handler;
 	}
 }
