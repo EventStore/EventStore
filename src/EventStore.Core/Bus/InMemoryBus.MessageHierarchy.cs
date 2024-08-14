@@ -114,6 +114,13 @@ public partial class InMemoryBus {
 		public override void Invoke(Message message, ref ExceptionAggregator exceptions) {
 			Debug.Assert(message is T);
 
+			// Compat: assume that we have message types A > B with handlers handler(A) and handler(B).
+			// Some parts of ESDB relies on the following behavior: if message B is published, the order of
+			// handlers must be handler(A) -> handler(B) instead of handler(B) -> handler(A). That compat
+			// issue prevents us from using tail call, because we need to call parent handlers first.
+
+			Parent?.Invoke(message, ref exceptions);
+
 			foreach (var handler in Volatile.Read(in _handlers)) {
 				try {
 					handler.Handle(Unsafe.As<T>(message));
@@ -121,8 +128,6 @@ public partial class InMemoryBus {
 					exceptions.Add(e);
 				}
 			}
-
-			Parent?.Invoke(message, ref exceptions);
 		}
 
 		internal void AddHandler(IHandle<T> handler) {
