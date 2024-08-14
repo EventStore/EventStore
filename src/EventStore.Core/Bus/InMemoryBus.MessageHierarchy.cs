@@ -109,7 +109,9 @@ public partial class InMemoryBus {
 	}
 
 	private sealed class MessageTypeHandler<T> : MessageTypeHandler where T : Message {
-		private IHandle<T>[] _handlers = [];
+		// Perf: invocation of handlers is hot path, it's better do devirt `Handle` method.
+		// Devirtualized method is stored as a delegate
+		private Action<T>[] _handlers = [];
 
 		public override void Invoke(Message message, ref ExceptionAggregator exceptions) {
 			Debug.Assert(message is T);
@@ -118,12 +120,11 @@ public partial class InMemoryBus {
 			// Some parts of ESDB relies on the following behavior: if message B is published, the order of
 			// handlers must be handler(A) -> handler(B) instead of handler(B) -> handler(A). That compat
 			// issue prevents us from using tail call, because we need to call parent handlers first.
-
 			Parent?.Invoke(message, ref exceptions);
 
 			foreach (var handler in Volatile.Read(in _handlers)) {
 				try {
-					handler.Handle(Unsafe.As<T>(message));
+					handler.Invoke(Unsafe.As<T>(message));
 				} catch (Exception e) {
 					exceptions.Add(e);
 				}
@@ -133,36 +134,45 @@ public partial class InMemoryBus {
 		internal void AddHandler(IHandle<T> handler) {
 			Debug.Assert(handler is not null);
 
-			for (IHandle<T>[] newArray;; Array.Clear(newArray)) {
+			for (Action<T>[] newArray;; Array.Clear(newArray)) {
 				var currentArray = _handlers;
 
 				// Perf: array is preferred over ImmutableHashSet because enumeration speed is much more important
 				// (for Publish method) than perf of subscription methods.
-				if (Array.IndexOf(currentArray, handler) >= 0)
+				if (IndexOf(currentArray, handler) >= 0)
 					break;
 
-				newArray = new IHandle<T>[currentArray.Length + 1];
+				newArray = new Action<T>[currentArray.Length + 1];
 				Array.Copy(currentArray, newArray, currentArray.Length);
-				newArray[currentArray.Length] = handler;
+				newArray[currentArray.Length] = handler.Handle;
 
 				if (Interlocked.CompareExchange(ref _handlers, newArray, currentArray) == currentArray)
 					break;
 			}
 		}
 
+		private static int IndexOf(Action<T>[] handlers, IHandle<T> handler) {
+			for (var i = 0; i < handlers.Length; i++) {
+				if (ReferenceEquals(handlers[i].Target, handler))
+					return i;
+			}
+
+			return -1;
+		}
+
 		internal void RemoveHandler(IHandle<T> handler) {
 			Debug.Assert(handler is not null);
 
 			for (var currentArray = _handlers;;) {
-				var index = Array.IndexOf(currentArray, handler);
+				var index = IndexOf(currentArray, handler);
 				if (index < 0 || currentArray.Length is 0)
 					break;
 
 				// fast path loop - no need to search over array
-				for (IHandle<T>[] newArray;; Array.Clear(newArray)) {
+				for (Action<T>[] newArray;; Array.Clear(newArray)) {
 
 					if (currentArray.Length > 1) {
-						newArray = new IHandle<T>[currentArray.Length - 1];
+						newArray = new Action<T>[currentArray.Length - 1];
 						Array.Copy(currentArray, newArray, index);
 						Array.Copy(currentArray, index + 1, newArray, index, currentArray.Length - index - 1);
 					} else {
