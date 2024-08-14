@@ -134,6 +134,7 @@ public partial class InMemoryBus {
 		internal void AddHandler(IHandle<T> handler) {
 			Debug.Assert(handler is not null);
 
+			Action<T> devirtHandler = handler.Handle;
 			for (Action<T>[] newArray;; Array.Clear(newArray)) {
 				var currentArray = _handlers;
 
@@ -144,7 +145,7 @@ public partial class InMemoryBus {
 
 				newArray = new Action<T>[currentArray.Length + 1];
 				Array.Copy(currentArray, newArray, currentArray.Length);
-				newArray[currentArray.Length] = handler.Handle;
+				newArray[currentArray.Length] = devirtHandler;
 
 				if (Interlocked.CompareExchange(ref _handlers, newArray, currentArray) == currentArray)
 					break;
