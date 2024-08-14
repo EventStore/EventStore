@@ -42,7 +42,6 @@ public class VNodeFSM : IHandle<Message> {
 				}
 			}
 
-			// Perf: dictionary with type handle provides better performance than Type-based lookup
 			_handlers[i] = output.ToFrozenDictionary();
 			output.Clear(); // help GC
 		}
