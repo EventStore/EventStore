@@ -13,6 +13,7 @@ using DotNext.Runtime.ExceptionServices;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using JetBrains.Annotations;
 
 namespace EventStore.Core.Services.VNode;
 
@@ -26,12 +27,24 @@ public class VNodeFSM : IHandle<Message> {
 		Action<VNodeState, Message>[] defaultHandlers) {
 		_stateRef = stateRef;
 
+		var output = new Dictionary<Type, Action<VNodeState, Message>>();
 		for (var i = 0; i < handlers.Length; i++) {
-			var collection = _handlers[i] = CreateMessageTypeHandlers();
+			var input = handlers[i];
 
-			foreach (var (messageType, handler) in handlers[i]) {
-				collection[messageType].Handler = handler;
+			foreach (var knownMessageType in InMemoryBus.KnownMessageTypes) {
+				foreach (var (messageType, action) in input) {
+					if (messageType.IsAssignableFrom(knownMessageType)) {
+						ref var handle =
+							ref CollectionsMarshal.GetValueRefOrAddDefault(output, knownMessageType,
+								out _);
+						handle += action;
+					}
+				}
 			}
+
+			// Perf: dictionary with type handle provides better performance than Type-based lookup
+			_handlers[i] = output.ToFrozenDictionary();
+			output.Clear(); // help GC
 		}
 
 		defaultHandlers.CopyTo(_defaultHandlers);
@@ -42,59 +55,12 @@ public class VNodeFSM : IHandle<Message> {
 
 		if (_handlers[(int)state] is { } stateHandler
 		    && stateHandler.TryGetValue(message.GetType(), out var handlers)
-		    && handlers.Invoke(state, message)) {
-			return;
-		}
-
-		if (_defaultHandlers[(int)state] is { } defaultHandler) {
+		    && handlers is not null) {
+			handlers.Invoke(state, message);
+		} else if (_defaultHandlers[(int)state] is { } defaultHandler) {
 			defaultHandler(state, message);
 		} else {
 			throw new Exception($"Unhandled message: {message} occurred in state: {state}.");
-		}
-	}
-
-	private static FrozenDictionary<Type, MessageTypeHandler> CreateMessageTypeHandlers() {
-		var handlers = new Dictionary<Type, MessageTypeHandler>(InMemoryBus.KnownMessageTypes.Count);
-
-		foreach (var messageType in InMemoryBus.KnownMessageTypes) {
-			var handler = new MessageTypeHandler();
-			handlers.Add(messageType, handler);
-		}
-
-		foreach (var (messageType, handler) in handlers) {
-			RegisterMessageType(handlers, messageType, handler);
-		}
-
-		// establish relationships between nodes
-		return handlers.ToFrozenDictionary();
-
-		static void RegisterMessageType(Dictionary<Type, MessageTypeHandler> messageTypes, Type messageType,
-			MessageTypeHandler handler) {
-			while (messageType.GetBaseTypes().FirstOrDefault(InMemoryBus.KnownMessageTypes.Contains) is { } baseType
-			       && handler.Parent is null) {
-				if (!messageTypes.TryGetValue(baseType, out var parent))
-					Debug.Fail($"Unexpected message type {messageType}");
-
-				handler.Parent = parent;
-				handler = parent;
-				messageType = baseType;
-			}
-		}
-	}
-
-	private sealed class MessageTypeHandler {
-		public MessageTypeHandler Parent; // can be null
-		public Action<VNodeState, Message> Handler;
-
-		public bool Invoke(VNodeState state, Message message) {
-			var result = Parent?.Invoke(state, message) ?? false;
-
-			if (Handler is not null) {
-				result = true;
-				Handler.Invoke(state, message);
-			}
-
-			return result;
 		}
 	}
 
@@ -107,6 +73,6 @@ public class VNodeFSM : IHandle<Message> {
 	[InlineArray((int)VNodeState.MaxValue + 1)]
 	[StructLayout(LayoutKind.Auto)]
 	private struct HandlersBuffer {
-		private IReadOnlyDictionary<Type, MessageTypeHandler> _handler;
+		private FrozenDictionary<Type, Action<VNodeState, Message>> _handler;
 	}
 }
