@@ -16,8 +16,8 @@ public class VNodeFSM : IHandle<Message> {
 	private readonly HandlersBuffer _handlers;
 
 	internal VNodeFSM(ReadOnlyValueReference<VNodeState> stateRef,
-		IReadOnlyDictionary<Type, Action<VNodeState, Message>>[] handlers,
-		Action<VNodeState, Message>[] defaultHandlers) {
+		ReadOnlySpan<IReadOnlyDictionary<Type, Action<VNodeState, Message>>> handlers,
+		ReadOnlySpan<Action<VNodeState, Message>> defaultHandlers) {
 		Debug.Assert(handlers.Length == (int)VNodeState.MaxValue + 1);
 		Debug.Assert(defaultHandlers.Length == (int)VNodeState.MaxValue + 1);
 
@@ -25,16 +25,16 @@ public class VNodeFSM : IHandle<Message> {
 
 		var output = new Dictionary<Type, Action<VNodeState, Message>>();
 		for (var i = 0; i < handlers.Length; i++) {
-			var input = handlers[i];
-
-			foreach (var knownMessageType in InMemoryBus.KnownMessageTypes) {
-				foreach (var (messageType, action) in input) {
-					Debug.Assert(action is not null);
-					if (messageType.IsAssignableFrom(knownMessageType)) {
-						ref var handle =
-							ref CollectionsMarshal.GetValueRefOrAddDefault(output, knownMessageType,
-								out _);
-						handle += action;
+			if (handlers[i] is { } input) {
+				foreach (var knownMessageType in InMemoryBus.KnownMessageTypes) {
+					foreach (var (messageType, action) in input) {
+						Debug.Assert(action is not null);
+						if (messageType.IsAssignableFrom(knownMessageType)) {
+							ref var handle =
+								ref CollectionsMarshal.GetValueRefOrAddDefault(output, knownMessageType,
+									out _);
+							handle += action;
+						}
 					}
 				}
 			}
