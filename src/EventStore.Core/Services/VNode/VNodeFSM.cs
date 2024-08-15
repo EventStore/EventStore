@@ -8,7 +8,6 @@ using DotNext.Runtime;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
-using Mono.Unix.Native;
 
 namespace EventStore.Core.Services.VNode;
 
