@@ -29,6 +29,7 @@ public class VNodeFSM : IHandle<Message> {
 
 			foreach (var knownMessageType in InMemoryBus.KnownMessageTypes) {
 				foreach (var (messageType, action) in input) {
+					Debug.Assert(action is not null);
 					if (messageType.IsAssignableFrom(knownMessageType)) {
 						ref var handle =
 							ref CollectionsMarshal.GetValueRefOrAddDefault(output, knownMessageType,
@@ -55,11 +56,10 @@ public class VNodeFSM : IHandle<Message> {
 		public void Invoke(VNodeState state, Message message) {
 			scoped ref readonly var actionRef = ref _handlers.GetValueRefOrNullRef(message.GetType());
 
-			Action<VNodeState, Message> action;
-			if (Unsafe.IsNullRef(in actionRef) || (action = actionRef) is null)
-				action = _defaultHandler;
+			if (Unsafe.IsNullRef(in actionRef))
+				actionRef = ref _defaultHandler;
 
-			action.Invoke(state, message);
+			actionRef.Invoke(state, message);
 		}
 
 		private static void ThrowException(VNodeState state, Message message) {
