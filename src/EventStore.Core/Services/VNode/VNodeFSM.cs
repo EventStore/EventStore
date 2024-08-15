@@ -75,8 +75,8 @@ public class VNodeFSM : IHandle<Message> {
 		public readonly Action<VNodeState, Message> this[VNodeState index, Type messageType] {
 			get {
 				var dictionary = Unsafe.Add(ref Unsafe.AsRef(in _handler), (int)index);
-				dictionary.TryGetValue(messageType, out var action);
-				return action;
+				ref readonly var action = ref dictionary.GetValueRefOrNullRef(messageType);
+				return Unsafe.IsNullRef(in action) ? null : action;
 			}
 		}
 	}
