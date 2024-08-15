@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using DotNext.Runtime;
@@ -18,6 +19,9 @@ public class VNodeFSM : IHandle<Message> {
 	internal VNodeFSM(ReadOnlyValueReference<VNodeState> stateRef,
 		IReadOnlyDictionary<Type, Action<VNodeState, Message>>[] handlers,
 		Action<VNodeState, Message>[] defaultHandlers) {
+		Debug.Assert(handlers.Length == (int)VNodeState.MaxValue + 1);
+		Debug.Assert(defaultHandlers.Length == (int)VNodeState.MaxValue + 1);
+
 		_stateRef = stateRef;
 
 		var output = new Dictionary<Type, Action<VNodeState, Message>>();
@@ -45,11 +49,9 @@ public class VNodeFSM : IHandle<Message> {
 	public void Handle(Message message) {
 		var state = _stateRef.Value;
 
-		if (_handlers[(int)state] is { } stateHandler
-		    && stateHandler.TryGetValue(message.GetType(), out var handlers)
-		    && handlers is not null) {
+		if (_handlers[state, message.GetType()] is { } handlers) {
 			handlers.Invoke(state, message);
-		} else if (_defaultHandlers[(int)state] is { } defaultHandler) {
+		} else if (_defaultHandlers[state] is { } defaultHandler) {
 			defaultHandler(state, message);
 		} else {
 			throw new Exception($"Unhandled message: {message} occurred in state: {state}.");
@@ -60,11 +62,22 @@ public class VNodeFSM : IHandle<Message> {
 	[StructLayout(LayoutKind.Auto)]
 	private struct DefaultHandlersBuffer {
 		private Action<VNodeState, Message> _handler;
+
+		public readonly Action<VNodeState, Message> this[VNodeState index]
+			=> Unsafe.Add(ref Unsafe.AsRef(in _handler), (int)index);
 	}
 
 	[InlineArray((int)VNodeState.MaxValue + 1)]
 	[StructLayout(LayoutKind.Auto)]
 	private struct HandlersBuffer {
 		private FrozenDictionary<Type, Action<VNodeState, Message>> _handler;
+
+		public readonly Action<VNodeState, Message> this[VNodeState index, Type messageType] {
+			get {
+				var dictionary = Unsafe.Add(ref Unsafe.AsRef(in _handler), (int)index);
+				dictionary.TryGetValue(messageType, out var action);
+				return action;
+			}
+		}
 	}
 }
