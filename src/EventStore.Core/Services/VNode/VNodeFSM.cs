@@ -1,19 +1,12 @@
 ﻿using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
-using DotNext.Collections.Specialized;
-using DotNext.Reflection;
 using DotNext.Runtime;
-using DotNext.Runtime.ExceptionServices;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
-using JetBrains.Annotations;
 
 namespace EventStore.Core.Services.VNode;
 
