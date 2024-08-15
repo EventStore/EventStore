@@ -153,6 +153,11 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 								sdb.FromAll();
 							}
 							break;
+						case "streams":
+							foreach (var e in item.Value.EnumerateArray()) {
+								sdb.FromStream(e.GetString());
+							}
+							break;
 						default:
 							throw new Exception($"unexpected property in expected config {item.Name}");
 					}
@@ -223,7 +228,7 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 							flags |= PrepareFlags.TransactionEnd;
 
 						/*Sequence:
-						Get partition if bycustom partition or by stream 
+						Get partition if bycustom partition or by stream
 							if the partition is null or an empty string skip this event (NB: need to indicate that an event should be skipped)
 						load the state if it doesn't exist or tell the projection to init state
 						init shared if it doesn't exist
@@ -231,7 +236,7 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 						if processing a delete, call partition deleted (NB: bistate partitions do not support deletes)
 						process the event
 						save any shared state if it isn't null
-						save any state 
+						save any state
 						save emitted events to verify later
 						*/
 						var @event = sequence.Events[j];
@@ -400,7 +405,7 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 		public Task Test(TestDefinition def) {
 			return def.Execute(_output).AsTask();
 		}
-		
+
 		public class TestDefinition {
 			private readonly string _name;
 			private readonly Func<ITestOutputHelper, ValueTask> _step;
