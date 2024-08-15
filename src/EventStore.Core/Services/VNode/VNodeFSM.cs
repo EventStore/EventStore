@@ -8,13 +8,13 @@ using DotNext.Runtime;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using Mono.Unix.Native;
 
 namespace EventStore.Core.Services.VNode;
 
 public class VNodeFSM : IHandle<Message> {
 	private readonly ReadOnlyValueReference<VNodeState> _stateRef;
 	private readonly HandlersBuffer _handlers;
-	private readonly DefaultHandlersBuffer _defaultHandlers;
 
 	internal VNodeFSM(ReadOnlyValueReference<VNodeState> stateRef,
 		IReadOnlyDictionary<Type, Action<VNodeState, Message>>[] handlers,
@@ -39,45 +39,41 @@ public class VNodeFSM : IHandle<Message> {
 				}
 			}
 
-			_handlers[i] = output.ToFrozenDictionary();
+			_handlers[i] = new(output, defaultHandlers[i]);
 			output.Clear(); // help GC
 		}
-
-		defaultHandlers.CopyTo(_defaultHandlers);
 	}
 
-	public void Handle(Message message) {
-		var state = _stateRef.Value;
+	public void Handle(Message message) => _handlers.Invoke(_stateRef.Value, message);
 
-		if (_handlers[state, message.GetType()] is { } handlers) {
-			handlers.Invoke(state, message);
-		} else if (_defaultHandlers[state] is { } defaultHandler) {
-			defaultHandler(state, message);
-		} else {
+	[StructLayout(LayoutKind.Auto)]
+	private readonly struct Handler(
+		IReadOnlyDictionary<Type, Action<VNodeState, Message>> handlers,
+		Action<VNodeState, Message> defaultHandler) {
+		private readonly FrozenDictionary<Type, Action<VNodeState, Message>> _handlers = handlers.ToFrozenDictionary();
+		private readonly Action<VNodeState, Message> _defaultHandler = defaultHandler ?? ThrowException;
+
+		public void Invoke(VNodeState state, Message message) {
+			scoped ref readonly var actionRef = ref _handlers.GetValueRefOrNullRef(message.GetType());
+
+			Action<VNodeState, Message> action;
+			if (Unsafe.IsNullRef(in actionRef) || (action = actionRef) is null)
+				action = _defaultHandler;
+
+			action.Invoke(state, message);
+		}
+
+		private static void ThrowException(VNodeState state, Message message) {
 			throw new Exception($"Unhandled message: {message} occurred in state: {state}.");
 		}
 	}
 
 	[InlineArray((int)VNodeState.MaxValue + 1)]
 	[StructLayout(LayoutKind.Auto)]
-	private struct DefaultHandlersBuffer {
-		private Action<VNodeState, Message> _handler;
-
-		public readonly Action<VNodeState, Message> this[VNodeState index]
-			=> Unsafe.Add(ref Unsafe.AsRef(in _handler), (int)index);
-	}
-
-	[InlineArray((int)VNodeState.MaxValue + 1)]
-	[StructLayout(LayoutKind.Auto)]
 	private struct HandlersBuffer {
-		private FrozenDictionary<Type, Action<VNodeState, Message>> _handler;
+		private Handler _handler;
 
-		public readonly Action<VNodeState, Message> this[VNodeState index, Type messageType] {
-			get {
-				var dictionary = Unsafe.Add(ref Unsafe.AsRef(in _handler), (int)index);
-				ref readonly var action = ref dictionary.GetValueRefOrNullRef(messageType);
-				return Unsafe.IsNullRef(in action) ? null : action;
-			}
-		}
+		public readonly void Invoke(VNodeState index, Message message)
+			=> Unsafe.Add(ref Unsafe.AsRef(in _handler), (int)index).Invoke(index, message);
 	}
 }
