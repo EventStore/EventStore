@@ -1,7 +1,6 @@
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Diagnostics;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
@@ -9,7 +8,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Settings;
 using EventStore.Transport.Http;
@@ -23,11 +21,9 @@ namespace EventStore.Core.Services {
 		IHandle<HttpMessage.HttpSend> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<HttpSendService>();
 
-		private readonly Stopwatch _watch = Stopwatch.StartNew();
 		private readonly HttpMessagePipe _httpPipe;
 		private readonly bool _forwardRequests;
 		private readonly HttpClient _forwardClient;
-		private const string _httpSendHistogram = "http-send";
 		private MemberInfo _leaderInfo;
 
 		public HttpSendService(HttpMessagePipe httpPipe, bool forwardRequests, CertificateDelegates.ServerCertificateValidator externServerCertValidator) {
@@ -90,18 +86,17 @@ namespace EventStore.Core.Services {
 						throw new ArgumentOutOfRangeException();
 				}
 
-				var start = _watch.ElapsedTicks;
+				// todo: histogram metric?
 				message.HttpEntityManager.ReplyStatus(
 					code,
 					deniedToHandle.Details,
 					exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.",
 						message.Message, exc.Message));
-				HistogramService.SetValue(_httpSendHistogram,
-					(long)((((double)_watch.ElapsedTicks - start) / Stopwatch.Frequency) * 1000000000));
 			} else {
 				var response = message.Data;
 				var config = message.Configuration;
-				var start = _watch.ElapsedTicks;
+
+				// todo: histogram metric?
 				if (response is byte[]) {
 					message.HttpEntityManager.ReplyContent(
 						response as byte[],
@@ -121,9 +116,6 @@ namespace EventStore.Core.Services {
 						exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.",
 							message.Message, exc.Message));
 				}
-
-				HistogramService.SetValue(_httpSendHistogram,
-					(long)((((double)_watch.ElapsedTicks - start) / Stopwatch.Frequency) * 1000000000));
 			}
 		}
 

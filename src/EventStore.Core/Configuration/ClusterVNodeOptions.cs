@@ -134,6 +134,8 @@ namespace EventStore.Core {
 
 			[Description("Enables the tracking of various histograms in the backend, " +
 			             "typically only used for debugging, etc.")]
+			[Deprecated("The EnableHistograms setting has been deprecated as of version 24.10.0 and currently has no effect. " +
+						"Please contact EventStore if this feature is of interest to you.")]
 			public bool EnableHistograms { get; init; } = false;
 
 			[Description("Log Http Requests and Responses before processing them.")]
