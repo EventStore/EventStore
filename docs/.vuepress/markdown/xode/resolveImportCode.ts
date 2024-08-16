@@ -1,8 +1,8 @@
-import {fs, path, logger} from "@vuepress/utils";
+import {fs, path, logger} from "vuepress/utils";
 import type {MarkdownEnv} from "../types";
 import type {ImportCodeTokenMeta} from "./types";
 
-function testLine(line, regexp, regionName, end = false) {
+function testLine(line: string, regexp: RegExp, regionName: string, end = false) {
     const [full, tag, name] = regexp.exec(line.trim()) || [];
     return (
         full
@@ -12,7 +12,8 @@ function testLine(line, regexp, regionName, end = false) {
     );
 }
 
-function findRegion(lines, regionName) {
+function findRegion(lines: string[] | null, regionName: string) {
+    if (lines === null) return undefined;
     const regionRegexps = [
         /^\/\/ ?#?((?:end)?region) ([\w*-]+)$/, // javascript, typescript, java, go
         /^\/\* ?#((?:end)?region) ([\w*-]+) ?\*\/$/, // css, less, scss

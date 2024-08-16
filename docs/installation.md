@@ -79,11 +79,11 @@ You can also build EventStoreDB from source. Before doing that, you need to inst
 
 If you installed one of the [pre-built packages for Debian based systems](https://packagecloud.io/EventStore/EventStore-OSS), you can remove it with:
 
-```bash:no-line-numbers
+```bash
 sudo apt-get purge eventstore-oss
 ```
 or
-```bash:no-line-numbers
+```bash
 sudo apt-get purge eventstore-commercial
 ```
 
@@ -189,13 +189,13 @@ Create file `docker-compose.yaml` with following content:
 Run the instance:
 
 ```bash:no-line-numbers
-docker compose up
+docker-compose up
 ```
 
 The command above would run EventStoreDB as a single node without SSL. You also get AtomPub protocol enabled, so you can get the stream browser to work in the Admin UI.
 
 ::: warning
-The legacy TCP client protocol is disabled by default and will no longer be available from 24.2. 
+The legacy TCP client protocol is disabled by default and will no longer be available since version 24.2. 
 To enable it in versions lower than 24.2, add the environment variable to the yaml file: 
 EVENTSTORE_ENABLE_EXTERNAL_TCP=true
 :::

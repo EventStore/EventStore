@@ -10,15 +10,14 @@ EventStoreDB provides two interfaces:
 
 Nodes in the cluster replicate with each other using the TCP protocol, but use gRPC for [discovering other cluster nodes](cluster.md#discovering-cluster-members).
 
-Server nodes separate internal and external TCP communication explicitly, but use a single HTTP binding. Replication between the cluster nodes is considered internal and all the TCP clients that connect to the database are external. EventStoreDB allows you to separate network configurations for internal and external communication. For example, you can use different network interfaces on the node. All the internal communication can go over the isolated private network but access for external clients can be configured on another interface, which is connected to a more open network. You can set restrictions on those external interfaces to make your deployment more secure.
+Server nodes separate internal and external TCP communication explicitly, but use a single HTTP binding. Replication between the cluster nodes is considered internal, and all the TCP clients that connect to the database are external. EventStoreDB allows you to separate network configurations for internal and external communication. For example, you can use different network interfaces on the node. All the internal communication can go over the isolated private network, but access for external clients can be configured on another interface, which is connected to a more open network. You can set restrictions on those external interfaces to make your deployment more secure.
 
 For gRPC and HTTP, there's no internal vs external separation of traffic.
 
 ## HTTP configuration
 
 HTTP is the primary protocol for EventStoreDB. It is used in gRPC communication and HTTP APIs (management, gossip and diagnostics).
-
-Unlike for [TCP protocol](#tcp-configuration), there is no separation between internal and external communication. The HTTP endpoint always binds to the IP address configured in the `NodeIp` setting (previously referred to as `ExtIp`).
+The HTTP endpoint always binds to the IP address configured in the `NodeIp` setting (previously referred to as `ExtIp`).
 
 | Format               | Syntax               |
 |:---------------------|:---------------------|
@@ -100,6 +99,34 @@ In Event Store Cloud, the AtomPub protocol is enabled. For self-hosted instances
 
 **Default**: `false` (AtomPub is disabled)
 
+### HTTP caching
+
+:::tip
+This section is about caching static resources for HTTP API. It does not affect the server performance directly and cannot be used with gRPC clients.
+:::
+
+Most of the URIs that EventStoreDB emits are immutable (including the UI and Atom Feeds).
+
+An Atom feed has a URI that represents an event, e.g., `/streams/foo/0` which represents 'event 0'. The data for event 0 never changes. If this stream is open to public reads, then the URI is set to be 'cachable' for long periods of time.
+
+You can see a similar example in reading a feed. If a stream has 50 events in it, the feed page `20/forward/10` never changes, it will always be events 20-30. Internally, EventStoreDB controls serving the right URIs by using `rel` links with feeds (for example `prev`/`next`).
+
+This caching behavior is great for performance in a production environment and we recommended you use it, but in a developer environment it can become confusing.
+
+For example, what happens if you started a database, wrote `/streams/foo/0` and performed a `GET` request? The `GET` request is cachable and now in your cache. Since this is a development environment, you shut down EventStoreDB and delete the database. You then restart EventStoreDB and append a different event to `/streams/foo/0`. You open your browser and inspect the `/streams/foo/0` stream, and you see the event appended before you deleted the database.
+
+To avoid this during development it's best to run EventStoreDB with the `--disable-http-caching` command line option. This disables all caching and solves the issue.
+
+The option can be set as follows:
+
+| Format               | Syntax                            |
+|:---------------------|:----------------------------------|
+| Command line         | `--disable-http-caching`          |
+| YAML                 | `DisableHttpCaching`              |
+| Environment variable | `EVENTSTORE_DISABLE_HTTP_CACHING` |
+
+**Default**: `false`, so the HTTP caching is **enabled** by default.
+
 ### Kestrel Settings
 
 It's generally not expected that you'll need to update the Kestrel configuration that EventStoreDB has set by default, but it's good to know that you can update the following settings if needed.
@@ -134,21 +161,21 @@ Value must be greater than or equal to 65,535 and less than 2^31. See the docs [
 
 This is configured with `Kestrel.Limits.Http2.InitialStreamWindowSize` in the settings file.
 
-## TCP configuration
+## Replication protocol
 
-The TCP protocol is used internally for cluster nodes to replicate with each other. It happens over the [internal](#internal) TCP communication.
+Replication between cluster nodes uses a proprietary TCP-based protocol. Options for configuring the internal replication protocol are described below.
 
-### Internal
+### Interface and port
 
 Internal TCP binds to the IP address specified in the `ReplicationIp` setting (previously `IntIp`). It must be configured if you run a multi-node cluster.
 
 By default, EventStoreDB binds its internal networking on the loopback interface only (`127.0.0.1`). You can change this behaviour and tell EventStoreDB to listen on a specific internal IP address. To do that set the `ReplicationIp` to `0.0.0.0` or the IP address of the network interface.
 
-| Format               | Syntax                     |
-|:---------------------|:---------------------------|
-| Command line         | `--replication-ip`         |
-| YAML                 | `ReplicationIp`            |
-| Environment variable | `EVENTSTORE_REPLICATION_IP`|
+| Format               | Syntax                      |
+|:---------------------|:----------------------------|
+| Command line         | `--replication-ip`          |
+| YAML                 | `ReplicationIp`             |
+| Environment variable | `EVENTSTORE_REPLICATION_IP` |
 
 **Default**: `127.0.0.1` (loopback).
 
@@ -160,11 +187,11 @@ Please note that the `IntIp` parameter has been deprecated as of version 23.10.0
 
 By default, EventStoreDB uses port `1112` for internal TCP. You can change this by specifying the `ReplicationPort` setting (previously `IntTcpPort` setting).
 
-| Format               | Syntax                       |
-|:---------------------|:-----------------------------|
-| Command line         | `--replication-port`         |
-| YAML                 | `ReplicationPort`            |
-| Environment variable | `EVENTSTORE_REPLICATION_PORT`|
+| Format               | Syntax                        |
+|:---------------------|:------------------------------|
+| Command line         | `--replication-port`          |
+| YAML                 | `ReplicationPort`             |
+| Environment variable | `EVENTSTORE_REPLICATION_PORT` |
 
 **Default**: `1112`
 
@@ -202,11 +229,11 @@ The only place where these settings make any effect is the [gossip](cluster.md#g
 
 By default, a cluster node will advertise itself using `NodeIp` and `NodePort`. You can override the advertised HTTP port using the  `NodePortAdvertiseAs` setting (previously `HttpPortAdvertiseAs` setting).
 
-| Format               | Syntax                             |
-|:---------------------|:-----------------------------------|
-| Command line         | `--node-port-advertise-as`         |
-| YAML                 | `NodePortAdvertiseAs`              |
-| Environment variable | `EVENTSTORE_NODE_PORT_ADVERTISE_AS`| 
+| Format               | Syntax                              |
+|:---------------------|:------------------------------------|
+| Command line         | `--node-port-advertise-as`          |
+| YAML                 | `NodePortAdvertiseAs`               |
+| Environment variable | `EVENTSTORE_NODE_PORT_ADVERTISE_AS` | 
 
 ::: warning
 Please note that the `HttpPortAdvertiseAs` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `NodePortAdvertiseAs` parameter instead.
@@ -226,13 +253,13 @@ Please note that the `ExtHostAdvertiseAs` parameter has been deprecated as of ve
 
 ### TCP translations
 
-Both internal and external TCP ports can be advertised using custom values:
+TCP ports used for replication can be advertised using custom values:
 
-| Format               | Syntax                                        |
-|:---------------------|:----------------------------------------------|
-| Command line         | `--replication-tcp-port-advertise-as`         |
-| YAML                 | `ReplicationTcpPortAdvertiseAs`               |
-| Environment variable | `EVENTSTORE_REPLICATION_TCP_PORT_ADVERTISE_AS`| 
+| Format               | Syntax                                         |
+|:---------------------|:-----------------------------------------------|
+| Command line         | `--replication-tcp-port-advertise-as`          |
+| YAML                 | `ReplicationTcpPortAdvertiseAs`                |
+| Environment variable | `EVENTSTORE_REPLICATION_TCP_PORT_ADVERTISE_AS` | 
 
 ::: warning
 Please note that the `IntTcpPortAdvertiseAs` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `ReplicationTcpPortAdvertiseAs` and `NodeTcpPortAdvertiseAs` parameters instead, respectively.
@@ -280,7 +307,7 @@ Please note that the `AdvertiseHttpPortToClientAs` parameter has been deprecated
 
 EventStoreDB uses heartbeats over all TCP connections to discover dead clients and nodes. Heartbeat timeouts should not be too short, as short timeouts will produce false positives. At the same time, setting too long timeouts will prevent discovering dead nodes and clients in time.
 
-Each heartbeat has two points of configuration. The first is the _interval_, this represents how often the system should consider a heartbeat. EventStoreDB doesn't send a heartbeat for every interval, but only if it has not heard from a node within the configured interval. On a busy cluster, you may never see any heartbeats.
+Each heartbeat has two points of configuration. The first is the _interval;_ this represents how often the system should consider a heartbeat. EventStoreDB doesn't send a heartbeat for every interval, but only if it has not heard from a node within the configured interval. In a busy cluster, you may never see any heartbeats.
 
 The second point of configuration is the _timeout_. This determines how long EventStoreDB server waits for a client or node to respond to a heartbeat request.
 
@@ -295,19 +322,19 @@ If in doubt, choose higher numbers. This adds a small period of time to discover
 
 Replication/Internal TCP heartbeat (between cluster nodes):
 
-| Format               | Syntax                                     |
-|:---------------------|:-------------------------------------------|
-| Command line         | `--replication-heartbeat-interval`         |
-| YAML                 | `ReplicationHeartbeatInterval`             |
-| Environment variable | `EVENTSTORE_REPLICATION_HEARTBEAT_INTERVAL`| 
+| Format               | Syntax                                      |
+|:---------------------|:--------------------------------------------|
+| Command line         | `--replication-heartbeat-interval`          |
+| YAML                 | `ReplicationHeartbeatInterval`              |
+| Environment variable | `EVENTSTORE_REPLICATION_HEARTBEAT_INTERVAL` | 
 
 **Default**: `700` (ms)
 
-| Format               | Syntax                                    |
-|:---------------------|:------------------------------------------|
-| Command line         | `--replication-heartbeat-timeout`         |
-| YAML                 | `ReplicationHeartbeatTimeout`             |
-| Environment variable | `EVENTSTORE_REPLICATION_HEARTBEAT_TIMEOUT`| 
+| Format               | Syntax                                     |
+|:---------------------|:-------------------------------------------|
+| Command line         | `--replication-heartbeat-timeout`          |
+| YAML                 | `ReplicationHeartbeatTimeout`              |
+| Environment variable | `EVENTSTORE_REPLICATION_HEARTBEAT_TIMEOUT` | 
 
 **Default**: `700` (ms)
 
@@ -353,6 +380,99 @@ You can also disable the gossip protocol in the external HTTP interface. If you 
 
 **Default**: `true`, gossip is enabled on the external HTTP.
 
+## External TCP 
+
+<wbr><Badge type="warning" text="Commercial" vertical="middle"/>
+
+The TCP client protocol plugin enables client applications based on the external TCP API to run without any changes. This provides developers a mechanism to migrate to gRPC clients. This bridge solution enables development teams to plan for the End Of Life (EOL) of the external TCP API. Past the EOL, the external TCP API will no longer be supported.
+
+### Enabling the plugin
+
+Refer to the general [plugins configuration](./configuration.md#plugins-configuration) guide to see how to configure plugins with JSON files and environment variables.
+
+To enable the TCP API plugin, save the following configuration in a JSON file, for example `<esdb-installation-directory>/config/tcp-plugin-config.json`, in the EventStoreDB installation directory for a node:
+
+```json
+{
+  "EventStore": {
+    "TcpPlugin": {
+      "EnableExternalTcp": true
+    }
+  }
+}
+```
+
+Once the plugin is enabled, the server will log a message similar to the one below:
+
+```
+[11212, 1,18:44:34.070,INF] "TcpApi" "24.6.0.0" plugin enabled.
+```
+
+### Other parameters
+
+The following options can be set in the json configuration:
+
+1. `NodeHeartbeatTimeout` - defaults to: 1000
+2. `NodeHeartbeatInterval` - defaults to: 2000
+3. `NodeTcpPort` - defaults to: 1113
+4. `NodeTcpPortAdvertiseAs` - defaults to: 1113
+
+The above default values can be overridden, for example:
+
+```json
+{
+  "EventStore": {
+    "TcpPlugin": {
+      "EnableExternalTcp": true,
+      "NodeTcpPort": 8113,
+      "NodeTcpPortAdvertiseAs": 8113,
+      "NodeHeartbeatInterval": 2000,
+      "NodeHeartbeatTimeout": 1000
+    }
+  }
+}
+```
+
+### Troubleshooting
+
+#### Plugin doesn't load
+
+The plugin has to be located in a subdirectory of the server's plugins directory. To check this:
+
+1. Go to the installation directory of a node, the directory containing the EventStoreDb executable.
+2. In this directory, there should be a directory called `plugins`, create it if this is not the case.
+3. The `plugins` directory should have a subdirectory for the TCP API plugin, for example `EventStore.TcpPlugin`. Create it if it doesn't exist.
+4. The binaries of the plugin should be located in that same subdirectory.
+
+You can verify which plugins have been found and loaded by searching for log entries similar to the following:
+
+```
+[11212, 1,18:44:30.420,INF] Plugins path: "C:\\EventStore\\plugins"
+[11212, 1,18:44:30.420,INF] Adding: "C:\\EventStore\\plugins" to the plugin catalog.
+[11212, 1,18:44:30.422,INF] Adding: "C:\\EventStore\\plugins\\EventStore.Licensing" to the plugin catalog.
+[11212, 1,18:44:30.432,INF] Adding: "C:\\EventStore\\plugins\\EventStore.POC.ConnectedSubsystemsPlugin" to the plugin catalog.
+[11212, 1,18:44:30.433,INF] Adding: "C:\\EventStore\\plugins\\EventStore.POC.ConnectorsPlugin" to the plugin catalog.
+[11212, 1,18:44:30.436,INF] Adding: "C:\\EventStore\\plugins\\EventStore.TcpPlugin" to the plugin catalog.
+[11212, 1,18:44:30.479,INF] Loaded SubsystemsPlugin plugin: "licensing" "24.10.0.0".
+[11212, 1,18:44:30.483,INF] Loaded SubsystemsPlugin plugin: "connected" "0.0.5".
+[11212, 1,18:44:30.496,INF] Loaded ConnectedSubsystemsPlugin plugin: "connectors" "0.0.5".
+[11212, 1,18:44:30.504,INF] Loaded SubsystemsPlugin plugin: "tcp-api" "24.10.0.0".
+```
+
+#### Plugin doesn't start
+
+The plugin has to be configured to be enabled.
+If you see the following log it means the plugin was found but not started:
+
+```
+[ 5104, 1,19:03:13.807,INF] "TcpApi" "24.6.0.0" plugin disabled. "Set 'EventStore:TcpPlugin:EnableExternalTcp' to 'true' to enable"
+```
+
+When the plugin starts, you should see a log similar to the following:
+
+```
+[11212, 1,18:44:34.070,INF] "TcpApi" "24.6.0.0" plugin enabled.
+```
 
 
 

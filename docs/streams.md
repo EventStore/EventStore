@@ -152,7 +152,7 @@ Learn more about the default ACL in the [access control lists](security.md#defau
 ### **`$stats`**
 
 EventStoreDB offers debugging and statistical information about a cluster within the **`$stats`** stream. Find out
-more in [the stats guide](diagnostics.md#statistics).
+more in [the stats guide](diagnostics/README.md#statistics).
 
 ### **`$scavenges`**
 

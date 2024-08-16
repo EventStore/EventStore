@@ -12,6 +12,7 @@ module.exports = [
         text: "Configuration",
         children: [
             "configuration.md",
+            "db-config.md",
             "security.md",
             "networking.md",
             "cluster.md",
@@ -20,6 +21,7 @@ module.exports = [
     {
         text: "Features",
         children: [
+            "admin-ui.md",
             "streams.md",
             "indexes.md",
             "projections.md",
@@ -31,8 +33,18 @@ module.exports = [
         children: [
             "upgrade-guide.md",
             "operations.md",
-            "diagnostics.md",
-            "metrics.md"
+        ]
+    },
+    {
+        text: "Diagnostics",
+        group: "Diagnostics",
+        prefix: "/diagnostics/",
+        link: "/diagnostics/",
+        children: [
+            "README.md",
+            "logs.md",
+            "metrics.md",
+            "integrations.md",
         ]
     }
 ];

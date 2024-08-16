@@ -1,6 +1,6 @@
-import {path} from '@vuepress/utils';
-import {ResolvedImport} from "../markdown/xode/types";
+import {type ResolvedImport} from "../markdown/xode/types";
 import version from "./version";
+import {path} from "@vuepress/utils";
 
 const base = "../../samples";
 
@@ -15,7 +15,7 @@ export function resolveMultiSamplesPath(src: string): ResolvedImport[] {
 }
 
 export function resolveSamplesPath(src: string, srcCat: string | undefined) {
-    const def = s => {
+    const def = (s: string) => {
         return {label: "", path: s}
     };
 
@@ -77,7 +77,7 @@ export function resolveSamplesPath(src: string, srcCat: string | undefined) {
     const isVersion = pseudo.length > 1 && version.isVersion(pseudo[1]);
 
     const catName = includesCat ? pseudo[0] : srcCat;
-    const cat = cats[catName];
+    const cat = cats[catName!];
     if (cat === undefined) {
         console.log(`Unknown placeholder: ${pseudo[0]}`);
         return def(src);
