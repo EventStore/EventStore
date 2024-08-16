@@ -1,16 +1,19 @@
-import {path} from '@vuepress/utils';
-import {defineUserConfig} from "@vuepress/cli";
-import type {DefaultThemeOptions} from "@vuepress/theme-default";
+import {defineUserConfig} from "vuepress";
 import containers from "./lib/containers";
 import {importCodePlugin} from "./markdown/xode/importCodePlugin";
 import {resolveMultiSamplesPath} from "./lib/samples";
 import {linkCheckPlugin} from "./markdown/linkCheck";
 import {replaceLinkPlugin} from "./markdown/replaceLink";
+import viteBundler from "@vuepress/bundler-vite";
+import {defaultTheme} from "@vuepress/theme-default";
+import {containerPlugin} from "@vuepress/plugin-container";
 
-export default defineUserConfig<DefaultThemeOptions>({
+const projectionSamplesPath = "https://raw.githubusercontent.com/EventStore/EventStore/53f84e55ea56ccfb981aff0e432581d72c23fbf6/samples/http-api/data/";
+
+export default defineUserConfig({
     title: "EventStoreDB Documentation",
     description: "The stream database built for Event Sourcing",
-    clientAppEnhanceFiles: path.resolve(__dirname, './clientAppEnhance.ts'),
+    bundler: viteBundler(),
     markdown: {importCode: false},
     extendsMarkdown: md => {
         md.use(importCodePlugin, {
@@ -22,10 +25,11 @@ export default defineUserConfig<DefaultThemeOptions>({
                 .replace("@server", "")
                 .replace("@clients/http-api/", "/http-api/")
                 .replace("@clients/httpapi/", "/http-api/")
-                .replace("@httpapi", "../../samples/http-api")
+                .replace("@httpapi/data/", projectionSamplesPath)
+                .replace("@httpapi", "/http-api")
         });
     },
-    themeConfig: {
+    theme: defaultTheme({
         sidebarDepth: 2,
         docsDir: ".",
         sidebar: {
@@ -42,19 +46,19 @@ export default defineUserConfig<DefaultThemeOptions>({
                 link: "/http-api/"
             }
         ]
-    },
+    }),
     plugins: [
         containers("tabs", "TabView", type => `${type ? ` type='${type}'` : ""}`),
         containers("tab", "TabPanel", label => `header="${label}"`),
-        ["@vuepress/container", {
+        containerPlugin( {
             type: "note",
             before: title => `<div class="custom-container note"><p class="custom-container-title">${title === "" ? "NOTE" : title}</p>`,
             after: _ => `</div>`
-        }],
-        ["@vuepress/container", {
+        }),
+        containerPlugin ({
             type: "card",
             before: _ => `<Card><template #content>`,
             after: _ => `</template></Card>`
-        }]
+        }),
     ],
 });

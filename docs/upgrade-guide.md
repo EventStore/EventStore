@@ -2,22 +2,24 @@
 title: "Upgrade Guide"
 ---
 
-# Upgrade guide for EventStoreDB 24.2
+# Upgrade guide for EventStoreDB 24.6
 
-EventStoreDB 24.2 is now available for download. You can install it using [Packagecloud](https://packagecloud.io/EventStore/EventStore-OSS), [Chocolatey](https://chocolatey.org/packages/eventstore-oss), or [Docker](https://hub.docker.com/r/eventstore/eventstore/tags?page=1&name=24.2).  Packages are available on our [website](https://www.eventstore.com/downloads) with detailed instructions for each platform.
+EventStoreDB 24.6 is now available for download. You can install it using [Packagecloud](https://packagecloud.io/EventStore/EventStore-OSS), [Chocolatey](https://chocolatey.org/packages/eventstore-oss), or [Docker](https://hub.docker.com/r/eventstore/eventstore/tags?page=1&name=24.6).  Packages are available on our [website](https://www.eventstore.com/downloads) with detailed instructions for each platform.
 
 ### Should you upgrade?
 
-Version 24.2 is an interim release that will be supported until the launch of version 24.6 in June 2024.
-We recommend upgrading to 24.2 if you are interested in using the new features introduced in this release.
+Version 24.6 is an interim release that will be supported until the launch of version 24.10 in October 2024.
+We recommend upgrading to 24.6 if you are interested in using the new features introduced in this release.
 
 ::: warning
-Do not upgrade to version 24.2 if your applications rely on the external TCP API. This has been removed in 24.2.0. See the [breaking changes](#external-tcp-api-removed) for more information. You can prevent automatic upgrades by pinning the version in your package manager. Find out about package holding on Linux [here](https://askubuntu.com/questions/18654/how-to-prevent-updating-of-a-specific-package).
+Do not upgrade to version 24.6 if your applications rely on the external TCP API. This has been removed in 24.2. See the [breaking changes](#external-tcp-api-removed) for more information. You can prevent automatic upgrades by pinning the version in your package manager. Find out about package holding on Linux [here](https://askubuntu.com/questions/18654/how-to-prevent-updating-of-a-specific-package).
+
+The commercial version of EventStoreDB 24.6 includes a plugin that enables the TCP client protocol. 
 :::
 
 ### Security update
 
-If you are not upgrading to 24.2, please ensure that you are running a patch of EventStoreDB with the security release addressing [CVE-2024-26133](https://www.eventstore.com/blog/eventstoredb-security-release-23.10-22.10-21.10-and-20.10-for-cve-2024-26133):
+If you are not upgrading to 24.6, please ensure that you are running a patch of EventStoreDB with the security release addressing [CVE-2024-26133](https://www.eventstore.com/blog/eventstoredb-security-release-23.10-22.10-21.10-and-20.10-for-cve-2024-26133):
 
 - **Version 23.10.0:** Upgrade to at least 23.10.1.
 - **Versions 22.10.x:** Upgrade to at least 22.10.5 or 23.10.1.
@@ -26,7 +28,8 @@ If you are not upgrading to 24.2, please ensure that you are running a patch of 
 
 ### Upgrade procedure
 
-You can perform an online rolling upgrade directly to 24.2.x from these versions of EventStoreDB:
+You can perform an online rolling upgrade directly to 24.6 from these versions of EventStoreDB:
+- 24.2
 - 23.10
 - 22.10
 - 21.10
@@ -34,16 +37,14 @@ You can perform an online rolling upgrade directly to 24.2.x from these versions
 Follow the upgrade procedure below on each node, starting with a follower node:
 
 1. Stop the node.
-2. Upgrade EventstoreDB to 24.2 and update configuration.
+2. Upgrade EventstoreDB to 24.6 and update configuration.
 3. Start the node.
 4. Wait for the node to become a follower or read-only replica.
 5. Repeat the process for the next node.
 
 As illustrated below:
 
-::: card
 ![EventStoreDB upgrade procedure for each node](./images/upgrade-procedure.png)
-:::
 
 Upgrading the cluster in this manner keeps the cluster online and able to service requests. There may still be disruptions to your services during the upgrade, namely:
 - Client connections may be disconnected when nodes go offline, or when elections take place.
@@ -75,27 +76,6 @@ A number of configuration options have been removed as part of this. EventStoreD
 - `NodeHeartbeatTimeout`
 - `NodeTcpPort`
 - `NodeTcpPortAdvertiseAs`
-
-##### Stricter node certificate requirements
-
-EventStoreDB 24.2.0 has stricter requirements for Key Usages in node certificates.
-
-These requirements are:
-- The certificate Extended Key Usages (EKUs) either:
-  - Contains both the ClientAuth EKU and the ServerAuth EKU, or
-  - Is empty.
-- The certificate Key Usages contains either:
-  - DigitalSignature and KeyEncipherment, or
-  - DigitalSignature and KeyAgreement.
-
-If a node certificate does not meet these requirements, the nodes in the cluster will be unable to make gossip and election requests.
-In this case, you will see the following logs:
-
-```
-[16480,21,14:57:06.209,WRN] Failed authorization check for "(anonymous)" in 00:00:00.0000826 with "node/gossip : update Deny : Policy : Legacy 1 9999-12-31 11:59:59 PM +00:00 : default:denied by default:Deny, $"
-```
-
-You can correct this by regenerating the certificates with the correct key usages. See the [Certificate Configuration](./security.md#certificates-configuration) documentation for more information about configuring and generating certificates.
 
 #### From version 22.10 and earlier
 
@@ -146,16 +126,16 @@ Follow the [upgrade procedure](#upgrade-procedure) and ensure that the Leader no
 
 Several options are deprecated and slated for removal in future releases. See the table below for guidance.
 
-| Deprecated Option           | Use Instead                   |
-|:----------------------------|:------------------------------|
-| ExtIp                       | NodeIp                        |
-| ExtPort                     | NodePort                      |
-| HttpPortAdvertiseAs         | NodePortAdvertiseAs           |
-| ExtHostAdvertiseAs          | NodeHostAdvertiseAs           |
-| AdvertiseHttpPortToClientAs | AdvertiseNodePortToClientAs   |
-| IntIp                       | ReplicationIp                 |
-| IntTcpPort                  | ReplicationTcpPort            |
-| IntTcpPortAdvertiseAs       | ReplicationTcpPortAdvertiseAs |
-| IntHostAdvertiseAs          | ReplicationHostAdvertiseAs    |
-| IntTcpHeartbeatTimeout      | ReplicationHeartbeatTimeout   |
-| IntTcpHeartbeatInterval     | ReplicationHeartbeatInterval  |
+| Deprecated Option             | Use Instead                     |
+|:------------------------------|:--------------------------------|
+| `ExtIp`                       | `NodeIp`                        |
+| `ExtPort`                     | `NodePort`                      |
+| `HttpPortAdvertiseAs`         | `NodePortAdvertiseAs`           |
+| `ExtHostAdvertiseAs`          | `NodeHostAdvertiseAs`           |
+| `AdvertiseHttpPortToClientAs` | `AdvertiseNodePortToClientAs`   |
+| `IntIp`                       | `ReplicationIp`                 |
+| `IntTcpPort`                  | `ReplicationTcpPort`            |
+| `IntTcpPortAdvertiseAs`       | `ReplicationTcpPortAdvertiseAs` |
+| `IntHostAdvertiseAs`          | `ReplicationHostAdvertiseAs`    |
+| `IntTcpHeartbeatTimeout`      | `ReplicationHeartbeatTimeout`   |
+| `IntTcpHeartbeatInterval`     | `ReplicationHeartbeatInterval`  |

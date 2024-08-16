@@ -2,12 +2,6 @@
 
 EventStoreDB collects metrics in [Prometheus format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format), available on the `/metrics` endpoint. Prometheus can be configured to scrape this endpoint directly. The metrics are configured in `metricsconfig.json`. 
 
-::: note
-`/metrics` does not yet contain metrics for Projections and Persistent Subscriptions. To view these in Prometheus it is still recommended to use the [Prometheus exporter](./diagnostics.md#prometheus)
-:::
-
-
-
 In addition, EventStoreDB can actively export metrics to a specified endpoint using the [OpenTelemetry Protocol](https://opentelemetry.io/docs/specs/otel/protocol/) (OTLP). <Badge type="warning" text="Commercial" vertical="middle"></Badge>
 
 ## Metrics reference
@@ -87,6 +81,25 @@ Example output:
 ```
 # TYPE eventstore_checkpoints gauge
 eventstore_checkpoints{name="replication",read="non-flushed"} 613363 1688054162478
+```
+
+### Elections Count
+
+This metric tracks the number of elections that have been completed.
+
+| Time series                  | Type                     | Description                  |
+|:-----------------------------|:-------------------------|:-----------------------------|
+| `eventstore_elections_count` | [Counter](#common-types) | Elections count in a cluster |
+
+Example configuration:
+```json
+"ElectionsCount": true
+```
+
+Example output:
+```
+# TYPE eventstore_elections_count counter
+eventstore_elections_count 0 1710188996949
 ```
 
 ### Events
@@ -237,6 +250,64 @@ Example output:
 eventstore_kestrel_connections 1 1688070655500
 ```
 
+### Persistent Subscriptions
+
+Persistent subscription metrics track the statistics for the persistent subscriptions.
+
+| Time series                                                                                                           | Type                     | Description                                                    |
+|:----------------------------------------------------------------------------------------------------------------------|:-------------------------|:---------------------------------------------------------------|
+| `eventstore_persistent_sub_connections{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                        | [Gauge](#common-types)   | Number of connections                                          |
+| `eventstore_persistent_sub_parked_messages{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                    | [Gauge](#common-types)   | Number of parked messages                                      |
+| `eventstore_persistent_sub_in_flight_messages{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                 | [Gauge](#common-types)   | Number of messages in flight                                   |
+| `eventstore_persistent_sub_oldest_parked_message_seconds{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`      | [Gauge](#common-types)   | Oldest parked message age in seconds                           |
+| `eventstore_persistent_sub_items_processed{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                    | [Counter](#common-types) | Total items processed                                          |
+| `eventstore_persistent_sub_last_known_event_number{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`            | [Counter](#common-types) | Last known event number (streams other than `$all`)            |
+| `eventstore_persistent_sub_last_known_event_commit_position{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`   | [Counter](#common-types) | Last known event's commit position (`$all` stream only)        |
+| `eventstore_persistent_sub_checkpointed_event_number{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`          | [Counter](#common-types) | Last checkpointed event number (streams other than `$all)`     |
+| `eventstore_persistent_sub_checkpointed_event_commit_position{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}` | [Counter](#common-types) | Last checkpointed event's commit position (`$all` stream only) |
+
+Example configuration:
+
+```json
+"PersistentSubscriptionStats": true,
+```
+
+Example output:
+
+```
+# TYPE eventstore_persistent_sub_connections gauge
+eventstore_persistent_sub_connections{event_stream_id="test-stream",group_name="group1"} 1 1720172078179
+eventstore_persistent_sub_connections{event_stream_id="$all",group_name="group1"} 1 1720172078179
+
+# TYPE eventstore_persistent_sub_parked_messages gauge
+eventstore_persistent_sub_parked_messages{event_stream_id="test-stream",group_name="group1"} 0 1720172078179
+eventstore_persistent_sub_parked_messages{event_stream_id="$all",group_name="group1"} 0 1720172078179
+
+# TYPE eventstore_persistent_sub_in_flight_messages gauge
+eventstore_persistent_sub_in_flight_messages{event_stream_id="test-stream",group_name="group1"} 0 1720172078179
+eventstore_persistent_sub_in_flight_messages{event_stream_id="$all",group_name="group1"} 0 1720172078179
+
+# TYPE eventstore_persistent_sub_oldest_parked_message_seconds gauge
+eventstore_persistent_sub_oldest_parked_message_seconds{event_stream_id="test-stream",group_name="group1"} 0 1720172078179
+eventstore_persistent_sub_oldest_parked_message_seconds{event_stream_id="$all",group_name="group1"} 0 1720172078179
+
+# TYPE eventstore_persistent_sub_items_processed counter
+eventstore_persistent_sub_items_processed{event_stream_id="test-stream",group_name="group1"} 0 1720172078179
+eventstore_persistent_sub_items_processed{event_stream_id="$all",group_name="group1"} 5 1720172078179
+
+# TYPE eventstore_persistent_sub_last_known_event_number counter
+eventstore_persistent_sub_last_known_event_number{event_stream_id="test-stream",group_name="group1"} 0 1720172078179
+
+# TYPE eventstore_persistent_sub_last_known_event_commit_position counter
+eventstore_persistent_sub_last_known_event_commit_position{event_stream_id="$all",group_name="group1"} 4113 1720172078179
+
+# TYPE eventstore_persistent_sub_checkpointed_event_number counter
+eventstore_persistent_sub_checkpointed_event_number{event_stream_id="test-stream",group_name="group1"} 0 1720172078179
+
+# TYPE eventstore_persistent_sub_checkpointed_event_commit_position counter
+eventstore_persistent_sub_checkpointed_event_commit_position{event_stream_id="$all",group_name="group1"} 4013 1720172078179
+```
+
 ### Process
 
 EventStoreDB collects key metrics about the running process.
@@ -302,6 +373,47 @@ eventstore_proc_contention_count 297 1688147136862
 # TYPE eventstore_gc_pause_duration_max_seconds gauge
 # UNIT eventstore_gc_pause_duration_max_seconds seconds
 eventstore_gc_pause_duration_max_seconds{range="16-20 seconds"} 0.0485873 1688147136862
+```
+
+### Projections
+
+Projection metrics track the statistics for projections.
+
+| Time series                                                                                | Type                     | Description                                                      |
+|:-------------------------------------------------------------------------------------------|:-------------------------|:-----------------------------------------------------------------|
+| `eventstore_projection_events_processed_after_restart_total{projection=<PROJECTION_NAME>}` | [Counter](#common-types) | Projection event processed count after restart                   |
+| `eventstore_projection_progress{projection=<PROJECTION_NAME>}`                             | [Gauge](#common-types)   | Projection progress 0 - 1, where 1 = projection progress at 100% |
+| `eventstore_projection_running{projection=<PROJECTION_NAME>}`                              | [Gauge](#common-types)   | If 1, projection is in 'Running' state                           |
+| `eventstore_projection_status{projection=<PROJECTION_NAME>,status=<PROJECTION_STATUS>}`    | [Gauge](#common-types)   | If 1, projection is in specified state                           |
+
+`Status` can have one of the following statuses:
+
+- Running
+- Faulted
+- Stopped
+
+Example configuration:
+
+```json
+"ProjectionStats": true
+```
+
+Example output:
+
+```
+# TYPE eventstore_projection_events_processed_after_restart_total counter
+eventstore_projection_events_processed_after_restart_total{projection="$by_category"} 83 1719526306309
+
+# TYPE eventstore_projection_progress gauge
+eventstore_projection_progress{projection="$stream_by_category"} 1 1719526306309
+
+# TYPE eventstore_projection_running gauge
+eventstore_projection_running{projection="$by_category"} 1 1719526306309
+
+# TYPE eventstore_projection_status gauge
+eventstore_projection_status{projection="$by_category",status="Running"} 1 1719526306309
+eventstore_projection_status{projection="$by_category",status="Faulted"} 0 1719526306309
+eventstore_projection_status{projection="$by_category",status="Stopped"} 0 1719526306309
 ```
 
 ### Queues
@@ -380,7 +492,7 @@ For a given _NAME_, the current status can be determined by taking the max of al
 - Cleaning
 - Idle
 
-`Node` can be one of the [node roles](cluster.md#node-roles).
+`Node` can be one of the [node roles](../cluster.md#node-roles).
 
 Example configuration:
 ```json
@@ -448,25 +560,6 @@ Example output:
 eventstore_sys_disk_bytes{disk="/home",kind="used"} 38947205120 1688070655500
 ```
 
-### Elections Count
-
-This metric tracks the number of elections that have been completed.
-
-| Time series                  | Type                     | Description                  |
-|:-----------------------------|:-------------------------|:-----------------------------|
-| `eventstore_elections_count` | [Counter](#common-types) | Elections count in a cluster |
-
-Example configuration:
-```json
-"ElectionsCount": true
-```
-
-Example output:
-```
-# TYPE eventstore_elections_count counter
-eventstore_elections_count 0 1710188996949
-```
-
 ## Metric types
 
 ### Common types
@@ -474,7 +567,8 @@ eventstore_elections_count 0 1710188996949
 Please refer to [Prometheus documentation](https://prometheus.io/docs/concepts/metric_types/) for explanation of common metric types (`Gauge`, `Counter` and `Histogram`).
 
 ### RecentMax
-A gauge whose value represents the maximum out of a set of _recent_ measurements. It's purpose is to capture spikes that would otherwise have fallen in-between scrapes.
+
+A gauge whose value represents the maximum out of a set of _recent_ measurements. Its purpose is to capture spikes that would otherwise have fallen in-between scrapes.
 
 ::: note
 The `ExpectedScrapeIntervalSeconds` setting within `metricsconfig.json` can be used to control the size of the window that the max is calculated over. It represents the expected interval between scrapes by a consumer such as Prometheus. It can only take specific values: `0`, `1`, `5`, `10` or multiples of `15`.
@@ -488,59 +582,5 @@ Following metric is reported when `ExpectedScrapeIntervalSeconds` is set to `15`
 # TYPE eventstore_writer_flush_size_max gauge
 eventstore_writer_flush_size_max{range="16-20 seconds"} 1854 1688070655500
 ```
-In above example, maximum reported is `1854`. It is not a maximum measurement in last `15s` but rather maximum measurement in last `16` to last `20` seconds i.e. the maximum measurement could have been recorded in last `16s`, last `17s`, ...., upto last `20s`.
+In above example, maximum reported is `1854`. It is not a maximum measurement in last `15s` but rather maximum measurement in last `16` to last `20` seconds i.e. the maximum measurement could have been recorded in last `16s`, last `17s`, …, upto last `20s`.
 
-
-## OpenTelemetry Exporter <Badge type="warning" vertical="middle" text="Commercial"/>
-
-EventStoreDB passively exposes metrics for scraping on the `/metrics` endpoint. If you would like EventStoreDB to actively export the metrics, the _OpenTelemetry Exporter Plugin_ can be used.
-
-The OpenTelemetry Exporter plugin allows you to export EventStoreDB metrics to a specified endpoint using the [OpenTelemetry Protocol](https://opentelemetry.io/docs/specs/otel/protocol/) (OTLP). The following instructions will help you set up the exporter and customize its configuration, so you can receive, process, export and monitor metrics as needed. 
-
-A number of APM providers natively support ingesting metrics using the OTLP protocol, so you might be able to directly use the OpenTelemetry Exporter to send metrics to your APM provider. Alternatively, you can export metrics to the OpenTelemetry Collector, which can then be configured to send metrics to a variety of backends. You can find out more about the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/).
-
-### Configuration
-
-Refer to the general [plugins configuration](configuration.md#plugins-configuration) guide to see how to configure plugins with JSON files and environment variables.
-
-Sample JSON configuration:
-```json
-{
-  "OpenTelemetry": {
-    "Otlp": {
-      "Endpoint": "http://localhost:4317",
-      "Headers": ""
-    }
-  }
-}
-```
-
-The configuration can specify: 
-
-| Name                          | Description                                            |
-|-------------------------------|--------------------------------------------------------|
-| OpenTelemetry__Otlp__Endpoint | Destination where the OTLP exporter will send the data |
-| OpenTelemetry__Otlp__Headers  | Optional headers for the connection                    |
-
-Headers are key-value pairs separated by commas. For example:
-```:no-line-numbers
-"Headers": "api-key=value,other-config-value=value"
-```
-
-EventStoreDB will log a message on startup confirming the metrics export to your specified endpoint:
-```:no-line-numbers
-OtlpExporter: Exporting metrics to http://localhost:4317/ every 15.0 seconds
-```
-
-The interval is taken from the `ExpectedScrapeIntervalSeconds` value in `metricsconfig.json` in the server installation directory:
-
-```:no-line-numbers
-"ExpectedScrapeIntervalSeconds": 15
-```
-
-### Troubleshooting
-
-| Symptom                                                                      | Solution                                                                                                                                                                                                                                                                                    |
-|------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| The OpenTelemetry Exporter plugin is not loaded                              | The OpenTelemetry Exporter plugin is only available in commercial editions. Check that it is present in `<installation-directory>/plugins`. <br/><br/> If it is present, on startup the server will log a message similar to: `Loaded SubsystemsPlugin plugin: "otlp-exporter" "24.2.0.0".` |
-| EventStoreDB logs a message on startup that it cannot find the configuration | The server logs a message: `OtlpExporter: No OpenTelemetry:Otlp configuration found. Not exporting metrics.`.<br/><br/> Check the configuration steps above.                                                                                                                                |

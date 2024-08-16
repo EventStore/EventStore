@@ -1,5 +1,5 @@
 ---
-title: "Configuration"
+title: "How-to"
 ---
 
 ## Configuration options
@@ -21,13 +21,13 @@ command line. For example:
 ```bash
 ```bash:no-line-numbers
 $ eventstored --version
-EventStoreDB version 24.2.0.0 (oss-v24.2.0-alpha-16-g8e06f9f77/8e06f9f77, 2023-10-24T22:05:57-05:00)
+EventStoreDB version 24.6.0.0 (oss-v24.6.0-alpha-16-g8e06f9f77/8e06f9f77, 2023-10-24T22:05:57-05:00)
 ```
 :::
 ::: code Windows
 ```
 > EventStore.ClusterNode.exe --version
-EventStoreDB version 24.2.0.0 (oss-v24.2.0-alpha-16-g8e06f9f77/8e06f9f77, 2023-10-24T22:05:57-05:00)
+EventStoreDB version 24.6.0.0 (oss-v24.6.0-alpha-16-g8e06f9f77/8e06f9f77, 2023-10-24T22:05:57-05:00)
 ```
 :::
 ::::
@@ -40,6 +40,10 @@ option in the command line.
 You would use the configuration file when you want the server to run with the same set of options every time.
 YAML files are better for large installations as you can centrally distribute and manage them, or generate
 them from a configuration management system.
+
+The default configuration file name is `eventstore.conf` and it's located in
+- **Linux:** `/etc/eventstore/`
+- **Windows:** EventStoreDB installation directory
 
 The configuration file has YAML-compatible format. The basic format of the YAML configuration file is as
 follows:
@@ -330,7 +334,7 @@ EventStoreDb was 100,000 entries.
 ::: note
 The default value of 0 for `StreamInfoCacheCapacity` might not always be the best value for optimal performance. Ideally, it should be set to double the number of streams in the anticipated working set.
 
-The total number of streams can be obtained by checking the event count in the `$streams` system stream. This stream is created by the [$streams system projection](https://developers.eventstore.com/server/v24.2/projections.html#streams-projection).
+The total number of streams can be obtained by checking the event count in the `$streams` system stream. This stream is created by the [$streams system projection](projections.md#streams-projection).
 
 It should be noted that the total number of streams does not necessarily give you the anticipated working set. The working set of streams is the set of streams that you intend on actively reading, writing, and/or subscribing to. This can be much lower than the total number of streams in certain cases, especially in systems that have many short-lived streams.
 :::

@@ -4,7 +4,7 @@ title: "Security"
 
 ## Security
 
-For production use it is important to configure EventStoreDB security features to prevent unauthorised access
+For production use, it is important to configure EventStoreDB security features to prevent unauthorised access
 to your data.
 
 Security features of EventStoreDB include:
@@ -48,12 +48,12 @@ For this to work, you can use the `Insecure` option:
 **Default**: `false`
 
 ::: warning
-When running with protocol security disabled, everything is sent unencrypted over the wire. In the previous version it included the server credentials. Sending username and password over the wire without encryption is not secure by definition, but it might give a false sense of security. In order to make things explicit, EventStoreDB v20+ **does not use any authentication and authorisation** (including ACLs) when running insecure.
+When running with protocol security disabled, everything is sent unencrypted over the wire. In the previous version it included the server credentials. Sending username and password over the wire without encryption is not secure by definition, but it might give a false sense of security. To make things explicit, EventStoreDB v20+ **does not use any authentication and authorisation** (including ACLs) when running insecure.
 :::
 
-### Running with default admin and ops password
+### Set initial passwords
 
-We are adding an ability to set default admin and ops passwords on first run of the database. It will not impact the existing credentials, the user can log into their accounts with exising passwords.
+We are adding an ability to set default admin and ops passwords on the first run of the database. It will not impact the existing credentials, the user can log into their accounts with exising passwords.
 
 For this to work, you can use the `DefaultAdminPassword` option:
 
@@ -119,21 +119,7 @@ Anonymous access is still always granted to `/ping`, `/info`, the static content
 
 ### Certificates configuration
 
-To run a cluster securely, you will need to generate and configure certificates for the nodes.
-
-The node certificate must adhere to the following requirements:
-- All node certificates in a cluster share a common root CA.
-- The root CA is trusted by the node.
-- The certificate Extended Key Usages (EKUs) either:
-  - Contains both the ClientAuth EKU and the ServerAuth EKU, or
-  - Is empty.
-- The certificate Key Usages contains either:
-  - DigitalSignature and KeyEncipherment, or
-  - DigitalSignature and KeyAgreement.
-- The certificate must be in date.
-- The CN matches the [CertificateReservedNodeCommonName](#certificate-common-name).
-
-You can generate a certificate that meets these requirements with the [Certificate Generation Tool](#certificate-generation-tool).
+In this section, you can find settings related to protocol security (HTTPS and TLS).
 
 #### Certificate common name
 

@@ -6,8 +6,8 @@ EventStoreDB requires regular maintenance with three operational concerns:
 - [Backup and restore](#backup-and-restore) for disaster recovery.
 - [Certificate update](#certificate-update-upon-expiry) to renew certificates.
 
-You might also be interested learning about EventStoreDB [diagnostics](diagnostics.md)
-and [indexes](./indexes.md), which might require attention.
+You might also be interested learning about EventStoreDB [diagnostics](diagnostics/README.md)
+and [indexes](./indexes.md), which might require some Ops attention.
 
 ## Scavenging
 
@@ -26,19 +26,17 @@ Scavenging is destructive. Once a scavenge has run, you cannot recover any delet
 
 ### Starting a scavenge
 
-Start a scavenge by issuing an empty `POST` request to the HTTP API with the credentials of an `admin`
+You start a scavenge by issuing an empty `POST` request to the HTTP API with the credentials of an `admin`
 or `ops` user:
 
 @[code{curl}](@samples/scavenge.sh)
 
-Scavenges can also be started from the _Admin_ page of the Admin UI.
+You can also start scavenges from the _Admin_ page of the Admin UI.
 
-::: card
 ![Start a scavenge in the Admin UI](./images/admin-scavenge.png)
-:::
 
-Each node in a cluster contains an independent copy of the database. As such, when you run a scavenge, you need to issue a
-scavenge request to each node. Scavenges can be run concurrently, or be run in series to spread the load.
+Each node in a cluster has its own independent copy of the database. As such, when you run a scavenge, you need to issue a
+scavenge request to each node. The scavenges can be run concurrently, but can also be run in series to spread the load.
 
 ### Getting the current scavenge ID
 
@@ -65,7 +63,7 @@ curl -i -X DELETE http://localhost:2113/admin/scavenge/current -u "admin:changei
 
 A 200 response is returned after the scavenge has stopped.
 
-Scavenges can also be stopped from the _Admin_ page of the Admin UI.
+You can also stop scavenges from the _Admin_ page of the Admin UI.
 
 ::: tip
 A scavenge can be stopped at any time. The next time a scavenge is started, it will resume from the place the previous scavenge stopped.
@@ -75,12 +73,12 @@ A scavenge can be stopped at any time. The next time a scavenge is started, it w
 
 The logs contain detailed information about the progress of the scavenge.
 
-The current state of the scavenge can also be tracked in the [metrics](metrics.md).
+The current state of the scavenge can also be tracked in the [metrics](diagnostics/metrics.md).
 
 The [execution phase](#execution-phase) of the scavenge emits events into streams.
-Each scavenge operation generates a new stream containing the events related to that
+Each scavenge operation will generate a new stream and the stream will contain events related to that
 operation.
-Refer to the `$scavenges` [stream documentation](streams.md#scavenges) to learn how to observe
+Refer to the `$scavenges` [stream documentation](streams.md#scavenges) to learn how you can use it to observe
 the scavenging operation progress and status.
 
 ## Scavenging best practices
@@ -98,7 +96,7 @@ This depends on:
 - How often you delete streams.
 - How you set `$maxAge`, `$maxCount` or `$tb` metadata on your streams.
 - How important freeing the disk space is to you.
-- Your GDPR requirements.
+- Your requirements around GDPR.
 
 You can tell from the scavenge output in the logs and streams how much data it is removing. This can help guide how frequently to scavenge.
 
@@ -117,21 +115,21 @@ Scavenging does place extra load on the server, especially in terms of disk IO. 
 
 Central to the scavenging process is the concept of _scavenge points_. Physically, these are log records in the transaction log, each containing the following information:
 
-- The position in the log to which scavenge will run
-- A number unique to the scavenge point (counting from 0)
-- The time (`EffectiveNow`) used to determine if an events `maxAge` has been exceeded
-- The threshold that a chunk's weight must reach to be executed
+- the position in the log that the scavenge will run up to
+- a number unique to the scavenge point (counting from 0)
+- the time (`EffectiveNow`) used to determine whether the `maxAge` of an event has been exceeded
+- the threshold that a chunk's weight must reach to be executed
 
 Any run of the scavenge process is associated with a single scavenge point, and it scavenges the log up to that point.
 Log records after that scavenge point do not exist as far as that scavenge is concerned.
 
-In this way, a scavenge can be run on the first node, creating a scavenge point. Then it can be run (potentially later) on other nodes to scavenge up to the same point, producing the same effect on the log.
+In this way, a scavenge can be run on the first node, creating a scavenge point. Then it can be run (potentially later) on other nodes, to scavenge up to the same point, producing the same effect on the log.
 
 The scavenging algorithm itself consists of several phases:
 
 ### Beginning
 
-When a scavenge is started, it first checks to see if a previous scavenge was stopped. If so, it resumes from where the previous scavenge stopped. Otherwise, it begins a fresh scavenge.
+When a scavenge is started, it first checks to see if a previous scavenge was stopped. If so, it resumes from where the previous scavenge stopped. Otherwise it begins a fresh scavenge.
 
 When beginning a fresh scavenge, it checks to see if a scavenge point already exists that has not been reached by previous scavenges. If so, it begins scavenging up to that point. Otherwise, it writes a new scavenge point to the log (which is replicated to the other nodes) and then begins a scavenge up to there. Writing a new scavenge point also causes the active chunk to be completed so that it can be scavenged.
 
@@ -148,7 +146,7 @@ The first time the scavenge is run it needs to accumulate all the chunks. Typica
 
 ### Calculation phase
 
-During the calculation phase, the scavenging process calculates which events can be discarded and in which chunks the events are located for each stream the scavenging process accumulated tombstones or metadata. Weight is assigned to those chunks.
+During the calculation phase, the scavenging process calculates which events can be discarded and which chunks they are located in for each stream that it accumulated tombstones or metadata for. It assigns weight to those chunks.
 
 ### Execution phase
 
@@ -182,7 +180,7 @@ Setting this option allows you to scavenge only the chunks that have a sufficien
 
 Possible values for the threshold:
 
-- `-1`: Scavenge all chunks, even if there are no events to remove. This should not be necessary in practice.
+- `-1`: Scavenge all chunks, even if there are no event to remove. This should not be necessary in practice.
 - `0`: Default value. Scavenges every chunk that has events to remove.
 - `> 0`: The minimum weight a chunk must have in order to be scavenged.
 
@@ -304,7 +302,7 @@ The default value is 100000.
 | YAML                 | `ScavengeHashUsersCacheCapacity`                |
 | Environment variable | `EVENTSTORE_SCAVENGE_HASH_USERS_CACHE_CAPACITY` |
 
-## Redaction
+## Redaction <Badge text="Commercial" type="warning" vertical="middle"/>
 
 In EventStoreDB, events are immutable and cannot be changed after they are written. Usually, when you have an event with data that needs to be deleted you should take the following steps:
 
@@ -346,15 +344,11 @@ Specify `--help` to see the full list of options.
 
 The redactor will blank out the data section of the specified events with one bits (0xFF bytes) keeping the data size exactly the same as it was before. It will also set a flag (`IsRedacted`) on the event's record to indicate that the event has been redacted. All other properties of the event such as the event type, event metadata, and timestamp will remain unchanged.
 
-::: card
 ![Redactor run](./images/redaction-run.png)
-:::
 
 If you read the data of a redacted event from an external client, you should see data composed of only 0xFF bytes. The UI will also label redacted events.
 
-::: card
 ![Redacted event in UI](./images/redaction-ui.png)
-:::
 
 ::: tip
 The redactor is not an offline tool. The EventStoreDB server must be running, as the redactor needs to communicate with it to obtain information about the events to be redacted and replace the chunk files with the redacted ones.

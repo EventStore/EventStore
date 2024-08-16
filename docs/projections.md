@@ -252,33 +252,23 @@ fromStream('account-1')
 
 #### Selectors
 
-| Selector                                                                                                | Description                                      | Notes |
-|:--------------------------------------------------------------------------------------------------------|:-------------------------------------------------|:------|
-| `fromAll()`                                                                                             | Selects events from the `$all` stream.           | **    |
-| Provides** <ul><li>`partitionBy`</li><li>`when`</li><li>`foreachStream`</li><li>`outputState`</li></ul> |                                                  |       |
-| `fromCategory({category})`                                                                              | Selects events from the `$ce-{category}` stream. | **    |
-| Provides** <ul><li>`partitionBy`</li><li>`when`</li><li>`foreachStream`</li><li>`outputState`</li></ul> |                                                  |       |
-| `fromStream({streamId})`                                                                                | Selects events from the `streamId` stream.       | **    |
-| Provides** <ul><li>`partitionBy`</li><li>`when`</li><li>`outputState`</li></ul>                         |                                                  |       |
-| `fromStreams(streams[])`                                                                                | Selects events from the streams supplied.        | **    |
-| Provides**<ul><li>`partitionBy`</li><li>`when`</li><li>`outputState`</li></ul>                          |                                                  |       |
+| Selector                   | Description                                      | Notes                                                                                                 |
+|:---------------------------|:-------------------------------------------------|:------------------------------------------------------------------------------------------------------|
+| `fromAll()`                | Selects events from the `$all` stream.           | Provides <ul><li>`partitionBy`</li><li>`when`</li><li>`foreachStream`</li><li>`outputState`</li></ul> |
+| `fromCategory({category})` | Selects events from the `$ce-{category}` stream. | Provides <ul><li>`partitionBy`</li><li>`when`</li><li>`foreachStream`</li><li>`outputState`</li></ul> |
+| `fromStream({streamId})`   | Selects events from the `streamId` stream.       | Provides <ul><li>`partitionBy`</li><li>`when`</li><li>`outputState`</li></ul>                         |
+| `fromStreams(streams[])`   | Selects events from the streams supplied.        | Provides <ul><li>`partitionBy`</li><li>`when`</li><li>`outputState`</li></ul>                         |
 
 #### Filters and transformations
 
-| Filter/Partition                                                                                                                           | Description                                                                                                                                               | Notes |
-|:-------------------------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------|:------|
-| `when(handlers)`                                                                                                                           | Allows only the given events of a particular to pass through the projection.                                                                              | **    |
-| Provides** <ul><li>`$defines_state_transform` </li><li>`transformBy`</li><li>`filterBy`</li><li>`outputTo`</li><li>`outputState`</li></ul> |                                                                                                                                                           |       |
-| `foreachStream()`                                                                                                                          | Partitions the state for each of the streams provided.                                                                                                    | **    |
-| Provides** <ul><li>`when`</li></ul>                                                                                                        |                                                                                                                                                           |       |
-| `outputState()`                                                                                                                            | If the projection maintains state, setting this option produces a stream called `$projections-{projection-name}-result` with the state as the event body. | **    |
-| Provides** <ul><li>`transformBy`</li><li>`filterBy`</li><li>`outputTo`</li></ul>                                                           |                                                                                                                                                           |       |
-| `partitionBy(function(event))`                                                                                                             | Partitions a projection by the partition returned from the handler.                                                                                       | **    |
-| Provides** <ul><li>`when`</li></ul>                                                                                                        |                                                                                                                                                           |       |
-| `transformBy(function(state))`                                                                                                             | Provides the ability to transform the state of a projection by the provided handler.                                                                      | **    |
-| Provides** <ul><li>`transformBy`</li><li>`filterBy`</li><li>`outputState`</li><li>`outputTo`</li></ul>                                     |                                                                                                                                                           |       |
-| `filterBy(function(state))`                                                                                                                | Causes projection results to be `null` for any `state` that returns a `false` value from the given predicate.                                             | **    |
-| Provides** <ul><li>`transformBy`</li><li>`filterBy`</li><li>`outputState`</li><li>`outputTo`</li></ul>                                     |                                                                                                                                                           |       |
+| Filter/Partition               | Description                                                                                                                                               | Notes                                                                                                                                    |
+|:-------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------|
+| `when(handlers)`               | Allows only the given events of a particular to pass through the projection.                                                                              | Provides <ul><li>`$defines_state_transform` </li><li>`transformBy`</li><li>`filterBy`</li><li>`outputTo`</li><li>`outputState`</li></ul> |
+| `foreachStream()`              | Partitions the state for each of the streams provided.                                                                                                    | Provides <ul><li>`when`</li></ul>                                                                                                        |
+| `outputState()`                | If the projection maintains state, setting this option produces a stream called `$projections-{projection-name}-result` with the state as the event body. | Provides <ul><li>`transformBy`</li><li>`filterBy`</li><li>`outputTo`</li></ul>                                                           |
+| `partitionBy(function(event))` | Partitions a projection by the partition returned from the handler.                                                                                       | Provides <ul><li>`when`</li></ul>                                                                                                        |
+| `transformBy(function(state))` | Provides the ability to transform the state of a projection by the provided handler.                                                                      | Provides <ul><li>`transformBy`</li><li>`filterBy`</li><li>`outputState`</li><li>`outputTo`</li></ul>                                     |
+| `filterBy(function(state))`    | Causes projection results to be `null` for any `state` that returns a `false` value from the given predicate.                                             | Provides <ul><li>`transformBy`</li><li>`filterBy`</li><li>`outputState`</li><li>`outputTo`</li></ul>                                     |
 
 #### Handlers
 
@@ -324,9 +314,7 @@ You can only change the configuration of a stopped projection.
 You change the configuration of a projection by setting the relevant key and value in a request, or when you
 create a projection with the web admin interface.
 
-::: card
 ![Web admin interface projections configuration screen](./images/wai-projection-config.jpg)
-:::
 
 <!-- TODO: Further explanation here -->
 
@@ -521,9 +509,7 @@ curl -i -d@stats-counter.json \
 Once the projection is running, open your browser and enable the developer tools. Once you have the developer
 tools open, visit your projection URL and you should see a button labelled _Debug_.
 
-::: card
 ![Projections Debugging Part 1](./images/projections_debugging_part_1.png)
-:::
 
 After clicking the projection "Debug" button, you see the debugging interface with the definition of the
 projection and information about the events the projection is processing on the right-hand side.
@@ -533,15 +519,11 @@ You use _Run Step_ to step through the event waiting in the queue, placing you i
 The _Update_ button provides you with a way to update the projection definition without having to go back to
 the projection itself and leave the context of the debugger.
 
-::: card
 ![Projections Debugging Part 2](./images/projections_debugging_part_2.png)
-:::
 
 If the _Run Step_ button is not greyed out and you click it, the browser has hit a breakpoint.
 
-::: card
 ![Projections Debugging Part 3](./images/projections_debugging_part_3.png)
-:::
 
 You are now able to step through the projection, the important method to step into is
 the `handler(state, eventEnvelope)` method.
@@ -579,7 +561,7 @@ Accepted values are `Interpreted` and `Legacy`.
 ### Run projections
 
 The `RunProjections` option tells the server if you want to run all projections, only system projections or no
-projections at all. Keep in mind that the `StartSystemProjections` setting has no effect on custom
+projections at all. Keep in mind that the `StartStandardProjections` setting has no effect on custom
 projections.
 
 The option accepts three values: `None`, `System` and `All`.
@@ -589,7 +571,7 @@ and the Projections menu in the Admin UI will be disabled.
 
 By using the `System` value for this option, you can instruct the server to enable system projections when the
 server starts. However, system projections will only start if the `StartStandardProjections` option is set
-to `true`. When the `RunProjections` option value is `System` (or `All`) but the `StartSystemProjections`
+to `true`. When the `RunProjections` option value is `System` (or `All`) but the `StartStandardProjections`
 option value is `false`, system projections will be enabled but not start. You can start them later manually
 via the Admin UI or via an API call.
 
@@ -653,11 +635,3 @@ to `true`.
 | Environment variable | `EVENTSTORE_FAULT_OUT_OF_ORDER_PROJECTIONS` |
 
 **Default**: `false`
-
-## Resetting a Projection
-
-You can reset a projection using the `Reset` button in the database Admin UI or through the [Projection HTTP API](@clients/http-api/projections.md#projections-api).
-
-When a projection is reset, the output streams associated with it are soft-deleted. If `TrackEmittedStreams` was enabled when the projection was created, the projection subsystem will truncate all streams generated by the projection.
-
-The checkpoint will also be reset, causing the projection to start processing events from the beginning of the event stream rather than from the latest checkpoint.
