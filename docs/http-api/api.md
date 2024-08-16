@@ -1820,6 +1820,21 @@ This operation does not require authentication
 
 Endpoints for Admin operations
 
+### Resign/change a leader
+
+1.  Reduce the current leader node's priority by issuing the following command, so that during the next election it becomes a Follower node
+
+```bash:no-line-numbers
+curl -X POST -d {} https://{leader_address}:2113/admin/node/priority/-1 -u admin:changeit
+```
+2. Issue a resignation command on the Leader node which will explicitly start a round of elections by issuing the following command:
+
+```bash:no-line-numbers
+curl -X POST -d {} https://{leader_address}:2113/admin/node/resign -u admin:changeit
+```
+
+Note: This does not guarantee that a new Leader is elected.
+
 ### Shutdown a node
 
 <a id="opIdShutdown a node"></a>
