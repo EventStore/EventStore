@@ -11,7 +11,6 @@ using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Services.Histograms;
 using System.Threading.Tasks;
 using ILogger = Serilog.ILogger;
 using EventStore.LogCommon;
@@ -50,8 +49,6 @@ namespace EventStore.Core.Services.Storage {
 
 		private readonly List<IPrepareLogRecord<TStreamId>> _transaction = new List<IPrepareLogRecord<TStreamId>>();
 		private bool _commitsAfterEof;
-		private const string ChaserWaitHistogram = "chaser-wait";
-		private const string ChaserFlushHistogram = "chaser-flush";
 
 		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
 
@@ -156,10 +153,8 @@ namespace EventStore.Core.Services.Storage {
 			var start = _watch.ElapsedTicks;
 			if (!result.Success || start - _lastFlush >= _flushDelay + MinFlushDelay) {
 				_queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
-				var startflush = _watch.ElapsedTicks;
+				// todo: histogram metric?
 				_chaser.Flush();
-				HistogramService.SetValue(ChaserFlushHistogram,
-					(long)((((double)_watch.ElapsedTicks - startflush) / Stopwatch.Frequency) * 1000000000));
 				_queueStats.ProcessingEnded(1);
 
 				var end = _watch.ElapsedTicks;
@@ -169,10 +164,8 @@ namespace EventStore.Core.Services.Storage {
 
 			if (!result.Success) {
 				_queueStats.EnterIdle();
-				var startwait = _watch.ElapsedTicks;
+				// todo: histogram metric?
 				FlushSignal.Wait(FlushWaitTimeout);
-				HistogramService.SetValue(ChaserWaitHistogram,
-					(long)((((double)_watch.ElapsedTicks - startwait) / Stopwatch.Frequency) * 1000000000));
 			}
 		}
 

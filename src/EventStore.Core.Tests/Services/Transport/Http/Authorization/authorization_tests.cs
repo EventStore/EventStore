@@ -184,7 +184,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"/streams/%24all/00000000000000000000000000000000/10?embed={embed};GET;Admin", /* /streams/%24all/{position}/{count}?embed={embed} */
 				"/streams/%24all/head/backward/10?embed={embed};GET;Admin", /* /streams/%24all/{position}/backward/{count}?embed={embed} */
 				/* ------------------------------------------------------------- */
-				"/histogram/{name};GET;Ops",
 				"/subscriptions;GET;User",
 				"/subscriptions/{stream};GET;User",
 				"/subscriptions/{stream}/{subscription};PUT;Ops",

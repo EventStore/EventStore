@@ -43,7 +43,6 @@ using EventStore.Core.TransactionLog.Scavenging.Sqlite;
 using EventStore.Core.Authentication;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.PersistentSubscription;
-using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
@@ -494,11 +493,6 @@ namespace EventStore.Core {
 			_externalServerCertificateValidator = (cert, chain, errors, otherNames) => ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector, otherNames);
 
 			var forwardingProxy = new MessageForwardingProxy();
-			if (options.Application.EnableHistograms) {
-				HistogramService.CreateHistograms();
-				//start watching jitter
-				HistogramService.StartJitterMonitor();
-			}
 
 			// MISC WORKERS
 			_workerBuses = Enumerable.Range(0, workerThreadsCount).Select(queueNum =>
@@ -1028,7 +1022,6 @@ namespace EventStore.Core {
 
 			var adminController = new AdminController(_mainQueue, _workersHandler);
 			var pingController = new PingController();
-			var histogramController = new HistogramController();
 			var statController = new StatController(monitoringQueue, _workersHandler);
 			var metricsController = new MetricsController();
 			var atomController = new AtomController(_mainQueue, _workersHandler,
@@ -1063,7 +1056,6 @@ namespace EventStore.Core {
 				_httpService.SetupController(atomController);
 			if (!options.Interface.DisableGossipOnHttp)
 				_httpService.SetupController(gossipController);
-			_httpService.SetupController(histogramController);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_httpService);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_httpService);

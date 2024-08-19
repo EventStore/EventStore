@@ -45,7 +45,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 			Assert.AreEqual(0, _options.Application.WorkerThreads, "WorkerThreads");
 			Assert.AreEqual(true, _options.Cluster.DiscoverViaDns, "DiscoverViaDns");
 			Assert.AreEqual(30, _options.Application.StatsPeriodSec, "StatsPeriod");
-			Assert.AreEqual(false, _options.Application.EnableHistograms, "EnableHistograms");
 			Assert.AreEqual(false, _options.Application.DisableHttpCaching, "DisableHTTPCaching");
 			Assert.AreEqual(false, _options.Database.SkipDbVerify, "VerifyDbHash");
 			Assert.AreEqual(TFConsts.MinFlushDelayMs.TotalMilliseconds, _options.Database.MinFlushDelayMs, "MinFlushDelay");

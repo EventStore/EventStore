@@ -8,7 +8,6 @@ using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Services.TimerService;
 using System.Diagnostics;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Histograms;
 
 namespace EventStore.Core.Services.RequestManager {
 	public class RequestManagementService :		
@@ -33,7 +32,6 @@ namespace EventStore.Core.Services.RequestManager {
 		private readonly TimerMessage.Schedule _tickRequestMessage;
 		private readonly Dictionary<Guid, RequestManagerBase> _currentRequests = new Dictionary<Guid, RequestManagerBase>();
 		private readonly Dictionary<Guid, Stopwatch> _currentTimedRequests = new Dictionary<Guid, Stopwatch>();
-		private const string _requestManagerHistogram = "request-manager";
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
 		private readonly CommitSource _commitSource;
@@ -196,10 +194,8 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		public void Handle(StorageMessage.RequestCompleted message) {
-			Stopwatch watch = null;
-			if (_currentTimedRequests.TryGetValue(message.CorrelationId, out watch)) {
-				HistogramService.SetValue(_requestManagerHistogram,
-					(long)((((double)watch.ElapsedTicks) / Stopwatch.Frequency) * 1000000000));
+			if (_currentTimedRequests.TryGetValue(message.CorrelationId, out _)) {
+				// todo: histogram metric?
 				_currentTimedRequests.Remove(message.CorrelationId);
 			}
 

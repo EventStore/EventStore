@@ -14,7 +14,6 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
-using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -81,7 +80,6 @@ namespace EventStore.Core.Services.Storage {
 		private long _lastFlushSize;
 		private long _maxFlushSize;
 		private long _maxFlushDelay;
-		private const string _writerFlushHistogram = "writer-flush";
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly TStreamId _emptyEventTypeId;
 		private readonly TStreamId _scavengePointsStreamId;
@@ -811,9 +809,6 @@ namespace EventStore.Core.Services.Storage {
 				var end = _flushDurationTracker.RecordNow(start);
 
 				var flushDelay = end.ElapsedTicksSince(start);
-				var flushDelaySeconds = ((double)flushDelay) / Stopwatch.Frequency;
-				var flushDelayNanoSeconds = (long)(flushDelaySeconds * 1_000_000_000);
-				HistogramService.SetValue(_writerFlushHistogram, flushDelayNanoSeconds);
 
 				Interlocked.Exchange(ref _lastFlushDelay, flushDelay);
 				Interlocked.Exchange(ref _lastFlushSize, flushSize);
