@@ -1,3 +1,7 @@
+---
+order: 4
+---
+
 # Projections
 
 You can also query the state of all projections using the HTTP API.
@@ -46,7 +50,7 @@ You can also create projections programmatically. Pass the projection JSON file 
 @[code](@httpapi/projections/create-projection.sh)
 
 ::: tip Next steps
-[Read here](api.md) for more information on creating projections with the HTTP API and the parameters available, or [our projections section](projections.md) for details on projection syntax.
+[Read here](api.md) for more information on creating projections with the HTTP API and the parameters available, or [our projections section](@server/features/projections.md) for details on projection syntax.
 :::
 
 ## Querying for the state of the projection
@@ -102,7 +106,7 @@ Then send the update to the projection:
 @[code](@httpapi/projections/update-projection-options.sh)
 
 ::: tip
-You can find all the options available in the [user-defined projections guide](@server/projections.md#user-defined-projections).
+You can find all the options available in the [user-defined projections guide](@server/features/projections.md#user-defined-projections).
 :::
 
 Now you can read the result as above, but use the new stream name:
