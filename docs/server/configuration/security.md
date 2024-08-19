@@ -410,7 +410,7 @@ services:
       - ./certs:/certs
 ```
 
-See more in the [complete sample of docker-compose secured cluster configuration.](../quck-start/installation.md#use-docker-compose)
+See more in the [complete sample of docker-compose secured cluster configuration.](../quick-start/installation.md#use-docker-compose)
 
 ### Certificate installation on a client environment
 
