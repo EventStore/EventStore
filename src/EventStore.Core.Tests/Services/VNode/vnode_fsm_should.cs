@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
+﻿using DotNext.Runtime;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.VNode;
@@ -25,7 +21,7 @@ namespace EventStore.Core.Tests.Services.VNode {
 	public class vnode_fsm_should {
 		[Test]
 		public void allow_ignoring_messages_by_common_ancestor() {
-			var fsm = new VNodeFSMBuilder(VNodeState.Leader)
+			var fsm = new VNodeFSMBuilder(new ValueReference<VNodeState>(VNodeState.Leader))
 				.InAnyState()
 				.When<P>().Ignore()
 				.WhenOther().Do(x => Assert.Fail("{0} slipped through", x.GetType().Name))
@@ -38,7 +34,7 @@ namespace EventStore.Core.Tests.Services.VNode {
 		[Test]
 		public void handle_specific_message_even_if_base_message_is_ignored() {
 			bool aHandled = false;
-			var fsm = new VNodeFSMBuilder(VNodeState.Leader)
+			var fsm = new VNodeFSMBuilder(new ValueReference<VNodeState>(VNodeState.Leader))
 				.InAnyState()
 				.When<P>().Ignore()
 				.When<A>().Do(x => aHandled = true)

@@ -25,15 +25,6 @@ public sealed class VNodeFSMBuilder {
 		_defaultHandlers = new Action<VNodeState, Message>[maxState + 1];
 	}
 
-	public VNodeFSMBuilder(VNodeState state)
-		: this(Constant(state)) {
-	}
-
-	private static ReadOnlyValueReference<VNodeState> Constant(VNodeState state) {
-		var box = new StrongBox<VNodeState> { Value = state };
-		return new(box, ref box.Value);
-	}
-
 	internal void AddHandler<TActualMessage>(VNodeState state, Action<VNodeState, Message> handler)
 		where TActualMessage : Message {
 		var stateHandlers = _handlers[(int)state] ??= new();

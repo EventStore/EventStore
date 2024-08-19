@@ -1,5 +1,6 @@
 ﻿using System;
 using DotNext.Diagnostics;
+using DotNext.Runtime;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -47,7 +48,7 @@ namespace EventStore.Core.Tests.Bus {
 
 		private VNodeFSM CreateFSM() {
 			var outputBus = InMemoryBus.CreateTest(false);
-			var stm = new VNodeFSMBuilder(VNodeState.Leader)
+			var stm = new VNodeFSMBuilder(new ValueReference<VNodeState>(VNodeState.Leader))
 				.InAnyState()
 				.When<SystemMessage.StateChangeMessage>().Do(m => { })
 				.InState(VNodeState.Initializing)
