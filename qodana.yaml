@@ -13,6 +13,13 @@ dotnet:
 dependencyIgnores:
   - name: "EventStore.Plugins" # Our own software
 
+customDependencies:
+  # System.UriTemplate (source copied under src/EventStore.NETCore.Compatibility from .NET 4.8 with some modifications)
+  - name: "System.UriTemplate"
+    version: ""
+    licenses:
+      - key: "MIT"
+
 # Manually specify the licenses of the following packages
 dependencyOverrides:
   # not automatically detectable, but the MIT license is in the nuget package
