@@ -46,5 +46,35 @@ namespace EventStore.Core.Tests.Services.VNode {
 
 			Assert.IsTrue(aHandled);
 		}
+
+		[Test]
+		public void ignore_base_handler_if_derived_message_published() {
+			var fsm = new VNodeFSMBuilder(new ValueReference<VNodeState>(VNodeState.Leader))
+				.InAnyState()
+				.When<P>()
+				.Do(x => Assert.Fail("shouldn't call this"))
+
+				.InState(VNodeState.Leader)
+				.When<A>()
+				.Ignore()
+				.Build();
+
+			fsm.Handle(new A());
+		}
+
+		[Test]
+		public void ignore_base_handler_if_derived_message_published_diff_reg_order() {
+			var fsm = new VNodeFSMBuilder(new ValueReference<VNodeState>(VNodeState.Leader))
+				.InState(VNodeState.Leader)
+				.When<A>()
+				.Ignore()
+
+				.InAnyState()
+				.When<P>()
+				.Do(x => Assert.Fail("shouldn't call this"))
+				.Build();
+
+			fsm.Handle(new A());
+		}
 	}
 }

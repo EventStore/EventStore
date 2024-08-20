@@ -2,6 +2,7 @@
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using DotNext.Runtime;
@@ -23,17 +24,21 @@ public class VNodeFSM : IHandle<Message> {
 
 		_stateRef = stateRef;
 
-		var output = new Dictionary<Type, Action<VNodeState, Message>>();
+		var output = new Dictionary<Type, HandlerAnalysisNode>();
 		for (var i = 0; i < handlers.Length; i++) {
 			if (handlers[i] is { } input) {
 				foreach (var knownMessageType in InMemoryBus.KnownMessageTypes) {
 					foreach (var (messageType, action) in input) {
 						Debug.Assert(action is not null);
 						if (messageType.IsAssignableFrom(knownMessageType)) {
-							ref var handle =
+							ref var node =
 								ref CollectionsMarshal.GetValueRefOrAddDefault(output, knownMessageType,
 									out _);
-							handle += action;
+
+							if (node.AnalyzedType is null || node.AnalyzedType.IsAssignableFrom(messageType)) {
+								node.AnalyzedType = messageType;
+								node.Handler = action;
+							}
 						}
 					}
 				}
@@ -48,9 +53,12 @@ public class VNodeFSM : IHandle<Message> {
 
 	[StructLayout(LayoutKind.Auto)]
 	private readonly struct Handler(
-		IReadOnlyDictionary<Type, Action<VNodeState, Message>> handlers,
+		IReadOnlyDictionary<Type, HandlerAnalysisNode> handlers,
 		Action<VNodeState, Message> defaultHandler) {
-		private readonly FrozenDictionary<Type, Action<VNodeState, Message>> _handlers = handlers.ToFrozenDictionary();
+		private readonly FrozenDictionary<Type, Action<VNodeState, Message>> _handlers = handlers
+			.Select(static pair => new KeyValuePair<Type, Action<VNodeState, Message>>(pair.Key, pair.Value.Handler))
+			.ToFrozenDictionary();
+
 		private readonly Action<VNodeState, Message> _defaultHandler = defaultHandler ?? ThrowException;
 
 		public void Invoke(VNodeState state, Message message) {
@@ -74,5 +82,11 @@ public class VNodeFSM : IHandle<Message> {
 
 		public readonly void Invoke(VNodeState index, Message message)
 			=> Unsafe.Add(ref Unsafe.AsRef(in _handler), (int)index).Invoke(index, message);
+	}
+
+	[StructLayout(LayoutKind.Auto)]
+	private struct HandlerAnalysisNode {
+		internal Type AnalyzedType;
+		internal Action<VNodeState, Message> Handler;
 	}
 }
