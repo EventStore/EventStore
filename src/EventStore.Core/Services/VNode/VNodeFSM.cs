@@ -35,7 +35,7 @@ public class VNodeFSM : IHandle<Message> {
 								ref CollectionsMarshal.GetValueRefOrAddDefault(output, knownMessageType,
 									out _);
 
-							if (node.AnalyzedType is null || node.AnalyzedType.IsAssignableFrom(messageType)) {
+							if (node.AnalyzedType?.IsAssignableFrom(messageType) ?? true) {
 								node.AnalyzedType = messageType;
 								node.Handler = action;
 							}
