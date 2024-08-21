@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using DotNext.Reflection;
 using DotNext.Runtime;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
