@@ -19,11 +19,11 @@ public readonly ref struct VNodeFSMHandling<TMessage>
 	public VNodeFSMStatesDefinition Do(Action<TMessage> handler) {
 		if (_defaultHandler) {
 			foreach (var state in _stateDef.States) {
-				_stateDef.FSM.AddDefaultHandler(state, handler.Invoke);
+				_stateDef.FSM.AddDefaultHandler(state, handler.InvokeWithoutState);
 			}
 		} else {
 			foreach (var state in _stateDef.States) {
-				_stateDef.FSM.AddHandler<TMessage>(state, handler.Invoke);
+				_stateDef.FSM.AddHandler<TMessage>(state, handler.InvokeWithoutState);
 			}
 		}
 
@@ -54,7 +54,7 @@ public readonly ref struct VNodeFSMHandling<TMessage>
 }
 
 file static class DelegateHelpers {
-	public static void Invoke<TMessage>(this Action<TMessage> action, VNodeState state, Message message)
+	public static void InvokeWithoutState<TMessage>(this Action<TMessage> action, VNodeState state, Message message)
 		where TMessage : Message
 		=> action.Invoke((TMessage)message);
 }
