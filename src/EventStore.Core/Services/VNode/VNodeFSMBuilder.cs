@@ -14,22 +14,23 @@ namespace EventStore.Core.Services.VNode;
 /// </summary>
 public sealed class VNodeFSMBuilder {
 	private readonly ReadOnlyValueReference<VNodeState> _stateRef;
-	private readonly Dictionary<Type, Action<Message>>[] _handlers;
+	private readonly Dictionary<Type, MulticastDelegate>[] _handlers;
 	private readonly Action<Message>[] _defaultHandlers;
 
 	public VNodeFSMBuilder(ReadOnlyValueReference<VNodeState> stateRef) {
 		_stateRef = stateRef;
 
 		var maxState = (int)Enum.GetValues<VNodeState>().Max();
-		_handlers = new Dictionary<Type, Action<Message>>[maxState + 1];
+		_handlers = new Dictionary<Type, MulticastDelegate>[maxState + 1];
 		_defaultHandlers = new Action<Message>[maxState + 1];
 	}
 
-	internal void AddHandler<TActualMessage>(VNodeState state, Action<Message> handler)
+	internal void AddHandler<TActualMessage>(VNodeState state, Action<TActualMessage> handler)
 		where TActualMessage : Message {
 		var stateHandlers = _handlers[(int)state] ??= new();
 
-		if (!stateHandlers.TryAdd(typeof(TActualMessage), handler)) {
+		// Perf: unsafe reinterpret cast is valid here because VNodeFSM routes the message by its type
+		if (!stateHandlers.TryAdd(typeof(TActualMessage), Unsafe.As<Action<Message>>(handler))) {
 			throw new InvalidOperationException(
 				$"Handler already defined for state {state} and message {typeof(TActualMessage).FullName}");
 		}

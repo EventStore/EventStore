@@ -22,7 +22,7 @@ public readonly ref struct VNodeFSMHandling<TMessage>
 			}
 		} else {
 			foreach (var state in _stateDef.States) {
-				_stateDef.FSM.AddHandler<TMessage>(state, handler.InvokeWithDowncast);
+				_stateDef.FSM.AddHandler(state, handler);
 			}
 		}
 
