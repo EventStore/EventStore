@@ -27,6 +27,7 @@ public class VNodeFSM : IHandle<Message> {
 		var output = new Dictionary<Type, HandlerAnalysisNode>();
 		for (var i = 0; i < handlers.Length; i++) {
 			if (handlers[i] is { } input) {
+				// register each handler in input against _all_ types it can handle
 				foreach (var knownMessageType in InMemoryBus.KnownMessageTypes) {
 					foreach (var (messageType, action) in input) {
 						Debug.Assert(action is not null);
@@ -35,6 +36,8 @@ public class VNodeFSM : IHandle<Message> {
 								ref CollectionsMarshal.GetValueRefOrAddDefault(output, knownMessageType,
 									out _);
 
+							// if two handlers can handle the same message at different levels
+							// of the message class hierarchy, only call the most derived one
 							if (node.AnalyzedType?.IsAssignableFrom(messageType) ?? true) {
 								node.AnalyzedType = messageType;
 								node.Handler = action;
