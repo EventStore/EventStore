@@ -1,7 +1,6 @@
 using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.VNode;
@@ -19,11 +18,11 @@ public readonly ref struct VNodeFSMHandling<TMessage>
 	public VNodeFSMStatesDefinition Do(Action<TMessage> handler) {
 		if (_defaultHandler) {
 			foreach (var state in _stateDef.States) {
-				_stateDef.FSM.AddDefaultHandler(state, handler.InvokeWithoutState);
+				_stateDef.FSM.AddDefaultHandler(state, handler.InvokeWithDowncast);
 			}
 		} else {
 			foreach (var state in _stateDef.States) {
-				_stateDef.FSM.AddHandler<TMessage>(state, handler.InvokeWithoutState);
+				_stateDef.FSM.AddHandler<TMessage>(state, handler.InvokeWithDowncast);
 			}
 		}
 
@@ -43,7 +42,7 @@ public readonly ref struct VNodeFSMHandling<TMessage>
 
 		return _stateDef;
 
-		static void NoOp(VNodeState state, Message msg) {
+		static void NoOp(Message msg) {
 		}
 	}
 
@@ -54,7 +53,7 @@ public readonly ref struct VNodeFSMHandling<TMessage>
 }
 
 file static class DelegateHelpers {
-	public static void InvokeWithoutState<TMessage>(this Action<TMessage> action, VNodeState state, Message message)
+	public static void InvokeWithDowncast<TMessage>(this Action<TMessage> action, Message message)
 		where TMessage : Message
 		=> action.Invoke((TMessage)message);
 }

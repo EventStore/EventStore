@@ -17,8 +17,8 @@ public class VNodeFSM : IHandle<Message> {
 	private readonly HandlersBuffer _handlers;
 
 	internal VNodeFSM(ReadOnlyValueReference<VNodeState> stateRef,
-		ReadOnlySpan<IReadOnlyDictionary<Type, Action<VNodeState, Message>>> handlers,
-		ReadOnlySpan<Action<VNodeState, Message>> defaultHandlers) {
+		ReadOnlySpan<IReadOnlyDictionary<Type, Action<Message>>> handlers,
+		ReadOnlySpan<Action<Message>> defaultHandlers) {
 		Debug.Assert(handlers.Length == (int)VNodeState.MaxValue + 1);
 		Debug.Assert(defaultHandlers.Length == (int)VNodeState.MaxValue + 1);
 
@@ -57,20 +57,23 @@ public class VNodeFSM : IHandle<Message> {
 	[StructLayout(LayoutKind.Auto)]
 	private readonly struct Handler(
 		IReadOnlyDictionary<Type, HandlerAnalysisNode> handlers,
-		Action<VNodeState, Message> defaultHandler) {
-		private readonly FrozenDictionary<Type, Action<VNodeState, Message>> _handlers = handlers
-			.Select(static pair => new KeyValuePair<Type, Action<VNodeState, Message>>(pair.Key, pair.Value.Handler))
+		Action<Message> defaultHandler) {
+		private readonly FrozenDictionary<Type, Action<Message>> _handlers = handlers
+			.Select(static pair => new KeyValuePair<Type, Action<Message>>(pair.Key, pair.Value.Handler))
 			.ToFrozenDictionary();
 
-		private readonly Action<VNodeState, Message> _defaultHandler = defaultHandler ?? ThrowException;
+		private readonly Action<VNodeState, Message> _defaultHandler =
+			defaultHandler is not null ? defaultHandler.InvokeWithoutState : ThrowException;
 
 		public void Invoke(VNodeState state, Message message) {
 			scoped ref readonly var actionRef = ref _handlers.GetValueRefOrNullRef(message.GetType());
 
-			if (Unsafe.IsNullRef(in actionRef))
-				actionRef = ref _defaultHandler;
+			if (Unsafe.IsNullRef(in actionRef)) {
+				_defaultHandler(state, message);
+				return;
+			}
 
-			actionRef.Invoke(state, message);
+			actionRef.Invoke(message);
 		}
 
 		private static void ThrowException(VNodeState state, Message message) {
@@ -90,6 +93,12 @@ public class VNodeFSM : IHandle<Message> {
 	[StructLayout(LayoutKind.Auto)]
 	private struct HandlerAnalysisNode {
 		internal Type AnalyzedType;
-		internal Action<VNodeState, Message> Handler;
+		internal Action<Message> Handler;
 	}
+}
+
+file static class DelegateHelpers {
+	public static void InvokeWithoutState<TMessage>(this Action<TMessage> action, VNodeState state, Message message)
+		where TMessage : Message
+		=> action.Invoke((TMessage)message);
 }

@@ -14,18 +14,18 @@ namespace EventStore.Core.Services.VNode;
 /// </summary>
 public sealed class VNodeFSMBuilder {
 	private readonly ReadOnlyValueReference<VNodeState> _stateRef;
-	private readonly Dictionary<Type, Action<VNodeState, Message>>[] _handlers;
-	private readonly Action<VNodeState, Message>[] _defaultHandlers;
+	private readonly Dictionary<Type, Action<Message>>[] _handlers;
+	private readonly Action<Message>[] _defaultHandlers;
 
 	public VNodeFSMBuilder(ReadOnlyValueReference<VNodeState> stateRef) {
 		_stateRef = stateRef;
 
 		var maxState = (int)Enum.GetValues<VNodeState>().Max();
-		_handlers = new Dictionary<Type, Action<VNodeState, Message>>[maxState + 1];
-		_defaultHandlers = new Action<VNodeState, Message>[maxState + 1];
+		_handlers = new Dictionary<Type, Action<Message>>[maxState + 1];
+		_defaultHandlers = new Action<Message>[maxState + 1];
 	}
 
-	internal void AddHandler<TActualMessage>(VNodeState state, Action<VNodeState, Message> handler)
+	internal void AddHandler<TActualMessage>(VNodeState state, Action<Message> handler)
 		where TActualMessage : Message {
 		var stateHandlers = _handlers[(int)state] ??= new();
 
@@ -35,7 +35,7 @@ public sealed class VNodeFSMBuilder {
 		}
 	}
 
-	internal void AddDefaultHandler(VNodeState state, Action<VNodeState, Message> handler) {
+	internal void AddDefaultHandler(VNodeState state, Action<Message> handler) {
 		ref var defaultHandler = ref _defaultHandlers[(int)state];
 		if (defaultHandler is not null)
 			throw new InvalidOperationException($"Default handler already defined for state {state}");
