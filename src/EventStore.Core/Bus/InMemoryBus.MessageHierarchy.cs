@@ -133,7 +133,7 @@ public partial class InMemoryBus {
 				// Perf: array is preferred over ImmutableHashSet because enumeration speed is much more important
 				// (for Publish method) than perf of subscription methods.
 				if (IndexOf(currentArray, handler) >= 0)
-					break;
+					throw new ArgumentException("The handler is already registered", nameof(handler));
 
 				newArray = new Action<T>[currentArray.Length + 1];
 				Array.Copy(currentArray, newArray, currentArray.Length);
