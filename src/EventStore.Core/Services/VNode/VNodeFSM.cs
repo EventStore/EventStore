@@ -75,7 +75,7 @@ public class VNodeFSM : IHandle<Message> {
 				actionRef = ref _defaultHandler;
 			}
 
-			// We know that the actual handler type is Action<T> where T <= message.GetType()
+			// We know that the actual handler type is Action<T> where T >= message.GetType()
 			// Unsafe reinterpret case is valid due to ABI nature of reference types. Size
 			// of reference is always 4 or 8 bytes regardless the actual type T.
 			EnsureActionType(message.GetType(), actionRef);
