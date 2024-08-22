@@ -14,6 +14,11 @@ namespace EventStore.Core.Services.VNode;
 /// </summary>
 public sealed class VNodeFSMBuilder {
 	private readonly ReadOnlyValueReference<VNodeState> _stateRef;
+
+	// The dictionary keeps a mapping between concrete message typeof(T) type and its handler
+	// in the form of Action<T> delegate instance where T <= Message.
+	// The mapping cannot be expressed at language level in type-safe manner, so we're using a common denominator
+	// for all Action<T> variations: MulticastDelegate
 	private readonly Dictionary<Type, MulticastDelegate>[] _handlers;
 	private readonly Action<Message>[] _defaultHandlers;
 
