@@ -75,11 +75,11 @@ public partial class InMemoryBus {
 			handlers.Add(messageType, handler);
 		}
 
+		// establish relationships between nodes
 		foreach (var (messageType, handler) in handlers) {
 			RegisterMessageType(handlers, messageType, handler);
 		}
 
-		// establish relationships between nodes
 		return handlers.ToFrozenDictionary();
 
 		static void RegisterMessageType(Dictionary<Type, MessageTypeHandler> messageTypes, Type messageType,
@@ -118,6 +118,7 @@ public partial class InMemoryBus {
 		public override void Invoke(Message message) {
 			Debug.Assert(message is T);
 
+			// first handler is the parent
 			foreach (var handler in Volatile.Read(in _handlers)) {
 				handler.Invoke(Unsafe.As<T>(message));
 			}
@@ -126,6 +127,7 @@ public partial class InMemoryBus {
 		internal void AddHandler(IHandle<T> handler) {
 			Debug.Assert(handler is not null);
 
+			// loop retries lock-free until successful
 			Action<T> devirtHandler = handler.Handle;
 			for (Action<T>[] newArray;; Array.Clear(newArray)) {
 				var currentArray = _handlers;
@@ -156,6 +158,7 @@ public partial class InMemoryBus {
 		internal void RemoveHandler(IHandle<T> handler) {
 			Debug.Assert(handler is not null);
 
+			// loop retries lock-free until successful
 			for (var currentArray = _handlers;;) {
 				var index = IndexOf(currentArray, handler);
 				if (index < 0 || currentArray.Length is 0)
