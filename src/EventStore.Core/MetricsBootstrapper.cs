@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using EventStore.Core.Bus;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Index;
-using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.TransactionLog;
@@ -72,7 +72,7 @@ public static class MetricsBootstrapper {
 		LogConfig(conf);
 
 		MessageLabelConfigurator.ConfigureMessageLabels(
-			conf.MessageTypes, MessageHierarchy.MsgTypeIdByType.Keys);
+			conf.MessageTypes, InMemoryBus.KnownMessageTypes);
 
 		if (conf.ExpectedScrapeIntervalSeconds <= 0)
 			return;

@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.AwakeService {
 					recordFactory, 1500, Guid.NewGuid(), Guid.NewGuid(), 1500, 0, streamId, 99, PrepareFlags.Data,
 					eventTypeId, new byte[0], null, DateTime.UtcNow), "Stream", "EventType");
 			_eventCommitted = new StorageMessage.EventCommitted(2000, _eventRecord, isTfEof: true);
-			_publisher = new InMemoryBus("bus");
+			_publisher = InMemoryBus.CreateTest();
 			_envelope = new PublishEnvelope(_publisher);
 			_handler = new TestHandler<TestMessage>();
 			_publisher.Subscribe(_handler);

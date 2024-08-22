@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace EventStore.Core.Data {
 	//WARNING: new states must be added at the bottom of the enum otherwise it may break cluster and client compatibility
 	public enum VNodeState {
@@ -16,15 +18,16 @@ namespace EventStore.Core.Data {
 		ReadOnlyLeaderless = 12,
 		PreReadOnlyReplica = 13,
 		ReadOnlyReplica = 14,
-		ResigningLeader = 15
+		ResigningLeader = 15,
+
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		MaxValue = ResigningLeader,
 	}
 
 	public static class VNodeStateExtensions {
 		public static bool IsReplica(this VNodeState state) {
-			return state == VNodeState.CatchingUp
-			       || state == VNodeState.Clone
-			       || state == VNodeState.Follower
-				   || state == VNodeState.ReadOnlyReplica;
+			return state is VNodeState.CatchingUp or VNodeState.Clone or VNodeState.Follower
+				or VNodeState.ReadOnlyReplica;
 		}
 	}
 }

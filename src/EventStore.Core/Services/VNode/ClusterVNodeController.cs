@@ -1,11 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Threading;
-using System.Threading.Tasks;
-using EventStore.Client.Messages;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
@@ -119,7 +115,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private VNodeFSM CreateFSM() {
-			var stm = new VNodeFSMBuilder(() => State)
+			var stm = new VNodeFSMBuilder(new(this, in _state))
 				.InAnyState()
 				.When<SystemMessage.StateChangeMessage>()
 					.Do(m => Application.Exit(ExitCode.Error,

@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Services.TimeService {
 		public void AddToUtcTime(TimeSpan timeSpan) {
 			UtcNow = UtcNow.Add(timeSpan);
 		}
-		
+
 		public void AddToLocalTime(TimeSpan timeSpan) {
 			UtcNow = LocalTime.Add(timeSpan);
 		}
@@ -48,13 +48,7 @@ namespace EventStore.Core.Tests.Services.TimeService {
 	}
 
 	public class TestResponseMessage : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
-		public int Id { get; set; }
+		public int Id { get; }
 
 		public TestResponseMessage(int id) {
 			Id = id;

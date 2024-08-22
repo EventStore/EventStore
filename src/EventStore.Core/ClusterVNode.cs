@@ -572,11 +572,11 @@ namespace EventStore.Core {
 				NodeInfo.ExternalSecureTcp,
 				statsHelper);
 
-            _mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
-			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
-			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
-			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShutdown, Message>());
-			_mainBus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.WriteEventsCompleted, Message>());
+            _mainBus.Subscribe<SystemMessage.SystemInit>(monitoringQueue);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(monitoringQueue);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoringQueue);
+			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(monitoringQueue);
+			_mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(monitoringQueue);
 			monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
 			monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
 			monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
@@ -834,7 +834,7 @@ namespace EventStore.Core {
 			SubscribeWorkers(bus => bus.Subscribe<HttpMessage.HttpSend>(httpSendService));
 
 			var grpcSendService = new GrpcSendService(_eventStoreClusterClientCache);
-			_mainBus.Subscribe(new WideningHandler<GrpcMessage.SendOverGrpc, Message>(_workersHandler));
+			_mainBus.Subscribe<GrpcMessage.SendOverGrpc>(_workersHandler);
 			SubscribeWorkers(bus => {
 				bus.Subscribe<GrpcMessage.SendOverGrpc>(grpcSendService);
 			});
@@ -1107,17 +1107,17 @@ namespace EventStore.Core {
 			var subscrBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
 			var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", _queueStatsManager,
 				trackers.QueueTrackers, false);
-			_mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.SystemStart, Message>());
-			_mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
-			_mainBus.Subscribe(subscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
-			_mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.SubscribeToStream, Message>());
-			_mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.FilteredSubscribeToStream, Message>());
-			_mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
-			_mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.DropSubscription, Message>());
-			_mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.PollStream, Message>());
-			_mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.CheckPollTimeout, Message>());
-			_mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
-			_mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.InMemoryEventCommitted, Message>());
+			_mainBus.Subscribe<SystemMessage.SystemStart>(subscrQueue);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(subscrQueue);
+			_mainBus.Subscribe<TcpMessage.ConnectionClosed>(subscrQueue);
+			_mainBus.Subscribe<ClientMessage.SubscribeToStream>(subscrQueue);
+			_mainBus.Subscribe<ClientMessage.FilteredSubscribeToStream>(subscrQueue);
+			_mainBus.Subscribe<ClientMessage.UnsubscribeFromStream>(subscrQueue);
+			_mainBus.Subscribe<SubscriptionMessage.DropSubscription>(subscrQueue);
+			_mainBus.Subscribe<SubscriptionMessage.PollStream>(subscrQueue);
+			_mainBus.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscrQueue);
+			_mainBus.Subscribe<StorageMessage.EventCommitted>(subscrQueue);
+			_mainBus.Subscribe<StorageMessage.InMemoryEventCommitted>(subscrQueue);
 
 			var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, _authorizationProvider, readIndex, inMemReader);
 			subscrBus.Subscribe<SystemMessage.SystemStart>(subscription);
@@ -1147,33 +1147,29 @@ namespace EventStore.Core {
 			perSubscrBus.Subscribe<ClientMessage.DeleteStreamCompleted>(psubDispatcher.StreamDeleter);
 			perSubscrBus.Subscribe<IODispatcherDelayedMessage>(psubDispatcher);
 			perSubscrBus.Subscribe<ClientMessage.NotHandled>(psubDispatcher);
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscriptionToStream, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UpdatePersistentSubscriptionToStream, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.DeletePersistentSubscriptionToStream, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscriptionToAll, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UpdatePersistentSubscriptionToAll, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.DeletePersistentSubscriptionToAll, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ConnectToPersistentSubscriptionToStream, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ConnectToPersistentSubscriptionToAll, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionAckEvents, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionNackEvents, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ReplayParkedMessages, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ReplayParkedMessage, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ReadNextNPersistentMessages, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
-			_mainBus.Subscribe(perSubscrQueue
-				.WidenFrom<TelemetryMessage.Request, Message>());
-			_mainBus.Subscribe(perSubscrQueue
-				.WidenFrom<MonitoringMessage.GetAllPersistentSubscriptionStats, Message>());
-			_mainBus.Subscribe(
-				perSubscrQueue.WidenFrom<MonitoringMessage.GetStreamPersistentSubscriptionStats, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetPersistentSubscriptionStats, Message>());
-			_mainBus.Subscribe(perSubscrQueue
-				.WidenFrom<SubscriptionMessage.PersistentSubscriptionTimerTick, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SubscriptionMessage.PersistentSubscriptionsRestart, Message>());
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(perSubscrQueue);
+			_mainBus.Subscribe<TcpMessage.ConnectionClosed>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.CreatePersistentSubscriptionToStream>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.UpdatePersistentSubscriptionToStream>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.DeletePersistentSubscriptionToStream>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.CreatePersistentSubscriptionToAll>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.UpdatePersistentSubscriptionToAll>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.DeletePersistentSubscriptionToAll>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.ConnectToPersistentSubscriptionToStream>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.ConnectToPersistentSubscriptionToAll>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.UnsubscribeFromStream>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.PersistentSubscriptionAckEvents>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.PersistentSubscriptionNackEvents>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.ReplayParkedMessages>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.ReplayParkedMessage>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.ReadNextNPersistentMessages>(perSubscrQueue);
+			_mainBus.Subscribe<StorageMessage.EventCommitted>(perSubscrQueue);
+			_mainBus.Subscribe<TelemetryMessage.Request>(perSubscrQueue);
+			_mainBus.Subscribe<MonitoringMessage.GetAllPersistentSubscriptionStats>(perSubscrQueue);
+			_mainBus.Subscribe<MonitoringMessage.GetStreamPersistentSubscriptionStats>(perSubscrQueue);
+			_mainBus.Subscribe<MonitoringMessage.GetPersistentSubscriptionStats>(perSubscrQueue);
+			_mainBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(perSubscrQueue);
+			_mainBus.Subscribe<SubscriptionMessage.PersistentSubscriptionsRestart>(perSubscrQueue);
 
 			//TODO CC can have multiple threads working on subscription if partition
 			var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus,
@@ -1394,11 +1390,11 @@ namespace EventStore.Core {
 			var redactionQueue = new QueuedHandlerThreadPool(redactionBus, "Redaction", _queueStatsManager,
 				trackers.QueueTrackers, false);
 
-			_mainBus.Subscribe(redactionQueue.WidenFrom<RedactionMessage.GetEventPosition, Message>());
-			_mainBus.Subscribe(redactionQueue.WidenFrom<RedactionMessage.AcquireChunksLock, Message>());
-			_mainBus.Subscribe(redactionQueue.WidenFrom<RedactionMessage.SwitchChunk, Message>());
-			_mainBus.Subscribe(redactionQueue.WidenFrom<RedactionMessage.ReleaseChunksLock, Message>());
-			_mainBus.Subscribe(redactionQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
+			_mainBus.Subscribe<RedactionMessage.GetEventPosition>(redactionQueue);
+			_mainBus.Subscribe<RedactionMessage.AcquireChunksLock>(redactionQueue);
+			_mainBus.Subscribe<RedactionMessage.SwitchChunk>(redactionQueue);
+			_mainBus.Subscribe<RedactionMessage.ReleaseChunksLock>(redactionQueue);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(redactionQueue);
 
 			var redactionService = new RedactionService<TStreamId>(redactionQueue, Db, _readIndex, _switchChunksLock);
 			redactionBus.Subscribe<RedactionMessage.GetEventPosition>(redactionService);

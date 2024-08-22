@@ -51,7 +51,7 @@ internal class AdHocReplicaController<TStreamId> : IHandle<Message> {
 		_state = VNodeState.Initializing;
 		SubscriptionId = Guid.Empty;
 
-		_fsm = new VNodeFSMBuilder(() => _state)
+		_fsm = new VNodeFSMBuilder(new(this, in _state))
 			.InAnyState()
 			.When<SystemMessage.VNodeConnectionEstablished>().Do(Handle)
 			.When<SystemMessage.BecomePreReplica>().Do(Handle)

@@ -46,18 +46,13 @@ namespace EventStore.SourceGenerators.Messaging {
 		}
 
 		public static ClassDeclarationSyntax AddBaseStatsMembers(this ClassDeclarationSyntax node) =>
-			node.AddMembers(DeclareDynamicMessageId)
-				.AddMembers(RegisterDynamicMessageId(isBase: true))
-				.AddMembers(AbstractLabel);
+			node.AddMembers(AbstractLabel);
 
 		public static ClassDeclarationSyntax AddDerivedStatsMembers(
 			this ClassDeclarationSyntax node,
 			GeneratorExecutionContext context,
 			ClassDeclarationSyntax originalNode,
 			AttributeSyntax derivedMessageAttribute) {
-
-			node = node.AddMembers(RegisterDynamicMessageId(isBase: false));
-
 			var args = derivedMessageAttribute.ArgumentList;
 			var argsCount = args?.Arguments.Count ?? 0;
 			var isAbstract = node.Modifiers.Any(SyntaxKind.AbstractKeyword);
@@ -76,19 +71,6 @@ namespace EventStore.SourceGenerators.Messaging {
 			}
 
 			return node;
-		}
-
-		private static readonly string[] DeclareDynamicMessageId = new[] {
-			"private static int _nextMsgId = -1;",
-			"protected static ref int NextMsgId => ref _nextMsgId;"
-		};
-
-		private static string[] RegisterDynamicMessageId(bool isBase) {
-			var virtualOrOverride = isBase ? "virtual" : "override";
-			return new[] {
-				$"private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);",
-				$"public {virtualOrOverride} int MsgTypeId => TypeId;",
-			};
 		}
 
 		private static readonly string[] AbstractLabel = new[] {

@@ -8,15 +8,11 @@ namespace EventStore.SourceGenerators.Tests.Messaging.NestedDerived
 	{
 		private partial class A
 		{
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-			public override int MsgTypeId => TypeId;
 			public static string OriginalLabelStatic { get; } = "TestMessageGroup-NestedDerived-A";
 			public static string LabelStatic { get; set; } = "TestMessageGroup-NestedDerived-A";
 			public override string Label => LabelStatic;
 		}
 
-		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-		public override int MsgTypeId => TypeId;
 		public static string OriginalLabelStatic { get; } = "TestMessageGroup-NestedDerived-B";
 		public static string LabelStatic { get; set; } = "TestMessageGroup-NestedDerived-B";
 		public override string Label => LabelStatic;

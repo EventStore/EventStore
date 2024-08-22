@@ -1,66 +1,59 @@
 using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Services.VNode {
-	public class VNodeFSMHandling<TMessage> where TMessage : Message {
-		private readonly VNodeFSMStatesDefinition _stateDef;
-		private readonly bool _defaultHandler;
+namespace EventStore.Core.Services.VNode;
 
-		public VNodeFSMHandling(VNodeFSMStatesDefinition stateDef, bool defaultHandler = false) {
-			_stateDef = stateDef;
-			_defaultHandler = defaultHandler;
-		}
+public readonly ref struct VNodeFSMHandling<TMessage>
+	where TMessage : Message {
+	private readonly VNodeFSMStatesDefinition _stateDef;
+	private readonly bool _defaultHandler;
 
-		public VNodeFSMStatesDefinition Do(Action<VNodeState, TMessage> handler) {
+	internal VNodeFSMHandling(VNodeFSMStatesDefinition stateDef, bool defaultHandler) {
+		_stateDef = stateDef;
+		_defaultHandler = defaultHandler;
+	}
+
+	public VNodeFSMStatesDefinition Do(Action<TMessage> handler) {
+		if (_defaultHandler) {
 			foreach (var state in _stateDef.States) {
-				if (_defaultHandler)
-					_stateDef.FSM.AddDefaultHandler(state, (s, m) => handler(s, (TMessage)m));
-				else
-					_stateDef.FSM.AddHandler<TMessage>(state, (s, m) => handler(s, (TMessage)m));
+				_stateDef.FSM.AddDefaultHandler(state, handler.InvokeWithDowncast);
 			}
-
-			return _stateDef;
-		}
-
-		public VNodeFSMStatesDefinition Do(Action<TMessage> handler) {
+		} else {
 			foreach (var state in _stateDef.States) {
-				if (_defaultHandler)
-					_stateDef.FSM.AddDefaultHandler(state, (s, m) => handler((TMessage)m));
-				else
-					_stateDef.FSM.AddHandler<TMessage>(state, (s, m) => handler((TMessage)m));
+				_stateDef.FSM.AddHandler(state, handler);
 			}
-
-			return _stateDef;
 		}
 
-		public VNodeFSMStatesDefinition Ignore() {
+		return _stateDef;
+	}
+
+	public VNodeFSMStatesDefinition Ignore() {
+		if (_defaultHandler) {
 			foreach (var state in _stateDef.States) {
-				if (_defaultHandler)
-					_stateDef.FSM.AddDefaultHandler(state, (s, m) => { });
-				else
-					_stateDef.FSM.AddHandler<TMessage>(state, (s, m) => { });
+				_stateDef.FSM.AddDefaultHandler(state, NoOp);
 			}
-
-			return _stateDef;
-		}
-
-		public VNodeFSMStatesDefinition Throw() {
+		} else {
 			foreach (var state in _stateDef.States) {
-				if (_defaultHandler)
-					_stateDef.FSM.AddDefaultHandler(state, (s, m) => { throw new NotSupportedException(); });
-				else
-					_stateDef.FSM.AddHandler<TMessage>(state, (s, m) => { throw new NotSupportedException(); });
+				_stateDef.FSM.AddHandler<TMessage>(state, NoOp);
 			}
-
-			return _stateDef;
 		}
 
-		public VNodeFSMStatesDefinition ForwardTo(IPublisher publisher) {
-			Ensure.NotNull(publisher, "publisher");
-			return Do(publisher.Publish);
+		return _stateDef;
+
+		static void NoOp(Message msg) {
 		}
 	}
+
+	public VNodeFSMStatesDefinition ForwardTo(IPublisher publisher) {
+		Ensure.NotNull(publisher, "publisher");
+		return Do(publisher.Publish);
+	}
+}
+
+file static class DelegateHelpers {
+	public static void InvokeWithDowncast<TMessage>(this Action<TMessage> action, Message message)
+		where TMessage : Message
+		=> action.Invoke((TMessage)message);
 }

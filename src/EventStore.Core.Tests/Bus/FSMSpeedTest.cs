@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
+using DotNext.Diagnostics;
+using DotNext.Runtime;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -19,41 +17,38 @@ namespace EventStore.Core.Tests.Bus {
 			var msg = new StorageMessage.WriteCommit(Guid.NewGuid(), new NoopEnvelope(), 0);
 			const int iterations = 1000000;
 
-			var sw = Stopwatch.StartNew();
+			var ts = new Timestamp();
 
 			for (int i = 0; i < iterations; ++i) {
 				fsm.Handle(msg);
 			}
 
-			sw.Stop();
-
-			Console.WriteLine("Elapsed: {0} ({1} per item).", sw.Elapsed, sw.ElapsedMilliseconds / (float)iterations);
+			var elapsedMs = ts.ElapsedMilliseconds;
+			Console.WriteLine($"Elapsed: {elapsedMs} ({elapsedMs / iterations} per item).");
 		}
 
 		[Test, Category("LongRunning"), Explicit]
 		public void FSMSpeedTest2() {
-			var bus = new InMemoryBus("a", true);
+			var bus = InMemoryBus.CreateTest();
 			bus.Subscribe(new AdHocHandler<StorageMessage.WriteCommit>(x => { }));
 			bus.Subscribe(new AdHocHandler<Message>(x => { }));
 
 			var msg = new StorageMessage.WriteCommit(Guid.NewGuid(), new NoopEnvelope(), 0);
 			const int iterations = 1000000;
 
-			var sw = Stopwatch.StartNew();
+			var ts = new Timestamp();
 
 			for (int i = 0; i < iterations; ++i) {
 				bus.Handle(msg);
 			}
 
-			sw.Stop();
-
-			Console.WriteLine("Elapsed: {0} ({1} per item).", sw.Elapsed, sw.ElapsedMilliseconds / (float)iterations);
+			var elapsedMs = ts.ElapsedMilliseconds;
+			Console.WriteLine($"Elapsed: {elapsedMs} ({elapsedMs / iterations} per item).");
 		}
 
 		private VNodeFSM CreateFSM() {
-			var outputBus = new InMemoryBus("a", false);
-			var state = VNodeState.Leader;
-			var stm = new VNodeFSMBuilder(() => state)
+			var outputBus = InMemoryBus.CreateTest(false);
+			var stm = new VNodeFSMBuilder(new ValueReference<VNodeState>(VNodeState.Leader))
 				.InAnyState()
 				.When<SystemMessage.StateChangeMessage>().Do(m => { })
 				.InState(VNodeState.Initializing)

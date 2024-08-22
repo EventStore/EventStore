@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.Bus {
 
 		[SetUp]
 		public void SetUp() {
-			_bus = new InMemoryBus("test_bus", watchSlowMsg: false);
+			_bus = InMemoryBus.CreateTest(false);
 		}
 
 		[TearDown]
