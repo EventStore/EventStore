@@ -115,11 +115,14 @@ public partial class InMemoryBus {
 			set => _handlers = value is null ? [] : [value.Invoke];
 		}
 
+		// This cannot be inlined (it is an override, also it contains a loop)
+		// but if it could, then we would need a compiler barrier for the _handlers
+		// read to stop it being cached.
 		public override void Invoke(Message message) {
 			Debug.Assert(message is T);
 
 			// first handler is the parent
-			foreach (var handler in Volatile.Read(in _handlers)) {
+			foreach (var handler in _handlers) {
 				handler.Invoke(Unsafe.As<T>(message));
 			}
 		}
