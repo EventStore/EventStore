@@ -528,7 +528,7 @@ namespace EventStore.Core {
 					options, this, forwardingProxy,
 					startSubsystems: StartSubsystems);
 
-			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager,
+			_mainQueue = new QueuedHandlerThreadPool(_controller, "MainQueue", _queueStatsManager,
 				trackers.QueueTrackers);
 
 			_controller.SetMainQueue(_mainQueue);

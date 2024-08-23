@@ -6,78 +6,57 @@ using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Bus {
-	public class MultiQueuedHandler : IHandle<Message>, IPublisher, IThreadSafePublisher {
-		public readonly IQueuedHandler[] Queues;
+namespace EventStore.Core.Bus;
 
-		private readonly Func<Message, int> _queueHash;
-		private int _nextQueueNum = -1;
+public class MultiQueuedHandler : IPublisher, IThreadSafePublisher {
+	public readonly ReadOnlyMemory<IQueuedHandler> Queues;
+	private int _nextQueueNum = -1;
 
-		public MultiQueuedHandler(int queueCount,
-			Func<int, IQueuedHandler> queueFactory,
-			Func<Message, int> queueHash = null) {
-			Ensure.Positive(queueCount, "queueCount");
-			Ensure.NotNull(queueFactory, "queueFactory");
+	public MultiQueuedHandler(int queueCount,
+		Func<int, IQueuedHandler> queueFactory) {
+		Ensure.Positive(queueCount, "queueCount");
+		Ensure.NotNull(queueFactory, "queueFactory");
 
-			Queues = new IQueuedHandler[queueCount];
-			for (int i = 0; i < Queues.Length; ++i) {
-				Queues[i] = queueFactory(i);
-			}
-
-			//TODO AN remove _queueHash function
-			_queueHash = queueHash ?? NextQueueHash;
+		var queues = new IQueuedHandler[queueCount];
+		for (int i = 0; i < Queues.Length; ++i) {
+			queues[i] = queueFactory(i);
 		}
 
-		public MultiQueuedHandler(params QueuedHandler[] queues) : this(queues, null) {
-			Ensure.Positive(queues.Length, "queues.Length");
+		Queues = queues;
+	}
+
+	private int NextQueueHash() => Interlocked.Increment(ref _nextQueueNum);
+
+	public IEnumerable<Task> Start() {
+		var queues = Queues.Span;
+		var tasks = new Task[queues.Length];
+
+		for (var i = 0; i < queues.Length; i++) {
+			tasks[i] = queues[i].Start();
 		}
 
-		public MultiQueuedHandler(IQueuedHandler[] queues, Func<Message, int> queueHash) {
-			Ensure.NotNull(queues, "queues");
-			Ensure.Positive(queues.Length, "queues.Length");
+		return tasks;
+	}
 
-			Queues = queues;
-			_queueHash = queueHash ?? NextQueueHash;
+	public void Stop() {
+		var stopTasks = new Task[Queues.Length];
+		var queues = Queues.Span;
+		for (int i = 0; i < queues.Length; ++i) {
+			stopTasks[i] = Task.Factory.StartNew(queues[i].Stop);
 		}
 
-		private int NextQueueHash(Message msg) {
-			return Interlocked.Increment(ref _nextQueueNum);
-		}
+		Task.WaitAll(stopTasks);
+	}
 
-		public IEnumerable<Task> Start() {
-			var tasks = new List<Task>();
-			for (int i = 0; i < Queues.Length; ++i) {
-				tasks.Add(Queues[i].Start());
-			}
+	public void Publish(Message message) {
+		int queueHash = (message as IQueueAffineMessage)?.QueueId ?? NextQueueHash();
+		var queueNum = (int)((uint)queueHash % Queues.Length);
+		Queues.Span[queueNum].Publish(message);
+	}
 
-			return tasks;
-		}
-
-		public void Stop() {
-			var stopTasks = new Task[Queues.Length];
-			for (int i = 0; i < Queues.Length; ++i) {
-				int queueNum = i;
-				stopTasks[i] = Task.Factory.StartNew(() => Queues[queueNum].Stop());
-			}
-
-			Task.WaitAll(stopTasks);
-		}
-
-		public void Handle(Message message) {
-			Publish(message);
-		}
-
-		public void Publish(Message message) {
-			var affineMsg = message as IQueueAffineMessage;
-			int queueHash = affineMsg != null ? affineMsg.QueueId : _queueHash(message);
-			var queueNum = (int)((uint)queueHash % Queues.Length);
-			Queues[queueNum].Publish(message);
-		}
-
-		public void PublishToAll(Message message) {
-			for (int i = 0; i < Queues.Length; ++i) {
-				Queues[i].Publish(message);
-			}
+	public void PublishToAll(Message message) {
+		foreach (var queue in Queues.Span) {
+			queue.Publish(message);
 		}
 	}
 }

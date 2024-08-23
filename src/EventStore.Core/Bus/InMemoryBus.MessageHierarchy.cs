@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using DotNext.Reflection;
 using EventStore.Core.Messaging;
 
@@ -98,13 +99,13 @@ public partial class InMemoryBus {
 	private abstract class MessageTypeHandler {
 		public abstract MessageTypeHandler Parent { get; set; }
 
-		public abstract void Invoke(Message message);
+		public abstract ValueTask InvokeAsync(Message message, CancellationToken token);
 	}
 
 	private sealed class MessageTypeHandler<T> : MessageTypeHandler where T : Message {
-		// Perf: invocation of handlers is hot path, it's better do devirt `Handle` method.
+		// Perf: invocation of handlers is hot path, it's better do devirt `HandleAsync` method.
 		// Devirtualized method is stored as a delegate
-		private Action<T>[] _handlers = [];
+		private Func<T, CancellationToken, ValueTask>[] _handlers = [];
 
 		// Compat: assume that we have message types A > B with handlers handler(A) and handler(B).
 		// Some parts of ESDB relies on the following behavior: if message B is published, the order of
@@ -112,27 +113,27 @@ public partial class InMemoryBus {
 		// issue prevents us from using tail call, because we need to call parent handlers first.
 		public override MessageTypeHandler Parent {
 			get => _handlers is [{ Target: MessageTypeHandler handler }, ..] ? handler : null;
-			set => _handlers = value is null ? [] : [value.Invoke];
+			set => _handlers = value is null ? [] : [value.InvokeAsync];
 		}
 
 		// This cannot be inlined (it is an override, also it contains a loop)
 		// but if it could, then we would need a compiler barrier for the _handlers
 		// read to stop it being cached.
-		public override void Invoke(Message message) {
+		public override async ValueTask InvokeAsync(Message message, CancellationToken token) {
 			Debug.Assert(message is T);
 
 			// first handler is the parent
 			foreach (var handler in _handlers) {
-				handler.Invoke(Unsafe.As<T>(message));
+				await handler.Invoke(Unsafe.As<T>(message), token);
 			}
 		}
 
-		internal void AddHandler(IHandle<T> handler) {
+		internal void AddHandler(IAsyncHandle<T> handler) {
 			Debug.Assert(handler is not null);
 
 			// loop retries lock-free until successful
-			Action<T> devirtHandler = handler.Handle;
-			for (Action<T>[] newArray;; Array.Clear(newArray)) {
+			Func<T, CancellationToken, ValueTask> devirtHandler = handler.HandleAsync;
+			for (Func<T, CancellationToken, ValueTask>[] newArray;; Array.Clear(newArray)) {
 				var currentArray = _handlers;
 
 				// Perf: array is preferred over ImmutableHashSet because enumeration speed is much more important
@@ -140,7 +141,7 @@ public partial class InMemoryBus {
 				if (IndexOf(currentArray, handler) >= 0)
 					break;
 
-				newArray = new Action<T>[currentArray.Length + 1];
+				newArray = new Func<T, CancellationToken, ValueTask>[currentArray.Length + 1];
 				Array.Copy(currentArray, newArray, currentArray.Length);
 				newArray[currentArray.Length] = devirtHandler;
 
@@ -149,7 +150,7 @@ public partial class InMemoryBus {
 			}
 		}
 
-		private static int IndexOf(Action<T>[] handlers, IHandle<T> handler) {
+		private static int IndexOf(Func<T, CancellationToken, ValueTask>[] handlers, IAsyncHandle<T> handler) {
 			for (var i = 0; i < handlers.Length; i++) {
 				if (ReferenceEquals(handlers[i].Target, handler))
 					return i;
@@ -158,7 +159,7 @@ public partial class InMemoryBus {
 			return -1;
 		}
 
-		internal void RemoveHandler(IHandle<T> handler) {
+		internal void RemoveHandler(IAsyncHandle<T> handler) {
 			Debug.Assert(handler is not null);
 
 			// loop retries lock-free until successful
@@ -168,10 +169,10 @@ public partial class InMemoryBus {
 					break;
 
 				// fast path loop - no need to search over array
-				for (Action<T>[] newArray;; Array.Clear(newArray)) {
+				for (Func<T, CancellationToken, ValueTask>[] newArray;; Array.Clear(newArray)) {
 
 					if (currentArray.Length > 1) {
-						newArray = new Action<T>[currentArray.Length - 1];
+						newArray = new Func<T, CancellationToken, ValueTask>[currentArray.Length - 1];
 						Array.Copy(currentArray, newArray, index);
 						Array.Copy(currentArray, index + 1, newArray, index, currentArray.Length - index - 1);
 					} else {
