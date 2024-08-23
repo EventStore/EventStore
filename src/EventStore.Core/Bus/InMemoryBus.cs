@@ -14,7 +14,7 @@ namespace EventStore.Core.Bus;
 /// Synchronously dispatches messages to zero or more subscribers.
 /// Subscribers are responsible for handling exceptions
 /// </summary>
-public partial class InMemoryBus : IBus, ISubscriber, IPublisher, IHandle<Message> {
+public partial class InMemoryBus : IBus, IHandle<Message> {
 	public static InMemoryBus CreateTest(bool watchSlowMsg = true) =>
 		new("Test", watchSlowMsg);
 
