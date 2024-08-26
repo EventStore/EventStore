@@ -1,37 +1,46 @@
 # outputState
 
-If the projection maintains state, setting this option produces a stream called `$projections-{projection-name}-result` with the state as the event body.
+Causes a stream called `$projections-{projection-name}-result` to be produced with the state as the event body.
+
+If the projection is running in `Continuous` mode, the projection will create a Result event in the `$projections-{projection-name}-result` stream for each input event.
+
+If the projection is running in `OneTime` mode, the projection will create a single Result event in the `$projections-{projection-name}-result` stream with the final state of the projection.
 
 ## Syntax
 
 ```js
-.outputState()
+outputState()
 ```
 
 ### Usage
 
 ```js
-fromStreams(["website-enquiries", "email-enquiries"])
-  .foreachStream({
+// Count the number of events of each type from the "account" category
+fromCategory("account")
+  .when({
     // Count each type of event in the input streams
     $any: function (state, event) {
       return {
         ...state,
         // Increment the count on the depending on the type of the event
-        [event.type]: (state[event.type] ?? 0) + 1,
+        [event.eventType]: (state[event.eventType] ?? 0) + 1,
       }
     },
   })
   .outputState()
 ```
 
-::: warning
-`outputState` will cause the **final** state of the projection to be appended to `$projections-{projection-name}-result`, once the projection has finished running. `outputState` does not use the state at the time `outputState` was called: it uses the final state of the projection. To emit an intermediate state, use [`emit`](../emitters/emit)
-:::
-
 ### Arguments
 
 None.
+
+### Chains from
+
+[when](../filters/when.md)
+
+[transformBy](../transformations/transformBy.md)
+
+[filterBy](../outputs/filterBy.md)
 
 ### Chains to
 
