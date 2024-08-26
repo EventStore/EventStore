@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -30,6 +31,7 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 		public static IEnumerable<object[]> GetTestCases() {
 			var assembly = typeof(SpecRunner).Assembly;
 			var specs = assembly.GetManifestResourceNames().Where(x => x.EndsWith("-spec.json"));
+
 			foreach (var spec in specs) {
 				JsonDocument doc;
 				using (var stream = assembly.GetManifestResourceStream(spec)) {
@@ -38,8 +40,10 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 
 				var projection = doc.RootElement.GetProperty("projection").GetString();
 				Assert.False(string.IsNullOrWhiteSpace(projection));
+
 				var projectionSourceName = assembly.GetManifestResourceNames()
 					.SingleOrDefault(x => x.EndsWith($"{projection}.js"));
+
 				Assert.NotNull(projectionSourceName);
 				string source;
 				using (var stream = assembly.GetManifestResourceStream(projectionSourceName!)) {
@@ -49,133 +53,13 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 					}
 				}
 
-				List<InputEventSequence> sequences = new();
-				foreach (var inputEvent in doc.RootElement.GetProperty("input").EnumerateArray()) {
-					var stream = inputEvent.GetProperty("streamId").GetString();
-					Assert.NotNull(stream);
-					var sequence = new InputEventSequence(stream!);
-					sequences.Add(sequence);
-					foreach (var e in inputEvent.GetProperty("events").EnumerateArray()) {
-						var et = e.GetProperty("eventType").GetString();
-						Assert.NotNull(et);
-						bool skip = false;
-						if (e.TryGetProperty("skip", out var skipElement)) {
-							skip = skipElement.GetBoolean();
-						}
-
-						var initializedPartitions = new List<string>();
-						if (e.TryGetProperty("initializedPartitions", out var partitions)) {
-							foreach (var element in partitions.EnumerateArray()) {
-								initializedPartitions.Add(element.GetString()!);
-							}
-						}
-						var expectedStates = new Dictionary<string, string?>();
-						int stateCount = 0;
-						if (e.TryGetProperty("states", out var states)) {
-							foreach (var state in states.EnumerateArray()) {
-								stateCount++;
-								var expectedStateNode = state.GetProperty("state");
-								var expectedState = expectedStateNode.ValueKind == JsonValueKind.Null ? null : expectedStateNode.GetRawText();
-								if (!expectedStates.TryAdd(state.GetProperty("partition").GetString()!,
-									expectedState)) {
-									throw new InvalidOperationException("Duplicate state");
-								}
-							}
-						}
-						if (stateCount > 2)
-							throw new InvalidOperationException("Cannot specify more than 2 states");
-
-						sequence.Events.Add(new InputEvent(et!, e.GetProperty("data").GetRawText(), e.TryGetProperty("metadata", out var metadata) ? metadata.GetRawText() : null, initializedPartitions, expectedStates, skip, e.TryGetProperty("eventId", out var idElement) && idElement.TryGetGuid(out var id) ? id: Guid.NewGuid()));
-					}
-				}
+				var sequences = GetInputEventSequences(doc);
 
 				var output = doc.RootElement.GetProperty("output");
-				var sdb = new SourceDefinitionBuilder();
-				var config = output.GetProperty("config");
-				foreach (var item in config.EnumerateObject()) {
-					switch (item.Name) {
-						case "definesStateTransform":
-							if (item.Value.GetBoolean())
-								sdb.SetDefinesStateTransform();
-							break;
-						case "handlesDeletedNotifications":
-							sdb.SetHandlesStreamDeletedNotifications(item.Value.GetBoolean());
-							break;
-						case "producesResults":
-							if (item.Value.GetBoolean())
-								sdb.SetOutputState();
-							break;
-						case "definesFold":
-							if (item.Value.GetBoolean())
-								sdb.SetDefinesFold();
-							break;
-						case "resultStreamName":
-							sdb.SetResultStreamNameOption(item.Value.GetString());
-							break;
-						case "partitionResultStreamNamePattern":
-							sdb.SetPartitionResultStreamNamePatternOption(item.Value.GetString());
-							break;
-						case "$includeLinks":
-							sdb.SetIncludeLinks(item.Value.GetBoolean());
-							break;
-						case "reorderEvents":
-							sdb.SetReorderEvents(item.Value.GetBoolean());
-							break;
-						case "processingLag":
-							sdb.SetProcessingLag(item.Value.GetInt32());
-							break;
-						case "biState":
-							sdb.SetIsBiState(item.Value.GetBoolean());
-							break;
-						case "categories":
-							foreach (var c in item.Value.EnumerateArray()) {
-								sdb.FromCategory(c.GetString());
-							}
-							break;
-						case "partitioned":
-							if (item.Value.GetBoolean())
-								sdb.SetByCustomPartitions();
-							break;
-						case "events":
-							foreach (var e in item.Value.EnumerateArray()) {
-								sdb.IncludeEvent(e.GetString());
-							}
-							break;
-						case "allEvents":
-							if (item.Value.GetBoolean()) {
-								sdb.AllEvents();
-							} else {
-								sdb.NotAllEvents();
-							}
-							break;
-						case "allStreams":
-							if (item.Value.GetBoolean()) {
-								sdb.FromAll();
-							}
-							break;
-						case "streams":
-							foreach (var e in item.Value.EnumerateArray()) {
-								sdb.FromStream(e.GetString());
-							}
-							break;
-						default:
-							throw new Exception($"unexpected property in expected config {item.Name}");
-					}
-				}
-#nullable disable
+				var sdb = GetExpectedSourceDefinitionBuilder(output);
 
-				List<OutputEvent> expectedEmittedEvents = new();
-				if (output.TryGetProperty("emitted", out var expectedEmittedElement)) {
-					foreach (var element in expectedEmittedElement.EnumerateObject()) {
-						var stream = element.Name;
-						foreach (var eventElement in element.Value.EnumerateArray()) {
-							if (eventElement.ValueKind == JsonValueKind.String) {
-								expectedEmittedEvents.Add(
-									new OutputEvent(stream, "$>", eventElement.GetString(), null));
-							}
-						}
-					}
-				}
+				List<OutputEvent> expectedEmittedEvents = GetExpectedEmittedEvents(output);
+#nullable disable
 				JintProjectionStateHandler runner = null;
 				IQuerySources definition = null;
 
@@ -363,7 +247,12 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 						yield return For(
 							$"Expected event {emitted.StreamId} {emitted.Type} {(emitted.Type == "$>" ? emitted.Data : "")} was emitted",
 							() => {
-								Assert.Contains(actualEmittedEvents, eee => eee.Event.Data == emitted.Data);
+								var actualEmittedEventsSortedJsonData = actualEmittedEvents.Select(e =>
+									e.Event.EventType == "$>"
+										? e.Event.Data
+										: GetSortedJsonObject(JsonDocument.Parse(e.Event.Data).RootElement).ToJsonString()).ToList();
+
+								Assert.Contains(actualEmittedEventsSortedJsonData, actualData => actualData == emitted.Data);
 							});
 					}
 				}
@@ -398,6 +287,187 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 				}
 				return new(root.Properties().OrderBy(x => x.Name));
 			}
+		}
+
+		private static SourceDefinitionBuilder GetExpectedSourceDefinitionBuilder(JsonElement expectedOutput)
+		{
+			var sdb = new SourceDefinitionBuilder();
+			var config = expectedOutput.GetProperty("config");
+			foreach (var item in config.EnumerateObject()) {
+				switch (item.Name) {
+					case "definesStateTransform":
+						if (item.Value.GetBoolean())
+							sdb.SetDefinesStateTransform();
+						break;
+					case "handlesDeletedNotifications":
+						sdb.SetHandlesStreamDeletedNotifications(item.Value.GetBoolean());
+						break;
+					case "producesResults":
+						if (item.Value.GetBoolean())
+							sdb.SetOutputState();
+						break;
+					case "definesFold":
+						if (item.Value.GetBoolean())
+							sdb.SetDefinesFold();
+						break;
+					case "resultStreamName":
+						sdb.SetResultStreamNameOption(item.Value.GetString());
+						break;
+					case "partitionResultStreamNamePattern":
+						sdb.SetPartitionResultStreamNamePatternOption(item.Value.GetString());
+						break;
+					case "$includeLinks":
+						sdb.SetIncludeLinks(item.Value.GetBoolean());
+						break;
+					case "reorderEvents":
+						sdb.SetReorderEvents(item.Value.GetBoolean());
+						break;
+					case "processingLag":
+						sdb.SetProcessingLag(item.Value.GetInt32());
+						break;
+					case "biState":
+						sdb.SetIsBiState(item.Value.GetBoolean());
+						break;
+					case "categories":
+						foreach (var c in item.Value.EnumerateArray()) {
+							sdb.FromCategory(c.GetString());
+						}
+						break;
+					case "partitioned":
+						if (item.Value.GetBoolean())
+							sdb.SetByCustomPartitions();
+						break;
+					case "events":
+						foreach (var e in item.Value.EnumerateArray()) {
+							sdb.IncludeEvent(e.GetString());
+						}
+						break;
+					case "allEvents":
+						if (item.Value.GetBoolean()) {
+							sdb.AllEvents();
+						} else {
+							sdb.NotAllEvents();
+						}
+						break;
+					case "allStreams":
+						if (item.Value.GetBoolean()) {
+							sdb.FromAll();
+						}
+						break;
+					case "streams":
+						foreach (var e in item.Value.EnumerateArray()) {
+							sdb.FromStream(e.GetString());
+						}
+						break;
+					default:
+						throw new Exception($"unexpected property in expected config {item.Name}");
+				}
+			}
+			return sdb;
+		}
+
+		private static List<InputEventSequence> GetInputEventSequences(JsonDocument doc)
+		{
+			List<InputEventSequence> sequences = new();
+			foreach (var inputEvent in doc.RootElement.GetProperty("input").EnumerateArray()) {
+				var stream = inputEvent.GetProperty("streamId").GetString();
+				Assert.NotNull(stream);
+				var sequence = new InputEventSequence(stream!);
+				sequences.Add(sequence);
+				foreach (var e in inputEvent.GetProperty("events").EnumerateArray()) {
+					var et = e.GetProperty("eventType").GetString();
+					Assert.NotNull(et);
+					bool skip = false;
+					if (e.TryGetProperty("skip", out var skipElement)) {
+						skip = skipElement.GetBoolean();
+					}
+
+					var initializedPartitions = new List<string>();
+					if (e.TryGetProperty("initializedPartitions", out var partitions)) {
+						foreach (var element in partitions.EnumerateArray()) {
+							initializedPartitions.Add(element.GetString()!);
+						}
+					}
+					var expectedStates = new Dictionary<string, string>();
+					int stateCount = 0;
+					if (e.TryGetProperty("states", out var states)) {
+						foreach (var state in states.EnumerateArray()) {
+							stateCount++;
+							var expectedStateNode = state.GetProperty("state");
+							var expectedState = expectedStateNode.ValueKind == JsonValueKind.Null ? null : expectedStateNode.GetRawText();
+							if (!expectedStates.TryAdd(state.GetProperty("partition").GetString()!,
+								    expectedState)) {
+								throw new InvalidOperationException("Duplicate state");
+							}
+						}
+					}
+					if (stateCount > 2)
+						throw new InvalidOperationException("Cannot specify more than 2 states");
+
+					sequence.Events.Add(new InputEvent(et!, e.GetProperty("data").GetRawText(), e.TryGetProperty("metadata", out var metadata) ? metadata.GetRawText() : null, initializedPartitions, expectedStates, skip, e.TryGetProperty("eventId", out var idElement) && idElement.TryGetGuid(out var id) ? id: Guid.NewGuid()));
+				}
+			}
+
+			return sequences;
+		}
+
+		private static List<OutputEvent> GetExpectedEmittedEvents(JsonElement output)
+		{
+			var expectedEmittedEvents = new List<OutputEvent>();
+
+			if (!output.TryGetProperty("emitted", out var expectedEmittedElement)) return expectedEmittedEvents;
+
+			foreach (var element in expectedEmittedElement.EnumerateObject()) {
+				var stream = element.Name;
+				foreach (var eventElement in element.Value.EnumerateArray()) {
+					switch (eventElement.ValueKind)
+					{
+						case JsonValueKind.String:
+							// If the eventElement is a string (e.g. "3@account-123"), treat the string as a LinkTo event's data
+							expectedEmittedEvents.Add(
+								new OutputEvent(stream, "$>", eventElement.GetString(), null));
+							break;
+						case JsonValueKind.Object:
+						{
+							var eventType = eventElement.GetProperty("eventType").GetString();
+							var data = GetSortedJsonObject(eventElement.GetProperty("data")).ToJsonString();
+							var metadata = eventElement.TryGetProperty("metadata", out var metadataObj)
+								? GetSortedJsonObject(metadataObj).ToJsonString()
+								: new JsonObject().ToJsonString();
+
+							expectedEmittedEvents.Add(
+								new OutputEvent(stream, eventType, data, metadata)
+							);
+							break;
+						}
+						default:
+							throw new Exception(
+								$"""
+								 Unexpected type of element in 'output.emitted.{stream}': Array elements must
+								 be either strings (e.g. \"3@account-123\") or objects with eventType, data and metadata.");
+								 """);
+					}
+				}
+			}
+
+			return expectedEmittedEvents;
+		}
+
+		// Sort a JsonElement's keys because we don't want tests to fail because of different key order
+		private static JsonObject GetSortedJsonObject(JsonElement element) {
+			var sortedDict = new SortedDictionary<string, JsonElement>();
+
+			foreach (var property in element.EnumerateObject()) {
+				sortedDict.Add(property.Name, property.Value);
+			}
+
+			var sortedJsonObj = new JsonObject();
+
+			foreach (var kvp in sortedDict) {
+				sortedJsonObj.Add(kvp.Key, JsonValue.Create(kvp.Value));
+			}
+
+			return sortedJsonObj;
 		}
 
 		[Theory]
