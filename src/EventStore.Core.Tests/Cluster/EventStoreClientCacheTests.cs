@@ -8,16 +8,21 @@ using EventStore.Core.Cluster;
 using EventStore.Core.Messages;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
 using EventStore.Core.Tests.Fakes;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Cluster {
 	public class EventStoreClientCacheTests {
+		private static readonly INodeHttpClientFactory NodeHttpClientFactory = new NodeHttpClientFactory(
+			uriScheme: Uri.UriSchemeHttps,
+			nodeCertificateValidator: delegate { return (true, null); },
+			clientCertificateSelector: null);
+
 		private static readonly Func<EndPoint, IPublisher, EventStoreClusterClient> EventStoreClusterClientFactory =
 			(endpoint, bus) =>
 				new EventStoreClusterClient(
-					Uri.UriSchemeHttps, endpoint, null, bus,
-					delegate { return (true, null); }, null,
+					bus, Uri.UriSchemeHttps, endpoint, NodeHttpClientFactory, null,
 					new DurationTracker.NoOp(),
 					new DurationTracker.NoOp());
 
@@ -52,7 +57,7 @@ namespace EventStore.Core.Tests.Cluster {
 
 			sut.Handle(new ClusterClientMessage.CleanCache());
 			await Task.Delay(oldItemThreshold.Add(TimeSpan.FromMilliseconds(500)));
-			
+
 			var newClient = sut.Get(new IPEndPoint(IPAddress.Loopback, 1113));
 			newClient = sut.Get(new IPEndPoint(IPAddress.Loopback, 1113));
 			Assert.AreNotEqual(oldClient, newClient);
