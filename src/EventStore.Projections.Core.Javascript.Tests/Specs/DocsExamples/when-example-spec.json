@@ -1,0 +1,50 @@
+{
+	"projection": "when-example",
+	"input": [
+		{
+			"streamId": "account-d7fa4899-1e7e-41ae-9be3-075f52bbcc3c",
+			"events": [
+				{
+					"eventType": "FundsDeposited",
+					"data": {
+						"amount": 1000
+					},
+					"initializedPartitions": [""],
+					"states": [
+						{
+							"partition": "",
+							"state": {
+								"accountBalance": 1000
+							}
+						}
+					]
+				},
+				{
+					"eventType": "FundsWithdrawn",
+					"data": {
+						"amount": 300
+					},
+					"states": [
+						{ "partition": "", "state": { "accountBalance": 700 } }
+					]
+				}
+			]
+		}
+	],
+	"output": {
+		"config": {
+			"categories": [],
+			"streams": ["account-d7fa4899-1e7e-41ae-9be3-075f52bbcc3c"],
+			"events": ["FundsDeposited", "FundsWithdrawn"],
+			"partitioned": false,
+			"definesStateTransform": false,
+			"handlesDeletedNotifications": false,
+			"producesResults": false,
+			"definesFold": true,
+			"$includeLinks": false,
+			"reorderEvents": false,
+			"processingLag": 0,
+			"biState": false
+		}
+	}
+}

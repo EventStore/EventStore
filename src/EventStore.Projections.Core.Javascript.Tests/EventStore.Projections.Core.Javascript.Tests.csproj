@@ -10,6 +10,7 @@
 		<None Remove="Specs\by-category.js" />
 		<None Remove="Specs\event-data.js" />
 		<None Remove="Specs\event-data-spec.json" />
+		<None Remove="Specs\DocsExamples\*" />
 	</ItemGroup>
 	<ItemGroup>
 		<EmbeddedResource Include="Specs\account-balancer.js" />
@@ -19,6 +20,10 @@
 		<EmbeddedResource Include="Specs\event-data.js" />
 		<EmbeddedResource Include="Specs\event-data-spec.json" />
 		<EmbeddedResource Include="Specs\account-spec.json" />
+		<EmbeddedResource Include="Specs\DocsExamples\when-example-spec.json" />
+		<EmbeddedResource Include="Specs\DocsExamples\when-example.js" />
+		<EmbeddedResource Include="Specs\DocsExamples\from-streams-emit-spec.json" />
+		<EmbeddedResource Include="Specs\DocsExamples\from-streams-emit.js" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="GitHubActionsTestLogger" Version="2.3.3" />
