@@ -379,7 +379,7 @@ You can also disable the gossip protocol in the external HTTP interface. If you 
 
 **Default**: `true`, gossip is enabled on the external HTTP.
 
-## External TCP 
+## External TCP
 
 <wbr><Badge type="warning" text="Commercial" vertical="middle"/>
 

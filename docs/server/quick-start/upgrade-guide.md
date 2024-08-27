@@ -43,11 +43,7 @@ Follow the upgrade procedure below on each node, starting with a follower node:
 4. Wait for the node to become a follower or read-only replica.
 5. Repeat the process for the next node.
 
-As illustrated below:
-
-![EventStoreDB upgrade procedure for each node](../images/upgrade-procedure.png)
-
-Upgrading the cluster in this manner keeps the cluster online and able to service requests. There may still be disruptions to your services during the upgrade, namely:
+Upgrading the cluster this way keeps the cluster online and able to service requests. There may still be disruptions to your services during the upgrade, namely:
 - Client connections may be disconnected when nodes go offline, or when elections take place.
 - The cluster is less fault-tolerant while a node is offline for an upgrade because the cluster requires a quorum of nodes to be online to service write requests.
 - Replicating large amounts of data to a node can have a performance impact on the Leader in the cluster.
@@ -64,7 +60,12 @@ If you modified the Linux service file to increase the open files limit, those c
 
 The external TCP API has been removed in 24.2.0. This affects external clients using the TCP API and configurations related to it.
 
+::: tip
+EventStoreDB 24.6 includes [a plugin](../configuration/networking.md#external-tcp) that enables the TCP client protocol. This plugin is only available in the commercial version of EventStoreDB.
+:::
+
 A number of configuration options have been removed as part of this. EventStoreDB will not start by default if any of the following options are present in the database configuration:
+
 - `AdvertiseTcpPortToClientAs`
 - `DisableExternalTcpTls`
 - `EnableExternalTcp`
