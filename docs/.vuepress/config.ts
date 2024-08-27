@@ -44,7 +44,7 @@ export default defineUserConfig({
         navbar: [
             {
                 text: "Server",
-                link: "/server/",
+                link: "/server/quick-start/",
             },
             {
                 text: "HTTP API",
