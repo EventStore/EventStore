@@ -26,7 +26,7 @@ or `ops` user:
 
 You can also start scavenges from the _Admin_ page of the Admin UI.
 
-![Start a scavenge in the Admin UI](../images/admin-scavenge.png)
+![Start a scavenge in the Admin UI](./images/admin-scavenge.png)
 
 Each node in a cluster has its own independent copy of the database. As such, when you run a scavenge, you need to issue a
 scavenge request to each node. The scavenges can be run concurrently, but can also be run in series to spread the load.
@@ -78,7 +78,7 @@ the scavenging operation progress and status.
 
 ### Backups
 
-Do not take [file-copy](#types-of-backups) backups while scavenge is running. Stop the scavenge and resume it after the backup.
+Do not take [file-copy](backup.md#types-of-backups) backups while scavenge is running. Stop the scavenge and resume it after the backup.
 
 [Disk snapshot](#types-of-backups) backups can be taken while scavenge is running.
 
@@ -122,7 +122,7 @@ The scavenging algorithm itself consists of several phases:
 
 ### Beginning
 
-When a scavenge is started, it first checks to see if a previous scavenge was stopped. If so, it resumes from where the previous scavenge stopped. Otherwise it begins a fresh scavenge.
+When a scavenge is started, it first checks to see if a previous scavenge was stopped. If so, it resumes from where the previous scavenge stopped. Otherwise, it begins a fresh scavenge.
 
 When beginning a fresh scavenge, it checks to see if a scavenge point already exists that has not been reached by previous scavenges. If so, it begins scavenging up to that point. Otherwise, it writes a new scavenge point to the log (which is replicated to the other nodes) and then begins a scavenge up to there. Writing a new scavenge point also causes the active chunk to be completed so that it can be scavenged.
 

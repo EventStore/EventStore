@@ -312,7 +312,7 @@ You can only change the configuration of a stopped projection.
 You change the configuration of a projection by setting the relevant key and value in a request, or when you
 create a projection with the web admin interface.
 
-![Web admin interface projections configuration screen](../images/wai-projection-config.jpg)
+![Web admin interface projections configuration screen](images/wai-projection-config.jpg)
 
 <!-- TODO: Further explanation here -->
 
@@ -342,15 +342,15 @@ need the projection to emit events.
 
 #### Track emitted streams
 
-The `trackemittedstreams` boolean setting enables tracking of a projection's emitted streams. It only has an
-affect if the projection has `EmitEnabled` enabled.
+The `TrackEmittedStreams` boolean setting enables tracking of a projection's emitted streams. It only has an
+affect if the projection is allowed to emit events.
 
 Tracking emitted streams enables you to delete a projection and all the streams that it has created. You
 should only the setting if you intend to delete a projection and create new ones that project to the same
 stream.
 
 ::: warning 
-By default, EventStoreDB disables the `trackemittedstreams` setting for projections. When enabled,
+By default, EventStoreDB disables the `TrackEmittedStreams` setting for projections. When enabled,
 an event appended records the stream name (in `$projections-{projection_name}-emittedstreams`) of each event
 emitted by the projection. This means that write amplification is a possibility, as each event that the
 projection emits appends a separate event. As such, this option is not recommended for projections that emit a

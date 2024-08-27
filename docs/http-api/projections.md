@@ -16,10 +16,10 @@ The response is a list of all known projections and useful information about the
 
 Download the following files that contain sample data used throughout this step of the getting started guide.
 
-- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1164.json](@httpapi/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1164.json)
-- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1165.json](@httpapi/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1165.json)
-- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1166.json](@httpapi/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1166.json)
-- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1167.json](@httpapi/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1167.json)
+- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1164.json](https://raw.githubusercontent.com/EventStore/EventStore/8ba2af25dec49ff5c4c962baa924a78099adee30/samples/http-api/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1164.json)
+- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1165.json](https://raw.githubusercontent.com/EventStore/EventStore/8ba2af25dec49ff5c4c962baa924a78099adee30/samples/http-api/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1165.json)
+- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1166.json](https://raw.githubusercontent.com/EventStore/EventStore/8ba2af25dec49ff5c4c962baa924a78099adee30/samples/http-api/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1166.json)
+- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1167.json](https://raw.githubusercontent.com/EventStore/EventStore/8ba2af25dec49ff5c4c962baa924a78099adee30/samples/http-api/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1167.json)
 
 Add the sample data to four different streams:
 
@@ -125,11 +125,11 @@ The projection links events from existing streams to new streams by splitting th
 
 By default, the category splits the stream `id` by a dash. The category is the first string.
 
-| Stream Name        | Category                               |
-|--------------------|----------------------------------------|
-| shoppingCart-54    | shoppingCart                           |
-| shoppingCart-v1-54 | shoppingCart                           |
-| shoppingCart       | _No category as there is no separator_ |
+| Stream Name          | Category                               |
+|----------------------|----------------------------------------|
+| `shoppingCart-54`    | `shoppingCart`                         |
+| `shoppingCart-v1-54` | `shoppingCart`                         |
+| `shoppingCart`       | _No category as there is no separator_ |
 
 You want to define a projection that produces a count per stream for a category, but the state needs to be per stream. To do so, use `$by_category` and its `fromCategory` API method.
 
@@ -155,20 +155,20 @@ The server then returns the state for the partition:
 
 ### List Projections
 
-| URI                                                | Description                  | HTTP verb |
-|:---------------------------------------------------|:-----------------------------|:----------|
-| `/projections/any`                                 | Returns all known projections.             | GET       |
-| `/projections/all-non-transient`                   | Returns all known non ad-hoc projections.  | GET       |
+| URI                              | Description                               | HTTP verb |
+|:---------------------------------|:------------------------------------------|:----------|
+| `/projections/any`               | Returns all known projections.            | GET       |
+| `/projections/all-non-transient` | Returns all known non ad-hoc projections. | GET       |
 
 
 ### Manage Continuous Projections
 
 Continuous projections will continue to run until they are disabled or until they encounter an unrecoverable error. These are the most typical projections.
 
-| URI                                                | Description                  | HTTP verb |
-|:---------------------------------------------------|:-----------------------------|:----------|
-| `/projections/continuous`                          | Returns all known continuous projections.  | GET       |
-| `/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}&trackemittedstreams={trackemittedstreams}` | Create a continuous projection. | POST      |
+| URI                                                                                                                       | Description                               | HTTP verb |
+|:--------------------------------------------------------------------------------------------------------------------------|:------------------------------------------|:----------|
+| `/projections/continuous`                                                                                                 | Returns all known continuous projections. | GET       |
+| `/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}&trackemittedstreams={trackemittedstreams}` | Create a continuous projection.           | POST      |
 
 #### Parameters
 
@@ -176,16 +176,16 @@ Continuous projections will continue to run until they are disabled or until the
 * `type`: JS or Native. (JavaScript or native. At this time, EventStoreDB only supports JavaScript)
 * `enabled`: Enable the projection (true/false)
 * `emit`: Allow the projection to append to streams (true/false)
-* `trackemittedstreams`: Write the name of the streams the projection is managing to a separate stream. $projections-{projection-name}-emittedstreams (true/false)
+* `trackemittedstreams`: Write the name of the streams the projection is managing to a separate stream `$projections-{projection-name}-emittedstreams` (true/false)
 
 ### Manage Transient Projections
 
 Transient projections are sometimes called ad-hoc projections or queries. This type of projection will run until completion and automatically delete itself afterwards.
 
-| URI                                                | Description                  | HTTP verb |
-|:---------------------------------------------------|:-----------------------------|:----------|
-| `/projections/transient`                                           | Returns all known ad-hoc projections.      | GET       |
-| `/projections/transient?name={name}&type={type}&enabled={enabled}` | Create an ad-hoc projection (or query).    | POST      |
+| URI                                                                | Description                           | HTTP verb |
+|:-------------------------------------------------------------------|:--------------------------------------|:----------|
+| `/projections/transient`                                           | Returns all known ad-hoc projections. | GET       |
+| `/projections/transient?name={name}&type={type}&enabled={enabled}` | Create an ad-hoc projection or query. | POST      |
 
 #### Parameters
 
@@ -197,10 +197,10 @@ Transient projections are sometimes called ad-hoc projections or queries. This t
 
 OneTime projections run until completion and then stop. These are useful for periodically generating state or reports when you don't need the projection to be always running.
 
-| URI                                                | Description                  | HTTP verb |
-|:---------------------------------------------------|:-----------------------------|:----------|
-| `/projections/onetime`                             | Returns all known one-time projections.    | GET       |
-| `/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}&trackemittedstreams={trackemittedstreams}` | Create a one-time projection. | POST      |
+| URI                                                                                                                                              | Description                             | HTTP verb |
+|:-------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------------------------|:----------|
+| `/projections/onetime`                                                                                                                           | Returns all known one-time projections. | GET       |
+| `/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}&trackemittedstreams={trackemittedstreams}` | Create a one-time projection.           | POST      |
 
 #### Parameters
 
@@ -209,23 +209,23 @@ OneTime projections run until completion and then stop. These are useful for per
 * `enabled`: Enable the projection (true/false)
 * `checkpoints`: Enable checkpoints (true/false)
 * `emit`: Enable the ability for the projection to append to streams (true/false)
-* `trackemittedstreams`: Write the name of the streams the projection is managing to a separate stream. $projections-{projection-name}-emittedstreams (true/false)
+* `trackemittedstreams`: Write the name of the streams the projection is managing to a separate stream `$projections-{projection-name}-emittedstreams` (true/false)
 
 ### Manage a Projection
 
-| URI                                                | Description                  | HTTP verb |
-|:---------------------------------------------------|:-----------------------------|:----------|
-| `/projection/{name}`                               | Returns information for a projection.          | GET       |
-| `/projection/{name}/query?config={config}`         | Returns the definition query and if config is set to true, will return the configuration. | GET
-| `/projection/{name}/query?type={type}&emit={emit}` | Update a projection's query.                   | PUT       |
-| `/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}&deleteEmittedStreams={deleteEmittedStreams}` | Delete a projection, optionally delete the streams that were created as part of the projection. | DELETE    |
-| `/projection/{name}/statistics`                    | Returns detailed information for a projection. | GET       |
-| `/projection/{name}/state?partition={partition}`   | Query for the state of a projection.           | GET       |
-| `/projection/{name}/result?partition={partition}`  | Query for the result of a projection.          | GET       |
-| `/projection/{name}/command/enable?enableRunAs={enableRunAs}`  | Enable a projection.               | POST      |
-| `/projection/{name}/command/disable?enableRunAs={enableRunAs}` | Disable a projection.              | POST      |
-| `/projection/{name}/command/reset?enableRunAs={enableRunAs}` | Reset a projection. (This will re-emit events, streams that are written to from the projection will also be soft deleted). | POST      |
-| `/projection/{name}/command/abort?enableRunAs={enableRunAs}` | Abort a projection.                  | POST      |
+| URI                                                                                                                                                    | Description                                                                                                                | HTTP verb |
+|:-------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------|:----------|
+| `/projection/{name}`                                                                                                                                   | Returns information for a projection.                                                                                      | GET       |
+| `/projection/{name}/query?config={config}`                                                                                                             | Returns the definition query and if config is set to true, will return the configuration.                                  | GET       |
+| `/projection/{name}/query?type={type}&emit={emit}`                                                                                                     | Update a projection's query.                                                                                               | PUT       |
+| `/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}&deleteEmittedStreams={deleteEmittedStreams}` | Delete a projection, optionally delete the streams that were created as part of the projection.                            | DELETE    |
+| `/projection/{name}/statistics`                                                                                                                        | Returns detailed information for a projection.                                                                             | GET       |
+| `/projection/{name}/state?partition={partition}`                                                                                                       | Query for the state of a projection.                                                                                       | GET       |
+| `/projection/{name}/result?partition={partition}`                                                                                                      | Query for the result of a projection.                                                                                      | GET       |
+| `/projection/{name}/command/enable?enableRunAs={enableRunAs}`                                                                                          | Enable a projection.                                                                                                       | POST      |
+| `/projection/{name}/command/disable?enableRunAs={enableRunAs}`                                                                                         | Disable a projection.                                                                                                      | POST      |
+| `/projection/{name}/command/reset?enableRunAs={enableRunAs}`                                                                                           | Reset a projection. (This will re-emit events, streams that are written to from the projection will also be soft deleted). | POST      |
+| `/projection/{name}/command/abort?enableRunAs={enableRunAs}`                                                                                           | Abort a projection.                                                                                                        | POST      |
 
 #### Parameters
 
@@ -233,7 +233,7 @@ OneTime projections run until completion and then stop. These are useful for per
 * `config`: Return the definition of the projection (true/false)
 * `type`: JS or Native. (JavaScript or native. At this time, EventStoreDB only supports JavaScript)
 * `emit`: Allow the projection to write to streams (true/false)
-* `trackemittedstreams`: Write the name of the streams the projection is managing to a separate stream. $projections-{projection-name}-emittedstreams (true/false)
+* `trackemittedstreams`: Write the name of the streams the projection is managing to a separate stream `$projections-{projection-name}-emittedstreams` (true/false)
 * `name`: Name of the projection
 * `deleteStateStream`: Delete the state stream (true/false)
 * `deleteCheckpointStream`: Delete the checkpoint stream (true/false)
