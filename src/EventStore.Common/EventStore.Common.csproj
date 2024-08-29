@@ -32,6 +32,8 @@
 		<PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
 		<PackageReference Include="Serilog.Extensions.Logging" Version="3.1.0" />
 		<PackageReference Include="YamlDotnet" Version="12.0.1" />
+		<!-- upgrade because of transitive dependency vulnerability https://github.com/advisories/GHSA-447r-wph3-92pm -->
+		<PackageReference Include="System.Formats.Asn1" Version="6.0.1" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.Common.Utils\EventStore.Common.Utils.csproj" />

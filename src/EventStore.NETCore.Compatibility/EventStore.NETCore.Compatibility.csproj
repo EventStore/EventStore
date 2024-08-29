@@ -9,5 +9,7 @@
 		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="6.0.3" />
 		<PackageReference Include="System.Security.Cryptography.Xml" Version="6.0.1" />
 		<PackageReference Include="System.ServiceModel.Http" Version="4.10.0" />
+		<!-- upgrade because of transitive dependency vulnerability https://github.com/advisories/GHSA-447r-wph3-92pm -->
+		<PackageReference Include="System.Formats.Asn1" Version="6.0.1" />
 	</ItemGroup>
 </Project>
