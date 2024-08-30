@@ -8,6 +8,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Emitting;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using EventStore.Projections.Core.Services.Processing.Partitioning;
 using EventStore.Projections.Core.Services.Processing.Strategies;
 using EventStore.Projections.Core.Services.Processing.Subscriptions;
@@ -15,7 +16,7 @@ using EventStore.Projections.Core.Services.Processing.WorkItems;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing.Phases {
-	public abstract class EventSubscriptionBasedProjectionProcessingPhase : IProjectionPhaseCompleter,
+	public abstract partial class EventSubscriptionBasedProjectionProcessingPhase : IProjectionPhaseCompleter,
 		IProjectionPhaseCheckpointManager,
 		IHandle<EventReaderSubscriptionMessage.ProgressChanged>,
 		IHandle<EventReaderSubscriptionMessage.SubscriptionStarted>,
@@ -562,21 +563,6 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 			_processingQueue.SetIsRunning(state == PhaseState.Running);
 			if (starting)
 				NewCheckpointStarted(LastProcessedEventPosition);
-		}
-
-		class ProgressResultWriter : IProgressResultWriter {
-			private readonly EventSubscriptionBasedProjectionProcessingPhase _phase;
-			private readonly IResultWriter _resultWriter;
-
-			public ProgressResultWriter(EventSubscriptionBasedProjectionProcessingPhase phase,
-				IResultWriter resultWriter) {
-				_phase = phase;
-				_resultWriter = resultWriter;
-			}
-
-			public void WriteProgress(float progress) {
-				_resultWriter.WriteProgress(_phase._currentSubscriptionId, progress);
-			}
 		}
 	}
 }

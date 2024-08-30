@@ -10,10 +10,11 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Emitting;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using EventStore.Projections.Core.Services.Processing.Partitioning;
 
 namespace EventStore.Projections.Core.Services.Processing.MultiStream {
-	public class MultiStreamMultiOutputCheckpointManager : DefaultCheckpointManager, IEmittedStreamContainer {
+	public partial class MultiStreamMultiOutputCheckpointManager : DefaultCheckpointManager, IEmittedStreamContainer {
 		private readonly PositionTagger _positionTagger;
 		private CheckpointTag _lastOrderCheckpointTag; //TODO: use position tracker to ensure order?
 		private EmittedStream _orderStream;
@@ -206,23 +207,6 @@ namespace EventStore.Projections.Core.Services.Processing.MultiStream {
 		private void SetOrderStreamReadCompleted() {
 			_orderStreamReadingCompleted = true;
 			CheckAllEventsLoaded();
-		}
-
-		private class Item {
-			internal EventStore.Core.Data.ResolvedEvent _result;
-			private readonly CheckpointTag _tag;
-
-			public Item(CheckpointTag tag) {
-				_tag = tag;
-			}
-
-			public CheckpointTag Tag {
-				get { return _tag; }
-			}
-
-			public void SetLoadedEvent(EventStore.Core.Data.ResolvedEvent eventLinkPair) {
-				_result = eventLinkPair;
-			}
 		}
 
 		public void Handle(CoreProjectionProcessingMessage.EmittedStreamAwaiting message) {

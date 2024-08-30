@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
-namespace EventStore.Projections.Core.Services.Processing.Emitting {
+namespace EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents {
 	public class EmittedLinkTo : EmittedEvent {
 		private readonly string _targetStreamId;
 		private long? _eventNumber;

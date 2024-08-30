@@ -12,11 +12,12 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace EventStore.Projections.Core.Services.Processing.Emitting {
-	public class EmittedStream : IDisposable,
+	public partial class EmittedStream : IDisposable,
 		IHandle<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted> {
 		private readonly IODispatcher _ioDispatcher;
 		private readonly IPublisher _publisher;
@@ -63,72 +64,6 @@ namespace EventStore.Projections.Core.Services.Processing.Emitting {
 		private const int MinAttemptWarnThreshold = 5;
 		private Guid _pendingRequestCorrelationId;
 		private Random _random = new Random();
-
-		public class WriterConfiguration {
-			private readonly ClaimsPrincipal _writeAs;
-			private readonly int _maxWriteBatchLength;
-			private readonly ILogger _logger;
-
-			private readonly int? maxCount;
-			private readonly TimeSpan? maxAge;
-
-			private readonly IEmittedStreamsWriter _writer;
-
-			public class StreamMetadata {
-				private readonly int? _maxCount;
-				private readonly TimeSpan? _maxAge;
-
-				public StreamMetadata(int? maxCount = null, TimeSpan? maxAge = null) {
-					_maxCount = maxCount;
-					_maxAge = maxAge;
-				}
-
-				public int? MaxCount {
-					get { return _maxCount; }
-				}
-
-				public TimeSpan? MaxAge {
-					get { return _maxAge; }
-				}
-			}
-
-			public WriterConfiguration(
-				IEmittedStreamsWriter writer, StreamMetadata streamMetadata, ClaimsPrincipal writeAs,
-				int maxWriteBatchLength, ILogger logger = null) {
-				_writer = writer;
-				_writeAs = writeAs;
-				_maxWriteBatchLength = maxWriteBatchLength;
-				_logger = logger;
-				if (streamMetadata != null) {
-					this.maxCount = streamMetadata.MaxCount;
-					this.maxAge = streamMetadata.MaxAge;
-				}
-			}
-
-			public ClaimsPrincipal WriteAs {
-				get { return _writeAs; }
-			}
-
-			public int MaxWriteBatchLength {
-				get { return _maxWriteBatchLength; }
-			}
-
-			public ILogger Logger {
-				get { return _logger; }
-			}
-
-			public int? MaxCount {
-				get { return maxCount; }
-			}
-
-			public TimeSpan? MaxAge {
-				get { return maxAge; }
-			}
-
-			public IEmittedStreamsWriter Writer {
-				get { return _writer; }
-			}
-		}
 
 		public EmittedStream(
 			string streamId, WriterConfiguration writerConfiguration, ProjectionVersion projectionVersion,
@@ -779,49 +714,6 @@ namespace EventStore.Projections.Core.Services.Processing.Emitting {
 			if (!_awaitingReady)
 				throw new InvalidOperationException("AwaitingReady state required");
 			ProcessWrites();
-		}
-	}
-
-	class InvalidEmittedEventSequenceException : Exception {
-		public InvalidEmittedEventSequenceException(string message)
-			: base(message) {
-		}
-	}
-
-	interface IValidatedEmittedEvent {}
-
-	sealed class ValidEmittedEvent : IValidatedEmittedEvent {
-		public CheckpointTag Checkpoint { get; private set; }
-		public string EventType { get; private set; }
-		public long Revision { get; private set; }
-
-		public ValidEmittedEvent(CheckpointTag checkpoint, string eventType, long revision) {
-			Checkpoint = checkpoint;
-			EventType = eventType;
-			Revision = revision;
-		}
-	}
-
-	sealed class IgnoredEmittedEvent : IValidatedEmittedEvent {
-	}
-
-	sealed class ErroredEmittedEvent : IValidatedEmittedEvent {
-		public Exception Exception { get; private set; }
-
-		public ErroredEmittedEvent(InvalidEmittedEventSequenceException exception) {
-			Exception = exception;
-		}
-	}
-
-	sealed class EmittedEventResolutionNeeded : IValidatedEmittedEvent {
-		public string StreamId { get; }
-		public long Revision { get; }
-		public Tuple<CheckpointTag, string, long> TopCommitted { get; }
-
-		public EmittedEventResolutionNeeded(string streamId, long revision, Tuple<CheckpointTag, string, long> topCommitted) {
-			StreamId = streamId;
-			Revision = revision;
-			TopCommitted = topCommitted;
 		}
 	}
 }

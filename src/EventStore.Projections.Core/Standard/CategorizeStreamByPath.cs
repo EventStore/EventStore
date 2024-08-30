@@ -5,6 +5,7 @@ using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Emitting;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 
 namespace EventStore.Projections.Core.Standard {
 	public class CategorizeStreamByPath : IProjectionStateHandler {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 
-namespace EventStore.Projections.Core.Services.Processing.Emitting {
+namespace EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents {
 	public class ExtraMetaData {
 		private readonly Dictionary<string, string> _metadata;
 

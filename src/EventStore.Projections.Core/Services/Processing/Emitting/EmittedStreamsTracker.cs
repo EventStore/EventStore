@@ -6,14 +6,10 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Settings;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing.Emitting {
-	public interface IEmittedStreamsTracker {
-		void TrackEmittedStream(EmittedEvent[] emittedEvents);
-		void Initialize();
-	}
-
 	public class EmittedStreamsTracker : IEmittedStreamsTracker {
 		private static readonly ILogger Log = Serilog.Log.ForContext<EmittedStreamsTracker>();
 		private readonly IODispatcher _ioDispatcher;

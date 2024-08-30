@@ -1,17 +1,7 @@
 using System;
-using EventStore.Projections.Core.Services.Processing.Emitting;
 using EventStore.Projections.Core.Services.Processing.Partitioning;
 
 namespace EventStore.Projections.Core.Services.Processing.Checkpointing {
-	public interface ICoreProjectionCheckpointReader {
-		void BeginLoadState();
-		void Initialize();
-	}
-
-	public interface IEmittedEventWriter {
-		void EventsEmitted(EmittedEventEnvelope[] scheduledWrites, Guid causedBy, string correlationId);
-	}
-
 	public interface ICoreProjectionCheckpointManager {
 		void Initialize();
 		void Start(CheckpointTag checkpointTag, PartitionState rootPartitionState);

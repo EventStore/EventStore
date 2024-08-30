@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics.Contracts;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing.Emitting;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using EventStore.Projections.Core.Services.Processing.Partitioning;
 using Serilog;
 using ILogger = Serilog.ILogger;

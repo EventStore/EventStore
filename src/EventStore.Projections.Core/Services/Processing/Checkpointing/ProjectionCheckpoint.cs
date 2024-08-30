@@ -8,6 +8,7 @@ using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Common;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing.Emitting;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing.Checkpointing {

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
-namespace EventStore.Projections.Core.Services.Processing.Emitting {
+namespace EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents {
 	public abstract class EmittedEvent {
 		public readonly string StreamId;
 		public readonly Guid EventId;

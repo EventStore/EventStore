@@ -5,6 +5,7 @@ using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Emitting;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using EventStore.Projections.Core.Services.Processing.Partitioning;
 using EventStore.Projections.Core.Services.Processing.Strategies;
 using EventStore.Projections.Core.Services.Processing.WorkItems;

@@ -775,21 +775,4 @@ namespace EventStore.Projections.Core.Services.Processing.Checkpointing {
 				throw new Exception("Invalid JSON");
 		}
 	}
-
-
-	public class CheckpointTagJsonConverter : JsonConverter {
-		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) {
-			var checkpointTag = (CheckpointTag)value;
-			checkpointTag.WriteTo(default(ProjectionVersion), null, writer);
-		}
-
-		public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
-			JsonSerializer serializer) {
-			return CheckpointTag.FromJson(reader, default(ProjectionVersion), skipStartObject: true).Tag;
-		}
-
-		public override bool CanConvert(Type objectType) {
-			return objectType == typeof(CheckpointTag);
-		}
-	}
 }

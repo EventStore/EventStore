@@ -8,10 +8,6 @@ using EventStore.Core.Services.UserManagement;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing.Emitting {
-	public interface IEmittedStreamsDeleter {
-		void DeleteEmittedStreams(Action onEmittedStreamsDeleted);
-	}
-
 	public class EmittedStreamsDeleter : IEmittedStreamsDeleter {
 		private static readonly ILogger Log = Serilog.Log.ForContext<EmittedStreamsDeleter>();
 		private readonly IODispatcher _ioDispatcher;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using Newtonsoft.Json;
 
-namespace EventStore.Projections.Core.Services.Processing.Emitting {
+namespace EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents {
 	public class EmittedLinkToWithRecategorization : EmittedEvent {
 		private readonly string _target;
 		private readonly string _originalStreamId;

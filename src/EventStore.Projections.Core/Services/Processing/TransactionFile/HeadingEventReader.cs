@@ -5,56 +5,12 @@ using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing.Subscriptions;
 
-namespace EventStore.Projections.Core.Services.Processing.AllStream {
-	public class HeadingEventReader {
+namespace EventStore.Projections.Core.Services.Processing.TransactionFile {
+	public partial class HeadingEventReader {
 		private IEventReader _headEventReader;
 		private TFPos _subscribeFromPosition = new TFPos(long.MaxValue, long.MaxValue);
 
-		private abstract class Item {
-			public readonly TFPos Position;
-
-			protected Item(TFPos position) {
-				Position = position;
-			}
-
-			public abstract void Handle(IReaderSubscription subscription);
-		}
-
-		private class CommittedEventItem : Item {
-			public readonly ReaderSubscriptionMessage.CommittedEventDistributed Message;
-
-			public CommittedEventItem(ReaderSubscriptionMessage.CommittedEventDistributed message)
-				: base(message.Data.Position) {
-				Message = message;
-			}
-
-			public override void Handle(IReaderSubscription subscription) {
-				subscription.Handle(Message);
-			}
-
-			public override string ToString() {
-				return string.Format(
-					"{0} : {2}@{1}",
-					Message.Data.EventType,
-					Message.Data.PositionStreamId,
-					Message.Data.PositionSequenceNumber);
-			}
-		}
-
-		private class PartitionDeletedItem : Item {
-			public readonly ReaderSubscriptionMessage.EventReaderPartitionDeleted Message;
-
-			public PartitionDeletedItem(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
-				: base(message.DeleteLinkOrEventPosition.Value) {
-				Message = message;
-			}
-
-			public override void Handle(IReaderSubscription subscription) {
-				subscription.Handle(Message);
-			}
-		}
-
-		private readonly Queue<Item> _lastMessages = new Queue<Item>();
+		private readonly Queue<HeadingEventReader.Item> _lastMessages = new Queue<HeadingEventReader.Item>();
 
 		private readonly int _eventCacheSize;
 
@@ -179,7 +135,7 @@ namespace EventStore.Projections.Core.Services.Processing.AllStream {
 					try {
 						m.Handle(subscription);
 					} catch (Exception ex) {
-						var item = m as CommittedEventItem;
+						var item = m as HeadingEventReader.CommittedEventItem;
 						string message;
 						if (item != null) {
 							message = string.Format(
@@ -226,12 +182,12 @@ namespace EventStore.Projections.Core.Services.Processing.AllStream {
 		}
 
 		private void CacheRecentMessage(ReaderSubscriptionMessage.CommittedEventDistributed message) {
-			_lastMessages.Enqueue(new CommittedEventItem(message));
+			_lastMessages.Enqueue(new HeadingEventReader.CommittedEventItem(message));
 			CleanUpCache();
 		}
 
 		private void CacheRecentMessage(ReaderSubscriptionMessage.EventReaderPartitionDeleted message) {
-			_lastMessages.Enqueue(new PartitionDeletedItem(message));
+			_lastMessages.Enqueue(new HeadingEventReader.PartitionDeletedItem(message));
 			CleanUpCache();
 		}
 

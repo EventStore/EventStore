@@ -5,14 +5,6 @@ using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Emitting;
 
 namespace EventStore.Projections.Core.Services.Processing.Phases {
-	public enum PhaseState {
-		Unknown,
-		Stopped,
-		Starting,
-		Running,
-	}
-
-
 	public interface IProjectionProcessingPhase : IDisposable,
 		IHandle<CoreProjectionManagementMessage.GetState>,
 		IHandle<CoreProjectionManagementMessage.GetResult>,
