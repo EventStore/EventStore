@@ -4,6 +4,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Standard;
 using Newtonsoft.Json.Linq;
 

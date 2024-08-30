@@ -3,6 +3,9 @@ using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.AllStream;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Emitting;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
@@ -19,7 +22,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
 
 		protected override void Given() {
 			AllWritesQueueUp();
-			//NOTE: it is possible for a batch of events to be partially written if it contains links 
+			//NOTE: it is possible for a batch of events to be partially written if it contains links
 			ExistingEvent("test_stream", "type1", @"{""c"": 100, ""p"": 50}", "data");
 			ExistingEvent("test_stream", "type2", @"{""c"": 100, ""p"": 50}", "data");
 		}

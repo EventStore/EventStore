@@ -4,6 +4,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public abstract class EventReader : IEventReader {

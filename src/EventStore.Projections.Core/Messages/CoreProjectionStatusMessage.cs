@@ -2,6 +2,7 @@ using System;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class CoreProjectionStatusMessage {
@@ -139,7 +140,7 @@ namespace EventStore.Projections.Core.Messages {
 				: base(projectionId) {
 			}
 		}
-		
+
 		[DerivedMessage(ProjectionMessage.CoreStatus)]
 		public partial class Stopped : CoreProjectionStatusMessageBase {
 			private readonly bool _completed;

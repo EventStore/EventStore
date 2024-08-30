@@ -4,6 +4,9 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Strategies;
+using EventStore.Projections.Core.Services.Processing.Subscriptions;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader {
 	public class FakeReaderSubscription : IReaderSubscription {

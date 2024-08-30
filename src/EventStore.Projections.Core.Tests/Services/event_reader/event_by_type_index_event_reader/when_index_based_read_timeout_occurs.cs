@@ -10,6 +10,7 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests;
+using EventStore.Projections.Core.Services.Processing.EventByType;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 

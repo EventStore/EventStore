@@ -10,6 +10,7 @@ using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 using System.Linq;
 using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing.SingleStream;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]

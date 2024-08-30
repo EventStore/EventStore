@@ -5,6 +5,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.AllStream;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader {

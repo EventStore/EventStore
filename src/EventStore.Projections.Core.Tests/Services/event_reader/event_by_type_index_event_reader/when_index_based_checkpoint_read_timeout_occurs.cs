@@ -10,6 +10,7 @@ using EventStore.Common.Utils;
 using NUnit.Framework;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests;
+using EventStore.Projections.Core.Services.Processing.EventByType;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_event_reader {

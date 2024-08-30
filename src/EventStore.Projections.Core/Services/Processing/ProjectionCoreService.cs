@@ -10,6 +10,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
+using EventStore.Projections.Core.Services.Processing.Strategies;
 using Serilog;
 
 namespace EventStore.Projections.Core.Services.Processing {

@@ -13,6 +13,8 @@ using System.Text.Json;
 using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Emitting;
 using Jint;
 using Jint.Native;
 using Jint.Native.Array;

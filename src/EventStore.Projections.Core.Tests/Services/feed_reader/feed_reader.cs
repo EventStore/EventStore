@@ -14,6 +14,7 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System.Linq;
 using EventStore.Core.Tests;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.feed_reader {

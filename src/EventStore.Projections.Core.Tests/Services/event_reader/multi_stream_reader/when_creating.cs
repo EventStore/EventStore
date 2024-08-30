@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.MultiStream;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;

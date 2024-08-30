@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Phases;
+using EventStore.Projections.Core.Services.Processing.WorkItems;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager {
 	public class FakeCoreProjection : ICoreProjection,

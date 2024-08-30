@@ -1,4 +1,6 @@
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.SingleStream;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.position_tagging.stream_position_tagger {
@@ -19,7 +21,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.stream_pos
 			_tag = tracker.LastTag;
 			_tagger = new StreamPositionTagger(0, "stream1");
 			_positionTracker = new PositionTracker(_tagger);
-			// when 
+			// when
 
 			_positionTracker.UpdateByCheckpointTagInitial(_tag);
 		}

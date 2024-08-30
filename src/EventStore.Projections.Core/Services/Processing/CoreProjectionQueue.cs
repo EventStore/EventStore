@@ -1,6 +1,8 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.WorkItems;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class CoreProjectionQueue {

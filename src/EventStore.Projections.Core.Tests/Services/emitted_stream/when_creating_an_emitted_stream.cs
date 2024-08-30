@@ -3,6 +3,9 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.AllStream;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Emitting;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 

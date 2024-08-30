@@ -8,6 +8,7 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_system.updating_projections {

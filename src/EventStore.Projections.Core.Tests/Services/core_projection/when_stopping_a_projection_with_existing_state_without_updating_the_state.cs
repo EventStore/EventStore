@@ -9,6 +9,7 @@ using EventStore.Projections.Core.Services.Processing;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]

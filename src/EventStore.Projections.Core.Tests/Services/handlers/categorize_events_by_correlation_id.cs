@@ -2,6 +2,8 @@
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Emitting;
 using EventStore.Projections.Core.Standard;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
