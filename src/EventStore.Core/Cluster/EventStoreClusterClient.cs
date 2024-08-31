@@ -1,22 +1,19 @@
 ﻿using System;
 using System.Net;
-using System.Net.Http;
-using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Metrics;
-using EventStore.Core.Settings;
+using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
 using Grpc.Net.Client;
 using Serilog.Extensions.Logging;
 
 namespace EventStore.Core.Cluster {
-	
+
 	public partial class EventStoreClusterClient : IDisposable {
 		private readonly EventStore.Cluster.Gossip.GossipClient _gossipClient;
 		private readonly EventStore.Cluster.Elections.ElectionsClient _electionsClient;
-		
+
 		private readonly GrpcChannel _channel;
 		private readonly IPublisher _bus;
 		private readonly string _clusterDns;
@@ -25,44 +22,24 @@ namespace EventStore.Core.Cluster {
 
 		public bool Disposed { get; private set; }
 
-		public EventStoreClusterClient(string uriScheme, EndPoint endpoint, string clusterDns,
-			IPublisher bus, CertificateDelegates.ServerCertificateValidator serverCertValidator,
-			Func<X509Certificate> clientCertificateSelector,
+		public EventStoreClusterClient(
+			IPublisher bus,
+			string uriScheme,
+			EndPoint nodeEndPoint,
+			INodeHttpClientFactory nodeHttpClientFactory,
+			string clusterDns,
 			IDurationTracker gossipSendTracker,
 			IDurationTracker gossipGetTracker) {
 
-			HttpMessageHandler httpMessageHandler = null;
 			_clusterDns = clusterDns;
-			if (uriScheme == Uri.UriSchemeHttps){
-				var socketsHttpHandler = new SocketsHttpHandler {
-					SslOptions = {
-						CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-						RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => {
-							var (isValid, error) = serverCertValidator(certificate, chain, errors, endpoint.GetOtherNames());
-							if (!isValid && error != null) {
-								Log.Error("Server certificate validation error: {e}", error);
-							}
 
-							return isValid;
-						},
-						LocalCertificateSelectionCallback = delegate {
-							return clientCertificateSelector();
-						}
-					},
-					PooledConnectionLifetime = ESConsts.HttpClientConnectionLifeTime
-				};
+			var httpClient = nodeHttpClientFactory.CreateHttpClient(nodeEndPoint.GetOtherNames());
+			httpClient.Timeout = Timeout.InfiniteTimeSpan;
+			httpClient.DefaultRequestVersion = new Version(2, 0);
 
-				httpMessageHandler = socketsHttpHandler;
-			} else if (uriScheme == Uri.UriSchemeHttp) {
-				httpMessageHandler = new SocketsHttpHandler();
-			}
-
-			var address = new UriBuilder(uriScheme, endpoint.GetHost(), endpoint.GetPort()).Uri;
+			var address = new UriBuilder(uriScheme, nodeEndPoint.GetHost(), nodeEndPoint.GetPort()).Uri;
 			_channel = GrpcChannel.ForAddress(address, new GrpcChannelOptions {
-				HttpClient = new HttpClient(httpMessageHandler) {
-					Timeout = Timeout.InfiniteTimeSpan,
-					DefaultRequestVersion = new Version(2, 0)
-				},
+				HttpClient = httpClient,
 				LoggerFactory = new SerilogLoggerFactory()
 			});
 			var callInvoker = _channel.CreateCallInvoker();

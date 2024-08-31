@@ -39,6 +39,9 @@ namespace EventStore.Core.Cluster {
 			public int ExternalTcpPort { get; set; }
 			public int ExternalSecureTcpPort { get; set; }
 
+			public string InternalHttpEndPointIp { get; set; }
+			public int InternalHttpEndPointPort { get; set; }
+
 			public string HttpEndPointIp { get; set; }
 			public int HttpEndPointPort { get; set; }
 
@@ -70,6 +73,9 @@ namespace EventStore.Core.Cluster {
 					: member.InternalTcpEndPoint.GetHost();
 				InternalSecureTcpPort = member.InternalSecureTcpEndPoint?.GetPort() ?? 0;
 				InternalTcpPort = member.InternalTcpEndPoint?.GetPort() ?? 0;
+
+				InternalHttpEndPointIp = member.HttpEndPoint.GetHost();
+				InternalHttpEndPointPort = member.HttpEndPoint.GetPort();
 
 				HttpEndPointIp = string.IsNullOrEmpty(member.AdvertiseHostToClientAs)
 					? member.HttpEndPoint.GetHost()
@@ -109,6 +115,7 @@ namespace EventStore.Core.Cluster {
 					$"InstanceId: {InstanceId:B}, TimeStamp: {TimeStamp:yyyy-MM-dd HH:mm:ss.fff}, State: {State}, IsAlive: {IsAlive}, " +
 					$"InternalTcpIp: {InternalTcpIp}, InternalTcpPort: {InternalTcpPort}, InternalSecureTcpPort: {InternalSecureTcpPort}, " +
 					$"ExternalTcpIp: {ExternalTcpIp}, ExternalTcpPort: {ExternalTcpPort}, ExternalSecureTcpPort: {ExternalSecureTcpPort}, " +
+					$"InternalHttpEndPointIp: {InternalHttpEndPointIp}, InternalHttpEndPointPort: {InternalHttpEndPointPort}, " +
 					$"HttpEndPointIp: {HttpEndPointIp}, HttpEndPointPort: {HttpEndPointPort}, " +
 					$"LastCommitPosition: {LastCommitPosition}, WriterCheckpoint: {WriterCheckpoint}, ChaserCheckpoint: {ChaserCheckpoint}, " +
 					$"EpochPosition: {EpochPosition}, EpochNumber: {EpochNumber}, EpochId: {EpochId:B}, NodePriority: {NodePriority}, " +

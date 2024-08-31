@@ -56,6 +56,7 @@ using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.PeriodicLogs;
+using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
 using EventStore.Core.Synchronization;
 using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -213,6 +214,7 @@ namespace EventStore.Core {
 		private readonly CertificateDelegates.ServerCertificateValidator _externalServerCertificateValidator;
 		private readonly CertificateProvider _certificateProvider;
 		private readonly ClusterVNodeStartup<TStreamId> _startup;
+		private readonly INodeHttpClientFactory _nodeHttpClientFactory;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
 		private int _stopCalled;
@@ -533,12 +535,19 @@ namespace EventStore.Core {
 
 			_controller.SetMainQueue(_mainQueue);
 
+			var uriScheme = options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps;
+			var clusterDns = options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null;
+
+			_nodeHttpClientFactory = new NodeHttpClientFactory(
+				uriScheme,
+				_internalServerCertificateValidator,
+				_certificateSelector);
+
 			_eventStoreClusterClientCache = new EventStoreClusterClientCache(_mainQueue,
 				(endpoint, publisher) =>
 					new EventStoreClusterClient(
-						options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps,
-						endpoint, options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
-						publisher, _internalServerCertificateValidator, _certificateSelector,
+						publisher, uriScheme,
+						endpoint, _nodeHttpClientFactory, clusterDns,
 						gossipSendTracker: trackers.GossipTrackers.PushToPeer,
 						gossipGetTracker: trackers.GossipTrackers.PullFromPeer));
 
@@ -1566,7 +1575,8 @@ namespace EventStore.Core {
 					.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
 					.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates,
 							X509Certificate2Collection Roots)>>
-						(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()));
+						(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()))
+					.AddSingleton(_nodeHttpClientFactory);
 
 				configureAdditionalNodeServices?.Invoke(services);
 				return services;
