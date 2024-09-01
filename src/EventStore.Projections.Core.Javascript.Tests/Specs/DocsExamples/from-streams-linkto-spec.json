@@ -1,0 +1,75 @@
+{
+	"projection": "from-streams-linkto",
+	"input": [
+		{
+			"streamId": "website-enquiries",
+			"events": [
+				{
+					"eventType": "EnquiryPlaced",
+					"data": {
+						"enquiryBody": "<Question>",
+						"customerId": "1"
+					},
+					"metadata": {},
+					"initializedPartitions": [""],
+					"states": [
+						{
+							"partition": "",
+							"state": {}
+						}
+					]
+				},
+				{
+					"eventType": "EnquiryAnswered",
+					"metadata": {},
+					"data": {
+						"answerBody": "<Answer>",
+						"customerId": "1"
+					},
+					"states": [{ "partition": "", "state": {} }]
+				}
+			]
+		},
+		{
+			"streamId": "email-enquiries",
+			"events": [
+				{
+					"eventType": "EnquiryPlaced",
+					"data": {
+						"enquiryBody": "<Question>",
+						"customerId": "2"
+					},
+					"metadata": {},
+					"initializedPartitions": [""],
+					"states": [
+						{
+							"partition": "",
+							"state": {}
+						}
+					]
+				}
+			]
+		}
+	],
+	"output": {
+		"config": {
+			"categories": [],
+			"streams": ["website-enquiries", "email-enquiries"],
+			"events": [],
+			"allEvents": true,
+			"partitioned": false,
+			"definesStateTransform": false,
+			"handlesDeletedNotifications": false,
+			"producesResults": false,
+			"definesFold": true,
+			"$includeLinks": false,
+			"reorderEvents": false,
+			"processingLag": 0,
+			"biState": false
+		},
+		"emitted": {
+			"customer-1": ["0@website-enquiries", "0@email-enquiries"],
+			"customer-2": ["1@website-enquiries"]
+		}
+	}
+}
