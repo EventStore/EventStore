@@ -74,29 +74,12 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 					definition = runner.GetSourceDefinition();
 				});
 
-				yield return For($"{projection} qs.AllStreams", () => Assert.Equal(expectedDefinition.AllStreams, definition.AllStreams));
-				yield return For($"{projection} qs.Categories", () => Assert.Equal(expectedDefinition.Categories, definition.Categories));
-				yield return For($"{projection} qs.Streams", () => Assert.Equal(expectedDefinition.Streams, definition.Streams));
-				yield return For($"{projection} qs.AllEvents", () => Assert.Equal(expectedDefinition.AllEvents, definition.AllEvents));
-				yield return For($"{projection} qs.Events", () => Assert.Equal(expectedDefinition.Events, definition.Events));
-				yield return For($"{projection} qs.ByStreams", () => Assert.Equal(expectedDefinition.ByStreams, definition.ByStreams));
-				yield return For($"{projection} qs.ByCustomPartitions", () => Assert.Equal(expectedDefinition.ByCustomPartitions, definition.ByCustomPartitions));
-				yield return For($"{projection} qs.DefinesStateTransform", () => Assert.Equal(expectedDefinition.DefinesStateTransform, definition.DefinesStateTransform));
-				yield return For($"{projection} qs.DefinesFold", () => Assert.Equal(expectedDefinition.DefinesFold, definition.DefinesFold));
-				yield return For($"{projection} qs.HandlesDeletedNotifications", () => Assert.Equal(expectedDefinition.HandlesDeletedNotifications, definition.HandlesDeletedNotifications));
-				yield return For($"{projection} qs.ProducesResults", () => Assert.Equal(expectedDefinition.ProducesResults, definition.ProducesResults));
-				yield return For($"{projection} qs.IsBiState", () => Assert.Equal(expectedDefinition.IsBiState, definition.IsBiState));
-				yield return For($"{projection} qs.IncludeLinksOption", () => Assert.Equal(expectedDefinition.IncludeLinksOption, definition.IncludeLinksOption));
-				yield return For($"{projection} qs.ResultStreamNameOption", () => Assert.Equal(expectedDefinition.ResultStreamNameOption, definition.ResultStreamNameOption));
-				yield return For($"{projection} qs.PartitionResultStreamNamePatternOption", () => Assert.Equal(expectedDefinition.PartitionResultStreamNamePatternOption,
-					definition.PartitionResultStreamNamePatternOption));
-				yield return For($"{projection} qs.ReorderEventsOption", () => Assert.Equal(expectedDefinition.ReorderEventsOption, definition.ReorderEventsOption));
-				yield return For($"{projection} qs.ProcessingLagOption", () => Assert.Equal(expectedDefinition.ProcessingLagOption, definition.ProcessingLagOption));
-				yield return For($"{projection} qs.LimitingCommitPosition", () => Assert.Equal(expectedDefinition.LimitingCommitPosition, definition.LimitingCommitPosition));
+				foreach (var p in CompareProjectionConfig()) yield return p;
+
+				List<EmittedEventEnvelope> actualEmittedEvents = new();
 				var partitionedState = new Dictionary<string, string>();
 				var sharedStateInitialized = false;
 				var revision = new Dictionary<string, long>();
-				List<EmittedEventEnvelope> actualEmittedEvents = new();
 
 				for (int i = 0; i < sequences.Count; i++) {
 					var sequence = sequences[i];
@@ -238,24 +221,7 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 
 				}
 
-				if (expectedEmittedEvents.Count == 0) {
-					yield return For("Should have no emitted events", () => {
-						Assert.Empty(actualEmittedEvents);
-					});
-				} else {
-					foreach (var emitted in expectedEmittedEvents) {
-						yield return For(
-							$"Expected event {emitted.StreamId} {emitted.Type} {(emitted.Type == "$>" ? emitted.Data : "")} was emitted",
-							() => {
-								var actualEmittedEventsSortedJsonData = actualEmittedEvents.Select(e =>
-									e.Event.EventType == "$>"
-										? e.Event.Data
-										: GetSortedJsonObject(JsonDocument.Parse(e.Event.Data).RootElement).ToJsonString()).ToList();
-
-								Assert.Contains(actualEmittedEventsSortedJsonData, actualData => actualData == emitted.Data);
-							});
-					}
-				}
+				foreach (var testSpec in CompareEmittedEvents()) yield return testSpec;
 
 				object[] For(string name, Action a) {
 					return new object[]{ new TestDefinition(Name(name),_ => {
@@ -275,6 +241,57 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 					if (name.StartsWith(projection!))
 						return name;
 					return $"{projection} {name}";
+				}
+
+				List<string> GetActualEmittedEventsJsonData(List<EmittedEventEnvelope> emittedEventEnvelopes)
+				{
+					var actualEmittedEventsSortedJsonData = emittedEventEnvelopes.Select(e =>
+						e.Event.EventType == "$>"
+							? e.Event.Data
+							: GetSortedJsonObject(JsonDocument.Parse(e.Event.Data).RootElement).ToJsonString()).ToList();
+					return actualEmittedEventsSortedJsonData;
+				}
+
+				IEnumerable<object[]> CompareEmittedEvents()
+				{
+					if (expectedEmittedEvents.Count == 0) {
+						yield return For("Should have no emitted events", () => {
+							Assert.Empty(actualEmittedEvents);
+						});
+					} else {
+						foreach (var emitted in expectedEmittedEvents) {
+							yield return For(
+								$"Expected event {emitted.StreamId} {emitted.Type} {(emitted.Type == "$>" ? emitted.Data : "")} was emitted",
+								() => {
+									var actualEmittedEventsSortedJsonData = GetActualEmittedEventsJsonData(actualEmittedEvents);
+
+									Assert.Contains(actualEmittedEventsSortedJsonData, actualData => actualData == emitted.Data);
+								});
+						}
+					}
+				}
+
+				IEnumerable<object[]> CompareProjectionConfig()
+				{
+					yield return For($"{projection} qs.AllStreams", () => Assert.Equal(expectedDefinition.AllStreams, definition.AllStreams));
+					yield return For($"{projection} qs.Categories", () => Assert.Equal(expectedDefinition.Categories, definition.Categories));
+					yield return For($"{projection} qs.Streams", () => Assert.Equal(expectedDefinition.Streams, definition.Streams));
+					yield return For($"{projection} qs.AllEvents", () => Assert.Equal(expectedDefinition.AllEvents, definition.AllEvents));
+					yield return For($"{projection} qs.Events", () => Assert.Equal(expectedDefinition.Events, definition.Events));
+					yield return For($"{projection} qs.ByStreams", () => Assert.Equal(expectedDefinition.ByStreams, definition.ByStreams));
+					yield return For($"{projection} qs.ByCustomPartitions", () => Assert.Equal(expectedDefinition.ByCustomPartitions, definition.ByCustomPartitions));
+					yield return For($"{projection} qs.DefinesStateTransform", () => Assert.Equal(expectedDefinition.DefinesStateTransform, definition.DefinesStateTransform));
+					yield return For($"{projection} qs.DefinesFold", () => Assert.Equal(expectedDefinition.DefinesFold, definition.DefinesFold));
+					yield return For($"{projection} qs.HandlesDeletedNotifications", () => Assert.Equal(expectedDefinition.HandlesDeletedNotifications, definition.HandlesDeletedNotifications));
+					yield return For($"{projection} qs.ProducesResults", () => Assert.Equal(expectedDefinition.ProducesResults, definition.ProducesResults));
+					yield return For($"{projection} qs.IsBiState", () => Assert.Equal(expectedDefinition.IsBiState, definition.IsBiState));
+					yield return For($"{projection} qs.IncludeLinksOption", () => Assert.Equal(expectedDefinition.IncludeLinksOption, definition.IncludeLinksOption));
+					yield return For($"{projection} qs.ResultStreamNameOption", () => Assert.Equal(expectedDefinition.ResultStreamNameOption, definition.ResultStreamNameOption));
+					yield return For($"{projection} qs.PartitionResultStreamNamePatternOption", () => Assert.Equal(expectedDefinition.PartitionResultStreamNamePatternOption,
+						definition.PartitionResultStreamNamePatternOption));
+					yield return For($"{projection} qs.ReorderEventsOption", () => Assert.Equal(expectedDefinition.ReorderEventsOption, definition.ReorderEventsOption));
+					yield return For($"{projection} qs.ProcessingLagOption", () => Assert.Equal(expectedDefinition.ProcessingLagOption, definition.ProcessingLagOption));
+					yield return For($"{projection} qs.LimitingCommitPosition", () => Assert.Equal(expectedDefinition.LimitingCommitPosition, definition.LimitingCommitPosition));
 				}
 			}
 
