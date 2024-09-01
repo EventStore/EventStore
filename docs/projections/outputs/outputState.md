@@ -9,7 +9,7 @@ If the projection is running in `OneTime` mode, the projection will create a sin
 ## Syntax
 
 ```js
-outputState()
+.outputState()
 ```
 
 ### Usage
@@ -40,7 +40,7 @@ None.
 
 [transformBy](../transformations/transformBy.md)
 
-[filterBy](../outputs/filterBy.md)
+[filterBy](../transformations/filterBy.md)
 
 ### Chains to
 

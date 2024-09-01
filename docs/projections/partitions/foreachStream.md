@@ -27,6 +27,14 @@ fromCategory("account")
 
 ### Arguments
 
+None.
+
+### Chains from
+
+[fromAll](../selectors/fromAll.md)
+
+[fromCategory](../selectors/fromCategory.md)
+
 ### Chains to
 
 [when](../filters/when.md)

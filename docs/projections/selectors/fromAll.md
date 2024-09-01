@@ -19,6 +19,10 @@ fromAll()
 
 None.
 
+### Chains from
+
+None.
+
 ### Chains to
 
 [partitionBy](../transformations/partitionBy.md)

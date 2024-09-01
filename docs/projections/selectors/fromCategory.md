@@ -25,6 +25,10 @@ fromCategory("user")
 
 Name of the category.
 
+### Chains from
+
+None.
+
 ### Chains to
 
 [partitionBy](../transformations/partitionBy.md)
@@ -40,15 +44,17 @@ Name of the category.
 ### Count the number of deactivated users
 
 ```js
-fromCategory("user").when({
-  $init: function () {
-    return { numDeactivatedUsers: 0 }
-  },
-  DeactivateUser: function (state, event) {
-    return { numDeactivatedUsers: state.numDeactivatedUsers + 1 }
-  },
-  ReactivateUser: function (state, event) {
-    return { numDeactivatedUsers: state.numDeactivatedUsers - 1 }
-  },
-})
+fromCategory("user")
+  .when({
+    $init: function () {
+      return { numDeactivatedUsers: 0 }
+    },
+    UserDeactivated: function (state, event) {
+      return { numDeactivatedUsers: state.numDeactivatedUsers + 1 }
+    },
+    UserReactivated: function (state, event) {
+      return { numDeactivatedUsers: state.numDeactivatedUsers - 1 }
+    },
+  })
+  .outputState()
 ```

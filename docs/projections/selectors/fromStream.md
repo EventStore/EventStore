@@ -11,7 +11,7 @@ fromStream(streamId)
 ### Usage
 
 ```js
-fromStream("user-1")
+fromStream("customer-1")
 ```
 
 ### Arguments
@@ -20,22 +20,29 @@ fromStream("user-1")
 
 ID of the stream used as input.
 
+### Chains from
+
+None.
+
 ### Chains to
 
 [partitionBy](../transformations/partitionBy.md)
 
-[when](../filters/when.md)
+[when](../when.md)
 
 [outputState](../outputs/outputState.md)
 
 ## Examples
 
-### Linking to events from one stream to another
+### Count events in a stream
 
 ```js
-fromStream("user-1").when({
+fromStream("customer-1").when({
+  $init: function () {
+    return { count: 0 }
+  },
   $any: function (state, event) {
-    linkTo("all-users", event, {})
+    return { count: state.count + 1 }
   },
 })
 ```

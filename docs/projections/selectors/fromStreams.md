@@ -20,11 +20,15 @@ fromStreams(["website-enquiries", "email-enquiries"])
 
 IDs of the streams used as input.
 
+### Chains from
+
+None.
+
 ### Chains to
 
-[partitionBy](../transformations/partitionBy.md)
+[partitionBy](../partitions/partitionBy.md)
 
-[when](../filters/when.md)
+[when](../when.md)
 
 [outputState](../outputs/outputState.md)
 
@@ -46,7 +50,7 @@ fromStreams(["website-enquiries", "email-enquiries"]).when({
 
     emit(
       `customer-${event.data.customerId}`,
-      event.type,
+      event.eventType,
       emittedEventData,
       event.metadata
     )
