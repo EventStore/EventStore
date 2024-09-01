@@ -55,7 +55,7 @@ An object whose properties contain functions which process the incoming events.
 
 [transformBy](../transformations/transformBy.md)
 
-[filterBy](./filterBy.md)
+[filterBy](../transformations/filterBy.md)
 
 [outputTo](../outputs/outputTo.md)
 
