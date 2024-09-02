@@ -1,12 +1,13 @@
 using System;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class EventReaderSubscriptionMessage {
 		/// <summary>
-		/// A CheckpointSuggested message is sent to core projection 
-		/// to allow bookmarking a position that can be used to 
+		/// A CheckpointSuggested message is sent to core projection
+		/// to allow bookmarking a position that can be used to
 		/// restore the projection processing (typically
 		/// an event at this position does not satisfy projection filter)
 		/// </summary>
@@ -95,7 +96,7 @@ namespace EventStore.Projections.Core.Messages {
 
 		/// <summary>
 		/// NOTEL the PartitionDeleted may appear out-of-order and is not guaranteed
-		/// to appear at the same sequence position in a recovery 
+		/// to appear at the same sequence position in a recovery
 		/// </summary>
 		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public partial class PartitionDeleted : EventReaderSubscriptionMessageBase {

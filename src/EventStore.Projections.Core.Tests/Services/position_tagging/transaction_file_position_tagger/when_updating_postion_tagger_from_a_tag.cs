@@ -1,4 +1,6 @@
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.AllStream;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.position_tagging.transaction_file_position_tagger {
@@ -19,7 +21,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
 			_tag = positionTracker.LastTag;
 			_tagger = new TransactionFilePositionTagger(0);
 			_positionTracker = new PositionTracker(_tagger);
-			// when 
+			// when
 
 			_positionTracker.UpdateByCheckpointTagInitial(_tag);
 		}

@@ -8,6 +8,9 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System.Linq;
 using EventStore.Core.Tests;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Strategies;
+using EventStore.Projections.Core.Services.Processing.Subscriptions;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader {
 	namespace reordering {

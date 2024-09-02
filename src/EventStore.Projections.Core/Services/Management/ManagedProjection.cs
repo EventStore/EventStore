@@ -17,6 +17,7 @@ using System.Threading;
 using EventStore.Core;
 using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Common;
+using EventStore.Projections.Core.Services.Processing.Emitting;
 using FastSerialization;
 using ILogger = Serilog.ILogger;
 

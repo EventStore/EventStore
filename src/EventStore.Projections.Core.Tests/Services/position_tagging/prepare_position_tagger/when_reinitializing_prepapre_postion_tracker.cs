@@ -1,5 +1,7 @@
 ﻿using System;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.AllStream;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.position_tagging.prepare_position_tagger {
@@ -21,7 +23,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.prepare_po
 			_tagger = new PreparePositionTagger(0);
 			_positionTracker = new PositionTracker(_tagger);
 			_positionTracker.UpdateByCheckpointTagInitial(_tag);
-			// when 
+			// when
 
 
 			_positionTracker.Initialize();

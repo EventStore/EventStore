@@ -192,7 +192,7 @@ public class leader_info_provider {
 			return new GossipAdvertiseInfo(
 				externalTcp: ParseDnsEndPoint(Gossip?.TcpEndPoint),
 				externalSecureTcp: ParseDnsEndPoint(Gossip?.SecureTcpEndPoint),
-				httpEndPointEndPoint: ParseDnsEndPoint(Gossip?.HttpEndPoint ?? DefaultHttpEndPoint),
+				httpEndPoint: ParseDnsEndPoint(Gossip?.HttpEndPoint ?? DefaultHttpEndPoint),
 				advertiseHostToClientAs: Gossip?.AdvertiseHost,
 				advertiseHttpPortToClientAs: Gossip?.AdvertiseHttpPort ?? 8,
 				advertiseTcpPortToClientAs: Gossip?.AdvertiseTcpPort ?? 9,

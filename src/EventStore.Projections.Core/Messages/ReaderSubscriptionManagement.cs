@@ -1,6 +1,9 @@
 using System;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Strategies;
+using EventStore.Projections.Core.Services.Processing.Subscriptions;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class ReaderSubscriptionManagement {

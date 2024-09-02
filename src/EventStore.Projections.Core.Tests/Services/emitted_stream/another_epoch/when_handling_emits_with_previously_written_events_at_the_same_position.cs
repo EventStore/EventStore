@@ -6,6 +6,10 @@ using EventStore.Core.Services;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.AllStream;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Emitting;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -24,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream.another_epoc
 		protected override void Given() {
 			AllWritesQueueUp();
 			AllWritesToSucceed("$$test_stream");
-			//NOTE: it is possible for a batch of events to be partially written if it contains links 
+			//NOTE: it is possible for a batch of events to be partially written if it contains links
 			ExistingEvent("test_stream", "type1", @"{""v"": 1, ""c"": 100, ""p"": 50}", "data");
 			ExistingEvent("test_stream", "type2", @"{""v"": 1, ""c"": 100, ""p"": 50}", "data");
 			NoOtherStreams();

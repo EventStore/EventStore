@@ -6,6 +6,9 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Emitting;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_streams_tracker.when_tracking {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]

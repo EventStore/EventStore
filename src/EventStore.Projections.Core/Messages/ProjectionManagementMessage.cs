@@ -7,6 +7,7 @@ using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class ProjectionManagementMessage {
@@ -714,7 +715,7 @@ namespace EventStore.Projections.Core.Messages {
 			public bool? TrackEmittedStreams {
 				get { return _trackEmittedStreams; }
 			}
-			
+
 			public bool? CheckpointsEnabled {
 				get { return _checkpointsEnabled; }
 			}
@@ -848,7 +849,7 @@ namespace EventStore.Projections.Core.Messages {
 			public int MaxAllowedWritesInFlight {
 				get { return _maxAllowedWritesInFlight; }
 			}
-			
+
 			public int ProjectionExecutionTimeout { get => _projectionExecutionTimeout; }
 		}
 	}

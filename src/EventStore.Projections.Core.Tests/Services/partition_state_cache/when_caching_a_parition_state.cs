@@ -1,5 +1,7 @@
 ﻿using System;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Partitioning;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.partition_state_cache {
