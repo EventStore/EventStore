@@ -5,6 +5,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Tests.ClientAPI;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Emitting;
 
 namespace EventStore.Projections.Core.Tests.Services {
 	public abstract class SpecificationWithEmittedStreamsTrackerAndDeleter<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {

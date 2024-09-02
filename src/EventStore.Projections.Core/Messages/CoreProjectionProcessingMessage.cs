@@ -2,6 +2,7 @@ using System;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class CoreProjectionCheckpointWriterMessage {

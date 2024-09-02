@@ -5,6 +5,8 @@ using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Strategies;
+using EventStore.Projections.Core.Services.Processing.Subscriptions;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
@@ -90,7 +92,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 
 			var config = ProjectionConfig.GetTest();
 			IQuerySources sources = readerBuilder.Build();
-			var readerStrategy = Core.Services.Processing.ReaderStrategy.Create(
+			var readerStrategy = ReaderStrategy.Create(
 				"test",
 				0,
 				sources,

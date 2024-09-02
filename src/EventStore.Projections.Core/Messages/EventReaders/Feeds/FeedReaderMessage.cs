@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
 namespace EventStore.Projections.Core.Messages.EventReaders.Feeds {
 	public static partial class FeedReaderMessage {

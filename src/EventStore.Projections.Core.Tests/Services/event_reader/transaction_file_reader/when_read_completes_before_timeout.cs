@@ -7,6 +7,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.AllStream;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 

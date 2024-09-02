@@ -7,6 +7,9 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Strategies;
+using EventStore.Projections.Core.Services.Processing.Subscriptions;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_reader.catching_up {
 	namespace when_one_event_type_has_been_never_emitted {

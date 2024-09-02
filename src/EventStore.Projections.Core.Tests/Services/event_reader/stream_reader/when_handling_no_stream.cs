@@ -8,6 +8,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.SingleStream;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;

@@ -3,6 +3,7 @@ using System.Threading;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 

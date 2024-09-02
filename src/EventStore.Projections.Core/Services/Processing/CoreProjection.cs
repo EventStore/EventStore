@@ -4,12 +4,15 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Partitioning;
+using EventStore.Projections.Core.Services.Processing.Phases;
+using EventStore.Projections.Core.Services.Processing.Strategies;
+using EventStore.Projections.Core.Services.Processing.WorkItems;
 using EventStore.Projections.Core.Utils;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
-	//TODO: replace Console.WriteLine with logging
-	//TODO: separate check-pointing from projection handling
 
 	public class CoreProjection : IDisposable,
 		ICoreProjection,
@@ -182,11 +185,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (_state != State.Stopped)
 				GoToState(State.Stopped);
 		}
-		
+
 		public bool Suspend() {
 			if (_state == State.Stopped || _state == State.Suspended)
 				return false;
-			
+
 			GoToState(State.Suspended);
 			return true;
 		}

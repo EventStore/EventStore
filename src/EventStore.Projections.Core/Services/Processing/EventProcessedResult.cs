@@ -1,4 +1,7 @@
 using System;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
+using EventStore.Projections.Core.Services.Processing.Partitioning;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class EventProcessedResult {

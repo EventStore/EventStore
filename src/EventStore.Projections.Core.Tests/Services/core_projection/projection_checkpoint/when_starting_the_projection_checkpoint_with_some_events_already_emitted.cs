@@ -5,6 +5,10 @@ using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using EventStore.Projections.Core.Common;
+using EventStore.Projections.Core.Services.Processing.AllStream;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Emitting;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]

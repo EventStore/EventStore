@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.MultiStream;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.position_tagging.multistream_position_tagger {
@@ -21,7 +23,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.multistrea
 			_tag = tracker.LastTag;
 			_tagger = new MultiStreamPositionTagger(0, new[] {"stream1", "stream2"});
 			_positionTracker = new PositionTracker(_tagger);
-			// when 
+			// when
 
 			_positionTracker.UpdateByCheckpointTagInitial(_tag);
 		}

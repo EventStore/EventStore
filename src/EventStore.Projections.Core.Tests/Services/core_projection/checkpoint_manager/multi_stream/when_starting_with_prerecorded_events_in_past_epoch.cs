@@ -6,6 +6,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager.multi_stream {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]

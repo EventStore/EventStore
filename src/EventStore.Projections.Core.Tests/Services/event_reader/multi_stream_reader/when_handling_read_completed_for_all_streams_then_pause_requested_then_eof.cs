@@ -11,6 +11,7 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing.MultiStream;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using EventStore.Common;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
@@ -10,6 +9,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
+using EventStore.Projections.Core.Services.Processing.Strategies;
 using Serilog;
 
 namespace EventStore.Projections.Core.Services.Processing {
@@ -34,7 +34,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			IHandle<ProjectionCoreServiceMessage.StopCoreTimeout>,
 			IHandle<CoreProjectionStatusMessage.Suspended> {
 		public const string SubComponentName = "ProjectionCoreService";
-		
+
 		private readonly Guid _workerId;
 		private readonly IPublisher _publisher;
 		private readonly IPublisher _inputQueue;
@@ -133,14 +133,14 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void FinishStopping() {
 			if (!_stopping) return;
-			
+
 			_projections.Clear();
 			_stopping = false;
 			_publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStopped(
 				nameof(ProjectionCoreService), _stopQueueId));
 			_stopQueueId = Guid.Empty;
 		}
-		
+
 		public void Handle(ProjectionCoreServiceMessage.CoreTick message) {
 			message.Action();
 		}
