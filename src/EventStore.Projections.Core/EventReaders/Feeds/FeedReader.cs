@@ -20,10 +20,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 		IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
 		IHandle<EventReaderSubscriptionMessage.NotAuthorized> {
 		private readonly
-			PublishSubscribeDispatcher
-			<Guid, ReaderSubscriptionManagement.Subscribe,
-				ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessageBase>
-			_subscriptionDispatcher;
+			ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
 		private readonly ClaimsPrincipal _user;
 
@@ -40,28 +37,21 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 		private CheckpointTag _lastReaderPosition;
 
 		public static FeedReader Create(
-			PublishSubscribeDispatcher
-				<Guid, ReaderSubscriptionManagement.Subscribe,
-					ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessageBase
-				>
-				publishSubscribeDispatcher, FeedReaderMessage.ReadPage message, ITimeProvider timeProvider) {
+			ReaderSubscriptionDispatcher readerSubscriptionDispatcher, FeedReaderMessage.ReadPage message, ITimeProvider timeProvider) {
 			return new FeedReader(
-				publishSubscribeDispatcher, message.User, message.QuerySource, message.FromPosition, message.MaxEvents,
+				readerSubscriptionDispatcher, message.User, message.QuerySource, message.FromPosition, message.MaxEvents,
 				message.CorrelationId, message.Envelope, timeProvider);
 		}
 
 		public FeedReader(
-			PublishSubscribeDispatcher
-				<Guid, ReaderSubscriptionManagement.Subscribe,
-					ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessageBase
-				>
-				subscriptionDispatcher, ClaimsPrincipal user, QuerySourcesDefinition querySource, CheckpointTag fromPosition,
+			ReaderSubscriptionDispatcher subscriptionDispatcher, ClaimsPrincipal user,
+			QuerySourcesDefinition querySource, CheckpointTag fromPosition,
 			int maxEvents, Guid requestCorrelationId, IEnvelope replyEnvelope, ITimeProvider timeProvider) {
-			if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");
-			if (querySource == null) throw new ArgumentNullException("querySource");
-			if (fromPosition == null) throw new ArgumentNullException("fromPosition");
-			if (replyEnvelope == null) throw new ArgumentNullException("replyEnvelope");
-			if (maxEvents <= 0) throw new ArgumentException("non-negative expected", "maxEvents");
+			ArgumentNullException.ThrowIfNull(subscriptionDispatcher);
+			ArgumentNullException.ThrowIfNull(querySource);
+			ArgumentNullException.ThrowIfNull(fromPosition);
+			ArgumentNullException.ThrowIfNull(replyEnvelope);
+			if (maxEvents <= 0) throw new ArgumentException("non-negative expected", nameof(maxEvents));
 
 			_subscriptionDispatcher = subscriptionDispatcher;
 			_user = user;
