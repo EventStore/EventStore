@@ -23,7 +23,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			var envelope = new CallbackEnvelope(OnMessage);
 
-			_queue.Publish(new ProjectionManagementMessage.Command.Reset(envelope, name, runAs));
+			_publisher.Publish(new ProjectionManagementMessage.Command.Reset(envelope, name, runAs));
 
 			await resetSource.Task;
 

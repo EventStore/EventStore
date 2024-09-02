@@ -50,7 +50,12 @@ namespace EventStore.Projections.Core {
 		private readonly bool _startStandardProjections;
 		private readonly TimeSpan _projectionsQueryExpiry;
 
+		private readonly InMemoryBus _leaderInputBus;
+		private readonly InMemoryBus _leaderOutputBus;
+
 		private IQueuedHandler _leaderInputQueue;
+		private IQueuedHandler _leaderOutputQueue;
+
 		private IDictionary<Guid, IQueuedHandler> _coreQueues;
 		private Dictionary<Guid, IPublisher> _queueMap;
 		private bool _subsystemStarted;
@@ -99,18 +104,18 @@ namespace EventStore.Projections.Core {
 			_projectionsQueryExpiry = projectionSubsystemOptions.ProjectionQueryExpiry;
 			_faultOutOfOrderProjections = projectionSubsystemOptions.FaultOutOfOrderProjections;
 
-			LeaderMainBus = new InMemoryBus("manager input bus");
-			LeaderOutputBus = new InMemoryBus("ProjectionManagerAndCoreCoordinatorOutput");
+			_leaderInputBus = new InMemoryBus("manager input bus");
+			_leaderOutputBus = new InMemoryBus("ProjectionManagerAndCoreCoordinatorOutput");
 
 			_subsystemInitialized = new();
 			_executionTimeout = projectionSubsystemOptions.ExecutionTimeout;
 			_compilationTimeout = projectionSubsystemOptions.CompilationTimeout;
 		}
 
-		public InMemoryBus LeaderMainBus { get; }
-		public InMemoryBus LeaderOutputBus { get; }
-
-		public IPublisher LeaderQueue => _leaderInputQueue;
+		public IPublisher LeaderOutputQueue => _leaderOutputQueue;
+		public IPublisher LeaderInputQueue => _leaderInputQueue;
+		public ISubscriber LeaderOutputBus => _leaderOutputBus;
+		public ISubscriber LeaderInputBus => _leaderInputBus;
 
 		public string Name => "Projections";
 		public string DiagnosticsName => Name;
@@ -123,25 +128,32 @@ namespace EventStore.Projections.Core {
 			var standardComponents = builder.ApplicationServices.GetRequiredService<StandardComponents>();
 
 			_leaderInputQueue = QueuedHandler.CreateQueuedHandler(
-				LeaderMainBus,
+				_leaderInputBus,
+				"Projections Leader",
+				standardComponents.QueueStatsManager,
+				standardComponents.QueueTrackers
+			);
+			_leaderOutputQueue = QueuedHandler.CreateQueuedHandler(
+				_leaderOutputBus,
 				"Projections Leader",
 				standardComponents.QueueStatsManager,
 				standardComponents.QueueTrackers
 			);
 
-			LeaderMainBus.Subscribe<ProjectionSubsystemMessage.RestartSubsystem>(this);
-			LeaderMainBus.Subscribe<ProjectionSubsystemMessage.ComponentStarted>(this);
-			LeaderMainBus.Subscribe<ProjectionSubsystemMessage.ComponentStopped>(this);
-			LeaderMainBus.Subscribe<ProjectionSubsystemMessage.IODispatcherDrained>(this);
-			LeaderMainBus.Subscribe<SystemMessage.SystemCoreReady>(this);
-			LeaderMainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
+			LeaderInputBus.Subscribe<ProjectionSubsystemMessage.RestartSubsystem>(this);
+			LeaderInputBus.Subscribe<ProjectionSubsystemMessage.ComponentStarted>(this);
+			LeaderInputBus.Subscribe<ProjectionSubsystemMessage.ComponentStopped>(this);
+			LeaderInputBus.Subscribe<ProjectionSubsystemMessage.IODispatcherDrained>(this);
+			LeaderInputBus.Subscribe<SystemMessage.SystemCoreReady>(this);
+			LeaderInputBus.Subscribe<SystemMessage.StateChangeMessage>(this);
 
 			var projectionsStandardComponents = new ProjectionsStandardComponents(
 				_projectionWorkerThreadCount,
 				_runProjections,
-				LeaderOutputBus,
-				_leaderInputQueue,
-				LeaderMainBus,
+				leaderOutputBus: _leaderOutputBus,
+				leaderOutputQueue: _leaderOutputQueue,
+				leaderInputBus: _leaderInputBus,
+				leaderInputQueue: _leaderInputQueue,
 				_faultOutOfOrderProjections,
 				_compilationTimeout,
 				_executionTimeout);
@@ -154,8 +166,8 @@ namespace EventStore.Projections.Core {
 
 			ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap,
 				_projectionsQueryExpiry, _projectionTracker);
-			LeaderMainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
-			LeaderMainBus.Subscribe<CoreProjectionStatusMessage.Started>(this);
+			LeaderInputBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
+			LeaderInputBus.Subscribe<CoreProjectionStatusMessage.Started>(this);
 
 			 builder.UseEndpoints(endpoints => endpoints.MapGrpcService<ProjectionManagement>());
 		}
@@ -234,7 +246,7 @@ namespace EventStore.Projections.Core {
 			_instanceCorrelationId = Guid.NewGuid();
 			Logger.Information("PROJECTIONS SUBSYSTEM: Starting components for Instance: {instanceCorrelationId}", _instanceCorrelationId);
 			_pendingComponentStarts = _componentCount;
-			LeaderMainBus.Publish(new ProjectionSubsystemMessage.StartComponents(_instanceCorrelationId));
+			LeaderInputQueue.Publish(new ProjectionSubsystemMessage.StartComponents(_instanceCorrelationId));
 		}
 
 		private void StopComponents() {
@@ -245,7 +257,7 @@ namespace EventStore.Projections.Core {
 
 			Logger.Information("PROJECTIONS SUBSYSTEM: Stopping components for Instance: {instanceCorrelationId}", _instanceCorrelationId);
 			_subsystemState = SubsystemState.Stopping;
-			LeaderMainBus.Publish(new ProjectionSubsystemMessage.StopComponents(_instanceCorrelationId));
+			LeaderInputQueue.Publish(new ProjectionSubsystemMessage.StopComponents(_instanceCorrelationId));
 		}
 
 		public void Handle(ProjectionSubsystemMessage.RestartSubsystem message) {
@@ -394,7 +406,7 @@ namespace EventStore.Projections.Core {
 				if (_standardProjections.Contains(message.Name)) {
 					_standardProjections.Remove(message.Name);
 					var envelope = new NoopEnvelope();
-					LeaderMainBus.Publish(new ProjectionManagementMessage.Command.Enable(envelope, message.Name,
+					LeaderInputQueue.Publish(new ProjectionManagementMessage.Command.Enable(envelope, message.Name,
 						ProjectionManagementMessage.RunAs.System));
 				}
 			}

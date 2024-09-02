@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration
 			return (() => {
 				subsystem.Stop();
 				db.Dispose();
-			}, subsystem.LeaderQueue);
+			}, subsystem.LeaderInputQueue);
 		}
 	}
 }

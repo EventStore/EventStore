@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			var envelope = new CallbackEnvelope(OnMessage);
 
-			_queue.Publish(new ProjectionManagementMessage.Command.GetResult(envelope, name, partition));
+			_publisher.Publish(new ProjectionManagementMessage.Command.GetResult(envelope, name, partition));
 
 			return new ResultResp {
 				Result = await resultSource.Task
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			var envelope = new CallbackEnvelope(OnMessage);
 
-			_queue.Publish(new ProjectionManagementMessage.Command.GetState(envelope, name, partition));
+			_publisher.Publish(new ProjectionManagementMessage.Command.GetState(envelope, name, partition));
 
 			return new StateResp {
 				State = await resultSource.Task

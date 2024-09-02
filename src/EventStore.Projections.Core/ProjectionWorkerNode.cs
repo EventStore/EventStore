@@ -16,37 +16,38 @@ namespace EventStore.Projections.Core {
 	public class ProjectionWorkerNode {
 		private readonly ProjectionType _runProjections;
 		private readonly ProjectionCoreService _projectionCoreService;
-		private readonly InMemoryBus _coreOutput;
+		private readonly ISubscriber _coreOutputBus;
 		private readonly EventReaderCoreService _eventReaderCoreService;
 
 		private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
 		private readonly FeedReaderService _feedReaderService;
 		private readonly IODispatcher _ioDispatcher;
-		private readonly IPublisher _leaderOutputBus;
+		private readonly IPublisher _leaderOutputQueue;
 
 		public ProjectionWorkerNode(
 			Guid workerId,
 			TFChunkDbConfig dbConfig,
-			IQueuedHandler inputQueue,
+			IPublisher inputQueue,
+			IPublisher outputQueue,
+			ISubscriber outputBus,
 			ITimeProvider timeProvider,
 			ISingletonTimeoutScheduler timeoutScheduler,
 			ProjectionType runProjections,
 			bool faultOutOfOrderProjections,
-			IPublisher leaderOutputBus,
+			IPublisher leaderOutputQueue,
 			ProjectionsStandardComponents configuration) {
 			_runProjections = runProjections;
 			Ensure.NotNull(dbConfig, "dbConfig");
 
-			_coreOutput = new InMemoryBus("Core Output");
-			_leaderOutputBus = leaderOutputBus;
+			_leaderOutputQueue = leaderOutputQueue;
+			_coreOutputBus = outputBus;
 
-			IPublisher publisher = CoreOutput;
-			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(publisher);
+			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(outputQueue);
 
-			_ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue), true);
+			_ioDispatcher = new IODispatcher(outputQueue, new PublishEnvelope(inputQueue), true);
 			_eventReaderCoreService = new EventReaderCoreService(
-				publisher,
+				outputQueue,
 				_ioDispatcher,
 				10,
 				dbConfig.WriterCheckpoint,
@@ -58,7 +59,7 @@ namespace EventStore.Projections.Core {
 				_projectionCoreService = new ProjectionCoreService(
 					workerId,
 					inputQueue,
-					publisher,
+					outputQueue,
 					_subscriptionDispatcher,
 					timeProvider,
 					_ioDispatcher,
@@ -67,11 +68,11 @@ namespace EventStore.Projections.Core {
 			}
 		}
 
-		public InMemoryBus CoreOutput {
-			get { return _coreOutput; }
+		public ISubscriber CoreOutputBus {
+			get { return _coreOutputBus;  }
 		}
 
-		public void SetupMessaging(IBus coreInputBus) {
+		public void SetupMessaging(ISubscriber coreInputBus) {
 			coreInputBus.Subscribe(_subscriptionDispatcher
 				.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
 			coreInputBus.Subscribe(_subscriptionDispatcher
@@ -127,11 +128,11 @@ namespace EventStore.Projections.Core {
 
 				// Forward messages back to projection manager
 				coreInputBus.Subscribe(
-					Forwarder.Create<ProjectionManagementMessage.Command.ControlMessage>(_leaderOutputBus));
+					Forwarder.Create<ProjectionManagementMessage.Command.ControlMessage>(_leaderOutputQueue));
 				coreInputBus.Subscribe(
-					Forwarder.Create<CoreProjectionStatusMessage.CoreProjectionStatusMessageBase>(_leaderOutputBus));
+					Forwarder.Create<CoreProjectionStatusMessage.CoreProjectionStatusMessageBase>(_leaderOutputQueue));
 				coreInputBus.Subscribe(
-					Forwarder.Create<CoreProjectionStatusMessage.DataReportBase>(_leaderOutputBus));
+					Forwarder.Create<CoreProjectionStatusMessage.DataReportBase>(_leaderOutputQueue));
 			}
 
 			coreInputBus.Subscribe<ReaderCoreServiceMessage.StartReader>(_eventReaderCoreService);

@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var runAs = new ProjectionManagementMessage.RunAs(user);
 
 			var envelope = new CallbackEnvelope(OnMessage);
-			_queue.Publish(
+			_publisher.Publish(
 				new ProjectionManagementMessage.Command.UpdateQuery(envelope, name, runAs, query,
 					emitEnabled));
 

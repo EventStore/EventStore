@@ -24,9 +24,9 @@ namespace EventStore.Projections.Core {
 			IDictionary<Guid, IPublisher> queues,
 			TimeSpan projectionQueryExpiry,
 			IProjectionTracker projectionTracker) {
-			IQueuedHandler inputQueue = projectionsStandardComponents.LeaderInputQueue;
-			IBus outputBus = projectionsStandardComponents.LeaderOutputBus;
-			var ioDispatcher = new IODispatcher(outputBus, new PublishEnvelope(inputQueue), true);
+			IPublisher inputQueue = projectionsStandardComponents.LeaderInputQueue;
+			IPublisher outputQueue = projectionsStandardComponents.LeaderOutputQueue;
+			var ioDispatcher = new IODispatcher(outputQueue, new PublishEnvelope(inputQueue), true);
 
 			var projectionsController = new ProjectionsController(
 				standardComponents.HttpForwarder,
@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core {
 
 			var projectionManager = new ProjectionManager(
 				inputQueue,
-				outputBus,
+				outputQueue,
 				queues,
 				new RealTimeProvider(),
 				projectionsStandardComponents.RunProjections,
@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core {
 				defaultProjectionExecutionTimeout: projectionsStandardComponents.ProjectionExecutionTimeout);
 
 			SubscribeMainBus(
-				projectionsStandardComponents.LeaderMainBus,
+				projectionsStandardComponents.LeaderInputBus,
 				projectionManager,
 				projectionsStandardComponents.RunProjections,
 				ioDispatcher,
@@ -156,7 +156,7 @@ namespace EventStore.Projections.Core {
 					.LeaderInputQueue));
 			standardComponents.MainBus.Subscribe(
 				Forwarder.Create<TelemetryMessage.Request>(projectionsStandardComponents.LeaderInputQueue));
-			projectionsStandardComponents.LeaderMainBus.Subscribe(new UnwrapEnvelopeHandler());
+			projectionsStandardComponents.LeaderInputBus.Subscribe(new UnwrapEnvelopeHandler());
 		}
 	}
 }
