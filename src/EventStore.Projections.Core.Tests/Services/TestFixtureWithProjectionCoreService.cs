@@ -88,9 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 		protected ProjectionCoreService _service;
 		protected EventReaderCoreService _readerService;
 
-		private
-			ReaderSubscriptionDispatcher
-			_subscriptionDispatcher;
+		private ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
 		private ISingletonTimeoutScheduler _timeoutScheduler;
 		protected Guid _workerId;

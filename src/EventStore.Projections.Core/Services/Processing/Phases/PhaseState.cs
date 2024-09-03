@@ -6,3 +6,11 @@ public enum PhaseState {
 	Starting,
 	Running,
 }
+
+public enum PhaseSubscriptionState {
+	Unknown = 0,
+	Unsubscribed,
+	Subscribing,
+	Subscribed,
+	Failed
+}

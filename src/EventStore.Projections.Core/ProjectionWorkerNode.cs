@@ -91,6 +91,8 @@ namespace EventStore.Projections.Core {
 				.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
 			coreInputBus.Subscribe(_subscriptionDispatcher
 				.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
+			coreInputBus.Subscribe(_subscriptionDispatcher
+				.CreateSubscriber<EventReaderSubscriptionMessage.SubscribeTimeout>());
 			coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.Failed>());
 
 			coreInputBus.Subscribe(_feedReaderService);

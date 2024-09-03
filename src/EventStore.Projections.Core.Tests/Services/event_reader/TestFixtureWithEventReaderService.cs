@@ -29,8 +29,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader {
 			_readerService = new EventReaderCoreService(
 				GetInputQueue(), _ioDispatcher, 10, writerCheckpoint, runHeadingReader: GivenHeadingReaderRunning(),
 				faultOutOfOrderProjections: true);
-			_subscriptionDispatcher =
-				new ReaderSubscriptionDispatcher(GetInputQueue());
+			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(GetInputQueue());
 
 
 			_bus.Subscribe(

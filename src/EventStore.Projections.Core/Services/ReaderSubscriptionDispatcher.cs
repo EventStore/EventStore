@@ -1,23 +1,45 @@
 using System;
 using System.Collections.Concurrent;
 using EventStore.Core.Bus;
+using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
+using EventStore.Core.Settings;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services {
 	public sealed class ReaderSubscriptionDispatcher {
 		private readonly ConcurrentDictionary<Guid, object> _map = new();
 		private readonly IPublisher _publisher;
+		private readonly PublishEnvelope _publishEnvelope;
+		private readonly TimeSpan ReaderSubscriptionTimeout =
+			TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout);
 
 		public ReaderSubscriptionDispatcher(IPublisher publisher) {
 			_publisher = publisher;
+			_publishEnvelope = new PublishEnvelope(_publisher, true);
 		}
 
-		public Guid PublishSubscribe(
-			ReaderSubscriptionManagement.Subscribe request, object subscriber) {
-			var requestCorrelationId = request.SubscriptionId;
-			_map.TryAdd(requestCorrelationId, subscriber);
+		/// <summary>
+		/// Publishes the <see cref="ReaderSubscriptionManagement.Subscribe"/> message to be handled later.
+		/// The caller must wait for further <see cref="EventReaderSubscriptionMessage"/>s to determine whether
+		/// the subscription was successful.
+		/// </summary>
+		/// <param name="request">The subscription to request</param>
+		/// <param name="subscriber">The subscriber to call with any responses for this subscription</param>
+		/// <param name="scheduleTimeout">Whether to schedule a <see cref="EventReaderSubscriptionMessage.SubscribeTimeout"/> message for this subscription</param>
+		/// <returns></returns>
+		public void PublishSubscribe(
+			ReaderSubscriptionManagement.Subscribe request, object subscriber, bool scheduleTimeout) {
+			_map.TryAdd(request.SubscriptionId, subscriber);
 			_publisher.Publish(request);
-			return requestCorrelationId;
+			if (scheduleTimeout)
+				ScheduleSubscriptionTimeout(request.SubscriptionId);
+		}
+
+		private void ScheduleSubscriptionTimeout(Guid subscriptionId) {
+			_publisher.Publish(TimerMessage.Schedule.Create(
+				ReaderSubscriptionTimeout, _publishEnvelope,
+				new EventReaderSubscriptionMessage.SubscribeTimeout(subscriptionId)));
 		}
 
 		public void Cancel(Guid requestId) {

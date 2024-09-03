@@ -4,6 +4,7 @@ using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Settings;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
@@ -25,6 +26,7 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 		IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
 		IHandle<EventReaderSubscriptionMessage.ReaderAssignedReader>,
 		IHandle<EventReaderSubscriptionMessage.Failed>,
+		IHandle<EventReaderSubscriptionMessage.SubscribeTimeout>,
 		IProjectionProcessingPhase,
 		IProjectionPhaseStateManager {
 		protected readonly IPublisher _publisher;
@@ -45,7 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 		protected readonly bool _useCheckpoints;
 		protected long _expectedSubscriptionMessageSequenceNumber = -1;
 		protected Guid _currentSubscriptionId;
-		protected bool _subscribed;
+		protected PhaseSubscriptionState _subscriptionState;
 		protected PhaseState _state;
 		protected readonly bool _stopOnEof;
 		private readonly bool _isBiState;
@@ -200,7 +202,7 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 
 		public void Unsubscribed() {
 			_subscriptionDispatcher.Cancel(_projectionCorrelationId);
-			_subscribed = false;
+			_subscriptionState = PhaseSubscriptionState.Unsubscribed;
 			_processingQueue.Unsubscribed();
 		}
 
@@ -267,14 +269,26 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 			}
 		}
 
-		public void Handle(EventReaderSubscriptionMessage.Failed message) {
-			_coreProjection.SetFaulted(message.Reason);
+		public void Handle(EventReaderSubscriptionMessage.SubscribeTimeout message) {
+			if (_subscriptionState is not PhaseSubscriptionState.Subscribing
+			    || message.SubscriptionId != _currentSubscriptionId) return;
+			SubscriptionFailed("Reader subscription timed out");
+		}
+
+		public void Handle(EventReaderSubscriptionMessage.Failed message) => SubscriptionFailed(message.Reason);
+
+		private void SubscriptionFailed(string reason) {
+			if (_subscriptionState is PhaseSubscriptionState.Subscribed or PhaseSubscriptionState.Subscribing)
+				_subscriptionDispatcher.Cancel(_currentSubscriptionId);
+			_subscriptionState = PhaseSubscriptionState.Failed;
+			_coreProjection.SetFaulted(reason);
 		}
 
 		protected void UnsubscribeFromPreRecordedOrderEvents() {
 			// projectionCorrelationId is used as a subscription identifier for delivery
 			// of pre-recorded order events recovered by checkpoint manager
 			_subscriptionDispatcher.Cancel(_projectionCorrelationId);
+			_subscriptionState = PhaseSubscriptionState.Unsubscribed;
 		}
 
 		public void Subscribed(Guid subscriptionId) {
@@ -289,23 +303,18 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 		}
 
 		protected void SubscribeReaders(CheckpointTag checkpointTag) {
-			//TODO: should we report subscribed state even if subscribing to
 			_expectedSubscriptionMessageSequenceNumber = 0;
 			_currentSubscriptionId = Guid.NewGuid();
 			Subscribed(_currentSubscriptionId);
-			try {
-				var readerStrategy = _readerStrategy;
-				if (readerStrategy != null) {
-					_subscribed = true;
-					_subscriptionDispatcher.PublishSubscribe(
-						new ReaderSubscriptionManagement.Subscribe(
-							_currentSubscriptionId, checkpointTag, readerStrategy, GetSubscriptionOptions()), this);
-				} else {
-					_coreProjection.Subscribed();
-				}
-			} catch (Exception ex) {
-				_coreProjection.SetFaulted(ex);
-				return;
+			var readerStrategy = _readerStrategy;
+			if (readerStrategy != null) {
+				_subscriptionState = PhaseSubscriptionState.Subscribing;
+				_subscriptionDispatcher.PublishSubscribe(
+					new ReaderSubscriptionManagement.Subscribe(
+						_currentSubscriptionId, checkpointTag, readerStrategy,
+						GetSubscriptionOptions()), this, scheduleTimeout: true);
+			} else {
+				_coreProjection.Subscribed();
 			}
 		}
 
@@ -316,7 +325,8 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 			_expectedSubscriptionMessageSequenceNumber = 0;
 			_currentSubscriptionId = coreProjection._projectionCorrelationId;
 			_subscriptionDispatcher.Subscribed(coreProjection._projectionCorrelationId, this);
-			_subscribed = true; // even if it is not a real subscription we need to unsubscribe
+			// even if it is not a real subscription we need to unsubscribe
+			_subscriptionState = PhaseSubscriptionState.Subscribed;
 		}
 
 		public virtual void Subscribe(CheckpointTag from, bool fromCheckpoint) {
@@ -362,7 +372,7 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 		public abstract void NewCheckpointStarted(CheckpointTag at);
 
 		public void InitializeFromCheckpoint(CheckpointTag checkpointTag) {
-			_wasReaderAssigned = false;
+			_subscriptionState = PhaseSubscriptionState.Unknown;
 			// this can be old checkpoint
 			var adjustedCheckpointTag = _readerStrategy.PositionTagger.AdjustTag(checkpointTag);
 			_processingQueue.InitializeQueue(adjustedCheckpointTag);
@@ -380,6 +390,10 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 			string partition, EventReaderSubscriptionMessage.CommittedEventReceived message,
 			EmittedEventEnvelope[] emittedEvents, PartitionState newPartitionState,
 			PartitionState newSharedPartitionState) {
+			if (_subscriptionState != PhaseSubscriptionState.Subscribed)
+				_logger?.Verbose("Got CommittedEventReceived in {state} SubscriptionState, but expected to be in {expectedState}",
+					_subscriptionState, PhaseSubscriptionState.Subscribed);
+
 			if (!ValidateEmittedEvents(emittedEvents))
 				return null;
 
@@ -528,16 +542,14 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 		}
 
 		public void EnsureUnsubscribed() {
-			if (_subscribed) {
+			if (_subscriptionState is PhaseSubscriptionState.Subscribed) {
 				Unsubscribed();
-				// this was we distinguish pre-recorded events subscription
+				// this way we distinguish pre-recorded events subscription
 				if (_currentSubscriptionId != _projectionCorrelationId)
-					_publisher.Publish(new ReaderSubscriptionManagement.Unsubscribe(_currentSubscriptionId));
-				_subscribed = false;
+					_publisher.Publish(
+						new ReaderSubscriptionManagement.Unsubscribe(_currentSubscriptionId));
 			}
 		}
-
-		private bool _wasReaderAssigned = false;
 
 		protected long _subscriptionStartedAtLastCommitPosition;
 		private readonly PublishEnvelope _inutQueueEnvelope;
@@ -547,12 +559,12 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 		public void Handle(EventReaderSubscriptionMessage.ReaderAssignedReader message) {
 			if (_state != PhaseState.Starting)
 				return;
-			if (_wasReaderAssigned)
+			if (_subscriptionState is not PhaseSubscriptionState.Subscribing
+			    || message.SubscriptionId != _currentSubscriptionId)
 				return;
-			_wasReaderAssigned = true;
+			_subscriptionState = PhaseSubscriptionState.Subscribed;
 			_coreProjection.Subscribed();
 		}
-
 
 		public abstract void Dispose();
 

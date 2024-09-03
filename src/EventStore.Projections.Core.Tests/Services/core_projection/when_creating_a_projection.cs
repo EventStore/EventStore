@@ -17,8 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			var fakePublisher = new FakePublisher();
 			_ioDispatcher = new IODispatcher(fakePublisher, new PublishEnvelope(fakePublisher), true);
 
-			_subscriptionDispatcher =
-				new ReaderSubscriptionDispatcher(new FakePublisher());
+			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(new FakePublisher());
 		}
 
 		private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(
@@ -27,9 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		private IODispatcher _ioDispatcher;
 
 
-		private
-			ReaderSubscriptionDispatcher
-			_subscriptionDispatcher;
+		private ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
 		[Test]
 		public void

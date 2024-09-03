@@ -82,10 +82,10 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 				// The projection must be stopped for debugging, so will enable content type validation automatically
 				enableContentTypeValidation: true);
 
-			_subscriptionId =
-				_subscriptionDispatcher.PublishSubscribe(
-					new ReaderSubscriptionManagement.Subscribe(
-						Guid.NewGuid(), _fromPosition, readerStrategy, readerOptions), this);
+			_subscriptionId = Guid.NewGuid();
+			_subscriptionDispatcher.PublishSubscribe(
+				new ReaderSubscriptionManagement.Subscribe(
+					_subscriptionId, _fromPosition, readerStrategy, readerOptions), this, false);
 		}
 
 		public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message) {
