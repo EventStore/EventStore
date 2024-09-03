@@ -20,15 +20,13 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMsg = WaitForStartMessage();
+			ResetMessageEvents();
 			_instanceCorrelation = startMsg.InstanceCorrelationId;
 
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
 				ProjectionManager.ServiceName, _instanceCorrelation));
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
 				ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
-
-			// Clear the existing messages so we don't get the original StartMessage
-			ResetMessageEvents();
 
 			Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(
 				new CallbackEnvelope(message => _restartResponse = message)));
@@ -76,6 +74,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			 var startMsg = WaitForStartMessage();
+			ResetMessageEvents();
 			_instanceCorrelation = startMsg.InstanceCorrelationId;
 
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
@@ -84,7 +83,6 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 				ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
 
 			// Restart subsystem
-			ResetMessageEvents();
 			Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(new NoopEnvelope()));
 
 			WaitForStopMessage("Timed out waiting for StopComponents on first restart");
@@ -96,6 +94,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionCoreService.SubComponentName));
 
 			var restartMsg = WaitForStartMessage("Timed out waiting for StartComponents on first restart");
+			ResetMessageEvents();
 			_restartInstanceCorrelation = restartMsg.InstanceCorrelationId;
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
 				ProjectionManager.ServiceName, _restartInstanceCorrelation));
@@ -104,8 +103,6 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionManager.ServiceName));
 			Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionCoreService.SubComponentName));
 
-			// Restart subsystem again
-			ResetMessageEvents();
 			Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(
 				new CallbackEnvelope(message => _secondRestartResponse = message)));
 		}
@@ -145,6 +142,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMsg = WaitForStartMessage();
+			ResetMessageEvents();
 			_instanceCorrelation = startMsg.InstanceCorrelationId;
 
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
@@ -152,8 +150,6 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
 				ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
 
-			// Clear the existing messages so we don't get the original StartMessage
-			ResetMessageEvents();
 			Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(new NoopEnvelope()));
 
 			_stopMsg = WaitForStopMessage();
@@ -214,6 +210,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMsg = WaitForStartMessage();
+			ResetMessageEvents();
 			_instanceCorrelation = startMsg.InstanceCorrelationId;
 
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
@@ -225,8 +222,6 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 			Subsystem.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
 
-			// Clear the existing messages so we don't get the original StartMessage
-			ResetMessageEvents();
 			WaitForStopMessage();
 
 			// Restart subsystem before fully stopped

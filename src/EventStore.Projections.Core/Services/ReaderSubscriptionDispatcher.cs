@@ -11,7 +11,7 @@ namespace EventStore.Projections.Core.Services {
 		private readonly ConcurrentDictionary<Guid, object> _map = new();
 		private readonly IPublisher _publisher;
 		private readonly PublishEnvelope _publishEnvelope;
-		private readonly TimeSpan ReaderSubscriptionTimeout =
+		private readonly TimeSpan _readerSubscriptionTimeout =
 			TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout);
 
 		public ReaderSubscriptionDispatcher(IPublisher publisher) {
@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services {
 
 		private void ScheduleSubscriptionTimeout(Guid subscriptionId) {
 			_publisher.Publish(TimerMessage.Schedule.Create(
-				ReaderSubscriptionTimeout, _publishEnvelope,
+				_readerSubscriptionTimeout, _publishEnvelope,
 				new EventReaderSubscriptionMessage.SubscribeTimeout(subscriptionId)));
 		}
 
