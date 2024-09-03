@@ -115,6 +115,9 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		[Test]
 		public void should_allow_starting_the_subsystem_again() {
+			// Clear the existing messages so we don't get the original StartMessage
+			ResetMessageEvents();
+
 			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			var startMessage = WaitForStartMessage();
 
@@ -166,6 +169,9 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 				ProjectionManager.ServiceName, _instanceCorrelation));
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
 				ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
+
+			// Clear the existing messages so we don't get the original StartMessage
+			ResetMessageEvents();
 
 			// Become unknown to stop the subsystem
 			Subsystem.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));

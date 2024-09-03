@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core {
 		private IQueuedHandler _leaderInputQueue;
 		private IQueuedHandler _leaderOutputQueue;
 
-		private IDictionary<Guid, IQueuedHandler> _coreQueues;
+		private IDictionary<Guid, CoreWorker> _coreWorkers;
 		private Dictionary<Guid, IPublisher> _queueMap;
 		private bool _subsystemStarted;
 		private readonly TaskCompletionSource _subsystemInitialized;
@@ -159,8 +159,8 @@ namespace EventStore.Projections.Core {
 				_executionTimeout);
 
 			CreateAwakerService(standardComponents);
-			_coreQueues = ProjectionCoreWorkersNode.CreateCoreWorkers(standardComponents, projectionsStandardComponents);
-			_queueMap = _coreQueues.ToDictionary(v => v.Key, v => (IPublisher)v.Value);
+			_coreWorkers = ProjectionCoreWorkersNode.CreateCoreWorkers(standardComponents, projectionsStandardComponents);
+			_queueMap = _coreWorkers.ToDictionary(v => v.Key, v => (IPublisher)v.Value.CoreInputQueue);
 
 			ConfigureProjectionMetrics(standardComponents.ProjectionStats);
 
@@ -376,10 +376,10 @@ namespace EventStore.Projections.Core {
 
 		public Task Start() {
 			if (_subsystemStarted == false) {
-				if (_leaderInputQueue != null)
-					_leaderInputQueue.Start();
+				_leaderInputQueue?.Start();
+				_leaderOutputQueue?.Start();
 
-				foreach (var queue in _coreQueues)
+				foreach (var queue in _coreWorkers)
 					queue.Value.Start();
 			}
 
@@ -392,7 +392,7 @@ namespace EventStore.Projections.Core {
 			if (_subsystemStarted) {
 				if (_leaderInputQueue != null)
 					_leaderInputQueue.Stop();
-				foreach (var queue in _coreQueues)
+				foreach (var queue in _coreWorkers)
 					queue.Value.Stop();
 			}
 
