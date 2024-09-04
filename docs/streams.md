@@ -68,8 +68,6 @@ When you delete a stream, EventStoreDB offers two options: **soft delete** or **
 
 It's worth noting that the **`$all`** stream circumvents index checking. Deleted events within this stream remain readable until a scavenging process removes them. To understand the prerequisites for successful event removal through scavenging, refer to the [scavenging guide](operations.md#scavenging).
 
-Even if a stream has been deleted, EventStoreDB retains one event within the stream to indicate the stream's existence and provide information about the last event version. As a best practice, consider appending a specific event like **`StreamDeleted`** and then setting the **`MaxCount`** to 1 to delete the stream. Keep this in mind, especially when dealing with streams containing sensitive data that you want to erase thoroughly and without a trace.
-
 ### Soft delete and TruncateBefore
 
 In event sourcing, **`TruncateBefore`** (or **`$tb`**) designates any event with an event number lower than its value as deleted. For instance, consider a stream with the following events:
