@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 				_nodeEndpoints[2], new[] { _nodeEndpoints[2].HttpEndPoint });
 			WaitIdle();
 
-			var projectionsStarted = _projections.Select(p => SystemProjections.Created(p.LeaderMainBus)).ToArray();
+			var projectionsStarted = _projections.Select(p => SystemProjections.Created(p.LeaderInputBus)).ToArray();
 
 			foreach (var node in _nodes) {
 				node.Start();

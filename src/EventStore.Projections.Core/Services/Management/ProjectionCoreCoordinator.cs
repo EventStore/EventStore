@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<ProjectionCoreServiceMessage.SubComponentStarted>,
 			IHandle<ProjectionCoreServiceMessage.SubComponentStopped> {
 		public const string ComponentName = "ProjectionCoreCoordinator";
-		
+
 		private readonly ILogger Log = Serilog.Log.ForContext<ProjectionCoreCoordinator>();
 		private readonly ProjectionType _runProjections;
 		private readonly TimeoutScheduler[] _timeoutSchedulers;
@@ -28,7 +28,7 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		private int _pendingSubComponentsStarts;
 		private int _activeSubComponents;
-		
+
 		private Guid _instanceCorrelationId = Guid.Empty;
 		private CoreCoordinatorState _currentState = CoreCoordinatorState.Stopped;
 
@@ -96,9 +96,9 @@ namespace EventStore.Projections.Core.Services.Management {
 			_pendingSubComponentsStarts = 0;
 			_activeSubComponents = 0;
 			_currentState = CoreCoordinatorState.Starting;
-			
+
 			ScheduleRegularTimeout();
-			
+
 			foreach (var queue in _queues.Values) {
 				queue.Publish(new ReaderCoreServiceMessage.StartReader(_instanceCorrelationId));
 				_pendingSubComponentsStarts += 1 /*EventReaderCoreService*/;
@@ -129,7 +129,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				}
 			}
 		}
-		
+
 		public void Handle(ProjectionCoreServiceMessage.SubComponentStarted message) {
 			if (_currentState != CoreCoordinatorState.Starting) {
 				Log.Debug("PROJECTIONS: Projection Core Coordinator received SubComponent Started when not starting. " +
@@ -177,7 +177,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			}
 		}
 
-		public void SetupMessaging(IBus bus) {
+		public void SetupMessaging(ISubscriber bus) {
 			bus.Subscribe<ProjectionCoreServiceMessage.SubComponentStarted>(this);
 			bus.Subscribe<ProjectionCoreServiceMessage.SubComponentStopped>(this);
 			bus.Subscribe<ProjectionSubsystemMessage.StartComponents>(this);

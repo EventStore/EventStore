@@ -88,9 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 		protected ProjectionCoreService _service;
 		protected EventReaderCoreService _readerService;
 
-		private
-			ReaderSubscriptionDispatcher
-			_subscriptionDispatcher;
+		private ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
 		private ISingletonTimeoutScheduler _timeoutScheduler;
 		protected Guid _workerId;
@@ -109,7 +107,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 			_timeoutScheduler = new TimeoutScheduler();
 			_workerId = Guid.NewGuid();
 			var guardBus = new GuardBusToTriggerFixingIfUsed();
-			var configuration = new ProjectionsStandardComponents(1, ProjectionType.All, guardBus, guardBus, guardBus, true,
+			var configuration = new ProjectionsStandardComponents(1, ProjectionType.All, guardBus, guardBus, guardBus, guardBus, true,
 				 500, 250);
 			_service = new ProjectionCoreService(
 				_workerId, _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher, _timeoutScheduler, configuration);
@@ -127,7 +125,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
-			
+
 			var instanceCorrelationId = Guid.NewGuid();
 			_readerService.Handle(new ReaderCoreServiceMessage.StartReader(instanceCorrelationId));
 			_service.Handle(new ProjectionCoreServiceMessage.StartCore(instanceCorrelationId));

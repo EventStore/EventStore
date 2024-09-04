@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				throw RpcExceptions.AccessDenied();
 			}
 
-			_queue.Publish(new ProjectionSubsystemMessage.RestartSubsystem(envelope));
+			_publisher.Publish(new ProjectionSubsystemMessage.RestartSubsystem(envelope));
 
 			await restart.Task;
 			return new Empty();

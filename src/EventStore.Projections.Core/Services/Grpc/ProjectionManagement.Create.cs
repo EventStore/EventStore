@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			var envelope = new CallbackEnvelope(OnMessage);
 
-			_queue.Publish(new ProjectionManagementMessage.Command.Post(envelope, projectionMode, name, runAs,
+			_publisher.Publish(new ProjectionManagementMessage.Command.Post(envelope, projectionMode, name, runAs,
 				handlerType, options.Query, true, checkpointsEnabled, emitEnabled, trackEmittedStreams, true));
 
 			await createdSource.Task;

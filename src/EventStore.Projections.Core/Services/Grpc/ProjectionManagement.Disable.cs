@@ -23,7 +23,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			var envelope = new CallbackEnvelope(OnMessage);
 
-			_queue.Publish(options.WriteCheckpoint
+			_publisher.Publish(options.WriteCheckpoint
 				? new ProjectionManagementMessage.Command.Disable(envelope, name, runAs)
 				: (Message)new ProjectionManagementMessage.Command.Abort(envelope, name, runAs));
 

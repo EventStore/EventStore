@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			_node = new MiniNode<TLogFormat, TStreamId>(
 				PathName, inMemDb: true,
 				subsystems: [_projections]);
-			_projectionsCreated = SystemProjections.Created(_projections.LeaderMainBus);
+			_projectionsCreated = SystemProjections.Created(_projections.LeaderInputBus);
 
 			await _node.Start();
 			_conn = EventStoreConnection.Create(new ConnectionSettingsBuilder()

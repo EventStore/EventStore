@@ -10,6 +10,17 @@ using EventStore.Projections.Core.Services.Processing.Subscriptions;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader {
 	public class FakeReaderSubscription : IReaderSubscription {
+		private readonly IPublisher _publisher;
+		private readonly Guid _subscriptionId;
+
+		public FakeReaderSubscription() {
+			_subscriptionId = Guid.NewGuid();
+		}
+
+		public FakeReaderSubscription(IPublisher publisher, Guid subscriptionId) {
+			_publisher = publisher;
+			_subscriptionId = subscriptionId;
+		}
 		private readonly List<ReaderSubscriptionMessage.CommittedEventDistributed> _receivedEvents =
 			new List<ReaderSubscriptionMessage.CommittedEventDistributed>();
 
@@ -38,6 +49,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 			}
 
 			_receivedEvents.Add(message);
+			_publisher?.Publish(
+				EventReaderSubscriptionMessage.CommittedEventReceived
+					.FromCommittedEventDistributed(message,
+					CheckpointTag.Empty, "", _subscriptionId, 0));
 		}
 
 		public List<ReaderSubscriptionMessage.CommittedEventDistributed> ReceivedEvents {
@@ -158,7 +173,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 
 		public IReaderSubscription CreateReaderSubscription(IPublisher publisher, CheckpointTag fromCheckpointTag,
 			Guid subscriptionId, ReaderSubscriptionOptions readerSubscriptionOptions) {
-			_subscription = new FakeReaderSubscription();
+			_subscription = new FakeReaderSubscription(publisher, subscriptionId);
 			return _subscription;
 		}
 	}
