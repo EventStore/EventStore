@@ -94,6 +94,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMessage = WaitForStartMessage();
+			ResetMessageEvents();
 			_instanceCorrelation = startMessage.InstanceCorrelationId;
 
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
@@ -160,6 +161,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMessage = WaitForStartMessage();
+			ResetMessageEvents();
 			_instanceCorrelation = startMessage.InstanceCorrelationId;
 
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(

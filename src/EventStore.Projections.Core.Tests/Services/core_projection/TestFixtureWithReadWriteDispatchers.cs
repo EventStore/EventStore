@@ -10,8 +10,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 
 		[SetUp]
 		public void SetUp() {
-			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(
-				_bus);
+			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(_bus);
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
 			_bus.Subscribe(

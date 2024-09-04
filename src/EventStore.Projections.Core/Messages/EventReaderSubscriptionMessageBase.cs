@@ -56,6 +56,13 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
+		public sealed partial class SubscribeTimeout : EventReaderSubscriptionMessageBase {
+			public SubscribeTimeout(Guid subscriptionId)
+				: base(subscriptionId, CheckpointTag.Empty, 100.0f, -1, null) {
+			}
+		}
+
+		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public sealed partial class Failed : EventReaderSubscriptionMessageBase {
 			private readonly string _reason;
 

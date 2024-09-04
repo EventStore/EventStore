@@ -101,28 +101,34 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public void Handle(ReaderSubscriptionManagement.Subscribe message) {
-			if (_stopped)
+			if (_stopped) {
+				_publisher.Publish(
+					new EventReaderSubscriptionMessage.Failed(
+						message.SubscriptionId, $"{nameof(EventReaderCoreService)} is stopped"));
 				return;
+			}
 
 			var fromCheckpointTag = message.FromPosition;
 			var subscriptionId = message.SubscriptionId;
-			var projectionSubscription = message.ReaderStrategy.CreateReaderSubscription(
-				_publisher, fromCheckpointTag, message.SubscriptionId, message.Options);
-			_subscriptions.Add(subscriptionId, projectionSubscription);
+			try {
+				var projectionSubscription = message.ReaderStrategy.CreateReaderSubscription(
+					_publisher, fromCheckpointTag, message.SubscriptionId, message.Options);
+				_subscriptions.Add(subscriptionId, projectionSubscription);
 
-			var distributionPointCorrelationId = Guid.NewGuid();
-			var eventReader = projectionSubscription.CreatePausedEventReader(
-				_publisher, _ioDispatcher, distributionPointCorrelationId);
-//            _logger.Trace(
-//                "The '{subscriptionId}' projection subscribed to the '{distributionPointCorrelationId}' distribution point", subscriptionId,
-//                distributionPointCorrelationId);
-			_eventReaders.Add(distributionPointCorrelationId, eventReader);
-			_subscriptionEventReaders.Add(subscriptionId, distributionPointCorrelationId);
-			_eventReaderSubscriptions.Add(distributionPointCorrelationId, subscriptionId);
-			_publisher.Publish(
-				new EventReaderSubscriptionMessage.ReaderAssignedReader(
-					subscriptionId, distributionPointCorrelationId));
-			eventReader.Resume();
+				var distributionPointCorrelationId = Guid.NewGuid();
+				var eventReader = projectionSubscription.CreatePausedEventReader(
+					_publisher, _ioDispatcher, distributionPointCorrelationId);
+				_eventReaders.Add(distributionPointCorrelationId, eventReader);
+				_subscriptionEventReaders.Add(subscriptionId, distributionPointCorrelationId);
+				_eventReaderSubscriptions.Add(distributionPointCorrelationId, subscriptionId);
+				_publisher.Publish(
+					new EventReaderSubscriptionMessage.ReaderAssignedReader(
+						subscriptionId, distributionPointCorrelationId));
+				eventReader.Resume();
+			} catch (Exception ex) {
+				_publisher.Publish(new EventReaderSubscriptionMessage.Failed(
+					subscriptionId, ex.ToString()));
+			}
 		}
 
 		public void Handle(ReaderSubscriptionManagement.Unsubscribe message) {

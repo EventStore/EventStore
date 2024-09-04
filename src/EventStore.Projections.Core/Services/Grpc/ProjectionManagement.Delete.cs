@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			var envelope = new CallbackEnvelope(OnMessage);
 
-			_queue.Publish(new ProjectionManagementMessage.Command.Delete(envelope, name, runAs,
+			_publisher.Publish(new ProjectionManagementMessage.Command.Delete(envelope, name, runAs,
 				deleteCheckpointStream, deleteStateStream, deleteEmittedStreams));
 
 			await deletedSource.Task;

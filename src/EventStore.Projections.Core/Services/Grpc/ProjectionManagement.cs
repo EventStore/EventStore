@@ -17,13 +17,13 @@ namespace EventStore.Client.Projections {
 
 namespace EventStore.Projections.Core.Services.Grpc {
 	internal partial class ProjectionManagement : EventStore.Client.Projections.Projections.ProjectionsBase {
-		private readonly IQueuedHandler _queue;
+		private readonly IPublisher _publisher;
 		private readonly IAuthorizationProvider _authorizationProvider;
 
-		public ProjectionManagement(IQueuedHandler queue, IAuthorizationProvider authorizationProvider) {
-			if (queue == null) throw new ArgumentNullException(nameof(queue));
+		public ProjectionManagement(IPublisher publisher, IAuthorizationProvider authorizationProvider) {
+			if (publisher == null) throw new ArgumentNullException(nameof(publisher));
 			if (authorizationProvider == null) throw new ArgumentNullException(nameof(authorizationProvider));
-			_queue = queue;
+			_publisher = publisher;
 			_authorizationProvider = authorizationProvider;
 		}
 

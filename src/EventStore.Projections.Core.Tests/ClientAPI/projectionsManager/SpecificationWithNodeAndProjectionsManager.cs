@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 		protected MiniNode<TLogFormat, TStreamId> CreateNode() {
 			_projectionsSubsystem = new ProjectionsSubsystem(new ProjectionSubsystemOptions(1, ProjectionType.All, false, TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault), Opts.FaultOutOfOrderProjectionsDefault, 500, 250));
-			_systemProjectionsCreated = SystemProjections.Created(_projectionsSubsystem.LeaderMainBus);
+			_systemProjectionsCreated = SystemProjections.Created(_projectionsSubsystem.LeaderInputBus);
 			return new MiniNode<TLogFormat, TStreamId>(
 				PathName, inMemDb: true,
 				subsystems: [_projectionsSubsystem]);

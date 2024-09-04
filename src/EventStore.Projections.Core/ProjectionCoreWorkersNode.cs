@@ -16,17 +16,23 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core {
 	public static class ProjectionCoreWorkersNode {
-		public static Dictionary<Guid, IQueuedHandler> CreateCoreWorkers(
+		public static Dictionary<Guid, CoreWorker> CreateCoreWorkers(
 			StandardComponents standardComponents,
 			ProjectionsStandardComponents projectionsStandardComponents) {
 			var coreTimeoutSchedulers =
 				CreateTimeoutSchedulers(projectionsStandardComponents.ProjectionWorkerThreadCount);
 
-			var coreQueues = new Dictionary<Guid, IQueuedHandler>();
-			while (coreQueues.Count < projectionsStandardComponents.ProjectionWorkerThreadCount) {
+			var coreWorkers = new Dictionary<Guid, CoreWorker>();
+			while (coreWorkers.Count < projectionsStandardComponents.ProjectionWorkerThreadCount) {
 				var coreInputBus = new InMemoryBus("bus");
-				var coreQueue = QueuedHandler.CreateQueuedHandler(coreInputBus,
-					"Projection Core #" + coreQueues.Count,
+				var coreInputQueue = QueuedHandler.CreateQueuedHandler(coreInputBus,
+					"Projection Core #" + coreWorkers.Count,
+					standardComponents.QueueStatsManager,
+					standardComponents.QueueTrackers,
+					groupName: "Projection Core");
+				var coreOutputBus = new InMemoryBus("output bus");
+				var coreOutputQueue = QueuedHandler.CreateQueuedHandler(coreOutputBus,
+					"Projection Core #" + coreWorkers.Count + " output",
 					standardComponents.QueueStatsManager,
 					standardComponents.QueueTrackers,
 					groupName: "Projection Core");
@@ -34,20 +40,22 @@ namespace EventStore.Projections.Core {
 				var projectionNode = new ProjectionWorkerNode(
 					workerId,
 					standardComponents.DbConfig,
-					coreQueue,
+					inputQueue: coreInputQueue,
+					outputQueue: coreOutputQueue,
+					coreOutputBus,
 					standardComponents.TimeProvider,
-					coreTimeoutSchedulers[coreQueues.Count],
+					coreTimeoutSchedulers[coreWorkers.Count],
 					projectionsStandardComponents.RunProjections,
 					projectionsStandardComponents.FaultOutOfOrderProjections,
-					projectionsStandardComponents.LeaderOutputBus,
+					projectionsStandardComponents.LeaderOutputQueue,
 					projectionsStandardComponents);
 				projectionNode.SetupMessaging(coreInputBus);
 
 				var forwarder = new RequestResponseQueueForwarder(
-					inputQueue: coreQueue,
+					inputQueue: coreInputQueue,
 					externalRequestQueue: standardComponents.MainQueue);
 				// forwarded messages
-				var coreOutput = projectionNode.CoreOutput;
+				var coreOutput = projectionNode.CoreOutputBus;
 				coreOutput.Subscribe<ClientMessage.ReadEvent>(forwarder);
 				coreOutput.Subscribe<ClientMessage.ReadStreamEventsBackward>(forwarder);
 				coreOutput.Subscribe<ClientMessage.ReadStreamEventsForward>(forwarder);
@@ -64,31 +72,32 @@ namespace EventStore.Projections.Core {
 						Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(standardComponents.MainQueue));
 					coreOutput.Subscribe(
 						Forwarder.Create<ProjectionSubsystemMessage.IODispatcherDrained>(projectionsStandardComponents
-							.LeaderOutputBus));
+							.LeaderOutputQueue));
 				}
 
 				coreOutput.Subscribe<TimerMessage.Schedule>(standardComponents.TimerService);
 
-
-				coreOutput.Subscribe(Forwarder.Create<Message>(coreQueue)); // forward all
+				coreOutput.Subscribe(Forwarder.Create<Message>(coreInputQueue)); // forward all
 
 				coreInputBus.Subscribe(new UnwrapEnvelopeHandler());
 
-				coreQueues.Add(workerId, coreQueue);
+				coreWorkers.Add(workerId, new CoreWorker(workerId, coreInputQueue, coreOutputQueue));
 			}
 
-			var queues = coreQueues.Select(v => v.Value).Cast<IPublisher>().ToArray();
+			var queues = coreWorkers.Select(v => v.Value.CoreInputQueue).Cast<IPublisher>().ToArray();
 			var coordinator = new ProjectionCoreCoordinator(
 				projectionsStandardComponents.RunProjections,
 				coreTimeoutSchedulers,
 				queues,
-				projectionsStandardComponents.LeaderOutputBus,
+				projectionsStandardComponents.LeaderOutputQueue,
 				new PublishEnvelope(projectionsStandardComponents.LeaderInputQueue, crossThread: true));
 
-			coordinator.SetupMessaging(projectionsStandardComponents.LeaderMainBus);
-			projectionsStandardComponents.LeaderMainBus.Subscribe(
-				Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(coreQueues.Values.Cast<IPublisher>().ToArray()));
-			return coreQueues;
+			coordinator.SetupMessaging(projectionsStandardComponents.LeaderInputBus);
+			projectionsStandardComponents.LeaderInputBus.Subscribe(
+				Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(coreWorkers
+					.Select(x => x.Value.CoreInputQueue)
+					.Cast<IPublisher>().ToArray()));
+			return coreWorkers;
 		}
 
 		public static TimeoutScheduler[] CreateTimeoutSchedulers(int count) {
@@ -96,6 +105,28 @@ namespace EventStore.Projections.Core {
 			for (var i = 0; i < timeoutSchedulers.Length; i++)
 				timeoutSchedulers[i] = new TimeoutScheduler();
 			return timeoutSchedulers;
+		}
+	}
+
+	public class CoreWorker {
+		public Guid WorkerId { get; }
+		public IQueuedHandler CoreInputQueue { get; }
+		public IQueuedHandler CoreOutputQueue { get; }
+
+		public CoreWorker(Guid workerId, IQueuedHandler inputQueue, IQueuedHandler outputQueue) {
+			WorkerId = workerId;
+			CoreInputQueue = inputQueue;
+			CoreOutputQueue = outputQueue;
+		}
+
+		public void Start() {
+			CoreInputQueue.Start();
+			CoreOutputQueue.Start();
+		}
+
+		public void Stop() {
+			CoreInputQueue.Stop();
+			CoreOutputQueue.Stop();
 		}
 	}
 }

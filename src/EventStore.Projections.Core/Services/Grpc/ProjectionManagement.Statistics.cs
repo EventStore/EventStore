@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			var envelope = new CallbackEnvelope(OnMessage);
 
-			_queue.Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, mode, name, true));
+			_publisher.Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, mode, name, true));
 
 			foreach (var stats in Array.ConvertAll(await statsSource.Task, s => new StatisticsResp.Types.Details {
 				BufferedEvents = s.BufferedEvents,
