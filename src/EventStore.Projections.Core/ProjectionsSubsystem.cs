@@ -127,13 +127,13 @@ namespace EventStore.Projections.Core {
 		public void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {
 			var standardComponents = builder.ApplicationServices.GetRequiredService<StandardComponents>();
 
-			_leaderInputQueue = QueuedHandler.CreateQueuedHandler(
+			_leaderInputQueue = new QueuedHandlerThreadPool(
 				_leaderInputBus,
 				"Projections Leader",
 				standardComponents.QueueStatsManager,
 				standardComponents.QueueTrackers
 			);
-			_leaderOutputQueue = QueuedHandler.CreateQueuedHandler(
+			_leaderOutputQueue = new QueuedHandlerThreadPool(
 				_leaderOutputBus,
 				"Projections Leader",
 				standardComponents.QueueStatsManager,

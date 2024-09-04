@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Concurrency;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -25,13 +26,13 @@ namespace EventStore.Projections.Core {
 			var coreWorkers = new Dictionary<Guid, CoreWorker>();
 			while (coreWorkers.Count < projectionsStandardComponents.ProjectionWorkerThreadCount) {
 				var coreInputBus = new InMemoryBus("bus");
-				var coreInputQueue = QueuedHandler.CreateQueuedHandler(coreInputBus,
+				var coreInputQueue = new QueuedHandlerThreadPool(coreInputBus,
 					"Projection Core #" + coreWorkers.Count,
 					standardComponents.QueueStatsManager,
 					standardComponents.QueueTrackers,
 					groupName: "Projection Core");
 				var coreOutputBus = new InMemoryBus("output bus");
-				var coreOutputQueue = QueuedHandler.CreateQueuedHandler(coreOutputBus,
+				var coreOutputQueue = new QueuedHandlerThreadPool(coreOutputBus,
 					"Projection Core #" + coreWorkers.Count + " output",
 					standardComponents.QueueStatsManager,
 					standardComponents.QueueTrackers,
