@@ -2,6 +2,7 @@ using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Index;
 using EventStore.Core.Services.Storage;
+using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
@@ -12,10 +13,10 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 	public class when_creating_index_committer_service {
 		protected ICheckpoint ReplicationCheckpoint = new InMemoryCheckpoint(0);
 		protected ICheckpoint WriterCheckpoint = new InMemoryCheckpoint(0);
-		protected InMemoryBus Publisher = new InMemoryBus("publisher");
-		protected FakeIndexCommitter<string> IndexCommitter = new FakeIndexCommitter<string>();
+		protected IPublisher Publisher = new FakePublisher();
+		protected FakeIndexCommitter<string> IndexCommitter = new();
 		protected ITableIndex TableIndex = new FakeTableIndex<string>();
-		private readonly QueueStatsManager _queueStatsManager = new QueueStatsManager();
+		private readonly QueueStatsManager _queueStatsManager = new();
 
 		[Test]
 		public void null_index_committer_throws_argument_null_exception() {

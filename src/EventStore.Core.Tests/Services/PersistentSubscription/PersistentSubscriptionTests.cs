@@ -174,7 +174,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 		private IEventFilter _filterWhenCreate = EventFilter.EventType.Prefixes(isAllStream: true, new[] { "prefixFilter" });
 
 		public when_updating_all_stream_subscription_with_filter() {
-			var bus = new InMemoryBus("bus");
+			var bus = new SynchronousScheduler();
 			var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
 			var trackers = new Trackers();
 
@@ -186,7 +186,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			bus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
 
 			_sut = new PersistentSubscriptionService<TStreamId>(
-				QueuedHandler.CreateQueuedHandler(bus, "test", new QueueStatsManager(), new QueueTrackers()),
+				new QueuedHandlerThreadPool(bus, "test", new QueueStatsManager(), new QueueTrackers()),
 				new FakeReadIndex<TLogFormat,TStreamId>(_ => false, new MetaStreamLookup()),
 				ioDispatcher, bus,
 				new PersistentSubscriptionConsumerStrategyRegistry(bus, bus,

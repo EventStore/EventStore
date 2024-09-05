@@ -40,12 +40,11 @@ namespace EventStore.Projections.Core.Tests.Services.Jint.Scenarios
 			_startSystemProjections = GivenStartSystemProjections();
 		}
 
-		protected override Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler, Guid>[] GivenProcessingQueues() {
-			var buses = new IBus[] {new InMemoryBus("1"), new InMemoryBus("2")};
-			var outBuses = new[] {new InMemoryBus("o1"), new InMemoryBus("o2")};
-			_otherQueues = new ManualQueue[]
-				{new ManualQueue(buses[0], _timeProvider), new ManualQueue(buses[1], _timeProvider)};
-			return new[] {
+		protected override Tuple<SynchronousScheduler, IPublisher, SynchronousScheduler, TimeoutScheduler, Guid>[] GivenProcessingQueues() {
+			SynchronousScheduler[] buses = [new("1"), new("2")];
+			SynchronousScheduler[] outBuses = [new("o1"), new("o2")];
+			_otherQueues = [new(buses[0], _timeProvider), new(buses[1], _timeProvider)];
+			return [
 				Tuple.Create(
 					buses[0],
 					(IPublisher)_otherQueues[0],
@@ -58,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint.Scenarios
 					outBuses[1],
 					default(TimeoutScheduler),
 					Guid.NewGuid())
-			};
+			];
 		}
 
 		protected abstract void GivenEvents();

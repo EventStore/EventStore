@@ -23,7 +23,7 @@ using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEv
 
 namespace EventStore.Projections.Core.Tests.Services {
 	public class TestFixtureWithProjectionCoreService {
-		class GuardBusToTriggerFixingIfUsed : IQueuedHandler, IBus, IPublisher {
+		class GuardBusToTriggerFixingIfUsed : IQueuedHandler, ISubscriber, IPublisher {
 			public void Handle(Message message) {
 				throw new NotImplementedException();
 			}
@@ -49,11 +49,11 @@ namespace EventStore.Projections.Core.Tests.Services {
 				throw new NotImplementedException();
 			}
 
-			public void Subscribe<T>(IHandle<T> handler) where T : Message {
+			public void Subscribe<T>(IAsyncHandle<T> handler) where T : Message {
 				throw new NotImplementedException();
 			}
 
-			public void Unsubscribe<T>(IHandle<T> handler) where T : Message {
+			public void Unsubscribe<T>(IAsyncHandle<T> handler) where T : Message {
 				throw new NotImplementedException();
 			}
 		}
@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 		}
 
 		protected TestHandler<Message> _consumer;
-		protected InMemoryBus _bus;
+		protected SynchronousScheduler _bus;
 		protected ProjectionCoreService _service;
 		protected EventReaderCoreService _readerService;
 
@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 		[SetUp]
 		public virtual void Setup() {
 			_consumer = new TestHandler<Message>();
-			_bus = new InMemoryBus("temp");
+			_bus = new();
 			_bus.Subscribe(_consumer);
 			ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
 			var ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);

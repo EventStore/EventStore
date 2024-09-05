@@ -18,14 +18,14 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 
 		protected TManager Manager;
 		protected List<Message> Produced;
-		protected FakePublisher Publisher = new FakePublisher();
+		protected FakePublisher Publisher = new();
 		protected Guid InternalCorrId = Guid.NewGuid();
 		protected Guid ClientCorrId = Guid.NewGuid();
 		protected byte[] Metadata = new byte[255];
 		protected byte[] EventData = new byte[255];
-		protected FakeEnvelope Envelope = new FakeEnvelope();
-		protected CommitSource CommitSource = new CommitSource();
-		protected InMemoryBus Dispatcher = new InMemoryBus(nameof(RequestManagerSpecification<TManager>));
+		protected FakeEnvelope Envelope = new();
+		protected CommitSource CommitSource = new();
+		protected SynchronousScheduler Dispatcher = new(nameof(RequestManagerSpecification<TManager>));
 
 		protected abstract TManager OnManager(FakePublisher publisher);
 		protected abstract IEnumerable<Message> WithInitialMessages();
@@ -66,6 +66,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 			Dispatcher.Publish(When());
 			Produced = new List<Message>(Publisher.Messages);
 		}
-		
+
 	}
 }

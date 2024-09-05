@@ -65,8 +65,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			var sendOverHttpHandler = GetSendOverHttpProcessor();
 
 			for (int i = 0; i < InstancesCnt; ++i) {
-				var inputBus = new InMemoryBus(string.Format("ELECTIONS-INPUT-BUS-{0}", i));
-				var outputBus = new InMemoryBus(string.Format("ELECTIONS-OUTPUT-BUS-{0}", i));
+				var inputBus = new SynchronousScheduler($"ELECTIONS-INPUT-BUS-{i}");
+				var outputBus = new SynchronousScheduler($"ELECTIONS-OUTPUT-BUS-{i}");
 				var endPoint = new IPEndPoint(BaseEndPoint.Address, BaseEndPoint.Port + i);
 				var memberInfo = MemberInfo.Initial(Guid.NewGuid(), DateTime.UtcNow, VNodeState.Unknown, true,
 					endPoint, endPoint, endPoint, endPoint, endPoint, null, 0, 0, 0, false);

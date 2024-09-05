@@ -18,7 +18,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture]
 	public abstract class WriteEventsToIndexScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
-		protected InMemoryBus _publisher;
+		protected SynchronousScheduler _publisher;
 		protected ITransactionFileReader _tfReader;
 		protected ITableIndex<TStreamId> _tableIndex;
 		protected IIndexBackend<TStreamId> _indexBackend;
@@ -129,7 +129,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				IndexDirectory = GetFilePathFor("index"),
 			});
 			_provider = _logFormat.StreamNamesProvider;
-			_publisher = new InMemoryBus("publisher");
+			_publisher = new("publisher");
 			_tfReader = new FakeInMemoryTfReader(RecordOffset);
 			_tableIndex = new FakeInMemoryTableIndex<TStreamId>();
 			_provider.SetTableIndex(_tableIndex);

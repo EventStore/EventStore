@@ -15,7 +15,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
 		protected readonly string _projectionCheckpointStreamId = "projection-checkpoint-stream";
 		protected readonly Guid _projectionId = Guid.NewGuid();
 
-		protected InMemoryBus _bus = InMemoryBus.CreateTest();
+		protected SynchronousScheduler _bus = new();
 		protected IODispatcher _ioDispatcher;
 		protected ProjectionVersion _projectionVersion;
 		protected CoreProjectionCheckpointReader _reader;

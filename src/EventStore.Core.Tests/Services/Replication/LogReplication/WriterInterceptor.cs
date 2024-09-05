@@ -40,10 +40,10 @@ internal class WriterInterceptor:
 	}
 
 	private readonly ConcurrentQueue<Message> _queue = new();
-	public InMemoryBus Bus { get; }
+	public SynchronousScheduler Bus { get; }
 
 	public WriterInterceptor(ISubscriber subscriber) {
-		Bus = new InMemoryBus("outputBus");
+		Bus = new("outputBus");
 		subscriber.Subscribe<SystemMessage.SystemInit>(this);
 		subscriber.Subscribe<SystemMessage.StateChangeMessage>(this);
 		subscriber.Subscribe<SystemMessage.WriteEpoch>(this);

@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests {
 			};
 		}
 
-		public static void SubscribeIODispatcher(IODispatcher ioDispatcher, IBus bus) {
+		public static void SubscribeIODispatcher(IODispatcher ioDispatcher, ISubscriber bus) {
 			bus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
 			bus.Subscribe<ClientMessage.NotHandled>(ioDispatcher);
 			bus.Subscribe(ioDispatcher.ForwardReader);

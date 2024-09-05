@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.AwakeService {
 		private StorageMessage.EventCommitted _eventCommitted;
 		private Exception _exception;
 		private IEnvelope _envelope;
-		private InMemoryBus _publisher;
+		private SynchronousScheduler _publisher;
 		private TestHandler<TestMessage> _handler;
 		private TestMessage _reply1;
 		private TestMessage _reply2;
@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.AwakeService {
 					recordFactory, 1500, Guid.NewGuid(), Guid.NewGuid(), 1500, 0, streamId, 99, PrepareFlags.Data,
 					eventTypeId, new byte[0], null, DateTime.UtcNow),"Stream", "EventType");
 			_eventCommitted = new StorageMessage.EventCommitted(2000, _eventRecord, isTfEof: true);
-			_publisher = InMemoryBus.CreateTest();
+			_publisher = new();
 			_envelope = new PublishEnvelope(_publisher);
 			_handler = new TestHandler<TestMessage>();
 			_publisher.Subscribe(_handler);

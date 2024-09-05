@@ -40,7 +40,7 @@ internal class AdHocReplicaController<TStreamId> : IHandle<Message> {
 	public int NumWriterFlushes => Interlocked.CompareExchange(ref _numWriterFlushes, 0, 0);
 
 	public AdHocReplicaController(IPublisher outputBus, LeaderInfo<TStreamId> leaderInfo) {
-		_inputQueue = QueuedHandler.CreateQueuedHandler(
+		_inputQueue = new QueuedHandlerThreadPool(
 			consumer: this,
 			name: "InputQueue",
 			queueStatsManager: new QueueStatsManager(),

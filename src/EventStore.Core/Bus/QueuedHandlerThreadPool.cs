@@ -36,7 +36,7 @@ namespace EventStore.Core.Bus {
 
 		private CancellationTokenSource _lifetimeSource;
 		private readonly CancellationToken _lifetimeToken; // cached to avoid ObjectDisposedException
-		private readonly ManualResetEventSlim _stopped = new();
+		private readonly ManualResetEventSlim _stopped = new(true);
 		private readonly TimeSpan _threadStopWaitTimeout;
 
 		// monitoring

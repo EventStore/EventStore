@@ -20,7 +20,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase {
 			public void it_can_be_created() {
 				var coreProjection = new FakeCoreProjection();
 				var stateCache = new PartitionStateCache();
-				var bus = new InMemoryBus("test");
+				var bus = new SynchronousScheduler();
 				var fakeCheckpointManager =
 					new specification_with_multi_phase_core_projection<TLogFormat, TStreamId>.FakeCheckpointManager(bus, Guid.NewGuid());
 				var fakeEmittedStreamsTracker =
@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase {
 			protected WriteQueryResultProjectionProcessingPhase _phase;
 			protected specification_with_multi_phase_core_projection<TLogFormat, TStreamId>.FakeCheckpointManager _checkpointManager;
 			protected specification_with_multi_phase_core_projection<TLogFormat, TStreamId>.FakeEmittedStreamsTracker _emittedStreamsTracker;
-			protected InMemoryBus _publisher;
+			protected SynchronousScheduler _publisher;
 			protected PartitionStateCache _stateCache;
 			protected string _resultStreamName;
 			protected FakeCoreProjection _coreProjection;
@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase {
 			[SetUp]
 			public void SetUp() {
 				_stateCache = GivenStateCache();
-				_publisher = new InMemoryBus("test");
+				_publisher = new();
 				_coreProjection = new FakeCoreProjection();
 				_checkpointManager = new specification_with_multi_phase_core_projection<TLogFormat, TStreamId>.FakeCheckpointManager(
 					_publisher, Guid.NewGuid());

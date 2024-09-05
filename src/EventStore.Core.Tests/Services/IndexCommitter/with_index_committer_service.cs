@@ -19,14 +19,14 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 
 		protected ICheckpoint ReplicationCheckpoint;
 		protected ICheckpoint WriterCheckpoint;
-		protected InMemoryBus Publisher = new InMemoryBus("publisher");
+		protected SynchronousScheduler Publisher = new("publisher");
 		protected ConcurrentQueue<StorageMessage.CommitIndexed> CommitReplicatedMgs = new ConcurrentQueue<StorageMessage.CommitIndexed>();
 		protected ConcurrentQueue<ReplicationTrackingMessage.IndexedTo> IndexWrittenMgs = new ConcurrentQueue<ReplicationTrackingMessage.IndexedTo>();
 
 		protected IndexCommitterService<TStreamId> Service;
 		protected FakeIndexCommitter<TStreamId> IndexCommitter;
 		protected ITFChunkScavengerLogManager TfChunkScavengerLogManager;
-		
+
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
 			IndexCommitter = new FakeIndexCommitter<TStreamId>();
@@ -84,8 +84,8 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 	}
 
 	public class FakeIndexCommitter<TStreamId> : IIndexCommitter<TStreamId> {
-		public ConcurrentQueue<IPrepareLogRecord<TStreamId>> CommittedPrepares = new ConcurrentQueue<IPrepareLogRecord<TStreamId>>();
-		public ConcurrentQueue<CommitLogRecord> CommittedCommits = new ConcurrentQueue<CommitLogRecord>();
+		public ConcurrentQueue<IPrepareLogRecord<TStreamId>> CommittedPrepares = new();
+		public ConcurrentQueue<CommitLogRecord> CommittedCommits = new();
 
 		public long LastIndexedPosition { get; set; }
 
@@ -102,7 +102,7 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 
 		public long Commit(IList<IPrepareLogRecord<TStreamId>> committedPrepares, bool isTfEof, bool cacheLastEventNumber) {
 			foreach (var prepare in committedPrepares) {
-				CommittedPrepares.Enqueue(prepare);	
+				CommittedPrepares.Enqueue(prepare);
 			}
 			return 0;
 		}

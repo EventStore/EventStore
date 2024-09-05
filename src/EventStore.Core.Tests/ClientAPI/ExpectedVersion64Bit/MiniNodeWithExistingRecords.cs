@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		protected ICheckpoint WriterCheckpoint;
 		protected ICheckpoint ChaserCheckpoint;
 		protected IODispatcher IODispatcher;
-		protected InMemoryBus Bus;
+		protected SynchronousScheduler Bus;
 
 		protected IEventStoreConnection _store;
 
@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				IndexDirectory = GetFilePathFor("index"),
 			});
 
-			Bus = new InMemoryBus("bus");
+			Bus = new();
 			IODispatcher = new IODispatcher(Bus, new PublishEnvelope(Bus));
 
 			if (!Directory.Exists(dbPath))
@@ -129,7 +129,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			if (streamRecord != null) {
 				Writer.Write(streamRecord, out pos);
 			}
-			
+
 			_logFormatFactory.EventTypeIndex.GetOrReserveEventType(
 				_logFormatFactory.RecordFactory,
 				eventType,

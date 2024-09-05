@@ -58,7 +58,10 @@ public partial class InMemoryBus : ISubscriber, IAsyncHandle<Message> {
 
 	private bool IsSlowMsgWatchEnabled => BitConverter.DoubleToInt64Bits(_slowMsgThresholdMs) is not 0L;
 
-	public ValueTask DispatchAsync(Message message, CancellationToken token) {
+	public ValueTask DispatchAsync(Message message, CancellationToken token = default) {
+		if (message is null)
+			return ValueTask.FromException(new ArgumentNullException(nameof(message)));
+
 		if (!_handlers.TryGetValue(message.GetType(), out var handlers))
 			throw new ArgumentOutOfRangeException(nameof(message), "Unexpected message type");
 

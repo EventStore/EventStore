@@ -7,16 +7,16 @@ using System.Linq;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class ManualQueue : IPublisher, IHandle<TimerMessage.Schedule> {
-		private readonly Queue<Message> _queue = new Queue<Message>();
-		private readonly IBus _bus;
+		private readonly Queue<Message> _queue = new();
+		private readonly SynchronousScheduler _bus;
 		private readonly ITimeProvider _time;
-		private readonly List<InternalSchedule> _timerQueue = new List<InternalSchedule>();
+		private readonly List<InternalSchedule> _timerQueue = new();
 		private bool _timerDisabled;
 
-		public ManualQueue(IBus bus, ITimeProvider time) {
+		public ManualQueue(SynchronousScheduler bus, ITimeProvider time) {
 			_bus = bus;
 			_time = time;
-			_bus.Subscribe(this);
+			_bus.Subscribe<TimerMessage.Schedule>(this);
 		}
 
 		public void Publish(Message message) {

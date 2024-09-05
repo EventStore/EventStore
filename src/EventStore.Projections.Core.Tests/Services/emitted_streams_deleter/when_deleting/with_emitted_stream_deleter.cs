@@ -20,7 +20,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 	public abstract class with_emitted_stream_deleter<TLogFormat, TStreamId> : IHandle<ClientMessage.ReadStreamEventsForward>,
 		IHandle<ClientMessage.ReadStreamEventsBackward>,
 		IHandle<ClientMessage.DeleteStream> {
-		protected InMemoryBus _bus = InMemoryBus.CreateTest();
+		protected SynchronousScheduler _bus = new();
 		protected IODispatcher _ioDispatcher;
 		protected EmittedStreamsDeleter _deleter;
 		protected ProjectionNamesBuilder _projectionNamesBuilder;
