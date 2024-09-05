@@ -9,7 +9,7 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Bus;
 
 public class MultiQueuedHandler : IPublisher, IThreadSafePublisher {
-	public readonly ReadOnlyMemory<IQueuedHandler> Queues;
+	private readonly ReadOnlyMemory<IQueuedHandler> _queues;
 	private int _nextQueueNum = -1;
 
 	public MultiQueuedHandler(int queueCount,
@@ -18,17 +18,17 @@ public class MultiQueuedHandler : IPublisher, IThreadSafePublisher {
 		Ensure.NotNull(queueFactory, "queueFactory");
 
 		var queues = new IQueuedHandler[queueCount];
-		for (int i = 0; i < Queues.Length; ++i) {
+		for (int i = 0; i < queues.Length; ++i) {
 			queues[i] = queueFactory(i);
 		}
 
-		Queues = queues;
+		_queues = queues;
 	}
 
 	private int NextQueueHash() => Interlocked.Increment(ref _nextQueueNum);
 
 	public IEnumerable<Task> Start() {
-		var queues = Queues.Span;
+		var queues = _queues.Span;
 		var tasks = new Task[queues.Length];
 
 		for (var i = 0; i < queues.Length; i++) {
@@ -39,8 +39,8 @@ public class MultiQueuedHandler : IPublisher, IThreadSafePublisher {
 	}
 
 	public void Stop() {
-		var stopTasks = new Task[Queues.Length];
-		var queues = Queues.Span;
+		var stopTasks = new Task[_queues.Length];
+		var queues = _queues.Span;
 		for (int i = 0; i < queues.Length; ++i) {
 			stopTasks[i] = Task.Factory.StartNew(queues[i].Stop);
 		}
@@ -50,12 +50,12 @@ public class MultiQueuedHandler : IPublisher, IThreadSafePublisher {
 
 	public void Publish(Message message) {
 		int queueHash = (message as IQueueAffineMessage)?.QueueId ?? NextQueueHash();
-		var queueNum = (int)((uint)queueHash % Queues.Length);
-		Queues.Span[queueNum].Publish(message);
+		var queueNum = (int)((uint)queueHash % _queues.Length);
+		_queues.Span[queueNum].Publish(message);
 	}
 
 	public void PublishToAll(Message message) {
-		foreach (var queue in Queues.Span) {
+		foreach (var queue in _queues.Span) {
 			queue.Publish(message);
 		}
 	}
