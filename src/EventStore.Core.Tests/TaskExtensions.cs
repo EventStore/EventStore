@@ -18,12 +18,14 @@ namespace EventStore.Core.Tests {
 
 			await task
 				.WaitAsync(timeout)
-				.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+				.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ContinueOnCapturedContext);
 
 			if (!task.IsCompleted) {
 				onFail?.Invoke();
 				throw new TimeoutException($"Timed out waiting for task at: {memberName} {sourceFilePath}:{sourceLineNumber}");
 			}
+
+			await task;
 		}
 
 		public static Task WithTimeout(this Task task, int timeoutMs = 10000, Action onFail = null,
@@ -42,7 +44,7 @@ namespace EventStore.Core.Tests {
 
 			await task.As<Task>()
 				.WaitAsync(timeout)
-				.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+				.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ContinueOnCapturedContext);
 
 			if (!task.IsCompleted) {
 				onFail?.Invoke();
