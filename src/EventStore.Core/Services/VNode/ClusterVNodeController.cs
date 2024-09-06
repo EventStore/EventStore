@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.VNode {
 		protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeController>();
 	}
 
-	public class ClusterVNodeController<TStreamId> : ClusterVNodeController, IPublisher, ISubscriber {
+	public class ClusterVNodeController<TStreamId> : ClusterVNodeController, IPublisher, ISubscriber, IEnvelope {
 		public static readonly TimeSpan ShutdownTimeout = TimeSpan.FromSeconds(5);
 		public static readonly TimeSpan LeaderReconnectionDelay = TimeSpan.FromMilliseconds(500);
 		private static readonly TimeSpan LeaderSubscriptionRetryDelay = TimeSpan.FromMilliseconds(500);
@@ -50,7 +50,6 @@ namespace EventStore.Core.Services.VNode {
 		private readonly int _clusterSize;
 
 		private readonly IQueuedHandler _scheduler;
-		private readonly IEnvelope _publishEnvelope;
 		private readonly VNodeFSM _fsm;
 
 		private readonly MessageForwardingProxy _forwardingProxy;
@@ -90,7 +89,6 @@ namespace EventStore.Core.Services.VNode {
 			_scheduler = new QueuedHandlerThreadPool(_dispatcher, "MainQueue", statsManager,
 				trackers);
 
-			_publishEnvelope = new PublishEnvelope(_scheduler);
 			_nodeInfo = nodeInfo;
 			_db = db;
 			_node = node;
@@ -358,6 +356,8 @@ namespace EventStore.Core.Services.VNode {
 
 		public void Publish(Message message) => _fsm.Handle(message);
 
+		void IEnvelope<Message>.ReplyWith<U>(U reply) => Publish(reply);
+
 		private void Handle(SystemMessage.SystemInit message) {
 			Log.Information("========== [{httpEndPoint}] SYSTEM INIT...", _nodeInfo.HttpEndPoint);
 			_scheduler.Publish(message);
@@ -383,7 +383,7 @@ namespace EventStore.Core.Services.VNode {
 			State = VNodeState.Unknown;
 			_leader = null;
 			_scheduler.Publish(message);
-			_scheduler.Publish(new ElectionMessage.StartElections());
+			Publish(new ElectionMessage.StartElections());
 		}
 
 		private void Handle(SystemMessage.BecomeDiscoverLeader message) {
@@ -393,7 +393,7 @@ namespace EventStore.Core.Services.VNode {
 			_scheduler.Publish(message);
 
 			var msg = new LeaderDiscoveryMessage.DiscoveryTimeout();
-			_scheduler.Publish(TimerMessage.Schedule.Create(LeaderDiscoveryTimeout, _publishEnvelope, msg));
+			Publish(TimerMessage.Schedule.Create(LeaderDiscoveryTimeout, this, msg));
 		}
 
 		private void Handle(SystemMessage.InitiateLeaderResignation message) {
@@ -426,7 +426,7 @@ namespace EventStore.Core.Services.VNode {
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
 			State = VNodeState.PreReplica;
 			_scheduler.Publish(message);
-			_scheduler.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
+			Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
 		}
 
 		private void Handle(SystemMessage.BecomePreReadOnlyReplica message) {
@@ -439,7 +439,7 @@ namespace EventStore.Core.Services.VNode {
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
 			State = VNodeState.PreReadOnlyReplica;
 			_scheduler.Publish(message);
-			_scheduler.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
+			Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
 		}
 
 		private void Handle(SystemMessage.BecomeCatchingUp message) {
@@ -502,7 +502,7 @@ namespace EventStore.Core.Services.VNode {
 				_nodeInfo.HttpEndPoint);
 			State = VNodeState.PreLeader;
 			_scheduler.Publish(message);
-			_scheduler.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
+			Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
 		}
 
 		private void Handle(SystemMessage.BecomeLeader message) {
@@ -525,7 +525,7 @@ namespace EventStore.Core.Services.VNode {
 			_stateCorrelationId = message.CorrelationId;
 			_exitProcessOnShutdown = message.ExitProcess;
 			State = VNodeState.ShuttingDown;
-			_scheduler.Publish(TimerMessage.Schedule.Create(ShutdownTimeout, _publishEnvelope,
+			Publish(TimerMessage.Schedule.Create(ShutdownTimeout, this,
 				new SystemMessage.ShutdownTimeout()));
 			_scheduler.Publish(message);
 		}
@@ -579,7 +579,7 @@ namespace EventStore.Core.Services.VNode {
 			_serviceInitsToExpect -= 1;
 			_scheduler.Publish(message);
 			if (_serviceInitsToExpect == 0)
-				_scheduler.Publish(new SystemMessage.SystemStart());
+				Publish(new SystemMessage.SystemStart());
 		}
 
 		private void Handle(AuthenticationMessage.AuthenticationProviderInitialized message) {
@@ -952,7 +952,7 @@ namespace EventStore.Core.Services.VNode {
 				var msg = State == VNodeState.PreReplica
 					? (Message)new ReplicationMessage.ReconnectToLeader(_leaderConnectionCorrelationId, _leader)
 					: new SystemMessage.BecomePreReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader);
-				_scheduler.Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, _publishEnvelope, msg));
+				Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, this, msg));
 			}
 
 			_scheduler.Publish(message);
@@ -965,7 +965,7 @@ namespace EventStore.Core.Services.VNode {
 				var msg = State == VNodeState.PreReadOnlyReplica
 					? (Message)new ReplicationMessage.ReconnectToLeader(_leaderConnectionCorrelationId, _leader)
 					: new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader);
-				_scheduler.Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, _publishEnvelope, msg));
+				Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, this, msg));
 			}
 
 			_scheduler.Publish(message);
@@ -978,7 +978,7 @@ namespace EventStore.Core.Services.VNode {
 					_leader);
 				Log.Debug("GOSSIP:");
 				Log.Debug("{clusterInfo}", message.ClusterInfo);
-				_scheduler.Publish(new ElectionMessage.StartElections());
+				Publish(new ElectionMessage.StartElections());
 			}
 
 			_scheduler.Publish(message);
@@ -1030,12 +1030,12 @@ namespace EventStore.Core.Services.VNode {
 				Log.Debug(
 					"There is NO LEADER or LEADER is DEAD according to GOSSIP. Starting new elections. LEADER: [{leader}].",
 					_leader);
-				_scheduler.Publish(new ElectionMessage.StartElections());
+				Publish(new ElectionMessage.StartElections());
 			} else if (leader.State != VNodeState.PreLeader && leader.State != VNodeState.Leader && leader.State != VNodeState.ResigningLeader) {
 				Log.Debug(
 					"LEADER node is still alive but is no longer in a LEADER state according to GOSSIP. Starting new elections. LEADER: [{leader}].",
 					_leader);
-				_scheduler.Publish(new ElectionMessage.StartElections());
+				Publish(new ElectionMessage.StartElections());
 			}
 			_scheduler.Publish(message);
 		}
@@ -1049,7 +1049,7 @@ namespace EventStore.Core.Services.VNode {
 			if (leaderCount == 1) {
 				_leader = aliveLeaders.First();
 				Log.Information("Existing LEADER found during LEADER DISCOVERY stage. LEADER: [{leader}]. Proceeding to PRE-REPLICA state.", _leader);
-				_scheduler.Publish(new LeaderDiscoveryMessage.LeaderFound(_leader));
+				Publish(new LeaderDiscoveryMessage.LeaderFound(_leader));
 				_stateCorrelationId = Guid.NewGuid();
 				_leaderConnectionCorrelationId = Guid.NewGuid();
 				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader));
@@ -1109,7 +1109,7 @@ namespace EventStore.Core.Services.VNode {
 			_leaderConnectionCorrelationId = Guid.NewGuid();
 			var msg = new ReplicationMessage.ReconnectToLeader(_leaderConnectionCorrelationId, message.Leader);
 			// Attempt the connection again after a timeout
-			_scheduler.Publish(TimerMessage.Schedule.Create(LeaderSubscriptionTimeout, _publishEnvelope, msg));
+			_scheduler.Publish(TimerMessage.Schedule.Create(LeaderSubscriptionTimeout, this, msg));
 		}
 
 		private void Handle(ReplicationMessage.SubscribeToLeader message) {
@@ -1119,7 +1119,7 @@ namespace EventStore.Core.Services.VNode {
 			_scheduler.Publish(message);
 
 			var msg = new ReplicationMessage.SubscribeToLeader(_stateCorrelationId, _leader.InstanceId, Guid.NewGuid());
-			_scheduler.Publish(TimerMessage.Schedule.Create(LeaderSubscriptionTimeout, _publishEnvelope, msg));
+			Publish(TimerMessage.Schedule.Create(LeaderSubscriptionTimeout, this, msg));
 		}
 
 		private void Handle(ReplicationMessage.ReplicaSubscriptionRetry message) {
@@ -1128,7 +1128,7 @@ namespace EventStore.Core.Services.VNode {
 
 				var msg = new ReplicationMessage.SubscribeToLeader(_stateCorrelationId, _leader.InstanceId,
 					Guid.NewGuid());
-				_scheduler.Publish(TimerMessage.Schedule.Create(LeaderSubscriptionRetryDelay, _publishEnvelope, msg));
+				Publish(TimerMessage.Schedule.Create(LeaderSubscriptionRetryDelay, this, msg));
 			}
 		}
 
