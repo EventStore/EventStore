@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Services {
 
 		public ReaderSubscriptionDispatcher(IPublisher publisher) {
 			_publisher = publisher;
-			_publishEnvelope = new PublishEnvelope(_publisher, true);
+			_publishEnvelope = new PublishEnvelope(_publisher);
 		}
 
 		/// <summary>

@@ -115,12 +115,12 @@ namespace EventStore.Projections.Core.Services.Processing.AllStream {
 			if (_eof) {
 				_publisher.Publish(
 					new AwakeServiceMessage.SubscribeAwake(
-						new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+						new PublishEnvelope(_publisher), Guid.NewGuid(), null,
 						new TFPos(_lastPosition, _lastPosition),
 						CreateReadTimeoutMessage(_pendingRequestCorrelationId, "$all")));
 				_publisher.Publish(
 					new AwakeServiceMessage.SubscribeAwake(
-						new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+						new PublishEnvelope(_publisher), Guid.NewGuid(), null,
 						new TFPos(_lastPosition, _lastPosition), readEventsForward));
 			} else {
 				_publisher.Publish(readEventsForward);

@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core {
 				coreTimeoutSchedulers,
 				queues,
 				projectionsStandardComponents.LeaderOutputQueue,
-				new PublishEnvelope(projectionsStandardComponents.LeaderInputQueue, crossThread: true));
+				new PublishEnvelope(projectionsStandardComponents.LeaderInputQueue));
 
 			coordinator.SetupMessaging(projectionsStandardComponents.LeaderInputBus);
 			projectionsStandardComponents.LeaderInputBus.Subscribe(

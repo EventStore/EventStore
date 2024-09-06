@@ -169,7 +169,7 @@ namespace EventStore.Projections.Core.Services.Management {
 
 			_projections = new Dictionary<string, ManagedProjection>();
 			_projectionsMap = new Dictionary<Guid, string>();
-			_publishEnvelope = new PublishEnvelope(_inputQueue, crossThread: true);
+			_publishEnvelope = new PublishEnvelope(_inputQueue);
 			_getStateDispatcher =
 				new RequestResponseDispatcher
 					<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
