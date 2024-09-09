@@ -3,6 +3,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Strategies;
@@ -23,11 +24,11 @@ public class when_handling_subscribe_requests<TLogFormat, TStreamId> :TestFixtur
 		_subscriptionDispatcher.PublishSubscribe(
 			new ReaderSubscriptionManagement.Subscribe(subscriptionId, CheckpointTag.Empty,
 				new FakeReaderStrategy(), _defaultOptions),
-			new AdHocHandler<EventReaderSubscriptionMessage.Failed>(m => failedMessage = m),
+			new AdHocHandlerStruct<EventReaderSubscriptionMessage.Failed>(m => failedMessage = m, null),
 			scheduleTimeout: false);
 		_queue.Process();
 
-		Assert.NotNull(failedMessage);
+		Assert.NotNull(failedMessage, $"Expected {nameof(ReaderSubscriptionDispatcher)} to publish a {nameof(EventReaderSubscriptionMessage.Failed)} message");
 		Assert.AreEqual(subscriptionId, failedMessage.SubscriptionId);
 		Assert.AreEqual($"{nameof(EventReaderCoreService)} is stopped", failedMessage.Reason);
 	}
@@ -39,11 +40,11 @@ public class when_handling_subscribe_requests<TLogFormat, TStreamId> :TestFixtur
 		_subscriptionDispatcher.PublishSubscribe(
 			new ReaderSubscriptionManagement.Subscribe(subscriptionId, CheckpointTag.Empty,
 				FakeReaderStrategyThatThrows.ThrowOnCreateReaderSubscription(), _defaultOptions),
-			new AdHocHandler<EventReaderSubscriptionMessage.Failed>(m => failedMessage = m),
+			new AdHocHandlerStruct<EventReaderSubscriptionMessage.Failed>(m => failedMessage = m, null),
 			scheduleTimeout: false);
 		_queue.Process();
 
-		Assert.NotNull(failedMessage);
+		Assert.NotNull(failedMessage, $"Expected {nameof(ReaderSubscriptionDispatcher)} to publish a {nameof(EventReaderSubscriptionMessage.Failed)} message");
 		Assert.AreEqual(subscriptionId, failedMessage.SubscriptionId);
 		Assert.True(failedMessage.Reason.Contains(nameof(FakeReaderStrategyThatThrows)));
 	}
@@ -55,11 +56,11 @@ public class when_handling_subscribe_requests<TLogFormat, TStreamId> :TestFixtur
 		_subscriptionDispatcher.PublishSubscribe(
 			new ReaderSubscriptionManagement.Subscribe(subscriptionId, CheckpointTag.Empty,
 				FakeReaderStrategyThatThrows.ThrowOnCreatePausedReader(), _defaultOptions),
-			new AdHocHandler<EventReaderSubscriptionMessage.Failed>(m => failedMessage = m),
+			new AdHocHandlerStruct<EventReaderSubscriptionMessage.Failed>(m => failedMessage = m, null),
 			scheduleTimeout: false);
 		_queue.Process();
 
-		Assert.NotNull(failedMessage);
+		Assert.NotNull(failedMessage, $"Expected {nameof(ReaderSubscriptionDispatcher)} to publish a {nameof(EventReaderSubscriptionMessage.Failed)} message");
 		Assert.AreEqual(subscriptionId, failedMessage.SubscriptionId);
 		Assert.True(failedMessage.Reason.Contains(nameof(FakeReaderSubscriptionThatThrows)));
 	}
