@@ -51,7 +51,7 @@ namespace EventStore.Core.Services.Monitoring {
 		private readonly IReadOnlyCheckpoint _writerCheckpoint;
 		private readonly string _dbPath;
 		private readonly StatsStorage _statsStorage;
-		private readonly long _statsCollectionPeriodMs;
+		private readonly TimeSpan _statsCollectionPeriod;
 		private SystemStatsHelper _systemStats;
 
 		private DateTime _lastStatsRequestTime = DateTime.UtcNow;
@@ -93,9 +93,9 @@ namespace EventStore.Core.Services.Monitoring {
 			_writerCheckpoint = writerCheckpoint;
 			_dbPath = dbPath;
 			_statsStorage = statsStorage;
-			_statsCollectionPeriodMs = statsCollectionPeriod > TimeSpan.Zero
-				? (long)statsCollectionPeriod.TotalMilliseconds
-				: Timeout.Infinite;
+			_statsCollectionPeriod = statsCollectionPeriod > TimeSpan.Zero
+				? statsCollectionPeriod
+				: Timeout.InfiniteTimeSpan;
 			_nodeStatsStream = string.Format("{0}-{1}", SystemStreams.StatsStreamPrefix, nodeEndpoint);
 			_tcpEndpoint = tcpEndpoint;
 			_tcpSecureEndpoint = tcpSecureEndpoint;
@@ -116,6 +116,7 @@ namespace EventStore.Core.Services.Monitoring {
 			}
 
 			while (!_timerToken.IsCancellationRequested) {
+				await Task.Delay(_statsCollectionPeriod);
 				await CollectRegularStats(_timerToken);
 			}
 		}
