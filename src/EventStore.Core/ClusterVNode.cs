@@ -1798,7 +1798,7 @@ namespace EventStore.Core {
 #endif
 		}
 
-		public override async Task<ClusterVNode> StartAsync(bool waitUntilReady) {
+		public override Task<ClusterVNode> StartAsync(bool waitUntilReady) {
 			var tcs = new TaskCompletionSource<ClusterVNode>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			if (waitUntilReady) {
@@ -1813,7 +1813,7 @@ namespace EventStore.Core {
 			if (IsShutdown)
 				tcs.TrySetResult(this);
 
-			return await tcs.Task;
+			return tcs.Task;
 		}
 
 		public static ValueTuple<bool, string> ValidateServerCertificate(X509Certificate certificate,
