@@ -1792,13 +1792,12 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class GetDatabaseScavenge : Message {
+		public partial class GetCurrentDatabaseScavenge : Message {
 			public readonly IEnvelope Envelope;
 			public readonly Guid CorrelationId;
 			public readonly ClaimsPrincipal User;
-			public readonly string ScavengeId;
 
-			public GetDatabaseScavenge(IEnvelope envelope, Guid correlationId, ClaimsPrincipal user) {
+			public GetCurrentDatabaseScavenge(IEnvelope envelope, Guid correlationId, ClaimsPrincipal user) {
 				Ensure.NotNull(envelope, "envelope");
 				Envelope = envelope;
 				CorrelationId = correlationId;
@@ -1807,12 +1806,12 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ScavengeDatabaseGetResponse : Message {
+		public partial class ScavengeDatabaseGetCurrentResponse : Message {
 			public readonly Guid CorrelationId;
 			public readonly ScavengeResult Result;
 			public readonly string ScavengeId;
 
-			public ScavengeDatabaseGetResponse(Guid correlationId, 
+			public ScavengeDatabaseGetCurrentResponse(Guid correlationId,
 				ScavengeResult result, string scavengeId) {
 				CorrelationId = correlationId;
 				Result = result;
@@ -1879,7 +1878,7 @@ namespace EventStore.Core.Messages {
 			}
 
 			public override string ToString() => $"ScavengeId: {ScavengeId}, Reason: {Reason}";
-			
+
 		}
 
 		[DerivedMessage(CoreMessage.Client)]

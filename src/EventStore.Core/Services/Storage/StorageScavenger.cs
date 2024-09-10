@@ -17,7 +17,7 @@ namespace EventStore.Core.Services.Storage {
 	public class StorageScavenger :
 		IHandle<ClientMessage.ScavengeDatabase>,
 		IHandle<ClientMessage.StopDatabaseScavenge>,
-		IHandle<ClientMessage.GetDatabaseScavenge>,
+		IHandle<ClientMessage.GetCurrentDatabaseScavenge>,
 		IHandle<SystemMessage.StateChangeMessage> {
 
 		protected static ILogger Log { get; } = Serilog.Log.ForContext<StorageScavenger>();
@@ -104,17 +104,17 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		public void Handle(ClientMessage.GetDatabaseScavenge message) {
+		public void Handle(ClientMessage.GetCurrentDatabaseScavenge message) {
 			if (IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
 				lock (_lock) {
 					if (_currentScavenge != null) {
-						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseGetResponse(
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseGetCurrentResponse(
 							message.CorrelationId,
-							ClientMessage.ScavengeDatabaseGetResponse.ScavengeResult.InProgress,
+							ClientMessage.ScavengeDatabaseGetCurrentResponse.ScavengeResult.InProgress,
 							_currentScavenge.ScavengeId));
 					} else {
-						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseGetResponse(
-							message.CorrelationId, ClientMessage.ScavengeDatabaseGetResponse.ScavengeResult.Stopped, scavengeId: null));
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseGetCurrentResponse(
+							message.CorrelationId, ClientMessage.ScavengeDatabaseGetCurrentResponse.ScavengeResult.Stopped, scavengeId: null));
 					}
 				}
 			}
