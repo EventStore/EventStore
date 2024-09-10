@@ -89,6 +89,11 @@ public static class ClusterVNodeOptionsValidator {
 			throw new InvalidConfigurationException(
 				"This node cannot be configured as a Read Only Replica as these node types are only supported in a clustered configuration.");
 		}
+
+		if (options.Cluster.Archiver && !options.Cluster.ReadOnlyReplica) {
+			throw new InvalidConfigurationException(
+				"Only Read Only Replica nodes can be Archivers.");
+		}
 	}
 
 	public static bool ValidateForStartup(ClusterVNodeOptions options) {
