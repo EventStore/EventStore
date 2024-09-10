@@ -1731,18 +1731,12 @@ namespace EventStore.Core {
 			_reloadConfigSignalRegistration?.Dispose();
 			_reloadConfigSignalRegistration = null;
 
-			if (_subsystems != null) {
-				foreach (var subsystem in _subsystems) {
-					await subsystem.Stop();
-				}
+			foreach (var subsystem in _subsystems ?? []) {
+				await subsystem.Stop();
 			}
 
-			var cts = new CancellationTokenSource();
-
-			await using var _ = cts.Token.Register(() => _shutdownSource.TrySetCanceled(cancellationToken));
-
-			cts.CancelAfter(timeout.Value);
-			await _shutdownSource.Task;
+			await _shutdownSource.Task.WaitAsync(timeout.Value, cancellationToken);
+			
 			_switchChunksLock?.Dispose();
 		}
 
