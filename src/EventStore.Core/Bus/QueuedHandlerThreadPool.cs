@@ -194,7 +194,7 @@ namespace EventStore.Core.Bus {
 #endif
 			_queue.Enqueue(new(_tracker.Now, message));
 			if (!_lifetimeToken.IsCancellationRequested && Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0) {
-				ThreadPool.UnsafeQueueUserWorkItem(Execute, this, preferLocal: false);
+				ThreadPool.QueueUserWorkItem(Execute, this, preferLocal: false);
 			}
 
 			static void Execute(IThreadPoolWorkItem workItem)
