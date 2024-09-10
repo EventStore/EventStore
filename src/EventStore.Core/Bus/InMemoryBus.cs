@@ -63,7 +63,7 @@ public partial class InMemoryBus : ISubscriber, IAsyncHandle<Message> {
 			return ValueTask.FromException(new ArgumentNullException(nameof(message)));
 
 		if (!_handlers.TryGetValue(message.GetType(), out var handlers))
-			throw new ArgumentOutOfRangeException(nameof(message), "Unexpected message type");
+			return ValueTask.FromException(new ArgumentOutOfRangeException(nameof(message), "Unexpected message type"));
 
 		// Perf: branching with single if-else statement is better than virtual dispatch
 		return IsSlowMsgWatchEnabled
