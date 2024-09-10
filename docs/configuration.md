@@ -4,28 +4,24 @@ title: "How-to"
 
 ## Configuration options
 
-EventStoreDB has a number of configuration options that can be changed. You can find all the options described
-in details in this section.
+EventStoreDB has a number of configuration options that will be described in detail in this section.
 
-When you don't change the configuration, EventStoreDB will use sensible defaults, but they might not suit your
-needs. You can always instruct EventStoreDB to use a different set of options. There are multiple ways to
-configure EventStoreDB server, described below.
+If you opt to NOT change the configuration, EventStoreDB uses sensible defaults.  But please note, the configurations
+should be set to meet your specific needs.  
 
 ### Version and help
 
-You can check what version of EventStoreDB you have installed by using the `--version` parameter in the
-command line. For example:
+Use the `--version` parameter in the command line to check the installed version of EventStoreDB. For example:
 
 :::: code-group
-::: code Linux
+::: code-group-item Linux
 ```bash
-```bash:no-line-numbers
 $ eventstored --version
 EventStoreDB version 24.6.0.0 (oss-v24.6.0-alpha-16-g8e06f9f77/8e06f9f77, 2023-10-24T22:05:57-05:00)
 ```
 :::
-::: code Windows
-```
+::: code-group-item Windows
+```bash:no-line-numbers
 > EventStore.ClusterNode.exe --version
 EventStoreDB version 24.6.0.0 (oss-v24.6.0-alpha-16-g8e06f9f77/8e06f9f77, 2023-10-24T22:05:57-05:00)
 ```
@@ -37,13 +33,17 @@ option in the command line.
 
 ### Configuration file
 
-You would use the configuration file when you want the server to run with the same set of options every time.
-YAML files are better for large installations as you can centrally distribute and manage them, or generate
+Use the configuration file when you want the server to consistenly run with the same set of options.
+YAML files are recommended for large installations, as you can centrally distribute and manage them, or generate
 them from a configuration management system.
 
-The default configuration file name is `eventstore.conf` and it's located in
+The default configuration file name is `eventstore.conf` and it's located in:
 - **Linux:** `/etc/eventstore/`
 - **Windows:** EventStoreDB installation directory
+
+You can either change this file or create another file and instruct EventStoreDB to use it.  To tell the EventStoreDB
+ server to use a different configuration file, pass the file path on the command line with `--config=filename`, 
+ or use the `CONFIG` environment variable.
 
 The configuration file has YAML-compatible format. The basic format of the YAML configuration file is as
 follows:
@@ -58,13 +58,6 @@ Log: "/esdb/logs"
 You need to use the three dashes and spacing in your YAML file.
 :::
 
-The default configuration file name is `eventstore.conf`. It is located in `/etc/eventstore/` on Linux and the
-server installation directory on Windows. You can either change this file or create another file and instruct
-EventStoreDB to use it.
-
-To tell the EventStoreDB server to use a different configuration file, you pass the file path on the command
-line with `--config=filename`, or use the `CONFIG`
-environment variable.
 
 ### Environment variables
 
@@ -95,13 +88,13 @@ EventStore.ClusterNode.exe --log C:\Temp\EventStore\Logs
 
 ### Testing the configuration
 
-If more than one method is used to configure the server, it might be hard to find out what the effective
-configuration will be when the server starts. To help to find out just that, you can use the `--what-if`
-option.
+If more than one method is used to configure the server, it may be difficult to discern the effective
+configuration when the server starts. You can use the `--what-if` option to better understand the configuration
+details.
 
-When you run EventStoreDB with this option, it will print out the effective configuration applied from all
-available sources (default and custom configuration file, environment variables and command line parameters)
-and print it out to the console.
+When you run EventStoreDB with the `--what-if` option, it will print out the effective configuration applied from all
+available sources (default and custom configuration file, environment variables, and command line parameters)
+to the console.
 
 ::: details Click here to see a WhatIf example
 
@@ -291,8 +284,8 @@ DEFAULT OPTIONS:
 :::
 
 ::: note 
-Version 21.6 introduced a stricter configuration check: the server will _not start_ when an unknown
-configuration options is passed in either the configuration file, environment variable or command line.
+Version 21.6 introduced a stricter configuration check: The server will _not start_ when an unknown
+configuration option is passed in either the configuration file, environment variable, or command line.
 
 E.g: the following will prevent the server from starting:
 
@@ -304,22 +297,22 @@ And will output on `stdout`
 only: _Error while parsing options: The option UnknownConfig is not a known option. (Parameter 'UnknownConfig')_.
 :::
 
-## Autoconfigured options
+## Auto-configured options
 
 Some options are configured at startup to make better use of the available resources on larger instances or
 machines.
 
 These options are `StreamInfoCacheCapacity`, `ReaderThreadsCount`, and `WorkerThreads`.
 
-Autoconfiguration does not apply in containerized environments.
+Auto-configuration does not apply in containerized environments.
 
 ### StreamInfoCacheCapacity
 
-This option sets the maximum number of entries to keep in the stream info cache. This is the lookup that
-contains the information of any stream that has recently been read or written to. Having entries in this cache
-significantly improves write and read performance to cached streams on larger databases.
+This option sets the maximum number of entries kept in the stream info cache. This lookup contains the information of 
+any stream that has recently been read or written to. Having entries in this cache significantly improves write 
+and read performance to cached streams on larger databases.
 
-By default, the cache dynamically resizes according to the amount of free memory. The minimum that it can be set to is 100,000 entries.
+By default, the cache dynamically resizes based on the amount of free memory. The minimum it can be set to is 100,000 entries.
 
 | Format               | Syntax                                  |
 |:---------------------|:----------------------------------------|
@@ -328,7 +321,7 @@ By default, the cache dynamically resizes according to the amount of free memory
 | Environment variable | `EVENTSTORE_STREAM_INFO_CACHE_CAPACITY` |
 
 The option is set to 0 by default, which enables dynamic resizing. The default on previous versions of
-EventStoreDb was 100,000 entries.
+EventStoreDB was 100,000 entries.
 
 ::: note
 The default value of 0 for `StreamInfoCacheCapacity` might not always be the best value for optimal performance. Ideally, it should be set to double the number of streams in the anticipated working set.
@@ -340,11 +333,16 @@ It should be noted that the total number of streams does not necessarily give yo
 
 ### ReaderThreadsCount
 
-This option configures the number of reader threads available to EventStoreDb. Having more reader threads
-allows more concurrent reads to be processed.
+This option configures the number of reader threads available to EventStoreDB. Increased reader threads
+enables more concurrent reads to be processed.
+
+::: warning 
+Increasing the reader threads count too high can cause read timeouts if your disk cannot handle the
+increased load.
+:::
 
 The reader threads count will be set at startup to twice the number of available processors, with a minimum of
-4 and a maximum of 16 threads.
+four and a maximum of sixteen threads.
 
 | Format               | Syntax                            |
 |:---------------------|:----------------------------------|
@@ -353,19 +351,15 @@ The reader threads count will be set at startup to twice the number of available
 | Environment variable | `EVENTSTORE_READER_THREADS_COUNT` |
 
 The option is set to 0 by default, which enables autoconfiguration. The default on previous versions of
-EventStoreDb was 4 threads.
+EventStoreDB was four threads.
 
-::: warning 
-Increasing the reader threads count too high can cause read timeouts if your disk cannot handle the
-increased load.
-:::
 
 ### WorkerThreads
 
 The `WorkerThreads` option configures the number of threads available to the pool of worker services.
 
-At startup the number of worker threads will be set to 10 if there are more than 4 reader threads. Otherwise,
-it will be set to have 5 threads available.
+At startup, the number of worker threads will be set to ten if there are more than four reader threads. Otherwise,
+it will be set to have five threads available.
 
 | Format               | Syntax                      |
 |:---------------------|:----------------------------|
@@ -374,20 +368,20 @@ it will be set to have 5 threads available.
 | Environment variable | `EVENTSTORE_WORKER_THREADS` |
 
 The option is set to 0 by default, which enables autoconfiguration. The default on previous versions of
-EventStoreDb was 5 threads.
+EventStoreDB was five threads.
 
 ## Plugins configuration
 
 The commercial edition of EventStoreDB ships with several plugins that augment the behavior of the open source server. Each plugin is documented in relevant sections. For example, under Security, you will find the User Certificates plugin documentation.
 
-The plugins (apart from the `ldap` plugin) are configured separately to the main server configuration and can be configured via `json` files and `environment variables`.
+The plugins (apart from the `ldap` plugin) are configured separately from the main server configuration and can be configured via `json` files and `environment variables`.
 
 Environment variables take precedence.
 
 #### JSON files
 
-Each configurable plugin comes with a sample JSON file in the `<installation-directory>/plugins/<plugin-name>` directory.
-Here is an example file called `user-certificates-plugin-example.json` to enable the user certificates plugin.
+Each configurable plugin comes with a sample JSON file, located in the `<installation-directory>/plugins/<plugin-name>` directory.
+Here is an example file called `user-certificates-plugin-example.json` that enables the user certificates plugin.
 
 ```json
 {
@@ -401,7 +395,7 @@ Here is an example file called `user-certificates-plugin-example.json` to enable
 }
 ```
 
-The system looks for JSON configuration files in a `<installation-directory>/config/` directory, and on Linux and OS X, the server additionally looks in `/etc/eventstore/config/`. To take effect, JSON configuration must be saved to one of these locations.
+The system looks for JSON configuration files in a `<installation-directory>/config/` directory.  Additionally, on Linux and OS X, the server looks in `/etc/eventstore/config/`. JSON configuration must be saved to one of these locations to take effect.
 
 The JSON configuration may be split across multiple files or combined into a single file. Apart from the `.json` extension, the names of the files is not important.
 

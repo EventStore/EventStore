@@ -2,7 +2,7 @@
 
 Starting with version 23.10 LTS, EventStoreDB has introduced a telemetry feature. This collects anonymous, aggregated usage statistics and sends them periodically to Event Store Ltd. Telemetry data helps us refine and improve our product based on real usage patterns.
 
-## What is usage telemetry
+## What is usage telemetry?
 
 EventStoreDB telemetry only tracks non-Personally-Identifiable Information. Collected data does not allow Event Store to fingerprint the users by any of the collected data points.
 
