@@ -82,7 +82,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		public Task Scavenge(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk = 0,
+		public Task<ScavengeResult> Scavenge(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk = 0,
 			bool scavengeIndex = true,
 			CancellationToken ct = default(CancellationToken)) {
 			Ensure.Nonnegative(startFromChunk, nameof(startFromChunk));
@@ -106,7 +106,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					_logger.Information("SCAVENGING: Scavenge cancelled.");
 					result = ScavengeResult.Stopped;
 				} catch (Exception exc) {
-					result = ScavengeResult.Interrupted;
+					result = ScavengeResult.Errored;
 					_logger.Error(exc, "SCAVENGING: Error while scavenging DB.");
 					error = string.Format("Error while scavenging DB: {0}.", exc.Message);
 				} finally {
@@ -118,6 +118,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							result, sw.Elapsed, error);
 					}
 				}
+
+				return result;
 			}, TaskCreationOptions.LongRunning);
 		}
 

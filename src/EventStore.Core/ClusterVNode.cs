@@ -1357,6 +1357,7 @@ public class ClusterVNode<TStreamId> :
 		_mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
 		_mainBus.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
 		_mainBus.Subscribe<ClientMessage.GetCurrentDatabaseScavenge>(storageScavenger);
+		_mainBus.Subscribe<ClientMessage.GetLastDatabaseScavenge>(storageScavenger);
 		_mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
 		// ReSharper restore RedundantTypeArgumentsOfMethod
 

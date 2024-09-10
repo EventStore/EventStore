@@ -148,6 +148,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"/admin/scavenge?startFromChunk={startFromChunk}&threads={threads};POST;Ops",
 				"/admin/scavenge/{scavengeId};DELETE;Ops",
 				"/admin/scavenge/current;GET;Ops",
+				"/admin/scavenge/last;GET;Ops",
 				"/admin/mergeindexes;POST;Ops",
 				"/ping;GET;None",
 				"/info;GET;None",

@@ -49,6 +49,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				new ControllerAction("/admin/scavenge/current", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Scavenge.Read)),
 				OnGetCurrentScavenge);
 			service.RegisterAction(
+				new ControllerAction("/admin/scavenge/last", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Scavenge.Read)),
+				OnGetLastScavenge);
+			service.RegisterAction(
 				new ControllerAction("/admin/mergeindexes", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.MergeIndexes)),
 				OnPostMergeIndexes);
 			service.RegisterAction(
@@ -267,6 +270,30 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			);
 
 			Publish(new ClientMessage.GetCurrentDatabaseScavenge(envelope, Guid.Empty, entity.User));
+		}
+
+		private void OnGetLastScavenge(HttpEntityManager entity, UriTemplateMatch match) {
+			Log.Information("/admin/scavenge/last GET request has been received.");
+
+			var envelope = new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseGetLastResponse>(
+				_networkSendQueue,
+				entity,
+				(e, message) => {
+					var result = new ScavengeGetLastResultDto();
+					if (message.ScavengeId is not null) {
+						result.ScavengeId = message.ScavengeId;
+						result.ScavengeLink = $"/admin/scavenge/{message.ScavengeId}";
+					}
+					result.ScavengeResult = message.Result.ToString();
+
+					return e.To(result);
+				},
+				(e, message) => {
+					return Configure.Ok(e.ContentType);
+				}, CreateErrorEnvelope(entity)
+			);
+
+			Publish(new ClientMessage.GetLastDatabaseScavenge(envelope, Guid.Empty, entity.User));
 		}
 
 		private void OnSetNodePriority(HttpEntityManager entity, UriTemplateMatch match) {

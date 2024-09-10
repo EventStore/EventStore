@@ -1826,6 +1826,46 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
+		public partial class GetLastDatabaseScavenge : Message {
+			public readonly IEnvelope Envelope;
+			public readonly Guid CorrelationId;
+			public readonly ClaimsPrincipal User;
+
+			public GetLastDatabaseScavenge(IEnvelope envelope, Guid correlationId, ClaimsPrincipal user) {
+				Ensure.NotNull(envelope, nameof(envelope));
+				Envelope = envelope;
+				CorrelationId = correlationId;
+				User = user;
+			}
+		}
+
+		[DerivedMessage(CoreMessage.Client)]
+		public partial class ScavengeDatabaseGetLastResponse : Message {
+			public readonly Guid CorrelationId;
+			public readonly ScavengeResult Result;
+			public readonly string ScavengeId;
+
+			public ScavengeDatabaseGetLastResponse(
+				Guid correlationId,
+				ScavengeResult result,
+				string scavengeId) {
+				CorrelationId = correlationId;
+				Result = result;
+				ScavengeId = scavengeId;
+			}
+
+			public override string ToString() => $"Result: {Result}, ScavengeId: {ScavengeId}";
+
+			public enum ScavengeResult {
+				Unknown,
+				InProgress,
+				Success,
+				Stopped,
+				Errored,
+			}
+		}
+
+		[DerivedMessage(CoreMessage.Client)]
 		public partial class ScavengeDatabaseStartedResponse : Message {
 			public readonly Guid CorrelationId;
 			public readonly string ScavengeId;

@@ -24,7 +24,16 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 	public enum ScavengeResult {
 		Success,
+		Stopped,
+		Errored,
 		Interrupted,
-		Stopped
+	}
+
+	public enum LastScavengeResult {
+		Unknown,
+		InProgress,
+		Success,
+		Stopped,
+		Errored,
 	}
 }
