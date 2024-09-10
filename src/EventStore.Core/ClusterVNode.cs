@@ -131,10 +131,12 @@ namespace EventStore.Core {
 
 	public class ClusterVNode<TStreamId> :
 		ClusterVNode,
-		IHandle<SystemMessage.BecomeShuttingDown>,
+		IAsyncHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
-		IHandle<SystemMessage.SystemStart>,
-		IHandle<ClientMessage.ReloadConfig>{
+		IAsyncHandle<SystemMessage.SystemStart>,
+		IHandle<ClientMessage.ReloadConfig> {
+		private static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromSeconds(5);
+
 		private readonly ClusterVNodeOptions _options;
 
 		public override TFChunkDb Db { get; }
@@ -1567,7 +1569,11 @@ namespace EventStore.Core {
 					// then we can remove this extra restart
 					Log.Information("Truncation successful. Shutting down.");
 					var shutdownGuid = Guid.NewGuid();
-					Handle(new SystemMessage.BecomeShuttingDown(shutdownGuid, exitProcess: true, shutdownHttp: true));
+					using var task = HandleAsync(
+							new SystemMessage.BecomeShuttingDown(shutdownGuid, exitProcess: true, shutdownHttp: true),
+							CancellationToken.None).AsTask();
+
+					task.Wait(DefaultShutdownTimeout);
 					Handle(new SystemMessage.BecomeShutdown(shutdownGuid));
 					Application.Exit(0, "Shutting down after successful truncation.");
 					return;
@@ -1725,44 +1731,42 @@ namespace EventStore.Core {
 				return;
 			}
 
-			timeout ??= TimeSpan.FromSeconds(5);
+			timeout ??= DefaultShutdownTimeout;
 			_controller.Publish(new ClientMessage.RequestShutdown(false, true));
 
 			_reloadConfigSignalRegistration?.Dispose();
 			_reloadConfigSignalRegistration = null;
 
 			foreach (var subsystem in _subsystems ?? []) {
-				await subsystem.Stop();
+				await subsystem.Stop().WaitAsync(timeout.Value, cancellationToken);
 			}
 
 			await _shutdownSource.Task.WaitAsync(timeout.Value, cancellationToken);
-			
+
 			_switchChunksLock?.Dispose();
 		}
 
-		public void Handle(SystemMessage.BecomeShuttingDown message) {
+		public async ValueTask HandleAsync(SystemMessage.BecomeShuttingDown message, CancellationToken token) {
 			_reloadConfigSignalRegistration?.Dispose();
 			_reloadConfigSignalRegistration = null;
 
-			if (_subsystems is null)
-				return;
-
-			foreach (var subsystem in _subsystems)
-				subsystem.Stop();
+			foreach (var subsystem in _subsystems ?? [])
+				await subsystem.Stop().WaitAsync(token);
 		}
 
 		public void Handle(SystemMessage.BecomeShutdown message) {
 			_shutdownSource.TrySetResult(true);
 		}
 
-		public void Handle(SystemMessage.SystemStart message) {
-			_authenticationProvider.Initialize().ContinueWith(t => {
-				if (t.Exception != null) {
-					_controller.Publish(new AuthenticationMessage.AuthenticationProviderInitializationFailed());
-				} else {
-					_controller.Publish(new AuthenticationMessage.AuthenticationProviderInitialized());
-				}
-			});
+		public async ValueTask HandleAsync(SystemMessage.SystemStart _, CancellationToken token) {
+			Message msg = new AuthenticationMessage.AuthenticationProviderInitialized();
+			try {
+				await _authenticationProvider.Initialize().WaitAsync(token);
+			} catch {
+				msg = new AuthenticationMessage.AuthenticationProviderInitializationFailed();
+			}
+
+			_controller.Publish(msg);
 		}
 
 		public void AddTasks(IEnumerable<Task> tasks) {
