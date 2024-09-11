@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
@@ -130,6 +131,7 @@ namespace EventStore.Core.Services.VNode {
 				.When<SystemMessage.ServiceInitialized>().Do(Handle)
 				.When<SystemMessage.BecomeReadOnlyLeaderless>().Do(Handle)
 				.When<SystemMessage.BecomeDiscoverLeader>().Do(Handle)
+				// .When<SystemMessage.BecomeShuttingDown>().Do(Handle)
 				.When<ClientMessage.ScavengeDatabase>().Ignore()
 				.When<ClientMessage.StopDatabaseScavenge>().Ignore()
 				.WhenOther().ForwardTo(_outputBus)
@@ -241,6 +243,7 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.TransactionWriteCompleted>().ForwardTo(_outputBus)
 				.When<ClientMessage.TransactionCommitCompleted>().ForwardTo(_outputBus)
 				.When<ClientMessage.DeleteStreamCompleted>().ForwardTo(_outputBus)
+				.When<SystemMessage.BecomeShuttingDown>().Do(Handle)
 				.InAllStatesExcept(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown,
 				VNodeState.ReadOnlyLeaderless, VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 				.When<ElectionMessage.ElectionsDone>().Do(Handle)
@@ -331,9 +334,6 @@ namespace EventStore.Core.Services.VNode {
 				.When<StorageMessage.WriteTransactionData>().Ignore()
 				.When<StorageMessage.WriteTransactionEnd>().Ignore()
 				.When<StorageMessage.WriteCommit>().Ignore()
-				.InAllStatesExcept(VNodeState.ShuttingDown, VNodeState.Shutdown)
-				.When<ClientMessage.RequestShutdown>().Do(Handle)
-				.When<SystemMessage.BecomeShuttingDown>().Do(Handle)
 				.InState(VNodeState.ShuttingDown)
 				.When<SystemMessage.BecomeShutdown>().Do(Handle)
 				.When<SystemMessage.ShutdownTimeout>().Do(Handle)
@@ -571,8 +571,9 @@ namespace EventStore.Core.Services.VNode {
 				message.ServiceName);
 			_serviceInitsToExpect -= 1;
 			_outputBus.Publish(message);
-			if (_serviceInitsToExpect == 0)
+			if (_serviceInitsToExpect == 0) {
 				_mainQueue.Publish(new SystemMessage.SystemStart());
+			}
 		}
 
 		private void Handle(AuthenticationMessage.AuthenticationProviderInitialized message) {
@@ -1175,7 +1176,7 @@ namespace EventStore.Core.Services.VNode {
 					_leader.InternalTcpEndPoint == null ? "n/a" : _leader.InternalTcpEndPoint.ToString(),
 					_leader.InternalSecureTcpEndPoint == null ? "n/a" : _leader.InternalSecureTcpEndPoint.ToString(),
 					message.LeaderId);
-				_fsm.Handle(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
+				_outputBus.Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
 			}
 		}
 
@@ -1201,12 +1202,6 @@ namespace EventStore.Core.Services.VNode {
 			}
 
 			return true;
-		}
-
-		private void Handle(ClientMessage.RequestShutdown message) {
-			_outputBus.Publish(message);
-			_fsm.Handle(
-				new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), message.ExitProcess, message.ShutdownHttp));
 		}
 
 		private void Handle(SystemMessage.ServiceShutdown message) {

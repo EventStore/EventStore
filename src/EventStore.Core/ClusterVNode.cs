@@ -216,6 +216,7 @@ namespace EventStore.Core {
 		private readonly ClusterVNodeStartup<TStreamId> _startup;
 		private readonly INodeHttpClientFactory _nodeHttpClientFactory;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
+		private readonly ShutdownService _shutdownService;
 
 		private int _stopCalled;
 		private int _reloadingConfig;
@@ -534,6 +535,11 @@ namespace EventStore.Core {
 				trackers.QueueTrackers);
 
 			_controller.SetMainQueue(_mainQueue);
+
+			_shutdownService = new ShutdownService(_mainQueue, NodeInfo);
+			_mainBus.Subscribe<SystemMessage.RegisterForGracefulTermination>(_shutdownService);
+			_mainBus.Subscribe<ClientMessage.RequestShutdown>(_shutdownService);
+			_mainBus.Subscribe<SystemMessage.ComponentTerminated>(_shutdownService);
 
 			var uriScheme = options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps;
 			var clusterDns = options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null;
@@ -1763,8 +1769,9 @@ namespace EventStore.Core {
 				return;
 			}
 
+			// TODO - We might want to increase that value here.
 			timeout ??= TimeSpan.FromSeconds(5);
-			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
+			_shutdownService.Shutdown();
 
 			_reloadConfigSignalRegistration?.Dispose();
 			_reloadConfigSignalRegistration = null;
