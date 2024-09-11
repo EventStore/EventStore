@@ -310,7 +310,7 @@ public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController, 
 			.When<SystemMessage.NoQuorumMessage>().Do(Handle)
 			.When<GossipMessage.GossipUpdated>().Do(HandleAsLeader)
 			.When<ReplicationMessage.ReplicaSubscriptionRequest>().ForwardTo(_dispatcher)
-			.When<ReplicationMessage.ReplicaLogPositionAck>().ForwardTo(_scheduler)
+			.When<ReplicationMessage.ReplicaLogPositionAck>().ForwardTo(_dispatcher)
 			.InAllStatesExcept(VNodeState.PreLeader, VNodeState.Leader, VNodeState.ResigningLeader)
 			.When<SystemMessage.NoQuorumMessage>().Ignore()
 			.When<ReplicationMessage.ReplicaSubscriptionRequest>().Ignore()
@@ -1042,7 +1042,7 @@ public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController, 
 			await _fsm.HandleAsync(new SystemMessage.BecomeReadOnlyLeaderless(_stateCorrelationId), token);
 		}
 
-		await _scheduler.HandleAsync(message, token);
+		await _dispatcher.DispatchAsync(message, token);
 	}
 
 	private async ValueTask HandleAsReadOnlyLeaderLess(GossipMessage.GossipUpdated message, CancellationToken token) {
@@ -1192,7 +1192,7 @@ public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController, 
 
 	private async ValueTask Handle(ReplicationMessage.ReplicaSubscribed message, CancellationToken token) {
 		if (IsLegitimateReplicationMessage(message)) {
-			await _scheduler.HandleAsync(message, token);
+			await _dispatcher.DispatchAsync(message, token);
 
 			Message msg = _nodeInfo.IsReadOnlyReplica
 				? new SystemMessage.BecomeReadOnlyReplica(_stateCorrelationId, _leader)
