@@ -111,11 +111,13 @@ namespace EventStore.Core {
 
 		abstract public TFChunkDb Db { get; }
 		abstract public GossipAdvertiseInfo GossipAdvertiseInfo { get; }
-		abstract public IPublisher MainQueue { get; }
+		abstract public IQueuedHandler MainQueue { get; }
 		abstract public ISubscriber MainBus { get; }
+		abstract public IReadIndex ReadIndex { get; }
 		abstract public QueueStatsManager QueueStatsManager { get; }
 		abstract public IStartup Startup { get; }
 		abstract public IAuthenticationProvider AuthenticationProvider { get; }
+		abstract public AuthorizationGateway AuthorizationGateway { get; }
 		abstract public IHttpService HttpService { get; }
 		abstract public VNodeInfo NodeInfo { get; }
 		abstract public CertificateDelegates.ClientCertificateValidator InternalClientCertificateValidator { get; }
@@ -132,10 +134,12 @@ namespace EventStore.Core {
 
 	public class ClusterVNode<TStreamId> :
 		ClusterVNode,
+		IHandle<SystemMessage.StateChangeMessage>,
 		IAsyncHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<SystemMessage.SystemStart>,
-		IHandle<ClientMessage.ReloadConfig> {
+		IHandle<ClientMessage.ReloadConfig>{
+
 		private static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromSeconds(5);
 
 		private readonly ClusterVNodeOptions _options;
@@ -144,12 +148,26 @@ namespace EventStore.Core {
 
 		public override GossipAdvertiseInfo GossipAdvertiseInfo { get; }
 
-		public override IPublisher MainQueue => _controller;
+		public override IQueuedHandler MainQueue {
+			get { return _mainQueue; }
+		}
 
-		public override ISubscriber MainBus => _controller;
+		public override ISubscriber MainBus {
+			get { return _mainBus; }
+		}
 
 		public override IHttpService HttpService {
 			get { return _httpService; }
+		}
+
+		public override IReadIndex ReadIndex => _readIndex;
+
+		public TimerService TimerService {
+			get { return _timerService; }
+		}
+
+		public IPublisher NetworkSendService {
+			get { return _workersHandler; }
 		}
 
 		public override QueueStatsManager QueueStatsManager => _queueStatsManager;
@@ -160,18 +178,25 @@ namespace EventStore.Core {
 			get { return _authenticationProvider; }
 		}
 
+		public override AuthorizationGateway AuthorizationGateway { get; }
+
 		internal MultiQueuedHandler WorkersHandler {
 			get { return _workersHandler; }
 		}
 
 		public override VNodeInfo NodeInfo { get; }
 
+		public IEnumerable<ISubsystem> Subsystems => _subsystems;
+
+		private readonly IQueuedHandler _mainQueue;
+		private readonly InMemoryBus _mainBus;
+
 		private readonly ClusterVNodeController<TStreamId> _controller;
 		private readonly TimerService _timerService;
 		private readonly KestrelHttpService _httpService;
 		private readonly ITimeProvider _timeProvider;
 		private readonly IReadOnlyList<ISubsystem> _subsystems;
-		private readonly TaskCompletionSource<bool> _shutdownSource = new();
+		private readonly TaskCompletionSource<bool> _shutdownSource = new TaskCompletionSource<bool>();
 		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private readonly IReadIndex<TStreamId> _readIndex;
@@ -179,7 +204,8 @@ namespace EventStore.Core {
 
 		private readonly InMemoryBus[] _workerBuses;
 		private readonly MultiQueuedHandler _workersHandler;
-		private readonly List<Task> _tasks = new();
+		public event EventHandler<VNodeStatusChangeArgs> NodeStatusChanged;
+		private readonly List<Task> _tasks = new List<Task>();
 		private readonly QueueStatsManager _queueStatsManager;
 		private readonly bool _disableHttps;
 		private readonly bool _enableUnixSocket;
@@ -188,6 +214,7 @@ namespace EventStore.Core {
 		private readonly Func<X509Certificate2Collection> _intermediateCertsSelector;
 		private readonly CertificateDelegates.ServerCertificateValidator _internalServerCertificateValidator;
 		private readonly CertificateDelegates.ClientCertificateValidator _internalClientCertificateValidator;
+		private readonly CertificateDelegates.ClientCertificateValidator _externalClientCertificateValidator;
 		private readonly CertificateDelegates.ServerCertificateValidator _externalServerCertificateValidator;
 		private readonly CertificateProvider _certificateProvider;
 		private readonly ClusterVNodeStartup<TStreamId> _startup;
@@ -210,9 +237,15 @@ namespace EventStore.Core {
 		public override bool IsShutdown => _shutdownSource.Task.IsCompleted;
 
 #if DEBUG
-		public TaskCompletionSource<bool> _taskAddedTrigger = new();
-		public object _taskAddLock = new();
+		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
+		public object _taskAddLock = new object();
 #endif
+
+		protected virtual void OnNodeStatusChanged(VNodeStatusChangeArgs e) {
+			EventHandler<VNodeStatusChangeArgs> handler = NodeStatusChanged;
+			if (handler != null)
+				handler(this, e);
+		}
 
 		public ClusterVNode(ClusterVNodeOptions options,
 			ILogFormatAbstractorFactory<TStreamId> logFormatAbstractorFactory,
@@ -450,6 +483,7 @@ namespace EventStore.Core {
 			var isSingleNode = options.Cluster.ClusterSize == 1;
 			_disableHttps = options.Application.Insecure;
 			_enableUnixSocket = options.Interface.EnableUnixSocket;
+			_mainBus = new InMemoryBus("MainBus");
 			_queueStatsManager = new QueueStatsManager();
 
 			_certificateSelector = () => _certificateProvider?.Certificate;
@@ -461,16 +495,10 @@ namespace EventStore.Core {
 
 			_internalServerCertificateValidator = (cert, chain, errors, otherNames) => ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector, otherNames);
 			_internalClientCertificateValidator = (cert, chain, errors) => ValidateClientCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
+			_externalClientCertificateValidator = delegate { return (true, null); };
 			_externalServerCertificateValidator = (cert, chain, errors, otherNames) => ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector, otherNames);
 
 			var forwardingProxy = new MessageForwardingProxy();
-
-			_controller =
-				new ClusterVNodeController<TStreamId>(
-					_queueStatsManager, trackers.QueueTrackers, NodeInfo, Db,
-					trackers.NodeStatusTracker,
-					options, this, forwardingProxy,
-					startSubsystems: StartSubsystems);
 
 			// MISC WORKERS
 			_workerBuses = Enumerable.Range(0, workerThreadsCount).Select(queueNum =>
@@ -492,14 +520,24 @@ namespace EventStore.Core {
 					var subSystemName = subsystem.Name;
 					subsystem.Start().ContinueWith(t => {
 						if (t.IsCompletedSuccessfully)
-							_controller.Publish(new SystemMessage.SubSystemInitialized(subSystemName));
+							_mainQueue.Publish(new SystemMessage.SubSystemInitialized(subSystemName));
 						else
 							Log.Error(t.Exception, "Failed to initialize subsystem {subSystemName}", subSystemName);
 					});
 				}
 			}
 
+			_controller =
+				new ClusterVNodeController<TStreamId>(
+					_mainBus, NodeInfo, Db,
+					trackers.NodeStatusTracker,
+					options, this, forwardingProxy,
+					startSubsystems: StartSubsystems);
 
+			_mainQueue = new QueuedHandlerThreadPool(_controller, "MainQueue", _queueStatsManager,
+				trackers.QueueTrackers);
+
+			_controller.SetMainQueue(_mainQueue);
 
 			var uriScheme = options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps;
 			var clusterDns = options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null;
@@ -509,7 +547,7 @@ namespace EventStore.Core {
 				_internalServerCertificateValidator,
 				_certificateSelector);
 
-			_eventStoreClusterClientCache = new EventStoreClusterClientCache(_controller,
+			_eventStoreClusterClientCache = new EventStoreClusterClientCache(_mainQueue,
 				(endpoint, publisher) =>
 					new EventStoreClusterClient(
 						publisher, uriScheme,
@@ -517,14 +555,15 @@ namespace EventStore.Core {
 						gossipSendTracker: trackers.GossipTrackers.PushToPeer,
 						gossipGetTracker: trackers.GossipTrackers.PullFromPeer));
 
-			_controller.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
-			_controller.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
+			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
+			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
 
 			//SELF
-			_controller.Subscribe<SystemMessage.BecomeShuttingDown>(this);
-			_controller.Subscribe<SystemMessage.BecomeShutdown>(this);
-			_controller.Subscribe<SystemMessage.SystemStart>(this);
-			_controller.Subscribe<ClientMessage.ReloadConfig>(this);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
+			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
+			_mainBus.Subscribe<SystemMessage.SystemStart>(this);
+			_mainBus.Subscribe<ClientMessage.ReloadConfig>(this);
 
 			// MONITORING
 			var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
@@ -536,7 +575,7 @@ namespace EventStore.Core {
 
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
-				_controller,
+				_mainQueue,
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				Db.Config.Path,
 				TimeSpan.FromSeconds(options.Application.StatsPeriodSec),
@@ -546,11 +585,11 @@ namespace EventStore.Core {
 				NodeInfo.ExternalSecureTcp,
 				statsHelper);
 
-			_controller.Subscribe<SystemMessage.SystemInit>(monitoringQueue);
-			_controller.Subscribe<SystemMessage.StateChangeMessage>(monitoringQueue);
-			_controller.Subscribe<SystemMessage.BecomeShuttingDown>(monitoringQueue);
-			_controller.Subscribe<SystemMessage.BecomeShutdown>(monitoringQueue);
-			_controller.Subscribe<ClientMessage.WriteEventsCompleted>(monitoringQueue);
+            _mainBus.Subscribe<SystemMessage.SystemInit>(monitoringQueue);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(monitoringQueue);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoringQueue);
+			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(monitoringQueue);
+			_mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(monitoringQueue);
 			monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
 			monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
 			monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
@@ -607,7 +646,7 @@ namespace EventStore.Core {
 					out streamInfoCacheResizer);
 
 			var dynamicCacheManager = new DynamicCacheManager(
-				bus: _controller,
+				bus: _mainQueue,
 				getFreeSystemMem: RuntimeStats.GetFreeMemory,
 				getFreeHeapMem: () => GC.GetGCMemoryInfo().FragmentedBytes,
 				getGcCollectionCount: () => GC.CollectionCount(GC.MaxGeneration),
@@ -620,7 +659,7 @@ namespace EventStore.Core {
 				rootCacheResizer: new CompositeCacheResizer("cache", 100, streamInfoCacheResizer),
 				cacheResourcesTracker: trackers.CacheResourcesTracker);
 
-			_controller.Subscribe<MonitoringMessage.DynamicCacheManagerTick>(dynamicCacheManager);
+			_mainBus.Subscribe<MonitoringMessage.DynamicCacheManagerTick>(dynamicCacheManager);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(dynamicCacheManager);
 
 			// STORAGE SUBSYSTEM
@@ -646,7 +685,7 @@ namespace EventStore.Core {
 				statusTracker: trackers.IndexStatusTracker);
 			logFormat.StreamNamesProvider.SetTableIndex(tableIndex);
 
-			var readIndex = new ReadIndex<TStreamId>(_controller,
+			var readIndex = new ReadIndex<TStreamId>(_mainQueue,
 				readerPool,
 				tableIndex,
 				logFormat.StreamNameIndexConfirmer,
@@ -678,7 +717,7 @@ namespace EventStore.Core {
 					optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
 				writer);
 
-			var epochManager = new EpochManager<TStreamId>(_controller,
+			var epochManager = new EpochManager<TStreamId>(_mainQueue,
 				ESConsts.CachedEpochCount,
 				Db.Config.EpochCheckpoint,
 				writer,
@@ -694,7 +733,7 @@ namespace EventStore.Core {
 				partitionManager,
 				NodeInfo.InstanceId);
 
-			var storageWriter = new ClusterStorageWriterService<TStreamId>(_controller, _controller,
+			var storageWriter = new ClusterStorageWriterService<TStreamId>(_mainQueue, _mainBus,
 				TimeSpan.FromMilliseconds(options.Database.MinFlushDelayMs), Db, writer, readIndex.IndexWriter,
 				logFormat.RecordFactory,
 				logFormat.StreamNameIndex,
@@ -713,12 +752,12 @@ namespace EventStore.Core {
 			var memLog = new InMemoryLog();
 
 			// Gossip listener
-			var gossipListener = new GossipListenerService(NodeInfo.InstanceId, _controller, memLog);
-			_controller.Subscribe<GossipMessage.GossipUpdated>(gossipListener);
+			var gossipListener = new GossipListenerService(NodeInfo.InstanceId, _mainQueue, memLog);
+			_mainBus.Subscribe<GossipMessage.GossipUpdated>(gossipListener);
 
 			// Node state listener
-			var nodeStatusListener = new NodeStateListenerService(_controller, memLog);
-			_controller.Subscribe<SystemMessage.StateChangeMessage>(nodeStatusListener);
+			var nodeStatusListener = new NodeStateListenerService(_mainQueue, memLog);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(nodeStatusListener);
 
 			var inMemReader = new InMemoryStreamReader(new Dictionary<string, IInMemoryStreamReader> {
 				[SystemStreams.GossipStream] = gossipListener,
@@ -726,56 +765,56 @@ namespace EventStore.Core {
 			});
 
 			// Storage Reader
-			var storageReader = new StorageReaderService<TStreamId>(_controller, _controller, readIndex,
+			var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
 				logFormat.SystemStreams,
 				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), inMemReader, _queueStatsManager,
 				trackers.QueueTrackers);
 
-			_controller.Subscribe<SystemMessage.SystemInit>(storageReader);
-			_controller.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
-			_controller.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
+			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
+			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
 			// PRE-LEADER -> LEADER TRANSITION MANAGEMENT
 			var inaugurationManager = new InaugurationManager(
-				publisher: _controller,
+				publisher: _mainQueue,
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: Db.Config.IndexCheckpoint,
 				statusTracker: trackers.InaugurationStatusTracker);
-			_controller.Subscribe<SystemMessage.StateChangeMessage>(inaugurationManager);
-			_controller.Subscribe<SystemMessage.ChaserCaughtUp>(inaugurationManager);
-			_controller.Subscribe<SystemMessage.EpochWritten>(inaugurationManager);
-			_controller.Subscribe<SystemMessage.CheckInaugurationConditions>(inaugurationManager);
-			_controller.Subscribe<ElectionMessage.ElectionsDone>(inaugurationManager);
-			_controller.Subscribe<ReplicationTrackingMessage.IndexedTo>(inaugurationManager);
-			_controller.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(inaugurationManager);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(inaugurationManager);
+			_mainBus.Subscribe<SystemMessage.ChaserCaughtUp>(inaugurationManager);
+			_mainBus.Subscribe<SystemMessage.EpochWritten>(inaugurationManager);
+			_mainBus.Subscribe<SystemMessage.CheckInaugurationConditions>(inaugurationManager);
+			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(inaugurationManager);
+			_mainBus.Subscribe<ReplicationTrackingMessage.IndexedTo>(inaugurationManager);
+			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(inaugurationManager);
 
 			// REPLICATION TRACKING
 			var replicationTracker = new ReplicationTrackingService(
-				_controller,
+				_mainQueue,
 				options.Cluster.ClusterSize,
 				Db.Config.ReplicationCheckpoint,
 				Db.Config.WriterCheckpoint.AsReadOnly());
 			AddTask(replicationTracker.Task);
-			_controller.Subscribe<SystemMessage.SystemInit>(replicationTracker);
-			_controller.Subscribe<SystemMessage.StateChangeMessage>(replicationTracker);
-			_controller.Subscribe<SystemMessage.BecomeShuttingDown>(replicationTracker);
-			_controller.Subscribe<ReplicationTrackingMessage.ReplicaWriteAck>(replicationTracker);
-			_controller.Subscribe<ReplicationTrackingMessage.WriterCheckpointFlushed>(replicationTracker);
-			_controller.Subscribe<ReplicationTrackingMessage.LeaderReplicatedTo>(replicationTracker);
-			_controller.Subscribe<SystemMessage.VNodeConnectionLost>(replicationTracker);
-			_controller.Subscribe<ReplicationMessage.ReplicaSubscribed>(replicationTracker);
-			var indexCommitterService = new IndexCommitterService<TStreamId>(readIndex.IndexCommitter, _controller,
+			_mainBus.Subscribe<SystemMessage.SystemInit>(replicationTracker);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicationTracker);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(replicationTracker);
+			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicaWriteAck>(replicationTracker);
+			_mainBus.Subscribe<ReplicationTrackingMessage.WriterCheckpointFlushed>(replicationTracker);
+			_mainBus.Subscribe<ReplicationTrackingMessage.LeaderReplicatedTo>(replicationTracker);
+			_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(replicationTracker);
+			_mainBus.Subscribe<ReplicationMessage.ReplicaSubscribed>(replicationTracker);
+			var indexCommitterService = new IndexCommitterService<TStreamId>(readIndex.IndexCommitter, _mainQueue,
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				Db.Config.ReplicationCheckpoint.AsReadOnly(),
 				tableIndex, _queueStatsManager);
 
 			AddTask(indexCommitterService.Task);
 
-			_controller.Subscribe<SystemMessage.BecomeShuttingDown>(indexCommitterService);
-			_controller.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(indexCommitterService);
-			_controller.Subscribe<StorageMessage.CommitAck>(indexCommitterService);
-			_controller.Subscribe<ClientMessage.MergeIndexes>(indexCommitterService);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(indexCommitterService);
+			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(indexCommitterService);
+			_mainBus.Subscribe<StorageMessage.CommitAck>(indexCommitterService);
+			_mainBus.Subscribe<ClientMessage.MergeIndexes>(indexCommitterService);
 
 			var chaser = new TFChunkChaser(
 				Db,
@@ -784,7 +823,7 @@ namespace EventStore.Core {
 				Db.Config.OptimizeReadSideCache);
 
 			var storageChaser = new StorageChaser<TStreamId>(
-				_controller,
+				_mainQueue,
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				chaser,
 				indexCommitterService,
@@ -797,18 +836,18 @@ namespace EventStore.Core {
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				Db.Config.ChaserCheckpoint.AsReadOnly());
 #endif
-			_controller.Subscribe<SystemMessage.SystemInit>(storageChaser);
-			_controller.Subscribe<SystemMessage.SystemStart>(storageChaser);
-			_controller.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
+			_mainBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
+			_mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
 			// REPLICATION TRACKING END
 
 			var httpPipe = new HttpMessagePipe();
 			var httpSendService = new HttpSendService(httpPipe, true, _externalServerCertificateValidator);
-			_controller.Subscribe<SystemMessage.StateChangeMessage>(httpSendService);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(httpSendService);
 			SubscribeWorkers(bus => bus.Subscribe<HttpMessage.HttpSend>(httpSendService));
 
 			var grpcSendService = new GrpcSendService(_eventStoreClusterClientCache);
-			_controller.Subscribe<GrpcMessage.SendOverGrpc>(_workersHandler);
+			_mainBus.Subscribe<GrpcMessage.SendOverGrpc>(_workersHandler);
 			SubscribeWorkers(bus => {
 				bus.Subscribe<GrpcMessage.SendOverGrpc>(grpcSendService);
 			});
@@ -871,7 +910,7 @@ namespace EventStore.Core {
 					nodeTcpOptions?.NodeTcpPortAdvertiseAs ?? 0);
 			}
 
-			_httpService = new KestrelHttpService(ServiceAccessibility.Public, _controller, new TrieUriRouter(),
+			_httpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
 				_workersHandler, options.Application.LogHttpRequests,
 				string.IsNullOrEmpty(GossipAdvertiseInfo.AdvertiseHostToClientAs) ? GossipAdvertiseInfo.AdvertiseExternalHostAs : GossipAdvertiseInfo.AdvertiseHostToClientAs,
 				GossipAdvertiseInfo.AdvertiseHttpPortToClientAs == 0 ? GossipAdvertiseInfo.AdvertiseHttpPortAs : GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
@@ -879,8 +918,8 @@ namespace EventStore.Core {
 				NodeInfo.HttpEndPoint);
 
 			var components = new AuthenticationProviderFactoryComponents {
-				MainBus = _controller,
-				MainQueue = _controller,
+				MainBus = _mainBus,
+				MainQueue = _mainQueue,
 				WorkerBuses = _workerBuses,
 				WorkersQueue = _workersHandler,
 				HttpSendService = httpSendService,
@@ -906,8 +945,8 @@ namespace EventStore.Core {
 
 			_authorizationProvider = authorizationProviderFactory
 				.GetFactory(new AuthorizationProviderFactoryComponents {
-					MainQueue = _controller,
-					MainBus = _controller
+					MainQueue = _mainQueue,
+					MainBus = _mainBus
 				}).Build();
 			Ensure.NotNull(_authorizationProvider, "authorizationProvider");
 
@@ -915,36 +954,36 @@ namespace EventStore.Core {
 				.WithPlugableComponent(_authorizationProvider)
 				.WithPlugableComponent(_authenticationProvider);
 
-			var authorizationGateway = new AuthorizationGateway(_authorizationProvider);
+			AuthorizationGateway = new AuthorizationGateway(_authorizationProvider);
 			{
 				if (!isSingleNode) {
 					// INTERNAL TCP
 					if (NodeInfo.InternalTcp != null) {
-						var intTcpService = new TcpService(_controller, NodeInfo.InternalTcp, _workersHandler,
+						var intTcpService = new TcpService(_mainQueue, NodeInfo.InternalTcp, _workersHandler,
 							TcpServiceType.Internal, TcpSecurityType.Normal,
 							new InternalTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
 							TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatInterval),
 							TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatTimeout),
-							_authenticationProvider, authorizationGateway, null, null, null, ESConsts.UnrestrictedPendingSendBytes,
+							_authenticationProvider, AuthorizationGateway, null, null, null, ESConsts.UnrestrictedPendingSendBytes,
 						ESConsts.MaxConnectionQueueSize);
-						_controller.Subscribe<SystemMessage.SystemInit>(intTcpService);
-						_controller.Subscribe<SystemMessage.SystemStart>(intTcpService);
-						_controller.Subscribe<SystemMessage.BecomeShuttingDown>(intTcpService);
+						_mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
+						_mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
+						_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intTcpService);
 					}
 					// INTERNAL SECURE TCP
 					if (NodeInfo.InternalSecureTcp != null) {
-						var intSecTcpService = new TcpService(_controller, NodeInfo.InternalSecureTcp, _workersHandler,
+						var intSecTcpService = new TcpService(_mainQueue, NodeInfo.InternalSecureTcp, _workersHandler,
 							TcpServiceType.Internal, TcpSecurityType.Secure,
 							new InternalTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
 							TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatInterval),
 							TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatTimeout),
-							_authenticationProvider, authorizationGateway,
+							_authenticationProvider, AuthorizationGateway,
 							_certificateSelector, _intermediateCertsSelector, _internalClientCertificateValidator,
 							ESConsts.UnrestrictedPendingSendBytes,
 							ESConsts.MaxConnectionQueueSize);
-						_controller.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
-						_controller.Subscribe<SystemMessage.SystemStart>(intSecTcpService);
-						_controller.Subscribe<SystemMessage.BecomeShuttingDown>(intSecTcpService);
+						_mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
+						_mainBus.Subscribe<SystemMessage.SystemStart>(intSecTcpService);
+						_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intSecTcpService);
 					}
 				}
 			}
@@ -994,16 +1033,16 @@ namespace EventStore.Core {
 			httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
 
 
-			var adminController = new AdminController(_controller, _workersHandler);
+			var adminController = new AdminController(_mainQueue, _workersHandler);
 			var pingController = new PingController();
 			var statController = new StatController(monitoringQueue, _workersHandler);
 			var metricsController = new MetricsController();
-			var atomController = new AtomController(_controller, _workersHandler,
+			var atomController = new AtomController(_mainQueue, _workersHandler,
 				options.Application.DisableHttpCaching, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
-			var gossipController = new GossipController(_controller, _workersHandler,
+			var gossipController = new GossipController(_mainQueue, _workersHandler,
 				trackers.GossipTrackers.ProcessingRequestFromHttpClient);
 			var persistentSubscriptionController =
-				new PersistentSubscriptionController(httpSendService, _controller, _workersHandler);
+				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
 
 			var infoController = new InfoController(
 				options,
@@ -1015,7 +1054,7 @@ namespace EventStore.Core {
 				_authenticationProvider
 			);
 
-			_controller.Subscribe<SystemMessage.StateChangeMessage>(infoController);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
 			_httpService.SetupController(persistentSubscriptionController);
 			if (!options.Interface.DisableAdminUi)
@@ -1031,69 +1070,69 @@ namespace EventStore.Core {
 			if (!options.Interface.DisableGossipOnHttp)
 				_httpService.SetupController(gossipController);
 
-			_controller.Subscribe<SystemMessage.SystemInit>(_httpService);
-			_controller.Subscribe<SystemMessage.BecomeShuttingDown>(_httpService);
+			_mainBus.Subscribe<SystemMessage.SystemInit>(_httpService);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_httpService);
 
 			SubscribeWorkers(KestrelHttpService.CreateAndSubscribePipeline);
 
 			// REQUEST FORWARDING
-			var forwardingService = new RequestForwardingService(_controller, forwardingProxy, TimeSpan.FromSeconds(1));
-			_controller.Subscribe<SystemMessage.SystemStart>(forwardingService);
-			_controller.Subscribe<SystemMessage.RequestForwardingTimerTick>(forwardingService);
-			_controller.Subscribe<ClientMessage.NotHandled>(forwardingService);
-			_controller.Subscribe<ClientMessage.WriteEventsCompleted>(forwardingService);
-			_controller.Subscribe<ClientMessage.TransactionStartCompleted>(forwardingService);
-			_controller.Subscribe<ClientMessage.TransactionWriteCompleted>(forwardingService);
-			_controller.Subscribe<ClientMessage.TransactionCommitCompleted>(forwardingService);
-			_controller.Subscribe<ClientMessage.DeleteStreamCompleted>(forwardingService);
+			var forwardingService = new RequestForwardingService(_mainQueue, forwardingProxy, TimeSpan.FromSeconds(1));
+			_mainBus.Subscribe<SystemMessage.SystemStart>(forwardingService);
+			_mainBus.Subscribe<SystemMessage.RequestForwardingTimerTick>(forwardingService);
+			_mainBus.Subscribe<ClientMessage.NotHandled>(forwardingService);
+			_mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(forwardingService);
+			_mainBus.Subscribe<ClientMessage.TransactionStartCompleted>(forwardingService);
+			_mainBus.Subscribe<ClientMessage.TransactionWriteCompleted>(forwardingService);
+			_mainBus.Subscribe<ClientMessage.TransactionCommitCompleted>(forwardingService);
+			_mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(forwardingService);
 
 			// REQUEST MANAGEMENT
 			var requestManagement = new RequestManagementService(
-				_controller,
+				_mainQueue,
 				TimeSpan.FromMilliseconds(options.Database.PrepareTimeoutMs),
 				TimeSpan.FromMilliseconds(options.Database.CommitTimeoutMs),
 				logFormat.SupportsExplicitTransactions);
 
-			_controller.Subscribe<SystemMessage.SystemInit>(requestManagement);
-			_controller.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
+			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
 
-			_controller.Subscribe<ClientMessage.WriteEvents>(requestManagement);
-			_controller.Subscribe<ClientMessage.TransactionStart>(requestManagement);
-			_controller.Subscribe<ClientMessage.TransactionWrite>(requestManagement);
-			_controller.Subscribe<ClientMessage.TransactionCommit>(requestManagement);
-			_controller.Subscribe<ClientMessage.DeleteStream>(requestManagement);
+			_mainBus.Subscribe<ClientMessage.WriteEvents>(requestManagement);
+			_mainBus.Subscribe<ClientMessage.TransactionStart>(requestManagement);
+			_mainBus.Subscribe<ClientMessage.TransactionWrite>(requestManagement);
+			_mainBus.Subscribe<ClientMessage.TransactionCommit>(requestManagement);
+			_mainBus.Subscribe<ClientMessage.DeleteStream>(requestManagement);
 
-			_controller.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
 
-			_controller.Subscribe<StorageMessage.PrepareAck>(requestManagement);
-			_controller.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(requestManagement);
-			_controller.Subscribe<ReplicationTrackingMessage.IndexedTo>(requestManagement);
-			_controller.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
-			_controller.Subscribe<StorageMessage.CommitIndexed>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
+			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(requestManagement);
+			_mainBus.Subscribe<ReplicationTrackingMessage.IndexedTo>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.CommitIndexed>(requestManagement);
 
-			_controller.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
-			_controller.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
-			_controller.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
 
-			_controller.Subscribe<StorageMessage.RequestManagerTimerTick>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.RequestManagerTimerTick>(requestManagement);
 
 			// SUBSCRIPTIONS
 			var subscrBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
 			var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", _queueStatsManager,
 				trackers.QueueTrackers, false);
-			_controller.Subscribe<SystemMessage.SystemStart>(subscrQueue);
-			_controller.Subscribe<SystemMessage.BecomeShuttingDown>(subscrQueue);
-			_controller.Subscribe<TcpMessage.ConnectionClosed>(subscrQueue);
-			_controller.Subscribe<ClientMessage.SubscribeToStream>(subscrQueue);
-			_controller.Subscribe<ClientMessage.FilteredSubscribeToStream>(subscrQueue);
-			_controller.Subscribe<ClientMessage.UnsubscribeFromStream>(subscrQueue);
-			_controller.Subscribe<SubscriptionMessage.DropSubscription>(subscrQueue);
-			_controller.Subscribe<SubscriptionMessage.PollStream>(subscrQueue);
-			_controller.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscrQueue);
-			_controller.Subscribe<StorageMessage.EventCommitted>(subscrQueue);
-			_controller.Subscribe<StorageMessage.InMemoryEventCommitted>(subscrQueue);
+			_mainBus.Subscribe<SystemMessage.SystemStart>(subscrQueue);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(subscrQueue);
+			_mainBus.Subscribe<TcpMessage.ConnectionClosed>(subscrQueue);
+			_mainBus.Subscribe<ClientMessage.SubscribeToStream>(subscrQueue);
+			_mainBus.Subscribe<ClientMessage.FilteredSubscribeToStream>(subscrQueue);
+			_mainBus.Subscribe<ClientMessage.UnsubscribeFromStream>(subscrQueue);
+			_mainBus.Subscribe<SubscriptionMessage.DropSubscription>(subscrQueue);
+			_mainBus.Subscribe<SubscriptionMessage.PollStream>(subscrQueue);
+			_mainBus.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscrQueue);
+			_mainBus.Subscribe<StorageMessage.EventCommitted>(subscrQueue);
+			_mainBus.Subscribe<StorageMessage.InMemoryEventCommitted>(subscrQueue);
 
-			var subscription = new SubscriptionsService<TStreamId>(_controller, subscrQueue, _authorizationProvider, readIndex, inMemReader);
+			var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, _authorizationProvider, readIndex, inMemReader);
 			subscrBus.Subscribe<SystemMessage.SystemStart>(subscription);
 			subscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(subscription);
 			subscrBus.Subscribe<TcpMessage.ConnectionClosed>(subscription);
@@ -1111,7 +1150,7 @@ namespace EventStore.Core {
 			var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
 			var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", _queueStatsManager,
 				trackers.QueueTrackers, false);
-			var psubDispatcher = new IODispatcher(_controller, new PublishEnvelope(perSubscrQueue));
+			var psubDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(perSubscrQueue));
 			perSubscrBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(psubDispatcher.BackwardReader);
 			perSubscrBus.Subscribe<ClientMessage.NotHandled>(psubDispatcher.BackwardReader);
 			perSubscrBus.Subscribe<ClientMessage.WriteEventsCompleted>(psubDispatcher.Writer);
@@ -1121,35 +1160,35 @@ namespace EventStore.Core {
 			perSubscrBus.Subscribe<ClientMessage.DeleteStreamCompleted>(psubDispatcher.StreamDeleter);
 			perSubscrBus.Subscribe<IODispatcherDelayedMessage>(psubDispatcher);
 			perSubscrBus.Subscribe<ClientMessage.NotHandled>(psubDispatcher);
-			_controller.Subscribe<SystemMessage.StateChangeMessage>(perSubscrQueue);
-			_controller.Subscribe<TcpMessage.ConnectionClosed>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.CreatePersistentSubscriptionToStream>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.UpdatePersistentSubscriptionToStream>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.DeletePersistentSubscriptionToStream>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.CreatePersistentSubscriptionToAll>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.UpdatePersistentSubscriptionToAll>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.DeletePersistentSubscriptionToAll>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.ConnectToPersistentSubscriptionToStream>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.ConnectToPersistentSubscriptionToAll>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.UnsubscribeFromStream>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.PersistentSubscriptionAckEvents>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.PersistentSubscriptionNackEvents>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.ReplayParkedMessages>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.ReplayParkedMessage>(perSubscrQueue);
-			_controller.Subscribe<ClientMessage.ReadNextNPersistentMessages>(perSubscrQueue);
-			_controller.Subscribe<StorageMessage.EventCommitted>(perSubscrQueue);
-			_controller.Subscribe<TelemetryMessage.Request>(perSubscrQueue);
-			_controller.Subscribe<MonitoringMessage.GetAllPersistentSubscriptionStats>(perSubscrQueue);
-			_controller.Subscribe<MonitoringMessage.GetStreamPersistentSubscriptionStats>(perSubscrQueue);
-			_controller.Subscribe<MonitoringMessage.GetPersistentSubscriptionStats>(perSubscrQueue);
-			_controller.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(perSubscrQueue);
-			_controller.Subscribe<SubscriptionMessage.PersistentSubscriptionsRestart>(perSubscrQueue);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(perSubscrQueue);
+			_mainBus.Subscribe<TcpMessage.ConnectionClosed>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.CreatePersistentSubscriptionToStream>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.UpdatePersistentSubscriptionToStream>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.DeletePersistentSubscriptionToStream>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.CreatePersistentSubscriptionToAll>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.UpdatePersistentSubscriptionToAll>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.DeletePersistentSubscriptionToAll>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.ConnectToPersistentSubscriptionToStream>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.ConnectToPersistentSubscriptionToAll>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.UnsubscribeFromStream>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.PersistentSubscriptionAckEvents>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.PersistentSubscriptionNackEvents>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.ReplayParkedMessages>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.ReplayParkedMessage>(perSubscrQueue);
+			_mainBus.Subscribe<ClientMessage.ReadNextNPersistentMessages>(perSubscrQueue);
+			_mainBus.Subscribe<StorageMessage.EventCommitted>(perSubscrQueue);
+			_mainBus.Subscribe<TelemetryMessage.Request>(perSubscrQueue);
+			_mainBus.Subscribe<MonitoringMessage.GetAllPersistentSubscriptionStats>(perSubscrQueue);
+			_mainBus.Subscribe<MonitoringMessage.GetStreamPersistentSubscriptionStats>(perSubscrQueue);
+			_mainBus.Subscribe<MonitoringMessage.GetPersistentSubscriptionStats>(perSubscrQueue);
+			_mainBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(perSubscrQueue);
+			_mainBus.Subscribe<SubscriptionMessage.PersistentSubscriptionsRestart>(perSubscrQueue);
 
 			//TODO CC can have multiple threads working on subscription if partition
-			var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_controller, _controller,
+			var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus,
 				additionalPersistentSubscriptionConsumerStrategyFactories);
 			var persistentSubscription = new PersistentSubscriptionService<TStreamId>(perSubscrQueue, readIndex, psubDispatcher,
-				_controller, consumerStrategyRegistry, trackers.PersistentSubscriptionTracker);
+				_mainQueue, consumerStrategyRegistry, trackers.PersistentSubscriptionTracker);
 			perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
 			perSubscrBus.Subscribe<SystemMessage.BecomeLeader>(persistentSubscription);
 			perSubscrBus.Subscribe<SystemMessage.StateChangeMessage>(persistentSubscription);
@@ -1178,12 +1217,12 @@ namespace EventStore.Core {
 
 			// STORAGE SCAVENGER
 			ScavengerFactory scavengerFactory;
-			var scavengerDispatcher = new IODispatcher(_controller, new PublishEnvelope(MainQueue));
-			_controller.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(scavengerDispatcher.BackwardReader);
-			_controller.Subscribe<ClientMessage.NotHandled>(scavengerDispatcher.BackwardReader);
-			_controller.Subscribe<ClientMessage.WriteEventsCompleted>(scavengerDispatcher.Writer);
-			_controller.Subscribe<IODispatcherDelayedMessage>(scavengerDispatcher);
-			_controller.Subscribe<ClientMessage.NotHandled>(scavengerDispatcher);
+			var scavengerDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(MainQueue));
+			_mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(scavengerDispatcher.BackwardReader);
+			_mainBus.Subscribe<ClientMessage.NotHandled>(scavengerDispatcher.BackwardReader);
+			_mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(scavengerDispatcher.Writer);
+			_mainBus.Subscribe<IODispatcherDelayedMessage>(scavengerDispatcher);
+			_mainBus.Subscribe<ClientMessage.NotHandled>(scavengerDispatcher);
 
 			var newScavenge = true;
 			if (newScavenge) {
@@ -1353,10 +1392,10 @@ namespace EventStore.Core {
 				switchChunksLock: _switchChunksLock);
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod
-			_controller.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
-			_controller.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
-			_controller.Subscribe<ClientMessage.GetDatabaseScavenge>(storageScavenger);
-			_controller.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
+			_mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
+			_mainBus.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
+			_mainBus.Subscribe<ClientMessage.GetDatabaseScavenge>(storageScavenger);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
 			// ReSharper restore RedundantTypeArgumentsOfMethod
 
 			// REDACTION
@@ -1364,11 +1403,11 @@ namespace EventStore.Core {
 			var redactionQueue = new QueuedHandlerThreadPool(redactionBus, "Redaction", _queueStatsManager,
 				trackers.QueueTrackers, false);
 
-			_controller.Subscribe<RedactionMessage.GetEventPosition>(redactionQueue);
-			_controller.Subscribe<RedactionMessage.AcquireChunksLock>(redactionQueue);
-			_controller.Subscribe<RedactionMessage.SwitchChunk>(redactionQueue);
-			_controller.Subscribe<RedactionMessage.ReleaseChunksLock>(redactionQueue);
-			_controller.Subscribe<SystemMessage.BecomeShuttingDown>(redactionQueue);
+			_mainBus.Subscribe<RedactionMessage.GetEventPosition>(redactionQueue);
+			_mainBus.Subscribe<RedactionMessage.AcquireChunksLock>(redactionQueue);
+			_mainBus.Subscribe<RedactionMessage.SwitchChunk>(redactionQueue);
+			_mainBus.Subscribe<RedactionMessage.ReleaseChunksLock>(redactionQueue);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(redactionQueue);
 
 			var redactionService = new RedactionService<TStreamId>(redactionQueue, Db, _readIndex, _switchChunksLock);
 			redactionBus.Subscribe<RedactionMessage.GetEventPosition>(redactionService);
@@ -1382,8 +1421,8 @@ namespace EventStore.Core {
 			var threadBasedScheduler = new ThreadBasedScheduler(_queueStatsManager, trackers.QueueTrackers);
 			AddTask(threadBasedScheduler.Task);
 			_timerService = new TimerService(threadBasedScheduler);
-			_controller.Subscribe<SystemMessage.BecomeShutdown>(_timerService);
-			_controller.Subscribe<TimerMessage.Schedule>(_timerService);
+			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(_timerService);
+			_mainBus.Subscribe<TimerMessage.Schedule>(_timerService);
 
 			var memberInfo = MemberInfo.Initial(NodeInfo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 				GossipAdvertiseInfo.InternalTcp,
@@ -1397,25 +1436,25 @@ namespace EventStore.Core {
 				options.Cluster.NodePriority, options.Cluster.ReadOnlyReplica, VersionInfo.Version);
 
 			// ELECTIONS TRACKER
-			_controller.Subscribe<ElectionMessage.ElectionsDone>(trackers.ElectionCounterTracker);
+			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(trackers.ElectionCounterTracker);
 
 			// TELEMETRY
 			var telemetryService = new TelemetryService(
 				Db.Manager,
 				modifiedOptions,
-				_controller,
+				_mainQueue,
 				new TelemetrySink(options.Application.TelemetryOptout),
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				memberInfo.InstanceId
 			);
 			if(modifiedOptions.Cluster.ReadOnlyReplica)
-				_controller.Subscribe<SystemMessage.ReplicaStateMessage>(telemetryService);
-			_controller.Subscribe<SystemMessage.StateChangeMessage>(telemetryService);
-			_controller.Subscribe<ElectionMessage.ElectionsDone>(telemetryService);
-			_controller.Subscribe<LeaderDiscoveryMessage.LeaderFound>(telemetryService);
+				_mainBus.Subscribe<SystemMessage.ReplicaStateMessage>(telemetryService);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(telemetryService);
+			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(telemetryService);
+			_mainBus.Subscribe<LeaderDiscoveryMessage.LeaderFound>(telemetryService);
 
 			// LEADER REPLICATION
-			var leaderReplicationService = new LeaderReplicationService(_controller, NodeInfo.InstanceId, Db,
+			var leaderReplicationService = new LeaderReplicationService(_mainQueue, NodeInfo.InstanceId, Db,
 				_workersHandler,
 				epochManager, options.Cluster.ClusterSize,
 				options.Cluster.UnsafeAllowSurplusNodes,
@@ -1423,17 +1462,17 @@ namespace EventStore.Core {
 			AddTask(leaderReplicationService.Task);
 
 			if (!isSingleNode) {
-				_controller.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);
-				_controller.Subscribe<SystemMessage.StateChangeMessage>(leaderReplicationService);
-				_controller.Subscribe<SystemMessage.EnablePreLeaderReplication>(leaderReplicationService);
-				_controller.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(leaderReplicationService);
-				_controller.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(leaderReplicationService);
-				_controller.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(leaderReplicationService);
+				_mainBus.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);
+				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(leaderReplicationService);
+				_mainBus.Subscribe<SystemMessage.EnablePreLeaderReplication>(leaderReplicationService);
+				_mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(leaderReplicationService);
+				_mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(leaderReplicationService);
+				_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(leaderReplicationService);
 				monitoringInnerBus.Subscribe<ReplicationMessage.GetReplicationStats>(leaderReplicationService);
 
 				// REPLICA REPLICATION
-				var replicaService = new ReplicaService(_controller, Db, epochManager, _workersHandler,
-					_authenticationProvider, authorizationGateway,
+				var replicaService = new ReplicaService(_mainQueue, Db, epochManager, _workersHandler,
+					_authenticationProvider, AuthorizationGateway,
 					GossipAdvertiseInfo.InternalTcp ?? GossipAdvertiseInfo.InternalSecureTcp,
 					options.Cluster.ReadOnlyReplica,
 					!disableInternalTcpTls, _internalServerCertificateValidator,
@@ -1441,11 +1480,11 @@ namespace EventStore.Core {
 					TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatTimeout),
 					TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatInterval),
 					TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
-				_controller.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
-				_controller.Subscribe<ReplicationMessage.ReconnectToLeader>(replicaService);
-				_controller.Subscribe<ReplicationMessage.SubscribeToLeader>(replicaService);
-				_controller.Subscribe<ReplicationMessage.AckLogPosition>(replicaService);
-				_controller.Subscribe<ClientMessage.TcpForwardMessage>(replicaService);
+				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
+				_mainBus.Subscribe<ReplicationMessage.ReconnectToLeader>(replicaService);
+				_mainBus.Subscribe<ReplicationMessage.SubscribeToLeader>(replicaService);
+				_mainBus.Subscribe<ReplicationMessage.AckLogPosition>(replicaService);
+				_mainBus.Subscribe<ClientMessage.TcpForwardMessage>(replicaService);
 			}
 			else {
 				//LeaderReplicationService only running on a single node to provide stats, hence not subscribed to the other message types like SystemStart and StateChangeMessage
@@ -1455,7 +1494,7 @@ namespace EventStore.Core {
 			// ELECTIONS
 			if (!NodeInfo.IsReadOnlyReplica) {
 				var electionsService = new ElectionsService(
-					_controller,
+					_mainQueue,
 					memberInfo,
 					options.Cluster.ClusterSize,
 					Db.Config.WriterCheckpoint.AsReadOnly(),
@@ -1466,7 +1505,7 @@ namespace EventStore.Core {
 					options.Cluster.NodePriority,
 					_timeProvider,
 					TimeSpan.FromMilliseconds(options.Cluster.LeaderElectionTimeoutMs));
-				electionsService.SubscribeMessages(_controller);
+				electionsService.SubscribeMessages(_mainBus);
 			}
 
 			if (!isSingleNode || (options.Interface.GossipOnSingleNode ?? true)) {
@@ -1485,7 +1524,7 @@ namespace EventStore.Core {
 				};
 
 				var gossip = new NodeGossipService(
-					_controller,
+					_mainQueue,
 					options.Cluster.ClusterSize,
 					gossipSeedSource,
 					memberInfo,
@@ -1497,36 +1536,36 @@ namespace EventStore.Core {
 					TimeSpan.FromMilliseconds(options.Cluster.GossipTimeoutMs),
 					TimeSpan.FromSeconds(options.Cluster.DeadMemberRemovalPeriodSec),
 					_timeProvider);
-				_controller.Subscribe<SystemMessage.SystemInit>(gossip);
-				_controller.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
-				_controller.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
-				_controller.Subscribe<GossipMessage.Gossip>(gossip);
-				_controller.Subscribe<GossipMessage.GossipReceived>(gossip);
-				_controller.Subscribe<GossipMessage.ReadGossip>(gossip);
-				_controller.Subscribe<GossipMessage.ClientGossip>(gossip);
-				_controller.Subscribe<SystemMessage.StateChangeMessage>(gossip);
-				_controller.Subscribe<GossipMessage.GossipSendFailed>(gossip);
-				_controller.Subscribe<GossipMessage.UpdateNodePriority>(gossip);
-				_controller.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
-				_controller.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
-				_controller.Subscribe<GossipMessage.GetGossipFailed>(gossip);
-				_controller.Subscribe<GossipMessage.GetGossipReceived>(gossip);
-				_controller.Subscribe<ElectionMessage.ElectionsDone>(gossip);
+				_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
+				_mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
+				_mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
+				_mainBus.Subscribe<GossipMessage.Gossip>(gossip);
+				_mainBus.Subscribe<GossipMessage.GossipReceived>(gossip);
+				_mainBus.Subscribe<GossipMessage.ReadGossip>(gossip);
+				_mainBus.Subscribe<GossipMessage.ClientGossip>(gossip);
+				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(gossip);
+				_mainBus.Subscribe<GossipMessage.GossipSendFailed>(gossip);
+				_mainBus.Subscribe<GossipMessage.UpdateNodePriority>(gossip);
+				_mainBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
+				_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
+				_mainBus.Subscribe<GossipMessage.GetGossipFailed>(gossip);
+				_mainBus.Subscribe<GossipMessage.GetGossipReceived>(gossip);
+				_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
 			}
 
 			var clusterStateChangeListener = new ClusterMultipleVersionsLogger();
-			_controller.Subscribe<GossipMessage.GossipUpdated>(clusterStateChangeListener);
+			_mainBus.Subscribe<GossipMessage.GossipUpdated>(clusterStateChangeListener);
 
 			_reloadConfigSignalRegistration = PosixSignalRegistration.Create(PosixSignal.SIGHUP, c => {
 				c.Cancel = true;
 				Log.Information("Reloading the node's configuration since {Signal} has been received.", c.Signal);
-				_controller.Publish(new ClientMessage.ReloadConfig());
+				_mainQueue.Publish(new ClientMessage.ReloadConfig());
 			});
 
 			// subsystems
 			_subsystems = options.Subsystems;
 
-			var standardComponents = new StandardComponents(Db.Config, _controller, _controller, _timerService, _timeProvider,
+			var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
 				httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
 
 			IServiceCollection ConfigureNodeServices(IServiceCollection services) {
@@ -1534,7 +1573,7 @@ namespace EventStore.Core {
 					.AddSingleton(telemetryService) // for correct disposal
 					.AddSingleton(_readIndex)
 					.AddSingleton(standardComponents)
-					.AddSingleton(authorizationGateway)
+					.AddSingleton(AuthorizationGateway)
 					.AddSingleton(certificateProvider)
 					.AddSingleton<IReadOnlyList<IDbTransform>>(new List<IDbTransform> { new IdentityDbTransform() })
 					.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
@@ -1588,7 +1627,7 @@ namespace EventStore.Core {
 				AddTasks(storageWriter.Tasks);
 
 				AddTasks(_workersHandler.Start());
-				AddTask(_controller.Start());
+				AddTask(_mainQueue.Start());
 				AddTask(monitoringQueue.Start());
 				AddTask(subscrQueue.Start());
 				AddTask(perSubscrQueue.Start());
@@ -1599,7 +1638,7 @@ namespace EventStore.Core {
 
 			_startup = new ClusterVNodeStartup<TStreamId>(
 				modifiedOptions.PlugableComponents,
-				_controller, monitoringQueue, _controller, _workersHandler,
+				_mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, _authorizationProvider,
 				options.Application.MaxAppendSize,
 				TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
@@ -1611,16 +1650,16 @@ namespace EventStore.Core {
 				ConfigureNodeServices,
 				ConfigureNode);
 
-			_controller.Subscribe<SystemMessage.SystemReady>(_startup);
-			_controller.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
+			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 
-			var certificateExpiryMonitor = new CertificateExpiryMonitor(_controller, _certificateSelector, Log);
-			_controller.Subscribe<SystemMessage.SystemStart>(certificateExpiryMonitor);
-			_controller.Subscribe<MonitoringMessage.CheckCertificateExpiry>(certificateExpiryMonitor);
+			var certificateExpiryMonitor = new CertificateExpiryMonitor(_mainQueue, _certificateSelector, Log);
+			_mainBus.Subscribe<SystemMessage.SystemStart>(certificateExpiryMonitor);
+			_mainBus.Subscribe<MonitoringMessage.CheckCertificateExpiry>(certificateExpiryMonitor);
 
-			var periodicLogging = new PeriodicallyLoggingService(_controller, VersionInfo.Version, Log);
-			_controller.Subscribe<SystemMessage.SystemStart>(periodicLogging);
-			_controller.Subscribe<MonitoringMessage.CheckEsVersion>(periodicLogging);
+			var periodicLogging = new PeriodicallyLoggingService(_mainQueue, VersionInfo.Version, Log);
+			_mainBus.Subscribe<SystemMessage.SystemStart>(periodicLogging);
+			_mainBus.Subscribe<MonitoringMessage.CheckEsVersion>(periodicLogging);
 		}
 
 		static int GetPTableMaxReaderCount(int readerThreadsCount) {
@@ -1723,7 +1762,7 @@ namespace EventStore.Core {
 		}
 
 		public override void Start() {
-			_controller.Publish(new SystemMessage.SystemInit());
+			_mainQueue.Publish(new SystemMessage.SystemInit());
 		}
 
 		public override async Task StopAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default) {
@@ -1732,7 +1771,7 @@ namespace EventStore.Core {
 				return;
 			}
 
-			_controller.Publish(new ClientMessage.RequestShutdown(false, true));
+			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
 			_reloadConfigSignalRegistration?.Dispose();
 			_reloadConfigSignalRegistration = null;
@@ -1748,6 +1787,10 @@ namespace EventStore.Core {
 			await _shutdownSource.Task.WaitAsync(remainingTime, cancellationToken);
 
 			_switchChunksLock?.Dispose();
+		}
+
+		public void Handle(SystemMessage.StateChangeMessage message) {
+			OnNodeStatusChanged(new VNodeStatusChangeArgs(message.State));
 		}
 
 		public async ValueTask HandleAsync(SystemMessage.BecomeShuttingDown message, CancellationToken token) {
@@ -1768,7 +1811,7 @@ namespace EventStore.Core {
 					? new AuthenticationMessage.AuthenticationProviderInitialized()
 					: new AuthenticationMessage.AuthenticationProviderInitializationFailed();
 
-				_controller.Publish(msg);
+				_mainQueue.Publish(msg);
 			});
 		}
 
@@ -1805,7 +1848,7 @@ namespace EventStore.Core {
 			var tcs = new TaskCompletionSource<ClusterVNode>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			if (waitUntilReady) {
-				_controller.Subscribe(new AdHocHandler<SystemMessage.SystemReady>(
+				_mainBus.Subscribe(new AdHocHandler<SystemMessage.SystemReady>(
 					_ => tcs.TrySetResult(this)));
 			} else {
 				tcs.TrySetResult(this);
