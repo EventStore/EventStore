@@ -124,6 +124,7 @@ namespace EventStore.Core.Tests.Helpers {
 					Cluster = new() {
 						DiscoverViaDns = false,
 						ReadOnlyReplica = isReadOnlyReplica,
+						Archiver = false,
 						StreamInfoCacheCapacity = 10_000
 					},
 					Database = new() {
