@@ -133,7 +133,7 @@ namespace EventStore.Core {
 		ClusterVNode,
 		IAsyncHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
-		IAsyncHandle<SystemMessage.SystemStart>,
+		IHandle<SystemMessage.SystemStart>,
 		IHandle<ClientMessage.ReloadConfig> {
 		private static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromSeconds(5);
 
@@ -1758,15 +1758,14 @@ namespace EventStore.Core {
 			_shutdownSource.TrySetResult(true);
 		}
 
-		public async ValueTask HandleAsync(SystemMessage.SystemStart _, CancellationToken token) {
-			Message msg = new AuthenticationMessage.AuthenticationProviderInitialized();
-			try {
-				await _authenticationProvider.Initialize().WaitAsync(token);
-			} catch {
-				msg = new AuthenticationMessage.AuthenticationProviderInitializationFailed();
-			}
+		public void Handle(SystemMessage.SystemStart _) {
+			_authenticationProvider.Initialize().ContinueWith(t => {
+				Message msg = t.Exception is null
+					? new AuthenticationMessage.AuthenticationProviderInitialized()
+					: new AuthenticationMessage.AuthenticationProviderInitializationFailed();
 
-			_controller.Publish(msg);
+				_controller.Publish(msg);
+			});
 		}
 
 		public void AddTasks(IEnumerable<Task> tasks) {
