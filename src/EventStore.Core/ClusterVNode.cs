@@ -80,6 +80,7 @@ using Serilog.Extensions.Logging;
 using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
+using TimeoutControl = DotNext.Threading.Timeout;
 
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
@@ -1731,17 +1732,20 @@ namespace EventStore.Core {
 				return;
 			}
 
-			timeout ??= DefaultShutdownTimeout;
 			_controller.Publish(new ClientMessage.RequestShutdown(false, true));
 
 			_reloadConfigSignalRegistration?.Dispose();
 			_reloadConfigSignalRegistration = null;
 
+			TimeSpan remainingTime;
+			var timeoutCtl = new TimeoutControl(timeout ?? DefaultShutdownTimeout);
 			foreach (var subsystem in _subsystems ?? []) {
-				await subsystem.Stop().WaitAsync(timeout.Value, cancellationToken);
+				timeoutCtl.ThrowIfExpired(out remainingTime);
+				await subsystem.Stop().WaitAsync(remainingTime, cancellationToken);
 			}
 
-			await _shutdownSource.Task.WaitAsync(timeout.Value, cancellationToken);
+			timeoutCtl.ThrowIfExpired(out remainingTime);
+			await _shutdownSource.Task.WaitAsync(remainingTime, cancellationToken);
 
 			_switchChunksLock?.Dispose();
 		}
