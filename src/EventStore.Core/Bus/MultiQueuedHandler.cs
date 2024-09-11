@@ -8,7 +8,7 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Bus;
 
-public class MultiQueuedHandler : IPublisher, IThreadSafePublisher {
+public class MultiQueuedHandler : IPublisher {
 	private readonly ReadOnlyMemory<IQueuedHandler> _queues;
 	private int _nextQueueNum = -1;
 

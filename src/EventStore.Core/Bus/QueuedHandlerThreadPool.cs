@@ -8,13 +8,14 @@ using System.Threading.Tasks;
 using EventStore.Core.Metrics;
 using ILogger = Serilog.ILogger;
 
-namespace EventStore.Core.Bus {
+namespace EventStore.Core.Bus;
+
 	/// <summary>
 	/// Lightweight in-memory queue with a separate thread in which it passes messages
 	/// to the consumer. It also tracks statistics about the message processing to help
 	/// in identifying bottlenecks
 	/// </summary>
-	public class QueuedHandlerThreadPool : IQueuedHandler, IMonitoredQueue, IThreadSafePublisher, IThreadPoolWorkItem {
+	public class QueuedHandlerThreadPool : IQueuedHandler, IMonitoredQueue, IThreadPoolWorkItem {
 		private static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
 		public static readonly TimeSpan VerySlowMsgThreshold = TimeSpan.FromSeconds(7);
 		private static readonly ILogger Log = Serilog.Log.ForContext<QueuedHandlerThreadPool>();
@@ -202,4 +203,3 @@ namespace EventStore.Core.Bus {
 			return _queueStats.GetStatistics(_queue.Count);
 		}
 	}
-}
