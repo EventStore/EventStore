@@ -8,14 +8,13 @@ namespace EventStore.Core.Tests.Integration {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_a_single_node_is_shutdown<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		[Test]
-		public async Task cancels_after_timeout() {
+		public async Task throws_on_timeout() {
 			var node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			try {
 				await node.Start();
 
 				var shutdownTask = node.Node.StopAsync(TimeSpan.FromMilliseconds(1));
-				await Task.Delay(100);
-				Assert.True(shutdownTask.IsCanceled);
+				Assert.ThrowsAsync<TimeoutException>(() => shutdownTask);
 			} finally {
 				await node.Shutdown();
 			}
