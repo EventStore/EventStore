@@ -116,8 +116,8 @@ namespace EventStore.Common.Configuration {
 		}
 
 		public class LabelMappingCase {
-			public string Regex { get; set; }
-			public string Label { get; set; }
+			public string Regex { get; set; } = "";
+			public string Label { get; set; } = "";
 		}
 
 		public string[] Meters { get; set; } = Array.Empty<string>();

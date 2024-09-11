@@ -47,11 +47,18 @@ public class MessageLabelConfigurator {
 			oldLabel = "";
 		}
 
-
 		foreach (var @case in configuration) {
 			var pattern = $"^{@case.Regex}$";
 			var match = Regex.Match(input: oldLabel, pattern: pattern);
 			if (match.Success) {
+				if (string.IsNullOrWhiteSpace(@case.Label)) {
+					Log.Warning(
+						"Label for message {message} matching pattern {pattern} was not specified.",
+						oldLabel, @case.Regex);
+					label = oldLabel;
+					return true;
+				}
+
 				label = Regex.Replace(
 					input: oldLabel,
 					pattern: pattern,
