@@ -6,6 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using DotNext.Runtime;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -13,13 +15,13 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.VNode;
 
-public class VNodeFSM : IHandle<Message> {
+public class VNodeFSM : IAsyncHandle<Message> {
 	private readonly ReadOnlyValueReference<VNodeState> _stateRef;
 	private readonly HandlersBuffer _handlers;
 
 	internal VNodeFSM(ReadOnlyValueReference<VNodeState> stateRef,
 		ReadOnlySpan<IReadOnlyDictionary<Type, MulticastDelegate>> handlers,
-		ReadOnlySpan<Action<Message>> defaultHandlers) {
+		ReadOnlySpan<Func<Message, CancellationToken, ValueTask>> defaultHandlers) {
 		Debug.Assert(handlers.Length == (int)VNodeState.MaxValue + 1);
 		Debug.Assert(defaultHandlers.Length == (int)VNodeState.MaxValue + 1);
 
@@ -54,13 +56,14 @@ public class VNodeFSM : IHandle<Message> {
 		}
 	}
 
-	public void Handle(Message message) => _handlers.Invoke(_stateRef.Value, message);
+	public ValueTask HandleAsync(Message message, CancellationToken token = default)
+		=> _handlers.InvokeAsync(_stateRef.Value, message, token);
 
 	[StructLayout(LayoutKind.Auto)]
 	private readonly struct Handler(
 		VNodeState state,
 		IReadOnlyDictionary<Type, HandlerAnalysisNode> handlers,
-		Action<Message> defaultHandler) {
+		Func<Message, CancellationToken, ValueTask> defaultHandler) {
 		private readonly FrozenDictionary<Type, MulticastDelegate> _handlers = handlers
 			.Select(static pair => new KeyValuePair<Type, MulticastDelegate>(pair.Key, pair.Value.Handler))
 			.ToFrozenDictionary();
@@ -68,7 +71,7 @@ public class VNodeFSM : IHandle<Message> {
 		// Enum name is cached by the runtime, no allocation caused by Enum.GetName
 		private readonly MulticastDelegate _defaultHandler = defaultHandler ?? Enum.GetName(state).ThrowException;
 
-		public void Invoke(Message message) {
+		public ValueTask InvokeAsync(Message message, CancellationToken token) {
 			scoped ref readonly var actionRef = ref _handlers.GetValueRefOrNullRef(message.GetType());
 
 			if (Unsafe.IsNullRef(in actionRef)) {
@@ -79,7 +82,7 @@ public class VNodeFSM : IHandle<Message> {
 			// Unsafe reinterpret case is valid due to ABI nature of reference types. Size
 			// of reference is always 4 or 8 bytes regardless the actual type T.
 			EnsureActionType(message.GetType(), actionRef);
-			Unsafe.As<Action<Message>>(actionRef).Invoke(message);
+			return Unsafe.As<Func<Message, CancellationToken, ValueTask>>(actionRef).Invoke(message, token);
 		}
 
 		[Conditional("DEBUG")]
@@ -94,8 +97,8 @@ public class VNodeFSM : IHandle<Message> {
 	private struct HandlersBuffer {
 		private Handler _handler;
 
-		public readonly void Invoke(VNodeState index, Message message)
-			=> Unsafe.Add(ref Unsafe.AsRef(in _handler), (int)index).Invoke(message);
+		public readonly ValueTask InvokeAsync(VNodeState index, Message message, CancellationToken token)
+			=> Unsafe.Add(ref Unsafe.AsRef(in _handler), (int)index).InvokeAsync(message, token);
 	}
 
 	[StructLayout(LayoutKind.Auto)]
@@ -106,7 +109,7 @@ public class VNodeFSM : IHandle<Message> {
 }
 
 file static class DelegateHelpers {
-	public static void ThrowException(this string stateName, Message message) {
-		throw new Exception($"Unhandled message: {message} occurred in state: {stateName}.");
+	public static ValueTask ThrowException(this string stateName, Message message, CancellationToken token) {
+		return ValueTask.FromException(new Exception($"Unhandled message: {message} occurred in state: {stateName}."));
 	}
 }

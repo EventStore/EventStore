@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -9,7 +10,7 @@ using EventStore.Core.Services.VNode;
 
 namespace EventStore.Core.Tests.Services.Replication.LogReplication;
 
-internal class AdHocReplicaController<TStreamId> : IHandle<Message> {
+internal class AdHocReplicaController<TStreamId> : IAsyncHandle<Message> {
 	private readonly IQueuedHandler _inputQueue;
 	private readonly IPublisher _outputBus;
 	private readonly LeaderInfo<TStreamId> _leaderInfo;
@@ -74,9 +75,8 @@ internal class AdHocReplicaController<TStreamId> : IHandle<Message> {
 		SubscriptionId = Guid.Empty;
 	}
 
-	public void Handle(Message message) {
-		_fsm.Handle(message);
-	}
+	public ValueTask HandleAsync(Message message, CancellationToken token)
+		=> _fsm.HandleAsync(message, token);
 
 	private void Handle(SystemMessage.VNodeConnectionEstablished message) {
 		ConnectionToLeaderEstablished.Set();

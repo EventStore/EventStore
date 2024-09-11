@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Diagnostics;
 using DotNext.Runtime;
@@ -14,7 +15,7 @@ namespace EventStore.Core.Tests.Bus;
 [TestFixture]
 public class FSMSpeedTest {
 	[Test, Category("LongRunning"), Explicit]
-	public void FSMSpeedTest1() {
+	public async Task FSMSpeedTest1() {
 		var fsm = CreateFSM();
 		var msg = new StorageMessage.WriteCommit(Guid.NewGuid(), new NoopEnvelope(), 0);
 		const int iterations = 1000000;
@@ -22,7 +23,7 @@ public class FSMSpeedTest {
 		var ts = new Timestamp();
 
 		for (int i = 0; i < iterations; ++i) {
-			fsm.Handle(msg);
+			await fsm.HandleAsync(msg);
 		}
 
 		var elapsedMs = ts.ElapsedMilliseconds;
