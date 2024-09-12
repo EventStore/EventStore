@@ -39,7 +39,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			_bus.Subscribe<CoreProjectionStatusMessage.Suspended>(_service);
 			_service.Handle(new CoreProjectionManagementMessage.CreateAndPrepare(
 				_projectionId, _workerId, "test-projection", 
-				new ProjectionVersion(), ProjectionConfig.GetTest(),
+				new ProjectionVersion(),
+				new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, true, 10000, 1, 250),
 				"JS", "fromStream('$user-admin').outputState()", true));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCore(_stopCorrelationId));
 		}
@@ -74,7 +75,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			_bus.Unsubscribe<CoreProjectionStatusMessage.Suspended>(_service);
 			_service.Handle(new CoreProjectionManagementMessage.CreateAndPrepare(
 				_projectionId, _workerId, "test-projection", 
-				new ProjectionVersion(), ProjectionConfig.GetTest(),
+				new ProjectionVersion(),
+				new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, true, 10000, 1, 250),
 				"JS", "fromStream('$user-admin').outputState()", true));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCore(_stopCorrelationId));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCoreTimeout(_stopCorrelationId));
@@ -102,7 +104,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			_bus.Unsubscribe<CoreProjectionStatusMessage.Suspended>(_service);
 			_service.Handle(new CoreProjectionManagementMessage.CreateAndPrepare(
 				_projectionId, _workerId, "test-projection", 
-				new ProjectionVersion(), ProjectionConfig.GetTest(),
+				new ProjectionVersion(),
+				new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, true, 10000, 1, 250),
 				"JS", "fromStream('$user-admin').outputState()", true));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCore(_stopCorrelationId));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCoreTimeout(Guid.NewGuid()));

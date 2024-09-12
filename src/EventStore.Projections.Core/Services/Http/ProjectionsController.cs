@@ -220,7 +220,7 @@ namespace EventStore.Projections.Core.Services.Http {
 						return;
 					}
 
-					if (config.ProjectionExecutionTimeout <= 0) {
+					if (config.ProjectionExecutionTimeout is not null && config.ProjectionExecutionTimeout <= 0) {
 						SendBadRequest(o, $"projectionExecutionTimeout should be positive. Found : {config.ProjectionExecutionTimeout}");
 						return;
 					}
@@ -655,9 +655,7 @@ namespace EventStore.Projections.Core.Services.Http {
 			public int PendingEventsThreshold { get; set; }
 			public int MaxWriteBatchLength { get; set; }
 			public int MaxAllowedWritesInFlight { get; set; }
-
-			public int ProjectionExecutionTimeout { get; set; } =
-				ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout;
+			public int? ProjectionExecutionTimeout { get; set; }
 		}
 	}
 }

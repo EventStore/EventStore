@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.Common.Utils;
+using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -61,7 +62,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 						v => v.CorrelationId,
 						new PublishEnvelope(_bus)),
 				_ioDispatcher,
-				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
+				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+				ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout);
 		}
 
 		[Test]
@@ -119,7 +121,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 						v => v.CorrelationId,
 						new PublishEnvelope(_bus)),
 				_ioDispatcher,
-				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
+				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+				ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout);
 		}
 
 		[Test]

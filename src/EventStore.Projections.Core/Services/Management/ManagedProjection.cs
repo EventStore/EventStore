@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			public int MaxAllowedWritesInFlight { get; set; }
 			public int? ProjectionSubsystemVersion { get; set; }
 			
-			public int ProjectionExecutionTimeout { get; set; }
+			public int? ProjectionExecutionTimeout { get; set; }
 
 			public PersistedState() {
 				CheckpointHandledThreshold = ProjectionConsts.CheckpointHandledThreshold;
@@ -74,7 +74,6 @@ namespace EventStore.Projections.Core.Services.Management {
 				PendingEventsThreshold = ProjectionConsts.PendingEventsThreshold;
 				MaxWriteBatchLength = ProjectionConsts.MaxWriteBatchLength;
 				MaxAllowedWritesInFlight = ProjectionConsts.MaxAllowedWritesInFlight;
-				ProjectionExecutionTimeout = ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout;
 			}
 		}
 
@@ -122,6 +121,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		internal bool Created;
 		private bool _pendingWritePersistedState;
 		private readonly TimeSpan _projectionsQueryExpiry;
+		private readonly int _defaultProjectionExecutionTimeout;
 
 		private ManagedProjectionStateBase _stateHandler;
 		private IEnvelope _lastReplyEnvelope;
@@ -148,7 +148,8 @@ namespace EventStore.Projections.Core.Services.Management {
 				<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>
 				getResultDispatcher,
 			IODispatcher ioDispatcher,
-			TimeSpan projectionQueryExpiry) {
+			TimeSpan projectionQueryExpiry,
+			int defaultProjectionExecutionTimeout) {
 			if (id == Guid.Empty) throw new ArgumentException("id");
 			if (name == null) throw new ArgumentNullException("name");
 			if (output == null) throw new ArgumentNullException("output");
@@ -171,6 +172,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			_lastAccessed = _timeProvider.UtcNow;
 			_ioDispatcher = ioDispatcher;
 			_projectionsQueryExpiry = projectionQueryExpiry;
+			_defaultProjectionExecutionTimeout = defaultProjectionExecutionTimeout;
 		}
 
 		private string HandlerType {
@@ -464,8 +466,10 @@ namespace EventStore.Projections.Core.Services.Management {
 					PersistedProjectionState.CheckpointAfterMs,
 					PersistedProjectionState.CheckpointHandledThreshold,
 					PersistedProjectionState.CheckpointUnhandledBytesThreshold,
-					PersistedProjectionState.PendingEventsThreshold, PersistedProjectionState.MaxWriteBatchLength,
-					PersistedProjectionState.MaxAllowedWritesInFlight, PersistedProjectionState.ProjectionExecutionTimeout));
+					PersistedProjectionState.PendingEventsThreshold,
+					PersistedProjectionState.MaxWriteBatchLength,
+					PersistedProjectionState.MaxAllowedWritesInFlight,
+					PersistedProjectionState.ProjectionExecutionTimeout));
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.UpdateConfig message) {
@@ -812,8 +816,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				throw new NotSupportedException("Unsupported error code received");
 		}
 
-		private void Prepare(ProjectionConfig config, Message message) {
-			if (config == null) throw new ArgumentNullException("config");
+		private void Prepare(Message message) {
 			if (_state >= ManagedProjectionState.Preparing) {
 				DisposeCoreProjection();
 				SetState(ManagedProjectionState.Loaded);
@@ -963,7 +966,8 @@ namespace EventStore.Projections.Core.Services.Management {
 			var emitEventEnabled = PersistedProjectionState.EmitEnabled == true;
 			var createTempStreams = PersistedProjectionState.CreateTempStreams == true;
 			var stopOnEof = PersistedProjectionState.Mode <= ProjectionMode.OneTime;
-			var projectionExecutionTimeout = PersistedProjectionState.ProjectionExecutionTimeout;
+			var projectionExecutionTimeout = PersistedProjectionState.ProjectionExecutionTimeout ??
+			                                 _defaultProjectionExecutionTimeout;
 
 			var projectionConfig = new ProjectionConfig(
 				_runAs,
@@ -1029,7 +1033,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				? CreatePreparedMessage(_projectionConfig)
 				: CreateCreateAndPrepareMessage(_projectionConfig);
 
-			Prepare(_projectionConfig, prepareMessage);
+			Prepare(prepareMessage);
 		}
 
 		private void Reply() {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests;
@@ -58,7 +59,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 						v => v.CorrelationId,
 						v => v.CorrelationId,
 						new PublishEnvelope(_bus)), _ioDispatcher,
-				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
+				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+				ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout);
 		}
 
 		protected override IEnumerable<WhenStep> When() {

@@ -1203,7 +1203,7 @@ namespace EventStore.Projections.Core.Services.Management {
 						Version = version,
 						RunAs = _enableRunAs ? SerializedRunAs.SerializePrincipal(_runAs) : null,
 						ProjectionSubsystemVersion = ProjectionsSubsystem.VERSION,
-						ProjectionExecutionTimeout = _defaultProjectionExecutionTimeout
+						ProjectionExecutionTimeout = null
 					},
 					_replyEnvelope);
 			}
@@ -1231,7 +1231,8 @@ namespace EventStore.Projections.Core.Services.Management {
 				_getStateDispatcher,
 				_getResultDispatcher,
 				_ioDispatcher,
-				_projectionsQueryExpiry);
+				_projectionsQueryExpiry,
+				_defaultProjectionExecutionTimeout);
 
 			_projectionsMap.Add(projectionCorrelationId, name);
 			_projections.Add(name, managedProjectionInstance);
