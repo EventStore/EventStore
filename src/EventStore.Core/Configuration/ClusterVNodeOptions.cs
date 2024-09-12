@@ -310,6 +310,9 @@ namespace EventStore.Core {
 			             "or accept writes from clients.")]
 			public bool ReadOnlyReplica { get; init; } = false;
 
+			[Description("Sets this node as an Archiver node. Requires ReadOnlyReplica to be true. Experimental.")]
+			public bool Archiver { get; init; } = false;
+
 			[Description("Allow more nodes than the cluster size to join the cluster as clones. " +
 			             "(UNSAFE: can cause data loss if a clone is promoted as leader)")]
 			public bool UnsafeAllowSurplusNodes { get; init; } = false;

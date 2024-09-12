@@ -110,6 +110,7 @@ namespace EventStore.Core.Tests.Helpers {
 					GossipTimeoutMs = 2_000,
 					DeadMemberRemovalPeriodSec = 1_800_000,
 					ReadOnlyReplica = readOnlyReplica,
+					Archiver = false,
 					StreamInfoCacheCapacity = 10_000
 				},
 				Interface = new() {
