@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DotNext;
 using EventStore.Common;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
@@ -86,7 +87,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_bus.Subscribe(_consumer);
 
 			_processingQueues = GivenProcessingQueues();
-			var queues = _processingQueues.ToDictionary(v => v.Item5, v => (IPublisher)v.Item1);
+			var queues = _processingQueues.ToDictionary(v => v.Item5, v => v.Item1.As<IPublisher>());
 			_managerMessageDispatcher = new ProjectionManagerMessageDispatcher(queues);
 			_manager = new ProjectionManager(
 				GetInputQueue(),

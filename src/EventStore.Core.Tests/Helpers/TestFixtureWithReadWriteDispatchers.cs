@@ -11,6 +11,7 @@ using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
 using System.Linq;
 using EventStore.Core.Metrics;
+using DotNext;
 
 namespace EventStore.Core.Tests.Helpers {
 	public abstract class TestFixtureWithReadWriteDispatchers {
@@ -79,7 +80,7 @@ namespace EventStore.Core.Tests.Helpers {
 		}
 
 		protected IPublisher GetInputQueue() {
-			return (IPublisher)_queue ?? _bus;
+			return _queue.As<IPublisher>() ?? _bus;
 		}
 
 		protected void DisableTimer() {
