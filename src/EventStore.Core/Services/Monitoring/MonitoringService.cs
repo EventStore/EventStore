@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Runtime.CompilerServices;
-using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -14,7 +13,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Transport.Tcp;
 using ILogger = Serilog.ILogger;
 using Timeout = System.Threading.Timeout;
@@ -85,12 +83,12 @@ namespace EventStore.Core.Services.Monitoring {
 			_mainQueue = mainQueue;
 			_statsStorage = statsStorage;
 
+			_statsCollectionPeriod = statsCollectionPeriod;
+
 			if (statsCollectionPeriod > TimeSpan.Zero) {
-				_statsCollectionPeriod = statsCollectionPeriod;
 				_timerTokenSource = new();
 				_timerToken = _timerTokenSource.Token;
 			} else {
-				_statsCollectionPeriod = Timeout.InfiniteTimeSpan;
 				_timerToken = new(canceled: true);
 			}
 
@@ -103,16 +101,22 @@ namespace EventStore.Core.Services.Monitoring {
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
-			if (_statsCollectionPeriod > TimeSpan.Zero)
-				_timer = CollectRegularStatsJob();
+			if (_timerToken.IsCancellationRequested)
+				return;
+
+			_timer = CollectRegularStatsJob();
 		}
 
 		[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))]
 		private async Task CollectRegularStatsJob() {
+			_systemStats.Start();
+
 			while (true) {
 				await Task.Delay(_statsCollectionPeriod, _timerToken)
-					.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing |
-					                ConfigureAwaitOptions.ContinueOnCapturedContext);
+					.ConfigureAwait(
+						ConfigureAwaitOptions.SuppressThrowing |
+						// to be consistent with all the other awaits
+						ConfigureAwaitOptions.ContinueOnCapturedContext);
 
 				if (_timerToken.IsCancellationRequested)
 					break;
