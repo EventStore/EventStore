@@ -45,7 +45,7 @@ public abstract class EventByTypeIndexEventReaderTestFixture<TLogFormat, TStream
 		var correlationId = ((ProjectionManagementMessage.Internal.ReadTimeout)timeoutMessage.ReplyMessage)
 			.CorrelationId;
 		correlationId = corrId == Guid.Empty ? correlationId : corrId;
-		timeoutMessage.ReplyWithDangerous(
+		timeoutMessage.Envelope.ReplyWith(
 			new ProjectionManagementMessage.Internal.ReadTimeout(corrId == Guid.Empty ? correlationId : corrId,
 				streamId));
 		return correlationId;

@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream.another_epoc
 			       typeof(EventStore.Core.Services.TimerService.TimerMessage.Schedule)) {
 				var message =
 					_consumer.HandledMessages.Last() as EventStore.Core.Services.TimerService.TimerMessage.Schedule;
-				message.Reply();
+				message.Envelope.ReplyWith(message.ReplyMessage);
 
 				CompleteWriteWithResult(OperationResult.CommitTimeout);
 

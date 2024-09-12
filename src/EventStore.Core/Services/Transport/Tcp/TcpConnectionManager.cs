@@ -63,8 +63,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly Action<TcpConnectionManager, SocketError> _connectionClosed;
 		private readonly Action<TcpConnectionManager> _connectionEstablished;
 
-		private readonly SendToWeakThisEnvelope<TcpMessage.Heartbeat> _heartbeatEnvelope;
-		private readonly SendToWeakThisEnvelope<TcpMessage.HeartbeatTimeout> _heartbeatTimeoutEnvelope;
+		private readonly SendToWeakThisEnvelope _weakThisEnvelope;
 		private readonly TimeSpan _heartbeatInterval;
 		private readonly TimeSpan _heartbeatTimeout;
 		private bool _awaitingHeartbeatTimeoutCheck;
@@ -108,8 +107,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_framer = new LengthPrefixMessageFramer();
 			_framer.RegisterMessageArrivedCallback(OnMessageArrived);
 
-			_heartbeatEnvelope = new SendToWeakThisEnvelope<TcpMessage.Heartbeat>(this);
-			_heartbeatTimeoutEnvelope = new SendToWeakThisEnvelope<TcpMessage.HeartbeatTimeout>(this);
+			_weakThisEnvelope = new SendToWeakThisEnvelope(this);
 			_heartbeatInterval = heartbeatInterval;
 			_heartbeatTimeout = heartbeatTimeout;
 			_connectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
@@ -166,8 +164,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_framer = new LengthPrefixMessageFramer();
 			_framer.RegisterMessageArrivedCallback(OnMessageArrived);
 
-			_heartbeatEnvelope = new SendToWeakThisEnvelope<TcpMessage.Heartbeat>(this);
-			_heartbeatTimeoutEnvelope = new SendToWeakThisEnvelope<TcpMessage.HeartbeatTimeout>(this);
+			_weakThisEnvelope = new SendToWeakThisEnvelope(this);
 			_heartbeatInterval = heartbeatInterval;
 			_heartbeatTimeout = heartbeatTimeout;
 			_connectionPendingSendBytesThreshold = ESConsts.UnrestrictedPendingSendBytes;
@@ -441,7 +438,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			if (message.ReceiveProgressIndicator == receiveProgressIndicator && !_awaitingHeartbeatTimeoutCheck) {
 				SendPackage(new TcpPackage(TcpCommand.HeartbeatRequestCommand, Guid.NewGuid(), null));
 				_awaitingHeartbeatTimeoutCheck = true;
-				_publisher.Publish(TimerMessage.Schedule.Create(_heartbeatTimeout, _heartbeatTimeoutEnvelope,
+				_publisher.Publish(TimerMessage.Schedule.Create(_heartbeatTimeout, _weakThisEnvelope,
 					new TcpMessage.HeartbeatTimeout(receiveProgressIndicator)));
 			}
 			/*
@@ -472,20 +469,23 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private void ScheduleHeartbeat(long receiveProgressIndicator, long sendProgressIndicator) {
-			_publisher.Publish(TimerMessage.Schedule.Create(_heartbeatInterval, _heartbeatEnvelope,
+			_publisher.Publish(TimerMessage.Schedule.Create(_heartbeatInterval, _weakThisEnvelope,
 				new TcpMessage.Heartbeat(receiveProgressIndicator, sendProgressIndicator)));
 		}
 
-		private class SendToWeakThisEnvelope<T> : IEnvelope<T> where T : Message {
-			private readonly WeakReference<IHandle<T>> _receiver;
+		// Same health warnings as SendToThisEnvelope
+		private class SendToWeakThisEnvelope : IEnvelope {
+			private readonly WeakReference _receiver;
 
-			public SendToWeakThisEnvelope(IHandle<T> receiver) {
-				_receiver = new WeakReference<IHandle<T>>(receiver);
+			public SendToWeakThisEnvelope(object receiver) {
+				_receiver = new WeakReference(receiver);
 			}
 
-			public void ReplyWith<TReply>(TReply message) where TReply : T {
-				if (_receiver.TryGetTarget(out var handle)) {
+			public void ReplyWith<T>(T message) where T : Message {
+				if (_receiver.Target is IHandle<T> handle) {
 					handle.Handle(message);
+				} else if (_receiver is IAsyncHandle<T>) {
+					throw new Exception($"SendToWeakThisEnvelope does not support asynchronous receivers. Receiver: {_receiver}");
 				}
 			}
 		}
