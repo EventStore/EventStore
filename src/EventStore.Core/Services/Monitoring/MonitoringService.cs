@@ -84,20 +84,27 @@ namespace EventStore.Core.Services.Monitoring {
 			_statsCollectionDispatcher = statsCollectionDispatcher;
 			_mainQueue = mainQueue;
 			_statsStorage = statsStorage;
-			_statsCollectionPeriod = statsCollectionPeriod > TimeSpan.Zero
-				? statsCollectionPeriod
-				: Timeout.InfiniteTimeSpan;
+
+			if (statsCollectionPeriod > TimeSpan.Zero) {
+				_statsCollectionPeriod = statsCollectionPeriod;
+				_timerTokenSource = new();
+				_timerToken = _timerTokenSource.Token;
+			} else {
+				_statsCollectionPeriod = Timeout.InfiniteTimeSpan;
+				_timerToken = new(canceled: true);
+			}
+
 			_nodeStatsStream = $"{SystemStreams.StatsStreamPrefix}-{nodeEndpoint}";
 			_tcpEndpoint = tcpEndpoint;
 			_tcpSecureEndpoint = tcpSecureEndpoint;
-			_timerTokenSource = new();
-			_timerToken = _timerTokenSource.Token;
+
 			_timer = Task.CompletedTask;
 			_systemStats = systemStatsHelper;
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
-			_timer = CollectRegularStatsJob();
+			if (_statsCollectionPeriod > TimeSpan.Zero)
+				_timer = CollectRegularStatsJob();
 		}
 
 		[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))]
