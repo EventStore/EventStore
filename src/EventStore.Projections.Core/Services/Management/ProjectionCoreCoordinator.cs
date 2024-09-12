@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		public ProjectionCoreCoordinator(
 			ProjectionType runProjections,
 			TimeoutScheduler[] timeoutSchedulers,
-			IPublisher[] queues,
+			IReadOnlyList<IPublisher> queues,
 			IPublisher publisher,
 			IEnvelope publishEnvelope) {
 			_runProjections = runProjections;

@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core {
 				coreWorkers.Add(workerId, new CoreWorker(workerId, coreInputQueue, coreOutputQueue));
 			}
 
-			var queues = coreWorkers.Select(v => v.Value.CoreInputQueue).Cast<IPublisher>().ToArray();
+			var queues = coreWorkers.Select(v => v.Value.CoreInputQueue).ToArray();
 			var coordinator = new ProjectionCoreCoordinator(
 				projectionsStandardComponents.RunProjections,
 				coreTimeoutSchedulers,
@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core {
 			projectionsStandardComponents.LeaderInputBus.Subscribe(
 				Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(coreWorkers
 					.Select(x => x.Value.CoreInputQueue)
-					.Cast<IPublisher>().ToArray()));
+					.ToArray()));
 			return coreWorkers;
 		}
 

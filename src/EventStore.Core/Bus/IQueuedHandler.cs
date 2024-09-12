@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 
 namespace EventStore.Core.Bus;
