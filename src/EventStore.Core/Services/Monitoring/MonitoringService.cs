@@ -48,8 +48,6 @@ namespace EventStore.Core.Services.Monitoring {
 		private readonly IQueuedHandler _monitoringQueue;
 		private readonly IAsyncHandle<Message> _statsCollectionDispatcher;
 		private readonly IPublisher _mainQueue;
-		private readonly IReadOnlyCheckpoint _writerCheckpoint;
-		private readonly string _dbPath;
 		private readonly StatsStorage _statsStorage;
 		private readonly TimeSpan _statsCollectionPeriod;
 		private SystemStatsHelper _systemStats;
@@ -67,13 +65,10 @@ namespace EventStore.Core.Services.Monitoring {
 		private DateTime _lastTcpConnectionsRequestTime;
 		private IPEndPoint _tcpEndpoint;
 		private IPEndPoint _tcpSecureEndpoint;
-		private Atomic.Boolean _started;
 
 		public MonitoringService(IQueuedHandler monitoringQueue,
 			IAsyncHandle<Message> statsCollectionDispatcher,
 			IPublisher mainQueue,
-			IReadOnlyCheckpoint writerCheckpoint,
-			string dbPath,
 			TimeSpan statsCollectionPeriod,
 			EndPoint nodeEndpoint,
 			StatsStorage statsStorage,
@@ -83,20 +78,16 @@ namespace EventStore.Core.Services.Monitoring {
 			Ensure.NotNull(monitoringQueue, "monitoringQueue");
 			Ensure.NotNull(statsCollectionDispatcher, nameof(statsCollectionDispatcher));
 			Ensure.NotNull(mainQueue, nameof(mainQueue));
-			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
-			Ensure.NotNullOrEmpty(dbPath, "dbPath");
 			Ensure.NotNull(nodeEndpoint, "nodeEndpoint");
 
 			_monitoringQueue = monitoringQueue;
 			_statsCollectionDispatcher = statsCollectionDispatcher;
 			_mainQueue = mainQueue;
-			_writerCheckpoint = writerCheckpoint;
-			_dbPath = dbPath;
 			_statsStorage = statsStorage;
 			_statsCollectionPeriod = statsCollectionPeriod > TimeSpan.Zero
 				? statsCollectionPeriod
 				: Timeout.InfiniteTimeSpan;
-			_nodeStatsStream = string.Format("{0}-{1}", SystemStreams.StatsStreamPrefix, nodeEndpoint);
+			_nodeStatsStream = $"{SystemStreams.StatsStreamPrefix}-{nodeEndpoint}";
 			_tcpEndpoint = tcpEndpoint;
 			_tcpSecureEndpoint = tcpSecureEndpoint;
 			_timerTokenSource = new();
@@ -111,12 +102,14 @@ namespace EventStore.Core.Services.Monitoring {
 
 		[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))]
 		private async Task CollectRegularStatsJob() {
-			if (_started.FalseToTrue()) {
-				_systemStats.Start();
-			}
+			while (true) {
+				await Task.Delay(_statsCollectionPeriod, _timerToken)
+					.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing |
+					                ConfigureAwaitOptions.ContinueOnCapturedContext);
 
-			while (!_timerToken.IsCancellationRequested) {
-				await Task.Delay(_statsCollectionPeriod);
+				if (_timerToken.IsCancellationRequested)
+					break;
+
 				await CollectRegularStats(_timerToken);
 			}
 		}

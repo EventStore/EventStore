@@ -537,8 +537,6 @@ namespace EventStore.Core {
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
 				_controller,
-				Db.Config.WriterCheckpoint.AsReadOnly(),
-				Db.Config.Path,
 				TimeSpan.FromSeconds(options.Application.StatsPeriodSec),
 				NodeInfo.HttpEndPoint,
 				options.Database.StatsStorage,
