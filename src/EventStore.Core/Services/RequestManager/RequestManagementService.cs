@@ -209,18 +209,17 @@ namespace EventStore.Core.Services.RequestManager {
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) => _commitSource.Handle(message);
 		public void Handle(ReplicationTrackingMessage.IndexedTo message) => _commitSource.Handle(message);
 
-		public void Handle(StorageMessage.AlreadyCommitted message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.PrepareAck message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.CommitIndexed message) =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.WrongExpectedVersion message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.InvalidTransaction message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.StreamDeleted message)  =>	DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.AlreadyCommitted message) => DispatchInternal(message.CorrelationId, message, static (manage, m) => manage.Handle(m));
+		public void Handle(StorageMessage.PrepareAck message) => DispatchInternal(message.CorrelationId, message, static (manage, m) => manage.Handle(m));
+		public void Handle(StorageMessage.CommitIndexed message) => DispatchInternal(message.CorrelationId, message, static (manage, m) => manage.Handle(m));
+		public void Handle(StorageMessage.WrongExpectedVersion message) => DispatchInternal(message.CorrelationId, message, static (manage, m) => manage.Handle(m));
+		public void Handle(StorageMessage.InvalidTransaction message) => DispatchInternal(message.CorrelationId, message, static (manage, m) => manage.Handle(m));
+		public void Handle(StorageMessage.StreamDeleted message) => DispatchInternal(message.CorrelationId, message, static (manage, m) => manage.Handle(m));
 		
-		private void DispatchInternal<T>(Guid correlationId, T message) where T : Message {
+		private void DispatchInternal<T>(Guid correlationId, T message, Action<RequestManagerBase, T> handle) where T : Message {
 			if (_currentRequests.TryGetValue(correlationId, out var manager)) {
-				var x = manager as IHandle<T>;
-				x?.Handle(message);
+				handle(manager, message);
 			}
-		}		
+		}
 	}
 }

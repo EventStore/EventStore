@@ -52,8 +52,12 @@ namespace EventStore.Projections.Core.Services {
 
 		private void Handle<T>(T message) where T : EventReaderSubscriptionMessageBase {
 			var correlationId = message.SubscriptionId;
-			if (_map.TryGetValue(correlationId, out var subscriber) && subscriber is IHandle<T> h) {
-				h.Handle(message);
+			if (_map.TryGetValue(correlationId, out var subscriber)) {
+				if (subscriber is IHandle<T> h) {
+					h.Handle(message);
+				} else if (subscriber is IAsyncHandle<T>) {
+					throw new Exception($"ReaderSubscriptionDispatcher does not support asynchronous subscribers. Subscriber: {subscriber}");
+				}
 			}
 		}
 
