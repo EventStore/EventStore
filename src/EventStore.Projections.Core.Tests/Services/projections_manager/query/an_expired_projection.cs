@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 				_timeProvider.AddToUtcTime(TimeSpan.FromMinutes(6));
 				yield return Yield;
 				foreach (var m in _consumer.HandledMessages.OfType<TimerMessage.Schedule>().ToArray())
-					m.Envelope.ReplyWith(m.ReplyMessage);
+					m.Reply();
 			}
 		}
 
