@@ -5,7 +5,7 @@ namespace EventStore.Core.Messaging {
 	// USE ONLY WHEN YOU KNOW WHAT YOU ARE DOING
 	// - no support for async handlers
 	// - calls the handler directly on the replying thread
-	// - limited type safty
+	// - limited type safety
 	public class SendToThisEnvelope : IEnvelope {
 		private readonly object _receiver;
 
