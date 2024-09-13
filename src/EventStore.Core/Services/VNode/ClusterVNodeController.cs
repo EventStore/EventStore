@@ -122,7 +122,7 @@ namespace EventStore.Core.Services.VNode {
 				.InAnyState()
 				.When<SystemMessage.StateChangeMessage>()
 					.Do(m => Application.Exit(ExitCode.Error,
-						string.Format("{0} message was unhandled in {1}. State: {2}", m.GetType().Name, GetType().Name, State)))
+						$"{m.GetType().Name} message was unhandled in {GetType().Name}. State: {State}"))
 				.When<AuthenticationMessage.AuthenticationProviderInitialized>().Do(Handle)
 				.When<AuthenticationMessage.AuthenticationProviderInitializationFailed>().Do(Handle)
 				.When<SystemMessage.SubSystemInitialized>().Do(Handle)
@@ -411,7 +411,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private async ValueTask Handle(SystemMessage.BecomePreReplica message, CancellationToken token) {
-			if (_leader == null) throw new Exception("_leader == null");
+			if (_leader is null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
@@ -426,7 +426,8 @@ namespace EventStore.Core.Services.VNode {
 		private async ValueTask Handle(SystemMessage.BecomePreReadOnlyReplica message, CancellationToken token) {
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
-			if (_leader == null) throw new Exception("_leader == null");
+
+			if (_leader is null) throw new Exception("_leader == null");
 
 			Log.Information(
 				"========== [{httpEndPoint}] READ ONLY PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... LEADER IS [{leaderHttp},{leaderId:B}]",
@@ -496,7 +497,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private async ValueTask Handle(SystemMessage.BecomePreLeader message, CancellationToken token) {
-			if (_leader == null) throw new Exception("_leader == null");
+			if (_leader is null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
@@ -743,56 +744,56 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void HandleAsNonLeader(ClientMessage.CreatePersistentSubscriptionToStream message) {
-			if (_leader == null)
+			if (_leader is null)
 				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 			else
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 		}
 
 		private void HandleAsNonLeader(ClientMessage.ConnectToPersistentSubscriptionToStream message) {
-			if (_leader == null)
+			if (_leader is null)
 				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 			else
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 		}
 
 		private void HandleAsNonLeader(ClientMessage.UpdatePersistentSubscriptionToStream message) {
-			if (_leader == null)
+			if (_leader is null)
 				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 			else
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 		}
 
 		private void HandleAsNonLeader(ClientMessage.DeletePersistentSubscriptionToStream message) {
-			if (_leader == null)
+			if (_leader is null)
 				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 			else
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 		}
 
 		private void HandleAsNonLeader(ClientMessage.CreatePersistentSubscriptionToAll message) {
-			if (_leader == null)
+			if (_leader is null)
 				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 			else
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 		}
 
 		private void HandleAsNonLeader(ClientMessage.ConnectToPersistentSubscriptionToAll message) {
-			if (_leader == null)
+			if (_leader is null)
 				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 			else
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 		}
 
 		private void HandleAsNonLeader(ClientMessage.UpdatePersistentSubscriptionToAll message) {
-			if (_leader == null)
+			if (_leader is null)
 				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 			else
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 		}
 
 		private void HandleAsNonLeader(ClientMessage.DeletePersistentSubscriptionToAll message) {
-			if (_leader == null)
+			if (_leader is null)
 				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 			else
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
@@ -972,7 +973,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_leader?.Is(message.VNodeEndPoint) ?? false) // leader connection failed
 			{
 				_leaderConnectionCorrelationId = Guid.NewGuid();
-				var msg = State == VNodeState.PreReplica
+				var msg = State is VNodeState.PreReplica
 					? (Message)new ReplicationMessage.ReconnectToLeader(_leaderConnectionCorrelationId, _leader)
 					: new SystemMessage.BecomePreReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader);
 				_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, _publishEnvelope, msg));
@@ -985,7 +986,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_leader?.Is(message.VNodeEndPoint) ?? false) // leader connection failed
 			{
 				_leaderConnectionCorrelationId = Guid.NewGuid();
-				var msg = State == VNodeState.PreReadOnlyReplica
+				var msg = State is VNodeState.PreReadOnlyReplica
 					? (Message)new ReplicationMessage.ReconnectToLeader(_leaderConnectionCorrelationId, _leader)
 					: new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader);
 				_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, _publishEnvelope, msg));
@@ -1010,7 +1011,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private async ValueTask HandleAsReadOnlyReplica(GossipMessage.GossipUpdated message, CancellationToken token) {
-			if (_leader == null) throw new Exception("_leader == null");
+			if (_leader is null) throw new Exception("_leader == null");
 
 			var aliveLeaders = message
 				.ClusterInfo
@@ -1032,12 +1033,12 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private async ValueTask HandleAsReadOnlyLeaderLess(GossipMessage.GossipUpdated message, CancellationToken token) {
-			if (_leader != null)
+			if (_leader is not null)
 				return;
 
 			var aliveLeaders = message.ClusterInfo.Members.Where(IsAliveLeader);
 			var leaderCount = aliveLeaders.Count();
-			if (leaderCount == 1) {
+			if (leaderCount is 1) {
 				_leader = aliveLeaders.First();
 				Log.Information("LEADER found in READ ONLY LEADERLESS state. LEADER: [{leader}]. Proceeding to READ ONLY PRE-REPLICA state.", _leader);
 				_stateCorrelationId = Guid.NewGuid();
@@ -1046,7 +1047,7 @@ namespace EventStore.Core.Services.VNode {
 			} else {
 				Log.Debug(
 					"{leadersFound} found in READ ONLY LEADERLESS state, making further attempts.",
-					(leaderCount == 0 ? "NO LEADER" : "MULTIPLE LEADERS"));
+					(leaderCount is 0 ? "NO LEADER" : "MULTIPLE LEADERS"));
 			}
 
 			await _outputBus.DispatchAsync(message, token);
@@ -1057,12 +1058,12 @@ namespace EventStore.Core.Services.VNode {
 				return ValueTask.FromException(new Exception("_leader == null"));
 
 			var leader = message.ClusterInfo.Members.FirstOrDefault(x => x.InstanceId == _leader.InstanceId);
-			if (leader == null || !leader.IsAlive) {
+			if (leader is null or { IsAlive: false }) {
 				Log.Debug(
 					"There is NO LEADER or LEADER is DEAD according to GOSSIP. Starting new elections. LEADER: [{leader}].",
 					_leader);
 				_mainQueue.Publish(new ElectionMessage.StartElections());
-			} else if (leader.State != VNodeState.PreLeader && leader.State != VNodeState.Leader && leader.State != VNodeState.ResigningLeader) {
+			} else if (leader.State is not VNodeState.PreLeader and not VNodeState.Leader and not VNodeState.ResigningLeader) {
 				Log.Debug(
 					"LEADER node is still alive but is no longer in a LEADER state according to GOSSIP. Starting new elections. LEADER: [{leader}].",
 					_leader);
@@ -1072,12 +1073,12 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private async ValueTask HandleAsDiscoverLeader(GossipMessage.GossipUpdated message, CancellationToken token) {
-			if (_leader != null)
+			if (_leader is not null)
 				return;
 
-			var aliveLeaders = message.ClusterInfo.Members.Where(x => x.IsAlive && x.State == VNodeState.Leader);
+			var aliveLeaders = message.ClusterInfo.Members.Where(IsAliveLeader);
 			var leaderCount = aliveLeaders.Count();
-			if (leaderCount == 1) {
+			if (leaderCount is 1) {
 				_leader = aliveLeaders.First();
 				Log.Information("Existing LEADER found during LEADER DISCOVERY stage. LEADER: [{leader}]. Proceeding to PRE-REPLICA state.", _leader);
 				_mainQueue.Publish(new LeaderDiscoveryMessage.LeaderFound(_leader));
@@ -1087,7 +1088,7 @@ namespace EventStore.Core.Services.VNode {
 			} else {
 				Log.Debug(
 					"{leadersFound} found during LEADER DISCOVERY stage, making further attempts.",
-					(leaderCount == 0 ? "NO LEADER" : "MULTIPLE LEADERS"));
+					(leaderCount is 0 ? "NO LEADER" : "MULTIPLE LEADERS"));
 			}
 
 			await _outputBus.DispatchAsync(message, token);
@@ -1275,7 +1276,7 @@ namespace EventStore.Core.Services.VNode {
 				message.ServiceName);
 
 			_serviceShutdownsToExpect -= 1;
-			if (_serviceShutdownsToExpect == 0) {
+			if (_serviceShutdownsToExpect is 0) {
 				Log.Information("========== [{httpEndPoint}] All Services Shutdown.", _nodeInfo.HttpEndPoint);
 				await Shutdown(token);
 			}
@@ -1284,7 +1285,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private async ValueTask Handle(SystemMessage.ShutdownTimeout message, CancellationToken token) {
-			Debug.Assert(State == VNodeState.ShuttingDown);
+			Debug.Assert(State is VNodeState.ShuttingDown);
 
 			Log.Error("========== [{httpEndPoint}] Shutdown Timeout.", _nodeInfo.HttpEndPoint);
 			await Shutdown(token);
@@ -1292,7 +1293,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private ValueTask Shutdown(CancellationToken token) {
-			Debug.Assert(State == VNodeState.ShuttingDown);
+			Debug.Assert(State is VNodeState.ShuttingDown);
 
 			_db.Close();
 			return _fsm.HandleAsync(new SystemMessage.BecomeShutdown(_stateCorrelationId), token);
