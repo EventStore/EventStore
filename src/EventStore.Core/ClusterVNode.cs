@@ -113,11 +113,9 @@ namespace EventStore.Core {
 		abstract public GossipAdvertiseInfo GossipAdvertiseInfo { get; }
 		abstract public IPublisher MainQueue { get; }
 		abstract public ISubscriber MainBus { get; }
-		abstract public IReadIndex ReadIndex { get; }
 		abstract public QueueStatsManager QueueStatsManager { get; }
 		abstract public IStartup Startup { get; }
 		abstract public IAuthenticationProvider AuthenticationProvider { get; }
-		abstract public AuthorizationGateway AuthorizationGateway { get; }
 		abstract public IHttpService HttpService { get; }
 		abstract public VNodeInfo NodeInfo { get; }
 		abstract public CertificateDelegates.ClientCertificateValidator InternalClientCertificateValidator { get; }
@@ -134,12 +132,10 @@ namespace EventStore.Core {
 
 	public class ClusterVNode<TStreamId> :
 		ClusterVNode,
-		IHandle<SystemMessage.StateChangeMessage>,
 		IAsyncHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<SystemMessage.SystemStart>,
-		IHandle<ClientMessage.ReloadConfig>{
-
+		IHandle<ClientMessage.ReloadConfig> {
 		private static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromSeconds(5);
 
 		private readonly ClusterVNodeOptions _options;
@@ -156,16 +152,6 @@ namespace EventStore.Core {
 			get { return _httpService; }
 		}
 
-		public override IReadIndex ReadIndex => _readIndex;
-
-		public TimerService TimerService {
-			get { return _timerService; }
-		}
-
-		public IPublisher NetworkSendService {
-			get { return _workersHandler; }
-		}
-
 		public override QueueStatsManager QueueStatsManager => _queueStatsManager;
 
 		public override IStartup Startup => _startup;
@@ -174,15 +160,12 @@ namespace EventStore.Core {
 			get { return _authenticationProvider; }
 		}
 
-		public override AuthorizationGateway AuthorizationGateway { get; }
-
 		internal MultiQueuedHandler WorkersHandler {
 			get { return _workersHandler; }
 		}
 
 		public override VNodeInfo NodeInfo { get; }
 
-		public IEnumerable<ISubsystem> Subsystems => _subsystems;
 
 		private readonly IPublisher _mainQueue;
 		private readonly ISubscriber _mainBus;
@@ -192,7 +175,7 @@ namespace EventStore.Core {
 		private readonly KestrelHttpService _httpService;
 		private readonly ITimeProvider _timeProvider;
 		private readonly IReadOnlyList<ISubsystem> _subsystems;
-		private readonly TaskCompletionSource<bool> _shutdownSource = new TaskCompletionSource<bool>();
+		private readonly TaskCompletionSource<bool> _shutdownSource = new();
 		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private readonly IReadIndex<TStreamId> _readIndex;
@@ -200,8 +183,7 @@ namespace EventStore.Core {
 
 		private readonly InMemoryBus[] _workerBuses;
 		private readonly MultiQueuedHandler _workersHandler;
-		public event EventHandler<VNodeStatusChangeArgs> NodeStatusChanged;
-		private readonly List<Task> _tasks = new List<Task>();
+		private readonly List<Task> _tasks = new();
 		private readonly QueueStatsManager _queueStatsManager;
 		private readonly bool _disableHttps;
 		private readonly bool _enableUnixSocket;
@@ -210,7 +192,6 @@ namespace EventStore.Core {
 		private readonly Func<X509Certificate2Collection> _intermediateCertsSelector;
 		private readonly CertificateDelegates.ServerCertificateValidator _internalServerCertificateValidator;
 		private readonly CertificateDelegates.ClientCertificateValidator _internalClientCertificateValidator;
-		private readonly CertificateDelegates.ClientCertificateValidator _externalClientCertificateValidator;
 		private readonly CertificateDelegates.ServerCertificateValidator _externalServerCertificateValidator;
 		private readonly CertificateProvider _certificateProvider;
 		private readonly ClusterVNodeStartup<TStreamId> _startup;
@@ -233,15 +214,9 @@ namespace EventStore.Core {
 		public override bool IsShutdown => _shutdownSource.Task.IsCompleted;
 
 #if DEBUG
-		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
-		public object _taskAddLock = new object();
+		public TaskCompletionSource<bool> _taskAddedTrigger = new();
+		public object _taskAddLock = new();
 #endif
-
-		protected virtual void OnNodeStatusChanged(VNodeStatusChangeArgs e) {
-			EventHandler<VNodeStatusChangeArgs> handler = NodeStatusChanged;
-			if (handler != null)
-				handler(this, e);
-		}
 
 		public ClusterVNode(ClusterVNodeOptions options,
 			ILogFormatAbstractorFactory<TStreamId> logFormatAbstractorFactory,
@@ -490,7 +465,6 @@ namespace EventStore.Core {
 
 			_internalServerCertificateValidator = (cert, chain, errors, otherNames) => ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector, otherNames);
 			_internalClientCertificateValidator = (cert, chain, errors) => ValidateClientCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
-			_externalClientCertificateValidator = delegate { return (true, null); };
 			_externalServerCertificateValidator = (cert, chain, errors, otherNames) => ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector, otherNames);
 
 			var forwardingProxy = new MessageForwardingProxy();
@@ -552,7 +526,6 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
 
 			//SELF
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(this);
@@ -945,7 +918,7 @@ namespace EventStore.Core {
 				.WithPlugableComponent(_authorizationProvider)
 				.WithPlugableComponent(_authenticationProvider);
 
-			AuthorizationGateway = new AuthorizationGateway(_authorizationProvider);
+			var authorizationGateway = new AuthorizationGateway(_authorizationProvider);
 			{
 				if (!isSingleNode) {
 					// INTERNAL TCP
@@ -955,7 +928,7 @@ namespace EventStore.Core {
 							new InternalTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
 							TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatInterval),
 							TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatTimeout),
-							_authenticationProvider, AuthorizationGateway, null, null, null, ESConsts.UnrestrictedPendingSendBytes,
+							_authenticationProvider, authorizationGateway, null, null, null, ESConsts.UnrestrictedPendingSendBytes,
 						ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
 						_mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
@@ -968,7 +941,7 @@ namespace EventStore.Core {
 							new InternalTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
 							TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatInterval),
 							TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatTimeout),
-							_authenticationProvider, AuthorizationGateway,
+							_authenticationProvider, authorizationGateway,
 							_certificateSelector, _intermediateCertsSelector, _internalClientCertificateValidator,
 							ESConsts.UnrestrictedPendingSendBytes,
 							ESConsts.MaxConnectionQueueSize);
@@ -1463,7 +1436,7 @@ namespace EventStore.Core {
 
 				// REPLICA REPLICATION
 				var replicaService = new ReplicaService(_mainQueue, Db, epochManager, _workersHandler,
-					_authenticationProvider, AuthorizationGateway,
+					_authenticationProvider, authorizationGateway,
 					GossipAdvertiseInfo.InternalTcp ?? GossipAdvertiseInfo.InternalSecureTcp,
 					options.Cluster.ReadOnlyReplica,
 					!disableInternalTcpTls, _internalServerCertificateValidator,
@@ -1564,7 +1537,7 @@ namespace EventStore.Core {
 					.AddSingleton(telemetryService) // for correct disposal
 					.AddSingleton(_readIndex)
 					.AddSingleton(standardComponents)
-					.AddSingleton(AuthorizationGateway)
+					.AddSingleton(authorizationGateway)
 					.AddSingleton(certificateProvider)
 					.AddSingleton<IReadOnlyList<IDbTransform>>(new List<IDbTransform> { new IdentityDbTransform() })
 					.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
@@ -1778,10 +1751,6 @@ namespace EventStore.Core {
 			await _shutdownSource.Task.WaitAsync(remainingTime, cancellationToken);
 
 			_switchChunksLock?.Dispose();
-		}
-
-		public void Handle(SystemMessage.StateChangeMessage message) {
-			OnNodeStatusChanged(new VNodeStatusChangeArgs(message.State));
 		}
 
 		public async ValueTask HandleAsync(SystemMessage.BecomeShuttingDown message, CancellationToken token) {
