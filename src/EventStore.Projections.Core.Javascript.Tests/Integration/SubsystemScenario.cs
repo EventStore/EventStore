@@ -23,9 +23,9 @@ using Xunit.Abstractions;
 namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 	public abstract class SubsystemScenario  : IHandle<Message>, IAsyncLifetime {
 		private readonly Action _stop;
-		private readonly InMemoryBus _mainBus;
+		private readonly SynchronousScheduler _mainBus;
 		private readonly IQueuedHandler _mainQueue;
-		
+
 		private readonly InMemoryCheckpoint _writerCheckpoint;
 		private readonly MiniStore _miniStore;
 		protected CancellationToken TestTimeout { get; }
@@ -34,9 +34,9 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 		private readonly Task _ready;
 		readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _notifications;
 
-		protected SubsystemScenario(Func<InMemoryBus, IQueuedHandler, ICheckpoint, (Action stopAction, IPublisher subsystemCommands)> createSubsystem, string readyStream, CancellationToken testTimeout) {
-			_mainBus = new InMemoryBus("main");
-			_mainQueue = QueuedHandler.CreateQueuedHandler(_mainBus, "bossQ", new QueueStatsManager(), new());
+		protected SubsystemScenario(Func<SynchronousScheduler, IQueuedHandler, ICheckpoint, (Action stopAction, IPublisher subsystemCommands)> createSubsystem, string readyStream, CancellationToken testTimeout) {
+			_mainBus = new SynchronousScheduler("main");
+			_mainQueue = new QueuedHandlerThreadPool(_mainBus, "bossQ", new QueueStatsManager(), new());
 			_writerCheckpoint = new InMemoryCheckpoint(0);
 			_miniStore = new MiniStore(_writerCheckpoint, _mainQueue);
 			TestTimeout = testTimeout;
@@ -51,8 +51,8 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 
 		public async Task InitializeAsync() {
 			var _ = _mainQueue.Start();
-			_mainBus.Publish(new SystemMessage.SystemCoreReady());
-			_mainBus.Publish(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+			_mainQueue.Publish(new SystemMessage.SystemCoreReady());
+			_mainQueue.Publish(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			await _ready.WaitAsync(TestTimeout);
 		}
 
@@ -115,7 +115,6 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 			return _notifications.GetOrAdd(streamName, new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
 		}
 
-		
 		public void Handle(Message message) {
 			switch (message) {
 				case SystemMessage.SystemCoreReady:
@@ -124,16 +123,16 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 				case AwakeServiceMessage.SubscribeAwake:
 				case SystemMessage.SubSystemInitialized:
 					return;
-				case ClientMessage.ReadStreamEventsForward m : 
+				case ClientMessage.ReadStreamEventsForward m :
 					_miniStore.Handle(m);
 					return;
-				case ClientMessage.ReadStreamEventsBackward m : 
+				case ClientMessage.ReadStreamEventsBackward m :
 					_miniStore.Handle(m);
 					return;
-				case ClientMessage.ReadAllEventsForward m : 
+				case ClientMessage.ReadAllEventsForward m :
 					_miniStore.Handle(m);
 					return;
-				case ClientMessage.WriteEvents m : 
+				case ClientMessage.WriteEvents m :
 					_miniStore.Handle(m);
 					return;
 				case StorageMessage.EventCommitted e:
@@ -154,7 +153,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 		}
 
 		//A super mini in memory event store purely for testing the projection runtime
-		class MiniStore : 
+		class MiniStore :
 			IHandle<ClientMessage.ReadStreamEventsForward>,
 			IHandle<ClientMessage.ReadAllEventsForward>,
 			IHandle<ClientMessage.ReadStreamEventsBackward>,

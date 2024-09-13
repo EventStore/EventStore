@@ -32,9 +32,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 		private LinkedList<EpochRecord> _cache;
 		private TFChunkReader _reader;
 		private TFChunkWriter _writer;
-		private IBus _mainBus;
+		private SynchronousScheduler _mainBus;
 		private readonly Guid _instanceId = Guid.NewGuid();
-		private readonly List<Message> _published = new List<Message>();
+		private readonly List<Message> _published = new();
 
 		private int GetNextEpoch() {
 			return (int)Interlocked.Increment(ref _currentEpoch);
@@ -61,15 +61,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return (LinkedList<EpochRecord>)typeof(EpochManager<TStreamId>).GetField("_epochs", BindingFlags.NonPublic | BindingFlags.Instance)
 				.GetValue(_epochManager);
 		}
-		private EpochRecord WriteEpoch(int epochNumber, long lastPos, Guid instanceId) {
-			long pos = _writer.Position;
-			var epoch = new EpochRecord(pos, epochNumber, Guid.NewGuid(), lastPos, DateTime.UtcNow, instanceId);
-			var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
-				SystemRecordSerialization.Json, epoch.AsSerialized());
-			_writer.Write(rec, out _);
-			_writer.Flush();
-			return epoch;
-		}
+
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
@@ -79,7 +71,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				IndexDirectory = indexDirectory,
 			});
 
-			_mainBus = new InMemoryBus(nameof(when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId>));
+			_mainBus = new(nameof(when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId>));
 			_mainBus.Subscribe(new AdHocHandler<SystemMessage.EpochWritten>(m => _published.Add(m)));
 			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
 			_db.Open();
@@ -104,7 +96,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		// epoch manager is stateful with TFLog,
 		// and TFLog is expesive to build fresh for each test
 		// and the tests depend on previous state in the epoch manager
-		// so this test will run through the test cases 
+		// so this test will run through the test cases
 		// in order
 		[Test]
 		public void can_write_epochs() {
@@ -124,7 +116,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.That(epochWritten.Epoch.TimeStamp >= beforeWrite);
 
 			// will_cache_epochs_written() {
-			
+
 			for (int i = 0; i < 4; i++) {
 				_epochManager.WriteNewEpoch(GetNextEpoch());
 			}
@@ -140,13 +132,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 			CollectionAssert.IsOrdered(epochs);
 
 			// can_write_more_epochs_than_cache_size
-			
+
 			for (int i = 0; i < 16; i++) {
 				_epochManager.WriteNewEpoch(GetNextEpoch());
 			}
 			Assert.That(_cache.Count == 10);
 			Assert.That(_cache.First.Value.EpochNumber == 11);
-			Assert.That(_cache.Last.Value.EpochNumber == 20);			
+			Assert.That(_cache.Last.Value.EpochNumber == 20);
 			epochs = new List<int>();
 			epoch = _cache.First;
 			while (epoch != null) {

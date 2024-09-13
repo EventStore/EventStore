@@ -8,13 +8,16 @@ using System.Threading.Tasks;
 using EventStore.Core.Metrics;
 using ILogger = Serilog.ILogger;
 
-namespace EventStore.Core.Bus {
+namespace EventStore.Core.Bus;
+
 	/// <summary>
 	/// Lightweight in-memory queue with a separate thread in which it passes messages
 	/// to the consumer. It also tracks statistics about the message processing to help
 	/// in identifying bottlenecks
 	/// </summary>
-	public class QueuedHandlerThreadPool : IQueuedHandler, IMonitoredQueue, IThreadSafePublisher {
+	public class QueuedHandlerThreadPool : IQueuedHandler, IMonitoredQueue, IThreadPoolWorkItem {
+		private static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
+		public static readonly TimeSpan VerySlowMsgThreshold = TimeSpan.FromSeconds(7);
 		private static readonly ILogger Log = Serilog.Log.ForContext<QueuedHandlerThreadPool>();
 
 		public int MessageCount {
@@ -25,15 +28,16 @@ namespace EventStore.Core.Bus {
 			get { return _queueStats.Name; }
 		}
 
-		private readonly IHandle<Message> _consumer;
+		private readonly Func<Message, CancellationToken, ValueTask> _consumer;
 
 		private readonly bool _watchSlowMsg;
 		private readonly TimeSpan _slowMsgThreshold;
 
-		private readonly ConcurrentQueueWrapper<QueueItem> _queue = new ConcurrentQueueWrapper<QueueItem>();
+		private readonly ConcurrentQueueWrapper<QueueItem> _queue = new();
 
-		private volatile bool _stop;
-		private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
+		private CancellationTokenSource _lifetimeSource;
+		private readonly CancellationToken _lifetimeToken; // cached to avoid ObjectDisposedException
+		private readonly ManualResetEventSlim _stopped = new(true);
 		private readonly TimeSpan _threadStopWaitTimeout;
 
 		// monitoring
@@ -44,10 +48,9 @@ namespace EventStore.Core.Bus {
 		private int _isRunning;
 		private int _queueStatsState; //0 - never started, 1 - started, 2 - stopped
 
-		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+		private readonly TaskCompletionSource<object> _tcs = new();
 
-
-		public QueuedHandlerThreadPool(IHandle<Message> consumer,
+		public QueuedHandlerThreadPool(IAsyncHandle<Message> consumer,
 			string name,
 			QueueStatsManager queueStatsManager,
 			QueueTrackers trackers,
@@ -58,11 +61,15 @@ namespace EventStore.Core.Bus {
 			Ensure.NotNull(consumer, "consumer");
 			Ensure.NotNull(name, "name");
 
-			_consumer = consumer;
+			// Pef: devirt interface
+			_consumer = consumer.HandleAsync;
+
+			_lifetimeSource = new();
+			_lifetimeToken = _lifetimeSource.Token;
 
 			_watchSlowMsg = watchSlowMsg;
 			_slowMsgThreshold = slowMsgThreshold ?? InMemoryBus.DefaultSlowMessageThreshold;
-			_threadStopWaitTimeout = threadStopWaitTimeout ?? QueuedHandler.DefaultStopWaitTimeout;
+			_threadStopWaitTimeout = threadStopWaitTimeout ?? DefaultStopWaitTimeout;
 
 			_queueMonitor = QueueMonitor.Default;
 			_queueStats = queueStatsManager.CreateQueueStatsCollector(name, groupName);
@@ -74,8 +81,16 @@ namespace EventStore.Core.Bus {
 			return _tcs.Task;
 		}
 
+		private void Cancel() {
+			if (Interlocked.Exchange(ref _lifetimeSource, null) is { } cts) {
+				using (cts) {
+					cts.Cancel();
+				}
+			}
+		}
+
 		public void Stop() {
-			_stop = true;
+			Cancel();
 			if (!_stopped.Wait(_threadStopWaitTimeout))
 				throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", Name));
 			TryStopQueueStats();
@@ -83,7 +98,7 @@ namespace EventStore.Core.Bus {
 		}
 
 		public void RequestStop() {
-			_stop = true;
+			Cancel();
 			TryStopQueueStats();
 			_queueMonitor.Unregister(this);
 		}
@@ -96,7 +111,7 @@ namespace EventStore.Core.Bus {
 			}
 		}
 
-		private void ReadFromQueue(object o) {
+		async void IThreadPoolWorkItem.Execute() {
 			try {
 				if (Interlocked.CompareExchange(ref _queueStatsState, 1, 0) == 0)
 					_queueStats.Start();
@@ -107,10 +122,9 @@ namespace EventStore.Core.Bus {
 					_queueStats.EnterBusy();
 					_tracker.EnterBusy();
 
-					Message msg;
-					while (!_stop && _queue.TryDequeue(out var item)) {
+					while (!_lifetimeToken.IsCancellationRequested && _queue.TryDequeue(out var item)) {
 						var start = _tracker.RecordMessageDequeued(item.EnqueuedAt);
-						msg = item.Message;
+						var msg = item.Message;
 #if DEBUG
 						_queueStats.Dequeued(msg);
 #endif
@@ -119,7 +133,7 @@ namespace EventStore.Core.Bus {
 							_queueStats.ProcessingStarted(msg.GetType(), queueCnt);
 
 							if (_watchSlowMsg) {
-								_consumer.Handle(msg);
+								await _consumer.Invoke(msg, _lifetimeToken);
 
 								var end = _tracker.RecordMessageProcessed(start, msg.Label);
 								var elapsed = TimeSpan.FromSeconds(end.ElapsedSecondsSince(start));
@@ -129,7 +143,7 @@ namespace EventStore.Core.Bus {
 										"SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}. {messageDetail}.",
 										_queueStats.Name, _queueStats.InProgressMessage.Name,
 										(int)elapsed.TotalMilliseconds, queueCnt, _queue.Count, msg);
-									if (elapsed > QueuedHandler.VerySlowMsgThreshold &&
+									if (elapsed > VerySlowMsgThreshold &&
 									    !(msg is SystemMessage.SystemInit))
 										Log.Error(
 											"---!!! VERY SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}.",
@@ -137,7 +151,7 @@ namespace EventStore.Core.Bus {
 											(int)elapsed.TotalMilliseconds, queueCnt, _queue.Count);
 								}
 							} else {
-								_consumer.Handle(msg);
+								await _consumer.Invoke(msg, _lifetimeToken);
 								_tracker.RecordMessageProcessed(start, msg.Label);
 							}
 
@@ -155,15 +169,19 @@ namespace EventStore.Core.Bus {
 					_queueStats.EnterIdle();
 					_tracker.EnterIdle();
 					Interlocked.CompareExchange(ref _isRunning, 0, 1);
-					if (_stop) {
+					if (_lifetimeToken.IsCancellationRequested) {
 						TryStopQueueStats();
 					}
 
 					_stopped.Set();
 
 					// try to reacquire lock if needed
-					proceed = !_stop && _queue.Count > 0 && Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0;
+					proceed = !_lifetimeToken.IsCancellationRequested
+					          && _queue.Count > 0
+					          && Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0;
 				}
+			} catch (OperationCanceledException e) when (e.CancellationToken == _lifetimeToken) {
+				_tcs.TrySetCanceled(e.CancellationToken);
 			} catch (Exception ex) {
 				_tcs.TrySetException(ex);
 				throw;
@@ -176,16 +194,12 @@ namespace EventStore.Core.Bus {
 			_queueStats.Enqueued();
 #endif
 			_queue.Enqueue(new(_tracker.Now, message));
-			if (!_stop && Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0)
-				ThreadPool.QueueUserWorkItem(ReadFromQueue);
-		}
-
-		public void Handle(Message message) {
-			Publish(message);
+			if (!_lifetimeToken.IsCancellationRequested && Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0) {
+				ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
+			}
 		}
 
 		public QueueStats GetStatistics() {
 			return _queueStats.GetStatistics(_queue.Count);
 		}
 	}
-}

@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
+using DotNext.Runtime.CompilerServices;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -10,9 +13,9 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Transport.Tcp;
 using ILogger = Serilog.ILogger;
+using Timeout = System.Threading.Timeout;
 
 namespace EventStore.Core.Services.Monitoring {
 	[Flags]
@@ -25,10 +28,10 @@ namespace EventStore.Core.Services.Monitoring {
 
 	public class MonitoringService : IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.StateChangeMessage>,
-		IHandle<SystemMessage.BecomeShuttingDown>,
+		IAsyncHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<ClientMessage.WriteEventsCompleted>,
-		IHandle<MonitoringMessage.GetFreshStats>,
+		IAsyncHandle<MonitoringMessage.GetFreshStats>,
 		IHandle<MonitoringMessage.GetFreshTcpConnectionStats> {
 		private static readonly ILogger RegularLog =
 			Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "REGULAR-STATS-LOGGER");
@@ -41,17 +44,18 @@ namespace EventStore.Core.Services.Monitoring {
 		private static readonly IEnvelope NoopEnvelope = new NoopEnvelope();
 
 		private readonly IQueuedHandler _monitoringQueue;
-		private readonly IPublisher _statsCollectionBus;
-		private readonly IPublisher _mainBus;
-		private readonly IReadOnlyCheckpoint _writerCheckpoint;
-		private readonly string _dbPath;
+		private readonly IAsyncHandle<Message> _statsCollectionDispatcher;
+		private readonly IPublisher _mainQueue;
 		private readonly StatsStorage _statsStorage;
-		private readonly long _statsCollectionPeriodMs;
+		private readonly TimeSpan _statsCollectionPeriod;
 		private SystemStatsHelper _systemStats;
 
 		private DateTime _lastStatsRequestTime = DateTime.UtcNow;
 		private StatsContainer _memoizedStats;
-		private readonly Timer _timer;
+		private Task _timer;
+		private CancellationTokenSource _timerTokenSource;
+		private readonly CancellationToken _timerToken;
+
 		private readonly string _nodeStatsStream;
 		private bool _statsStreamCreated;
 		private Guid _streamMetadataWriteCorrId;
@@ -59,13 +63,10 @@ namespace EventStore.Core.Services.Monitoring {
 		private DateTime _lastTcpConnectionsRequestTime;
 		private IPEndPoint _tcpEndpoint;
 		private IPEndPoint _tcpSecureEndpoint;
-		private bool _started = false;
 
 		public MonitoringService(IQueuedHandler monitoringQueue,
-			IPublisher statsCollectionBus,
-			IPublisher mainBus,
-			IReadOnlyCheckpoint writerCheckpoint,
-			string dbPath,
+			IAsyncHandle<Message> statsCollectionDispatcher,
+			IPublisher mainQueue,
 			TimeSpan statsCollectionPeriod,
 			EndPoint nodeEndpoint,
 			StatsStorage statsStorage,
@@ -73,46 +74,60 @@ namespace EventStore.Core.Services.Monitoring {
 			IPEndPoint tcpSecureEndpoint,
 			SystemStatsHelper systemStatsHelper) {
 			Ensure.NotNull(monitoringQueue, "monitoringQueue");
-			Ensure.NotNull(statsCollectionBus, "statsCollectionBus");
-			Ensure.NotNull(mainBus, "mainBus");
-			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
-			Ensure.NotNullOrEmpty(dbPath, "dbPath");
+			Ensure.NotNull(statsCollectionDispatcher, nameof(statsCollectionDispatcher));
+			Ensure.NotNull(mainQueue, nameof(mainQueue));
 			Ensure.NotNull(nodeEndpoint, "nodeEndpoint");
 
 			_monitoringQueue = monitoringQueue;
-			_statsCollectionBus = statsCollectionBus;
-			_mainBus = mainBus;
-			_writerCheckpoint = writerCheckpoint;
-			_dbPath = dbPath;
+			_statsCollectionDispatcher = statsCollectionDispatcher;
+			_mainQueue = mainQueue;
 			_statsStorage = statsStorage;
-			_statsCollectionPeriodMs = statsCollectionPeriod > TimeSpan.Zero
-				? (long)statsCollectionPeriod.TotalMilliseconds
-				: Timeout.Infinite;
-			_nodeStatsStream = string.Format("{0}-{1}", SystemStreams.StatsStreamPrefix, nodeEndpoint);
+
+			_statsCollectionPeriod = statsCollectionPeriod;
+
+			if (statsCollectionPeriod > TimeSpan.Zero) {
+				_timerTokenSource = new();
+				_timerToken = _timerTokenSource.Token;
+			} else {
+				_timerToken = new(canceled: true);
+			}
+
+			_nodeStatsStream = $"{SystemStreams.StatsStreamPrefix}-{nodeEndpoint}";
 			_tcpEndpoint = tcpEndpoint;
 			_tcpSecureEndpoint = tcpSecureEndpoint;
-			_timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
+
+			_timer = Task.CompletedTask;
 			_systemStats = systemStatsHelper;
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
-			_timer.Change(_statsCollectionPeriodMs, Timeout.Infinite);
+			if (_timerToken.IsCancellationRequested)
+				return;
+
+			_timer = CollectRegularStatsJob();
 		}
 
-		public void OnTimerTick(object state) {
-			if (!_started) {
-				_started = true;
-				_systemStats.Start();
+		[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))]
+		private async Task CollectRegularStatsJob() {
+			_systemStats.Start();
+
+			while (true) {
+				await Task.Delay(_statsCollectionPeriod, _timerToken)
+					.ConfigureAwait(
+						ConfigureAwaitOptions.SuppressThrowing |
+						// to be consistent with all the other awaits
+						ConfigureAwaitOptions.ContinueOnCapturedContext);
+
+				if (_timerToken.IsCancellationRequested)
+					break;
+
+				await CollectRegularStats(_timerToken);
 			}
-
-			CollectRegularStats();
-			_timer.Change(_statsCollectionPeriodMs, Timeout.Infinite);
 		}
 
-		private void CollectRegularStats() {
+		private async ValueTask CollectRegularStats(CancellationToken token) {
 			try {
-				var stats = CollectStats();
-				if (stats != null) {
+				if (await CollectStats(token) is { } stats) {
 					var rawStats = stats.GetStats(useGrouping: false, useMetadata: false);
 
 					if ((_statsStorage & StatsStorage.File) != 0)
@@ -128,12 +143,15 @@ namespace EventStore.Core.Services.Monitoring {
 			}
 		}
 
-		private StatsContainer CollectStats() {
+		private async ValueTask<StatsContainer> CollectStats(CancellationToken token) {
 			var statsContainer = new StatsContainer();
 			try {
 				statsContainer.Add(_systemStats.GetSystemStats());
-				_statsCollectionBus.Publish(
-					new MonitoringMessage.InternalStatsRequest(new StatsCollectorEnvelope(statsContainer)));
+				await _statsCollectionDispatcher.HandleAsync(
+					new MonitoringMessage.InternalStatsRequest(new StatsCollectorEnvelope(statsContainer)),
+					token);
+			} catch (OperationCanceledException e) when (e.CancellationToken == token) {
+				statsContainer = null;
 			} catch (Exception ex) {
 				Log.Error(ex, "Error while collecting stats");
 				statsContainer = null;
@@ -142,23 +160,10 @@ namespace EventStore.Core.Services.Monitoring {
 			return statsContainer;
 		}
 
-		private void SaveStatsToFile(Dictionary<string, object> rawStats) {
+		private static void SaveStatsToFile(Dictionary<string, object> rawStats) {
 			rawStats.Add("timestamp", DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture));
 			RegularLog.Information("{@stats}", rawStats);
 		}
-
-        private DateTime? GetTimestamp(string line) {
-			var separatorIdx = line.IndexOf(',');
-			if(separatorIdx == -1)
-				return null;
-
-			try{
-				return DateTime.Parse(line.Substring(0, separatorIdx)).ToUniversalTime();
-			}
-			catch{
-				return null;
-			}
-        }
 
         private void SaveStatsToStream(Dictionary<string, object> rawStats) {
 			var data = rawStats.ToJsonBytes();
@@ -166,7 +171,7 @@ namespace EventStore.Core.Services.Monitoring {
 			var corrId = Guid.NewGuid();
 			var msg = new ClientMessage.WriteEvents(corrId, corrId, NoopEnvelope, false, _nodeStatsStream,
 				ExpectedVersion.Any, new[] {evnt}, SystemAccounts.System);
-			_mainBus.Publish(msg);
+			_mainQueue.Publish(msg);
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
@@ -188,12 +193,15 @@ namespace EventStore.Core.Services.Monitoring {
 			}
 		}
 
-		public void Handle(SystemMessage.BecomeShuttingDown message) {
-			try {
-				_timer.Dispose();
-				_systemStats.Dispose();
-			} catch (ObjectDisposedException) {
-				// ok, no problem if already disposed
+		public async ValueTask HandleAsync(SystemMessage.BecomeShuttingDown message, CancellationToken token) {
+			if (Interlocked.Exchange(ref _timerTokenSource, null) is { } cts) {
+				try {
+					cts.Cancel();
+					await _timer.WaitAsync(token);
+				} finally {
+					cts.Dispose();
+					_systemStats.Dispose();
+				}
 			}
 		}
 
@@ -204,7 +212,7 @@ namespace EventStore.Core.Services.Monitoring {
 		private void SetStatsStreamMetadata() {
 			var metadata = Helper.UTF8NoBom.GetBytes(StreamMetadata);
 			_streamMetadataWriteCorrId = Guid.NewGuid();
-			_mainBus.Publish(
+			_mainQueue.Publish(
 				new ClientMessage.WriteEvents(
 					_streamMetadataWriteCorrId, _streamMetadataWriteCorrId, new PublishEnvelope(_monitoringQueue),
 					false, SystemStreams.MetastreamOf(_nodeStatsStream), ExpectedVersion.NoStream,
@@ -248,11 +256,11 @@ namespace EventStore.Core.Services.Monitoring {
 			}
 		}
 
-		public void Handle(MonitoringMessage.GetFreshStats message) {
+		public async ValueTask HandleAsync(MonitoringMessage.GetFreshStats message, CancellationToken token) {
 			try {
 				StatsContainer stats;
 				if (!TryGetMemoizedStats(out stats)) {
-					stats = CollectStats();
+					stats = await CollectStats(token);
 					if (stats != null) {
 						_memoizedStats = stats;
 						_lastStatsRequestTime = DateTime.UtcNow;

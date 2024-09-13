@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Services.Processing.MultiStream {
 			if (_eofs.Any(v => v.Value))
 				_publisher.Publish(
 					TimerMessage.Schedule.Create(
-						TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
+						TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher),
 						new UnwrapEnvelopeMessage(ProcessBuffers2)));
 			foreach (var stream in _streams)
 				RequestEvents(stream, delay: _eofs[stream]);
@@ -271,12 +271,12 @@ namespace EventStore.Projections.Core.Services.Processing.MultiStream {
 			if (delay) {
 				_publisher.Publish(
 					new AwakeServiceMessage.SubscribeAwake(
-						new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+						new PublishEnvelope(_publisher), Guid.NewGuid(), null,
 						new TFPos(_lastPosition, _lastPosition),
 						CreateReadTimeoutMessage(pendingRequestCorrelationId, stream)));
 				_publisher.Publish(
 					new AwakeServiceMessage.SubscribeAwake(
-						new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+						new PublishEnvelope(_publisher), Guid.NewGuid(), null,
 						new TFPos(_lastPosition, _lastPosition), readEventsForward));
 			} else {
 				_publisher.Publish(readEventsForward);

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using DotNext;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;
@@ -40,25 +41,24 @@ namespace EventStore.Projections.Core.Tests.Services.Jint.Scenarios
 			_startSystemProjections = GivenStartSystemProjections();
 		}
 
-		protected override Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler, Guid>[] GivenProcessingQueues() {
-			var buses = new IBus[] {new InMemoryBus("1"), new InMemoryBus("2")};
-			var outBuses = new[] {new InMemoryBus("o1"), new InMemoryBus("o2")};
-			_otherQueues = new ManualQueue[]
-				{new ManualQueue(buses[0], _timeProvider), new ManualQueue(buses[1], _timeProvider)};
-			return new[] {
+		protected override Tuple<SynchronousScheduler, IPublisher, SynchronousScheduler, TimeoutScheduler, Guid>[] GivenProcessingQueues() {
+			SynchronousScheduler[] buses = [new("1"), new("2")];
+			SynchronousScheduler[] outBuses = [new("o1"), new("o2")];
+			_otherQueues = [new(buses[0], _timeProvider), new(buses[1], _timeProvider)];
+			return [
 				Tuple.Create(
 					buses[0],
-					(IPublisher)_otherQueues[0],
+					_otherQueues[0].As<IPublisher>(),
 					outBuses[0],
 					default(TimeoutScheduler),
 					Guid.NewGuid()),
 				Tuple.Create(
 					buses[1],
-					(IPublisher)_otherQueues[1],
+					_otherQueues[1].As<IPublisher>(),
 					outBuses[1],
 					default(TimeoutScheduler),
 					Guid.NewGuid())
-			};
+			];
 		}
 
 		protected abstract void GivenEvents();

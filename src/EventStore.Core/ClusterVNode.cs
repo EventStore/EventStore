@@ -80,6 +80,7 @@ using Serilog.Extensions.Logging;
 using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
+using TimeoutControl = DotNext.Threading.Timeout;
 
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
@@ -134,10 +135,13 @@ namespace EventStore.Core {
 	public class ClusterVNode<TStreamId> :
 		ClusterVNode,
 		IHandle<SystemMessage.StateChangeMessage>,
-		IHandle<SystemMessage.BecomeShuttingDown>,
+		IAsyncHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<ClientMessage.ReloadConfig>{
+
+		private static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromSeconds(5);
+
 		private readonly ClusterVNodeOptions _options;
 
 		public override TFChunkDb Db { get; }
@@ -185,7 +189,7 @@ namespace EventStore.Core {
 		public IEnumerable<ISubsystem> Subsystems => _subsystems;
 
 		private readonly IQueuedHandler _mainQueue;
-		private readonly ISubscriber _mainBus;
+		private readonly InMemoryBus _mainBus;
 
 		private readonly ClusterVNodeController<TStreamId> _controller;
 		private readonly TimerService _timerService;
@@ -525,12 +529,12 @@ namespace EventStore.Core {
 
 			_controller =
 				new ClusterVNodeController<TStreamId>(
-					(IPublisher)_mainBus, NodeInfo, Db,
+					_mainBus, NodeInfo, Db,
 					trackers.NodeStatusTracker,
 					options, this, forwardingProxy,
 					startSubsystems: StartSubsystems);
 
-			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager,
+			_mainQueue = new QueuedHandlerThreadPool(_controller, "MainQueue", _queueStatsManager,
 				trackers.QueueTrackers);
 
 			_controller.SetMainQueue(_mainQueue);
@@ -572,8 +576,6 @@ namespace EventStore.Core {
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
 				_mainQueue,
-				Db.Config.WriterCheckpoint.AsReadOnly(),
-				Db.Config.Path,
 				TimeSpan.FromSeconds(options.Application.StatsPeriodSec),
 				NodeInfo.HttpEndPoint,
 				options.Database.StatsStorage,
@@ -1605,7 +1607,11 @@ namespace EventStore.Core {
 					// then we can remove this extra restart
 					Log.Information("Truncation successful. Shutting down.");
 					var shutdownGuid = Guid.NewGuid();
-					Handle(new SystemMessage.BecomeShuttingDown(shutdownGuid, exitProcess: true, shutdownHttp: true));
+					using var task = HandleAsync(
+							new SystemMessage.BecomeShuttingDown(shutdownGuid, exitProcess: true, shutdownHttp: true),
+							CancellationToken.None).AsTask();
+
+					task.Wait(DefaultShutdownTimeout);
 					Handle(new SystemMessage.BecomeShutdown(shutdownGuid));
 					Application.Exit(0, "Shutting down after successful truncation.");
 					return;
@@ -1763,24 +1769,21 @@ namespace EventStore.Core {
 				return;
 			}
 
-			timeout ??= TimeSpan.FromSeconds(5);
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
 			_reloadConfigSignalRegistration?.Dispose();
 			_reloadConfigSignalRegistration = null;
 
-			if (_subsystems != null) {
-				foreach (var subsystem in _subsystems) {
-					await subsystem.Stop();
-				}
+			TimeSpan remainingTime;
+			var timeoutCtl = new TimeoutControl(timeout ?? DefaultShutdownTimeout);
+			foreach (var subsystem in _subsystems ?? []) {
+				timeoutCtl.ThrowIfExpired(out remainingTime);
+				await subsystem.Stop().WaitAsync(remainingTime, cancellationToken);
 			}
 
-			var cts = new CancellationTokenSource();
+			timeoutCtl.ThrowIfExpired(out remainingTime);
+			await _shutdownSource.Task.WaitAsync(remainingTime, cancellationToken);
 
-			await using var _ = cts.Token.Register(() => _shutdownSource.TrySetCanceled(cancellationToken));
-
-			cts.CancelAfter(timeout.Value);
-			await _shutdownSource.Task;
 			_switchChunksLock?.Dispose();
 		}
 
@@ -1788,28 +1791,25 @@ namespace EventStore.Core {
 			OnNodeStatusChanged(new VNodeStatusChangeArgs(message.State));
 		}
 
-		public void Handle(SystemMessage.BecomeShuttingDown message) {
+		public async ValueTask HandleAsync(SystemMessage.BecomeShuttingDown message, CancellationToken token) {
 			_reloadConfigSignalRegistration?.Dispose();
 			_reloadConfigSignalRegistration = null;
 
-			if (_subsystems is null)
-				return;
-
-			foreach (var subsystem in _subsystems)
-				subsystem.Stop();
+			foreach (var subsystem in _subsystems ?? [])
+				await subsystem.Stop().WaitAsync(token);
 		}
 
 		public void Handle(SystemMessage.BecomeShutdown message) {
 			_shutdownSource.TrySetResult(true);
 		}
 
-		public void Handle(SystemMessage.SystemStart message) {
+		public void Handle(SystemMessage.SystemStart _) {
 			_authenticationProvider.Initialize().ContinueWith(t => {
-				if (t.Exception != null) {
-					_mainQueue.Publish(new AuthenticationMessage.AuthenticationProviderInitializationFailed());
-				} else {
-					_mainQueue.Publish(new AuthenticationMessage.AuthenticationProviderInitialized());
-				}
+				Message msg = t.Exception is null
+					? new AuthenticationMessage.AuthenticationProviderInitialized()
+					: new AuthenticationMessage.AuthenticationProviderInitializationFailed();
+
+				_mainQueue.Publish(msg);
 			});
 		}
 
@@ -1842,7 +1842,7 @@ namespace EventStore.Core {
 #endif
 		}
 
-		public override async Task<ClusterVNode> StartAsync(bool waitUntilReady) {
+		public override Task<ClusterVNode> StartAsync(bool waitUntilReady) {
 			var tcs = new TaskCompletionSource<ClusterVNode>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			if (waitUntilReady) {
@@ -1857,7 +1857,7 @@ namespace EventStore.Core {
 			if (IsShutdown)
 				tcs.TrySetResult(this);
 
-			return await tcs.Task;
+			return tcs.Task;
 		}
 
 		public static ValueTuple<bool, string> ValidateServerCertificate(X509Certificate certificate,

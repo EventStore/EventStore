@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Services {
 
 		public ReaderSubscriptionDispatcher(IPublisher publisher) {
 			_publisher = publisher;
-			_publishEnvelope = new PublishEnvelope(_publisher, true);
+			_publishEnvelope = new PublishEnvelope(_publisher);
 		}
 
 		/// <summary>
@@ -53,8 +53,11 @@ namespace EventStore.Projections.Core.Services {
 		private void Handle<T>(T message) where T : EventReaderSubscriptionMessageBase {
 			var correlationId = message.SubscriptionId;
 			if (_map.TryGetValue(correlationId, out var subscriber)) {
-				if (subscriber is IHandle<T> h)
+				if (subscriber is IHandle<T> h) {
 					h.Handle(message);
+				} else if (subscriber is IAsyncHandle<T>) {
+					throw new Exception($"ReaderSubscriptionDispatcher does not support asynchronous subscribers. Subscriber: {subscriber}");
+				}
 			}
 		}
 

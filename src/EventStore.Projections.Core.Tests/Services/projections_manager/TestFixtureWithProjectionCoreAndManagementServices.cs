@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DotNext;
 using EventStore.Common;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
@@ -23,7 +24,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 	public abstract class TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> : core_projection.TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
-		protected class GuardBusToTriggerFixingIfUsed : IQueuedHandler, IBus, IPublisher {
+		protected class GuardBusToTriggerFixingIfUsed : IQueuedHandler, IPublisher, ISubscriber {
 			public void Handle(Message message) {
 				throw new NotImplementedException();
 			}
@@ -49,18 +50,18 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				throw new NotImplementedException();
 			}
 
-			public void Subscribe<T>(IHandle<T> handler) where T : Message {
+			public void Subscribe<T>(IAsyncHandle<T> handler) where T : Message {
 				throw new NotImplementedException();
 			}
 
-			public void Unsubscribe<T>(IHandle<T> handler) where T : Message {
+			public void Unsubscribe<T>(IAsyncHandle<T> handler) where T : Message {
 				throw new NotImplementedException();
 			}
 		}
 		protected ProjectionManager _manager;
 		protected ProjectionManagerMessageDispatcher _managerMessageDispatcher;
 		private bool _initializeSystemProjections;
-		protected Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler, Guid>[] _processingQueues;
+		protected Tuple<SynchronousScheduler, IPublisher, SynchronousScheduler, TimeoutScheduler, Guid>[] _processingQueues;
 		private ProjectionCoreCoordinator _coordinator;
 
 		protected override void Given1() {
@@ -86,7 +87,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_bus.Subscribe(_consumer);
 
 			_processingQueues = GivenProcessingQueues();
-			var queues = _processingQueues.ToDictionary(v => v.Item5, v => (IPublisher)v.Item1);
+			var queues = _processingQueues.ToDictionary(v => v.Item5, v => v.Item1.As<IPublisher>());
 			_managerMessageDispatcher = new ProjectionManagerMessageDispatcher(queues);
 			_manager = new ProjectionManager(
 				GetInputQueue(),
@@ -149,17 +150,17 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			WhenLoop();
 		}
 
-		protected virtual Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler, Guid>[] GivenProcessingQueues() {
+		protected virtual Tuple<SynchronousScheduler, IPublisher, SynchronousScheduler, TimeoutScheduler, Guid>[] GivenProcessingQueues() {
 			return new[] {
-				Tuple.Create((IBus)_bus, GetInputQueue(), (InMemoryBus)null, default(TimeoutScheduler), Guid.NewGuid())
+				Tuple.Create(_bus, GetInputQueue(), (SynchronousScheduler)null, default(TimeoutScheduler), Guid.NewGuid())
 			};
 		}
 
 		private void SetUpCoreServices(
 			Guid workerId,
-			IBus bus,
+			SynchronousScheduler bus,
 			IPublisher inputQueue,
-			InMemoryBus output_,
+			SynchronousScheduler output_,
 			ISingletonTimeoutScheduler timeoutScheduler) {
 			var output = (output_ ?? inputQueue);
 			ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);

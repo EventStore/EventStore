@@ -8,7 +8,7 @@ using EventStore.Core.TransactionLog.Chunks;
 namespace EventStore.Core {
 	public class StandardComponents {
 		private readonly TFChunkDbConfig _dbConfig;
-		private readonly IQueuedHandler _mainQueue;
+		private readonly IPublisher _mainQueue;
 		private readonly ISubscriber _mainBus;
 		private readonly TimerService _timerService;
 		private readonly ITimeProvider _timeProvider;
@@ -19,7 +19,7 @@ namespace EventStore.Core {
 
 		public StandardComponents(
 			TFChunkDbConfig dbConfig,
-			IQueuedHandler mainQueue,
+			IPublisher mainQueue,
 			ISubscriber mainBus,
 			TimerService timerService,
 			ITimeProvider timeProvider,
@@ -46,7 +46,7 @@ namespace EventStore.Core {
 			get { return _dbConfig; }
 		}
 
-		public IQueuedHandler MainQueue {
+		public IPublisher MainQueue {
 			get { return _mainQueue; }
 		}
 

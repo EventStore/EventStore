@@ -16,7 +16,7 @@ using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager.multi_stream {
 	public abstract class with_multi_stream_checkpoint_manager<TLogFormat, TStreamId> : IHandle<ClientMessage.ReadStreamEventsBackward> {
-		protected readonly InMemoryBus _bus = InMemoryBus.CreateTest();
+		protected readonly SynchronousScheduler _bus = new();
 		protected readonly Guid _projectionId = Guid.NewGuid();
 		protected readonly string[] _streams = new string[] {"a", "b", "c"};
 		protected readonly string _projectionName = "test_projection";

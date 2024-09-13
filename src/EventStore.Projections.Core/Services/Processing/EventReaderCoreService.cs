@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_writerCheckpoint = writerCheckpoint;
 			_runHeadingReader = runHeadingReader;
 			_faultOutOfOrderProjections = faultOutOfOrderProjections;
-			_publishEnvelope = new PublishEnvelope(publisher, true);
+			_publishEnvelope = new PublishEnvelope(publisher);
 		}
 
 		public void Handle(ReaderSubscriptionManagement.Pause message) {

@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		protected readonly VNodeInfo _nodeThree;
 		protected FakeTimeProvider _timeProvider;
 		protected Core.Services.ElectionsService _sut;
-		private IBus _bus;
+		private ISubscriber _bus;
 		protected FakePublisher _publisher;
 		protected Guid _epochId;
 		protected TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1_000);

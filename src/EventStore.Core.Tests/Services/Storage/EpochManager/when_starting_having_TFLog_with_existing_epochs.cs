@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		private LinkedList<EpochRecord> _cache;
 		private TFChunkReader _reader;
 		private TFChunkWriter _writer;
-		private IBus _mainBus;
+		private SynchronousScheduler _mainBus;
 		private readonly Guid _instanceId = Guid.NewGuid();
 		private readonly List<Message> _published = new List<Message>();
 		private List<EpochRecord> _epochs;
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				IndexDirectory = indexDirectory,
 			});
 
-			_mainBus = new InMemoryBus(nameof(when_starting_having_TFLog_with_existing_epochs<TLogFormat, TStreamId>));
+			_mainBus = new(nameof(when_starting_having_TFLog_with_existing_epochs<TLogFormat, TStreamId>));
 			_mainBus.Subscribe(new AdHocHandler<SystemMessage.EpochWritten>(m => _published.Add(m)));
 			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
 			_db.Open();
@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			this.Dispose();
 			await base.TestFixtureTearDown();
 		}
-		
+
 		[Test]
 		public void starting_epoch_manager_loads_epochs() {
 
@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_epochManager.Init();
 			_cache = GetCache(_epochManager);
 			Assert.NotNull(_cache);
-			
+
 			Assert.That(_cache.Count == 10);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[20].EpochNumber);
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[29].EpochNumber);
@@ -134,7 +134,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_epochManager.Init();
 			_cache = GetCache(_epochManager);
 			Assert.NotNull(_cache);
-			
+
 			Assert.That(_cache.Count == 30);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[0].EpochNumber);
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[29].EpochNumber);

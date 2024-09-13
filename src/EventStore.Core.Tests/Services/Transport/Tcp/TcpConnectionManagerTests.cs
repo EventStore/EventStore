@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 	public class TcpConnectionManagerTests {
 		private int _connectionPendingSendBytesThreshold = 10 * 1024;
 		private int _connectionQueueSizeThreshold = 50000;
-		
+
 		[Test]
 		public void when_handling_trusted_write_on_external_service() {
 			var package = new TcpPackage(TcpCommand.WriteEvents, TcpFlags.TrustedWrite, Guid.NewGuid(), null, null,
@@ -37,11 +37,11 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var tcpConnectionManager = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(2000),
-				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
+				new SynchronousScheduler(), dummyConnection, new SynchronousScheduler(),
 				new InternalAuthenticationProvider(
-					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
+					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(new SynchronousScheduler(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false, DefaultData.DefaultUserOptions),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
 			var dummyConnection = new DummyTcpConnection();
-			var publisher = InMemoryBus.CreateTest();
+			var publisher = new SynchronousScheduler();
 
 			publisher.Subscribe(new AdHocHandler<ClientMessage.WriteEvents>(x => {
 				publishedWrite = x;
@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				publisher, dummyConnection, publisher,
 				new InternalAuthenticationProvider(publisher, new Core.Helpers.IODispatcher(publisher, new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false, DefaultData.DefaultUserOptions),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
@@ -114,11 +114,11 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var tcpConnectionManager = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(2000),
-				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
+				new SynchronousScheduler(), dummyConnection, new SynchronousScheduler(),
 				new InternalAuthenticationProvider(
-					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(),
+					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(new SynchronousScheduler(),
 						new NoopEnvelope()), null, 1, false, DefaultData.DefaultUserOptions),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
@@ -144,10 +144,10 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var tcpConnectionManager = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(2000),
-				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
+				new SynchronousScheduler(), dummyConnection, new SynchronousScheduler(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false, DefaultData.DefaultUserOptions),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+					new Core.Helpers.IODispatcher(new SynchronousScheduler(), new NoopEnvelope()), null, 1, false, DefaultData.DefaultUserOptions),
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
@@ -177,10 +177,10 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var tcpConnectionManager = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(2000),
-				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
+				new SynchronousScheduler(), dummyConnection, new SynchronousScheduler(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false, DefaultData.DefaultUserOptions),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+					new Core.Helpers.IODispatcher(new SynchronousScheduler(), new NoopEnvelope()), null, 1, false, DefaultData.DefaultUserOptions),
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				ESConsts.UnrestrictedPendingSendBytes, ESConsts.MaxConnectionQueueSize);
 
@@ -192,7 +192,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.AreEqual(receivedPackage.Command, TcpCommand.ReadEventCompleted,
 				"Expected ReadEventCompleted but got {0}", receivedPackage.Command);
 		}
-		
+
 		[Test]
 		public void
 			when_send_queue_size_is_smaller_than_threshold_should_not_close_connection() {
@@ -210,10 +210,10 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var tcpConnectionManager = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(2000),
-				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
+				new SynchronousScheduler(), dummyConnection, new SynchronousScheduler(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false, DefaultData.DefaultUserOptions),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+					new Core.Helpers.IODispatcher(new SynchronousScheduler(), new NoopEnvelope()), null, 1, false, DefaultData.DefaultUserOptions),
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				ESConsts.UnrestrictedPendingSendBytes, ESConsts.MaxConnectionQueueSize);
 
@@ -225,7 +225,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.AreEqual(receivedPackage.Command, TcpCommand.ReadEventCompleted,
 				"Expected ReadEventCompleted but got {0}", receivedPackage.Command);
 		}
-		
+
 		[Test]
 		public void
 			when_send_queue_size_is_larger_than_threshold_should_close_connection() {
@@ -243,10 +243,10 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var tcpConnectionManager = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(2000),
-				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
+				new SynchronousScheduler(), dummyConnection, new SynchronousScheduler(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false, DefaultData.DefaultUserOptions),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+					new Core.Helpers.IODispatcher(new SynchronousScheduler(), new NoopEnvelope()), null, 1, false, DefaultData.DefaultUserOptions),
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				ESConsts.UnrestrictedPendingSendBytes, ESConsts.MaxConnectionQueueSize);
 

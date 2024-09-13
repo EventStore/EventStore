@@ -29,7 +29,7 @@ namespace EventStore.Core.Services {
 			_forwardingProxy = forwardingProxy;
 
 			_tickScheduleMessage = TimerMessage.Schedule.Create(tickInterval,
-				new PublishEnvelope(bus, crossThread: true),
+				new PublishEnvelope(bus),
 				new SystemMessage.RequestForwardingTimerTick());
 		}
 

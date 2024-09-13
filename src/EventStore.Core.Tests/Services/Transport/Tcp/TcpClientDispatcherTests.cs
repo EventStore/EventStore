@@ -31,14 +31,14 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		[OneTimeSetUp]
 		public void Setup() {
 			_dispatcher = new ClientTcpDispatcher(2000);
-			
+
 			var dummyConnection = new DummyTcpConnection();
 			_connection = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(2000),
-				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(
-					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
+				new SynchronousScheduler(), dummyConnection, new SynchronousScheduler(), new InternalAuthenticationProvider(
+					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(new SynchronousScheduler(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false, DefaultData.DefaultUserOptions),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				Opts.ConnectionPendingSendBytesThresholdDefault, Opts.ConnectionQueueSizeThresholdDefault);
 		}
@@ -235,9 +235,9 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(dto, "DTO is null");
 			Assert.AreEqual(long.MaxValue, dto.LastEventNumber, "Last event number");
 		}
-		
+
 		[Test]
-		public void 
+		public void
 			when_wrapping_scavenge_started_response_should_return_result_and_scavengeId_for_v2_clients() {
 			var scavengeId = Guid.NewGuid().ToString();
 			var msg = new ClientMessage.ScavengeDatabaseStartedResponse(Guid.NewGuid(), scavengeId);
@@ -251,9 +251,9 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.AreEqual(dto.Result, ScavengeDatabaseResponse.Types.ScavengeResult.Started);
 			Assert.AreEqual(dto.ScavengeId, scavengeId);
 		}
-		
+
 		[Test]
-		public void 
+		public void
 			when_wrapping_scavenge_inprogress_response_should_return_result_and_scavengeId_for_v2_clients() {
 			var scavengeId = Guid.NewGuid().ToString();
 			var msg = new ClientMessage.ScavengeDatabaseInProgressResponse(Guid.NewGuid(), scavengeId, reason:"In Progress");
@@ -261,7 +261,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var package = _dispatcher.WrapMessage(msg, (byte)ClientVersion.V2);
 			Assert.IsNotNull(package, "Package is null");
 			Assert.AreEqual(TcpCommand.ScavengeDatabaseResponse, package.Value.Command, "TcpCommand");
-			
+
 			var dto = package.Value.Data.Deserialize<ScavengeDatabaseResponse>();
 			Assert.IsNotNull(dto, "DTO is null");
 			Assert.AreEqual(dto.Result, ScavengeDatabaseResponse.Types.ScavengeResult.InProgress);
@@ -269,7 +269,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		}
 
 		[Test]
-		public void 
+		public void
 			when_wrapping_scavenge_unauthorized_response_should_return_result_and_scavengeId_for_v2_clients() {
 			var scavengeId = Guid.NewGuid().ToString();
 			var msg = new ClientMessage.ScavengeDatabaseUnauthorizedResponse(Guid.NewGuid(), scavengeId,"Unauthorized" );

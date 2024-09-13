@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
@@ -20,7 +21,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		private const string _projectionStateStream = "$projections-projection-result";
 		private const string _projectionCheckpointStream = "$projections-projection-checkpoint";
 		private CoreProjection _coreProjection;
-		private InMemoryBus _bus;
+		private SynchronousScheduler _bus;
 		private TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 		private IODispatcher _ioDispatcher;
 		private ReaderSubscriptionDispatcher _subscriptionDispatcher;
@@ -28,7 +29,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 
 		[SetUp]
 		public void setup() {
-			_bus = new InMemoryBus("bus");
+			_bus = new();
 			_listEventsHandler = new TestHandler<ClientMessage.ReadStreamEventsBackward>();
 			_bus.Subscribe(_listEventsHandler);
 			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
@@ -83,8 +84,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		}
 
 		[Test]
-		public void should_accept_no_event_stream_response() {
-			_bus.Handle(
+		public async Task should_accept_no_event_stream_response() {
+			await _bus.DispatchAsync(
 				new ClientMessage.ReadStreamEventsBackwardCompleted(
 					_listEventsHandler.HandledMessages[0].CorrelationId,
 					_listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.NoStream,
@@ -92,8 +93,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		}
 
 		[Test]
-		public void should_accept_events_not_found_response() {
-			_bus.Handle(
+		public async Task should_accept_events_not_found_response() {
+			await _bus.DispatchAsync(
 				new ClientMessage.ReadStreamEventsBackwardCompleted(
 					_listEventsHandler.HandledMessages[0].CorrelationId,
 					_listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.Success,

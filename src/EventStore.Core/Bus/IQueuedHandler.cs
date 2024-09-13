@@ -1,16 +1,14 @@
 ﻿using System.Threading.Tasks;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 
-namespace EventStore.Core.Bus {
-	public interface IQueuedHandler : IHandle<Message>, IPublisher {
-		string Name { get; }
-		Task Start();
-		void Stop();
+namespace EventStore.Core.Bus;
 
-		void RequestStop();
+public interface IQueuedHandler : IPublisher {
+	string Name { get; }
+	Task Start();
+	void Stop();
 
-		//void Publish(Message message);
-		QueueStats GetStatistics();
-	}
+	void RequestStop();
+	
+	QueueStats GetStatistics();
 }

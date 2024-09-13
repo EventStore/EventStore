@@ -11,10 +11,11 @@ using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
 using System.Linq;
 using EventStore.Core.Metrics;
+using DotNext;
 
 namespace EventStore.Core.Tests.Helpers {
 	public abstract class TestFixtureWithReadWriteDispatchers {
-		protected InMemoryBus _bus;
+		protected SynchronousScheduler _bus;
 		protected IQueuedHandler _publisher;
 
 		protected RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted>
@@ -48,8 +49,8 @@ namespace EventStore.Core.Tests.Helpers {
 		public void setup0() {
 			_envelope = null;
 			_timeProvider = new FakeTimeProvider();
-			_bus = new InMemoryBus("bus");
-			_publisher = QueuedHandler.CreateQueuedHandler(_bus,
+			_bus = new SynchronousScheduler();
+			_publisher = new QueuedHandlerThreadPool(_bus,
 				"TestQueue",
 				new QueueStatsManager(),
 				new QueueTrackers(), watchSlowMsg: false);
@@ -79,7 +80,7 @@ namespace EventStore.Core.Tests.Helpers {
 		}
 
 		protected IPublisher GetInputQueue() {
-			return (IPublisher)_queue ?? _bus;
+			return _queue.As<IPublisher>() ?? _bus;
 		}
 
 		protected void DisableTimer() {

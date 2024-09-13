@@ -1,4 +1,7 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
@@ -15,7 +18,10 @@ public readonly ref struct VNodeFSMHandling<TMessage>
 		_defaultHandler = defaultHandler;
 	}
 
-	public VNodeFSMStatesDefinition Do(Action<TMessage> handler) {
+	public VNodeFSMStatesDefinition Do(Action<TMessage> handler)
+		=> Do(handler.ToAsync());
+
+	public VNodeFSMStatesDefinition Do(Func<TMessage, CancellationToken, ValueTask> handler) {
 		if (_defaultHandler) {
 			foreach (var state in _stateDef.States) {
 				_stateDef.FSM.AddDefaultHandler(state, handler.InvokeWithDowncast);
@@ -30,30 +36,21 @@ public readonly ref struct VNodeFSMHandling<TMessage>
 	}
 
 	public VNodeFSMStatesDefinition Ignore() {
-		if (_defaultHandler) {
-			foreach (var state in _stateDef.States) {
-				_stateDef.FSM.AddDefaultHandler(state, NoOp);
-			}
-		} else {
-			foreach (var state in _stateDef.States) {
-				_stateDef.FSM.AddHandler<TMessage>(state, NoOp);
-			}
-		}
+		return Do(NoOp);
 
-		return _stateDef;
-
-		static void NoOp(Message msg) {
-		}
+		static ValueTask NoOp(Message msg, CancellationToken token)
+			=> token.IsCancellationRequested ? ValueTask.FromCanceled(token) : ValueTask.CompletedTask;
 	}
 
-	public VNodeFSMStatesDefinition ForwardTo(IPublisher publisher) {
+	public VNodeFSMStatesDefinition ForwardTo(IAsyncHandle<Message> publisher) {
 		Ensure.NotNull(publisher, "publisher");
-		return Do(publisher.Publish);
+		return Do(publisher.HandleAsync);
 	}
 }
 
 file static class DelegateHelpers {
-	public static void InvokeWithDowncast<TMessage>(this Action<TMessage> action, Message message)
+	public static ValueTask InvokeWithDowncast<TMessage>(this Func<TMessage, CancellationToken, ValueTask> action,
+		Message message, CancellationToken token)
 		where TMessage : Message
-		=> action.Invoke((TMessage)message);
+		=> action.Invoke((TMessage)message, token);
 }

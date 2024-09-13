@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 		private EpochManager<TStreamId> _epochManager;
 		private LogFormatAbstractor<TStreamId> _logFormat;
 		private TFChunkWriter _writer;
-		private IBus _mainBus;
+		private SynchronousScheduler _mainBus;
 		private List<EpochRecord> _epochs;
 		private readonly Guid _instanceId = Guid.NewGuid();
 		private readonly int _numEpochs;
@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 
 		[SetUp]
 		public void SetUp() {
-			_mainBus = new InMemoryBus(nameof(when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId>));
+			_mainBus = new(nameof(when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId>));
 
 			var indexDirectory = GetFilePathFor("index");
 			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {

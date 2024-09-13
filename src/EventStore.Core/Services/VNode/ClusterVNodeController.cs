@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
@@ -19,14 +20,14 @@ namespace EventStore.Core.Services.VNode {
 		protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeController>();
 	}
 
-	public class ClusterVNodeController<TStreamId> : ClusterVNodeController, IHandle<Message> {
+	public class ClusterVNodeController<TStreamId> : ClusterVNodeController, IAsyncHandle<Message> {
 		public static readonly TimeSpan ShutdownTimeout = TimeSpan.FromSeconds(5);
 		public static readonly TimeSpan LeaderReconnectionDelay = TimeSpan.FromMilliseconds(500);
 		private static readonly TimeSpan LeaderSubscriptionRetryDelay = TimeSpan.FromMilliseconds(500);
 		private static readonly TimeSpan LeaderSubscriptionTimeout = TimeSpan.FromMilliseconds(1000);
 		private static readonly TimeSpan LeaderDiscoveryTimeout = TimeSpan.FromMilliseconds(3000);
 
-		private readonly IPublisher _outputBus;
+		private readonly InMemoryBus _outputBus;
 		private readonly VNodeInfo _nodeInfo;
 		private readonly TFChunkDb _db;
 		private readonly ClusterVNode<TStreamId> _node;
@@ -71,7 +72,7 @@ namespace EventStore.Core.Services.VNode {
 
 		private bool _exitProcessOnShutdown;
 
-		public ClusterVNodeController(IPublisher outputBus, VNodeInfo nodeInfo, TFChunkDb db,
+		public ClusterVNodeController(InMemoryBus outputBus, VNodeInfo nodeInfo, TFChunkDb db,
 			INodeStatusTracker statusTracker,
 			ClusterVNodeOptions options, ClusterVNode<TStreamId> node, MessageForwardingProxy forwardingProxy,
 			Action startSubsystems) {
@@ -347,69 +348,69 @@ namespace EventStore.Core.Services.VNode {
 			return stm;
 		}
 
-		void IHandle<Message>.Handle(Message message) {
-			_fsm.Handle(message);
+		ValueTask IAsyncHandle<Message>.HandleAsync(Message message, CancellationToken token) {
+			return _fsm.HandleAsync(message, token);
 		}
 
-		private void Handle(SystemMessage.SystemInit message) {
+		private async ValueTask Handle(SystemMessage.SystemInit message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] SYSTEM INIT...", _nodeInfo.HttpEndPoint);
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Handle(SystemMessage.SystemStart message) {
+		private async ValueTask Handle(SystemMessage.SystemStart message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] SYSTEM START...", _nodeInfo.HttpEndPoint);
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 			if (_nodeInfo.IsReadOnlyReplica) {
-				_fsm.Handle(new SystemMessage.BecomeReadOnlyLeaderless(Guid.NewGuid()));
+				await _fsm.HandleAsync(new SystemMessage.BecomeReadOnlyLeaderless(Guid.NewGuid()), token);
 			} else {
 				if (_clusterSize > 1) {
-					_fsm.Handle(new SystemMessage.BecomeDiscoverLeader(Guid.NewGuid()));
+					await _fsm.HandleAsync(new SystemMessage.BecomeDiscoverLeader(Guid.NewGuid()), token);
 				} else {
-					_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+					await _fsm.HandleAsync(new SystemMessage.BecomeUnknown(Guid.NewGuid()), token);
 				}
 			}
 		}
 
-		private void Handle(SystemMessage.BecomeUnknown message) {
+		private async ValueTask Handle(SystemMessage.BecomeUnknown message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] IS UNKNOWN...", _nodeInfo.HttpEndPoint);
 
 			State = VNodeState.Unknown;
 			_leader = null;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 			_mainQueue.Publish(new ElectionMessage.StartElections());
 		}
 
-		private void Handle(SystemMessage.BecomeDiscoverLeader message) {
+		private async ValueTask Handle(SystemMessage.BecomeDiscoverLeader message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] IS ATTEMPTING TO DISCOVER EXISTING LEADER...", _nodeInfo.HttpEndPoint);
 
 			State = VNodeState.DiscoverLeader;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 
 			var msg = new LeaderDiscoveryMessage.DiscoveryTimeout();
 			_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderDiscoveryTimeout, _publishEnvelope, msg));
 		}
 
-		private void Handle(SystemMessage.InitiateLeaderResignation message) {
+		private async ValueTask Handle(SystemMessage.InitiateLeaderResignation message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] IS INITIATING LEADER RESIGNATION...", _nodeInfo.HttpEndPoint);
 
-			_fsm.Handle(new SystemMessage.BecomeResigningLeader(_stateCorrelationId));
+			await _fsm.HandleAsync(new SystemMessage.BecomeResigningLeader(_stateCorrelationId), token);
 		}
 
-		private void Handle(SystemMessage.BecomeResigningLeader message) {
+		private async ValueTask Handle(SystemMessage.BecomeResigningLeader message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] IS RESIGNING LEADER...", _nodeInfo.HttpEndPoint);
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
 			State = VNodeState.ResigningLeader;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Handle(SystemMessage.RequestQueueDrained message) {
+		private async ValueTask Handle(SystemMessage.RequestQueueDrained message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] REQUEST QUEUE DRAINED. RESIGNATION COMPLETE.", _nodeInfo.HttpEndPoint);
-			_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+			await _fsm.HandleAsync(new SystemMessage.BecomeUnknown(Guid.NewGuid()), token);
 		}
 
-		private void Handle(SystemMessage.BecomePreReplica message) {
+		private async ValueTask Handle(SystemMessage.BecomePreReplica message, CancellationToken token) {
 			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
@@ -418,11 +419,11 @@ namespace EventStore.Core.Services.VNode {
 				"========== [{httpEndPoint}] PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... LEADER IS [{masterHttp},{masterId:B}]",
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
 			State = VNodeState.PreReplica;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 			_mainQueue.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
 		}
 
-		private void Handle(SystemMessage.BecomePreReadOnlyReplica message) {
+		private async ValueTask Handle(SystemMessage.BecomePreReadOnlyReplica message, CancellationToken token) {
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 			if (_leader == null) throw new Exception("_leader == null");
@@ -431,11 +432,11 @@ namespace EventStore.Core.Services.VNode {
 				"========== [{httpEndPoint}] READ ONLY PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... LEADER IS [{leaderHttp},{leaderId:B}]",
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
 			State = VNodeState.PreReadOnlyReplica;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 			_mainQueue.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
 		}
 
-		private void Handle(SystemMessage.BecomeCatchingUp message) {
+		private async ValueTask Handle(SystemMessage.BecomeCatchingUp message, CancellationToken token) {
 			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
@@ -443,10 +444,10 @@ namespace EventStore.Core.Services.VNode {
 			Log.Information("========== [{httpEndPoint}] IS CATCHING UP... LEADER IS [{leaderHttp},{leaderId:B}]",
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
 			State = VNodeState.CatchingUp;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Handle(SystemMessage.BecomeClone message) {
+		private async ValueTask Handle(SystemMessage.BecomeClone message, CancellationToken token) {
 			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
@@ -454,10 +455,10 @@ namespace EventStore.Core.Services.VNode {
 			Log.Information("========== [{httpEndPoint}] IS CLONE... LEADER IS [{leaderHttp},{leaderId:B}]",
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
 			State = VNodeState.Clone;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Handle(SystemMessage.BecomeFollower message) {
+		private async ValueTask Handle(SystemMessage.BecomeFollower message, CancellationToken token) {
 			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
@@ -465,17 +466,17 @@ namespace EventStore.Core.Services.VNode {
 			Log.Information("========== [{httpEndPoint}] IS FOLLOWER... LEADER IS [{leaderHttp},{leaderId:B}]",
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
 			State = VNodeState.Follower;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Handle(SystemMessage.BecomeReadOnlyLeaderless message) {
+		private async ValueTask Handle(SystemMessage.BecomeReadOnlyLeaderless message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] IS READ ONLY REPLICA WITH UNKNOWN LEADER...", _nodeInfo.HttpEndPoint);
 			State = VNodeState.ReadOnlyLeaderless;
 			_leader = null;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Handle(SystemMessage.BecomeReadOnlyReplica message) {
+		private async ValueTask Handle(SystemMessage.BecomeReadOnlyReplica message, CancellationToken token) {
 			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
@@ -483,10 +484,10 @@ namespace EventStore.Core.Services.VNode {
 			Log.Information("========== [{httpEndPoint}] IS READ ONLY REPLICA... LEADER IS [{leaderHttp},{leaderId:B}]",
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
 			State = VNodeState.ReadOnlyReplica;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Handle(SystemMessage.BecomePreLeader message) {
+		private async ValueTask Handle(SystemMessage.BecomePreLeader message, CancellationToken token) {
 			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
@@ -494,11 +495,11 @@ namespace EventStore.Core.Services.VNode {
 			Log.Information("========== [{httpEndPoint}] PRE-LEADER STATE, WAITING FOR CHASER TO CATCH UP...",
 				_nodeInfo.HttpEndPoint);
 			State = VNodeState.PreLeader;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 			_mainQueue.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
 		}
 
-		private void Handle(SystemMessage.BecomeLeader message) {
+		private async ValueTask Handle(SystemMessage.BecomeLeader message, CancellationToken token) {
 			if (State == VNodeState.Leader) throw new Exception("We should not BecomeLeader twice in a row.");
 			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
@@ -506,10 +507,10 @@ namespace EventStore.Core.Services.VNode {
 
 			Log.Information("========== [{httpEndPoint}] IS LEADER... SPARTA!", _nodeInfo.HttpEndPoint);
 			State = VNodeState.Leader;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Handle(SystemMessage.BecomeShuttingDown message) {
+		private async ValueTask Handle(SystemMessage.BecomeShuttingDown message, CancellationToken token) {
 			if (State == VNodeState.ShuttingDown || State == VNodeState.Shutdown)
 				return;
 
@@ -520,14 +521,14 @@ namespace EventStore.Core.Services.VNode {
 			State = VNodeState.ShuttingDown;
 			_mainQueue.Publish(TimerMessage.Schedule.Create(ShutdownTimeout, _publishEnvelope,
 				new SystemMessage.ShutdownTimeout()));
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Handle(SystemMessage.BecomeShutdown message) {
+		private async ValueTask Handle(SystemMessage.BecomeShutdown message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] IS SHUT DOWN.", _nodeInfo.HttpEndPoint);
 			State = VNodeState.Shutdown;
 			try {
-				_outputBus.Publish(message);
+				await _outputBus.DispatchAsync(message, token);
 			} catch (Exception exc) {
 				Log.Error(exc, "Error when publishing {message}.", message);
 			}
@@ -544,12 +545,12 @@ namespace EventStore.Core.Services.VNode {
 			}
 		}
 
-		private void Handle(ElectionMessage.ElectionsDone message) {
+		private async ValueTask Handle(ElectionMessage.ElectionsDone message, CancellationToken token) {
 			if (_leader != null && _leader.InstanceId == message.Leader.InstanceId) {
 				//if the leader hasn't changed, we skip state changes through PreLeader or PreReplica
 				if (_leader.InstanceId == _nodeInfo.InstanceId && State == VNodeState.Leader) {
 					//transitioning from leader to leader, we just write a new epoch
-					_fsm.Handle(new SystemMessage.WriteEpoch(message.ProposalNumber));
+					await _fsm.HandleAsync(new SystemMessage.WriteEpoch(message.ProposalNumber), token);
 				}
 
 				return;
@@ -559,46 +560,46 @@ namespace EventStore.Core.Services.VNode {
 			_subscriptionId = Guid.NewGuid();
 			_stateCorrelationId = Guid.NewGuid();
 			_leaderConnectionCorrelationId = Guid.NewGuid();
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 			if (_leader.InstanceId == _nodeInfo.InstanceId)
-				_fsm.Handle(new SystemMessage.BecomePreLeader(_stateCorrelationId));
+				await _fsm.HandleAsync(new SystemMessage.BecomePreLeader(_stateCorrelationId), token);
 			else
-				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader));
+				await _fsm.HandleAsync(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader), token);
 		}
 
-		private void Handle(SystemMessage.ServiceInitialized message) {
+		private async ValueTask Handle(SystemMessage.ServiceInitialized message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] Service '{service}' initialized.", _nodeInfo.HttpEndPoint,
 				message.ServiceName);
 			_serviceInitsToExpect -= 1;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 			if (_serviceInitsToExpect == 0)
 				_mainQueue.Publish(new SystemMessage.SystemStart());
 		}
 
-		private void Handle(AuthenticationMessage.AuthenticationProviderInitialized message) {
+		private async ValueTask Handle(AuthenticationMessage.AuthenticationProviderInitialized message, CancellationToken token) {
 			_startSubsystems();
-			_outputBus.Publish(message);
-			_fsm.Handle(new SystemMessage.SystemCoreReady());
+			await _outputBus.DispatchAsync(message, token);
+			await _fsm.HandleAsync(new SystemMessage.SystemCoreReady(), token);
 		}
 
-		private void Handle(AuthenticationMessage.AuthenticationProviderInitializationFailed message) {
+		private async ValueTask Handle(AuthenticationMessage.AuthenticationProviderInitializationFailed message, CancellationToken token) {
 			Log.Error("Authentication Provider Initialization Failed. Shutting Down.");
-			_fsm.Handle(new SystemMessage.BecomeShutdown(Guid.NewGuid()));
+			await _fsm.HandleAsync(new SystemMessage.BecomeShutdown(Guid.NewGuid()), token);
 		}
 
-		private void Handle(SystemMessage.SystemCoreReady message) {
+		private async ValueTask Handle(SystemMessage.SystemCoreReady message, CancellationToken token) {
 			if (_subsystemCount == 0) {
-				_outputBus.Publish(new SystemMessage.SystemReady());
+				await _outputBus.DispatchAsync(new SystemMessage.SystemReady());
 			} else {
-				_outputBus.Publish(message);
+				await _outputBus.DispatchAsync(message, token);
 			}
 		}
 
-		private void Handle(SystemMessage.SubSystemInitialized message) {
+		private async ValueTask Handle(SystemMessage.SubSystemInitialized message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] Sub System '{subSystemName}' initialized.", _nodeInfo.HttpEndPoint,
 				message.SubSystemName);
 			if (Interlocked.Decrement(ref _subSystemInitsToExpect) == 0) {
-				_outputBus.Publish(new SystemMessage.SystemReady());
+				await _outputBus.DispatchAsync(new SystemMessage.SystemReady());
 			}
 		}
 
@@ -642,80 +643,80 @@ namespace EventStore.Core.Services.VNode {
 			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 		}
 
-		private void HandleAsNonLeader(ClientMessage.ReadEvent message) {
+		private async ValueTask HandleAsNonLeader(ClientMessage.ReadEvent message, CancellationToken token) {
 			if (message.RequireLeader) {
 				if (_leader == null)
 					DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 				else
 					DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 			} else {
-				_outputBus.Publish(message);
+				await _outputBus.DispatchAsync(message, token);
 			}
 		}
 
-		private void HandleAsNonLeader(ClientMessage.ReadStreamEventsForward message) {
+		private async ValueTask HandleAsNonLeader(ClientMessage.ReadStreamEventsForward message, CancellationToken token) {
 			if (message.RequireLeader) {
 				if (_leader == null)
 					DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 				else
 					DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 			} else {
-				_outputBus.Publish(message);
+				await _outputBus.DispatchAsync(message, token);
 			}
 		}
 
-		private void HandleAsNonLeader(ClientMessage.ReadStreamEventsBackward message) {
+		private async ValueTask HandleAsNonLeader(ClientMessage.ReadStreamEventsBackward message, CancellationToken token) {
 			if (message.RequireLeader) {
 				if (_leader == null)
 					DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 				else
 					DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 			} else {
-				_outputBus.Publish(message);
+				await _outputBus.DispatchAsync(message, token);
 			}
 		}
 
-		private void HandleAsNonLeader(ClientMessage.ReadAllEventsForward message) {
+		private async ValueTask HandleAsNonLeader(ClientMessage.ReadAllEventsForward message, CancellationToken token) {
 			if (message.RequireLeader) {
 				if (_leader == null)
 					DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 				else
 					DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 			} else {
-				_outputBus.Publish(message);
+				await _outputBus.DispatchAsync(message, token);
 			}
 		}
 
-		private void HandleAsNonLeader(ClientMessage.FilteredReadAllEventsForward message) {
+		private async ValueTask HandleAsNonLeader(ClientMessage.FilteredReadAllEventsForward message, CancellationToken token) {
 			if (message.RequireLeader) {
 				if (_leader == null)
 					DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 				else
 					DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 			} else {
-				_outputBus.Publish(message);
+				await _outputBus.DispatchAsync(message, token);
 			}
 		}
 
-		private void HandleAsNonLeader(ClientMessage.ReadAllEventsBackward message) {
+		private async ValueTask HandleAsNonLeader(ClientMessage.ReadAllEventsBackward message, CancellationToken token) {
 			if (message.RequireLeader) {
 				if (_leader == null)
 					DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 				else
 					DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 			} else {
-				_outputBus.Publish(message);
+				await _outputBus.DispatchAsync(message, token);
 			}
 		}
 
-		private void HandleAsNonLeader(ClientMessage.FilteredReadAllEventsBackward message) {
+		private async ValueTask HandleAsNonLeader(ClientMessage.FilteredReadAllEventsBackward message, CancellationToken token) {
 			if (message.RequireLeader) {
 				if (_leader == null)
 					DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 				else
 					DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 			} else {
-				_outputBus.Publish(message);
+				await _outputBus.DispatchAsync(message, token);
 			}
 		}
 
@@ -775,7 +776,7 @@ namespace EventStore.Core.Services.VNode {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 		}
 
-		private void HandleAsNonLeader(ClientMessage.WriteEvents message) {
+		private async ValueTask HandleAsNonLeader(ClientMessage.WriteEvents message, CancellationToken token) {
 			if (message.RequireLeader) {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
@@ -783,10 +784,10 @@ namespace EventStore.Core.Services.VNode {
 
 			var timeoutMessage = new ClientMessage.WriteEventsCompleted(
 				message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout");
-			ForwardRequest(message, timeoutMessage);
+			await ForwardRequest(message, timeoutMessage, token);
 		}
 
-		private void HandleAsNonLeader(ClientMessage.TransactionStart message) {
+		private async ValueTask HandleAsNonLeader(ClientMessage.TransactionStart message, CancellationToken token) {
 			if (message.RequireLeader) {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
@@ -794,10 +795,10 @@ namespace EventStore.Core.Services.VNode {
 
 			var timeoutMessage = new ClientMessage.TransactionStartCompleted(
 				message.CorrelationId, -1, OperationResult.ForwardTimeout, "Forwarding timeout");
-			ForwardRequest(message, timeoutMessage);
+			await ForwardRequest(message, timeoutMessage, token);
 		}
 
-		private void HandleAsNonLeader(ClientMessage.TransactionWrite message) {
+		private async ValueTask HandleAsNonLeader(ClientMessage.TransactionWrite message, CancellationToken token) {
 			if (message.RequireLeader) {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
@@ -805,10 +806,10 @@ namespace EventStore.Core.Services.VNode {
 
 			var timeoutMessage = new ClientMessage.TransactionWriteCompleted(
 				message.CorrelationId, message.TransactionId, OperationResult.ForwardTimeout, "Forwarding timeout");
-			ForwardRequest(message, timeoutMessage);
+			await ForwardRequest(message, timeoutMessage, token);
 		}
 
-		private void HandleAsNonLeader(ClientMessage.TransactionCommit message) {
+		private async ValueTask HandleAsNonLeader(ClientMessage.TransactionCommit message, CancellationToken token) {
 			if (message.RequireLeader) {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
@@ -816,10 +817,10 @@ namespace EventStore.Core.Services.VNode {
 
 			var timeoutMessage = new ClientMessage.TransactionCommitCompleted(
 				message.CorrelationId, message.TransactionId, OperationResult.ForwardTimeout, "Forwarding timeout");
-			ForwardRequest(message, timeoutMessage);
+			await ForwardRequest(message, timeoutMessage, token);
 		}
 
-		private void HandleAsNonLeader(ClientMessage.DeleteStream message) {
+		private async ValueTask HandleAsNonLeader(ClientMessage.DeleteStream message, CancellationToken token) {
 			if (message.RequireLeader) {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
@@ -827,13 +828,13 @@ namespace EventStore.Core.Services.VNode {
 
 			var timeoutMessage = new ClientMessage.DeleteStreamCompleted(
 				message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout", -1, -1, -1);
-			ForwardRequest(message, timeoutMessage);
+			await ForwardRequest(message, timeoutMessage, token);
 		}
 
-		private void ForwardRequest(ClientMessage.WriteRequestMessage msg, Message timeoutMessage) {
+		private async ValueTask ForwardRequest(ClientMessage.WriteRequestMessage msg, Message timeoutMessage, CancellationToken token) {
 			_forwardingProxy.Register(msg.InternalCorrId, msg.CorrelationId, msg.Envelope, _forwardingTimeout,
 				timeoutMessage);
-			_outputBus.Publish(new ClientMessage.TcpForwardMessage(msg));
+			await _outputBus.DispatchAsync(new ClientMessage.TcpForwardMessage(msg), token);
 		}
 
 		private void DenyRequestBecauseNotLeader(Guid correlationId, IEnvelope envelope) {
@@ -848,7 +849,7 @@ namespace EventStore.Core.Services.VNode {
 						)));
 		}
 
-		private void HandleAsReadOnlyReplica(ClientMessage.WriteEvents message) {
+		private async ValueTask HandleAsReadOnlyReplica(ClientMessage.WriteEvents message, CancellationToken token) {
 			if (message.RequireLeader) {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
@@ -860,10 +861,10 @@ namespace EventStore.Core.Services.VNode {
 
 			var timeoutMessage = new ClientMessage.WriteEventsCompleted(
 				message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout");
-			ForwardRequest(message, timeoutMessage);
+			await ForwardRequest(message, timeoutMessage, token);
 		}
 
-		private void HandleAsReadOnlyReplica(ClientMessage.TransactionStart message) {
+		private async ValueTask HandleAsReadOnlyReplica(ClientMessage.TransactionStart message, CancellationToken token) {
 			if (message.RequireLeader) {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
@@ -874,10 +875,10 @@ namespace EventStore.Core.Services.VNode {
 			}
 			var timeoutMessage = new ClientMessage.TransactionStartCompleted(
 				message.CorrelationId, -1, OperationResult.ForwardTimeout, "Forwarding timeout");
-			ForwardRequest(message, timeoutMessage);
+			await ForwardRequest(message, timeoutMessage, token);
 		}
 
-		private void HandleAsReadOnlyReplica(ClientMessage.TransactionWrite message) {
+		private async ValueTask HandleAsReadOnlyReplica(ClientMessage.TransactionWrite message, CancellationToken token) {
 			if (message.RequireLeader) {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
@@ -889,10 +890,10 @@ namespace EventStore.Core.Services.VNode {
 
 			var timeoutMessage = new ClientMessage.TransactionWriteCompleted(
 				message.CorrelationId, message.TransactionId, OperationResult.ForwardTimeout, "Forwarding timeout");
-			ForwardRequest(message, timeoutMessage);
+			await ForwardRequest(message, timeoutMessage, token);
 		}
 
-		private void HandleAsReadOnlyReplica(ClientMessage.TransactionCommit message) {
+		private async ValueTask HandleAsReadOnlyReplica(ClientMessage.TransactionCommit message, CancellationToken token) {
 			if (message.RequireLeader) {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
@@ -904,10 +905,10 @@ namespace EventStore.Core.Services.VNode {
 
 			var timeoutMessage = new ClientMessage.TransactionCommitCompleted(
 				message.CorrelationId, message.TransactionId, OperationResult.ForwardTimeout, "Forwarding timeout");
-			ForwardRequest(message, timeoutMessage);
+			await ForwardRequest(message, timeoutMessage, token);
 		}
 
-		private void HandleAsReadOnlyReplica(ClientMessage.DeleteStream message) {
+		private async ValueTask HandleAsReadOnlyReplica(ClientMessage.DeleteStream message, CancellationToken token) {
 			if (message.RequireLeader) {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
@@ -918,7 +919,7 @@ namespace EventStore.Core.Services.VNode {
 			}
 			var timeoutMessage = new ClientMessage.DeleteStreamCompleted(
 				message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout", -1, -1, -1);
-			ForwardRequest(message, timeoutMessage);
+			await ForwardRequest(message, timeoutMessage, token);
 		}
 
 		private void DenyRequestBecauseReadOnly(Guid correlationId, IEnvelope envelope) {
@@ -938,7 +939,7 @@ namespace EventStore.Core.Services.VNode {
 				ClientMessage.NotHandled.Types.NotHandledReason.NotReady,((string) null)));
 		}
 
-		private void Handle(SystemMessage.VNodeConnectionLost message) {
+		private async ValueTask Handle(SystemMessage.VNodeConnectionLost message, CancellationToken token) {
 			if (_leader != null && _leader.Is(message.VNodeEndPoint)) // leader connection failed
 			{
 				_leaderConnectionCorrelationId = Guid.NewGuid();
@@ -948,10 +949,10 @@ namespace EventStore.Core.Services.VNode {
 				_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, _publishEnvelope, msg));
 			}
 
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void HandleAsReadOnlyReplica(SystemMessage.VNodeConnectionLost message) {
+		private async ValueTask HandleAsReadOnlyReplica(SystemMessage.VNodeConnectionLost message, CancellationToken token) {
 			if (_leader != null && _leader.Is(message.VNodeEndPoint)) // leader connection failed
 			{
 				_leaderConnectionCorrelationId = Guid.NewGuid();
@@ -961,10 +962,10 @@ namespace EventStore.Core.Services.VNode {
 				_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, _publishEnvelope, msg));
 			}
 
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void HandleAsLeader(GossipMessage.GossipUpdated message) {
+		private async ValueTask HandleAsLeader(GossipMessage.GossipUpdated message, CancellationToken token) {
 			if (_leader == null) throw new Exception("_leader == null");
 			if (message.ClusterInfo.Members.Count(x => x.IsAlive && x.State == VNodeState.Leader) > 1) {
 				Log.Debug("There are MULTIPLE LEADERS according to gossip, need to start elections. LEADER: [{leader}]",
@@ -974,10 +975,10 @@ namespace EventStore.Core.Services.VNode {
 				_mainQueue.Publish(new ElectionMessage.StartElections());
 			}
 
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void HandleAsReadOnlyReplica(GossipMessage.GossipUpdated message) {
+		private async ValueTask HandleAsReadOnlyReplica(GossipMessage.GossipUpdated message, CancellationToken token) {
 			if (_leader == null) throw new Exception("_leader == null");
 
 			var aliveLeaders = message.ClusterInfo.Members.Where(x => x.IsAlive && x.State == VNodeState.Leader);
@@ -989,13 +990,13 @@ namespace EventStore.Core.Services.VNode {
 					(noLeader ? "NO LEADER found" : "LEADER CHANGE detected") + " in READ ONLY PRE-REPLICA/READ ONLY REPLICA state. Proceeding to READ ONLY LEADERLESS STATE. CURRENT LEADER: [{leader}]",_leader);
 				_stateCorrelationId = Guid.NewGuid();
 				_leaderConnectionCorrelationId = Guid.NewGuid();
-				_fsm.Handle(new SystemMessage.BecomeReadOnlyLeaderless(_stateCorrelationId));
+				await _fsm.HandleAsync(new SystemMessage.BecomeReadOnlyLeaderless(_stateCorrelationId), token);
 			}
 
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void HandleAsReadOnlyLeaderLess(GossipMessage.GossipUpdated message) {
+		private async ValueTask HandleAsReadOnlyLeaderLess(GossipMessage.GossipUpdated message, CancellationToken token) {
 			if (_leader != null)
 				return;
 
@@ -1006,17 +1007,17 @@ namespace EventStore.Core.Services.VNode {
 				Log.Information("LEADER found in READ ONLY LEADERLESS state. LEADER: [{leader}]. Proceeding to READ ONLY PRE-REPLICA state.", _leader);
 				_stateCorrelationId = Guid.NewGuid();
 				_leaderConnectionCorrelationId = Guid.NewGuid();
-				_fsm.Handle(new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader));
+				await _fsm.HandleAsync(new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader), token);
 			} else {
 				Log.Debug(
 					"{leadersFound} found in READ ONLY LEADERLESS state, making further attempts.",
 					(leaderCount == 0 ? "NO LEADER" : "MULTIPLE LEADERS"));
 			}
 
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void HandleAsNonLeader(GossipMessage.GossipUpdated message) {
+		private async ValueTask HandleAsNonLeader(GossipMessage.GossipUpdated message, CancellationToken token) {
 			if (_leader == null) throw new Exception("_leader == null");
 			var leader = message.ClusterInfo.Members.FirstOrDefault(x => x.InstanceId == _leader.InstanceId);
 			if (leader == null || !leader.IsAlive) {
@@ -1030,10 +1031,10 @@ namespace EventStore.Core.Services.VNode {
 					_leader);
 				_mainQueue.Publish(new ElectionMessage.StartElections());
 			}
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void HandleAsDiscoverLeader(GossipMessage.GossipUpdated message) {
+		private async ValueTask HandleAsDiscoverLeader(GossipMessage.GossipUpdated message, CancellationToken token) {
 			if (_leader != null)
 				return;
 
@@ -1045,79 +1046,79 @@ namespace EventStore.Core.Services.VNode {
 				_mainQueue.Publish(new LeaderDiscoveryMessage.LeaderFound(_leader));
 				_stateCorrelationId = Guid.NewGuid();
 				_leaderConnectionCorrelationId = Guid.NewGuid();
-				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader));
+				await _fsm.HandleAsync(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader), token);
 			} else {
 				Log.Debug(
 					"{leadersFound} found during LEADER DISCOVERY stage, making further attempts.",
 					(leaderCount == 0 ? "NO LEADER" : "MULTIPLE LEADERS"));
 			}
 
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void HandleAsDiscoverLeader(LeaderDiscoveryMessage.DiscoveryTimeout _) {
+		private async ValueTask HandleAsDiscoverLeader(LeaderDiscoveryMessage.DiscoveryTimeout _, CancellationToken token) {
 			if (_leader != null)
 				return;
 			Log.Information("LEADER DISCOVERY timed out. Proceeding to UNKNOWN state.");
-			_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+			await _fsm.HandleAsync(new SystemMessage.BecomeUnknown(Guid.NewGuid()), token);
 		}
 
-		private void Handle(SystemMessage.NoQuorumMessage message) {
+		private async ValueTask Handle(SystemMessage.NoQuorumMessage message, CancellationToken token) {
 			Log.Information("=== NO QUORUM EMERGED WITHIN TIMEOUT... RETIRING...");
-			_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+			await _fsm.HandleAsync(new SystemMessage.BecomeUnknown(Guid.NewGuid()), token);
 		}
 
-		private void Handle(SystemMessage.WaitForChaserToCatchUp message) {
+		private async ValueTask Handle(SystemMessage.WaitForChaserToCatchUp message, CancellationToken token) {
 			if (message.CorrelationId != _stateCorrelationId)
 				return;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void HandleAsPreLeader(SystemMessage.ChaserCaughtUp message) {
+		private async ValueTask HandleAsPreLeader(SystemMessage.ChaserCaughtUp message, CancellationToken token) {
 			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void HandleAsPreReplica(SystemMessage.ChaserCaughtUp message) {
+		private async ValueTask HandleAsPreReplica(SystemMessage.ChaserCaughtUp message, CancellationToken token) {
 			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
-			_outputBus.Publish(message);
-			_fsm.Handle(
-				new ReplicationMessage.SubscribeToLeader(_stateCorrelationId, _leader.InstanceId, Guid.NewGuid()));
+			await _outputBus.DispatchAsync(message, token);
+			await _fsm.HandleAsync(
+				new ReplicationMessage.SubscribeToLeader(_stateCorrelationId, _leader.InstanceId, Guid.NewGuid()), token);
 		}
 
-		private void Handle(ReplicationMessage.ReconnectToLeader message) {
+		private async ValueTask Handle(ReplicationMessage.ReconnectToLeader message, CancellationToken token) {
 			if (_leader.InstanceId != message.Leader.InstanceId || _leaderConnectionCorrelationId != message.ConnectionCorrelationId)
 				return;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Handle(ReplicationMessage.LeaderConnectionFailed message) {
+		private async ValueTask Handle(ReplicationMessage.LeaderConnectionFailed message, CancellationToken token) {
 			if (_leader.InstanceId != message.Leader.InstanceId || _leaderConnectionCorrelationId != message.LeaderConnectionCorrelationId)
 				return;
 			_leaderConnectionCorrelationId = Guid.NewGuid();
 			var msg = new ReplicationMessage.ReconnectToLeader(_leaderConnectionCorrelationId, message.Leader);
 			// Attempt the connection again after a timeout
-			_outputBus.Publish(TimerMessage.Schedule.Create(LeaderSubscriptionTimeout, _publishEnvelope, msg));
+			await _outputBus.DispatchAsync(TimerMessage.Schedule.Create(LeaderSubscriptionTimeout, _publishEnvelope, msg), token);
 		}
 
-		private void Handle(ReplicationMessage.SubscribeToLeader message) {
+		private async ValueTask Handle(ReplicationMessage.SubscribeToLeader message, CancellationToken token) {
 			if (message.LeaderId != _leader.InstanceId || _stateCorrelationId != message.StateCorrelationId)
 				return;
 			_subscriptionId = message.SubscriptionId;
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 
 			var msg = new ReplicationMessage.SubscribeToLeader(_stateCorrelationId, _leader.InstanceId, Guid.NewGuid());
 			_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderSubscriptionTimeout, _publishEnvelope, msg));
 		}
 
-		private void Handle(ReplicationMessage.ReplicaSubscriptionRetry message) {
+		private async ValueTask Handle(ReplicationMessage.ReplicaSubscriptionRetry message, CancellationToken token) {
 			if (IsLegitimateReplicationMessage(message)) {
-				_outputBus.Publish(message);
+				await _outputBus.DispatchAsync(message, token);
 
 				var msg = new ReplicationMessage.SubscribeToLeader(_stateCorrelationId, _leader.InstanceId,
 					Guid.NewGuid());
@@ -1125,23 +1126,23 @@ namespace EventStore.Core.Services.VNode {
 			}
 		}
 
-		private void Handle(ReplicationMessage.ReplicaSubscribed message) {
+		private async ValueTask Handle(ReplicationMessage.ReplicaSubscribed message, CancellationToken token) {
 			if (IsLegitimateReplicationMessage(message)) {
-				_outputBus.Publish(message);
+				await _outputBus.DispatchAsync(message, token);
 				if (_nodeInfo.IsReadOnlyReplica) {
-					_fsm.Handle(new SystemMessage.BecomeReadOnlyReplica(_stateCorrelationId, _leader));
+					await _fsm.HandleAsync(new SystemMessage.BecomeReadOnlyReplica(_stateCorrelationId, _leader), token);
 				} else {
-					_fsm.Handle(new SystemMessage.BecomeCatchingUp(_stateCorrelationId, _leader));
+					await _fsm.HandleAsync(new SystemMessage.BecomeCatchingUp(_stateCorrelationId, _leader), token);
 				}
 			}
 		}
 
-		private void ForwardReplicationMessage<T>(T message) where T : Message, ReplicationMessage.IReplicationMessage {
+		private async ValueTask ForwardReplicationMessage<T>(T message, CancellationToken token) where T : Message, ReplicationMessage.IReplicationMessage {
 			if (IsLegitimateReplicationMessage(message))
-				_outputBus.Publish(message);
+				await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Handle(ReplicationMessage.FollowerAssignment message) {
+		private async ValueTask Handle(ReplicationMessage.FollowerAssignment message, CancellationToken token) {
 			if (IsLegitimateReplicationMessage(message)) {
 				Log.Information(
 					"========== [{httpEndPoint}] FOLLOWER ASSIGNMENT RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}].",
@@ -1149,12 +1150,12 @@ namespace EventStore.Core.Services.VNode {
 					_leader.InternalTcpEndPoint == null ? "n/a" : _leader.InternalTcpEndPoint.ToString(),
 					_leader.InternalSecureTcpEndPoint == null ? "n/a" : _leader.InternalSecureTcpEndPoint.ToString(),
 					message.LeaderId);
-				_outputBus.Publish(message);
-				_fsm.Handle(new SystemMessage.BecomeFollower(_stateCorrelationId, _leader));
+				await _outputBus.DispatchAsync(message, token);
+				await _fsm.HandleAsync(new SystemMessage.BecomeFollower(_stateCorrelationId, _leader), token);
 			}
 		}
 
-		private void Handle(ReplicationMessage.CloneAssignment message) {
+		private async ValueTask Handle(ReplicationMessage.CloneAssignment message, CancellationToken token) {
 			if (IsLegitimateReplicationMessage(message)) {
 				Log.Information(
 					"========== [{httpEndPoint}] CLONE ASSIGNMENT RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}].",
@@ -1162,12 +1163,12 @@ namespace EventStore.Core.Services.VNode {
 					_leader.InternalTcpEndPoint == null ? "n/a" : _leader.InternalTcpEndPoint.ToString(),
 					_leader.InternalSecureTcpEndPoint == null ? "n/a" : _leader.InternalSecureTcpEndPoint.ToString(),
 					message.LeaderId);
-				_outputBus.Publish(message);
-				_fsm.Handle(new SystemMessage.BecomeClone(_stateCorrelationId, _leader));
+				await _outputBus.DispatchAsync(message, token);
+				await _fsm.HandleAsync(new SystemMessage.BecomeClone(_stateCorrelationId, _leader), token);
 			}
 		}
 
-		private void Handle(ReplicationMessage.DropSubscription message) {
+		private async ValueTask Handle(ReplicationMessage.DropSubscription message, CancellationToken token) {
 			if (IsLegitimateReplicationMessage(message)) {
 				Log.Information(
 					"========== [{httpEndPoint}] DROP SUBSCRIPTION REQUEST RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}]. THIS MEANS THAT THERE IS A SURPLUS OF NODES IN THE CLUSTER, SHUTTING DOWN.",
@@ -1175,7 +1176,7 @@ namespace EventStore.Core.Services.VNode {
 					_leader.InternalTcpEndPoint == null ? "n/a" : _leader.InternalTcpEndPoint.ToString(),
 					_leader.InternalSecureTcpEndPoint == null ? "n/a" : _leader.InternalSecureTcpEndPoint.ToString(),
 					message.LeaderId);
-				_fsm.Handle(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
+				await _fsm.HandleAsync(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true), token);
 			}
 		}
 
@@ -1203,38 +1204,38 @@ namespace EventStore.Core.Services.VNode {
 			return true;
 		}
 
-		private void Handle(ClientMessage.RequestShutdown message) {
-			_outputBus.Publish(message);
-			_fsm.Handle(
-				new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), message.ExitProcess, message.ShutdownHttp));
+		private async ValueTask Handle(ClientMessage.RequestShutdown message, CancellationToken token) {
+			await _outputBus.DispatchAsync(message, token);
+			await _fsm.HandleAsync(
+				new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), message.ExitProcess, message.ShutdownHttp), token);
 		}
 
-		private void Handle(SystemMessage.ServiceShutdown message) {
+		private async ValueTask Handle(SystemMessage.ServiceShutdown message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] Service '{service}' has shut down.", _nodeInfo.HttpEndPoint,
 				message.ServiceName);
 
 			_serviceShutdownsToExpect -= 1;
 			if (_serviceShutdownsToExpect == 0) {
 				Log.Information("========== [{httpEndPoint}] All Services Shutdown.", _nodeInfo.HttpEndPoint);
-				Shutdown();
+				await Shutdown(token);
 			}
 
-			_outputBus.Publish(message);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Handle(SystemMessage.ShutdownTimeout message) {
+		private async ValueTask Handle(SystemMessage.ShutdownTimeout message, CancellationToken token) {
 			Debug.Assert(State == VNodeState.ShuttingDown);
 
 			Log.Error("========== [{httpEndPoint}] Shutdown Timeout.", _nodeInfo.HttpEndPoint);
-			Shutdown();
-			_outputBus.Publish(message);
+			await Shutdown(token);
+			await _outputBus.DispatchAsync(message, token);
 		}
 
-		private void Shutdown() {
+		private async ValueTask Shutdown(CancellationToken token) {
 			Debug.Assert(State == VNodeState.ShuttingDown);
 
 			_db.Close();
-			_fsm.Handle(new SystemMessage.BecomeShutdown(_stateCorrelationId));
+			await _fsm.HandleAsync(new SystemMessage.BecomeShutdown(_stateCorrelationId), token);
 		}
 	}
 }

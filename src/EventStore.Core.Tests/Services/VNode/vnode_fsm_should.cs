@@ -1,4 +1,5 @@
-﻿using DotNext.Runtime;
+﻿using System.Threading.Tasks;
+using DotNext.Runtime;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.VNode;
@@ -20,19 +21,19 @@ namespace EventStore.Core.Tests.Services.VNode {
 	[TestFixture]
 	public class vnode_fsm_should {
 		[Test]
-		public void allow_ignoring_messages_by_common_ancestor() {
+		public async Task allow_ignoring_messages_by_common_ancestor() {
 			var fsm = new VNodeFSMBuilder(new ValueReference<VNodeState>(VNodeState.Leader))
 				.InAnyState()
 				.When<P>().Ignore()
 				.WhenOther().Do(x => Assert.Fail("{0} slipped through", x.GetType().Name))
 				.Build();
 
-			fsm.Handle(new A());
-			fsm.Handle(new B());
+			await fsm.HandleAsync(new A());
+			await fsm.HandleAsync(new B());
 		}
 
 		[Test]
-		public void handle_specific_message_even_if_base_message_is_ignored() {
+		public async Task handle_specific_message_even_if_base_message_is_ignored() {
 			bool aHandled = false;
 			var fsm = new VNodeFSMBuilder(new ValueReference<VNodeState>(VNodeState.Leader))
 				.InAnyState()
@@ -41,14 +42,14 @@ namespace EventStore.Core.Tests.Services.VNode {
 				.WhenOther().Do(x => Assert.Fail("{0} slipped through", x.GetType().Name))
 				.Build();
 
-			fsm.Handle(new A());
-			fsm.Handle(new B());
+			await fsm.HandleAsync(new A());
+			await fsm.HandleAsync(new B());
 
 			Assert.IsTrue(aHandled);
 		}
 
 		[Test]
-		public void ignore_base_handler_if_derived_message_published() {
+		public async Task ignore_base_handler_if_derived_message_published() {
 			var fsm = new VNodeFSMBuilder(new ValueReference<VNodeState>(VNodeState.Leader))
 				.InAnyState()
 				.When<P>()
@@ -59,11 +60,11 @@ namespace EventStore.Core.Tests.Services.VNode {
 				.Ignore()
 				.Build();
 
-			fsm.Handle(new A());
+			await fsm.HandleAsync(new A());
 		}
 
 		[Test]
-		public void ignore_base_handler_if_derived_message_published_diff_reg_order() {
+		public async Task ignore_base_handler_if_derived_message_published_diff_reg_order() {
 			var fsm = new VNodeFSMBuilder(new ValueReference<VNodeState>(VNodeState.Leader))
 				.InState(VNodeState.Leader)
 				.When<A>()
@@ -74,7 +75,7 @@ namespace EventStore.Core.Tests.Services.VNode {
 				.Do(x => Assert.Fail("shouldn't call this"))
 				.Build();
 
-			fsm.Handle(new A());
+			await fsm.HandleAsync(new A());
 		}
 	}
 }

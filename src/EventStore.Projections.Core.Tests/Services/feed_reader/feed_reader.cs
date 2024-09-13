@@ -29,7 +29,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 
 			[SetUp]
 			public void SetUp() {
-				_bus = new InMemoryBus("test");
+				_bus = new SynchronousScheduler();
 				_subscriptionDispatcher = new ReaderSubscriptionDispatcher(_bus);
 				_testQueryDefinition = new QuerySourcesDefinition {AllStreams = true, AllEvents = true};
 			}
@@ -109,7 +109,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 		}
 
 		public abstract class FeedReaderSpecification {
-			protected InMemoryBus _bus;
+			protected SynchronousScheduler _bus;
 
 			protected ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
@@ -119,7 +119,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 
 			[SetUp]
 			public void SetUp() {
-				_bus = new InMemoryBus("test");
+				_bus = new();
 				_consumer = new TestHandler<Message>();
 				_bus.Subscribe(_consumer);
 				_subscriptionDispatcher = new ReaderSubscriptionDispatcher(_bus);

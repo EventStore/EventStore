@@ -6,12 +6,12 @@ using EventStore.Core.Tests.Fakes;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
 	public class HttpBootstrap {
-		public static void Subscribe(IBus bus, KestrelHttpService service) {
+		public static void Subscribe(ISubscriber bus, KestrelHttpService service) {
 			bus.Subscribe<SystemMessage.SystemInit>(service);
 			bus.Subscribe<SystemMessage.BecomeShuttingDown>(service);
 		}
 
-		public static void Unsubscribe(IBus bus, KestrelHttpService service) {
+		public static void Unsubscribe(ISubscriber bus, KestrelHttpService service) {
 			bus.Unsubscribe<SystemMessage.SystemInit>(service);
 			bus.Unsubscribe<SystemMessage.BecomeShuttingDown>(service);
 		}

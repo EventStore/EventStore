@@ -8,7 +8,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.RequestManagement {
 	[TestFixture]
 	public class when_creating_stream_request_manager {
-		protected static readonly IPublisher Publisher = new InMemoryBus("test");
+		protected static readonly IPublisher Publisher = new SynchronousScheduler();
 		protected static readonly TimeSpan CommitTimeout = TimeSpan.FromMinutes(5);
 		protected static readonly IEnvelope Envelope = new NoopEnvelope();
 		protected static readonly Guid InternalCorrId = Guid.NewGuid();
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 					ExpectedVersion,
 					new CommitSource()));
 		}
-		
+
 		[Test]
 		public void empty_commit_source_throws_null_argument_exception() {
 			Assert.Throws<ArgumentNullException>(() =>

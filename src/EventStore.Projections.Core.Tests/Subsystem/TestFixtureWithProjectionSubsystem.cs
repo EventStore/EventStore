@@ -31,10 +31,10 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 		protected Task Started { get; private set; }
 
 		static readonly IConfiguration EmptyConfiguration = new ConfigurationBuilder().AddInMemoryCollection().Build();
-		
+
 		private StandardComponents CreateStandardComponents() {
 			var dbConfig = TFChunkHelper.CreateDbConfig(Path.GetTempPath(), 0);
-			var mainQueue = QueuedHandler.CreateQueuedHandler
+			var mainQueue = new QueuedHandlerThreadPool
 			(new AdHocHandler<Message>(msg => {
 				/* Ignore messages */
 			}), "MainQueue", new QueueStatsManager(), new());

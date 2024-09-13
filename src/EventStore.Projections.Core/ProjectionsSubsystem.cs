@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Threading.Tasks;
+using DotNext;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -127,13 +128,13 @@ namespace EventStore.Projections.Core {
 		public void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {
 			var standardComponents = builder.ApplicationServices.GetRequiredService<StandardComponents>();
 
-			_leaderInputQueue = QueuedHandler.CreateQueuedHandler(
+			_leaderInputQueue = new QueuedHandlerThreadPool(
 				_leaderInputBus,
 				"Projections Leader",
 				standardComponents.QueueStatsManager,
 				standardComponents.QueueTrackers
 			);
-			_leaderOutputQueue = QueuedHandler.CreateQueuedHandler(
+			_leaderOutputQueue = new QueuedHandlerThreadPool(
 				_leaderOutputBus,
 				"Projections Leader",
 				standardComponents.QueueStatsManager,
@@ -160,7 +161,7 @@ namespace EventStore.Projections.Core {
 
 			CreateAwakerService(standardComponents);
 			_coreWorkers = ProjectionCoreWorkersNode.CreateCoreWorkers(standardComponents, projectionsStandardComponents);
-			_queueMap = _coreWorkers.ToDictionary(v => v.Key, v => (IPublisher)v.Value.CoreInputQueue);
+			_queueMap = _coreWorkers.ToDictionary(v => v.Key, v => v.Value.CoreInputQueue.As<IPublisher>());
 
 			ConfigureProjectionMetrics(standardComponents.ProjectionStats);
 

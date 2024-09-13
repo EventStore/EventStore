@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		public readonly FakePublisher Publisher;
 		public readonly List<Message> InputMessages;
 
-		private readonly InMemoryBus _bus;
+		private readonly SynchronousScheduler _bus;
 
 		protected readonly ClusterSettings InitialClusterSettings;
 		protected readonly ClusterInfo InitialClusterInfo;
@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		public ElectionsServiceUnit(ClusterSettings clusterSettings) {
 			Publisher = new FakePublisher();
 
-			_bus = new InMemoryBus(GetType().Name);
+			_bus = new(GetType().Name);
 			var memberInfo = MemberInfo.Initial(clusterSettings.Self.NodeInfo.InstanceId, InitialDate,
 				VNodeState.Unknown, true,
 				clusterSettings.Self.NodeInfo.InternalTcp,

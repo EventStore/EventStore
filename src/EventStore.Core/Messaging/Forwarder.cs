@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using EventStore.Core.Bus;
 
 namespace EventStore.Core.Messaging {
@@ -18,7 +18,7 @@ namespace EventStore.Core.Messaging {
 		/// <summary>
 		/// Creates a message handler publishing all incoming messages onto one of the destinations.  
 		/// </summary>
-		public static IHandle<T> CreateBalancing<T>(params IPublisher[] to) where T : Message {
+		public static IHandle<T> CreateBalancing<T>(IReadOnlyList<IPublisher> to) where T : Message {
 			return new Balancing<T>(to);
 		}
 
@@ -50,16 +50,16 @@ namespace EventStore.Core.Messaging {
 		}
 
 		class Balancing<T> : IHandle<T> where T : Message {
-			private readonly IPublisher[] _to;
+			private readonly IReadOnlyList<IPublisher> _to;
 			private int _last;
 
-			public Balancing(IPublisher[] to) {
+			public Balancing(IReadOnlyList<IPublisher> to) {
 				_to = to;
 			}
 
 			public void Handle(T message) {
 				var last = _last;
-				if (last == _to.Length - 1)
+				if (last == _to.Count - 1)
 					_last = 0;
 				else
 					_last = last + 1;

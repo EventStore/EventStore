@@ -473,6 +473,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				new TcpMessage.Heartbeat(receiveProgressIndicator, sendProgressIndicator)));
 		}
 
+		// Same health warnings as SendToThisEnvelope
 		private class SendToWeakThisEnvelope : IEnvelope {
 			private readonly WeakReference _receiver;
 
@@ -481,9 +482,11 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 
 			public void ReplyWith<T>(T message) where T : Message {
-				var x = _receiver.Target as IHandle<T>;
-				if (x != null)
-					x.Handle(message);
+				if (_receiver.Target is IHandle<T> handle) {
+					handle.Handle(message);
+				} else if (_receiver is IAsyncHandle<T>) {
+					throw new Exception($"SendToWeakThisEnvelope does not support asynchronous receivers. Receiver: {_receiver}");
+				}
 			}
 		}
 

@@ -17,7 +17,7 @@ public class InternalAuthenticationProviderFactory : IAuthenticationProviderFact
 	public InternalAuthenticationProviderFactory(AuthenticationProviderFactoryComponents components, ClusterVNodeOptions.DefaultUserOptions defaultUserOptions) {
 		_components = components;
 		_passwordHashAlgorithm = new();
-		_dispatcher = new(components.MainQueue, new PublishEnvelope(components.WorkersQueue, crossThread: true));
+		_dispatcher = new(components.MainQueue, new PublishEnvelope(components.WorkersQueue));
 		_defaultUserOptions = defaultUserOptions;
 
 		foreach (var bus in components.WorkerBuses) {
@@ -32,24 +32,24 @@ public class InternalAuthenticationProviderFactory : IAuthenticationProviderFact
 		}
 
 		var usersController = new UsersController(
-			components.HttpSendService, 
-			components.MainQueue, 
+			components.HttpSendService,
+			components.MainQueue,
 			components.WorkersQueue
 		);
-			
+
 		components.HttpService.SetupController(usersController);
 	}
 
 	public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts) {
 		var provider = new InternalAuthenticationProvider(
-			subscriber: _components.MainBus, 
+			subscriber: _components.MainBus,
 			ioDispatcher: _dispatcher,
 			passwordHashAlgorithm: _passwordHashAlgorithm,
-			cacheSize: ESConsts.CachedPrincipalCount, 
-			logFailedAuthenticationAttempts: logFailedAuthenticationAttempts, 
+			cacheSize: ESConsts.CachedPrincipalCount,
+			logFailedAuthenticationAttempts: logFailedAuthenticationAttempts,
 			defaultUserOptions: _defaultUserOptions
 		);
-			
+
 		var passwordChangeNotificationReader = new PasswordChangeNotificationReader(_components.MainQueue, _dispatcher);
 		_components.MainBus.Subscribe<SystemMessage.SystemStart>(passwordChangeNotificationReader);
 		_components.MainBus.Subscribe<SystemMessage.BecomeShutdown>(passwordChangeNotificationReader);
