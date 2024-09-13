@@ -49,6 +49,30 @@ namespace EventStore.Core.XUnit.Tests.Metrics {
 		}
 
 		[Fact]
+		public void unspecified_label_yields_no_op() {
+			var sut = GenSut(
+				new Conf.LabelMappingCase {
+					Regex = "MainQueue",
+					// no Label
+				});
+
+			var tracker = sut.GetTrackerForQueue("MainQueue");
+			Assert.Equal("NoOp", tracker.Name);
+		}
+
+		[Fact]
+		public void unspecified_regex_does_not_match() {
+			var sut = GenSut(
+				new Conf.LabelMappingCase {
+					// no Regex
+					Label = "MainQueue",
+				});
+
+			var tracker = sut.GetTrackerForQueue("MainQueue");
+			Assert.Equal("NoOp", tracker.Name);
+		}
+
+		[Fact]
 		public void patterns_applied_in_order() {
 			var sut = GenSut(
 				new Conf.LabelMappingCase {
