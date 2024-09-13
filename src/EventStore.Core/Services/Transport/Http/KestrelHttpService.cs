@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Http {
 	public class KestrelHttpService : IHttpService,
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
-		private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
+
 		private static readonly ILogger Log = Serilog.Log.ForContext<KestrelHttpService>();
 
 		public ServiceAccessibility Accessibility => _accessibility;
@@ -101,6 +101,7 @@ namespace EventStore.Core.Services.Transport.Http {
 		public static void CreateAndSubscribePipeline(ISubscriber bus) {
 			var requestProcessor = new AuthenticatedHttpRequestProcessor();
 			bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
+			bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
 		}
 	}
 }

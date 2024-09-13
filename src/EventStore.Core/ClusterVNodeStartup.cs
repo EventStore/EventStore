@@ -114,7 +114,8 @@ namespace EventStore.Core {
 			_configureNode(app);
 
 			var internalDispatcher = new InternalDispatcherEndpoint(_mainQueue, _httpMessageHandler);
-			_mainBus.Subscribe(internalDispatcher);
+			_mainBus.Subscribe<SystemMessage.SystemInit>(internalDispatcher);
+			_mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(internalDispatcher);
 
 			app = app.Map("/health", _statusCheck.Configure)
 				// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns

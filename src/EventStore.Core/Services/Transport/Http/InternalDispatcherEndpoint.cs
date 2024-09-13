@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -13,25 +11,34 @@ using Serilog;
 
 namespace EventStore.Core.Services.Transport.Http
 {
-	public class InternalDispatcherEndpoint : IHandle<HttpMessage.PurgeTimedOutRequests> {
+	public class InternalDispatcherEndpoint :
+		IHandle<SystemMessage.SystemInit>,
+		IHandle<HttpMessage.PurgeTimedOutRequests> {
+
 		private static readonly ILogger Log = Serilog.Log.ForContext<AuthorizationMiddleware>();
-		private readonly IPublisher _inputBus;
+		private readonly IPublisher _output;
 		private readonly MultiQueuedHandler _requestsMultiHandler;
 		private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
-		private readonly IEnvelope _publishEnvelope;
-		public InternalDispatcherEndpoint(IPublisher inputBus, MultiQueuedHandler requestsMultiHandler) {
+		private readonly Message _schedulePurge;
 
-			_inputBus = inputBus;
+		public InternalDispatcherEndpoint(IPublisher output, MultiQueuedHandler requestsMultiHandler) {
+			_output = output;
 			_requestsMultiHandler = requestsMultiHandler;
-			_publishEnvelope = new PublishEnvelope(inputBus);
-		}
-		public void Handle(HttpMessage.PurgeTimedOutRequests message) {
-			
-			_requestsMultiHandler.PublishToAll(message);
 
-			_inputBus.Publish(
-				TimerMessage.Schedule.Create(
-					UpdateInterval, _publishEnvelope, message));
+			_schedulePurge = TimerMessage.Schedule.Create(
+				UpdateInterval,
+				new PublishEnvelope(output),
+				new HttpMessage.PurgeTimedOutRequests());
+
+		}
+
+		public void Handle(SystemMessage.SystemInit _) {
+			_output.Publish(_schedulePurge);
+		}
+
+		public void Handle(HttpMessage.PurgeTimedOutRequests message) {
+			_requestsMultiHandler.PublishToAll(message);
+			_output.Publish(_schedulePurge);
 		}
 
 		public Task InvokeAsync(HttpContext context) {
