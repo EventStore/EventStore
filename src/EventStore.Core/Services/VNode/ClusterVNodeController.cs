@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.VNode {
 		protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeController>();
 	}
 
-	public class ClusterVNodeController<TStreamId> : ClusterVNodeController, IAsyncHandle<Message> {
+	public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController {
 		public static readonly TimeSpan ShutdownTimeout = TimeSpan.FromSeconds(5);
 		public static readonly TimeSpan LeaderReconnectionDelay = TimeSpan.FromMilliseconds(500);
 		private static readonly TimeSpan LeaderSubscriptionRetryDelay = TimeSpan.FromMilliseconds(500);
@@ -48,8 +48,8 @@ namespace EventStore.Core.Services.VNode {
 		private Guid _subscriptionId = Guid.Empty;
 		private readonly int _clusterSize;
 
-		private IQueuedHandler _mainQueue;
-		private IEnvelope _publishEnvelope;
+		private readonly IQueuedHandler _mainQueue;
+		private readonly IEnvelope _publishEnvelope;
 		private readonly VNodeFSM _fsm;
 
 		private readonly MessageForwardingProxy _forwardingProxy;
@@ -72,18 +72,20 @@ namespace EventStore.Core.Services.VNode {
 
 		private bool _exitProcessOnShutdown;
 
-		public ClusterVNodeController(InMemoryBus outputBus, VNodeInfo nodeInfo, TFChunkDb db,
+		public ClusterVNodeController(
+			QueueStatsManager statsManager,
+			Trackers trackers,
+			VNodeInfo nodeInfo,
+			TFChunkDb db,
 			INodeStatusTracker statusTracker,
 			ClusterVNodeOptions options, ClusterVNode<TStreamId> node, MessageForwardingProxy forwardingProxy,
 			Action startSubsystems) {
-			Ensure.NotNull(outputBus, "outputBus");
 			Ensure.NotNull(nodeInfo, "nodeInfo");
 			Ensure.NotNull(db, "dbConfig");
 			Ensure.NotNull(node, "node");
 			Ensure.NotNull(forwardingProxy, "forwardingProxy");
 			Ensure.NotNull(startSubsystems, "startSubsystems");
 
-			_outputBus = outputBus;
 			_nodeInfo = nodeInfo;
 			_db = db;
 			_node = node;
@@ -105,15 +107,15 @@ namespace EventStore.Core.Services.VNode {
 			_forwardingTimeout = TimeSpan.FromMilliseconds(options.Database.PrepareTimeoutMs +
 			                                               options.Database.CommitTimeoutMs + 300);
 
+			_outputBus = new InMemoryBus("MainBus");
 			_fsm = CreateFSM();
+			_mainQueue = new QueuedHandlerThreadPool(_fsm, "MainQueue", statsManager, trackers.QueueTrackers);
+			_publishEnvelope = new PublishEnvelope(_mainQueue);
 		}
 
-		public void SetMainQueue(IQueuedHandler mainQueue) {
-			Ensure.NotNull(mainQueue, "mainQueue");
+		public IPublisher MainQueue => _mainQueue;
 
-			_mainQueue = mainQueue;
-			_publishEnvelope = new PublishEnvelope(mainQueue);
-		}
+		public ISubscriber MainBus => _outputBus;
 
 		private VNodeFSM CreateFSM() {
 			var stm = new VNodeFSMBuilder(new(this, in _state))
@@ -348,9 +350,7 @@ namespace EventStore.Core.Services.VNode {
 			return stm;
 		}
 
-		ValueTask IAsyncHandle<Message>.HandleAsync(Message message, CancellationToken token) {
-			return _fsm.HandleAsync(message, token);
-		}
+		public Task Start() => _mainQueue.Start();
 
 		private ValueTask Handle(SystemMessage.SystemInit message, CancellationToken token) {
 			Log.Information("========== [{httpEndPoint}] SYSTEM INIT...", _nodeInfo.HttpEndPoint);

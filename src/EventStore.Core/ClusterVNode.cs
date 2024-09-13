@@ -111,7 +111,7 @@ namespace EventStore.Core {
 
 		abstract public TFChunkDb Db { get; }
 		abstract public GossipAdvertiseInfo GossipAdvertiseInfo { get; }
-		abstract public IQueuedHandler MainQueue { get; }
+		abstract public IPublisher MainQueue { get; }
 		abstract public ISubscriber MainBus { get; }
 		abstract public IReadIndex ReadIndex { get; }
 		abstract public QueueStatsManager QueueStatsManager { get; }
@@ -148,13 +148,9 @@ namespace EventStore.Core {
 
 		public override GossipAdvertiseInfo GossipAdvertiseInfo { get; }
 
-		public override IQueuedHandler MainQueue {
-			get { return _mainQueue; }
-		}
+		public override IPublisher MainQueue => _mainQueue;
 
-		public override ISubscriber MainBus {
-			get { return _mainBus; }
-		}
+		public override ISubscriber MainBus => _mainBus;
 
 		public override IHttpService HttpService {
 			get { return _httpService; }
@@ -188,8 +184,8 @@ namespace EventStore.Core {
 
 		public IEnumerable<ISubsystem> Subsystems => _subsystems;
 
-		private readonly IQueuedHandler _mainQueue;
-		private readonly InMemoryBus _mainBus;
+		private readonly IPublisher _mainQueue;
+		private readonly ISubscriber _mainBus;
 
 		private readonly ClusterVNodeController<TStreamId> _controller;
 		private readonly TimerService _timerService;
@@ -483,7 +479,6 @@ namespace EventStore.Core {
 			var isSingleNode = options.Cluster.ClusterSize == 1;
 			_disableHttps = options.Application.Insecure;
 			_enableUnixSocket = options.Interface.EnableUnixSocket;
-			_mainBus = new InMemoryBus("MainBus");
 			_queueStatsManager = new QueueStatsManager();
 
 			_certificateSelector = () => _certificateProvider?.Certificate;
@@ -529,15 +524,13 @@ namespace EventStore.Core {
 
 			_controller =
 				new ClusterVNodeController<TStreamId>(
-					_mainBus, NodeInfo, Db,
+					_queueStatsManager, trackers, NodeInfo, Db,
 					trackers.NodeStatusTracker,
 					options, this, forwardingProxy,
 					startSubsystems: StartSubsystems);
 
-			_mainQueue = new QueuedHandlerThreadPool(_controller, "MainQueue", _queueStatsManager,
-				trackers.QueueTrackers);
-
-			_controller.SetMainQueue(_mainQueue);
+			_mainQueue = _controller.MainQueue;
+			_mainBus = _controller.MainBus;
 
 			var uriScheme = options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps;
 			var clusterDns = options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null;
@@ -1625,7 +1618,7 @@ namespace EventStore.Core {
 				AddTasks(storageWriter.Tasks);
 
 				AddTasks(_workersHandler.Start());
-				AddTask(_mainQueue.Start());
+				AddTask(_controller.Start());
 				AddTask(monitoringQueue.Start());
 				AddTask(subscrQueue.Start());
 				AddTask(perSubscrQueue.Start());
