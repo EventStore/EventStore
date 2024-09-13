@@ -76,6 +76,7 @@ using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 using TimeoutControl = DotNext.Threading.Timeout;
+using EventStore.Core.Services.Archiver;
 
 namespace EventStore.Core;
 public abstract class ClusterVNode {
@@ -990,6 +991,9 @@ public class ClusterVNode<TStreamId> :
 		//default authentication provider
 		httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
 
+		if (options.Cluster.Archiver) {
+			modifiedOptions = modifiedOptions.WithPlugableComponent(new ArchiverService());
+		}
 
 		var adminController = new AdminController(_mainQueue, _workersHandler);
 		var pingController = new PingController();
