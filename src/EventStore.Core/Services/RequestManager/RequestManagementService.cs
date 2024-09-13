@@ -10,7 +10,7 @@ using System.Diagnostics;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.Services.RequestManager {
-	public class RequestManagementService :		
+	public class RequestManagementService :
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<ClientMessage.WriteEvents>,
 		IHandle<ClientMessage.DeleteStream>,
@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.RequestManager {
 			Ensure.NotNull(bus, "bus");
 			_bus = bus;
 			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
-				new PublishEnvelope(bus),
+				bus,
 				new StorageMessage.RequestManagerTimerTick());
 
 			_prepareTimeout = prepareTimeout;

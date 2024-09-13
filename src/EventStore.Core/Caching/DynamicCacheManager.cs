@@ -70,7 +70,7 @@ namespace EventStore.Core.Caching {
 			_rootCacheResizer = rootCacheResizer;
 			_scheduleTick = TimerMessage.Schedule.Create(
 				monitoringInterval,
-				new PublishEnvelope(_bus),
+				_bus,
 				new MonitoringMessage.DynamicCacheManagerTick());
 			_cacheResourcesTracker = cacheResourcesTracker;
 			_fetchOrGetCachedStats = Functions.Debounce(

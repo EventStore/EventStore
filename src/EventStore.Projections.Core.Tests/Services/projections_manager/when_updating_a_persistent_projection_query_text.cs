@@ -29,7 +29,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 			yield return
 				(new ProjectionManagementMessage.Command.Post(
-					new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
+					_bus, ProjectionMode.Continuous, _projectionName,
 					ProjectionManagementMessage.RunAs.System, "JS",
 					@"fromAll(); on_any(function(){return {};});log(1);",
 					enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true));
@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_newProjectionSource = @"fromAll().when({a:function(){return {};}});log(2);";
 			yield return
 				(new ProjectionManagementMessage.Command.UpdateQuery(
-					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System,
+					_bus, _projectionName, ProjectionManagementMessage.RunAs.System,
 					_newProjectionSource, emitEnabled: null));
 		}
 
@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		public void the_projection_source_can_be_retrieved() {
 			_manager.Handle(
 				new ProjectionManagementMessage.Command.GetQuery(
-					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+					_bus, _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
 			Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Count());
 			var projectionQuery =
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Single();
@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		public void emit_enabled_options_remains_unchanged() {
 			_manager.Handle(
 				new ProjectionManagementMessage.Command.GetQuery(
-					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+					_bus, _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
 			Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Count());
 			var projectionQuery =
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Single();
@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test, Category("v8")]
 		public void the_projection_status_is_still_running() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, _projectionName,
+				new ProjectionManagementMessage.Command.GetStatistics(_bus, null, _projectionName,
 					false));
 
 			Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test, Category("v8")]
 		public void the_projection_state_can_be_retrieved() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetState(new PublishEnvelope(_bus), _projectionName, ""));
+				new ProjectionManagementMessage.Command.GetState(_bus, _projectionName, ""));
 			_queue.Process();
 
 			Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Count());

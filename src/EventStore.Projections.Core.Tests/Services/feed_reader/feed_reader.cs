@@ -126,7 +126,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 				_testQueryDefinition = GivenQuerySource();
 				_feedReader = new FeedReader(
 					_subscriptionDispatcher, SystemAccounts.System, _testQueryDefinition, GivenFromPosition(), 10,
-					Guid.NewGuid(), new PublishEnvelope(_bus), new RealTimeProvider());
+					Guid.NewGuid(), _bus, new RealTimeProvider());
 				Given();
 				When();
 			}
@@ -286,7 +286,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new FeedReaderMessage.ReadPage(
-						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
+						Guid.NewGuid(), GetInputQueue(), SystemAccounts.System,
 						_querySourcesDefinition, _fromPosition, _maxEvents);
 			}
 
@@ -325,12 +325,12 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new FeedReaderMessage.ReadPage(
-						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
+						Guid.NewGuid(), GetInputQueue(), SystemAccounts.System,
 						_querySourcesDefinition, _fromPosition, _maxEvents);
 				var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().Single();
 				yield return
 					new FeedReaderMessage.ReadPage(
-						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
+						Guid.NewGuid(), GetInputQueue(), SystemAccounts.System,
 						_querySourcesDefinition, feedPage.LastReaderPosition, _maxEvents);
 			}
 

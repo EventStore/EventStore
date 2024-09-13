@@ -721,7 +721,7 @@ namespace EventStore.Core.Services.Storage {
 			_expiredBatchCount = 0;
 			_publisher.Publish(
 				TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2),
-					new PublishEnvelope(_publisher),
+					_publisher,
 					new StorageMessage.BatchLogExpiredMessages(Guid.NewGuid(), _queueId))
 			);
 		}
@@ -744,7 +744,7 @@ namespace EventStore.Core.Services.Storage {
 							_queueId);
 						_publisher.Publish(
 							TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2),
-								new PublishEnvelope(_publisher),
+								_publisher,
 								new StorageMessage.BatchLogExpiredMessages(Guid.NewGuid(), _queueId))
 						);
 						_expiredBatchCount = 1;

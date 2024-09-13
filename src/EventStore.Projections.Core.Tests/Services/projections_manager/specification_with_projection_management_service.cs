@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 
 			IPublisher inputQueue = GetInputQueue();
 			IPublisher publisher = GetInputQueue();
-			var ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue), true);
+			var ioDispatcher = new IODispatcher(publisher, inputQueue, true);
 			_bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(_manager);
 			_bus.Subscribe<CoreProjectionStatusMessage.Started>(_manager);

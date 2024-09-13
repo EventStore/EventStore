@@ -48,10 +48,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 			yield return
 				new ProjectionManagementMessage.Command.Disable(
-					new PublishEnvelope(_bus), _systemProjectionName, ProjectionManagementMessage.RunAs.System);
+					_bus, _systemProjectionName, ProjectionManagementMessage.RunAs.System);
 			yield return
 				new ProjectionManagementMessage.Command.Delete(
-					new PublishEnvelope(_bus), _systemProjectionName,
+					_bus, _systemProjectionName,
 					ProjectionManagementMessage.RunAs.System, false, false, false);
 		}
 

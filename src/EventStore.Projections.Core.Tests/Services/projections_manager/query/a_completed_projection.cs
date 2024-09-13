@@ -47,14 +47,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 
 				yield return
 					(new ProjectionManagementMessage.Command.Disable(
-						new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+						_bus, _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
 			}
 
 			[Test]
 			public void the_projection_status_becomes_completed_disabled() {
 				_manager.Handle(
 					new ProjectionManagementMessage.Command.GetStatistics(
-						new PublishEnvelope(_bus), null, _projectionName, false));
+						_bus, null, _projectionName, false));
 
 				Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
 				Assert.AreEqual(
@@ -90,14 +90,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 				foreach (var m in base.When()) yield return m;
 				yield return
 					(new ProjectionManagementMessage.Command.Enable(
-						new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+						_bus, _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
 			}
 
 			[Test]
 			public void the_projection_status_becomes_running_enabled() {
 				_manager.Handle(
 					new ProjectionManagementMessage.Command.GetStatistics(
-						new PublishEnvelope(_bus), null, _projectionName, false));
+						_bus, null, _projectionName, false));
 
 				Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
 				Assert.AreEqual(

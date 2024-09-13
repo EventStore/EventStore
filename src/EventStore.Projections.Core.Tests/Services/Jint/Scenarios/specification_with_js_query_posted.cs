@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint.Scenarios
 
 		protected Message CreateQueryMessage(string name, string source) {
 			return new ProjectionManagementMessage.Command.Post(
-				new PublishEnvelope(_bus), ProjectionMode.Transient, name,
+				_bus, ProjectionMode.Transient, name,
 				ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: false,
 				trackEmittedStreams: false,
 				emitEnabled: false);
@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint.Scenarios
 
 		protected Message CreateNewProjectionMessage(string name, string source) {
 			return new ProjectionManagementMessage.Command.Post(
-				new PublishEnvelope(_bus), ProjectionMode.Continuous, name, ProjectionManagementMessage.RunAs.System,
+				_bus, ProjectionMode.Continuous, name, ProjectionManagementMessage.RunAs.System,
 				"INTERPRETED", source, enabled: true, checkpointsEnabled: true, trackEmittedStreams: true, emitEnabled: true);
 		}
 
@@ -109,7 +109,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint.Scenarios
 			foreach (var source in otherProjections) {
 				yield return
 					(new ProjectionManagementMessage.Command.Post(
-						new PublishEnvelope(_bus), ProjectionMode.Continuous, "other_" + index,
+						_bus, ProjectionMode.Continuous, "other_" + index,
 						ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: true,
 						trackEmittedStreams: true,
 						emitEnabled: true));
@@ -119,7 +119,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint.Scenarios
 			if (!string.IsNullOrEmpty(_projectionSource)) {
 				yield return
 					(new ProjectionManagementMessage.Command.Post(
-						new PublishEnvelope(_bus), _projectionMode, _projectionName,
+						_bus, _projectionMode, _projectionName,
 						ProjectionManagementMessage.RunAs.System, "JS", _projectionSource, enabled: true,
 						checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled,
 						trackEmittedStreams: _trackEmittedStreams));

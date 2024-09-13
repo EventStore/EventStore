@@ -15,7 +15,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		[SetUp]
 		public void Setup() {
 			var fakePublisher = new FakePublisher();
-			_ioDispatcher = new IODispatcher(fakePublisher, new PublishEnvelope(fakePublisher), true);
+			_ioDispatcher = new IODispatcher(fakePublisher, fakePublisher, true);
 
 			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(new FakePublisher());
 		}

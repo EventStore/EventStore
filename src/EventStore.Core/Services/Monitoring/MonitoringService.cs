@@ -214,7 +214,7 @@ namespace EventStore.Core.Services.Monitoring {
 			_streamMetadataWriteCorrId = Guid.NewGuid();
 			_mainQueue.Publish(
 				new ClientMessage.WriteEvents(
-					_streamMetadataWriteCorrId, _streamMetadataWriteCorrId, new PublishEnvelope(_monitoringQueue),
+					_streamMetadataWriteCorrId, _streamMetadataWriteCorrId, _monitoringQueue,
 					false, SystemStreams.MetastreamOf(_nodeStatsStream), ExpectedVersion.NoStream,
 					new[] {new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata, null)},
 					SystemAccounts.System));

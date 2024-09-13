@@ -87,7 +87,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_streamReader = new PersistentSubscriptionStreamReader(_ioDispatcher, 100);
 			_timerTickCorrelationId = Guid.NewGuid();
 			_persistentSubscriptionTracker = persistentSubscriptionTracker;
-			_getStats = TimerMessage.Schedule.Create(_interval, new PublishEnvelope(_bus),
+			_getStats = TimerMessage.Schedule.Create(_interval, _bus,
 				new MonitoringMessage.GetAllPersistentSubscriptionStats(
 					new CallbackEnvelope(PushStatsToPersistentSubscriptionTracker)));
 		}
@@ -145,7 +145,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_handleTick = true;
 			_timerTickCorrelationId = Guid.NewGuid();
 			_bus.Publish(TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
-				new PublishEnvelope(_bus),
+				_bus,
 				new SubscriptionMessage.PersistentSubscriptionTimerTick(_timerTickCorrelationId)));
 			LoadConfiguration(Start);
 		}
@@ -1352,7 +1352,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			} finally {
 				_timerTickCorrelationId = Guid.NewGuid();
 				_bus.Publish(TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
-					new PublishEnvelope(_bus),
+					_bus,
 					new SubscriptionMessage.PersistentSubscriptionTimerTick(_timerTickCorrelationId)));
 			}
 		}

@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.Gossip {
 
 			_bus = bus;
 			_clusterSize = clusterSize;
-			_publishEnvelope = new PublishEnvelope(bus);
+			_publishEnvelope = bus;
 			_gossipSeedSource = gossipSeedSource;
 			_memberInfo = memberInfo;
 			GossipInterval = gossipInterval;

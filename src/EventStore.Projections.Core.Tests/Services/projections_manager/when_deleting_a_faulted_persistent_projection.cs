@@ -27,12 +27,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 			yield return
 				new ProjectionManagementMessage.Command.Post(
-					new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
+					_bus, ProjectionMode.Continuous, _projectionName,
 					ProjectionManagementMessage.RunAs.System, "JS", @"faulted_projection",
 					enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true);
 			yield return
 				new ProjectionManagementMessage.Command.Delete(
-					new PublishEnvelope(_bus), _projectionName,
+					_bus, _projectionName,
 					ProjectionManagementMessage.RunAs.System, true, true, true);
 		}
 

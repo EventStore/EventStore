@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 			_stopOnEof = stopOnEof;
 			_isBiState = isBiState;
 			_progressResultWriter = new ProgressResultWriter(this, _resultWriter);
-			_inutQueueEnvelope = new PublishEnvelope(_inputQueue);
+			_inutQueueEnvelope = _inputQueue;
 			_emittedStreamsTracker = emittedStreamsTracker;
 			_enableContentTypeValidation = enableContentTypeValidation;
 		}
@@ -552,7 +552,7 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 		}
 
 		protected long _subscriptionStartedAtLastCommitPosition;
-		private readonly PublishEnvelope _inutQueueEnvelope;
+		private readonly IEnvelope _inutQueueEnvelope;
 		private readonly TimeSpan _updateInterval = TimeSpan.FromMilliseconds(250);
 		private bool _updateStatisticsTicketPending;
 

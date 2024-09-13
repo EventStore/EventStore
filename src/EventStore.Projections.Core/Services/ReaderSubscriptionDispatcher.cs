@@ -10,13 +10,13 @@ namespace EventStore.Projections.Core.Services {
 	public sealed class ReaderSubscriptionDispatcher {
 		private readonly ConcurrentDictionary<Guid, object> _map = new();
 		private readonly IPublisher _publisher;
-		private readonly PublishEnvelope _publishEnvelope;
+		private readonly IEnvelope _publishEnvelope;
 		private readonly TimeSpan _readerSubscriptionTimeout =
 			TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout);
 
 		public ReaderSubscriptionDispatcher(IPublisher publisher) {
 			_publisher = publisher;
-			_publishEnvelope = new PublishEnvelope(_publisher);
+			_publishEnvelope = _publisher;
 		}
 
 		/// <summary>

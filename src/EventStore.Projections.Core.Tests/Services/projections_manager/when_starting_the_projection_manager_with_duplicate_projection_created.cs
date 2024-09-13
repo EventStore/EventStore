@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test]
 		public void projection_status_is_preparing() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, "projection1",
+				new ProjectionManagementMessage.Command.GetStatistics(_bus, null, "projection1",
 					true));
 			Assert.AreEqual(
 				ManagedProjectionState.Preparing,
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test]
 		public void projection_id_is_latest() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, "projection1",
+				new ProjectionManagementMessage.Command.GetStatistics(_bus, null, "projection1",
 					true));
 			Assert.AreEqual(
 				1,

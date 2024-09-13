@@ -175,7 +175,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 		public when_updating_all_stream_subscription_with_filter() {
 			var bus = new SynchronousScheduler();
-			var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
+			var ioDispatcher = new IODispatcher(bus, bus);
 			var trackers = new Trackers();
 
 			_storage = new FakeStorage(cfgs => cfgs.Count() >= 2);

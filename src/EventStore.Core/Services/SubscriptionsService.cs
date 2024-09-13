@@ -81,7 +81,7 @@ namespace EventStore.Core.Services {
 			Ensure.NotNull(inMemReader, nameof(inMemReader));
 
 			_bus = bus;
-			_busEnvelope = new PublishEnvelope(bus);
+			_busEnvelope = bus;
 			_queuedHandler = queuedHandler;
 			_authorizationProvider = authorizationProvider;
 			_readIndex = readIndex;

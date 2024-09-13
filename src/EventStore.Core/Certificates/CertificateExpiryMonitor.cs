@@ -3,7 +3,6 @@ using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using Serilog;
 
@@ -35,7 +34,7 @@ public class CertificateExpiryMonitor :
 		_logger = logger;
 		_nodeCertificateExpirySchedule = TimerMessage.Schedule.Create(
 			_interval,
-			new PublishEnvelope(publisher),
+			publisher,
 			new MonitoringMessage.CheckCertificateExpiry());
 	}
 

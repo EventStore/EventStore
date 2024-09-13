@@ -120,7 +120,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			var chaserCheckpoint = new InMemoryCheckpoint(0);
 
 			var bus = new SynchronousScheduler();
-			new IODispatcher(bus, new PublishEnvelope(bus));
+			new IODispatcher(bus, bus);
 
 			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerCheckpoint, chaserCheckpoint));
 

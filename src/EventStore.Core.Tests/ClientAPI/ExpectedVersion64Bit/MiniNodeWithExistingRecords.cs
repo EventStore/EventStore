@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			});
 
 			Bus = new();
-			IODispatcher = new IODispatcher(Bus, new PublishEnvelope(Bus));
+			IODispatcher = new IODispatcher(Bus, Bus);
 
 			if (!Directory.Exists(dbPath))
 				Directory.CreateDirectory(dbPath);

@@ -26,7 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 			yield return
 				new ProjectionManagementMessage.Command.Post(
-					new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
+					_bus, ProjectionMode.Continuous, _projectionName,
 					ProjectionManagementMessage.RunAs.System, "JS", @"fromAll().when({$any:function(s,e){return s;}});",
 					enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true);
 			OneWriteCompletes();
@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test, Category("v8")]
 		public void the_projection_status_is_writing() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, _projectionName,
+				new ProjectionManagementMessage.Command.GetStatistics(_bus, null, _projectionName,
 					true));
 			Assert.AreEqual(
 				ManagedProjectionState.Prepared,
