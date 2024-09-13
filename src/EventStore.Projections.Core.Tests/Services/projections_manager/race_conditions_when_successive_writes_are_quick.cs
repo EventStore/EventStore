@@ -69,11 +69,11 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 					ProjectionMode.Continuous, ProjectionManagementMessage.RunAs.System, name,
 					"native:" + FakeProjectionType.AssemblyQualifiedName, enabled: true,
 					checkpointsEnabled: true, emitEnabled: false, trackEmittedStreams: false, query: _projectionSource, enableRunAs: true);
-				return (new ProjectionManagementMessage.Command.PostBatch(new PublishEnvelope(_bus),
+				return (new ProjectionManagementMessage.Command.PostBatch(_bus,
 					ProjectionManagementMessage.RunAs.System, new[] { projectionPost }));
 			}
 
-			return (new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
+			return (new ProjectionManagementMessage.Command.Post(_bus, ProjectionMode.Continuous,
 				name,
 				ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
 				_projectionSource, enabled: true, checkpointsEnabled: true,
@@ -134,7 +134,7 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 		protected override IEnumerable<WhenStep> When() {
 			foreach (var m in base.When()) yield return m;
 			yield return
-				(new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
+				(new ProjectionManagementMessage.Command.Post(_bus, ProjectionMode.Continuous,
 					_projection1,
 					ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
 					_projectionSource, enabled: true, checkpointsEnabled: true,
@@ -153,11 +153,11 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 					ProjectionMode.Continuous, ProjectionManagementMessage.RunAs.System, name,
 					"native:" + FakeProjectionType.AssemblyQualifiedName, enabled: true,
 					checkpointsEnabled: true, emitEnabled: false, trackEmittedStreams: false, query: _projectionSource, enableRunAs: true);
-				return (new ProjectionManagementMessage.Command.PostBatch(new PublishEnvelope(_bus),
+				return (new ProjectionManagementMessage.Command.PostBatch(_bus,
 					ProjectionManagementMessage.RunAs.System, new[] { projectionPost }));
 			}
 
-			return (new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
+			return (new ProjectionManagementMessage.Command.Post(_bus, ProjectionMode.Continuous,
 				name,
 				ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
 				_projectionSource, enabled: true, checkpointsEnabled: true,
@@ -224,7 +224,7 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 
 		protected override IEnumerable<WhenStep> When() {
 			foreach (var m in base.When()) yield return m;
-			yield return (new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus),
+			yield return (new ProjectionManagementMessage.Command.Post(_bus,
 				ProjectionMode.Continuous,
 				_projection1,
 				ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
@@ -238,11 +238,11 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 					ProjectionMode.Continuous, ProjectionManagementMessage.RunAs.System, name,
 					"native:" + FakeProjectionType.AssemblyQualifiedName, enabled: true,
 					checkpointsEnabled: true, emitEnabled: false, trackEmittedStreams: false, query: _projectionSource, enableRunAs: true);
-				return (new ProjectionManagementMessage.Command.PostBatch(new PublishEnvelope(_bus),
+				return (new ProjectionManagementMessage.Command.PostBatch(_bus,
 					ProjectionManagementMessage.RunAs.System, new[] { projectionPost }));
 			}
 
-			return (new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
+			return (new ProjectionManagementMessage.Command.Post(_bus, ProjectionMode.Continuous,
 				name,
 				ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
 				_projectionSource, enabled: true, checkpointsEnabled: true,
@@ -308,13 +308,13 @@ public abstract class race_conditions_when_successive_writes_are_quick {
 		protected override IEnumerable<WhenStep> When() {
 			foreach (var m in base.When()) yield return m;
 			yield return
-				(new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
+				(new ProjectionManagementMessage.Command.Post(_bus, ProjectionMode.Continuous,
 					_projection1,
 					ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
 					_projectionSource, enabled: true, checkpointsEnabled: true,
 					emitEnabled: false, trackEmittedStreams: false));
 			yield return
-				(new ProjectionManagementMessage.Command.Post(new PublishEnvelope(_bus), ProjectionMode.Continuous,
+				(new ProjectionManagementMessage.Command.Post(_bus, ProjectionMode.Continuous,
 					_projection2,
 					ProjectionManagementMessage.RunAs.System, "native:" + FakeProjectionType.AssemblyQualifiedName,
 					_projectionSource, enabled: true, checkpointsEnabled: true,

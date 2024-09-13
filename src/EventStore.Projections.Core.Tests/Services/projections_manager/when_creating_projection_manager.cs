@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				_queues.Values.ToArray(),
 				fakePublisher,
 				new NoopEnvelope());
-			_ioDispatcher = new IODispatcher(fakePublisher, new PublishEnvelope(fakePublisher), true);
+			_ioDispatcher = new IODispatcher(fakePublisher, fakePublisher, true);
 		}
 
 		[Test]

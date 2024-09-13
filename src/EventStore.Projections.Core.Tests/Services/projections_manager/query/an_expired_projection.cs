@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 				_consumer.HandledMessages.Clear();
 				yield return (
 					new ProjectionManagementMessage.Command.GetStatistics(
-						new PublishEnvelope(_bus), null, _projectionName, false));
+						_bus, null, _projectionName, false));
 			}
 
 			[Test]

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -17,7 +16,7 @@ namespace EventStore.Core.Cluster {
 		private readonly TimeSpan _oldCacheItemThreshold = TimeSpan.FromMinutes(30);
 		private readonly IPublisher _bus;
 		private readonly Func<EndPoint, IPublisher, EventStoreClusterClient> _clientFactory;
-		private readonly PublishEnvelope _publishEnvelope;
+		private readonly IEnvelope _publishEnvelope;
 		private readonly MemoryCache _cache;
 
 		public EventStoreClusterClientCache(IPublisher bus,
@@ -29,7 +28,7 @@ namespace EventStore.Core.Cluster {
 			_cacheCleaningInterval = cacheCleaningInterval ?? _cacheCleaningInterval;
 			_oldCacheItemThreshold = oldCacheItemThreshold ?? _oldCacheItemThreshold;
 
-			_publishEnvelope = new PublishEnvelope(_bus);
+			_publishEnvelope = _bus;
 			_cache = new MemoryCache(new MemoryCacheOptions {
 				ExpirationScanFrequency = _oldCacheItemThreshold
 			});

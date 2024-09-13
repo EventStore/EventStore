@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core {
 
 			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(outputQueue);
 
-			_ioDispatcher = new IODispatcher(outputQueue, new PublishEnvelope(inputQueue), true);
+			_ioDispatcher = new IODispatcher(outputQueue, inputQueue, true);
 			_eventReaderCoreService = new EventReaderCoreService(
 				outputQueue,
 				_ioDispatcher,

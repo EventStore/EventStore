@@ -5,7 +5,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Bus;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
@@ -31,12 +30,12 @@ namespace EventStore.Core.Tests.Helpers {
 		protected ManualQueue _queue;
 		protected ManualQueue[] _otherQueues;
 		protected FakeTimeProvider _timeProvider;
-		private PublishEnvelope _envelope;
+		private IEnvelope _envelope;
 
 		protected IEnvelope Envelope {
 			get {
 				if (_envelope == null)
-					_envelope = new PublishEnvelope(GetInputQueue());
+					_envelope = GetInputQueue();
 				return _envelope;
 			}
 		}
@@ -59,7 +58,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_bus.Subscribe(_consumer);
 			_queue = GiveInputQueue();
 			_otherQueues = null;
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(GetInputQueue()));
+			_ioDispatcher = new IODispatcher(_bus, GetInputQueue());
 			_readDispatcher = _ioDispatcher.BackwardReader;
 			_writeDispatcher = _ioDispatcher.Writer;
 			_streamDispatcher = _ioDispatcher.StreamDeleter;

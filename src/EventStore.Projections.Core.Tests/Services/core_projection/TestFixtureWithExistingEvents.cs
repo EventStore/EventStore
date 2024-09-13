@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			string streamId, string eventType, string data, string metadata = null, bool isJson = true,
 			Guid? correlationId = null) {
 			return new ClientMessage.WriteEvents(
-				Guid.NewGuid(), correlationId ?? Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), false, streamId,
+				Guid.NewGuid(), correlationId ?? Guid.NewGuid(), GetInputQueue(), false, streamId,
 				ExpectedVersion.Any, new Event(Guid.NewGuid(), eventType, isJson, data, metadata), null);
 		}
 	}

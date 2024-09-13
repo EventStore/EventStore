@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 
 		[OneTimeSetUp]
 		protected virtual void SetUp() {
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
+			_ioDispatcher = new IODispatcher(_bus, _bus, true);
 			_projectionNamesBuilder = ProjectionNamesBuilder.CreateForTest(_projectionName);
 			_checkpointName = _projectionNamesBuilder.GetEmittedStreamsCheckpointName();
 

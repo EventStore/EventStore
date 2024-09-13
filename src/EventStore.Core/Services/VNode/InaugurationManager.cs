@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.VNode {
 
 			_scheduleCheckInaugurationConditions = TimerMessage.Schedule.Create(
 				triggerAfter: TimeSpan.FromSeconds(1),
-				envelope: new PublishEnvelope(_publisher),
+				envelope: _publisher,
 				replyMessage: new SystemMessage.CheckInaugurationConditions());
 		}
 

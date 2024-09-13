@@ -33,14 +33,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 						_bus,
 						v => v.CorrelationId,
 						v => v.CorrelationId,
-						new PublishEnvelope(_bus));
+						_bus);
 			_getResultDispatcher =
 				new RequestResponseDispatcher
 					<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
 						_bus,
 						v => v.CorrelationId,
 						v => v.CorrelationId,
-						new PublishEnvelope(_bus));
+						_bus);
 		}
 
 
@@ -86,13 +86,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 							_bus,
 							v => v.CorrelationId,
 							v => v.CorrelationId,
-							new PublishEnvelope(_bus)),
+							_bus),
 					new RequestResponseDispatcher
 						<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
 							_bus,
 							v => v.CorrelationId,
 							v => v.CorrelationId,
-							new PublishEnvelope(_bus)),
+							_bus),
 					_ioDispatcher,
 					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 			});
@@ -118,13 +118,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 							_bus,
 							v => v.CorrelationId,
 							v => v.CorrelationId,
-							new PublishEnvelope(_bus)),
+							_bus),
 					new RequestResponseDispatcher
 						<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
 							_bus,
 							v => v.CorrelationId,
 							v => v.CorrelationId,
-							new PublishEnvelope(_bus)),
+							_bus),
 					_ioDispatcher,
 					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 			});
@@ -150,13 +150,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 							_bus,
 							v => v.CorrelationId,
 							v => v.CorrelationId,
-							new PublishEnvelope(_bus)),
+							_bus),
 					new RequestResponseDispatcher
 						<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
 							_bus,
 							v => v.CorrelationId,
 							v => v.CorrelationId,
-							new PublishEnvelope(_bus)),
+							_bus),
 					_ioDispatcher,
 					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 			});
@@ -182,13 +182,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 							_bus,
 							v => v.CorrelationId,
 							v => v.CorrelationId,
-							new PublishEnvelope(_bus)),
+							_bus),
 					new RequestResponseDispatcher
 						<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
 							_bus,
 							v => v.CorrelationId,
 							v => v.CorrelationId,
-							new PublishEnvelope(_bus)),
+							_bus),
 					_ioDispatcher,
 					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 			});
@@ -214,13 +214,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 							_bus,
 							v => v.CorrelationId,
 							v => v.CorrelationId,
-							new PublishEnvelope(_bus)),
+							_bus),
 					new RequestResponseDispatcher
 						<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
 							_bus,
 							v => v.CorrelationId,
 							v => v.CorrelationId,
-							new PublishEnvelope(_bus)),
+							_bus),
 					_ioDispatcher,
 					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 			});

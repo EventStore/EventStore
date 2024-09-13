@@ -2,7 +2,6 @@
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using Serilog;
 
@@ -26,7 +25,7 @@ public class PeriodicallyLoggingService :
 		_publisher = publisher;
 		_esVersion = esVersion;
 		_logger = logger;
-		_esVersionScheduleLog = TimerMessage.Schedule.Create(_interval, new PublishEnvelope(publisher),
+		_esVersionScheduleLog = TimerMessage.Schedule.Create(_interval, publisher,
 			new MonitoringMessage.CheckEsVersion());
 	}
 

@@ -1,6 +1,5 @@
 ﻿using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Settings;
@@ -17,7 +16,7 @@ public class InternalAuthenticationProviderFactory : IAuthenticationProviderFact
 	public InternalAuthenticationProviderFactory(AuthenticationProviderFactoryComponents components, ClusterVNodeOptions.DefaultUserOptions defaultUserOptions) {
 		_components = components;
 		_passwordHashAlgorithm = new();
-		_dispatcher = new(components.MainQueue, new PublishEnvelope(components.WorkersQueue));
+		_dispatcher = new(components.MainQueue, components.WorkersQueue);
 		_defaultUserOptions = defaultUserOptions;
 
 		foreach (var bus in components.WorkerBuses) {

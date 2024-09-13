@@ -107,7 +107,7 @@ namespace EventStore.Core.Services {
 
 			_publisher = publisher;
 			_memberInfo = memberInfo;
-			_publisherEnvelope = new PublishEnvelope(_publisher);
+			_publisherEnvelope = _publisher;
 			_clusterSize = clusterSize;
 			_writerCheckpoint = writerCheckpoint;
 			_chaserCheckpoint = chaserCheckpoint;

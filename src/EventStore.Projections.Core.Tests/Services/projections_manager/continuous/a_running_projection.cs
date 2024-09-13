@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 
 				yield return
 					(new ProjectionManagementMessage.Command.Disable(
-						new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System));
+						_bus, _projectionName, ProjectionManagementMessage.RunAs.System));
 				for (var i = 0; i < 50; i++) {
 					yield return
 						(ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 			public void the_projection_status_becomes_stopped_disabled() {
 				_manager.Handle(
 					new ProjectionManagementMessage.Command.GetStatistics(
-						new PublishEnvelope(_bus), null, _projectionName, false));
+						_bus, null, _projectionName, false));
 
 				Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
 				Assert.AreEqual(
@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 			public void the_projection_status_remains_running_enabled() {
 				_manager.Handle(
 					new ProjectionManagementMessage.Command.GetStatistics(
-						new PublishEnvelope(_bus), null, _projectionName, false));
+						_bus, null, _projectionName, false));
 
 				Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
 				Assert.AreEqual(
@@ -154,14 +154,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 
 				yield return
 					(new ProjectionManagementMessage.Command.Reset(
-						new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System));
+						_bus, _projectionName, ProjectionManagementMessage.RunAs.System));
 			}
 
 			[Test]
 			public void the_projection_epoch_changes() {
 				_manager.Handle(
 					new ProjectionManagementMessage.Command.GetStatistics(
-						new PublishEnvelope(_bus), null, _projectionName, false));
+						_bus, null, _projectionName, false));
 
 				Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
 				Assert.AreEqual(
@@ -187,7 +187,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 			public void the_projection_status_is_enabled_running() {
 				_manager.Handle(
 					new ProjectionManagementMessage.Command.GetStatistics(
-						new PublishEnvelope(_bus), null, _projectionName, false));
+						_bus, null, _projectionName, false));
 
 				Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
 				Assert.AreEqual(
@@ -222,10 +222,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 				foreach (var m in base.When()) yield return m;
 				yield return
 					(new ProjectionManagementMessage.Command.Reset(
-						new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System));
+						_bus, _projectionName, ProjectionManagementMessage.RunAs.System));
 				yield return
 					(new ProjectionManagementMessage.Command.Enable(
-						new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System));
+						_bus, _projectionName, ProjectionManagementMessage.RunAs.System));
 				yield return
 					(ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
 						_reader, new TFPos(100, 150), new TFPos(100, 150), "stream", 1 + 1, "stream", 1 + 1, false,
@@ -236,7 +236,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 			public void the_projection_epoch_changes() {
 				_manager.Handle(
 					new ProjectionManagementMessage.Command.GetStatistics(
-						new PublishEnvelope(_bus), null, _projectionName, false));
+						_bus, null, _projectionName, false));
 
 				Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
 				Assert.AreEqual(
@@ -262,7 +262,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 			public void the_projection_status_is_enabled_running() {
 				_manager.Handle(
 					new ProjectionManagementMessage.Command.GetStatistics(
-						new PublishEnvelope(_bus), null, _projectionName, false));
+						_bus, null, _projectionName, false));
 
 				Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
 				Assert.AreEqual(

@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
 
 		[OneTimeSetUp]
 		public void TestFixtureSetUp() {
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
+			_ioDispatcher = new IODispatcher(_bus, _bus, true);
 			IODispatcherTestHelpers.SubscribeIODispatcher(_ioDispatcher, _bus);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
 			_projectionVersion = new ProjectionVersion(1, 2, 3);

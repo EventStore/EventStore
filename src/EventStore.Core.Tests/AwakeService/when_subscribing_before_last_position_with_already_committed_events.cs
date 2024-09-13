@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.AwakeService {
 					eventTypeId, new byte[0], null, DateTime.UtcNow),"Stream", "EventType");
 			_eventCommitted = new StorageMessage.EventCommitted(2000, _eventRecord, isTfEof: true);
 			_publisher = new();
-			_envelope = new PublishEnvelope(_publisher);
+			_envelope = _publisher;
 			_handler = new TestHandler<TestMessage>();
 			_publisher.Subscribe(_handler);
 			_reply1 = new TestMessage(1);

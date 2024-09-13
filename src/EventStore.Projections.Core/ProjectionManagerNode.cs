@@ -26,7 +26,7 @@ namespace EventStore.Projections.Core {
 			IProjectionTracker projectionTracker) {
 			IPublisher inputQueue = projectionsStandardComponents.LeaderInputQueue;
 			IPublisher outputQueue = projectionsStandardComponents.LeaderOutputQueue;
-			var ioDispatcher = new IODispatcher(outputQueue, new PublishEnvelope(inputQueue), true);
+			var ioDispatcher = new IODispatcher(outputQueue, inputQueue, true);
 
 			var projectionsController = new ProjectionsController(
 				standardComponents.HttpForwarder,

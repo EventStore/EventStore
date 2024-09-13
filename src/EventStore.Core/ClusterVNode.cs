@@ -1112,7 +1112,7 @@ public class ClusterVNode<TStreamId> :
 		var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
 		var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", _queueStatsManager,
 			trackers.QueueTrackers, false);
-		var psubDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(perSubscrQueue));
+		var psubDispatcher = new IODispatcher(_mainQueue, perSubscrQueue);
 		perSubscrBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(psubDispatcher.BackwardReader);
 		perSubscrBus.Subscribe<ClientMessage.NotHandled>(psubDispatcher.BackwardReader);
 		perSubscrBus.Subscribe<ClientMessage.WriteEventsCompleted>(psubDispatcher.Writer);
@@ -1179,7 +1179,7 @@ public class ClusterVNode<TStreamId> :
 
 		// STORAGE SCAVENGER
 		ScavengerFactory scavengerFactory;
-		var scavengerDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(MainQueue));
+		var scavengerDispatcher = new IODispatcher(_mainQueue, _mainQueue);
 		_mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(scavengerDispatcher.BackwardReader);
 		_mainBus.Subscribe<ClientMessage.NotHandled>(scavengerDispatcher.BackwardReader);
 		_mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(scavengerDispatcher.Writer);

@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		private long _projectionsRegistrationExpectedVersion = 0;
 		private bool _isWritePending = false;
 		private HashSet<string> _projectionsRegistrationState = new HashSet<string>();
-		private readonly PublishEnvelope _publishEnvelope;
+		private readonly IEnvelope _publishEnvelope;
 
 		private readonly
 			RequestResponseDispatcher<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>
@@ -146,46 +146,46 @@ namespace EventStore.Projections.Core.Services.Management {
 					publisher,
 					v => v.CorrelationId,
 					v => v.CorrelationId,
-					new PublishEnvelope(_inputQueue));
+					_inputQueue);
 			_readDispatcher = new ReadDispatcher(
 				publisher,
 				v => v.CorrelationId,
 				v => v.CorrelationId,
 				v => v.CorrelationId,
-				new PublishEnvelope(_inputQueue));
+				_inputQueue);
 			_readForwardDispatcher =
 				new RequestResponseDispatcher
 					<ClientMessage.ReadStreamEventsForward, ClientMessage.ReadStreamEventsForwardCompleted>(
 						publisher,
 						v => v.CorrelationId,
 						v => v.CorrelationId,
-						new PublishEnvelope(_inputQueue));
+						_inputQueue);
 			_streamDispatcher =
 				new RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted>(
 					publisher,
 					v => v.CorrelationId,
 					v => v.CorrelationId,
-					new PublishEnvelope(_inputQueue));
+					_inputQueue);
 
 			_projections = new Dictionary<string, ManagedProjection>();
 			_projectionsMap = new Dictionary<Guid, string>();
-			_publishEnvelope = new PublishEnvelope(_inputQueue);
+			_publishEnvelope = _inputQueue;
 			_getStateDispatcher =
 				new RequestResponseDispatcher
 					<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
 						_publisher,
 						v => v.CorrelationId,
 						v => v.CorrelationId,
-						new PublishEnvelope(_inputQueue));
+						_inputQueue);
 			_getResultDispatcher =
 				new RequestResponseDispatcher
 					<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
 						_publisher,
 						v => v.CorrelationId,
 						v => v.CorrelationId,
-						new PublishEnvelope(_inputQueue));
+						_inputQueue);
 			_defaultProjectionExecutionTimeout = defaultProjectionExecutionTimeout;
-			_getStats = TimerMessage.Schedule.Create(_interval, new PublishEnvelope(_inputQueue),
+			_getStats = TimerMessage.Schedule.Create(_interval, _inputQueue,
 				new ProjectionManagementMessage.Command.GetStatistics(new CallbackEnvelope(PushStatsToProjectionTracker), ProjectionMode.AllNonTransient, null, true));
 		}
 
@@ -1143,7 +1143,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		private void DelayMessage(Message messageToDelay) {
-			_publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2), new PublishEnvelope(_inputQueue), messageToDelay));
+			_publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2), _inputQueue, messageToDelay));
 		}
 
 		public class NewProjectionInitializer {

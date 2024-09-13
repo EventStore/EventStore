@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test]
 		public void projection_status_can_be_retrieved() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, "projection1",
+				new ProjectionManagementMessage.Command.GetStatistics(_bus, null, "projection1",
 					true));
 			Assert.IsNotNull(
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().SingleOrDefault(
@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test]
 		public void projection_status_is_starting() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, "projection1",
+				new ProjectionManagementMessage.Command.GetStatistics(_bus, null, "projection1",
 					true));
 			Assert.AreEqual(
 				ManagedProjectionState.Preparing,
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		public void projection_telemetry_working() {
 			_manager.Handle(
 				new TelemetryMessage.Request(
-					new PublishEnvelope(_bus)));
+					_bus));
 
 			var actual = _consumer.HandledMessages.OfType<TelemetryMessage.Response>().Single();
 

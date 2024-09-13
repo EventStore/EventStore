@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -23,7 +21,7 @@ namespace EventStore.Core.Services.Transport.Http
 
 			_inputBus = inputBus;
 			_requestsMultiHandler = requestsMultiHandler;
-			_publishEnvelope = new PublishEnvelope(inputBus);
+			_publishEnvelope = inputBus;
 		}
 		public void Handle(HttpMessage.PurgeTimedOutRequests message) {
 			

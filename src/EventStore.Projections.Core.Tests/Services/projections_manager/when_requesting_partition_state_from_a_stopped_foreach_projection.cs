@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test]
 		public void the_projection_state_can_be_retrieved() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetState(new PublishEnvelope(_bus), _projectionName, "a"));
+				new ProjectionManagementMessage.Command.GetState(_bus, _projectionName, "a"));
 			_queue.Process();
 
 			Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Count());
@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			Assert.AreEqual(@"{""data"":1}", first.State);
 
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetState(new PublishEnvelope(_bus), _projectionName, "b"));
+				new ProjectionManagementMessage.Command.GetState(_bus, _projectionName, "b"));
 			_queue.Process();
 
 			Assert.AreEqual(2, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Count());

@@ -111,7 +111,7 @@ public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController {
 		_outputBus = new InMemoryBus("MainBus");
 		_fsm = CreateFSM();
 		_mainQueue = new QueuedHandlerThreadPool(_fsm, "MainQueue", statsManager, trackers.QueueTrackers);
-		_publishEnvelope = new PublishEnvelope(_mainQueue);
+		_publishEnvelope = _mainQueue;
 	}
 
 	public IPublisher MainQueue => _mainQueue;

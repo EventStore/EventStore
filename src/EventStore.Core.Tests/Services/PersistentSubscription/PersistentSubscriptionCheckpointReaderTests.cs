@@ -43,7 +43,7 @@ public class PersistentSubscriptionCheckpointReaderTests {
 				tfLastCommitPosition: 0));
 		}));
 
-		var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
+		var ioDispatcher = new IODispatcher(bus, bus);
 		IODispatcherTestHelpers.SubscribeIODispatcher(ioDispatcher, bus);
 		var sut = new PersistentSubscriptionCheckpointReader(ioDispatcher);
 

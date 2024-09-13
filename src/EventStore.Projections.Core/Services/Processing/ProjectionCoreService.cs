@@ -111,7 +111,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			} else {
 				_publisher.Publish(TimerMessage.Schedule.Create(
 					TimeSpan.FromMilliseconds(_projectionStopTimeoutMs),
-					new PublishEnvelope(_inputQueue),
+					_inputQueue,
 					new ProjectionCoreServiceMessage.StopCoreTimeout(_stopQueueId)));
 			}
 		}

@@ -2,7 +2,6 @@ using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.VNode;
 
@@ -29,7 +28,7 @@ namespace EventStore.Core.Services {
 			_forwardingProxy = forwardingProxy;
 
 			_tickScheduleMessage = TimerMessage.Schedule.Create(tickInterval,
-				new PublishEnvelope(bus),
+				bus,
 				new SystemMessage.RequestForwardingTimerTick());
 		}
 

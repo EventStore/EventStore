@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Services.Processing.EventByType {
 			if (delay) {
 				_publisher.Publish(
 					new AwakeServiceMessage.SubscribeAwake(
-						new PublishEnvelope(_publisher), correlationId, null,
+						_publisher, correlationId, null,
 						new TFPos(_lastPosition, _lastPosition), readEventsForward));
 			} else {
 				_publisher.Publish(readEventsForward);

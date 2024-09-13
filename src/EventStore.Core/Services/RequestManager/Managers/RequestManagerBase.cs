@@ -78,7 +78,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_clientResponseEnvelope = clientResponseEnvelope;
 			InternalCorrId = internalCorrId;
 			ClientCorrId = clientCorrId;
-			WriteReplyEnvelope = new PublishEnvelope(Publisher);
+			WriteReplyEnvelope = Publisher;
 			ExpectedVersion = expectedVersion;
 			CommitSource = commitSource;
 			_prepareCount = prepareCount;

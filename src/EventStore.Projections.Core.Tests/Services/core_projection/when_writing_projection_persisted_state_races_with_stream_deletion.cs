@@ -35,12 +35,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 				yield return
 					(new ProjectionManagementMessage.Command.Post(
-						new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
+						_bus, ProjectionMode.Continuous, _projectionName,
 						ProjectionManagementMessage.RunAs.System, "native:" + typeof(FakeProjection).AssemblyQualifiedName,
 						@"", enabled: true, checkpointsEnabled: true,
 						emitEnabled: false, trackEmittedStreams: false));
 				yield return
-					new ProjectionManagementMessage.Command.Disable(new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System);
+					new ProjectionManagementMessage.Command.Disable(_bus, _projectionName, ProjectionManagementMessage.RunAs.System);
 				yield return new ProjectionManagementMessage.Command.Delete(new NoopEnvelope(), _projectionName, ProjectionManagementMessage.RunAs.System, 
 					true, false, false);
 			}
