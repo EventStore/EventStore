@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using EventStore.Core;
 using EventStore.Projections.Core.Services.Interpreted;
 
 namespace EventStore.Projections.Core.Services.Management {
@@ -18,7 +17,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			string factoryType, string source,
 			bool enableContentTypeValidation,
 			int? projectionExecutionTimeout,
-			Action<int, Action> cancelCallbackFactory = null,
 			Action<string, object[]> logger = null) {
 			var colonPos = factoryType.IndexOf(':');
 			string kind = null;

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Concurrency;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -20,9 +19,6 @@ namespace EventStore.Projections.Core {
 		public static Dictionary<Guid, CoreWorker> CreateCoreWorkers(
 			StandardComponents standardComponents,
 			ProjectionsStandardComponents projectionsStandardComponents) {
-			var coreTimeoutSchedulers =
-				CreateTimeoutSchedulers(projectionsStandardComponents.ProjectionWorkerThreadCount);
-
 			var coreWorkers = new Dictionary<Guid, CoreWorker>();
 			while (coreWorkers.Count < projectionsStandardComponents.ProjectionWorkerThreadCount) {
 				var coreInputBus = new InMemoryBus("bus");
@@ -45,7 +41,6 @@ namespace EventStore.Projections.Core {
 					outputQueue: coreOutputQueue,
 					coreOutputBus,
 					standardComponents.TimeProvider,
-					coreTimeoutSchedulers[coreWorkers.Count],
 					projectionsStandardComponents.RunProjections,
 					projectionsStandardComponents.FaultOutOfOrderProjections,
 					projectionsStandardComponents.LeaderOutputQueue,
@@ -88,10 +83,8 @@ namespace EventStore.Projections.Core {
 			var queues = coreWorkers.Select(v => v.Value.CoreInputQueue).ToArray();
 			var coordinator = new ProjectionCoreCoordinator(
 				projectionsStandardComponents.RunProjections,
-				coreTimeoutSchedulers,
 				queues,
-				projectionsStandardComponents.LeaderOutputQueue,
-				projectionsStandardComponents.LeaderInputQueue);
+				projectionsStandardComponents.LeaderOutputQueue);
 
 			coordinator.SetupMessaging(projectionsStandardComponents.LeaderInputBus);
 			projectionsStandardComponents.LeaderInputBus.Subscribe(
@@ -99,13 +92,6 @@ namespace EventStore.Projections.Core {
 					.Select(x => x.Value.CoreInputQueue)
 					.ToArray()));
 			return coreWorkers;
-		}
-
-		public static TimeoutScheduler[] CreateTimeoutSchedulers(int count) {
-			var timeoutSchedulers = new TimeoutScheduler[count];
-			for (var i = 0; i < timeoutSchedulers.Length; i++)
-				timeoutSchedulers[i] = new TimeoutScheduler();
-			return timeoutSchedulers;
 		}
 	}
 
