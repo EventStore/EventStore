@@ -121,7 +121,6 @@ namespace EventStore.Projections.Core.Services.Management {
 		internal bool Created;
 		private bool _pendingWritePersistedState;
 		private readonly TimeSpan _projectionsQueryExpiry;
-		private readonly int _defaultProjectionExecutionTimeout;
 
 		private ManagedProjectionStateBase _stateHandler;
 		private IEnvelope _lastReplyEnvelope;
@@ -148,8 +147,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>
 				getResultDispatcher,
 			IODispatcher ioDispatcher,
-			TimeSpan projectionQueryExpiry,
-			int defaultProjectionExecutionTimeout) {
+			TimeSpan projectionQueryExpiry) {
 			if (id == Guid.Empty) throw new ArgumentException("id");
 			if (name == null) throw new ArgumentNullException("name");
 			if (output == null) throw new ArgumentNullException("output");
@@ -172,7 +170,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			_lastAccessed = _timeProvider.UtcNow;
 			_ioDispatcher = ioDispatcher;
 			_projectionsQueryExpiry = projectionQueryExpiry;
-			_defaultProjectionExecutionTimeout = defaultProjectionExecutionTimeout;
 		}
 
 		private string HandlerType {
@@ -966,8 +963,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			var emitEventEnabled = PersistedProjectionState.EmitEnabled == true;
 			var createTempStreams = PersistedProjectionState.CreateTempStreams == true;
 			var stopOnEof = PersistedProjectionState.Mode <= ProjectionMode.OneTime;
-			var projectionExecutionTimeout = PersistedProjectionState.ProjectionExecutionTimeout ??
-			                                 _defaultProjectionExecutionTimeout;
+			var projectionExecutionTimeout = PersistedProjectionState.ProjectionExecutionTimeout;
 
 			var projectionConfig = new ProjectionConfig(
 				_runAs,
@@ -981,7 +977,8 @@ namespace EventStore.Projections.Core.Services.Management {
 				stopOnEof,
 				trackEmittedStreams,
 				checkpointAfterMs,
-				maximumAllowedWritesInFlight, projectionExecutionTimeout);
+				maximumAllowedWritesInFlight,
+				projectionExecutionTimeout);
 			return projectionConfig;
 		}
 

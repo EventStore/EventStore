@@ -22,7 +22,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 		private ManagedProjection _mp;
 		private Guid _projectionId = Guid.NewGuid();
 		private ProjectionManagementMessage.ProjectionConfig _config;
-		private int _fallbackExecutionTimeout = 1000;
 		private EventRecord _persistedStateWrite;
 
 		private ManagedProjection.PersistedState _persistedState = new ManagedProjection.PersistedState {
@@ -50,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 
 		protected override void Given() {
 			_timeProvider = new FakeTimeProvider();
-			_mp = CreateManagedProjection(_fallbackExecutionTimeout);
+			_mp = CreateManagedProjection();
 
 			_mp.InitializeNew(
 				_persistedState,
@@ -180,7 +179,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 		private ProjectionManagementMessage.ProjectionConfig _config;
 		private EventRecord _persistedStateWrite;
 		private ProjectionManagementMessage.Command.UpdateConfig _updateConfig;
-		private readonly int _fallbackProjectionExecutionTimeout = 1100;
 
 		private ManagedProjection.PersistedState _persistedState => new ManagedProjection.PersistedState {
 			Enabled = false,
@@ -208,7 +206,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 
 		protected override void Given() {
 			_timeProvider = new FakeTimeProvider();
-			_mp = CreateManagedProjection(_fallbackProjectionExecutionTimeout);
+			_mp = CreateManagedProjection();
 
 			_mp.InitializeNew(
 				_persistedState,
@@ -241,7 +239,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 		public void persisted_state_should_have_null_projection_execution_timeout() {
 		Assert.IsNotNull(_persistedStateWrite);
 			var actualState = _persistedStateWrite.Data.ParseJson<ManagedProjection.PersistedState>();
-			Assert.AreEqual(null, actualState.ProjectionExecutionTimeout, "ProjectionExecutionTimeout");
+			Assert.IsNull(actualState.ProjectionExecutionTimeout, "ProjectionExecutionTimeout");
 		}
 	}
 
@@ -403,7 +401,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 	public abstract class projection_config_test_base<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		protected const string ProjectionName = "name";
 		protected readonly string ProjectionStreamId = ProjectionNamesBuilder.ProjectionsStreamPrefix + ProjectionName;
-		protected ManagedProjection CreateManagedProjection(int defaultProjectionExecutionTimeout = ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout) {
+		protected ManagedProjection CreateManagedProjection() {
 			return new ManagedProjection(
 				Guid.NewGuid(),
 				Guid.NewGuid(),
@@ -427,8 +425,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 						v => v.CorrelationId,
 						new PublishEnvelope(_bus)),
 				_ioDispatcher,
-				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
-				defaultProjectionExecutionTimeout);
+				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 		}
 
 		protected ProjectionManagementMessage.Command.UpdateConfig CreateConfig() {

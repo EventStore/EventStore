@@ -10,10 +10,8 @@ using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Core;
 using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection {
@@ -76,8 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 						v => v.CorrelationId,
 						new PublishEnvelope(_bus)),
 				_ioDispatcher,
-				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
-				ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout);
+				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 		}
 
 		protected override IEnumerable<WhenStep> When() {

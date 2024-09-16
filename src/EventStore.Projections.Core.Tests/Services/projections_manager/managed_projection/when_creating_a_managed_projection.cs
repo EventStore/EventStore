@@ -1,5 +1,4 @@
 ﻿using System;
-using EventStore.Core;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Services.TimeService;
@@ -62,8 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 					_getStateDispatcher,
 					_getResultDispatcher,
 					_ioDispatcher,
-					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
-					ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout);
+					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 			});
 		}
 
@@ -85,8 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 					_getStateDispatcher,
 					_getResultDispatcher,
 					_ioDispatcher,
-					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
-					ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout);
+					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 			});
 		}
 
@@ -108,8 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 					_getStateDispatcher,
 					_getResultDispatcher,
 					_ioDispatcher,
-					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
-					ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout);
+					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 			});
 		}
 	}
