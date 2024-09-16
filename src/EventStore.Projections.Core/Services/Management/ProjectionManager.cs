@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text.Json.Nodes;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
-using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -106,8 +105,6 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		private readonly IODispatcher _ioDispatcher;
 
-		private readonly int _defaultProjectionExecutionTimeout;
-		
 		private Guid _instanceCorrelationId = Guid.Empty;
 
 		public ProjectionManager(
@@ -118,7 +115,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			ProjectionType runProjections,
 			IODispatcher ioDispatcher,
 			TimeSpan projectionQueryExpiry,
-			bool initializeSystemProjections = true, int defaultProjectionExecutionTimeout = ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout) {
+			bool initializeSystemProjections = true) {
 			if (inputQueue == null) throw new ArgumentNullException("inputQueue");
 			if (publisher == null) throw new ArgumentNullException("publisher");
 			if (queueMap == null) throw new ArgumentNullException("queueMap");
@@ -178,7 +175,6 @@ namespace EventStore.Projections.Core.Services.Management {
 						v => v.CorrelationId,
 						v => v.CorrelationId,
 						new PublishEnvelope(_inputQueue));
-			_defaultProjectionExecutionTimeout = defaultProjectionExecutionTimeout;
 		}
 
 		public void Handle(ProjectionSubsystemMessage.StartComponents message) {
@@ -244,7 +240,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				return;
 
 			if (message.Mode == ProjectionMode.Transient) {
-				var transientProjection = new PendingProjection(ProjectionQueryId, message, _defaultProjectionExecutionTimeout);
+				var transientProjection = new PendingProjection(ProjectionQueryId, message);
 				if (!ValidateProjections(new [] {transientProjection}, message)) return;
 
 				PostNewTransientProjection(transientProjection, message.Envelope);
@@ -254,7 +250,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				} else {
 					var expectedVersion = _projectionsRegistrationExpectedVersion;
 					var pendingProjections = new Dictionary<string, PendingProjection> {
-						{message.Name, new PendingProjection(expectedVersion + 1, message, _defaultProjectionExecutionTimeout)}
+						{message.Name, new PendingProjection(expectedVersion + 1, message)}
 					};
 					if (!ValidateProjections(pendingProjections.Values.ToArray(), message)) return;
 						
@@ -281,7 +277,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			
 				var projectionId = expectedVersion + 1;
 				foreach (var projection in message.Projections) {
-					pendingProjections.Add(projection.Name, new PendingProjection(projectionId, projection, _defaultProjectionExecutionTimeout));
+					pendingProjections.Add(projection.Name, new PendingProjection(projectionId, projection));
 					projectionId++;
 				}
 
@@ -1141,7 +1137,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			private readonly ProjectionManagementMessage.RunAs _runAs;
 			private readonly IEnvelope _replyEnvelope;
 			private readonly string _name;
-			private readonly int _defaultProjectionExecutionTimeout;
 
 			public NewProjectionInitializer(
 				long projectionId,
@@ -1155,7 +1150,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				bool enableRunAs,
 				bool trackEmittedStreams,
 				ProjectionManagementMessage.RunAs runAs,
-				IEnvelope replyEnvelope, int defaultProjectionExecutionTimeout) {
+				IEnvelope replyEnvelope) {
 				if (projectionMode >= ProjectionMode.Continuous && !checkpointsEnabled)
 					throw new InvalidOperationException("Continuous mode requires checkpoints");
 
@@ -1174,7 +1169,6 @@ namespace EventStore.Projections.Core.Services.Management {
 				_runAs = runAs;
 				_replyEnvelope = replyEnvelope;
 				_name = name;
-				_defaultProjectionExecutionTimeout = defaultProjectionExecutionTimeout;
 			}
 
 			public void CreateAndInitializeNewProjection(
@@ -1203,7 +1197,7 @@ namespace EventStore.Projections.Core.Services.Management {
 						Version = version,
 						RunAs = _enableRunAs ? SerializedRunAs.SerializePrincipal(_runAs) : null,
 						ProjectionSubsystemVersion = ProjectionsSubsystem.VERSION,
-						ProjectionExecutionTimeout = _defaultProjectionExecutionTimeout
+						ProjectionExecutionTimeout = null
 					},
 					_replyEnvelope);
 			}
@@ -1260,13 +1254,11 @@ namespace EventStore.Projections.Core.Services.Management {
 			public bool EnableRunAs { get; }
 			public bool TrackEmittedStreams { get; }
 			public long ProjectionId { get; }
-			
-			public int DefaultProjectionExecutionTimeout { get; }
 
 			public PendingProjection(
 				long projectionId, ProjectionMode mode, SerializedRunAs runAs, string name, string handlerType, string query,
 				bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs,
-				bool trackEmittedStreams, int defaultProjectionExecutionTimeout) {
+				bool trackEmittedStreams) {
 				ProjectionId = projectionId;
 				Mode = mode;
 				RunAs = runAs;
@@ -1278,18 +1270,17 @@ namespace EventStore.Projections.Core.Services.Management {
 				EmitEnabled = emitEnabled;
 				EnableRunAs = enableRunAs;
 				TrackEmittedStreams = trackEmittedStreams;
-				DefaultProjectionExecutionTimeout = defaultProjectionExecutionTimeout;
 			}
 
-			public PendingProjection(long projectionId, ProjectionManagementMessage.Command.PostBatch.ProjectionPost projection, int defaultProjectionExecutionTimeout)
+			public PendingProjection(long projectionId, ProjectionManagementMessage.Command.PostBatch.ProjectionPost projection)
 				: this(projectionId, projection.Mode, projection.RunAs, projection.Name, projection.HandlerType,
 					projection.Query, projection.Enabled, projection.CheckpointsEnabled,
-					projection.EmitEnabled, projection.EnableRunAs, projection.TrackEmittedStreams, defaultProjectionExecutionTimeout) { }
+					projection.EmitEnabled, projection.EnableRunAs, projection.TrackEmittedStreams) { }
 
-			public PendingProjection(long projectionId, ProjectionManagementMessage.Command.Post projection, int defaultProjectionExecutionTimeout)
+			public PendingProjection(long projectionId, ProjectionManagementMessage.Command.Post projection)
 				: this(projectionId, projection.Mode, projection.RunAs, projection.Name, projection.HandlerType,
 					projection.Query, projection.Enabled, projection.CheckpointsEnabled,
-					projection.EmitEnabled, projection.EnableRunAs, projection.TrackEmittedStreams, defaultProjectionExecutionTimeout) { }
+					projection.EmitEnabled, projection.EnableRunAs, projection.TrackEmittedStreams) { }
 
 			public NewProjectionInitializer CreateInitializer(IEnvelope replyEnvelope) {
 				return new NewProjectionInitializer(
@@ -1304,7 +1295,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					EnableRunAs,
 					TrackEmittedStreams,
 					RunAs,
-					replyEnvelope, DefaultProjectionExecutionTimeout);
+					replyEnvelope);
 			}
 		}
 

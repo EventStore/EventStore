@@ -21,7 +21,9 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 			protected override IProjectionStateHandler CreateStateHandler() {
 				return _stateHandlerFactory.Create(
 					_projectionType, _projection, 
-					enableContentTypeValidation: true, logger: (s, _) => {
+					enableContentTypeValidation: true,
+					projectionExecutionTimeout: null,
+					logger: (s, _) => {
 						if (s.StartsWith("P:"))
 							Console.WriteLine(s);
 						else
@@ -71,8 +73,10 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			protected override IProjectionStateHandler CreateStateHandler() {
 				return _stateHandlerFactory.Create(
-					_projectionType, _projection, 
-					enableContentTypeValidation: false, logger: (s, _) => {
+					_projectionType, _projection,
+					enableContentTypeValidation: false,
+					projectionExecutionTimeout: null,
+					logger: (s, _) => {
 						if (s.StartsWith("P:"))
 							Console.WriteLine(s);
 						else

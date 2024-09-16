@@ -1,6 +1,5 @@
 ﻿using System;
 using EventStore.Common.Utils;
-using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests;
