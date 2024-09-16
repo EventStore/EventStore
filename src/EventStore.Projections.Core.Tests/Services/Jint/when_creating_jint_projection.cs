@@ -1,10 +1,7 @@
 ﻿using System;
-using EventStore.Common;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
-using EventStore.Projections.Core.Services.Processing.Emitting;
 using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using Jint.Runtime;
 using NUnit.Framework;
@@ -22,14 +19,14 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
 
 		[Test, Category(_projectionType)]
 		public void it_can_be_created() {
-			using (_stateHandlerFactory.Create(_projectionType, @"", true)) {
+			using (_stateHandlerFactory.Create(_projectionType, @"", true, null)) {
 			}
 		}
 
 		[Test, Category(_projectionType)]
 		public void js_syntax_errors_are_reported() {
 			try {
-				using (_stateHandlerFactory.Create(_projectionType, @"log(1;", true, logger: (s, _) => { })) {
+				using (_stateHandlerFactory.Create(_projectionType, @"log(1;", true, null, logger: (s, _) => { })) {
 				}
 			} catch (Exception ex) {
 				Assert.IsInstanceOf<Esprima.ParserException>(ex);
@@ -39,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
 		[Test, Category(_projectionType)]
 		public void js_exceptions_errors_are_reported() {
 			try {
-				using (_stateHandlerFactory.Create(_projectionType, @"throw 123;", true, logger: (s, _) => { })) {
+				using (_stateHandlerFactory.Create(_projectionType, @"throw 123;", true, null, logger: (s, _) => { })) {
 				}
 			} catch (Exception ex) {
 				Assert.IsInstanceOf<JavaScriptException>(ex);
@@ -56,6 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
                                 while (true) i++;
                     ",
 					true,
+					null,
 					logger: (s, _) => { },
 					cancelCallbackFactory: (timeout, action) => { })) {
 				}
@@ -78,6 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
                         });
                     ",
 					true,
+					null,
 					logger: Console.WriteLine)) {
 					h.Initialize();
 					string newState;
@@ -115,6 +114,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
                         });
                     ",
 					true,
+					null,
 					logger: Console.WriteLine)) {
 					h.Initialize();
 					string newState;
@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
                             while (true) i++;
                         }
                     });
-                ", true, logger: Console.WriteLine)) {
+                ", true, null, logger: Console.WriteLine)) {
 						h.Initialize();
 						string newState;
 						EmittedEventEnvelope[] emittedevents;

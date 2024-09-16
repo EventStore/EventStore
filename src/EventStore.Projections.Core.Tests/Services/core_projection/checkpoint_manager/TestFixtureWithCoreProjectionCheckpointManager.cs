@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 			_config = new ProjectionConfig(null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
 				_pendingEventsThreshold, _maxWriteBatchLength, _emitEventEnabled,
 				_checkpointsEnabled, _createTempStreams, _stopOnEof, _trackEmittedStreams, _checkpointAfterMs,
-				_maximumAllowedWritesInFlight);
+				_maximumAllowedWritesInFlight, null);
 			When();
 		}
 

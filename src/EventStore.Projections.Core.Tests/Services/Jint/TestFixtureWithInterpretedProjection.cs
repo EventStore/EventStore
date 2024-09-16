@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using EventStore.Common;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -44,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 		protected virtual IProjectionStateHandler CreateStateHandler() {
 			return _stateHandlerFactory.Create(
-				_projectionType, _projection, true, logger: (s, _) => {
+				_projectionType, _projection, true, null, logger: (s, _) => {
 					if (s.StartsWith("P:"))
 						Console.WriteLine(s);
 					else

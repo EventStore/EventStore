@@ -221,7 +221,7 @@ namespace EventStore.Projections.Core.Services.Http {
 						return;
 					}
 
-					if (config.ProjectionExecutionTimeout <= 0) {
+					if (config.ProjectionExecutionTimeout is not null && config.ProjectionExecutionTimeout <= 0) {
 						SendBadRequest(o, $"projectionExecutionTimeout should be positive. Found : {config.ProjectionExecutionTimeout}");
 						return;
 					}
@@ -554,8 +554,8 @@ namespace EventStore.Projections.Core.Services.Http {
 						new SendToHttpEnvelope<ProjectionManagementMessage.OperationFailed>(
 							_networkSendQueue,
 							http,
-							OperationFailedFormatter, 
-							OperationFailedConfigurator, 
+							OperationFailedFormatter,
+							OperationFailedConfigurator,
 							new SendToHttpEnvelope<ProjectionSubsystemMessage.InvalidSubsystemRestart>(
 								_networkSendQueue,
 								http,
@@ -602,7 +602,7 @@ namespace EventStore.Projections.Core.Services.Http {
 		private static string DefaultFormatter<T>(ICodec codec, T message) {
 			return codec.To(message);
 		}
-		
+
 		private ResponseConfiguration InvalidSubsystemRestartConfigurator(ICodec codec, ProjectionSubsystemMessage.InvalidSubsystemRestart message) {
 			return new ResponseConfiguration(HttpStatusCode.BadRequest, "Bad Request", "text/plain",
 				Helper.UTF8NoBom);
@@ -657,8 +657,7 @@ namespace EventStore.Projections.Core.Services.Http {
 			public int MaxWriteBatchLength { get; set; }
 			public int MaxAllowedWritesInFlight { get; set; }
 
-			public int ProjectionExecutionTimeout { get; set; } =
-				ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout;
+			public int? ProjectionExecutionTimeout { get; set; }
 		}
 	}
 }

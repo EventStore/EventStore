@@ -1,5 +1,4 @@
 ﻿using System;
-using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Services.TimeService;
@@ -45,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 
 
 		[Test]
-		public void empty_guid_throws_invali_argument_exception() {
+		public void empty_guid_throws_invalid_argument_exception() {
 			Assert.Throws<ArgumentException>(() => {
 				new ManagedProjection(
 					Guid.NewGuid(),
@@ -67,38 +66,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 		}
 
 		[Test]
-		public void empty_guid_throws_invali_argument_exception2() {
-			Assert.Throws<ArgumentException>(() => {
-				new ManagedProjection(
-					Guid.NewGuid(),
-					Guid.Empty,
-					1,
-					"name",
-					true,
-					null,
-					_streamDispatcher,
-					_writeDispatcher,
-					_readDispatcher,
-					_bus,
-					_timeProvider,
-					new RequestResponseDispatcher
-						<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
-							_bus,
-							v => v.CorrelationId,
-							v => v.CorrelationId,
-							_bus),
-					new RequestResponseDispatcher
-						<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
-							_bus,
-							v => v.CorrelationId,
-							v => v.CorrelationId,
-							_bus),
-					_ioDispatcher,
-					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
-			});
-		}
-
-		[Test]
 		public void null_name_throws_argument_null_exception() {
 			Assert.Throws<ArgumentNullException>(() => {
 				new ManagedProjection(
@@ -113,50 +80,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 					_readDispatcher,
 					_bus,
 					_timeProvider,
-					new RequestResponseDispatcher
-						<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
-							_bus,
-							v => v.CorrelationId,
-							v => v.CorrelationId,
-							_bus),
-					new RequestResponseDispatcher
-						<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
-							_bus,
-							v => v.CorrelationId,
-							v => v.CorrelationId,
-							_bus),
-					_ioDispatcher,
-					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
-			});
-		}
-
-		[Test]
-		public void null_name_throws_argument_null_exception2() {
-			Assert.Throws<ArgumentNullException>(() => {
-				new ManagedProjection(
-					Guid.NewGuid(),
-					Guid.NewGuid(),
-					1,
-					null,
-					true,
-					null,
-					_streamDispatcher,
-					_writeDispatcher,
-					_readDispatcher,
-					_bus,
-					_timeProvider,
-					new RequestResponseDispatcher
-						<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
-							_bus,
-							v => v.CorrelationId,
-							v => v.CorrelationId,
-							_bus),
-					new RequestResponseDispatcher
-						<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
-							_bus,
-							v => v.CorrelationId,
-							v => v.CorrelationId,
-							_bus),
+					_getStateDispatcher,
+					_getResultDispatcher,
 					_ioDispatcher,
 					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 			});
@@ -177,50 +102,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 					_readDispatcher,
 					_bus,
 					_timeProvider,
-					new RequestResponseDispatcher
-						<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
-							_bus,
-							v => v.CorrelationId,
-							v => v.CorrelationId,
-							_bus),
-					new RequestResponseDispatcher
-						<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
-							_bus,
-							v => v.CorrelationId,
-							v => v.CorrelationId,
-							_bus),
-					_ioDispatcher,
-					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
-			});
-		}
-
-		[Test]
-		public void empty_name_throws_argument_exception2() {
-			Assert.Throws<ArgumentException>(() => {
-				new ManagedProjection(
-					Guid.NewGuid(),
-					Guid.NewGuid(),
-					1,
-					"",
-					true,
-					null,
-					_streamDispatcher,
-					_writeDispatcher,
-					_readDispatcher,
-					_bus,
-					_timeProvider,
-					new RequestResponseDispatcher
-						<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>(
-							_bus,
-							v => v.CorrelationId,
-							v => v.CorrelationId,
-							_bus),
-					new RequestResponseDispatcher
-						<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
-							_bus,
-							v => v.CorrelationId,
-							v => v.CorrelationId,
-							_bus),
+					_getStateDispatcher,
+					_getResultDispatcher,
 					_ioDispatcher,
 					TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 			});
