@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using DotNext;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager;
 
@@ -35,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Integration {
 			_startSystemProjections = GivenStartSystemProjections();
 		}
 
-		protected override Tuple<SynchronousScheduler, IPublisher, SynchronousScheduler, TimeoutScheduler, Guid>[] GivenProcessingQueues() {
+		protected override Tuple<SynchronousScheduler, IPublisher, SynchronousScheduler, Guid>[] GivenProcessingQueues() {
 			SynchronousScheduler[] buses = [new("1"), new("2")];
 			SynchronousScheduler[] outBuses = [new("o1"), new("o2")];
 			_otherQueues = [new (buses[0], _timeProvider), new(buses[1], _timeProvider)];
@@ -44,13 +42,11 @@ namespace EventStore.Projections.Core.Tests.Integration {
 					buses[0],
 					_otherQueues[0].As<IPublisher>(),
 					outBuses[0],
-					default(TimeoutScheduler),
 					Guid.NewGuid()),
 				Tuple.Create(
 					buses[1],
 					_otherQueues[1].As<IPublisher>(),
 					outBuses[1],
-					default(TimeoutScheduler),
 					Guid.NewGuid())
 			];
 		}

@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using EventStore.Common;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.TimerService;
@@ -14,10 +12,8 @@ using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.Strategies;
-using EventStore.Projections.Core.Tests.Services.projections_manager;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
@@ -90,7 +86,6 @@ namespace EventStore.Projections.Core.Tests.Services {
 
 		private ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
-		private ISingletonTimeoutScheduler _timeoutScheduler;
 		protected Guid _workerId;
 
 		[SetUp]
@@ -104,13 +99,12 @@ namespace EventStore.Projections.Core.Tests.Services {
 				runHeadingReader: true, faultOutOfOrderProjections: true);
 			_subscriptionDispatcher =
 				new ReaderSubscriptionDispatcher(_bus);
-			_timeoutScheduler = new TimeoutScheduler();
 			_workerId = Guid.NewGuid();
 			var guardBus = new GuardBusToTriggerFixingIfUsed();
 			var configuration = new ProjectionsStandardComponents(1, ProjectionType.All, guardBus, guardBus, guardBus, guardBus, true,
 				 500, 250);
 			_service = new ProjectionCoreService(
-				_workerId, _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher, _timeoutScheduler, configuration);
+				_workerId, _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher, configuration);
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
 			_bus.Subscribe(_subscriptionDispatcher

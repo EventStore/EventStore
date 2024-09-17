@@ -739,10 +739,6 @@ namespace EventStore.Projections.Core.Messages {
 			}
 
 			[DerivedMessage(ProjectionMessage.Management)]
-			public partial class RegularTimeout : Message {
-			}
-
-			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class ReadTimeout : Message {
 				private readonly Guid _correlationId;
 				private readonly string _streamId;

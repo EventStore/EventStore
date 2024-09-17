@@ -8,7 +8,6 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Common.Utils;
-using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing.Strategies;
 using Serilog;
 
@@ -49,8 +48,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly ITimeProvider _timeProvider;
 		private readonly ProcessingStrategySelector _processingStrategySelector;
 
-		private readonly ISingletonTimeoutScheduler _timeoutScheduler;
-
 		private bool _stopping;
 		private readonly Dictionary<Guid, CoreProjection> _suspendingProjections = new Dictionary<Guid, CoreProjection>();
 		private Guid _stopQueueId = Guid.Empty;
@@ -64,12 +61,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ReaderSubscriptionDispatcher subscriptionDispatcher,
 			ITimeProvider timeProvider,
 			IODispatcher ioDispatcher,
-			ISingletonTimeoutScheduler timeoutScheduler, ProjectionsStandardComponents configuration) {
+			ProjectionsStandardComponents configuration) {
 			_workerId = workerId;
 			_inputQueue = inputQueue;
 			_publisher = publisher;
 			_ioDispatcher = ioDispatcher;
-			_timeoutScheduler = timeoutScheduler;
 			_subscriptionDispatcher = subscriptionDispatcher;
 			_timeProvider = timeProvider;
 			_processingStrategySelector = new ProcessingStrategySelector(_subscriptionDispatcher);
@@ -149,7 +145,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			try {
 				//TODO: factory method can throw
 				var stateHandler = CreateStateHandler(_factory,
-					_timeoutScheduler,
 					_logger,
 					message.HandlerType,
 					message.Query,
@@ -298,7 +293,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public static IProjectionStateHandler CreateStateHandler(ProjectionStateHandlerFactory factory,
-			ISingletonTimeoutScheduler singletonTimeoutScheduler,
 			ILogger logger,
 			string handlerType,
 			string query,
@@ -309,9 +303,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				query,
 				enableContentTypeValidation,
 				projectionExecutionTimeout,
-				logger: logger.Verbose,
-				cancelCallbackFactory:
-				singletonTimeoutScheduler == null ? null : singletonTimeoutScheduler.Schedule);
+				logger: logger.Verbose);
 			return stateHandler;
 		}
 	}

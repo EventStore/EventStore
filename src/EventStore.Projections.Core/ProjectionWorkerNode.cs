@@ -32,7 +32,6 @@ namespace EventStore.Projections.Core {
 			IPublisher outputQueue,
 			ISubscriber outputBus,
 			ITimeProvider timeProvider,
-			ISingletonTimeoutScheduler timeoutScheduler,
 			ProjectionType runProjections,
 			bool faultOutOfOrderProjections,
 			IPublisher leaderOutputQueue,
@@ -63,7 +62,6 @@ namespace EventStore.Projections.Core {
 					_subscriptionDispatcher,
 					timeProvider,
 					_ioDispatcher,
-					timeoutScheduler,
 					configuration);
 			}
 		}

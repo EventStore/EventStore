@@ -54,8 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
                     ",
 					true,
 					null,
-					logger: (s, _) => { },
-					cancelCallbackFactory: (timeout, action) => { })) {
+					logger: (s, _) => { })) {
 				}
 			} catch (Exception ex) {
 				Assert.IsInstanceOf<TimeoutException>(ex);
