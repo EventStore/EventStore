@@ -39,7 +39,7 @@ public class MultiStreamMultiOutputCheckpointManagerTests {
 		_existingStreams = new ExistingStreamsHelper();
 
 		var projectionConfig = new ProjectionConfig(SystemAccounts.System, 10, 1000, 20, 2,
-			true, true, false, false, false, 10000, 100);
+			true, true, false, false, false, 10000, 100, null);
 		var positionTagger = new FakePositionTagger(ProjectionPhase);
 
 		_sut = new MultiStreamMultiOutputCheckpointManager(

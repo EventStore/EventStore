@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Tests.ClientAPI;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -30,7 +29,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 			_projectionNamesBuilder = ProjectionNamesBuilder.CreateForTest(_projectionName);
 			_emittedStreamsTracker = new EmittedStreamsTracker(_ioDispatcher,
 				new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false,
-					_trackEmittedStreams, 10000, 1), _projectionNamesBuilder);
+					_trackEmittedStreams, 10000, 1, null), _projectionNamesBuilder);
 			_emittedStreamsDeleter = new EmittedStreamsDeleter(_ioDispatcher,
 				_projectionNamesBuilder.GetEmittedStreamsName(),
 				_projectionNamesBuilder.GetEmittedStreamsCheckpointName());

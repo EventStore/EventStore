@@ -89,7 +89,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 				readerBuilder.AllEvents();
 			}
 
-			var config = ProjectionConfig.GetTest();
+			var config = new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, true, 10000,
+				1, 250);
 			IQuerySources sources = readerBuilder.Build();
 			var readerStrategy = ReaderStrategy.Create(
 				"test",

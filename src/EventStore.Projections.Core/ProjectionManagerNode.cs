@@ -53,8 +53,7 @@ namespace EventStore.Projections.Core {
 				projectionsStandardComponents.RunProjections,
 				ioDispatcher,
 				projectionQueryExpiry,
-				projectionTracker,
-				defaultProjectionExecutionTimeout: projectionsStandardComponents.ProjectionExecutionTimeout);
+				projectionTracker);
 
 			SubscribeMainBus(
 				projectionsStandardComponents.LeaderInputBus,

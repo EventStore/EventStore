@@ -4,7 +4,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Helpers.IODispatcherTests;
 using EventStore.Projections.Core.Services;
@@ -37,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 			_projectionVersion = new ProjectionVersion(3, 1, 2);
 			_projectionConfig = new ProjectionConfig(SystemAccounts.System, 10, 1000, 1000, 10, true, true, true,
 				false,
-				false, 5000, 10);
+				false, 5000, 10, null);
 			_positionTagger = new MultiStreamPositionTagger(3, _streams);
 			_positionTagger.AdjustTag(CheckpointTag.FromStreamPositions(3,
 				new Dictionary<string, long> {{"a", 0}, {"b", 0}, {"c", 0}}));
