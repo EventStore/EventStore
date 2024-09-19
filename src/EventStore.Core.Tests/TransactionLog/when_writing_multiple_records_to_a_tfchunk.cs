@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -19,8 +20,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private IPrepareLogRecord<TStreamId> _prepare2;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_chunk = TFChunkHelper.CreateNewChunk(Filename);
 
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;

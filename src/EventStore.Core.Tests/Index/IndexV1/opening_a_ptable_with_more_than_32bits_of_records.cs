@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using EventStore.Core.Index;
 using EventStore.Common.Utils;
@@ -21,13 +22,13 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 		protected int _indexEntrySize = PTable.IndexEntryV1Size;
 
-		public opening_a_ptable_with_more_than_32bits_of_records(int indexEntrySize) {	
+		public opening_a_ptable_with_more_than_32bits_of_records(int indexEntrySize) {
 			Assert.Inconclusive("Explicit test, Test setup never returns");
 			_indexEntrySize = indexEntrySize;
 		}
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_ptableCount = (long)(uint.MaxValue + 10000000L);
 			_size = _ptableCount * (long)_indexEntrySize + PTableHeader.Size + PTable.MD5Size;
 			Console.WriteLine("Creating PTable at {0}. Size of PTable: {1}", Filename, _size);
@@ -81,7 +82,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[Test, Explicit,Ignore("Long running, unsafe")]
-		public void count_should_be_right() {			
+		public void count_should_be_right() {
 			Assert.AreEqual(_ptableCount, _ptable.Count);
 		}
 
