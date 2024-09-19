@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Runtime.CompilerServices;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog.Chunks;
 using Serilog;
@@ -70,9 +72,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		}
 
 		// following old scavenging design the returned task must complete successfully
+		[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))] // get off the main queue
 		public async Task ScavengeAsync(CancellationToken cancellationToken) {
-			await Task.Yield(); // get off the main queue
-
 			_recordedTimes.Clear();
 			var stopwatch = Stopwatch.StartNew();
 			var result = ScavengeResult.Success;
