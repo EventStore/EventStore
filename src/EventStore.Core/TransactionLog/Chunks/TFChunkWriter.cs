@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -126,16 +128,16 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			Flush();
 		}
 
-		private void CompleteReplicatedRawChunkInTransaction(TFChunk.TFChunk rawChunk) {
-			rawChunk.CompleteRaw();
+		private async ValueTask CompleteReplicatedRawChunkInTransaction(TFChunk.TFChunk rawChunk, CancellationToken token) {
+			await rawChunk.CompleteRaw(token);
 			_currentChunk = _db.Manager.SwitchChunk(rawChunk, verifyHash: true, removeChunksWithGreaterNumbers: true);
 
 			_nextRecordPosition = rawChunk.ChunkHeader.ChunkEndPosition;
 		}
 
-		public void CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk) {
+		public async ValueTask CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk, CancellationToken token) {
 			OpenTransaction();
-			CompleteReplicatedRawChunkInTransaction(rawChunk);
+			await CompleteReplicatedRawChunkInTransaction(rawChunk, token);
 			CommitTransaction();
 			Flush();
 		}

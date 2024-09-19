@@ -163,7 +163,7 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		protected void SubscribeToMessage<T>() where T : Message {
-			_writerBus.Subscribe((IHandle<T>)this);
+			_writerBus.Subscribe((IAsyncHandle<T>)this);
 			_subscribeToBus.Subscribe<T>(new AdHocHandler<Message>(EnqueueMessage));
 		}
 

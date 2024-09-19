@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Security.Cryptography;
 using DotNext;
@@ -50,12 +51,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				WorkingStream = memStream;
 		}
 
-		public void AppendData(byte[] buf, int offset, int len) {
+		public void AppendData(ReadOnlyMemory<byte> buf) {
 			// as we are always append-only, stream's position should be right here
-			_fileStream?.Write(buf, offset, len);
+			_fileStream?.Write(buf.Span);
 
 			//MEMORY
-			_memStream?.Write(buf, offset, len);
+			_memStream?.Write(buf.Span);
 		}
 
 		public void ResizeStream(int fileSize) {
