@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
@@ -29,8 +30,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			_lruCacheSize = lruCacheSize;
 		}
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			var table = new HashListMemTable(_ptableVersion, maxSize: 50);
 			table.Add(0x010100000000, 0x0001, 0x0001);

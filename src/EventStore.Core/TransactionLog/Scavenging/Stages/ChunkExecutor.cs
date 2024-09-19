@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Chunks;
@@ -39,7 +40,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_throttle = throttle;
 		}
 
-		public void Execute(
+		public ValueTask Execute(
 			ScavengePoint scavengePoint,
 			IScavengeStateForChunkExecutor<TStreamId> state,
 			ITFChunkScavengerLog scavengerLogger,
@@ -52,10 +53,10 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				scavengePoint: scavengePoint,
 				doneLogicalChunkNumber: default);
 			state.SetCheckpoint(checkpoint);
-			Execute(checkpoint, state, scavengerLogger, cancellationToken);
+			return Execute(checkpoint, state, scavengerLogger, cancellationToken);
 		}
 
-		public void Execute(
+		public async ValueTask Execute(
 			ScavengeCheckpoint.ExecutingChunks checkpoint,
 			IScavengeStateForChunkExecutor<TStreamId> state,
 			ITFChunkScavengerLog scavengerLogger,
@@ -77,7 +78,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			}
 
 			try {
-				ParallelLoop.RunWithTrailingCheckpoint(
+				await ParallelLoop.RunWithTrailingCheckpointAsync(
 					source: physicalChunks,
 					degreeOfParallelism: _threads,
 					getCheckpointInclusive: physicalChunk => physicalChunk.ChunkEndNumber,
@@ -86,7 +87,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 							return null;
 						return physicalChunk.ChunkStartNumber - 1;
 					},
-					process: (slot, physicalChunk) => {
+					process: async (slot, physicalChunk, cancellationToken) => {
 						// this is called on other threads
 						var concurrentState = borrowedStates[slot];
 						var sw = stopwatches[slot];
@@ -94,11 +95,11 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 						// the physical chunks do not overlap in chunk range, so we can sum
 						// and reset them concurrently
 						var physicalWeight = concurrentState.SumChunkWeights(
-								physicalChunk.ChunkStartNumber,
-								physicalChunk.ChunkEndNumber);
+							physicalChunk.ChunkStartNumber,
+							physicalChunk.ChunkEndNumber);
 
 						if (physicalWeight > scavengePoint.Threshold || _unsafeIgnoreHardDeletes) {
-							ExecutePhysicalChunk(
+							await ExecutePhysicalChunk(
 								physicalWeight,
 								scavengePoint,
 								concurrentState,
@@ -120,6 +121,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 								physicalChunk.Name,
 								physicalWeight);
 						}
+
 						cancellationToken.ThrowIfCancellationRequested();
 					},
 					emitCheckpoint: chunkEndNumber => {
@@ -138,7 +140,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 							// running a multithreaded scavenge with throttle < 100
 							// is rejected by the AdminController.
 						}
-					});
+					},
+					token: cancellationToken);
 			} finally {
 				for (var i = 0; i < borrowedStates.Length; i++) {
 					borrowedStates[i].Dispose();
@@ -167,7 +170,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			}
 		}
 
-		private void ExecutePhysicalChunk(
+		private async ValueTask ExecutePhysicalChunk(
 			float physicalWeight,
 			ScavengePoint scavengePoint,
 			IScavengeStateForChunkExecutorWorker<TStreamId> state,
@@ -196,7 +199,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			try {
 				outputChunk = _chunkManager.CreateChunkWriter(sourceChunk);
 				_logger.Debug(
-					"SCAVENGING: Resulting temp chunk file: {tmpChunkPath}.", 
+					"SCAVENGING: Resulting temp chunk file: {tmpChunkPath}.",
 					Path.GetFileName(outputChunk.FileName));
 
 			} catch (IOException ex) {
@@ -240,7 +243,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					oldChunkName, discardedCount + keptCount,
 					keptCount, discardedCount);
 
-				outputChunk.Complete(out var newFileName, out var newFileSize);
+				var (newFileName, newFileSize) = await outputChunk.Complete(cancellationToken);
 
 				var elapsed = sw.Elapsed;
 				_logger.Debug(
@@ -328,7 +331,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					return false;
 				}
 			}
-			
+
 			if (details.IsTombstoned) {
 				if (_unsafeIgnoreHardDeletes) {
 					// remove _everything_ for metadata and original streams

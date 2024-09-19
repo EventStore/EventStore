@@ -300,7 +300,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				}
 			}
 
-			EmptyRequestedChunks(dbResult.Db);
+			await EmptyRequestedChunks(dbResult.Db);
 
 			Scavenger<TStreamId> sut = null;
 			try {
@@ -694,7 +694,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			}
 		}
 
-		private void EmptyRequestedChunks(TFChunkDb db) {
+		private async ValueTask EmptyRequestedChunks(TFChunkDb db) {
 			foreach (var chunkNum in _chunkNumsToEmpty) {
 				var chunk = db.Manager.GetChunk(chunkNum);
 				var header = chunk.ChunkHeader;
@@ -722,7 +722,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					transformFactory: transformFactory,
 					transformHeader: transformFactory.CreateTransformHeader());
 
-				newChunk.CompleteScavenge(null);
+				await newChunk.CompleteScavenge(null, CancellationToken.None);
 
 				db.Manager.SwitchChunk(newChunk, false, false);
 			}

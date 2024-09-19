@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public interface IChunkManagerForChunkExecutor<TStreamId, TRecord> {
@@ -13,7 +15,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 		void WriteRecord(RecordForExecutor<TStreamId, TRecord> record);
 
-		void Complete(out string newFileName, out long newFileSize);
+		ValueTask<(string NewFileName, long NewFileSize)> Complete(CancellationToken token);
 
 		void Abort(bool deleteImmediately);
 	}

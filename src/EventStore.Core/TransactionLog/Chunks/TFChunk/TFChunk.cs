@@ -841,10 +841,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			CompleteNonRaw(null);
 		}
 
-		public void CompleteScavenge(ICollection<PosMap> mapping) {
+		public async ValueTask CompleteScavenge(ICollection<PosMap> mapping, CancellationToken token) {
 			if (!ChunkHeader.IsScavenged)
 				throw new InvalidOperationException("CompleteScavenged should not be used for non-scavenged chunks.");
 
+			token.ThrowIfCancellationRequested();
 			CompleteNonRaw(mapping);
 		}
 

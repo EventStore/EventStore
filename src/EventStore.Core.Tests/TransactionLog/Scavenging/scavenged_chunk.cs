@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -10,7 +12,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 	[TestFixture]
 	public class scavenged_chunk : SpecificationWithFile {
 		[Test]
-		public void is_fully_resident_in_memory_when_cached() {
+		public async Task is_fully_resident_in_memory_when_cached() {
 			var map = new List<PosMap>();
 			var chunk = TFChunk.CreateNew(Filename, 1024 * 1024, 0, 0, true, false, false, false,
 				false,
@@ -24,7 +26,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 				logPos = res.NewPosition;
 			}
 
-			chunk.CompleteScavenge(map);
+			await chunk.CompleteScavenge(map, CancellationToken.None);
 
 			chunk.CacheInMemory();
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Chunks;
@@ -21,7 +22,7 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 
 	protected abstract Task CreateChunks(TFChunkDb leaderDb);
 
-	protected static Task CreateChunk(TFChunkDb db, bool raw, bool complete, int chunkStartNumber, int chunkEndNumber, ILogRecord[] logRecords) {
+	protected static async Task CreateChunk(TFChunkDb db, bool raw, bool complete, int chunkStartNumber, int chunkEndNumber, ILogRecord[] logRecords) {
 		var filename = db.Config.FileNamingStrategy.GetFilenameFor(chunkStartNumber, raw ? 1 : 0);
 
 		if (raw && !complete)
@@ -77,7 +78,7 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 		}
 
 		if (raw)
-			chunk.CompleteScavenge(posMaps);
+			await chunk.CompleteScavenge(posMaps, CancellationToken.None);
 		else if (complete)
 			chunk.Complete();
 		else
@@ -88,8 +89,6 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 
 		chunk.Dispose();
 		chunk.WaitForDestroy(0);
-
-		return Task.CompletedTask;
 	}
 
 	private ILogRecord CreatePrepare(long logPosition, PrepareFlags flags) {
