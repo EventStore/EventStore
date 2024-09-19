@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Threading.Tasks;
 using DotNext.Buffers;
 using DotNext.Collections.Concurrent;
 using DotNext.Diagnostics;
@@ -865,29 +866,42 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			SetAttributes(_filename, true);
 		}
 
-		public void CompleteRaw() {
-			if (IsReadOnly)
-				throw new InvalidOperationException("Cannot complete a read-only TFChunk.");
-			if (_writerWorkItem.WorkingStream.Position != _writerWorkItem.WorkingStream.Length)
-				throw new InvalidOperationException("The raw chunk is not completely written.");
-			Flush();
+		public ValueTask CompleteRaw(CancellationToken token) {
+			ValueTask task;
 
-			if (!_inMem)
-				CreateReaderStreams();
-
-			IsReadOnly = true;
-
-			_writerWorkItem?.Dispose();
-			_writerWorkItem = null;
-
-			SetAttributes(_filename, true);
-
-			if (!_inMem) {
-				using var stream = _handle.AsUnbufferedStream(FileAccess.Read);
-				_chunkFooter = ReadFooter(stream);
+			if (token.IsCancellationRequested) {
+				task = ValueTask.FromCanceled(token);
 			} else {
-				_chunkFooter = ReadFooter(_sharedMemStream);
+				task = ValueTask.CompletedTask;
+				try {
+					if (IsReadOnly)
+						throw new InvalidOperationException("Cannot complete a read-only TFChunk.");
+					if (_writerWorkItem.WorkingStream.Position != _writerWorkItem.WorkingStream.Length)
+						throw new InvalidOperationException("The raw chunk is not completely written.");
+					Flush();
+
+					if (!_inMem)
+						CreateReaderStreams();
+
+					IsReadOnly = true;
+
+					_writerWorkItem?.Dispose();
+					_writerWorkItem = null;
+
+					SetAttributes(_filename, true);
+
+					if (!_inMem) {
+						using var stream = _handle.AsUnbufferedStream(FileAccess.Read);
+						_chunkFooter = ReadFooter(stream);
+					} else {
+						_chunkFooter = ReadFooter(_sharedMemStream);
+					}
+				} catch (Exception e) {
+					task = ValueTask.FromException(e);
+				}
 			}
+
+			return task;
 		}
 
 		private ChunkFooter WriteFooter(ICollection<PosMap> mapping) {
@@ -1314,15 +1328,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		[StructLayout(LayoutKind.Auto)]
-		private struct ReaderWorkItemPool {
+		private struct ReaderWorkItemPool() {
 			private volatile ReaderWorkItem[] _array;
 
 			// IndexPool supports up to 64 elements with O(1) take/return time complexity.
 			// It's a thread-safe data structure with no allocations that provide predictability about
 			// the indices: smallest available index is always preferred.
-			private IndexPool _indices;
-
-			public ReaderWorkItemPool() => _indices = new() { IsEmpty = true };
+			private IndexPool _indices = new() { IsEmpty = true };
 
 			public void Reuse() {
 				if (_array is null) {
@@ -1360,8 +1372,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				return localReferenceCount;
 			}
-
-			internal readonly int Count => _indices.Count;
 
 			internal bool TryTake(out Slot slot) {
 				if (_array is { } array && _indices.TryTake(out int index)) {
