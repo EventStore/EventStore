@@ -147,11 +147,9 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				tasksInProgress[slot] = Task.Run(() => process(slot, item, token), token);
 			}
 
-			int WaitForSlot() {
-				var slot = Task.WaitAny(tasksInProgress);
-				var task = tasksInProgress[slot];
-				if (task.Status is TaskStatus.Faulted or TaskStatus.Canceled)
-					throw task.Exception.InnerException;
+			static async Task<int> WaitForSlot(Task[] tasks) {
+				var task = await Task.WhenAny(tasks);
+				var slot = Array.IndexOf(tasks, task);
 				return slot;
 			}
 
@@ -182,7 +180,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					PrepareProcessingItem(slotsInUse, item);
 					StartProcessingItem(slotsInUse++, item);
 				} else {
-					var slot = WaitForSlot();
+					var slot = await WaitForSlot(tasksInProgress);
 					PrepareProcessingItem(slot, item);
 					EmitCheckpoint();
 					StartProcessingItem(slot, item);
@@ -191,7 +189,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 			// drain the tasks
 			while (slotsInUse > 0) {
-				var slot = WaitForSlot();
+				var slot = await WaitForSlot(tasksInProgress);
 				checkpoints[slot] = int.MaxValue;
 				EmitCheckpoint();
 				tasksInProgress[slot] = _neverComplete;
