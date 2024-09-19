@@ -866,42 +866,31 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			SetAttributes(_filename, true);
 		}
 
-		public ValueTask CompleteRaw(CancellationToken token) {
-			ValueTask task;
+		public async ValueTask CompleteRaw(CancellationToken token) {
+			if (IsReadOnly)
+				throw new InvalidOperationException("Cannot complete a read-only TFChunk.");
+			if (_writerWorkItem.WorkingStream.Position != _writerWorkItem.WorkingStream.Length)
+				throw new InvalidOperationException("The raw chunk is not completely written.");
 
-			if (token.IsCancellationRequested) {
-				task = ValueTask.FromCanceled(token);
+			token.ThrowIfCancellationRequested();
+			Flush();
+
+			if (!_inMem)
+				CreateReaderStreams();
+
+			IsReadOnly = true;
+
+			_writerWorkItem?.Dispose();
+			_writerWorkItem = null;
+
+			SetAttributes(_filename, true);
+
+			if (!_inMem) {
+				using var stream = _handle.AsUnbufferedStream(FileAccess.Read);
+				_chunkFooter = ReadFooter(stream);
 			} else {
-				task = ValueTask.CompletedTask;
-				try {
-					if (IsReadOnly)
-						throw new InvalidOperationException("Cannot complete a read-only TFChunk.");
-					if (_writerWorkItem.WorkingStream.Position != _writerWorkItem.WorkingStream.Length)
-						throw new InvalidOperationException("The raw chunk is not completely written.");
-					Flush();
-
-					if (!_inMem)
-						CreateReaderStreams();
-
-					IsReadOnly = true;
-
-					_writerWorkItem?.Dispose();
-					_writerWorkItem = null;
-
-					SetAttributes(_filename, true);
-
-					if (!_inMem) {
-						using var stream = _handle.AsUnbufferedStream(FileAccess.Read);
-						_chunkFooter = ReadFooter(stream);
-					} else {
-						_chunkFooter = ReadFooter(_sharedMemStream);
-					}
-				} catch (Exception e) {
-					task = ValueTask.FromException(e);
-				}
+				_chunkFooter = ReadFooter(_sharedMemStream);
 			}
-
-			return task;
 		}
 
 		private ChunkFooter WriteFooter(ICollection<PosMap> mapping) {
