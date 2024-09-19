@@ -808,24 +808,24 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
 		}
 
-		public bool TryAppendRawData(byte[] buffer) {
+		public bool TryAppendRawData(ReadOnlyMemory<byte> buffer) {
 			var workItem = _writerWorkItem;
 			if (workItem.WorkingStream.Position + buffer.Length > workItem.WorkingStream.Length)
 				return false;
-			WriteRawData(workItem, buffer, buffer.Length);
+			WriteRawData(workItem, buffer);
 			return true;
 		}
 
 		private static long WriteRawData(WriterWorkItem workItem, MemoryStream buffer) {
 			var len = (int)buffer.Length;
 			var buf = buffer.GetBuffer();
-			return WriteRawData(workItem, buf, len);
+			return WriteRawData(workItem, buf.AsMemory(0, len));
 		}
 
-		private static long WriteRawData(WriterWorkItem workItem, byte[] buf, int len) {
+		private static long WriteRawData(WriterWorkItem workItem, ReadOnlyMemory<byte> buf) {
 			var curPos = GetDataPosition(workItem);
 			// the writer work item's stream is responsible for updating the checksum
-			workItem.AppendData(buf, 0, len);
+			workItem.AppendData(buf);
 			return curPos;
 		}
 
