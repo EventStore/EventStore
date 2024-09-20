@@ -54,11 +54,13 @@ function Watch-ProjectionStatus {
     $complete = $false
     while ($false -eq $complete) {
         $status = Invoke-RestMethod -Uri $ProjectionDetails.StatusUri -Headers $Headers
-        if ($ExpectedStatus -eq $status.Status) {
-            $complete = $true
-        } else {
-            Start-Sleep -Milliseconds 500
+        ForEach ($exp in $ExpectedStatus) {
+            if ($status.Status -like $exp) {
+                $complete = $true
+                break;
+            }
         }
+        Start-Sleep -Milliseconds 500
     }
 }
 
@@ -70,7 +72,7 @@ function Disable-Projection {
     Write-Host "Disabling projection $($ProjectionDetails.Name)"
     Invoke-WebRequest -Uri $ProjectionDetails.DisableUri -Method "POST" -Headers $Headers | Out-Null
 
-    Watch-ProjectionStatus $ProjectionDetails @("Stopped", "Faulted")
+    Watch-ProjectionStatus $ProjectionDetails @("*Stopped*", "*Faulted*")
 
     Write-Host "Projection $($ProjectionDetails.Name) has been disabled"
 }
@@ -115,7 +117,7 @@ foreach($projection in $AllProjections) {
 
     if ($null -ne $projectionConfig.ProjectionExecutionTimeout) {
         Write-Host "Fixing projection $($projection.Name)"
-        if ($projection.Status -ne "Stopped" -and $projection.Status -ne "Faulted") {
+        if ($projection.Status -eq "Running") {
             Disable-Projection $projection
         }
 
