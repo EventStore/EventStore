@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Runtime.CompilerServices;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
@@ -128,7 +130,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			// null means it cannot emit a checkpoint at all.
 			// int.max means it places no limit on the checkpoint.
 			var checkpoints = new int?[degreeOfParallelism];
-			var tasksInProgress = new Task[degreeOfParallelism];
+			var tasksInProgress = new Task<int>[degreeOfParallelism];
 
 			for (var i = 0; i < degreeOfParallelism; i++) {
 				tasksInProgress[i] = _neverComplete;
@@ -143,13 +145,9 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				checkpoints[slot] = getCheckpointExclusive(item);
 			}
 
-			void StartProcessingItem(int slot, T item) {
-				tasksInProgress[slot] = Task.Run(() => process(slot, item, token), token);
-			}
-
-			static async Task<int> WaitForSlot(Task[] tasks) {
-				var task = await Task.WhenAny(tasks);
-				var slot = Array.IndexOf(tasks, task);
+			[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder<>))]
+			static async Task<int> SpawnProcess(Func<int, T, CancellationToken, Task> process, int slot, T item, CancellationToken token) {
+				await process.Invoke(slot, item, token);
 				return slot;
 			}
 
@@ -178,18 +176,21 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				endCheckpoint = getCheckpointInclusive(item);
 				if (slotsInUse < tasksInProgress.Length) {
 					PrepareProcessingItem(slotsInUse, item);
-					StartProcessingItem(slotsInUse++, item);
+					tasksInProgress[slotsInUse] = SpawnProcess(process, slotsInUse, item, token);
+					slotsInUse++;
 				} else {
-					var slot = await WaitForSlot(tasksInProgress);
+					var task = await Task.WhenAny(tasksInProgress);
+					var slot = await task;
 					PrepareProcessingItem(slot, item);
 					EmitCheckpoint();
-					StartProcessingItem(slot, item);
+					tasksInProgress[slot] = SpawnProcess(process, slot, item, token);
 				}
 			}
 
 			// drain the tasks
 			while (slotsInUse > 0) {
-				var slot = await WaitForSlot(tasksInProgress);
+				var task = await Task.WhenAny(tasksInProgress);
+				var slot = await task;
 				checkpoints[slot] = int.MaxValue;
 				EmitCheckpoint();
 				tasksInProgress[slot] = _neverComplete;
