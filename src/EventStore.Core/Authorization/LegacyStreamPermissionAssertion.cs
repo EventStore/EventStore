@@ -78,7 +78,9 @@ namespace EventStore.Core.Authorization {
 
 		private ValueTask<bool> Check(ClaimsPrincipal cp, Operation operation, string action, string streamId,
 			PolicyInformation policy, EvaluationContext context) {
+#pragma warning disable CA2012
 			var preChecks = IsSystemOrAdmin(cp, operation, policy, context);
+#pragma warning restore CA2012
 			if (preChecks.IsCompleted && preChecks.Result) return preChecks;
 
 			return CheckAsync(preChecks, cp, action, streamId, policy, context);

@@ -23,7 +23,7 @@ public class when_publishing_into_memory_bus {
 
 	[Test, Ignore("We do not check each message for null for performance reasons.")]
 	public void null_message_app_should_throw() {
-		Assert.ThrowsAsync<ArgumentNullException>(_bus.DispatchAsync(null).AsTask);
+		Assert.ThrowsAsync<ArgumentNullException>(async () => await _bus.DispatchAsync(null));
 	}
 
 	[Test]
