@@ -166,10 +166,22 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			expectedCheckpoints: new int[] { 50 });
 
 		[Fact]
+		public async Task process_very_out_of_order_async() => await RunAsync(
+			source: [10, 20, 30, 40, 50],
+			completionOrder: [20, 30, 40, 50, 10],
+			expectedCheckpoints: [50]);
+
+		[Fact]
 		public void process_interleaved() => Run(
 			source: new int[] { 10, 20, 30, 40, 50 },
 			completionOrder: new int[] { 20, 10, 30, 40, 50 },
 			expectedCheckpoints: new int[] { 20, 30, 40, 50 });
+
+		[Fact]
+		public async Task process_interleaved_async() => await RunAsync(
+			source: [10, 20, 30, 40, 50],
+			completionOrder: [20, 10, 30, 40, 50],
+			expectedCheckpoints: [20, 30, 40, 50]);
 
 		[Fact]
 		public void one_degree_of_parallelism() => Run(
@@ -221,6 +233,22 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					process: (slot, x) => {
 						throw new InvalidOperationException("something went wrong");
 					},
+					emitCheckpoint: checkpoint => {
+					});
+			});
+
+			Assert.Equal("something went wrong", ex.Message);
+		}
+
+		[Fact]
+		public async Task exception_during_processing_is_propagated_async() {
+			var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => {
+				await ParallelLoop.RunWithTrailingCheckpointAsync(
+					source: new int[] { 10 },
+					degreeOfParallelism: 2,
+					getCheckpointInclusive: x => x,
+					getCheckpointExclusive: x => x,
+					process: (slot, x, token) => Task.FromException(new InvalidOperationException("something went wrong")),
 					emitCheckpoint: checkpoint => {
 					});
 			});
