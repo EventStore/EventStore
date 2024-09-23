@@ -149,20 +149,13 @@ paths:
           description: Not found
       security:
         - basicAuth: []
+  "/admin/scavenge/current":
     get:
       description: Returns a link to the current scavenge.
       summary: Get current scavenge
       tags:
         - Scavenge
       operationId: Get current scavenge
-      parameters:
-        - name: scavengeId
-          in: path
-          description: Alias for current scavenge ID.
-          required: true
-          type: string
-          enum:
-            - current
       produces:
         - application/json
       responses:
@@ -170,6 +163,24 @@ paths:
           description: OK
           schema:
             $ref: "#/definitions/ScavengeCurrentItem"
+        "401":
+          description: Unauthorized
+      security:
+        - basicAuth: []
+  "/admin/scavenge/last":
+    get:
+      description: Returns details of the last scavenge. This information is reset when a node is restarted.
+      summary: Get last scavenge
+      tags:
+        - Scavenge
+      operationId: Get last scavenge
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: "#/definitions/ScavengeLastItem"
         "401":
           description: Unauthorized
       security:
@@ -2292,6 +2303,24 @@ definitions:
       ScavengeLink:
         type: string
         description: Link to current scavenge.
+  ScavengeLastItem:
+    type: object
+    properties:
+      ScavengeId:
+        type: string
+        description: The identifier of the last scavenge.
+      ScavengeLink:
+        type: string
+        description: Link to last scavenge.
+      ScavengeResult:
+        description: The status of the last scavenge.
+        type: string
+        enum:
+          - Success
+          - InProgress
+          - Stopped
+          - Errored
+          - Unknown
   streamData:
     type: object
     required:

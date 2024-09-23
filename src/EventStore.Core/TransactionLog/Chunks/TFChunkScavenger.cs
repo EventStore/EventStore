@@ -83,9 +83,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		public async Task Scavenge(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk = 0,
+		public async Task<ScavengeResult> Scavenge(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk = 0,
 			bool scavengeIndex = true,
-			CancellationToken ct = default(CancellationToken)) {
+			CancellationToken ct = default) {
 			Ensure.Nonnegative(startFromChunk, nameof(startFromChunk));
 
 			// Awaiters don't have to handle Exceptions and can wait for the actual completion of the task.
@@ -105,7 +105,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				_logger.Information("SCAVENGING: Scavenge cancelled.");
 				result = ScavengeResult.Stopped;
 			} catch (Exception exc) {
-				result = ScavengeResult.Interrupted;
+				result = ScavengeResult.Errored;
 				_logger.Error(exc, "SCAVENGING: Error while scavenging DB.");
 				error = string.Format("Error while scavenging DB: {0}.", exc.Message);
 			} finally {
@@ -117,6 +117,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						result, sw.Elapsed, error);
 				}
 			}
+
+			return result;
 		}
 
 		private async ValueTask ScavengeInternal(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk,
@@ -346,6 +348,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				var chunksToMerge = new List<TFChunk.TFChunk>();
 				long totalDataSize = 0;
 				foreach (var chunk in GetAllChunks(db, 0)) {
+					ct.ThrowIfCancellationRequested();
 
 					if (totalDataSize + chunk.PhysicalDataSize > maxChunkDataSize) {
 						if (chunksToMerge.Count == 0)
@@ -526,7 +529,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				} else {
 					logger.Error("Failed to delete the temp chunk. Retry limit of {maxRetryCount} reached. Reason: {e}",
 						MaxRetryCount, ex);
-					if (ex is IOException)
+					if (ex is System.IO.IOException)
 						WindowsProcessUtil.PrintWhoIsLocking(tmpChunkPath, logger);
 					throw;
 				}
