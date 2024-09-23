@@ -72,7 +72,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		}
 
 		// following old scavenging design the returned task must complete successfully
-		[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))] // get off the main queue
+		[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder<>))] // get off the main queue
 		public async Task<ScavengeResult> ScavengeAsync(CancellationToken cancellationToken) {
 			_recordedTimes.Clear();
 			var stopwatch = Stopwatch.StartNew();
