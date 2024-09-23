@@ -70,7 +70,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		}
 
 		// following old scavenging design the returned task must complete successfully
-		public async Task ScavengeAsync(CancellationToken cancellationToken) {
+		public async Task<ScavengeResult> ScavengeAsync(CancellationToken cancellationToken) {
 			await Task.Yield(); // get off the main queue
 
 			_recordedTimes.Clear();
@@ -97,7 +97,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					stopwatch.Elapsed);
 				result = ScavengeResult.Stopped;
 			} catch (Exception exc) {
-				result = ScavengeResult.Interrupted;
+				result = ScavengeResult.Errored;
 				_logger.Error(exc, "SCAVENGING: Scavenge Failed. Total time taken: {elapsed}.",
 					stopwatch.Elapsed);
 				error = string.Format("Error while scavenging DB: {0}.", exc.Message);
@@ -114,6 +114,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 						result, stopwatch.Elapsed, error);
 				}
 			}
+
+			return result;
 		}
 
 		private void LogCollisions() {
