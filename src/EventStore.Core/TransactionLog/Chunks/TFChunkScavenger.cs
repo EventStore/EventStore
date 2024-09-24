@@ -85,7 +85,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder<>))] // because the method is not awaited immediately
+		[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder<>))] // get off the main queue
 		public async Task<ScavengeResult> Scavenge(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk = 0,
 			bool scavengeIndex = true,
 			CancellationToken ct = default) {
