@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext.Collections.Generic;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -108,7 +107,7 @@ namespace EventStore.Core.Tests.TransactionLog.Optimization {
 			}
 
 			if (scavenged) {
-				posmap.AddAll(map);
+				posmap.AddRange(map);
 				await chunk.CompleteScavenge(map, CancellationToken.None);
 			} else {
 				posmap.Clear();
