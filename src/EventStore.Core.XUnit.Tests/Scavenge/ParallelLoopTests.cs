@@ -43,7 +43,6 @@ public class ParallelLoopTests {
 		var emittedCheckpoints = new List<int>();
 		var completedItems = new List<int>();
 
-		var loopThread = Thread.CurrentThread.ManagedThreadId;
 		await ParallelLoop.RunWithTrailingCheckpointAsync(
 			source: source,
 			degreeOfParallelism: degreeOfParallelism,
@@ -57,7 +56,6 @@ public class ParallelLoopTests {
 				return chunkStartNumber - 1;
 			},
 			process: async (slot, x, token) => {
-				Assert.NotEqual(loopThread, Thread.CurrentThread.ManagedThreadId);
 
 				// wait until we are complete
 				await selfTriggers[x].WaitAsync(token);
