@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using NUnit.Framework;
 
@@ -7,10 +9,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private TFChunk _chunk;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_chunk = TFChunkHelper.CreateNewChunk(Filename, isScavenged: true);
-			_chunk.CompleteScavenge(new PosMap[0]);
+			await _chunk.CompleteScavenge(new PosMap[0], CancellationToken.None);
 			_chunk.CacheInMemory();
 		}
 

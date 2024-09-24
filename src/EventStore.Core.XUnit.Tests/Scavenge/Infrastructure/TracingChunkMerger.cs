@@ -1,4 +1,5 @@
 ﻿using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Scavenging;
 
@@ -12,7 +13,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			_tracer = tracer;
 		}
 
-		public void MergeChunks(
+		public async ValueTask MergeChunks(
 			ScavengePoint scavengePoint,
 			IScavengeStateForChunkMerger state,
 			ITFChunkScavengerLog scavengerLogger,
@@ -20,7 +21,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 			_tracer.TraceIn($"Merging chunks for {scavengePoint.GetName()}");
 			try {
-				_wrapped.MergeChunks(scavengePoint, state, scavengerLogger, cancellationToken);
+				await _wrapped.MergeChunks(scavengePoint, state, scavengerLogger, cancellationToken);
 				_tracer.TraceOut("Done");
 			} catch {
 				_tracer.TraceOut("Exception merging chunks");
@@ -28,7 +29,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			}
 		}
 
-		public void MergeChunks(
+		public async ValueTask MergeChunks(
 			ScavengeCheckpoint.MergingChunks checkpoint,
 			IScavengeStateForChunkMerger state,
 			ITFChunkScavengerLog scavengerLogger,
@@ -36,7 +37,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 			_tracer.TraceIn($"Merging chunks from checkpoint: {checkpoint}");
 			try {
-				_wrapped.MergeChunks(checkpoint, state, scavengerLogger, cancellationToken);
+				await _wrapped.MergeChunks(checkpoint, state, scavengerLogger, cancellationToken);
 				_tracer.TraceOut("Done");
 			} catch {
 				_tracer.TraceOut("Exception merging chunks");
