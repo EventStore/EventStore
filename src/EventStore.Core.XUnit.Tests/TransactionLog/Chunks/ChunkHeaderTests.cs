@@ -12,7 +12,7 @@ public class ChunkHeaderTests {
 	public void can_round_trip(bool isScavenged) {
 		var source = new ChunkHeader(
 			version: (byte)Random.Shared.Next(4, 8),
-			minCompatibleVersion: (byte)Random.Shared.Next(8),
+			minCompatibleVersion: (byte)Random.Shared.Next(4),
 			chunkSize: Random.Shared.Next(500, 600),
 			chunkStartNumber: Random.Shared.Next(500, 600),
 			chunkEndNumber: Random.Shared.Next(700, 800),
