@@ -17,9 +17,9 @@ public static class ParallelLoop {
 		_neverComplete = tcs.Task;
 	}
 
-	// passes each item in `source` to `process`, according to the `degreeOfParallelism.
-	// processing is never done on the calling thread
-	// emitCheckpoint is called on the calling thread with the latest checkpoint that is complete
+	// passes each item in `source` to `process`, according to the `degreeOfParallelism`.
+	// process is guaranteed to be called asynchronously.
+	// calls to emitCheckpoint are serialized (one at a time) and passed the latest checkpoint that is complete
 	// items are queried for checkpoint
 	//   - getCheckpointInclusive returns the checkpoint that can be emitted when all items up to
 	//     and including this one have been completed.
