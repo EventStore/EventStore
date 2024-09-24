@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Diagnostics;
+using DotNext.Runtime.CompilerServices;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
@@ -83,6 +85,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
+		[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder<>))] // because the method is not awaited immediately
 		public async Task<ScavengeResult> Scavenge(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk = 0,
 			bool scavengeIndex = true,
 			CancellationToken ct = default) {
