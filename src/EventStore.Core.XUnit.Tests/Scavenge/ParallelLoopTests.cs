@@ -98,6 +98,13 @@ public class ParallelLoopTests {
 		expectedCheckpoints: [20, 30, 40, 50]);
 
 	[Fact]
+	public async Task one_degree_of_parallelism() => await RunAsync(
+		source: [10, 20, 30],
+		completionOrder: [10, 20, 30],
+		expectedCheckpoints: [10, 20, 30],
+		degreeOfParallelism: 1);
+
+	[Fact]
 	public async Task four_degrees_of_parallelism_async() => await RunAsync(
 		source: [10, 20, 30, 40, 50],
 		completionOrder: [10, 20, 30, 40, 50],
