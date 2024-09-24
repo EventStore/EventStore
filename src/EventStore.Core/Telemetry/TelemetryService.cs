@@ -189,6 +189,7 @@ public sealed class TelemetryService :
 		var env = EnvironmentTelemetry.Collect(_nodeOptions);
 		message.Envelope.ReplyWith(new TelemetryMessage.Response(
 			"environment", new JsonObject {
+				["os"] = env.Machine.OS,
 				["coreCount"] = env.Machine.ProcessorCount,
 				["isContainer"] = env.Container.IsContainer,
 				["isKubernetes"] = env.Container.IsKubernetes,

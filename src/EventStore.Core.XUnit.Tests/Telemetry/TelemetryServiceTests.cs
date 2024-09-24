@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -130,6 +131,8 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 			}
 			""",
 			_sink.Data["plugins"].ToString());
+
+		Assert.Equal(_sink.Data["environment"]!["os"]!.ToString(), RuntimeInformation.OSDescription);
 	}
 
 	[Fact]
