@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
@@ -67,8 +68,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		}
 
 		[Test]
-		public void should_not_have_changed_any_records() {
-			CheckRecords();
+		public async Task should_not_have_changed_any_records() {
+			await CheckRecords();
 		}
 	}
 }

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -48,8 +50,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void there_is_no_first_record() {
-			var res = _chunk.TryReadFirst();
+		public async Task there_is_no_first_record() {
+			var res = await _chunk.TryReadFirst(CancellationToken.None);
 			Assert.IsFalse(res.Success);
 		}
 

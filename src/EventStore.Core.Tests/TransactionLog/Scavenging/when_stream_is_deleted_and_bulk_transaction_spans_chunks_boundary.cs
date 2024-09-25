@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -33,8 +34,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		[Test]
-		public void first_prepare_of_transaction_is_preserved() {
-			CheckRecords();
+		public async Task first_prepare_of_transaction_is_preserved() {
+			await CheckRecords();
 		}
 	}
 }

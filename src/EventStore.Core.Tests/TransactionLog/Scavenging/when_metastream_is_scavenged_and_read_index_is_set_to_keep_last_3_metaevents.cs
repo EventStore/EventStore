@@ -1,6 +1,5 @@
 ﻿using System.Linq;
-using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -32,8 +31,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		[Test]
-		public void metastream_is_scavenged_correctly() {
-			CheckRecords();
+		public async Task metastream_is_scavenged_correctly() {
+			await CheckRecords();
 		}
 	}
 }
