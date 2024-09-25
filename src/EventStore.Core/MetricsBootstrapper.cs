@@ -62,6 +62,7 @@ public class GossipTrackers {
 }
 
 public static class MetricsBootstrapper {
+	public const string LogicalChunkReadDistributionName = "eventstore-logical-chunk-read-distribution";
 	private static readonly ILogger Log = Serilog.Log.ForContext(typeof(MetricsBootstrapper));
 
 	public static void Bootstrap(
@@ -124,8 +125,13 @@ public static class MetricsBootstrapper {
 		if (conf.Events.TryGetValue(Conf.EventTracker.Read, out var readEnabled) && readEnabled) {
 			var readTag = new KeyValuePair<string, object>("activity", "read");
 			trackers.TransactionFileTracker = new TFChunkTracker(
-				readBytes: new CounterSubMetric(byteMetric, new[] {readTag}),
-				readEvents: new CounterSubMetric(eventMetric, new[] {readTag}));
+				readDistribution: new LogicalChunkReadDistributionMetric(
+					meter: coreMeter,
+					name: LogicalChunkReadDistributionName,
+					writer: dbConfig.WriterCheckpoint,
+					chunkSize: dbConfig.ChunkSize),
+				readBytes: new CounterSubMetric(byteMetric, [readTag]),
+				readEvents: new CounterSubMetric(eventMetric, [readTag]));
 		}
 
 		// from a users perspective an event is written when it is indexed: thats when it can be read.
