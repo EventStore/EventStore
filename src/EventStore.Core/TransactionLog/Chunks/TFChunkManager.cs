@@ -9,7 +9,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkManager {
 		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunkManager>();
 
-		public const int MaxChunksCount = 400_000; 
+		public const int MaxChunksCount = 800_000; 
 
 		public int ChunksCount {
 			get { return _chunksCount; }
