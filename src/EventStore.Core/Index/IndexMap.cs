@@ -425,11 +425,19 @@ namespace EventStore.Core.Index {
 						break;
 					}
 					var filename = filenameProvider.GetFilenameNewTable();
-					PTable mergedTable = PTable.MergeTo(tables[level], filename, upgradeHash, existsAt, recordExistsAt,
+					PTable mergedTable = PTable.MergeTo(
+						tables[level],
+						filename,
+						upgradeHash,
+						existsAt,
+						recordExistsAt,
 						version,
-						ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount,
-						indexCacheDepth, skipIndexVerify,
-						useBloomFilter, lruCacheSize);
+						ESConsts.PTableInitialReaderCount,
+						_pTableMaxReaderCount,
+						indexCacheDepth,
+						skipIndexVerify,
+						useBloomFilter,
+						lruCacheSize);
 					hasMergedAny = true;
 
 					AddTableToTables(tables, level + 1, mergedTable);
@@ -466,10 +474,19 @@ namespace EventStore.Core.Index {
 				return new MergeResult(this, new List<PTable>(), false, false);
 
 			var filename = filenameProvider.GetFilenameNewTable();
-			PTable mergedTable = PTable.MergeTo(tablesToMerge, filename, upgradeHash, existsAt, recordExistsAt,
-				version, ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount,
-				indexCacheDepth, skipIndexVerify,
-				useBloomFilter, lruCacheSize);
+			PTable mergedTable = PTable.MergeTo(
+				tablesToMerge,
+				filename,
+				upgradeHash,
+				existsAt,
+				recordExistsAt,
+				version,
+				ESConsts.PTableInitialReaderCount,
+				_pTableMaxReaderCount,
+				indexCacheDepth,
+				skipIndexVerify,
+				useBloomFilter,
+				lruCacheSize);
 
 			for (int i = tables.Count - 1; i > _maxTableLevelsForAutomaticMerge; i--) {
 				tables.RemoveAt(i);
@@ -504,8 +521,22 @@ namespace EventStore.Core.Index {
 						var filename = filenameProvider.GetFilenameNewTable();
 						var oldTable = scavengedMap[level][i];
 
-						PTable scavenged = PTable.Scavenged(oldTable, filename, upgradeHash, existsAt, recordExistsAt,
-							version, shouldKeep, out spaceSaved, ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount, indexCacheDepth, skipIndexVerify, useBloomFilter, lruCacheSize, ct);
+						PTable scavenged = PTable.Scavenged(
+							oldTable,
+							filename,
+							upgradeHash,
+							existsAt,
+							recordExistsAt,
+							version,
+							shouldKeep,
+							out spaceSaved,
+							ESConsts.PTableInitialReaderCount,
+							_pTableMaxReaderCount,
+							indexCacheDepth,
+							skipIndexVerify,
+							useBloomFilter,
+							lruCacheSize,
+							ct);
 
 						if (scavenged == null) {
 							return ScavengeResult.Failed(oldTable, level, i);

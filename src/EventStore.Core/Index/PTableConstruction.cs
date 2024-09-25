@@ -719,8 +719,13 @@ namespace EventStore.Core.Index {
 				get { return _enumerator.Current; }
 			}
 
-			public EnumerableTable(byte mergedPTableVersion, ISearchTable table, Func<TStreamId, ulong, ulong> upgradeHash,
-				Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<TStreamId, bool>> readRecord) {
+			public EnumerableTable(
+				byte mergedPTableVersion,
+				ISearchTable table,
+				Func<TStreamId, ulong, ulong> upgradeHash,
+				Func<IndexEntry, bool> existsAt,
+				Func<IndexEntry, Tuple<TStreamId, bool>> readRecord) {
+
 				_mergedPTableVersion = mergedPTableVersion;
 				_ptable = table;
 
@@ -754,7 +759,11 @@ namespace EventStore.Core.Index {
 
 				// upgrading a V1 table 32 to 64 bit
 				_enumerator.Dispose();
-				_list = ReadUntilDifferentHash(_mergedPTableVersion, _ptableEnumerator, _upgradeHash, _existsAt,
+				_list = ReadUntilDifferentHash(
+					_mergedPTableVersion,
+					_ptableEnumerator,
+					_upgradeHash,
+					_existsAt,
 					_readRecord);
 				_enumerator = _list.GetEnumerator();
 
@@ -762,9 +771,13 @@ namespace EventStore.Core.Index {
 			}
 
 			// only called when upgrading 32 to 64 bit
-			private List<IndexEntry> ReadUntilDifferentHash(byte version, IEnumerator<IndexEntry> ptableEnumerator,
-				Func<TStreamId, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt,
+			private List<IndexEntry> ReadUntilDifferentHash(
+				byte version,
+				IEnumerator<IndexEntry> ptableEnumerator,
+				Func<TStreamId, ulong, ulong> upgradeHash,
+				Func<IndexEntry, bool> existsAt,
 				Func<IndexEntry, Tuple<TStreamId, bool>> readRecord) {
+
 				var list = new List<IndexEntry>();
 
 				if (_lastIteration)
