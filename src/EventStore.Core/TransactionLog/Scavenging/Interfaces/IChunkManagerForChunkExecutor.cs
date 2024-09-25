@@ -28,8 +28,9 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		bool IsReadOnly { get; }
 		long ChunkStartPosition { get; }
 		long ChunkEndPosition { get; }
-		IEnumerable<bool> ReadInto(
+		IAsyncEnumerable<bool> ReadInto(
 			RecordForExecutor<TStreamId, TRecord>.NonPrepare nonPrepare,
-			RecordForExecutor<TStreamId, TRecord>.Prepare prepare);
+			RecordForExecutor<TStreamId, TRecord>.Prepare prepare,
+			CancellationToken token);
 	}
 }

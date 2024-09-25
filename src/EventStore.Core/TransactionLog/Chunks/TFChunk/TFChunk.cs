@@ -753,7 +753,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return _readSide.TryReadAt(logicalPosition, couldBeScavenged);
 		}
 
-		public RecordReadResult TryReadFirst() {
+		public async ValueTask<RecordReadResult> TryReadFirst(CancellationToken token) {
+			token.ThrowIfCancellationRequested();
 			return _readSide.TryReadFirst();
 		}
 
