@@ -704,7 +704,6 @@ namespace EventStore.Core.Index {
 			readonly Func<TStreamId, ulong, ulong> _upgradeHash;
 			readonly Func<IndexEntry, bool> _existsAt;
 			readonly Func<IndexEntry, Tuple<TStreamId, bool>> _readRecord;
-			readonly byte _mergedPTableVersion;
 			static readonly IComparer<IndexEntry> EntryComparer = new IndexEntryComparer();
 
 			public byte GetVersion() {
@@ -726,7 +725,6 @@ namespace EventStore.Core.Index {
 				Func<IndexEntry, bool> existsAt,
 				Func<IndexEntry, Tuple<TStreamId, bool>> readRecord) {
 
-				_mergedPTableVersion = mergedPTableVersion;
 				_ptable = table;
 
 				_upgradeHash = upgradeHash;
@@ -760,7 +758,6 @@ namespace EventStore.Core.Index {
 				// upgrading a V1 table 32 to 64 bit
 				_enumerator.Dispose();
 				_list = ReadUntilDifferentHash(
-					_mergedPTableVersion,
 					_ptableEnumerator,
 					_upgradeHash,
 					_existsAt,
@@ -772,7 +769,6 @@ namespace EventStore.Core.Index {
 
 			// only called when upgrading 32 to 64 bit
 			private List<IndexEntry> ReadUntilDifferentHash(
-				byte version,
 				IEnumerator<IndexEntry> ptableEnumerator,
 				Func<TStreamId, ulong, ulong> upgradeHash,
 				Func<IndexEntry, bool> existsAt,
