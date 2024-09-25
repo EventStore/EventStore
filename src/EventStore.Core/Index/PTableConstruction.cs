@@ -177,8 +177,7 @@ namespace EventStore.Core.Index {
 			Log.Debug("PTables merge started.");
 			var watch = Stopwatch.StartNew();
 
-			var enumerators = tables
-				.Select(table => new EnumerableTable(table)).ToList();
+			var enumerators = tables.Select(Get64bitEnumerator).ToList();
 			try {
 				for (int i = 0; i < enumerators.Count; i++) {
 					if (!enumerators[i].MoveNext()) {
@@ -310,8 +309,7 @@ namespace EventStore.Core.Index {
 			var watch = Stopwatch.StartNew();
 
 			var fileSizeUpToIndexEntries = GetFileSizeUpToIndexEntries(numIndexEntries, version);
-			var enumerators = tables
-				.Select(table => new EnumerableTable(table)).ToList();
+			var enumerators = tables.Select(Get64bitEnumerator).ToList();
 			try {
 				long dumpedEntryCount = 0;
 				using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
@@ -465,7 +463,7 @@ namespace EventStore.Core.Index {
 
 						// WRITE SCAVENGED INDEX ENTRIES
 						var buffer = new byte[indexEntrySize];
-						using (var enumerator = new EnumerableTable(table)) {
+						using (var enumerator = Get64bitEnumerator(table)) {
 
 							ulong? previousHash = null;
 							while (enumerator.MoveNext()) {
@@ -484,7 +482,6 @@ namespace EventStore.Core.Index {
 							}
 						}
 
-						// We calculate this as the EnumerableTable can silently drop entries too.
 						droppedCount = numIndexEntries - keptCount;
 
 						var forceKeep = version > table.Version;
@@ -568,7 +565,7 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		private static int GetMaxOf(List<EnumerableTable> enumerators) {
+		private static int GetMaxOf(List<IEnumerator<IndexEntry>> enumerators) {
 			var max = new IndexEntry(ulong.MinValue, 0, long.MinValue);
 			int idx = 0;
 			for (int i = 0; i < enumerators.Count; i++) {
@@ -695,39 +692,14 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		//qq class no longer necessary, can be a method
-		internal class EnumerableTable : IEnumerator<IndexEntry> {
-			private readonly IEnumerator<IndexEntry> _enumerator;
-
-			public IndexEntry Current {
-				get { return _enumerator.Current; }
+		static IEnumerator<IndexEntry> Get64bitEnumerator(ISearchTable table) {
+			if (table.Version == PTableVersions.IndexV1) {
+				// V1 source table (32bit hashes)
+				//qq add this check on startup
+				throw new InvalidOperationException("V1 (32bit) PTables are not supported since v24.10. Please perform an index merge in an earlier version >= v3.9.0 to upgrade your PTables");
 			}
 
-			object IEnumerator.Current {
-				get { return _enumerator.Current; }
-			}
-
-			public EnumerableTable(ISearchTable table) {
-				if (table.Version == PTableVersions.IndexV1) {
-					// V1 source table (32bit hashes)
-					//qq add this check on startup
-					throw new InvalidOperationException("V1 (32bit) PTables are not supported since v24.10. Please perform an index merge in an earlier version >= v3.9.0 to upgrade your PTables");
-				}
-				
-				_enumerator = table.IterateAllInOrder().GetEnumerator();
-			}
-
-			public void Dispose() {
-				_enumerator.Dispose();
-			}
-
-			public bool MoveNext() {
-				return _enumerator.MoveNext();
-			}
-
-			public void Reset() {
-				_enumerator.Reset();
-			}
+			return table.IterateAllInOrder().GetEnumerator();
 		}
 
 		public static long GetFileSizeUpToIndexEntries(long numIndexEntries, byte version) {
