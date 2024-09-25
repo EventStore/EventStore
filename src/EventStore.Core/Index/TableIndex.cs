@@ -310,22 +310,20 @@ namespace EventStore.Core.Index {
 						Log.Debug("Performing manual index merge.");
 
 						_isManualMergePending = false;
-						using (var reader = _tfReaderFactory()) {
-							var manualMergeResult = _indexMap.TryManualMerge(
-								_fileNameProvider,
-								_ptableVersion,
-								_indexCacheDepth,
-								_skipIndexVerify,
-								useBloomFilter: _useBloomFilter,
-								lruCacheSize: _lruCacheSize);
+						var manualMergeResult = _indexMap.TryManualMerge(
+							_fileNameProvider,
+							_ptableVersion,
+							_indexCacheDepth,
+							_skipIndexVerify,
+							useBloomFilter: _useBloomFilter,
+							lruCacheSize: _lruCacheSize);
 
-							if (manualMergeResult.HasMergedAny) {
-								_indexMap = manualMergeResult.MergedMap;
-								_indexMap.SaveToFile(indexmapFile);
-								manualMergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
-							}
-							Log.Debug("Manual index merge completed: {numMergedPTables} PTable(s) merged.", manualMergeResult.ToDelete.Count);
+						if (manualMergeResult.HasMergedAny) {
+							_indexMap = manualMergeResult.MergedMap;
+							_indexMap.SaveToFile(indexmapFile);
+							manualMergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
 						}
+						Log.Debug("Manual index merge completed: {numMergedPTables} PTable(s) merged.", manualMergeResult.ToDelete.Count);
 					}
 
 					TableItem tableItem;
@@ -358,24 +356,22 @@ namespace EventStore.Core.Index {
 					_indexMap.SaveToFile(indexmapFile);
 
 					if (addResult.CanMergeAny) {
-						using (var reader = _tfReaderFactory()) {
-							MergeResult mergeResult;
-							do {
-								mergeResult = _indexMap.TryMergeOneLevel(
-									_fileNameProvider,
-									_ptableVersion,
-									_indexCacheDepth,
-									_skipIndexVerify,
-									useBloomFilter: _useBloomFilter,
-									lruCacheSize: _lruCacheSize);
+						MergeResult mergeResult;
+						do {
+							mergeResult = _indexMap.TryMergeOneLevel(
+								_fileNameProvider,
+								_ptableVersion,
+								_indexCacheDepth,
+								_skipIndexVerify,
+								useBloomFilter: _useBloomFilter,
+								lruCacheSize: _lruCacheSize);
 
-								if (mergeResult.HasMergedAny) {
-									_indexMap = mergeResult.MergedMap;
-									_indexMap.SaveToFile(indexmapFile);
-									mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
-								}
-							} while (mergeResult.CanMergeAny);
-						}
+							if (mergeResult.HasMergedAny) {
+								_indexMap = mergeResult.MergedMap;
+								_indexMap.SaveToFile(indexmapFile);
+								mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
+							}
+						} while (mergeResult.CanMergeAny);
 					}
 
 					lock (_awaitingTablesLock) {
