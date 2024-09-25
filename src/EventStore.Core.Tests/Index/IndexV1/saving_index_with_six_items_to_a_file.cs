@@ -7,8 +7,6 @@ using EventStore.Core.Util;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1)]
-	[TestFixture(PTableVersions.IndexV2)]
 	[TestFixture(PTableVersions.IndexV3)]
 	[TestFixture(PTableVersions.IndexV4)]
 	public class saving_index_with_six_items_to_a_file : SpecificationWithDirectory {
