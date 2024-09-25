@@ -10,8 +10,8 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 			Assert.AreEqual(2, _result.MergedMap.InOrder().Count());
 
 			_result = _result.MergedMap.TryManualMerge(
-				UpgradeHash, ExistsAt,
-				RecordExistsAt, _fileNameProvider, _ptableVersion,
+				_fileNameProvider,
+				_ptableVersion,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 		}
@@ -23,8 +23,8 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 			Assert.AreEqual(3, _result.MergedMap.InOrder().Count());
 
 			_result = _result.MergedMap.TryManualMerge(
-				UpgradeHash, ExistsAt,
-				RecordExistsAt, _fileNameProvider, _ptableVersion,
+				_fileNameProvider,
+				_ptableVersion,
 				skipIndexVerify: _skipIndexVerify);
 
 			Assert.False(_result.HasMergedAny);

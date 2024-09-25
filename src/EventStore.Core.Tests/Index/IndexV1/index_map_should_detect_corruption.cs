@@ -41,8 +41,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			memtable.Add(1, 1, 100);
 			_ptable = PTable.FromMemtable(memtable, _ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
 
-			indexMap = indexMap.AddAndMergePTable(_ptable, 0, 0, (streamId, hash) => hash, _ => true,
-				_ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion, 0, skipIndexVerify: _skipIndexVerify).MergedMap;
+			indexMap = indexMap.AddAndMergePTable(_ptable, 0, 0,
+				new GuidFilenameProvider(PathName), _ptableVersion, 0, skipIndexVerify: _skipIndexVerify).MergedMap;
 			indexMap.SaveToFile(_indexMapFileName);
 		}
 

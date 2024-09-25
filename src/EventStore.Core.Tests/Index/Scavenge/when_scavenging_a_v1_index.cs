@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using NUnit.Framework;
 
+//qq expecting errors in here 
 namespace EventStore.Core.Tests.Index.Scavenge {
 	[TestFixture(PTableVersions.IndexV2, false)]
 	[TestFixture(PTableVersions.IndexV2, true)]
@@ -41,9 +41,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			long spaceSaved;
 			_upgradeHash = (streamId, hash) => hash << 32 | hasher.Hash(streamId);
 			Func<IndexEntry, bool> existsAt = x => x.Position % 2 == 0;
-			Func<IndexEntry, Tuple<string, bool>> readRecord = x =>
-				new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0);
-			_newtable = PTable.Scavenged(_oldTable, GetTempFilePath(), _upgradeHash, existsAt, readRecord, _newVersion,
+			_newtable = PTable.Scavenged(_oldTable, GetTempFilePath(), _newVersion,
 				existsAt,
 				out spaceSaved, skipIndexVerify: _skipIndexVerify, initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault,
 				useBloomFilter: true);

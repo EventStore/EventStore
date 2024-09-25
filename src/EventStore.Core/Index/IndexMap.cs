@@ -401,10 +401,7 @@ namespace EventStore.Core.Index {
 			return new AddResult(indexMap, canMergeAny);
 		}
 
-		public MergeResult TryMergeOneLevel<TStreamId>(
-			Func<TStreamId, ulong, ulong> upgradeHash,
-			Func<IndexEntry, bool> existsAt,
-			Func<IndexEntry, Tuple<TStreamId, bool>> readRecord,
+		public MergeResult TryMergeOneLevel(
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
@@ -428,9 +425,6 @@ namespace EventStore.Core.Index {
 					PTable mergedTable = PTable.MergeTo(
 						tables[level],
 						filename,
-						upgradeHash,
-						existsAt,
-						readRecord,
 						version,
 						ESConsts.PTableInitialReaderCount,
 						_pTableMaxReaderCount,
@@ -451,10 +445,7 @@ namespace EventStore.Core.Index {
 			return new MergeResult(indexMap, toDelete, hasMergedAny, canMergeAny);
 		}
 
-		public MergeResult TryManualMerge<TStreamId>(
-			Func<TStreamId, ulong, ulong> upgradeHash,
-			Func<IndexEntry, bool> existsAt,
-			Func<IndexEntry, Tuple<TStreamId, bool>> readRecord,
+		public MergeResult TryManualMerge(
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
@@ -477,9 +468,6 @@ namespace EventStore.Core.Index {
 			PTable mergedTable = PTable.MergeTo(
 				tablesToMerge,
 				filename,
-				upgradeHash,
-				existsAt,
-				readRecord,
 				version,
 				ESConsts.PTableInitialReaderCount,
 				_pTableMaxReaderCount,
@@ -501,11 +489,8 @@ namespace EventStore.Core.Index {
 			return new MergeResult(indexMap, toDelete, true, false);
 		}
 
-		public ScavengeResult Scavenge<TStreamId>(Guid toScavenge, CancellationToken ct,
+		public ScavengeResult Scavenge(Guid toScavenge, CancellationToken ct,
 			Func<IndexEntry, bool> shouldKeep,
-			Func<TStreamId, ulong, ulong> upgradeHash,
-			Func<IndexEntry, bool> existsAt,
-			Func<IndexEntry, Tuple<TStreamId, bool>> readRecord,
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
@@ -524,9 +509,6 @@ namespace EventStore.Core.Index {
 						PTable scavenged = PTable.Scavenged(
 							oldTable,
 							filename,
-							upgradeHash,
-							existsAt,
-							readRecord,
 							version,
 							shouldKeep,
 							out spaceSaved,

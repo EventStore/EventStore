@@ -43,9 +43,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 			_result = _map.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 1, 2,
-				(streamId, hash) => hash,
-				_ => true,
-				_ => new System.Tuple<string, bool>("", true),
 				new GuidFilenameProvider(PathName),
 				_ptableVersion,
 				0,
@@ -54,22 +51,19 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 3, 4,
-				(streamId, hash) => hash,
-				_ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName),
+				new GuidFilenameProvider(PathName),
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 4, 5,
-				(streamId, hash) => hash,
-				_ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName),
+				new GuidFilenameProvider(PathName),
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 1,
-				(streamId, hash) => hash,
-				_ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile),
+				new FakeFilenameProvider(_mergeFile),
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 		}

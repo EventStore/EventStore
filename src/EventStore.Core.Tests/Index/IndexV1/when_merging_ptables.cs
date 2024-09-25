@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using EventStore.Core.Index;
-using NUnit.Framework;
-using EventStore.Core.Index.Hashes;
-using System.IO;
 using System.Threading.Tasks;
-using System.Linq;
+using EventStore.Core.Index;
+using EventStore.Core.Index.Hashes;
+using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(false)]
@@ -37,8 +35,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			table.Add(0x010700000000, 0, 0x0107);
 			table.Add(0x010800000000, 0, 0x0108);
 			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
-			_newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true,
-				x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV1, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
+			_newtable = PTable.MergeTo(_tables, GetTempFilePath(),
+				PTableVersions.IndexV1, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify,
 				useBloomFilter: true);
 		}
@@ -109,8 +107,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			table.Add(0x010700000000, 0, 0x0107);
 			table.Add(0x010800000000, 0, 0x0108);
 			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
-			_newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true,
-				x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV3, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
+			_newtable = PTable.MergeTo(_tables, GetTempFilePath(),
+				PTableVersions.IndexV3, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify,
 				useBloomFilter: true);
 		}
@@ -188,8 +186,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			table.Add(0x111000000000, 0, 0x111000000000);
 			table.Add(0x121000000000, 0, 0x121000000000);
 			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
-			_newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true,
-				x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV2, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
+			_newtable = PTable.MergeTo(_tables, GetTempFilePath(),
+				PTableVersions.IndexV2, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify,
 				useBloomFilter: true);
 		}
@@ -245,7 +243,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			SpecificationWithDirectoryPerTestFixture {
 		private readonly List<string> _files = new List<string>();
 		private readonly List<PTable> _tables = new List<PTable>();
-		private IHasher<string> hasher;
 
 		private PTable _newtable;
 		private bool _skipIndexVerify;
@@ -256,7 +253,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
-			hasher = new Murmur3AUnsafe();
 			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(PTableVersions.IndexV2, maxSize: 20);
@@ -274,8 +270,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			table.Add(0x010500000000, 3, 14);
 			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			_newtable = PTable.MergeTo(_tables, GetTempFilePath(),
-				(streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0,
-				x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
+				PTableVersions.IndexV2, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify,
 				useBloomFilter: true);
 		}
@@ -330,7 +325,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			SpecificationWithDirectoryPerTestFixture {
 		private readonly List<string> _files = new List<string>();
 		private readonly List<PTable> _tables = new List<PTable>();
-		private IHasher<string> hasher;
 
 		private PTable _newtable;
 		private bool _skipIndexVerify;
@@ -341,7 +335,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
-			hasher = new Murmur3AUnsafe();
 			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
@@ -365,8 +358,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			table.Add(0x010500000000, 3, 14);
 			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			_newtable = PTable.MergeTo(_tables, GetTempFilePath(),
-				(streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0,
-				x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
+				PTableVersions.IndexV2, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify,
 				useBloomFilter: true);
 		}
