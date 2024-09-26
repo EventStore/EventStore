@@ -10,11 +10,15 @@ using EventStore.Core.TransactionLog.LogRecords;
 namespace EventStore.Core.Tests.Services.ElectionsService;
 
 internal class FakeEpochManager : IEpochManager {
-
 	public int LastEpochNumber {
 		get {
-			lock (_epochs) {
+			var task = _lock.AcquireAsync().AsTask();
+			task.Wait();
+			try {
 				return _epochs.Any() ? _epochs.Last().EpochNumber : -1;
+			} finally {
+				_lock.Release();
+				task.Dispose();
 			}
 		}
 	}
