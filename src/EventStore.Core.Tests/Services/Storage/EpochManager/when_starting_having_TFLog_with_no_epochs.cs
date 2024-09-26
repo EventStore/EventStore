@@ -86,22 +86,22 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 
 		[Test]
-		public void starting_epoch_manager_loads_without_epochs() {
+		public async Task starting_epoch_manager_loads_without_epochs() {
 
 			_epochManager = GetManager();
-			_epochManager.Init();
+			await _epochManager.Init(CancellationToken.None);
 			_cache = GetCache(_epochManager);
 			Assert.NotNull(_cache);
 
-			Assert.That(_cache.Count == 0);
-			Assert.That(_cache?.First?.Value == null);
-			Assert.That(_cache?.Last?.Value == null);
+			Assert.That(_cache.Count is 0);
+			Assert.That(_cache?.First?.Value is null);
+			Assert.That(_cache?.Last?.Value is null);
 			Assert.That(_epochManager.LastEpochNumber == -1);
-			_epochManager.WriteNewEpoch(0);
-			Assert.That(_cache.Count == 1);
-			Assert.That(_cache.First.Value.EpochNumber == 0);
-			Assert.That(_cache.Last.Value.EpochNumber == 0);
-			Assert.That(_epochManager.LastEpochNumber == 0);
+			await _epochManager.WriteNewEpoch(0, CancellationToken.None);
+			Assert.That(_cache.Count is 1);
+			Assert.That(_cache.First.Value.EpochNumber is 0);
+			Assert.That(_cache.Last.Value.EpochNumber is 0);
+			Assert.That(_epochManager.LastEpochNumber is 0);
 
 		}
 

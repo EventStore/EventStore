@@ -25,7 +25,7 @@ namespace EventStore.Core.Services {
 	}
 
 	public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStreamId>,
-		IHandle<ReplicationMessage.ReplicaSubscribed>,
+		IAsyncHandle<ReplicationMessage.ReplicaSubscribed>,
 		IHandle<ReplicationMessage.CreateChunk>,
 		IAsyncHandle<ReplicationMessage.RawChunkBulk>,
 		IHandle<ReplicationMessage.DataChunkBulk> {
@@ -89,7 +89,7 @@ namespace EventStore.Core.Services {
 			base.Handle(message);
 		}
 
-		public void Handle(ReplicationMessage.ReplicaSubscribed message) {
+		async ValueTask IAsyncHandle<ReplicationMessage.ReplicaSubscribed>.HandleAsync(ReplicationMessage.ReplicaSubscribed message, CancellationToken token) {
 			if (_activeChunk != null) {
 				_activeChunk.MarkForDeletion();
 				_activeChunk = null;
@@ -151,7 +151,7 @@ namespace EventStore.Core.Services {
 				// avoid scanning the transaction log to find a valid epoch
 				// when starting up for truncation
 				var oldEpoch = EpochManager.GetLastEpoch();
-				if (EpochManager.TryTruncateBefore(message.SubscriptionPosition, out var newEpoch)) {
+				if (await EpochManager.TryTruncateBefore(message.SubscriptionPosition, token) is { } newEpoch) {
 					if (newEpoch.EpochId != oldEpoch.EpochId) {
 						Log.Information("Truncated epoch from "
 						                + "E{oldEpochNumber}@{oldEpochPosition}:{oldEpochId:B} to "
@@ -164,8 +164,8 @@ namespace EventStore.Core.Services {
 				} else {
 					Log.Information("Could not find a valid epoch to truncate to before position: {truncatePosition} (0x{truncatePosition:X})",
 						message.SubscriptionPosition, message.SubscriptionPosition);
-					var epochs = EpochManager.GetLastEpochs(int.MaxValue);
-					if (epochs.Length > 0) {
+					var epochs = await EpochManager.GetLastEpochs(int.MaxValue, token);
+					if (epochs.Count > 0) {
 						Log.Debug("Displaying cached epochs:");
 						foreach (var epoch in epochs) {
 							Log.Debug(

@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_writer.Open();
 
 			_epochManager = GetManager();
-			_epochManager.Init();
+			await _epochManager.Init(CancellationToken.None);
 			_cache = GetCache(_epochManager);
 			Assert.NotNull(_cache);
 		}
@@ -99,12 +99,12 @@ namespace EventStore.Core.Tests.Services.Storage {
 		// so this test will run through the test cases
 		// in order
 		[Test]
-		public void can_write_epochs() {
+		public async Task can_write_epochs() {
 
 			//can write first epoch
 			_published.Clear();
 			var beforeWrite = DateTime.UtcNow;
-			_epochManager.WriteNewEpoch(GetNextEpoch());
+			await _epochManager.WriteNewEpoch(GetNextEpoch(), CancellationToken.None);
 			Assert.That(_published.Count == 1);
 			var epochWritten = _published[0] as SystemMessage.EpochWritten;
 			Assert.NotNull(epochWritten);
@@ -118,7 +118,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			// will_cache_epochs_written() {
 
 			for (int i = 0; i < 4; i++) {
-				_epochManager.WriteNewEpoch(GetNextEpoch());
+				await _epochManager.WriteNewEpoch(GetNextEpoch(), CancellationToken.None);
 			}
 			Assert.That(_cache.Count == 5);
 			Assert.That(_cache.First.Value.EpochNumber == 0);
@@ -134,7 +134,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			// can_write_more_epochs_than_cache_size
 
 			for (int i = 0; i < 16; i++) {
-				_epochManager.WriteNewEpoch(GetNextEpoch());
+				await _epochManager.WriteNewEpoch(GetNextEpoch(), CancellationToken.None);
 			}
 			Assert.That(_cache.Count == 10);
 			Assert.That(_cache.First.Value.EpochNumber == 11);

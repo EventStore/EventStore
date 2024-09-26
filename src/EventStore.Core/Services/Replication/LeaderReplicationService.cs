@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Replication {
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.EnablePreLeaderReplication>,
-		IHandle<ReplicationMessage.ReplicaSubscriptionRequest>,
+		IAsyncHandle<ReplicationMessage.ReplicaSubscriptionRequest>,
 		IHandle<ReplicationMessage.ReplicaLogPositionAck>,
 		IHandle<ReplicationMessage.GetReplicationStats>,
 		IHandle<ReplicationTrackingMessage.ReplicatedTo> {
@@ -156,7 +156,7 @@ namespace EventStore.Core.Services.Replication {
 			return false;
 		}
 
-		public void Handle(ReplicationMessage.ReplicaSubscriptionRequest message) {
+		async ValueTask IAsyncHandle<ReplicationMessage.ReplicaSubscriptionRequest>.HandleAsync(ReplicationMessage.ReplicaSubscriptionRequest message, CancellationToken token) {
 			_publisher.Publish(new SystemMessage.VNodeConnectionEstablished(message.ReplicaEndPoint,
 				message.Connection.ConnectionId));
 
@@ -178,8 +178,8 @@ namespace EventStore.Core.Services.Replication {
 					subscr.ShouldDispose = true;
 			}
 
-			if (SubscribeReplica(subscription, message.LastEpochs, message.CorrelationId, message.LogPosition,
-				message.ChunkId)) {
+			if (await SubscribeReplica(subscription, message.LastEpochs, message.CorrelationId, message.LogPosition,
+				message.ChunkId, token)) {
 				_newSubscriptions = true;
 				if (!_subscriptions.TryAdd(subscription.SubscriptionId, subscription)) {
 					ReplicaSubscription existingSubscr;
@@ -232,17 +232,17 @@ namespace EventStore.Core.Services.Replication {
 			message.Envelope.ReplyWith(new ReplicationMessage.GetReplicationStatsCompleted(replicaStats));
 		}
 
-		private bool SubscribeReplica(ReplicaSubscription replica, Epoch[] lastEpochs, Guid correlationId,
-			long logPosition, Guid chunkId) {
+		private async ValueTask<bool> SubscribeReplica(ReplicaSubscription replica, IReadOnlyList<Epoch> lastEpochs, Guid correlationId,
+			long logPosition, Guid chunkId, CancellationToken token) {
 			try {
-				var epochs = lastEpochs ?? new Epoch[0];
+				var epochs = lastEpochs ?? Array.Empty<Epoch>();
 				Log.Information(
 					"SUBSCRIBE REQUEST from [{replicaEndPoint},V:{version},C:{connectionId:B},S:{subscriptionId:B},{logPosition}(0x{logPosition:X}),{epochs}]...",
 					replica.ReplicaEndPoint, replica.Version, replica.ConnectionId, replica.SubscriptionId, logPosition, logPosition,
 					string.Join(", ", epochs.Select(x => EpochRecordExtensions.AsString((Epoch)x))));
 
 				var epochCorrectedLogPos =
-					GetValidLogPosition(logPosition, epochs, replica.ReplicaEndPoint, replica.SubscriptionId);
+					await GetValidLogPosition(logPosition, epochs, replica.ReplicaEndPoint, replica.SubscriptionId, token);
 				var subscriptionPos = SetSubscriptionPosition(replica, epochCorrectedLogPos, chunkId,
 					replicationStart: true, verbose: true, trial: 0);
 				Interlocked.Exchange(ref replica.AckedLogPosition, subscriptionPos);
@@ -262,9 +262,10 @@ namespace EventStore.Core.Services.Replication {
 			}
 		}
 
-		private long GetValidLogPosition(long logPosition, Epoch[] epochs, EndPoint replicaEndPoint,
-			Guid subscriptionId) {
-			if (epochs.Length == 0) {
+		private async ValueTask<long> GetValidLogPosition(long logPosition, IReadOnlyList<Epoch> epochs, EndPoint replicaEndPoint,
+			Guid subscriptionId,
+			CancellationToken token) {
+			if (epochs.Count is 0) {
 				if (logPosition > 0) {
 					// follower has some data, but doesn't have any epoch
 					// for now we'll just report error and close connection
@@ -285,9 +286,9 @@ namespace EventStore.Core.Services.Replication {
 			var leaderCheckpoint = _db.Config.WriterCheckpoint.Read();
 			Epoch nextEpochAfterCommonEpoch = null;
 			Epoch commonEpoch = null;
-			for (int i = 0; i < epochs.Length; ++i) {
+			for (int i = 0; i < epochs.Count; ++i) {
 				var epoch = epochs[i];
-				if (_epochManager.IsCorrectEpochAt(epoch.EpochPosition, epoch.EpochNumber, epoch.EpochId)) {
+				if (await _epochManager.IsCorrectEpochAt(epoch.EpochPosition, epoch.EpochNumber, epoch.EpochId, token)) {
 					commonEpoch = epoch;
 					nextEpochAfterCommonEpoch = i > 0 ? epochs[i - 1] : null;
 					break;
@@ -301,7 +302,7 @@ namespace EventStore.Core.Services.Replication {
 					logPosition, logPosition,
 					string.Join(", ", epochs.Select(x => x.AsString())),
 					leaderCheckpoint, leaderCheckpoint,
-					string.Join(", ", _epochManager.GetLastEpochs(int.MaxValue).Select(x => x.AsString())));
+					string.Join(", ", (await _epochManager.GetLastEpochs(int.MaxValue, token)).Select(x => x.AsString())));
 				return 0;
 			}
 
@@ -313,9 +314,7 @@ namespace EventStore.Core.Services.Replication {
 				return Math.Min(replicaPosition, leaderCheckpoint);
 
 			// common epoch number is older than the last epoch
-			var nextEpoch = _epochManager.GetEpochAfter(commonEpoch.EpochNumber , false);
-
-			if (nextEpoch == null) {
+			if (await _epochManager.GetEpochAfter(commonEpoch.EpochNumber, false, token) is not { } nextEpoch) {
 				var msg = string.Format(
 					"Replica [{0},S:{1},{2}(0x{3:X}),epochs:\n{4}]\n provided epochs which are not in "
 					+ "EpochManager (possibly too old, known epochs:\n{5}).\nLeader LogPosition: {6} (0x{7:X}). "
@@ -323,9 +322,10 @@ namespace EventStore.Core.Services.Replication {
 					+ "CommonEpoch: {8}, NextEpochAfterCommonEpoch: {9}",
 					replicaEndPoint, subscriptionId, logPosition, logPosition,
 					string.Join("\n", epochs.Select(x => x.AsString())),
-					string.Join("\n", _epochManager.GetLastEpochs(int.MaxValue).Select(x => x.AsString())),
+					string.Join("\n", (await _epochManager.GetLastEpochs(int.MaxValue, token)).Select(x => x.AsString())),
 					leaderCheckpoint, leaderCheckpoint,
-					commonEpoch.AsString(), nextEpochAfterCommonEpoch == null ? "<none>" : nextEpochAfterCommonEpoch.AsString());
+					commonEpoch.AsString(),
+					nextEpochAfterCommonEpoch == null ? "<none>" : nextEpochAfterCommonEpoch.AsString());
 				Log.Error(
 					"Replica [{replicaEndPoint},S:{subscriptionId},{logPosition}(0x{logPosition:X}),epochs:\n{epochs}]\n provided epochs which are not in "
 					+ "EpochManager (possibly too old, known epochs:\n{lastEpochs}).\nLeader LogPosition: {leaderCheckpoint} (0x{leaderCheckpoint:X}). "
@@ -336,7 +336,7 @@ namespace EventStore.Core.Services.Replication {
 					logPosition,
 					logPosition,
 					string.Join("\n", epochs.Select(x => x.AsString())),
-					string.Join("\n", _epochManager.GetLastEpochs(int.MaxValue).Select(x => x.AsString())),
+					string.Join("\n", (await _epochManager.GetLastEpochs(int.MaxValue, token)).Select(x => x.AsString())),
 					leaderCheckpoint,
 					leaderCheckpoint,
 					commonEpoch.AsString(),

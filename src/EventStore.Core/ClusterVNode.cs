@@ -1583,7 +1583,9 @@ public class ClusterVNode<TStreamId> :
 
 			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads, createNewChunks: false);
 
-			epochManager.Init();
+			using (var task = epochManager.Init(CancellationToken.None).AsTask()) {
+				task.Wait(); // No timeout or cancellation, this is intended
+			}
 
 			storageWriter.Start();
 			AddTasks(storageWriter.Tasks);

@@ -16,7 +16,7 @@ namespace EventStore.Core.Messages {
 			public readonly int Version;
 			public readonly long LogPosition;
 			public readonly Guid ChunkId;
-			public readonly EpochRecord[] LastEpochs;
+			public readonly IReadOnlyList<EpochRecord> LastEpochs;
 			public readonly EndPoint ReplicaEndPoint;
 			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
@@ -24,7 +24,7 @@ namespace EventStore.Core.Messages {
 
 			public SubscribeReplica(
 				int version,
-				long logPosition, Guid chunkId, EpochRecord[] lastEpochs,
+				long logPosition, Guid chunkId, IReadOnlyList<EpochRecord> lastEpochs,
 				EndPoint replicaEndPoint,
 				Guid leaderId, Guid subscriptionId, bool isPromotable) {
 

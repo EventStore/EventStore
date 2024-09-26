@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -12,8 +13,10 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using System.Threading.Tasks;
+using DotNext.Runtime.CompilerServices;
 using ILogger = Serilog.ILogger;
 using EventStore.LogCommon;
+using static System.Threading.Timeout;
 
 namespace EventStore.Core.Services.Storage {
 	public abstract class StorageChaser {
@@ -23,7 +26,8 @@ namespace EventStore.Core.Services.Storage {
 	public class StorageChaser<TStreamId> : StorageChaser, IMonitoredQueue,
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.SystemStart>,
-		IHandle<SystemMessage.BecomeShuttingDown> {
+		IHandle<SystemMessage.BecomeShuttingDown>,
+		IThreadPoolWorkItem {
 
 		private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
 		private static readonly int MinFlushDelay = 2 * TicksPerMs;
@@ -37,8 +41,9 @@ namespace EventStore.Core.Services.Storage {
 		private readonly ITransactionFileChaser _chaser;
 		private readonly IIndexCommitterService<TStreamId> _indexCommitterService;
 		private readonly IEpochManager _epochManager;
-		private Thread _thread;
-		private volatile bool _stop;
+		private readonly CancellationToken _stopToken; // cached to avoid ObjectDisposedException
+		private volatile CancellationTokenSource _stop;
+
 		private volatile bool _systemStarted;
 
 		private readonly QueueStatsCollector _queueStats;
@@ -47,10 +52,10 @@ namespace EventStore.Core.Services.Storage {
 		private long _flushDelay;
 		private long _lastFlush;
 
-		private readonly List<IPrepareLogRecord<TStreamId>> _transaction = new List<IPrepareLogRecord<TStreamId>>();
+		private readonly List<IPrepareLogRecord<TStreamId>> _transaction = new();
 		private bool _commitsAfterEof;
 
-		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+		private readonly TaskCompletionSource<object> _tcs = new();
 
 		public Task Task {
 			get { return _tcs.Task; }
@@ -77,20 +82,20 @@ namespace EventStore.Core.Services.Storage {
 
 			_flushDelay = 0;
 			_lastFlush = _watch.ElapsedTicks;
+
+			_stop = new();
+			_stopToken = _stop.Token;
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
-			_thread = new Thread(ChaseTransactionLog);
-			_thread.IsBackground = true;
-			_thread.Name = Name;
-			_thread.Start();
+			ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
 		}
 
 		public void Handle(SystemMessage.SystemStart message) {
 			_systemStarted = true;
 		}
 
-		private void ChaseTransactionLog() {
+		async void IThreadPoolWorkItem.Execute() {
 			try {
 				_queueStats.Start();
 				QueueMonitor.Default.Register(this);
@@ -106,11 +111,11 @@ namespace EventStore.Core.Services.Storage {
 				_indexCommitterService.Init(_chaser.Checkpoint.Read());
 				_leaderBus.Publish(new SystemMessage.ServiceInitialized("StorageChaser"));
 
-				while (!_stop) {
+				while (!_stopToken.IsCancellationRequested) {
 					if (_systemStarted)
-						ChaserIteration();
+						await ChaserIteration(_stopToken);
 					else
-						Thread.Sleep(1);
+						await Task.Yield();
 				}
 			} catch (Exception exc) {
 				Log.Fatal(exc, "Error in StorageChaser. Terminating...");
@@ -118,9 +123,8 @@ namespace EventStore.Core.Services.Storage {
 				_queueStats.ProcessingStarted<FaultedChaserState>(0);
 				_tcs.TrySetException(exc);
 				Application.Exit(ExitCode.Error, "Error in StorageChaser. Terminating...\nError: " + exc.Message);
-				while (!_stop) {
-					Thread.Sleep(100);
-				}
+				await Task.Delay(InfiniteTimeSpan, _stopToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing |
+				                                                              ConfigureAwaitOptions.ContinueOnCapturedContext);
 
 				_queueStats.ProcessingEnded(0);
 			} finally {
@@ -137,7 +141,7 @@ namespace EventStore.Core.Services.Storage {
 			FlushSignal.Set();
 		}
 
-		private void ChaserIteration() {
+		private async ValueTask ChaserIteration(CancellationToken token) {
 			_queueStats.EnterBusy();
 
 			FlushSignal.Reset(); // Reset the flush signal just before a read to reduce pointless reads from [flush flush read] patterns.
@@ -146,7 +150,7 @@ namespace EventStore.Core.Services.Storage {
 
 			if (result.Success) {
 				_queueStats.ProcessingStarted(result.LogRecord.GetType(), 0);
-				ProcessLogRecord(result);
+				await ProcessLogRecord(result, token);
 				_queueStats.ProcessingEnded(1);
 			}
 
@@ -169,7 +173,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private void ProcessLogRecord(SeqReadResult result) {
+		private async ValueTask ProcessLogRecord(SeqReadResult result, CancellationToken token) {
 			switch (result.LogRecord.RecordType) {
 				case LogRecordType.Stream:
 				case LogRecordType.EventType:
@@ -186,7 +190,7 @@ namespace EventStore.Core.Services.Storage {
 				}
 				case LogRecordType.System: {
 					var record = (ISystemLogRecord)result.LogRecord;
-					ProcessSystemRecord(record);
+					await ProcessSystemRecord(record, token);
 					break;
 				}
 				case LogRecordType.Partition:
@@ -247,17 +251,19 @@ namespace EventStore.Core.Services.Storage {
 				record.TransactionPosition, firstEventNumber, lastEventNumber));
 		}
 
-		private void ProcessSystemRecord(ISystemLogRecord record) {
+		private ValueTask ProcessSystemRecord(ISystemLogRecord record, CancellationToken token) {
 			CommitPendingTransaction(_transaction, record.LogPosition);
 
-			if (record.SystemRecordType == SystemRecordType.Epoch) {
+			if (record.SystemRecordType is SystemRecordType.Epoch) {
 				// Epoch record is written to TF, but possibly is not added to EpochManager
 				// as we could be in Follower/Clone mode. We try to add epoch to EpochManager
 				// every time we encounter EpochRecord while chasing. CacheEpoch call is idempotent,
 				// but does integrity checks.
 				var epoch = record.GetEpochRecord();
-				_epochManager.CacheEpoch(epoch);
+				return _epochManager.CacheEpoch(epoch, token);
 			}
+
+			return ValueTask.CompletedTask;
 		}
 
 		private void CommitPendingTransaction(List<IPrepareLogRecord<TStreamId>> transaction, long postPosition) {
@@ -268,7 +274,11 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
-			_stop = true;
+			if (Interlocked.Exchange(ref _stop, null) is { } cts) {
+				using (cts) {
+					cts.Cancel();
+				}
+			}
 		}
 
 		public QueueStats GetStatistics() {
