@@ -28,8 +28,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void no_record_can_be_read_as_first_record() {
-			Assert.IsFalse(_chunk.TryReadFirst().Success);
+		public async Task no_record_can_be_read_as_first_record() {
+			Assert.IsFalse((await _chunk.TryReadFirst(CancellationToken.None)).Success);
 		}
 
 		[Test]

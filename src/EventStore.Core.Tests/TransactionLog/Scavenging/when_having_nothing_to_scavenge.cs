@@ -1,4 +1,5 @@
-﻿using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+﻿using System.Threading.Tasks;
+using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -24,8 +25,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		[Test]
-		public void all_records_are_kept_untouched() {
-			CheckRecords();
+		public async Task all_records_are_kept_untouched() {
+			await CheckRecords();
 		}
 	}
 }

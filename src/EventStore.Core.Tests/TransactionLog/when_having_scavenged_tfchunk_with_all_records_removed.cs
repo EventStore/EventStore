@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
@@ -42,13 +43,13 @@ namespace EventStore.Core.Tests.TransactionLog {
 				var res = chunk.TryAppend(streamRecord);
 				pos = res.NewPosition;
 			}
-			
+
 			_logFormat.EventTypeIndex.GetOrReserveEventType(_logFormat.RecordFactory, "et1", pos, out var eventTypeId, out var eventTypeRecord);
 			if (eventTypeRecord is not null) {
 				var res = chunk.TryAppend(eventTypeRecord);
 				pos = res.NewPosition;
 			}
-			
+
 			var expectedVersion = ExpectedVersion.NoStream;
 			_p1 = LogRecord.SingleWrite(_logFormat.RecordFactory, pos, Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, eventTypeId,
 				new byte[2048], new byte[] { 5, 7 });
@@ -151,9 +152,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void sequencial_read_returns_no_records() {
+		public async Task sequencial_read_returns_no_records() {
 			var records = new List<ILogRecord>();
-			RecordReadResult res = _scavengedChunk.TryReadFirst();
+			RecordReadResult res = await _scavengedChunk.TryReadFirst(CancellationToken.None);
 			while (res.Success) {
 				records.Add(res.LogRecord);
 				res = _scavengedChunk.TryReadClosestForward((int)res.NextPosition);

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -82,8 +83,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void the_first_record_can_be_read() {
-			var res = _chunk.TryReadFirst();
+		public async Task the_first_record_can_be_read() {
+			var res = await _chunk.TryReadFirst(CancellationToken.None);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_prepare1.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
 			Assert.IsTrue(res.LogRecord is IPrepareLogRecord<TStreamId>);

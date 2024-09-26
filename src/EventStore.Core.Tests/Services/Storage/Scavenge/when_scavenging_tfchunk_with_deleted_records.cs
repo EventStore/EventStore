@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -51,10 +53,10 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		}
 
 		[Test]
-		public void should_have_updated_deleted_stream_event_number() {
+		public async Task should_have_updated_deleted_stream_event_number() {
 			var chunk = Db.Manager.GetChunk(0);
 			var chunkRecords = new List<ILogRecord>();
-			RecordReadResult result = chunk.TryReadFirst();
+			RecordReadResult result = await chunk.TryReadFirst(CancellationToken.None);
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);
 				result = chunk.TryReadClosestForward(result.NextPosition);

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Services.Storage;
@@ -55,11 +57,11 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		}
 
 		[Test]
-		public void the_log_records_are_in_first_chunk() {
+		public async Task the_log_records_are_in_first_chunk() {
 			var chunk = Db.Manager.GetChunk(0);
 
 			var chunkRecords = new List<ILogRecord>();
-			RecordReadResult result = chunk.TryReadFirst();
+			RecordReadResult result = await chunk.TryReadFirst(CancellationToken.None);
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);
 				result = chunk.TryReadClosestForward(result.NextPosition);
@@ -69,11 +71,11 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		}
 
 		[Test]
-		public void the_log_records_are_unchanged_in_second_chunk() {
+		public async Task the_log_records_are_unchanged_in_second_chunk() {
 			var chunk = Db.Manager.GetChunk(1);
 
 			var chunkRecords = new List<ILogRecord>();
-			RecordReadResult result = chunk.TryReadFirst();
+			RecordReadResult result = await chunk.TryReadFirst(CancellationToken.None);
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);
 				result = chunk.TryReadClosestForward(result.NextPosition);

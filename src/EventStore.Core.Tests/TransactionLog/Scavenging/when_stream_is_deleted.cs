@@ -1,4 +1,4 @@
-﻿using System.Linq;
+﻿using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -32,8 +32,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		[Test]
-		public void stream_created_and_delete_tombstone_with_corresponding_commits_are_kept() {
-			CheckRecords();
+		public async Task stream_created_and_delete_tombstone_with_corresponding_commits_are_kept() {
+			await CheckRecords();
 		}
 	}
 
@@ -69,8 +69,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		[Test]
-		public void stream_created_and_delete_tombstone_with_corresponding_commits_are_kept() {
-			CheckRecords();
+		public async Task stream_created_and_delete_tombstone_with_corresponding_commits_are_kept() {
+			await CheckRecords();
 		}
 	}
 }

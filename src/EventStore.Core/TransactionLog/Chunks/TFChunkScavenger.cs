@@ -206,7 +206,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 
 			try {
-				TraverseChunkBasic(oldChunk, ct,
+				await TraverseChunkBasic(oldChunk, ct,
 					result => {
 						threadLocalCache.Records.Add(result);
 
@@ -445,7 +445,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				var positionMapping = new List<PosMap>();
 				foreach (var oldChunk in oldChunks) {
 					var lastFlushedPage = -1;
-					TraverseChunkBasic(oldChunk, ct,
+					await TraverseChunkBasic(oldChunk, ct,
 						result => {
 
 							positionMapping.Add(WriteRecord(newChunk, result.LogRecord));
@@ -727,9 +727,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			return allInChunk;
 		}
 
-		private static void TraverseChunkBasic(TFChunk.TFChunk chunk, CancellationToken ct,
+		private static async ValueTask TraverseChunkBasic(TFChunk.TFChunk chunk, CancellationToken ct,
 			Action<CandidateRecord> process) {
-			var result = chunk.TryReadFirst();
+			var result = await chunk.TryReadFirst(ct);
 			while (result.Success) {
 				process(new CandidateRecord(result.LogRecord, result.RecordLength));
 
