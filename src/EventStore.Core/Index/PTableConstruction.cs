@@ -693,11 +693,8 @@ namespace EventStore.Core.Index {
 		}
 
 		static IEnumerator<IndexEntry> Get64bitEnumerator(ISearchTable table) {
-			if (table.Version == PTableVersions.IndexV1) {
-				// V1 source table (32bit hashes)
-				//qq add this check on startup
-				throw new InvalidOperationException("V1 (32bit) PTables are not supported since v24.10. Please perform an index merge in an earlier version >= v3.9.0 to upgrade your PTables");
-			}
+			if (table.Version == PTableVersions.IndexV1)
+				throw new InvalidOperationException("Attempted to merge or scavenge a V1 PTable");
 
 			return table.IterateAllInOrder().GetEnumerator();
 		}

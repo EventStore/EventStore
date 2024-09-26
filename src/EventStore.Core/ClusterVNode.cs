@@ -577,7 +577,9 @@ public class ClusterVNode<TStreamId> :
 			MaxReaderCount = pTableMaxReaderCount,
 			StreamExistenceFilterSize = options.Database.StreamExistenceFilterSize,
 			StreamExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint,
-			TFReaderLeaseFactory = () => new TFReaderLease(readerPool)
+			TFReaderLeaseFactory = () => new TFReaderLease(readerPool),
+			LowHasher = new XXHashUnsafe(),
+			HighHasher = new Murmur3AUnsafe(),
 		});
 
 		ICacheResizer streamInfoCacheResizer;
