@@ -169,10 +169,9 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				_logger.Debug("SCAVENGING: Continuing a scavenge from {checkpoint}", checkpoint);
 
 				if (checkpoint is ScavengeCheckpoint.Accumulating accumulating) {
-					await Time(stopwatch, "Accumulation", cancellationToken => {
-						_accumulator.Accumulate(accumulating, _state, cancellationToken);
-						return ValueTask.CompletedTask;
-					}, cancellationToken);
+					await Time(stopwatch, "Accumulation", cancellationToken =>
+						_accumulator.Accumulate(accumulating, _state, cancellationToken)
+						, cancellationToken);
 					await AfterAccumulation(
 						accumulating.ScavengePoint, scavengerLogger, stopwatch, cancellationToken);
 
@@ -293,10 +292,9 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			}
 
 			// we now have a nextScavengePoint.
-			await Time(stopwatch, "Accumulation", cancellationToken => {
-				_accumulator.Accumulate(prevScavengePoint, nextScavengePoint, _state, cancellationToken);
-				return ValueTask.CompletedTask;
-			}, cancellationToken);
+			await Time(stopwatch, "Accumulation", cancellationToken =>
+					_accumulator.Accumulate(prevScavengePoint, nextScavengePoint, _state, cancellationToken)
+				, cancellationToken);
 			await AfterAccumulation(nextScavengePoint, scavengerLogger, stopwatch, cancellationToken);
 		}
 
