@@ -218,7 +218,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				var nonPrepareRecord = new RecordForExecutor<TStreamId, TRecord>.NonPrepare();
 				var prepareRecord = new RecordForExecutor<TStreamId, TRecord>.Prepare();
 
-				foreach (var isPrepare in sourceChunk.ReadInto(nonPrepareRecord, prepareRecord)) {
+				await foreach (var isPrepare in sourceChunk.ReadInto(nonPrepareRecord, prepareRecord, cancellationToken)) {
 					if (isPrepare) {
 						if (ShouldDiscard(state, scavengePoint, prepareRecord)) {
 							discardedCount++;

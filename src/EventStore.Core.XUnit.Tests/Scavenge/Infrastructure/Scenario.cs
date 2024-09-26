@@ -551,7 +551,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				// The records we expected to keep are kept
 				// The index entries we expected to be kept are kept
 				if (keptRecords != null) {
-					CheckRecords(keptRecords, dbResult);
+					await CheckRecords(keptRecords, dbResult, cancellationTokenSource.Token);
 					CheckIndex(keptIndexEntries, readIndex, collidingStreams, hasher);
 				}
 
@@ -567,7 +567,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 		}
 
 		// nicked from scavengetestscenario
-		protected static void CheckRecords(ILogRecord[][] expected, DbResult actual) {
+		private static async ValueTask CheckRecords(ILogRecord[][] expected, DbResult actual, CancellationToken token = default) {
 			Assert.True(
 				expected.Length == actual.Db.Manager.ChunksCount,
 				"Wrong number of chunks. " +
@@ -577,7 +577,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				var chunk = actual.Db.Manager.GetChunk(i);
 
 				var chunkRecords = new List<ILogRecord>();
-				var result = chunk.TryReadFirst();
+				var result = await chunk.TryReadFirst(token);
 				while (result.Success) {
 					chunkRecords.Add(result.LogRecord);
 					result = chunk.TryReadClosestForward((int)result.NextPosition);

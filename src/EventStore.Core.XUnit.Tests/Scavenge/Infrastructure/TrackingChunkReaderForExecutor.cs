@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using EventStore.Core.TransactionLog.Scavenging;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge {
@@ -30,12 +31,13 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 		public long ChunkEndPosition => _wrapped.ChunkEndPosition;
 
-		public IEnumerable<bool> ReadInto(
+		public IAsyncEnumerable<bool> ReadInto(
 			RecordForExecutor<TStreamId, TRecord>.NonPrepare nonPrepare,
-			RecordForExecutor<TStreamId, TRecord>.Prepare prepare) {
+			RecordForExecutor<TStreamId, TRecord>.Prepare prepare,
+			CancellationToken token) {
 
 			_tracer.Trace($"Opening Chunk {ChunkStartNumber}-{ChunkEndNumber}");
-			return _wrapped.ReadInto(nonPrepare, prepare);
+			return _wrapped.ReadInto(nonPrepare, prepare, token);
 		}
 	}
 }

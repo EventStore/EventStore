@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
@@ -26,11 +28,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		public long ChunkEndPosition => _chunk.ChunkHeader.ChunkEndPosition;
 
 		// similar to TFChunkScavenger.TraverseChunkBasic
-		public IEnumerable<bool> ReadInto(
+		public async IAsyncEnumerable<bool> ReadInto(
 			RecordForExecutor<TStreamId, ILogRecord>.NonPrepare nonPrepare,
-			RecordForExecutor<TStreamId, ILogRecord>.Prepare prepare) {
+			RecordForExecutor<TStreamId, ILogRecord>.Prepare prepare,
+			[EnumeratorCancellation] CancellationToken token) {
 
-			var result = _chunk.TryReadFirst();
+			var result = await _chunk.TryReadFirst(token);
 			while (result.Success) {
 				var record = result.LogRecord;
 				if (record.RecordType != LogRecordType.Prepare) {

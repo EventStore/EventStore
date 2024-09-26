@@ -1,6 +1,6 @@
 ﻿using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -27,8 +27,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		[Test]
-		public void only_last_metaevent_is_left() {
-			CheckRecords();
+		public async Task only_last_metaevent_is_left() {
+			await CheckRecords();
 		}
 	}
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
@@ -65,8 +66,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void the_record_can_be_read_as_first_record() {
-			var res = _cachedChunk.TryReadFirst();
+		public async Task the_record_can_be_read_as_first_record() {
+			var res = await _cachedChunk.TryReadFirst(CancellationToken.None);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
 			Assert.AreEqual(_record, res.LogRecord);
