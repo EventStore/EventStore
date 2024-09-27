@@ -2,8 +2,6 @@ using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1, false)]
-	[TestFixture(PTableVersions.IndexV1, true)]
 	[TestFixture(PTableVersions.IndexV2, false)]
 	[TestFixture(PTableVersions.IndexV2, true)]
 	[TestFixture(PTableVersions.IndexV3, false)]

@@ -5,8 +5,6 @@ using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1, false)]
-	[TestFixture(PTableVersions.IndexV1, true)]
 	[TestFixture(PTableVersions.IndexV2, false)]
 	[TestFixture(PTableVersions.IndexV2, true)]
 	[TestFixture(PTableVersions.IndexV3, false)]
@@ -46,82 +44,81 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var guidFilename = new GuidFilenameProvider(PathName);
 			_result = _map.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 0, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), guidFilename,
+				guidFilename,
 				_ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify), 1, 2,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true),
 				new FakeFilenameProvider(_finalmergefile, _finalmergefile2), _ptableVersion, 0,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());

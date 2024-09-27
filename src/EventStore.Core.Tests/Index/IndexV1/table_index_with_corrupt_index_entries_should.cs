@@ -133,7 +133,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			}
 		}
 
-		[TestCase(PTableVersions.IndexV1)]
 		[TestCase(PTableVersions.IndexV2)]
 		[TestCase(PTableVersions.IndexV3)]
 		[TestCase(PTableVersions.IndexV4)]
@@ -146,7 +145,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			Assert.False(File.Exists(Path.Combine(PathName, TableIndex.ForceIndexVerifyFilename)));
 		}
 
-		[TestCase(PTableVersions.IndexV1)]
 		[TestCase(PTableVersions.IndexV2)]
 		[TestCase(PTableVersions.IndexV3)]
 		[TestCase(PTableVersions.IndexV4)]
@@ -163,7 +161,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			Assert.True(File.Exists(Path.Combine(PathName, TableIndex.ForceIndexVerifyFilename)));
 		}
 
-		[TestCase(PTableVersions.IndexV1)]
 		[TestCase(PTableVersions.IndexV2)]
 		[TestCase(PTableVersions.IndexV3)]
 		[TestCase(PTableVersions.IndexV4)]

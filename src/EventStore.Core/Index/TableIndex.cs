@@ -310,25 +310,20 @@ namespace EventStore.Core.Index {
 						Log.Debug("Performing manual index merge.");
 
 						_isManualMergePending = false;
-						using (var reader = _tfReaderFactory()) {
-							var manualMergeResult = _indexMap.TryManualMerge(
-								(streamId, currentHash) => UpgradeHash(streamId, currentHash),
-								entry => reader.ExistsAt(entry.Position),
-								entry => ReadEntry(reader, entry.Position),
-								_fileNameProvider,
-								_ptableVersion,
-								_indexCacheDepth,
-								_skipIndexVerify,
-								useBloomFilter: _useBloomFilter,
-								lruCacheSize: _lruCacheSize);
+						var manualMergeResult = _indexMap.TryManualMerge(
+							_fileNameProvider,
+							_ptableVersion,
+							_indexCacheDepth,
+							_skipIndexVerify,
+							useBloomFilter: _useBloomFilter,
+							lruCacheSize: _lruCacheSize);
 
-							if (manualMergeResult.HasMergedAny) {
-								_indexMap = manualMergeResult.MergedMap;
-								_indexMap.SaveToFile(indexmapFile);
-								manualMergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
-							}
-							Log.Debug("Manual index merge completed: {numMergedPTables} PTable(s) merged.", manualMergeResult.ToDelete.Count);
+						if (manualMergeResult.HasMergedAny) {
+							_indexMap = manualMergeResult.MergedMap;
+							_indexMap.SaveToFile(indexmapFile);
+							manualMergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
 						}
+						Log.Debug("Manual index merge completed: {numMergedPTables} PTable(s) merged.", manualMergeResult.ToDelete.Count);
 					}
 
 					TableItem tableItem;
@@ -361,27 +356,22 @@ namespace EventStore.Core.Index {
 					_indexMap.SaveToFile(indexmapFile);
 
 					if (addResult.CanMergeAny) {
-						using (var reader = _tfReaderFactory()) {
-							MergeResult mergeResult;
-							do {
-								mergeResult = _indexMap.TryMergeOneLevel(
-									(streamId, currentHash) => UpgradeHash(streamId, currentHash),
-									entry => reader.ExistsAt(entry.Position),
-									entry => ReadEntry(reader, entry.Position),
-									_fileNameProvider,
-									_ptableVersion,
-									_indexCacheDepth,
-									_skipIndexVerify,
-									useBloomFilter: _useBloomFilter,
-									lruCacheSize: _lruCacheSize);
+						MergeResult mergeResult;
+						do {
+							mergeResult = _indexMap.TryMergeOneLevel(
+								_fileNameProvider,
+								_ptableVersion,
+								_indexCacheDepth,
+								_skipIndexVerify,
+								useBloomFilter: _useBloomFilter,
+								lruCacheSize: _lruCacheSize);
 
-								if (mergeResult.HasMergedAny) {
-									_indexMap = mergeResult.MergedMap;
-									_indexMap.SaveToFile(indexmapFile);
-									mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
-								}
-							} while (mergeResult.CanMergeAny);
-						}
+							if (mergeResult.HasMergedAny) {
+								_indexMap = mergeResult.MergedMap;
+								_indexMap.SaveToFile(indexmapFile);
+								mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
+							}
+						} while (mergeResult.CanMergeAny);
 					}
 
 					lock (_awaitingTablesLock) {
@@ -468,11 +458,12 @@ namespace EventStore.Core.Index {
 						var indexmapFile = Path.Combine(_directory, IndexMapFilename);
 
 						Func<IndexEntry, bool> existsAt = entry => reader.ExistsAt(entry.Position);
-						var scavengeResult = _indexMap.Scavenge(pTable.Id, ct,
+						var scavengeResult = _indexMap.Scavenge(
+							pTable.Id,
+							ct,
 							shouldKeep ?? existsAt,
-							(streamId, currentHash) => UpgradeHash(streamId, currentHash),
-							existsAt,
-							entry => ReadEntry(reader, entry.Position), _fileNameProvider, _ptableVersion,
+							_fileNameProvider,
+							_ptableVersion,
 							_indexCacheDepth,
 							_skipIndexVerify,
 							useBloomFilter: _useBloomFilter,
@@ -515,17 +506,6 @@ namespace EventStore.Core.Index {
 				Log.Information("Waiting for TableIndex background task to complete before starting scavenge.");
 				_backgroundRunningEvent.Wait(ct);
 			}
-		}
-
-		private Tuple<TStreamId, bool> ReadEntry(TFReaderLease reader, long position) {
-			RecordReadResult result = reader.TryReadAt(position, couldBeScavenged: true);
-			if (!result.Success)
-				return new Tuple<TStreamId, bool>(_emptyStreamId, false);
-			if (result.LogRecord.RecordType != LogRecordType.Prepare)
-				throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",
-					result.LogRecord.RecordType));
-			return new Tuple<TStreamId, bool>(((IPrepareLogRecord<TStreamId>)result.LogRecord).EventStreamId,
-				true);
 		}
 
 		private void ReclaimMemoryIfNeeded(List<TableItem> awaitingMemTables) {
@@ -960,10 +940,6 @@ namespace EventStore.Core.Index {
 		private IndexEntry CreateIndexEntry(IndexKey<TStreamId> key) {
 			key = CreateIndexKey(key.StreamId, key.Version, key.Position);
 			return new IndexEntry(key.Hash, key.Version, key.Position);
-		}
-
-		private ulong UpgradeHash(TStreamId streamId, ulong lowHash) {
-			return lowHash << 32 | _highHasher.Hash(streamId);
 		}
 
 		private ulong CreateHash(TStreamId streamId) {

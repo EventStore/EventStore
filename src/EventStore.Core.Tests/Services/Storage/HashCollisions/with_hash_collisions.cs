@@ -11,10 +11,11 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
+using EventStore.Core.Tests.Index.Hashers;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	// both the stream names hash to the same value using XXHash.
-	// they are different for Murmur3 so we use v1 tables here.
+	// they are different for Murmur3 so we use only XXHashUnsafe here.
 	// we use a fake TransactionFileReader that attributes:
 	//    odd  positions to LPN-FC002_LPK51001
 	//    even positions to account--696193173
@@ -46,14 +47,16 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 			_logFormat = LogFormatHelper<LogFormat.V2, string>.LogFormatFactory.Create(new() {
 				InMemory = true,
+				LowHasher = new XXHashUnsafe(),
+				HighHasher = new ConstantHasher(0),
 			});
 
 			_lowHasher = _logFormat.LowHasher;
 			_highHasher = _logFormat.HighHasher;
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, _logFormat.EmptyStreamId,
-				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: _maxMemTableSize),
+				() => new HashListMemTable(PTableVersions.IndexV4, maxSize: _maxMemTableSize),
 				() => _fakeReader,
-				PTableVersions.IndexV1,
+				PTableVersions.IndexV4,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: _maxMemTableSize,
 				maxTablesPerLevel: 2);

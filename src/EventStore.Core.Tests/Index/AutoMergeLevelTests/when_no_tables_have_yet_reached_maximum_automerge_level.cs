@@ -9,9 +9,6 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 			AddTables(3);
 			Assert.AreEqual(2, _result.MergedMap.InOrder().Count());
 			var result = _result.MergedMap.TryManualMerge(
-				UpgradeHash,
-				ExistsAt,
-				RecordExistsAt,
 				_fileNameProvider,
 				_ptableVersion,
 				skipIndexVerify: _skipIndexVerify);

@@ -5,8 +5,6 @@ using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1, false)]
-	[TestFixture(PTableVersions.IndexV1, true)]
 	[TestFixture(PTableVersions.IndexV2, false)]
 	[TestFixture(PTableVersions.IndexV2, true)]
 	[TestFixture(PTableVersions.IndexV3, false)]
@@ -43,13 +41,13 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 			_result = _map.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
-				123, 321, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true),
+				123, 321,
 				new GuidFilenameProvider(PathName), _ptableVersion, 0,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
-				100, 400, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true),
+				100, 400,
 				new FakeFilenameProvider(_mergeFile), _ptableVersion, 0,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
