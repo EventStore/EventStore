@@ -1,6 +1,6 @@
 module.exports = [
     {
-        text:     "Getting started",
+        text: "Server Quick Start",
         children: [
             "README.md",
             "installation.md",
@@ -8,17 +8,19 @@ module.exports = [
         ]
     },
     {
-        text:     "Configuration",
+        text: "Configuration",
         children: [
             "configuration.md",
+            "db-config.md",
             "security.md",
             "networking.md",
             "cluster.md",
         ]
     },
     {
-        text:     "Features",
+        text: "Features",
         children: [
+            "admin-ui.md",
             "streams.md",
             "indexes.md",
             "projections.md",
@@ -26,12 +28,11 @@ module.exports = [
         ]
     },
     {
-        text:     "Operations",
+        text: "Operations",
         children: [
             "upgrade-guide.md",
             "operations.md",
             "diagnostics.md",
-            "metrics.md"
         ]
     }
 ];

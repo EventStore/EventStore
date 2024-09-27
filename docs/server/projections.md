@@ -325,7 +325,7 @@ You change the configuration of a projection by setting the relevant key and val
 create a projection with the web admin interface.
 
 ::: card
-![Web admin interface projections configuration screen](./images/wai-projection-config.jpg)
+![Web admin interface projections configuration screen](images/wai-projection-config.jpg)
 :::
 
 <!-- TODO: Further explanation here -->
@@ -522,7 +522,7 @@ Once the projection is running, open your browser and enable the developer tools
 tools open, visit your projection URL and you should see a button labelled _Debug_.
 
 ::: card
-![Projections Debugging Part 1](./images/projections_debugging_part_1.png)
+![Projections Debugging Part 1](images/projections_debugging_part_1.png)
 :::
 
 After clicking the projection "Debug" button, you see the debugging interface with the definition of the
@@ -534,13 +534,13 @@ The _Update_ button provides you with a way to update the projection definition 
 the projection itself and leave the context of the debugger.
 
 ::: card
-![Projections Debugging Part 2](./images/projections_debugging_part_2.png)
+![Projections Debugging Part 2](images/projections_debugging_part_2.png)
 :::
 
 If the _Run Step_ button is not greyed out and you click it, the browser has hit a breakpoint.
 
 ::: card
-![Projections Debugging Part 3](./images/projections_debugging_part_3.png)
+![Projections Debugging Part 3](images/projections_debugging_part_3.png)
 :::
 
 You are now able to step through the projection, the important method to step into is

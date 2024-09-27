@@ -77,57 +77,49 @@ The format represents data with the following jschema (`eventId` must be a UUID)
 
 ### Appending a single event to a new stream
 
-If you issue a `POST` request with data to a stream and the correct content type set it appends the event to the stream, and generates a `201` response from the server, giving you the location of the event. Using the following event, which [you can also download as a file](@httpapi/event.json):
+If you issue a `POST` request with data to a stream and the correct content type set it appends the event to the stream, and generates a `201` response from the server, giving you the location of the event. Using the following event, which [you can also download as a file](https://raw.githubusercontent.com/EventStore/EventStore/c948d32302414b456b42a73e0ce212f264ccb30a/samples/http-api/event.json):
 
 @[code](@httpapi/event.json)
 
 `POST` the following request to create a stream and add an event to it:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event-to-new-stream.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-event-to-new-stream.sh)
 :::
-::::
 
 Some clients may not be able to generate a unique identifier (or may not want to) for the event ID. You need this ID for idempotence purposes and EventStoreDB can generate it for you.
 
 If you leave off the `ES-EventId` header you see different behavior:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event-no-id.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-event-no-id.sh)
 :::
-::::
 
 In this case EventStoreDB has responded with a `307 Temporary Redirect`. The location points to another URI that you can post the event to. This new URI is idempotent for posting, even without an event ID.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event-follow.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-event-follow.sh)
 :::
-::::
 
 It's generally recommended to include an event ID if possible as it results in fewer round trips between the client and the server.
 
 When posting to either the stream or to the returned redirect, clients must include the `EventType` header. If you forget to include the header you receive an error.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event-no-type.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-event-no-type.sh)
 :::
-::::
 
 ### Batch append operation
 
@@ -139,14 +131,12 @@ For example, the below has two events:
 
 When you append multiple events in a single post, EventStoreDB treats them as one transaction, it appends all events together or fails.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-multiple-events.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-multiple-events.sh)
 :::
-::::
 
 #### Appending events
 
@@ -154,27 +144,23 @@ To append events, issue a `POST` request to the same resource with a new `eventI
 
 @[code](@httpapi/event-append.json)
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
+@[code{curl}](@httpapi/append-event.sh)
+@tab Response
 @[code{curl}](@httpapi/append-event.sh)
 :::
-::: code-group-item Response
-@[code{curl}](@httpapi/append-event.sh)
-:::
-::::
 
 ### Data-only events
 
 Version 3.7.0 of EventStoreDB added support for the `application/octet-stream` content type to support data-only binary events. When creating these events, you need to provide the `ES-EventType` and `ES-EventId` headers and cannot have metadata associated with the event. In the example below `SGVsbG8gV29ybGQ=` is the data you `POST` to the stream:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-data-event.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-data-event.sh)
 :::
-::::
 
 ### Expected version header
 
@@ -192,25 +178,21 @@ First append an event to a stream, setting a version:
 
 @[code](@httpapi/event-version.json)
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event-version.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-event-version.sh)
 :::
-::::
 
 If you now append to the stream with the incorrect version, you receive an HTTP status code 400 error.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event-wrong-version.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-event-wrong-version.sh)
 :::
-::::
 
 There are special values you can use in the expected version header:
 
@@ -232,16 +214,12 @@ If you are using the expected version parameter with your post, then EventStoreD
 
 EventStoreDB exposes streams as a resource located at `http(s)://{yourdomain.com}:{port}/streams/{stream}`. If you issue a simple `GET` request to this resource, you receive a standard AtomFeed document as a response.
 
-:::: code-group
-::: code-group-item Request
-
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/read-stream.sh)
-:::
-::: code-group-item Response
-
+@tab Response
 @[code{response}](@httpapi/read-stream.sh)
 :::
-::::
 
 ### Reading an event from a stream
 
@@ -260,14 +238,12 @@ The accepted content types for `GET` requests are:
 
 The non-atom version of the event has fewer details about the event.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/read-event.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/read-event.sh)
 :::
-::::
 
 ### Feed paging
 
@@ -275,14 +251,12 @@ The next step in understanding how to read a stream is the `first`/`last`/`previ
 
 In the example above the server returned the following `links` as part of its result:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/read-stream.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/read-stream.sh)
 :::
-::::
 
 This shows that there is not a `next` URL as all the information is in this request and that the URL requested is the first link. When dealing with these URLs, there are two ways of reading the data in the stream.
 
@@ -291,16 +265,12 @@ This shows that there is not a `next` URL as all the information is in this requ
 
 If you want to follow a live stream, then you keep following the `previous` links. When you reach the end of a stream, you receive an empty document with no entries or `previous` link. You then continue polling this URI (in the future a document will appear). You can see this by trying the `previous` link from the above feed.
 
-:::: code-group
-::: code-group-item Request
-
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/read-stream-forwards.sh)
-:::
-::: code-group-item Response
-
+@tab Response
 @[code{response}](@httpapi/read-stream-forwards.sh)
 :::
-::::
 
 When parsing an atom subscription, the IDs of events always stay the same. This is important for figuring out if you are referring to the same event.
 
@@ -308,44 +278,32 @@ When parsing an atom subscription, the IDs of events always stay the same. This 
 
 Let's now try an example with more than a single page. First create the multiple events:
 
-:::: code-group
-::: code-group-item Request
-
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-paging-events.sh)
-:::
-::: code-group-item Response
-
+@tab Response
 @[code{response}](@httpapi/append-paging-events.sh)
 :::
-::::
 
 If you request the stream of events, you see a series of links above the events:
 
-:::: code-group
-::: code-group-item Request
-
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/request-paging-events.sh)
-:::
-::: code-group-item Response
-
+@tab Response
 @[code{response}](@httpapi/request-paging-events.sh)
 :::
-::::
 
 Using the links in the stream of events, you can traverse through all the events in the stream by going to the `last` URL and following `previous` links, or by following `next` links from the `first` link.
 
 For example, if you request the `last` link from above:
 
-:::: code-group
-::: code-group-item Request
-
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/request-last-link.sh)
-:::
-::: code-group-item Response
-
+@tab Response
 @[code{response}](@httpapi/request-last-link.sh)
 :::
-::::
 
 You then follow `previous` links until you are back to the head of the stream, where you can continue reading events in real time by polling the `previous` link.
 
@@ -361,16 +319,12 @@ All links except the head link are fully cacheable as you can see in the HTTP he
 To access the `$all` stream, you must use admin details. Find more information on the [security](security.md) page.
 :::
 
-:::: code-group
-::: code-group-item Request
-
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/read-all-events.sh)
-:::
-::: code-group-item Response
-
+@tab Response
 @[code{response}](@httpapi/read-all-events.sh)
 :::
-::::
 
 ### Conditional GETs
 
@@ -380,16 +334,12 @@ The head link supports conditional `GET`s with the use of [ETAGS](http://en.wiki
 
 You can use this in your next request when polling the stream for changes by putting it in the `If-None-Match` header. This tells the server to check if the response is the one you already know and returning a '304 not modified' response. If the tags have changed, the server returns a '200 OK' response. You can use this method to optimise your application by not sending large streams if there are no changes.
 
-:::: code-group
-::: code-group-item Request
-
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/request-etag.sh)
-:::
-::: code-group-item Response
-
+@tab Response
 @[code{response}](@httpapi/request-etag.sh)
 :::
-::::
 
 ::: tip
 You create Etags using the version of the stream and the media type of the stream you are reading. You can't read an Etag from a stream in one media type and use it with another media type.
@@ -408,31 +358,23 @@ There are ways of embedding events and further metadata into your stream by usin
 
 The `rich` embed mode returns more properties about the event (`eventtype`, `streamid`, `position`, and so on) as you can see in the following request.
 
-:::: code-group
-::: code-group-item Request
-
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/read-stream-rich.sh)
-:::
-::: code-group-item Response
-
+@tab Response
 @[code{response}](@httpapi/read-stream-rich.sh)
 :::
-::::
 
 #### Body embed mode
 
 The `body` embed mode returns the JSON/XML body of the events into the feed as well, depending on the type of the feed. You can see this in the request below:
 
-:::: code-group
-::: code-group-item Request
-
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/read-stream-body.sh)
-:::
-::: code-group-item Response
-
+@tab Response
 @[code{response}](@httpapi/read-stream-body.sh)
 :::
-::::
 
 ##### Variants of body embed mode
 
@@ -447,36 +389,30 @@ Two other modes are variants of `body`:
 
 To delete a stream over the Atom interface, issue a `DELETE` request to the resource.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code](@httpapi/delete-stream/delete-stream.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code](@httpapi/delete-stream/delete-stream-response.http)
 :::
-::::
 
-By default when you delete a stream, EventStoreDB soft deletes it. This means you can recreate it later by setting the `$tb` metadata section in the stream. If you try to `GET` a soft deleted stream you receive a 404 response:
+By default, when you delete a stream, EventStoreDB soft deletes it. This means you can recreate it later by setting the `$tb` metadata section in the stream. If you try to `GET` a soft deleted stream you receive a 404 response:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code](@httpapi/delete-stream/get-deleted-stream.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code](@httpapi/delete-stream/get-deleted-stream-response.http)
 :::
-::::
 
 You can recreate the stream by appending new events to it (like creating a new stream):
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code](@httpapi/append-event.http)
 :::
-::::
 
 The version numbers do not start at zero but at where you soft deleted the stream from
 
@@ -490,36 +426,30 @@ A hard delete is permanent and the stream is not removed during a scavenge. If y
 
 Issue the `DELETE` as before but with the permanent delete header:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code](@httpapi/delete-stream/hard-delete-stream.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code](@httpapi/delete-stream/hard-delete-stream.http)
 :::
-::::
 
 The stream is now permanently deleted, and now the response is a `410`.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/delete-stream/get-deleted-stream.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code](@httpapi/delete-stream/get-deleted-stream-response.http)
 :::
-::::
 
 If you try to recreate the stream as in the above example you also receive a `410` response.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/delete-stream/append-event-deleted.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/delete-stream/append-event-deleted.sh)
 :::
-::::
 
 ## Description document
 
@@ -542,14 +472,12 @@ There are three ways in which EventStoreDB returns the description document.
 
 The client is able to request the description document by passing `application/vnd.eventstore.streamdesc+json` in the `accept` header, for example:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/get-dd.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/get-dd.sh)
 :::
-::::
 
 In the example above, the client requested the description document for the stream called `newstream` which has a set of links describing the supported methods and content types. The document also includes additional methods available such as the `streamSubscription`. If there are no subscriptions to the `newstream`, the `streamSubscription` key is absent.
 
@@ -563,14 +491,13 @@ Provided the client maintains this EventStoreDB will treat all operations as ide
 
 For example:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 
 ```bash
 curl -i -d @event.txt "http://127.0.0.1:2113/streams/newstream"
 ```
-:::
-::: code-group-item Response
+@tab Response
 
 ```http
 HTTP/1.1 201 Created
@@ -584,7 +511,6 @@ Content-Length: 107
 Keep-Alive: timeout=15,max=100
 ```
 :::
-::::
 
 Assuming you were posting to a new stream you would get the event appended once (and the stream created). The second event returns as the first but not write again.
 
@@ -594,14 +520,13 @@ This allows the client rule of “if you get an unknown condition, retry” to w
 
 For example:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 
 ```bash
 curl -i "http://127.0.0.1:2113/streams/newstream444"
 ```
-:::
-::: code-group-item Response
+@tab Response
 
 ```http
 HTTP/1.1 200 OK
@@ -693,7 +618,6 @@ Keep-Alive: timeout=15,max=100
 }
 ```
 :::
-::::
 
 ## Stream metadata
 
@@ -711,14 +635,12 @@ http://{eventstore-ip-address}/streams/{stream-name}/metadata
 
 You should not access metadata by constructing this URL yourself, as the right to change the resource address is reserved. Instead, you should follow the link from the stream itself, which enables your client to tolerate future changes to the addressing structure.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/read-metadata.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/read-metadata.sh)
 :::
-::::
 
 Once you have the URI of the metadata stream, issue a `GET` request to retrieve the metadata:
 
@@ -728,14 +650,12 @@ curl -i -H "Accept:application/vnd.eventstore.atom+json" http://127.0.0.1:2113/s
 
 If you have security enabled, reading metadata may require that you pass credentials, as in the examples above. If credentials are required and you do not pass them, then you receive a `401 Unauthorized` response.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/missing-credentials.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/missing-credentials.sh)
 :::
-::::
 
 ### Writing metadata
 
@@ -753,13 +673,11 @@ You can also add user-specified metadata here. Some examples user-specified meta
 
 You then post this information is then posted to the stream:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/update-metadata.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/update-metadata.sh)
 :::
-::::
 
 If the specified user does not have permissions to write to the stream metadata, you receive a '401 Unauthorized' response.

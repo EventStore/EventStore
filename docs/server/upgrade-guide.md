@@ -24,7 +24,7 @@ An online rolling upgrade can be done from these versions of EventStoreDB, direc
 Follow the upgrade procedure below on each node, starting with a follower node:
 
 ::: card
-![EventStoreDB upgrade procedure for each node](./images/upgrade-procedure.png)
+![EventStoreDB upgrade procedure for each node](images/upgrade-procedure.png)
 :::
 
 

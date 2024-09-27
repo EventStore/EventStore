@@ -1,3 +1,7 @@
+---
+order: 3
+---
+
 # Persistent subscriptions
 
 This document explains how to use HTTP API for setting up and consuming persistent subscriptions and competing consumer subscription groups. For an overview on competing consumers and how they relate to other subscription types please see our [getting started guide](@server/persistent-subscriptions.md).
@@ -12,7 +16,7 @@ Before interacting with a subscription group, you need to create one. You receiv
 
 ::: warning
 
-Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to create persistent subscriptions to `$all`, use the [appropriate client method](@clients/persistent-subscriptions.md#subscribing-to-all).
+Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to create persistent subscriptions to `$all`, use the [appropriate client method](@clients/grpc/persistent-subscriptions.md#subscribing-to-all).
 
 :::
 

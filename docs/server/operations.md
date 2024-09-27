@@ -7,7 +7,7 @@ EventStoreDB requires regular maintenance with three operational concerns:
 - [Certificate update](#certificate-update-upon-expiry) to renew certificates.
 
 You might also be interested learning about EventStoreDB [diagnostics](diagnostics.md)
-and [indexes](./indexes.md), which might require attention.
+and [indexes](indexes.md), which might require attention.
 
 ## Scavenging
 
@@ -34,7 +34,7 @@ or `ops` user:
 Scavenges can also be started from the _Admin_ page of the Admin UI.
 
 ::: card
-![Start a scavenge in the Admin UI](./images/admin-scavenge.png)
+![Start a scavenge in the Admin UI](images/admin-scavenge.png)
 :::
 
 Each node in a cluster contains an independent copy of the database. As such, when you run a scavenge, you need to issue a
@@ -344,13 +344,13 @@ Specify `--help` to see the full list of options.
 The redactor will blank out the data section of the specified events with one bits (0xFF bytes) keeping the data size exactly the same as it was before. It will also set a flag (`IsRedacted`) on the event's record to indicate that the event has been redacted. All other properties of the event such as the event type, event metadata, and timestamp will remain unchanged.
 
 ::: card
-![Redactor run](./images/redaction-run.png)
+![Redactor run](images/redaction-run.png)
 :::
 
 If you read the data of a redacted event from an external client, you should see data composed of only 0xFF bytes. The UI will also label redacted events.
 
 ::: card
-![Redacted event in UI](./images/redaction-ui.png)
+![Redacted event in UI](images/redaction-ui.png)
 :::
 
 ::: tip
@@ -397,7 +397,7 @@ There are two main ways to perform backups:
 
 - Do not attempt to back up a node using file copy at the same time a scavenge operation is running.
 
-- [Read-only replica](./cluster.md#read-only-replica) nodes may be used as a backup source.
+- [Read-only replica](cluster.md#read-only-replica) nodes may be used as a backup source.
 
 - When either running a backup or restoring, do not mix backup files of different nodes.
 
@@ -509,7 +509,7 @@ Then backup the log:
 Increase the cluster size from 3 to 5 to keep further copies of data. This increase in the cluster size will
 slow the cluster's writing performance as two follower nodes will need to confirm each write.
 
-Alternatively, you can use a [read-only replica](./cluster.md#read-only-replica) node, which is not a part of
+Alternatively, you can use a [read-only replica](cluster.md#read-only-replica) node, which is not a part of
 the cluster. In this case, the write performance will be minimally impacted.
 
 #### Alternative storage

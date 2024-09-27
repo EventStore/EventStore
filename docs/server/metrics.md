@@ -3,7 +3,7 @@
 EventStoreDB collects metrics in [prometheus format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format), available on the `/metrics` endpoint. Promethus can be configured to scrape this endpoint directly. The metrics are configured in `metricsconfig.json`. 
 
 ::: note
-`/metrics` does not yet contain metrics for Projections and Persistent Subscriptions. To view these in Prometheus it is still recommended to use the [Prometheus exporter](./diagnostics.md#prometheus)
+`/metrics` does not yet contain metrics for Projections and Persistent Subscriptions. To view these in Prometheus it is still recommended to use the [Prometheus exporter](diagnostics.md#prometheus)
 :::
 
 ## Metrics Reference
@@ -13,9 +13,9 @@ EventStoreDB collects metrics in [prometheus format](https://prometheus.io/docs/
 #### Cache hits and misses
 EventStoreDB tracks cache hits/misses metrics for `stream-info` and `chunk` caches.
 
-| Time Series | Type       | Description |
-| :---------- | :--------- | :---------- |
-| `eventstore_cache_hits_misses{cache=<CACHE_NAME>,kind=<"hits"\|"misses">}` | [Counter](#common-types) | Total hits/misses on _CACHE_NAME_ cache   |
+| Time Series                                                                | Type                     | Description                             |
+|:---------------------------------------------------------------------------|:-------------------------|:----------------------------------------|
+| `eventstore_cache_hits_misses{cache=<CACHE_NAME>,kind=<"hits"\|"misses">}` | [Counter](#common-types) | Total hits/misses on _CACHE_NAME_ cache |
 
 Example Configuration:
 ```

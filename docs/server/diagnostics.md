@@ -90,7 +90,7 @@ verbose log level.
 :::
 
 | Format               | Syntax           |
-| :------------------- | :--------------- |
+|:---------------------|:-----------------|
 | Command line         | `--log`          |
 | YAML                 | `Log`            |
 | Environment variable | `EVENTSTORE_LOG` |
@@ -774,7 +774,7 @@ compression = "gzip"
 You can export EventStoreDB metrics to Prometheus and configure Grafana dashboards to monitor your deployment.
 
 ::: card
-![Grafana dashboard](./images/grafana.png)
+![Grafana dashboard](images/grafana.png)
 :::
 
 Event Store doesn't provide Prometheus support out of the box, but you can use the community-supported

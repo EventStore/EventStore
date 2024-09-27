@@ -16,21 +16,19 @@ configure EventStoreDB server, described below.
 You can check what version of EventStoreDB you have installed by using the `--version` parameter in the
 command line. For example:
 
-:::: code-group
-::: code Linux
+::: tabs#os
+@tab Linux
 ```bash
 ```bash:no-line-numbers
 $ eventstored --version
 EventStoreDB version 23.10.0.0 (oss-v23.10.0/8660912b8, 2023-10-24T16:13:49+01:00)
 ```
-:::
-::: code Windows
+@tab Windows
 ```
 > EventStore.ClusterNode.exe --version
 EventStoreDB version 23.10.0.0 (oss-v23.10.0/8660912b8, 2023-10-24T16:13:49+01:00)
 ```
 :::
-::::
 
 The full list of available options is available from the currently installed server by using the `--help`
 option in the command line.
@@ -76,18 +74,16 @@ You can also override options from both configuration files and environment vari
 
 For example, starting EventStoreDB with the `--log` option will override the default log files location:
 
-:::: code-group
-::: code-group-item Linux
+::: tabs#os
+@tab Linux
 ```bash:no-line-numbers
 eventstored --log /tmp/eventstore/logs
 ```
-:::
-::: code-group-item Windows
+@tab Windows
 ```bash:no-line-numbers
 EventStore.ClusterNode.exe --log C:\Temp\EventStore\Logs
 ```
 :::
-::::
 
 ### Testing the configuration
 
