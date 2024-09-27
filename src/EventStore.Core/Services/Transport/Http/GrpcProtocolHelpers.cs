@@ -1,3 +1,4 @@
+#pragma warning disable IDE0073 // The file header does not match the required text
 // From https://github.com/grpc/grpc-dotnet
 
 using System;
