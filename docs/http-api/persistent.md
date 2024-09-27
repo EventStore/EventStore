@@ -61,7 +61,7 @@ You can edit the settings of an existing subscription while it is running. This 
 
 ::: warning
 
-Persistent subscriptions to `$all` are not supported over the HTTP API. To update persistent subscriptions to `$all`, use the [appropriate client method](@clients/persistent-subscriptions.md#updating-a-subscription-group).
+Persistent subscriptions to `$all` are not supported over the HTTP API. To update persistent subscriptions to `$all`, use the [appropriate client method](@clients/grpc/persistent-subscriptions.md#updating-a-subscription-group).
 
 :::
 
@@ -84,7 +84,7 @@ _Same parameters as "Creating a Persistent Subscription"_
 
 ::: warning
 
-Deleting persistent subscriptions to `$all` is not supported over the HTTP API. If you want to delete persistent subscriptions to `$all`, use the [appropriate client method](@clients/persistent-subscriptions.md#deleting-a-subscription-group).
+Deleting persistent subscriptions to `$all` is not supported over the HTTP API. If you want to delete persistent subscriptions to `$all`, use the [appropriate client method](@clients/grpc/persistent-subscriptions.md#deleting-a-subscription-group).
 
 :::
 
