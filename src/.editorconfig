@@ -14,6 +14,10 @@ trim_trailing_whitespace = true
 
 charset = utf-8
 
+# License headers
+dotnet_diagnostic.IDE0073.severity = error
+file_header_template = Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.\nEvent Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 # New line preferences
 csharp_new_line_before_open_brace = none
 csharp_new_line_before_catch = false
