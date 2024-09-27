@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Threading.Tasks;
 using EventStore.Core.DataStructures;
 using EventStore.Core.TransactionLog.Chunks;

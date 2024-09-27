@@ -1,9 +1,5 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using EventStore.Core.Index;
 
 namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 	[TestFixture]
@@ -21,9 +17,6 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 		[Test]
 		public void no_table_should_manually_merged() {
 			var result = _map.TryMergeOneLevel(
-				UpgradeHash,
-				ExistsAt,
-				RecordExistsAt,
 				_fileNameProvider,
 				_ptableVersion,
 				skipIndexVerify: _skipIndexVerify

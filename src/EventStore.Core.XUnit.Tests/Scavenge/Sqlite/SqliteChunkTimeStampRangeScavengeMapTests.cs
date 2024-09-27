@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.TransactionLog.Scavenging;
 using EventStore.Core.TransactionLog.Scavenging.Sqlite;
 using Xunit;

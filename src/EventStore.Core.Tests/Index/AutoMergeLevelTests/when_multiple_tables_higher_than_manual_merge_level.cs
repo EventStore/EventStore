@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using NUnit.Framework;
 
@@ -18,8 +18,8 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 		[Test]
 		public void tables_should_be_merged() {
 			_result = _map.TryManualMerge(
-				UpgradeHash, ExistsAt,
-				RecordExistsAt, _fileNameProvider, _ptableVersion,
+				_fileNameProvider,
+				_ptableVersion,
 				skipIndexVerify: _skipIndexVerify);
 			Assert.AreEqual(1, _result.MergedMap.InOrder().Count());
 		}

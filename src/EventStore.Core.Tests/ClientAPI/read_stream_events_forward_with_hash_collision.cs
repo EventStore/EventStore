@@ -24,7 +24,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				inMemDb: false,
 				memTableSize: 20,
 				hashCollisionReadLimit: 1,
-				indexBitnessVersion: EventStore.Core.Index.PTableVersions.IndexV1,
+				indexBitnessVersion: EventStore.Core.Index.PTableVersions.IndexV4,
+				hash32bit: true,
 				streamExistenceFilterSize: 0);
 			await _node.Start();
 		}
@@ -62,7 +63,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				tcpPort, httpPort, inMemDb: false,
 				memTableSize: 20,
 				hashCollisionReadLimit: 1,
-				indexBitnessVersion: EventStore.Core.Index.PTableVersions.IndexV1,
+				indexBitnessVersion: EventStore.Core.Index.PTableVersions.IndexV4,
+				hash32bit: true,
 				streamExistenceFilterSize: 0);
 			await _node.Start();
 			using (var store = BuildConnection(_node)) {

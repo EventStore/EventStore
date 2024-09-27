@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.LogV3 {
 	// This class slices bytes up according to the headers in the desired record

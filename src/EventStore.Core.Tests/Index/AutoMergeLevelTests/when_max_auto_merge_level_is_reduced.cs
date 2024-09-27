@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Linq;
-using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
@@ -18,8 +17,8 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 			_map.Dispose(TimeSpan.FromMilliseconds(100));
 			_map = IndexMapTestFactory.FromFile(filename, maxAutoMergeLevel: 3);
 			_result = _map.TryManualMerge(
-				UpgradeHash, ExistsAt,
-				RecordExistsAt, _fileNameProvider, _ptableVersion,
+				_fileNameProvider,
+				_ptableVersion,
 				skipIndexVerify: _skipIndexVerify);
 			Assert.AreEqual(2, _result.MergedMap.InOrder().Count());
 		}

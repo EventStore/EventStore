@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http {

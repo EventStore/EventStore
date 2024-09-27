@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.LogV3 {
 	public struct SlicedRecord {

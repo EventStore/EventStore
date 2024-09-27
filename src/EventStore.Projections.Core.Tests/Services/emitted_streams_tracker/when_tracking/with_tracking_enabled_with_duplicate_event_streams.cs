@@ -1,4 +1,4 @@
-﻿using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;

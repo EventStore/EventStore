@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Caching;
+using EventStore.Core.Caching;
 using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.LogV2 {

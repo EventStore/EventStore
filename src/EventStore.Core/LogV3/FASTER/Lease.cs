@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.LogV3.FASTER {

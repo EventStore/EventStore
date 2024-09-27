@@ -1,4 +1,4 @@
-﻿using EventStore.Common.Configuration;
+using EventStore.Common.Configuration;
 using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Common.Tests.Configuration;

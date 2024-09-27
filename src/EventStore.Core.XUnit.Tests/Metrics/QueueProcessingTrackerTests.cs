@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics.Metrics;
 using EventStore.Core.Metrics;
 using Xunit;

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace EventStore.Core.DataStructures {
 	public class BoundedQueue<T> {

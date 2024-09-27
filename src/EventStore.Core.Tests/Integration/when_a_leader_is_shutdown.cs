@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Bus;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using NUnit.Framework;
 using System;

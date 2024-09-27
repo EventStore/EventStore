@@ -1,4 +1,4 @@
-﻿using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Metrics;
 

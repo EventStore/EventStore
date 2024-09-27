@@ -1,4 +1,4 @@
-﻿using EventStore.Common.Utils;
+using EventStore.Common.Utils;
 using StreamId = System.UInt32;
 
 namespace EventStore.Core.LogV3 {

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;

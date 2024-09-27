@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins.Transforms;
 using Xunit;

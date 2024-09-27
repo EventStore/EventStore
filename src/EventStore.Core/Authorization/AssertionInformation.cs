@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Authorization {
+namespace EventStore.Core.Authorization {
 	public struct AssertionInformation {
 		public Grant Grant { get; }
 		private readonly string _assertion;

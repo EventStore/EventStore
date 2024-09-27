@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.LogAbstraction;
 using LogV3StreamId = System.UInt32;
 

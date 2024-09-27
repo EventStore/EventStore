@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Services;
+using EventStore.Core.Services;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {

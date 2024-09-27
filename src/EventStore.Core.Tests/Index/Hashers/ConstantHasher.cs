@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Index.Hashes;
+using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Index.Hashers {
 	public class ConstantHasher : IHasher<string> {

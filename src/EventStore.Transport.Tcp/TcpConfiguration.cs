@@ -1,4 +1,4 @@
-﻿namespace EventStore.Transport.Tcp {
+namespace EventStore.Transport.Tcp {
 	public static class TcpConfiguration {
 		public const int SocketCloseTimeoutSecs = 1;
 

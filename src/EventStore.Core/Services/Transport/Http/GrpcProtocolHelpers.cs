@@ -1,4 +1,4 @@
-﻿// From https://github.com/grpc/grpc-dotnet
+// From https://github.com/grpc/grpc-dotnet
 
 using System;
 using System.Runtime.CompilerServices;

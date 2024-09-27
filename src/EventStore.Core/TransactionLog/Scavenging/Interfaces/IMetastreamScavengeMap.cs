@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.TransactionLog.Scavenging {
+namespace EventStore.Core.TransactionLog.Scavenging {
 	public interface IMetastreamScavengeMap<TKey> :
 		IScavengeMap<TKey, MetastreamData> {
 

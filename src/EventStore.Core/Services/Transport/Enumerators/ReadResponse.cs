@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Data;
+using EventStore.Core.Data;
 using EventStore.Core.Services.Transport.Common;
 
 namespace EventStore.Core.Services.Transport.Enumerators;

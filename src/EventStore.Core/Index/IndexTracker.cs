@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System.Collections.Generic;
 using EventStore.Core.Metrics;
 using EventStore.Core.TransactionLog.LogRecords;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IExpiryStrategy {

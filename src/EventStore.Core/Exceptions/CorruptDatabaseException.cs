@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Core.Exceptions {
 	public class CorruptDatabaseException : Exception {

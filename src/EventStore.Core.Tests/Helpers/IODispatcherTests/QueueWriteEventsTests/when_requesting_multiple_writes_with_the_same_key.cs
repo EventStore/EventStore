@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Data;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using NUnit.Framework;

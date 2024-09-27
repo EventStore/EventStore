@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Metrics;
+using System.Diagnostics.Metrics;
 using System.Threading.Tasks;
 using EventStore.Core.Metrics;
 using Xunit;

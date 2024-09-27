@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
@@ -19,7 +16,7 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 				AddTables(1);
 				Assert.AreEqual(2, _result.MergedMap.InOrder().Count());
 
-				_result = _result.MergedMap.TryManualMerge(UpgradeHash, ExistsAt, RecordExistsAt, _fileNameProvider,
+				_result = _result.MergedMap.TryManualMerge(_fileNameProvider,
 					_ptableVersion, 16, false);
 				_result.ToDelete.ForEach(x => x.MarkForDestruction());
 				Assert.AreEqual(1, _result.MergedMap.InOrder().Count());

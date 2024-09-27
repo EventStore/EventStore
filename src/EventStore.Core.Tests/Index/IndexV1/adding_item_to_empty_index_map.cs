@@ -5,8 +5,6 @@ using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1, false)]
-	[TestFixture(PTableVersions.IndexV1, true)]
 	[TestFixture(PTableVersions.IndexV2, false)]
 	[TestFixture(PTableVersions.IndexV2, true)]
 	[TestFixture(PTableVersions.IndexV3, false)]
@@ -40,8 +38,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			memtable.Add(0, 1, 0);
 			var table = PTable.FromMemtable(memtable, _tablename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
-			_result = _map.AddAndMergePTable(table, 7, 11, (streamId, hash) => hash, _ => true,
-				_ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
+			_result = _map.AddAndMergePTable(table, 7, 11,
+				new FakeFilenameProvider(_mergeFile), _ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			table.MarkForDestruction();
 		}
 

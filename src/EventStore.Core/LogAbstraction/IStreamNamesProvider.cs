@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Index;
+using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.LogAbstraction {

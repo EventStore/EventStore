@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Google.Protobuf;
 
 // ReSharper disable once CheckNamespace

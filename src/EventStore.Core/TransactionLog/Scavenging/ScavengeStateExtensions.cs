@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.TransactionLog.Scavenging {
+namespace EventStore.Core.TransactionLog.Scavenging {
 	public static class ScavengeStateExtensions {
 		public static void SetCheckpoint(
 			this IScavengeStateCommon state,

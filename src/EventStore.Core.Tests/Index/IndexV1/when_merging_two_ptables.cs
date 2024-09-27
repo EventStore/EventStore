@@ -5,8 +5,6 @@ using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1, false)]
-	[TestFixture(PTableVersions.IndexV1, true)]
 	[TestFixture(PTableVersions.IndexV2, false)]
 	[TestFixture(PTableVersions.IndexV2, true)]
 	[TestFixture(PTableVersions.IndexV3, false)]
@@ -47,8 +45,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			}
 
 			_files.Add(GetTempFilePath());
-			_newtable = PTable.MergeTo(_tables, _files[2], (streamId, hash) => hash, x => true,
-				x => new System.Tuple<string, bool>("", true), _ptableVersion, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
+			_newtable = PTable.MergeTo(_tables, _files[2],
+				_ptableVersion, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify, useBloomFilter: true);
 		}
 

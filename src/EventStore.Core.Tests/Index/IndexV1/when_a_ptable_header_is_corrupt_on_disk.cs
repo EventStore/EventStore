@@ -1,12 +1,10 @@
 using System;
 using System.IO;
-using EventStore.Common.Options;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1)]
 	[TestFixture(PTableVersions.IndexV2)]
 	[TestFixture(PTableVersions.IndexV3)]
 	[TestFixture(PTableVersions.IndexV4)]

@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Messaging;
+using EventStore.Core.Messaging;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Messages {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http;

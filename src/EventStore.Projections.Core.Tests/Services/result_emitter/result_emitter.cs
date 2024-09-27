@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;

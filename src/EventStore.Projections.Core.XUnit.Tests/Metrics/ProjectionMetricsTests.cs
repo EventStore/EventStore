@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Metrics;
+using System.Diagnostics.Metrics;
 using EventStore.Projections.Core.Metrics;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;

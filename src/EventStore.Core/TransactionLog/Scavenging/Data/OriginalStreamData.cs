@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class OriginalStreamData {

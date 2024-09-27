@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.LogAbstraction {
+namespace EventStore.Core.LogAbstraction {
 	/// Maps names (strings) to TValues
 	public interface INameIndex<TValue> {
 		void CancelReservations();

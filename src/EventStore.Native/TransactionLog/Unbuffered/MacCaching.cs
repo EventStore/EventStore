@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using Mono.Unix;
 using RuntimeInformation = System.Runtime.RuntimeInformation;

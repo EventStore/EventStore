@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Settings {

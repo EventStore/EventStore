@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using EventStore.Core.TransactionLog.Unbuffered;
 using NUnit.Framework;

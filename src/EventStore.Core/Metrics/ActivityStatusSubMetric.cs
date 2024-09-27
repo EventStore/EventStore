@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Core.Metrics {
 	// When there is one activity at a time and it is disposed before starting the next.

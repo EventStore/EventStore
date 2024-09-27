@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Index {
+namespace EventStore.Core.Index {
 	public struct IndexKey<TStreamId> {
 		public TStreamId StreamId;
 		public long Version;

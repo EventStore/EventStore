@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog;

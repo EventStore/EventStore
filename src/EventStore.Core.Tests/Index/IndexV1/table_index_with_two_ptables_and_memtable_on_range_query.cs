@@ -1,5 +1,4 @@
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Tests.Fakes;
@@ -8,8 +7,6 @@ using NUnit.Framework;
 using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1, false), Category("LongRunning")]
-	[TestFixture(PTableVersions.IndexV1, true), Category("LongRunning")]
 	[TestFixture(PTableVersions.IndexV2, false), Category("LongRunning")]
 	[TestFixture(PTableVersions.IndexV2, true), Category("LongRunning")]
 	[TestFixture(PTableVersions.IndexV3, false), Category("LongRunning")]

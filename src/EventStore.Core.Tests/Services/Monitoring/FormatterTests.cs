@@ -1,4 +1,4 @@
-﻿using EventStore.Common.Utils;
+using EventStore.Common.Utils;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Monitoring {

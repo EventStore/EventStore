@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using EventStore.Core;
 using EventStore.Core.Certificates;
 using EventStore.Core.Services;

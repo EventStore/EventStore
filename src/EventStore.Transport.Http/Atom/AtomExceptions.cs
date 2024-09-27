@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Transport.Http.Atom {
 	public class AtomSpecificationViolationException : Exception {

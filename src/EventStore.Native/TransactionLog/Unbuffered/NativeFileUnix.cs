@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32.SafeHandles;
+using Microsoft.Win32.SafeHandles;
 using Mono.Unix;
 using Mono.Unix.Native;
 using System;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Caching;
 
 namespace EventStore.Core.Tests.Caching {

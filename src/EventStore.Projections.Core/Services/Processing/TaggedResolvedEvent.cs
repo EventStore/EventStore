@@ -1,4 +1,4 @@
-﻿using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public sealed class TaggedResolvedEvent {

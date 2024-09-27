@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog.Chunks;

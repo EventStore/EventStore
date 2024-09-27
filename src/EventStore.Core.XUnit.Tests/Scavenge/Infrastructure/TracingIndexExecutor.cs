@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using EventStore.Core.Index;
 using EventStore.Core.TransactionLog.Scavenging;
 

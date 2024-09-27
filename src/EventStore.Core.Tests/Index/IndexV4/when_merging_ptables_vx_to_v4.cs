@@ -2,13 +2,10 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Index;
 using NUnit.Framework;
-using EventStore.Core.Index.Hashes;
 using System.IO;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Index.IndexV4 {
-	[TestFixture(PTableVersions.IndexV1, false)]
-	[TestFixture(PTableVersions.IndexV1, true)]
 	[TestFixture(PTableVersions.IndexV2, false)]
 	[TestFixture(PTableVersions.IndexV2, true)]
 	[TestFixture(PTableVersions.IndexV3, false)]
@@ -63,8 +60,8 @@ namespace EventStore.Core.Tests.Index.IndexV4 {
 
 			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify));
 			_newtableFile = GetTempFilePath();
-			_newtable = PTable.MergeTo(_tables, _newtableFile, (streamId, hash) => hash + 1, x => true,
-				x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV4, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
+			_newtable = PTable.MergeTo(_tables, _newtableFile,
+				PTableVersions.IndexV4, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify);
 		}
 
@@ -138,115 +135,6 @@ namespace EventStore.Core.Tests.Index.IndexV4 {
 		}
 	}
 
-	[TestFixture(PTableVersions.IndexV1, false)]
-	[TestFixture(PTableVersions.IndexV1, true)]
-	public class when_merging_to_ptable_v4_with_deleted_entries_from_v1 : SpecificationWithDirectoryPerTestFixture {
-		private readonly List<string> _files = new List<string>();
-		private readonly List<PTable> _tables = new List<PTable>();
-		private IHasher<string> hasher;
-		private string _newtableFile;
-
-		private PTable _newtable;
-		private byte _fromVersion;
-		private bool _skipIndexVerify;
-
-		public when_merging_to_ptable_v4_with_deleted_entries_from_v1(byte fromVersion, bool skipIndexVerify) {
-			_fromVersion = fromVersion;
-			_skipIndexVerify = skipIndexVerify;
-		}
-
-		[OneTimeSetUp]
-		public override async Task TestFixtureSetUp() {
-			hasher = new Murmur3AUnsafe();
-			await base.TestFixtureSetUp();
-			_files.Add(GetTempFilePath());
-			var table = new HashListMemTable(_fromVersion, maxSize: 20);
-			table.Add(0x010100000000, 0, 1);
-			table.Add(0x010200000000, 0, 2);
-			table.Add(0x010300000000, 0, 3);
-			table.Add(0x010300000000, 1, 4);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify));
-			table = new HashListMemTable(_fromVersion, maxSize: 20);
-			table.Add(0x010100000000, 2, 5);
-			table.Add(0x010200000000, 1, 6);
-			table.Add(0x010200000000, 2, 7);
-			table.Add(0x010400000000, 0, 8);
-			table.Add(0x010400000000, 1, 9);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify));
-			table = new HashListMemTable(_fromVersion, maxSize: 20);
-			table.Add(0x010100000000, 1, 10);
-			table.Add(0x010100000000, 2, 11);
-			table.Add(0x010500000000, 1, 12);
-			table.Add(0x010500000000, 2, 13);
-			table.Add(0x010500000000, 3, 14);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify));
-			_newtableFile = GetTempFilePath();
-			_newtable = PTable.MergeTo(_tables, _newtableFile, (streamId, hash) => hash << 32 | hasher.Hash(streamId),
-				x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0),
-				PTableVersions.IndexV4, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
-		}
-
-		[OneTimeTearDown]
-		public override Task TestFixtureTearDown() {
-			_newtable.Dispose();
-			foreach (var ssTable in _tables) {
-				ssTable.Dispose();
-			}
-
-			return base.TestFixtureTearDown();
-		}
-
-		[Test]
-		public void merged_ptable_is_64bit() {
-			Assert.AreEqual(PTableVersions.IndexV4, _newtable.Version);
-		}
-
-		[Test]
-		public void there_are_7_records_in_the_merged_index() {
-			Assert.AreEqual(7, _newtable.Count);
-		}
-
-		[Test]
-		public void midpoints_are_cached_in_ptable_footer() {
-			var numIndexEntries = 7;
-			var requiredMidpoints = PTable.GetRequiredMidpointCountCached(numIndexEntries, PTableVersions.IndexV4);
-
-			var newTableFileCopy = GetTempFilePath();
-			File.Copy(_newtableFile, newTableFileCopy);
-			using (var filestream = File.Open(newTableFileCopy, FileMode.Open, FileAccess.Read)) {
-				var footerSize = PTableFooter.GetSize(PTableVersions.IndexV4);
-				Assert.AreEqual(filestream.Length,
-					PTableHeader.Size + numIndexEntries * PTable.IndexEntryV4Size +
-					requiredMidpoints * PTable.IndexEntryV4Size + footerSize + PTable.MD5Size);
-				filestream.Seek(
-					PTableHeader.Size + numIndexEntries * PTable.IndexEntryV4Size +
-					requiredMidpoints * PTable.IndexEntryV4Size, SeekOrigin.Begin);
-
-				var ptableFooter = PTableFooter.FromStream(filestream);
-				Assert.AreEqual(FileType.PTableFile, ptableFooter.FileType);
-				Assert.AreEqual(PTableVersions.IndexV4, ptableFooter.Version);
-				Assert.AreEqual(requiredMidpoints, ptableFooter.NumMidpointsCached);
-			}
-		}
-
-		[Test]
-		public void correct_number_of_midpoints_are_loaded() {
-			Assert.AreEqual(_newtable.GetMidPoints().Length,
-				PTable.GetRequiredMidpointCountCached(7, PTableVersions.IndexV4));
-		}
-
-		[Test]
-		public void the_items_are_sorted() {
-			var last = new IndexEntry(ulong.MaxValue, 0, long.MaxValue);
-			foreach (var item in _newtable.IterateAllInOrder()) {
-				Assert.IsTrue((last.Stream == item.Stream ? last.Version > item.Version : last.Stream > item.Stream) ||
-							  ((last.Stream == item.Stream && last.Version == item.Version) &&
-							   last.Position > item.Position));
-				last = item;
-			}
-		}
-	}
-
 	[TestFixture(PTableVersions.IndexV2, false)]
 	[TestFixture(PTableVersions.IndexV2, true)]
 	[TestFixture(PTableVersions.IndexV3, false)]
@@ -256,7 +144,6 @@ namespace EventStore.Core.Tests.Index.IndexV4 {
 	public class when_merging_to_ptable_v4_with_deleted_entries : SpecificationWithDirectoryPerTestFixture {
 		private readonly List<string> _files = new List<string>();
 		private readonly List<PTable> _tables = new List<PTable>();
-		private IHasher<string> hasher;
 		private string _newtableFile;
 
 		private PTable _newtable;
@@ -270,7 +157,6 @@ namespace EventStore.Core.Tests.Index.IndexV4 {
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
-			hasher = new Murmur3AUnsafe();
 			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(_fromVersion, maxSize: 20);
@@ -294,8 +180,7 @@ namespace EventStore.Core.Tests.Index.IndexV4 {
 			table.Add(0x010500000000, 3, 14);
 			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify));
 			_newtableFile = GetTempFilePath();
-			_newtable = PTable.MergeTo(_tables, _newtableFile, (streamId, hash) => hash << 32 | hasher.Hash(streamId),
-				x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0),
+			_newtable = PTable.MergeTo(_tables, _newtableFile,
 				PTableVersions.IndexV4, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
 		}
 

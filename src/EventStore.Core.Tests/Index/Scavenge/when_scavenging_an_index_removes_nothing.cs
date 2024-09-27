@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
@@ -36,13 +36,9 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 			long spaceSaved;
 			Func<IndexEntry, bool> existsAt = x => true;
-			Func<IndexEntry, Tuple<string, bool>> readRecord = x => { throw new Exception("Should not be called"); };
-			Func<string, ulong, ulong> upgradeHash = (streamId, hash) => {
-				throw new Exception("Should not be called");
-			};
 
 			_expectedOutputFile = GetTempFilePath();
-			_newtable = PTable.Scavenged(_oldTable, _expectedOutputFile, upgradeHash, existsAt, readRecord,
+			_newtable = PTable.Scavenged(_oldTable, _expectedOutputFile,
 				PTableVersions.IndexV4, existsAt, out spaceSaved, skipIndexVerify: _skipIndexVerify,
 				initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault);
 		}

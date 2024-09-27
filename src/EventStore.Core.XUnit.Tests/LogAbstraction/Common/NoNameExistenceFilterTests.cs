@@ -1,4 +1,4 @@
-﻿using EventStore.Core.LogAbstraction;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogAbstraction.Common;
 
 namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {

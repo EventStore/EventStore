@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using EventStore.Core.DataStructures.ProbabilisticFilter;

@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Services.Monitoring.Stats {
+namespace EventStore.Core.Services.Monitoring.Stats {
 	public class StatMetadata {
 		public object Value { get; set; }
 		public string Category { get; set; }

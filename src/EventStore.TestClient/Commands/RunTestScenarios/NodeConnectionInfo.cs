@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios {
 	internal class NodeConnectionInfo {

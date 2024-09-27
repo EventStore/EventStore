@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Security.Claims;
 using EventStore.Core.Messages;
 using NUnit.Framework;

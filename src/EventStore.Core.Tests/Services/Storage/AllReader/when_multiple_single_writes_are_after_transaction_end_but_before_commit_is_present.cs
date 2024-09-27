@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 

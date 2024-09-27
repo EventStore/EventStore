@@ -1,4 +1,4 @@
-﻿namespace EventStore.Transport.Http {
+namespace EventStore.Transport.Http {
 	public static class HttpMethod {
 		public const string Get = "GET";
 		public const string Post = "POST";

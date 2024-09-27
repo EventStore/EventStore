@@ -1,4 +1,4 @@
-﻿namespace EventStore.Transport.Http.Atom {
+namespace EventStore.Transport.Http.Atom {
 	public class AtomSpecs {
 		public const int FeedPageSize = 20;
 

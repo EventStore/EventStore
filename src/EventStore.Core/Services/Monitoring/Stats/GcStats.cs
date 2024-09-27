@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Services.Monitoring.Stats {
+namespace EventStore.Core.Services.Monitoring.Stats {
 	public class GcStats {
 		/// <summary>
 		/// Number of Gen 0 Collections.

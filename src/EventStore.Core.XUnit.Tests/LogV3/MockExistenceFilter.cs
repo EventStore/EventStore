@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.XUnit.Tests.LogV3 {

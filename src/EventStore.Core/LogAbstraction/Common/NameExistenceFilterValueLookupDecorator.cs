@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.LogAbstraction.Common {
+namespace EventStore.Core.LogAbstraction.Common {
 	public class NameExistenceFilterValueLookupDecorator<TValue> : IValueLookup<TValue> {
 		private readonly IValueLookup<TValue> _wrapped;
 		private readonly INameExistenceFilter _existenceFilter;

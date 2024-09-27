@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;

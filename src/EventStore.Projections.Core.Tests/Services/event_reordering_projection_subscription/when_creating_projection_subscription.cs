@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.TimeService;
