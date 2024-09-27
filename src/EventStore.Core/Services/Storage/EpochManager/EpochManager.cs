@@ -36,6 +36,10 @@ public class EpochManager<TStreamId> : IEpochManager {
 	private readonly IPartitionManager _partitionManager;
 	private readonly Guid _instanceId;
 
+	// We have two async exclusive locks. There are three options to optimize them:
+	// 1. Replace exclusive lock with async reader/writer lock to enable horizontal scaling
+	// 2. Use copy-on-write immutable collection to avoid lock contention on read side
+	// 3. Combine two locks by writing a custom sync primitive using QueuedSynchronizer<T>
 	private readonly AsyncExclusiveLock _locker = new();
 	private readonly int _cacheSize;
 	private readonly LinkedList<EpochRecord> _epochs = new();
