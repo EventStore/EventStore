@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
@@ -49,7 +51,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		}
 
 		[Test]
-		public void should_receive_all_events_backward() {
+		public async Task should_receive_all_events_backward() {
 			// create a db with explicit transactions, some of which are filtered out on read.
 			// previously, a bug caused those filtered-out records to prevent the successful
 			// reading of subsequent events that are contained within an explicit transaction.
@@ -77,11 +79,12 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 			]);
 
 			var writerCp = DbRes.Db.Config.WriterCheckpoint.Read();
-			var read = ReadIndex.ReadAllEventsBackwardFiltered(
+			var read = await ReadIndex.ReadAllEventsBackwardFiltered(
 				pos: new TFPos(writerCp, writerCp),
 				maxCount: 10,
 				maxSearchWindow: int.MaxValue,
-				eventFilter: EventFilter.StreamName.Prefixes(false, "included"));
+				eventFilter: EventFilter.StreamName.Prefixes(false, "included"),
+				CancellationToken.None);
 
 			Assert.AreEqual(10, read.Records.Count);
 			for (int j = 9; j <= 0; j--)

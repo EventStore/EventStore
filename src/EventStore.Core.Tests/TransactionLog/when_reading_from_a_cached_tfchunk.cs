@@ -84,16 +84,16 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void the_record_can_be_read_as_closest_backward_from_end() {
-			var res = _cachedChunk.TryReadClosestBackward(_record.GetSizeWithLengthPrefixAndSuffix());
+		public async Task the_record_can_be_read_as_closest_backward_from_end() {
+			var res = await _cachedChunk.TryReadClosestBackward(_record.GetSizeWithLengthPrefixAndSuffix(), CancellationToken.None);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(0, res.NextPosition);
 			Assert.AreEqual(_record, res.LogRecord);
 		}
 
 		[Test]
-		public void the_record_can_be_read_as_last() {
-			var res = _cachedChunk.TryReadLast();
+		public async Task the_record_can_be_read_as_last() {
+			var res = await _cachedChunk.TryReadLast(CancellationToken.None);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(0, res.NextPosition);
 			Assert.AreEqual(_record, res.LogRecord);

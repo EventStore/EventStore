@@ -68,8 +68,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void there_is_no_last_record() {
-			var res = _chunk.TryReadLast();
+		public async Task there_is_no_last_record() {
+			var res = await _chunk.TryReadLast(CancellationToken.None);
 			Assert.IsFalse(res.Success);
 		}
 	}

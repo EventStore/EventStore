@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -81,12 +82,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		public SeqReadResult TryReadPrev() {
-			return TryReadPrevInternal(0);
+		public ValueTask<SeqReadResult> TryReadPrev(CancellationToken token) {
+			return TryReadPrevInternal(0, token);
 		}
 
-		private SeqReadResult TryReadPrevInternal(int retries) {
-			while (true) {
+		private async ValueTask<SeqReadResult> TryReadPrevInternal(int retries, CancellationToken token) {
+			for (;;token.ThrowIfCancellationRequested()) {
 				var pos = _curPos;
 				var writerChk = _writerCheckpoint.Read();
 				// we allow == writerChk, that means read the very last record
@@ -108,16 +109,16 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 				RecordReadResult result;
 				try {
-					result = readLast
-						? chunk.TryReadLast()
-						: chunk.TryReadClosestBackward(chunk.ChunkHeader.GetLocalLogPosition(pos));
+					result = await (readLast
+						? chunk.TryReadLast(token)
+						: chunk.TryReadClosestBackward(chunk.ChunkHeader.GetLocalLogPosition(pos), token));
 					CountRead(chunk.IsCached);
 				} catch (FileBeingDeletedException) {
 					if (retries > MaxRetries)
 						throw new Exception(string.Format(
 							"Got a file that was being deleted {0} times from TFChunkDb, likely a bug there.",
 							MaxRetries));
-					return TryReadPrevInternal(retries + 1);
+					return await TryReadPrevInternal(retries + 1, token);
 				}
 
 				if (result.Success) {

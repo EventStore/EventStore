@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -71,8 +73,8 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		}
 
 		[Test]
-		public void read_all_events_backward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).Records;
+		public async Task read_all_events_backward_returns_all_events_in_correct_order() {
+			var records = (await ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10, CancellationToken.None)).Records;
 
 			Assert.AreEqual(5, records.Count);
 			Assert.AreEqual(_p5, records[0].Event);
@@ -90,14 +92,15 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		}
 
 		[Test]
-		public void
+		public async Task
 			read_all_events_backwards_returns_nothing_when_prepare_position_is_smaller_than_first_prepare_in_commit() {
-			var records = ReadIndex.ReadAllEventsBackward(new TFPos(_t2CommitPos, 0), 10).Records;
+			var records =
+				(await ReadIndex.ReadAllEventsBackward(new TFPos(_t2CommitPos, 0), 10, CancellationToken.None)).Records;
 			Assert.AreEqual(0, records.Count);
 		}
 
 		[Test]
-		public void read_all_events_forward_returns_correct_events_starting_in_the_middle_of_tf() {
+		public async Task read_all_events_forward_returns_correct_events_starting_in_the_middle_of_tf() {
 			var res1 = ReadIndex.ReadAllEventsForward(new TFPos(_t2CommitPos, _p4.LogPosition), 10);
 
 			Assert.AreEqual(4, res1.Records.Count);
@@ -106,15 +109,15 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 			Assert.AreEqual(_p3, res1.Records[2].Event);
 			Assert.AreEqual(_p5, res1.Records[3].Event);
 
-			var res2 = ReadIndex.ReadAllEventsBackward(res1.PrevPos, 10);
+			var res2 = await ReadIndex.ReadAllEventsBackward(res1.PrevPos, 10, CancellationToken.None);
 			Assert.AreEqual(1, res2.Records.Count);
 			Assert.AreEqual(_p2, res2.Records[0].Event);
 		}
 
 		[Test]
-		public void read_all_events_backward_returns_correct_events_starting_in_the_middle_of_tf() {
+		public async Task read_all_events_backward_returns_correct_events_starting_in_the_middle_of_tf() {
 			var pos = new TFPos(_pos6, _p4.LogPosition); // p3 post-pos
-			var res1 = ReadIndex.ReadAllEventsBackward(pos, 10);
+			var res1 = await ReadIndex.ReadAllEventsBackward(pos, 10, CancellationToken.None);
 
 			Assert.AreEqual(4, res1.Records.Count);
 			Assert.AreEqual(_p3, res1.Records[0].Event);
@@ -145,13 +148,13 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		}
 
 		[Test]
-		public void all_records_can_be_read_sequentially_page_by_page_in_backward_pass() {
+		public async Task all_records_can_be_read_sequentially_page_by_page_in_backward_pass() {
 			var recs = new[] {_p5, _p3, _p1, _p4, _p2}; // in reverse committed order
 
 			int count = 0;
 			var pos = GetBackwardReadPos();
 			IndexReadAllResult result;
-			while ((result = ReadIndex.ReadAllEventsBackward(pos, 1)).Records.Count != 0) {
+			while ((result = await ReadIndex.ReadAllEventsBackward(pos, 1, CancellationToken.None)).Records.Count != 0) {
 				Assert.AreEqual(1, result.Records.Count);
 				Assert.AreEqual(recs[count], result.Records[0].Event);
 				pos = result.NextPos;
@@ -162,7 +165,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		}
 
 		[Test]
-		public void position_returned_for_prev_page_when_traversing_forward_allow_to_traverse_backward_correctly() {
+		public async Task position_returned_for_prev_page_when_traversing_forward_allow_to_traverse_backward_correctly() {
 			var recs = new[] {_p2, _p4, _p1, _p3, _p5}; // in committed order
 
 			int count = 0;
@@ -175,7 +178,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 				var localPos = result.PrevPos;
 				int localCount = 0;
 				IndexReadAllResult localResult;
-				while ((localResult = ReadIndex.ReadAllEventsBackward(localPos, 1)).Records.Count != 0) {
+				while ((localResult = await ReadIndex.ReadAllEventsBackward(localPos, 1, CancellationToken.None)).Records.Count != 0) {
 					Assert.AreEqual(1, localResult.Records.Count);
 					Assert.AreEqual(recs[count - 1 - localCount], localResult.Records[0].Event);
 					localPos = localResult.NextPos;
@@ -190,13 +193,13 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		}
 
 		[Test]
-		public void position_returned_for_prev_page_when_traversing_backward_allow_to_traverse_forward_correctly() {
+		public async Task position_returned_for_prev_page_when_traversing_backward_allow_to_traverse_forward_correctly() {
 			var recs = new[] {_p5, _p3, _p1, _p4, _p2}; // in reverse committed order
 
 			int count = 0;
 			var pos = GetBackwardReadPos();
 			IndexReadAllResult result;
-			while ((result = ReadIndex.ReadAllEventsBackward(pos, 1)).Records.Count != 0) {
+			while ((result = await ReadIndex.ReadAllEventsBackward(pos, 1, CancellationToken.None)).Records.Count != 0) {
 				Assert.AreEqual(1, result.Records.Count);
 				Assert.AreEqual(recs[count], result.Records[0].Event);
 
@@ -218,16 +221,17 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		}
 
 		[Test]
-		public void
+		public async Task
 			reading_all_forward_at_position_with_no_commits_after_returns_prev_pos_that_allows_to_traverse_back() {
 			var res1 = ReadIndex.ReadAllEventsForward(new TFPos(_pos6, 0), 100);
 			Assert.AreEqual(0, res1.Records.Count);
 
-			var recs = new[] {_p5, _p3, _p1, _p4, _p2}; // in reverse committed order
+			var recs = new[] { _p5, _p3, _p1, _p4, _p2 }; // in reverse committed order
 			int count = 0;
 			IndexReadAllResult result;
 			TFPos pos = res1.PrevPos;
-			while ((result = ReadIndex.ReadAllEventsBackward(pos, 1)).Records.Count != 0) {
+			while ((result = await ReadIndex.ReadAllEventsBackward(pos, 1, CancellationToken.None)).Records.Count !=
+			       0) {
 				Assert.AreEqual(1, result.Records.Count);
 				Assert.AreEqual(recs[count], result.Records[0].Event);
 				pos = result.NextPos;
@@ -238,7 +242,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		}
 
 		[Test]
-		public void reading_all_forward_at_the_very_end_returns_prev_pos_that_allows_to_traverse_back() {
+		public async Task reading_all_forward_at_the_very_end_returns_prev_pos_that_allows_to_traverse_back() {
 			var res1 = ReadIndex.ReadAllEventsForward(new TFPos(Db.Config.WriterCheckpoint.Read(), 0), 100);
 			Assert.AreEqual(0, res1.Records.Count);
 
@@ -246,7 +250,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 			int count = 0;
 			IndexReadAllResult result;
 			TFPos pos = res1.PrevPos;
-			while ((result = ReadIndex.ReadAllEventsBackward(pos, 1)).Records.Count != 0) {
+			while ((result = await ReadIndex.ReadAllEventsBackward(pos, 1, CancellationToken.None)).Records.Count != 0) {
 				Assert.AreEqual(1, result.Records.Count);
 				Assert.AreEqual(recs[count], result.Records[0].Event);
 				pos = result.NextPos;
@@ -257,9 +261,9 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		}
 
 		[Test]
-		public void
+		public async Task
 			reading_all_backward_at_position_with_no_commits_before_returns_prev_pos_that_allows_to_traverse_forward() {
-			var res1 = ReadIndex.ReadAllEventsBackward(new TFPos(_t2CommitPos, int.MaxValue), 100);
+			var res1 = await ReadIndex.ReadAllEventsBackward(new TFPos(_t2CommitPos, int.MaxValue), 100, CancellationToken.None);
 			Assert.AreEqual(0, res1.Records.Count);
 
 			var recs = new[] {_p2, _p4, _p1, _p3, _p5};
@@ -277,8 +281,8 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		}
 
 		[Test]
-		public void reading_all_backward_at_the_very_beginning_returns_prev_pos_that_allows_to_traverse_forward() {
-			var res1 = ReadIndex.ReadAllEventsBackward(new TFPos(0, int.MaxValue), 100);
+		public async Task reading_all_backward_at_the_very_beginning_returns_prev_pos_that_allows_to_traverse_forward() {
+			var res1 = await ReadIndex.ReadAllEventsBackward(new TFPos(0, int.MaxValue), 100, CancellationToken.None);
 			Assert.AreEqual(0, res1.Records.Count);
 
 			var recs = new[] {_p2, _p4, _p1, _p3, _p5};

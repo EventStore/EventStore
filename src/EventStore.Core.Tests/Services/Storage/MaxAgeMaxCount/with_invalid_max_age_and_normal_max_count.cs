@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
@@ -101,8 +103,9 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 		}
 
 		[Test]
-		public void on_read_all_backward_metadata_is_ignored() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
+		public async Task on_read_all_backward_metadata_is_ignored() {
+			var records = (await ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, CancellationToken.None))
+				.Records;
 
 			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
 				Assert.AreEqual(6, records.Count);

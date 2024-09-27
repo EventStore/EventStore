@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -117,8 +119,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		}
 
 		[Test]
-		public void read_all_events_backward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).EventRecords();
+		public async Task read_all_events_backward_returns_all_events_in_correct_order() {
+			var records = (await ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10, CancellationToken.None)).EventRecords();
 
 			Assert.AreEqual(2, records.Count);
 			Assert.AreEqual(_id1, records[1].Event.EventId);

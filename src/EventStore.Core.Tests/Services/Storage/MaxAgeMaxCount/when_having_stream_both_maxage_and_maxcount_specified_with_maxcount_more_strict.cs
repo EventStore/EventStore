@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
@@ -84,8 +86,9 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 		}
 
 		[Test]
-		public void read_all_backward_returns_all_records_including_expired_ones() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords();
+		public async Task read_all_backward_returns_all_records_including_expired_ones() {
+			var records = (await ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, CancellationToken.None))
+				.EventRecords();
 			Assert.AreEqual(6, records.Count);
 			Assert.AreEqual(_r6, records[0].Event);
 			Assert.AreEqual(_r5, records[1].Event);

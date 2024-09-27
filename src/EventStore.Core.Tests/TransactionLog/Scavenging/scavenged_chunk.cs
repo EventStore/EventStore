@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 
 			Assert.IsTrue(chunk.IsCached);
 
-			var last = chunk.TryReadLast();
+			var last = await chunk.TryReadLast(CancellationToken.None);
 			Assert.IsTrue(last.Success);
 			Assert.AreEqual(map[map.Count - 1].ActualPos, last.LogRecord.LogPosition);
 

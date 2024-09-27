@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -65,8 +67,9 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		}
 
 		[Test]
-		public void read_all_backward_returns_all_events() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+		public async Task read_all_backward_returns_all_events() {
+			var events = (await ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, CancellationToken.None))
+				.EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(2, events.Length);

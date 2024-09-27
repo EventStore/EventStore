@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
@@ -74,23 +75,23 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		}
 
 		[Test]
-		public void the_stream_is_present_physically() {
+		public async Task the_stream_is_present_physically() {
 			var headOfTf = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
 			Assert.AreEqual(1,
 				ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 1000).Records
 					.Count(x => x.Event.EventStreamId == "test"));
 			Assert.AreEqual(1,
-				ReadIndex.ReadAllEventsBackward(headOfTf, 1000).Records.Count(x => x.Event.EventStreamId == "test"));
+				(await ReadIndex.ReadAllEventsBackward(headOfTf, 1000, CancellationToken.None)).Records.Count(x => x.Event.EventStreamId == "test"));
 		}
 
 		[Test]
-		public void the_metastream_is_present_physically() {
+		public async Task the_metastream_is_present_physically() {
 			var headOfTf = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
 			Assert.AreEqual(1,
 				ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 1000).Records
 					.Count(x => x.Event.EventStreamId == "$$test"));
 			Assert.AreEqual(1,
-				ReadIndex.ReadAllEventsBackward(headOfTf, 1000).Records.Count(x => x.Event.EventStreamId == "$$test"));
+				(await ReadIndex.ReadAllEventsBackward(headOfTf, 1000, CancellationToken.None)).Records.Count(x => x.Event.EventStreamId == "$$test"));
 		}
 	}
 }

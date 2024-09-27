@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.LogV2;
@@ -99,12 +100,12 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void all_records_could_be_read_with_backward_pass() {
+		public async Task all_records_could_be_read_with_backward_pass() {
 			var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, _db.Config.WriterCheckpoint.Read());
 
 			SeqReadResult res;
 			int count = 0;
-			while ((res = seqReader.TryReadPrev()).Success) {
+			while ((res = await seqReader.TryReadPrev(CancellationToken.None)).Success) {
 				var rec = _records[RecordsCount - count - 1];
 				Assert.AreEqual(rec, res.LogRecord);
 				Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);
@@ -117,7 +118,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void all_records_could_be_read_doing_forward_backward_pass() {
+		public async Task all_records_could_be_read_doing_forward_backward_pass() {
 			var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, 0);
 
 			SeqReadResult res;
@@ -134,7 +135,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.AreEqual(RecordsCount, count1);
 
 			int count2 = 0;
-			while ((res = seqReader.TryReadPrev()).Success) {
+			while ((res = await seqReader.TryReadPrev(CancellationToken.None)).Success) {
 				var rec = _records[RecordsCount - count2 - 1];
 				Assert.AreEqual(rec, res.LogRecord);
 				Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);
@@ -167,13 +168,13 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void records_can_be_read_backward_starting_from_any_position() {
+		public async Task records_can_be_read_backward_starting_from_any_position() {
 			for (int i = 0; i < RecordsCount; ++i) {
 				var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, _records[i].LogPosition);
 
 				SeqReadResult res;
 				int count = 0;
-				while ((res = seqReader.TryReadPrev()).Success) {
+				while ((res = await seqReader.TryReadPrev(CancellationToken.None)).Success) {
 					var rec = _records[i - count - 1];
 					Assert.AreEqual(rec, res.LogRecord);
 					Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);

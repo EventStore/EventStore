@@ -38,13 +38,13 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void no_record_can_be_read_as_closest_backward_record() {
-			Assert.IsFalse(_chunk.TryReadClosestBackward(0).Success);
+		public async Task no_record_can_be_read_as_closest_backward_record() {
+			Assert.IsFalse((await _chunk.TryReadClosestBackward(0, CancellationToken.None)).Success);
 		}
 
 		[Test]
-		public void no_record_can_be_read_as_last_record() {
-			Assert.IsFalse(_chunk.TryReadLast().Success);
+		public async Task no_record_can_be_read_as_last_record() {
+			Assert.IsFalse((await _chunk.TryReadLast(CancellationToken.None)).Success);
 		}
 	}
 }

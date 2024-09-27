@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -27,9 +29,9 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<ClientMessage.ReadStreamEventsBackward>,
 		IHandle<ClientMessage.ReadStreamEventsForward>,
 		IHandle<ClientMessage.ReadAllEventsForward>,
-		IHandle<ClientMessage.ReadAllEventsBackward>,
+		IAsyncHandle<ClientMessage.ReadAllEventsBackward>,
 		IHandle<ClientMessage.FilteredReadAllEventsForward>,
-		IHandle<ClientMessage.FilteredReadAllEventsBackward>,
+		IAsyncHandle<ClientMessage.FilteredReadAllEventsBackward>,
 		IHandle<StorageMessage.EffectiveStreamAclRequest>,
 		IHandle<StorageMessage.StreamIdFromTransactionIdRequest>,
 		IHandle<StorageMessage.BatchLogExpiredMessages> {
@@ -197,7 +199,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		void IHandle<ClientMessage.ReadAllEventsBackward>.Handle(ClientMessage.ReadAllEventsBackward msg) {
+		async ValueTask IAsyncHandle<ClientMessage.ReadAllEventsBackward>.HandleAsync(ClientMessage.ReadAllEventsBackward msg, CancellationToken token) {
 			if (msg.CancellationToken.IsCancellationRequested)
 				return;
 
@@ -209,7 +211,7 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			}
 
-			msg.Envelope.ReplyWith(ReadAllEventsBackward(msg));
+			msg.Envelope.ReplyWith(await ReadAllEventsBackward(msg, token));
 		}
 
 		void IHandle<ClientMessage.FilteredReadAllEventsForward>.Handle(ClientMessage.FilteredReadAllEventsForward msg) {
@@ -261,7 +263,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		void IHandle<ClientMessage.FilteredReadAllEventsBackward>.Handle(ClientMessage.FilteredReadAllEventsBackward msg) {
+		async ValueTask IAsyncHandle<ClientMessage.FilteredReadAllEventsBackward>.HandleAsync(ClientMessage.FilteredReadAllEventsBackward msg, CancellationToken token) {
 			if (msg.CancellationToken.IsCancellationRequested)
 				return;
 
@@ -272,7 +274,7 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			}
 
-			var res = FilteredReadAllEventsBackward(msg);
+			var res = await FilteredReadAllEventsBackward(msg, token);
 			switch (res.Result) {
 				case FilteredReadAllResult.Success:
 					if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.Events.Length == 0) {
@@ -443,8 +445,8 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private ClientMessage.ReadAllEventsBackwardCompleted ReadAllEventsBackward(
-			ClientMessage.ReadAllEventsBackward msg) {
+		private async ValueTask<ClientMessage.ReadAllEventsBackwardCompleted> ReadAllEventsBackward(
+			ClientMessage.ReadAllEventsBackward msg, CancellationToken token) {
 
 			var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
 			var lastIndexedPosition = _readIndex.LastIndexedPosition;
@@ -463,7 +465,7 @@ namespace EventStore.Core.Services.Storage {
 				if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
 					return NoData(msg, ReadAllResult.NotModified, pos, lastIndexedPosition);
 
-				var res = _readIndex.ReadAllEventsBackward(pos, msg.MaxCount);
+				var res = await _readIndex.ReadAllEventsBackward(pos, msg.MaxCount, token);
 				var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
 				if (resolved == null)
 					return NoData(msg, ReadAllResult.AccessDenied, pos, lastIndexedPosition);
@@ -526,8 +528,8 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private ClientMessage.FilteredReadAllEventsBackwardCompleted FilteredReadAllEventsBackward(
-			ClientMessage.FilteredReadAllEventsBackward msg) {
+		private async ValueTask<ClientMessage.FilteredReadAllEventsBackwardCompleted> FilteredReadAllEventsBackward(
+			ClientMessage.FilteredReadAllEventsBackward msg, CancellationToken token) {
 
 			var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
 			var lastIndexedPosition = _readIndex.LastIndexedPosition;
@@ -548,8 +550,8 @@ namespace EventStore.Core.Services.Storage {
 					return NoDataForFilteredCommand(msg, FilteredReadAllResult.NotModified, pos,
 						lastIndexedPosition);
 
-				var res = _readIndex.ReadAllEventsBackwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
-					msg.EventFilter);
+				var res = await _readIndex.ReadAllEventsBackwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
+					msg.EventFilter, token);
 				var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
 				if (resolved == null)
 					return NoDataForFilteredCommand(msg, FilteredReadAllResult.AccessDenied, pos,
@@ -673,7 +675,7 @@ namespace EventStore.Core.Services.Storage {
 
 						return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
 					}
-					
+
 					Log.Warning($"Invalid link event payload [{linkPayload}]: {eventRecord}");
 					return ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition);
 				} catch (Exception exc) {
