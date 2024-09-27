@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
 	// This interface specifies what the Storage, TF and Index machinery requires

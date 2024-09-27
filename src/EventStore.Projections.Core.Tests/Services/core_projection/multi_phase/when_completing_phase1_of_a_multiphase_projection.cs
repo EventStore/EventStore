@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;

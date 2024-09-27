@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using EventStore.Core.Data;
 using NUnit.Framework;
 

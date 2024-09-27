@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
 

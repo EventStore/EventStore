@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Common.Utils {
 	public static class NumberExtensions {

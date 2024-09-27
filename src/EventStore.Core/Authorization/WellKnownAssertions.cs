@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using EventStore.Core.Services;
 
 namespace EventStore.Core.Authorization {

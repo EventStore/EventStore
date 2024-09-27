@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 	public class CorruptedHashException : Exception {

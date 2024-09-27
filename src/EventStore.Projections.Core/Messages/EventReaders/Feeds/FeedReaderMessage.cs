@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security.Claims;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;

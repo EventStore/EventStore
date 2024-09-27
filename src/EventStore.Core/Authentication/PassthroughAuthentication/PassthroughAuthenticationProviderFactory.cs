@@ -1,4 +1,4 @@
-﻿using EventStore.Plugins.Authentication;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.Core.Authentication.PassthroughAuthentication;
 

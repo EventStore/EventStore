@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;

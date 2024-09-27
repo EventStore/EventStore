@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Authorization {
+namespace EventStore.Core.Authorization {
 	public enum Grant {
 		Unknown = 0,
 		Allow = 1,

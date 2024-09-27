@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords {

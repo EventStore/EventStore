@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Tests.Services.PersistentSubscription
+namespace EventStore.Core.Tests.Services.PersistentSubscription
 {
 	using System;
 	using System.Text;

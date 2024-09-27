@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	// For ChunkExecutor, which implements maxAge more accurately than the index executor

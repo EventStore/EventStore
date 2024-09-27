@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	// The Calculator calculates the DiscardPoints that depend on the ScavengePoint

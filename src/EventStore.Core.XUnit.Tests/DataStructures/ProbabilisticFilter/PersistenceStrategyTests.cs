@@ -1,4 +1,4 @@
-﻿using EventStore.Core.DataStructures.ProbabilisticFilter;
+using EventStore.Core.DataStructures.ProbabilisticFilter;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.DataStructures.ProbabilisticFilter {

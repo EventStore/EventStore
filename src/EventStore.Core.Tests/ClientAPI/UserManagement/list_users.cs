@@ -1,4 +1,4 @@
-﻿using EventStore.ClientAPI.SystemData;
+using EventStore.ClientAPI.SystemData;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement {

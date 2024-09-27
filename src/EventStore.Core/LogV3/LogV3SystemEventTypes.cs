@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Services;
+using EventStore.Core.Services;
 using EventTypeId = System.UInt32;
 
 namespace EventStore.Core.LogV3 {

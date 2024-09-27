@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.LogAbstraction;
 using StreamId = System.UInt32;

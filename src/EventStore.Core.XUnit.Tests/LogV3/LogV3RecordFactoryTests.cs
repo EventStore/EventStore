@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using EventStore.Core.LogV3;
 using EventStore.Core.TransactionLog.LogRecords;

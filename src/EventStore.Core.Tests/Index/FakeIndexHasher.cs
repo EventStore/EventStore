@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Index.Hashes;
+using EventStore.Core.Index.Hashes;
 using System;
 
 namespace EventStore.Core.Tests.Index {

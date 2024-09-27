@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Bus;
+using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.XUnit.Tests;

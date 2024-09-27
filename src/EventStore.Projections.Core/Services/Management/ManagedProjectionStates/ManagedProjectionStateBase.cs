@@ -1,4 +1,4 @@
-﻿using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Management.ManagedProjectionStates {
 	internal abstract class ManagedProjectionStateBase {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Projections.Core.Common {
 	public static class ProjectionConsts {

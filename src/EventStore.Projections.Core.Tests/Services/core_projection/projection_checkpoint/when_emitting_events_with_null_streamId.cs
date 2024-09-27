@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.AllStream;

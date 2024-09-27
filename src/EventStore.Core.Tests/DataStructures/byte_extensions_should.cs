@@ -1,4 +1,4 @@
-﻿using EventStore.Core.DataStructures.ProbabilisticFilter;
+using EventStore.Core.DataStructures.ProbabilisticFilter;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.DataStructures {

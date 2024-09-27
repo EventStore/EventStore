@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public interface IChunkReaderForAccumulator<TStreamId> {

@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 
 namespace EventStore.Core.Util {
 	public static class FileUtils {

@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Index.Hashes {
+namespace EventStore.Core.Index.Hashes {
 	public class CompositeHasher<T> : ILongHasher<T> {
 		private readonly IHasher<T> _lowHasher;
 		private readonly IHasher<T> _highHasher;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Common.Utils;
 using Microsoft.Data.Sqlite;
 using Serilog;

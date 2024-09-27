@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Messaging;
+using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
 	public static partial class ClusterClientMessage {

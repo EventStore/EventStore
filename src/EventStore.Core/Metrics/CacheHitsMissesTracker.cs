@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using static EventStore.Common.Configuration.MetricsConfiguration;
 
 namespace EventStore.Core.Metrics;

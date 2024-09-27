@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using EventStore.Client;
 using EventStore.Client.PersistentSubscriptions;
 using EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests;

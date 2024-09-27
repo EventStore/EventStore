@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Tests.Http.Users.users;
+using EventStore.Core.Tests.Http.Users.users;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System;

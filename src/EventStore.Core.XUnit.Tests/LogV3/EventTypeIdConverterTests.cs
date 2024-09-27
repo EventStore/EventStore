@@ -1,4 +1,4 @@
-﻿using EventStore.Core.LogV3;
+using EventStore.Core.LogV3;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.LogV3 {

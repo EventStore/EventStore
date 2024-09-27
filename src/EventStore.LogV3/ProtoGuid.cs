@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Google.Protobuf;
 
 namespace EventStore.LogV3 {

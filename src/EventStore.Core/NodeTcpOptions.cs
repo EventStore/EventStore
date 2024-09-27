@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core;
+namespace EventStore.Core;
 
 // Still needed for gossip and stats.
 public class NodeTcpOptions {

@@ -1,4 +1,4 @@
-﻿using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Partitioning;
 using NUnit.Framework;

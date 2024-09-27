@@ -1,4 +1,4 @@
-﻿namespace EventStore.Projections.Core.Messages {
+namespace EventStore.Projections.Core.Messages {
 	// The name of this enum and its members are used for metrics
 	public enum ProjectionMessage {
 		None,

@@ -1,4 +1,4 @@
-﻿namespace EventStore.Transport.Http {
+namespace EventStore.Transport.Http {
 	public static class ProxyHeaders {
 		public const string XForwardedPort = "X-Forwarded-Port";
 		public const string XForwardedProto = "X-Forwarded-Proto";

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.DataStructures.ProbabilisticFilter;
 using Xunit;
 

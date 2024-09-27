@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage.EpochManager {

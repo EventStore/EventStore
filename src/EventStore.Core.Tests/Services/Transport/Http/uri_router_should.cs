@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Http;

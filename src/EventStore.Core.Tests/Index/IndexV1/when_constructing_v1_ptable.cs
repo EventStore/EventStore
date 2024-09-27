@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Exceptions;
+using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using NUnit.Framework;
 

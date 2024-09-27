@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.ClientAPI;

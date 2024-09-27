@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Services.UserManagement;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Plugins.Authentication;
 using Microsoft.AspNetCore.Http;
 

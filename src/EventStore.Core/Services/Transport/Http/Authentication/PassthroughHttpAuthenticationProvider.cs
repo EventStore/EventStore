@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Plugins.Authentication;

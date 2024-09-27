@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Metrics {
+namespace EventStore.Core.Metrics {
 
 	public interface IDurationTracker {
 		Duration Start();

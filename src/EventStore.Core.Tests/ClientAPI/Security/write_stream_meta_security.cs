@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Services;
 using NUnit.Framework;

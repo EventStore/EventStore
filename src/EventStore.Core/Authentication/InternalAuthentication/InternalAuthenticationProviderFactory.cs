@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Helpers;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;

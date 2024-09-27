@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using System.Linq;
 using System.Net.Http;

@@ -1,4 +1,4 @@
-﻿using EventStore.Plugins.Authorization;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Authorization {
 	public class InternalAuthorizationProviderFactory : IAuthorizationProviderFactory {

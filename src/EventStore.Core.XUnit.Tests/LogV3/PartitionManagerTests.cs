@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogV3;

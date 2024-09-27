@@ -1,4 +1,4 @@
-﻿using EventStore.ClientAPI;
+using EventStore.ClientAPI;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers {

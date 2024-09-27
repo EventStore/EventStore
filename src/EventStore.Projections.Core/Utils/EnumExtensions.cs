@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Projections.Core.Utils {
 	public static class EnumExtensions {

@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Helpers;

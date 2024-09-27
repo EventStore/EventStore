@@ -1,4 +1,4 @@
-﻿using FASTER.core;
+using FASTER.core;
 
 namespace EventStore.Core.LogV3.FASTER {
 	public class Context<TValue> {

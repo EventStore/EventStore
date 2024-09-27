@@ -1,4 +1,4 @@
-﻿namespace EventStore.Transport.Http {
+namespace EventStore.Transport.Http {
 	public static class ContentType {
 		public const string Any = "*/*";
 

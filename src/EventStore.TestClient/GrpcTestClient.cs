@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Client;
 using Connection = EventStore.Transport.Tcp.TcpTypedConnection<byte[]>;
 using ILogger = Serilog.ILogger;

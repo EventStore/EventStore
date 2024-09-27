@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Tests {
 	public static class IIndexReaderExtensions {

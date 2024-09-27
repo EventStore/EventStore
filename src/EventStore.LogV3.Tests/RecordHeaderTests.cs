@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Xunit;
 
 namespace EventStore.LogV3.Tests {

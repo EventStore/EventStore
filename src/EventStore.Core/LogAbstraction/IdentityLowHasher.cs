@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Index.Hashes;
+using EventStore.Core.Index.Hashes;
 using StreamId = System.UInt32;
 
 namespace EventStore.Core.LogAbstraction {

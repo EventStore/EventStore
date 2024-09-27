@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Core.Index.Hashes {
 	public class Murmur2Unsafe : IHasher, IHasher<string> {

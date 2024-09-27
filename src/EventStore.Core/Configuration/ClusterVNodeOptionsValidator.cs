@@ -1,4 +1,4 @@
-﻿// ReSharper disable CheckNamespace
+// ReSharper disable CheckNamespace
 using System;
 using System.IO;
 using EventStore.Common.Exceptions;

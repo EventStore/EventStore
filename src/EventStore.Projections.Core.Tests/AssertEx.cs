@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Esprima.Ast;
 using EventStore.LogV3;
 using EventStore.Projections.Core.Messages;

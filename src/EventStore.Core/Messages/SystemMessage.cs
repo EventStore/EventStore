@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Cluster;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
