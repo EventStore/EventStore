@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Metrics;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.XUnit.Tests.Metrics;

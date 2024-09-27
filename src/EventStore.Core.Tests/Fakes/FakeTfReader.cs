@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.TransactionLog;
 
 namespace EventStore.Core.Tests.Fakes {

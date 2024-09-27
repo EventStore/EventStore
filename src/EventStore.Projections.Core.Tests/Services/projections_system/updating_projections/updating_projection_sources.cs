@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;

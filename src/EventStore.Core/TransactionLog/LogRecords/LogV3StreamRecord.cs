@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.LogV3;
 using EventStore.LogV3;
 using StreamId = System.UInt32;

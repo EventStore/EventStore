@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.TransactionLog.Scavenging {
+namespace EventStore.Core.TransactionLog.Scavenging {
 	public interface IChunkWeightScavengeMap : IScavengeMap<int, float> {
 		bool AllWeightsAreZero();
 		void IncreaseWeight(int logicalChunkNumber, float extraWeight);

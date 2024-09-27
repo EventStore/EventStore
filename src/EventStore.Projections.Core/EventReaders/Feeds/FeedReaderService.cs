@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Bus;
+using EventStore.Core.Bus;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Services;

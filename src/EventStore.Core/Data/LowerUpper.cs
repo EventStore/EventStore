@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Data {
+namespace EventStore.Core.Data {
 	public struct Range {
 		public readonly long Lower;
 		public readonly long Upper;

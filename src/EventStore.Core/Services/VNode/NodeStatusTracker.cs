@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Data;
+using EventStore.Core.Data;
 using EventStore.Core.Metrics;
 
 namespace EventStore.Core.Services.VNode {

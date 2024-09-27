@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Util;
 using EventStore.Core.XUnit.Tests.Metrics;
 using Xunit;

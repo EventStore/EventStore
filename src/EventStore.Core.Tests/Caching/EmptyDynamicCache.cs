@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Caching;
+using EventStore.Core.Caching;
 
 namespace EventStore.Core.Tests.Caching {
 	public class EmptyDynamicCache : IDynamicCache {

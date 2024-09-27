@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.TransactionLog.Chunks {
+namespace EventStore.Core.TransactionLog.Chunks {
 	public interface ITFChunkScavengerLogManager {
 		void Initialise();
 

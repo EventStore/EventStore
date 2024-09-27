@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.Chunks;
 

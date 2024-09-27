@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Text.RegularExpressions;
 using EventStore.Core.Tests.Http.Users.users;

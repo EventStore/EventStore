@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services;
 using System;

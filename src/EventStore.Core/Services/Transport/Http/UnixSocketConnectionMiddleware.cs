@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
 namespace EventStore.Core.Services.Transport.Http;

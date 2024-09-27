@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using Tag = System.Collections.Generic.KeyValuePair<string, object>;

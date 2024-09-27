@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EndPoint = System.Net.EndPoint;

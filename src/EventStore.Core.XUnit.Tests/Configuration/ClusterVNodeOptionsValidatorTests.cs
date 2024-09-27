@@ -1,4 +1,4 @@
-﻿using EventStore.Common.Exceptions;
+using EventStore.Common.Exceptions;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Configuration;

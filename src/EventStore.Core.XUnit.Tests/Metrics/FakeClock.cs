@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Time;
 
 namespace EventStore.Core.XUnit.Tests.Metrics {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Core.Messaging {
 	public interface ICorrelatedTimeout {

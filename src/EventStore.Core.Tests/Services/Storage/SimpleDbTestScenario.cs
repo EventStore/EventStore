@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Caching;
 using EventStore.Core.DataStructures;

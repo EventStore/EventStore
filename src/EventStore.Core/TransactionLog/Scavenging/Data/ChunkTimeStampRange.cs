@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	// store a range per chunk so that the calculator can definitely get a timestamp range for each event

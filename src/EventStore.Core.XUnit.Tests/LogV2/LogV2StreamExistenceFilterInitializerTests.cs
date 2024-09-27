@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogV2;

@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Core.Tests; 

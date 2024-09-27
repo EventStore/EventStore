@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Bus;
 
 namespace EventStore.Core.Messaging {

@@ -1,4 +1,4 @@
-﻿namespace EventStore.Projections.Core.Services {
+namespace EventStore.Projections.Core.Services {
 	public static class ProjectionEventTypes {
 		public const string ProjectionCheckpoint = "$ProjectionCheckpoint";
 		public const string PartitionCheckpoint = "$Checkpoint";

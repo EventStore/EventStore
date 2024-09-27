@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Metrics;
 
 namespace EventStore.Core.TransactionLog.Scavenging {

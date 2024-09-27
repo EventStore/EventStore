@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Services;
 

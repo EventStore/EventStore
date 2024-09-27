@@ -1,4 +1,4 @@
-﻿#define USE_POOL
+#define USE_POOL
 
 using System;
 using System.Collections.Concurrent;

@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Index;
+using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index {

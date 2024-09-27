@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Data;
+using EventStore.Core.Data;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services {

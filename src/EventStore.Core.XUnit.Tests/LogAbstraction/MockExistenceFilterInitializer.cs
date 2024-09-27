@@ -1,4 +1,4 @@
-﻿using EventStore.Core.LogAbstraction;
+using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 	public class MockExistenceFilterInitializer : INameExistenceFilterInitializer {

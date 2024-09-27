@@ -1,4 +1,4 @@
-﻿using EventStore.ClientAPI;
+using EventStore.ClientAPI;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {

@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	// The Accumulator reads through the log up to the scavenge point

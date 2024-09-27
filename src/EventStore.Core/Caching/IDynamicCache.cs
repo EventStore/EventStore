@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Caching {
+namespace EventStore.Core.Caching {
 	// This has its capacity adjusted by the ICacheResizer
 	public interface IDynamicCache {
 		string Name { get; }

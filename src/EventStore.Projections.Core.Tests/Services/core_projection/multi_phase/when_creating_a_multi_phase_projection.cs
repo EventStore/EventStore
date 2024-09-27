@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Tests;
+using EventStore.Core.Tests;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase {

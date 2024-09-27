@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Messages {
+namespace EventStore.Core.Messages {
 	public class MergeIndexesResultDto {
 		public string MergeIndexesId { get; set; }
 

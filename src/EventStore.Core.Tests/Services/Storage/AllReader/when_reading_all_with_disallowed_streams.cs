@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using EventStore.Client.Messages;
 using NUnit.Framework;

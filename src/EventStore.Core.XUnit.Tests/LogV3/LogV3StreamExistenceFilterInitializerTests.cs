@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using EventStore.Core.LogV3;
 using Xunit;
 using StreamId = System.UInt32;

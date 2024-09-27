@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.Hashers {
 	public class HumanReadableHasherTests {

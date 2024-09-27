@@ -1,4 +1,4 @@
-﻿namespace EventStore.Transport.Http {
+namespace EventStore.Transport.Http {
 	public static class HttpStatusCode {
 		public const int Continue = (int)System.Net.HttpStatusCode.Continue;
 		public const int SwitchingProtocols = (int)System.Net.HttpStatusCode.SwitchingProtocols;

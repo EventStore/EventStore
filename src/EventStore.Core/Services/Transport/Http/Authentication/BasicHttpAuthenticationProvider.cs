@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Headers;
+using System.Net.Http.Headers;
 using System.Text;
 using EventStore.Plugins.Authentication;
 using Microsoft.AspNetCore.Http;

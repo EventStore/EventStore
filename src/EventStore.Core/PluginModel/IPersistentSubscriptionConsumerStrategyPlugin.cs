@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Services.PersistentSubscription;
+using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
 namespace EventStore.Core.PluginModel {

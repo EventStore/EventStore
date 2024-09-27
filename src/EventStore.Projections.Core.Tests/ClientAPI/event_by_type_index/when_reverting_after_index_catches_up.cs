@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests;
 using NUnit.Framework;

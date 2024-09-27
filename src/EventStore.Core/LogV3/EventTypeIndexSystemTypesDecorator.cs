@@ -1,4 +1,4 @@
-﻿using EventStore.Common.Utils;
+using EventStore.Common.Utils;
 using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.LogV3 {

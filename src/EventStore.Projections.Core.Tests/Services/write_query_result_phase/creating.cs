@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests;
