@@ -32,7 +32,7 @@ A number of APM providers natively support ingesting metrics using the OTLP prot
 
 ### Configuration
 
-Refer to the general [plugins configuration](../configuration/README.md#plugins-configuration) guide to see how to configure plugins with JSON files and environment variables.
+Refer to the general [plugins configuration](../configuration/plugins.md) guide to see how to configure plugins with JSON files and environment variables.
 
 Sample JSON configuration:
 ```json
