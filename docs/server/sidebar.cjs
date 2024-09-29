@@ -1,13 +1,13 @@
 module.exports = [
     {
-        text:     "Getting started",
+        text: "Getting started",
         children: [
-            "README.md",
+            "introduction.md",
             "installation.md"
         ]
     },
     {
-        text:     "Configuration",
+        text: "Configuration",
         children: [
             "configuration.md",
             "security.md",
@@ -17,7 +17,7 @@ module.exports = [
         ]
     },
     {
-        text:     "Features",
+        text: "Features",
         children: [
             "admin-ui.md",
             "streams.md",
@@ -27,7 +27,7 @@ module.exports = [
         ]
     },
     {
-        text:     "Operations",
+        text: "Operations",
         children: [
             "operations.md",
             "diagnostics.md",
