@@ -54,7 +54,7 @@ You can edit the settings of an existing subscription while it is running. This 
 | `/subscriptions/{stream}/{subscription_name}` | `application/json`      | POST   |
 
 ::: warning  
-Persistent subscriptions to `$all` are not supported over the HTTP API. To update persistent subscriptions to `$all`, use the [appropriate client method](@clients/persistent-subscriptions.md#updating-a-subscription-group).  
+Persistent subscriptions to `$all` are not supported over the HTTP API. To update persistent subscriptions to `$all`, use the [appropriate client method](@clients/grpc/persistent-subscriptions.md#updating-a-subscription-group).  
 :::
 
 ### Query parameters
