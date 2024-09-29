@@ -26,9 +26,7 @@ or `ops` user:
 
 Scavenges can also be started from the _Admin_ page of the Admin UI.
 
-::: card
 ![Start a scavenge in the Admin UI](../images/admin-scavenge.png)
-:::
 
 Each node in a cluster contains an independent copy of the database. As such, when you run a scavenge, you need to issue a
 scavenge request to each node. Scavenges can be run concurrently, or be run in series to spread the load.
