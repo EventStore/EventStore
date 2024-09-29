@@ -1,12 +1,13 @@
 ---
 title: Persistent subscriptions
+order: 3
 ---
 
 ## Persistent subscription
 
 A common operation is to subscribe to a stream and receive notifications for changes. As new events arrive, you continue following them. 
 
-You can only subscribe to one stream or the `$all` stream. You can use server-side projections for linking events to new aggregated streams. System projections create pre-defined streams that aggregate events by type or by category and are available out-of-the box. Learn more about system and user-defined projections [here](projections.md).
+You can only subscribe to one stream or the `$all` stream. You can use server-side projections for linking events to new aggregated streams. System projections create pre-defined streams that aggregate events by type or by category and are available out-of-the box. Learn more about system and user-defined projections [here](projections/custom.md).
 
 Persistent subscriptions run on the Leader node and are not dropped when the connection is closed. Moreover, this subscription type supports the "[competing consumers](https://www.enterpriseintegrationpatterns.com/patterns/messaging/CompetingConsumers.html)" messaging pattern and are useful when you need to distribute messages to many workers. EventStoreDB saves the subscription state server-side and allows for at-least-once delivery guarantees across multiple consumers on the same stream. It is possible to have many groups of consumers compete on the same stream, with each group getting an at-least-once guarantee.
 
@@ -23,7 +24,7 @@ Since it is the server who decides from where the subscription should start rece
 In order for the server to load-balance subscribers, it uses the concept of consumer groups. All clients that belong to a single consumer group will get a portion of events and that's how load balancing works inside a group. It is possible to create multiple consumer groups for the same stream and they will be completely independent of each other, receiving and processing events at their own pace and having their own last known position handled by the server.
 
 ::: card
-![Consumer groups](images/consumer-groups.jpg)
+![Consumer groups](../images/consumer-groups.jpg)
 :::
 
 ::: warning
@@ -76,7 +77,7 @@ This option can be seen as a fall-back scenario for high availability, when a si
 
 ### Pinned
 
-For use with an indexing projection such as the [system](projections.md#by-category) `$by_category` projection.
+For use with an indexing projection such as the [system](projections/system.md#by-category) `$by_category` projection.
 
 EventStoreDB inspects the event for its source stream id, hashing the id to one of 1024 buckets assigned to individual clients. When a client disconnects its buckets are assigned to other clients. When a client connects, it is assigned some existing buckets. This naively attempts to maintain a balanced workload.
 

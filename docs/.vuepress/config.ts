@@ -38,7 +38,7 @@ export default defineUserConfig({
         docsDir: ".",
         toc: true,
         sidebar: {
-            "/server/": require("../server/sidebar.cjs"),
+            "/server/": "structure",
             "/http-api/": "structure"
         },
         navbar: [

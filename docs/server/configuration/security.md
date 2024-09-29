@@ -1,8 +1,8 @@
 ---
-title: "Security"
+order: 2
 ---
 
-## Security
+# Security
 
 For production use it is important to configure EventStoreDB security features to prevent unauthorised access
 to your data.
@@ -13,7 +13,7 @@ Security features of EventStoreDB include:
 - [Access Control Lists](#access-control-lists) to restrict access to specific event streams
 - Encryption in-flight using HTTPS and TLS
 
-### Protocol security
+## Protocol security
 
 EventStoreDB supports gRPC and the proprietary TCP protocol for high-throughput real-time communication. It
 also has some HTTP endpoints for the management operations like scavenging, creating projections and so on.
@@ -24,7 +24,7 @@ All those protocols support encryption with TLS and SSL. Each protocol has its o
 you can only use one set of certificates for both TLS and HTTPS.
 
 The protocol security configuration depends a lot on the deployment topology and platform. We have created an
-interactive [configuration tool](installation.md), which also has instructions on how to generate and install
+interactive [configuration tool](../quick-start/installation.md), which also has instructions on how to generate and install
 the certificates and configure EventStoreDB nodes to use them.
 
 ## Security options
@@ -117,11 +117,11 @@ The `AllowAnonymousEndpointAccess` option controls anonymous access to these end
 Anonymous access is still always granted to `/ping`, `/info`, the static content of the UI, and http redirects.
 :::
 
-### Certificates configuration
+## Certificates configuration
 
 In this section, you can find settings related to protocol security (HTTPS and TLS).
 
-#### Certificate common name
+### Certificate common name
 
 SSL certificates can be created with a common name (CN), which is an arbitrary string. Usually it contains the DNS name for which the certificate is issued.
 
@@ -145,7 +145,7 @@ If the domains are `node1.esdb.mycompany.org`, `node2.esdb.mycompany.org` and `n
 Server certificates **must** have the internal and external IP addresses (`ReplicationIp` and `NodeIp` respectively) or DNS names as subject alternative names.
 :::
 
-#### Trusted root certificates
+### Trusted root certificates
 
 When getting an incoming connection, the server needs to ensure if the certificate used for the connection can be trusted. For this to work, the server needs to know where trusted root certificates are located.
 
@@ -161,7 +161,7 @@ If you are running on Windows, you can also load the trusted root certificate fr
 
 **Default**: n/a on Windows, `/etc/ssl/certs` on Linux
 
-#### Certificate file
+### Certificate file
 
 The `CertificateFile` setting needs to point to the certificate file, which will be used by the cluster node.
 
@@ -195,8 +195,7 @@ If the private key file is an encrypted PKCS #8 file, then you need to provide t
 | YAML                 | `CertificatePrivateKeyPassword`               |
 | Environment variable | `EVENTSTORE_CERTIFICATE_PRIVATE_KEY_PASSWORD` |
 
-
-#### Certificate store (Windows)
+### Certificate store (Windows)
 
 The certificate store location is the location of the Windows certificate store, for example `CurrentUser`.
 
@@ -273,11 +272,11 @@ If multiple matching root certificates are found, then the root certificate with
 | YAML                 | `TrustedRootCertificateSubjectName`                |
 | Environment variable | `EVENTSTORE_TRUSTED_ROOT_CERTIFICATE_SUBJECT_NAME` |
 
-### Certificate generation tool
+## Certificate generation tool
 
-Event Store provides the interactive Certificate Generation CLI, which creates certificates signed by a private, auto-generated CA for EventStoreDB. You can use the [configuration wizard](installation.md), that will provide you exact CLI commands that you need to run to generate certificates matching your configuration.
+Event Store provides the interactive Certificate Generation CLI, which creates certificates signed by a private, auto-generated CA for EventStoreDB. You can use the [configuration wizard](../quick-start/installation.md), that will provide you exact CLI commands that you need to run to generate certificates matching your configuration.
 
-#### Getting started
+### Getting started
 
 CLI is available as Open Source project in the [Github Repository](https://github.com/EventStore/es-gencert-cli). The latest release can be found under the [GitHub releases page.](https://github.com/EventStore/es-gencert-cli/releases)
 
@@ -306,7 +305,7 @@ chmod 600 [file]
 ```
 :::
 
-#### Generating the CA certificate
+### Generating the CA certificate
 
 As the first step CA certificate needs to be generated. It'll need to be trusted for each of the nodes and client environment.
 
@@ -335,7 +334,7 @@ Example:
 ./es-gencert-cli create-ca -out ./es-ca
 ```
 
-#### Generating the Node certificate
+### Generating the Node certificate
 
 You need to generate certificates signed by the CA for each node. They should be installed only on the specific node machine.
 
@@ -378,7 +377,7 @@ Sample:
     -dns-names localhost,node1.eventstore
 ```
 
-#### Running with Docker
+### Running with Docker
 
 You could also run the tool using Docker interactive container:
 
@@ -410,13 +409,13 @@ services:
       - ./certs:/certs
 ```
 
-See more in the [complete sample of docker-compose secured cluster configuration.](installation.md#use-docker-compose)
+See more in the [complete sample of docker-compose secured cluster configuration.](../quick-start/installation.md#use-docker-compose)
 
-### Certificate installation on a client environment
+## Certificate installation on a client environment
 
 To connect to EventStoreDB, you need to install the auto-generated CA certificate file on the client machine (e.g. machine where the client is hosted, or your dev environment).
 
-#### Linux (Ubuntu, Debian)
+### Linux (Ubuntu, Debian)
 
 1. Copy auto-generated CA file to dir `/usr/local/share/ca-certificates/`, e.g. using command:
   ```bash
@@ -427,7 +426,7 @@ To connect to EventStoreDB, you need to install the auto-generated CA certificat
   sudo update-ca-certificates
   ```
 
-#### Windows
+### Windows
 
 1. You can manually import it to the local CA cert store through `Certificates Local Machine Management Console`. To do that select **Run** from the **Start** menu, and then enter `certmgr.msc`. Then import certificate to `Trusted Root Certification`.
 2. You can also run the PowerShell script instead:
@@ -436,7 +435,7 @@ To connect to EventStoreDB, you need to install the auto-generated CA certificat
 Import-Certificate -FilePath ".\certs\ca\ca.crt" -CertStoreLocation Cert:\CurrentUser\Root
 ```
 
-#### MacOS
+### MacOS
 
 1. In the Keychain Access app on your Mac, select either the login or System keychain. Drag the certificate file onto the Keychain Access app. If you're asked to provide a name and password, type the name and password for an administrator user on this computer.
 2. You can also run the bash script:
@@ -445,7 +444,7 @@ Import-Certificate -FilePath ".\certs\ca\ca.crt" -CertStoreLocation Cert:\Curren
 sudo security add-certificates -k /Library/Keychains/System.keychain ca.crt 
 ```
 
-### Intermediate CA certificates
+## Intermediate CA certificates
 
 Intermediate CA certificates are supported by loading them from a [PEM](https://datatracker.ietf.org/doc/html/rfc1422) or [PKCS #12](https://datatracker.ietf.org/doc/html/rfc7292) bundle specified by the [`CertificateFile` configuration parameter](#certificate-file). To make sure that the configuration is correct, the certificate chain is validated on startup with the node's own certificate.
 
@@ -479,13 +478,13 @@ or with [an online service](https://www.sslshopper.com/ssl-converter.html) if yo
 
 It's possible that there are more than one intermediate CA certificates in the chain - so you need to verify if the certificate you've just downloaded also uses the AIA extension. If yes, you need to download the next intermediate CA certificate in the chain by repeating the same process above until you eventually reach a publicly trusted root certificate (i.e. the `Subject` and `Issuer` fields will match). In practice, there'll usually be at most two intermediate certificates in the chain.
 
-#### Bundling the intermediate certificates
+### Bundling the intermediate certificates
 
 The node's certificate should be first in the bundle, followed by the intermediates. Intermediates can be in any order but it would be good to keep it from leaf to root, as per the usual convention. The root certificate should not be bundled.
 
 In the examples below, intermediate certificates are numbered from 1 to N starting from the leaf and going up.
 
-##### PEM format
+#### PEM format
 
 If your node's certificate and the intermediate CA certificates are both PEM formatted, that is they begin with `-----BEGIN CERTIFICATE-----` and end with `-----END CERTIFICATE-----` then you can simply append the contents of the intermediate certificate files to the end of the node's certificate file to create the bundle.
 
@@ -504,7 +503,7 @@ type C:\path\to\intermediateN.crt >> C:\path\to\node.crt
 ```
 :::
 
-##### PKCS #12 format
+#### PKCS #12 format
 
 If you want to generate a PKCS #12 bundle from PEM formatted certificate files, please follow the steps below.
 
@@ -516,7 +515,7 @@ cat /path/to/intermediateN.crt >> ./ca_bundle.crt
 openssl pkcs12 -export -in /path/to/node.crt -inkey /path/to/node.key -certfile ./ca_bundle.crt -out /path/to/node.p12 -passout pass:<password>
 ```
 
-#### Adding intermediate certificates to the certificate store
+### Adding intermediate certificates to the certificate store
 
 Intermediate certificates also need to be added to the current user's certificate store.
 
@@ -547,7 +546,7 @@ Import-Certificate -FilePath .\ca.crt -CertStoreLocation Cert:\LocalMachine\CA
 ```
 :::
 
-### TCP protocol security
+## Replication protocol security
 
 Although TCP is disabled by default for external connections (clients), cluster nodes still use TCP for replication. If you aren't running EventStoreDB in insecure mode, all TCP communication will use TLS using the same certificates as SSL.
 

@@ -1,5 +1,6 @@
 ---
 title: "Installation"
+order: 3
 ---
 
 ## Quick start
@@ -106,7 +107,7 @@ You can also [download](https://eventstore.com/downloads/) a binary, unzip the a
 location with administrator permissions.
 
 The following command starts EventStoreDB in dev mode with the database stored at the path `./db` and the logs in `./logs`.
-Read more about configuring the EventStoreDB server in the [Configuration section](configuration.md).
+Read more about configuring the EventStoreDB server in the [Configuration section](../configuration/README.md).
 
 ```powershell:no-line-numbers
 EventStore.ClusterNode.exe --dev --db ./db --log ./logs
@@ -247,7 +248,7 @@ You have to tell your client to use secure connection for both TCP and gRPC.
 
 As you might've noticed, both connection strings have a setting to disable the certificate validation (`ValidateServer=False` for `TCP` and `tlsVerifyCert=false` for `gRPC`). It would prevent the invalid certificate error since the cluster uses a private, auto-generated CA.
 
-However, **we do not recommend using this setting in production**. Instead, you can either add the CA certificate to the trusted root CA store or instruct your application to use such a certificate. See the [security section](security.md#certificate-installation-on-a-client-environment) for detailed instructions.
+However, **we do not recommend using this setting in production**. Instead, you can either add the CA certificate to the trusted root CA store or instruct your application to use such a certificate. See the [security section](../configuration/security.md#certificate-installation-on-a-client-environment) for detailed instructions.
 
 ## Compatibility notes
 

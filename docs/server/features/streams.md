@@ -1,3 +1,7 @@
+---
+order: 2
+---
+
 # Event streams
 
 EventStoreDB is purpose-built for event storage. Unlike traditional state-based databases, which retain only the most recent entity state, EventStoreDB allows you to store each state alteration as an independent event.
@@ -43,7 +47,7 @@ Security access control lists are also included in the `$acl` section of the str
 | `$mw`         | The list of users with write permissions to stream metadata |
 | `$mr`         | The list of users with read permissions to stream metadata  |
 
-You can find more details on access control lists can [here](security.md#access-control-lists).
+You can find more details on access control lists can [here](../configuration/security.md#access-control-lists).
 
 ### Event metadata
 
@@ -79,7 +83,7 @@ will fail. The tombstone event doesn't get scavenged.
 The `$all` stream bypasses the index, meaning that it does not check the metadata to determine whether events
 exist or not. As such, events that have been deleted are still be readable until a scavenge has removed them.
 There are requirements for a scavenge to successfully remove events, for more information about this, read
-the [scavenging guide](operations.md#scavenging).
+the [scavenging guide](../operations/scavenge.md).
 
 EventStoreDB will always keep one event in the stream even if the stream was deleted, to indicate the stream
 existence and the last event version. Therefore, we advise you to append a specific event like `StreamDeleted`
@@ -141,8 +145,8 @@ consideration:
 
 - Due to the nature of `$all`, projections using `fromAll` read any deleted events that have not been
   scavenged. They also receive any tombstone events from hard deletes.
-- System projections like [by category](projections.md#by-category)
-  or [by event type](projections.md#by-event-type) projections produce new (link) events that are stored in
+- System projections like [by category](projections/system.md#by-category)
+  or [by event type](projections/system.md#by-event-type) projections produce new (link) events that are stored in
   the database in addition to the original event. When you delete the original events, then link events will
   remain in the projected streams, but their links won't be resolved (will have undefined value). You can
   ignore those events in the code logic.
@@ -172,12 +176,12 @@ can perform all operations, except posting to it.
 The `$settings` stream has a special ACL used as the default ACL. This stream controls the default ACL for
 streams without an ACL and also controls who can create streams in the system.
 
-Learn more about the default ACL in the [access control lists](security.md#default-acl) documentation.
+Learn more about the default ACL in the [access control lists](../configuration/security.md#default-acl) documentation.
 
 ### `$stats`
 
 EventStoreDB has debug and statistics information available about a cluster in the `$stats` stream, find out
-more in [the stats guide](diagnostics.md#statistics).
+more in [the stats guide](../diagnostics/README.md#statistics).
 
 ### `$scavenges`
 

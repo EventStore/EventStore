@@ -1,10 +1,14 @@
 ---
-title: Database
+order: 1
 ---
 
-## Database settings
+# Database settings
 
 On this page, you find settings that tune the database server behaviour. Only modify these settings if you know what you are doing or when requested by Event Store support personnel.
+
+## Database
+
+Settings described below are related to the database behaviour, like the location of the database files, in-memory database, and verification, and caches.
 
 ### Database location
 
@@ -48,7 +52,7 @@ When the database node restarts, it checks the database files to ensure they are
 
 You can increase the number of chunk files that are cached if you have free memory on the nodes.
 
-The [stats response](diagnostics.md#statistics) contains two fields: `es-readIndex-cachedRecord` and `es-readIndex-notCachedRecord`. Statistic values for those fields tell you how many times a chunk file was retrieved from the cache and from the disk. We expect the two most recent chunks (the current chunk and the previous one) to be most frequently accessed and therefore cached.
+The [stats response](../diagnostics/README.md#statistics) contains two fields: `es-readIndex-cachedRecord` and `es-readIndex-notCachedRecord`. Statistic values for those fields tell you how many times a chunk file was retrieved from the cache and from the disk. We expect the two most recent chunks (the current chunk and the previous one) to be most frequently accessed and therefore cached.
 
 If you observe that the `es-readIndex-notCachedRecord` stats value gets significantly higher than the `es-readIndex-cachedRecord`, you can try adjusting the chunk cache.
 

@@ -1,13 +1,22 @@
+---
+order: 1
+headerDepth: 3
+dir:
+  text: "Quick Start"
+  expanded: true
+  order: 1
+---
+
 # Introduction
 
 Welcome to the EventStoreDB 23.10 documentation.
 
 EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration and operational concerns.
 
-EventStoreDB is available in both an Open-Source and an Enterprise version:
+EventStoreDB v23.10 is available in both Open-Source and Commercial version:
 
-- EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore) and free-to-use edition of EventStoreDB.
-- EventStoreDB Enterprise is available for customers with an EventStoreDB [paid support subscription](https://eventstore.com/support/). EventStoreDB Enterprise adds enterprise-focused features such as LDAP integration, correlation event sequence visualisation, and management CLI.
+- EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore/tree/release/oss-v23.10) and free-to-use edition of EventStoreDB.
+- EventStoreDB Commercial is available for customers with an EventStoreDB [paid support subscription](https://eventstore.com/support/). EventStoreDB Commercial adds enterprise-focused features such as LDAP integration, correlation event sequence visualisation, and management CLI.
 
 ## Getting started
 
@@ -25,7 +34,7 @@ Customers with the paid [support plan](https://eventstore.com/support/) can open
 
 ### Issues
 
-Since EventStoreDB is an open-source product, we track most of the issues openly in the EventStoreDB [repository on GitHub](https://github.com/EventStore/EventStore). Before opening an issue, please ensure that a similar issue hasn't been opened already. Also, try searching closed issues that might contain a solution or workaround for your problem.
+We track most of the issues openly in the EventStoreDB [repository on GitHub](https://github.com/EventStore/EventStore). Before opening an issue, please ensure that a similar issue hasn't been opened already. Also, try searching closed issues that might contain a solution or workaround for your problem.
 
 When opening an issue, follow our [guidelines](https://github.com/EventStore/EventStore/blob/master/CONTRIBUTING.md) for bug reports and feature requests. By doing so, you would greatly help us to solve your concerns most efficiently.
 
@@ -65,7 +74,7 @@ EventStoreDB offers a low-level protocol in the form of an asynchronous TCP prot
 TCP protocol will be available only through version 23.10. Please plan to migrate your applications that use the TCP client SDK to use the gRPC SDK instead.
 :::
 
-Find out more about configuring the TCP protocol on the [TCP configuration](networking.md#tcp-configuration) page.
+Find out more about configuring the TCP protocol on the [TCP configuration](../configuration/networking.md#tcp-configuration) page.
 
 #### EventStoreDB supported clients
 
@@ -89,10 +98,10 @@ Community supported clients are developed and maintained by community members, n
 
 EventStoreDB also offers an HTTP-based interface, based specifically on the [AtomPub protocol](https://datatracker.ietf.org/doc/html/rfc5023). As it operates over HTTP, this is less efficient, but nearly every environment supports it.
 
-Find out more about configuring the HTTP protocol on the [HTTP configuration](networking.md#http-configuration) page.
+Find out more about configuring the HTTP protocol on the [HTTP configuration](../configuration/networking.md#http-configuration) page.
 
 ::: warning Deprecation Note
-The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](networking.md#atompub) to the server configuration. Although we plan to remove AtomPub support from future server versions, the server management HTTP API will remain available.
+The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](../configuration/networking.md#atompub) to the server configuration. Although we plan to remove AtomPub support from future server versions, the server management HTTP API will remain available.
 :::
 
 As the AtomPub protocol doesn't get any changes, you can use the v5 [HTTP API documentation](@clients/httpapi/README.md) for it.

@@ -1,8 +1,10 @@
 ---
-title: "Configuration"
+dir:
+  text: Configuration
+  order: 2
 ---
 
-## Configuration options
+# Configuring the server
 
 EventStoreDB has a number of configuration options that can be changed. You can find all the options described
 in details in this section.
@@ -11,7 +13,7 @@ When you don't change the configuration, EventStoreDB will use sensible defaults
 needs. You can always instruct EventStoreDB to use a different set of options. There are multiple ways to
 configure EventStoreDB server, described below.
 
-### Version and help
+## Version and help
 
 You can check what version of EventStoreDB you have installed by using the `--version` parameter in the
 command line. For example:
@@ -19,7 +21,6 @@ command line. For example:
 ::: tabs#os
 @tab Linux
 ```bash
-```bash:no-line-numbers
 $ eventstored --version
 EventStoreDB version 23.10.0.0 (oss-v23.10.0/8660912b8, 2023-10-24T16:13:49+01:00)
 ```
@@ -33,7 +34,7 @@ EventStoreDB version 23.10.0.0 (oss-v23.10.0/8660912b8, 2023-10-24T16:13:49+01:0
 The full list of available options is available from the currently installed server by using the `--help`
 option in the command line.
 
-### Configuration file
+## Configuration file
 
 You would use the configuration file when you want the server to run with the same set of options every time.
 YAML files are better for large installations as you can centrally distribute and manage them, or generate
@@ -60,7 +61,7 @@ To tell the EventStoreDB server to use a different configuration file, you pass 
 line with `--config=filename`, or use the `CONFIG`
 environment variable.
 
-### Environment variables
+## Environment variables
 
 You can also set all arguments with environment variables. All variables are prefixed with `EVENTSTORE_` and
 normally follow the pattern `EVENTSTORE_{option}`. For example, setting the `EVENTSTORE_LOG`
@@ -68,7 +69,7 @@ variable would instruct the server to use a custom location for log files.
 
 Environment variables override all the options specified in configuration files.
 
-### Command line
+## Command line
 
 You can also override options from both configuration files and environment variables using the command line.
 
@@ -85,7 +86,7 @@ EventStore.ClusterNode.exe --log C:\Temp\EventStore\Logs
 ```
 :::
 
-### Testing the configuration
+## Testing the configuration
 
 If more than one method is used to configure the server, it might be hard to find out what the effective
 configuration will be when the server starts. To help to find out just that, you can use the `--what-if`

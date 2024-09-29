@@ -1,5 +1,6 @@
 ---
 title: "Upgrade Guide"
+order: 5
 ---
 
 ## Upgrade guide for EventStoreDB 23.10
@@ -23,10 +24,7 @@ An online rolling upgrade can be done from these versions of EventStoreDB, direc
 
 Follow the upgrade procedure below on each node, starting with a follower node:
 
-::: card
 ![EventStoreDB upgrade procedure for each node](images/upgrade-procedure.png)
-:::
-
 
 Upgrading the cluster in this manner keeps the cluster online and able to service requests. There may still be disruptions to your services during the upgrade, namely:
 - Client connections may be disconnected when nodes go offline, or when elections take place.

@@ -1,8 +1,9 @@
 ---
 title: Networking
+order: 3
 ---
 
-## Network configuration
+# Network configuration
 
 EventStoreDB provides two interfaces: 
 - HTTP(S) for gRPC communication and REST APIs
@@ -104,7 +105,7 @@ In Event Store Cloud, the AtomPub protocol is enabled. For self-hosted instances
 
 It's generally not expected that you'll need to update the Kestrel configuration that EventStoreDB has set by default, but it's good to know that you can update the following settings if needed.
 
-Kestrel uses the `kestrelsettings.json` configuration file. This file should be located in the [default configuration directory](configuration.md#configuration-file).
+Kestrel uses the `kestrelsettings.json` configuration file. This file should be located in the [default configuration directory](README.md#configuration-file).
 
 #### MaxConcurrentConnections
 
@@ -173,6 +174,10 @@ Please note that the `IntTcpPort` parameter has been deprecated as of version 23
 :::
 
 ### External
+
+::: warning
+EventStoreDB v23.10 is the last version that supports external TCP for all users. It is removed in future versions. If you need the TCP client protocol support, please contact Event Store.
+:::
 
 By default, TCP protocol is not exposed externally. If you use a TCP client library in your applications, you need to enable external TCP explicitly using the setting below.
 

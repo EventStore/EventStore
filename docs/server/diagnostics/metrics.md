@@ -1,9 +1,13 @@
+---
+order: 2
+---
+
 # Metrics
 
-EventStoreDB collects metrics in [prometheus format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format), available on the `/metrics` endpoint. Promethus can be configured to scrape this endpoint directly. The metrics are configured in `metricsconfig.json`. 
+EventStoreDB collects metrics in [prometheus format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format), available on the `/metrics` endpoint. Prometheus can be configured to scrape this endpoint directly. The metrics are configured in `metricsconfig.json`. 
 
 ::: note
-`/metrics` does not yet contain metrics for Projections and Persistent Subscriptions. To view these in Prometheus it is still recommended to use the [Prometheus exporter](diagnostics.md#prometheus)
+Native EventStoreDB metrics do not yet contain metrics for Projections and Persistent Subscriptions. To view these in Prometheus you can still use the [Prometheus exporter](https://github.com/marcinbudny/eventstore_exporter).
 :::
 
 ## Metrics Reference
@@ -11,6 +15,7 @@ EventStoreDB collects metrics in [prometheus format](https://prometheus.io/docs/
 ### Caches
 
 #### Cache hits and misses
+
 EventStoreDB tracks cache hits/misses metrics for `stream-info` and `chunk` caches.
 
 | Time Series                                                                | Type                     | Description                             |
@@ -18,7 +23,7 @@ EventStoreDB tracks cache hits/misses metrics for `stream-info` and `chunk` cach
 | `eventstore_cache_hits_misses{cache=<CACHE_NAME>,kind=<"hits"\|"misses">}` | [Counter](#common-types) | Total hits/misses on _CACHE_NAME_ cache |
 
 Example Configuration:
-```
+```json
 "CacheHitsMisses": {
 	"StreamInfo": true,
 	"Chunk": false
@@ -65,7 +70,7 @@ eventstore_cache_resources_entries{cache="LastEventNumber",kind="count"} 75 1688
 | `eventstore_checkpoints{name=<CHECKPOINT_NAME>,read="non-flushed"}` | [Gauge](#common-types) | Value for _CHECKPOINT_NAME_ checkpoint|
 
 Example Configuration:
-```
+```json
 "Checkpoints": {
 	"Replication": true,
 	"Chaser": false,
@@ -88,13 +93,13 @@ eventstore_checkpoints{name="replication",read="non-flushed"} 613363 16880541624
 
 These metrics track events written to and read from the server, including reads from caches.
 
-| Time Series | Type       | Description |
-| :---------- | :--------- | :---------- |
-| `eventstore_io_bytes{activity="read"}`               | [Counter](#common-types) | Event bytes read |
+| Time Series                                          | Type                     | Description         |
+|:-----------------------------------------------------|:-------------------------|:--------------------|
+| `eventstore_io_bytes{activity="read"}`               | [Counter](#common-types) | Event bytes read    |
 | `eventstore_io_events{activity=<"read"\|"written">}` | [Counter](#common-types) | Events read/written |
 
 Example Configuration:
-```
+```json
 "Events": {
 	"Read": false,
 	"Written": true
@@ -122,15 +127,15 @@ Usually a node pushes new gossip to other nodes periodically or when its view of
 
 #### Gossip Processing
 
-| Time Series | Type       | Description |
-| :---------- | :--------- | :---------- |
-| `eventstore_gossip_processing_duration_seconds_bucket{activity="push-from-peer",status=<"successful"\|"failed">,le=<DURATION>}`           | [Histogram](#common-types) | Number of gossips pushed from peers that took less than or equal to _DURATION_ in seconds to process                            |
-| `eventstore_gossip_processing_duration_seconds_bucket{activity="request-from-peer",status=<"successful"\|"failed">,le=<DURATION>}`        | [Histogram](#common-types) | Number of gossip requests from peers that took less than or equal to _DURATION_ in seconds to process                 |
-| `eventstore_gossip_processing_duration_seconds_bucket{activity="request-from-grpc-client",status=<"successful"\|"failed">,le=<DURATION>}` | [Histogram](#common-types) | Number of gossip requests from gRPC clients that took less than or equal to _DURATION_ in seconds to process          |
-| `eventstore_gossip_processing_duration_seconds_bucket{activity="request-from-http-client",status=<"successful"\|"failed">,le=<DURATION>}` | [Histogram](#common-types) | Number of gossip requests from HTTP clients that took less than or equal to _DURATION_ in seconds to process          |
+| Time Series                                                                                                                                                    | Type                       | Description                                                                                                  |
+|:---------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------|:-------------------------------------------------------------------------------------------------------------|
+| `eventstore_gossip_processing_duration_seconds_bucket{`<br/>`activity="push-from-peer",`<br/>`status=<"successful"\|"failed">,`<br/>`le=<DURATION>}`           | [Histogram](#common-types) | Number of gossips pushed from peers that took less than or equal to _DURATION_ in seconds to process         |
+| `eventstore_gossip_processing_duration_seconds_bucket{`<br/>`activity="request-from-peer",`<br/>`status=<"successful"\|"failed">,`<br/>`le=<DURATION>}`        | [Histogram](#common-types) | Number of gossip requests from peers that took less than or equal to _DURATION_ in seconds to process        |
+| `eventstore_gossip_processing_duration_seconds_bucket{`<br/>`activity="request-from-grpc-client",`<br/>`status=<"successful"\|"failed">,`<br/>`le=<DURATION>}` | [Histogram](#common-types) | Number of gossip requests from gRPC clients that took less than or equal to _DURATION_ in seconds to process |
+| `eventstore_gossip_processing_duration_seconds_bucket{`<br/>`activity="request-from-http-client",`<br/>`status=<"successful"\|"failed">,`<br/>`le=<DURATION>}` | [Histogram](#common-types) | Number of gossip requests from HTTP clients that took less than or equal to _DURATION_ in seconds to process |
 
 Example Configuration:
-```
+```json
 "Gossip": {
 	"PullFromPeer": false,
 	"PushToPeer": true,
@@ -159,7 +164,7 @@ eventstore_gossip_latency_seconds_bucket{activity="push-to-peer",status="success
 | `eventstore_incoming_grpc_calls{kind="deadline-exceeded"}` | [Counter](#common-types) | Total gRPC requests for which deadline have exceeded |
 
 Example Configuration:
-```
+```json
 "IncomingGrpcCalls": {
 	"Current": true,
 	"Total": false,
@@ -187,7 +192,7 @@ In addition, EventStoreDB also records metrics for each of client protocol gRPC 
 | `eventstore_grpc_method_duration_seconds_bucket{activity=<LABEL>,status="successful"\|"failed",le=<DURATION>}` | [Histogram](#common-types) | Number of _LABEL_ gRPC requests that took less than or equal to _DURATION_ in seconds to process |
 
 Example Configuration:
-```
+```json
 "GrpcMethods": {
 	"StreamAppend": "append",
 	"StreamBatchAppend": "append",
@@ -220,7 +225,7 @@ eventstore_grpc_method_duration_seconds_bucket{activity="append",status="success
 | `eventstore_kestrel_connections`  | [Gauge](#common-types) | Number of open kestrel connections |
 
 Example Configuration:
-```
+```json
 "Kestrel": {
 	"ConnectionCount": true
 }
@@ -256,7 +261,7 @@ EventStoreDB collects key metrics about the running process.
 | `eventstore_disk_io_operations{activity=<"read"\|"written">}`                     | [Counter](#common-types) | Number of OS read/write operations issued to the disk  |
 
 Example Configuration:
-```
+```json
 "Process": {
 	"UpTime": false,
 	"Cpu": false,
@@ -303,11 +308,11 @@ eventstore_gc_pause_duration_max_seconds{range="16-20 seconds"} 0.0485873 168814
 
 EventStoreDB uses various queues for asynchronous processing for which it also collects different metrics. In addition, EventStoreDB allows users to group queues and monitor them as a unit.
 
-| Time Series | Type       | Description |
-| :---------- | :--------- | :---------- |
-| `eventstore_queue_busy_seconds{queue=<QUEUE_GROUP>}`                                                         | [Counter](#common-types)     | Total time spent processing in seconds, averaged across the queues in the _QUEUE_GROUP_. The rate of this metric is therefore the average busyness of the group during the period (from 0-1 s/s) |
-| `eventstore_queue_queueing_duration_max_seconds{name=<QUEUE_GROUP>,range=<RANGE>}`                           | [RecentMax](#recentmax) | Recent maximum time in seconds for which any item was queued in queues belonging to the _QUEUE_GROUP_. This is essentially the length of the longest queue in the group in seconds |
-| `eventstore_queue_processing_duration_seconds_bucket{message_type=<TYPE>,queue=<QUEUE_GROUP>,le=<DURATION>}` | [Histogram](#common-types)   | Number of messages of type _TYPE_ processed by _QUEUE_GROUP_ group that took less than or equal to _DURATION_ in seconds                         |
+| Time Series                                                                                                         | Type                       | Description                                                                                                                                                                                      |
+|:--------------------------------------------------------------------------------------------------------------------|:---------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `eventstore_queue_busy_seconds{queue=<QUEUE_GROUP>}`                                                                | [Counter](#common-types)   | Total time spent processing in seconds, averaged across the queues in the _QUEUE_GROUP_. The rate of this metric is therefore the average busyness of the group during the period (from 0-1 s/s) |
+| `eventstore_queue_queueing_duration_max_seconds`<br/>`{name=<QUEUE_GROUP>,range=<RANGE>}`                           | [RecentMax](#recentmax)    | Recent maximum time in seconds for which any item was queued in queues belonging to the _QUEUE_GROUP_. This is essentially the length of the longest queue in the group in seconds               |
+| `eventstore_queue_processing_duration_seconds_bucket`<br/>`{message_type=<TYPE>,queue=<QUEUE_GROUP>,le=<DURATION>}` | [Histogram](#common-types) | Number of messages of type _TYPE_ processed by _QUEUE_GROUP_ group that took less than or equal to _DURATION_ in seconds                                                                         |
 
 `QueueLabels` setting within `metricsconfig.json` can be used to group queues, based on regex which gets matched on queue names, and label them for metrics reporting. Capture groups are also supported. Message types can be grouped in the same way in the `MessageTypes` setting in `metricsconfig.json`.
 
@@ -316,13 +321,12 @@ Enabling `Queues.Processing` can cause a lot more time series to be generated, a
 :::
 
 Example Configuration:
-```
-Queues": {
+```json
+"Queues": {
 	"Busy": true,
 	"Length": true,
 	"Processing": false
-}
-
+},
 "QueueLabels": [
 	{
 		"Regex": "StorageReaderQueue #.*",
@@ -375,10 +379,10 @@ For a given _NAME_, the current status can be determined by taking the max of al
 - Cleaning
 - Idle
 
-`Node` can be one of the [node roles](cluster.md#node-roles).
+`Node` can be one of the [node roles](../configuration/cluster.md#node-roles).
 
 Example Configuration:
-```
+```json
 "Statuses": {
 	"Index": true,
 	"Node": false,
@@ -423,7 +427,7 @@ eventstore_writer_flush_size_max{range="16-20 seconds"} 410 1688056823193
 | `eventstore_sys_disk_bytes{disk=<MOUNT_POINT>,kind=<"used"\|"total">}` | [Gauge](#common-types) | Current used/total bytes of disk mounted at _MOUNT_POINT_ |
 
 Example Configuration:
-```
+```json
 "System": {
 	"Cpu": false,
 	"LoadAverage1m": false,
