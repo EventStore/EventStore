@@ -131,22 +131,22 @@ To trust the new certificate, you have to import the certificate into the Truste
 
 1.  Press `WindowsKey + R`, and enter `certmgr.msc`.
 
-![Open certmgr.msc](../images/ssl-step1.png)
+![Open certmgr.msc](images/ssl-step1.png)
 
 2.  Navigate to _Certificates -> Current User -> Personal -> Certificates_.
 
 3.  Locate the certificate 'eventstore.com'.
 
-![Find certificate](../images/ssl-step2.png)
+![Find certificate](images/ssl-step2.png)
 
 4.  _Right click_ on the certificate and click on _All Tasks -> Export_. Follow the prompts.
 
-![Export certificate](../images/ssl-step3.png)
+![Export certificate](images/ssl-step3.png)
 
 5.  Navigate to _Certificates -> Current User -> Trusted Root Certification Authorities -> Certificates_.
 6.  _Right click_ on the Certificates folder menu item and click _All Tasks -> Import_. Follow the prompts.
 
-![Find certificate](../images/ssl-step4.png)
+![Find certificate](images/ssl-step4.png)
 
 #### Configure the server
 

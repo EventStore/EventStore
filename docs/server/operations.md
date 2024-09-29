@@ -51,7 +51,7 @@ If you need to restart a stopped scavenge, you can specify the starting chunk ID
 
 You can also start scavenges from the _Admin_ page of the Admin UI.
 
-![Start a scavenge in the Admin UI](../images/admin-scavenge.png)
+![Start a scavenge in the Admin UI](images/admin-scavenge.png)
 
 Each node in a cluster has its own independent database. As such, when you run a scavenge, you need to issue a scavenge request to each node.
 
