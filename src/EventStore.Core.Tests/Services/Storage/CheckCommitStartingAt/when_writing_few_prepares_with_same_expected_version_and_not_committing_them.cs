@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -13,10 +15,10 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 		private IPrepareLogRecord _prepare1;
 		private IPrepareLogRecord _prepare2;
 
-		protected override void WriteTestScenario() {
-			_prepare0 = WritePrepare("ES", -1);
-			_prepare1 = WritePrepare("ES", -1);
-			_prepare2 = WritePrepare("ES", -1);
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			_prepare0 = await WritePrepare("ES", -1, token: token);
+			_prepare1 = await WritePrepare("ES", -1, token: token);
+			_prepare2 = await WritePrepare("ES", -1, token: token);
 		}
 
 		[Test]

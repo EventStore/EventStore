@@ -7,8 +7,9 @@ using System.Threading.Tasks;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public interface IChunkManagerForChunkExecutor<TStreamId, TRecord> {
-		IChunkWriterForExecutor<TStreamId, TRecord> CreateChunkWriter(
-			IChunkReaderForExecutor<TStreamId, TRecord> sourceChunk);
+		ValueTask<IChunkWriterForExecutor<TStreamId, TRecord>> CreateChunkWriter(
+			IChunkReaderForExecutor<TStreamId, TRecord> sourceChunk,
+			CancellationToken token);
 
 		IChunkReaderForExecutor<TStreamId, TRecord> GetChunkReaderFor(long position);
 	}

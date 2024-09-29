@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Index.Hashers;
@@ -31,25 +33,25 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 			}
 		}
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			// PTable 1
-			_events.Add(WriteSingleEvent(Stream, 0, string.Empty));
-			_events.Add(WriteSingleEvent(Stream, 1, string.Empty));
-			_events.Add(WriteSingleEvent(Stream, 2, string.Empty));
+			_events.Add(await WriteSingleEvent(Stream, 0, string.Empty, token: token));
+			_events.Add(await WriteSingleEvent(Stream, 1, string.Empty, token: token));
+			_events.Add(await WriteSingleEvent(Stream, 2, string.Empty, token: token));
 
 			// PTable 2
-			_events.Add(WriteSingleEvent(Stream, 3, string.Empty));
-			_events.Add(WriteSingleEvent(Stream, 2, string.Empty)); // duplicate
-			_events.Add(WriteSingleEvent(CollidingStream, 3, string.Empty)); // colliding stream
+			_events.Add(await WriteSingleEvent(Stream, 3, string.Empty, token: token));
+			_events.Add(await WriteSingleEvent(Stream, 2, string.Empty, token: token)); // duplicate
+			_events.Add(await WriteSingleEvent(CollidingStream, 3, string.Empty, token: token)); // colliding stream
 
 			// PTable 3
-			_events.Add(WriteSingleEvent(Stream, 2, string.Empty)); // duplicate
-			_events.Add(WriteSingleEvent(SoftDeletedStream, 10, string.Empty)); // soft deleted stream
-			_events.Add(WriteSingleEvent(HardDeletedStream, 20, string.Empty)); // hard deleted stream
+			_events.Add(await WriteSingleEvent(Stream, 2, string.Empty, token: token)); // duplicate
+			_events.Add(await WriteSingleEvent(SoftDeletedStream, 10, string.Empty, token: token)); // soft deleted stream
+			_events.Add(await WriteSingleEvent(HardDeletedStream, 20, string.Empty, token: token)); // hard deleted stream
 
 			// MemTable
-			WriteStreamMetadata(SoftDeletedStream, 0, @"{""$tb"":11}");
-			WriteDelete(HardDeletedStream);
+			await WriteStreamMetadata(SoftDeletedStream, 0, @"{""$tb"":11}", token: token);
+			await WriteDelete(HardDeletedStream, token);
 		}
 
 		[Test]

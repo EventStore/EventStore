@@ -18,15 +18,15 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		private EventRecord _event0;
 		private EventRecord _event1;
 
-		protected override void WriteTestScenario() {
-			_event0 = WriteSingleEvent("ES", 0, "bla1");
-			GetOrReserve("ES", out var esStreamId, out var pos);
-			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			_event0 = await WriteSingleEvent("ES", 0, "bla1", token: token);
+			var (esStreamId, _) = await GetOrReserve("ES", token);
+			var (streamDeletedEventTypeId, pos) = await GetOrReserveEventType(SystemEventTypes.StreamDeleted, token);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos, Guid.NewGuid(), Guid.NewGuid(),
 				esStreamId, streamDeletedEventTypeId, 2);
-			Assert.IsTrue(Writer.Write(prepare, out pos));
+			Assert.IsTrue(await Writer.Write(prepare, token) is (true, _));
 
-			_event1 = WriteSingleEvent("ES", 1, "bla1");
+			_event1 = await WriteSingleEvent("ES", 1, "bla1", token: token);
 			Scavenge(completeLast: false, mergeChunks: false);
 		}
 

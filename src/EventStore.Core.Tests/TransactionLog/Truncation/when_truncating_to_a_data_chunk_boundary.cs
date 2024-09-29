@@ -34,16 +34,16 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		}
 
 		[OneTimeTearDown]
-		public override Task TestFixtureTearDown() {
-			using (var db = new TFChunkDb(_config)) {
-				Assert.DoesNotThrow(() => db.Open(verifyHash: false));
+		public override async Task TestFixtureTearDown() {
+			await using (var db = new TFChunkDb(_config)) {
+				Assert.DoesNotThrowAsync(async () => await db.Open(verifyHash: false));
 			}
 
 			Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000002")));
 			Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000003.000000")));
 			Assert.AreEqual(2, Directory.GetFiles(PathName, "*").Length);
 
-			return base.TestFixtureTearDown();
+			await base.TestFixtureTearDown();
 		}
 
 		[Test]

@@ -13,25 +13,23 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_building_an_index_off_tfile_with_prepares_but_no_commits<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
-		protected override void WriteTestScenario() {
-			GetOrReserve("test1", out var streamId1, out _);
-			GetOrReserve("test2", out var streamId2, out _);
-			GetOrReserve("test3", out var streamId3, out var p0);
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			var (streamId1, _) = await GetOrReserve("test1", token);
+			var (streamId2, _) = await GetOrReserve("test2", token);
+			var (streamId3, p0) = await GetOrReserve("test3", token);
 
 			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
-			long p1;
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, p0, Guid.NewGuid(), Guid.NewGuid(), p0, 0, streamId1, -1,
+			var (_, p1) = await Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, p0, Guid.NewGuid(), Guid.NewGuid(), p0, 0, streamId1, -1,
 					PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow),
-				out p1);
-			long p2;
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, p1, Guid.NewGuid(), Guid.NewGuid(), p1, 0, streamId2, -1,
+				token);
+			var (_, p2) = await Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, p1, Guid.NewGuid(), Guid.NewGuid(), p1, 0, streamId2, -1,
 					PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow),
-				out p2);
-			long p3;
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, p2, Guid.NewGuid(), Guid.NewGuid(), p2, 0, streamId3, -1,
+				token);
+
+			await Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, p2, Guid.NewGuid(), Guid.NewGuid(), p2, 0, streamId3, -1,
 					PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow),
-				out p3);
+				token);
 		}
 
 		[Test]

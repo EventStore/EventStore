@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.ChunkBoundary;
@@ -13,10 +15,10 @@ namespace EventStore.Core.Tests.Services.Storage.ChunkBoundary;
 public class when_writing_events_at_chunk_boundary<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 	private long _writerChk;
 
-	protected override void WriteTestScenario() {
-		WriteSingleEvent("ES", 0, new string('.', 4000));
-		WriteSingleEvent("ES", 1, new string('.', 4000));
-		WriteSingleEvent("ES", 2, new string('.', 4000), retryOnFail: true); // chunk 1
+	protected override async ValueTask WriteTestScenario(CancellationToken token) {
+		await WriteSingleEvent("ES", 0, new string('.', 4000), token: token);
+		await WriteSingleEvent("ES", 1, new string('.', 4000), token: token);
+		await WriteSingleEvent("ES", 2, new string('.', 4000), retryOnFail: true, token: token); // chunk 1
 
 		// verify that the writer is in the correct chunk
 		var chunk = WriterCheckpoint.ReadNonFlushed() / Db.Config.ChunkSize;

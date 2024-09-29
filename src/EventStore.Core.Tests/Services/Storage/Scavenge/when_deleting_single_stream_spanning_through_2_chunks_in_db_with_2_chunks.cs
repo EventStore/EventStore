@@ -15,15 +15,15 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		private EventRecord _event4;
 		private EventRecord _delete;
 
-		protected override void WriteTestScenario() {
-			WriteSingleEvent("ES", 0, new string('.', 3000));
-			WriteSingleEvent("ES", 1, new string('.', 3000));
-			WriteSingleEvent("ES", 2, new string('.', 3000));
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			await WriteSingleEvent("ES", 0, new string('.', 3000), token: token);
+			await WriteSingleEvent("ES", 1, new string('.', 3000), token: token);
+			await WriteSingleEvent("ES", 2, new string('.', 3000), token: token);
 
-			_event3 = WriteSingleEvent("ES", 3, new string('.', 3000), retryOnFail: true); // chunk 2
-			_event4 = WriteSingleEvent("ES", 4, new string('.', 3000));
+			_event3 = await WriteSingleEvent("ES", 3, new string('.', 3000), retryOnFail: true, token: token); // chunk 2
+			_event4 = await WriteSingleEvent("ES", 4, new string('.', 3000), token: token);
 
-			_delete = WriteDelete("ES");
+			_delete = await WriteDelete("ES", token);
 			Scavenge(completeLast: false, mergeChunks: false);
 		}
 

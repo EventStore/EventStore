@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Caching;
 using EventStore.Core.DataStructures;
@@ -27,13 +28,13 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-			ReOpenDb();
+			await ReOpenDb(CancellationToken.None);
 		}
 
-		private void ReOpenDb() {
+		private async ValueTask ReOpenDb(CancellationToken token) {
 			Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, WriterCheckpoint, ChaserCheckpoint));
 
-			Db.Open();
+			await Db.Open();
 
 			var indexDirectory = GetFilePathFor("index");
 			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {

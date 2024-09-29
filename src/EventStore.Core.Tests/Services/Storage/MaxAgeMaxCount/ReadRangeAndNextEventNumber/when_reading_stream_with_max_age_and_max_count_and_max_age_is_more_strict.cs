@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
@@ -16,19 +18,19 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
 		private EventRecord _event5;
 
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			var now = DateTime.UtcNow;
 
 			var metadata = string.Format(@"{{""$maxAge"":{0},""$maxCount"":5}}",
 				(int)TimeSpan.FromMinutes(20).TotalSeconds);
 
-			WriteStreamMetadata("ES", 0, metadata);
-			WriteSingleEvent("ES", 0, "bla", now.AddMinutes(-100)); // expired: maxcount & maxage
-			WriteSingleEvent("ES", 1, "bla", now.AddMinutes(-50)); // expired: maxage
-			WriteSingleEvent("ES", 2, "bla", now.AddMinutes(-25)); // expired: maxage
-			_event3 = WriteSingleEvent("ES", 3, "bla", now.AddMinutes(-15)); // active
-			_event4 = WriteSingleEvent("ES", 4, "bla", now.AddMinutes(-11)); // active
-			_event5 = WriteSingleEvent("ES", 5, "bla", now.AddMinutes(-3)); // active
+			await WriteStreamMetadata("ES", 0, metadata, token: token);
+			await WriteSingleEvent("ES", 0, "bla", now.AddMinutes(-100), token: token); // expired: maxcount & maxage
+			await WriteSingleEvent("ES", 1, "bla", now.AddMinutes(-50), token: token); // expired: maxage
+			await WriteSingleEvent("ES", 2, "bla", now.AddMinutes(-25), token: token); // expired: maxage
+			_event3 = await WriteSingleEvent("ES", 3, "bla", now.AddMinutes(-15), token: token); // active
+			_event4 = await WriteSingleEvent("ES", 4, "bla", now.AddMinutes(-11), token: token); // active
+			_event5 = await WriteSingleEvent("ES", 5, "bla", now.AddMinutes(-3), token: token); // active
 		}
 
 		[Test]
@@ -213,23 +215,23 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
 
 		}
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			var now = DateTime.UtcNow;
 
 			var metadata = string.Format(@"{{""$maxAge"":{0}}}",
 				(int)TimeSpan.FromMinutes(20).TotalSeconds);
 
-			WriteStreamMetadata("ES", 0, metadata);
+			await WriteStreamMetadata("ES", 0, metadata, token: token);
 			var start = 0;
 			var end = 1008;
 			for (int i = start; i < end; i++) {
-				WriteSingleEvent("ES", i, "bla", now.AddMinutes(-100), retryOnFail: true);
+				await WriteSingleEvent("ES", i, "bla", now.AddMinutes(-100), retryOnFail: true, token: token);
 			}
 
 			start = end;
 			end += 5;
 			for (int i = start; i < end; i++) {
-				WriteSingleEvent("ES", i, "bla", now, retryOnFail: true);
+				await WriteSingleEvent("ES", i, "bla", now, retryOnFail: true, token: token);
 			}
 
 		}

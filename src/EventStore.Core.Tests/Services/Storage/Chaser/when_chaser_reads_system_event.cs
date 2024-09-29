@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -12,14 +14,14 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		private Guid _epochId;
 		private int _epochNumber;
 
-		public override void When() {
+		public override async ValueTask When(CancellationToken token) {
 			_epochId = Guid.NewGuid();
 			_epochNumber = 7;
 			var epoch = new EpochRecord(0, _epochNumber, _epochId, -1, DateTime.UtcNow, Guid.Empty);
 			var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
 				SystemRecordSerialization.Json, epoch.AsSerialized());
 
-			Assert.True(Writer.Write(rec, out _));
+			Assert.True(await Writer.Write(rec, token) is (true, _));
 			Writer.Flush();
 		}
 		[Test]

@@ -16,6 +16,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Caching;
 using EventStore.Core.Data;
@@ -41,46 +42,45 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		public when_building_an_index_off_tfile_with_duplicate_events_in_a_stream() : base(maxEntriesInMemTable: 3) {
 		}
 
-		protected override void SetupDB() {
+		protected override async ValueTask SetupDB(CancellationToken token) {
 			_id1 = Guid.NewGuid();
 			_id2 = Guid.NewGuid();
 			_id3 = Guid.NewGuid();
 
 			_logFormat.StreamNameIndex.GetOrReserve(_logFormat.RecordFactory, "duplicate_stream", 0, out var streamId, out var streamRecord);
-			if (streamRecord != null) {
-				Writer.Write(streamRecord, out pos0);
+			if (streamRecord is not null) {
+				(_, pos0) = await Writer.Write(streamRecord, token);
 			}
 
 			var expectedVersion = ExpectedVersion.NoStream;
 			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 			//stream id: duplicate_stream at version: 0
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos0, _id1, _id1, pos0, 0, streamId, expectedVersion++,
-				PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), out pos1);
-			Writer.Write(new CommitLogRecord(pos1, _id1, pos0, DateTime.UtcNow, 0), out pos2);
+			(_, pos1) = await Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos0, _id1, _id1, pos0, 0, streamId, expectedVersion++,
+				PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), token);
+			(_, pos2) = await Writer.Write(new CommitLogRecord(pos1, _id1, pos0, DateTime.UtcNow, 0), token);
 
 			//stream id: duplicate_stream at version: 1
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos2, _id2, _id2, pos2, 0, streamId, expectedVersion++,
-				PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), out pos3);
-			Writer.Write(new CommitLogRecord(pos3, _id2, pos2, DateTime.UtcNow, 1), out pos4);
+			(_, pos3) = await Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos2, _id2, _id2, pos2, 0, streamId, expectedVersion++,
+				PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), token);
+			(_, pos4) = await Writer.Write(new CommitLogRecord(pos3, _id2, pos2, DateTime.UtcNow, 1), token);
 
 			//stream id: duplicate_stream at version: 2
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos4, _id3, _id3, pos4, 0, streamId, expectedVersion++,
-				PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), out pos5);
-			Writer.Write(new CommitLogRecord(pos5, _id3, pos4, DateTime.UtcNow, 2), out pos6);
+			(_, pos5) = await Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos4, _id3, _id3, pos4, 0, streamId, expectedVersion++,
+				PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), token);
+			(_, pos6) = await Writer.Write(new CommitLogRecord(pos5, _id3, pos4, DateTime.UtcNow, 2), token);
 		}
 
-		protected override void Given() {
+		protected override async ValueTask Given(CancellationToken token) {
 			_id4 = Guid.NewGuid();
-			long pos8;
 
 			var streamId = _logFormat.StreamIds.LookupValue("duplicate_stream");
 			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 			//stream id: duplicate_stream at version: 0 (duplicate event/index entry)
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos6, _id4, _id4, pos6, 0, streamId, ExpectedVersion.NoStream,
-				PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), out pos7);
-			Writer.Write(new CommitLogRecord(pos7, _id4, pos6, DateTime.UtcNow, 0), out pos8);
+			(_, pos7) = await Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos6, _id4, _id4, pos6, 0, streamId, ExpectedVersion.NoStream,
+				PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), token);
+			await Writer.Write(new CommitLogRecord(pos7, _id4, pos6, DateTime.UtcNow, 0), token);
 		}
 
 		[Test]
@@ -127,11 +127,11 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerCheckpoint, chaserCheckpoint));
 
-			_db.Open();
+			await _db.Open();
 			// create db
 			Writer = new TFChunkWriter(_db);
 			Writer.Open();
-			SetupDB();
+			await SetupDB(CancellationToken.None);
 			Writer.Close();
 			Writer = null;
 
@@ -185,7 +185,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 			Writer = new TFChunkWriter(_db);
 			Writer.Open();
-			Given();
+			await Given(CancellationToken.None);
 			Writer.Close();
 			Writer = null;
 
@@ -229,20 +229,20 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			ReadIndex = readIndex;
 		}
 
-		public override Task TestFixtureTearDown() {
+		public override async Task TestFixtureTearDown() {
 			_logFormat?.Dispose();
 			ReadIndex.Close();
 			ReadIndex.Dispose();
 
 			_tableIndex.Close();
 
-			_db.Close();
-			_db.Dispose();
+			await _db.DisposeAsync();
 
-			return base.TestFixtureTearDown();
+			await base.TestFixtureTearDown();
 		}
 
-		protected abstract void SetupDB();
-		protected abstract void Given();
+		protected abstract ValueTask SetupDB(CancellationToken token);
+
+		protected abstract ValueTask Given(CancellationToken token);
 	}
 }

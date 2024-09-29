@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using NUnit.Framework;
 
@@ -14,11 +16,11 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			: base(maxEntriesInMemTable: 3) {
 		}
 
-		protected override void WriteTestScenario() {
-			WriteSingleEvent("ES", 0, new string('.', 500));
-			_event2 = WriteSingleEvent("ES", 1, new string('.', 500));
-			WriteSingleEvent("ES", 2, new string('.', 500)); // index goes to disk
-			WriteSingleEvent("ES", 3, new string('.', 500));
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			await WriteSingleEvent("ES", 0, new string('.', 500), token: token);
+			_event2 = await WriteSingleEvent("ES", 1, new string('.', 500), token: token);
+			await WriteSingleEvent("ES", 2, new string('.', 500), token: token); // index goes to disk
+			await WriteSingleEvent("ES", 3, new string('.', 500), token: token);
 
 			TruncateCheckpoint = _event2.LogPosition;
 		}

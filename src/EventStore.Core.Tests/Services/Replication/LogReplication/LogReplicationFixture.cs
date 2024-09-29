@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Runtime.CompilerServices;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
@@ -37,7 +38,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 	private const int ClusterSize = 3;
 	private readonly EndPoint FakeEndPoint = new IPEndPoint(IPAddress.Loopback, 5555);
 
-	private readonly Disposables _disposables = new();
+	private Scope _disposables = new();
 	private LeaderInfo<TStreamId> _leaderInfo;
 	private ReplicaInfo<TStreamId> _replicaInfo;
 
@@ -104,8 +105,8 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		return storageWriterService;
 	}
 
-	private LeaderInfo<TStreamId> CreateLeader(TFChunkDb db) {
-		db.Open(createNewChunks: true);
+	private async ValueTask<LeaderInfo<TStreamId>> CreateLeader(TFChunkDb db, CancellationToken token) {
+		await db.Open(createNewChunks: true, token: token);
 
 		// we don't need a controller here, so we use the same bus for subscribing and publishing
 		var subscribeBus = new SynchronousScheduler("subscribeBus");
@@ -194,8 +195,8 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		};
 	}
 
-	private ReplicaInfo<TStreamId> CreateReplica(TFChunkDb db, LeaderInfo<TStreamId> leaderInfo) {
-		db.Open(createNewChunks: false);
+	private async ValueTask<ReplicaInfo<TStreamId>> CreateReplica(TFChunkDb db, LeaderInfo<TStreamId> leaderInfo, CancellationToken token) {
+		await db.Open(createNewChunks: false, token: token);
 
 		var subscribeBus = new SynchronousScheduler("subscribeBus");
 		var adhocReplicaController = new AdHocReplicaController<TStreamId>(subscribeBus, leaderInfo);
@@ -289,13 +290,15 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 	public virtual async Task SetUp() {
 		var runId = Guid.NewGuid();
 
-		var leaderDb = CreateDb($"leader-{runId}").DisposeWith(_disposables);
-		var replicaDb = CreateDb($"replica-{runId}").DisposeWith(_disposables);
+		var leaderDb = CreateDb($"leader-{runId}");
+		var replicaDb = CreateDb($"replica-{runId}");
+		_disposables.RegisterForDisposeAsync(leaderDb);
+		_disposables.RegisterForDisposeAsync(replicaDb);
 
 		await SetUpDbs(leaderDb, replicaDb);
 
-		_leaderInfo = CreateLeader(leaderDb);
-		_replicaInfo = CreateReplica(replicaDb, _leaderInfo);
+		_leaderInfo = await CreateLeader(leaderDb, CancellationToken.None);
+		_replicaInfo = await CreateReplica(replicaDb, _leaderInfo, CancellationToken.None);
 
 		await AddEpoch(epochNumber: 0, epochPosition: 0);
 		StartLeader();
@@ -530,8 +533,6 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		_leaderInfo.Publisher.Publish(shutdownMsg);
 		_replicaInfo.Publisher.Publish(shutdownMsg);
 
-		_disposables?.Dispose();
-
-		return Task.CompletedTask;
+		return _disposables.DisposeAsync().AsTask();
 	}
 }

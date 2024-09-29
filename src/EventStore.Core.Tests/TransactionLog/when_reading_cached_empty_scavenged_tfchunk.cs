@@ -14,9 +14,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_chunk = TFChunkHelper.CreateNewChunk(Filename, isScavenged: true);
+			_chunk = await TFChunkHelper.CreateNewChunk(Filename, isScavenged: true);
 			await _chunk.CompleteScavenge(new PosMap[0], CancellationToken.None);
-			_chunk.CacheInMemory();
+			await _chunk.CacheInMemory(CancellationToken.None);
 		}
 
 		[OneTimeTearDown]

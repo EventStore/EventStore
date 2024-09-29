@@ -25,36 +25,36 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		private EventRecord _p1, _p2, _p3, _p4, _p5, _random1;
 		private long _t2CommitPos, _t1CommitPos, _postCommitPos;
 
-		protected override void WriteTestScenario() {
-			var t1 = WriteTransactionBegin(_streamIdOne, ExpectedVersion.NoStream);
-			var t2 = WriteTransactionBegin(_streamIdTwo, ExpectedVersion.NoStream);
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			var t1 = await WriteTransactionBegin(_streamIdOne, ExpectedVersion.NoStream, token);
+			var t2 = await WriteTransactionBegin(_streamIdTwo, ExpectedVersion.NoStream, token);
 
-			_p1 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 0,
-				_streamIdOne, 0, "es1", PrepareFlags.Data);
-			_p2 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 0,
-				_streamIdTwo, 0, "abc1", PrepareFlags.Data);
-			_p3 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 1,
-				_streamIdOne, 1, "es1", PrepareFlags.Data);
-			_p4 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 1,
-				_streamIdTwo, 1, "abc1", PrepareFlags.Data);
-			_p5 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 2,
-				_streamIdOne, 2, "es1", PrepareFlags.Data);
+			_p1 = await WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 0,
+				_streamIdOne, 0, "es1", PrepareFlags.Data, token: token);
+			_p2 = await WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 0,
+				_streamIdTwo, 0, "abc1", PrepareFlags.Data, token: token);
+			_p3 = await WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 1,
+				_streamIdOne, 1, "es1", PrepareFlags.Data, token: token);
+			_p4 = await WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 1,
+				_streamIdTwo, 1, "abc1", PrepareFlags.Data, token: token);
+			_p5 = await WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 2,
+				_streamIdOne, 2, "es1", PrepareFlags.Data, token: token);
 
-			WriteTransactionEnd(t2.CorrelationId, t2.TransactionPosition, _streamIdTwo);
-			WriteTransactionEnd(t1.CorrelationId, t1.TransactionPosition, _streamIdOne);
+			await WriteTransactionEnd(t2.CorrelationId, t2.TransactionPosition, _streamIdTwo, token: token);
+			await WriteTransactionEnd(t1.CorrelationId, t1.TransactionPosition, _streamIdOne, token: token);
 
-			var t2Commit = WriteCommit(t2.TransactionPosition, _streamIdTwo, 0);
+			var t2Commit = await WriteCommit(t2.TransactionPosition, _streamIdTwo, 0, token);
 			_t2CommitPos = t2Commit.LogPosition;
-			var t1Commit = WriteCommit(t1.TransactionPosition, _streamIdOne, 0);
+			var t1Commit = await WriteCommit(t1.TransactionPosition, _streamIdOne, 0, token);
 			_t1CommitPos = t1Commit.LogPosition;
 			_postCommitPos =
 				t1Commit.GetNextLogPosition(t1Commit.LogPosition, t1Commit.GetSizeWithLengthPrefixAndSuffix() - 2 * sizeof(int));
 
 			Writer.CompleteChunk();
-			Writer.AddNewChunk();
+			await Writer.AddNewChunk(token: token);
 
 			// Need to have a second chunk as otherwise the checkpoints will be off
-			_random1 = WriteSingleEvent("random-stream", 0, "bla");
+			_random1 = await WriteSingleEvent("random-stream", 0, "bla", token: token);
 
 			Scavenge(completeLast: false, mergeChunks: true);
 		}

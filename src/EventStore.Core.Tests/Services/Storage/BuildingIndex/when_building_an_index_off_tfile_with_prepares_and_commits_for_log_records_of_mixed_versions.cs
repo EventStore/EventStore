@@ -21,25 +21,24 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		private Guid _id2;
 		private Guid _id3;
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			_id1 = Guid.NewGuid();
 			_id2 = Guid.NewGuid();
 			_id3 = Guid.NewGuid();
-			long pos1, pos2, pos3, pos4, pos5, pos6;
-			Writer.Write(new PrepareLogRecord(0, _id1, _id1, 0, 0, "test1", null, 0, DateTime.UtcNow,
+			var (_, pos1) = await Writer.Write(new PrepareLogRecord(0, _id1, _id1, 0, 0, "test1", null, 0, DateTime.UtcNow,
 					PrepareFlags.SingleWrite, "type", null, new byte[0], new byte[0], LogRecordVersion.LogRecordV0),
-				out pos1);
-			Writer.Write(new PrepareLogRecord(pos1, _id2, _id2, pos1, 0, "test2", null, 0, DateTime.UtcNow,
+				token);
+			var (_, pos2) = await Writer.Write(new PrepareLogRecord(pos1, _id2, _id2, pos1, 0, "test2", null, 0, DateTime.UtcNow,
 					PrepareFlags.SingleWrite, "type", null, new byte[0], new byte[0], LogRecordVersion.LogRecordV0),
-				out pos2);
-			Writer.Write(new PrepareLogRecord(pos2, _id3, _id3, pos2, 0, "test2", null, 1, DateTime.UtcNow,
+				token);
+			var (_, pos3) = await Writer.Write(new PrepareLogRecord(pos2, _id3, _id3, pos2, 0, "test2", null, 1, DateTime.UtcNow,
 					PrepareFlags.SingleWrite, "type", null, new byte[0], new byte[0]),
-				out pos3);
-			Writer.Write(new CommitLogRecord(pos3, _id1, 0, DateTime.UtcNow, 0, LogRecordVersion.LogRecordV0),
-				out pos4);
-			Writer.Write(new CommitLogRecord(pos4, _id2, pos1, DateTime.UtcNow, 0, LogRecordVersion.LogRecordV0),
-				out pos5);
-			Writer.Write(new CommitLogRecord(pos5, _id3, pos2, DateTime.UtcNow, 1), out pos6);
+				token);
+			var (_, pos4) = await Writer.Write(new CommitLogRecord(pos3, _id1, 0, DateTime.UtcNow, 0, LogRecordVersion.LogRecordV0),
+				token);
+			var (_, pos5) = await Writer.Write(new CommitLogRecord(pos4, _id2, pos1, DateTime.UtcNow, 0, LogRecordVersion.LogRecordV0),
+				token);
+			await Writer.Write(new CommitLogRecord(pos5, _id3, pos2, DateTime.UtcNow, 1), token);
 		}
 
 		[Test]

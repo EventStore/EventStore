@@ -21,10 +21,10 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			: base(20000) {
 		}
 
-		protected override void WriteTestScenario() {
-			_event1 = WriteSingleEvent("ES", 0, new string('.', 500));
-			_event2 = WriteSingleEvent("ES", 1, new string('.', 500)); // truncated
-			_event3 = WriteSingleEvent("ES", 2, new string('.', 500)); // truncated
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			_event1 = await WriteSingleEvent("ES", 0, new string('.', 500), token: token);
+			_event2 = await WriteSingleEvent("ES", 1, new string('.', 500), token: token); // truncated
+			_event3 = await WriteSingleEvent("ES", 2, new string('.', 500), token: token); // truncated
 
 			TruncateCheckpoint = _event2.LogPosition;
 		}

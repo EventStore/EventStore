@@ -27,13 +27,13 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 			_disallowedStream = disallowedStream;
 		}
 
-		protected override void WriteTestScenario() {
-			var firstEvent = WriteSingleEvent(_allowedStream1, 1, new string('.', 3000), eventId: Guid.NewGuid(),
-				eventType: "event-type-1", retryOnFail: true);
-			WriteSingleEvent(_disallowedStream, 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type-2",
-				retryOnFail: true); //disallowed
-			WriteSingleEvent(_allowedStream2, 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type-3",
-				retryOnFail: true); //allowed
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			var firstEvent = await WriteSingleEvent(_allowedStream1, 1, new string('.', 3000), eventId: Guid.NewGuid(),
+				eventType: "event-type-1", retryOnFail: true, token: token);
+			await WriteSingleEvent(_disallowedStream, 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type-2",
+				retryOnFail: true, token: token); //disallowed
+			await WriteSingleEvent(_allowedStream2, 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type-3",
+				retryOnFail: true, token: token); //allowed
 
 			_forwardReadPos = new TFPos(firstEvent.LogPosition, firstEvent.LogPosition);
 			_backwardReadPos = new TFPos(Writer.Position, Writer.Position);

@@ -3,6 +3,8 @@
 
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -23,7 +25,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private InMemoryCheckpoint _checkpoint;
 
 		[Test]
-		public void a_record_can_be_written() {
+		public async Task a_record_can_be_written() {
 			var filename = GetFilePathFor("chunk-000000.000000");
 			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid(), TransformType.Identity);
 			var chunkBytes = chunkHeader.AsByteArray();
@@ -34,7 +36,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_checkpoint = new InMemoryCheckpoint(137);
 			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, _checkpoint, new InMemoryCheckpoint(),
 				chunkSize: chunkHeader.ChunkSize));
-			db.Open();
+			await db.Open();
 
 			var
 				bytes = new byte[3994]; // this gives exactly 4097 size of record, with 3993 (rec size 4096) everything works fine!
@@ -61,10 +63,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 				data: bytes,
 				metadata: new byte[] {0x07, 0x17});
 
-			long pos;
-			Assert.IsTrue(writer.Write(record, out pos));
+			Assert.IsTrue(await writer.Write(record, CancellationToken.None) is (true, _));
 			writer.Close();
-			db.Dispose();
+			await db.DisposeAsync();
 
 			Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix() + 137, _checkpoint.Read());
 			using (var filestream = File.Open(filename, FileMode.Open, FileAccess.Read)) {

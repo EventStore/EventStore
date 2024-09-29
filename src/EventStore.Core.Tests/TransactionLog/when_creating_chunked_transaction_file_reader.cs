@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -19,9 +20,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void a_null_checkpoint_throws_argument_null_exception() {
+		public async Task a_null_checkpoint_throws_argument_null_exception() {
 			var config = TFChunkHelper.CreateDbConfig(PathName, 0);
-			using var db = new TFChunkDb(config);
+			await using var db = new TFChunkDb(config);
 			Assert.Throws<ArgumentNullException>(() => new TFChunkReader(db, null));
 		}
 	}

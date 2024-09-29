@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_stream_is_softdeleted_and_temp_and_all_events_and_metaevents_are_in_one_chunk<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
-		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+		protected override ValueTask<DbResult> CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator, CancellationToken token) {
 			return dbCreator
 				.Chunk(
 					Rec.Prepare(0, "$$test", metadata: new StreamMetadata(tempStream: true)),
@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 					Rec.Prepare(3, "$$test", metadata: new StreamMetadata(truncateBefore: EventNumber.DeletedStream, tempStream: true)),
 					Rec.Commit(3, "$$test"))
 				.CompleteLastChunk()
-				.CreateDb();
+				.CreateDb(token: token);
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {

@@ -21,12 +21,10 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private readonly List<List<PosMap>> _posMapss;
 		private int _lastFlushedPage = -1;
 
-		public ChunkWriterForExecutor(
+		private ChunkWriterForExecutor(
 			ILogger logger,
 			ChunkManagerForExecutor<TStreamId> manager,
-			TFChunkDbConfig dbConfig,
-			IChunkReaderForExecutor<TStreamId, ILogRecord> sourceChunk,
-			DbTransformManager transformManager) {
+			TFChunk outputChunk) {
 
 			_logger = logger;
 			_manager = manager;
@@ -34,13 +32,23 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			// list of lists to avoid having an enormous list which could make it to the LoH
 			// and to avoid expensive resize operations on large lists
 			_posMapss = new List<List<PosMap>>(capacity: BatchLength) {
-				new List<PosMap>(capacity: BatchLength)
+				new(capacity: BatchLength)
 			};
 
+			_outputChunk = outputChunk;
+		}
+
+		public static async ValueTask<ChunkWriterForExecutor<TStreamId>> CreateAsync(
+			ILogger logger,
+			ChunkManagerForExecutor<TStreamId> manager,
+			TFChunkDbConfig dbConfig,
+			IChunkReaderForExecutor<TStreamId, ILogRecord> sourceChunk,
+			DbTransformManager transformManager,
+			CancellationToken token) {
+
 			// from TFChunkScavenger.ScavengeChunk
-			FileName = Path.Combine(dbConfig.Path, Guid.NewGuid() + ".scavenge.tmp");
-			_outputChunk = TFChunk.CreateNew(
-				filename: FileName,
+			var chunk = await TFChunk.CreateNew(
+				filename: Path.Combine(dbConfig.Path, Guid.NewGuid() + ".scavenge.tmp"),
 				chunkDataSize: dbConfig.ChunkSize,
 				chunkStartNumber: sourceChunk.ChunkStartNumber,
 				chunkEndNumber: sourceChunk.ChunkEndNumber,
@@ -50,10 +58,13 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				writethrough: dbConfig.WriteThrough,
 				reduceFileCachePressure: dbConfig.ReduceFileCachePressure,
 				tracker: new TFChunkTracker.NoOp(),
-				transformFactory: transformManager.GetFactoryForNewChunk());
+				transformFactory: transformManager.GetFactoryForNewChunk(),
+				token);
+
+			return new(logger, manager, chunk);
 		}
 
-		public string FileName { get; }
+		public string FileName => _outputChunk.FileName;
 
 		public void WriteRecord(RecordForExecutor<TStreamId, ILogRecord> record) {
 			var posMap = TFChunkScavenger<TStreamId>.WriteRecord(_outputChunk, record.Record);
@@ -86,7 +97,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				unifiedPosMap.AddRange(list);
 
 			await _outputChunk.CompleteScavenge(unifiedPosMap, token);
-			_manager.SwitchChunk(chunk: _outputChunk, out var newFileName);
+			var newFileName = await _manager.SwitchChunk(chunk: _outputChunk, token);
 
 			return (newFileName, _outputChunk.FileSize);
 		}

@@ -18,15 +18,15 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		TFPos _forwardReadPos;
 		TFPos _backwardReadPos;
 
-		protected override void WriteTestScenario() {
-			var firstEvent = WriteSingleEvent("ES1", 1, new string('.', 3000), eventId: Guid.NewGuid(),
-				eventType: "event-type-1", retryOnFail: true);
-			WriteSingleEvent("ES2", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "other-event-type-2",
-				retryOnFail: true);
-			WriteSingleEvent("ES3", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type-3",
-				retryOnFail: true);
-			WriteSingleEvent("ES4", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "other-event-type-4",
-				retryOnFail: true);
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			var firstEvent = await WriteSingleEvent("ES1", 1, new string('.', 3000), eventId: Guid.NewGuid(),
+				eventType: "event-type-1", retryOnFail: true, token: token);
+			await WriteSingleEvent("ES2", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "other-event-type-2",
+				retryOnFail: true, token: token);
+			await WriteSingleEvent("ES3", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type-3",
+				retryOnFail: true, token: token);
+			await WriteSingleEvent("ES4", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "other-event-type-4",
+				retryOnFail: true, token: token);
 
 			_forwardReadPos = new TFPos(firstEvent.LogPosition, firstEvent.LogPosition);
 			_backwardReadPos = new TFPos(Writer.Position, Writer.Position);

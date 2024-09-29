@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.IO;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using NUnit.Framework;
 
@@ -11,9 +12,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private TFChunk _chunk;
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
-			_chunk = TFChunkHelper.CreateNewChunk(Filename, 1000);
+		public override async Task SetUp() {
+			await base.SetUp();
+			_chunk = await TFChunkHelper.CreateNewChunk(Filename, 1000);
 			_chunk.MarkForDeletion();
 		}
 

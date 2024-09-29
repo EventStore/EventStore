@@ -1,6 +1,7 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -18,7 +19,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			_version = version;
 		}
 
-		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+		protected override ValueTask<DbResult> CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator, CancellationToken token) {
 			return dbCreator
 				.Chunk(
 					Rec.Prepare(0, "ES1", version: _version),
@@ -31,7 +32,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 					Rec.Prepare(3, "ES2", version: _version),
 					Rec.Commit(3, "ES2", version: _version))
 				.CompleteLastChunk()
-				.CreateDb();
+				.CreateDb(token: token);
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {

@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -15,13 +17,13 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams {
 		read_index_result_original_stream_exists_tests<TLogFormat, TStreamId>
 		: SimpleDbTestScenario<TLogFormat, TStreamId> {
 
-		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+		protected override ValueTask<DbResult> CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator, CancellationToken token) {
 			return dbCreator.Chunk(
 				Rec.Prepare(0, "existing_stream"),
 				Rec.Commit(0, "existing_stream"),
 				Rec.Prepare(1, "$existing_stream"),
 				Rec.Commit(1, "$existing_stream")
-			).CreateDb();
+			).CreateDb(token: token);
 		}
 
 		[Test]

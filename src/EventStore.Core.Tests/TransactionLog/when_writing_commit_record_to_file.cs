@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -21,11 +23,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private TFChunkDb _db;
 
 		[OneTimeSetUp]
-		public void SetUp() {
+		public async Task SetUp() {
 			_writerCheckpoint = new InMemoryCheckpoint();
 			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, _writerCheckpoint, new InMemoryCheckpoint(),
 				1024));
-			_db.Open();
+			await _db.Open();
 			_writer = new TFChunkWriter(_db);
 			_writer.Open();
 			_record = new CommitLogRecord(logPosition: 0,
@@ -33,15 +35,15 @@ namespace EventStore.Core.Tests.TransactionLog {
 				transactionPosition: 4321,
 				timeStamp: new DateTime(2012, 12, 21),
 				firstEventNumber: 10);
-			long newPos;
-			_writer.Write(_record, out newPos);
+
+			await _writer.Write(_record, CancellationToken.None);
 			_writer.Flush();
 		}
 
 		[OneTimeTearDown]
-		public void Teardown() {
+		public async Task Teardown() {
 			_writer.Close();
-			_db.Close();
+			await _db.DisposeAsync();
 		}
 
 		[Test]

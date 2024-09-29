@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.Index.Hashers;
 using NUnit.Framework;
@@ -17,8 +19,6 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 			highHasher: new HumanReadableHasher32()) { }
 
 		public class VerifyCollision : GetStreamLastEventNumber_KnownCollisions {
-			protected override void WriteTestScenario() { }
-
 			[Test]
 			public void verify_that_streams_collide() {
 				Assert.AreEqual(Hasher.Hash(Stream), Hasher.Hash(CollidingStream));
@@ -27,9 +27,9 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 		}
 
 		public class WithNoEvents : GetStreamLastEventNumber_KnownCollisions {
-			protected override void WriteTestScenario() {
-				WriteSingleEvent(CollidingStream, 0, "test data");
-				WriteSingleEvent(CollidingStream1, 0, "test data");
+			protected override async ValueTask WriteTestScenario(CancellationToken token) {
+				await WriteSingleEvent(CollidingStream, 0, "test data", token: token);
+				await WriteSingleEvent(CollidingStream1, 0, "test data", token: token);
 			}
 
 			[Test]
@@ -42,9 +42,9 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 		}
 
 		public class WithOneEvent : GetStreamLastEventNumber_KnownCollisions {
-			protected override void WriteTestScenario() {
-				WriteSingleEvent(Stream, 2, "test data");
-				WriteSingleEvent(CollidingStream, 3, "test data");
+			protected override async ValueTask WriteTestScenario(CancellationToken token) {
+				await WriteSingleEvent(Stream, 2, "test data", token: token);
+				await WriteSingleEvent(CollidingStream, 3, "test data", token: token);
 			}
 
 			[Test]
@@ -65,20 +65,20 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 		public class WithMultipleEvents : GetStreamLastEventNumber_KnownCollisions {
 			private EventRecord _zeroth, _first, _second, _third;
 
-			protected override void WriteTestScenario() {
+			protected override async ValueTask WriteTestScenario(CancellationToken token) {
 				// PTable 1
-				WriteSingleEvent(CollidingStream, 0, string.Empty);
-				WriteSingleEvent(CollidingStream1, 0, string.Empty);
-				_zeroth = WriteSingleEvent(Stream, 0, string.Empty);
+				await WriteSingleEvent(CollidingStream, 0, string.Empty, token: token);
+				await WriteSingleEvent(CollidingStream1, 0, string.Empty, token: token);
+				_zeroth = await WriteSingleEvent(Stream, 0, string.Empty, token: token);
 
 				// PTable 2
-				_first = WriteSingleEvent(Stream, 1, string.Empty);
-				_second = WriteSingleEvent(Stream, 2, string.Empty);
-				WriteSingleEvent(CollidingStream, 1, string.Empty);
+				_first = await WriteSingleEvent(Stream, 1, string.Empty, token: token);
+				_second = await WriteSingleEvent(Stream, 2, string.Empty, token: token);
+				await WriteSingleEvent(CollidingStream, 1, string.Empty, token: token);
 
 				// MemTable
-				_third = WriteSingleEvent(Stream, 3, string.Empty);
-				WriteSingleEvent(CollidingStream, 2, string.Empty);
+				_third = await WriteSingleEvent(Stream, 3, string.Empty, token: token);
+				await WriteSingleEvent(CollidingStream, 2, string.Empty, token: token);
 			}
 
 			[Test]
@@ -129,12 +129,12 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 		}
 
 		public class WithDeletedStream : GetStreamLastEventNumber_KnownCollisions {
-			protected override void WriteTestScenario() {
-				WriteSingleEvent(Stream, 0, "test data");
-				WriteSingleEvent(CollidingStream, 1, "test data");
+			protected override async ValueTask WriteTestScenario(CancellationToken token) {
+				await WriteSingleEvent(Stream, 0, "test data", token: token);
+				await WriteSingleEvent(CollidingStream, 1, "test data", token: token);
 
-				var prepare = WriteDeletePrepare(Stream);
-				WriteDeleteCommit(prepare);
+				var prepare = await WriteDeletePrepare(Stream, token);
+				await WriteDeleteCommit(prepare, token);
 			}
 
 			[Test]

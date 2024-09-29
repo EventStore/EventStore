@@ -18,11 +18,11 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		private EventRecord _delete1;
 		private EventRecord _prepare2;
 
-		protected override void WriteTestScenario() {
-			_prepare1 = WriteSingleEvent("AB", 0, "test1");
-			_delete1 = WriteDelete("AB");
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			_prepare1 = await WriteSingleEvent("AB", 0, "test1", token: token);
+			_delete1 = await WriteDelete("AB", token);
 
-			_prepare2 = WriteSingleEvent("CD", 0, "test2");
+			_prepare2 = await WriteSingleEvent("CD", 0, "test2", token: token);
 		}
 
 		[Test]

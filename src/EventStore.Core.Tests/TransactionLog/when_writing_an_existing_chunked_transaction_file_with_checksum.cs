@@ -3,6 +3,8 @@
 
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -21,7 +23,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private InMemoryCheckpoint _checkpoint;
 
 		[Test]
-		public void a_record_can_be_written() {
+		public async Task a_record_can_be_written() {
 			var filename = GetFilePathFor("chunk-000000.000000");
 			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, TFChunk.CurrentChunkVersion, 10000, 0, 0, false, chunkId: Guid.NewGuid(), TransformType.Identity);
 			var chunkBytes = chunkHeader.AsByteArray();
@@ -31,7 +33,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			_checkpoint = new InMemoryCheckpoint(137);
 			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, _checkpoint, new InMemoryCheckpoint()));
-			db.Open();
+			await db.Open();
 
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
@@ -53,10 +55,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 				eventType: eventTypeId,
 				data: new byte[] {1, 2, 3, 4, 5},
 				metadata: new byte[] {7, 17});
-			long tmp;
-			tf.Write(record, out tmp);
+
+			await tf.Write(record, CancellationToken.None);
 			tf.Close();
-			db.Dispose();
+			await db.DisposeAsync();
 
 			Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix() + 137,
 				_checkpoint.Read()); //137 is fluff assigned to beginning of checkpoint

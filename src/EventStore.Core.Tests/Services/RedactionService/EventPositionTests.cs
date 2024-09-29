@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data.Redaction;
 using EventStore.Core.Messages;
@@ -18,8 +19,8 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 		private const string StreamId = nameof(EventPositionTests<TLogFormat, TStreamId>);
 		private readonly Dictionary<long, List<EventPosition>> _positions = new();
 
-		private void WriteEvent(string streamId, long eventNumber, string data) {
-			var eventRecord = WriteSingleEvent(streamId, eventNumber, data);
+		private async ValueTask WriteEvent(string streamId, long eventNumber, string data, CancellationToken token) {
+			var eventRecord = await WriteSingleEvent(streamId, eventNumber, data, token: token);
 			if (!_positions.ContainsKey(eventNumber))
 				_positions[eventNumber] = new();
 
@@ -30,11 +31,11 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 			_positions[eventNumber].Add(eventPosition);
 		}
 
-		protected override void WriteTestScenario() {
-			WriteEvent(StreamId, 2, "data 2");
-			WriteEvent(StreamId, 0, "data 0");
-			WriteEvent(StreamId, 1, "data 1");
-			WriteEvent(StreamId, 2, "data 2"); // duplicate
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			await WriteEvent(StreamId, 2, "data 2", token: token);
+			await WriteEvent(StreamId, 0, "data 0", token: token);
+			await WriteEvent(StreamId, 1, "data 1", token: token);
+			await WriteEvent(StreamId, 2, "data 2", token: token); // duplicate
 		}
 
 		private async Task<RedactionMessage.GetEventPositionCompleted> GetEventPosition(long eventNumber) {

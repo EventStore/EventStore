@@ -17,6 +17,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using NUnit.Framework;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Caching;
 using EventStore.Core.Metrics;
@@ -40,9 +41,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_metastreamMaxCount = metastreamMaxCount;
 		}
 
-		public void CreateDb(params Rec[] records) {
-			if (DbRes != null) {
-				DbRes.Db.Close();
+		public async ValueTask CreateDb(Rec[] records, CancellationToken token = default) {
+			if (DbRes is not null) {
+				await DbRes.Db.DisposeAsync();
 			}
 
 			var indexDirectory = GetFilePathFor("index");
@@ -51,9 +52,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 			});
 
 			var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
-			var dbHelper = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig, _logFormat);
+			var dbHelper = await TFChunkDbCreationHelper<TLogFormat, TStreamId>.CreateAsync(dbConfig, _logFormat, token);
 
-			DbRes = dbHelper.Chunk(records).CreateDb();
+			DbRes = await dbHelper.Chunk(records).CreateDb(token: token);
 
 			DbRes.Db.Config.WriterCheckpoint.Flush();
 			DbRes.Db.Config.ChaserCheckpoint.Write(DbRes.Db.Config.WriterCheckpoint.Read());
@@ -102,10 +103,10 @@ namespace EventStore.Core.Tests.Services.Storage {
 			ReadIndex = readIndex;
 		}
 
-		public override Task TestFixtureTearDown() {
+		public override async Task TestFixtureTearDown() {
 			_logFormat?.Dispose();
-			DbRes.Db.Close();
-			return base.TestFixtureTearDown();
+			await DbRes.Db.DisposeAsync();
+			await base.TestFixtureTearDown();
 		}
 	}
 }

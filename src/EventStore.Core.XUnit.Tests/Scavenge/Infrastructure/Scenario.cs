@@ -27,8 +27,10 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
 using EventStore.Core.Transforms;
 using EventStore.Core.Util;
+using Google.Protobuf.WellKnownTypes;
 using Xunit;
 using static EventStore.Core.XUnit.Tests.Scavenge.StreamMetadatas;
+using Type = System.Type;
 
 #pragma warning disable CS0162 // Unreachable code detected
 
@@ -43,7 +45,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 		private static EqualityComparer<TStreamId> StreamIdComparer { get; } =
 			EqualityComparer<TStreamId>.Default;
 
-		private Func<TFChunkDbConfig, LogFormatAbstractor<TStreamId>, DbResult> _getDb;
+		private Func<TFChunkDbConfig, LogFormatAbstractor<TStreamId>, ValueTask<DbResult>> _getDb;
 		private Func<ScavengeStateBuilder<TStreamId>, ScavengeStateBuilder<TStreamId>> _stateTransform;
 		private Action<ScavengeState<TStreamId>> _assertState;
 		private List<ScavengePoint> _newScavengePoint;
@@ -87,8 +89,8 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 		}
 
 		public Scenario<TLogFormat, TStreamId> WithDb(DbResult db) {
-			_getDb = (_, _) => {
-				db.Db.Open();
+			_getDb = async (_, _) => {
+				await db.Db.Open();
 				return db;
 			};
 			return this;
@@ -99,8 +101,8 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				TFChunkDbCreationHelper<TLogFormat, TStreamId>,
 				TFChunkDbCreationHelper<TLogFormat, TStreamId>> f) {
 
-			_getDb = (dbConfig, logFormat) =>
-				f(new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig, logFormat)).CreateDb();
+			_getDb = async (dbConfig, logFormat) =>
+				await f(await TFChunkDbCreationHelper<TLogFormat, TStreamId>.CreateAsync(dbConfig, logFormat, CancellationToken.None)).CreateDb();
 			return this;
 		}
 
@@ -214,7 +216,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			var dbConfig = TFChunkHelper.CreateSizedDbConfig(_dbPath, 0, chunkSize: 1024 * 1024);
 			var dbTransformManager = DbTransformManager.Default;
 
-			var dbResult = _getDb(dbConfig, logFormat);
+			var dbResult = await _getDb(dbConfig, logFormat);
 			var keptRecords = getExpectedKeptRecords != null
 				? getExpectedKeptRecords(dbResult)
 				: null;
@@ -303,7 +305,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				}
 			}
 
-			await EmptyRequestedChunks(dbResult.Db);
+			await EmptyRequestedChunks(dbResult.Db, CancellationToken.None);
 
 			Scavenger<TStreamId> sut = null;
 			try {
@@ -565,7 +567,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			} finally {
 				sut?.Dispose();
 				readIndex.Close();
-				dbResult.Db.Close();
+				await dbResult.Db.DisposeAsync();
 			}
 		}
 
@@ -697,7 +699,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			}
 		}
 
-		private async ValueTask EmptyRequestedChunks(TFChunkDb db) {
+		private async ValueTask EmptyRequestedChunks(TFChunkDb db, CancellationToken token) {
 			foreach (var chunkNum in _chunkNumsToEmpty) {
 				var chunk = db.Manager.GetChunk(chunkNum);
 				var header = chunk.ChunkHeader;
@@ -713,7 +715,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					transformType: header.TransformType);
 
 				var transformFactory = db.TransformManager.GetFactoryForExistingChunk(header.TransformType);
-				var newChunk = TFChunk.CreateWithHeader(
+				var newChunk = await TFChunk.CreateWithHeader(
 					filename: $"{chunk.FileName}.tmp",
 					header: newChunkHeader,
 					fileSize: ChunkHeader.Size,
@@ -723,11 +725,12 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					reduceFileCachePressure: false,
 					tracker: new TFChunkTracker.NoOp(),
 					transformFactory: transformFactory,
-					transformHeader: transformFactory.CreateTransformHeader());
+					transformHeader: transformFactory.CreateTransformHeader(),
+					token);
 
-				await newChunk.CompleteScavenge(null, CancellationToken.None);
+				await newChunk.CompleteScavenge(null, token);
 
-				db.Manager.SwitchChunk(newChunk, false, false);
+				await db.Manager.SwitchChunk(newChunk, false, false, token);
 			}
 		}
 	}

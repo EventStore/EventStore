@@ -24,15 +24,15 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 
 		private EventRecord _c1, _c2;
 
-		public override void WriteTestScenario() {
-			WriteSingleEvent(_volatileStreamOne, intMaxValue + 1, new string('.', 3000));
-			WriteSingleEvent(_volatileStreamOne, intMaxValue + 2, new string('.', 3000));
+		public override async ValueTask WriteTestScenario(CancellationToken token) {
+			await WriteSingleEvent(_volatileStreamOne, intMaxValue + 1, new string('.', 3000), token: token);
+			await WriteSingleEvent(_volatileStreamOne, intMaxValue + 2, new string('.', 3000), token: token);
 
-			WriteSingleEvent(_volatileStreamTwo, intMaxValue + 1, new string('.', 3000));
-			WriteSingleEvent(_volatileStreamTwo, intMaxValue + 2, new string('.', 3000));
+			await WriteSingleEvent(_volatileStreamTwo, intMaxValue + 1, new string('.', 3000), token: token);
+			await WriteSingleEvent(_volatileStreamTwo, intMaxValue + 2, new string('.', 3000), token: token);
 
-			_c1 = WriteSingleEvent(_catchupStreamOne, intMaxValue + 1, new string('.', 3000));
-			_c2 = WriteSingleEvent(_catchupStreamOne, intMaxValue + 2, new string('.', 3000));
+			_c1 = await WriteSingleEvent(_catchupStreamOne, intMaxValue + 1, new string('.', 3000), token: token);
+			_c2 = await WriteSingleEvent(_catchupStreamOne, intMaxValue + 2, new string('.', 3000), token: token);
 		}
 
 		public override async Task Given() {
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			await _store.SubscribeToAllAsync(true, (s, e) => {
 				if (SystemStreams.IsSystemStream(e.OriginalStreamId))
 					return Task.CompletedTask;
-				
+
 				receivedEvent = e;
 				mre.Set();
 				return Task.CompletedTask;

@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -13,12 +15,12 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		private List<ILogRecord> _survivors;
 		private List<ILogRecord> _scavenged;
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			_survivors = new List<ILogRecord>();
 			_scavenged = new List<ILogRecord>();
 
-			GetOrReserve("s1", out var s1StreamId, out _);
-			GetOrReserveEventType("event-type", out var eventTypeId, out _);
+			var (s1StreamId, _) = await GetOrReserve("s1", token);
+			var (eventTypeId, _) = await GetOrReserveEventType("event-type", token);
 			var transPos = Writer.Position;
 
 			for (int i = 0; i < 10; ++i) {
@@ -33,30 +35,30 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 					eventTypeId,
 					new byte[3],
 					new byte[3]);
-				Assert.IsTrue(Writer.Write(r, out _));
+				Assert.IsTrue(await Writer.Write(r, token) is (true, _));
 				Writer.CompleteChunk();
-				Writer.AddNewChunk();
+				await Writer.AddNewChunk(token: token);
 
 				_scavenged.Add(r);
 			}
 
-			var r2 = WriteCommit(transPos, "s1", 0);
+			var r2 = await WriteCommit(transPos, "s1", 0, token);
 			_survivors.Add(r2);
 
 			Writer.CompleteChunk();
-			Writer.AddNewChunk();
+			await Writer.AddNewChunk(token: token);
 
-			var r3 = WriteDeletePrepare("s1");
+			var r3 = await WriteDeletePrepare("s1", token);
 			_survivors.Add(r3);
 
 			Writer.CompleteChunk();
-			Writer.AddNewChunk();
+			await Writer.AddNewChunk(token: token);
 
-			var r4 = WriteDeleteCommit(r3);
+			var r4 = await WriteDeleteCommit(r3, token);
 			_survivors.Add(r4);
 
 			Writer.CompleteChunk();
-			Writer.AddNewChunk();
+			await Writer.AddNewChunk(token: token);
 
 			Scavenge(completeLast: false, mergeChunks: true);
 

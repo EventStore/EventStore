@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 			DbConfig = CreateDbConfig();
 			var db = new TFChunkDb(DbConfig);
-			db.Open();
+			await db.Open();
 			Service = new LeaderReplicationService(
 				publisher: Publisher,
 				instanceId: LeaderId,

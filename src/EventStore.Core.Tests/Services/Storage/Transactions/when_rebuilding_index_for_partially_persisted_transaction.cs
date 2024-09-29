@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Caching;
@@ -70,14 +71,14 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 			ReadIndex = readIndex;
 		}
 
-		protected override void WriteTestScenario() {
-			var begin = WriteTransactionBegin("ES", ExpectedVersion.Any);
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			var begin = await WriteTransactionBegin("ES", ExpectedVersion.Any, token);
 			for (int i = 0; i < 15; ++i) {
-				WriteTransactionEvent(Guid.NewGuid(), begin.LogPosition, i, "ES", i, "data" + i, PrepareFlags.Data);
+				await WriteTransactionEvent(Guid.NewGuid(), begin.LogPosition, i, "ES", i, "data" + i, PrepareFlags.Data, token: token);
 			}
 
-			WriteTransactionEnd(Guid.NewGuid(), begin.LogPosition, "ES");
-			WriteCommit(Guid.NewGuid(), begin.LogPosition, "ES", 0);
+			await WriteTransactionEnd(Guid.NewGuid(), begin.LogPosition, "ES", token);
+			await WriteCommit(Guid.NewGuid(), begin.LogPosition, "ES", 0, token);
 		}
 
 		[Test]

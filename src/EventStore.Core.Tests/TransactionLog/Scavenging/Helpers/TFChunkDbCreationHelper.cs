@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
@@ -20,24 +22,31 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		private readonly TFChunkDbConfig _dbConfig;
 		private readonly TFChunkDb _db;
 
-		private readonly List<Rec[]> _chunkRecs = new List<Rec[]>();
+		private readonly List<Rec[]> _chunkRecs = new();
 
 		private bool _completeLast;
 
 		private readonly LogFormatAbstractor<TStreamId> _logFormat;
 		private readonly TStreamId _scavengePointEventTypeId;
 
-		public TFChunkDbCreationHelper(TFChunkDbConfig dbConfig, LogFormatAbstractor<TStreamId> logFormat) {
+		private TFChunkDbCreationHelper(TFChunkDbConfig dbConfig, LogFormatAbstractor<TStreamId> logFormat) {
 			Ensure.NotNull(dbConfig, "dbConfig");
 			_dbConfig = dbConfig;
 			_logFormat = logFormat;
 			_scavengePointEventTypeId = logFormat.EventTypeIndex.GetExisting(SystemEventTypes.ScavengePoint);
 
 			_db = new TFChunkDb(_dbConfig);
-			_db.Open();
+		}
 
-			if (_db.Config.WriterCheckpoint.ReadNonFlushed() > 0)
+		public static async ValueTask<TFChunkDbCreationHelper<TLogFormat, TStreamId>> CreateAsync(TFChunkDbConfig dbConfig, LogFormatAbstractor<TStreamId> logFormat, CancellationToken token = default) {
+			var result = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig, logFormat);
+
+			await result._db.Open(token: token);
+
+			if (result._db.Config.WriterCheckpoint.ReadNonFlushed() > 0)
 				throw new Exception("The DB already contains some data.");
+
+			return result;
 		}
 
 		public TFChunkDbCreationHelper<TLogFormat, TStreamId> Chunk(params Rec[] records) {
@@ -50,7 +59,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			return this;
 		}
 
-		public DbResult CreateDb(bool commit = false) {
+		public async ValueTask<DbResult> CreateDb(bool commit = false, CancellationToken token = default) {
 			var records = new List<ILogRecord>[_chunkRecs.Count];
 			for (int i = 0; i < records.Length; ++i) {
 				records[i] = new();
@@ -103,7 +112,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			// convert the Recs into LogRecords and write them to the database.
 			// for each chunk i
 			for (int i = 0; i < _chunkRecs.Count; ++i) {
-				var chunk = i == 0 ? _db.Manager.GetChunk(0) : _db.Manager.AddNewChunk();
+				var chunk = i == 0 ? _db.Manager.GetChunk(0) : await _db.Manager.AddNewChunk(token);
 				logPos = i * (long)_db.Config.ChunkSize;
 
 				var completedChunk = false;
@@ -119,7 +128,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						Write(i, chunk, streamRecord, false, out logPos);
 						records[i].Add(streamRecord);
 					}
-					
+
 					_logFormat.EventTypeIndex.GetOrReserveEventType(_logFormat.RecordFactory, rec.EventType, logPos, out var eventTypeNumber, out var eventTypeRecord);
 					if (eventTypeRecord != null) {
 						Write(i, chunk, eventTypeRecord, false, out logPos);

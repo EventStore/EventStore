@@ -21,11 +21,11 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override async Task When(CancellationToken token) {
 			await EpochManager.WriteNewEpoch(0, token);
-			Writer.Write(CreateLogRecord(0), out _);
-			Writer.Write(CreateLogRecord(1), out _);
-			Writer.Write(CreateLogRecord(2), out _);
-			Writer.Write(CreateLogRecord(3), out _);
-			Writer.Write(CreateLogRecord(4), out _);
+			await Writer.Write(CreateLogRecord(0), token);
+			await Writer.Write(CreateLogRecord(1), token);
+			await Writer.Write(CreateLogRecord(2), token);
+			await Writer.Write(CreateLogRecord(3), token);
+			await Writer.Write(CreateLogRecord(4), token);
 			await EpochManager.WriteNewEpoch(1, token);
 
 			var epochs = new[] {
@@ -56,11 +56,11 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override async Task When(CancellationToken token) {
 			await EpochManager.WriteNewEpoch(0, token);
-			Writer.Write(CreateLogRecord(0), out _);
-			Writer.Write(CreateLogRecord(1), out _);
-			Writer.Write(CreateLogRecord(2), out _);
-			Writer.Write(CreateLogRecord(3), out _);
-			Writer.Write(CreateLogRecord(4), out _);
+			await Writer.Write(CreateLogRecord(0), token);
+			await Writer.Write(CreateLogRecord(1), token);
+			await Writer.Write(CreateLogRecord(2), token);
+			await Writer.Write(CreateLogRecord(3), token);
+			await Writer.Write(CreateLogRecord(4), token);
 			await EpochManager.WriteNewEpoch(1, token);
 
 			_lastEpoch = EpochManager.GetLastEpoch();
@@ -91,11 +91,11 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override async Task When(CancellationToken token) {
 			await EpochManager.WriteNewEpoch(0, token);
-			Writer.Write(CreateLogRecord(0), out _);
-			Writer.Write(CreateLogRecord(1), out _);
-			Writer.Write(CreateLogRecord(2), out _);
-			Writer.Write(CreateLogRecord(3), out _);
-			Writer.Write(CreateLogRecord(4), out _subscribedPosition);
+			await Writer.Write(CreateLogRecord(0), token);
+			await Writer.Write(CreateLogRecord(1), token);
+			await Writer.Write(CreateLogRecord(2), token);
+			await Writer.Write(CreateLogRecord(3), token);
+			(_, _subscribedPosition) = await Writer.Write(CreateLogRecord(4), token);
 			await EpochManager.WriteNewEpoch(1, token);
 
 			_lastEpoch = EpochManager.GetLastEpoch();
@@ -125,21 +125,21 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override async Task When(CancellationToken token) {
 			await EpochManager.WriteNewEpoch(0, token);
-			Writer.Write(CreateLogRecord(0), out _);
-			Writer.Write(CreateLogRecord(1), out _);
-			Writer.Write(CreateLogRecord(2), out _);
-			Writer.Write(CreateLogRecord(3), out _);
-			Writer.Write(CreateLogRecord(4), out _);
+			await Writer.Write(CreateLogRecord(0), token);
+			await Writer.Write(CreateLogRecord(1), token);
+			await Writer.Write(CreateLogRecord(2), token);
+			await Writer.Write(CreateLogRecord(3), token);
+			await Writer.Write(CreateLogRecord(4), token);
 			await EpochManager.WriteNewEpoch(1, token);
-			Writer.Write(CreateLogRecord(5), out _);
-			Writer.Write(CreateLogRecord(6), out _);
-			Writer.Write(CreateLogRecord(7), out var lastWritePosition);
+			await Writer.Write(CreateLogRecord(5), token);
+			await Writer.Write(CreateLogRecord(6), token);
+			var (_, lastWritePosition) = await Writer.Write(CreateLogRecord(7), token);
 			Writer.Flush();
 
 			_replicaEpochs = new List<Epoch> {
-				new Epoch(lastWritePosition + 2000, 4, Guid.NewGuid()),
-				new Epoch(lastWritePosition + 1000, 3, Guid.NewGuid()),
-				new Epoch(lastWritePosition, 2, Guid.NewGuid()),
+				new(lastWritePosition + 2000, 4, Guid.NewGuid()),
+				new(lastWritePosition + 1000, 3, Guid.NewGuid()),
+				new(lastWritePosition, 2, Guid.NewGuid()),
 			};
 			_replicaEpochs.AddRange((await EpochManager.GetLastEpochs(10, token))
 				.Select(e => new Epoch(e.EpochPosition, e.EpochNumber, e.EpochId)).ToList());
@@ -168,17 +168,17 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override async Task When(CancellationToken token) {
 			await EpochManager.WriteNewEpoch(0, token);
-			Writer.Write(CreateLogRecord(0), out _);
-			Writer.Write(CreateLogRecord(1), out _);
-			Writer.Write(CreateLogRecord(2), out var otherEpochLogPosition);
-			Writer.Write(CreateLogRecord(3), out _);
-			Writer.Write(CreateLogRecord(4), out _);
+			await Writer.Write(CreateLogRecord(0), token);
+			await Writer.Write(CreateLogRecord(1), token);
+			var (_, otherEpochLogPosition) = await Writer.Write(CreateLogRecord(2), token);
+			await Writer.Write(CreateLogRecord(3), token);
+			await Writer.Write(CreateLogRecord(4), token);
 			await EpochManager.WriteNewEpoch(2, token);
 
 			var firstEpoch = (await EpochManager.GetLastEpochs(10, token)).First(e => e.EpochNumber == 0);
 			_replicaEpochs = new List<Epoch> {
-				new Epoch(otherEpochLogPosition, 1, Guid.NewGuid()),
-				new Epoch(firstEpoch.EpochPosition, firstEpoch.EpochNumber, firstEpoch.EpochId)
+				new(otherEpochLogPosition, 1, Guid.NewGuid()),
+				new(firstEpoch.EpochPosition, firstEpoch.EpochNumber, firstEpoch.EpochId)
 			};
 
 			(_, _replicaManager) = await AddSubscription(_replicaId, true, _replicaEpochs.ToArray(),
@@ -205,11 +205,11 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override async Task When(CancellationToken token) {
 			await EpochManager.WriteNewEpoch(0, token);
-			Writer.Write(CreateLogRecord(0), out _);
-			Writer.Write(CreateLogRecord(1), out _);
-			Writer.Write(CreateLogRecord(2), out _);
-			Writer.Write(CreateLogRecord(3), out _);
-			Writer.Write(CreateLogRecord(4), out _);
+			await Writer.Write(CreateLogRecord(0), token);
+			await Writer.Write(CreateLogRecord(1), token);
+			await Writer.Write(CreateLogRecord(2), token);
+			await Writer.Write(CreateLogRecord(3), token);
+			await Writer.Write(CreateLogRecord(4), token);
 			await EpochManager.WriteNewEpoch(1, token);
 
 			var subscribePosition = Writer.Position + 1000;
@@ -243,12 +243,12 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override async Task When(CancellationToken token) {
 			await EpochManager.WriteNewEpoch(0, token);
-			Writer.Write(CreateLogRecord(0), out _);
-			Writer.Write(CreateLogRecord(1), out _);
-			Writer.Write(CreateLogRecord(2), out _);
+			await Writer.Write(CreateLogRecord(0), token);
+			await Writer.Write(CreateLogRecord(1), token);
+			await Writer.Write(CreateLogRecord(2), token);
 			await EpochManager.WriteNewEpoch(1, token);
-			Writer.Write(CreateLogRecord(3), out _);
-			Writer.Write(CreateLogRecord(4), out _);
+			await Writer.Write(CreateLogRecord(3), token);
+			await Writer.Write(CreateLogRecord(4), token);
 			await EpochManager.WriteNewEpoch(4, token);
 
 			var subscribePosition = Writer.Position + 1000;
@@ -283,22 +283,22 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override async Task When(CancellationToken token) {
 			await EpochManager.WriteNewEpoch(0, token);
-			Writer.Write(CreateLogRecord(0), out _);
+			await Writer.Write(CreateLogRecord(0), token);
 			await EpochManager.WriteNewEpoch(1, token);
 
 			// The EpochManager for these tests only caches 5 epochs
 			_replicaEpochs = (await EpochManager.GetLastEpochs(2, token))
 				.Select(e => new Epoch(e.EpochPosition, e.EpochNumber, e.EpochId)).ToList();
 
-			Writer.Write(CreateLogRecord(1), out _);
+			await Writer.Write(CreateLogRecord(1), token);
 			await EpochManager.WriteNewEpoch(2, token);
-			Writer.Write(CreateLogRecord(2), out _);
+			await Writer.Write(CreateLogRecord(2), token);
 			await EpochManager.WriteNewEpoch(3, token);
-			Writer.Write(CreateLogRecord(3), out _);
+			await Writer.Write(CreateLogRecord(3), token);
 			await EpochManager.WriteNewEpoch(4, token);
-			Writer.Write(CreateLogRecord(4), out _);
+			await Writer.Write(CreateLogRecord(4), token);
 			await EpochManager.WriteNewEpoch(5, token);
-			Writer.Write(CreateLogRecord(5), out _);
+			await Writer.Write(CreateLogRecord(5), token);
 			await EpochManager.WriteNewEpoch(6, token);
 
 			(_, _replicaManager) = await AddSubscription(_replicaId, true, _replicaEpochs.ToArray(),
@@ -328,20 +328,20 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			// The EpochManager for these tests only caches 5 epochs
 			// Epochs 2 and 3 don't exist
 			await EpochManager.WriteNewEpoch(0, token);
-			Writer.Write(CreateLogRecord(0), out _);
+			await Writer.Write(CreateLogRecord(0), token);
 			await EpochManager.WriteNewEpoch(1, token);
-			Writer.Write(CreateLogRecord(1), out _);
+			await Writer.Write(CreateLogRecord(1), token);
 
 			_uncachedLeaderEpochs = (await EpochManager.GetLastEpochs(2, token)).ToArray();
 
 			await EpochManager.WriteNewEpoch(4, token);
-			Writer.Write(CreateLogRecord(2), out _);
+			await Writer.Write(CreateLogRecord(2), token);
 			await EpochManager.WriteNewEpoch(5, token);
-			Writer.Write(CreateLogRecord(3), out _);
+			await Writer.Write(CreateLogRecord(3), token);
 			await EpochManager.WriteNewEpoch(6, token);
-			Writer.Write(CreateLogRecord(4), out _);
+			await Writer.Write(CreateLogRecord(4), token);
 			await EpochManager.WriteNewEpoch(7, token);
-			Writer.Write(CreateLogRecord(5), out _);
+			await Writer.Write(CreateLogRecord(5), token);
 			await EpochManager.WriteNewEpoch(8, token);
 
 			_replicaEpochs = new List<Epoch> {

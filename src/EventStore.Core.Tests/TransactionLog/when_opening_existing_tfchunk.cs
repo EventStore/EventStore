@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_chunk = TFChunkHelper.CreateNewChunk(Filename);
+			_chunk = await TFChunkHelper.CreateNewChunk(Filename);
 			_chunk.Complete();
 			_testChunk = TFChunk.FromCompletedFile(Filename, true, false,
 				reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),

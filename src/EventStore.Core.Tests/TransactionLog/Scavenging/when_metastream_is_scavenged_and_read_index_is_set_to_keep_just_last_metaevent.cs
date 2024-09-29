@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
@@ -12,7 +13,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_metastream_is_scavenged_and_read_index_is_set_to_keep_just_last_metaevent<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
-		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+		protected override ValueTask<DbResult> CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator, CancellationToken token) {
 			return dbCreator
 				.Chunk(Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(10, null, null, null, null)),
 					Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(5, null, null, null, null)),
@@ -20,7 +21,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 					Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(2, null, null, null, null)),
 					Rec.Commit(0, "$$bla"))
 				.CompleteLastChunk()
-				.CreateDb();
+				.CreateDb(token: token);
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {

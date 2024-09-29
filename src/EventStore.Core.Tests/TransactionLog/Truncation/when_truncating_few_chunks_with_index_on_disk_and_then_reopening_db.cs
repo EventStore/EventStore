@@ -27,14 +27,14 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			: base(maxEntriesInMemTable: 3) {
 		}
 
-		protected override void WriteTestScenario() {
-			_event1 = WriteSingleEvent("ES", 0, new string('.', 4000)); // chunk 0
-			_event2 = WriteSingleEvent("ES", 1, new string('.', 4000));
-			_event3 = WriteSingleEvent("ES", 2, new string('.', 4000), retryOnFail: true); // ptable 1, chunk 1
-			_event4 = WriteSingleEvent("ES", 3, new string('.', 4000));
-			WriteSingleEvent("ES", 4, new string('.', 4000), retryOnFail: true); // chunk 2
-			WriteSingleEvent("ES", 5, new string('.', 4000)); // ptable 2
-			_event7 = WriteSingleEvent("ES", 6, new string('.', 4000), retryOnFail: true); // chunk 3
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			_event1 = await WriteSingleEvent("ES", 0, new string('.', 4000), token: token); // chunk 0
+			_event2 = await WriteSingleEvent("ES", 1, new string('.', 4000), token: token);
+			_event3 = await WriteSingleEvent("ES", 2, new string('.', 4000), retryOnFail: true, token: token); // ptable 1, chunk 1
+			_event4 = await WriteSingleEvent("ES", 3, new string('.', 4000), token: token);
+			await WriteSingleEvent("ES", 4, new string('.', 4000), retryOnFail: true, token: token); // chunk 2
+			await WriteSingleEvent("ES", 5, new string('.', 4000), token: token); // ptable 2
+			_event7 = await WriteSingleEvent("ES", 6, new string('.', 4000), retryOnFail: true, token: token); // chunk 3
 
 			TruncateCheckpoint = _event4.LogPosition;
 

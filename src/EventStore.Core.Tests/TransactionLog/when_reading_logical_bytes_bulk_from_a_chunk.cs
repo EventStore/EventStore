@@ -18,8 +18,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void the_file_will_not_be_deleted_until_reader_released() {
-			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
+		public async Task the_file_will_not_be_deleted_until_reader_released() {
+			var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
 			using (var reader = chunk.AcquireDataReader()) {
 				chunk.MarkForDeletion();
 				var buffer = new byte[1024];
@@ -32,8 +32,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void a_read_on_new_file_can_be_performed_but_returns_nothing() {
-			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
+		public async Task a_read_on_new_file_can_be_performed_but_returns_nothing() {
+			var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
 			using (var reader = chunk.AcquireDataReader()) {
 				var buffer = new byte[1024];
 				var result = reader.ReadNextBytes(1024, buffer);
@@ -46,8 +46,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void a_read_past_end_of_completed_chunk_does_not_include_footer() {
-			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
+		public async Task a_read_past_end_of_completed_chunk_does_not_include_footer() {
+			var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
 			chunk.Complete(); // chunk has 0 bytes of actual data
 			using (var reader = chunk.AcquireDataReader()) {
 				var buffer = new byte[1024];
@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public async Task a_read_on_scavenged_chunk_does_not_include_map() {
-			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("afile"), 200, isScavenged: true);
+			var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("afile"), 200, isScavenged: true);
 			await chunk.CompleteScavenge([new PosMap(0, 0), new PosMap(1, 1)], CancellationToken.None);
 			using (var reader = chunk.AcquireDataReader()) {
 				var buffer = new byte[1024];
@@ -76,8 +76,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void if_asked_for_more_than_buffer_size_will_only_read_buffer_size() {
-			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 3000);
+		public async Task if_asked_for_more_than_buffer_size_will_only_read_buffer_size() {
+			var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 3000);
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
@@ -98,8 +98,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void a_read_past_eof_doesnt_return_eof_if_chunk_is_not_yet_completed() {
-			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
+		public async Task a_read_past_eof_doesnt_return_eof_if_chunk_is_not_yet_completed() {
+			var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
 			var rec = LogRecord.Commit(0, Guid.NewGuid(), 0, 0);
 			Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");
 			using (var reader = chunk.AcquireDataReader()) {
@@ -116,8 +116,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void a_read_past_eof_returns_eof_if_chunk_is_completed() {
-			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
+		public async Task a_read_past_eof_returns_eof_if_chunk_is_completed() {
+			var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
 
 			var rec = LogRecord.Commit(0, Guid.NewGuid(), 0, 0);
 			Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");

@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Tests.Services.Storage;
@@ -30,9 +31,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			});
 
 			var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
-			var dbCreationHelper = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig, _logFormat);
+			var dbCreationHelper = await TFChunkDbCreationHelper<TLogFormat, TStreamId>.CreateAsync(dbConfig, _logFormat, CancellationToken.None);
 
-			_dbResult = dbCreationHelper
+			_dbResult = await dbCreationHelper
 				.Chunk().CompleteLastChunk()
 				.Chunk().CompleteLastChunk()
 				.Chunk()
@@ -54,11 +55,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			}
 		}
 
-		public override Task TestFixtureTearDown() {
+		public override async Task TestFixtureTearDown() {
 			_logFormat?.Dispose();
-			_dbResult.Db.Close();
+			await _dbResult.Db.DisposeAsync();
 
-			return base.TestFixtureTearDown();
+			await base.TestFixtureTearDown();
 		}
 
 		protected abstract Task When();

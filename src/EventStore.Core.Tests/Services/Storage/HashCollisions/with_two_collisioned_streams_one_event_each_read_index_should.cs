@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
@@ -13,9 +15,9 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		private EventRecord _prepare1;
 		private EventRecord _prepare2;
 
-		protected override void WriteTestScenario() {
-			_prepare1 = WriteSingleEvent("AB", 0, "test1");
-			_prepare2 = WriteSingleEvent("CD", 0, "test2");
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			_prepare1 = await WriteSingleEvent("AB", 0, "test1", token: token);
+			_prepare2 = await WriteSingleEvent("CD", 0, "test2", token: token);
 		}
 
 		[Test]

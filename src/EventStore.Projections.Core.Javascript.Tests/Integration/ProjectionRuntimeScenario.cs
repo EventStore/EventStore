@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -27,7 +28,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration
 
 		}
 
-		static (Action, IPublisher) CreateRuntime(SynchronousScheduler mainBus, IQueuedHandler mainQueue, ICheckpoint writerCheckpoint) {
+		static (Func<ValueTask>, IPublisher) CreateRuntime(SynchronousScheduler mainBus, IQueuedHandler mainQueue, ICheckpoint writerCheckpoint) {
 			var options = new ProjectionSubsystemOptions(3, ProjectionType.All, true, TimeSpan.FromMinutes(5), false, 500, 500);
 			var config = new TFChunkDbConfig("mem", new VersionedPatternFileNamingStrategy("mem", "chunk-"), 10000, 0, writerCheckpoint, new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), true);
 			var db = new TFChunkDb(config);
@@ -48,7 +49,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration
 
 			return (() => {
 				subsystem.Stop();
-				db.Dispose();
+				return db.DisposeAsync();
 			}, subsystem.LeaderInputQueue);
 		}
 	}

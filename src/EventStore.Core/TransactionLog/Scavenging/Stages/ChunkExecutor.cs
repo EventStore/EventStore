@@ -200,7 +200,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 			IChunkWriterForExecutor<TStreamId, TRecord> outputChunk;
 			try {
-				outputChunk = _chunkManager.CreateChunkWriter(sourceChunk);
+				outputChunk = await _chunkManager.CreateChunkWriter(sourceChunk, cancellationToken);
 				_logger.Debug(
 					"SCAVENGING: Resulting temp chunk file: {tmpChunkPath}.",
 					Path.GetFileName(outputChunk.FileName));

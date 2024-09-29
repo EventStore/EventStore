@@ -705,9 +705,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private bool _set = false;
 		private Guid _event1Id;
 
-		public override void WriteTestScenario() {
-			var event1 = WriteSingleEvent(StreamName, intMaxValue + 1, new string('.', 3000));
-			WriteSingleEvent(StreamName, intMaxValue + 2, new string('.', 3000));
+		public override async ValueTask WriteTestScenario(CancellationToken token) {
+			var event1 = await WriteSingleEvent(StreamName, intMaxValue + 1, new string('.', 3000), token: token);
+			await WriteSingleEvent(StreamName, intMaxValue + 2, new string('.', 3000), token: token);
 			_event1Id = event1.EventId;
 		}
 
@@ -814,7 +814,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 	                    (sub, e) => Console.Write("appeared"),
 	                    (sub, reason, ex) =>
 	                    {
-	                    }, 
+	                    },
 	                    DefaultData.AdminCredentials);
 	                throw new Exception("should have thrown");
 	            }

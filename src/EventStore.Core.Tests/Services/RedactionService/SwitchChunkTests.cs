@@ -3,7 +3,10 @@
 
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
+using DotNext;
+using EventStore.Core.Bus;
 using EventStore.Core.Data.Redaction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -15,17 +18,17 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 		protected const string FakeChunk = "fake_chunk.tmp";
 		private Guid _lockId;
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			// the writes below create 3 chunks for both V2 & V3 log formats
-			WriteSingleEvent(StreamId, 0, new string('0', 50), retryOnFail: true);
-			WriteSingleEvent(StreamId, 1, new string('1', 50), retryOnFail: true);
-			WriteSingleEvent(StreamId, 2, new string('2', 50), retryOnFail: true);
-			WriteSingleEvent(StreamId, 3, new string('3', 50), retryOnFail: true);
-			WriteSingleEvent(StreamId, 4, new string('4', 50), retryOnFail: true);
-			WriteSingleEvent(StreamId, 5, new string('5', 50), retryOnFail: true);
-			WriteSingleEvent(StreamId, 6, new string('6', 50), retryOnFail: true);
-			WriteSingleEvent(StreamId, 7, new string('7', 50), retryOnFail: true);
-			WriteSingleEvent(StreamId, 8, new string('8', 50), retryOnFail: true);
+			await WriteSingleEvent(StreamId, 0, new string('0', 50), retryOnFail: true, token: token);
+			await WriteSingleEvent(StreamId, 1, new string('1', 50), retryOnFail: true, token: token);
+			await WriteSingleEvent(StreamId, 2, new string('2', 50), retryOnFail: true, token: token);
+			await WriteSingleEvent(StreamId, 3, new string('3', 50), retryOnFail: true, token: token);
+			await WriteSingleEvent(StreamId, 4, new string('4', 50), retryOnFail: true, token: token);
+			await WriteSingleEvent(StreamId, 5, new string('5', 50), retryOnFail: true, token: token);
+			await WriteSingleEvent(StreamId, 6, new string('6', 50), retryOnFail: true, token: token);
+			await WriteSingleEvent(StreamId, 7, new string('7', 50), retryOnFail: true, token: token);
+			await WriteSingleEvent(StreamId, 8, new string('8', 50), retryOnFail: true, token: token);
 
 			var writerPos = Writer.Position;
 			var chunk = Path.GetFileName(Db.Manager.GetChunkFor(writerPos).FileName);
@@ -63,7 +66,8 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 
 		protected async Task<RedactionMessage.SwitchChunkCompleted> SwitchChunk(string targetChunk, string newChunk) {
 			var e = new TcsEnvelope<RedactionMessage.SwitchChunkCompleted>();
-			RedactionService.Handle(new RedactionMessage.SwitchChunk(e, _lockId, targetChunk, newChunk));
+			await RedactionService.As<IAsyncHandle<RedactionMessage.SwitchChunk>>()
+				.HandleAsync(new(e, _lockId, targetChunk, newChunk), CancellationToken.None);
 			return await e.Task;
 		}
 	}

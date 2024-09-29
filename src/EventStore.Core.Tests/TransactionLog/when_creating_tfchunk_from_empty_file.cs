@@ -15,9 +15,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private TFChunk _chunk;
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
-			_chunk = TFChunkHelper.CreateNewChunk(Filename, 1024);
+		public override async Task SetUp() {
+			await base.SetUp();
+			_chunk = await TFChunkHelper.CreateNewChunk(Filename, 1024);
 		}
 
 		[TearDown]

@@ -20,17 +20,17 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 		private EventRecord _r5;
 		private EventRecord _r6;
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			var now = DateTime.UtcNow;
 
 			const string metadata = @"{""$maxAge"":21,""$maxCount"":2.1}";
 
-			_r1 = WriteStreamMetadata("ES", 0, metadata);
-			_r2 = WriteSingleEvent("ES", 0, "bla1", now.AddSeconds(-50));
-			_r3 = WriteSingleEvent("ES", 1, "bla1", now.AddSeconds(-20));
-			_r4 = WriteSingleEvent("ES", 2, "bla1", now.AddSeconds(-11));
-			_r5 = WriteSingleEvent("ES", 3, "bla1", now.AddSeconds(-5));
-			_r6 = WriteSingleEvent("ES", 4, "bla1", now.AddSeconds(-1));
+			_r1 = await WriteStreamMetadata("ES", 0, metadata, token: token);
+			_r2 = await WriteSingleEvent("ES", 0, "bla1", now.AddSeconds(-50), token: token);
+			_r3 = await WriteSingleEvent("ES", 1, "bla1", now.AddSeconds(-20), token: token);
+			_r4 = await WriteSingleEvent("ES", 2, "bla1", now.AddSeconds(-11), token: token);
+			_r5 = await WriteSingleEvent("ES", 3, "bla1", now.AddSeconds(-5), token: token);
+			_r6 = await WriteSingleEvent("ES", 4, "bla1", now.AddSeconds(-1), token: token);
 		}
 
 		[Test]
