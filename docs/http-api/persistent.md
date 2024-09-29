@@ -106,7 +106,7 @@ By default, reading a stream via a persistent subscription returns a single even
 | `count`             | How many events to return for the request.                                       |
 | `embed`             | Allowed values are `None`, `Content`, `Rich`, `Body`, `PrettyBody`, `TryHarder`. |
 
-See [Reading Streams](introduction#reading-streams-and-events) for information on the different embed levels.
+See [Reading Streams](introduction.md#reading-streams-and-events) for information on the different embed levels.
 
 ### Response
 
