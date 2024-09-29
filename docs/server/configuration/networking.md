@@ -387,7 +387,7 @@ The TCP client protocol plugin enables client applications based on the external
 
 ### Enabling the plugin
 
-Refer to the general [plugins configuration](../configuration/README.md#plugins-configuration) guide to see how to configure plugins with JSON files and environment variables.
+Refer to the general [plugins configuration](../configuration/plugins.md) guide to see how to configure plugins with JSON files and environment variables.
 
 To enable the TCP API plugin, save the following configuration in a JSON file, for example `<esdb-installation-directory>/config/tcp-plugin-config.json`, in the EventStoreDB installation directory for a node:
 
