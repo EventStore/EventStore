@@ -12,27 +12,23 @@ When using the HTTP API, you can send the following JSON payload to the server:
 
 @[code](@httpapi/new-user.json)
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code](@httpapi/new-user.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code](@httpapi/new-user.http)
 :::
-::::
 
 Once you have added users, you can use their details with requests.
 
 If you were to use the wrong user or no user when a request requires one, you receive a `401 Unauthorized` response.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code](@httpapi/incorrect-user.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code](@httpapi/incorrect-user.http)
 :::
-::::
 
 As you pass the username and password in the request we recommend you to enable SSL to encrypt the user information. [Read this guide for instructions](@server/security.md).
 
@@ -66,14 +62,13 @@ All these examples assume you have created a user named `ouro` with password `ou
 
 If you try to access the `$settings` stream as an unauthorized user, the server returns a 401 response.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 ```bash
 curl -i http://127.0.0.1:2113/streams/%24settings \
     -u ouro:ouroboros
 ```
-:::
-::: code-group-item Response
+@tab Response
 ```http
 HTTP/1.1 401 Unauthorized
 Access-Control-Allow-Methods: POST, DELETE, GET, OPTIONS
@@ -88,7 +83,6 @@ Content-Length: 0
 Keep-Alive: timeout=15,max=100
 ```
 :::
-::::
 
 If you wanted to give `ouro` access by default to system streams, POST the following JSON:
 
@@ -113,14 +107,13 @@ If you wanted to give `ouro` access by default to system streams, POST the follo
 
 At which point `ouro` can read system streams by default:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 ```bash
 curl -i http://127.0.0.1:2113/streams/%24settings \
     -u ouro:ouroboros
 ```
-:::
-::: code-group-item Response
+@tab Response
 ```http
 HTTP/1.1 200 OK
 Access-Control-Allow-Methods: POST, DELETE, GET, OPTIONS
@@ -137,7 +130,6 @@ Content-Length: 1286
 Keep-Alive: timeout=15,max=100
 ```
 :::
-::::
 
 You can also limit ACLs on particular streams which are then merged with the default ACLs.
 

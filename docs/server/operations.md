@@ -33,19 +33,17 @@ Scavenges are not run automatically by EventStoreDB. We recommend that you set u
 
 You start a scavenge by issuing an empty `POST` request to the HTTP API with the credentials of an `admin` or `ops` user:
 
-::::: code-group
-:::: code Request
+:::: tabs
+@tab Request
 @[code{curl}](@samples/scavenge.sh)
 
 ::: tip
 Scavenge operations have other options you can set to improve performance. For example, you can set the number of threads to use. Check [the API docs](@clients/http-api/api.md#scavenge-a-node) for more details.
 :::
 
+@tab Response
+@[code{response}](@samples/scavenge.sh)
 ::::
-:::: code Response
-@[code{curl}](@samples/scavenge.sh)
-::::
-:::::
 
 ::: tip
 If you need to restart a stopped scavenge, you can specify the starting chunk ID.
@@ -53,9 +51,7 @@ If you need to restart a stopped scavenge, you can specify the starting chunk ID
 
 You can also start scavenges from the _Admin_ page of the Admin UI.
 
-::: card
-![Start a scavenge in the Admin UI](./images/admin-scavenge.png)
-:::
+![Start a scavenge in the Admin UI](../images/admin-scavenge.png)
 
 Each node in a cluster has its own independent database. As such, when you run a scavenge, you need to issue a scavenge request to each node.
 

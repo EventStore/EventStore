@@ -1,21 +1,76 @@
-:root {
-  --content-width: 940px;
-}
+@use "vuepress-theme-hope/presets/shinning-feature-panel";
 
-.custom-container.note {
-  border-color: var(--nprogress-color);
-  background-color: var(--c-tip-bg);
-  color: var(--c-tip-text);
-  padding: 0.1rem 1.5rem;
-  border-left-width: 0.5rem;
-  border-left-style: solid;
-  margin: 1rem 0;
-}
-
-.custom-container-title {
-  color: var(--c-tip-title);
-}
-
-.site-name {
+.vp-site-name {
   display: none;
+}
+
+body {
+  font-size: 15px;
+}
+
+body:has(#kapa-widget-container) .vp-back-to-top-button {
+  bottom: 7.5rem!important;
+}
+
+.vp-feature-title .icon {
+  font-size: 1.5em;
+  vertical-align: middle;
+}
+
+.vp-nav-links {
+  font-size: 1rem;
+}
+
+@font-face {
+  font-family: "Museo Sans";
+  src: url("/fonts/museosans-100-webfont.woff2") format("woff2"),
+  url("/fonts/museosans-100-webfont.woff") format("woff");
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Museo Sans";
+  src: url("/fonts/museosans-300-webfont.woff2") format("woff2"),
+  url("/fonts/museosans-300-webfont.woff") format("woff");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Museo Sans";
+  src: url("/fonts/museosans_500-webfont.woff2") format("woff2"),
+  url("/fonts/museosans_500-webfont.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Museo Sans";
+  src: url("/fonts/museosans_500_italic-webfont.woff2") format("woff2"),
+  url("/fonts/museosans_500_italic-webfont.woff") format("woff");
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Museo Sans";
+  src: url("/fonts/museosans_700-webfont.woff2") format("woff2"),
+  url("/fonts/museosans_700-webfont.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Museo Sans";
+  src: url("/fonts/museosans_900-webfont.woff2") format("woff2"),
+  url("/fonts/museosans_900-webfont.woff") format("woff");
+  font-weight: 900;
+  font-style: normal;
+}
+
+.theme-hope-content:not(.custom)>p,
+.theme-hope-content:not(.custom)>ol p,
+.theme-hope-content:not(.custom)>ul p {
+  text-align: left;
 }

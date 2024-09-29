@@ -6,7 +6,7 @@ The EventStoreDB Admin UI is available at _SERVER_IP:2113_ and helps you interac
 
 ::: card
 
-![Web admin interface dashboard](./images/wai-dashboard.png)
+![Web admin interface dashboard](../images/wai-dashboard.png)
 
 :::
 
@@ -20,7 +20,7 @@ Click the _Snapshot_ button in the top right to output a snapshot of all queue s
 
 ::: card
 
-![Web admin interface stream browser tab](./images/wai-stream-browser.png)
+![Web admin interface stream browser tab](../images/wai-stream-browser.png)
 
 :::
 
@@ -30,7 +30,7 @@ The _Stream Browser_ tab gives an overview of recently created and changed strea
 
 ::: card
 
-![Web admin interface stream details](./images/wai-stream-details.png)
+![Web admin interface stream details](../images/wai-stream-details.png)
 
 :::
 
@@ -57,7 +57,7 @@ The buttons on the left above the events when you are viewing an event stream ar
 
 ::: card
 
-![Web admin interface projections tab](./images/wai-projections.png)
+![Web admin interface projections tab](../images/wai-projections.png)
 
 :::
 
@@ -72,7 +72,7 @@ Clicking an individual projection shows further details.
 
 ::: card
 
-![Web admin interface projection details](./images/wai-projection-details.jpg)
+![Web admin interface projection details](../images/wai-projection-details.jpg)
 
 :::
 
@@ -93,7 +93,7 @@ The _Query_ tab a code editor field where you can create transient and short-liv
 
 ::: card
 
-![Web admin interface query details](./images/wai-query-details.png)
+![Web admin interface query details](../images/wai-query-details.png)
 
 :::
 
@@ -114,7 +114,7 @@ Clicking the _+_ icon next to a stream name reveals the subscription name and mo
 
 ::: card
 
-![Web admin interface projections tab](./images/wai-admin.png)
+![Web admin interface projections tab](../images/wai-admin.png)
 
 :::
 
@@ -124,7 +124,7 @@ The _Admin_ tab shows sub systems enabled (currently only [projections](projecti
 
 ::: card
 
-![Web admin interface projections tab](./images/wai-users.png)
+![Web admin interface projections tab](../images/wai-users.png)
 
 :::
 

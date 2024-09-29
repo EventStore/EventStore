@@ -43,7 +43,7 @@ qualify for scavenging after either 10 seconds or the accumulation of 50,000 eve
 
 
 
-You can find more information on ACLs in the [access control lists documentation](./security.md#access-control-lists).
+You can find more information on ACLs in the [access control lists documentation](security.md#access-control-lists).
 
 ### Event metadata ##
 
