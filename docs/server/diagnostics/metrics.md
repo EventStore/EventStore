@@ -1,3 +1,7 @@
+---
+order: 2
+---
+
 # Metrics
 
 EventStoreDB collects metrics in [Prometheus format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format), available on the `/metrics` endpoint. Prometheus can be configured to scrape this endpoint directly. The metrics are configured in `metricsconfig.json`. 
@@ -200,8 +204,8 @@ eventstore_incoming_grpc_calls{kind="failed"} 1 1687962877623
 
 In addition, EventStoreDB also records metrics for each of client protocol gRPC methods: `StreamRead`, `StreamAppend`, `StreamBatchAppend`, `StreamDelete` and `StreamTombstone`. They are grouped together according to the mapping defined in the configuration.
 
-| Time series                                                                                                    | Type                       | Description                                                                                      |
-|:---------------------------------------------------------------------------------------------------------------|:---------------------------|:-------------------------------------------------------------------------------------------------|
+| Time series                                                                                                                         | Type                       | Description                                                                                      |
+|:------------------------------------------------------------------------------------------------------------------------------------|:---------------------------|:-------------------------------------------------------------------------------------------------|
 | `eventstore_grpc_method_duration_seconds_bucket{`<br/>`activity=<LABEL>,`<br/>`status="successful"\|"failed",`<br/>`le=<DURATION>}` | [Histogram](#common-types) | Number of _LABEL_ gRPC requests that took less than or equal to _DURATION_ in seconds to process |
 
 Example configuration:
@@ -254,17 +258,17 @@ eventstore_kestrel_connections 1 1688070655500
 
 Persistent subscription metrics track the statistics for the persistent subscriptions.
 
-| Time series                                                                                                           | Type                     | Description                                                    |
-|:----------------------------------------------------------------------------------------------------------------------|:-------------------------|:---------------------------------------------------------------|
-| `eventstore_persistent_sub_connections{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                        | [Gauge](#common-types)   | Number of connections                                          |
-| `eventstore_persistent_sub_parked_messages{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                    | [Gauge](#common-types)   | Number of parked messages                                      |
-| `eventstore_persistent_sub_in_flight_messages{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                 | [Gauge](#common-types)   | Number of messages in flight                                   |
-| `eventstore_persistent_sub_oldest_parked_message_seconds{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`      | [Gauge](#common-types)   | Oldest parked message age in seconds                           |
-| `eventstore_persistent_sub_items_processed{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                    | [Counter](#common-types) | Total items processed                                          |
-| `eventstore_persistent_sub_last_known_event_number{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`            | [Counter](#common-types) | Last known event number (streams other than `$all`)            |
-| `eventstore_persistent_sub_last_known_event_commit_position{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`   | [Counter](#common-types) | Last known event's commit position (`$all` stream only)        |
-| `eventstore_persistent_sub_checkpointed_event_number{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`          | [Counter](#common-types) | Last checkpointed event number (streams other than `$all)`     |
-| `eventstore_persistent_sub_checkpointed_event_commit_position{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}` | [Counter](#common-types) | Last checkpointed event's commit position (`$all` stream only) |
+| Time series                                                                                                                  | Type                     | Description                                                    |
+|:-----------------------------------------------------------------------------------------------------------------------------|:-------------------------|:---------------------------------------------------------------|
+| `eventstore_persistent_sub_connections`<br/>`{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                        | [Gauge](#common-types)   | Number of connections                                          |
+| `eventstore_persistent_sub_parked_messages`<br/>`{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                    | [Gauge](#common-types)   | Number of parked messages                                      |
+| `eventstore_persistent_sub_in_flight_messages`<br/>`{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                 | [Gauge](#common-types)   | Number of messages in flight                                   |
+| `eventstore_persistent_sub_oldest_parked_message_seconds`<br/>`{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`      | [Gauge](#common-types)   | Oldest parked message age in seconds                           |
+| `eventstore_persistent_sub_items_processed`<br/>`{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`                    | [Counter](#common-types) | Total items processed                                          |
+| `eventstore_persistent_sub_last_known_event_number`<br/>`{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`            | [Counter](#common-types) | Last known event number (streams other than `$all`)            |
+| `eventstore_persistent_sub_last_known_event_commit_position`<br/>`{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`   | [Counter](#common-types) | Last known event's commit position (`$all` stream only)        |
+| `eventstore_persistent_sub_checkpointed_event_number`<br/>`{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}`          | [Counter](#common-types) | Last checkpointed event number (streams other than `$all)`     |
+| `eventstore_persistent_sub_checkpointed_event_commit_position`<br/>`{event_stream_id=<STREAM_NAME>,group_name=<GROUP_NAME>}` | [Counter](#common-types) | Last checkpointed event's commit position (`$all` stream only) |
 
 Example configuration:
 
@@ -379,12 +383,12 @@ eventstore_gc_pause_duration_max_seconds{range="16-20 seconds"} 0.0485873 168814
 
 Projection metrics track the statistics for projections.
 
-| Time series                                                                                | Type                     | Description                                                      |
-|:-------------------------------------------------------------------------------------------|:-------------------------|:-----------------------------------------------------------------|
-| `eventstore_projection_events_processed_after_restart_total{projection=<PROJECTION_NAME>}` | [Counter](#common-types) | Projection event processed count after restart                   |
-| `eventstore_projection_progress{projection=<PROJECTION_NAME>}`                             | [Gauge](#common-types)   | Projection progress 0 - 1, where 1 = projection progress at 100% |
-| `eventstore_projection_running{projection=<PROJECTION_NAME>}`                              | [Gauge](#common-types)   | If 1, projection is in 'Running' state                           |
-| `eventstore_projection_status{projection=<PROJECTION_NAME>,status=<PROJECTION_STATUS>}`    | [Gauge](#common-types)   | If 1, projection is in specified state                           |
+| Time series                                                                                       | Type                     | Description                                                      |
+|:--------------------------------------------------------------------------------------------------|:-------------------------|:-----------------------------------------------------------------|
+| `eventstore_projection_events_processed_after_restart_total`<br/>`{projection=<PROJECTION_NAME>}` | [Counter](#common-types) | Projection event processed count after restart                   |
+| `eventstore_projection_progress{projection=<PROJECTION_NAME>}`                                    | [Gauge](#common-types)   | Projection progress 0 - 1, where 1 = projection progress at 100% |
+| `eventstore_projection_running{projection=<PROJECTION_NAME>}`                                     | [Gauge](#common-types)   | If 1, projection is in 'Running' state                           |
+| `eventstore_projection_status{projection=<PROJECTION_NAME>,status=<PROJECTION_STATUS>}`           | [Gauge](#common-types)   | If 1, projection is in specified state                           |
 
 `Status` can have one of the following statuses:
 

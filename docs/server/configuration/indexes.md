@@ -4,12 +4,6 @@ title: "Indexing"
 
 EventStoreDB stores indexes separately from the main data files, accessing records by stream name.
 
-Apple
-: Pomaceous fruit of plants of the genus Malus in the family Rosaceae.
-
-Orange
-: The fruit of an evergreen tree of the genus Citrus.
-
 ## Overview
 
 EventStoreDB creates index entries as it processes commit events. It holds these in memory (called 

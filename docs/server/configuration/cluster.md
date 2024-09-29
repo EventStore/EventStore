@@ -3,7 +3,7 @@ title: Clustering
 order: 4
 ---
 
-## Highly-available cluster
+# Highly-available cluster
 
 EventStoreDB allows you to run more than one node in a cluster for high availability.
 
@@ -12,7 +12,7 @@ EventStoreDB starts in secure mode by default, which requires configuration [set
 Cluster members authenticate each other using the certificate Common Name. All the cluster nodes must have the same common name in their certificates.
 :::
 
-### Cluster nodes
+## Cluster nodes
 
 EventStoreDB clusters follow a "shared nothing" philosophy, meaning that clustering requires no shared disks. Instead, each node has a copy of the data to ensure it is not lost in case of a drive failure or a node crashing. 
 
@@ -22,7 +22,7 @@ Lean more about [node roles](#node-roles).
 
 EventStoreDB uses a quorum-based replication model, in which a majority of nodes in the cluster must acknowledge that they have received a copy of the write before the write is acknowledged to the client. This means that to be able to tolerate the failure of _n_ nodes, the cluster must be of size _(2n + 1)_. A three node cluster can continue to accept writes if one node is unavailable. A five node cluster can continue to accept writes if two nodes are unavailable, and so forth.
 
-### Cluster size
+## Cluster size
 
 For any cluster configuration, you first need to decide how many nodes you want, provision each node and set the cluster size option on each node.
 
@@ -42,7 +42,13 @@ Use the `ClusterSize` option to tell each cluster node about how many nodes the 
 
 Common values for the `ClusterSize` setting are three or five (to have a majority of two nodes and a majority of three nodes). We recommended setting this to an odd number of nodes to minimise the chance of a tie during elections, which would lengthen the election process.
 
-### Discovering cluster members
+## Internal communication
+
+When setting up a cluster, the nodes must be able to reach each other over both the HTTP channel, and the internal TCP channel. You should ensure that these ports are open on firewalls on the machines and between the machines.
+
+Learn more about [replication configuration](networking.md#replication-protocol) and [HTTP configuration](networking.md#http-configuration) to set up the cluster properly.
+
+## Discovering cluster members
 
 Cluster nodes use the gossip protocol to discover each other and elect the cluster leader.
 
@@ -54,13 +60,7 @@ Configure cluster nodes to discover other nodes in one of two ways:
 
 The multi-address DNS name cluster discovery only works for clusters that use certificates signed by a private certificate authority, or run insecure. For other scenarios you need to provide the gossip seed using hostnames of other cluster nodes.
 
-### Internal communication
-
-When setting up a cluster, the nodes must be able to reach each other over both the HTTP channel, and the internal TCP channel. You should ensure that these ports are open on firewalls on the machines and between the machines.
-
-Learn more about [internal TCP configuration](networking.md#replication-protocol) and [HTTP configuration](networking.md#http-configuration) to set up the cluster properly.
-
-## Cluster with DNS
+### Cluster with DNS
 
 When you tell EventStoreDB to use DNS for its gossip, the server will resolve the DNS name to a list of IP addresses and connect to each of those addresses to find other nodes. This method is very flexible because you can change the list of nodes on your DNS server without changing the cluster configuration. The DNS method is also useful in automated deployment scenarios when you control both the cluster deployment and the DNS server from your infrastructure-as-code scripts.
 
@@ -92,7 +92,7 @@ It will be used only if the cluster has more than one node. You must set the `Cl
 
 When using DNS for cluster gossip, you might need to set the `GossipPort` setting to the HTTP port if the external HTTP port setting is not set to `2113` default port. Refer to [gossip port](#gossip-port) option documentation to learn more.
 
-## Cluster with gossip seeds
+### Cluster with gossip seeds
 
 If you don't want or cannot use the DNS-based configuration, it is possible to tell cluster nodes to call other nodes using their IP addresses. This method is a bit more cumbersome, because each node has to have the list of addresses for other nodes configured, but not its own address.
 

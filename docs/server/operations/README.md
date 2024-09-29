@@ -13,6 +13,6 @@ EventStoreDB requires regular maintenance with three operational concerns:
 - [Certificate update](cert-update.md) to renew certificates.
 
 You might also be interested learning about EventStoreDB [diagnostics](../diagnostics/README.md)
-and [indexes](../features/indexes.md), which might require some Ops attention.
+and [indexes](../configuration/indexes.md), which might require some Ops attention.
 
 <Catalog/>

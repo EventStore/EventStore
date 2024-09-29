@@ -13,9 +13,9 @@ Welcome to the EventStoreDB documentation.
 
 EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration, and operational concerns.
 
-EventStoreDB is available in both an Open-Source and a Commercial version:
+EventStoreDB v24.6 is available in both an Open-Source and a Commercial version:
 
-- EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore) and free-to-use edition of EventStoreDB.
+- EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore/tree/release/oss-v24.6) and free-to-use edition of EventStoreDB.
 - EventStoreDB Commercial is available for customers with an EventStoreDB [paid support subscription](https://eventstore.com/support/). EventStoreDB Commercial adds enterprise-focused features such as LDAP and X.509 authentication, OpenTelemetry Exporter, correlation event sequence visualisation, and management CLI tool.
 
 ## What's new
@@ -38,7 +38,7 @@ Customers with the paid [support plan](https://eventstore.com/support/) can open
 
 ### Issues
 
-Since EventStoreDB is an open-source product, we track most of the issues openly in the EventStoreDB [repository on GitHub](https://github.com/EventStore/EventStore). Before opening an issue, please ensure that a similar issue hasn't been opened already. Also, try searching closed issues that might contain a solution or workaround for your problem.
+Ee track most of the issues openly in the EventStoreDB [repository on GitHub](https://github.com/EventStore/EventStore). Before opening an issue, please ensure that a similar issue hasn't been opened already. Also, try searching closed issues that might contain a solution or workaround for your problem.
 
 When opening an issue, follow our [guidelines](https://github.com/EventStore/EventStore/blob/master/CONTRIBUTING.md) for bug reports and feature requests. By doing so, you will greatly help us to solve your concerns most efficiently.
 
@@ -82,7 +82,6 @@ You need to enable the AtomPub protocol to have a fully functioning database use
 :::
 
 Learn more about the EventStoreDB HTTP interface in the [HTTP documentation](@clients/http-api/README.md). 
-
 
 #### Community developed clients
 

@@ -13,7 +13,7 @@ Security features of EventStoreDB include:
 - [Access Control Lists](#access-control-lists) to restrict access to specific event streams
 - Encryption in-flight using HTTPS and TLS
 
-### Protocol security
+## Protocol security
 
 EventStoreDB supports gRPC and the proprietary TCP protocol for high-throughput real-time communication. It
 also has some HTTP endpoints for the management operations like scavenging, creating projections and so on.

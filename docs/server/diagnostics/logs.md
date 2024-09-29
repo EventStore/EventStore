@@ -1,5 +1,6 @@
 ---
 title: "Logs"
+order: 1
 ---
 
 # Database logs
