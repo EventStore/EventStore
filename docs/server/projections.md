@@ -22,7 +22,7 @@ As a medical research doctor you want to find people diagnosed with pancreatic c
 
 You can use projections in nearly all examples of near real-time complex event processing. There are a large number of problems that fit into this category from monitoring of temperature sensors, to reacting to changes in the stock market.
 
-It's important to remember the types of problems that projections help to solve. Many problems are not a good fit for projections and are better served by hosting another read model populated by a [catchup subscription](@clients/dotnet/5.0/subscriptions.md#catch-up-subscriptions).
+It's important to remember the types of problems that projections help to solve. Many problems are not a good fit for projections and are better served by hosting another read model populated by a catchup subscription. See the clients documentation for more information on catchup subscriptions.
 
 ### Continuous querying
 
