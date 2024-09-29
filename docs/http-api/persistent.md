@@ -1,3 +1,7 @@
+---
+order: 3
+---
+
 # Persistent subscriptions
 
 This document explains how to use HTTP API for setting up and consuming persistent subscriptions and competing consumer subscription groups. For an overview on competing consumers and how they relate to other subscription types please see our [getting started guide](@server/persistent-subscriptions.md).
@@ -98,7 +102,7 @@ By default, reading a stream via a persistent subscription returns a single even
 | `count`             | How many events to return for the request.                   |
 | `embed`             | `None`, `Content`, `Rich`, `Body`, `PrettyBody`, `TryHarder` |
 
-Read [Reading Streams](README.md#reading-streams-and-events) for information on the different embed levels.
+Read [Reading Streams](introduction#reading-streams-and-events) for information on the different embed levels.
 
 ### Response
 

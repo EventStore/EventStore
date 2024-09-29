@@ -1,3 +1,7 @@
+---
+order: 2
+---
+
 # Security
 
 EventStoreDB supports basic authentication for HTTP API calls, and access control lists (ACL).
@@ -36,7 +40,7 @@ As you pass the username and password in the request we recommend you to enable 
 
 Alongside authentication, EventStoreDB supports per stream configuration of Access Control Lists (ACL). To configure the ACL of a stream go to its head and look for the `metadata` relationship link to fetch the metadata for the stream.
 
-To set access control lists over HTTP you can post to the metadata stream as [with setting any other metadata](README.md#stream-metadata). You can also set Access Control Lists for a stream in the admin UI.
+To set access control lists over HTTP you can post to the metadata stream as [with setting any other metadata](introduction#stream-metadata). You can also set Access Control Lists for a stream in the admin UI.
 
 ### ACL example
 
