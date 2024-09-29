@@ -4,11 +4,7 @@ The EventStoreDB Admin UI is available at _SERVER_IP:2113_ and helps you interac
 
 ## Dashboard
 
-::: card
-
 ![Web admin interface dashboard](../images/wai-dashboard.png)
-
-:::
 
 The _Dashboard_ tab shows an overview of active queues with associated statistics in the top half. The _+_ icon indicates a queue group, click it to reveal the queues that are part of the group.
 
@@ -18,21 +14,13 @@ Click the _Snapshot_ button in the top right to output a snapshot of all queue s
 
 ## Stream browser
 
-::: card
-
 ![Web admin interface stream browser tab](../images/wai-stream-browser.png)
-
-:::
 
 The _Stream Browser_ tab gives an overview of recently created and changed streams, clicking on an individual stream shows details about the individual stream.
 
 ### Event stream
 
-::: card
-
 ![Web admin interface stream details](../images/wai-stream-details.png)
-
-:::
 
 Each individual stream shows pages of the events in a stream with an overview of the event. Click the _Name_ to see the EventId, and _JSON_ to the see the event data. The buttons above change depending on what you are viewing in the interface. The _Back_ button takes you to the parent screen.
 
@@ -55,11 +43,7 @@ The buttons on the left above the events when you are viewing an event stream ar
 
 ## Projections
 
-::: card
-
 ![Web admin interface projections tab](../images/wai-projections.png)
-
-:::
 
 The _Projections_ tab shows system and user created projections defined in EventStoreDB, the buttons above the list do the following:
 
@@ -70,11 +54,7 @@ The _Projections_ tab shows system and user created projections defined in Event
 
 Clicking an individual projection shows further details.
 
-::: card
-
 ![Web admin interface projection details](../images/wai-projection-details.jpg)
-
-:::
 
 On the left is the projection definition, and on the right, the stats, results and state of the projection. The buttons above the details do the following:
 
@@ -91,11 +71,7 @@ On the left is the projection definition, and on the right, the stats, results a
 
 The _Query_ tab a code editor field where you can create transient and short-lived projections for quick analysis of your event streams.
 
-::: card
-
 ![Web admin interface query details](../images/wai-query-details.png)
-
-:::
 
 ## Persistent subscriptions
 
@@ -112,21 +88,13 @@ Clicking the _+_ icon next to a stream name reveals the subscription name and mo
 
 ## Admin
 
-::: card
-
 ![Web admin interface projections tab](../images/wai-admin.png)
-
-:::
 
 The _Admin_ tab shows sub systems enabled (currently only [projections](projections.md)) on EventStoreDB and [scavenges](operations.md#scavenging-events) run. You can start a new scavenge operation by clicking the _Scavenge_ button, and shut EventStoreDB down by clicking the _Shutdown Server_ button.
 
 ## Users
 
-::: card
-
 ![Web admin interface projections tab](../images/wai-users.png)
-
-:::
 
 The _Users_ tab shows [the users defined in EventStoreDB](security.md#authentication), clicking an individual user shows a JSON representation of that users details.
 
