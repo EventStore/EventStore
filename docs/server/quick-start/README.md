@@ -18,6 +18,10 @@ EventStoreDB v23.10 is available in both Open-Source and Commercial version:
 - EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore/tree/release/oss-v23.10) and free-to-use edition of EventStoreDB.
 - EventStoreDB Commercial is available for customers with an EventStoreDB [paid support subscription](https://eventstore.com/support/). EventStoreDB Commercial adds enterprise-focused features such as LDAP integration, correlation event sequence visualisation, and management CLI.
 
+::: note
+Although version 23.10 is licensed under the Event Store License based on BSD 3-Clause, starting from version 24.10, EventStoreDB will be licensed under the [Event Store License v2 (ESLv2)](https://github.com/EventStore/EventStore/blob/4cab8ca81a63f0a8f708d5564ea459fe5a7131de/LICENSE.md), which is not an OSI-approved Open Source License.
+:::
+
 ## Getting started
 
 Get started by learning more about the principles of EventStoreDB, Event Sourcing, database installation guidelines and choosing a [client SDK](#protocols-clients-and-sdks).
