@@ -23,25 +23,21 @@ When you append to a stream and don't use the `application/vnd.eventstore.events
 
 You can include an event ID on an event by specifying this header.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event-to-new-stream.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-event-to-new-stream.sh)
 :::
-::::
 
 If you don't add an `ES-EventId` header on an append where the body is considered the actual event (e.g., not using `application/vnd.eventstore.events+json/+xml`) EventStoreDB generates a unique identifier for you and redirects you to an idempotent URI where you can post your event. If you can create a UUID then you shouldn't use this feature, but it's useful when you cannot create a UUID.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event-no-id.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-event-no-id.sh)
 :::
-::::
 
 EventStoreDB returned a `307 Temporary Redirect` with a location header that points to a generated URI that is idempotent for purposes of retrying the post.
 
@@ -51,27 +47,23 @@ When you append to a stream and don't the `application/vnd.eventstore.events+jso
 
 You use the `ES-EventType` header as follows.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event-to-new-stream.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-event-to-new-stream.sh)
 :::
-::::
 
 If you view the event in the UI or with cURL it has the `EventType` of `SomeEvent`:
 
 <!-- TODO: Does this make sense? If I can't use the custom media type -->
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/read-event.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/read-event.sh)
 :::
-::::
 
 ## Expected Version
 
@@ -90,49 +82,41 @@ If the `ExpectedVersion` does not match the version of the stream, EventStoreDB 
 
 In the following cURL command `ExpectedVersion` is not set, and it appends or create/append to the stream.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event-to-new-stream.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-event-to-new-stream.sh)
 :::
-::::
 
 The stream `newstream` has one event. If you append with an expected version of `3`, you receive an error.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event-wrong-version.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-event-wrong-version.sh)
 :::
-::::
 
 You can see from the `ES-CurrentVersion` header above that the stream is at version 0. Appending with an expected version of 0 works. The expected version is always the version of the last event known in the stream.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/append-event-version.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/append-event-version.sh)
 :::
-::::
 
 ## HardDelete
 
 The `ES-HardDelete` header controls deleting a stream. By default EventStoreDB soft deletes a stream allowing you to later reuse that stream. If you set the `ES-HardDelete` header EventStoreDB permanently deletes the stream.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/delete-stream/hard-delete-stream.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/delete-stream/hard-delete-stream.sh)
 :::
-::::
 
 This changes the general behaviour from returning a `404` and the stream to be recreated (soft-delete) to the stream now return a `410 Deleted` response.
 
@@ -148,25 +132,21 @@ You can see the use of the `ES-LongPoll` header in the following cURL command.
 
 First go to the head of the stream.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/read-stream.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/read-stream.sh)
 :::
-::::
 
 Then fetch the previous `rel` link `http://127.0.0.1:2113/streams/newstream/2/forward/20` and try it. It returns an empty feed.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/get-forward-link.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/get-forward-link.sh)
 :::
-::::
 
 The entries section is empty (there is no further data to provide). Now try the same URI with a long poll header.
 
@@ -182,14 +162,13 @@ Over HTTP the `RequiresMaster` header tells the node that it is not allowed to s
 
 Run the below on the master:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 ```bash
 curl -i "http://127.0.0.1:32004/streams/newstream" \
     -H "ES-RequireMaster: True"
 ```
-:::
-::: code-group-item Response
+@tab Response
 ```json
 HTTP/1.1 200 OK
 Cache-Control: max-age=0, no-cache, must-revalidate
@@ -257,18 +236,16 @@ Date: Thu, 27 Jun 2013 14:48:37 GMT
 }
 ```
 :::
-::::
 
 Run the following on any other node:
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 ```bash
 curl -i "http://127.0.0.1:31004/streams/newstream" \
     -H "ES-RequireMaster: True"
 ```
-:::
-::: code-group-item Response
+@tab Response
 ```http
 HTTP/1.1 307 Temporary Redirect
 Content-Length: 0
@@ -281,7 +258,6 @@ Access-Control-Allow-Origin: *
 Date: Thu, 27 Jun 2013 14:48:28 GMT
 ```
 :::
-::::
 
 ## Resolve LinkTo
 
@@ -289,24 +265,20 @@ When using projections you can have links placed into another stream. By default
 
 You can see the differences in behaviour in the following cURL commands.
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/resolve-links.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/resolve-links.sh)
 :::
-::::
 
 ::: tip
 The content links are pointing to the original projection stream. The linked events are resolved back to where they point. With the header set the links (or embedded content) instead point back to the actual `linkTo` events.
 :::
 
-:::: code-group
-::: code-group-item Request
+::: tabs
+@tab Request
 @[code{curl}](@httpapi/resolve-links-false.sh)
-:::
-::: code-group-item Response
+@tab Response
 @[code{response}](@httpapi/resolve-links-false.sh)
 :::
-::::

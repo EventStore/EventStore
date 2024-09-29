@@ -43,7 +43,7 @@ Security access control lists are also included in the `$acl` section of the str
 | `$mw`         | The list of users with write permissions to stream metadata |
 | `$mr`         | The list of users with read permissions to stream metadata  |
 
-You can find more details on access control lists can [here](./security.md#access-control-lists).
+You can find more details on access control lists can [here](security.md#access-control-lists).
 
 ### Event metadata
 

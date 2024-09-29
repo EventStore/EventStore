@@ -24,14 +24,11 @@ Follow the upgrade procedure below on each node, starting with a follower node:
 
 As illustrated below:
 
-::: card
-![EventStoreDB upgrade procedure for each node](./images/upgrade-procedure.png)
-:::
-
+![EventStoreDB upgrade procedure for each node](images/upgrade-procedure.png)
 
 Upgrading the cluster in this manner keeps the cluster online and able to service requests. There may still be disruptions to your services during the upgrade, namely:
 - Client connections may be disconnected when nodes go offline, or when elections take place.
-- The cluster is less fault tolerant while a node is offline for an upgrade because the cluster requires a quorum of nodes to be online to service write requests.
+- The cluster is less fault-tolerant while a node is offline for an upgrade because the cluster requires a quorum of nodes to be online to service write requests.
 - Replicating large amounts of data to a node can have a performance impact on the Leader in the cluster.
 
 ### Breaking changes from version 21.10
