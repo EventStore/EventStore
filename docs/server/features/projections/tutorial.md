@@ -22,7 +22,7 @@ Add the sample data to four different streams:
 ## Create your first projection
 
 ::: tip Next steps
-Read [this guide](#projections-api) to find out more about the user defined projection's API.
+Read [this guide](custom.md#projections-api) to find out more about the user defined projection's API.
 :::
 
 The projection counts the number of 'XBox One S's that customers added to their shopping carts.
@@ -37,7 +37,7 @@ Here is the projection code:
 
 You create a projection by calling the projection API and providing it with the definition of the projection. Here you decide how to run the projection, declaring that you want the projection to start from the beginning and keep running. You can create a projection using the Admin UI by opening the _Projections_ tab, clicking the _New Projection_ button and filling in the details of your projection.
 
-![Creating a projection with the EventStoreDB Admin UI](../images/getting-started-create-projection.png)
+![Creating a projection with the EventStoreDB Admin UI](images/getting-started-create-projection.png)
 
 You can also create projections programmatically. Pass the projection JSON file as a parameter of your request, along with any other settings:
 

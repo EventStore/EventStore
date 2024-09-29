@@ -119,7 +119,7 @@ If you plan to use projections and delete streams, there are some considerations
 
 - In the context of **`$all`**, projections using **`fromAll`** read any deleted events that have not been scavenged. They also receive tombstone events from any hard deletions.
 
-- System projections like [by category](projections.md#by-category) or [by event type](projections.md#by-event-type) produce new link events stored alongside
+- System projections like [by category](projections/system.md#by-category) or [by event type](projections/system.md#by-event-type) produce new link events stored alongside
   the original event in the database. When original events are deleted, link events remain in the projected streams, but their links remain unresolved (with undefined values). You can ignore those events in the code logic.
 
 ## System events and streams

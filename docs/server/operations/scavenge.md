@@ -80,7 +80,7 @@ the scavenging operation progress and status.
 
 Do not take [file-copy](backup.md#types-of-backups) backups while scavenge is running. Stop the scavenge and resume it after the backup.
 
-[Disk snapshot](#types-of-backups) backups can be taken while scavenge is running.
+[Disk snapshot](backup.md#types-of-backups) backups can be taken while scavenge is running.
 
 ### How often to scavenge
 

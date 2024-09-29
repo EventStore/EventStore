@@ -58,7 +58,7 @@ The _Projections_ tab shows system and user created projections defined in Event
 - _Disable All_: Disable all running projections.
 - _Enable All_: Enable all stopped projections.
 - _Include Queries_: Toggle displaying queries in the Projections table.
-- _New Projection_: [Create a user-defined projection](projections.md#user-defined-projections) with the Admin UI.
+- _New Projection_: [Create a user-defined projection](projections/custom.md) with the Admin UI.
 
 Clicking an individual projection shows further details.
 
@@ -69,8 +69,8 @@ On the left is the projection definition. On the right are the stats, results, a
 - _Start_: Start a stopped projection.
 - _Stop_: Stop a running projection.
 - _Edit_: Edit the projection definition.
-- _Config_: [Set configuration options](projections.md#configuring-projections) for a projection.
-- _Debug_: Opens [the debugging interface](projections.md#debugging) to debug what effect a projection is having on events.
+- _Config_: [Set configuration options](projections/custom.md#configuring-projections) for a projection.
+- _Debug_: Opens [the debugging interface](projections/custom.md#debugging) to debug what effect a projection is having on events.
 - _Delete_: Delete a projection.
 - _Reset_: Reset a projection.
 - _Back_: Returns you to the parent screen.
@@ -98,7 +98,7 @@ Clicking the _+_ icon next to a stream name reveals the subscription name and mo
 
 ![Web admin interface admin](images/wai-admin.png)
 
-The _Admin_ tab shows subsystems enabled (currently only [projections](projections.md)) on EventStoreDB and [scavenges](../operations/scavenge.md) run. You can start a new scavenge operation by clicking the _Scavenge_ button, and shut EventStoreDB down by clicking the _Shutdown Server_ button.
+The _Admin_ tab shows subsystems enabled (currently only [projections](projections/README.md)) on EventStoreDB and [scavenges](../operations/scavenge.md) run. You can start a new scavenge operation by clicking the _Scavenge_ button, and shut EventStoreDB down by clicking the _Shutdown Server_ button.
 
 ## Users
 
