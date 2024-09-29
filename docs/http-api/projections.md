@@ -1,3 +1,7 @@
+---
+order: 4
+---
+
 # Projections
 
 You can also query the state of all projections using the HTTP API.
