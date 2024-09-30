@@ -1,3 +1,7 @@
+---
+order: 3
+---
+
 # Persistent subscriptions
 
 This document explains how to use HTTP API for setting up and consuming persistent subscriptions and competing consumer subscription groups. For an overview on competing consumers and how they relate to other subscription types please see our [getting started guide](@server/persistent-subscriptions.md).
@@ -11,7 +15,7 @@ The Administration UI includes a _Competing Consumers_ section where you are abl
 Before interacting with a subscription group, you need to create one. You receive an error if you try to create a subscription group more than once. This requires [admin permissions](security.md).
 
 ::: warning  
-Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to create persistent subscriptions to `$all`, use the [appropriate client method](@clients/persistent-subscriptions.md#subscribing-to-all).  
+Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to create persistent subscriptions to `$all`, use the [appropriate client method](@clients/grpc/persistent-subscriptions.md#subscribing-to-all).  
 :::
 
 <!-- TODO: File inclusion for the below? -->
@@ -54,7 +58,7 @@ You can edit the settings of an existing subscription while it is running. This 
 | `/subscriptions/{stream}/{subscription_name}` | `application/json`      | POST   |
 
 ::: warning  
-Persistent subscriptions to `$all` are not supported over the HTTP API. To update persistent subscriptions to `$all`, use the [appropriate client method](@clients/persistent-subscriptions.md#updating-a-subscription-group).  
+Persistent subscriptions to `$all` are not supported over the HTTP API. To update persistent subscriptions to `$all`, use the [appropriate client method](@clients/grpc/persistent-subscriptions.md#updating-a-subscription-group).  
 :::
 
 ### Query parameters
@@ -100,7 +104,7 @@ By default, reading a stream via a persistent subscription returns a single even
 | `count`             | How many events to return for the request.                   |
 | `embed`             | `None`, `Content`, `Rich`, `Body`, `PrettyBody`, `TryHarder` |
 
-Read [Reading Streams](README.md#reading-streams-and-events) for information on the different embed levels.
+Read [Reading Streams](introduction.md#reading-streams-and-events) for information on the different embed levels.
 
 ### Response
 

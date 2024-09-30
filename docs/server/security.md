@@ -386,16 +386,14 @@ However, if you're using a public certificate authority (e.g [Let's Encrypt](htt
 
 To verify if your certificate is using the AIA extension, you need to verify if there is a section named: `Authority Information Access` in the certificate.
 
-:::: tabs
-::: tab Linux
-
+::: tabs#os
+@tab Linux
 Use `openssl` to find the section in the certificate file:
 
 ```
 openssl x509 -in /path/to/node.crt -text | grep 'Authority Information Access' -A 1
 ```
-:::
-::: tab Windows
+@tab Windows
 Open the certificate, go to the `Details` tab and look for the `Authority Information Access` field.
 
 If the extension is present, you can manually download the intermediate certificate from the URL present under the `CA Issuers` entry.
@@ -409,7 +407,6 @@ openssl x509 -inform der -in /path/to/cert.der > /path/to/cert.pem
 
 or with [an online service](https://www.sslshopper.com/ssl-converter.html) if you don't have openssl installed.
 :::
-::::
 
 It's possible that there are more than one intermediate CA certificates in the chain - so you need to verify if the certificate you've just downloaded also uses the AIA extension. If yes, you need to download the next intermediate CA certificate in the chain by repeating the same process above until you eventually reach a publicly trusted root certificate (i.e. the `Subject` and `Issuer` fields will match). In practice, there'll usually be at most two intermediate certificates in the chain.
 
@@ -423,25 +420,20 @@ In the examples below, intermediate certificates are numbered from 1 to N starti
 
 If your node's certificate and the intermediate CA certificates are both PEM formatted, that is they begin with `-----BEGIN CERTIFICATE-----` and end with `-----END CERTIFICATE-----` then you can simply append the contents of the intermediate certificate files to the end of the node's certificate file to create the bundle.
 
-:::: code-group
-::: code-group-item Linux
-
+::: tabs#os
+@tab Linux
 ```bash
 cat /path/to/intermediate1.crt >> /path/to/node.crt
 ...
 cat /path/to/intermediateN.crt >> /path/to/node.crt
 ```
-
-:::
-::: code-group-item Windows
-
+@tab Windows
 ```powershell
 type C:\path\to\intermediate1.crt >> C:\path\to\node.crt
 ...
 type C:\path\to\intermediateN.crt >> C:\path\to\node.crt
 ```
 :::
-::::
 
 ##### PKCS #12 format
 
@@ -463,8 +455,8 @@ This is required for two reasons:
 i)  For the full certificate chain to be sent when TLS connections are established  
 ii) To improve performance by preventing certificate downloads if your certificate uses the AIA extension  
 
-:::: tabs
-::: tab Linux
+::: tabs#os
+@tab Linux
 The following script assumes EventStoreDB is running under the `eventstore` account.
 
 ```bash
@@ -472,8 +464,7 @@ sudo su eventstore --shell /bin/bash
 dotnet tool install --global dotnet-certificate-tool
  ~/.dotnet/tools/certificate-tool add -s CertificateAuthority -l CurrentUser --file /path/to/intermediate.crt
 ```
-:::
-::: tab Windows
+@tab Windows
 To import the intermediate certificate in the `Intermediate Certification Authorities` certificate store, run the following PowerShell command under the same account as EventStoreDB is running:
 
 ```powershell
@@ -486,7 +477,6 @@ Optionally, to import the intermediate certificate in the `Local Computer` store
 Import-Certificate -FilePath .\ca.crt -CertStoreLocation Cert:\LocalMachine\CA
 ```
 :::
-::::
 
 ### TCP protocol security
 

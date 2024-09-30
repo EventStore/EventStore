@@ -7,7 +7,7 @@ EventStoreDB requires regular maintenance with three operational concerns:
 - [Certificate update](#certificate-update-upon-expiry) to renew certificates.
 
 You might also be interested learning about EventStoreDB [diagnostics](diagnostics.md)
-and [indexes](./indexes.md), which might require attention.
+and [indexes](indexes.md), which might require attention.
 
 ## Scavenging
 
@@ -33,9 +33,7 @@ or `ops` user:
 
 Scavenges can also be started from the _Admin_ page of the Admin UI.
 
-::: card
-![Start a scavenge in the Admin UI](./images/admin-scavenge.png)
-:::
+![Start a scavenge in the Admin UI](images/admin-scavenge.png)
 
 Each node in a cluster contains an independent copy of the database. As such, when you run a scavenge, you need to issue a
 scavenge request to each node. Scavenges can be run concurrently, or be run in series to spread the load.
@@ -74,8 +72,6 @@ A scavenge can be stopped at any time. The next time a scavenge is started, it w
 ### Viewing progress
 
 The logs contain detailed information about the progress of the scavenge.
-
-The current state of the scavenge can also be tracked in the [metrics](metrics.md).
 
 The [execution phase](#execution-phase) of the scavenge emits events into streams.
 Each scavenge operation generates a new stream containing the events related to that
@@ -326,7 +322,7 @@ There are two main ways to perform backups:
 
 - Do not attempt to back up a node using file copy at the same time a scavenge operation is running.
 
-- [Read-only replica](./cluster.md#read-only-replica) nodes may be used as a backup source.
+- [Read-only replica](cluster.md#read-only-replica) nodes may be used as a backup source.
 
 - When either running a backup or restoring, do not mix backup files of different nodes.
 
@@ -438,7 +434,7 @@ Then backup the log:
 Increase the cluster size from 3 to 5 to keep further copies of data. This increase in the cluster size will
 slow the cluster's writing performance as two follower nodes will need to confirm each write.
 
-Alternatively, you can use a [read-only replica](./cluster.md#read-only-replica) node, which is not a part of
+Alternatively, you can use a [read-only replica](cluster.md#read-only-replica) node, which is not a part of
 the cluster. In this case, the write performance will be minimally impacted.
 
 #### Alternative storage

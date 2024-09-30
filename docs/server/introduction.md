@@ -6,8 +6,12 @@ EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/
 
 EventStoreDB is available in both an Open-Source and an Enterprise version:
 
-- EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore) and free-to-use edition of EventStoreDB.
-- EventStoreDB Enterprise is available for customers with an EventStoreDB [paid support subscription](https://eventstore.com/support/). EventStoreDB Enterprise adds enterprise-focused features such as LDAP integration, correlation event sequence visualisation, and management CLI.
+- EventStoreDB v22.10 OSS is the [open-source](https://github.com/EventStore/EventStore/tree/release/oss-v22.10) and free-to-use edition of EventStoreDB.
+- EventStoreDB v22.10 Enterprise is available for customers with an EventStoreDB [paid support subscription](https://eventstore.com/support/). EventStoreDB Enterprise adds enterprise-focused features such as LDAP integration, correlation event sequence visualisation, and management CLI.
+
+::: note
+Although version 22.10 is licensed under the Event Store License based on BSD 3-Clause, starting from version 24.10, EventStoreDB will be licensed under the [Event Store License v2 (ESLv2)](https://github.com/EventStore/EventStore/blob/4cab8ca81a63f0a8f708d5564ea459fe5a7131de/LICENSE.md), which is not an OSI-approved Open Source License.
+:::
 
 ## Getting started
 

@@ -2,7 +2,7 @@ module.exports = [
     {
         text:     "Getting started",
         children: [
-            "README.md",
+            "introduction.md",
             "installation.md",
         ]
     },
