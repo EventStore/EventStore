@@ -1,6 +1,10 @@
+---
+order: 3
+---
+
 # Persistent subscriptions
 
-This document explains how to use the HTTP API for setting up and consuming persistent subscriptions and competing consumer subscription groups. For an overview on competing consumers and how they relate to other subscription types, please see our [getting started guide](@server/persistent-subscriptions.md).
+This document explains how to use the HTTP API for setting up and consuming persistent subscriptions and competing consumer subscription groups. For an overview on competing consumers and how they relate to other subscription types, please see our [getting started guide](@server/features/persistent-subscriptions.md).
 
 ::: tip
 The Administration UI includes a _Competing Consumers_ section where you are able to create, update, delete and view subscriptions and their statuses.
@@ -17,20 +21,20 @@ Persistent subscriptions to `$all` are not supported over the HTTP API. If you w
 <!-- TODO: File inclusion for the below? -->
 
 | URI                                           | Supported Content Types | Method |
-| --------------------------------------------- | ----------------------- | ------ |
+|-----------------------------------------------|-------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name}` | `application/json`      | PUT    |
 
 ### Query parameters
 
 | Parameter           | Description                                   |
-| ------------------- | --------------------------------------------- |
+|---------------------|-----------------------------------------------|
 | `stream`            | The stream the persistent subscription is on. |
 | `subscription_name` | The name of the subscription group.           |
 
 ### Body
 
 | Parameter                     | Description                                                                                        |
-| ----------------------------- | -------------------------------------------------------------------------------------------------- |
+|-------------------------------|----------------------------------------------------------------------------------------------------|
 | `resolveLinktos`              | Tells the subscription to resolve link events.                                                     |
 | `startFrom`                   | Start the subscription from the position of the event in the stream.                               |
 | `extraStatistics`             | Tells the backend to measure timings on the clients so statistics will contain histograms of them. |
@@ -50,7 +54,7 @@ Persistent subscriptions to `$all` are not supported over the HTTP API. If you w
 You can edit the settings of an existing subscription while it is running. This drops the current subscribers and resets the subscription internally. This requires admin permissions.
 
 | URI                                           | Supported Content Types | Method |
-| --------------------------------------------- | ----------------------- | ------ |
+|-----------------------------------------------|-------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name}` | `application/json`      | POST   |
 
 ::: warning
@@ -60,7 +64,7 @@ Persistent subscriptions to `$all` are not supported over the HTTP API. To updat
 ### Query parameters
 
 | Parameter           | Description                                   |
-| ------------------- | --------------------------------------------- |
+|---------------------|-----------------------------------------------|
 | `stream`            | The stream the persistent subscription is on. |
 | `subscription_name` | The name of the subscription group.           |
 
@@ -71,7 +75,7 @@ _Same parameters as [Creating a Persistent Subscription](#creating-a-persistent-
 ## Deleting a persistent subscription
 
 | URI                                           | Supported Content Types | Method |
-| --------------------------------------------- | ----------------------- | ------ |
+|-----------------------------------------------|-------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name}` | `application/json`      | DELETE |
 
 ::: warning
@@ -81,7 +85,7 @@ Deleting persistent subscriptions to `$all` is not supported over the HTTP API. 
 ### Query parameters
 
 | Parameter           | Description                                   |
-| ------------------- | --------------------------------------------- |
+|---------------------|-----------------------------------------------|
 | `stream`            | The stream the persistent subscription is on. |
 | `subscription_name` | The name of the subscription group.           |
 
@@ -90,19 +94,19 @@ Deleting persistent subscriptions to `$all` is not supported over the HTTP API. 
 By default, reading a stream via a persistent subscription returns a single event per request and does not embed the event properties as part of the response.
 
 | URI                                                                                                                                                                  | Supported Content Types                                                                      | Method |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------ |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name} /subscriptions/{stream}/{subscription_name}?embed={embed} /subscriptions/{stream}/{subscription}/{count}?embed={embed}` | `application/vnd.eventstore.competingatom+xml application/vnd.eventstore.competingatom+json` | GET    |
 
 ### Query parameters
 
 | Parameter           | Description                                                                      |
-| ------------------- | -------------------------------------------------------------------------------- |
+|---------------------|----------------------------------------------------------------------------------|
 | `stream`            | The stream the persistent subscription is on.                                    |
 | `subscription_name` | The name of the subscription group.                                              |
 | `count`             | How many events to return for the request.                                       |
 | `embed`             | Allowed values are `None`, `Content`, `Rich`, `Body`, `PrettyBody`, `TryHarder`. |
 
-See [Reading Streams](README.md#reading-streams-and-events) for information on the different embed levels.
+See [Reading Streams](introduction.md#reading-streams-and-events) for information on the different embed levels.
 
 ### Response
 
@@ -124,27 +128,27 @@ For example:
 ### Ack multiple messages
 
 | URI                                                                | Supported Content Types | Method |
-| ------------------------------------------------------------------ | ----------------------- | ------ |
+|--------------------------------------------------------------------|-------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name}/ack?ids={messageids}` | `application/json`      | POST   |
 
 #### Query parameters
 
 | Parameter           | Description                                            |
-| :------------------ | :----------------------------------------------------- |
+|:--------------------|:-------------------------------------------------------|
 | `stream`            | The stream the persistent subscription is on.          |
 | `subscription_name` | The name of the subscription group.                    |
-| `messageids`        | The IDs of the messages that needs to be acknowledged. |
+| `messages`          | The IDs of the messages that needs to be acknowledged. |
 
 ### Ack a single message
 
 | URI                                                           | Supported Content Types | Method |
-| ------------------------------------------------------------- | ----------------------- | ------ |
+|---------------------------------------------------------------|-------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name}/ack/{messageid}` | `application/json`      | POST   |
 
 #### Query parameters
 
 | Parameter           | Description                                          |
-| ------------------- | ---------------------------------------------------- |
+|---------------------|------------------------------------------------------|
 | `stream`            | The stream to the persistent subscription is on.     |
 | `subscription_name` | The name of the subscription group.                  |
 | `messageid`         | The ID of the message that needs to be acknowledged. |
@@ -152,13 +156,13 @@ For example:
 ### Nack multiple messages
 
 | URI                                                                                 | Supported Content Types | Method |
-| ----------------------------------------------------------------------------------- | ----------------------- | ------ |
+|-------------------------------------------------------------------------------------|-------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name}/nack?ids={messageids}?action={action}` | `application/json`      | POST   |
 
 #### Query parameters
 
 | Parameter           | Description                                                                                                                                                                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `stream`            | The stream to the persistent subscription is on.                                                                                                                                                                                          |
 | `subscription_name` | The name of the subscription group.                                                                                                                                                                                                       |
 | `action`            | <ul><li>**Park**: Don't retry the message; park it until a request is sent to replay the parked messages.</li><li>**Retry**: Retry the message.</li><li>**Skip**: Discard the message.</li><li>**Stop**: Stop the subscription.</li></ul> |
@@ -167,19 +171,19 @@ For example:
 ### Nack a single message
 
 | URI                                                                            | Supported Content Types | Method |
-| ------------------------------------------------------------------------------ | ----------------------- | ------ |
+|--------------------------------------------------------------------------------|-------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name}/nack/{messageid}?action={action}` | `application/json`      | POST   |
 
 ## Replaying parked messages
 
 | URI                                                        | Supported Content Types | Method |
-| ---------------------------------------------------------- | ----------------------- | ------ |
+|------------------------------------------------------------|-------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name}/replayParked` | `application/json`      | POST   |
 
 ## Getting information for all subscriptions
 
 | URI              | Method |
-| ---------------- | ------ |
+|------------------|--------|
 | `/subscriptions` | GET    |
 
 ### Response
@@ -189,7 +193,7 @@ For example:
 ## Get subscriptions for a stream
 
 | URI                       | Supported Content Types | Method |
-| ------------------------- | ----------------------- | ------ |
+|---------------------------|-------------------------|--------|
 | `/subscriptions/{stream}` | `application/json`      | GET    |
 
 ### Response
@@ -199,7 +203,7 @@ For example:
 ## Getting a specific subscription
 
 | URI                                                | Supported Content Types | Method |
-| -------------------------------------------------- | ----------------------- | ------ |
+|----------------------------------------------------|-------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name}/info` | `application/json`      | GET    |
 
 ### Response
@@ -208,4 +212,3 @@ For example:
 
 <!-- TODO: Is this better as a general subscriptions page? -->
 <!-- TODO: Somehow get this better integrated with API docs -->
-<!-- TODO: Still to do -->
