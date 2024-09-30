@@ -1,8 +1,7 @@
 ---
 title: Persistent subscriptions
+order: 5
 ---
-
-## Persistent subscription
 
 A common operation is to subscribe to a stream and receive notifications for changes. As new events arrive, you continue following them. 
 
