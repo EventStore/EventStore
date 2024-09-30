@@ -4,6 +4,7 @@ export interface ImportCodeTokenMeta {
     lineEnd?: number;
     region?: string;
 }
+
 export interface ResolvedImport {
     label?: string;
     importPath: string;
