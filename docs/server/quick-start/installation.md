@@ -166,7 +166,7 @@ connect to it using one of the clients and the `esdb://localhost:2113?tls=false`
 
 ```bash:no-line-numbers
 docker run --name esdb-node -it -p 2113:2113 \
-    eventstore/eventstore:latest --insecure --run-projections=All
+    eventstore/eventstore:24.6 --insecure --run-projections=All
     --enable-atom-pub-over-http
 ```
 
