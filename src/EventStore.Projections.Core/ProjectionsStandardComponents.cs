@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 
@@ -6,15 +9,17 @@ namespace EventStore.Projections.Core {
 		public ProjectionsStandardComponents(
 			int projectionWorkerThreadCount,
 			ProjectionType runProjections,
-			IBus leaderOutputBus,
-			IQueuedHandler leaderInputQueue,
-			IBus leaderMainBus,
+			ISubscriber leaderOutputBus,
+			IPublisher leaderOutputQueue,
+			ISubscriber leaderInputBus,
+			IPublisher leaderInputQueue,
 			bool faultOutOfOrderProjections, int projectionCompilationTimeout, int projectionExecutionTimeout) {
 			ProjectionWorkerThreadCount = projectionWorkerThreadCount;
 			RunProjections = runProjections;
 			LeaderOutputBus = leaderOutputBus;
+			LeaderOutputQueue = leaderOutputQueue;
 			LeaderInputQueue = leaderInputQueue;
-			LeaderMainBus = leaderMainBus;
+			LeaderInputBus = leaderInputBus;
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
 			ProjectionCompilationTimeout = projectionCompilationTimeout;
 			ProjectionExecutionTimeout = projectionExecutionTimeout;
@@ -24,14 +29,14 @@ namespace EventStore.Projections.Core {
 
 		public ProjectionType RunProjections { get; }
 
-		public IBus LeaderOutputBus { get; }
+		public ISubscriber LeaderOutputBus { get; }
+		public IPublisher LeaderOutputQueue { get; }
 
-		public IQueuedHandler LeaderInputQueue { get; }
-
-		public IBus LeaderMainBus { get; }
+		public IPublisher LeaderInputQueue { get; }
+		public ISubscriber LeaderInputBus { get; }
 
 		public bool FaultOutOfOrderProjections { get; }
-		
+
 		public int ProjectionCompilationTimeout { get; }
 
 		public int ProjectionExecutionTimeout { get; }

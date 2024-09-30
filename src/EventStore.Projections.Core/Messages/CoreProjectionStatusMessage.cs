@@ -1,7 +1,11 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class CoreProjectionStatusMessage {
@@ -139,7 +143,7 @@ namespace EventStore.Projections.Core.Messages {
 				: base(projectionId) {
 			}
 		}
-		
+
 		[DerivedMessage(ProjectionMessage.CoreStatus)]
 		public partial class Stopped : CoreProjectionStatusMessageBase {
 			private readonly bool _completed;

@@ -1,10 +1,11 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System.Linq;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1, false, 10)]
-	[TestFixture(PTableVersions.IndexV1, true, 10)]
 	[TestFixture(PTableVersions.IndexV2, false, 10)]
 	[TestFixture(PTableVersions.IndexV2, true, 10)]
 	[TestFixture(PTableVersions.IndexV3, false, 10)]
@@ -20,8 +21,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 	}
 
-	[TestFixture(PTableVersions.IndexV1, false, 0)]
-	[TestFixture(PTableVersions.IndexV1, true, 0)]
 	[TestFixture(PTableVersions.IndexV2, false, 0)]
 	[TestFixture(PTableVersions.IndexV2, true, 0)]
 	[TestFixture(PTableVersions.IndexV3, false, 0)]

@@ -1,7 +1,11 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -26,7 +30,7 @@ namespace EventStore.Core.Services {
 	public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStreamId>,
 		IHandle<ReplicationMessage.ReplicaSubscribed>,
 		IHandle<ReplicationMessage.CreateChunk>,
-		IHandle<ReplicationMessage.RawChunkBulk>,
+		IAsyncHandle<ReplicationMessage.RawChunkBulk>,
 		IHandle<ReplicationMessage.DataChunkBulk> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterStorageWriterService>();
 
@@ -238,9 +242,9 @@ namespace EventStore.Core.Services {
 				writerLogPosition: Writer.Position));
 		}
 
-		public void Handle(ReplicationMessage.RawChunkBulk message) {
+		async ValueTask IAsyncHandle<ReplicationMessage.RawChunkBulk>.HandleAsync(ReplicationMessage.RawChunkBulk message, CancellationToken token) {
 			if (_subscriptionId != message.SubscriptionId) return;
-			if (_activeChunk == null)
+			if (_activeChunk is null)
 				ReplicationFail(
 					"Physical chunk bulk received, but we do not have active chunk.",
 					"Physical chunk bulk received, but we do not have active chunk.");
@@ -274,7 +278,7 @@ namespace EventStore.Core.Services {
 			if (message.CompleteChunk) {
 				Log.Debug("Completing raw chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
 					message.ChunkEndNumber);
-				Writer.CompleteReplicatedRawChunk(_activeChunk);
+				await Writer.CompleteReplicatedRawChunk(_activeChunk, token);
 				Flush();
 
 				_subscriptionPos = _activeChunk.ChunkHeader.ChunkEndPosition;

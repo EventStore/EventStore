@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.IO;
 using System.Linq;
@@ -7,8 +10,6 @@ using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1, false)]
-	[TestFixture(PTableVersions.IndexV1, true)]
 	[TestFixture(PTableVersions.IndexV2, false)]
 	[TestFixture(PTableVersions.IndexV2, true)]
 	[TestFixture(PTableVersions.IndexV3, false)]
@@ -41,8 +42,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			memtable.Add(1, 1, 100);
 			_ptable = PTable.FromMemtable(memtable, _ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
 
-			indexMap = indexMap.AddAndMergePTable(_ptable, 0, 0, (streamId, hash) => hash, _ => true,
-				_ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion, 0, skipIndexVerify: _skipIndexVerify).MergedMap;
+			indexMap = indexMap.AddAndMergePTable(_ptable, 0, 0,
+				new GuidFilenameProvider(PathName), _ptableVersion, 0, skipIndexVerify: _skipIndexVerify).MergedMap;
 			indexMap.SaveToFile(_indexMapFileName);
 		}
 

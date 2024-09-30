@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
@@ -116,8 +119,8 @@ namespace EventStore.Common.Configuration {
 		}
 
 		public class LabelMappingCase {
-			public string Regex { get; set; }
-			public string Label { get; set; }
+			public string Regex { get; set; } = "";
+			public string Label { get; set; } = "";
 		}
 
 		public string[] Meters { get; set; } = Array.Empty<string>();

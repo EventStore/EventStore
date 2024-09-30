@@ -1,10 +1,12 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Common.Options;
 using EventStore.Projections.Core.Messages;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Services.Replication;
 using System.Collections.Generic;
 
 namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
@@ -13,8 +15,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 		private FakePublisher[] queues;
 		private FakePublisher publisher;
 		private ProjectionCoreCoordinator _coordinator;
-		private TimeoutScheduler[] timeoutScheduler = { };
-		private FakeEnvelope envelope = new FakeEnvelope();
 
 		[SetUp]
 		public void Setup() {
@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			publisher = new FakePublisher();
 
 			_coordinator =
-				new ProjectionCoreCoordinator(ProjectionType.System, timeoutScheduler, queues, publisher, envelope);
+				new ProjectionCoreCoordinator(ProjectionType.System, queues, publisher);
 			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 		}
 

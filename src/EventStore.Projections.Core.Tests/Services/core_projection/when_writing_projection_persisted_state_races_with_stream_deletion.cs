@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,12 +38,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 				yield return
 					(new ProjectionManagementMessage.Command.Post(
-						new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
+						_bus, ProjectionMode.Continuous, _projectionName,
 						ProjectionManagementMessage.RunAs.System, "native:" + typeof(FakeProjection).AssemblyQualifiedName,
 						@"", enabled: true, checkpointsEnabled: true,
 						emitEnabled: false, trackEmittedStreams: false));
 				yield return
-					new ProjectionManagementMessage.Command.Disable(new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System);
+					new ProjectionManagementMessage.Command.Disable(_bus, _projectionName, ProjectionManagementMessage.RunAs.System);
 				yield return new ProjectionManagementMessage.Command.Delete(new NoopEnvelope(), _projectionName, ProjectionManagementMessage.RunAs.System, 
 					true, false, false);
 			}

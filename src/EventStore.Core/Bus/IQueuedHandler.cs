@@ -1,16 +1,17 @@
-﻿using System.Threading.Tasks;
-using EventStore.Core.Messaging;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Threading.Tasks;
 using EventStore.Core.Services.Monitoring.Stats;
 
-namespace EventStore.Core.Bus {
-	public interface IQueuedHandler : IHandle<Message>, IPublisher {
-		string Name { get; }
-		Task Start();
-		void Stop();
+namespace EventStore.Core.Bus;
 
-		void RequestStop();
+public interface IQueuedHandler : IPublisher {
+	string Name { get; }
+	Task Start();
+	void Stop();
 
-		//void Publish(Message message);
-		QueueStats GetStatistics();
-	}
+	void RequestStop();
+	
+	QueueStats GetStatistics();
 }

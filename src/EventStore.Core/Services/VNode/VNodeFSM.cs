@@ -1,61 +1,118 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext.Runtime;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.VNode;
 
-public class VNodeFSM : IHandle<Message> {
-	private readonly Func<VNodeState> _getState;
-	private readonly Action<VNodeState, Message>[][] _handlers;
-	private readonly Action<VNodeState, Message>[] _defaultHandlers;
+public class VNodeFSM : IAsyncHandle<Message> {
+	private readonly ReadOnlyValueReference<VNodeState> _stateRef;
+	private readonly HandlersBuffer _handlers;
 
-	internal VNodeFSM(Func<VNodeState> getState,
-		Dictionary<Type, Action<VNodeState, Message>>[] handlers,
-		Action<VNodeState, Message>[] defaultHandlers) {
-		_getState = getState;
+	internal VNodeFSM(ReadOnlyValueReference<VNodeState> stateRef,
+		ReadOnlySpan<IReadOnlyDictionary<Type, MulticastDelegate>> handlers,
+		ReadOnlySpan<Func<Message, CancellationToken, ValueTask>> defaultHandlers) {
+		Debug.Assert(handlers.Length == (int)VNodeState.MaxValue + 1);
+		Debug.Assert(defaultHandlers.Length == (int)VNodeState.MaxValue + 1);
 
-		_handlers = new Action<VNodeState, Message>[handlers.Length][];
-		for (int i = 0; i < _handlers.Length; ++i) {
-			_handlers[i] = new Action<VNodeState, Message>[MessageHierarchy.MaxMsgTypeId + 1];
-			if (handlers[i] != null) {
-				foreach (var handler in handlers[i]) {
-					_handlers[i][MessageHierarchy.MsgTypeIdByType[handler.Key]] = handler.Value;
+		_stateRef = stateRef;
+
+		var output = new Dictionary<Type, HandlerAnalysisNode>();
+		for (var i = 0; i < handlers.Length; i++) {
+			if (handlers[i] is { } input) {
+				// register each handler in input against _all_ types it can handle
+				foreach (var knownMessageType in InMemoryBus.KnownMessageTypes) {
+					foreach (var (messageType, action) in input) {
+						Debug.Assert(action is not null);
+						if (messageType.IsAssignableFrom(knownMessageType)) {
+							ref var node =
+								ref CollectionsMarshal.GetValueRefOrAddDefault(output, knownMessageType,
+									out _);
+
+							// if two handlers can handle the same message at different levels
+							// of the message class hierarchy, only call the most derived one
+							if (node.AnalyzedType?.IsAssignableFrom(messageType) ?? true) {
+								node.AnalyzedType = messageType;
+								node.Handler = action;
+							}
+						}
+					}
 				}
 			}
-		}
 
-		_defaultHandlers = defaultHandlers;
+			Debug.Assert(Enum.IsDefined((VNodeState)i));
+			_handlers[i] = new((VNodeState)i, output, defaultHandlers[i]);
+			output.Clear(); // help GC
+		}
 	}
 
-	public void Handle(Message message) {
-		var state = _getState();
-		var stateNum = (int)state;
-		var handlers = _handlers[stateNum];
+	public ValueTask HandleAsync(Message message, CancellationToken token = default)
+		=> _handlers.InvokeAsync(_stateRef.Value, message, token);
 
-		var parents = MessageHierarchy.ParentsByTypeId[message.MsgTypeId];
-		for (int i = 0; i < parents.Length; ++i) {
-			if (TryHandle(state, handlers, message, parents[i]))
-				return;
+	[StructLayout(LayoutKind.Auto)]
+	private readonly struct Handler(
+		VNodeState state,
+		IReadOnlyDictionary<Type, HandlerAnalysisNode> handlers,
+		Func<Message, CancellationToken, ValueTask> defaultHandler) {
+		private readonly FrozenDictionary<Type, MulticastDelegate> _handlers = handlers
+			.Select(static pair => new KeyValuePair<Type, MulticastDelegate>(pair.Key, pair.Value.Handler))
+			.ToFrozenDictionary();
+
+		// Enum name is cached by the runtime, no allocation caused by Enum.GetName
+		private readonly MulticastDelegate _defaultHandler = defaultHandler ?? Enum.GetName(state).ThrowException;
+
+		public ValueTask InvokeAsync(Message message, CancellationToken token) {
+			scoped ref readonly var actionRef = ref _handlers.GetValueRefOrNullRef(message.GetType());
+
+			if (Unsafe.IsNullRef(in actionRef)) {
+				actionRef = ref _defaultHandler;
+			}
+
+			// We know that the actual handler type is Action<T> where T >= message.GetType()
+			// Unsafe reinterpret case is valid due to ABI nature of reference types. Size
+			// of reference is always 4 or 8 bytes regardless the actual type T.
+			EnsureActionType(message.GetType(), actionRef);
+			return Unsafe.As<Func<Message, CancellationToken, ValueTask>>(actionRef).Invoke(message, token);
 		}
 
-		if (_defaultHandlers[stateNum] != null) {
-			_defaultHandlers[stateNum](state, message);
-			return;
+		[Conditional("DEBUG")]
+		private static void EnsureActionType(Type expectedMessageType, [DisallowNull] MulticastDelegate handler) {
+			var actualMessageType = handler.GetType().GetGenericArguments()[0];
+			Debug.Assert(actualMessageType.IsAssignableFrom(expectedMessageType));
 		}
-
-		throw new Exception(string.Format("Unhandled message: {0} occurred in state: {1}.", message, state));
 	}
 
-	private static bool TryHandle(VNodeState state, Action<VNodeState, Message>[] handlers, Message message,
-		int msgTypeId) {
-		Action<VNodeState, Message> handler = handlers[msgTypeId];
-		if (handler != null) {
-			handler(state, message);
-			return true;
-		}
+	[InlineArray((int)VNodeState.MaxValue + 1)]
+	[StructLayout(LayoutKind.Auto)]
+	private struct HandlersBuffer {
+		private Handler _handler;
 
-		return false;
+		public readonly ValueTask InvokeAsync(VNodeState index, Message message, CancellationToken token)
+			=> Unsafe.Add(ref Unsafe.AsRef(in _handler), (int)index).InvokeAsync(message, token);
+	}
+
+	[StructLayout(LayoutKind.Auto)]
+	private struct HandlerAnalysisNode {
+		internal Type AnalyzedType;
+		internal MulticastDelegate Handler;
+	}
+}
+
+file static class DelegateHelpers {
+	public static ValueTask ThrowException(this string stateName, Message message, CancellationToken token) {
+		return ValueTask.FromException(new Exception($"Unhandled message: {message} occurred in state: {stateName}."));
 	}
 }

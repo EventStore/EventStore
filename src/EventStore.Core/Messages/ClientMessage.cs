@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1792,13 +1795,12 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class GetDatabaseScavenge : Message {
+		public partial class GetCurrentDatabaseScavenge : Message {
 			public readonly IEnvelope Envelope;
 			public readonly Guid CorrelationId;
 			public readonly ClaimsPrincipal User;
-			public readonly string ScavengeId;
 
-			public GetDatabaseScavenge(IEnvelope envelope, Guid correlationId, ClaimsPrincipal user) {
+			public GetCurrentDatabaseScavenge(IEnvelope envelope, Guid correlationId, ClaimsPrincipal user) {
 				Ensure.NotNull(envelope, "envelope");
 				Envelope = envelope;
 				CorrelationId = correlationId;
@@ -1807,12 +1809,12 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Client)]
-		public partial class ScavengeDatabaseGetResponse : Message {
+		public partial class ScavengeDatabaseGetCurrentResponse : Message {
 			public readonly Guid CorrelationId;
 			public readonly ScavengeResult Result;
 			public readonly string ScavengeId;
 
-			public ScavengeDatabaseGetResponse(Guid correlationId, 
+			public ScavengeDatabaseGetCurrentResponse(Guid correlationId,
 				ScavengeResult result, string scavengeId) {
 				CorrelationId = correlationId;
 				Result = result;
@@ -1823,6 +1825,46 @@ namespace EventStore.Core.Messages {
 			public enum ScavengeResult {
 				InProgress,
 				Stopped
+			}
+		}
+
+		[DerivedMessage(CoreMessage.Client)]
+		public partial class GetLastDatabaseScavenge : Message {
+			public readonly IEnvelope Envelope;
+			public readonly Guid CorrelationId;
+			public readonly ClaimsPrincipal User;
+
+			public GetLastDatabaseScavenge(IEnvelope envelope, Guid correlationId, ClaimsPrincipal user) {
+				Ensure.NotNull(envelope, nameof(envelope));
+				Envelope = envelope;
+				CorrelationId = correlationId;
+				User = user;
+			}
+		}
+
+		[DerivedMessage(CoreMessage.Client)]
+		public partial class ScavengeDatabaseGetLastResponse : Message {
+			public readonly Guid CorrelationId;
+			public readonly ScavengeResult Result;
+			public readonly string ScavengeId;
+
+			public ScavengeDatabaseGetLastResponse(
+				Guid correlationId,
+				ScavengeResult result,
+				string scavengeId) {
+				CorrelationId = correlationId;
+				Result = result;
+				ScavengeId = scavengeId;
+			}
+
+			public override string ToString() => $"Result: {Result}, ScavengeId: {ScavengeId}";
+
+			public enum ScavengeResult {
+				Unknown,
+				InProgress,
+				Success,
+				Stopped,
+				Errored,
 			}
 		}
 
@@ -1879,7 +1921,7 @@ namespace EventStore.Core.Messages {
 			}
 
 			public override string ToString() => $"ScavengeId: {ScavengeId}, Reason: {Reason}";
-			
+
 		}
 
 		[DerivedMessage(CoreMessage.Client)]

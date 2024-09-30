@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -47,11 +50,18 @@ public class MessageLabelConfigurator {
 			oldLabel = "";
 		}
 
-
 		foreach (var @case in configuration) {
 			var pattern = $"^{@case.Regex}$";
 			var match = Regex.Match(input: oldLabel, pattern: pattern);
 			if (match.Success) {
+				if (string.IsNullOrWhiteSpace(@case.Label)) {
+					Log.Warning(
+						"Label for message {message} matching pattern {pattern} was not specified.",
+						oldLabel, @case.Regex);
+					label = oldLabel;
+					return true;
+				}
+
 				label = Regex.Replace(
 					input: oldLabel,
 					pattern: pattern,

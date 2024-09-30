@@ -1,13 +1,16 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
@@ -26,7 +29,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 			yield return
 				new ProjectionManagementMessage.Command.Post(
-					new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
+					_bus, ProjectionMode.Continuous, _projectionName,
 					ProjectionManagementMessage.RunAs.System, "JS", @"fromAll().when({$any:function(s,e){return s;}});",
 					enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true);
 			OneWriteCompletes();
@@ -35,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test, Category("v8")]
 		public void the_projection_status_is_writing() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, _projectionName,
+				new ProjectionManagementMessage.Command.GetStatistics(_bus, null, _projectionName,
 					true));
 			Assert.AreEqual(
 				ManagedProjectionState.Prepared,
@@ -45,13 +48,23 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 
 		[Test, Category("v8")]
 		public void a_projection_created_event_is_written() {
-			Assert.AreEqual(
-				ProjectionEventTypes.ProjectionCreated,
-				_consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First().Events[0].EventType);
-			Assert.AreEqual(
-				_projectionName,
-				Helper.UTF8NoBom.GetString(_consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First()
-					.Events[0].Data));
+			var createdEventWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().FirstOrDefault();
+			Assert.NotNull(createdEventWrite);
+			Assert.AreEqual(ProjectionNamesBuilder.ProjectionsRegistrationStream, createdEventWrite.EventStreamId);
+			Assert.AreEqual(ProjectionEventTypes.ProjectionCreated, createdEventWrite.Events[0].EventType);
+			Assert.AreEqual(_projectionName, Helper.UTF8NoBom.GetString(createdEventWrite.Events[0].Data));
+		}
+
+		[Test, Category("v8")]
+		public void persisted_projection_state_is_written_with_empty_execution_timeout() {
+			var persistedStateStream = ProjectionNamesBuilder.ProjectionsStreamPrefix + _projectionName;
+			var persistedStateWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
+				.FirstOrDefault(x => x.EventStreamId == persistedStateStream);
+
+			Assert.NotNull(persistedStateWrite);
+			Assert.AreEqual(ProjectionEventTypes.ProjectionUpdated, persistedStateWrite.Events[0].EventType);
+			var actualState = persistedStateWrite.Events[0].Data.ParseJson<ManagedProjection.PersistedState>();
+			Assert.IsNull(actualState.ProjectionExecutionTimeout);
 		}
 
 		[Test, Category("v8")]

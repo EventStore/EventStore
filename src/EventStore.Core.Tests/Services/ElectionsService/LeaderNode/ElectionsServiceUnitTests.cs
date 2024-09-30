@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,8 +33,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var seedSource = new ReallyNotSafeFakeGossipSeedSource(seeds);
 			_nodes = new Dictionary<IPEndPoint, IPublisher>();
 			for (int i = 0; i < 3; i++) {
-				var inputBus = new InMemoryBus($"ELECTIONS-INPUT-BUS-NODE-{i}", watchSlowMsg: false);
-				var outputBus = new InMemoryBus($"ELECTIONS-OUTPUT-BUS-NODE-{i}", watchSlowMsg: false);
+				var inputBus = new SynchronousScheduler($"ELECTIONS-INPUT-BUS-NODE-{i}", watchSlowMsg: false);
+				var outputBus = new SynchronousScheduler($"ELECTIONS-OUTPUT-BUS-NODE-{i}", watchSlowMsg: false);
 				var endPoint = new IPEndPoint(address, 1000 + i);
 				seeds.Add(endPoint);
 				var instanceId = Guid.Parse($"101EFD13-F9CD-49BE-9C6D-E6AF9AF5540{i}");

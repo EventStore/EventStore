@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using EventStore.Core.Metrics;
 using EventStore.Core.Time;
 using Xunit;
@@ -45,6 +48,30 @@ namespace EventStore.Core.XUnit.Tests.Metrics {
 			Assert.Equal("WriterQueue", tracker.Name);
 
 			tracker = sut.GetTrackerForQueue("MainQueue");
+			Assert.Equal("NoOp", tracker.Name);
+		}
+
+		[Fact]
+		public void unspecified_label_yields_no_op() {
+			var sut = GenSut(
+				new Conf.LabelMappingCase {
+					Regex = "MainQueue",
+					// no Label
+				});
+
+			var tracker = sut.GetTrackerForQueue("MainQueue");
+			Assert.Equal("NoOp", tracker.Name);
+		}
+
+		[Fact]
+		public void unspecified_regex_does_not_match() {
+			var sut = GenSut(
+				new Conf.LabelMappingCase {
+					// no Regex
+					Label = "MainQueue",
+				});
+
+			var tracker = sut.GetTrackerForQueue("MainQueue");
 			Assert.Equal("NoOp", tracker.Name);
 		}
 

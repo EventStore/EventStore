@@ -1,10 +1,16 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Diagnostics;
+using DotNext.Runtime.CompilerServices;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
@@ -82,49 +88,49 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		public Task Scavenge(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk = 0,
+		[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder<>))] // get off the main queue
+		public async Task<ScavengeResult> Scavenge(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk = 0,
 			bool scavengeIndex = true,
-			CancellationToken ct = default(CancellationToken)) {
+			CancellationToken ct = default) {
 			Ensure.Nonnegative(startFromChunk, nameof(startFromChunk));
 
-			// Note we aren't passing the CancellationToken to the task on purpose so awaiters
-			// don't have to handle Exceptions and can wait for the actual completion of the task.
-			return Task.Factory.StartNew(() => {
-				var sw = Stopwatch.StartNew();
+			// Awaiters don't have to handle Exceptions and can wait for the actual completion of the task.
+			var sw = new Timestamp();
 
-				ScavengeResult result = ScavengeResult.Success;
-				string error = null;
-				try {
-					_scavengerLog.ScavengeStarted(alwaysKeepScavenged, mergeChunks, startFromChunk, _threads);
+			ScavengeResult result = ScavengeResult.Success;
+			string error = null;
+			try {
+				_scavengerLog.ScavengeStarted(alwaysKeepScavenged, mergeChunks, startFromChunk, _threads);
 
-					ScavengeInternal(alwaysKeepScavenged, mergeChunks, startFromChunk, ct);
+				await ScavengeInternal(alwaysKeepScavenged, mergeChunks, startFromChunk, ct);
 
-					if (scavengeIndex) {
-						_tableIndex.Scavenge(_scavengerLog, ct);
-					}
-				} catch (OperationCanceledException) {
-					_logger.Information("SCAVENGING: Scavenge cancelled.");
-					result = ScavengeResult.Stopped;
-				} catch (Exception exc) {
-					result = ScavengeResult.Interrupted;
-					_logger.Error(exc, "SCAVENGING: Error while scavenging DB.");
-					error = string.Format("Error while scavenging DB: {0}.", exc.Message);
-				} finally {
-					try {
-						_scavengerLog.ScavengeCompleted(result, error, sw.Elapsed);
-					} catch (Exception ex) {
-						_logger.Error(ex,
-							"Error whilst recording scavenge completed. Scavenge result: {result}, Elapsed: {elapsed}, Original error: {e}",
-							result, sw.Elapsed, error);
-					}
+				if (scavengeIndex) {
+					_tableIndex.Scavenge(_scavengerLog, ct);
 				}
-			}, TaskCreationOptions.LongRunning);
+			} catch (OperationCanceledException) {
+				_logger.Information("SCAVENGING: Scavenge cancelled.");
+				result = ScavengeResult.Stopped;
+			} catch (Exception exc) {
+				result = ScavengeResult.Errored;
+				_logger.Error(exc, "SCAVENGING: Error while scavenging DB.");
+				error = string.Format("Error while scavenging DB: {0}.", exc.Message);
+			} finally {
+				try {
+					_scavengerLog.ScavengeCompleted(result, error, sw.Elapsed);
+				} catch (Exception ex) {
+					_logger.Error(ex,
+						"Error whilst recording scavenge completed. Scavenge result: {result}, Elapsed: {elapsed}, Original error: {e}",
+						result, sw.Elapsed, error);
+				}
+			}
+
+			return result;
 		}
 
-		private void ScavengeInternal(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk,
+		private async ValueTask ScavengeInternal(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk,
 			CancellationToken ct) {
-			var totalSw = Stopwatch.StartNew();
-			var sw = Stopwatch.StartNew();
+			var totalSw = new Timestamp();
+			var sw = totalSw;
 
 			_logger.Debug(
 				"SCAVENGING: Started scavenging of DB. Chunks count at start: {chunksCount}. Options: alwaysKeepScavenged = {alwaysKeepScavenged}, mergeChunks = {mergeChunks}",
@@ -134,12 +140,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			var chunksToScavenge = GetAllChunks(_db, startFromChunk);
 
 			using (var scavengeCacheObjectPool = CreateThreadLocalScavengeCachePool(_threads)) {
-				Parallel.ForEach(chunksToScavenge,
+				await Parallel.ForEachAsync(chunksToScavenge,
 					new ParallelOptions {MaxDegreeOfParallelism = _threads, CancellationToken = ct},
-					(chunk, pls) => {
+					async (chunk, ct) => {
 						var cache = scavengeCacheObjectPool.Get();
 						try {
-							ScavengeChunk(alwaysKeepScavenged, chunk, cache, ct);
+							await ScavengeChunk(alwaysKeepScavenged, chunk, cache, ct);
 						} finally {
 							cache.Reset(); // reset thread local cache before next iteration.
 							scavengeCacheObjectPool.Return(cache);
@@ -151,7 +157,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			// Merge scavenge pass
 			if (mergeChunks) {
-				MergePhase(
+				await MergePhase(
 					logger: _logger,
 					db: _db,
 					maxChunkDataSize: _maxChunkDataSize,
@@ -164,11 +170,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				_scavengerLog.SpaceSaved);
 		}
 
-		private void ScavengeChunk(bool alwaysKeepScavenged, TFChunk.TFChunk oldChunk,
+		private async ValueTask ScavengeChunk(bool alwaysKeepScavenged, TFChunk.TFChunk oldChunk,
 			ThreadLocalScavengeCache threadLocalCache, CancellationToken ct) {
 			if (oldChunk == null) throw new ArgumentNullException("oldChunk");
 
-			var sw = Stopwatch.StartNew();
+			var sw = new Timestamp();
 
 			int chunkStartNumber = oldChunk.ChunkHeader.ChunkStartNumber;
 			long chunkStartPos = oldChunk.ChunkHeader.ChunkStartPosition;
@@ -203,7 +209,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 
 			try {
-				TraverseChunkBasic(oldChunk, ct,
+				await TraverseChunkBasic(oldChunk, ct,
 					result => {
 						threadLocalCache.Records.Add(result);
 
@@ -272,7 +278,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						}
 					}
 
-					newChunk.CompleteScavenge(positionMapping);
+					await newChunk.CompleteScavenge(positionMapping, ct);
 
 					if (_unsafeIgnoreHardDeletes) {
 						_logger.Debug("Forcing scavenge chunk to be kept even if bigger.");
@@ -330,7 +336,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		public static void MergePhase(
+		public static async ValueTask MergePhase(
 			ILogger logger,
 			TFChunkDb db,
 			long maxChunkDataSize,
@@ -340,11 +346,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			bool mergedSomething;
 			int passNum = 0;
-			var sw = new Stopwatch();
 			do {
 				mergedSomething = false;
 				passNum += 1;
-				sw.Restart();
+				var sw = new Timestamp();
 
 				var chunksToMerge = new List<TFChunk.TFChunk>();
 				long totalDataSize = 0;
@@ -356,7 +361,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							throw new Exception("SCAVENGING: No chunks to merge, unexpectedly...");
 
 						if (chunksToMerge.Count > 1 &&
-							MergeChunks(
+							await MergeChunks(
 								logger: logger,
 								db: db,
 								scavengerLog: scavengerLog,
@@ -376,7 +381,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				}
 
 				if (chunksToMerge.Count > 1) {
-					if (MergeChunks(
+					if (await MergeChunks(
 						logger: logger,
 						db: db,
 						scavengerLog: scavengerLog,
@@ -392,7 +397,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			} while (mergedSomething);
 		}
 
-		private static bool MergeChunks(
+		private static async ValueTask<bool> MergeChunks(
 			ILogger logger,
 			TFChunkDb db,
 			ITFChunkScavengerLog scavengerLog,
@@ -408,7 +413,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				return false;
 			}
 
-			var sw = Stopwatch.StartNew();
+			var sw = new Timestamp();
 
 			int chunkStartNumber = oldChunks.First().ChunkHeader.ChunkStartNumber;
 			int chunkEndNumber = oldChunks.Last().ChunkHeader.ChunkEndNumber;
@@ -443,7 +448,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				var positionMapping = new List<PosMap>();
 				foreach (var oldChunk in oldChunks) {
 					var lastFlushedPage = -1;
-					TraverseChunkBasic(oldChunk, ct,
+					await TraverseChunkBasic(oldChunk, ct,
 						result => {
 
 							positionMapping.Add(WriteRecord(newChunk, result.LogRecord));
@@ -456,7 +461,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						});
 				}
 
-				newChunk.CompleteScavenge(positionMapping);
+				await newChunk.CompleteScavenge(positionMapping, ct);
 
 				if (oldVersion) {
 					logger.Debug("Forcing merged chunk to be kept as old chunk is a previous version.");
@@ -725,9 +730,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			return allInChunk;
 		}
 
-		private static void TraverseChunkBasic(TFChunk.TFChunk chunk, CancellationToken ct,
+		private static async ValueTask TraverseChunkBasic(TFChunk.TFChunk chunk, CancellationToken ct,
 			Action<CandidateRecord> process) {
-			var result = chunk.TryReadFirst();
+			var result = await chunk.TryReadFirst(ct);
 			while (result.Success) {
 				process(new CandidateRecord(result.LogRecord, result.RecordLength));
 

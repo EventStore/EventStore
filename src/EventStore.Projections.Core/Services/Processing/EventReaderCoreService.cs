@@ -1,6 +1,8 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -9,6 +11,9 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing.AllStream;
+using EventStore.Projections.Core.Services.Processing.Subscriptions;
+using HeadingEventReader = EventStore.Projections.Core.Services.Processing.TransactionFile.HeadingEventReader;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
@@ -61,7 +66,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_writerCheckpoint = writerCheckpoint;
 			_runHeadingReader = runHeadingReader;
 			_faultOutOfOrderProjections = faultOutOfOrderProjections;
-			_publishEnvelope = new PublishEnvelope(publisher, true);
+			_publishEnvelope = publisher;
 		}
 
 		public void Handle(ReaderSubscriptionManagement.Pause message) {
@@ -99,28 +104,34 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public void Handle(ReaderSubscriptionManagement.Subscribe message) {
-			if (_stopped)
+			if (_stopped) {
+				_publisher.Publish(
+					new EventReaderSubscriptionMessage.Failed(
+						message.SubscriptionId, $"{nameof(EventReaderCoreService)} is stopped"));
 				return;
+			}
 
 			var fromCheckpointTag = message.FromPosition;
 			var subscriptionId = message.SubscriptionId;
-			var projectionSubscription = message.ReaderStrategy.CreateReaderSubscription(
-				_publisher, fromCheckpointTag, message.SubscriptionId, message.Options);
-			_subscriptions.Add(subscriptionId, projectionSubscription);
+			try {
+				var projectionSubscription = message.ReaderStrategy.CreateReaderSubscription(
+					_publisher, fromCheckpointTag, message.SubscriptionId, message.Options);
+				_subscriptions.Add(subscriptionId, projectionSubscription);
 
-			var distributionPointCorrelationId = Guid.NewGuid();
-			var eventReader = projectionSubscription.CreatePausedEventReader(
-				_publisher, _ioDispatcher, distributionPointCorrelationId);
-//            _logger.Trace(
-//                "The '{subscriptionId}' projection subscribed to the '{distributionPointCorrelationId}' distribution point", subscriptionId,
-//                distributionPointCorrelationId);
-			_eventReaders.Add(distributionPointCorrelationId, eventReader);
-			_subscriptionEventReaders.Add(subscriptionId, distributionPointCorrelationId);
-			_eventReaderSubscriptions.Add(distributionPointCorrelationId, subscriptionId);
-			_publisher.Publish(
-				new EventReaderSubscriptionMessage.ReaderAssignedReader(
-					subscriptionId, distributionPointCorrelationId));
-			eventReader.Resume();
+				var distributionPointCorrelationId = Guid.NewGuid();
+				var eventReader = projectionSubscription.CreatePausedEventReader(
+					_publisher, _ioDispatcher, distributionPointCorrelationId);
+				_eventReaders.Add(distributionPointCorrelationId, eventReader);
+				_subscriptionEventReaders.Add(subscriptionId, distributionPointCorrelationId);
+				_eventReaderSubscriptions.Add(distributionPointCorrelationId, subscriptionId);
+				_publisher.Publish(
+					new EventReaderSubscriptionMessage.ReaderAssignedReader(
+						subscriptionId, distributionPointCorrelationId));
+				eventReader.Resume();
+			} catch (Exception ex) {
+				_publisher.Publish(new EventReaderSubscriptionMessage.Failed(
+					subscriptionId, ex.ToString()));
+			}
 		}
 
 		public void Handle(ReaderSubscriptionManagement.Unsubscribe message) {

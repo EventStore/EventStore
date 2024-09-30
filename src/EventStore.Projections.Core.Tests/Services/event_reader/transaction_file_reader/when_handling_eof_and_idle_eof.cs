@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Linq;
 using EventStore.Core.Data;
@@ -11,6 +14,7 @@ using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Tests;
+using EventStore.Projections.Core.Services.Processing.AllStream;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_file_reader {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]

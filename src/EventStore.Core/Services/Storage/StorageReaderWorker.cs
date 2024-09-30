@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -11,7 +14,6 @@ using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
-using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Messaging;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -44,9 +46,6 @@ namespace EventStore.Core.Services.Storage {
 		private readonly int _queueId;
 		private static readonly char[] LinkToSeparator = { '@' };
 		private const int MaxPageSize = 4096;
-		private const string ReaderReadHistogram = "reader-readevent";
-		private const string ReaderStreamRangeHistogram = "reader-streamrange";
-		private const string ReaderAllRangeHistogram = "reader-allrange";
 		private DateTime? _lastExpireTime;
 		private long _expiredBatchCount;
 		private bool _batchLoggingEnabled;
@@ -104,33 +103,31 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			}
 
-			using (HistogramService.Measure(ReaderStreamRangeHistogram)) {
-				var res = SystemStreams.IsInMemoryStream(msg.EventStreamId)
-					? _inMemReader.ReadForwards(msg)
-					: ReadStreamEventsForward(msg);
+			var res = SystemStreams.IsInMemoryStream(msg.EventStreamId)
+				? _inMemReader.ReadForwards(msg)
+				: ReadStreamEventsForward(msg);
 
-				switch (res.Result) {
-					case ReadStreamResult.Success:
-					case ReadStreamResult.NoStream:
-					case ReadStreamResult.NotModified:
-						if (msg.LongPollTimeout.HasValue && res.FromEventNumber > res.LastEventNumber) {
-							_publisher.Publish(new SubscriptionMessage.PollStream(
-								msg.EventStreamId, res.TfLastCommitPosition, res.LastEventNumber,
-								DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
-						} else {
-							msg.Envelope.ReplyWith(res);
-						}
-
-						break;
-					case ReadStreamResult.StreamDeleted:
-					case ReadStreamResult.Error:
-					case ReadStreamResult.AccessDenied:
+			switch (res.Result) {
+				case ReadStreamResult.Success:
+				case ReadStreamResult.NoStream:
+				case ReadStreamResult.NotModified:
+					if (msg.LongPollTimeout.HasValue && res.FromEventNumber > res.LastEventNumber) {
+						_publisher.Publish(new SubscriptionMessage.PollStream(
+							msg.EventStreamId, res.TfLastCommitPosition, res.LastEventNumber,
+							DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
+					} else {
 						msg.Envelope.ReplyWith(res);
-						break;
-					default:
-						throw new ArgumentOutOfRangeException(
-							$"Unknown ReadStreamResult: {res.Result}");
-				}
+					}
+
+					break;
+				case ReadStreamResult.StreamDeleted:
+				case ReadStreamResult.Error:
+				case ReadStreamResult.AccessDenied:
+					msg.Envelope.ReplyWith(res);
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(
+						$"Unknown ReadStreamResult: {res.Result}");
 			}
 		}
 
@@ -172,36 +169,34 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			}
 
-			using (HistogramService.Measure(ReaderAllRangeHistogram)) {
-				var res = ReadAllEventsForward(msg);
-				switch (res.Result) {
-					case ReadAllResult.Success:
-						if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.Events.Length == 0) {
-							_publisher.Publish(new SubscriptionMessage.PollStream(
-								SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
-								DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
-						} else
-							msg.Envelope.ReplyWith(res);
-
-						break;
-					case ReadAllResult.NotModified:
-						if (msg.LongPollTimeout.HasValue && res.IsEndOfStream &&
-							res.CurrentPos.CommitPosition > res.TfLastCommitPosition) {
-							_publisher.Publish(new SubscriptionMessage.PollStream(
-								SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
-								DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
-						} else
-							msg.Envelope.ReplyWith(res);
-
-						break;
-					case ReadAllResult.Error:
-					case ReadAllResult.AccessDenied:
-					case ReadAllResult.InvalidPosition:
+			var res = ReadAllEventsForward(msg);
+			switch (res.Result) {
+				case ReadAllResult.Success:
+					if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.Events.Length == 0) {
+						_publisher.Publish(new SubscriptionMessage.PollStream(
+							SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
+							DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
+					} else
 						msg.Envelope.ReplyWith(res);
-						break;
-					default:
-						throw new ArgumentOutOfRangeException($"Unknown ReadAllResult: {res.Result}");
-				}
+
+					break;
+				case ReadAllResult.NotModified:
+					if (msg.LongPollTimeout.HasValue && res.IsEndOfStream &&
+						res.CurrentPos.CommitPosition > res.TfLastCommitPosition) {
+						_publisher.Publish(new SubscriptionMessage.PollStream(
+							SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
+							DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
+					} else
+						msg.Envelope.ReplyWith(res);
+
+					break;
+				case ReadAllResult.Error:
+				case ReadAllResult.AccessDenied:
+				case ReadAllResult.InvalidPosition:
+					msg.Envelope.ReplyWith(res);
+					break;
+				default:
+					throw new ArgumentOutOfRangeException($"Unknown ReadAllResult: {res.Result}");
 			}
 		}
 
@@ -238,36 +233,34 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			}
 
-			using (HistogramService.Measure(ReaderAllRangeHistogram)) {
-				var res = FilteredReadAllEventsForward(msg);
-				switch (res.Result) {
-					case FilteredReadAllResult.Success:
-						if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.Events.Length == 0) {
-							_publisher.Publish(new SubscriptionMessage.PollStream(
-								SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
-								DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
-						} else
-							msg.Envelope.ReplyWith(res);
-
-						break;
-					case FilteredReadAllResult.NotModified:
-						if (msg.LongPollTimeout.HasValue && res.IsEndOfStream &&
-							res.CurrentPos.CommitPosition > res.TfLastCommitPosition) {
-							_publisher.Publish(new SubscriptionMessage.PollStream(
-								SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
-								DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
-						} else
-							msg.Envelope.ReplyWith(res);
-
-						break;
-					case FilteredReadAllResult.Error:
-					case FilteredReadAllResult.AccessDenied:
-					case FilteredReadAllResult.InvalidPosition:
+			var res = FilteredReadAllEventsForward(msg);
+			switch (res.Result) {
+				case FilteredReadAllResult.Success:
+					if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.Events.Length == 0) {
+						_publisher.Publish(new SubscriptionMessage.PollStream(
+							SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
+							DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
+					} else
 						msg.Envelope.ReplyWith(res);
-						break;
-					default:
-						throw new ArgumentOutOfRangeException($"Unknown ReadAllResult: {res.Result}");
-				}
+
+					break;
+				case FilteredReadAllResult.NotModified:
+					if (msg.LongPollTimeout.HasValue && res.IsEndOfStream &&
+						res.CurrentPos.CommitPosition > res.TfLastCommitPosition) {
+						_publisher.Publish(new SubscriptionMessage.PollStream(
+							SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
+							DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
+					} else
+						msg.Envelope.ReplyWith(res);
+
+					break;
+				case FilteredReadAllResult.Error:
+				case FilteredReadAllResult.AccessDenied:
+				case FilteredReadAllResult.InvalidPosition:
+					msg.Envelope.ReplyWith(res);
+					break;
+				default:
+					throw new ArgumentOutOfRangeException($"Unknown ReadAllResult: {res.Result}");
 			}
 		}
 
@@ -282,36 +275,34 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			}
 
-			using (HistogramService.Measure(ReaderAllRangeHistogram)) {
-				var res = FilteredReadAllEventsBackward(msg);
-				switch (res.Result) {
-					case FilteredReadAllResult.Success:
-						if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.Events.Length == 0) {
-							_publisher.Publish(new SubscriptionMessage.PollStream(
-								SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
-								DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
-						} else
-							msg.Envelope.ReplyWith(res);
-
-						break;
-					case FilteredReadAllResult.NotModified:
-						if (msg.LongPollTimeout.HasValue && res.IsEndOfStream &&
-							res.CurrentPos.CommitPosition > res.TfLastCommitPosition) {
-							_publisher.Publish(new SubscriptionMessage.PollStream(
-								SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
-								DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
-						} else
-							msg.Envelope.ReplyWith(res);
-
-						break;
-					case FilteredReadAllResult.Error:
-					case FilteredReadAllResult.AccessDenied:
-					case FilteredReadAllResult.InvalidPosition:
+			var res = FilteredReadAllEventsBackward(msg);
+			switch (res.Result) {
+				case FilteredReadAllResult.Success:
+					if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.Events.Length == 0) {
+						_publisher.Publish(new SubscriptionMessage.PollStream(
+							SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
+							DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
+					} else
 						msg.Envelope.ReplyWith(res);
-						break;
-					default:
-						throw new ArgumentOutOfRangeException($"Unknown ReadAllResult: {res.Result}");
-				}
+
+					break;
+				case FilteredReadAllResult.NotModified:
+					if (msg.LongPollTimeout.HasValue && res.IsEndOfStream &&
+						res.CurrentPos.CommitPosition > res.TfLastCommitPosition) {
+						_publisher.Publish(new SubscriptionMessage.PollStream(
+							SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
+							DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
+					} else
+						msg.Envelope.ReplyWith(res);
+
+					break;
+				case FilteredReadAllResult.Error:
+				case FilteredReadAllResult.AccessDenied:
+				case FilteredReadAllResult.InvalidPosition:
+					msg.Envelope.ReplyWith(res);
+					break;
+				default:
+					throw new ArgumentOutOfRangeException($"Unknown ReadAllResult: {res.Result}");
 			}
 		}
 
@@ -325,268 +316,260 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		private ClientMessage.ReadEventCompleted ReadEvent(ClientMessage.ReadEvent msg) {
-			using (HistogramService.Measure(ReaderReadHistogram)) {
-				try {
-					var streamName = msg.EventStreamId;
-					var streamId = _readIndex.GetStreamId(streamName);
-					var result = _readIndex.ReadEvent(streamName, streamId, msg.EventNumber);
-					var record = result.Result == ReadEventResult.Success && msg.ResolveLinkTos
-						? ResolveLinkToEvent(result.Record, msg.User, null)
-						: ResolvedEvent.ForUnresolvedEvent(result.Record);
-					if (record == null)
-						return NoData(msg, ReadEventResult.AccessDenied);
-					if ((result.Result == ReadEventResult.NoStream ||
-						 result.Result == ReadEventResult.NotFound) &&
-						_systemStreams.IsMetaStream(streamId) &&
-						result.OriginalStreamExists.HasValue &&
-						result.OriginalStreamExists.Value) {
-						return NoData(msg, ReadEventResult.Success);
-					}
-
-					return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result.Result,
-						record.Value, result.Metadata, false, null);
-				} catch (Exception exc) {
-					Log.Error(exc, "Error during processing ReadEvent request.");
-					return NoData(msg, ReadEventResult.Error, exc.Message);
+			try {
+				var streamName = msg.EventStreamId;
+				var streamId = _readIndex.GetStreamId(streamName);
+				var result = _readIndex.ReadEvent(streamName, streamId, msg.EventNumber);
+				var record = result.Result == ReadEventResult.Success && msg.ResolveLinkTos
+					? ResolveLinkToEvent(result.Record, msg.User, null)
+					: ResolvedEvent.ForUnresolvedEvent(result.Record);
+				if (record == null)
+					return NoData(msg, ReadEventResult.AccessDenied);
+				if ((result.Result == ReadEventResult.NoStream ||
+						result.Result == ReadEventResult.NotFound) &&
+					_systemStreams.IsMetaStream(streamId) &&
+					result.OriginalStreamExists.HasValue &&
+					result.OriginalStreamExists.Value) {
+					return NoData(msg, ReadEventResult.Success);
 				}
+
+				return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result.Result,
+					record.Value, result.Metadata, false, null);
+			} catch (Exception exc) {
+				Log.Error(exc, "Error during processing ReadEvent request.");
+				return NoData(msg, ReadEventResult.Error, exc.Message);
 			}
 		}
 
 		private ClientMessage.ReadStreamEventsForwardCompleted ReadStreamEventsForward(
 			ClientMessage.ReadStreamEventsForward msg) {
-			using (HistogramService.Measure(ReaderStreamRangeHistogram)) {
-				var lastIndexPosition = _readIndex.LastIndexedPosition;
-				try {
-					if (msg.MaxCount > MaxPageSize) {
-						throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
-					}
 
-					var streamName = msg.EventStreamId;
-					var streamId = _readIndex.GetStreamId(msg.EventStreamId);
-					if (msg.ValidationStreamVersion.HasValue &&
-						_readIndex.GetStreamLastEventNumber(streamId) == msg.ValidationStreamVersion)
-						return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition,
-							msg.ValidationStreamVersion.Value);
-
-					var result =
-						_readIndex.ReadStreamEventsForward(streamName, streamId, msg.FromEventNumber, msg.MaxCount);
-					CheckEventsOrder(msg, result);
-					var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User);
-					if (resolvedPairs == null)
-						return NoData(msg, ReadStreamResult.AccessDenied, lastIndexPosition);
-
-					return new ClientMessage.ReadStreamEventsForwardCompleted(
-						msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
-						(ReadStreamResult)result.Result, resolvedPairs, result.Metadata, false, string.Empty,
-						result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastIndexPosition);
-				} catch (Exception exc) {
-					Log.Error(exc, "Error during processing ReadStreamEventsForward request.");
-					return NoData(msg, ReadStreamResult.Error, lastIndexPosition, error: exc.Message);
+			var lastIndexPosition = _readIndex.LastIndexedPosition;
+			try {
+				if (msg.MaxCount > MaxPageSize) {
+					throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
 				}
+
+				var streamName = msg.EventStreamId;
+				var streamId = _readIndex.GetStreamId(msg.EventStreamId);
+				if (msg.ValidationStreamVersion.HasValue &&
+					_readIndex.GetStreamLastEventNumber(streamId) == msg.ValidationStreamVersion)
+					return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition,
+						msg.ValidationStreamVersion.Value);
+
+				var result =
+					_readIndex.ReadStreamEventsForward(streamName, streamId, msg.FromEventNumber, msg.MaxCount);
+				CheckEventsOrder(msg, result);
+				var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User);
+				if (resolvedPairs == null)
+					return NoData(msg, ReadStreamResult.AccessDenied, lastIndexPosition);
+
+				return new ClientMessage.ReadStreamEventsForwardCompleted(
+					msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
+					(ReadStreamResult)result.Result, resolvedPairs, result.Metadata, false, string.Empty,
+					result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastIndexPosition);
+			} catch (Exception exc) {
+				Log.Error(exc, "Error during processing ReadStreamEventsForward request.");
+				return NoData(msg, ReadStreamResult.Error, lastIndexPosition, error: exc.Message);
 			}
 		}
 
 		private ClientMessage.ReadStreamEventsBackwardCompleted ReadStreamEventsBackward(
 			ClientMessage.ReadStreamEventsBackward msg) {
-			using (HistogramService.Measure(ReaderStreamRangeHistogram)) {
-				var lastIndexedPosition = _readIndex.LastIndexedPosition;
-				try {
-					if (msg.MaxCount > MaxPageSize) {
-						throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
-					}
 
-					var streamName = msg.EventStreamId;
-					var streamId = _readIndex.GetStreamId(msg.EventStreamId);
-					if (msg.ValidationStreamVersion.HasValue &&
-						_readIndex.GetStreamLastEventNumber(streamId) == msg.ValidationStreamVersion)
-						return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition,
-							msg.ValidationStreamVersion.Value);
-
-
-					var result = _readIndex.ReadStreamEventsBackward(streamName, streamId, msg.FromEventNumber,
-						msg.MaxCount);
-					CheckEventsOrder(msg, result);
-					var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User);
-					if (resolvedPairs == null)
-						return NoData(msg, ReadStreamResult.AccessDenied, lastIndexedPosition);
-
-					return new ClientMessage.ReadStreamEventsBackwardCompleted(
-						msg.CorrelationId, msg.EventStreamId, result.FromEventNumber, result.MaxCount,
-						(ReadStreamResult)result.Result, resolvedPairs, result.Metadata, false, string.Empty,
-						result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastIndexedPosition);
-				} catch (Exception exc) {
-					Log.Error(exc, "Error during processing ReadStreamEventsBackward request.");
-					return NoData(msg, ReadStreamResult.Error, lastIndexedPosition, error: exc.Message);
+			var lastIndexedPosition = _readIndex.LastIndexedPosition;
+			try {
+				if (msg.MaxCount > MaxPageSize) {
+					throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
 				}
+
+				var streamName = msg.EventStreamId;
+				var streamId = _readIndex.GetStreamId(msg.EventStreamId);
+				if (msg.ValidationStreamVersion.HasValue &&
+					_readIndex.GetStreamLastEventNumber(streamId) == msg.ValidationStreamVersion)
+					return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition,
+						msg.ValidationStreamVersion.Value);
+
+
+				var result = _readIndex.ReadStreamEventsBackward(streamName, streamId, msg.FromEventNumber,
+					msg.MaxCount);
+				CheckEventsOrder(msg, result);
+				var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User);
+				if (resolvedPairs == null)
+					return NoData(msg, ReadStreamResult.AccessDenied, lastIndexedPosition);
+
+				return new ClientMessage.ReadStreamEventsBackwardCompleted(
+					msg.CorrelationId, msg.EventStreamId, result.FromEventNumber, result.MaxCount,
+					(ReadStreamResult)result.Result, resolvedPairs, result.Metadata, false, string.Empty,
+					result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastIndexedPosition);
+			} catch (Exception exc) {
+				Log.Error(exc, "Error during processing ReadStreamEventsBackward request.");
+				return NoData(msg, ReadStreamResult.Error, lastIndexedPosition, error: exc.Message);
 			}
 		}
 
 		private ClientMessage.ReadAllEventsForwardCompleted
 			ReadAllEventsForward(ClientMessage.ReadAllEventsForward msg) {
-			using (HistogramService.Measure(ReaderAllRangeHistogram)) {
-				var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
-				var lastIndexedPosition = _readIndex.LastIndexedPosition;
-				try {
-					if (msg.MaxCount > MaxPageSize) {
-						throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
-					}
 
-					if (pos == TFPos.HeadOfTf) {
-						var checkpoint = _writerCheckpoint.Read();
-						pos = new TFPos(checkpoint, checkpoint);
-					}
-
-					if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
-						return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, "Invalid position.");
-					if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
-						return NoData(msg, ReadAllResult.NotModified, pos, lastIndexedPosition);
-
-					var res = _readIndex.ReadAllEventsForward(pos, msg.MaxCount);
-					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
-					if (resolved == null)
-						return NoData(msg, ReadAllResult.AccessDenied, pos, lastIndexedPosition);
-
-					var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream);
-					return new ClientMessage.ReadAllEventsForwardCompleted(
-						msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, false, msg.MaxCount,
-						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition);
-				} catch (Exception exc) when (exc is InvalidReadException or UnableToReadPastEndOfStreamException) {
-					Log.Warning(exc, "Error during processing ReadAllEventsBackward request. The read appears to be at an invalid position.");
-					return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, exc.Message);
-				} catch (Exception exc) {
-					Log.Error(exc, "Error during processing ReadAllEventsForward request.");
-					return NoData(msg, ReadAllResult.Error, pos, lastIndexedPosition, exc.Message);
+			var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
+			var lastIndexedPosition = _readIndex.LastIndexedPosition;
+			try {
+				if (msg.MaxCount > MaxPageSize) {
+					throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
 				}
+
+				if (pos == TFPos.HeadOfTf) {
+					var checkpoint = _writerCheckpoint.Read();
+					pos = new TFPos(checkpoint, checkpoint);
+				}
+
+				if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
+					return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, "Invalid position.");
+				if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
+					return NoData(msg, ReadAllResult.NotModified, pos, lastIndexedPosition);
+
+				var res = _readIndex.ReadAllEventsForward(pos, msg.MaxCount);
+				var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
+				if (resolved == null)
+					return NoData(msg, ReadAllResult.AccessDenied, pos, lastIndexedPosition);
+
+				var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream);
+				return new ClientMessage.ReadAllEventsForwardCompleted(
+					msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, false, msg.MaxCount,
+					res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition);
+			} catch (Exception exc) when (exc is InvalidReadException or UnableToReadPastEndOfStreamException) {
+				Log.Warning(exc, "Error during processing ReadAllEventsBackward request. The read appears to be at an invalid position.");
+				return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, exc.Message);
+			} catch (Exception exc) {
+				Log.Error(exc, "Error during processing ReadAllEventsForward request.");
+				return NoData(msg, ReadAllResult.Error, pos, lastIndexedPosition, exc.Message);
 			}
 		}
 
 		private ClientMessage.ReadAllEventsBackwardCompleted ReadAllEventsBackward(
 			ClientMessage.ReadAllEventsBackward msg) {
-			using (HistogramService.Measure(ReaderAllRangeHistogram)) {
-				var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
-				var lastIndexedPosition = _readIndex.LastIndexedPosition;
-				try {
-					if (msg.MaxCount > MaxPageSize) {
-						throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
-					}
 
-					if (pos == TFPos.HeadOfTf) {
-						var checkpoint = _writerCheckpoint.Read();
-						pos = new TFPos(checkpoint, checkpoint);
-					}
-
-					if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
-						return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, "Invalid position.");
-					if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
-						return NoData(msg, ReadAllResult.NotModified, pos, lastIndexedPosition);
-
-					var res = _readIndex.ReadAllEventsBackward(pos, msg.MaxCount);
-					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
-					if (resolved == null)
-						return NoData(msg, ReadAllResult.AccessDenied, pos, lastIndexedPosition);
-
-					var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream);
-					return new ClientMessage.ReadAllEventsBackwardCompleted(
-						msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, false, msg.MaxCount,
-						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition);
-				} catch (Exception exc) when (exc is InvalidReadException or UnableToReadPastEndOfStreamException) {
-					Log.Warning(exc, "Error during processing ReadAllEventsBackward request. The read appears to be at an invalid position.");
-					return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, exc.Message);
-				} catch (Exception exc) {
-					Log.Error(exc, "Error during processing ReadAllEventsBackward request.");
-					return NoData(msg, ReadAllResult.Error, pos, lastIndexedPosition, exc.Message);
+			var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
+			var lastIndexedPosition = _readIndex.LastIndexedPosition;
+			try {
+				if (msg.MaxCount > MaxPageSize) {
+					throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
 				}
+
+				if (pos == TFPos.HeadOfTf) {
+					var checkpoint = _writerCheckpoint.Read();
+					pos = new TFPos(checkpoint, checkpoint);
+				}
+
+				if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
+					return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, "Invalid position.");
+				if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
+					return NoData(msg, ReadAllResult.NotModified, pos, lastIndexedPosition);
+
+				var res = _readIndex.ReadAllEventsBackward(pos, msg.MaxCount);
+				var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
+				if (resolved == null)
+					return NoData(msg, ReadAllResult.AccessDenied, pos, lastIndexedPosition);
+
+				var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream);
+				return new ClientMessage.ReadAllEventsBackwardCompleted(
+					msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, false, msg.MaxCount,
+					res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition);
+			} catch (Exception exc) when (exc is InvalidReadException or UnableToReadPastEndOfStreamException) {
+				Log.Warning(exc, "Error during processing ReadAllEventsBackward request. The read appears to be at an invalid position.");
+				return NoData(msg, ReadAllResult.InvalidPosition, pos, lastIndexedPosition, exc.Message);
+			} catch (Exception exc) {
+				Log.Error(exc, "Error during processing ReadAllEventsBackward request.");
+				return NoData(msg, ReadAllResult.Error, pos, lastIndexedPosition, exc.Message);
 			}
 		}
 
 		private ClientMessage.FilteredReadAllEventsForwardCompleted FilteredReadAllEventsForward(
 			ClientMessage.FilteredReadAllEventsForward msg) {
-			using (HistogramService.Measure(ReaderAllRangeHistogram)) {
-				var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
-				var lastIndexedPosition = _readIndex.LastIndexedPosition;
-				try {
-					if (msg.MaxCount > MaxPageSize) {
-						throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
-					}
 
-					if (pos == TFPos.HeadOfTf) {
-						var checkpoint = _writerCheckpoint.Read();
-						pos = new TFPos(checkpoint, checkpoint);
-					}
-
-					if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
-						return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition,
-							"Invalid position.");
-					if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
-						return NoDataForFilteredCommand(msg, FilteredReadAllResult.NotModified, pos,
-							lastIndexedPosition);
-
-					var res = _readIndex.ReadAllEventsForwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
-						msg.EventFilter);
-					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
-					if (resolved == null)
-						return NoDataForFilteredCommand(msg, FilteredReadAllResult.AccessDenied, pos,
-							lastIndexedPosition);
-
-					var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream);
-					return new ClientMessage.FilteredReadAllEventsForwardCompleted(
-						msg.CorrelationId, FilteredReadAllResult.Success, null, resolved, metadata, false,
-						msg.MaxCount,
-						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition, res.IsEndOfStream,
-						res.ConsideredEventsCount);
-				} catch (Exception exc) when (exc is InvalidReadException or UnableToReadPastEndOfStreamException) {
-					Log.Warning(exc, "Error during processing ReadAllEventsForwardFiltered request. The read appears to be at an invalid position.");
-					return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition, exc.Message);
-				} catch (Exception exc) {
-					Log.Error(exc, "Error during processing ReadAllEventsForwardFiltered request.");
-					return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
-						exc.Message);
+			var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
+			var lastIndexedPosition = _readIndex.LastIndexedPosition;
+			try {
+				if (msg.MaxCount > MaxPageSize) {
+					throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
 				}
+
+				if (pos == TFPos.HeadOfTf) {
+					var checkpoint = _writerCheckpoint.Read();
+					pos = new TFPos(checkpoint, checkpoint);
+				}
+
+				if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
+					return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition,
+						"Invalid position.");
+				if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
+					return NoDataForFilteredCommand(msg, FilteredReadAllResult.NotModified, pos,
+						lastIndexedPosition);
+
+				var res = _readIndex.ReadAllEventsForwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
+					msg.EventFilter);
+				var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
+				if (resolved == null)
+					return NoDataForFilteredCommand(msg, FilteredReadAllResult.AccessDenied, pos,
+						lastIndexedPosition);
+
+				var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream);
+				return new ClientMessage.FilteredReadAllEventsForwardCompleted(
+					msg.CorrelationId, FilteredReadAllResult.Success, null, resolved, metadata, false,
+					msg.MaxCount,
+					res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition, res.IsEndOfStream,
+					res.ConsideredEventsCount);
+			} catch (Exception exc) when (exc is InvalidReadException or UnableToReadPastEndOfStreamException) {
+				Log.Warning(exc, "Error during processing ReadAllEventsForwardFiltered request. The read appears to be at an invalid position.");
+				return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition, exc.Message);
+			} catch (Exception exc) {
+				Log.Error(exc, "Error during processing ReadAllEventsForwardFiltered request.");
+				return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
+					exc.Message);
 			}
 		}
 
 		private ClientMessage.FilteredReadAllEventsBackwardCompleted FilteredReadAllEventsBackward(
 			ClientMessage.FilteredReadAllEventsBackward msg) {
-			using (HistogramService.Measure(ReaderAllRangeHistogram)) {
-				var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
-				var lastIndexedPosition = _readIndex.LastIndexedPosition;
-				try {
-					if (msg.MaxCount > MaxPageSize) {
-						throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
-					}
 
-					if (pos == TFPos.HeadOfTf) {
-						var checkpoint = _writerCheckpoint.Read();
-						pos = new TFPos(checkpoint, checkpoint);
-					}
-
-					if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
-						return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition,
-							"Invalid position.");
-					if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
-						return NoDataForFilteredCommand(msg, FilteredReadAllResult.NotModified, pos,
-							lastIndexedPosition);
-
-					var res = _readIndex.ReadAllEventsBackwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
-						msg.EventFilter);
-					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
-					if (resolved == null)
-						return NoDataForFilteredCommand(msg, FilteredReadAllResult.AccessDenied, pos,
-							lastIndexedPosition);
-
-					var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream);
-					return new ClientMessage.FilteredReadAllEventsBackwardCompleted(
-						msg.CorrelationId, FilteredReadAllResult.Success, null, resolved, metadata, false,
-						msg.MaxCount,
-						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition, res.IsEndOfStream);
-				} catch (Exception exc) when (exc is InvalidReadException or UnableToReadPastEndOfStreamException) {
-					Log.Warning(exc, "Error during processing ReadAllEventsBackwardFiltered request. The read appears to be at an invalid position.");
-					return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition, exc.Message);
-				} catch (Exception exc) {
-					Log.Error(exc, "Error during processing ReadAllEventsBackwardFiltered request.");
-					return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
-						exc.Message);
+			var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
+			var lastIndexedPosition = _readIndex.LastIndexedPosition;
+			try {
+				if (msg.MaxCount > MaxPageSize) {
+					throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
 				}
+
+				if (pos == TFPos.HeadOfTf) {
+					var checkpoint = _writerCheckpoint.Read();
+					pos = new TFPos(checkpoint, checkpoint);
+				}
+
+				if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
+					return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition,
+						"Invalid position.");
+				if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
+					return NoDataForFilteredCommand(msg, FilteredReadAllResult.NotModified, pos,
+						lastIndexedPosition);
+
+				var res = _readIndex.ReadAllEventsBackwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
+					msg.EventFilter);
+				var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
+				if (resolved == null)
+					return NoDataForFilteredCommand(msg, FilteredReadAllResult.AccessDenied, pos,
+						lastIndexedPosition);
+
+				var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream);
+				return new ClientMessage.FilteredReadAllEventsBackwardCompleted(
+					msg.CorrelationId, FilteredReadAllResult.Success, null, resolved, metadata, false,
+					msg.MaxCount,
+					res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition, res.IsEndOfStream);
+			} catch (Exception exc) when (exc is InvalidReadException or UnableToReadPastEndOfStreamException) {
+				Log.Warning(exc, "Error during processing ReadAllEventsBackwardFiltered request. The read appears to be at an invalid position.");
+				return NoDataForFilteredCommand(msg, FilteredReadAllResult.InvalidPosition, pos, lastIndexedPosition, exc.Message);
+			} catch (Exception exc) {
+				Log.Error(exc, "Error during processing ReadAllEventsBackwardFiltered request.");
+				return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
+					exc.Message);
 			}
 		}
 
@@ -741,7 +724,7 @@ namespace EventStore.Core.Services.Storage {
 			_expiredBatchCount = 0;
 			_publisher.Publish(
 				TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2),
-					new PublishEnvelope(_publisher),
+					_publisher,
 					new StorageMessage.BatchLogExpiredMessages(Guid.NewGuid(), _queueId))
 			);
 		}
@@ -764,7 +747,7 @@ namespace EventStore.Core.Services.Storage {
 							_queueId);
 						_publisher.Publish(
 							TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2),
-								new PublishEnvelope(_publisher),
+								_publisher,
 								new StorageMessage.BatchLogExpiredMessages(Guid.NewGuid(), _queueId))
 						);
 						_expiredBatchCount = 1;

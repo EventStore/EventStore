@@ -17,3 +17,6 @@
 # eventstore-admin team owns the codeowners file to prevent
 # unauthorized changes to it.
 /.github/CODEOWNERS	@EventStore/eventstore-admin
+
+# protected because it contains license rules
+/qodana.yaml	@EventStore/eventstore-admin

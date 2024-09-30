@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,14 +32,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 			yield return
 				(new ProjectionManagementMessage.Command.Post(
-					new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
+					_bus, ProjectionMode.Continuous, _projectionName,
 					ProjectionManagementMessage.RunAs.System,"native:EventStore.Projections.Core.Standard.ByCorrelationId", "{\"correlationIdProperty\":\"$myCorrelationId\"}",
 					enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true));
 			// when
 			_newProjectionSource = "{\"correlationIdProperty\":\"$updateCorrelationId\"}";
 			yield return
 				(new ProjectionManagementMessage.Command.UpdateQuery(
-					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System,
+					_bus, _projectionName, ProjectionManagementMessage.RunAs.System,
 					_newProjectionSource, emitEnabled: null));
 		}
 
@@ -44,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		public void the_projection_source_can_be_retrieved() {
 			_manager.Handle(
 				new ProjectionManagementMessage.Command.GetQuery(
-					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+					_bus, _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
 			Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Count());
 			var projectionQuery =
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Single();
@@ -56,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		public void emit_enabled_options_remains_unchanged() {
 			_manager.Handle(
 				new ProjectionManagementMessage.Command.GetQuery(
-					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+					_bus, _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
 			Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Count());
 			var projectionQuery =
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Single();
@@ -67,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test, Category("v8")]
 		public void the_projection_status_is_still_running() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, _projectionName,
+				new ProjectionManagementMessage.Command.GetStatistics(_bus, null, _projectionName,
 					false));
 
 			 Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
@@ -87,7 +90,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test, Category("v8")]
 		public void the_projection_state_can_be_retrieved() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetState(new PublishEnvelope(_bus), _projectionName, ""));
+				new ProjectionManagementMessage.Command.GetState(_bus, _projectionName, ""));
 			_queue.Process();
 
 			Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Count());

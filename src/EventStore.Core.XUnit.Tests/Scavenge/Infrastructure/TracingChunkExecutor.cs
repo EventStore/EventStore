@@ -1,4 +1,8 @@
-﻿using System.Threading;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Scavenging;
 
@@ -12,7 +16,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			_tracer = tracer;
 		}
 
-		public void Execute(
+		public async ValueTask Execute(
 			ScavengePoint scavengePoint,
 			IScavengeStateForChunkExecutor<TStreamId> state,
 			ITFChunkScavengerLog scavengerLogger,
@@ -20,7 +24,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 			_tracer.TraceIn($"Executing chunks for {scavengePoint.GetName()}");
 			try {
-				_wrapped.Execute(scavengePoint, state, scavengerLogger, cancellationToken);
+				await _wrapped.Execute(scavengePoint, state, scavengerLogger, cancellationToken);
 				_tracer.TraceOut("Done");
 			} catch {
 				_tracer.TraceOut("Exception executing chunks");
@@ -28,7 +32,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			}
 		}
 
-		public void Execute(
+		public async ValueTask Execute(
 			ScavengeCheckpoint.ExecutingChunks checkpoint,
 			IScavengeStateForChunkExecutor<TStreamId> state,
 			ITFChunkScavengerLog scavengerLogger,
@@ -36,7 +40,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 			_tracer.TraceIn($"Executing chunks from checkpoint: {checkpoint}");
 			try {
-				_wrapped.Execute(checkpoint, state, scavengerLogger, cancellationToken);
+				await _wrapped.Execute(checkpoint, state, scavengerLogger, cancellationToken);
 				_tracer.TraceOut("Done");
 			} catch {
 				_tracer.TraceOut("Exception executing chunks");

@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +17,7 @@ using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
@@ -220,7 +224,7 @@ namespace EventStore.Projections.Core.Services.Http {
 						return;
 					}
 
-					if (config.ProjectionExecutionTimeout <= 0) {
+					if (config.ProjectionExecutionTimeout is not null && config.ProjectionExecutionTimeout <= 0) {
 						SendBadRequest(o, $"projectionExecutionTimeout should be positive. Found : {config.ProjectionExecutionTimeout}");
 						return;
 					}
@@ -553,8 +557,8 @@ namespace EventStore.Projections.Core.Services.Http {
 						new SendToHttpEnvelope<ProjectionManagementMessage.OperationFailed>(
 							_networkSendQueue,
 							http,
-							OperationFailedFormatter, 
-							OperationFailedConfigurator, 
+							OperationFailedFormatter,
+							OperationFailedConfigurator,
 							new SendToHttpEnvelope<ProjectionSubsystemMessage.InvalidSubsystemRestart>(
 								_networkSendQueue,
 								http,
@@ -601,7 +605,7 @@ namespace EventStore.Projections.Core.Services.Http {
 		private static string DefaultFormatter<T>(ICodec codec, T message) {
 			return codec.To(message);
 		}
-		
+
 		private ResponseConfiguration InvalidSubsystemRestartConfigurator(ICodec codec, ProjectionSubsystemMessage.InvalidSubsystemRestart message) {
 			return new ResponseConfiguration(HttpStatusCode.BadRequest, "Bad Request", "text/plain",
 				Helper.UTF8NoBom);
@@ -656,8 +660,7 @@ namespace EventStore.Projections.Core.Services.Http {
 			public int MaxWriteBatchLength { get; set; }
 			public int MaxAllowedWritesInFlight { get; set; }
 
-			public int ProjectionExecutionTimeout { get; set; } =
-				ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout;
+			public int? ProjectionExecutionTimeout { get; set; }
 		}
 	}
 }

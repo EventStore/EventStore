@@ -1,9 +1,8 @@
-﻿using NUnit.Framework;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using EventStore.Core.Index;
 
 namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 	[TestFixture]
@@ -21,9 +20,6 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 		[Test]
 		public void no_table_should_manually_merged() {
 			var result = _map.TryMergeOneLevel(
-				UpgradeHash,
-				ExistsAt,
-				RecordExistsAt,
 				_fileNameProvider,
 				_ptableVersion,
 				skipIndexVerify: _skipIndexVerify

@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -213,11 +216,19 @@ namespace EventStore.Core {
 					.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore"))
 					.AddMeter(metricsConfiguration.Meters)
 					.AddView(i => {
-						if (i.Name.StartsWith("eventstore-") &&
+						if (i.Name == MetricsBootstrapper.LogicalChunkReadDistributionName)
+							// 20 buckets, 0, 1, 2, 4, 8, ...
+							return new ExplicitBucketHistogramConfiguration {
+								Boundaries = [
+									0,
+									.. Enumerable.Range(0, count: 19).Select(x => 1 << x)
+								]
+							};
+						else if (i.Name.StartsWith("eventstore-") &&
 							i.Name.EndsWith("-latency") &&
 							i.Unit == "seconds")
 							return new ExplicitBucketHistogramConfiguration {
-								Boundaries = new double[] {
+								Boundaries = [
 									0.001, //    1 ms
 									0.005, //    5 ms
 									0.01,  //   10 ms
@@ -226,11 +237,11 @@ namespace EventStore.Core {
 									0.5,   //  500 ms
 									1,     // 1000 ms
 									5,     // 5000 ms
-								}
+								]
 							};
 						else if (i.Name.StartsWith("eventstore-") && i.Unit == "seconds")
 							return new ExplicitBucketHistogramConfiguration {
-								Boundaries = new double[] {
+								Boundaries = [
 									0.000_001, // 1 microsecond
 									0.000_01,
 									0.000_1,
@@ -239,7 +250,7 @@ namespace EventStore.Core {
 									0.1,
 									1, // 1 second
 									10,
-								}
+								]
 							};
 						return default;
 					})

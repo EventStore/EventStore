@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Linq;
 using System.Text.Json;
@@ -17,13 +20,13 @@ namespace EventStore.Client.Projections {
 
 namespace EventStore.Projections.Core.Services.Grpc {
 	internal partial class ProjectionManagement : EventStore.Client.Projections.Projections.ProjectionsBase {
-		private readonly IQueuedHandler _queue;
+		private readonly IPublisher _publisher;
 		private readonly IAuthorizationProvider _authorizationProvider;
 
-		public ProjectionManagement(IQueuedHandler queue, IAuthorizationProvider authorizationProvider) {
-			if (queue == null) throw new ArgumentNullException(nameof(queue));
+		public ProjectionManagement(IPublisher publisher, IAuthorizationProvider authorizationProvider) {
+			if (publisher == null) throw new ArgumentNullException(nameof(publisher));
 			if (authorizationProvider == null) throw new ArgumentNullException(nameof(authorizationProvider));
-			_queue = queue;
+			_publisher = publisher;
 			_authorizationProvider = authorizationProvider;
 		}
 

@@ -125,7 +125,6 @@ DEFAULT OPTIONS:
          ALLOW UNKNOWN OPTIONS:                   False (<DEFAULT>)
          CONFIG:                                  /etc/eventstore/eventstore.conf (<DEFAULT>)
          DISABLE HTTP CACHING:                    False (<DEFAULT>)
-         ENABLE HISTOGRAMS:                       False (<DEFAULT>)
          HELP:                                    False (<DEFAULT>)
          LOG FAILED AUTHENTICATION ATTEMPTS:      False (<DEFAULT>)
          LOG HTTP REQUESTS:                       False (<DEFAULT>)

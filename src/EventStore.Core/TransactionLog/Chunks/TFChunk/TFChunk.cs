@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Threading.Tasks;
 using DotNext.Buffers;
 using DotNext.Collections.Concurrent;
 using DotNext.Diagnostics;
@@ -752,7 +756,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return _readSide.TryReadAt(logicalPosition, couldBeScavenged);
 		}
 
-		public RecordReadResult TryReadFirst() {
+		public async ValueTask<RecordReadResult> TryReadFirst(CancellationToken token) {
+			token.ThrowIfCancellationRequested();
 			return _readSide.TryReadFirst();
 		}
 
@@ -807,24 +812,24 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
 		}
 
-		public bool TryAppendRawData(byte[] buffer) {
+		public bool TryAppendRawData(ReadOnlyMemory<byte> buffer) {
 			var workItem = _writerWorkItem;
 			if (workItem.WorkingStream.Position + buffer.Length > workItem.WorkingStream.Length)
 				return false;
-			WriteRawData(workItem, buffer, buffer.Length);
+			WriteRawData(workItem, buffer);
 			return true;
 		}
 
 		private static long WriteRawData(WriterWorkItem workItem, MemoryStream buffer) {
 			var len = (int)buffer.Length;
 			var buf = buffer.GetBuffer();
-			return WriteRawData(workItem, buf, len);
+			return WriteRawData(workItem, buf.AsMemory(0, len));
 		}
 
-		private static long WriteRawData(WriterWorkItem workItem, byte[] buf, int len) {
+		private static long WriteRawData(WriterWorkItem workItem, ReadOnlyMemory<byte> buf) {
 			var curPos = GetDataPosition(workItem);
 			// the writer work item's stream is responsible for updating the checksum
-			workItem.AppendData(buf, 0, len);
+			workItem.AppendData(buf);
 			return curPos;
 		}
 
@@ -840,10 +845,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			CompleteNonRaw(null);
 		}
 
-		public void CompleteScavenge(ICollection<PosMap> mapping) {
+		public async ValueTask CompleteScavenge(ICollection<PosMap> mapping, CancellationToken token) {
 			if (!ChunkHeader.IsScavenged)
 				throw new InvalidOperationException("CompleteScavenged should not be used for non-scavenged chunks.");
 
+			token.ThrowIfCancellationRequested();
 			CompleteNonRaw(mapping);
 		}
 
@@ -865,11 +871,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			SetAttributes(_filename, true);
 		}
 
-		public void CompleteRaw() {
+		public async ValueTask CompleteRaw(CancellationToken token) {
 			if (IsReadOnly)
 				throw new InvalidOperationException("Cannot complete a read-only TFChunk.");
 			if (_writerWorkItem.WorkingStream.Position != _writerWorkItem.WorkingStream.Length)
 				throw new InvalidOperationException("The raw chunk is not completely written.");
+
+			token.ThrowIfCancellationRequested();
 			Flush();
 
 			if (!_inMem)
@@ -1314,15 +1322,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		[StructLayout(LayoutKind.Auto)]
-		private struct ReaderWorkItemPool {
+		private struct ReaderWorkItemPool() {
 			private volatile ReaderWorkItem[] _array;
 
 			// IndexPool supports up to 64 elements with O(1) take/return time complexity.
 			// It's a thread-safe data structure with no allocations that provide predictability about
 			// the indices: smallest available index is always preferred.
-			private IndexPool _indices;
-
-			public ReaderWorkItemPool() => _indices = new() { IsEmpty = true };
+			private IndexPool _indices = new() { IsEmpty = true };
 
 			public void Reuse() {
 				if (_array is null) {
@@ -1360,8 +1366,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				return localReferenceCount;
 			}
-
-			internal readonly int Count => _indices.Count;
 
 			internal bool TryTake(out Slot slot) {
 				if (_array is { } array && _indices.TryTake(out int index)) {

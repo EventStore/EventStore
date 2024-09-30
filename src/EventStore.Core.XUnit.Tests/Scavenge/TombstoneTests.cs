@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Threading.Tasks;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
@@ -109,7 +112,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				.RunAsync();
 
 			Assert.True(logger.Completed);
-			Assert.Equal(EventStore.Core.TransactionLog.Chunks.ScavengeResult.Interrupted, logger.Result);
+			Assert.Equal(EventStore.Core.TransactionLog.Chunks.ScavengeResult.Errored, logger.Result);
 			Assert.Equal("Error while scavenging DB: Found Tombstone in metadata stream $$ab-1.", logger.Error);
 		}
 
@@ -132,7 +135,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				.RunAsync();
 
 			Assert.True(logger.Completed);
-			Assert.Equal(EventStore.Core.TransactionLog.Chunks.ScavengeResult.Interrupted, logger.Result);
+			Assert.Equal(EventStore.Core.TransactionLog.Chunks.ScavengeResult.Errored, logger.Result);
 			Assert.Equal("Error while scavenging DB: Found Tombstone in transaction in stream ab-1.", logger.Error);
 		}
 

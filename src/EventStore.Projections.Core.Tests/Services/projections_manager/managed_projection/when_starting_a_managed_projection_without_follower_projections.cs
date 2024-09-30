@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messaging;
@@ -52,12 +55,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 						_bus,
 						v => v.CorrelationId,
 						v => v.CorrelationId,
-						new PublishEnvelope(_bus)), new RequestResponseDispatcher
+						_bus), new RequestResponseDispatcher
 					<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
 						_bus,
 						v => v.CorrelationId,
 						v => v.CorrelationId,
-						new PublishEnvelope(_bus)), _ioDispatcher,
+						_bus), _ioDispatcher,
 				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
 		}
 

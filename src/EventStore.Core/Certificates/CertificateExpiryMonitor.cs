@@ -1,9 +1,11 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using Serilog;
 
@@ -35,7 +37,7 @@ public class CertificateExpiryMonitor :
 		_logger = logger;
 		_nodeCertificateExpirySchedule = TimerMessage.Schedule.Create(
 			_interval,
-			new PublishEnvelope(publisher),
+			publisher,
 			new MonitoringMessage.CheckCertificateExpiry());
 	}
 

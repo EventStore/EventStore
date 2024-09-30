@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 				yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 				yield return
 					(new ProjectionManagementMessage.Command.Post(
-						new PublishEnvelope(_bus), _projectionMode, _projectionName,
+						_bus, _projectionMode, _projectionName,
 						ProjectionManagementMessage.RunAs.System, "native:" + _fakeProjectionType.AssemblyQualifiedName,
 						_projectionSource, enabled: true, checkpointsEnabled: _checkpointsEnabled,
 						emitEnabled: _emitEnabled, trackEmittedStreams: _trackEmittedStreams));
@@ -51,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 				foreach (var m in base.When()) yield return m;
 				yield return
 					(new ProjectionManagementMessage.Command.GetQuery(
-						new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
+						_bus, _projectionName, ProjectionManagementMessage.RunAs.Anonymous));
 			}
 
 			[Test]
@@ -71,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var m in base.When()) yield return m;
 				yield return (
-					new ProjectionManagementMessage.Command.GetState(new PublishEnvelope(_bus), _projectionName, ""));
+					new ProjectionManagementMessage.Command.GetState(_bus, _projectionName, ""));
 			}
 
 			[Test]
@@ -112,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 			public void the_projection_status_becomes_faulted() {
 				_manager.Handle(
 					new ProjectionManagementMessage.Command.GetStatistics(
-						new PublishEnvelope(_bus), null, _projectionName, false));
+						_bus, null, _projectionName, false));
 
 				Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
 				Assert.AreEqual(

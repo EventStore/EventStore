@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -81,7 +84,7 @@ namespace EventStore.Core.Services {
 			Ensure.NotNull(inMemReader, nameof(inMemReader));
 
 			_bus = bus;
-			_busEnvelope = new PublishEnvelope(bus);
+			_busEnvelope = bus;
 			_queuedHandler = queuedHandler;
 			_authorizationProvider = authorizationProvider;
 			_readIndex = readIndex;

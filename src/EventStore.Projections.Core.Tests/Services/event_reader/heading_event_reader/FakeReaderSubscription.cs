@@ -1,12 +1,29 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Strategies;
+using EventStore.Projections.Core.Services.Processing.Subscriptions;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader {
 	public class FakeReaderSubscription : IReaderSubscription {
+		private readonly IPublisher _publisher;
+		private readonly Guid _subscriptionId;
+
+		public FakeReaderSubscription() {
+			_subscriptionId = Guid.NewGuid();
+		}
+
+		public FakeReaderSubscription(IPublisher publisher, Guid subscriptionId) {
+			_publisher = publisher;
+			_subscriptionId = subscriptionId;
+		}
 		private readonly List<ReaderSubscriptionMessage.CommittedEventDistributed> _receivedEvents =
 			new List<ReaderSubscriptionMessage.CommittedEventDistributed>();
 
@@ -35,6 +52,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 			}
 
 			_receivedEvents.Add(message);
+			_publisher?.Publish(
+				EventReaderSubscriptionMessage.CommittedEventReceived
+					.FromCommittedEventDistributed(message,
+					CheckpointTag.Empty, "", _subscriptionId, 0));
 		}
 
 		public List<ReaderSubscriptionMessage.CommittedEventDistributed> ReceivedEvents {
@@ -155,7 +176,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 
 		public IReaderSubscription CreateReaderSubscription(IPublisher publisher, CheckpointTag fromCheckpointTag,
 			Guid subscriptionId, ReaderSubscriptionOptions readerSubscriptionOptions) {
-			_subscription = new FakeReaderSubscription();
+			_subscription = new FakeReaderSubscription(publisher, subscriptionId);
 			return _subscription;
 		}
 	}

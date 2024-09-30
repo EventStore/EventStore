@@ -1,12 +1,16 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class EventReaderSubscriptionMessage {
 		/// <summary>
-		/// A CheckpointSuggested message is sent to core projection 
-		/// to allow bookmarking a position that can be used to 
+		/// A CheckpointSuggested message is sent to core projection
+		/// to allow bookmarking a position that can be used to
 		/// restore the projection processing (typically
 		/// an event at this position does not satisfy projection filter)
 		/// </summary>
@@ -55,6 +59,13 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
+		public sealed partial class SubscribeTimeout : EventReaderSubscriptionMessageBase {
+			public SubscribeTimeout(Guid subscriptionId)
+				: base(subscriptionId, CheckpointTag.Empty, 100.0f, -1, null) {
+			}
+		}
+
+		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public sealed partial class Failed : EventReaderSubscriptionMessageBase {
 			private readonly string _reason;
 
@@ -95,7 +106,7 @@ namespace EventStore.Projections.Core.Messages {
 
 		/// <summary>
 		/// NOTEL the PartitionDeleted may appear out-of-order and is not guaranteed
-		/// to appear at the same sequence position in a recovery 
+		/// to appear at the same sequence position in a recovery
 		/// </summary>
 		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public partial class PartitionDeleted : EventReaderSubscriptionMessageBase {

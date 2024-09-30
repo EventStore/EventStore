@@ -1,6 +1,8 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Linq;
-using EventStore.Core.Bus;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
@@ -29,8 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader {
 			_readerService = new EventReaderCoreService(
 				GetInputQueue(), _ioDispatcher, 10, writerCheckpoint, runHeadingReader: GivenHeadingReaderRunning(),
 				faultOutOfOrderProjections: true);
-			_subscriptionDispatcher =
-				new ReaderSubscriptionDispatcher(GetInputQueue());
+			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(GetInputQueue());
 
 
 			_bus.Subscribe(
@@ -46,7 +47,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader {
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
-
+			_bus.Subscribe(
+				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.Failed>());
+			_bus.Subscribe(
+				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.SubscribeTimeout>());
 
 			_bus.Subscribe<ReaderCoreServiceMessage.StartReader>(_readerService);
 			_bus.Subscribe<ReaderCoreServiceMessage.StopReader>(_readerService);

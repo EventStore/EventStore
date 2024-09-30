@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,16 +8,16 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Bus;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
 using System.Linq;
 using EventStore.Core.Metrics;
+using DotNext;
 
 namespace EventStore.Core.Tests.Helpers {
 	public abstract class TestFixtureWithReadWriteDispatchers {
-		protected InMemoryBus _bus;
+		protected SynchronousScheduler _bus;
 		protected IQueuedHandler _publisher;
 
 		protected RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted>
@@ -30,12 +33,12 @@ namespace EventStore.Core.Tests.Helpers {
 		protected ManualQueue _queue;
 		protected ManualQueue[] _otherQueues;
 		protected FakeTimeProvider _timeProvider;
-		private PublishEnvelope _envelope;
+		private IEnvelope _envelope;
 
 		protected IEnvelope Envelope {
 			get {
 				if (_envelope == null)
-					_envelope = new PublishEnvelope(GetInputQueue());
+					_envelope = GetInputQueue();
 				return _envelope;
 			}
 		}
@@ -48,8 +51,8 @@ namespace EventStore.Core.Tests.Helpers {
 		public void setup0() {
 			_envelope = null;
 			_timeProvider = new FakeTimeProvider();
-			_bus = new InMemoryBus("bus");
-			_publisher = QueuedHandler.CreateQueuedHandler(_bus,
+			_bus = new SynchronousScheduler();
+			_publisher = new QueuedHandlerThreadPool(_bus,
 				"TestQueue",
 				new QueueStatsManager(),
 				new QueueTrackers(), watchSlowMsg: false);
@@ -58,7 +61,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_bus.Subscribe(_consumer);
 			_queue = GiveInputQueue();
 			_otherQueues = null;
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(GetInputQueue()));
+			_ioDispatcher = new IODispatcher(_bus, GetInputQueue());
 			_readDispatcher = _ioDispatcher.BackwardReader;
 			_writeDispatcher = _ioDispatcher.Writer;
 			_streamDispatcher = _ioDispatcher.StreamDeleter;
@@ -79,7 +82,7 @@ namespace EventStore.Core.Tests.Helpers {
 		}
 
 		protected IPublisher GetInputQueue() {
-			return (IPublisher)_queue ?? _bus;
+			return _queue.As<IPublisher>() ?? _bus;
 		}
 
 		protected void DisableTimer() {

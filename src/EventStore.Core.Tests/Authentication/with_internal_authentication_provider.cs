@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using EventStore.Core.Authentication.InternalAuthentication;
@@ -14,7 +17,7 @@ namespace EventStore.Core.Tests.Authentication {
 		protected InternalAuthenticationProvider _internalAuthenticationProvider;
 
 		protected void SetUpProvider() {
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+			_ioDispatcher = new IODispatcher(_bus, _bus);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_ioDispatcher.BackwardReader);
 			_bus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher.BackwardReader);
 			_bus.Subscribe(_ioDispatcher.ForwardReader);

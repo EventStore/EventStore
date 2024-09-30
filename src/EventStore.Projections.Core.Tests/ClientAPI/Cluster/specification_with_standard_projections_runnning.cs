@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -76,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 				_nodeEndpoints[2], new[] { _nodeEndpoints[2].HttpEndPoint });
 			WaitIdle();
 
-			var projectionsStarted = _projections.Select(p => SystemProjections.Created(p.LeaderMainBus)).ToArray();
+			var projectionsStarted = _projections.Select(p => SystemProjections.Created(p.LeaderInputBus)).ToArray();
 
 			foreach (var node in _nodes) {
 				node.Start();

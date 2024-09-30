@@ -1,4 +1,8 @@
-﻿using System.Threading;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using Serilog;
 
@@ -12,7 +16,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_db = db;
 		}
 
-		public void MergeChunks(
+		public ValueTask MergeChunks(
 			ITFChunkScavengerLog scavengerLogger,
 			Throttle throttle,
 			CancellationToken cancellationToken) {
@@ -23,7 +27,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			// todo: if time permits we could start with the minimum executed chunk this scavenge
 			// todo: if time permits we could add some way of checkpointing during the merges
 			// todo: move MergePhase to non-generic TFChunkScavenger
-			TFChunkScavenger<string>.MergePhase(
+			return TFChunkScavenger<string>.MergePhase(
 				logger: _logger,
 				db: _db,
 				maxChunkDataSize: _db.Config.ChunkSize,
