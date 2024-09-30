@@ -1,13 +1,16 @@
-import type {RuleBlock} from "markdown-it/lib/parser_block"
-import {path} from "@vuepress/utils"
-import {ExtendedCodeImportPluginOptions, ImportCodePluginOptions, ImportCodeTokenMeta, ResolvedImport} from "./types";
+import {path} from "vuepress/utils"
+import type {ExtendedCodeImportPluginOptions, ImportCodeTokenMeta, ResolvedImport} from "./types";
+// @ts-ignore
+import type {RuleBlock} from "markdown-it/lib/parser_block";
+// @ts-ignore
+import type {StateBlock} from "markdown-it";
 
 // min length of the import code syntax, i.e. '@[code]()'
 const MIN_LENGTH = 9;
 
 const startSequence = "@[code";
 
-const knownPrismIssues = {
+const knownPrismIssues: Record<string, string> = {
     "rs": "rust"
 };
 
@@ -16,13 +19,15 @@ const replaceKnownPrismExtensions = (ext: string): string => knownPrismIssues[ex
 // regexp to match the import syntax
 const SYNTAX_RE = /^@\[code(?:{(\d+)?-(\d+)?})?(?:{(.+)?})?(?: ([^\]]+))?]\(([^)]*)\)/;
 
+const name = "tabs";
+
 export const createImportCodeBlockRule = ({
-                                              handleImportPath = (str) => [{ importPath: str }],
+                                              handleImportPath = (str) => [{importPath: str}],
                                           }: ExtendedCodeImportPluginOptions): RuleBlock => (
-    state,
-    startLine,
-    endLine,
-    silent
+    state: StateBlock,
+    startLine: number,
+    endLine: number,
+    silent: boolean
 ): boolean => {
     // if it's indented more than 3 spaces, it should be a code block
     /* istanbul ignore if */
@@ -50,7 +55,7 @@ export const createImportCodeBlockRule = ({
 
     const resolvedImports = handleImportPath(importPath);
 
-    const addBlock = (r: ResolvedImport) => {
+    const addCodeBlock = (r: ResolvedImport) => {
         const meta: ImportCodeTokenMeta = {
             importPath: r.importPath,
             lineStart: lineStart ? Number.parseInt(lineStart, 10) : 0,
@@ -58,7 +63,7 @@ export const createImportCodeBlockRule = ({
             region: region
         };
 
-        // create a import_code token
+        // create an import_code token
         const token = state.push('import_code', 'code', 0);
 
         // use user specified info, or fallback to file ext
@@ -69,28 +74,30 @@ export const createImportCodeBlockRule = ({
         token.meta = meta;
     }
 
-    const addGroup = (r: ResolvedImport) => {
-        const token = state.push('container_code-group-item', "CodeGroupItem", 1);
+    const addGroupItem = (r: ResolvedImport) => {
+        const token = state.push(`${name}_tab_open`, "", 1);
         token.block = true;
-        token.attrSet("title", r.label);
+        token.info = r.label;
+        token.meta = {active: false};
 
-        addBlock(r);
+        addCodeBlock(r);
 
-        state.push('container_code-group-item', "CodeGroupItem", -1);
+        state.push(`${name}_tab_close`, "", -1);
     }
 
     const experiment = resolvedImports.length > 1;
     if (experiment) {
-        const token = state.push('container_code-group_open', "div", 1);
-        token.block = true;
+        const token = state.push(`${name}_tabs_open`, "", 1);
+        token.info = name;
+        token.meta = {id: "code"};
 
         for (const resolved of resolvedImports) {
-            addGroup(resolved);
+            addGroupItem(resolved);
         }
 
-        state.push('container_code-group_close', "div", -1);
+        state.push(`${name}_tabs_close`, "", -1);
     } else {
-        addBlock(resolvedImports[0]);
+        addCodeBlock(resolvedImports[0]);
     }
 
     state.line = startLine + 1;
