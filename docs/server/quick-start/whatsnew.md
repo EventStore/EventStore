@@ -2,153 +2,105 @@
 order: 2
 ---
 
-# What's new
-
-This page describes new features and other changes in EventStoreDB 24.6.
+# What's New
 
 ## New features
 
-- **Legacy TCP Client API plugin** <Badge type="warning" text="Commercial" vertical="middle" />
-- **macOS arm64 support for development purposes**
-- **Additional metrics**
+* Connectors:
+    * Kafka
+    * HTTP
+    * RabbitMQ
+* AutoScavenge Plugin: Schedule and execute scavenges automatically across a cluster.
+* Stream Policy Plugin: Define stream access policies based on stream prefixes, rather than using stream ACLs.
+* Encryption-at-rest Plugin: Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
+* License keys: A license key is now required to use some features and plugins.
 
-### Legacy TCP Client API plugin <Badge type="warning" text="Commercial" vertical="middle" />
+### Connectors
 
-EventStoreDB v23.10 is the last release to natively support the legacy TCP-based client protocol.
-Version 24.2 removed it completely.
+We have improved and expanded on the Connectors preview that was introduced in 24.2.0.
 
-This release introduces a new plugin that allows to connect to the database with the legacy TCP API.
-This is a stop-gap solution for customers who have not yet upgraded to the gRPC API.
+The Connectors plugin is enabled by default.
+You can use the HTTP sink without a license, but a license is required for all other connectors.
 
-Read more about enabling and configuration of the TCP API plugin in the [documentation](../configuration/networking.md#external-tcp).
+Refer to the [documentation](TODO) for instructions on setting up and configuring connectors and sinks.
 
-### Apple Silicon support for development
+#### Kafka Sink <Badge type="warning" vertical="middle" text="License"/>
 
-An alpha build was available for running EventStoreDB on arm64 processors since EventStoreDB v22.10 using a [Docker image](https://hub.docker.com/r/eventstore/eventstore/tags?page=&page_size=&ordering=&name=arm64).
+The Kafka Sink Connector writes events from EventStoreDB to a Kafka topic.
 
-Since version 24.6, EventStoreDB can now be built from source and executed on macOS with Apple Silicon.
+It can extract the partition key from the record based on specific sources such as the stream ID, headers, or record key and also supports basic authentication and resilience
+features to handle transient errors.
 
-### Additional metrics
+Refer to the [documentation](TODO) for instructions on setting up a Kafka sink.
 
-Continuing the work on observability, the following [metrics](../diagnostics/metrics.md) are now available.
+#### HTTP Sink
 
-* [Election counter](../diagnostics/metrics.md#elections-count): `eventstore_elections_count`
-* [Projections](../diagnostics/metrics.md#projections).
-    * Projection status: `eventstore_projection_status`
-    * Percent progress: `eventstore_projection_progress`
-    * Events processed since restart: `eventstore_projection_events_processed_after_restart_total`
-* [Persistent Subscriptions](../diagnostics/metrics.md#persistent-subscriptions):
-    * Connection count: `eventstore_persistent_sub_connections`
-    * Total in-flight messages : `eventstore_persistent_sub_in_flight_messages`
-    * Total number of parked messages: `eventstore_persistent_sub_parked_messages`
-    * Oldest Parked Message: `eventstore_persistent_sub_oldest_parked_message_seconds`
-    * Total Number of Item processed: `eventstore_persistent_sub_items_processed`
-    * Last Seen Message:
-        * `eventstore_persistent_sub_last_known_event_number`
-        * `eventstore_persistent_sub_last_known_event_commit_position`
-    * Last checkpoint event:
-        * `eventstore_persistent_sub_checkpointed_event_number`
-        * `eventstore_persistent_sub_checkpointed_event_commit_position`
+The HTTP Sink connector allows for integration between EventStoreDB and external
+APIs over HTTP or HTTPS.
 
-## Feature enhancements
+This connector consumes events from an EventStoreDB
+stream and converts each event's data into JSON format before sending it in the
+request body to a specified Url. Events are sent individually as they are
+consumed from the stream, without batching. The event data is transmitted as the
+request body, and metadata can be included as HTTP headers.
 
-- **Performance improvements**
-- **X.509 authentication in client libraries**
-- **Metric support for Linux, FreeBSD, macOS**
-- **Allow specifying the status Code for health requests**
-- **Fix: Events in explicit transactions can be missing in `$all` reads**
-- **Miscellaneous**
+The connector supports Basic Authentication and Bearer Token Authentication.
+Additionally, the connector offers resilience features, such as configurable
+retry logic and backoff strategies for handling request failures.
 
-### Performance improvements
+Refer to the [documentation](TODO) for instructions on setting up an HTTP sink.
 
-Several performance and compatibility improvements have been made to EventStoreDB and client SDKs, described below.
+#### RabbitMQ Sink
 
-#### Reduced FileHandle usage by 80%
+The RabbitMQ sink connector sends messages from EventStoreDB to a RabbitMQ exchange using a specified routing key.
 
-The number of file handles used by the database has been reduced by 80%. On large databases it results in:
-* Reduced likelihood of hitting the default OS file handle limit
-* Lower overall memory footprint
+It efficiently handles message delivery by abstracting the complexities of RabbitMQ's exchange and queue management, ensuring that messages are routed to the appropriate destinations based on the provided routing key.
 
-#### Faster Startup For Scavenged databases
+This sink is designed for high reliability and supports graceful error handling and recovery mechanisms to ensure consistent message delivery in a production environment.
 
-Large database with thousands of scavenged chunks now starts faster.
-A 10x improvement has been observed in testing.
+Refer to the [documentation](TODO) for instructions on setting up a RabbitMQ sink.
 
-### X.509 authentication in client APIs <Badge type="warning" text="Commercial" vertical="middle" />
+### Auto-Scavenge Plugin <Badge type="warning" vertical="middle" text="License"/>
 
-Refer to the [clients documentation](@clients/grpc/authentication.md) for instructions on how to enable and use X.509 certificates with the EventStoreDB clients.
+The Autoscavenge plugin automatically schedules _cluster scavenges_ which are composed of multiple _node scavenges_. Only one node scavenge can be executed at a time in the cluster. The Autoscavenge plugin allows to schedule said _cluster scavenges_.
 
-### Metrics support for Linux, FreeBSD, OSX
+This plugin is bundled in EventStoreDB version of 24.10.0, but is disabled by default.
 
-The following [System metrics](../diagnostics/metrics.md#system) are now available on the following platforms:
-* `eventstore_sys_load_avg`: Linux, FreeBSD, macOS, Windows
-* `eventstore_sys_cpu`: Linux, FreeBSD, macOS
+Refer to the [documentation](../operations/auto-scavenge.md) for instructions on how to enable and use this plugin.
 
-The following [Process metrics](../diagnostics/metrics.md#process) are now available on the following platforms:
-* `eventstore_disk_io_bytes`: Linux, Windows and macOS
+### Stream Policy Plugin <Badge type="warning" vertical="middle" text="License"/>
 
-### Allow specifying the HTTP status Code for health requests
+Define stream access policies in one place based on stream prefixes, rather than using stream ACLs.
 
-The HTTP status code to be returned by the `/health/live` endpoint can be provided using the `liveCode` query parameter.
-For example, making a `GET` HTTP call to `/health/live?liveCode=200` will return an empty response with `200 OK` status code.
+Stream access policies can be created to grant users or groups read, write, delete, or metadata access; and then these policies can be applied to streams based on their prefix, or to system or user streams in general.
 
-This is useful for liveness probe expecting specific status code.
+The Stream Policy plugin requires a license to use, and is disabled by default.
 
-### Fix - Events in explicit transactions can be missing from $all reads
+Refer to the [documentation](../configuration/security.md#stream-policy-authorization-plugin) for more information about using and configuring this plugin.
 
-This bug only appears with events written in explicit transactions with the deprecated TCP API.
-They will not appear on filtered $all reads and subscriptions under specific circumstances.
+### Encryption-at-rest Plugin <Badge type="warning" vertical="middle" text="License"/>
 
-This [fix](https://github.com/EventStore/EventStore/pull/4251) will also be back ported to v23.10.2 and v22.10.6.
+Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
 
-### Miscellaneous
+This plugin aims to protect against an attacker who obtains access to the physical disk. In contrast to volume or filesystem encryption, file level encryption provides some degree of protection for attacks against the live system or remote exploits as the plaintext data is not directly readable.
 
-* Index merge will now continue without bloom filters if there is not enough memory to store them.
-* Node advertise address is used for identifying nodes in the scavenge log.
-* Incomplete scavenges that previously got status `Failed` will now be marked as `Interrupted`.
-* Error will be logged when the node certificate does not have the necessary usages.
-* More information made available in the current database options API response.
-* Projections will now log a warning when the projection state size becomes greater than 8 MB.
+The Encryption-at-rest plugin requires a license to use, and is disabled by default.
+If Encryption-at-rest is enabled, it is not possible to roll back to an unencrypted database after a new chunk has been created, or if a chunk has been scavenged.
 
-## Breaking changes
+Refer to the [documentation](../configuration/security.md#encryption-at-rest) for more information about using and configuring this plugin.
 
-### Persistent subscription checkpoint event type
+### License Keys
 
-The persistent subscription checkpoint event type has been changed from `SubscriptionCheckpoint` to `$SubscriptionCheckpoint`.  
-Checkpoints written before upgrading will still have the old event type and will continue to work.
+Some features of EventStoreDB now require a license key to access.
 
-### Deposed leader truncation: Two restarts needed
+You will need to provide a license key if you want to enable or use the following features:
+* Auto-Scavenge
+* Kafka Connectors
+* Stream Policies
+* Encryption-at-rest
+* Ldaps Authentication
+* OAuth Authentication
+* Logs Endpoint
+* OTLP Endpoint
 
-Previously a deposed leader that needed offline truncation would:
-* Set a truncate checkpoint and shutdown
-* Upon restart, truncate its log and join the cluster
-
-The process is now:
-* Set a truncate checkpoint and shutdown
-* Upon restart, truncate its log, shutdown
-
-This will affect nodes that run under a Service Manager configured to disallow successive stops of the process, like [systemd](https://systemd.io/) with `StartLimitIntervalSec` and `StartLimitBurst`.
-
-### File-copy backup and restore: Two restarts needed
-
-Part of the file copy [backup and restore procedure](../operations/backup.md#simple-full-backup-restore) requires copying the chaser checkpoint file over the truncate checkpoint file.   
-This might trigger the database to truncate the log on startup.
-
-Previously the process was:
-* Set the truncate checkpoint
-* Start the node.
-
-The process is now:
-* Set the truncate checkpoint
-* Start the node
-    * if needed, the log will be truncated and the node will shut down
-* Start the node
-
-This will affect nodes that run under a Service Manager configured to disallow successive stops of the process, like [systemd](https://systemd.io/) with `StartLimitIntervalSec` and `StartLimitBurst`
-
-### Unbuffered config setting
-
-The `--unbuffered` config setting is deprecated and has no effect when set to `true`.
-This option was used to enable unbuffered and direct IO when writing to the file system, and it is no longer supported.
-
-You can read more about any breaking changes and what you should be aware of during an upgrade in the [Upgrade Guide](upgrade-guide.md).
+Refer to the [documentation](../configuration/license-keys.md) for more information about using a license key.

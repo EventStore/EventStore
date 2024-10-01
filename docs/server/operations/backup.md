@@ -1,5 +1,5 @@
 ---
-order: 2
+order: 3
 ---
 
 # Backup and restore
@@ -25,7 +25,7 @@ There are two main ways to perform backups:
 
 - For additional safety, you can also back up at least a quorum of nodes.
 
-- Do not attempt to back up a node using file copy at the same time a scavenge operation is running.
+- Do not attempt to back up a node using file copy at the same time a scavenge operation is running. Your backup script should [stop any ongoing scavenge](#stopping-an-ongoing-scavenge-before-taking-a-backup) on a node before taking a backup.
 
 - [Read-only replica](../configuration/cluster.md#read-only-replica) nodes may be used as a backup source.
 
@@ -131,6 +131,16 @@ Then backup the log:
    in most cases, will lead to data corruption.
 2. Copy all files to the desired location.
 3. Create a copy of `chaser.chk` and call it `truncate.chk`.
+
+## Stopping an ongoing scavenge before taking a backup
+It is extremely important to stop any ongoing scavenge before taking a backup. If this step is not followed, the backed up data may have missing or corrupted files. Your backup script can include the following steps to ensure that any ongoing scavenge is stopped before a node is backed up:
+
+1. Do an HTTP `GET` request to `/admin/scavenge/current` or `/admin/scavenge/last` to determine if there is an ongoing scavenge on the node.
+2. If there is one, do an HTTP `DELETE` request to `/admin/scavenge/{scavengeId}` to abort the scavenge. `{scavengeId}` can be obtained from the HTTP response received in the first step.
+3. If you are using the [auto-scavenge plugin](./auto-scavenge.md), it is recommended to pause auto-scavenge by doing a `POST` request to `/auto-scavenge/pause`. This will ensure that no new scavenges are launched on the node while it is being backed up.
+4. You can now back up the node's data
+5. If you are using the auto-scavenge plugin, you can resume auto-scavenge by doing a `POST` request to `/auto-scavenge/resume`.
+6. Finally, you can optionally resume the scavenge that was aborted by starting a new one. This can be done with a `POST` request to `/admin/scavenge`. If you are using the auto-scavenge plugin, this step is not recommended to avoid the risk of having multiple nodes being scavenged simultaneously.
 
 ## Other options for data recovery
 

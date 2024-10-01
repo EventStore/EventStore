@@ -1,6 +1,6 @@
 ---
 title: Networking
-order: 3
+order: 4
 ---
 
 EventStoreDB provides two interfaces: 

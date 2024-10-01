@@ -1,5 +1,5 @@
 ---
-order: 2
+order: 3
 ---
 
 # Security
@@ -716,6 +716,270 @@ access to `$settings` unless you specifically override it.
 Refer to the documentation of the HTTP API or SDK of your choice for more information about changing ACLs
 programmatically.
 
+## Stream Policy Authorization Plugin <Badge type="warning" vertical="middle" text="Commercial"/>
+
+This plugin allows administrators to define stream access policies for ESDB based on stream prefix.
+
+### Enabling the plugin
+
+By default, the Stream Policy plugin is bundled with EventStoreDB and located inside the `plugins` directory.
+
+The plugin can be enabled by setting the `Authorization:PolicyType` option to `streampolicy`.
+
+You can do this by adding the following config to the `configs` folder in the installation directory:
+
+```
+{
+  "EventStore": {
+    "Plugins": {
+      "Authorization": {
+        "PolicyType": "streampolicy"
+      }
+    }
+  }
+}
+```
+
+or by setting the environment variable:
+
+```
+EVENTSTORE__PLUGINS__AUTHORIZATION__POLICY_TYPE="streampolicy"
+```
+
+You can check that the plugin is enabled by searching for the following log at startup:
+
+```
+[20056, 1,11:14:40.088,INF] ClusterVNodeHostedService Loaded authorization policy plugin: StreamPolicyPlugin version 24.10.0.0 (Command Line: streampolicy)
+[20056, 1,11:14:40.088,INF] ClusterVNodeHostedService Using authorization policy plugin: StreamPolicyPlugin version 24.10.0.0
+```
+
+::: note
+If you enable the Stream Policy plugin, EventStoreDB will not enforce [stream ACLs](#access-control-lists).
+:::
+
+### Stream Policies and Rules
+
+Stream policies and Stream Rules are configured by events written to the `$policies` stream.
+
+#### Default Stream Policy
+
+When the Stream Policy Plugin is run for the first time, it will create a default policy in the `$policies` stream.
+The default policy does the following
+- Grants public access to user streams (this excludes users in the `$ops` group).
+- Restricts system streams to the `$admins` group.
+- Grants public read and metadata read access to the default projection streams (`$ce`, `$et`, `$bc`, `$category`, `$streams`).
+
+EventStoreDB will log when the default policy is created:
+
+```
+[31124,16,11:18:15.099,DBG] StreamBasedPolicySelector Successfully wrote default policy to stream $policies.
+```
+
+The default policy looks like this:
+
+```
+{
+	"streamPolicies": {
+		"publicDefault": {
+			"$r": ["$all"],
+			"$w": ["$all"],
+			"$d": ["$all"],
+			"$mr": ["$all"],
+			"$mw": ["$all"]
+		},
+		"adminsDefault": {
+			"$r": ["$admins"],
+			"$w": ["$admins"],
+			"$d": ["$admins"],
+			"$mr": ["$admins"],
+			"$mw": ["$admins"]
+		},
+		"projectionsDefault": {
+			"$r": ["$all"],
+			"$w": ["$admins"],
+			"$d": ["$admins"],
+			"$mr": ["$all"],
+			"$mw": ["$admins"]
+		}
+	},
+	"streamRules": [
+		{
+			"startsWith": "$et-",
+			"policy": "projectionsDefault"
+		},
+		{
+			"startsWith": "$ce-",
+			"policy": "projectionsDefault"
+		},
+		{
+			"startsWith": "$bc-",
+			"policy": "projectionsDefault"
+		},
+		{
+			"startsWith": "$category-",
+			"policy": "projectionsDefault"
+		},
+		{
+			"startsWith": "$streams",
+			"policy": "projectionsDefault"
+		}
+	],
+	"defaultStreamRules": {
+		"userStreams": "publicDefault",
+		"systemStreams": "adminsDefault"
+	}
+}
+```
+
+::: note
+Operations users in the `$ops` group are excluded from the `$all` group and does not have access to user streams by default.
+:::
+
+#### Custom Stream Policies
+
+You can create a custom stream policy by writing an event with event type `$policy-updated` to the `$policies` stream.
+
+Define your custom policy in the `streamPolicies`, e.g:
+
+```
+"streamPolicies": {
+    "customPolicy": {
+        "$r": ["ouro", "readers"],
+        "$w": ["ouro"],
+        "$d": ["ouro"],
+        "$mr": ["ouro"],
+        "$mw": ["ouro"]
+    },
+    // Default policies truncated (full version defined below)
+}
+```
+
+And then add an entry to `streamRules` to specify the stream prefixes which should use the custom policy. You can apply the same policy to multiple streams by defining multiple stream rules. e.g:
+
+```
+"streamRules": [{
+    "startsWith": "account",
+    "policy": "customPolicy"
+}, {
+    "startsWith": "customer",
+    "policy": "customPolicy"
+}]
+```
+
+You still need to specify default stream rules when you update the `$policies` stream. So the above example would look like this in full:
+
+```
+{
+  "streamPolicies": {
+    "publicDefault": {
+      "$r": ["$all"],
+      "$w": ["$all"],
+      "$d": ["$all"],
+      "$mr": ["$all"],
+      "$mw": ["$all"]
+    },
+    "adminsDefault": {
+      "$r": ["$admins"],
+      "$w": ["$admins"],
+      "$d": ["$admins"],
+      "$mr": ["$admins"],
+      "$mw": ["$admins"]
+    },
+    {
+    "projectionsDefault": {
+      "$r": ["$all"],
+      "$w": ["$admins"],
+      "$d": ["$admins"],
+      "$mr": ["$all"],
+      "$mw": ["$admins"]
+    },
+    "customPolicy": {
+      "$r": ["$all"],
+      "$w": ["$all"],
+      "$d": ["$all"],
+      "$mr": ["$all"],
+      "$mw": ["$all"]
+    }
+  },
+  "streamRules": [
+    {
+      "startsWith": "account",
+      "policy": "customPolicy"
+    },
+    {
+      "startsWith": "customer",
+      "policy": "customPolicy"
+    },
+    {
+      "startsWith": "$et-",
+      "policy": "projectionsDefault"
+    },
+    {
+      "startsWith": "$ce-",
+      "policy": "projectionsDefault"
+    },
+    {
+      "startsWith": "$bc-",
+      "policy": "projectionsDefault"
+    },
+    {
+      "startsWith": "$category-",
+      "policy": "projectionsDefault"
+    },
+    {
+      "startsWith": "$streams",
+      "policy": "projectionsDefault"
+    }
+  ],
+  "defaultStreamRules": {
+    "userStreams": "publicDefault",
+    "systemStreams": "adminsDefault"
+  }
+}
+```
+
+::: note
+If a policy update is invalid, it will not be applied and an error will be logged. ESDB will continue running with the previous valid policy in place.
+:::
+
+#### Stream Policy Schema
+
+##### Policy
+
+| Key                   | Type                                  | Description | Required |
+|-----------------------|---------------------------------------|-------------|----------|
+| `streamPolicies`      | `Dictionary<string, AccessPolicy>`    | The named policies which can be applied to streams. | Yes |
+| `streamRules`         | `StreamRule[]`                        | An array of rules to apply for stream access.  The ordering is important, and the first match wins. | Yes |
+| `defaultStreamRules`  | `DefaultStreamRules`                  | The default policies to apply if no other policies are defined for a stream | Yes |
+
+##### AccessPolicy
+
+| Key   | Type	    | Description	| Required |
+|-------|-----------|---------------|----------|
+| `$r`  | string[]  | User and group names that are granted stream read access. | Yes |
+| `$w`  | string[]  | User and group names that are granted stream write access. | Yes |
+| `$d`  | string[]  | User and group names that are granted stream delete access. | Yes |
+| `$mr` | string[]  | User and group names that are granted metadata stream read access. | Yes |
+| `$mw` | string[]  | User and group names that are granted metadata stream write access. | Yes |
+
+::: note
+Having metadata read or metadata write access to a stream does not grant read or write access to that stream.
+:::
+
+##### DefaultStreamRules
+
+|Key                | Type           | Description   | Required |
+|-------------------|----------------|---------------|----------|
+| `userStreams`     | `AccessPolicy` | The default policy to apply for non-system streams. | Yes |
+| `systemStreams`   | `AccessPolicy` | The default policy to apply for system streams. | Yes |
+
+##### StreamRule
+
+| Key           | Type     | Description   | Required |
+|---------------|----------|---------------|----------|
+| `startsWith`  | `string` | The stream prefix to apply the rule to. | Yes |
+| `policy`      | `string` | The name of the policy to enforce for streams that match this prefix. | Yes |
+
 ## Trusted intermediary
 
 The trusted intermediary header helps EventStoreDB to support a common security architecture. There are
@@ -1002,3 +1266,102 @@ Signature Hash: 6d922badaba2372070f13c69b620286262eab1d8d2d2156a271a1d73aaaf64e4
 | Plugin not loaded                         | The plugin is only available in commercial editions. Check that it is present in `<installation-directory/plugins`.<br/><br/> If it is present, on startup the server will log a message similar to: `Loaded SubsystemsPlugin plugin: "user-certificates"`.                                                                                                                                                                                                                                                                |
 | Plugin not enabled                        | The plugin has to be enabled in order to authenticate user requests.<br/><br/> The following log indicates that the plugin was found but not enabled: `UserCertificatesPlugin is not enabled`.                                                                                                                                                                                                                                                                                                                             |
 | Plugin enabled and user not authenticated | If the plugin has been enabled but there are still access denied errors, check the following: <ul><li>The user exists and is enabled in the EventStoreDB database. Can you log in with the username and password?</li><li>The user certificate is valid, and has a valid chain up to a trusted root CA.</li><li>The user certificate and node certificate share a common root CA.</li><li>Use 'requires leader' (which is the default) in your client configuration to rule out issues with forwarding requests.</li></ul> |
+
+## Encryption-At-Rest <Badge type="warning" vertical="middle" text="Commercial"/>
+
+The Encryption-At-Rest plugin allows users to encrypt their EventStoreDB database. Currently, only chunk files are encrypted - the indexes are not. The primary objective is to protect against an attacker who obtains access to the physical disk. In contrast to volume or filesystem encryption, file level encryption provides some degree of protection for attacks against the live system or remote exploits as the plaintext data is not directly readable. Protecting against memory-dump based attacks is out of the scope of this plugin.
+
+### Encryption Algorithm
+
+Data is encrypted using a symmetric-key encryption algorithm.
+
+
+The plugin is designed to support different encryption algorithms. Currently, the following encryption algorithms are implemented:
+- `AesGcm` - Advanced Encryption Standard (AES) Galois Counter Mode (GCM)
+  - The default key size is 256 bits, but 128-bit and 192-bit keys are also supported.
+
+### Master Key
+
+The `master` key is the topmost key in the key hierarchy.
+
+The size of the master key is not defined but it needs to be long enough (e.g at least 128 bits) to provide reasonable security.
+
+Using a key-derivation function (HKDF in our case), the master key is used to derive multiple `data` keys. Each `data` key is used to encrypt a single chunk file. If the `master` key is compromised, the whole database can be decrypted. However, if a `data` key is compromised, only one chunk file can be decrypted.
+
+Usually, only one `master` key should be necessary. However, to cater for scenarios where a `master` key is compromised, the plugin supports loading multiple `master` keys. The latest `master` key is actively used to encrypt/decrypt new chunks, while old `master` keys are used only to decrypt old chunks - thus the new data is secure.
+
+### Master Key Source
+
+The function of a master key source is to load master keys.
+
+Master keys are loaded from the source only once at process startup. They are then kept in memory throughout the lifetime of the process.
+
+The plugin is designed to support different master key sources. Currently, the following master key sources are implemented:
+- `File` - loads master keys from a directory
+  - The master key can be generated using [es-genkey-cli](https://github.com/EventStore/es-genkey-cli)
+  - For proper security, the master key files must be located on a drive other than where the database files are.
+  - This master key source is not recommended to be used in production as it provides minimal protection.
+
+You can contact Event Store if you want us to support a particular master key source.
+
+### Configuration
+
+By default, the encryption plugin is bundled with EventStoreDB and located inside the `plugins` directory.
+
+A JSON configuration file (e.g. `encryption-config.json`)  needs to be added in the `./config` directory located within the EventStoreDB installation directory:
+
+```
+{
+  "EventStore": {
+    "Plugins": {
+      "EncryptionAtRest": {
+        "Enabled": true,
+        "MasterKey": {
+          "File": {
+            "KeyPath": "/path/to/keys/"
+          }
+        },
+        "Encryption": {
+          "AesGcm": {
+            "Enabled": true,
+            "KeySize": 256 # optional. supported key sizes: 128, 192, 256 (default)
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+The `Transform` configuration parameter must be specified in the server's configuration file:
+
+```
+Transform: aes-gcm
+```
+
+When using the `File` master key source, a master key must be generated using the es-genkey-cli tool and placed in the configured `KeyPath` directory. The master key having the highest ID will be chosen as the active one.
+
+Once the plugin is installed and enabled the server should log messages similar to the following:
+
+```
+...
+[141828, 1,11:42:45.325,INF] Encryption-At-Rest: Loaded master key source: "File"
+[141828, 1,11:42:45.340,INF] Encryption-At-Rest: (File) Loaded master key: 2 (256 bits)
+[141828, 1,11:42:45.340,INF] Encryption-At-Rest: (File) Loaded master key: 1 (256 bits)
+[141828, 1,11:42:45.345,INF] Encryption-At-Rest: Active master key ID: 2
+[141828, 1,11:42:45.345,INF] Encryption-At-Rest: Loaded encryption algorithm: "AesGcm"
+[141828, 1,11:42:45.347,INF] Encryption-At-Rest: (AesGcm) Using key size: 256 bits
+[141828, 1,11:42:45.401,INF] Loaded the following transforms: Identity, Encryption_AesGcm
+[141828, 1,11:42:45.402,INF] Active transform set to: Encryption_AesGcm
+...
+```
+
+New and scavenged chunks will be encrypted.
+
+### Compatibility
+
+When encryption is enabled, it's no longer possible to revert back to an unencrypted database if:
+- at least one new chunk file has been created or
+- at least one chunk has been scavenged
+
+The encrypted chunks would first need to be decrypted before a user can revert to the `identity` transform. Special tooling or endpoints are not currently available to do this.
