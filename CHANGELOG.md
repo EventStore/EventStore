@@ -209,7 +209,6 @@ All notable changes to this project will be documented in this file.
 - Extra checkpoint when subscription to $all goes live. [EventStore#4035](https://github.com/EventStore/EventStore/pull/4035)
 - Some redundant code. [EventStore#3722](https://github.com/EventStore/EventStore/pull/3722)
 
-
 ## [23.10.0] - 2023-10-13
 
 ### Breaking Changes
