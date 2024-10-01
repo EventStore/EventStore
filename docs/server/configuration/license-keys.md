@@ -19,13 +19,13 @@ Configuration file:
 
 ```
 {
-	"EventStore": {
-		"Plugins": {
-			"Licensing": {
-				"LicenseKey": "Your key"
-			}
-		}
-	}
+  "EventStore": {
+    "Plugins": {
+      "Licensing": {
+        "LicenseKey": "Your key"
+      }
+    }
+  }
 }
 ```
 

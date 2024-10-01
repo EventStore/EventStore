@@ -779,55 +779,55 @@ The default policy looks like this:
 
 ```
 {
-	"streamPolicies": {
-		"publicDefault": {
-			"$r": ["$all"],
-			"$w": ["$all"],
-			"$d": ["$all"],
-			"$mr": ["$all"],
-			"$mw": ["$all"]
-		},
-		"adminsDefault": {
-			"$r": ["$admins"],
-			"$w": ["$admins"],
-			"$d": ["$admins"],
-			"$mr": ["$admins"],
-			"$mw": ["$admins"]
-		},
-		"projectionsDefault": {
-			"$r": ["$all"],
-			"$w": ["$admins"],
-			"$d": ["$admins"],
-			"$mr": ["$all"],
-			"$mw": ["$admins"]
-		}
-	},
-	"streamRules": [
-		{
-			"startsWith": "$et-",
-			"policy": "projectionsDefault"
-		},
-		{
-			"startsWith": "$ce-",
-			"policy": "projectionsDefault"
-		},
-		{
-			"startsWith": "$bc-",
-			"policy": "projectionsDefault"
-		},
-		{
-			"startsWith": "$category-",
-			"policy": "projectionsDefault"
-		},
-		{
-			"startsWith": "$streams",
-			"policy": "projectionsDefault"
-		}
-	],
-	"defaultStreamRules": {
-		"userStreams": "publicDefault",
-		"systemStreams": "adminsDefault"
-	}
+  "streamPolicies": {
+    "publicDefault": {
+      "$r": ["$all"],
+      "$w": ["$all"],
+      "$d": ["$all"],
+      "$mr": ["$all"],
+      "$mw": ["$all"]
+    },
+    "adminsDefault": {
+      "$r": ["$admins"],
+      "$w": ["$admins"],
+      "$d": ["$admins"],
+      "$mr": ["$admins"],
+      "$mw": ["$admins"]
+    },
+    "projectionsDefault": {
+      "$r": ["$all"],
+      "$w": ["$admins"],
+      "$d": ["$admins"],
+      "$mr": ["$all"],
+      "$mw": ["$admins"]
+    }
+  },
+  "streamRules": [
+    {
+      "startsWith": "$et-",
+      "policy": "projectionsDefault"
+    },
+    {
+      "startsWith": "$ce-",
+      "policy": "projectionsDefault"
+    },
+    {
+      "startsWith": "$bc-",
+      "policy": "projectionsDefault"
+    },
+    {
+      "startsWith": "$category-",
+      "policy": "projectionsDefault"
+    },
+    {
+      "startsWith": "$streams",
+      "policy": "projectionsDefault"
+    }
+  ],
+  "defaultStreamRules": {
+    "userStreams": "publicDefault",
+    "systemStreams": "adminsDefault"
+  }
 }
 ```
 
