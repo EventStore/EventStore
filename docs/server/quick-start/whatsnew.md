@@ -12,7 +12,6 @@ order: 2
 * AutoScavenge Plugin: Schedule and execute scavenges automatically across a cluster.
 * Stream Policy Plugin: Define stream access policies based on stream prefixes, rather than using stream ACLs.
 * Encryption-at-rest Plugin: Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
-* License keys: A license key is now required to use some features and plugins.
 
 ### Connectors
 
@@ -86,9 +85,21 @@ If Encryption-at-rest is enabled, it is not possible to roll back to an unencryp
 
 Refer to the [documentation](../configuration/security.md#encryption-at-rest) for more information about using and configuring this plugin.
 
-### License Keys
+## Event Store License v2
 
-Some features of EventStoreDB now require a license key to access.
+Starting with the 24.10 LTS release, we are transitioning to a new licensing model: the Event Store License v2 (ESLv2).
+
+A summary of the effects on installing and using EventStoreDB are listed below. Check out [the announcement](https://www.eventstore.com/blog/introducing-event-store-license-v2-eslv2) for the full details.
+
+### Unified binary release
+
+There is no longer a distinction between OSS and commercial binaries for EventStoreDB.
+
+Instead there is a single binary artifact which anyone can access and use, but a license key is required to use enterprise features.
+
+### Enterprise features now require a license key
+
+Customers can unlock the enterprise features of EventStoreDB with a license key. This applies to the previous commercial plugins, and some of the new features in this release.
 
 You will need to provide a license key if you want to enable or use the following features:
 * Auto-Scavenge
@@ -101,3 +112,7 @@ You will need to provide a license key if you want to enable or use the followin
 * OTLP Endpoint
 
 Refer to the [documentation](../quick-start/installation.md#license-keys) for more information about using a license key.
+
+### EventStoreDB binaries have moved to Cloudsmith
+
+All EventStoreDB binaries are now available on [Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore-preview/). In addition, the RedHat binaries which were previously commercial-only can now be accessed by all users of EventStoreDB.

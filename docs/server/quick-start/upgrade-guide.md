@@ -9,6 +9,8 @@ As of version 24.10.0, all of our packages are hosted on [Cloudsmith](https://cl
 
 You can also download the package files for each platform from our [website](https://www.eventstore.com/downloads).
 
+There is no longer a distinction between the open-source (OSS) and commercial version of EventStoreDB. This unified release is licensed under [ESLv2](https://github.com/EventStore/EventStore/blob/master/LICENSE.md), meaning that anyone can access and use it, but enterprise features are only enabled with a valid license key.
+
 If you have a previous version of EventStoreDB installed through PackageCloud or Chocolatey, please uninstall those versions before installing version 24.10 from Cloudsmith.
 
 ### Should you upgrade?
