@@ -8,7 +8,7 @@ The default directories used by EventStoreDB vary by platform to fit with the co
 
 ## Linux
 
-When you install EventStoreDB from PackageCloud on Linux, the following locations apply:
+When you install EventStoreDB on Linux, the following locations apply:
 
 - **Application:** `/usr/bin`
 - **Content:** `/usr/share/eventstore`

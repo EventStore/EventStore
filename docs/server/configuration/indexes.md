@@ -88,7 +88,7 @@ _indexmap_ and reindexing from the prepare/commit position stored in the _indexm
 
 If you have set the maximum level ([`MaxAutoMergeIndexLevel`](#auto-merge-index-level)) for automatically
 merging indexes, then you need to trigger merging indexes above this level manually by using
-the `/admin/mergeindexes` endpoint, or the es-cli tool that is available with commercial support.
+the `/admin/mergeindexes` endpoint, or the es-cli tool.
 
 Triggering a manual merge causes EventStoreDB to merge all tables that have a level equal to the maximum merge
 level or above into a single table. If there is only 1 table at the maximum level or above, no merge is

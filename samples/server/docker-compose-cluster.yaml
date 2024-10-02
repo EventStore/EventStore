@@ -1,5 +1,3 @@
-version: "3.5"
-
 services:
   setup:
     image: eventstore/es-gencert-cli:1.0.2
@@ -17,7 +15,7 @@ services:
       - ./certs:/certs
 
   node1.eventstore: &template
-    image: eventstore/eventstore:24.6
+    image: docker.eventstore.com/eventstore-preview/eventstoredb-ee:24.10.0-preview1-x64-8.0-bookworm-slim
     container_name: node1.eventstore
     env_file:
       - vars.env

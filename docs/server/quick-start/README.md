@@ -13,9 +13,9 @@ Welcome to the EventStoreDB documentation.
 
 EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration, and operational concerns.
 
-EventStoreDB v24.6 is available in both an Open-Source and a Commercial version:
+EventStoreDB v24.10 is available in both an Open-Source and a Commercial version:
 
-- EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore/tree/release/oss-v24.6) and free-to-use edition of EventStoreDB.
+- EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore/tree/release/oss-v24.10) and free-to-use edition of EventStoreDB.
 - EventStoreDB Commercial is available for customers with an EventStoreDB [paid support subscription](https://eventstore.com/support/). EventStoreDB Commercial adds enterprise-focused features such as LDAP and X.509 authentication, OpenTelemetry Exporter, correlation event sequence visualisation, and management CLI tool.
 
 ::: note
@@ -50,7 +50,7 @@ When opening an issue, follow our [guidelines](https://github.com/EventStore/Eve
 
 EventStoreDB supports one client protocol, which is described below. The older TCP client API has been deprecated in version 20.2 and removed in version 24.2. The final version with TCP API support is 23.10. More information can be found in our [blog post](https://www.eventstore.com/blog/sunsetting-eventstoredb-tcp-based-client-protocol).
 
-Since version 24.6, the legacy protocol is available as a [commercial plugin](../configuration/networking.md#external-tcp) available for Event Store customers.
+Since version 24.6, the legacy protocol is available as a [licensed plugin](../configuration/networking.md#external-tcp) available for Event Store customers.
 
 ### Client protocol
 

@@ -3,33 +3,24 @@ title: "Upgrade guide"
 order: 5
 ---
 
-# Upgrade guide for EventStoreDB 24.6
+# Upgrade guide for EventStoreDB 24.10
 
-EventStoreDB 24.6 is now available for download. You can install it using [Packagecloud](https://packagecloud.io/EventStore/EventStore-OSS), [Chocolatey](https://chocolatey.org/packages/eventstore-oss), or [Docker](https://hub.docker.com/r/eventstore/eventstore/tags?page=1&name=24.6).  Packages are available on our [website](https://www.eventstore.com/downloads) with detailed instructions for each platform.
+As of version 24.10.0, all of our packages are hosted on [Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore-preview/packages/). Packages are available for [Debian](https://cloudsmith.io/~eventstore/repos/eventstore-preview/setup/#formats-deb), [RedHat](https://cloudsmith.io/~eventstore/repos/eventstore-preview/setup/#formats-rpm), [Docker](https://cloudsmith.io/~eventstore/repos/eventstore-preview/setup/#formats-docker), and [NuGet](https://cloudsmith.io/~eventstore/repos/eventstore-preview/setup/#formats-nuget).
+
+You can also download the package files for each platform from our [website](https://www.eventstore.com/downloads).
+
+If you have a previous version of EventStoreDB installed through PackageCloud or Chocolatey, please uninstall those versions before installing version 24.10 from Cloudsmith.
 
 ### Should you upgrade?
 
-Version 24.6 is an interim release that will be supported until the launch of version 24.10 in October 2024.
-We recommend upgrading to 24.6 if you are interested in using the new features introduced in this release.
+Version 24.10 is currently in preview and running it in production is not supported.
 
-::: warning
-Do not upgrade to version 24.6 if your applications rely on the external TCP API. This has been removed in 24.2. See the [breaking changes](#external-tcp-api-removed) for more information. You can prevent automatic upgrades by pinning the version in your package manager. Find out about package holding on Linux [here](https://askubuntu.com/questions/18654/how-to-prevent-updating-of-a-specific-package).
-
-The commercial version of EventStoreDB 24.6 includes a plugin that enables the TCP client protocol. 
-:::
-
-### Security update
-
-If you are not upgrading to 24.6, please ensure that you are running a patch of EventStoreDB with the security release addressing [CVE-2024-26133](https://www.eventstore.com/blog/eventstoredb-security-release-23.10-22.10-21.10-and-20.10-for-cve-2024-26133):
-
-- **Version 23.10.0:** Upgrade to at least 23.10.1.
-- **Versions 22.10.x:** Upgrade to at least 22.10.5 or 23.10.1.
-- **Versions 21.10.x:** Upgrade to at least 21.10.11 for the security fix, or 22.10.5 for ongoing support.
-- **Versions 20.10.x:** Upgrade to at least 20.10.6 for the security fix, or 22.10.5 for ongoing support.
+We recommend trying the 24.10 preview if you are interested in any of the [new features](./whatsnew.md) coming in the official 24.10 LTS release.
 
 ### Upgrade procedure
 
-You can perform an online rolling upgrade directly to 24.6 from these versions of EventStoreDB:
+You can perform an online rolling upgrade directly to 24.10 from these versions of EventStoreDB:
+- 24.6
 - 24.2
 - 23.10
 - 22.10
@@ -38,10 +29,11 @@ You can perform an online rolling upgrade directly to 24.6 from these versions o
 Follow the upgrade procedure below on each node, starting with a follower node:
 
 1. Stop the node.
-2. Upgrade EventstoreDB to 24.6 and update configuration.
-3. Start the node.
-4. Wait for the node to become a follower or read-only replica.
-5. Repeat the process for the next node.
+2. Uninstall any previous versions of EventStoreDB.
+3. Install EventStoreDB 24.10 and update configuration. If you are using any licensed features, ensure that you configure a [license key](../quick-start/installation.md#license-keys).
+4. Start the node.
+5. Wait for the node to become a follower or read-only replica.
+6. Repeat the process for the next node.
 
 Upgrading the cluster this way keeps the cluster online and able to service requests. There may still be disruptions to your services during the upgrade, namely:
 - Client connections may be disconnected when nodes go offline, or when elections take place.
@@ -54,14 +46,32 @@ If you modified the Linux service file to increase the open files limit, those c
 
 ### Breaking changes
 
+#### From version 24.6 and earlier
+
+##### Histograms endpoint has been removed
+
+The `/histogram/{name}` endpoint has been removed.
+
+Any tooling that relies on the histogram endpoint will receive a 404 after when requesting this endpoint after upgrading.
+
+##### Support for v1 PTables has been removed
+
+Support for extremely old PTables (v1) has been removed.
+
+This will only affect databases that were created on EventStoreDB versions 3.9.0 and before, and which have not upgraded their PTables since EventStoreDB version 3.9.0.
+
+PTables are automatically upgraded when they are merged, or when the PTables are rebuilt. So if your EventStoreDB has been running for some time on a version greater than 3.9.0, then you are unlikely to be affected by this change.
+
+If 32bit PTables are present we detect them on startup and exit. If this happens, you can use a version between v3.9.0 and v24.10.0 to upgrade the PTables, or rebuild the index.
+
 #### From version 23.10 and earlier
 
 ##### External TCP API removed
 
-The external TCP API has been removed in 24.2.0. This affects external clients using the TCP API and configurations related to it.
+The external TCP API was removed in 24.2.0. This affects external clients using the TCP API and configurations related to it.
 
 ::: tip
-EventStoreDB 24.6 includes [a plugin](../configuration/networking.md#external-tcp) that enables the TCP client protocol. This plugin is only available in the commercial version of EventStoreDB.
+EventStoreDB 24.10 includes [a plugin](../configuration/networking.md#external-tcp) that enables the TCP client protocol. This plugin can only be used with a [license](../quick-start/installation.md#license-keys)
 :::
 
 A number of configuration options have been removed as part of this. EventStoreDB will not start by default if any of the following options are present in the database configuration:
