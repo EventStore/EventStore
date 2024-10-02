@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Services.VNode;
 [TestFixture(typeof(LogFormat.V2), typeof(string))]
 [TestFixture(typeof(LogFormat.V3), typeof(uint))]
 public class ShutdownServiceWithMiniNodeTests<TLogFormat, TStreamId>: SpecificationWithDirectoryPerTestFixture {
-	private readonly CancellationTokenSource _cst = new();
+	private readonly CancellationTokenSource _cts = new();
 	private readonly TaskCompletionSource _tcs = new();
 	private MiniNode<TLogFormat, TStreamId> _node;
 
@@ -32,8 +32,8 @@ public class ShutdownServiceWithMiniNodeTests<TLogFormat, TStreamId>: Specificat
 
 	[Test]
 	public async Task should_graceful_shutdown_with_mininode() {
-		await using var _ = _cst.Token.Register(() => _tcs.TrySetCanceled(_cst.Token));
-		_cst.CancelAfter(TimeSpan.FromSeconds(15));
+		await using var _ = _cts.Token.Register(() => _tcs.TrySetCanceled(_cts.Token));
+		_cts.CancelAfter(TimeSpan.FromSeconds(15));
 		await _node.Shutdown();
 		await _tcs.Task;
 	}
