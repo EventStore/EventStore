@@ -216,7 +216,7 @@ You can completely disable logging to a file by changing the `DisableLogFile` op
 
 ## Logs download
 
-<Badge type="warning" vertical="middle" text="License Required"/>
+<Badge type="info" vertical="middle" text="License Required"/>
 
 The _Logs Download Plugin_ provides HTTP access to EventStoreDB logs so that they can be viewed without requiring file system access.
 

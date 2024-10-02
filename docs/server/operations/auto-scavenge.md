@@ -4,7 +4,7 @@ order: 2
 
 # Auto-Scavenge Plugin
 
-<Badge type="warning" vertical="middle" text="License Required"/>
+<Badge type="info" vertical="middle" text="License Required"/>
 
 The Auto-scavenge plugin automatically schedules and coordinates _cluster scavenges_ which are composed of multiple _node scavenges_ run across all of the nodes in the cluster. The plugin ensures that only one node scavenge is executed at a time in the cluster, and handles restarting or cancelling scavenges if a node is lost.
 

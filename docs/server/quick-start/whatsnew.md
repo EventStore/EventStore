@@ -9,7 +9,6 @@ order: 2
 * Connectors:
     * Kafka
     * HTTP
-    * RabbitMQ
 * AutoScavenge Plugin: Schedule and execute scavenges automatically across a cluster.
 * Stream Policy Plugin: Define stream access policies based on stream prefixes, rather than using stream ACLs.
 * Encryption-at-rest Plugin: Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
@@ -26,7 +25,7 @@ Refer to the [documentation](TODO) for instructions on setting up and configurin
 
 #### Kafka Sink
 
-<Badge type="warning" vertical="middle" text="License Required"/>
+<Badge type="info" vertical="middle" text="License Required"/>
 
 The Kafka Sink Connector writes events from EventStoreDB to a Kafka topic.
 
@@ -52,21 +51,9 @@ retry logic and backoff strategies for handling request failures.
 
 Refer to the [documentation](TODO) for instructions on setting up an HTTP sink.
 
-#### RabbitMQ Sink
-
-<Badge type="warning" vertical="middle" text="License Required"/>
-
-The RabbitMQ sink connector sends messages from EventStoreDB to a RabbitMQ exchange using a specified routing key.
-
-It efficiently handles message delivery by abstracting the complexities of RabbitMQ's exchange and queue management, ensuring that messages are routed to the appropriate destinations based on the provided routing key.
-
-This sink is designed for high reliability and supports graceful error handling and recovery mechanisms to ensure consistent message delivery in a production environment.
-
-Refer to the [documentation](TODO) for instructions on setting up a RabbitMQ sink.
-
 ### Auto-Scavenge Plugin
 
-<Badge type="warning" vertical="middle" text="License Required"/>
+<Badge type="info" vertical="middle" text="License Required"/>
 
 The Autoscavenge plugin automatically schedules _cluster scavenges_ which are composed of multiple _node scavenges_. Only one node scavenge can be executed at a time in the cluster. The Autoscavenge plugin allows to schedule said _cluster scavenges_.
 
@@ -76,7 +63,7 @@ Refer to the [documentation](../operations/auto-scavenge.md) for instructions on
 
 ### Stream Policy Plugin
 
-<Badge type="warning" vertical="middle" text="License Required"/>
+<Badge type="info" vertical="middle" text="License Required"/>
 
 Define stream access policies in one place based on stream prefixes, rather than using stream ACLs.
 
@@ -88,7 +75,7 @@ Refer to the [documentation](../configuration/security.md#stream-policy-authoriz
 
 ### Encryption-at-rest Plugin
 
-<Badge type="warning" vertical="middle" text="License Required"/>
+<Badge type="info" vertical="middle" text="License Required"/>
 
 Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
 

@@ -718,7 +718,7 @@ programmatically.
 
 ## Stream Policy Authorization Plugin
 
-<Badge type="warning" vertical="middle" text="License Required"/>
+<Badge type="info" vertical="middle" text="License Required"/>
 
 This plugin allows administrators to define stream access policies for EventStoreDB based on stream prefix.
 
@@ -1275,7 +1275,7 @@ Signature Hash: 6d922badaba2372070f13c69b620286262eab1d8d2d2156a271a1d73aaaf64e4
 | Plugin not enabled                        | The plugin has to be enabled in order to authenticate user requests.<br/><br/> The following log indicates that the plugin was found but not enabled: `UserCertificatesPlugin is not enabled`.                                                                                                                                                                                                                                                                                                                             |
 | Plugin enabled and user not authenticated | If the plugin has been enabled but there are still access denied errors, check the following: <ul><li>The user exists and is enabled in the EventStoreDB database. Can you log in with the username and password?</li><li>The user certificate is valid, and has a valid chain up to a trusted root CA.</li><li>The user certificate and node certificate share a common root CA.</li><li>Use 'requires leader' (which is the default) in your client configuration to rule out issues with forwarding requests.</li></ul> |
 
-## Encryption-At-Rest <Badge type="warning" vertical="middle" text="License Required"/>
+## Encryption-At-Rest <Badge type="info" vertical="middle" text="License Required"/>
 
 The Encryption-At-Rest plugin allows users to encrypt their EventStoreDB database. Currently, only chunk files are encrypted - the indexes are not. The primary objective is to protect against an attacker who obtains access to the physical disk. In contrast to volume or filesystem encryption, file level encryption provides some degree of protection for attacks against the live system or remote exploits as the plaintext data is not directly readable. Protecting against memory-dump based attacks is out of the scope of this plugin.
 
