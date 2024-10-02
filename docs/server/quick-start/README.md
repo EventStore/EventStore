@@ -13,13 +13,10 @@ Welcome to the EventStoreDB documentation.
 
 EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration, and operational concerns.
 
-EventStoreDB v24.10 is available in both an Open-Source and a Commercial version:
-
-- EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore/tree/release/oss-v24.10) and free-to-use edition of EventStoreDB.
-- EventStoreDB Commercial is available for customers with an EventStoreDB [paid support subscription](https://eventstore.com/support/). EventStoreDB Commercial adds enterprise-focused features such as LDAP and X.509 authentication, OpenTelemetry Exporter, correlation event sequence visualisation, and management CLI tool.
+EventStoreDB is licensed under [Event Store License v2 (ESLv2)](https://github.com/EventStore/EventStore/blob/4cab8ca81a63f0a8f708d5564ea459fe5a7131de/LICENSE.md), meaning that anyone can access and use it, but enterprise features are only enabled with a valid [license key](./installation.md#license-keys).
 
 ::: note
-Although version 23.10 is licensed under the Event Store License based on BSD 3-Clause, starting from version 24.10, EventStoreDB will be licensed under the [Event Store License v2 (ESLv2)](https://github.com/EventStore/EventStore/blob/4cab8ca81a63f0a8f708d5564ea459fe5a7131de/LICENSE.md), which is not an OSI-approved Open Source License.
+Although the source code for EventStoreDB is available to view, the [ESLv2 license](https://github.com/EventStore/EventStore/blob/4cab8ca81a63f0a8f708d5564ea459fe5a7131de/LICENSE.md) is not an OSI-approved Open Source License.
 :::
 
 ## What's new
@@ -34,7 +31,7 @@ Check the [getting started guide](/getting-started.md) for resources on the prin
 
 ### EventStoreDB community
 
-Users of EventStoreDB OSS can use the [community forum](https://discuss.eventstore.com) for questions, discussions and getting help from community members.
+Users of EventStoreDB can use the [community forum](https://discuss.eventstore.com) for questions, discussions and getting help from community members.
 
 ### Enterprise customers
 

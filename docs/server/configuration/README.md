@@ -22,13 +22,13 @@ command line. For example:
 @tab Linux
 ```bash:no-line-numbers
 $ eventstored --version
-EventStoreDB version 24.6.0.0 (oss-v24.6.0-alpha-16-g8e06f9f77/8e06f9f77, 2023-10-24T22:05:57-05:00)
+EventStoreDB version 24.10.0.1182-preview1 ee (52a0cf4c-94a4-4e7b-ad13-d6096ba30a74/4cab8ca81a63f0a8f708d5564ea459fe5a7131de)
 ```
 
 @tab Windows
 ```powershell
 > EventStore.ClusterNode.exe --version
-EventStoreDB version 24.6.0.0 (oss-v24.6.0-alpha-16-g8e06f9f77/8e06f9f77, 2023-10-24T22:05:57-05:00)
+EventStoreDB version 24.10.0.1182-preview1 ee (52a0cf4c-94a4-4e7b-ad13-d6096ba30a74/4cab8ca81a63f0a8f708d5564ea459fe5a7131de)
 ```
 :::
 
