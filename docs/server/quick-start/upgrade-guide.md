@@ -19,7 +19,8 @@ We recommend trying the 24.10 preview if you are interested in any of the [new f
 
 ### Upgrade procedure
 
-You can perform an online rolling upgrade directly to 24.6 from these versions of EventStoreDB:
+You can perform an online rolling upgrade directly to 24.10 from these versions of EventStoreDB:
+- 24.6
 - 24.2
 - 23.10
 - 22.10

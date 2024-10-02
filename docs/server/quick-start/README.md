@@ -13,9 +13,9 @@ Welcome to the EventStoreDB documentation.
 
 EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration, and operational concerns.
 
-EventStoreDB v24.6 is available in both an Open-Source and a Commercial version:
+EventStoreDB v24.10 is available in both an Open-Source and a Commercial version:
 
-- EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore/tree/release/oss-v24.6) and free-to-use edition of EventStoreDB.
+- EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore/tree/release/oss-v24.10) and free-to-use edition of EventStoreDB.
 - EventStoreDB Commercial is available for customers with an EventStoreDB [paid support subscription](https://eventstore.com/support/). EventStoreDB Commercial adds enterprise-focused features such as LDAP and X.509 authentication, OpenTelemetry Exporter, correlation event sequence visualisation, and management CLI tool.
 
 ::: note
