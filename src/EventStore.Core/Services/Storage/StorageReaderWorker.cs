@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -721,7 +724,7 @@ namespace EventStore.Core.Services.Storage {
 			_expiredBatchCount = 0;
 			_publisher.Publish(
 				TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2),
-					new PublishEnvelope(_publisher),
+					_publisher,
 					new StorageMessage.BatchLogExpiredMessages(Guid.NewGuid(), _queueId))
 			);
 		}
@@ -744,7 +747,7 @@ namespace EventStore.Core.Services.Storage {
 							_queueId);
 						_publisher.Publish(
 							TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2),
-								new PublishEnvelope(_publisher),
+								_publisher,
 								new StorageMessage.BatchLogExpiredMessages(Guid.NewGuid(), _queueId))
 						);
 						_expiredBatchCount = 1;

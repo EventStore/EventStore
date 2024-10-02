@@ -1,18 +1,18 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
-using EventStore.Core.Messaging;
-using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using Serilog;
 
 namespace EventStore.Projections.Core.Services.Management {
 	public class ProjectionCoreCoordinator
-		: IHandle<ProjectionManagementMessage.Internal.RegularTimeout>,
-			IHandle<ProjectionSubsystemMessage.StartComponents>,
+		: IHandle<ProjectionSubsystemMessage.StartComponents>,
 			IHandle<ProjectionSubsystemMessage.StopComponents>,
 			IHandle<ProjectionCoreServiceMessage.SubComponentStarted>,
 			IHandle<ProjectionCoreServiceMessage.SubComponentStopped> {
@@ -20,11 +20,9 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		private readonly ILogger Log = Serilog.Log.ForContext<ProjectionCoreCoordinator>();
 		private readonly ProjectionType _runProjections;
-		private readonly TimeoutScheduler[] _timeoutSchedulers;
 
 		private readonly Dictionary<Guid, IPublisher> _queues = new Dictionary<Guid, IPublisher>();
 		private readonly IPublisher _publisher;
-		private readonly IEnvelope _publishEnvelope;
 
 		private int _pendingSubComponentsStarts;
 		private int _activeSubComponents;
@@ -34,21 +32,11 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		public ProjectionCoreCoordinator(
 			ProjectionType runProjections,
-			TimeoutScheduler[] timeoutSchedulers,
-			IPublisher[] queues,
-			IPublisher publisher,
-			IEnvelope publishEnvelope) {
+			IReadOnlyList<IPublisher> queues,
+			IPublisher publisher){
 			_runProjections = runProjections;
-			_timeoutSchedulers = timeoutSchedulers;
 			_queues = queues.ToDictionary(_ => Guid.NewGuid(), q => q);
 			_publisher = publisher;
-			_publishEnvelope = publishEnvelope;
-		}
-
-		public void Handle(ProjectionManagementMessage.Internal.RegularTimeout message) {
-			ScheduleRegularTimeout();
-			for (var i = 0; i < _timeoutSchedulers.Length; i++)
-				_timeoutSchedulers[i].Tick();
 		}
 
 		public void Handle(ProjectionSubsystemMessage.StartComponents message) {
@@ -77,16 +65,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			Stop(message);
 		}
 
-		private void ScheduleRegularTimeout() {
-			if (_currentState == CoreCoordinatorState.Stopped)
-				return;
-			_publisher.Publish(
-				TimerMessage.Schedule.Create(
-					TimeSpan.FromMilliseconds(100),
-					_publishEnvelope,
-					new ProjectionManagementMessage.Internal.RegularTimeout()));
-		}
-
 		private void Start() {
 			if (_currentState != CoreCoordinatorState.Stopped) {
 				Log.Warning("PROJECTIONS: Projection Core Coordinated tried to start when not stopped.");
@@ -96,8 +74,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			_pendingSubComponentsStarts = 0;
 			_activeSubComponents = 0;
 			_currentState = CoreCoordinatorState.Starting;
-
-			ScheduleRegularTimeout();
 
 			foreach (var queue in _queues.Values) {
 				queue.Publish(new ReaderCoreServiceMessage.StartReader(_instanceCorrelationId));
@@ -182,9 +158,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			bus.Subscribe<ProjectionCoreServiceMessage.SubComponentStopped>(this);
 			bus.Subscribe<ProjectionSubsystemMessage.StartComponents>(this);
 			bus.Subscribe<ProjectionSubsystemMessage.StopComponents>(this);
-			if (_runProjections >= ProjectionType.System) {
-				bus.Subscribe<ProjectionManagementMessage.Internal.RegularTimeout>(this);
-			}
 		}
 
 		private enum CoreCoordinatorState {

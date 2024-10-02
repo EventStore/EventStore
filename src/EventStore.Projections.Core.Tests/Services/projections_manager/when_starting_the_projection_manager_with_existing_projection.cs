@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -64,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test]
 		public void projection_status_can_be_retrieved() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, "projection1",
+				new ProjectionManagementMessage.Command.GetStatistics(_bus, null, "projection1",
 					true));
 			Assert.IsNotNull(
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().SingleOrDefault(
@@ -74,7 +77,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		[Test]
 		public void projection_status_is_starting() {
 			_manager.Handle(
-				new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, "projection1",
+				new ProjectionManagementMessage.Command.GetStatistics(_bus, null, "projection1",
 					true));
 			Assert.AreEqual(
 				ManagedProjectionState.Preparing,
@@ -86,7 +89,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		public void projection_telemetry_working() {
 			_manager.Handle(
 				new TelemetryMessage.Request(
-					new PublishEnvelope(_bus)));
+					_bus));
 
 			var actual = _consumer.HandledMessages.OfType<TelemetryMessage.Response>().Single();
 

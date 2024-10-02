@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -99,7 +102,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 				var correlationId = Guid.NewGuid();
 				yield return
 					new ClientMessage.TransactionStart(
-						Guid.NewGuid(), correlationId, new PublishEnvelope(GetInputQueue()), true, "stream-a", 0, null);
+						Guid.NewGuid(), correlationId, GetInputQueue(), true, "stream-a", 0, null);
 
 				var transactionId =
 					_consumer.HandledMessages.OfType<ClientMessage.TransactionStartCompleted>()
@@ -109,25 +112,25 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 				correlationId = Guid.NewGuid();
 				yield return
 					new ClientMessage.TransactionWrite(
-						Guid.NewGuid(), correlationId, new PublishEnvelope(GetInputQueue()), true, transactionId,
+						Guid.NewGuid(), correlationId, GetInputQueue(), true, transactionId,
 						new[] {new Event(Guid.NewGuid(), "type1", true, "{Data: 3, Transacted=true}", "{}")}, null);
 
 				correlationId = Guid.NewGuid();
 				yield return
 					new ClientMessage.WriteEvents(
-						Guid.NewGuid(), correlationId, new PublishEnvelope(GetInputQueue()), true, "stream-b", 0,
+						Guid.NewGuid(), correlationId, GetInputQueue(), true, "stream-b", 0,
 						new[] {new Event(Guid.NewGuid(), "type1", true, "{Data: 4}", "{}")}, null);
 
 				correlationId = Guid.NewGuid();
 				yield return
 					new ClientMessage.TransactionWrite(
-						Guid.NewGuid(), correlationId, new PublishEnvelope(GetInputQueue()), true, transactionId,
+						Guid.NewGuid(), correlationId, GetInputQueue(), true, transactionId,
 						new[] {new Event(Guid.NewGuid(), "type1", true, "{Data: 5, Transacted=true}", "{}")}, null);
 
 				correlationId = Guid.NewGuid();
 				yield return
 					new ClientMessage.TransactionCommit(
-						Guid.NewGuid(), correlationId, new PublishEnvelope(GetInputQueue()), true, transactionId, null);
+						Guid.NewGuid(), correlationId, GetInputQueue(), true, transactionId, null);
 
 				yield return Yield;
 

@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -20,7 +23,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 	public abstract class with_emitted_stream_deleter<TLogFormat, TStreamId> : IHandle<ClientMessage.ReadStreamEventsForward>,
 		IHandle<ClientMessage.ReadStreamEventsBackward>,
 		IHandle<ClientMessage.DeleteStream> {
-		protected InMemoryBus _bus = InMemoryBus.CreateTest();
+		protected SynchronousScheduler _bus = new();
 		protected IODispatcher _ioDispatcher;
 		protected EmittedStreamsDeleter _deleter;
 		protected ProjectionNamesBuilder _projectionNamesBuilder;
@@ -31,7 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 
 		[OneTimeSetUp]
 		protected virtual void SetUp() {
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
+			_ioDispatcher = new IODispatcher(_bus, _bus, true);
 			_projectionNamesBuilder = ProjectionNamesBuilder.CreateForTest(_projectionName);
 			_checkpointName = _projectionNamesBuilder.GetEmittedStreamsCheckpointName();
 

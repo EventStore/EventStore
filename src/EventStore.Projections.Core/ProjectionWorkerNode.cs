@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Common.Utils;
@@ -32,7 +35,6 @@ namespace EventStore.Projections.Core {
 			IPublisher outputQueue,
 			ISubscriber outputBus,
 			ITimeProvider timeProvider,
-			ISingletonTimeoutScheduler timeoutScheduler,
 			ProjectionType runProjections,
 			bool faultOutOfOrderProjections,
 			IPublisher leaderOutputQueue,
@@ -45,7 +47,7 @@ namespace EventStore.Projections.Core {
 
 			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(outputQueue);
 
-			_ioDispatcher = new IODispatcher(outputQueue, new PublishEnvelope(inputQueue), true);
+			_ioDispatcher = new IODispatcher(outputQueue, inputQueue, true);
 			_eventReaderCoreService = new EventReaderCoreService(
 				outputQueue,
 				_ioDispatcher,
@@ -63,7 +65,6 @@ namespace EventStore.Projections.Core {
 					_subscriptionDispatcher,
 					timeProvider,
 					_ioDispatcher,
-					timeoutScheduler,
 					configuration);
 			}
 		}

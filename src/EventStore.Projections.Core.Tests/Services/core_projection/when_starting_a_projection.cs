@@ -1,8 +1,11 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Bus.Helpers;
@@ -20,7 +23,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		private const string _projectionStateStream = "$projections-projection-result";
 		private const string _projectionCheckpointStream = "$projections-projection-checkpoint";
 		private CoreProjection _coreProjection;
-		private InMemoryBus _bus;
+		private SynchronousScheduler _bus;
 		private TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 		private IODispatcher _ioDispatcher;
 		private ReaderSubscriptionDispatcher _subscriptionDispatcher;
@@ -28,10 +31,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 
 		[SetUp]
 		public void setup() {
-			_bus = new InMemoryBus("bus");
+			_bus = new();
 			_listEventsHandler = new TestHandler<ClientMessage.ReadStreamEventsBackward>();
 			_bus.Subscribe(_listEventsHandler);
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
+			_ioDispatcher = new IODispatcher(_bus, _bus, true);
 			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(_bus);
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CommittedEventReceived>());
@@ -55,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			_bus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher);
 			IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
 			_projectionConfig =
-				new ProjectionConfig(null, 5, 10, 1000, 250, true, true, false, false, true, 10000, 1);
+				new ProjectionConfig(null, 5, 10, 1000, 250, true, true, false, false, true, 10000, 1, null);
 			var version = new ProjectionVersion(1, 0, 0);
 			var projectionProcessingStrategy = new ContinuousProjectionProcessingStrategy(
 				"projection", version, projectionStateHandler, _projectionConfig,
@@ -83,8 +86,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		}
 
 		[Test]
-		public void should_accept_no_event_stream_response() {
-			_bus.Handle(
+		public async Task should_accept_no_event_stream_response() {
+			await _bus.DispatchAsync(
 				new ClientMessage.ReadStreamEventsBackwardCompleted(
 					_listEventsHandler.HandledMessages[0].CorrelationId,
 					_listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.NoStream,
@@ -92,8 +95,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		}
 
 		[Test]
-		public void should_accept_events_not_found_response() {
-			_bus.Handle(
+		public async Task should_accept_events_not_found_response() {
+			await _bus.DispatchAsync(
 				new ClientMessage.ReadStreamEventsBackwardCompleted(
 					_listEventsHandler.HandledMessages[0].CorrelationId,
 					_listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.Success,

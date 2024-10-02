@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -99,7 +102,7 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 			_stopOnEof = stopOnEof;
 			_isBiState = isBiState;
 			_progressResultWriter = new ProgressResultWriter(this, _resultWriter);
-			_inutQueueEnvelope = new PublishEnvelope(_inputQueue);
+			_inutQueueEnvelope = _inputQueue;
 			_emittedStreamsTracker = emittedStreamsTracker;
 			_enableContentTypeValidation = enableContentTypeValidation;
 		}
@@ -552,7 +555,7 @@ namespace EventStore.Projections.Core.Services.Processing.Phases {
 		}
 
 		protected long _subscriptionStartedAtLastCommitPosition;
-		private readonly PublishEnvelope _inutQueueEnvelope;
+		private readonly IEnvelope _inutQueueEnvelope;
 		private readonly TimeSpan _updateInterval = TimeSpan.FromMilliseconds(250);
 		private bool _updateStatisticsTicketPending;
 

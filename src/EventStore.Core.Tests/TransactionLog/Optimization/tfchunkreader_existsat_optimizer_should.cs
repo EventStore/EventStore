@@ -1,5 +1,10 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -17,13 +22,13 @@ namespace EventStore.Core.Tests.TransactionLog.Optimization {
 		}
 
 		[Test]
-		public void optimize_only_maxcached_items_at_a_time() {
+		public async Task optimize_only_maxcached_items_at_a_time() {
 			int maxCached = 3;
 			List<TFChunk> chunks = new List<TFChunk>();
 			TFChunkReaderExistsAtOptimizer _existsAtOptimizer = new TFChunkReaderExistsAtOptimizer(maxCached);
 
 			for (int i = 0; i < 7; i++) {
-				var chunk = CreateChunk(i, true);
+				var chunk = await CreateChunk(i, true);
 				chunks.Add(chunk);
 				Assert.IsFalse(_existsAtOptimizer.IsOptimized(chunk));
 				_existsAtOptimizer.Optimize(chunk);
@@ -48,9 +53,9 @@ namespace EventStore.Core.Tests.TransactionLog.Optimization {
 		}
 
 		[Test]
-		public void optimize_only_scavenged_chunks() {
+		public async Task optimize_only_scavenged_chunks() {
 			TFChunkReaderExistsAtOptimizer _existsAtOptimizer = new TFChunkReaderExistsAtOptimizer(3);
-			var chunk = CreateChunk(0, false);
+			var chunk = await CreateChunk(0, false);
 			_existsAtOptimizer.Optimize(chunk);
 			Assert.AreEqual(false, _existsAtOptimizer.IsOptimized(chunk));
 
@@ -59,10 +64,10 @@ namespace EventStore.Core.Tests.TransactionLog.Optimization {
 		}
 
 		[Test]
-		public void posmap_items_should_exist_in_chunk() {
+		public async Task posmap_items_should_exist_in_chunk() {
 			TFChunkReaderExistsAtOptimizer _existsAtOptimizer = new TFChunkReaderExistsAtOptimizer(3);
-			List<PosMap> posmap;
-			var chunk = CreateChunk(0, true, out posmap);
+			List<PosMap> posmap = new();
+			var chunk = await CreateChunk(0, true, posmap);
 
 			//before optimization
 			Assert.AreEqual(false, _existsAtOptimizer.IsOptimized(chunk));
@@ -81,12 +86,12 @@ namespace EventStore.Core.Tests.TransactionLog.Optimization {
 			chunk.WaitForDestroy(5000);
 		}
 
-		private TFChunk CreateChunk(int chunkNumber, bool scavenged) {
-			List<PosMap> posmap;
-			return CreateChunk(chunkNumber, scavenged, out posmap);
+		private ValueTask<TFChunk> CreateChunk(int chunkNumber, bool scavenged) {
+			List<PosMap> posmap = new();
+			return CreateChunk(chunkNumber, scavenged, posmap);
 		}
 
-		private TFChunk CreateChunk(int chunkNumber, bool scavenged, out List<PosMap> posmap) {
+		private async ValueTask<TFChunk> CreateChunk(int chunkNumber, bool scavenged, List<PosMap> posmap) {
 			var map = new List<PosMap>();
 			var chunk = TFChunk.CreateNew(GetFilePathFor("chunk-" + chunkNumber + "-" + Guid.NewGuid()), 1024 * 1024,
 				chunkNumber, chunkNumber, scavenged, false, false, false,
@@ -105,10 +110,10 @@ namespace EventStore.Core.Tests.TransactionLog.Optimization {
 			}
 
 			if (scavenged) {
-				posmap = map;
-				chunk.CompleteScavenge(map);
+				posmap.AddRange(map);
+				await chunk.CompleteScavenge(map, CancellationToken.None);
 			} else {
-				posmap = null;
+				posmap.Clear();
 				chunk.Complete();
 			}
 

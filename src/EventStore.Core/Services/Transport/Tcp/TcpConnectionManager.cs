@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -473,6 +476,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				new TcpMessage.Heartbeat(receiveProgressIndicator, sendProgressIndicator)));
 		}
 
+		// Same health warnings as SendToThisEnvelope
 		private class SendToWeakThisEnvelope : IEnvelope {
 			private readonly WeakReference _receiver;
 
@@ -481,9 +485,11 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 
 			public void ReplyWith<T>(T message) where T : Message {
-				var x = _receiver.Target as IHandle<T>;
-				if (x != null)
-					x.Handle(message);
+				if (_receiver.Target is IHandle<T> handle) {
+					handle.Handle(message);
+				} else if (_receiver is IAsyncHandle<T>) {
+					throw new Exception($"SendToWeakThisEnvelope does not support asynchronous receivers. Receiver: {_receiver}");
+				}
 			}
 		}
 

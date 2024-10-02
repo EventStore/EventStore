@@ -2,7 +2,7 @@ version: "3.4"
 
 services:
   eventstore.db:
-    image: eventstore/eventstore:24.2.0-jammy
+    image: eventstore/eventstore:24.6
     environment:
       - EVENTSTORE_CLUSTER_SIZE=1
       - EVENTSTORE_RUN_PROJECTIONS=All

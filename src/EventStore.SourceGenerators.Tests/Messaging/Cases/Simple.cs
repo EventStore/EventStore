@@ -1,4 +1,4 @@
-﻿namespace EventStore.SourceGenerators.Tests.Messaging.Simple {
+namespace EventStore.SourceGenerators.Tests.Messaging.Simple {
 	[DerivedMessage(TestMessageGroup.Simple)]
 	public partial class A : Message {
 	}

@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Net;
 using EventStore.Common.Utils;
@@ -59,7 +62,7 @@ namespace EventStore.Core.Services.Transport.Http {
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
-			
+
 			_isListening = true;
 		}
 
@@ -98,13 +101,9 @@ namespace EventStore.Core.Services.Transport.Http {
 			});
 		}
 		public List<UriToActionMatch> GetAllUriMatches(Uri uri) => UriRouter.GetAllUriMatches(uri);
-		public static void CreateAndSubscribePipeline(IBus bus) {
+		public static void CreateAndSubscribePipeline(ISubscriber bus) {
 			var requestProcessor = new AuthenticatedHttpRequestProcessor();
 			bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
-			bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
-			bus.Publish(
-				TimerMessage.Schedule.Create(
-					UpdateInterval, new PublishEnvelope(bus), new HttpMessage.PurgeTimedOutRequests()));
 		}
 	}
 }

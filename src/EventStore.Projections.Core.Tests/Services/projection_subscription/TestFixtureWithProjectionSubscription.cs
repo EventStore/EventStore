@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.TimerService;
@@ -22,8 +25,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 		protected TestHandler<EventReaderSubscriptionMessage.PartitionDeleted> _partitionDeletedHandler;
 		protected IReaderSubscription _subscription;
 		protected ITimeProvider _timeProvider;
-		protected IEventReader ForkedReader;
-		protected InMemoryBus _bus;
+		protected SynchronousScheduler _bus;
 		protected Action<SourceDefinitionBuilder> _source = null;
 		protected int _checkpointUnhandledBytesThreshold;
 		protected int _checkpointProcessedEventsThreshold;
@@ -37,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 			_checkpointAfterMs = 10000;
 			_timeProvider = new RealTimeProvider();
 			Given();
-			_bus = new InMemoryBus("bus");
+			_bus = new();
 			_projectionCorrelationId = Guid.NewGuid();
 			_eventHandler = new TestHandler<EventReaderSubscriptionMessage.CommittedEventReceived>();
 			_checkpointHandler = new TestHandler<EventReaderSubscriptionMessage.CheckpointSuggested>();
@@ -90,7 +92,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 				readerBuilder.AllEvents();
 			}
 
-			var config = ProjectionConfig.GetTest();
+			var config = new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, true, 10000,
+				1, 250);
 			IQuerySources sources = readerBuilder.Build();
 			var readerStrategy = ReaderStrategy.Create(
 				"test",

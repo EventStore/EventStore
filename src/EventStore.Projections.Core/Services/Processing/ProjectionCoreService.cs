@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +11,6 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Common.Utils;
-using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing.Strategies;
 using Serilog;
 
@@ -49,8 +51,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly ITimeProvider _timeProvider;
 		private readonly ProcessingStrategySelector _processingStrategySelector;
 
-		private readonly ISingletonTimeoutScheduler _timeoutScheduler;
-
 		private bool _stopping;
 		private readonly Dictionary<Guid, CoreProjection> _suspendingProjections = new Dictionary<Guid, CoreProjection>();
 		private Guid _stopQueueId = Guid.Empty;
@@ -64,12 +64,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ReaderSubscriptionDispatcher subscriptionDispatcher,
 			ITimeProvider timeProvider,
 			IODispatcher ioDispatcher,
-			ISingletonTimeoutScheduler timeoutScheduler, ProjectionsStandardComponents configuration) {
+			ProjectionsStandardComponents configuration) {
 			_workerId = workerId;
 			_inputQueue = inputQueue;
 			_publisher = publisher;
 			_ioDispatcher = ioDispatcher;
-			_timeoutScheduler = timeoutScheduler;
 			_subscriptionDispatcher = subscriptionDispatcher;
 			_timeProvider = timeProvider;
 			_processingStrategySelector = new ProcessingStrategySelector(_subscriptionDispatcher);
@@ -111,7 +110,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			} else {
 				_publisher.Publish(TimerMessage.Schedule.Create(
 					TimeSpan.FromMilliseconds(_projectionStopTimeoutMs),
-					new PublishEnvelope(_inputQueue),
+					_inputQueue,
 					new ProjectionCoreServiceMessage.StopCoreTimeout(_stopQueueId)));
 			}
 		}
@@ -149,11 +148,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 			try {
 				//TODO: factory method can throw
 				var stateHandler = CreateStateHandler(_factory,
-					_timeoutScheduler,
 					_logger,
 					message.HandlerType,
 					message.Query,
-					message.EnableContentTypeValidation, message.Config.ProjectionExecutionTimeout);
+					message.EnableContentTypeValidation,
+					message.Config.ProjectionExecutionTimeout);
 
 				string name = message.Name;
 				var sourceDefinition = ProjectionSourceDefinition.From(stateHandler.GetSourceDefinition());
@@ -297,18 +296,17 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public static IProjectionStateHandler CreateStateHandler(ProjectionStateHandlerFactory factory,
-			ISingletonTimeoutScheduler singletonTimeoutScheduler,
 			ILogger logger,
 			string handlerType,
 			string query,
-			bool enableContentTypeValidation, int projectionExecutionTimeout) {
+			bool enableContentTypeValidation,
+			int? projectionExecutionTimeout) {
 			var stateHandler = factory.Create(
 				handlerType,
 				query,
-				enableContentTypeValidation, projectionExecutionTimeout,
-				logger: logger.Verbose,
-				cancelCallbackFactory:
-				singletonTimeoutScheduler == null ? null : singletonTimeoutScheduler.Schedule);
+				enableContentTypeValidation,
+				projectionExecutionTimeout,
+				logger: logger.Verbose);
 			return stateHandler;
 		}
 	}

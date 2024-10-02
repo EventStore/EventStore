@@ -1,10 +1,12 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Helpers.IODispatcherTests;
 using EventStore.Projections.Core.Services;
@@ -16,7 +18,7 @@ using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager.multi_stream {
 	public abstract class with_multi_stream_checkpoint_manager<TLogFormat, TStreamId> : IHandle<ClientMessage.ReadStreamEventsBackward> {
-		protected readonly InMemoryBus _bus = InMemoryBus.CreateTest();
+		protected readonly SynchronousScheduler _bus = new();
 		protected readonly Guid _projectionId = Guid.NewGuid();
 		protected readonly string[] _streams = new string[] {"a", "b", "c"};
 		protected readonly string _projectionName = "test_projection";
@@ -33,11 +35,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 
 		[OneTimeSetUp]
 		public void TestFixtureSetUp() {
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
+			_ioDispatcher = new IODispatcher(_bus, _bus, true);
 			_projectionVersion = new ProjectionVersion(3, 1, 2);
 			_projectionConfig = new ProjectionConfig(SystemAccounts.System, 10, 1000, 1000, 10, true, true, true,
 				false,
-				false, 5000, 10);
+				false, 5000, 10, null);
 			_positionTagger = new MultiStreamPositionTagger(3, _streams);
 			_positionTagger.AdjustTag(CheckpointTag.FromStreamPositions(3,
 				new Dictionary<string, long> {{"a", 0}, {"b", 0}, {"c", 0}}));

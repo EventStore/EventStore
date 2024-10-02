@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -10,7 +13,7 @@ using System.Diagnostics;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.Services.RequestManager {
-	public class RequestManagementService :		
+	public class RequestManagementService :
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<ClientMessage.WriteEvents>,
 		IHandle<ClientMessage.DeleteStream>,
@@ -45,7 +48,7 @@ namespace EventStore.Core.Services.RequestManager {
 			Ensure.NotNull(bus, "bus");
 			_bus = bus;
 			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
-				new PublishEnvelope(bus),
+				bus,
 				new StorageMessage.RequestManagerTimerTick());
 
 			_prepareTimeout = prepareTimeout;
@@ -209,18 +212,17 @@ namespace EventStore.Core.Services.RequestManager {
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) => _commitSource.Handle(message);
 		public void Handle(ReplicationTrackingMessage.IndexedTo message) => _commitSource.Handle(message);
 
-		public void Handle(StorageMessage.AlreadyCommitted message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.PrepareAck message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.CommitIndexed message) =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.WrongExpectedVersion message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.InvalidTransaction message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.StreamDeleted message)  =>	DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.AlreadyCommitted message) => DispatchInternal(message.CorrelationId, message, static (manager, m) => manager.Handle(m));
+		public void Handle(StorageMessage.PrepareAck message) => DispatchInternal(message.CorrelationId, message, static (manager, m) => manager.Handle(m));
+		public void Handle(StorageMessage.CommitIndexed message) => DispatchInternal(message.CorrelationId, message, static (manager, m) => manager.Handle(m));
+		public void Handle(StorageMessage.WrongExpectedVersion message) => DispatchInternal(message.CorrelationId, message, static (manager, m) => manager.Handle(m));
+		public void Handle(StorageMessage.InvalidTransaction message) => DispatchInternal(message.CorrelationId, message, static (manager, m) => manager.Handle(m));
+		public void Handle(StorageMessage.StreamDeleted message) => DispatchInternal(message.CorrelationId, message, static (manager, m) => manager.Handle(m));
 		
-		private void DispatchInternal<T>(Guid correlationId, T message) where T : Message {
+		private void DispatchInternal<T>(Guid correlationId, T message, Action<RequestManagerBase, T> handle) where T : Message {
 			if (_currentRequests.TryGetValue(correlationId, out var manager)) {
-				var x = manager as IHandle<T>;
-				x?.Handle(message);
+				handle(manager, message);
 			}
-		}		
+		}
 	}
 }

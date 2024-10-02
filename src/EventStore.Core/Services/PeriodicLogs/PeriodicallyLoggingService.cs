@@ -1,8 +1,10 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using Serilog;
 
@@ -26,7 +28,7 @@ public class PeriodicallyLoggingService :
 		_publisher = publisher;
 		_esVersion = esVersion;
 		_logger = logger;
-		_esVersionScheduleLog = TimerMessage.Schedule.Create(_interval, new PublishEnvelope(publisher),
+		_esVersionScheduleLog = TimerMessage.Schedule.Create(_interval, publisher,
 			new MonitoringMessage.CheckEsVersion());
 	}
 

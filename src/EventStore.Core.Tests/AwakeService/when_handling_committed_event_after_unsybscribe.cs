@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -18,7 +21,7 @@ namespace EventStore.Core.Tests.AwakeService {
 		private StorageMessage.EventCommitted _eventCommitted;
 		private Exception _exception;
 		private IEnvelope _envelope;
-		private InMemoryBus _publisher;
+		private SynchronousScheduler _publisher;
 		private TestHandler<TestMessage> _handler;
 		private TestMessage _reply1;
 		private TestMessage _reply2;
@@ -51,8 +54,8 @@ namespace EventStore.Core.Tests.AwakeService {
 					recordFactory, 1500, Guid.NewGuid(), Guid.NewGuid(), 1500, 0, streamId, 99, PrepareFlags.Data,
 					eventTypeId, new byte[0], null, DateTime.UtcNow), "Stream", "EventType");
 			_eventCommitted = new StorageMessage.EventCommitted(2000, _eventRecord, isTfEof: true);
-			_publisher = InMemoryBus.CreateTest();
-			_envelope = new PublishEnvelope(_publisher);
+			_publisher = new();
+			_envelope = _publisher;
 			_handler = new TestHandler<TestMessage>();
 			_publisher.Subscribe(_handler);
 			_reply1 = new TestMessage(1);

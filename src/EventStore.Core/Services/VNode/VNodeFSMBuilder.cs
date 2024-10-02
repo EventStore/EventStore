@@ -1,7 +1,12 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 using DotNext.Runtime;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -16,21 +21,21 @@ public sealed class VNodeFSMBuilder {
 	private readonly ReadOnlyValueReference<VNodeState> _stateRef;
 
 	// The dictionary keeps a mapping between concrete message typeof(T) type and its handler
-	// in the form of Action<T> delegate instance where T <= Message.
+	// in the form of Func<T, CancellationToken, ValueTask> delegate instance where T <= Message.
 	// The mapping cannot be expressed at language level in type-safe manner, so we're using a common denominator
-	// for all Action<T> variations: MulticastDelegate
+	// for all Func<T, CancellationToken, ValueTask> variations: MulticastDelegate
 	private readonly Dictionary<Type, MulticastDelegate>[] _handlers;
-	private readonly Action<Message>[] _defaultHandlers;
+	private readonly Func<Message, CancellationToken, ValueTask>[] _defaultHandlers;
 
 	public VNodeFSMBuilder(ReadOnlyValueReference<VNodeState> stateRef) {
 		_stateRef = stateRef;
 
 		var maxState = (int)Enum.GetValues<VNodeState>().Max();
 		_handlers = new Dictionary<Type, MulticastDelegate>[maxState + 1];
-		_defaultHandlers = new Action<Message>[maxState + 1];
+		_defaultHandlers = new Func<Message, CancellationToken, ValueTask>[maxState + 1];
 	}
 
-	internal void AddHandler<TActualMessage>(VNodeState state, Action<TActualMessage> handler)
+	internal void AddHandler<TActualMessage>(VNodeState state, Func<TActualMessage, CancellationToken, ValueTask> handler)
 		where TActualMessage : Message {
 		var stateHandlers = _handlers[(int)state] ??= new();
 
@@ -41,7 +46,7 @@ public sealed class VNodeFSMBuilder {
 		}
 	}
 
-	internal void AddDefaultHandler(VNodeState state, Action<Message> handler) {
+	internal void AddDefaultHandler(VNodeState state, Func<Message, CancellationToken, ValueTask> handler) {
 		ref var defaultHandler = ref _defaultHandlers[(int)state];
 		if (defaultHandler is not null)
 			throw new InvalidOperationException($"Default handler already defined for state {state}");

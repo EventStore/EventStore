@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -34,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Management {
 	}
 
 		/// <summary>
-		/// managed projection controls start/stop/create/update/delete lifecycle of the projection. 
+		/// managed projection controls start/stop/create/update/delete lifecycle of the projection.
 		/// </summary>
 		public class ManagedProjection : IDisposable {
 		public class PersistedState {
@@ -65,8 +68,8 @@ namespace EventStore.Projections.Core.Services.Management {
 			public int MaxWriteBatchLength { get; set; }
 			public int MaxAllowedWritesInFlight { get; set; }
 			public int? ProjectionSubsystemVersion { get; set; }
-			
-			public int ProjectionExecutionTimeout { get; set; }
+
+			public int? ProjectionExecutionTimeout { get; set; }
 
 			public PersistedState() {
 				CheckpointHandledThreshold = ProjectionConsts.CheckpointHandledThreshold;
@@ -75,7 +78,6 @@ namespace EventStore.Projections.Core.Services.Management {
 				PendingEventsThreshold = ProjectionConsts.PendingEventsThreshold;
 				MaxWriteBatchLength = ProjectionConsts.MaxWriteBatchLength;
 				MaxAllowedWritesInFlight = ProjectionConsts.MaxAllowedWritesInFlight;
-				ProjectionExecutionTimeout = ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout;
 			}
 		}
 
@@ -465,8 +467,10 @@ namespace EventStore.Projections.Core.Services.Management {
 					PersistedProjectionState.CheckpointAfterMs,
 					PersistedProjectionState.CheckpointHandledThreshold,
 					PersistedProjectionState.CheckpointUnhandledBytesThreshold,
-					PersistedProjectionState.PendingEventsThreshold, PersistedProjectionState.MaxWriteBatchLength,
-					PersistedProjectionState.MaxAllowedWritesInFlight, PersistedProjectionState.ProjectionExecutionTimeout));
+					PersistedProjectionState.PendingEventsThreshold,
+					PersistedProjectionState.MaxWriteBatchLength,
+					PersistedProjectionState.MaxAllowedWritesInFlight,
+					PersistedProjectionState.ProjectionExecutionTimeout));
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.UpdateConfig message) {
@@ -813,8 +817,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				throw new NotSupportedException("Unsupported error code received");
 		}
 
-		private void Prepare(ProjectionConfig config, Message message) {
-			if (config == null) throw new ArgumentNullException("config");
+		private void Prepare(Message message) {
 			if (_state >= ManagedProjectionState.Preparing) {
 				DisposeCoreProjection();
 				SetState(ManagedProjectionState.Loaded);
@@ -978,7 +981,8 @@ namespace EventStore.Projections.Core.Services.Management {
 				stopOnEof,
 				trackEmittedStreams,
 				checkpointAfterMs,
-				maximumAllowedWritesInFlight, projectionExecutionTimeout);
+				maximumAllowedWritesInFlight,
+				projectionExecutionTimeout);
 			return projectionConfig;
 		}
 
@@ -1030,7 +1034,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				? CreatePreparedMessage(_projectionConfig)
 				: CreateCreateAndPrepareMessage(_projectionConfig);
 
-			Prepare(_projectionConfig, prepareMessage);
+			Prepare(prepareMessage);
 		}
 
 		private void Reply() {

@@ -1,12 +1,13 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using EventStore.Common;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.TimerService;
@@ -14,16 +15,14 @@ using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services.Processing.Strategies;
-using EventStore.Projections.Core.Tests.Services.projections_manager;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services {
 	public class TestFixtureWithProjectionCoreService {
-		class GuardBusToTriggerFixingIfUsed : IQueuedHandler, IBus, IPublisher {
+		class GuardBusToTriggerFixingIfUsed : IQueuedHandler, ISubscriber, IPublisher {
 			public void Handle(Message message) {
 				throw new NotImplementedException();
 			}
@@ -49,11 +48,11 @@ namespace EventStore.Projections.Core.Tests.Services {
 				throw new NotImplementedException();
 			}
 
-			public void Subscribe<T>(IHandle<T> handler) where T : Message {
+			public void Subscribe<T>(IAsyncHandle<T> handler) where T : Message {
 				throw new NotImplementedException();
 			}
 
-			public void Unsubscribe<T>(IHandle<T> handler) where T : Message {
+			public void Unsubscribe<T>(IAsyncHandle<T> handler) where T : Message {
 				throw new NotImplementedException();
 			}
 		}
@@ -84,33 +83,31 @@ namespace EventStore.Projections.Core.Tests.Services {
 		}
 
 		protected TestHandler<Message> _consumer;
-		protected InMemoryBus _bus;
+		protected SynchronousScheduler _bus;
 		protected ProjectionCoreService _service;
 		protected EventReaderCoreService _readerService;
 
 		private ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
-		private ISingletonTimeoutScheduler _timeoutScheduler;
 		protected Guid _workerId;
 
 		[SetUp]
 		public virtual void Setup() {
 			_consumer = new TestHandler<Message>();
-			_bus = new InMemoryBus("temp");
+			_bus = new();
 			_bus.Subscribe(_consumer);
 			ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
-			var ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
+			var ioDispatcher = new IODispatcher(_bus, _bus, true);
 			_readerService = new EventReaderCoreService(_bus, ioDispatcher, 10, writerCheckpoint,
 				runHeadingReader: true, faultOutOfOrderProjections: true);
 			_subscriptionDispatcher =
 				new ReaderSubscriptionDispatcher(_bus);
-			_timeoutScheduler = new TimeoutScheduler();
 			_workerId = Guid.NewGuid();
 			var guardBus = new GuardBusToTriggerFixingIfUsed();
 			var configuration = new ProjectionsStandardComponents(1, ProjectionType.All, guardBus, guardBus, guardBus, guardBus, true,
 				 500, 250);
 			_service = new ProjectionCoreService(
-				_workerId, _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher, _timeoutScheduler, configuration);
+				_workerId, _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher, configuration);
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
 			_bus.Subscribe(_subscriptionDispatcher

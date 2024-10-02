@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -80,7 +83,7 @@ namespace EventStore.Projections.Core.Services.Processing.MultiStream {
 			if (_eofs.Any(v => v.Value))
 				_publisher.Publish(
 					TimerMessage.Schedule.Create(
-						TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
+						TimeSpan.FromMilliseconds(250), _publisher,
 						new UnwrapEnvelopeMessage(ProcessBuffers2)));
 			foreach (var stream in _streams)
 				RequestEvents(stream, delay: _eofs[stream]);
@@ -271,12 +274,12 @@ namespace EventStore.Projections.Core.Services.Processing.MultiStream {
 			if (delay) {
 				_publisher.Publish(
 					new AwakeServiceMessage.SubscribeAwake(
-						new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+						_publisher, Guid.NewGuid(), null,
 						new TFPos(_lastPosition, _lastPosition),
 						CreateReadTimeoutMessage(pendingRequestCorrelationId, stream)));
 				_publisher.Publish(
 					new AwakeServiceMessage.SubscribeAwake(
-						new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
+						_publisher, Guid.NewGuid(), null,
 						new TFPos(_lastPosition, _lastPosition), readEventsForward));
 			} else {
 				_publisher.Publish(readEventsForward);

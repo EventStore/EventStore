@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Linq;
 using System.Net;
 using EventStore.Core.Bus;
@@ -20,7 +23,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		protected readonly VNodeInfo _nodeThree;
 		protected FakeTimeProvider _timeProvider;
 		protected Core.Services.ElectionsService _sut;
-		private IBus _bus;
+		private ISubscriber _bus;
 		protected FakePublisher _publisher;
 		protected Guid _epochId;
 		protected TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1_000);
@@ -84,7 +87,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
 					LeaderElectionProgressTimeout,
-					new PublishEnvelope(_publisher),
+					_publisher,
 					new ElectionMessage.ElectionsTimedOut(0)),
 			};
 
@@ -103,7 +106,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var expected = new Message[] {
 				TimerMessage.Schedule.Create(
 					Core.Services.ElectionsService.SendViewChangeProofInterval,
-					new PublishEnvelope(_publisher),
+					_publisher,
 					new ElectionMessage.SendViewChangeProof()),
 			};
 			_publisher.Messages.Should().BeEquivalentTo(expected);
@@ -212,7 +215,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
 					LeaderElectionProgressTimeout,
-					new PublishEnvelope(_publisher),
+					_publisher,
 					new ElectionMessage.ElectionsTimedOut(1)),
 			};
 			_publisher.Messages.Should().BeEquivalentTo(expected);
@@ -255,7 +258,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var expected = new Message[] {
 				TimerMessage.Schedule.Create(
 					Core.Services.ElectionsService.SendViewChangeProofInterval,
-					new PublishEnvelope(_publisher),
+					_publisher,
 					new ElectionMessage.SendViewChangeProof()),
 			};
 			_publisher.Messages.Should().BeEquivalentTo(expected);
@@ -295,7 +298,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
 					Core.Services.ElectionsService.SendViewChangeProofInterval,
-					new PublishEnvelope(_publisher),
+					_publisher,
 					new ElectionMessage.SendViewChangeProof()),
 			};
 			_publisher.Messages.Should().BeEquivalentTo(expected);
@@ -386,7 +389,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
 					LeaderElectionProgressTimeout,
-					new PublishEnvelope(_publisher),
+					_publisher,
 					new ElectionMessage.ElectionsTimedOut(10)),
 			};
 

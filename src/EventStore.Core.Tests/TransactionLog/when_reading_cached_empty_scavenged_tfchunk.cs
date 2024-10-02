@@ -1,3 +1,8 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using NUnit.Framework;
 
@@ -7,10 +12,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private TFChunk _chunk;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_chunk = TFChunkHelper.CreateNewChunk(Filename, isScavenged: true);
-			_chunk.CompleteScavenge(new PosMap[0]);
+			await _chunk.CompleteScavenge(new PosMap[0], CancellationToken.None);
 			_chunk.CacheInMemory();
 		}
 
@@ -26,8 +31,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void no_record_can_be_read_as_first_record() {
-			Assert.IsFalse(_chunk.TryReadFirst().Success);
+		public async Task no_record_can_be_read_as_first_record() {
+			Assert.IsFalse((await _chunk.TryReadFirst(CancellationToken.None)).Success);
 		}
 
 		[Test]

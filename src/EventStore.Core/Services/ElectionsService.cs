@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -107,7 +110,7 @@ namespace EventStore.Core.Services {
 
 			_publisher = publisher;
 			_memberInfo = memberInfo;
-			_publisherEnvelope = new PublishEnvelope(_publisher);
+			_publisherEnvelope = _publisher;
 			_clusterSize = clusterSize;
 			_writerCheckpoint = writerCheckpoint;
 			_chaserCheckpoint = chaserCheckpoint;

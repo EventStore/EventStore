@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -195,7 +198,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		[Test]
 		public void should_schedule_retry_retrieve_gossip_seed_sources() {
 			ExpectMessages(
-				TimerMessage.Schedule.Create(GossipServiceBase.DnsRetryTimeout, new PublishEnvelope(_bus),
+				TimerMessage.Schedule.Create(GossipServiceBase.DnsRetryTimeout, _bus,
 					new GossipMessage.RetrieveGossipSeedSources()));
 		}
 	}
@@ -217,7 +220,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
 					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout)),
-				TimerMessage.Schedule.Create(GossipServiceBase.GossipStartupInterval, new PublishEnvelope(_bus),
+				TimerMessage.Schedule.Create(GossipServiceBase.GossipStartupInterval, _bus,
 					new GossipMessage.Gossip(1)));
 		}
 	}
@@ -239,7 +242,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
 					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout)),
-				TimerMessage.Schedule.Create(_gossipInterval, new PublishEnvelope(_bus),
+				TimerMessage.Schedule.Create(_gossipInterval, _bus,
 					new GossipMessage.Gossip(++_gossipRound)));
 		}
 	}
@@ -259,7 +262,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 
 		[Test]
 		public void should_just_schedule_next_gossip() {
-			ExpectMessages(TimerMessage.Schedule.Create(_gossipInterval, new PublishEnvelope(_bus),
+			ExpectMessages(TimerMessage.Schedule.Create(_gossipInterval, _bus,
 				new GossipMessage.Gossip(_gossipRound)));
 		}
 	}
@@ -293,7 +296,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
 					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout)),
-				TimerMessage.Schedule.Create(GossipServiceBase.GossipStartupInterval, new PublishEnvelope(_bus),
+				TimerMessage.Schedule.Create(GossipServiceBase.GossipStartupInterval, _bus,
 					new GossipMessage.Gossip(++_gossipRound)));
 		}
 	}
@@ -315,7 +318,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
 					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout)),
-				TimerMessage.Schedule.Create(_gossipInterval, new PublishEnvelope(_bus),
+				TimerMessage.Schedule.Create(_gossipInterval, _bus,
 					new GossipMessage.Gossip(++_gossipRound)));
 		}
 	}

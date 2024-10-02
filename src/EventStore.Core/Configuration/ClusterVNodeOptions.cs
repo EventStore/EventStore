@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 // ReSharper disable CheckNamespace
 
 #nullable enable
@@ -309,6 +312,9 @@ namespace EventStore.Core {
 			[Description("Sets this node as a read only replica that is not allowed to participate in elections " +
 			             "or accept writes from clients.")]
 			public bool ReadOnlyReplica { get; init; } = false;
+
+			[Description("Sets this node as an Archiver node. Requires ReadOnlyReplica to be true. Experimental.")]
+			public bool Archiver { get; init; } = false;
 
 			[Description("Allow more nodes than the cluster size to join the cluster as clones. " +
 			             "(UNSAFE: can cause data loss if a clone is promoted as leader)")]

@@ -1,4 +1,9 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using DotNext.Diagnostics;
 using DotNext.Runtime;
 using EventStore.Core.Bus;
@@ -8,99 +13,101 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.VNode;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Bus {
-	[TestFixture]
-	public class FSMSpeedTest {
-		[Test, Category("LongRunning"), Explicit]
-		public void FSMSpeedTest1() {
-			var fsm = CreateFSM();
-			var msg = new StorageMessage.WriteCommit(Guid.NewGuid(), new NoopEnvelope(), 0);
-			const int iterations = 1000000;
+namespace EventStore.Core.Tests.Bus;
 
-			var ts = new Timestamp();
+[TestFixture]
+public class FSMSpeedTest {
+	[Test, Category("LongRunning"), Explicit]
+	public async Task FSMSpeedTest1() {
+		var fsm = CreateFSM();
+		var msg = new StorageMessage.WriteCommit(Guid.NewGuid(), new NoopEnvelope(), 0);
+		const int iterations = 1000000;
 
-			for (int i = 0; i < iterations; ++i) {
-				fsm.Handle(msg);
-			}
+		var ts = new Timestamp();
 
-			var elapsedMs = ts.ElapsedMilliseconds;
-			Console.WriteLine($"Elapsed: {elapsedMs} ({elapsedMs / iterations} per item).");
+		for (int i = 0; i < iterations; ++i) {
+			await fsm.HandleAsync(msg);
 		}
 
-		[Test, Category("LongRunning"), Explicit]
-		public void FSMSpeedTest2() {
-			var bus = InMemoryBus.CreateTest();
-			bus.Subscribe(new AdHocHandler<StorageMessage.WriteCommit>(x => { }));
-			bus.Subscribe(new AdHocHandler<Message>(x => { }));
+		var elapsedMs = ts.ElapsedMilliseconds;
+		Console.WriteLine($"Elapsed: {elapsedMs} ({elapsedMs / iterations} per item).");
+	}
 
-			var msg = new StorageMessage.WriteCommit(Guid.NewGuid(), new NoopEnvelope(), 0);
-			const int iterations = 1000000;
+	[Test, Category("LongRunning"), Explicit]
+	public async Task FSMSpeedTest2() {
+		var bus = InMemoryBus.CreateTest();
+		bus.Subscribe(new AdHocHandler<StorageMessage.WriteCommit>(x => { }));
+		bus.Subscribe(new AdHocHandler<Message>(x => { }));
 
-			var ts = new Timestamp();
+		var msg = new StorageMessage.WriteCommit(Guid.NewGuid(), new NoopEnvelope(), 0);
+		const int iterations = 1000000;
 
-			for (int i = 0; i < iterations; ++i) {
-				bus.Handle(msg);
-			}
+		var ts = new Timestamp();
 
-			var elapsedMs = ts.ElapsedMilliseconds;
-			Console.WriteLine($"Elapsed: {elapsedMs} ({elapsedMs / iterations} per item).");
+		for (int i = 0; i < iterations; ++i) {
+			await bus.DispatchAsync(msg);
 		}
 
-		private VNodeFSM CreateFSM() {
-			var outputBus = InMemoryBus.CreateTest(false);
-			var stm = new VNodeFSMBuilder(new ValueReference<VNodeState>(VNodeState.Leader))
-				.InAnyState()
-				.When<SystemMessage.StateChangeMessage>().Do(m => { })
-				.InState(VNodeState.Initializing)
-				.When<SystemMessage.SystemInit>().Do(msg => { })
-				.When<SystemMessage.SystemStart>().Do(msg => { })
-				.When<SystemMessage.BecomePreLeader>().Do(msg => { })
-				.When<SystemMessage.ServiceInitialized>().Do(msg => { })
-				.WhenOther().ForwardTo(outputBus)
-				.InStates(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown)
-				.When<ClientMessage.ReadRequestMessage>().Do(msg => { })
-				.InAllStatesExcept(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown)
-				.When<ClientMessage.ReadRequestMessage>().ForwardTo(outputBus)
-				.InAllStatesExcept(VNodeState.PreLeader)
-				.When<SystemMessage.WaitForChaserToCatchUp>().Ignore()
-				.When<SystemMessage.ChaserCaughtUp>().Ignore()
-				.InState(VNodeState.PreLeader)
-				.When<SystemMessage.BecomeLeader>().Do(msg => { })
-				.When<SystemMessage.WaitForChaserToCatchUp>().ForwardTo(outputBus)
-				.When<SystemMessage.ChaserCaughtUp>().Do(msg => { })
-				.WhenOther().ForwardTo(outputBus)
-				.InState(VNodeState.Leader)
-				.When<ClientMessage.WriteEvents>().Do(msg => { })
-				.When<ClientMessage.TransactionStart>().Do(msg => { })
-				.When<ClientMessage.TransactionWrite>().Do(msg => { })
-				.When<ClientMessage.TransactionCommit>().Do(msg => { })
-				.When<ClientMessage.DeleteStream>().Do(msg => { })
-				.When<StorageMessage.WritePrepares>().ForwardTo(outputBus)
-				.When<StorageMessage.WriteDelete>().ForwardTo(outputBus)
-				.When<StorageMessage.WriteTransactionStart>().ForwardTo(outputBus)
-				.When<StorageMessage.WriteTransactionData>().ForwardTo(outputBus)
-				.When<StorageMessage.WriteTransactionEnd>().ForwardTo(outputBus)
-				.When<StorageMessage.WriteCommit>().ForwardTo(outputBus)
-				.WhenOther().ForwardTo(outputBus)
-				.InAllStatesExcept(VNodeState.Leader)
-				.When<ClientMessage.WriteRequestMessage>().Do(msg => { })
-				.When<StorageMessage.WritePrepares>().Ignore()
-				.When<StorageMessage.WriteDelete>().Ignore()
-				.When<StorageMessage.WriteTransactionStart>().Ignore()
-				.When<StorageMessage.WriteTransactionData>().Ignore()
-				.When<StorageMessage.WriteTransactionEnd>().Ignore()
-				.When<StorageMessage.WriteCommit>().Ignore()
-				.InAllStatesExcept(VNodeState.ShuttingDown, VNodeState.Shutdown)
-				.When<ClientMessage.RequestShutdown>().Do(msg => { })
-				.When<SystemMessage.BecomeShuttingDown>().Do(msg => { })
-				.InState(VNodeState.ShuttingDown)
-				.When<SystemMessage.BecomeShutdown>().Do(msg => { })
-				.When<SystemMessage.ShutdownTimeout>().Do(msg => { })
-				.InStates(VNodeState.ShuttingDown, VNodeState.Shutdown)
-				.When<SystemMessage.ServiceShutdown>().Do(msg => { })
-				.WhenOther().ForwardTo(outputBus)
-				.Build();
-			return stm;
-		}
+		var elapsedMs = ts.ElapsedMilliseconds;
+		Console.WriteLine($"Elapsed: {elapsedMs} ({elapsedMs / iterations} per item).");
+	}
+
+	private VNodeFSM CreateFSM() {
+		var outputBus = InMemoryBus.CreateTest(false);
+		var scheduler = new QueuedHandlerThreadPool(outputBus, "Test", new(), new());
+
+		var stm = new VNodeFSMBuilder(new ValueReference<VNodeState>(VNodeState.Leader))
+			.InAnyState()
+			.When<SystemMessage.StateChangeMessage>().Do(m => { })
+			.InState(VNodeState.Initializing)
+			.When<SystemMessage.SystemInit>().Do(msg => { })
+			.When<SystemMessage.SystemStart>().Do(msg => { })
+			.When<SystemMessage.BecomePreLeader>().Do(msg => { })
+			.When<SystemMessage.ServiceInitialized>().Do(msg => { })
+			.WhenOther().ForwardTo(scheduler)
+			.InStates(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown)
+			.When<ClientMessage.ReadRequestMessage>().Do(msg => { })
+			.InAllStatesExcept(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown)
+			.When<ClientMessage.ReadRequestMessage>().ForwardTo(scheduler)
+			.InAllStatesExcept(VNodeState.PreLeader)
+			.When<SystemMessage.WaitForChaserToCatchUp>().Ignore()
+			.When<SystemMessage.ChaserCaughtUp>().Ignore()
+			.InState(VNodeState.PreLeader)
+			.When<SystemMessage.BecomeLeader>().Do(msg => { })
+			.When<SystemMessage.WaitForChaserToCatchUp>().ForwardTo(scheduler)
+			.When<SystemMessage.ChaserCaughtUp>().Do(msg => { })
+			.WhenOther().ForwardTo(scheduler)
+			.InState(VNodeState.Leader)
+			.When<ClientMessage.WriteEvents>().Do(msg => { })
+			.When<ClientMessage.TransactionStart>().Do(msg => { })
+			.When<ClientMessage.TransactionWrite>().Do(msg => { })
+			.When<ClientMessage.TransactionCommit>().Do(msg => { })
+			.When<ClientMessage.DeleteStream>().Do(msg => { })
+			.When<StorageMessage.WritePrepares>().ForwardTo(scheduler)
+			.When<StorageMessage.WriteDelete>().ForwardTo(scheduler)
+			.When<StorageMessage.WriteTransactionStart>().ForwardTo(scheduler)
+			.When<StorageMessage.WriteTransactionData>().ForwardTo(scheduler)
+			.When<StorageMessage.WriteTransactionEnd>().ForwardTo(scheduler)
+			.When<StorageMessage.WriteCommit>().ForwardTo(scheduler)
+			.WhenOther().ForwardTo(scheduler)
+			.InAllStatesExcept(VNodeState.Leader)
+			.When<ClientMessage.WriteRequestMessage>().Do(msg => { })
+			.When<StorageMessage.WritePrepares>().Ignore()
+			.When<StorageMessage.WriteDelete>().Ignore()
+			.When<StorageMessage.WriteTransactionStart>().Ignore()
+			.When<StorageMessage.WriteTransactionData>().Ignore()
+			.When<StorageMessage.WriteTransactionEnd>().Ignore()
+			.When<StorageMessage.WriteCommit>().Ignore()
+			.InAllStatesExcept(VNodeState.ShuttingDown, VNodeState.Shutdown)
+			.When<ClientMessage.RequestShutdown>().Do(msg => { })
+			.When<SystemMessage.BecomeShuttingDown>().Do(msg => { })
+			.InState(VNodeState.ShuttingDown)
+			.When<SystemMessage.BecomeShutdown>().Do(msg => { })
+			.When<SystemMessage.ShutdownTimeout>().Do(msg => { })
+			.InStates(VNodeState.ShuttingDown, VNodeState.Shutdown)
+			.When<SystemMessage.ServiceShutdown>().Do(msg => { })
+			.WhenOther().ForwardTo(scheduler)
+			.Build();
+		return stm;
 	}
 }

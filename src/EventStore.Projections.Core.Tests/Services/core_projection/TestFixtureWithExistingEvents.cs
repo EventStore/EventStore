@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -62,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			string streamId, string eventType, string data, string metadata = null, bool isJson = true,
 			Guid? correlationId = null) {
 			return new ClientMessage.WriteEvents(
-				Guid.NewGuid(), correlationId ?? Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), false, streamId,
+				Guid.NewGuid(), correlationId ?? Guid.NewGuid(), GetInputQueue(), false, streamId,
 				ExpectedVersion.Any, new Event(Guid.NewGuid(), eventType, isJson, data, metadata), null);
 		}
 	}

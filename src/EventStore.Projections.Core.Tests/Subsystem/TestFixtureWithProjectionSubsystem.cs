@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,10 +34,10 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 		protected Task Started { get; private set; }
 
 		static readonly IConfiguration EmptyConfiguration = new ConfigurationBuilder().AddInMemoryCollection().Build();
-		
+
 		private StandardComponents CreateStandardComponents() {
 			var dbConfig = TFChunkHelper.CreateDbConfig(Path.GetTempPath(), 0);
-			var mainQueue = QueuedHandler.CreateQueuedHandler
+			var mainQueue = new QueuedHandlerThreadPool
 			(new AdHocHandler<Message>(msg => {
 				/* Ignore messages */
 			}), "MainQueue", new QueueStatsManager(), new());

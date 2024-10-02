@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -15,14 +18,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
 		protected readonly string _projectionCheckpointStreamId = "projection-checkpoint-stream";
 		protected readonly Guid _projectionId = Guid.NewGuid();
 
-		protected InMemoryBus _bus = InMemoryBus.CreateTest();
+		protected SynchronousScheduler _bus = new();
 		protected IODispatcher _ioDispatcher;
 		protected ProjectionVersion _projectionVersion;
 		protected CoreProjectionCheckpointReader _reader;
 
 		[OneTimeSetUp]
 		public void TestFixtureSetUp() {
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
+			_ioDispatcher = new IODispatcher(_bus, _bus, true);
 			IODispatcherTestHelpers.SubscribeIODispatcher(_ioDispatcher, _bus);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
 			_projectionVersion = new ProjectionVersion(1, 2, 3);

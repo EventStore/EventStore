@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -138,7 +141,7 @@ namespace EventStore.Core.Services.Storage {
 			Writer = writer;
 
 			_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
-			StorageWriterQueue = QueuedHandler.CreateQueuedHandler(new AdHocHandler<Message>(CommonHandle),
+			StorageWriterQueue = new QueuedHandlerThreadPool(new AdHocHandler<Message>(CommonHandle),
 				"StorageWriterQueue",
 				queueStatsManager,
 				queueTrackers,
@@ -163,7 +166,7 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		protected void SubscribeToMessage<T>() where T : Message {
-			_writerBus.Subscribe((IHandle<T>)this);
+			_writerBus.Subscribe((IAsyncHandle<T>)this);
 			_subscribeToBus.Subscribe<T>(new AdHocHandler<Message>(EnqueueMessage));
 		}
 
@@ -182,7 +185,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private void CommonHandle(Message message) {
+		private async ValueTask CommonHandle(Message message, CancellationToken token) {
 			if (BlockWriter && !(message is SystemMessage.StateChangeMessage)) {
 				Log.Verbose("Blocking message {message} in StorageWriterService. Message:", message.GetType().Name);
 				Log.Verbose("{message}", message);
@@ -199,7 +202,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 
 			try {
-				_writerBus.Handle(message);
+				await _writerBus.DispatchAsync(message, token);
 			} catch (Exception exc) {
 				BlockWriter = true;
 				Log.Fatal(exc, "Unexpected error in StorageWriterService. Terminating the process...");

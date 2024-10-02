@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
@@ -7,16 +10,16 @@ using System.Linq;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class ManualQueue : IPublisher, IHandle<TimerMessage.Schedule> {
-		private readonly Queue<Message> _queue = new Queue<Message>();
-		private readonly IBus _bus;
+		private readonly Queue<Message> _queue = new();
+		private readonly SynchronousScheduler _bus;
 		private readonly ITimeProvider _time;
-		private readonly List<InternalSchedule> _timerQueue = new List<InternalSchedule>();
+		private readonly List<InternalSchedule> _timerQueue = new();
 		private bool _timerDisabled;
 
-		public ManualQueue(IBus bus, ITimeProvider time) {
+		public ManualQueue(SynchronousScheduler bus, ITimeProvider time) {
 			_bus = bus;
 			_time = time;
-			_bus.Subscribe(this);
+			_bus.Subscribe<TimerMessage.Schedule>(this);
 		}
 
 		public void Publish(Message message) {

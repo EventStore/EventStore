@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using EventStore.Common.Options;
@@ -26,7 +29,7 @@ namespace EventStore.Projections.Core {
 			IProjectionTracker projectionTracker) {
 			IPublisher inputQueue = projectionsStandardComponents.LeaderInputQueue;
 			IPublisher outputQueue = projectionsStandardComponents.LeaderOutputQueue;
-			var ioDispatcher = new IODispatcher(outputQueue, new PublishEnvelope(inputQueue), true);
+			var ioDispatcher = new IODispatcher(outputQueue, inputQueue, true);
 
 			var projectionsController = new ProjectionsController(
 				standardComponents.HttpForwarder,
@@ -53,8 +56,7 @@ namespace EventStore.Projections.Core {
 				projectionsStandardComponents.RunProjections,
 				ioDispatcher,
 				projectionQueryExpiry,
-				projectionTracker,
-				defaultProjectionExecutionTimeout: projectionsStandardComponents.ProjectionExecutionTimeout);
+				projectionTracker);
 
 			SubscribeMainBus(
 				projectionsStandardComponents.LeaderInputBus,

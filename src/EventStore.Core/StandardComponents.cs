@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using EventStore.Common.Configuration;
 using EventStore.Core.Bus;
 using EventStore.Core.Metrics;
@@ -8,7 +11,7 @@ using EventStore.Core.TransactionLog.Chunks;
 namespace EventStore.Core {
 	public class StandardComponents {
 		private readonly TFChunkDbConfig _dbConfig;
-		private readonly IQueuedHandler _mainQueue;
+		private readonly IPublisher _mainQueue;
 		private readonly ISubscriber _mainBus;
 		private readonly TimerService _timerService;
 		private readonly ITimeProvider _timeProvider;
@@ -19,7 +22,7 @@ namespace EventStore.Core {
 
 		public StandardComponents(
 			TFChunkDbConfig dbConfig,
-			IQueuedHandler mainQueue,
+			IPublisher mainQueue,
 			ISubscriber mainBus,
 			TimerService timerService,
 			ITimeProvider timeProvider,
@@ -46,7 +49,7 @@ namespace EventStore.Core {
 			get { return _dbConfig; }
 		}
 
-		public IQueuedHandler MainQueue {
+		public IPublisher MainQueue {
 			get { return _mainQueue; }
 		}
 

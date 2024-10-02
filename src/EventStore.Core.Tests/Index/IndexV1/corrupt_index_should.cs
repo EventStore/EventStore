@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.IO;
 using EventStore.Core.Exceptions;
@@ -169,8 +172,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			else return stream;
 		}
 
-		[TestCase(PTableVersions.IndexV1, false)]
-		[TestCase(PTableVersions.IndexV1, true)]
 		[TestCase(PTableVersions.IndexV2, false)]
 		[TestCase(PTableVersions.IndexV2, true)]
 		[TestCase(PTableVersions.IndexV3, false)]
@@ -184,8 +185,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			Assert.Throws<CorruptIndexException>(() => PTable.FromFile(ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, depth, skipIndexVerify));
 		}
 
-		[TestCase(PTableVersions.IndexV1, false)]
-		[TestCase(PTableVersions.IndexV1, true)]
 		[TestCase(PTableVersions.IndexV2, false)]
 		[TestCase(PTableVersions.IndexV2, true)]
 		[TestCase(PTableVersions.IndexV3, false)]
@@ -209,7 +208,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			Assert.Throws<CorruptIndexException>(() => PTable.FromFile(ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, depth, skipIndexVerify));
 		}
 
-		[TestCase(PTableVersions.IndexV1, true)]
 		[TestCase(PTableVersions.IndexV2, true)]
 		[TestCase(PTableVersions.IndexV3, true)]
 		[TestCase(PTableVersions.IndexV4, true)]
@@ -224,7 +222,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			pTable.Dispose();
 		}
 
-		[TestCase(PTableVersions.IndexV1, true)]
 		[TestCase(PTableVersions.IndexV2, true)]
 		[TestCase(PTableVersions.IndexV3, true)]
 		[TestCase(PTableVersions.IndexV4, true)]
@@ -239,7 +236,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			pTable.Dispose();
 		}
 
-		[TestCase(PTableVersions.IndexV1, true)]
 		[TestCase(PTableVersions.IndexV2, true)]
 		[TestCase(PTableVersions.IndexV3, true)]
 		[TestCase(PTableVersions.IndexV4, true)]
@@ -256,7 +252,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			pTable.Dispose();
 		}
 
-		[TestCase(PTableVersions.IndexV1, true)]
 		[TestCase(PTableVersions.IndexV2, true)]
 		[TestCase(PTableVersions.IndexV3, true)]
 		[TestCase(PTableVersions.IndexV4, true)]
@@ -272,7 +267,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			pTable.Dispose();
 		}
 
-		[TestCase(PTableVersions.IndexV1, true)]
 		[TestCase(PTableVersions.IndexV2, true)]
 		[TestCase(PTableVersions.IndexV3, true)]
 		[TestCase(PTableVersions.IndexV4, true)]
@@ -288,7 +282,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			pTable.Dispose();
 		}
 
-		[TestCase(PTableVersions.IndexV1, true)]
 		[TestCase(PTableVersions.IndexV2, true)]
 		[TestCase(PTableVersions.IndexV3, true)]
 		[TestCase(PTableVersions.IndexV4, true)]
@@ -304,7 +297,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			pTable.Dispose();
 		}
 
-		[TestCase(PTableVersions.IndexV1, true)]
 		[TestCase(PTableVersions.IndexV2, true)]
 		[TestCase(PTableVersions.IndexV3, true)]
 		[TestCase(PTableVersions.IndexV4, true)]
@@ -320,7 +312,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			pTable.Dispose();
 		}
 
-		[TestCase(PTableVersions.IndexV1, true)]
 		[TestCase(PTableVersions.IndexV2, true)]
 		[TestCase(PTableVersions.IndexV3, true)]
 		[TestCase(PTableVersions.IndexV4, true)]

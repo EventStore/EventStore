@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Security.Claims;
 using EventStore.Core.Messaging;
@@ -344,12 +347,12 @@ namespace EventStore.Projections.Core.Messages {
 				private readonly int _pendingEventsThreshold;
 				private readonly int _maxWriteBatchLength;
 				private readonly int _maxAllowedWritesInFlight;
-				private readonly int _projectionExecutionTimeout;
+				private readonly int? _projectionExecutionTimeout;
 
 				public UpdateConfig(IEnvelope envelope, string name, bool emitEnabled, bool trackEmittedStreams,
 					int checkpointAfterMs,
 					int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold, int pendingEventsThreshold,
-					int maxWriteBatchLength, int maxAllowedWritesInFlight, RunAs runAs, int projectionExecutionTimeout) :
+					int maxWriteBatchLength, int maxAllowedWritesInFlight, RunAs runAs, int? projectionExecutionTimeout) :
 					base(envelope, runAs) {
 					_name = name;
 					_emitEnabled = emitEnabled;
@@ -399,7 +402,7 @@ namespace EventStore.Projections.Core.Messages {
 					get { return _maxAllowedWritesInFlight; }
 				}
 
-				public int ProjectionExecutionTimeout { get => _projectionExecutionTimeout; }
+				public int? ProjectionExecutionTimeout { get => _projectionExecutionTimeout; }
 			}
 
 			[DerivedMessage(ProjectionMessage.Management)]
@@ -739,10 +742,6 @@ namespace EventStore.Projections.Core.Messages {
 			}
 
 			[DerivedMessage(ProjectionMessage.Management)]
-			public partial class RegularTimeout : Message {
-			}
-
-			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class ReadTimeout : Message {
 				private readonly Guid _correlationId;
 				private readonly string _streamId;
@@ -801,12 +800,12 @@ namespace EventStore.Projections.Core.Messages {
 			private readonly int _pendingEventsThreshold;
 			private readonly int _maxWriteBatchLength;
 			private readonly int _maxAllowedWritesInFlight;
-			private readonly int _projectionExecutionTimeout;
+			private readonly int? _projectionExecutionTimeout;
 
 			public ProjectionConfig(bool emitEnabled, bool trackEmittedStreams, int checkpointAfterMs,
 				int checkpointHandledThreshold,
 				int checkpointUnhandledBytesThreshold, int pendingEventsThreshold, int maxWriteBatchLength,
-				int maxAllowedWritesInFlight, int projectionExecutionTimeout) {
+				int maxAllowedWritesInFlight, int? projectionExecutionTimeout) {
 				_emitEnabled = emitEnabled;
 				_trackEmittedStreams = trackEmittedStreams;
 				_checkpointAfterMs = checkpointAfterMs;
@@ -850,7 +849,7 @@ namespace EventStore.Projections.Core.Messages {
 				get { return _maxAllowedWritesInFlight; }
 			}
 
-			public int ProjectionExecutionTimeout { get => _projectionExecutionTimeout; }
+			public int? ProjectionExecutionTimeout { get => _projectionExecutionTimeout; }
 		}
 	}
 }

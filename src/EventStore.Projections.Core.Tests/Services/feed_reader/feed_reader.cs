@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -29,7 +32,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 
 			[SetUp]
 			public void SetUp() {
-				_bus = new InMemoryBus("test");
+				_bus = new SynchronousScheduler();
 				_subscriptionDispatcher = new ReaderSubscriptionDispatcher(_bus);
 				_testQueryDefinition = new QuerySourcesDefinition {AllStreams = true, AllEvents = true};
 			}
@@ -109,7 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 		}
 
 		public abstract class FeedReaderSpecification {
-			protected InMemoryBus _bus;
+			protected SynchronousScheduler _bus;
 
 			protected ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
@@ -119,14 +122,14 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 
 			[SetUp]
 			public void SetUp() {
-				_bus = new InMemoryBus("test");
+				_bus = new();
 				_consumer = new TestHandler<Message>();
 				_bus.Subscribe(_consumer);
 				_subscriptionDispatcher = new ReaderSubscriptionDispatcher(_bus);
 				_testQueryDefinition = GivenQuerySource();
 				_feedReader = new FeedReader(
 					_subscriptionDispatcher, SystemAccounts.System, _testQueryDefinition, GivenFromPosition(), 10,
-					Guid.NewGuid(), new PublishEnvelope(_bus), new RealTimeProvider());
+					Guid.NewGuid(), _bus, new RealTimeProvider());
 				Given();
 				When();
 			}
@@ -286,7 +289,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new FeedReaderMessage.ReadPage(
-						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
+						Guid.NewGuid(), GetInputQueue(), SystemAccounts.System,
 						_querySourcesDefinition, _fromPosition, _maxEvents);
 			}
 
@@ -325,12 +328,12 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new FeedReaderMessage.ReadPage(
-						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
+						Guid.NewGuid(), GetInputQueue(), SystemAccounts.System,
 						_querySourcesDefinition, _fromPosition, _maxEvents);
 				var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().Single();
 				yield return
 					new FeedReaderMessage.ReadPage(
-						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
+						Guid.NewGuid(), GetInputQueue(), SystemAccounts.System,
 						_querySourcesDefinition, feedPage.LastReaderPosition, _maxEvents);
 			}
 

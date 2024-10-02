@@ -1,7 +1,9 @@
-﻿using System.Threading.Tasks;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Threading.Tasks;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Tests.ClientAPI;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -18,7 +20,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 		protected string _projectionName = "test_projection";
 
 		protected override Task Given() {
-			_ioDispatcher = new IODispatcher(_node.Node.MainQueue, new PublishEnvelope(_node.Node.MainQueue), true);
+			_ioDispatcher = new IODispatcher(_node.Node.MainQueue, _node.Node.MainQueue, true);
 			_node.Node.MainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_ioDispatcher.BackwardReader);
 			_node.Node.MainBus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher.BackwardReader);
 			_node.Node.MainBus.Subscribe(_ioDispatcher.ForwardReader);
@@ -30,7 +32,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 			_projectionNamesBuilder = ProjectionNamesBuilder.CreateForTest(_projectionName);
 			_emittedStreamsTracker = new EmittedStreamsTracker(_ioDispatcher,
 				new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false,
-					_trackEmittedStreams, 10000, 1), _projectionNamesBuilder);
+					_trackEmittedStreams, 10000, 1, null), _projectionNamesBuilder);
 			_emittedStreamsDeleter = new EmittedStreamsDeleter(_ioDispatcher,
 				_projectionNamesBuilder.GetEmittedStreamsName(),
 				_projectionNamesBuilder.GetEmittedStreamsCheckpointName());

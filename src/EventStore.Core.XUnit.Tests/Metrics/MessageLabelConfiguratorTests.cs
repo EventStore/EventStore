@@ -1,9 +1,11 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Reflection;
 using EventStore.Common.Configuration;
 using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.ObjectModel;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Metrics;
@@ -116,5 +118,31 @@ public class MessageLabelConfiguratorTests {
 		Assert.Equal("Other", new ReadAllBackward().Label);
 		Assert.Equal("Forward", new ReadStreamForward().Label);
 		Assert.Equal("Stream", new ReadStreamBackward().Label);
+	}
+
+	[Fact]
+	public void unspecified_label() {
+		Run(new MetricsConfiguration.LabelMappingCase() {
+			Regex = "TestGroup-Reads-ReadAll.*",
+			// no Label
+		});
+
+		Assert.Equal("TestGroup-Reads-ReadAllForward", new ReadAllForward().Label);
+		Assert.Equal("TestGroup-Reads-ReadAllBackward", new ReadAllBackward().Label);
+		Assert.Equal("TestGroup-Reads-ReadStreamForward", new ReadStreamForward().Label);
+		Assert.Equal("TestGroup-Reads-ReadStreamBackward", new ReadStreamBackward().Label);
+	}
+
+	[Fact]
+	public void unspecified_regex() {
+		Run(new MetricsConfiguration.LabelMappingCase() {
+			// no Regex
+			Label = "TheLabel",
+		});
+
+		Assert.Equal("TestGroup-Reads-ReadAllForward", new ReadAllForward().Label);
+		Assert.Equal("TestGroup-Reads-ReadAllBackward", new ReadAllBackward().Label);
+		Assert.Equal("TestGroup-Reads-ReadStreamForward", new ReadStreamForward().Label);
+		Assert.Equal("TestGroup-Reads-ReadStreamBackward", new ReadStreamBackward().Label);
 	}
 }

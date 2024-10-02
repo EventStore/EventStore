@@ -1,5 +1,10 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -48,8 +53,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void there_is_no_first_record() {
-			var res = _chunk.TryReadFirst();
+		public async Task there_is_no_first_record() {
+			var res = await _chunk.TryReadFirst(CancellationToken.None);
 			Assert.IsFalse(res.Success);
 		}
 

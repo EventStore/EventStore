@@ -1,113 +1,116 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Runtime.CompilerServices;
 using EventStore.Common.Utils;
 
-namespace EventStore.Core.TransactionLog.Scavenging {
-	public static class ParallelLoop {
-		private static readonly Task<int> _neverComplete;
+namespace EventStore.Core.TransactionLog.Scavenging;
 
-		static ParallelLoop() {
-			var tcs = new TaskCompletionSource<int>();
-			_neverComplete = tcs.Task;
+public static class ParallelLoop {
+	private static readonly Task<int> _neverComplete;
+
+	static ParallelLoop() {
+		var tcs = new TaskCompletionSource<int>();
+		_neverComplete = tcs.Task;
+	}
+
+	// passes each item in `source` to `process`, according to the `degreeOfParallelism`.
+	// process is guaranteed to be called asynchronously.
+	// calls to emitCheckpoint are serialized (one at a time) and passed the latest checkpoint that is complete
+	// items are queried for checkpoint
+	//   - getCheckpointInclusive returns the checkpoint that can be emitted when all items up to
+	//     and including this one have been completed.
+	//   - getCheckpointExclusive returns the checkpoint that can be emitted when all items up to
+	//     but excluding this one have been completed.
+	public static async ValueTask RunWithTrailingCheckpointAsync<T>(
+		IEnumerable<T> source,
+		int degreeOfParallelism,
+		Func<T, int> getCheckpointInclusive,
+		Func<T, int?> getCheckpointExclusive,
+		Func<int, T, CancellationToken, Task> process,
+		Action<int> emitCheckpoint,
+		Action onConsiderEmit = null,
+		CancellationToken token = default) {
+
+		Ensure.Positive(degreeOfParallelism, nameof(degreeOfParallelism));
+
+		// in each slot we store the checkpoint that can be emitted when every item before the one
+		// being processed in that slot is completed.
+		// null means it cannot emit a checkpoint at all.
+		// int.max means it places no limit on the checkpoint.
+		var checkpoints = new int?[degreeOfParallelism];
+		var tasksInProgress = new Task<int>[degreeOfParallelism];
+
+		for (var i = 0; i < degreeOfParallelism; i++) {
+			tasksInProgress[i] = _neverComplete;
+			checkpoints[i] = int.MaxValue;
 		}
 
-		// passes each item in `source` to `process`, according to the `degreeOfParallelism.
-		// processing is never done on the calling thread
-		// emitCheckpoint is called on the calling thread with the latest checkpoint that is complete
-		// items are queried for checkpoint
-		//   - getCheckpointInclusive returns the checkpoint that can be emitted when all items up to
-		//     and including this one have been completed.
-		//   - getCheckpointExclusive returns the checkpoint that can be emitted when all items up to
-		//     but excluding this one have been completed.
-		public static void RunWithTrailingCheckpoint<T>(
-			IEnumerable<T> source,
-			int degreeOfParallelism,
-			Func<T, int> getCheckpointInclusive,
-			Func<T, int?> getCheckpointExclusive,
-			Action<int, T> process,
-			Action<int> emitCheckpoint,
-			Action onConsiderEmit = null) {
+		// checkpoint of the last element, to emit at the end.
+		var endCheckpoint = default(int?);
+		var lastEmittedCheckpoint = default(int?);
 
-			Ensure.Positive(degreeOfParallelism, nameof(degreeOfParallelism));
+		void PrepareProcessingItem(int slot, T item) {
+			checkpoints[slot] = getCheckpointExclusive(item);
+		}
 
-			// in each slot we store the checkpoint that can be emitted when every item before the one
-			// being processed in that slot is completed.
-			// null means it cannot emit a checkpoint at all.
-			// int.max means it places no limit on the checkpoint.
-			var checkpoints = new int?[degreeOfParallelism];
-			var tasksInProgress = new Task[degreeOfParallelism];
+		[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder<>))]
+		static async Task<int> SpawnProcess(Func<int, T, CancellationToken, Task> process, int slot, T item,
+			CancellationToken token) {
+			await process.Invoke(slot, item, token);
+			return slot;
+		}
 
-			for (var i = 0; i < degreeOfParallelism; i++) {
-				tasksInProgress[i] = _neverComplete;
-				checkpoints[i] = int.MaxValue;
-			}
+		void EmitCheckpoint() {
+			onConsiderEmit?.Invoke();
 
-			// checkpoint of the last element, to emit at the end.
-			var endCheckpoint = default(int?);
-			var lastEmittedCheckpoint = default(int?);
+			// find the the minimum checkpoint, we can emit it.
+			if (checkpoints.Any(static x => x is null))
+				return;
 
-			void PrepareProcessingItem(int slot, T item) {
-				checkpoints[slot] = getCheckpointExclusive(item);
-			}
+			var checkpointToEmit = checkpoints.Min().Value;
 
-			void StartProcessingItem(int slot, T item) {
-				tasksInProgress[slot] = Task.Factory.StartNew(
-					() => process(slot, item),
-					TaskCreationOptions.PreferFairness);
-			}
+			if (lastEmittedCheckpoint != null && checkpointToEmit <= lastEmittedCheckpoint)
+				return;
 
-			int WaitForSlot() {
-				var slot = Task.WaitAny(tasksInProgress);
-				var task = tasksInProgress[slot];
-				if (task.Status == TaskStatus.Faulted)
-					throw task.Exception.InnerException;
-				return slot;
-			}
+			if (checkpointToEmit is int.MaxValue)
+				checkpointToEmit = endCheckpoint.Value;
 
-			void EmitCheckpoint() {
-				onConsiderEmit?.Invoke();
+			emitCheckpoint(checkpointToEmit);
+			lastEmittedCheckpoint = checkpointToEmit;
+		}
 
-				// find the the minimum checkpoint, we can emit it.
-				if (checkpoints.Any(x => x == null))
-					return;
-
-				var checkpointToEmit = checkpoints.Min().Value;
-
-				if (lastEmittedCheckpoint != null && checkpointToEmit <= lastEmittedCheckpoint)
-					return;
-
-				if (checkpointToEmit == int.MaxValue)
-					checkpointToEmit = endCheckpoint.Value;
-
-				emitCheckpoint(checkpointToEmit);
-				lastEmittedCheckpoint = checkpointToEmit;
-			}
-
-			// process the source
-			var slotsInUse = 0;
-			foreach (var item in source) {
-				endCheckpoint = getCheckpointInclusive(item);
-				if (slotsInUse < tasksInProgress.Length) {
-					PrepareProcessingItem(slotsInUse, item);
-					StartProcessingItem(slotsInUse++, item);
-				} else {
-					var slot = WaitForSlot();
-					PrepareProcessingItem(slot, item);
-					EmitCheckpoint();
-					StartProcessingItem(slot, item);
-				}
-			}
-
-			// drain the tasks
-			while (slotsInUse > 0) {
-				var slot = WaitForSlot();
-				checkpoints[slot] = int.MaxValue;
+		// process the source
+		var slotsInUse = 0;
+		foreach (var item in source) {
+			endCheckpoint = getCheckpointInclusive(item);
+			if (slotsInUse < tasksInProgress.Length) {
+				PrepareProcessingItem(slotsInUse, item);
+				tasksInProgress[slotsInUse] = SpawnProcess(process, slotsInUse, item, token);
+				slotsInUse++;
+			} else {
+				var task = await Task.WhenAny(tasksInProgress);
+				var slot = await task;
+				PrepareProcessingItem(slot, item);
 				EmitCheckpoint();
-				tasksInProgress[slot] = _neverComplete;
-				slotsInUse--;
+				tasksInProgress[slot] = SpawnProcess(process, slot, item, token);
 			}
+		}
+
+		// drain the tasks
+		while (slotsInUse > 0) {
+			var task = await Task.WhenAny(tasksInProgress);
+			var slot = await task;
+			checkpoints[slot] = int.MaxValue;
+			EmitCheckpoint();
+			tasksInProgress[slot] = _neverComplete;
+			slotsInUse--;
 		}
 	}
 }

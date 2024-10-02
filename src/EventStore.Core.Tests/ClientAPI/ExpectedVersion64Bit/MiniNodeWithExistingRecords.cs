@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -38,7 +41,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		protected ICheckpoint WriterCheckpoint;
 		protected ICheckpoint ChaserCheckpoint;
 		protected IODispatcher IODispatcher;
-		protected InMemoryBus Bus;
+		protected SynchronousScheduler Bus;
 
 		protected IEventStoreConnection _store;
 
@@ -55,8 +58,8 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				IndexDirectory = GetFilePathFor("index"),
 			});
 
-			Bus = new InMemoryBus("bus");
-			IODispatcher = new IODispatcher(Bus, new PublishEnvelope(Bus));
+			Bus = new();
+			IODispatcher = new IODispatcher(Bus, Bus);
 
 			if (!Directory.Exists(dbPath))
 				Directory.CreateDirectory(dbPath);
@@ -129,7 +132,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			if (streamRecord != null) {
 				Writer.Write(streamRecord, out pos);
 			}
-			
+
 			_logFormatFactory.EventTypeIndex.GetOrReserveEventType(
 				_logFormatFactory.RecordFactory,
 				eventType,

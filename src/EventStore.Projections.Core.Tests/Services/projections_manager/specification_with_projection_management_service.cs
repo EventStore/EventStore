@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using EventStore.Common.Options;
@@ -60,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 
 			IPublisher inputQueue = GetInputQueue();
 			IPublisher publisher = GetInputQueue();
-			var ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue), true);
+			var ioDispatcher = new IODispatcher(publisher, inputQueue, true);
 			_bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(_manager);
 			_bus.Subscribe<CoreProjectionStatusMessage.Started>(_manager);

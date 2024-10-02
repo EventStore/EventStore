@@ -1,6 +1,9 @@
-﻿using System.Linq;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -27,8 +30,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		[Test]
-		public void metastream_is_scavenged_as_well() {
-			CheckRecords();
+		public async Task metastream_is_scavenged_as_well() {
+			await CheckRecords();
 		}
 	}
 }

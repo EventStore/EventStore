@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Concurrent;
 using EventStore.Core.Bus;
@@ -10,13 +13,13 @@ namespace EventStore.Projections.Core.Services {
 	public sealed class ReaderSubscriptionDispatcher {
 		private readonly ConcurrentDictionary<Guid, object> _map = new();
 		private readonly IPublisher _publisher;
-		private readonly PublishEnvelope _publishEnvelope;
+		private readonly IEnvelope _publishEnvelope;
 		private readonly TimeSpan _readerSubscriptionTimeout =
 			TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout);
 
 		public ReaderSubscriptionDispatcher(IPublisher publisher) {
 			_publisher = publisher;
-			_publishEnvelope = new PublishEnvelope(_publisher, true);
+			_publishEnvelope = _publisher;
 		}
 
 		/// <summary>
@@ -53,8 +56,11 @@ namespace EventStore.Projections.Core.Services {
 		private void Handle<T>(T message) where T : EventReaderSubscriptionMessageBase {
 			var correlationId = message.SubscriptionId;
 			if (_map.TryGetValue(correlationId, out var subscriber)) {
-				if (subscriber is IHandle<T> h)
+				if (subscriber is IHandle<T> h) {
 					h.Handle(message);
+				} else if (subscriber is IAsyncHandle<T>) {
+					throw new Exception($"ReaderSubscriptionDispatcher does not support asynchronous subscribers. Subscriber: {subscriber}");
+				}
 			}
 		}
 

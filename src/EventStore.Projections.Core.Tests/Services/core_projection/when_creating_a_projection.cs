@@ -1,6 +1,8 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using EventStore.Core.Helpers;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Fakes;
@@ -15,13 +17,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		[SetUp]
 		public void Setup() {
 			var fakePublisher = new FakePublisher();
-			_ioDispatcher = new IODispatcher(fakePublisher, new PublishEnvelope(fakePublisher), true);
+			_ioDispatcher = new IODispatcher(fakePublisher, fakePublisher, true);
 
 			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(new FakePublisher());
 		}
 
 		private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(
-			null, 5, 10, 1000, 250, true, true, true, true, true, 10000, 1);
+			null, 5, 10, 1000, 250, true, true, true, true, true, 10000, 1, null);
 
 		private IODispatcher _ioDispatcher;
 
@@ -35,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
 				var version = new ProjectionVersion(1, 0, 0);
 				var projectionConfig = new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false,
-					true, 10000, 1);
+					true, 10000, 1, null);
 				new ContinuousProjectionProcessingStrategy(
 					"projection",
 					version,
@@ -62,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
 				var version = new ProjectionVersion(1, 0, 0);
 				var projectionConfig = new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false,
-					true, 10000, 1);
+					true, 10000, 1, null);
 				new ContinuousProjectionProcessingStrategy(
 					"projection",
 					version,
@@ -262,7 +264,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
 				var version = new ProjectionVersion(1, 0, 0);
 				var projectionConfig = new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false,
-					true, 10000, 1);
+					true, 10000, 1, null);
 				new ContinuousProjectionProcessingStrategy(
 					"projection",
 					version,

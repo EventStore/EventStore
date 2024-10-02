@@ -1,4 +1,8 @@
-﻿using System.Linq;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -33,8 +37,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		[Test]
-		public void first_prepare_of_transaction_is_preserved() {
-			CheckRecords();
+		public async Task first_prepare_of_transaction_is_preserved() {
+			await CheckRecords();
 		}
 	}
 }
