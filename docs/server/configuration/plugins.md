@@ -5,7 +5,7 @@ order: 6
 
 # Plugins configuration
 
-EventStoreDB ships with several plugins that augment the behavior of the open source server. Each plugin is documented in relevant sections. For example, under Security, you will find the User Certificates plugin documentation.
+EventStoreDB ships with several plugins that augment the behavior of the server. Each plugin is documented in relevant sections. For example, under Security, you will find the User Certificates plugin documentation.
 
 Most plugins require a [license key](../quick-start/installation.md#license-keys) to use.
 
