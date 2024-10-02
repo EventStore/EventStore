@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [23.10.3] - 2024-09-18
+
+### Changed
+- Upgraded all grpc and proto related packages. [EventStore#4340](https://github.com/EventStore/EventStore/pull/4340)
+
+### Fixed
+- Transitive dependency vulnerabilities with `System.Text.Json` and `System.Formats.Asn1`. [EventStore#4340](https://github.com/EventStore/EventStore/pull/4340)
+- Projections shutdown timeout check is now published on the correct thread. [EventStore#4407](https://github.com/EventStore/EventStore/pull/4407)
+- Don't write the database default `ProjectionExecutionTimeout` in the projection persisted state on creation. [EventStore#4423](https://github.com/EventStore/EventStore/pull/4423)
+- Multistream projections don't always start properly when the input stream is truncated or deleted.[EventStore#4431](https://github.com/EventStore/EventStore/pull/4431)
+
 ## [24.6.0] - 2024-06-26
 
 ### Changed

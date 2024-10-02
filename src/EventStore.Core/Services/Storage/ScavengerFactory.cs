@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Messages;
@@ -44,7 +47,7 @@ namespace EventStore.Core.Services.Storage {
 		public void Dispose() {
 		}
 
-		public Task ScavengeAsync(CancellationToken cancellationToken) {
+		public Task<ScavengeResult> ScavengeAsync(CancellationToken cancellationToken) {
 			return _tfChunkScavenger.Scavenge(
 				alwaysKeepScavenged: _alwaysKeepScavenged,
 				mergeChunks: _mergeChunks,

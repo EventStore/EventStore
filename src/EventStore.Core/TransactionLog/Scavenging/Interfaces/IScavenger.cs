@@ -1,6 +1,10 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	// There are two kinds of streams that we might want to remove events from
@@ -23,6 +27,6 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 	//   (as determined by the calculator)
 	public interface IScavenger : IDisposable {
 		string ScavengeId { get; }
-		Task ScavengeAsync(CancellationToken cancellationToken);
+		Task<ScavengeResult> ScavengeAsync(CancellationToken cancellationToken);
 	}
 }

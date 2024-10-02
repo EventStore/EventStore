@@ -1,4 +1,8 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -12,8 +16,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private TFChunk _testChunk;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_chunk = TFChunkHelper.CreateNewChunk(Filename);
 			_chunk.Complete();
 			_testChunk = TFChunk.FromCompletedFile(Filename, true, false,

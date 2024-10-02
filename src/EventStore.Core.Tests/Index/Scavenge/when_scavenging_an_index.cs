@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
 using NUnit.Framework;
@@ -34,12 +37,8 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 			long spaceSaved;
 			Func<IndexEntry, bool> existsAt = x => x.Position % 2 == 0;
-			Func<IndexEntry, Tuple<string, bool>> readRecord = x => { throw new Exception("Should not be called"); };
-			Func<string, ulong, ulong> upgradeHash = (streamId, hash) => {
-				throw new Exception("Should not be called");
-			};
 
-			_newtable = PTable.Scavenged(_oldTable, GetTempFilePath(), upgradeHash, existsAt, readRecord,
+			_newtable = PTable.Scavenged(_oldTable, GetTempFilePath(),
 				PTableVersions.IndexV4, existsAt, out spaceSaved, skipIndexVerify: _skipIndexVerify,
 				initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault,
 				useBloomFilter: true);

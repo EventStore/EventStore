@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace EventStore.SourceGenerators.Tests.Messaging {
 	[AttributeUsage(AttributeTargets.Class)]

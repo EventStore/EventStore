@@ -1,4 +1,7 @@
-﻿﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -23,7 +26,6 @@ using EventStore.Core.Messages;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
-using EventStore.Core.LogAbstraction;
 using EventStore.Plugins.Subsystems;
 using EventStore.TcpUnitTestPlugin;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
@@ -34,6 +36,7 @@ using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Transforms;
 using Microsoft.Extensions.DependencyInjection;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
+using EventStore.Core.Tests.Index.Hashers;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
@@ -73,6 +76,7 @@ namespace EventStore.Core.Tests.Helpers {
 			string advertisedExtHostAddress = null, int advertisedHttpPort = 0,
 			int hashCollisionReadLimit = Util.Opts.HashCollisionReadLimitDefault,
 			byte indexBitnessVersion = Util.Opts.IndexBitnessVersionDefault,
+			bool hash32bit = false,
 			string dbPath = "", bool isReadOnlyReplica = false,
 			long streamExistenceFilterSize = 10_000,
 			int streamExistenceFilterCheckpointIntervalMs = 30_000,
@@ -189,10 +193,11 @@ namespace EventStore.Core.Tests.Helpers {
 				"HTTP ENDPOINT:", HttpEndPoint);
 
 			var logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory
-				.Wrap(x => new AbstractorFactoryTimingDecorator<TStreamId>(
-					wrapped: x,
-					streamExistenceFilterCheckpointIntervalMs: streamExistenceFilterCheckpointIntervalMs,
-					streamExistenceFilterCheckpointDelayMs: streamExistenceFilterCheckpointDelayMs));
+				.Configure(options => options with {
+					StreamExistenceFilterCheckpointDelay = TimeSpan.FromMilliseconds(streamExistenceFilterCheckpointDelayMs),
+					StreamExistenceFilterCheckpointInterval = TimeSpan.FromMilliseconds(streamExistenceFilterCheckpointIntervalMs),
+					HighHasher = hash32bit ? new ConstantHasher(0) : options.HighHasher,
+				});
 
 			Node = new ClusterVNode<TStreamId>(options, logFormatFactory,
 				new AuthenticationProviderFactory(

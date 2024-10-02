@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;

@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -577,7 +580,9 @@ public class ClusterVNode<TStreamId> :
 			MaxReaderCount = pTableMaxReaderCount,
 			StreamExistenceFilterSize = options.Database.StreamExistenceFilterSize,
 			StreamExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint,
-			TFReaderLeaseFactory = () => new TFReaderLease(readerPool)
+			TFReaderLeaseFactory = () => new TFReaderLease(readerPool),
+			LowHasher = new XXHashUnsafe(),
+			HighHasher = new Murmur3AUnsafe(),
 		});
 
 		ICacheResizer streamInfoCacheResizer;
@@ -1356,7 +1361,8 @@ public class ClusterVNode<TStreamId> :
 		// ReSharper disable RedundantTypeArgumentsOfMethod
 		_mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
 		_mainBus.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
-		_mainBus.Subscribe<ClientMessage.GetDatabaseScavenge>(storageScavenger);
+		_mainBus.Subscribe<ClientMessage.GetCurrentDatabaseScavenge>(storageScavenger);
+		_mainBus.Subscribe<ClientMessage.GetLastDatabaseScavenge>(storageScavenger);
 		_mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
 		// ReSharper restore RedundantTypeArgumentsOfMethod
 

@@ -17,7 +17,7 @@ services:
       - ./certs:/certs
 
   node1.eventstore: &template
-    image: eventstore/eventstore:24.2.0-jammy
+    image: eventstore/eventstore:24.6
     container_name: node1.eventstore
     env_file:
       - vars.env

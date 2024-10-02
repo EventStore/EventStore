@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
@@ -23,7 +26,7 @@ public class when_publishing_into_memory_bus {
 
 	[Test, Ignore("We do not check each message for null for performance reasons.")]
 	public void null_message_app_should_throw() {
-		Assert.ThrowsAsync<ArgumentNullException>(_bus.DispatchAsync(null).AsTask);
+		Assert.ThrowsAsync<ArgumentNullException>(async () => await _bus.DispatchAsync(null));
 	}
 
 	[Test]

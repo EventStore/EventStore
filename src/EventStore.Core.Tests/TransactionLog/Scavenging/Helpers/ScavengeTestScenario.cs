@@ -1,6 +1,10 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Caching;
 using EventStore.Core.DataStructures;
@@ -113,7 +117,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 		protected abstract ILogRecord[][] KeptRecords(DbResult dbResult);
 
-		protected void CheckRecords() {
+		protected async Task CheckRecords(CancellationToken token = default) {
 			_checked = true;
 			Assert.AreEqual(_keptRecords.Length, _dbResult.Db.Manager.ChunksCount, "Wrong chunks count.");
 
@@ -121,7 +125,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				var chunk = _dbResult.Db.Manager.GetChunk(i);
 
 				var chunkRecords = new List<ILogRecord>();
-				RecordReadResult result = chunk.TryReadFirst();
+				RecordReadResult result = await chunk.TryReadFirst(token);
 				while (result.Success) {
 					chunkRecords.Add(result.LogRecord);
 					result = chunk.TryReadClosestForward((int)result.NextPosition);

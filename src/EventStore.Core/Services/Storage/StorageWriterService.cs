@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -163,7 +166,7 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		protected void SubscribeToMessage<T>() where T : Message {
-			_writerBus.Subscribe((IHandle<T>)this);
+			_writerBus.Subscribe((IAsyncHandle<T>)this);
 			_subscribeToBus.Subscribe<T>(new AdHocHandler<Message>(EnqueueMessage));
 		}
 

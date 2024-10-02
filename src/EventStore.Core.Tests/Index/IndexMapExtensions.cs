@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Index;
@@ -9,9 +12,6 @@ namespace EventStore.Core.Tests.Index {
 			PTable tableToAdd,
 			int prepareCheckpoint,
 			int commitCheckpoint,
-			Func<string, ulong, ulong> upgradeHash,
-			Func<IndexEntry, bool> existsAt,
-			Func<IndexEntry, Tuple<string, bool>> recordExistsAt,
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
@@ -26,9 +26,6 @@ namespace EventStore.Core.Tests.Index {
 				IndexMap curMap = addResult.NewMap;
 				do {
 					mergeResult = curMap.TryMergeOneLevel(
-						upgradeHash,
-						existsAt,
-						recordExistsAt,
 						filenameProvider,
 						version,
 						indexCacheDepth,

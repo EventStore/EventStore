@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
@@ -23,7 +26,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		[Test]
 		public void no_exception_is_thrown_to_caller() {
 			Assert.That(Log.Completed);
-			Assert.That(Log.Result, Is.EqualTo(ScavengeResult.Interrupted));
+			Assert.That(Log.Result, Is.EqualTo(ScavengeResult.Errored));
 		}
 
 		[Test]

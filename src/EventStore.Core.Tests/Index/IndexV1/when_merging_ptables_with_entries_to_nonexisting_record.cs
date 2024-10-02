@@ -1,8 +1,9 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System.Collections.Generic;
 using EventStore.Core.Index;
 using NUnit.Framework;
-using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
@@ -41,8 +42,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			}
 
 			_files.Add(GetTempFilePath());
-			_newtable = PTable.MergeTo(_tables, _files[4], (streamId, hash) => hash, x => x.Position % 2 == 0,
-				x => new Tuple<string, bool>("", x.Position % 2 == 0), _ptableVersion, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
+			_newtable = PTable.MergeTo(_tables, _files[4],
+				_ptableVersion, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify);
 		}
 

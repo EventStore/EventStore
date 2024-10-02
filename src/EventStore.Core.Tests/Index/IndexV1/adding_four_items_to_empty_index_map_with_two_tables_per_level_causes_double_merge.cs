@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System.IO;
 using System.Linq;
 using EventStore.Core.Index;
@@ -6,8 +9,6 @@ using System;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1, false)]
-	[TestFixture(PTableVersions.IndexV1, true)]
 	[TestFixture(PTableVersions.IndexV2, false)]
 	[TestFixture(PTableVersions.IndexV2, true)]
 	[TestFixture(PTableVersions.IndexV3, false)]
@@ -44,25 +45,25 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 			_result = _map.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
-				10, 20, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
+				10, 20,
 				new GuidFilenameProvider(PathName), _ptableVersion, 0,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
-				20, 30, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
+				20, 30,
 				new GuidFilenameProvider(PathName), _ptableVersion, 0,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
-				30, 40, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
+				30, 40,
 				new GuidFilenameProvider(PathName), _ptableVersion, 0,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddAndMergePTable(
 				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
-				50, 60, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
+				50, 60,
 				new FakeFilenameProvider(_mergeFile + ".firstmerge", _mergeFile), _ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 		}

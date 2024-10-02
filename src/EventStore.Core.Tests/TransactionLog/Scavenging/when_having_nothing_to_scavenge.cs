@@ -1,4 +1,8 @@
-﻿using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Threading.Tasks;
+using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -24,8 +28,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		[Test]
-		public void all_records_are_kept_untouched() {
-			CheckRecords();
+		public async Task all_records_are_kept_untouched() {
+			await CheckRecords();
 		}
 	}
 }

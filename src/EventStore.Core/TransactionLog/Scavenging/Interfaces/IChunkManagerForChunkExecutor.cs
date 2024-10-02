@@ -1,4 +1,9 @@
-﻿using System.Collections.Generic;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public interface IChunkManagerForChunkExecutor<TStreamId, TRecord> {
@@ -13,7 +18,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 		void WriteRecord(RecordForExecutor<TStreamId, TRecord> record);
 
-		void Complete(out string newFileName, out long newFileSize);
+		ValueTask<(string NewFileName, long NewFileSize)> Complete(CancellationToken token);
 
 		void Abort(bool deleteImmediately);
 	}
@@ -26,8 +31,9 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		bool IsReadOnly { get; }
 		long ChunkStartPosition { get; }
 		long ChunkEndPosition { get; }
-		IEnumerable<bool> ReadInto(
+		IAsyncEnumerable<bool> ReadInto(
 			RecordForExecutor<TStreamId, TRecord>.NonPrepare nonPrepare,
-			RecordForExecutor<TStreamId, TRecord>.Prepare prepare);
+			RecordForExecutor<TStreamId, TRecord>.Prepare prepare,
+			CancellationToken token);
 	}
 }

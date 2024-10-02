@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -149,8 +152,18 @@ namespace EventStore.Core.Index {
 			try {
 				readerWorkItem.Stream.Seek(0, SeekOrigin.Begin);
 				var header = PTableHeader.FromStream(readerWorkItem.Stream);
-				if ((header.Version != PTableVersions.IndexV1) &&
-					(header.Version != PTableVersions.IndexV2) &&
+
+				if (header.Version == PTableVersions.IndexV1) {
+					throw new CorruptIndexException(new UnsupportedFileVersionException(
+						_filename, header.Version, Version,
+						"Detected a V1 index file, which is no longer supported. " +
+						"The index will be backed up and rebuilt in a supported format. " +
+						"This may take a long time for large databases. " +
+						"You can also use a version of ESDB (>= 3.9.0 and < 24.10.0) to upgrade the " +
+						"indexes to a supported format by performing an index merge."));
+				}
+
+				if ((header.Version != PTableVersions.IndexV2) &&
 					(header.Version != PTableVersions.IndexV3) &&
 					(header.Version != PTableVersions.IndexV4))
 					throw new CorruptIndexException(new UnsupportedFileVersionException(_filename, header.Version, Version));

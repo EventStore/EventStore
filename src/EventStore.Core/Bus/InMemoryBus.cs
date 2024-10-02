@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Frozen;
 using System.Diagnostics;
@@ -80,11 +83,11 @@ public partial class InMemoryBus : ISubscriber, IAsyncHandle<Message> {
 		var elapsedMs = ts.ElapsedMilliseconds;
 		if (elapsedMs > _slowMsgThresholdMs) {
 			Log.Debug("SLOW BUS MSG [{bus}]: {message} - {elapsed}ms.",
-				Name, message.GetType().Name, elapsedMs);
+				Name, message.GetType().Name, (int)elapsedMs);
 			if (elapsedMs > QueuedHandlerThreadPool.VerySlowMsgThreshold.TotalMilliseconds &&
 			    message is not SystemMessage.SystemInit)
 				Log.Error("---!!! VERY SLOW BUS MSG [{bus}]: {message} - {elapsed}ms.",
-					Name, message.GetType().Name, elapsedMs);
+					Name, message.GetType().Name, (int)elapsedMs);
 		}
 	}
 

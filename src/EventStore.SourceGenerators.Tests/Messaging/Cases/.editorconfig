@@ -1,0 +1,4 @@
+[*.cs]
+
+# adding the license header to the test cases would make the tests more complicated
+dotnet_diagnostic.IDE0073.severity = none

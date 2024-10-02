@@ -1,4 +1,9 @@
-﻿using System.Collections.Generic;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
@@ -26,11 +31,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		public long ChunkEndPosition => _chunk.ChunkHeader.ChunkEndPosition;
 
 		// similar to TFChunkScavenger.TraverseChunkBasic
-		public IEnumerable<bool> ReadInto(
+		public async IAsyncEnumerable<bool> ReadInto(
 			RecordForExecutor<TStreamId, ILogRecord>.NonPrepare nonPrepare,
-			RecordForExecutor<TStreamId, ILogRecord>.Prepare prepare) {
+			RecordForExecutor<TStreamId, ILogRecord>.Prepare prepare,
+			[EnumeratorCancellation] CancellationToken token) {
 
-			var result = _chunk.TryReadFirst();
+			var result = await _chunk.TryReadFirst(token);
 			while (result.Success) {
 				var record = result.LogRecord;
 				if (record.RecordType != LogRecordType.Prepare) {
