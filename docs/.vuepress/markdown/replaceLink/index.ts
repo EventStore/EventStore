@@ -1,19 +1,15 @@
-import {PluginWithOptions} from "markdown-it";
-import {logger} from "@vuepress/utils";
+import {type PluginWithOptions} from "markdown-it";
+import {logger} from "vuepress/utils";
 import {isKnownPlaceholder} from "../../lib/externalPlaceholders";
+import type {MarkdownEnv, MdToken} from "../types";
 
 export interface ReplaceLinkPluginOptions {
     replaceLink?: (link: string, env: any) => string;
 }
 
-interface MdEnv {
-    base: string;
-    filePath: string;
-    filePathRelative: string;
-}
-
-function replaceCrossLinks(token, env: MdEnv) {
+function replaceCrossLinks(token: MdToken, env: MarkdownEnv) {
     const href = token.attrGet("href");
+    if (href === null) return;
     if (!href.startsWith("@")) return;
 
     const placeholder = href.split("/")[0];
@@ -30,12 +26,13 @@ export const replaceLinkPlugin: PluginWithOptions<ReplaceLinkPluginOptions> = (m
         "inline",
         "replace-link",
         (state) => {
+            if (opts?.replaceLink === undefined) return;
             state.tokens.forEach((blockToken) => {
                 if (!(blockToken.type === "inline" && blockToken.children)) {
                     return;
                 }
 
-                const replaceAttr = (token, attrName) => token.attrSet(attrName, opts.replaceLink(token.attrGet(attrName), state.env));
+                const replaceAttr = (token: MdToken, attrName: string) => token.attrSet(attrName, opts.replaceLink!(token.attrGet(attrName)!, state.env));
 
                 blockToken.children.forEach((token) => {
                     const type = token.type;
