@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -61,7 +64,7 @@ namespace EventStore.ClusterNode {
 			} catch {
 				throw new
 					InvalidConfigurationException(
-						"Failed to configure MD5. If FIPS mode is enabled, please use the FIPS commercial plugin or disable FIPS mode.");
+						"Failed to configure MD5. If FIPS mode is enabled in your OS, please use the MD5 commercial plugin.");
 			}
 
 			var projectionMode = options.DevMode.Dev && options.Projection.RunProjections == ProjectionType.None
@@ -102,16 +105,17 @@ namespace EventStore.ClusterNode {
 				? _options.Application.Config
 				: _options.Auth.AuthenticationConfig;
 
+			(_options, var policySelectorsFactory) = ConfigurePolicySelectorsFactory();
 			if (_options.Database.DbLogFormat == DbLogFormat.V2) {
 				var logFormatFactory = new LogV2FormatAbstractorFactory();
             	Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-	                GetAuthorizationProviderFactory(GetPolicySelectorsFactory()),
+	                GetAuthorizationProviderFactory(policySelectorsFactory),
 	                GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 					configuration);
 			} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
 				var logFormatFactory = new LogV3FormatAbstractorFactory();
 				Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-					GetAuthorizationProviderFactory(GetPolicySelectorsFactory()),
+					GetAuthorizationProviderFactory(policySelectorsFactory),
 					GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 					configuration);
 			} else {
@@ -125,9 +129,9 @@ namespace EventStore.ClusterNode {
 			RegisterWebControllers(enabledNodeSubsystems);
 			return;
 
-			PolicySelectorsFactory GetPolicySelectorsFactory() {
+			(ClusterVNodeOptions, PolicySelectorsFactory) ConfigurePolicySelectorsFactory() {
 				if (_options.Application.Insecure) {
-					return new PolicySelectorsFactory();
+					return (_options, new PolicySelectorsFactory());
 				}
 
 				var defaultPolicySelector = new LegacyPolicySelectorFactory(
@@ -138,7 +142,7 @@ namespace EventStore.ClusterNode {
 				// Temporary: get the policy plugin configuration
 				// TODO: Allow specifying multiple policy selectors
 				var policyPluginType =
-					_options.ConfigurationRoot!.GetValue<string>("EventStore:Plugins:Authorization:PolicyType") ??
+					_options.ConfigurationRoot!.GetValue<string>("EventStore:Authorization:PolicyType") ??
 					string.Empty;
 
 				var policyPlugins = pluginLoader.Load<IPolicySelectorFactory>().ToArray();
@@ -158,7 +162,7 @@ namespace EventStore.ClusterNode {
 
 				if (policyPluginType == string.Empty) {
 					Log.Information("Using default authorization policy");
-					return new PolicySelectorsFactory(defaultPolicySelector);
+					return (_options, new PolicySelectorsFactory(defaultPolicySelector));
 				}
 				if (!policySelectors.TryGetValue(policyPluginType, out var selectedPolicy)) {
 					throw new ApplicationInitializationException(
@@ -167,10 +171,16 @@ namespace EventStore.ClusterNode {
 						Environment.NewLine +
 						$"Valid options for authorization policies are: {string.Join(", ", policySelectors.Keys)}.");
 				}
+
 				Log.Information("Using authorization policy plugin: {plugin} version {version}", selectedPolicy.Name,
 					selectedPolicy.Version);
 				// Policies will be applied in order, so the default should always be last
-				return new PolicySelectorsFactory([selectedPolicy, defaultPolicySelector]);
+				var factory = new PolicySelectorsFactory([selectedPolicy, defaultPolicySelector]);
+
+				if (selectedPolicy is IPlugableComponent plugablePolicy) {
+					return (_options.WithPlugableComponent(plugablePolicy), factory);
+				}
+				return (_options, factory);
 			}
 
 			AuthorizationProviderFactory GetAuthorizationProviderFactory(PolicySelectorsFactory policySelectorsFactory) {

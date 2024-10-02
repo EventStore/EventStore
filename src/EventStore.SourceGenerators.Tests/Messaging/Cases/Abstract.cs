@@ -1,4 +1,4 @@
-﻿namespace EventStore.SourceGenerators.Tests.Messaging.Abstract {
+namespace EventStore.SourceGenerators.Tests.Messaging.Abstract {
 	[DerivedMessage]
 	abstract partial class B : Message {
 		[DerivedMessage(TestMessageGroup.Abstract)]

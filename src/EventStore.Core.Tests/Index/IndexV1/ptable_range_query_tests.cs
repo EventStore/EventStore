@@ -1,12 +1,12 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1, false, 1_000_000)]
-	[TestFixture(PTableVersions.IndexV1, true, 1_000_000)]
-	[TestFixture(PTableVersions.IndexV1, false, 0)]
-	[TestFixture(PTableVersions.IndexV1, true, 0)]
 	[TestFixture(PTableVersions.IndexV2, false, 1_000_000)]
 	[TestFixture(PTableVersions.IndexV2, true, 1_000_000)]
 	[TestFixture(PTableVersions.IndexV3, false, 1_000_000)]
@@ -29,8 +29,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			_lruCacheSize = lruCacheSize;
 		}
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			var table = new HashListMemTable(_ptableVersion, maxSize: 50);
 			table.Add(0x010100000000, 0x0001, 0x0001);

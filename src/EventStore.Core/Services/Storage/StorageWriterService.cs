@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +17,6 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
-using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -81,7 +83,6 @@ namespace EventStore.Core.Services.Storage {
 		private long _lastFlushSize;
 		private long _maxFlushSize;
 		private long _maxFlushDelay;
-		private const string _writerFlushHistogram = "writer-flush";
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly TStreamId _emptyEventTypeId;
 		private readonly TStreamId _scavengePointsStreamId;
@@ -140,7 +141,7 @@ namespace EventStore.Core.Services.Storage {
 			Writer = writer;
 
 			_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
-			StorageWriterQueue = QueuedHandler.CreateQueuedHandler(new AdHocHandler<Message>(CommonHandle),
+			StorageWriterQueue = new QueuedHandlerThreadPool(new AdHocHandler<Message>(CommonHandle),
 				"StorageWriterQueue",
 				queueStatsManager,
 				queueTrackers,
@@ -165,8 +166,8 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		protected void SubscribeToMessage<T>() where T : Message {
-			_writerBus.Subscribe((IHandle<T>)this);
-			_subscribeToBus.Subscribe(new AdHocHandler<Message>(EnqueueMessage).WidenFrom<T, Message>());
+			_writerBus.Subscribe((IAsyncHandle<T>)this);
+			_subscribeToBus.Subscribe<T>(new AdHocHandler<Message>(EnqueueMessage));
 		}
 
 		private void EnqueueMessage(Message message) {
@@ -184,7 +185,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private void CommonHandle(Message message) {
+		private async ValueTask CommonHandle(Message message, CancellationToken token) {
 			if (BlockWriter && !(message is SystemMessage.StateChangeMessage)) {
 				Log.Verbose("Blocking message {message} in StorageWriterService. Message:", message.GetType().Name);
 				Log.Verbose("{message}", message);
@@ -201,7 +202,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 
 			try {
-				_writerBus.Handle(message);
+				await _writerBus.DispatchAsync(message, token);
 			} catch (Exception exc) {
 				BlockWriter = true;
 				Log.Fatal(exc, "Unexpected error in StorageWriterService. Terminating the process...");
@@ -811,9 +812,6 @@ namespace EventStore.Core.Services.Storage {
 				var end = _flushDurationTracker.RecordNow(start);
 
 				var flushDelay = end.ElapsedTicksSince(start);
-				var flushDelaySeconds = ((double)flushDelay) / Stopwatch.Frequency;
-				var flushDelayNanoSeconds = (long)(flushDelaySeconds * 1_000_000_000);
-				HistogramService.SetValue(_writerFlushHistogram, flushDelayNanoSeconds);
 
 				Interlocked.Exchange(ref _lastFlushDelay, flushDelay);
 				Interlocked.Exchange(ref _lastFlushSize, flushSize);

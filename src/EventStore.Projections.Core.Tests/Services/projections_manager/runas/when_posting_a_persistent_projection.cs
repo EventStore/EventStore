@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -38,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(
-						new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,
+						GetInputQueue(), ProjectionMode.Continuous, _projectionName,
 						new ProjectionManagementMessage.RunAs(_testUserPrincipal), "JS", _projectionBody, enabled: true,
 						checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true, enableRunAs: true);
 			}
@@ -87,7 +90,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(
-						new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,
+						GetInputQueue(), ProjectionMode.Continuous, _projectionName,
 						ProjectionManagementMessage.RunAs.Anonymous, "JS", _projectionBody, enabled: true,
 						checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true, enableRunAs: true);
 			}
@@ -133,7 +136,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(
-						new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,
+						GetInputQueue(), ProjectionMode.Continuous, _projectionName,
 						new ProjectionManagementMessage.RunAs(_testUserPrincipal), "JS", _projectionBody, enabled: true,
 						checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true, enableRunAs: true);
 			}

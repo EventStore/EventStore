@@ -1,6 +1,8 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
-using EventStore.Common;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -44,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 		protected virtual IProjectionStateHandler CreateStateHandler() {
 			return _stateHandlerFactory.Create(
-				_projectionType, _projection, true, logger: (s, _) => {
+				_projectionType, _projection, true, null, logger: (s, _) => {
 					if (s.StartsWith("P:"))
 						Console.WriteLine(s);
 					else

@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.IO;
 using System.Linq;
@@ -105,7 +108,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		db.Open(createNewChunks: true);
 
 		// we don't need a controller here, so we use the same bus for subscribing and publishing
-		var subscribeBus = new InMemoryBus("subscribeBus");
+		var subscribeBus = new SynchronousScheduler("subscribeBus");
 		var publishBus = subscribeBus;
 
 		var writer = CreateStorageWriter(
@@ -114,7 +117,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			outputBus: publishBus);
 
 		var port = PortsHelper.GetAvailablePort(IPAddress.Loopback);
-		var networkSendBus = new InMemoryBus("networkSendBus");
+		var networkSendBus = new SynchronousScheduler("networkSendBus");
 		var dispatcher = new InternalTcpDispatcher(writeTimeout: TimeSpan.FromSeconds(5));
 
 		var tcpService = new TcpService(
@@ -194,7 +197,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 	private ReplicaInfo<TStreamId> CreateReplica(TFChunkDb db, LeaderInfo<TStreamId> leaderInfo) {
 		db.Open(createNewChunks: false);
 
-		var subscribeBus = new InMemoryBus("subscribeBus");
+		var subscribeBus = new SynchronousScheduler("subscribeBus");
 		var adhocReplicaController = new AdHocReplicaController<TStreamId>(subscribeBus, leaderInfo);
 		var publishBus = adhocReplicaController.Publisher;
 
@@ -205,7 +208,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			outputBus: publishBus);
 
 		var epochManager = new FakeEpochManager();
-		var networkSendBus = new InMemoryBus("networkSendBus");
+		var networkSendBus = new SynchronousScheduler("networkSendBus");
 
 		var replicaService = new ReplicaService(
 			publisher: publishBus,
@@ -348,9 +351,9 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		InterceptorCheckpoint writerChk,
 		int chunkSize) {
 		// we keep track of write completion by verifying if the list of writer checkpoints has changed.
-		// we cannot simply wait for a single checkpoint change as some writes may move the writer checkpoint multiple times. 
+		// we cannot simply wait for a single checkpoint change as some writes may move the writer checkpoint multiple times.
 		// since chunk completion also moves the writer checkpoint, we need to keep track of it.
-		// finally, we wait for the writer checkpoint to be flushed (this is guaranteed as we force a flush when setting up ClusterStorageWriterService) 
+		// finally, we wait for the writer checkpoint to be flushed (this is guaranteed as we force a flush when setting up ClusterStorageWriterService)
 
 		var flushedWriterPos = writerChk.Read();
 		var writerChks = writerChk.Values.ToArray();

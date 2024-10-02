@@ -1,11 +1,13 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
+using DotNext;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager;
 
@@ -34,25 +36,22 @@ namespace EventStore.Projections.Core.Tests.Integration {
 			_startSystemProjections = GivenStartSystemProjections();
 		}
 
-		protected override Tuple<IBus, IPublisher, InMemoryBus, TimeoutScheduler, Guid>[] GivenProcessingQueues() {
-			var buses = new IBus[] {new InMemoryBus("1"), new InMemoryBus("2")};
-			var outBuses = new[] {new InMemoryBus("o1"), new InMemoryBus("o2")};
-			_otherQueues = new ManualQueue[]
-				{new ManualQueue(buses[0], _timeProvider), new ManualQueue(buses[1], _timeProvider)};
-			return new[] {
+		protected override Tuple<SynchronousScheduler, IPublisher, SynchronousScheduler, Guid>[] GivenProcessingQueues() {
+			SynchronousScheduler[] buses = [new("1"), new("2")];
+			SynchronousScheduler[] outBuses = [new("o1"), new("o2")];
+			_otherQueues = [new (buses[0], _timeProvider), new(buses[1], _timeProvider)];
+			return [
 				Tuple.Create(
 					buses[0],
-					(IPublisher)_otherQueues[0],
+					_otherQueues[0].As<IPublisher>(),
 					outBuses[0],
-					default(TimeoutScheduler),
 					Guid.NewGuid()),
 				Tuple.Create(
 					buses[1],
-					(IPublisher)_otherQueues[1],
+					_otherQueues[1].As<IPublisher>(),
 					outBuses[1],
-					default(TimeoutScheduler),
 					Guid.NewGuid())
-			};
+			];
 		}
 
 		protected abstract void GivenEvents();
@@ -65,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Integration {
 
 		protected Message CreateQueryMessage(string name, string source) {
 			return new ProjectionManagementMessage.Command.Post(
-				new PublishEnvelope(_bus), ProjectionMode.Transient, name,
+				_bus, ProjectionMode.Transient, name,
 				ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: false,
 				trackEmittedStreams: false,
 				emitEnabled: false);
@@ -73,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Integration {
 
 		protected Message CreateNewProjectionMessage(string name, string source) {
 			return new ProjectionManagementMessage.Command.Post(
-				new PublishEnvelope(_bus), ProjectionMode.Continuous, name, ProjectionManagementMessage.RunAs.System,
+				_bus, ProjectionMode.Continuous, name, ProjectionManagementMessage.RunAs.System,
 				"JS", source, enabled: true, checkpointsEnabled: true, trackEmittedStreams: true, emitEnabled: true);
 		}
 
@@ -103,7 +102,7 @@ namespace EventStore.Projections.Core.Tests.Integration {
 			foreach (var source in otherProjections) {
 				yield return
 					(new ProjectionManagementMessage.Command.Post(
-						new PublishEnvelope(_bus), ProjectionMode.Continuous, "other_" + index,
+						_bus, ProjectionMode.Continuous, "other_" + index,
 						ProjectionManagementMessage.RunAs.System, "JS", source, enabled: true, checkpointsEnabled: true,
 						trackEmittedStreams: true,
 						emitEnabled: true));
@@ -113,7 +112,7 @@ namespace EventStore.Projections.Core.Tests.Integration {
 			if (!string.IsNullOrEmpty(_projectionSource)) {
 				yield return
 					(new ProjectionManagementMessage.Command.Post(
-						new PublishEnvelope(_bus), _projectionMode, _projectionName,
+						_bus, _projectionMode, _projectionName,
 						ProjectionManagementMessage.RunAs.System, "JS", _projectionSource, enabled: true,
 						checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled,
 						trackEmittedStreams: _trackEmittedStreams));

@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -78,7 +81,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_clientResponseEnvelope = clientResponseEnvelope;
 			InternalCorrId = internalCorrId;
 			ClientCorrId = clientCorrId;
-			WriteReplyEnvelope = new PublishEnvelope(Publisher);
+			WriteReplyEnvelope = Publisher;
 			ExpectedVersion = expectedVersion;
 			CommitSource = commitSource;
 			_prepareCount = prepareCount;

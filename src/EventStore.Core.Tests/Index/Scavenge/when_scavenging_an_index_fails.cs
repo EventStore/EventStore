@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
@@ -23,14 +26,10 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 			long spaceSaved;
 			Func<IndexEntry, bool> existsAt = x => { throw new Exception("Expected exception"); };
-			Func<IndexEntry, Tuple<string, bool>> readRecord = x => { throw new Exception("Should not be called"); };
-			Func<string, ulong, ulong> upgradeHash = (streamId, hash) => {
-				throw new Exception("Should not be called");
-			};
 
 			_expectedOutputFile = GetTempFilePath();
 			Assert.That(
-				() => PTable.Scavenged(_oldTable, _expectedOutputFile, upgradeHash, existsAt, readRecord,
+				() => PTable.Scavenged(_oldTable, _expectedOutputFile,
 					PTableVersions.IndexV4, existsAt, out spaceSaved, initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault,
 					useBloomFilter: true),
 				Throws.Exception.With.Message.EqualTo("Expected exception"));

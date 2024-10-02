@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -110,6 +113,7 @@ namespace EventStore.Core.Tests.Helpers {
 					GossipTimeoutMs = 2_000,
 					DeadMemberRemovalPeriodSec = 1_800_000,
 					ReadOnlyReplica = readOnlyReplica,
+					Archiver = false,
 					StreamInfoCacheCapacity = 10_000
 				},
 				Interface = new() {

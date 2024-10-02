@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,7 +21,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture]
 	public abstract class WriteEventsToIndexScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
-		protected InMemoryBus _publisher;
+		protected SynchronousScheduler _publisher;
 		protected ITransactionFileReader _tfReader;
 		protected ITableIndex<TStreamId> _tableIndex;
 		protected IIndexBackend<TStreamId> _indexBackend;
@@ -129,7 +132,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				IndexDirectory = GetFilePathFor("index"),
 			});
 			_provider = _logFormat.StreamNamesProvider;
-			_publisher = new InMemoryBus("publisher");
+			_publisher = new("publisher");
 			_tfReader = new FakeInMemoryTfReader(RecordOffset);
 			_tableIndex = new FakeInMemoryTableIndex<TStreamId>();
 			_provider.SetTableIndex(_tableIndex);

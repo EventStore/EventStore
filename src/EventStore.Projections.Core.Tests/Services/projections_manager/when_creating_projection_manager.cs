@@ -1,9 +1,11 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.TimeService;
@@ -18,22 +20,18 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 	public class when_creating_projection_manager {
 		private ITimeProvider _timeProvider;
 		private Dictionary<Guid, IPublisher> _queues;
-		private TimeoutScheduler[] _timeoutSchedulers;
 		private IODispatcher _ioDispatcher;
 
 		[SetUp]
 		public void setup() {
 			_timeProvider = new FakeTimeProvider();
 			_queues = new Dictionary<Guid, IPublisher> {{Guid.NewGuid(), new FakePublisher()}};
-			_timeoutSchedulers = ProjectionCoreWorkersNode.CreateTimeoutSchedulers(_queues.Count);
 			var fakePublisher = new FakePublisher();
 			new ProjectionCoreCoordinator(
 				ProjectionType.All,
-				_timeoutSchedulers,
 				_queues.Values.ToArray(),
-				fakePublisher,
-				new NoopEnvelope());
-			_ioDispatcher = new IODispatcher(fakePublisher, new PublishEnvelope(fakePublisher), true);
+				fakePublisher);
+			_ioDispatcher = new IODispatcher(fakePublisher, fakePublisher, true);
 		}
 
 		[Test]

@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Index.Hashes;
@@ -22,6 +25,8 @@ namespace EventStore.Core.LogAbstraction {
 		public TimeSpan StreamExistenceFilterCheckpointInterval { get; init; } = TimeSpan.FromSeconds(30);
 		public TimeSpan StreamExistenceFilterCheckpointDelay { get; init; } = TimeSpan.FromSeconds(5);
 		public Func<TFReaderLease> TFReaderLeaseFactory { get; init; }
+		public IHasher<string> LowHasher { get; init; } = new XXHashUnsafe();
+		public IHasher<string> HighHasher { get; init; } = new Murmur3AUnsafe();
 	}
 
 	public interface ILogFormatAbstractorFactory<TStreamId> {
@@ -33,16 +38,13 @@ namespace EventStore.Core.LogAbstraction {
 		}
 
 		public LogFormatAbstractor<string> Create(LogFormatAbstractorOptions options) {
-			var lowHasher = new XXHashUnsafe();
-			var highHasher = new Murmur3AUnsafe();
-			var longHasher = new CompositeHasher<string>(lowHasher, highHasher);
-			var streamExistenceFilter = GenStreamExistenceFilter(options, longHasher);
+			var streamExistenceFilter = GenStreamExistenceFilter(options);
 			var streamNameIndex = new LogV2StreamNameIndex(streamExistenceFilter);
 			var eventTypeIndex = new LogV2EventTypeIndex();
-			
+
 			return new LogFormatAbstractor<string>(
-				lowHasher: lowHasher,
-				highHasher: highHasher,
+				lowHasher: options.LowHasher,
+				highHasher: options.HighHasher,
 				streamNameIndex: streamNameIndex,
 				streamNameIndexConfirmer: streamNameIndex,
 				eventTypeIndex: eventTypeIndex,
@@ -63,8 +65,7 @@ namespace EventStore.Core.LogAbstraction {
 		}
 
 		private static INameExistenceFilter GenStreamExistenceFilter(
-			LogFormatAbstractorOptions options,
-			ILongHasher<string> longHasher) {
+			LogFormatAbstractorOptions options) {
 
 			if (options.InMemory || options.StreamExistenceFilterSize == 0) {
 				return new NoNameExistenceFilter();
@@ -77,7 +78,9 @@ namespace EventStore.Core.LogAbstraction {
 				checkpoint: options.StreamExistenceFilterCheckpoint,
 				checkpointInterval: options.StreamExistenceFilterCheckpointInterval,
 				checkpointDelay: options.StreamExistenceFilterCheckpointDelay,
-				hasher: longHasher);
+				hasher: new CompositeHasher<string>(
+					options.LowHasher,
+					options.HighHasher));
 
 			return nameExistenceFilter;
 		}

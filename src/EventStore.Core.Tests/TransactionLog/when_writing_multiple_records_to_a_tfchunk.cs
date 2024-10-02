@@ -1,4 +1,9 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -19,8 +24,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private IPrepareLogRecord<TStreamId> _prepare2;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_chunk = TFChunkHelper.CreateNewChunk(Filename);
 
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
@@ -81,8 +86,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void the_first_record_can_be_read() {
-			var res = _chunk.TryReadFirst();
+		public async Task the_first_record_can_be_read() {
+			var res = await _chunk.TryReadFirst(CancellationToken.None);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_prepare1.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
 			Assert.IsTrue(res.LogRecord is IPrepareLogRecord<TStreamId>);

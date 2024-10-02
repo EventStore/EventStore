@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
@@ -119,8 +122,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			var writerCheckpoint = new InMemoryCheckpoint(0);
 			var chaserCheckpoint = new InMemoryCheckpoint(0);
 
-			var bus = new InMemoryBus("bus");
-			new IODispatcher(bus, new PublishEnvelope(bus));
+			var bus = new SynchronousScheduler();
+			new IODispatcher(bus, bus);
 
 			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerCheckpoint, chaserCheckpoint));
 

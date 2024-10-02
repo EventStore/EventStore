@@ -1,5 +1,10 @@
-﻿using System.IO;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Scavenging;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge {
@@ -23,9 +28,11 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			_wrapped.WriteRecord(record);
 		}
 
-		public void Complete(out string newFileName, out long newFileSize) {
-			_wrapped.Complete(out newFileName, out newFileSize);
-			_tracer.Trace($"Switched in {Path.GetFileName(newFileName)}");
+		public async ValueTask<(string, long)> Complete(CancellationToken token) {
+			var result = await _wrapped.Complete(token);
+			_tracer.Trace($"Switched in {Path.GetFileName(result.NewFileName)}");
+
+			return result;
 		}
 
 		public void Abort(bool deleteImmediately) {

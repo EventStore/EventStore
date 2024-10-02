@@ -1,4 +1,8 @@
-﻿using System.Linq;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -34,8 +38,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		[Test]
-		public void only_delete_tombstone_records_with_their_commits_are_kept() {
-			CheckRecords();
+		public async Task only_delete_tombstone_records_with_their_commits_are_kept() {
+			await CheckRecords();
 		}
 	}
 
@@ -73,8 +77,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		[Test]
-		public void only_delete_tombstone_records_with_their_commits_are_kept() {
-			CheckRecords();
+		public async Task only_delete_tombstone_records_with_their_commits_are_kept() {
+			await CheckRecords();
 		}
 	}
 }

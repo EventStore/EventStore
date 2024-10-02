@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Linq;
 using System.Text.Json;
@@ -189,6 +192,7 @@ public sealed class TelemetryService :
 		var env = EnvironmentTelemetry.Collect(_nodeOptions);
 		message.Envelope.ReplyWith(new TelemetryMessage.Response(
 			"environment", new JsonObject {
+				["os"] = env.Machine.OS,
 				["coreCount"] = env.Machine.ProcessorCount,
 				["isContainer"] = env.Container.IsContainer,
 				["isKubernetes"] = env.Container.IsKubernetes,

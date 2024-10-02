@@ -1,14 +1,10 @@
-using System.Threading;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Tests.AwakeService {
 	public class TestMessage : Message {
-		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
 		public readonly int Kind;
 
 		public TestMessage(int kind) {

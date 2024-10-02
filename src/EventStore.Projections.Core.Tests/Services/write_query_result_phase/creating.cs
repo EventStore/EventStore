@@ -1,9 +1,15 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Partitioning;
+using EventStore.Projections.Core.Services.Processing.Phases;
 using EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager;
 using EventStore.Projections.Core.Tests.Services.core_projection.multi_phase;
 using NUnit.Framework;
@@ -17,7 +23,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase {
 			public void it_can_be_created() {
 				var coreProjection = new FakeCoreProjection();
 				var stateCache = new PartitionStateCache();
-				var bus = new InMemoryBus("test");
+				var bus = new SynchronousScheduler();
 				var fakeCheckpointManager =
 					new specification_with_multi_phase_core_projection<TLogFormat, TStreamId>.FakeCheckpointManager(bus, Guid.NewGuid());
 				var fakeEmittedStreamsTracker =
@@ -39,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase {
 			protected WriteQueryResultProjectionProcessingPhase _phase;
 			protected specification_with_multi_phase_core_projection<TLogFormat, TStreamId>.FakeCheckpointManager _checkpointManager;
 			protected specification_with_multi_phase_core_projection<TLogFormat, TStreamId>.FakeEmittedStreamsTracker _emittedStreamsTracker;
-			protected InMemoryBus _publisher;
+			protected SynchronousScheduler _publisher;
 			protected PartitionStateCache _stateCache;
 			protected string _resultStreamName;
 			protected FakeCoreProjection _coreProjection;
@@ -47,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase {
 			[SetUp]
 			public void SetUp() {
 				_stateCache = GivenStateCache();
-				_publisher = new InMemoryBus("test");
+				_publisher = new();
 				_coreProjection = new FakeCoreProjection();
 				_checkpointManager = new specification_with_multi_phase_core_projection<TLogFormat, TStreamId>.FakeCheckpointManager(
 					_publisher, Guid.NewGuid());

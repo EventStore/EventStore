@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using EventStore.Common.Utils;
@@ -9,6 +12,9 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Strategies;
+using EventStore.Projections.Core.Services.Processing.Subscriptions;
 
 namespace EventStore.Projections.Core.EventReaders.Feeds {
 	public class FeedReader : IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
@@ -17,10 +23,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 		IHandle<EventReaderSubscriptionMessage.CheckpointSuggested>,
 		IHandle<EventReaderSubscriptionMessage.NotAuthorized> {
 		private readonly
-			PublishSubscribeDispatcher
-			<Guid, ReaderSubscriptionManagement.Subscribe,
-				ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessageBase>
-			_subscriptionDispatcher;
+			ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
 		private readonly ClaimsPrincipal _user;
 
@@ -37,28 +40,21 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 		private CheckpointTag _lastReaderPosition;
 
 		public static FeedReader Create(
-			PublishSubscribeDispatcher
-				<Guid, ReaderSubscriptionManagement.Subscribe,
-					ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessageBase
-				>
-				publishSubscribeDispatcher, FeedReaderMessage.ReadPage message, ITimeProvider timeProvider) {
+			ReaderSubscriptionDispatcher readerSubscriptionDispatcher, FeedReaderMessage.ReadPage message, ITimeProvider timeProvider) {
 			return new FeedReader(
-				publishSubscribeDispatcher, message.User, message.QuerySource, message.FromPosition, message.MaxEvents,
+				readerSubscriptionDispatcher, message.User, message.QuerySource, message.FromPosition, message.MaxEvents,
 				message.CorrelationId, message.Envelope, timeProvider);
 		}
 
 		public FeedReader(
-			PublishSubscribeDispatcher
-				<Guid, ReaderSubscriptionManagement.Subscribe,
-					ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessageBase
-				>
-				subscriptionDispatcher, ClaimsPrincipal user, QuerySourcesDefinition querySource, CheckpointTag fromPosition,
+			ReaderSubscriptionDispatcher subscriptionDispatcher, ClaimsPrincipal user,
+			QuerySourcesDefinition querySource, CheckpointTag fromPosition,
 			int maxEvents, Guid requestCorrelationId, IEnvelope replyEnvelope, ITimeProvider timeProvider) {
-			if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");
-			if (querySource == null) throw new ArgumentNullException("querySource");
-			if (fromPosition == null) throw new ArgumentNullException("fromPosition");
-			if (replyEnvelope == null) throw new ArgumentNullException("replyEnvelope");
-			if (maxEvents <= 0) throw new ArgumentException("non-negative expected", "maxEvents");
+			ArgumentNullException.ThrowIfNull(subscriptionDispatcher);
+			ArgumentNullException.ThrowIfNull(querySource);
+			ArgumentNullException.ThrowIfNull(fromPosition);
+			ArgumentNullException.ThrowIfNull(replyEnvelope);
+			if (maxEvents <= 0) throw new ArgumentException("non-negative expected", nameof(maxEvents));
 
 			_subscriptionDispatcher = subscriptionDispatcher;
 			_user = user;
@@ -89,10 +85,10 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 				// The projection must be stopped for debugging, so will enable content type validation automatically
 				enableContentTypeValidation: true);
 
-			_subscriptionId =
-				_subscriptionDispatcher.PublishSubscribe(
-					new ReaderSubscriptionManagement.Subscribe(
-						Guid.NewGuid(), _fromPosition, readerStrategy, readerOptions), this);
+			_subscriptionId = Guid.NewGuid();
+			_subscriptionDispatcher.PublishSubscribe(
+				new ReaderSubscriptionManagement.Subscribe(
+					_subscriptionId, _fromPosition, readerStrategy, readerOptions), this, false);
 		}
 
 		public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message) {

@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -51,7 +54,11 @@ namespace EventStore.PluginHosting {
 				_resolver = new AssemblyDependencyResolver(directory.FullName);
 				foreach (var library in directory.GetFiles("*.dll")
 					.Where(file => !Shared.Contains(Path.GetFileNameWithoutExtension(file.Name)))) {
-					LoadFromAssemblyPath(library.FullName);
+					try {
+						LoadFromAssemblyPath(library.FullName);
+					} catch (BadImageFormatException) {
+						// We shouldn't be loading this dll. Ignore it
+					}
 				}
 				_shared = shared;
 			}

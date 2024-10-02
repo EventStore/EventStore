@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -401,10 +404,7 @@ namespace EventStore.Core.Index {
 			return new AddResult(indexMap, canMergeAny);
 		}
 
-		public MergeResult TryMergeOneLevel<TStreamId>(
-			Func<TStreamId, ulong, ulong> upgradeHash,
-			Func<IndexEntry, bool> existsAt,
-			Func<IndexEntry, Tuple<TStreamId, bool>> recordExistsAt,
+		public MergeResult TryMergeOneLevel(
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
@@ -425,11 +425,16 @@ namespace EventStore.Core.Index {
 						break;
 					}
 					var filename = filenameProvider.GetFilenameNewTable();
-					PTable mergedTable = PTable.MergeTo(tables[level], filename, upgradeHash, existsAt, recordExistsAt,
+					PTable mergedTable = PTable.MergeTo(
+						tables[level],
+						filename,
 						version,
-						ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount,
-						indexCacheDepth, skipIndexVerify,
-						useBloomFilter, lruCacheSize);
+						ESConsts.PTableInitialReaderCount,
+						_pTableMaxReaderCount,
+						indexCacheDepth,
+						skipIndexVerify,
+						useBloomFilter,
+						lruCacheSize);
 					hasMergedAny = true;
 
 					AddTableToTables(tables, level + 1, mergedTable);
@@ -443,10 +448,7 @@ namespace EventStore.Core.Index {
 			return new MergeResult(indexMap, toDelete, hasMergedAny, canMergeAny);
 		}
 
-		public MergeResult TryManualMerge<TStreamId>(
-			Func<TStreamId, ulong, ulong> upgradeHash,
-			Func<IndexEntry, bool> existsAt,
-			Func<IndexEntry, Tuple<TStreamId, bool>> recordExistsAt,
+		public MergeResult TryManualMerge(
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
@@ -466,10 +468,16 @@ namespace EventStore.Core.Index {
 				return new MergeResult(this, new List<PTable>(), false, false);
 
 			var filename = filenameProvider.GetFilenameNewTable();
-			PTable mergedTable = PTable.MergeTo(tablesToMerge, filename, upgradeHash, existsAt, recordExistsAt,
-				version, ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount,
-				indexCacheDepth, skipIndexVerify,
-				useBloomFilter, lruCacheSize);
+			PTable mergedTable = PTable.MergeTo(
+				tablesToMerge,
+				filename,
+				version,
+				ESConsts.PTableInitialReaderCount,
+				_pTableMaxReaderCount,
+				indexCacheDepth,
+				skipIndexVerify,
+				useBloomFilter,
+				lruCacheSize);
 
 			for (int i = tables.Count - 1; i > _maxTableLevelsForAutomaticMerge; i--) {
 				tables.RemoveAt(i);
@@ -484,11 +492,8 @@ namespace EventStore.Core.Index {
 			return new MergeResult(indexMap, toDelete, true, false);
 		}
 
-		public ScavengeResult Scavenge<TStreamId>(Guid toScavenge, CancellationToken ct,
+		public ScavengeResult Scavenge(Guid toScavenge, CancellationToken ct,
 			Func<IndexEntry, bool> shouldKeep,
-			Func<TStreamId, ulong, ulong> upgradeHash,
-			Func<IndexEntry, bool> existsAt,
-			Func<IndexEntry, Tuple<TStreamId, bool>> recordExistsAt,
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
@@ -504,8 +509,19 @@ namespace EventStore.Core.Index {
 						var filename = filenameProvider.GetFilenameNewTable();
 						var oldTable = scavengedMap[level][i];
 
-						PTable scavenged = PTable.Scavenged(oldTable, filename, upgradeHash, existsAt, recordExistsAt,
-							version, shouldKeep, out spaceSaved, ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount, indexCacheDepth, skipIndexVerify, useBloomFilter, lruCacheSize, ct);
+						PTable scavenged = PTable.Scavenged(
+							oldTable,
+							filename,
+							version,
+							shouldKeep,
+							out spaceSaved,
+							ESConsts.PTableInitialReaderCount,
+							_pTableMaxReaderCount,
+							indexCacheDepth,
+							skipIndexVerify,
+							useBloomFilter,
+							lruCacheSize,
+							ct);
 
 						if (scavenged == null) {
 							return ScavengeResult.Failed(oldTable, level, i);

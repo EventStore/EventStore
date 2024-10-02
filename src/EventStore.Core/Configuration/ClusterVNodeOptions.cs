@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 // ReSharper disable CheckNamespace
 
 #nullable enable
@@ -134,6 +137,8 @@ namespace EventStore.Core {
 
 			[Description("Enables the tracking of various histograms in the backend, " +
 			             "typically only used for debugging, etc.")]
+			[Deprecated("The EnableHistograms setting has been deprecated as of version 24.10.0 and currently has no effect. " +
+						"Please contact EventStore if this feature is of interest to you.")]
 			public bool EnableHistograms { get; init; } = false;
 
 			[Description("Log Http Requests and Responses before processing them.")]
@@ -307,6 +312,9 @@ namespace EventStore.Core {
 			[Description("Sets this node as a read only replica that is not allowed to participate in elections " +
 			             "or accept writes from clients.")]
 			public bool ReadOnlyReplica { get; init; } = false;
+
+			[Description("Sets this node as an Archiver node. Requires ReadOnlyReplica to be true. Experimental.")]
+			public bool Archiver { get; init; } = false;
 
 			[Description("Allow more nodes than the cluster size to join the cluster as clones. " +
 			             "(UNSAFE: can cause data loss if a clone is promoted as leader)")]
@@ -772,6 +780,8 @@ namespace EventStore.Core {
 
 					var unknownSections = FindUnknownSections(unknownKeys);
 
+					// only report top level unknown keys. plugins, metrics, etc will use nested keys.
+					// in the future we may report unknown keys in nested sections but it is out of scope for now.
 					return unknownKeys
 						.Where(key => !unknownSections.Any(key.StartsWith));
 				}

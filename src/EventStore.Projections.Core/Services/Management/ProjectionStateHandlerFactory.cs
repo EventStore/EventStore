@@ -1,11 +1,13 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Linq;
-using EventStore.Core;
 using EventStore.Projections.Core.Services.Interpreted;
 
 namespace EventStore.Projections.Core.Services.Management {
 
-	
+
 	public class ProjectionStateHandlerFactory {
 		private readonly TimeSpan _javascriptCompilationTimeout;
 		private readonly TimeSpan _javascriptExecutionTimeout;
@@ -16,8 +18,8 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 		public IProjectionStateHandler Create(
 			string factoryType, string source,
-			bool enableContentTypeValidation, int projectionExecutionTimeout = ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout,
-			Action<int, Action> cancelCallbackFactory = null,
+			bool enableContentTypeValidation,
+			int? projectionExecutionTimeout,
 			Action<string, object[]> logger = null) {
 			var colonPos = factoryType.IndexOf(':');
 			string kind = null;
@@ -30,9 +32,9 @@ namespace EventStore.Projections.Core.Services.Management {
 			}
 
 			IProjectionStateHandler result;
-			var executionTimeout = projectionExecutionTimeout <= 0
-				? _javascriptExecutionTimeout
-				: TimeSpan.FromMilliseconds(projectionExecutionTimeout);
+			var executionTimeout = projectionExecutionTimeout is > 0
+				? TimeSpan.FromMilliseconds(projectionExecutionTimeout.Value)
+				: _javascriptExecutionTimeout;
 			switch (kind.ToLowerInvariant()) {
 				case "js":
 					result = new JintProjectionStateHandler(source, enableContentTypeValidation,

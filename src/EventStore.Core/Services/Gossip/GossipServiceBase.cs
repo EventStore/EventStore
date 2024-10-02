@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,7 +70,7 @@ namespace EventStore.Core.Services.Gossip {
 
 			_bus = bus;
 			_clusterSize = clusterSize;
-			_publishEnvelope = new PublishEnvelope(bus);
+			_publishEnvelope = bus;
 			_gossipSeedSource = gossipSeedSource;
 			_memberInfo = memberInfo;
 			GossipInterval = gossipInterval;

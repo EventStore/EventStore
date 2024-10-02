@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
@@ -40,10 +43,10 @@ internal class WriterInterceptor:
 	}
 
 	private readonly ConcurrentQueue<Message> _queue = new();
-	public InMemoryBus Bus { get; }
+	public SynchronousScheduler Bus { get; }
 
 	public WriterInterceptor(ISubscriber subscriber) {
-		Bus = new InMemoryBus("outputBus");
+		Bus = new("outputBus");
 		subscriber.Subscribe<SystemMessage.SystemInit>(this);
 		subscriber.Subscribe<SystemMessage.StateChangeMessage>(this);
 		subscriber.Subscribe<SystemMessage.WriteEpoch>(this);

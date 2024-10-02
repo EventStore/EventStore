@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using EventStore.ClientAPI.Common.Utils;
@@ -19,14 +22,14 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 		protected readonly TimeSpan PrepareTimeout = TimeSpan.FromMinutes(5);
 		protected readonly TimeSpan CommitTimeout = TimeSpan.FromMinutes(5);
 
-		protected List<Message> Produced = new List<Message>();
-		protected FakePublisher Publisher = new FakePublisher();
+		protected List<Message> Produced = new();
+		protected FakePublisher Publisher = new();
 		protected Guid InternalCorrId = Guid.NewGuid();
 		protected Guid ClientCorrId = Guid.NewGuid();
 		protected byte[] Metadata = Helper.UTF8NoBom.GetBytes("{Value:42}");
 		protected byte[] EventData = Helper.UTF8NoBom.GetBytes("{Value:43}");
-		protected FakeEnvelope Envelope = new FakeEnvelope();
-		protected InMemoryBus Dispatcher = new InMemoryBus(nameof(RequestManagerServiceSpecification));
+		protected FakeEnvelope Envelope = new();
+		protected SynchronousScheduler Dispatcher = new(nameof(RequestManagerServiceSpecification));
 		protected RequestManagementService Service;
 		protected bool GrantAccess =true;
 		protected long LogPosition = 100;
@@ -68,7 +71,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 			Publisher.Messages.Clear();
 
 			Dispatcher.Publish(When());
-			
+
 		}
 
 
@@ -91,10 +94,10 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 				LogPosition += 100;
 			}
 			Dispatcher.Publish(new StorageMessage.CommitIndexed(
-									message.CorrelationId, 
-									LogPosition, 
+									message.CorrelationId,
+									LogPosition,
 									transactionPosition,
-									0, 
+									0,
 									message.Events.Length));
 		}
 

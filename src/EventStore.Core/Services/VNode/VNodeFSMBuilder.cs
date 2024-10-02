@@ -1,82 +1,73 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext.Runtime;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Services.VNode {
-	/// <summary>
-	/// Builder syntax for constructing <see cref="VNodeFSM"/> in the code
-	/// </summary>
-	public class VNodeFSMBuilder {
-		private readonly Func<VNodeState> _getState;
-		private readonly Dictionary<Type, Action<VNodeState, Message>>[] _handlers;
-		private readonly Action<VNodeState, Message>[] _defaultHandlers;
+namespace EventStore.Core.Services.VNode;
 
-		public VNodeFSMBuilder(Func<VNodeState> getState) {
-			_getState = getState;
+/// <summary>
+/// Builder syntax for constructing <see cref="VNodeFSM"/> in the code
+/// </summary>
+public sealed class VNodeFSMBuilder {
+	private readonly ReadOnlyValueReference<VNodeState> _stateRef;
 
-			var maxState = Enum.GetValues(typeof(VNodeState)).Cast<int>().Max();
-			_handlers = new Dictionary<Type, Action<VNodeState, Message>>[maxState + 1];
-			_defaultHandlers = new Action<VNodeState, Message>[maxState + 1];
-		}
+	// The dictionary keeps a mapping between concrete message typeof(T) type and its handler
+	// in the form of Func<T, CancellationToken, ValueTask> delegate instance where T <= Message.
+	// The mapping cannot be expressed at language level in type-safe manner, so we're using a common denominator
+	// for all Func<T, CancellationToken, ValueTask> variations: MulticastDelegate
+	private readonly Dictionary<Type, MulticastDelegate>[] _handlers;
+	private readonly Func<Message, CancellationToken, ValueTask>[] _defaultHandlers;
 
-		internal void AddHandler<TActualMessage>(VNodeState state, Action<VNodeState, Message> handler)
-			where TActualMessage : Message {
-			var stateNum = (int)state;
+	public VNodeFSMBuilder(ReadOnlyValueReference<VNodeState> stateRef) {
+		_stateRef = stateRef;
 
-			Dictionary<Type, Action<VNodeState, Message>> stateHandlers = _handlers[stateNum];
-			if (stateHandlers == null)
-				stateHandlers = _handlers[stateNum] = new Dictionary<Type, Action<VNodeState, Message>>();
+		var maxState = (int)Enum.GetValues<VNodeState>().Max();
+		_handlers = new Dictionary<Type, MulticastDelegate>[maxState + 1];
+		_defaultHandlers = new Func<Message, CancellationToken, ValueTask>[maxState + 1];
+	}
 
-			//var existingHandler = stateHandlers[typeof (TActualMessage)];
-			//stateHandlers[typeof (TActualMessage)] = existingHandler == null
-			//                                            ? handler
-			//                                            : (s, m) => { existingHandler(s, m); handler(s, m); };
+	internal void AddHandler<TActualMessage>(VNodeState state, Func<TActualMessage, CancellationToken, ValueTask> handler)
+		where TActualMessage : Message {
+		var stateHandlers = _handlers[(int)state] ??= new();
 
-			if (stateHandlers.ContainsKey(typeof(TActualMessage)))
-				throw new InvalidOperationException(
-					string.Format("Handler already defined for state {0} and message {1}",
-						state,
-						typeof(TActualMessage).FullName));
-			stateHandlers[typeof(TActualMessage)] = handler;
-		}
-
-		internal void AddDefaultHandler(VNodeState state, Action<VNodeState, Message> handler) {
-			var stateNum = (int)state;
-			//var existingHandler = _defaultHandlers[stateNum];
-			//_defaultHandlers[stateNum] = existingHandler == null
-			//                                ? handler
-			//                                : (s, m) => { existingHandler(s, m); handler(s, m); };
-			if (_defaultHandlers[stateNum] != null)
-				throw new InvalidOperationException(string.Format("Default handler already defined for state {0}",
-					state));
-			_defaultHandlers[stateNum] = handler;
-		}
-
-		public VNodeFSMStatesDefinition InAnyState() {
-			var allStates = Enum.GetValues(typeof(VNodeState)).Cast<VNodeState>().ToArray();
-			return new VNodeFSMStatesDefinition(this, allStates);
-		}
-
-		public VNodeFSMStatesDefinition InState(VNodeState state) {
-			return new VNodeFSMStatesDefinition(this, state);
-		}
-
-		public VNodeFSMStatesDefinition InStates(params VNodeState[] states) {
-			return new VNodeFSMStatesDefinition(this, states);
-		}
-
-		public VNodeFSMStatesDefinition InAllStatesExcept(VNodeState[] states) {
-			Ensure.Positive(states.Length, "states.Length");
-
-			var s = Enum.GetValues(typeof(VNodeState)).Cast<VNodeState>().Except(states).ToArray();
-			return new VNodeFSMStatesDefinition(this, s);
-		}
-
-		public VNodeFSM Build() {
-			return new VNodeFSM(_getState, _handlers, _defaultHandlers);
+		// Perf: unsafe reinterpret cast is valid here because VNodeFSM routes the message by its type
+		if (!stateHandlers.TryAdd(typeof(TActualMessage), Unsafe.As<Action<Message>>(handler))) {
+			throw new InvalidOperationException(
+				$"Handler already defined for state {state} and message {typeof(TActualMessage).FullName}");
 		}
 	}
+
+	internal void AddDefaultHandler(VNodeState state, Func<Message, CancellationToken, ValueTask> handler) {
+		ref var defaultHandler = ref _defaultHandlers[(int)state];
+		if (defaultHandler is not null)
+			throw new InvalidOperationException($"Default handler already defined for state {state}");
+
+		defaultHandler = handler;
+	}
+
+	public VNodeFSMStatesDefinition InAnyState() => InStates(Enum.GetValues<VNodeState>().Distinct().ToArray());
+
+	public VNodeFSMStatesDefinition InState(VNodeState state) => InStates(state);
+
+	public VNodeFSMStatesDefinition InStates(params VNodeState[] states) {
+		return new VNodeFSMStatesDefinition(this, states);
+	}
+
+	public VNodeFSMStatesDefinition InAllStatesExcept(params VNodeState[] states) {
+		Ensure.Positive(states.Length, "states.Length");
+
+		var s = Enum.GetValues<VNodeState>().Except(states).Distinct().ToArray();
+		return new VNodeFSMStatesDefinition(this, s);
+	}
+
+	public VNodeFSM Build() => new(_stateRef, _handlers, _defaultHandlers);
 }

@@ -1,5 +1,10 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.AllStream;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.position_tagging.transaction_file_position_tagger {
@@ -21,7 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
 			_tagger = new TransactionFilePositionTagger(0);
 			_positionTracker = new PositionTracker(_tagger);
 			_positionTracker.UpdateByCheckpointTagInitial(_tag);
-			// when 
+			// when
 
 
 			_positionTracker.Initialize();

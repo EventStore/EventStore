@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Linq;
 using EventStore.Core.Index;
@@ -133,7 +136,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			}
 		}
 
-		[TestCase(PTableVersions.IndexV1)]
 		[TestCase(PTableVersions.IndexV2)]
 		[TestCase(PTableVersions.IndexV3)]
 		[TestCase(PTableVersions.IndexV4)]
@@ -146,7 +148,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			Assert.False(File.Exists(Path.Combine(PathName, TableIndex.ForceIndexVerifyFilename)));
 		}
 
-		[TestCase(PTableVersions.IndexV1)]
 		[TestCase(PTableVersions.IndexV2)]
 		[TestCase(PTableVersions.IndexV3)]
 		[TestCase(PTableVersions.IndexV4)]
@@ -163,7 +164,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			Assert.True(File.Exists(Path.Combine(PathName, TableIndex.ForceIndexVerifyFilename)));
 		}
 
-		[TestCase(PTableVersions.IndexV1)]
 		[TestCase(PTableVersions.IndexV2)]
 		[TestCase(PTableVersions.IndexV3)]
 		[TestCase(PTableVersions.IndexV4)]

@@ -1,306 +1,96 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
-using System.Collections.Generic;
+using System.Collections.Frozen;
 using System.Diagnostics;
-using System.Linq;
-using EventStore.Common.Utils;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext;
+using DotNext.Diagnostics;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using ILogger = Serilog.ILogger;
 
-namespace EventStore.Core.Bus {
-	/// <summary>
-	/// Synchronously dispatches messages to zero or more subscribers.
-	/// Subscribers are responsible for handling exceptions
-	/// </summary>
-	public class InMemoryBusUnoptimized : IBus, ISubscriber, IPublisher, IHandle<Message> {
-		public static InMemoryBusUnoptimized CreateTest() {
-			return new InMemoryBusUnoptimized();
-		}
+namespace EventStore.Core.Bus;
 
-		public static readonly TimeSpan DefaultSlowMessageThreshold = TimeSpan.FromMilliseconds(48);
+/// <summary>
+/// Synchronously dispatches messages to zero or more subscribers.
+/// Subscribers are responsible for handling exceptions
+/// </summary>
+public partial class InMemoryBus : ISubscriber, IAsyncHandle<Message> {
+	public static InMemoryBus CreateTest(bool watchSlowMsg = true) =>
+		new("Test", watchSlowMsg);
 
-		private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<InMemoryBus>();
+	public static readonly TimeSpan DefaultSlowMessageThreshold = TimeSpan.FromMilliseconds(48);
+	private static readonly ILogger Log = Serilog.Log.ForContext<InMemoryBus>();
 
-		public string Name { get; private set; }
+	private readonly FrozenDictionary<Type, MessageTypeHandler> _handlers;
+	private readonly double _slowMsgThresholdMs;
 
-		private readonly Dictionary<Type, List<IMessageHandler>> _typeHash;
+	public InMemoryBus(string name, bool watchSlowMsg = true, TimeSpan? slowMsgThreshold = null) {
+		_handlers = CreateMessageTypeHandlers();
+		Name = name;
 
-		private readonly bool _watchSlowMsg;
-		private readonly TimeSpan _slowMsgThreshold;
-		private object _handlersLock = new object();
+		if (watchSlowMsg)
+			_slowMsgThresholdMs = slowMsgThreshold.GetValueOrDefault(DefaultSlowMessageThreshold).TotalMilliseconds;
+	}
 
-		private InMemoryBusUnoptimized() : this("Test") {
-		}
+	public string Name { get; }
 
-		public InMemoryBusUnoptimized(string name, bool watchSlowMsg = true, TimeSpan? slowMsgThreshold = null) {
-			_typeHash = new Dictionary<Type, List<IMessageHandler>>();
+	public void Subscribe<T>(IAsyncHandle<T> handler) where T : Message {
+		ArgumentNullException.ThrowIfNull(handler);
 
-			Name = name;
-			_watchSlowMsg = watchSlowMsg;
-			_slowMsgThreshold = slowMsgThreshold ?? DefaultSlowMessageThreshold;
-		}
+		if (!_handlers.TryGetValue(typeof(T), out var handlers))
+			throw new GenericArgumentException<T>("Unexpected message type", nameof(handler));
 
-		public void Subscribe<T>(IHandle<T> handler) where T : Message {
-			lock (_handlersLock) {
-				Ensure.NotNull(handler, "handler");
+		Debug.Assert(handlers is MessageTypeHandler<T>);
+		Unsafe.As<MessageTypeHandler<T>>(handlers).AddHandler(handler);
+	}
 
-				List<IMessageHandler> handlers;
-				if (!_typeHash.TryGetValue(typeof(T), out handlers)) {
-					handlers = new List<IMessageHandler>();
-					_typeHash.Add(typeof(T), handlers);
-				}
+	public void Unsubscribe<T>(IAsyncHandle<T> handler) where T : Message {
+		ArgumentNullException.ThrowIfNull(handler);
 
-				if (!handlers.Any(x => x.IsSame<T>(handler)))
-					handlers.Add(new MessageHandler<T>(handler, handler.GetType().Name));
-			}
-		}
+		if (!_handlers.TryGetValue(typeof(T), out var handlers))
+			throw new GenericArgumentException<T>("Unexpected message type", nameof(handler));
 
-		public void Unsubscribe<T>(IHandle<T> handler) where T : Message {
-			lock (_handlersLock) {
-				Ensure.NotNull(handler, "handler");
+		Debug.Assert(handlers is MessageTypeHandler<T>);
+		Unsafe.As<MessageTypeHandler<T>>(handlers).RemoveHandler(handler);
+	}
 
-				List<IMessageHandler> handlers;
-				if (_typeHash.TryGetValue(typeof(T), out handlers)) {
-					var messageHandler = handlers.FirstOrDefault(x => x.IsSame<T>(handler));
-					if (messageHandler != null)
-						handlers.Remove(messageHandler);
-				}
-			}
-		}
+	private bool IsSlowMsgWatchEnabled => BitConverter.DoubleToInt64Bits(_slowMsgThresholdMs) is not 0L;
 
-		public void Handle(Message message) {
-			Publish(message);
-		}
+	public ValueTask DispatchAsync(Message message, CancellationToken token = default) {
+		if (message is null)
+			return ValueTask.FromException(new ArgumentNullException(nameof(message)));
 
-		public void Publish(Message message) {
-			//Ensure.NotNull(message,"message");
-			DispatchByType(message);
-		}
+		if (!_handlers.TryGetValue(message.GetType(), out var handlers))
+			return ValueTask.FromException(new ArgumentOutOfRangeException(nameof(message), "Unexpected message type"));
 
-		private void DispatchByType(Message message) {
-			var type = message.GetType();
-			PublishByType(message, type);
-			do {
-				type = type.BaseType;
-				PublishByType(message, type);
-			} while (type != typeof(Message));
-		}
+		// Perf: branching with single if-else statement is better than virtual dispatch
+		return IsSlowMsgWatchEnabled
+			? DispatchAndWatchSlowMsg(handlers, message, token)
+			: handlers.InvokeAsync(message, token);
+	}
 
-		private void PublishByType(Message message, Type type) {
-			List<IMessageHandler> handlers;
-			if (_typeHash.TryGetValue(type, out handlers)) {
-				for (int i = 0, n = handlers.Count; i < n; ++i) {
-					var handler = handlers[i];
-					if (_watchSlowMsg) {
-						var start = DateTime.UtcNow;
+	private async ValueTask DispatchAndWatchSlowMsg(MessageTypeHandler handlers, Message message,
+		CancellationToken token) {
+		var ts = new Timestamp();
 
-						handler.TryHandle(message);
+		await handlers.InvokeAsync(message, token);
 
-						var elapsed = DateTime.UtcNow - start;
-						if (elapsed > _slowMsgThreshold)
-							Log.Debug("SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.", Name,
-								message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
-					} else {
-						handler.TryHandle(message);
-					}
-				}
-			}
+		var elapsedMs = ts.ElapsedMilliseconds;
+		if (elapsedMs > _slowMsgThresholdMs) {
+			Log.Debug("SLOW BUS MSG [{bus}]: {message} - {elapsed}ms.",
+				Name, message.GetType().Name, (int)elapsedMs);
+			if (elapsedMs > QueuedHandlerThreadPool.VerySlowMsgThreshold.TotalMilliseconds &&
+			    message is not SystemMessage.SystemInit)
+				Log.Error("---!!! VERY SLOW BUS MSG [{bus}]: {message} - {elapsed}ms.",
+					Name, message.GetType().Name, (int)elapsedMs);
 		}
 	}
 
-	/// <summary>
-	/// Synchronously dispatches messages to zero or more subscribers.
-	/// Subscribers are responsible for handling exceptions
-	/// </summary>
-	public class InMemoryBus2 : IBus, ISubscriber, IPublisher, IHandle<Message> {
-		public static InMemoryBus2 CreateTest() {
-			return new InMemoryBus2();
-		}
-
-		public static readonly TimeSpan DefaultSlowMessageThreshold = TimeSpan.FromMilliseconds(48);
-
-		private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<InMemoryBus2>();
-
-		public string Name { get; private set; }
-
-		private readonly Dictionary<Type, List<IMessageHandler>> _typeHash;
-
-		private readonly bool _watchSlowMsg;
-		private readonly TimeSpan _slowMsgThreshold;
-		private object _handlersLock = new object();
-
-		private InMemoryBus2() : this("Test") {
-		}
-
-		public InMemoryBus2(string name, bool watchSlowMsg = true, TimeSpan? slowMsgThreshold = null) {
-			_typeHash = new Dictionary<Type, List<IMessageHandler>>();
-
-			Name = name;
-			_watchSlowMsg = watchSlowMsg;
-			_slowMsgThreshold = slowMsgThreshold ?? DefaultSlowMessageThreshold;
-		}
-
-		public void Subscribe<T>(IHandle<T> handler) where T : Message {
-			lock (_handlersLock) {
-				Ensure.NotNull(handler, "handler");
-
-				List<Type> descendants;
-				if (!MessageHierarchy.Descendants.TryGetValue(typeof(T), out descendants))
-					throw new Exception(string.Format("No descendants for message of type '{0}'.", typeof(T).Name));
-
-				foreach (var descendant in descendants) {
-					List<IMessageHandler> handlers;
-					if (!_typeHash.TryGetValue(descendant, out handlers)) {
-						handlers = new List<IMessageHandler>();
-						_typeHash.Add(descendant, handlers);
-					}
-
-					if (!handlers.Any(x => x.IsSame<T>(handler)))
-						handlers.Add(new MessageHandler<T>(handler, handler.GetType().Name));
-				}
-			}
-		}
-
-		public void Unsubscribe<T>(IHandle<T> handler) where T : Message {
-			lock (_handlersLock) {
-				Ensure.NotNull(handler, "handler");
-
-				List<Type> descendants;
-				if (!MessageHierarchy.Descendants.TryGetValue(typeof(T), out descendants))
-					throw new Exception(string.Format("No descendants for message of type '{0}'.", typeof(T).Name));
-
-				foreach (var descendant in descendants) {
-					List<IMessageHandler> handlers;
-					if (_typeHash.TryGetValue(descendant, out handlers)) {
-						var messageHandler = handlers.FirstOrDefault(x => x.IsSame<T>(handler));
-						if (messageHandler != null)
-							handlers.Remove(messageHandler);
-					}
-				}
-			}
-		}
-
-		public void Handle(Message message) {
-			Publish(message);
-		}
-
-		public void Publish(Message message) {
-			Ensure.NotNull(message, "message");
-			PublishByType(message, message.GetType());
-		}
-
-		private void PublishByType(Message message, Type type) {
-			List<IMessageHandler> handlers;
-			if (!_typeHash.TryGetValue(type, out handlers))
-				return;
-
-			for (int i = 0, n = handlers.Count; i < n; ++i) {
-				var handler = handlers[i];
-				if (_watchSlowMsg) {
-					var start = DateTime.UtcNow;
-
-					handler.TryHandle(message);
-
-					var elapsed = DateTime.UtcNow - start;
-					if (elapsed > _slowMsgThreshold) {
-						Log.Debug("SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.",
-							Name, message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
-					}
-				} else {
-					handler.TryHandle(message);
-				}
-			}
-		}
-	}
-
-	/// <summary>
-	/// Synchronously dispatches messages to zero or more subscribers.
-	/// Subscribers are responsible for handling exceptions
-	/// </summary>
-	public class InMemoryBus : IBus, ISubscriber, IPublisher, IHandle<Message> {
-		public static InMemoryBus CreateTest() {
-			return new InMemoryBus();
-		}
-
-		public static readonly TimeSpan DefaultSlowMessageThreshold = TimeSpan.FromMilliseconds(48);
-		private static readonly ILogger Log = Serilog.Log.ForContext<InMemoryBus>();
-
-		public string Name { get; private set; }
-
-		private readonly List<IMessageHandler>[] _handlers;
-
-		private readonly bool _watchSlowMsg;
-		private readonly TimeSpan _slowMsgThreshold;
-		private object _handlersLock = new object();
-
-		private InMemoryBus() : this("Test") {
-		}
-
-		public InMemoryBus(string name, bool watchSlowMsg = true, TimeSpan? slowMsgThreshold = null) {
-			Name = name;
-			_watchSlowMsg = watchSlowMsg;
-			_slowMsgThreshold = slowMsgThreshold ?? DefaultSlowMessageThreshold;
-
-			_handlers = new List<IMessageHandler>[MessageHierarchy.MaxMsgTypeId + 1];
-			for (int i = 0; i < _handlers.Length; ++i) {
-				_handlers[i] = new List<IMessageHandler>();
-			}
-		}
-
-		public void Subscribe<T>(IHandle<T> handler) where T : Message {
-			lock (_handlersLock) {
-				Ensure.NotNull(handler, "handler");
-
-				int[] descendants = MessageHierarchy.DescendantsByType[typeof(T)];
-				for (int i = 0; i < descendants.Length; ++i) {
-					var handlers = _handlers[descendants[i]];
-					if (!handlers.Any(x => x.IsSame<T>(handler)))
-						handlers.Add(new MessageHandler<T>(handler, handler.GetType().Name));
-				}
-			}
-		}
-
-		public void Unsubscribe<T>(IHandle<T> handler) where T : Message {
-			lock (_handlersLock) {
-				Ensure.NotNull(handler, "handler");
-
-				int[] descendants = MessageHierarchy.DescendantsByType[typeof(T)];
-				for (int i = 0; i < descendants.Length; ++i) {
-					var handlers = _handlers[descendants[i]];
-					var messageHandler = handlers.FirstOrDefault(x => x.IsSame<T>(handler));
-					if (messageHandler != null)
-						handlers.Remove(messageHandler);
-				}
-			}
-		}
-
-		public void Handle(Message message) {
-			Publish(message);
-		}
-
-		public void Publish(Message message) {
-			//if (message == null) throw new ArgumentNullException("message");
-
-			var handlers = _handlers[message.MsgTypeId];
-			for (int i = 0, n = handlers.Count; i < n; ++i) {
-				var handler = handlers[i];
-				if (_watchSlowMsg) {
-					var start = DateTime.UtcNow;
-
-					handler.TryHandle(message);
-
-					var elapsed = DateTime.UtcNow - start;
-					if (elapsed > _slowMsgThreshold) {
-						Log.Debug("SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.",
-							Name, message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
-						if (elapsed > QueuedHandler.VerySlowMsgThreshold && !(message is SystemMessage.SystemInit))
-							Log.Error("---!!! VERY SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.",
-								Name, message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
-					}
-				} else {
-					handler.TryHandle(message);
-				}
-			}
-		}
-	}
+	ValueTask IAsyncHandle<Message>.HandleAsync(Message message, CancellationToken token)
+		=> DispatchAsync(message, token);
 }

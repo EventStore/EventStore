@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -192,7 +195,7 @@ public class leader_info_provider {
 			return new GossipAdvertiseInfo(
 				externalTcp: ParseDnsEndPoint(Gossip?.TcpEndPoint),
 				externalSecureTcp: ParseDnsEndPoint(Gossip?.SecureTcpEndPoint),
-				httpEndPointEndPoint: ParseDnsEndPoint(Gossip?.HttpEndPoint ?? DefaultHttpEndPoint),
+				httpEndPoint: ParseDnsEndPoint(Gossip?.HttpEndPoint ?? DefaultHttpEndPoint),
 				advertiseHostToClientAs: Gossip?.AdvertiseHost,
 				advertiseHttpPortToClientAs: Gossip?.AdvertiseHttpPort ?? 8,
 				advertiseTcpPortToClientAs: Gossip?.AdvertiseTcpPort ?? 9,

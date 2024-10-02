@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
 using EventStore.Client;
@@ -19,7 +22,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				throw RpcExceptions.AccessDenied();
 			}
 
-			_queue.Publish(new ProjectionSubsystemMessage.RestartSubsystem(envelope));
+			_publisher.Publish(new ProjectionSubsystemMessage.RestartSubsystem(envelope));
 
 			await restart.Task;
 			return new Empty();

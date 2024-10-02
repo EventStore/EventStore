@@ -1,18 +1,14 @@
-﻿using System.Diagnostics;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Histograms;
 
 namespace EventStore.Core.Services {
 	public class TcpSendService : IHandle<TcpMessage.TcpSend> {
-		private readonly Stopwatch _watch = Stopwatch.StartNew();
-		private const string _tcpSendHistogram = "tcp-send";
-
 		public void Handle(TcpMessage.TcpSend message) {
-			var start = _watch.ElapsedTicks;
+			// todo: histogram metric?
 			message.ConnectionManager.SendMessage(message.Message);
-			HistogramService.SetValue(_tcpSendHistogram,
-				(long)((((double)_watch.ElapsedTicks - start) / Stopwatch.Frequency) * 1000000000));
 		}
 	}
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace EventStore.SourceGenerators.Messaging {
 	static class SyntaxExtensions {
