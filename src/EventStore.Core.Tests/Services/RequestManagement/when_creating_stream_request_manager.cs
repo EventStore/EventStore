@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager;
@@ -8,7 +11,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.RequestManagement {
 	[TestFixture]
 	public class when_creating_stream_request_manager {
-		protected static readonly IPublisher Publisher = new InMemoryBus("test");
+		protected static readonly IPublisher Publisher = new SynchronousScheduler();
 		protected static readonly TimeSpan CommitTimeout = TimeSpan.FromMinutes(5);
 		protected static readonly IEnvelope Envelope = new NoopEnvelope();
 		protected static readonly Guid InternalCorrId = Guid.NewGuid();
@@ -66,7 +69,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 					ExpectedVersion,
 					new CommitSource()));
 		}
-		
+
 		[Test]
 		public void empty_commit_source_throws_null_argument_exception() {
 			Assert.Throws<ArgumentNullException>(() =>

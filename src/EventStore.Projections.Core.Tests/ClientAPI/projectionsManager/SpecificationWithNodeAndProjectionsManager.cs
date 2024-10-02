@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -71,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 		protected MiniNode<TLogFormat, TStreamId> CreateNode() {
 			_projectionsSubsystem = new ProjectionsSubsystem(new ProjectionSubsystemOptions(1, ProjectionType.All, false, TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault), Opts.FaultOutOfOrderProjectionsDefault, 500, 250));
-			_systemProjectionsCreated = SystemProjections.Created(_projectionsSubsystem.LeaderMainBus);
+			_systemProjectionsCreated = SystemProjections.Created(_projectionsSubsystem.LeaderInputBus);
 			return new MiniNode<TLogFormat, TStreamId>(
 				PathName, inMemDb: true,
 				subsystems: [_projectionsSubsystem]);

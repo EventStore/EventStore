@@ -3,6 +3,10 @@ ARG CONTAINER_RUNTIME=jammy
 FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
 ARG RUNTIME=linux-x64
 
+WORKDIR /build
+COPY ./LICENSE.md .
+COPY ./NOTICE.html .
+
 WORKDIR /build/ci
 COPY ./ci ./
 

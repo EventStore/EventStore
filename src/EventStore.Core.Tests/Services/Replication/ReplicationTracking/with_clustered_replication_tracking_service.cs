@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Concurrent;
 using System.Net;
@@ -12,7 +15,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 	public abstract class with_clustered_replication_tracking_service:
 		IHandle<ReplicationTrackingMessage.ReplicatedTo> {
 		protected string EventStreamId = "test_stream";
-		protected InMemoryBus Publisher = new InMemoryBus("publisher");
+		protected SynchronousScheduler Publisher = new("publisher");
 		protected ReplicationTrackingService Service;
 		protected ConcurrentQueue<ReplicationTrackingMessage.ReplicatedTo> ReplicatedTos = new ConcurrentQueue<ReplicationTrackingMessage.ReplicatedTo>();
 		protected ICheckpoint ReplicationCheckpoint = new InMemoryCheckpoint();
@@ -23,7 +26,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
 			Publisher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(this);
-			
+
 			Service = new ReplicationTrackingService(Publisher, ClusterSize,ReplicationCheckpoint, WriterCheckpoint);
 			Service.Start();
 			When();
@@ -35,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 		}
 
 		public abstract void When();
-		
+
 		protected void BecomeLeader() {
 			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 		}

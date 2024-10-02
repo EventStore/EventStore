@@ -11,6 +11,13 @@ trim_trailing_whitespace = true
 
 # C# files
 [*.cs]
+
+charset = utf-8
+
+# License headers
+dotnet_diagnostic.IDE0073.severity = error
+file_header_template = Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.\nEvent Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 # New line preferences
 csharp_new_line_before_open_brace = none
 csharp_new_line_before_catch = false
@@ -19,6 +26,12 @@ csharp_new_line_before_finally = false
 csharp_new_line_before_members_in_anonymous_types = false
 csharp_new_line_before_members_in_object_initializers = false
 csharp_new_line_within_query_expression_clauses = true
+
+# disable hint to use primary constructor
+dotnet_diagnostic.IDE0290.severity = none
+
+# use ValueTasks correctly
+dotnet_diagnostic.CA2012.severity = error
 
 # Indentation preferences
 csharp_indent_block_contents = true

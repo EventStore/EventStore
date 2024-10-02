@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -174,8 +177,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 		private IEventFilter _filterWhenCreate = EventFilter.EventType.Prefixes(isAllStream: true, new[] { "prefixFilter" });
 
 		public when_updating_all_stream_subscription_with_filter() {
-			var bus = new InMemoryBus("bus");
-			var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
+			var bus = new SynchronousScheduler();
+			var ioDispatcher = new IODispatcher(bus, bus);
 			var trackers = new Trackers();
 
 			_storage = new FakeStorage(cfgs => cfgs.Count() >= 2);
@@ -186,7 +189,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			bus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
 
 			_sut = new PersistentSubscriptionService<TStreamId>(
-				QueuedHandler.CreateQueuedHandler(bus, "test", new QueueStatsManager(), new QueueTrackers()),
+				new QueuedHandlerThreadPool(bus, "test", new QueueStatsManager(), new QueueTrackers()),
 				new FakeReadIndex<TLogFormat,TStreamId>(_ => false, new MetaStreamLookup()),
 				ioDispatcher, bus,
 				new PersistentSubscriptionConsumerStrategyRegistry(bus, bus,

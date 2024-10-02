@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -27,13 +30,13 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			protected when_an_error_occurs(TResult expectedResult) {
 				_expectedResult = expectedResult;
 				_replySource = new TaskCompletionSource<Message>();
-				var bus = new InMemoryBus("bus");
+				var bus = new SynchronousScheduler();
 				var trackers = new Trackers();
 				_sut = new PersistentSubscriptionService<TStreamId>(
-					QueuedHandler.CreateQueuedHandler(bus, "test",
+					new QueuedHandlerThreadPool(bus, "test",
 						new QueueStatsManager(), new QueueTrackers()),
 					new FakeReadIndex<TLogFormat, TStreamId>(_ => false, new MetaStreamLookup()),
-					new IODispatcher(bus, new PublishEnvelope(bus)), bus,
+					new IODispatcher(bus, bus), bus,
 					new PersistentSubscriptionConsumerStrategyRegistry(bus, bus,
 						Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()), trackers.PersistentSubscriptionTracker);
 				_envelope = new CallbackEnvelope(_replySource.SetResult);

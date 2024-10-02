@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -23,9 +26,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private static readonly ICodec[] SupportedCodecs = new ICodec[]
 			{Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml};
-		
+
 		public static readonly char[] ETagSeparatorArray = { ';' };
-		
+
 		private static readonly Func<UriTemplateMatch, Operation> ReadStreamOperationForScavengeStream =
 			ForScavengeStream(Operations.Streams.Read);
 		public AdminController(IPublisher publisher, IPublisher networkSendQueue) : base(publisher) {
@@ -47,7 +50,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					SupportedCodecs, new Operation(Operations.Node.Scavenge.Stop)), OnStopScavenge);
 			service.RegisterAction(
 				new ControllerAction("/admin/scavenge/current", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Scavenge.Read)),
-				OnGetScavenge);
+				OnGetCurrentScavenge);
+			service.RegisterAction(
+				new ControllerAction("/admin/scavenge/last", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Scavenge.Read)),
+				OnGetLastScavenge);
 			service.RegisterAction(
 				new ControllerAction("/admin/mergeindexes", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.MergeIndexes)),
 				OnPostMergeIndexes);
@@ -65,15 +71,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			Register(service, "/streams/$scavenges?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
 				SupportedCodecs, ReadStreamOperationForScavengeStream);
 		}
-	
+
 		private static Func<UriTemplateMatch, Operation> ForScavengeStream(OperationDefinition definition) {
 			return match => {
 				var operation = new Operation(definition);
 				var stream = "$scavenges";
 				var scavengeId = match.BoundVariables["scavengeId"];
-				if (scavengeId != null) 
+				if (scavengeId != null)
 					stream = stream + "-" + scavengeId;
-				
+
 				if (!string.IsNullOrEmpty(stream)) {
 					return operation.WithParameter(Operations.Streams.Parameters.StreamId(stream));
 				}
@@ -81,7 +87,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				return operation;
 			};
 		}
-		
+
 		private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
 			    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
@@ -213,7 +219,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					return Configure.Ok(e.ContentType);
 				}, CreateErrorEnvelope(entity)
 			);
-			
+
 			Publish(new ClientMessage.ScavengeDatabase(
 				envelope: envelope,
 				correlationId: Guid.Empty,
@@ -230,7 +236,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 			Log.Information("Stopping scavenge because /admin/scavenge/{scavengeId} DELETE request has been received.",
 				scavengeId);
-			
+
 			var envelope = new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseStoppedResponse>(_networkSendQueue, entity, (e, message) => {
 					return e.To(message?.ScavengeId);
 				},
@@ -242,17 +248,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			Publish(new ClientMessage.StopDatabaseScavenge(envelope, Guid.Empty, entity.User, scavengeId));
 		}
 
-		private void OnGetScavenge(HttpEntityManager entity, UriTemplateMatch match) {
-			Log.Information("/admin/scavenge/ GET request has been received.");
-			
-			var envelope = new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseGetResponse>(
+		private void OnGetCurrentScavenge(HttpEntityManager entity, UriTemplateMatch match) {
+			Log.Information("/admin/scavenge/current GET request has been received.");
+
+			var envelope = new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseGetCurrentResponse>(
 				_networkSendQueue,
 				entity,
 				(e, message) => {
-					var result = new ScavengeGetResultDto();
+					var result = new ScavengeGetCurrentResultDto();
 
 					if (message is not null &&
-					    message.Result == ClientMessage.ScavengeDatabaseGetResponse.ScavengeResult.InProgress &&
+					    message.Result == ClientMessage.ScavengeDatabaseGetCurrentResponse.ScavengeResult.InProgress &&
 					    message.ScavengeId is not null) {
 
 						result.ScavengeId = message.ScavengeId;
@@ -266,7 +272,31 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				}, CreateErrorEnvelope(entity)
 			);
 
-			Publish(new ClientMessage.GetDatabaseScavenge(envelope, Guid.Empty, entity.User));
+			Publish(new ClientMessage.GetCurrentDatabaseScavenge(envelope, Guid.Empty, entity.User));
+		}
+
+		private void OnGetLastScavenge(HttpEntityManager entity, UriTemplateMatch match) {
+			Log.Information("/admin/scavenge/last GET request has been received.");
+
+			var envelope = new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseGetLastResponse>(
+				_networkSendQueue,
+				entity,
+				(e, message) => {
+					var result = new ScavengeGetLastResultDto();
+					if (message.ScavengeId is not null) {
+						result.ScavengeId = message.ScavengeId;
+						result.ScavengeLink = $"/admin/scavenge/{message.ScavengeId}";
+					}
+					result.ScavengeResult = message.Result.ToString();
+
+					return e.To(result);
+				},
+				(e, message) => {
+					return Configure.Ok(e.ContentType);
+				}, CreateErrorEnvelope(entity)
+			);
+
+			Publish(new ClientMessage.GetLastDatabaseScavenge(envelope, Guid.Empty, entity.User));
 		}
 
 		private void OnSetNodePriority(HttpEntityManager entity, UriTemplateMatch match) {
@@ -303,7 +333,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
 			}
 		}
-		
+
 		private void OnGetLogin(HttpEntityManager entity, UriTemplateMatch match) {
 			var message = new UserManagementMessage.UserDetailsResult(
 				new UserManagementMessage.UserData(
@@ -312,7 +342,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					entity.User.Claims.Where(x => x.Type == ClaimTypes.Role).Select(x => x.Value).ToArray(),
 					false,
 					new DateTimeOffset(DateTime.UtcNow)));
-			
+
 			entity.ReplyTextContent(
 				message.ToJson(),
 				HttpStatusCode.OK,
@@ -321,7 +351,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				new List<KeyValuePair<string, string>>(),
 				e => Log.Error(e, "Error while writing HTTP response"));
 		}
-		
+
 		private IEnvelope CreateErrorEnvelope(HttpEntityManager http) {
 			return new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseInProgressResponse>(
 				_networkSendQueue,
@@ -356,7 +386,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private string ScavengeNotFoundFormatter(ICodec codec, ClientMessage.ScavengeDatabaseNotFoundResponse message) {
 			return message.Reason;
 		}
-		
+
 		private ResponseConfiguration ScavengeUnauthorizedConfigurator(ICodec codec, ClientMessage.ScavengeDatabaseUnauthorizedResponse message) {
 			return new ResponseConfiguration(HttpStatusCode.Unauthorized, "Unauthorized", "text/plain", Helper.UTF8NoBom);
 		}
@@ -418,8 +448,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			long eventNumber = -1;
 			int count = AtomSpecs.FeedPageSize;
 			var embed = GetEmbedLevel(manager, match);
-			
-			if (scavengeId != null) 
+
+			if (scavengeId != null)
 				stream = stream + "-" + scavengeId;
 
 			if (stream.IsEmptyString()) {
@@ -501,13 +531,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 		private bool GetRequireLeader(HttpEntityManager manager, out bool requireLeader) {
 			requireLeader = false;
-			
+
 			var onlyLeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireLeader);
 			var onlyMaster = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireMaster);
-			
+
 			if (StringValues.IsNullOrEmpty(onlyLeader) && StringValues.IsNullOrEmpty(onlyMaster))
 				return true;
-		
+
 			if (string.Equals(onlyLeader, "True", StringComparison.OrdinalIgnoreCase) ||
 			    string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase)) {
 				requireLeader = true;

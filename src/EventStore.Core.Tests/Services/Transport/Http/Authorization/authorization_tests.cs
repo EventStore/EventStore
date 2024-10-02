@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
@@ -148,6 +151,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"/admin/scavenge?startFromChunk={startFromChunk}&threads={threads};POST;Ops",
 				"/admin/scavenge/{scavengeId};DELETE;Ops",
 				"/admin/scavenge/current;GET;Ops",
+				"/admin/scavenge/last;GET;Ops",
 				"/admin/mergeindexes;POST;Ops",
 				"/ping;GET;None",
 				"/info;GET;None",
@@ -184,7 +188,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"/streams/%24all/00000000000000000000000000000000/10?embed={embed};GET;Admin", /* /streams/%24all/{position}/{count}?embed={embed} */
 				"/streams/%24all/head/backward/10?embed={embed};GET;Admin", /* /streams/%24all/{position}/backward/{count}?embed={embed} */
 				/* ------------------------------------------------------------- */
-				"/histogram/{name};GET;Ops",
 				"/subscriptions;GET;User",
 				"/subscriptions/{stream};GET;User",
 				"/subscriptions/{stream}/{subscription};PUT;Ops",

@@ -1,6 +1,10 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.Jint
@@ -10,7 +14,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 		public class when_running_with_content_type_validation_enabled : TestFixtureWithInterpretedProjection {
 			protected override void Given() {
 				_projection = @"
-                fromAll().when({$any: 
+                fromAll().when({$any:
                     function(state, event) {
                     linkTo('output-stream' + event.sequenceNumber, event);
                     return {};
@@ -20,8 +24,10 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			protected override IProjectionStateHandler CreateStateHandler() {
 				return _stateHandlerFactory.Create(
-					_projectionType, _projection, 
-					enableContentTypeValidation: true, logger: (s, _) => {
+					_projectionType, _projection,
+					enableContentTypeValidation: true,
+					null,
+					logger: (s, _) => {
 						if (s.StartsWith("P:"))
 							Console.WriteLine(s);
 						else
@@ -61,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 		public class when_running_with_content_type_validation_disabled : TestFixtureWithInterpretedProjection {
 			protected override void Given() {
 				_projection = @"
-                fromAll().when({$any: 
+                fromAll().when({$any:
                     function(state, event) {
                     linkTo('output-stream' + event.sequenceNumber, event);
                     return {};
@@ -71,8 +77,10 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			protected override IProjectionStateHandler CreateStateHandler() {
 				return _stateHandlerFactory.Create(
-					_projectionType, _projection, 
-					enableContentTypeValidation: false, logger: (s, _) => {
+					_projectionType, _projection,
+					enableContentTypeValidation: false,
+					projectionExecutionTimeout: null,
+					logger: (s, _) => {
 						if (s.StartsWith("P:"))
 							Console.WriteLine(s);
 						else

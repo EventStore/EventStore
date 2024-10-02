@@ -1,8 +1,11 @@
-﻿using System;
-using EventStore.Common;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using Jint.Runtime;
 using NUnit.Framework;
 
@@ -19,14 +22,14 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
 
 		[Test, Category(_projectionType)]
 		public void it_can_be_created() {
-			using (_stateHandlerFactory.Create(_projectionType, @"", true)) {
+			using (_stateHandlerFactory.Create(_projectionType, @"", true, null)) {
 			}
 		}
 
 		[Test, Category(_projectionType)]
 		public void js_syntax_errors_are_reported() {
 			try {
-				using (_stateHandlerFactory.Create(_projectionType, @"log(1;", true, logger: (s, _) => { })) {
+				using (_stateHandlerFactory.Create(_projectionType, @"log(1;", true, null, logger: (s, _) => { })) {
 				}
 			} catch (Exception ex) {
 				Assert.IsInstanceOf<Esprima.ParserException>(ex);
@@ -36,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
 		[Test, Category(_projectionType)]
 		public void js_exceptions_errors_are_reported() {
 			try {
-				using (_stateHandlerFactory.Create(_projectionType, @"throw 123;", true, logger: (s, _) => { })) {
+				using (_stateHandlerFactory.Create(_projectionType, @"throw 123;", true, null, logger: (s, _) => { })) {
 				}
 			} catch (Exception ex) {
 				Assert.IsInstanceOf<JavaScriptException>(ex);
@@ -53,8 +56,8 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
                                 while (true) i++;
                     ",
 					true,
-					logger: (s, _) => { },
-					cancelCallbackFactory: (timeout, action) => { })) {
+					null,
+					logger: (s, _) => { })) {
 				}
 			} catch (Exception ex) {
 				Assert.IsInstanceOf<TimeoutException>(ex);
@@ -75,6 +78,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
                         });
                     ",
 					true,
+					null,
 					logger: Console.WriteLine)) {
 					h.Initialize();
 					string newState;
@@ -112,6 +116,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
                         });
                     ",
 					true,
+					null,
 					logger: Console.WriteLine)) {
 					h.Initialize();
 					string newState;
@@ -140,7 +145,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
                             while (true) i++;
                         }
                     });
-                ", true, logger: Console.WriteLine)) {
+                ", true, null, logger: Console.WriteLine)) {
 						h.Initialize();
 						string newState;
 						EmittedEventEnvelope[] emittedevents;

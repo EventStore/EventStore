@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
@@ -25,7 +28,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				inMemDb: false,
 				memTableSize: 20,
 				hashCollisionReadLimit: 1,
-				indexBitnessVersion: EventStore.Core.Index.PTableVersions.IndexV1,
+				indexBitnessVersion: EventStore.Core.Index.PTableVersions.IndexV4,
+				hash32bit: true,
 				streamExistenceFilterSize: 0);
 			await _node.Start();
 		}
@@ -61,7 +65,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				tcpPort, httpPort, inMemDb: false,
 				memTableSize: 20,
 				hashCollisionReadLimit: 1,
-				indexBitnessVersion: EventStore.Core.Index.PTableVersions.IndexV1,
+				indexBitnessVersion: EventStore.Core.Index.PTableVersions.IndexV4,
+				hash32bit: true,
 				streamExistenceFilterSize: 0);
 			await _node.Start();
 			using (var store = BuildConnection(_node)) {

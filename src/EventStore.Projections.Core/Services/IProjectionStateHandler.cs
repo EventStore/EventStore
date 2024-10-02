@@ -1,7 +1,11 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Services {
@@ -23,7 +27,7 @@ namespace EventStore.Projections.Core.Services {
 		string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data);
 
 		/// <summary>
-		/// Processes event and updates internal state if necessary.  
+		/// Processes event and updates internal state if necessary.
 		/// </summary>
 		/// <returns>true - if event was processed (new state must be returned) </returns>
 		bool ProcessEvent(
@@ -31,7 +35,7 @@ namespace EventStore.Projections.Core.Services {
 			out string newSharedState, out EmittedEventEnvelope[] emittedEvents);
 
 		/// <summary>
-		/// Processes partition created notification and updates internal state if necessary.  
+		/// Processes partition created notification and updates internal state if necessary.
 		/// </summary>
 		/// <param name="partition"></param>
 		/// <param name="createPosition"></param>
@@ -43,13 +47,13 @@ namespace EventStore.Projections.Core.Services {
 			out EmittedEventEnvelope[] emittedEvents);
 
 		/// <summary>
-		/// Processes partition deleted notification and updates internal state if necessary.  
+		/// Processes partition deleted notification and updates internal state if necessary.
 		/// </summary>
 		/// <returns>true - if event was processed (new state must be returned) </returns>
 		bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string newState);
 
 		/// <summary>
-		/// Transforms current state into a projection result.  Should not call any emit/linkTo etc 
+		/// Transforms current state into a projection result.  Should not call any emit/linkTo etc
 		/// </summary>
 		/// <returns>result JSON or NULL if current state has been skipped</returns>
 		string TransformStateToResult();

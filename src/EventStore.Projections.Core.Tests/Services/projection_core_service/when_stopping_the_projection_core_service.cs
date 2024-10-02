@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Linq;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -7,7 +10,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 	[TestFixture]
-	public class when_stopping_the_projection_core_service_with_no_running_projections 
+	public class when_stopping_the_projection_core_service_with_no_running_projections
 		: TestFixtureWithProjectionCoreService {
 		private readonly Guid _stopCorrelationId = Guid.NewGuid();
 
@@ -16,7 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			base.Setup();
 			_service.Handle(new ProjectionCoreServiceMessage.StopCore(_stopCorrelationId));
 		}
-		
+
 		[Test]
 		public void should_handle_subcomponent_stopped() {
 			var componentStopped = _consumer.HandledMessages
@@ -28,7 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 	}
 
 	[TestFixture]
-	public class when_stopping_the_projection_core_service_with_running_projections 
+	public class when_stopping_the_projection_core_service_with_running_projections
 		: TestFixtureWithProjectionCoreService  {
 		private readonly Guid _projectionId = Guid.NewGuid();
 		private readonly Guid _stopCorrelationId = Guid.NewGuid();
@@ -38,8 +41,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			base.Setup();
 			_bus.Subscribe<CoreProjectionStatusMessage.Suspended>(_service);
 			_service.Handle(new CoreProjectionManagementMessage.CreateAndPrepare(
-				_projectionId, _workerId, "test-projection", 
-				new ProjectionVersion(), ProjectionConfig.GetTest(),
+				_projectionId, _workerId, "test-projection",
+				new ProjectionVersion(), new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, true, 10000,
+					1, 250),
 				"JS", "fromStream('$user-admin').outputState()", true));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCore(_stopCorrelationId));
 		}
@@ -49,9 +53,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			var suspended = _consumer.HandledMessages
 				.OfType<CoreProjectionStatusMessage.Suspended>()
 				.LastOrDefault(x => x.ProjectionId == _projectionId);
-			Assert.IsNotNull(suspended);	
+			Assert.IsNotNull(suspended);
 		}
-		
+
 		[Test]
 		public void should_handle_subcomponent_stopped() {
 			var componentStopped = _consumer.HandledMessages
@@ -60,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			Assert.IsNotNull(componentStopped);
 		}
 	}
-	
+
 	[TestFixture]
 	public class when_stopping_the_projection_core_service_times_out_suspending_projections
 		: TestFixtureWithProjectionCoreService  {
@@ -73,8 +77,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			// Don't subscribe to the suspended message
 			_bus.Unsubscribe<CoreProjectionStatusMessage.Suspended>(_service);
 			_service.Handle(new CoreProjectionManagementMessage.CreateAndPrepare(
-				_projectionId, _workerId, "test-projection", 
-				new ProjectionVersion(), ProjectionConfig.GetTest(),
+				_projectionId, _workerId, "test-projection",
+				new ProjectionVersion(), new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, true, 10000,
+					1, 250),
 				"JS", "fromStream('$user-admin').outputState()", true));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCore(_stopCorrelationId));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCoreTimeout(_stopCorrelationId));
@@ -88,7 +93,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			Assert.IsNotNull(componentStopped);
 		}
 	}
-	
+
 	[TestFixture]
 	public class when_stopping_the_projection_core_service_and_timeout_for_wrong_correlation_received
 		: TestFixtureWithProjectionCoreService  {
@@ -101,8 +106,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			// Don't subscribe to the suspended message
 			_bus.Unsubscribe<CoreProjectionStatusMessage.Suspended>(_service);
 			_service.Handle(new CoreProjectionManagementMessage.CreateAndPrepare(
-				_projectionId, _workerId, "test-projection", 
-				new ProjectionVersion(), ProjectionConfig.GetTest(),
+				_projectionId, _workerId, "test-projection",
+				new ProjectionVersion(), new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, true, 10000,
+					1, 250),
 				"JS", "fromStream('$user-admin').outputState()", true));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCore(_stopCorrelationId));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCoreTimeout(Guid.NewGuid()));

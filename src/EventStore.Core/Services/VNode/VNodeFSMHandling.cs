@@ -1,66 +1,59 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Services.VNode {
-	public class VNodeFSMHandling<TMessage> where TMessage : Message {
-		private readonly VNodeFSMStatesDefinition _stateDef;
-		private readonly bool _defaultHandler;
+namespace EventStore.Core.Services.VNode;
 
-		public VNodeFSMHandling(VNodeFSMStatesDefinition stateDef, bool defaultHandler = false) {
-			_stateDef = stateDef;
-			_defaultHandler = defaultHandler;
-		}
+public readonly ref struct VNodeFSMHandling<TMessage>
+	where TMessage : Message {
+	private readonly VNodeFSMStatesDefinition _stateDef;
+	private readonly bool _defaultHandler;
 
-		public VNodeFSMStatesDefinition Do(Action<VNodeState, TMessage> handler) {
-			foreach (var state in _stateDef.States) {
-				if (_defaultHandler)
-					_stateDef.FSM.AddDefaultHandler(state, (s, m) => handler(s, (TMessage)m));
-				else
-					_stateDef.FSM.AddHandler<TMessage>(state, (s, m) => handler(s, (TMessage)m));
-			}
-
-			return _stateDef;
-		}
-
-		public VNodeFSMStatesDefinition Do(Action<TMessage> handler) {
-			foreach (var state in _stateDef.States) {
-				if (_defaultHandler)
-					_stateDef.FSM.AddDefaultHandler(state, (s, m) => handler((TMessage)m));
-				else
-					_stateDef.FSM.AddHandler<TMessage>(state, (s, m) => handler((TMessage)m));
-			}
-
-			return _stateDef;
-		}
-
-		public VNodeFSMStatesDefinition Ignore() {
-			foreach (var state in _stateDef.States) {
-				if (_defaultHandler)
-					_stateDef.FSM.AddDefaultHandler(state, (s, m) => { });
-				else
-					_stateDef.FSM.AddHandler<TMessage>(state, (s, m) => { });
-			}
-
-			return _stateDef;
-		}
-
-		public VNodeFSMStatesDefinition Throw() {
-			foreach (var state in _stateDef.States) {
-				if (_defaultHandler)
-					_stateDef.FSM.AddDefaultHandler(state, (s, m) => { throw new NotSupportedException(); });
-				else
-					_stateDef.FSM.AddHandler<TMessage>(state, (s, m) => { throw new NotSupportedException(); });
-			}
-
-			return _stateDef;
-		}
-
-		public VNodeFSMStatesDefinition ForwardTo(IPublisher publisher) {
-			Ensure.NotNull(publisher, "publisher");
-			return Do(publisher.Publish);
-		}
+	internal VNodeFSMHandling(VNodeFSMStatesDefinition stateDef, bool defaultHandler) {
+		_stateDef = stateDef;
+		_defaultHandler = defaultHandler;
 	}
+
+	public VNodeFSMStatesDefinition Do(Action<TMessage> handler)
+		=> Do(handler.ToAsync());
+
+	public VNodeFSMStatesDefinition Do(Func<TMessage, CancellationToken, ValueTask> handler) {
+		if (_defaultHandler) {
+			foreach (var state in _stateDef.States) {
+				_stateDef.FSM.AddDefaultHandler(state, handler.InvokeWithDowncast);
+			}
+		} else {
+			foreach (var state in _stateDef.States) {
+				_stateDef.FSM.AddHandler(state, handler);
+			}
+		}
+
+		return _stateDef;
+	}
+
+	public VNodeFSMStatesDefinition Ignore() {
+		return Do(NoOp);
+
+		static ValueTask NoOp(Message msg, CancellationToken token)
+			=> token.IsCancellationRequested ? ValueTask.FromCanceled(token) : ValueTask.CompletedTask;
+	}
+
+	public VNodeFSMStatesDefinition ForwardTo(IAsyncHandle<Message> publisher) {
+		Ensure.NotNull(publisher, "publisher");
+		return Do(publisher.HandleAsync);
+	}
+}
+
+file static class DelegateHelpers {
+	public static ValueTask InvokeWithDowncast<TMessage>(this Func<TMessage, CancellationToken, ValueTask> action,
+		Message message, CancellationToken token)
+		where TMessage : Message
+		=> action.Invoke((TMessage)message, token);
 }

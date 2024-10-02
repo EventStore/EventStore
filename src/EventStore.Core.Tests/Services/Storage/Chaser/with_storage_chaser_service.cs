@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
@@ -23,7 +26,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		readonly ICheckpoint _indexCheckpoint = new InMemoryCheckpoint(-1);
 		readonly ICheckpoint _streamExistenceFilterCheckpoint = new InMemoryCheckpoint(-1);
 
-		protected InMemoryBus Publisher = new InMemoryBus("publisher");
+		protected SynchronousScheduler Publisher = new("publisher");
 		protected StorageChaser<TStreamId> Service;
 		protected FakeIndexCommitterService<TStreamId> IndexCommitter;
 		protected IEpochManager EpochManager;
@@ -76,12 +79,12 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		private TFChunkDbConfig CreateDbConfig() {
 
 			var nodeConfig = new TFChunkDbConfig(
-				PathName, 
-				new VersionedPatternFileNamingStrategy(PathName, "chunk-"), 
-				1000, 
-				10000, 
+				PathName,
+				new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
+				1000,
+				10000,
 				_writerChk,
-				_chaserChk, 
+				_chaserChk,
 				_epochChk,
 				_proposalChk,
 				_truncateChk,

@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,7 +35,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		public readonly FakePublisher Publisher;
 		public readonly List<Message> InputMessages;
 
-		private readonly InMemoryBus _bus;
+		private readonly SynchronousScheduler _bus;
 
 		protected readonly ClusterSettings InitialClusterSettings;
 		protected readonly ClusterInfo InitialClusterInfo;
@@ -40,7 +43,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		public ElectionsServiceUnit(ClusterSettings clusterSettings) {
 			Publisher = new FakePublisher();
 
-			_bus = new InMemoryBus(GetType().Name);
+			_bus = new(GetType().Name);
 			var memberInfo = MemberInfo.Initial(clusterSettings.Self.NodeInfo.InstanceId, InitialDate,
 				VNodeState.Unknown, true,
 				clusterSettings.Self.NodeInfo.InternalTcp,

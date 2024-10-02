@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication.InternalAuthentication;
@@ -24,8 +27,8 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 	public abstract class with_replication_service : SpecificationWithDirectoryPerTestFixture {
 		protected string EventStreamId = "test_stream";
 		protected int ClusterSize = 3;
-		protected InMemoryBus Publisher = new InMemoryBus("publisher");
-		protected InMemoryBus TcpSendPublisher = new InMemoryBus("tcpSend");
+		protected SynchronousScheduler Publisher = new("publisher");
+		protected SynchronousScheduler TcpSendPublisher = new("tcpSend");
 		protected LeaderReplicationService Service;
 		protected ConcurrentQueue<ReplicationTrackingMessage.ReplicaWriteAck> ReplicaWriteAcks = new ConcurrentQueue<ReplicationTrackingMessage.ReplicaWriteAck>();
 		protected ConcurrentQueue<SystemMessage.VNodeConnectionLost> ReplicaLostMessages = new ConcurrentQueue<SystemMessage.VNodeConnectionLost>();
@@ -56,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Publisher.Subscribe(new AdHocHandler<ReplicationTrackingMessage.ReplicaWriteAck>(msg => ReplicaWriteAcks.Enqueue(msg)));
 			Publisher.Subscribe(new AdHocHandler<SystemMessage.VNodeConnectionLost>(msg => ReplicaLostMessages.Enqueue(msg)));
 			TcpSendPublisher.Subscribe(new AdHocHandler<TcpMessage.TcpSend>(msg => TcpSends.Enqueue(msg)));
-			
+
 			DbConfig = CreateDbConfig();
 			var db = new TFChunkDb(DbConfig);
 			db.Open();
@@ -92,11 +95,11 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 			manager = new TcpConnectionManager(
 				"Test Subscription Connection manager", TcpServiceType.External, new ClientTcpDispatcher(2000),
-				InMemoryBus.CreateTest(), tcpConn, InMemoryBus.CreateTest(),
+				new SynchronousScheduler(), tcpConn, new SynchronousScheduler(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
+					new Core.Helpers.IODispatcher(new SynchronousScheduler(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false, DefaultData.DefaultUserOptions),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 			var subRequest = new ReplicationMessage.ReplicaSubscriptionRequest(
@@ -135,7 +138,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			ICheckpoint indexCheckpoint = new InMemoryCheckpoint(-1);
 			ICheckpoint streamExistenceFilterCheckpoint = new InMemoryCheckpoint(-1);
 			var nodeConfig = new TFChunkDbConfig(
-				PathName, 
+				PathName,
 				new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
 				1000,
 				10000,

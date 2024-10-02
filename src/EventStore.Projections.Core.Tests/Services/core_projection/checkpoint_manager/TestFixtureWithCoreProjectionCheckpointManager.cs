@@ -1,7 +1,12 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services.Processing.Checkpointing;
+using EventStore.Projections.Core.Services.Processing.SingleStream;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager {
@@ -37,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 			_config = new ProjectionConfig(null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
 				_pendingEventsThreshold, _maxWriteBatchLength, _emitEventEnabled,
 				_checkpointsEnabled, _createTempStreams, _stopOnEof, _trackEmittedStreams, _checkpointAfterMs,
-				_maximumAllowedWritesInFlight);
+				_maximumAllowedWritesInFlight, null);
 			When();
 		}
 

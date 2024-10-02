@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,7 +19,7 @@ public class PersistentSubscriptionCheckpointReaderTests {
 	[TestCase("SubscriptionCheckpoint")] // old checkpoints
 	[TestCase("$SubscriptionCheckpoint")] // new checkpoints
 	public void can_read_checkpoints(string checkpointEventType) {
-		var bus = new InMemoryBus("persistent subscription test bus");
+		var bus = new SynchronousScheduler("persistent subscription test bus");
 
 		bus.Subscribe(new AdHocHandler<Messages.ClientMessage.ReadStreamEventsBackward>(msg => {
 			var lastEventNumber = msg.FromEventNumber + 1;
@@ -43,7 +46,7 @@ public class PersistentSubscriptionCheckpointReaderTests {
 				tfLastCommitPosition: 0));
 		}));
 
-		var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
+		var ioDispatcher = new IODispatcher(bus, bus);
 		IODispatcherTestHelpers.SubscribeIODispatcher(ioDispatcher, bus);
 		var sut = new PersistentSubscriptionCheckpointReader(ioDispatcher);
 

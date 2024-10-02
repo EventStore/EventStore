@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Threading;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -94,6 +97,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMessage = WaitForStartMessage();
+			ResetMessageEvents();
 			_instanceCorrelation = startMessage.InstanceCorrelationId;
 
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
@@ -160,6 +164,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMessage = WaitForStartMessage();
+			ResetMessageEvents();
 			_instanceCorrelation = startMessage.InstanceCorrelationId;
 
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(

@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Security.Claims;
 using EventStore.Core.Bus;
@@ -7,8 +10,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Tests.Helpers.IODispatcherTests;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
@@ -17,10 +18,9 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
 		IHandle<TimerMessage.Schedule> {
 		protected IODispatcher _ioDispatcher;
 		protected readonly ClaimsPrincipal _principal = SystemAccounts.System;
-		protected readonly InMemoryBus _bus = InMemoryBus.CreateTest();
+		protected readonly SynchronousScheduler _bus = new();
 
-		protected readonly IODispatcherAsync.CancellationScope _cancellationScope =
-			new IODispatcherAsync.CancellationScope();
+		protected readonly IODispatcherAsync.CancellationScope _cancellationScope = new();
 
 		protected ClientMessage.ReadStreamEventsForward _readForward;
 		protected ClientMessage.ReadStreamEventsBackward _readBackward;
@@ -32,8 +32,8 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
 
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
-			var _queue = QueuedHandler.CreateQueuedHandler(_bus,"TestQueuedHandler", new QueueStatsManager(), new());
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_queue));
+			var _queue = new QueuedHandlerThreadPool(_bus,"TestQueuedHandler", new QueueStatsManager(), new());
+			_ioDispatcher = new IODispatcher(_bus, _queue);
 			IODispatcherTestHelpers.SubscribeIODispatcher(_ioDispatcher, _bus);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsForward>(this);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);

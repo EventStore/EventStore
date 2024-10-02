@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Serilog;
@@ -62,6 +65,14 @@ public class QueueTrackers {
 			var pattern = $"^{@case.Regex}$";
 			var match = Regex.Match(input: queueName, pattern: pattern);
 			if (match.Success) {
+				if (string.IsNullOrWhiteSpace(@case.Label)) {
+					Log.Warning(
+						"Label for queue {queueName} matching pattern {pattern} was not specified. " +
+						"Metrics will not be collected for this queue",
+						queueName, @case.Regex);
+					return _noOpShared;
+				}
+
 				var label = Regex.Replace(
 					input: queueName,
 					pattern: pattern,

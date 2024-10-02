@@ -1,4 +1,7 @@
-﻿using System.Linq;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Linq;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Tests;
@@ -43,7 +46,7 @@ fromStream('stream').when({
 		public void state_becomes_completed() {
 			_manager.Handle(
 				new ProjectionManagementMessage.Command.GetStatistics(
-					new PublishEnvelope(_bus), null, _projectionName, false));
+					_bus, null, _projectionName, false));
 
 			Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
 			Assert.AreEqual(

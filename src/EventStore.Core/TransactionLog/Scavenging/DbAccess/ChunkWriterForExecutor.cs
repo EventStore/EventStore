@@ -1,6 +1,11 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -70,7 +75,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			}
 		}
 
-		public void Complete(out string newFileName, out long newFileSize) {
+		public async ValueTask<(string, long)> Complete(CancellationToken token) {
 			// write posmap
 			var posMapCount = 0;
 			foreach (var list in _posMapss)
@@ -80,10 +85,10 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			foreach (var list in _posMapss)
 				unifiedPosMap.AddRange(list);
 
-			_outputChunk.CompleteScavenge(unifiedPosMap);
-			_manager.SwitchChunk(chunk: _outputChunk, out newFileName);
+			await _outputChunk.CompleteScavenge(unifiedPosMap, token);
+			_manager.SwitchChunk(chunk: _outputChunk, out var newFileName);
 
-			newFileSize = _outputChunk.FileSize;
+			return (newFileName, _outputChunk.FileSize);
 		}
 
 		// tbh not sure why this distinction is important

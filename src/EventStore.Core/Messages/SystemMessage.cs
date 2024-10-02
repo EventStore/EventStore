@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using EventStore.Core.Cluster;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -198,6 +201,26 @@ namespace EventStore.Core.Messages {
 				if (String.IsNullOrEmpty(serviceName))
 					throw new ArgumentNullException("serviceName");
 				ServiceName = serviceName;
+			}
+		}
+
+		[DerivedMessage(CoreMessage.System)]
+		public partial class RegisterForGracefulTermination : Message {
+			public readonly string ComponentName;
+			public readonly Action Action;
+
+			public RegisterForGracefulTermination(string componentName, Action action) {
+				ComponentName = componentName;
+				Action = action;
+			}
+		}
+
+		[DerivedMessage(CoreMessage.System)]
+		public partial class ComponentTerminated : Message {
+			public readonly string ComponentName;
+
+			public ComponentTerminated(string componentName) {
+				ComponentName = componentName;
 			}
 		}
 

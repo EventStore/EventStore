@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -44,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			_node = new MiniNode<TLogFormat, TStreamId>(
 				PathName, inMemDb: true,
 				subsystems: [_projections]);
-			_projectionsCreated = SystemProjections.Created(_projections.LeaderMainBus);
+			_projectionsCreated = SystemProjections.Created(_projections.LeaderInputBus);
 
 			await _node.Start();
 			_conn = EventStoreConnection.Create(new ConnectionSettingsBuilder()

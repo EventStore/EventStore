@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins.Transforms;
 using Xunit;
@@ -12,7 +15,7 @@ public class ChunkHeaderTests {
 	public void can_round_trip(bool isScavenged) {
 		var source = new ChunkHeader(
 			version: (byte)Random.Shared.Next(4, 8),
-			minCompatibleVersion: (byte)Random.Shared.Next(8),
+			minCompatibleVersion: (byte)Random.Shared.Next(4),
 			chunkSize: Random.Shared.Next(500, 600),
 			chunkStartNumber: Random.Shared.Next(500, 600),
 			chunkEndNumber: Random.Shared.Next(700, 800),

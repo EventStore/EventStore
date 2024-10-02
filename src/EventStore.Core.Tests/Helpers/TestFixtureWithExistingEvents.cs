@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -34,7 +37,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public class Transaction {
 			private readonly ClientMessage.TransactionStart _startMessage;
 
-			private readonly List<Tuple<int, Event>> _events = new List<Tuple<int, Event>>();
+			private readonly List<Tuple<int, Event>> _events = new();
 
 			public Transaction(long position, ClientMessage.TransactionStart startMessage) {
 				_startMessage = startMessage;
@@ -456,7 +459,7 @@ namespace EventStore.Core.Tests.Helpers {
 				}
 			}
 
-			var eventRecords = (from ep in events.Zip(positions, (@event, position) => new {@event, position})
+			var eventRecords = (from ep in events.Zip(positions, (@event, position) => new { @event, position })
 				let e = ep.@event
 				let eventNumber = list.Count
 				//NOTE: ASSUMES STAYS ENUMERABLE
@@ -482,8 +485,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_bus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
 
 			var firstEventNumber = list.Count - events.Length;
-			if (envelope != null)
-				envelope.ReplyWith(writeEventsCompleted(firstEventNumber, firstEventNumber + events.Length - 1));
+			envelope?.ReplyWith(writeEventsCompleted(firstEventNumber, firstEventNumber + events.Length - 1));
 		}
 
 		public void Handle(StorageMessage.EventCommitted msg) {

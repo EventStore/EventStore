@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
 using System.Net;
 using EventStore.Common.Options;
@@ -45,7 +48,6 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 			Assert.AreEqual(0, _options.Application.WorkerThreads, "WorkerThreads");
 			Assert.AreEqual(true, _options.Cluster.DiscoverViaDns, "DiscoverViaDns");
 			Assert.AreEqual(30, _options.Application.StatsPeriodSec, "StatsPeriod");
-			Assert.AreEqual(false, _options.Application.EnableHistograms, "EnableHistograms");
 			Assert.AreEqual(false, _options.Application.DisableHttpCaching, "DisableHTTPCaching");
 			Assert.AreEqual(false, _options.Database.SkipDbVerify, "VerifyDbHash");
 			Assert.AreEqual(TFConsts.MinFlushDelayMs.TotalMilliseconds, _options.Database.MinFlushDelayMs, "MinFlushDelay");

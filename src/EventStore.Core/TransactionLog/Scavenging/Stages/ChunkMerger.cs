@@ -1,4 +1,8 @@
-﻿using System.Threading;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using Serilog;
 
@@ -21,7 +25,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_throttle = throttle;
 		}
 
-		public void MergeChunks(
+		public ValueTask MergeChunks(
 			ScavengePoint scavengePoint,
 			IScavengeStateForChunkMerger state,
 			ITFChunkScavengerLog scavengerLogger,
@@ -32,10 +36,10 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 			var checkpoint = new ScavengeCheckpoint.MergingChunks(scavengePoint);
 			state.SetCheckpoint(checkpoint);
-			MergeChunks(checkpoint, state, scavengerLogger, cancellationToken);
+			return MergeChunks(checkpoint, state, scavengerLogger, cancellationToken);
 		}
 
-		public void MergeChunks(
+		public ValueTask MergeChunks(
 			ScavengeCheckpoint.MergingChunks checkpoint,
 			IScavengeStateForChunkMerger state,
 			ITFChunkScavengerLog scavengerLogger,
@@ -43,10 +47,11 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 			if (_mergeChunks) {
 				_logger.Debug("SCAVENGING: Merging chunks from checkpoint: {checkpoint}", checkpoint);
-				_backend.MergeChunks(scavengerLogger, _throttle, cancellationToken);
-			} else {
-				_logger.Debug("SCAVENGING: Merging chunks is disabled");
+				return _backend.MergeChunks(scavengerLogger, _throttle, cancellationToken);
 			}
+
+			_logger.Debug("SCAVENGING: Merging chunks is disabled");
+			return ValueTask.CompletedTask;
 		}
 	}
 }

@@ -1,4 +1,7 @@
-﻿// ReSharper disable CheckNamespace
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+// ReSharper disable CheckNamespace
 using System;
 using System.IO;
 using EventStore.Common.Exceptions;
@@ -88,6 +91,11 @@ public static class ClusterVNodeOptionsValidator {
 		if (options.Cluster.ReadOnlyReplica && options.Cluster.ClusterSize <= 1) {
 			throw new InvalidConfigurationException(
 				"This node cannot be configured as a Read Only Replica as these node types are only supported in a clustered configuration.");
+		}
+
+		if (options.Cluster.Archiver && !options.Cluster.ReadOnlyReplica) {
+			throw new InvalidConfigurationException(
+				"Only Read Only Replica nodes can be Archivers.");
 		}
 	}
 

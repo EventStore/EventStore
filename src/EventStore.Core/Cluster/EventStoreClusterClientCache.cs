@@ -1,5 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Net;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -17,7 +19,7 @@ namespace EventStore.Core.Cluster {
 		private readonly TimeSpan _oldCacheItemThreshold = TimeSpan.FromMinutes(30);
 		private readonly IPublisher _bus;
 		private readonly Func<EndPoint, IPublisher, EventStoreClusterClient> _clientFactory;
-		private readonly PublishEnvelope _publishEnvelope;
+		private readonly IEnvelope _publishEnvelope;
 		private readonly MemoryCache _cache;
 
 		public EventStoreClusterClientCache(IPublisher bus,
@@ -29,7 +31,7 @@ namespace EventStore.Core.Cluster {
 			_cacheCleaningInterval = cacheCleaningInterval ?? _cacheCleaningInterval;
 			_oldCacheItemThreshold = oldCacheItemThreshold ?? _oldCacheItemThreshold;
 
-			_publishEnvelope = new PublishEnvelope(_bus);
+			_publishEnvelope = _bus;
 			_cache = new MemoryCache(new MemoryCacheOptions {
 				ExpirationScanFrequency = _oldCacheItemThreshold
 			});

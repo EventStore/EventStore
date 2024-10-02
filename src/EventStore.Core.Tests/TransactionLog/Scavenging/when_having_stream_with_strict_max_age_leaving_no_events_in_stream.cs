@@ -1,7 +1,10 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -38,8 +41,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		[Test]
-		public void expired_prepares_are_scavenged_but_the_last_in_stream_is_physically_kept() {
-			CheckRecords();
+		public async Task expired_prepares_are_scavenged_but_the_last_in_stream_is_physically_kept() {
+			await CheckRecords();
 		}
 	}
 }

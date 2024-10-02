@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 #nullable enable
 
 using System;
@@ -71,21 +74,16 @@ namespace EventStore.Core.Configuration {
 				: (configFilePath, false);
 		}
 
-		public static IConfigurationBuilder AddEventStoreYamlConfigFile(this IConfigurationBuilder builder, string path,
-			bool optional = true) {
-			if (string.IsNullOrWhiteSpace(path))
-				throw new ArgumentException("Value cannot be null or whitespace.", nameof(path));
+		public static IConfigurationBuilder AddEventStoreYamlConfigFile(
+			this IConfigurationBuilder builder,
+			string path,
+			bool optional) =>
 
-			var yamlSource = new YamlConfigurationSource {
-				Path = path,
-				Optional = optional,
-				ReloadOnChange = true,
-				Prefix = EventStoreConfigurationKeys.Prefix
-			};
-
-			yamlSource.ResolveFileProvider();
-
-			return builder.Add(yamlSource);
-		}
+			builder.AddSection(
+				EventStoreConfigurationKeys.Prefix,
+				x => x.AddYamlFile(
+					path: path,
+					optional: optional,
+					reloadOnChange: true));
 	}
 }

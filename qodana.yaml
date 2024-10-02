@@ -1,0 +1,79 @@
+version: "1.0"
+
+linter: jetbrains/qodana-dotnet:2024.1
+
+dotnet:
+  solution: src/EventStore.sln
+
+#
+# License Audit
+#
+
+# Dependencies to exclude from the License Audit
+dependencyIgnores:
+  - name: "EventStore.Plugins" # Our own software
+
+customDependencies:
+  # System.UriTemplate (source copied under src/EventStore.NETCore.Compatibility from .NET 4.8 with some modifications)
+  - name: "System.UriTemplate"
+    version: ""
+    licenses:
+      - key: "MIT"
+
+# Manually specify the licenses of the following packages
+dependencyOverrides:
+  # not automatically detectable, but the MIT license is in the nuget package
+  - name: "NETStandard.Library"
+    version: "2.0.3"
+    licenses:
+      - key: "MIT"
+        url: "https://nuget.info/packages/NETStandard.Library/2.0.3"
+
+  # Qodana is detecting this as MS-NET-LIBRARY but the nuspec in the nuget package says MIT
+  - name: "Microsoft.Diagnostics.Runtime"
+    version: "2.2.332302"
+    licenses:
+      - key: "MIT"
+        url: "https://www.nuget.org/packages/Microsoft.Diagnostics.Runtime/2.2.332302"
+
+  # the referenced license file is not trivial but appears to imply that this library is MIT
+  - name: "Mono.Posix.NETStandard"
+    version: "1.0.0"
+    licenses:
+      - key: "MIT"
+        url: "https://github.com/mono/mono/blob/main/LICENSE"
+
+  # not automatically detectable in this older package
+  - name: "OpenTelemetry"
+    version: "1.4.0-rc.1"
+    licenses:
+      - key: "Apache-2.0"
+        url: "https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/LICENSE.TXT"
+
+  # not automatically detectable in this older package
+  - name: "OpenTelemetry.Api"
+    version: "1.4.0-rc.1"
+    licenses:
+      - key: "Apache-2.0"
+        url: "https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/LICENSE.TXT"
+
+  # not automatically detectable in this older package
+  - name: "OpenTelemetry.Exporter.Prometheus.AspNetCore"
+    version: "1.4.0-rc.1"
+    licenses:
+      - key: "Apache-2.0"
+        url: "https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/LICENSE.TXT"
+
+  # not automatically detectable in this older package
+  - name: "OpenTelemetry.Extensions.DependencyInjection"
+    version: "1.4.0-rc.1"
+    licenses:
+      - key: "Apache-2.0"
+        url: "https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/LICENSE.TXT"
+
+  # not automatically detectable in this older package
+  - name: "OpenTelemetry.Extensions.Hosting"
+    version: "1.4.0-rc.1"
+    licenses:
+      - key: "Apache-2.0"
+        url: "https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/LICENSE.TXT"

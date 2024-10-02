@@ -1,4 +1,9 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogV2;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -55,11 +60,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 			chunk.WaitForDestroy(5000);
 		}
 
-
 		[Test]
-		public void a_read_on_scavenged_chunk_does_not_include_map() {
+		public async Task a_read_on_scavenged_chunk_does_not_include_map() {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("afile"), 200, isScavenged: true);
-			chunk.CompleteScavenge(new[] {new PosMap(0, 0), new PosMap(1, 1)});
+			await chunk.CompleteScavenge([new PosMap(0, 0), new PosMap(1, 1)], CancellationToken.None);
 			using (var reader = chunk.AcquireDataReader()) {
 				var buffer = new byte[1024];
 				var result = reader.ReadNextBytes(1024, buffer);

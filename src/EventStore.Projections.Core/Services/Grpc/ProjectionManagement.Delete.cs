@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
 using EventStore.Client.Projections;
@@ -25,7 +28,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			var envelope = new CallbackEnvelope(OnMessage);
 
-			_queue.Publish(new ProjectionManagementMessage.Command.Delete(envelope, name, runAs,
+			_publisher.Publish(new ProjectionManagementMessage.Command.Delete(envelope, name, runAs,
 				deleteCheckpointStream, deleteStateStream, deleteEmittedStreams));
 
 			await deletedSource.Task;

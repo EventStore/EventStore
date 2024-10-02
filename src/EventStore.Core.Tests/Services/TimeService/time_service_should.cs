@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
@@ -32,7 +35,7 @@ namespace EventStore.Core.Tests.Services.TimeService {
 		public void AddToUtcTime(TimeSpan timeSpan) {
 			UtcNow = UtcNow.Add(timeSpan);
 		}
-		
+
 		public void AddToLocalTime(TimeSpan timeSpan) {
 			UtcNow = LocalTime.Add(timeSpan);
 		}
@@ -48,13 +51,7 @@ namespace EventStore.Core.Tests.Services.TimeService {
 	}
 
 	public class TestResponseMessage : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
-		public int Id { get; set; }
+		public int Id { get; }
 
 		public TestResponseMessage(int id) {
 			Id = id;
