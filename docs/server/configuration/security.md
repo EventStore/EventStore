@@ -718,7 +718,7 @@ programmatically.
 
 ## Stream Policy Authorization Plugin <Badge type="warning" vertical="middle" text="Commercial"/>
 
-This plugin allows administrators to define stream access policies for ESDB based on stream prefix.
+This plugin allows administrators to define stream access policies for EventStoreDB based on stream prefix.
 
 ### Enabling the plugin
 
@@ -726,7 +726,7 @@ By default, the Stream Policy plugin is bundled with EventStoreDB and located in
 
 The plugin can be enabled by setting the `Authorization:PolicyType` option to `streampolicy`.
 
-You can do this by adding the following config to the `configs` folder in the installation directory:
+You can do this by adding the following config to the `config` folder in the installation directory:
 
 ```
 {
@@ -939,7 +939,7 @@ You still need to specify default stream rules when you update the `$policies` s
 ```
 
 ::: note
-If a policy update is invalid, it will not be applied and an error will be logged. ESDB will continue running with the previous valid policy in place.
+If a policy update is invalid, it will not be applied and an error will be logged. EventStoreDB will continue running with the previous valid policy in place.
 :::
 
 #### Stream Policy Schema
