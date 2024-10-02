@@ -754,10 +754,10 @@ The 140 series of FIPS (FIPS 140) are U.S. government computer security standard
 
 To run EventStoreDB on FIPS 140-2 enabled operating systems, the following is required:
 
-1. The FIPS plugin must be installed. It is available on our commercial downloads page.
-2. The node's certificates & keys must be FIPS 140-2 compliant
-    - Our certificate generation tool, [es-gencert-cli](https://github.com/EventStore/es-gencert-cli/releases), generates FIPS 140-2 compliant certificates & keys as from version 1.2.0 (only the linux build).
+1. The MD5 plugin must be installed. It is available on our [commercial downloads page](https://developers.eventstore.org/). To install it, unzip it in the `plugins` directory inside the server installation directory and restart the server.
+2. The node's certificates & keys must be FIPS 140-2 compatible
+    - Our certificate generation tool, [es-gencert-cli](https://github.com/EventStore/es-gencert-cli/releases), generates FIPS 140-2 compatible certificates & keys as from version 1.2.0 (only the linux build).
     - If you want to manually generate your certificates or keys with openssl, you must use openssl 3 or later.
-    - If you want to use PKCS #12 bundles (.p12/.pfx extension), you must use a FIPS 140-2 compliant encryption algorithm (e.g AES-256) & hash algorithm (e.g SHA-256) to encrypt the bundle's contents.
+    - If you want to use PKCS #12 bundles (.p12/.pfx extension), you must use a FIPS 140-2 compatible encryption algorithm (e.g AES-256) & hash algorithm (e.g SHA-256) to encrypt the bundle's contents.
 
-Note that EventStoreDB will also likely run properly on FIPS 140-3 compliant systems with the above steps but this cannot reliably be confirmed at the moment as FIPS 140-3 certification is still ongoing for several operating systems.
+Note that EventStoreDB will also likely run properly on FIPS 140-3 compliant operating systems with the above steps but this cannot reliably be confirmed at the moment as FIPS 140-3 certification is still ongoing for the operating systems themselves.
