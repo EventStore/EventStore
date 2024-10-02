@@ -3,7 +3,7 @@ order: 4
 ---
 
 # Redaction
-<Badge text="Commercial" type="info" vertical="middle"/>
+<Badge text="License Required" type="info" vertical="middle"/>
 
 In EventStoreDB, events are immutable and cannot be changed after they are written. Usually, when you have an event with data that needs to be deleted you should take the following steps:
 
@@ -21,14 +21,14 @@ Use the redactor as a last resort and only if you know what you're doing. Redact
 
 Using redaction has the following prerequisites:
 
-- A commercial license.
+- A valid [license key](../configuration/license-keys.md).
 - EventStoreDB version 23.6.0 or above. If running on Windows, Windows Server 2019 or above is required.
 - Server configuration option: `EnableUnixSocket: True`.
 - The redactor tool (see steps below on how to get it).
 
 ## Getting the redactor
 
-Redaction requires a commercial license. Due to its sensitive nature, the tool is available only upon request. Please [contact us here](https://www.eventstore.com/contact) if you do not have commercial support, or reach out to our support team if you do.
+Redaction requires a license key. Due to its sensitive nature, the tool is available only upon request. Please [contact us here](https://www.eventstore.com/contact) if you do not have a support contract, or reach out to our support team if you do.
 
 ## Running the redactor
 

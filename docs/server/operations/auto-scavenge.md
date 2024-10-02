@@ -2,7 +2,7 @@
 order: 2
 ---
 
-# Auto-Scavenge Plugin <Badge type="warning" vertical="middle" text="Commercial"/>
+# Auto-Scavenge Plugin <Badge type="warning" vertical="middle" text="License Required"/>
 
 The Auto-scavenge plugin automatically schedules and coordinates _cluster scavenges_ which are composed of multiple _node scavenges_ run across all of the nodes in the cluster. The plugin ensures that only one node scavenge is executed at a time in the cluster, and handles restarting or cancelling scavenges if a node is lost.
 
@@ -10,7 +10,8 @@ Cluster scavenges can be configured to run on a set schedule with a CRON express
 
 The Auto-scavenge does its best not to run the scavenge process on the leader node to minimise the impact a scavenge can have on your cluster. It does this by executing the scavenge on all of the non-leader nodes first. Once all of the other nodes have been scavenged, the leader of the cluster will resign before executing its own scavenge.
 
-The Auto-scavenge plugin requires a valid license to use. If you attempt to start EventStoreDB with Auto-scavenge enabled and without a valid license, the process will log an error and exit.
+You require a [license key](../configuration/license-keys.md) to use this plugin.
+If you attempt to start EventStoreDB with Auto-scavenge enabled and without a valid license, the process will log an error and exit.
 
 ### Enabling the plugin
 

@@ -6,7 +6,7 @@ order: 2
 
 EventStoreDB collects metrics in [Prometheus format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format), available on the `/metrics` endpoint. Prometheus can be configured to scrape this endpoint directly. The metrics are configured in `metricsconfig.json`. 
 
-In addition, EventStoreDB can actively export metrics to a specified endpoint using the [OpenTelemetry Protocol](https://opentelemetry.io/docs/specs/otel/protocol/) (OTLP). <Badge type="warning" text="Commercial" vertical="middle"></Badge>
+In addition, EventStoreDB can actively export metrics to a specified endpoint using the [OpenTelemetry Protocol](https://opentelemetry.io/docs/specs/otel/protocol/) (OTLP). <Badge type="warning" text="License Required" vertical="middle"></Badge>
 
 ## Metrics reference
 

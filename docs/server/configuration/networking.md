@@ -381,13 +381,15 @@ You can also disable the gossip protocol in the external HTTP interface. If you 
 
 ## External TCP
 
-<wbr><Badge type="warning" text="Commercial" vertical="middle"/>
+<wbr><Badge type="warning" text="License Required" vertical="middle"/>
 
 The TCP client protocol plugin enables client applications based on the external TCP API to run without any changes. This provides developers a mechanism to migrate to gRPC clients. This bridge solution enables development teams to plan for the End Of Life (EOL) of the external TCP API. Past the EOL, the external TCP API will no longer be supported.
 
 ### Enabling the plugin
 
 Refer to the general [plugins configuration](../configuration/plugins.md) guide to see how to configure plugins with JSON files and environment variables.
+
+You require a [license key](../configuration/license-keys.md) with the `tcp` entitlement to use this plugin.
 
 To enable the TCP API plugin, save the following configuration in a JSON file, for example `<esdb-installation-directory>/config/tcp-plugin-config.json`, in the EventStoreDB installation directory for a node:
 

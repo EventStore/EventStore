@@ -716,7 +716,7 @@ access to `$settings` unless you specifically override it.
 Refer to the documentation of the HTTP API or SDK of your choice for more information about changing ACLs
 programmatically.
 
-## Stream Policy Authorization Plugin <Badge type="warning" vertical="middle" text="Commercial"/>
+## Stream Policy Authorization Plugin <Badge type="warning" vertical="middle" text="License Required"/>
 
 This plugin allows administrators to define stream access policies for EventStoreDB based on stream prefix.
 
@@ -1010,9 +1010,9 @@ Use the following option to enable this feature:
 
 ## FIPS 140-2 
 
-<Badge type="info" vertical="middle" text="Commercial"/>
+<Badge type="info" vertical="middle" text="License Required"/>
 
-EventStoreDB runs on FIPS 140-2 enabled operating systems, this feature requires a commercial licence.
+EventStoreDB runs on FIPS 140-2 enabled operating systems, this feature requires a [licence key](../configuration/license-keys.md).
 
 The Federal Information Processing Standards (FIPS) of the United States are a set of publicly announced standards that the National Institute of Standards and Technology (NIST) has developed for use in computer systems of non-military United States government agencies and contractors.
 
@@ -1030,11 +1030,13 @@ Note that EventStoreDB will also likely run properly on FIPS 140-3 compliant ope
 
 ## LDAP authentication 
 
-<Badge type="info" vertical="middle" text="Commercial"/>
+<Badge type="info" vertical="middle" text="License Required"/>
 
 The LDAP Authentication plugin enables EventStoreDB to use LDAP-based directory services for authentication. 
 
 ### Configuration steps
+
+You require a [license key](../configuration/license-keys.md) to use this plugin.
 
 To set up EventStoreDB with LDAP authentication, follow these steps on the [database node's configuration file](../configuration/README.md). Remember to stop the service before making changes, and then start it. 
 
@@ -1085,11 +1087,13 @@ If you encounter issues, check the server's log. Common problems include:
 
 ## User X.509 Certificates 
 
-<Badge type="info" vertical="middle" text="Commercial"/>
+<Badge type="info" vertical="middle" text="License Required"/>
 
 The User Certificates plugin allows authentication through an X.509 user certificate in addition to username and password. User certificates work across any cluster that shares a trusted root Certificate Authority (CA) with the user's certificate. This means that you can have a single user certificate that is valid across multiple clusters.
 
 ### Configuration steps
+
+You require a [license key](../configuration/license-keys.md) to use this plugin.
 
 Refer to the general [plugins configuration](../configuration/plugins.md) guide to see how to configure plugins with JSON files and environment variables.
 
@@ -1263,13 +1267,15 @@ Signature Hash: 6d922badaba2372070f13c69b620286262eab1d8d2d2156a271a1d73aaaf64e4
 
 | Error                                     | Solution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 |:------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Plugin not loaded                         | The plugin is only available in commercial editions. Check that it is present in `<installation-directory/plugins`.<br/><br/> If it is present, on startup the server will log a message similar to: `Loaded SubsystemsPlugin plugin: "user-certificates"`.                                                                                                                                                                                                                                                                |
+| Plugin not loaded                         | Check that the plugin is present in `<installation-directory/plugins`.<br/><br/> If it is present, on startup the server will log a message similar to: `Loaded SubsystemsPlugin plugin: "user-certificates"`.                                                                                                                                                                                                                                                                |
 | Plugin not enabled                        | The plugin has to be enabled in order to authenticate user requests.<br/><br/> The following log indicates that the plugin was found but not enabled: `UserCertificatesPlugin is not enabled`.                                                                                                                                                                                                                                                                                                                             |
 | Plugin enabled and user not authenticated | If the plugin has been enabled but there are still access denied errors, check the following: <ul><li>The user exists and is enabled in the EventStoreDB database. Can you log in with the username and password?</li><li>The user certificate is valid, and has a valid chain up to a trusted root CA.</li><li>The user certificate and node certificate share a common root CA.</li><li>Use 'requires leader' (which is the default) in your client configuration to rule out issues with forwarding requests.</li></ul> |
 
-## Encryption-At-Rest <Badge type="warning" vertical="middle" text="Commercial"/>
+## Encryption-At-Rest <Badge type="warning" vertical="middle" text="License Required"/>
 
 The Encryption-At-Rest plugin allows users to encrypt their EventStoreDB database. Currently, only chunk files are encrypted - the indexes are not. The primary objective is to protect against an attacker who obtains access to the physical disk. In contrast to volume or filesystem encryption, file level encryption provides some degree of protection for attacks against the live system or remote exploits as the plaintext data is not directly readable. Protecting against memory-dump based attacks is out of the scope of this plugin.
+
+You require a [license key](../configuration/license-keys.md) to use this plugin.
 
 ### Encryption Algorithm
 

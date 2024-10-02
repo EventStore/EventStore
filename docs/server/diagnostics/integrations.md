@@ -22,7 +22,7 @@ Older versions can be monitored by Prometheus using the community-supported expo
 
 ## OpenTelemetry Exporter
 
-<wbr><Badge type="info" vertical="middle" text="Commercial"/>
+<wbr><Badge type="info" vertical="middle" text="License Required"/>
 
 EventStoreDB passively exposes metrics for scraping on the `/metrics` endpoint. If you would like EventStoreDB to actively export the metrics, the _OpenTelemetry Exporter Plugin_ can be used.
 
@@ -31,6 +31,8 @@ The OpenTelemetry Exporter plugin allows you to export EventStoreDB metrics to a
 A number of APM providers natively support ingesting metrics using the OTLP protocol, so you might be able to directly use the OpenTelemetry Exporter to send metrics to your APM provider. Alternatively, you can export metrics to the OpenTelemetry Collector, which can then be configured to send metrics to a variety of backends. You can find out more about the [OpenTelemetry collector](https://opentelemetry.io/docs/collector/).
 
 ### Configuration
+
+You require a [license key](../configuration/license-keys.md) to use this plugin.
 
 Refer to the general [plugins configuration](../configuration/plugins.md) guide to see how to configure plugins with JSON files and environment variables.
 
@@ -73,12 +75,12 @@ The interval is taken from the `ExpectedScrapeIntervalSeconds` value in `metrics
 
 | Symptom                                                                      | Solution                                                                                                                                                                                                                                                                                    |
 |------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| The OpenTelemetry Exporter plugin is not loaded                              | The OpenTelemetry Exporter plugin is only available in commercial editions. Check that it is present in `<installation-directory>/plugins`. <br/><br/> If it is present, on startup the server will log a message similar to: `Loaded SubsystemsPlugin plugin: "otlp-exporter" "24.6.0.0".` |
+| The OpenTelemetry Exporter plugin is not loaded                              | Check that the plugin is present in `<installation-directory>/plugins`. <br/><br/> If it is present, on startup the server will log a message similar to: `Loaded SubsystemsPlugin plugin: "otlp-exporter" "24.6.0.0".` |
 | EventStoreDB logs a message on startup that it cannot find the configuration | The server logs a message: `OtlpExporter: No OpenTelemetry:Otlp configuration found. Not exporting metrics.`.<br/><br/> Check the configuration steps above.                                                                                                                                |
 
 ## Datadog
 
-The best way to integrate EventStoreDB metrics with Datadog today is by using the [OpenTelemetry exporter]() built-in to the commercial version of the database. We currently don't support exporting logs via the exporter.
+The best way to integrate EventStoreDB metrics with Datadog today is by using the [OpenTelemetry exporter plugin](#opentelemetry-exporter). We currently don't support exporting logs via the exporter.
 
 You can use the community-supported integration to collect EventStoreDB logs and metrics in Datadog.
 
