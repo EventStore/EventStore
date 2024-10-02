@@ -146,7 +146,7 @@ Several options are deprecated and slated for removal in future releases. See th
 | `ExtHostAdvertiseAs`          | `NodeHostAdvertiseAs`           |
 | `AdvertiseHttpPortToClientAs` | `AdvertiseNodePortToClientAs`   |
 | `IntIp`                       | `ReplicationIp`                 |
-| `IntTcpPort`                  | `ReplicationTcpPort`            |
+| `IntTcpPort`                  | `ReplicationPort`               |
 | `IntTcpPortAdvertiseAs`       | `ReplicationTcpPortAdvertiseAs` |
 | `IntHostAdvertiseAs`          | `ReplicationHostAdvertiseAs`    |
 | `IntTcpHeartbeatTimeout`      | `ReplicationHeartbeatTimeout`   |
