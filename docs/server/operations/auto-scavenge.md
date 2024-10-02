@@ -12,7 +12,7 @@ Cluster scavenges can be configured to run on a set schedule with a CRON express
 
 The Auto-scavenge does its best not to run the scavenge process on the leader node to minimise the impact a scavenge can have on your cluster. It does this by executing the scavenge on all of the non-leader nodes first. Once all of the other nodes have been scavenged, the leader of the cluster will resign before executing its own scavenge.
 
-You require a [license key](../configuration/license-keys.md) to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) to use this plugin.
 If you attempt to start EventStoreDB with Auto-scavenge enabled and without a valid license, the process will log an error and exit.
 
 ### Enabling the plugin

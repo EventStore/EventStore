@@ -29,7 +29,7 @@ Follow the upgrade procedure below on each node, starting with a follower node:
 
 1. Stop the node.
 2. Uninstall any previous versions of EventStoreDB.
-3. Install EventStoreDB 24.10 and update configuration. If you are using any licensed features, ensure that you configure a [license key](../configuration/license-keys.md).
+3. Install EventStoreDB 24.10 and update configuration. If you are using any licensed features, ensure that you configure a [license key](../quick-start/installation.md#license-keys).
 4. Start the node.
 5. Wait for the node to become a follower or read-only replica.
 6. Repeat the process for the next node.
@@ -70,7 +70,7 @@ If 32bit PTables are present we detect them on startup and exit. If this happens
 The external TCP API was removed in 24.2.0. This affects external clients using the TCP API and configurations related to it.
 
 ::: tip
-EventStoreDB 24.10 includes [a plugin](../configuration/networking.md#external-tcp) that enables the TCP client protocol. This plugin can only be used with a [license](../configuration/license-keys.md)
+EventStoreDB 24.10 includes [a plugin](../configuration/networking.md#external-tcp) that enables the TCP client protocol. This plugin can only be used with a [license](../quick-start/installation.md#license-keys)
 :::
 
 A number of configuration options have been removed as part of this. EventStoreDB will not start by default if any of the following options are present in the database configuration:

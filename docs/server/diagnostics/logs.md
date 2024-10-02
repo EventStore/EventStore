@@ -220,7 +220,7 @@ You can completely disable logging to a file by changing the `DisableLogFile` op
 
 The _Logs Download Plugin_ provides HTTP access to EventStoreDB logs so that they can be viewed without requiring file system access.
 
-You require a [license key](../configuration/license-keys.md) to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) to use this plugin.
 
 ::: tip
 You can use this API to download log files from your managed EventStoreDB clusters in Event Store Cloud.

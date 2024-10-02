@@ -1,6 +1,6 @@
 ---
 title: Networking
-order: 4
+order: 3
 ---
 
 EventStoreDB provides two interfaces: 
@@ -389,7 +389,7 @@ The TCP client protocol plugin enables client applications based on the external
 
 Refer to the general [plugins configuration](../configuration/plugins.md) guide to see how to configure plugins with JSON files and environment variables.
 
-You require a [license key](../configuration/license-keys.md) with the `tcp` entitlement to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) with the `tcp` entitlement to use this plugin.
 
 To enable the TCP API plugin, save the following configuration in a JSON file, for example `<esdb-installation-directory>/config/tcp-plugin-config.json`, in the EventStoreDB installation directory for a node:
 

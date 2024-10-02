@@ -9,7 +9,7 @@ EventStoreDB can run as a single node or as a highly-available cluster. For the 
 
 The installation procedure consists of the following steps:
 
-- Create a configuration file for each cluster node. If you are using any licensed features, ensure that you configure a [license key](../configuration/license-keys.md).
+- Create a configuration file for each cluster node. If you are using any licensed features, ensure that you configure a [license key](#license-keys).
 - Install EventStoreDB on each node using one of the available methods.
 - Obtain SSL certificates, either signed by a publicly trusted or private certificate authority.
 - Copy the configuration files and SSL certificates to each node.
@@ -22,6 +22,34 @@ The installation procedure consists of the following steps:
 |-------|----------|
 | admin | changeit |
 | ops   | changeit |
+
+### License Keys
+
+Some features of EventStoreDB require a license key to access.
+
+The license key can be provided to EventStoreDB via environment variable or config file in the [usual plugin config location](./plugins.md#json-files).
+
+Environment variable:
+
+```
+EventStore__Plugins__Licensing__LicenseKey={Your key}
+```
+
+Configuration file:
+
+```
+{
+  "EventStore": {
+    "Plugins": {
+      "Licensing": {
+        "LicenseKey": "Your key"
+      }
+    }
+  }
+}
+```
+
+EventStoreDB will not start if features are enabled that require a license key but the license is not provided or is invalid.
 
 ## Linux
 

@@ -1,5 +1,5 @@
 ---
-order: 3
+order: 2
 ---
 
 # Security
@@ -724,7 +724,7 @@ This plugin allows administrators to define stream access policies for EventStor
 
 ### Enabling the plugin
 
-You require a [license key](../configuration/license-keys.md) to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) to use this plugin.
 
 By default, the Stream Policy plugin is bundled with EventStoreDB and located inside the `plugins` directory.
 
@@ -1016,7 +1016,7 @@ Use the following option to enable this feature:
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
-EventStoreDB runs on FIPS 140-2 enabled operating systems, this feature requires a [licence key](../configuration/license-keys.md).
+EventStoreDB runs on FIPS 140-2 enabled operating systems, this feature requires a [licence key](../quick-start/installation.md#license-keys).
 
 The Federal Information Processing Standards (FIPS) of the United States are a set of publicly announced standards that the National Institute of Standards and Technology (NIST) has developed for use in computer systems of non-military United States government agencies and contractors.
 
@@ -1040,7 +1040,7 @@ The LDAP Authentication plugin enables EventStoreDB to use LDAP-based directory 
 
 ### Configuration steps
 
-You require a [license key](../configuration/license-keys.md) to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) to use this plugin.
 
 To set up EventStoreDB with LDAP authentication, follow these steps on the [database node's configuration file](../configuration/README.md). Remember to stop the service before making changes, and then start it. 
 
@@ -1097,7 +1097,7 @@ The User Certificates plugin allows authentication through an X.509 user certifi
 
 ### Configuration steps
 
-You require a [license key](../configuration/license-keys.md) to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) to use this plugin.
 
 Refer to the general [plugins configuration](../configuration/plugins.md) guide to see how to configure plugins with JSON files and environment variables.
 
@@ -1279,7 +1279,7 @@ Signature Hash: 6d922badaba2372070f13c69b620286262eab1d8d2d2156a271a1d73aaaf64e4
 
 The Encryption-At-Rest plugin allows users to encrypt their EventStoreDB database. Currently, only chunk files are encrypted - the indexes are not. The primary objective is to protect against an attacker who obtains access to the physical disk. In contrast to volume or filesystem encryption, file level encryption provides some degree of protection for attacks against the live system or remote exploits as the plaintext data is not directly readable. Protecting against memory-dump based attacks is out of the scope of this plugin.
 
-You require a [license key](../configuration/license-keys.md) to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) to use this plugin.
 
 ### Encryption Algorithm
 

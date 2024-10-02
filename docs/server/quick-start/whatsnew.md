@@ -113,4 +113,4 @@ You will need to provide a license key if you want to enable or use the followin
 * Logs Endpoint
 * OTLP Endpoint
 
-Refer to the [documentation](../configuration/license-keys.md) for more information about using a license key.
+Refer to the [documentation](../quick-start/installation.md#license-keys) for more information about using a license key.

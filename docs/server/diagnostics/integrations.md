@@ -32,7 +32,7 @@ A number of APM providers natively support ingesting metrics using the OTLP prot
 
 ### Configuration
 
-You require a [license key](../configuration/license-keys.md) to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) to use this plugin.
 
 Refer to the general [plugins configuration](../configuration/plugins.md) guide to see how to configure plugins with JSON files and environment variables.
 

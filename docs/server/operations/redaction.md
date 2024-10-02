@@ -22,7 +22,7 @@ Use the redactor as a last resort and only if you know what you're doing. Redact
 
 Using redaction has the following prerequisites:
 
-- A valid [license key](../configuration/license-keys.md).
+- A valid [license key](../quick-start/installation.md#license-keys).
 - EventStoreDB version 23.6.0 or above. If running on Windows, Windows Server 2019 or above is required.
 - Server configuration option: `EnableUnixSocket: True`.
 - The redactor tool (see steps below on how to get it).
