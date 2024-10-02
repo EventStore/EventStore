@@ -44,7 +44,7 @@ The default configuration file name is `eventstore.conf`, and it's located in:
 
 You can either change this file or create another file and instruct EventStoreDB to use it.  To tell the EventStoreDB
  server to use a different configuration file, pass the file path on the command line with `--config=filename`, 
- or use the `CONFIG` environment variable.
+ or use the `EVENTSTORE_CONFIG` environment variable.
  
 The configuration file has YAML-compatible format. The basic format of the YAML configuration file is as
 follows:
