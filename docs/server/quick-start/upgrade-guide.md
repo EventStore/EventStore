@@ -92,7 +92,7 @@ Several options are deprecated and slated for removal in version 24.10 next year
 | ExtTcpHeartbeatTimeout | NodeHeartbeatTimeout |
 | ExtTcpHeartbeatInterval | NodeHeartbeatInterval |
 | IntIp | ReplicationIp |
-| IntTcpPort | ReplicationTcpPort |
+| IntTcpPort | ReplicationPort |
 | IntTcpPortAdvertiseAs | ReplicationTcpPortAdvertiseAs |
 | IntHostAdvertiseAs | ReplicationHostAdvertiseAs |
 | IntTcpHeartbeatTimeout | ReplicationHeartbeatTimeout |
