@@ -780,6 +780,8 @@ namespace EventStore.Core {
 
 					var unknownSections = FindUnknownSections(unknownKeys);
 
+					// only report top level unknown keys. plugins, metrics, etc will use nested keys.
+					// in the future we may report unknown keys in nested sections but it is out of scope for now.
 					return unknownKeys
 						.Where(key => !unknownSections.Any(key.StartsWith));
 				}
