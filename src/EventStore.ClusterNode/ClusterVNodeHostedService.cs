@@ -142,7 +142,7 @@ namespace EventStore.ClusterNode {
 				// Temporary: get the policy plugin configuration
 				// TODO: Allow specifying multiple policy selectors
 				var policyPluginType =
-					_options.ConfigurationRoot!.GetValue<string>("EventStore:Plugins:Authorization:PolicyType") ??
+					_options.ConfigurationRoot!.GetValue<string>("EventStore:Authorization:PolicyType") ??
 					string.Empty;
 
 				var policyPlugins = pluginLoader.Load<IPolicySelectorFactory>().ToArray();
