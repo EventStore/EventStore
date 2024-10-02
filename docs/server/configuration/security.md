@@ -279,7 +279,7 @@ Event Store provides the interactive Certificate Generation CLI, which creates c
 
 #### Getting started
 
-The CLI is available as Open Source project in the [GitHub Repository](https://github.com/EventStore/es-gencert-cli). The latest release can be found under the [GitHub releases page.](https://github.com/EventStore/es-gencert-cli/releases)
+The CLI is available from its [GitHub Repository](https://github.com/EventStore/es-gencert-cli). The latest release can be found under the [GitHub releases page.](https://github.com/EventStore/es-gencert-cli/releases)
 
 We're releasing binaries for Windows, Linux and macOS. We also publish the tool as a Docker image.
 
