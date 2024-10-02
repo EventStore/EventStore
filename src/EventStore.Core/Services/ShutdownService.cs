@@ -14,14 +14,14 @@ public class ShutdownService :
 
 	private static readonly ILogger Log = Serilog.Log.ForContext<ShutdownService>();
 
-	private readonly IQueuedHandler _mainQueue;
+	private readonly IPublisher _mainQueue;
 	private readonly VNodeInfo _nodeInfo;
 	private readonly List<Action> _shutdownActions = [];
 
 	private int _componentsNeedingTermination;
 	private bool _shutdown;
 
-	public ShutdownService(IQueuedHandler mainQueue, VNodeInfo nodeInfo) {
+	public ShutdownService(IPublisher mainQueue, VNodeInfo nodeInfo) {
 		_mainQueue = mainQueue;
 		_nodeInfo = nodeInfo;
 	}
