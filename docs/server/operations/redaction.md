@@ -3,6 +3,7 @@ order: 4
 ---
 
 # Redaction
+
 <Badge text="License Required" type="info" vertical="middle"/>
 
 In EventStoreDB, events are immutable and cannot be changed after they are written. Usually, when you have an event with data that needs to be deleted you should take the following steps:

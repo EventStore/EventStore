@@ -716,11 +716,15 @@ access to `$settings` unless you specifically override it.
 Refer to the documentation of the HTTP API or SDK of your choice for more information about changing ACLs
 programmatically.
 
-## Stream Policy Authorization Plugin <Badge type="warning" vertical="middle" text="License Required"/>
+## Stream Policy Authorization Plugin
+
+<Badge type="warning" vertical="middle" text="License Required"/>
 
 This plugin allows administrators to define stream access policies for EventStoreDB based on stream prefix.
 
 ### Enabling the plugin
+
+You require a [license key](../configuration/license-keys.md) to use this plugin.
 
 By default, the Stream Policy plugin is bundled with EventStoreDB and located inside the `plugins` directory.
 

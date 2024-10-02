@@ -24,7 +24,9 @@ You can use the HTTP sink without a license, but a license is required for all o
 
 Refer to the [documentation](TODO) for instructions on setting up and configuring connectors and sinks.
 
-#### Kafka Sink <Badge type="warning" vertical="middle" text="License"/>
+#### Kafka Sink
+
+<Badge type="warning" vertical="middle" text="License Required"/>
 
 The Kafka Sink Connector writes events from EventStoreDB to a Kafka topic.
 
@@ -52,6 +54,8 @@ Refer to the [documentation](TODO) for instructions on setting up an HTTP sink.
 
 #### RabbitMQ Sink
 
+<Badge type="warning" vertical="middle" text="License Required"/>
+
 The RabbitMQ sink connector sends messages from EventStoreDB to a RabbitMQ exchange using a specified routing key.
 
 It efficiently handles message delivery by abstracting the complexities of RabbitMQ's exchange and queue management, ensuring that messages are routed to the appropriate destinations based on the provided routing key.
@@ -60,7 +64,9 @@ This sink is designed for high reliability and supports graceful error handling 
 
 Refer to the [documentation](TODO) for instructions on setting up a RabbitMQ sink.
 
-### Auto-Scavenge Plugin <Badge type="warning" vertical="middle" text="License"/>
+### Auto-Scavenge Plugin
+
+<Badge type="warning" vertical="middle" text="License Required"/>
 
 The Autoscavenge plugin automatically schedules _cluster scavenges_ which are composed of multiple _node scavenges_. Only one node scavenge can be executed at a time in the cluster. The Autoscavenge plugin allows to schedule said _cluster scavenges_.
 
@@ -68,7 +74,9 @@ This plugin is bundled in EventStoreDB version of 24.10.0, but is disabled by de
 
 Refer to the [documentation](../operations/auto-scavenge.md) for instructions on how to enable and use this plugin.
 
-### Stream Policy Plugin <Badge type="warning" vertical="middle" text="License"/>
+### Stream Policy Plugin
+
+<Badge type="warning" vertical="middle" text="License Required"/>
 
 Define stream access policies in one place based on stream prefixes, rather than using stream ACLs.
 
@@ -78,7 +86,9 @@ The Stream Policy plugin requires a license to use, and is disabled by default.
 
 Refer to the [documentation](../configuration/security.md#stream-policy-authorization-plugin) for more information about using and configuring this plugin.
 
-### Encryption-at-rest Plugin <Badge type="warning" vertical="middle" text="License"/>
+### Encryption-at-rest Plugin
+
+<Badge type="warning" vertical="middle" text="License Required"/>
 
 Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
 
