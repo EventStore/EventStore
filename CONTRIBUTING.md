@@ -2,7 +2,7 @@
 
 ## Working with the Git
 
-Event Store uses `master` as the main development branch. It contains all changes to the upcoming release. Older releases have dedicated feature branches with the format `release/oss-{version}`. E.g., `release/oss-v5`, `release/oss-v23.10`, `release/oss-v24.6`. Specific releases are tagged from the release branch commits. 
+Event Store uses `master` as the main development branch. It contains all changes to the upcoming release. Older releases have dedicated feature branches with the format `release/oss-{version}`. E.g., `release/oss-v5`, `release/oss-v23.10`, `release/oss-v24.6`. Specific releases are tagged from the release branch commits.
 
 We do our best to ensure a clean history. To do so, we ask contributors to squash their commits into a set or single logical commit.
 
@@ -29,7 +29,7 @@ To update a specific database version's docs, we recommended creating a feature 
 - Create a new branch and add your changes
 - Create a pull request targeting the `release/oss-v23.10` branch.
 
-If you're unsure which branch to select, the safe choice is the main branch (`master`). 
+If you're unsure which branch to select, the safe choice is the main branch (`master`).
 
 Multiple pull requests are not required for changes that should be reflected in multiple database version documentation. Contributors reviewing the pull request should label it (e.g., `cherry-pick:release/oss-v24.6`). Event Store uses the [GitHub action](/.github/workflows/cherry-pick-pr-for-label.yml) based on the labels that create pull requests with cherry-picks to the target branches. It's recommended that contributors monitor notifications and make sure that cherry-picks succeed. Read more in [action documentation](https://github.com/EventStore/Automations/tree/master/cherry-pick-pr-for-label).
 
@@ -49,4 +49,5 @@ By contributing to EventStoreDB:
 
 1. You assert that contribution is your original work
 2. You assert that you have the right to assign the copyright for the work
-3. You are accepting the [License](LICENSE.md)
+3. You accept the [Contributor License Agreement](https://gist.github.com/eventstore-bot/7a1e56c21e81f44a625a7462403298bf) (CLA) for your contribution
+4. You accept the [License](LICENSE.md)
