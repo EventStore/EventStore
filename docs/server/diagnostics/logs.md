@@ -218,9 +218,9 @@ You can completely disable logging to a file by changing the `DisableLogFile` op
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
-The _Logs Download Plugin_ provides HTTP access to EventStoreDB logs so that they can be viewed without requiring file system access.
+The _Logs Download_ feature provides HTTP access to EventStoreDB logs so that they can be viewed without requiring file system access.
 
-You require a [license key](../quick-start/installation.md#license-keys) to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) to use this feature.
 
 ::: tip
 You can use this API to download log files from your managed EventStoreDB clusters in Event Store Cloud.
@@ -289,7 +289,7 @@ curl https://user:password@localhost:2113/admin/logs/log20240205.json --output l
 
 ### Troubleshooting
 
-- **404 Not Found:** Verify the plugin is loaded by checking the server startup logs.
+- **404 Not Found:** Verify that you have a valid license key.
 
 - **401 Unauthorized:** Confirm the credentials are correct and the user belongs to the `$ops` or `$admins` group.
 

@@ -716,41 +716,28 @@ access to `$settings` unless you specifically override it.
 Refer to the documentation of the HTTP API or SDK of your choice for more information about changing ACLs
 programmatically.
 
-## Stream Policy Authorization Plugin
+## Stream Policy Authorization
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
-This plugin allows administrators to define stream access policies for EventStoreDB based on stream prefix.
+This allows administrators to define stream access policies for EventStoreDB based on stream prefix.
 
-### Enabling the plugin
+### Configuration
 
-You require a [license key](../quick-start/installation.md#license-keys) to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) to use this feature.
 
-By default, the Stream Policy plugin is bundled with EventStoreDB and located inside the `plugins` directory.
+Refer to the [configuration guide](../configuration/README.md) for configuration mechanisms other than YAML.
 
-The plugin can be enabled by setting the `Authorization:PolicyType` option to `streampolicy`.
+The feature can be enabled by setting the `Authorization:PolicyType` option to `streampolicy`.
 
-You can do this by adding the following config to the `config` folder in the installation directory:
+You can do this by adding the following to the server configuration file:
 
-```
-{
-  "EventStore": {
-    "Plugins": {
-      "Authorization": {
-        "PolicyType": "streampolicy"
-      }
-    }
-  }
-}
+```yaml
+Authorization:
+  PolicyType: streampolicy
 ```
 
-or by setting the environment variable:
-
-```
-EVENTSTORE__PLUGINS__AUTHORIZATION__POLICY_TYPE="streampolicy"
-```
-
-You can check that the plugin is enabled by searching for the following log at startup:
+You can check that the feature is enabled by searching for the following log at startup:
 
 ```
 [20056, 1,11:14:40.088,INF] ClusterVNodeHostedService Loaded authorization policy plugin: StreamPolicyPlugin version 24.10.0.0 (Command Line: streampolicy)
@@ -758,7 +745,7 @@ You can check that the plugin is enabled by searching for the following log at s
 ```
 
 ::: note
-If you enable the Stream Policy plugin, EventStoreDB will not enforce [stream ACLs](#access-control-lists).
+If you enable the Stream Policy feature, EventStoreDB will not enforce [stream ACLs](#access-control-lists).
 :::
 
 ### Stream Policies and Rules
@@ -767,7 +754,7 @@ Stream policies and Stream Rules are configured by events written to the `$polic
 
 #### Default Stream Policy
 
-When the Stream Policy Plugin is run for the first time, it will create a default policy in the `$policies` stream.
+When the Stream Policy feature is run for the first time, it will create a default policy in the `$policies` stream.
 The default policy does the following
 - Grants public access to user streams (this excludes users in the `$ops` group).
 - Restricts system streams to the `$admins` group.
@@ -1036,13 +1023,13 @@ Note that EventStoreDB will also likely run properly on FIPS 140-3 compliant ope
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
-The LDAP Authentication plugin enables EventStoreDB to use LDAP-based directory services for authentication. 
+The LDAP Authentication feature enables EventStoreDB to use LDAP-based directory services for authentication. 
 
-### Configuration steps
+### Configuration
 
-You require a [license key](../quick-start/installation.md#license-keys) to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) to use this feature.
 
-To set up EventStoreDB with LDAP authentication, follow these steps on the [database node's configuration file](../configuration/README.md). Remember to stop the service before making changes, and then start it. 
+Refer to the [configuration guide](../configuration/README.md) for configuration mechanisms other than YAML.
 
 1. Change the authentication type to `ldaps`.
 2. Add a section named `LdapsAuth` for LDAP-specific settings. 
@@ -1093,28 +1080,22 @@ If you encounter issues, check the server's log. Common problems include:
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
-The User Certificates plugin allows authentication through an X.509 user certificate in addition to username and password. User certificates work across any cluster that shares a trusted root Certificate Authority (CA) with the user's certificate. This means that you can have a single user certificate that is valid across multiple clusters.
+The User Certificates feature allows authentication through an X.509 user certificate in addition to username and password. User certificates work across any cluster that shares a trusted root Certificate Authority (CA) with the user's certificate. This means that you can have a single user certificate that is valid across multiple clusters.
 
 ### Configuration steps
 
-You require a [license key](../quick-start/installation.md#license-keys) to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) to use this feature.
 
-Refer to the general [plugins configuration](../configuration/plugins.md) guide to see how to configure plugins with JSON files and environment variables.
+Refer to the [configuration guide](../configuration/README.md) for configuration mechanisms other than YAML.
 
-Sample json configuration:
-```json
-{
-  "EventStore": {
-    "Plugins": {
-      "UserCertificates": {
-        "Enabled": true
-      }
-    }
-  }
-}
+Sample configuration:
+
+```yaml
+UserCertificates:
+  Enabled: true
 ```
 
-If the plugin is enabled, the server will log the following on startup:
+If the feature is enabled, the server will log the following on startup:
 
 ```
 UserCertificatesPlugin: user X.509 certificate authentication is enabled
@@ -1271,22 +1252,21 @@ Signature Hash: 6d922badaba2372070f13c69b620286262eab1d8d2d2156a271a1d73aaaf64e4
 
 | Error                                     | Solution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 |:------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Plugin not loaded                         | Check that the plugin is present in `<installation-directory/plugins`.<br/><br/> If it is present, on startup the server will log a message similar to: `Loaded SubsystemsPlugin plugin: "user-certificates"`.                                                                                                                                                                                                                                                                |
-| Plugin not enabled                        | The plugin has to be enabled in order to authenticate user requests.<br/><br/> The following log indicates that the plugin was found but not enabled: `UserCertificatesPlugin is not enabled`.                                                                                                                                                                                                                                                                                                                             |
-| Plugin enabled and user not authenticated | If the plugin has been enabled but there are still access denied errors, check the following: <ul><li>The user exists and is enabled in the EventStoreDB database. Can you log in with the username and password?</li><li>The user certificate is valid, and has a valid chain up to a trusted root CA.</li><li>The user certificate and node certificate share a common root CA.</li><li>Use 'requires leader' (which is the default) in your client configuration to rule out issues with forwarding requests.</li></ul> |
+| Feature not enabled                        | The feature has to be enabled in order to authenticate user requests.<br/><br/> The following log indicates that the feature was not enabled: `UserCertificatesPlugin is not enabled`.                                                                                                                                                                                                                                                                                                                             |
+| Feature enabled and user not authenticated | If the feature has been enabled but there are still access denied errors, check the following: <ul><li>The user exists and is enabled in the EventStoreDB database. Can you log in with the username and password?</li><li>The user certificate is valid, and has a valid chain up to a trusted root CA.</li><li>The user certificate and node certificate share a common root CA.</li><li>Use 'requires leader' (which is the default) in your client configuration to rule out issues with forwarding requests.</li></ul> |
 
 ## Encryption-At-Rest <Badge type="info" vertical="middle" text="License Required"/>
 
-The Encryption-At-Rest plugin allows users to encrypt their EventStoreDB database. Currently, only chunk files are encrypted - the indexes are not. The primary objective is to protect against an attacker who obtains access to the physical disk. In contrast to volume or filesystem encryption, file level encryption provides some degree of protection for attacks against the live system or remote exploits as the plaintext data is not directly readable. Protecting against memory-dump based attacks is out of the scope of this plugin.
+The Encryption-At-Rest feature allows users to encrypt their EventStoreDB database. Currently, only chunk files are encrypted - the indexes are not. The primary objective is to protect against an attacker who obtains access to the physical disk. In contrast to volume or filesystem encryption, file level encryption provides some degree of protection for attacks against the live system or remote exploits as the plaintext data is not directly readable. Protecting against memory-dump based attacks is out of the scope of this feature.
 
-You require a [license key](../quick-start/installation.md#license-keys) to use this plugin.
+You require a [license key](../quick-start/installation.md#license-keys) to use this feature.
 
 ### Encryption Algorithm
 
 Data is encrypted using a symmetric-key encryption algorithm.
 
 
-The plugin is designed to support different encryption algorithms. Currently, the following encryption algorithms are implemented:
+The feature is designed to support different encryption algorithms. Currently, the following encryption algorithms are implemented:
 - `AesGcm` - Advanced Encryption Standard (AES) Galois Counter Mode (GCM)
   - The default key size is 256 bits, but 128-bit and 192-bit keys are also supported.
 
@@ -1298,7 +1278,7 @@ The size of the master key is not defined but it needs to be long enough (e.g at
 
 Using a key-derivation function (HKDF in our case), the master key is used to derive multiple `data` keys. Each `data` key is used to encrypt a single chunk file. If the `master` key is compromised, the whole database can be decrypted. However, if a `data` key is compromised, only one chunk file can be decrypted.
 
-Usually, only one `master` key should be necessary. However, to cater for scenarios where a `master` key is compromised, the plugin supports loading multiple `master` keys. The latest `master` key is actively used to encrypt/decrypt new chunks, while old `master` keys are used only to decrypt old chunks - thus the new data is secure.
+Usually, only one `master` key should be necessary. However, to cater for scenarios where a `master` key is compromised, the feature supports loading multiple `master` keys. The latest `master` key is actively used to encrypt/decrypt new chunks, while old `master` keys are used only to decrypt old chunks - thus the new data is secure.
 
 ### Master Key Source
 
@@ -1306,7 +1286,7 @@ The function of a master key source is to load master keys.
 
 Master keys are loaded from the source only once at process startup. They are then kept in memory throughout the lifetime of the process.
 
-The plugin is designed to support different master key sources. Currently, the following master key sources are implemented:
+The feature is designed to support different master key sources. Currently, the following master key sources are implemented:
 - `File` - loads master keys from a directory
   - The master key can be generated using [es-genkey-cli](https://github.com/EventStore/es-genkey-cli)
   - For proper security, the master key files must be located on a drive other than where the database files are.
@@ -1316,31 +1296,20 @@ You can contact Event Store if you want us to support a particular master key so
 
 ### Configuration
 
-By default, the encryption plugin is bundled with EventStoreDB and located inside the `plugins` directory.
+Refer to the [configuration guide](../configuration/README.md) for configuration mechanisms other than YAML.
 
-A JSON configuration file (e.g. `encryption-config.json`)  needs to be added in the `./config` directory located within the EventStoreDB installation directory:
+Sample configuration:
 
-```
-{
-  "EventStore": {
-    "Plugins": {
-      "EncryptionAtRest": {
-        "Enabled": true,
-        "MasterKey": {
-          "File": {
-            "KeyPath": "/path/to/keys/"
-          }
-        },
-        "Encryption": {
-          "AesGcm": {
-            "Enabled": true,
-            "KeySize": 256 # optional. supported key sizes: 128, 192, 256 (default)
-          }
-        }
-      }
-    }
-  }
-}
+```yaml
+EncryptionAtRest:
+  Enabled: true
+  MasterKey:
+    File:
+      KeyPath: /path/to/keys/
+  Encryption:
+    AesGcm:
+      Enabled: true
+      KeySize: 256 # optional. supported key sizes: 128, 192, 256 (default)
 ```
 
 The `Transform` configuration parameter must be specified in the server's configuration file:
@@ -1351,7 +1320,7 @@ Transform: aes-gcm
 
 When using the `File` master key source, a master key must be generated using the es-genkey-cli tool and placed in the configured `KeyPath` directory. The master key having the highest ID will be chosen as the active one.
 
-Once the plugin is installed and enabled the server should log messages similar to the following:
+Once the feature is enabled, the server should log messages similar to the following:
 
 ```
 ...

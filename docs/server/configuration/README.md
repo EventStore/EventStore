@@ -6,10 +6,11 @@ dir:
 
 # Configuring the server
 
-EventStoreDB has a number of configuration options that will be described in detail in this section.
+EventStoreDB has a number of configuration options that are described in detail in the sections to the left.
 
-If you opt NOT to change the configuration, EventStoreDB uses sensible defaults.  But please note the configurations
-should be set to meet your specific needs.
+The options have sensible defaults, but those might not suit your specific needs and can be customised.
+
+There are multiple ways to configure EventStoreDB. They are described below in order of increasing precedence:
 
 ### Version and help
 
@@ -32,45 +33,74 @@ EventStoreDB version 24.10.0.1182-preview1 ee (52a0cf4c-94a4-4e7b-ad13-d6096ba30
 The full list of available options is available from the currently installed server by using the `--help`
 option in the command line.
 
-### Configuration file
+## Configuration files
 
-Use the configuration file when you want the server to run consistently with the same set of options.
-YAML files are recommended for large installations, as you can centrally distribute and manage them or generate
-them from a configuration management system.
+### YAML
 
-The default configuration file name is `eventstore.conf`, and it's located in:
+The default configuration file name is `eventstore.conf`, and it is located in:
 - **Linux:** `/etc/eventstore/`
 - **Windows:** EventStoreDB installation directory
 
-You can either change this file or create another file and instruct EventStoreDB to use it.  To tell the EventStoreDB
- server to use a different configuration file, pass the file path on the command line with `--config=filename`, 
- or use the `EVENTSTORE_CONFIG` environment variable.
- 
-The configuration file has YAML-compatible format. The basic format of the YAML configuration file is as
-follows:
+This configuration file has a YAML format. Options can be set as follows:
 
 ```yaml
 ---
 Db: "/volumes/data"
 Log: "/esdb/logs"
+ReaderThreadsCount: 4
+```
+
+Nested configuration options are expressed in the natural way:
+
+```yaml
+UserCertificates:
+  Enabled: true
 ```
 
 ::: tip 
-You need to use the three dashes and spacing in your YAML file.
+You need to use the three dashes at the top of the YAML file, and spaces for indentation.
 :::
 
+The path to the configuration file can be changed with the `EVENTSTORE_CONFIG` environment variable, or on the command line with `--config=path-to-file`.
 
-### Environment variables
+### JSON
 
-You can also set all arguments with environment variables. All variables are prefixed with `EVENTSTORE_` and
-typically follow the pattern `EVENTSTORE_{option}`. For example, setting the `EVENTSTORE_LOG`
-variable would instruct the server to use a custom location for log files.
+EventStoreDB looks for JSON configuration files in the `<installation-directory>/config/` directory, and on Linux and OS X, the server additionally looks in `/etc/eventstore/config/`. JSON configuration may be split across multiple files or combined into a single file. Apart from the `json` extension, the names of the files is not important.
 
-Environment variables override all the options specified in configuration files.
+All configuration options are nested under the `EventStore` key.
 
-### Command line
+```json
+{
+  "EventStore": {
+    "Db": "/volumes/data",
+    "Log": "/esdb/logs",
+    "ReaderThreadsCount": 4,
 
-You can also override options from both configuration files and environment variables from the command line.
+    "UserCertificates": {
+      "Enabled": true
+    }
+  }
+}
+```
+
+An option set in the JSON configuration overrides the same option set in the YAML configuration.
+
+## Environment variables
+
+When setting options via environment variables, prefix the option with `EVENTSTORE_` and use double underscores `__` to indicate nesting.
+
+For example:
+
+```
+EVENTSTORE_DB
+EVENTSTORE_LOG
+EVENTSTORE_READER_THREADS_COUNT
+EVENTSTORE_USER_CERTIFICATES__ENABLED
+```
+
+An option set via an environment variables overrides the same option set in the configuration files.
+
+## Command line
 
 For example, starting EventStoreDB with the `--log` option will override the default log files location:
 
@@ -86,7 +116,20 @@ EventStore.ClusterNode.exe --log C:\Temp\EventStore\Logs
 ```
 :::
 
-### Testing the configuration
+Use double underscores `__` to indicate nesting, as with environment variables.
+
+Additional examples:
+
+```
+--db
+--log
+--reader-threads-count
+--user-certificates__enabled
+```
+
+Command line options override the configuration files and environment variables.
+
+## Testing the configuration
 
 If more than one method is used to configure the server, it may be difficult to discern the effective
 configuration when the server starts. You can use the `--what-if` option to better understand the configuration

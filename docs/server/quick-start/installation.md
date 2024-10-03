@@ -27,29 +27,22 @@ The installation procedure consists of the following steps:
 
 Some features of EventStoreDB require a license key to access.
 
-The license key can be provided to EventStoreDB via environment variable or config file in the [usual plugin config location](./plugins.md#json-files).
+The license key can be provided to EventStoreDB in different ways. Refer to the [configuration guide](../configuration/README.md) for more information.
+
+Configuration file:
+
+```yaml
+Licensing:
+  LicenseKey: Yourkey
+```
 
 Environment variable:
 
 ```
-EventStore__Plugins__Licensing__LicenseKey={Your key}
+EVENTSTORE_LICENSING__LICENSE_KEY
 ```
 
-Configuration file:
-
-```
-{
-  "EventStore": {
-    "Plugins": {
-      "Licensing": {
-        "LicenseKey": "Your key"
-      }
-    }
-  }
-}
-```
-
-EventStoreDB will not start if features are enabled that require a license key but the license is not provided or is invalid.
+For most features that require a license, EventStoreDB will not start if the feature is enabled but the license key is not provided or is invalid.
 
 ## Linux
 
