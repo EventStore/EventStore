@@ -52,9 +52,9 @@ See the online documentation: [Getting started with Event Store Cloud](https://d
 ## Client libraries
 
 This guide shows you how to get started with EventStoreDB by setting up an instance or cluster and configuring it.
-EventStoreDB supports two protocols: gRPC and TCP(legacy).
+EventStoreDB supports two protocols: gRPC-based (current) and TCP-based (legacy).
 
-EventStoreDB supported gRPC clients
+### EventStoreDB supported clients
 
 - Python: [pyeventsourcing/esdbclient](https://pypi.org/project/esdbclient/)
 - Node.js (javascript/typescript): [EventStore/EventStore-Client-NodeJS](https://github.com/EventStore/EventStore-Client-NodeJS)
@@ -64,21 +64,21 @@ EventStoreDB supported gRPC clients
 - Rust: [EventStore/EventStoreDB-Client-Rust](https://github.com/EventStore/EventStoreDB-Client-Rust)
 - Read more in the [gRPC clients documentation](https://developers.eventstore.com/clients/grpc)
 
-Community supported gRPC clients
+### Community supported clients
 
 - Elixir: [NFIBrokerage/spear](https://github.com/NFIBrokerage/spear)
 - Ruby: [yousty/event_store_client](https://github.com/yousty/event_store_client)
 
 Read more in the [documentation](https://developers.eventstore.com/server/v22.10/#protocols-clients-and-sdks).
 
-Legacy TCP Clients (support ends with 23.10 LTS)
+### Legacy clients (support ends with 23.10 LTS)
 
-- .Net: [EventStoreDB-Client-Dotnet-Legacy](https://github.com/EventStore/EventStoreDB-Client-Dotnet-Legacy)
+- .NET: [EventStoreDB-Client-Dotnet-Legacy](https://github.com/EventStore/EventStoreDB-Client-Dotnet-Legacy)
 
 ## Deployment
 
 - Event Store Cloud - [steps to get started in Cloud](https://developers.eventstore.com/cloud/).
-- Self-managed - [steps to host EventStoreDB yourself](https://developers.eventstore.com/server/v22.10/#getting-started).
+- Self-managed - [steps to host EventStoreDB yourself](https://developers.eventstore.com/latest/quick-start/installation).
 
 ## Communities
 
@@ -91,7 +91,7 @@ Legacy TCP Clients (support ends with 23.10 LTS)
 Development is done on the `master` branch.
 We attempt to do our best to ensure that the history remains clean and to do so, we generally ask contributors to squash their commits into a set or single logical commit.
 
-If you want to switch to a particular release, you can check out the release branch for that particular release. For example:  
+If you want to switch to a particular release, you can check out the release branch for that particular release. For example:
 `git checkout release/oss-v22.10`
 
 - [Create an issue](https://github.com/EventStore/EventStore/issues)
@@ -104,7 +104,7 @@ EventStoreDB is written in a mixture of C# and JavaScript. It can run on Windows
 
 **Prerequisites**
 
-- [.NET Core SDK 8.0](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET SDK 8.0](https://dotnet.microsoft.com/download/dotnet/8.0)
 
 Once you've installed the prerequisites for your system, you can launch a `Release` build of EventStore as follows:
 
@@ -177,7 +177,7 @@ You can verify the built image by running:
 docker run --rm myeventstore --insecure --what-if
 ```
 
-## Need help?
+## More resources
 
 - [Release notes ](https://www.eventstore.com/blog/release-notes)
 - [Beginners Guide to Event Sourcing](https://www.eventstore.com/event-sourcing)
