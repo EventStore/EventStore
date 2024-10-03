@@ -385,31 +385,26 @@ You can also disable the gossip protocol in the external HTTP interface. If you 
 
 The TCP client protocol plugin enables client applications based on the external TCP API to run without any changes. This provides developers a mechanism to migrate to gRPC clients. This bridge solution enables development teams to plan for the End Of Life (EOL) of the external TCP API. Past the EOL, the external TCP API will no longer be supported.
 
-### Enabling the plugin
+### Configuration
 
-Refer to the general [plugins configuration](../configuration/plugins.md) guide to see how to configure plugins with JSON files and environment variables.
+You require a [license key](../quick-start/installation.md#license-keys) to use this feature.
 
-You require a [license key](../quick-start/installation.md#license-keys) with the `tcp` entitlement to use this plugin.
+Refer to the [configuration guide](../configuration/README.md) for configuration mechanisms other than YAML.
 
-To enable the TCP API plugin, save the following configuration in a JSON file, for example `<esdb-installation-directory>/config/tcp-plugin-config.json`, in the EventStoreDB installation directory for a node:
+Sample configuration:
 
-```json
-{
-  "EventStore": {
-    "TcpPlugin": {
-      "EnableExternalTcp": true
-    }
-  }
-}
+```yaml
+TcpPlugin:
+  EnableExternalTcp: true
 ```
 
-Once the plugin is enabled, the server will log a message similar to the one below:
+Once enabled, the server will log a message similar to the one below:
 
 ```
 [11212, 1,18:44:34.070,INF] "TcpApi" "24.6.0.0" plugin enabled.
 ```
 
-### Other parameters
+#### Other parameters
 
 The following options can be set in the json configuration:
 
@@ -420,45 +415,16 @@ The following options can be set in the json configuration:
 
 The above default values can be overridden, for example:
 
-```json
-{
-  "EventStore": {
-    "TcpPlugin": {
-      "EnableExternalTcp": true,
-      "NodeTcpPort": 8113,
-      "NodeTcpPortAdvertiseAs": 8113,
-      "NodeHeartbeatInterval": 2000,
-      "NodeHeartbeatTimeout": 1000
-    }
-  }
-}
+```yaml
+TcpPlugin:
+  EnableExternalTcp: true
+  NodeTcpPort: 8113
+  NodeTcpPortAdvertiseAs: 8113
+  NodeHeartbeatInterval: 2000
+  NodeHeartbeatTimeout: 1000
 ```
 
 ### Troubleshooting
-
-#### Plugin doesn't load
-
-The plugin has to be located in a subdirectory of the server's plugins directory. To check this:
-
-1. Go to the installation directory of a node, the directory containing the EventStoreDb executable.
-2. In this directory, there should be a directory called `plugins`, create it if this is not the case.
-3. The `plugins` directory should have a subdirectory for the TCP API plugin, for example `EventStore.TcpPlugin`. Create it if it doesn't exist.
-4. The binaries of the plugin should be located in that same subdirectory.
-
-You can verify which plugins have been found and loaded by searching for log entries similar to the following:
-
-```
-[11212, 1,18:44:30.420,INF] Plugins path: "C:\\EventStore\\plugins"
-[11212, 1,18:44:30.420,INF] Adding: "C:\\EventStore\\plugins" to the plugin catalog.
-[11212, 1,18:44:30.422,INF] Adding: "C:\\EventStore\\plugins\\EventStore.Licensing" to the plugin catalog.
-[11212, 1,18:44:30.432,INF] Adding: "C:\\EventStore\\plugins\\EventStore.POC.ConnectedSubsystemsPlugin" to the plugin catalog.
-[11212, 1,18:44:30.433,INF] Adding: "C:\\EventStore\\plugins\\EventStore.POC.ConnectorsPlugin" to the plugin catalog.
-[11212, 1,18:44:30.436,INF] Adding: "C:\\EventStore\\plugins\\EventStore.TcpPlugin" to the plugin catalog.
-[11212, 1,18:44:30.479,INF] Loaded SubsystemsPlugin plugin: "licensing" "24.10.0.0".
-[11212, 1,18:44:30.483,INF] Loaded SubsystemsPlugin plugin: "connected" "0.0.5".
-[11212, 1,18:44:30.496,INF] Loaded ConnectedSubsystemsPlugin plugin: "connectors" "0.0.5".
-[11212, 1,18:44:30.504,INF] Loaded SubsystemsPlugin plugin: "tcp-api" "24.10.0.0".
-```
 
 #### Plugin doesn't start
 

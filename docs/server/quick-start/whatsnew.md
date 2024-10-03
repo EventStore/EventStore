@@ -9,15 +9,15 @@ order: 2
 * Connectors:
     * Kafka
     * HTTP
-* AutoScavenge Plugin: Schedule and execute scavenges automatically across a cluster.
-* Stream Policy Plugin: Define stream access policies based on stream prefixes, rather than using stream ACLs.
-* Encryption-at-rest Plugin: Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
+* AutoScavenge: Schedule and execute scavenges automatically across a cluster.
+* Stream Policy: Define stream access policies based on stream prefixes, rather than using stream ACLs.
+* Encryption-at-rest: Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
 
 ### Connectors
 
 We have improved and expanded on the Connectors preview that was introduced in 24.2.0.
 
-The Connectors plugin is enabled by default.
+The Connectors feature is enabled by default.
 You can use the HTTP sink without a license, but a license is required for all other connectors.
 
 Refer to the [documentation](TODO) for instructions on setting up and configuring connectors and sinks.
@@ -50,17 +50,17 @@ retry logic and backoff strategies for handling request failures.
 
 Refer to the [documentation](TODO) for instructions on setting up an HTTP sink.
 
-### Auto-Scavenge Plugin
+### Auto-Scavenge
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
-The Autoscavenge plugin automatically schedules _cluster scavenges_ which are composed of multiple _node scavenges_. Only one node scavenge can be executed at a time in the cluster. The Autoscavenge plugin allows to schedule said _cluster scavenges_.
+The Autoscavenge feature automatically schedules _cluster scavenges_ which are composed of multiple _node scavenges_. Only one node scavenge can be executed at a time in the cluster. The Autoscavenge feature allows to schedule said _cluster scavenges_.
 
-This plugin is bundled in EventStoreDB version of 24.10.0, but is disabled by default.
+This feature is disabled by default.
 
-Refer to the [documentation](../operations/auto-scavenge.md) for instructions on how to enable and use this plugin.
+Refer to the [documentation](../operations/auto-scavenge.md) for instructions on how to enable and use this feature.
 
-### Stream Policy Plugin
+### Stream Policy
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
@@ -68,22 +68,22 @@ Define stream access policies in one place based on stream prefixes, rather than
 
 Stream access policies can be created to grant users or groups read, write, delete, or metadata access; and then these policies can be applied to streams based on their prefix, or to system or user streams in general.
 
-The Stream Policy plugin requires a license to use, and is disabled by default.
+The Stream Policy feature requires a license to use, and is disabled by default.
 
-Refer to the [documentation](../configuration/security.md#stream-policy-authorization-plugin) for more information about using and configuring this plugin.
+Refer to the [documentation](../configuration/security.md#stream-policy-authorization) for more information about using and configuring this feature.
 
-### Encryption-at-rest Plugin
+### Encryption-at-rest
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
 Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
 
-This plugin aims to protect against an attacker who obtains access to the physical disk. In contrast to volume or filesystem encryption, file level encryption provides some degree of protection for attacks against the live system or remote exploits as the plaintext data is not directly readable.
+This feature aims to protect against an attacker who obtains access to the physical disk. In contrast to volume or filesystem encryption, file level encryption provides some degree of protection for attacks against the live system or remote exploits as the plaintext data is not directly readable.
 
-The Encryption-at-rest plugin requires a license to use, and is disabled by default.
+The Encryption-at-rest feature requires a license to use, and is disabled by default.
 If Encryption-at-rest is enabled, it is not possible to roll back to an unencrypted database after a new chunk has been created, or if a chunk has been scavenged.
 
-Refer to the [documentation](../configuration/security.md#encryption-at-rest) for more information about using and configuring this plugin.
+Refer to the [documentation](../configuration/security.md#encryption-at-rest) for more information about using and configuring this feature.
 
 ## Event Store License v2
 

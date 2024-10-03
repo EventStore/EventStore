@@ -137,10 +137,10 @@ It is extremely important to stop any ongoing scavenge before taking a backup. I
 
 1. Do an HTTP `GET` request to `/admin/scavenge/current` or `/admin/scavenge/last` to determine if there is an ongoing scavenge on the node.
 2. If there is one, do an HTTP `DELETE` request to `/admin/scavenge/{scavengeId}` to abort the scavenge. `{scavengeId}` can be obtained from the HTTP response received in the first step.
-3. If you are using the [auto-scavenge plugin](./auto-scavenge.md), it is recommended to pause auto-scavenge by doing a `POST` request to `/auto-scavenge/pause`. This will ensure that no new scavenges are launched on the node while it is being backed up.
+3. If you are using the [auto-scavenge](./auto-scavenge.md) feature, it is recommended to pause auto-scavenge by doing a `POST` request to `/auto-scavenge/pause`. This will ensure that no new scavenges are launched on the node while it is being backed up.
 4. You can now back up the node's data
-5. If you are using the auto-scavenge plugin, you can resume auto-scavenge by doing a `POST` request to `/auto-scavenge/resume`.
-6. Finally, you can optionally resume the scavenge that was aborted by starting a new one. This can be done with a `POST` request to `/admin/scavenge`. If you are using the auto-scavenge plugin, this step is not recommended to avoid the risk of having multiple nodes being scavenged simultaneously.
+5. If you are using the auto-scavenge feature, you can resume auto-scavenge by doing a `POST` request to `/auto-scavenge/resume`.
+6. Finally, you can optionally resume the scavenge that was aborted by starting a new one. This can be done with a `POST` request to `/admin/scavenge`. If you are using the auto-scavenge feature, it will resume the scavenge automatically.
 
 ## Other options for data recovery
 
