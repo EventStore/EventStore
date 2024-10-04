@@ -38,7 +38,7 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 	}
 
 	// Start a new accumulation
-	public ValueTask Accumulate(
+	public async ValueTask Accumulate(
 		ScavengePoint prevScavengePoint,
 		ScavengePoint scavengePoint,
 		IScavengeStateForAccumulator<TStreamId> state,
@@ -60,7 +60,7 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 			scavengePoint: scavengePoint,
 			doneLogicalChunkNumber: doneLogicalChunkNumber);
 		state.SetCheckpoint(checkpoint);
-		return Accumulate(checkpoint, state, cancellationToken);
+		await Accumulate(checkpoint, state, cancellationToken);
 	}
 
 	// Continue accumulation for a particular scavenge point
