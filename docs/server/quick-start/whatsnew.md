@@ -20,22 +20,22 @@ We have improved and expanded on the Connectors preview that was introduced in 2
 The Connectors plugin is enabled by default.
 You can use the HTTP sink without a license, but a license is required for all other connectors.
 
-Refer to the [documentation](TODO) for instructions on setting up and configuring connectors and sinks.
+Refer to the [documentation](../features/connectors/quickstart.md) for instructions on setting up and configuring connectors and sinks.
 
 #### Kafka Sink
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
-The Kafka Sink Connector writes events from EventStoreDB to a Kafka topic.
+The Kafka sink writes events from EventStoreDB to a Kafka topic.
 
 It can extract the partition key from the record based on specific sources such as the stream ID, headers, or record key and also supports basic authentication and resilience
 features to handle transient errors.
 
-Refer to the [documentation](TODO) for instructions on setting up a Kafka sink.
+Refer to the [documentation](../features/connectors/sinks/kafka.md) for instructions on setting up a Kafka sink.
 
 #### HTTP Sink
 
-The HTTP Sink connector allows for integration between EventStoreDB and external
+The HTTP sink allows for integration between EventStoreDB and external
 APIs over HTTP or HTTPS.
 
 This connector consumes events from an EventStoreDB
@@ -48,7 +48,7 @@ The connector supports Basic Authentication and Bearer Token Authentication.
 Additionally, the connector offers resilience features, such as configurable
 retry logic and backoff strategies for handling request failures.
 
-Refer to the [documentation](TODO) for instructions on setting up an HTTP sink.
+Refer to the [documentation](../features/connectors/sinks/http.md) for instructions on setting up an HTTP sink.
 
 ### Auto-Scavenge Plugin
 
