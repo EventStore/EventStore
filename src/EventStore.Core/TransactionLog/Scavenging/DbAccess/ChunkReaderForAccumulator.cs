@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.LogAbstraction;
@@ -11,112 +13,114 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
 
-namespace EventStore.Core.TransactionLog.Scavenging {
-	public class ChunkReaderForAccumulator<TStreamId> : IChunkReaderForAccumulator<TStreamId> {
-		private readonly TFChunkManager _manager;
-		private readonly IMetastreamLookup<TStreamId> _metaStreamLookup;
-		private readonly IStreamIdConverter<TStreamId> _streamIdConverter;
-		private readonly ICheckpoint _replicationChk;
-		private readonly int _chunkSize;
+namespace EventStore.Core.TransactionLog.Scavenging;
 
-		private readonly Func<int, byte[]> _getBuffer;
-		private readonly Action _releaseBuffer;
+public class ChunkReaderForAccumulator<TStreamId> : IChunkReaderForAccumulator<TStreamId> {
+	private readonly TFChunkManager _manager;
+	private readonly IMetastreamLookup<TStreamId> _metaStreamLookup;
+	private readonly IStreamIdConverter<TStreamId> _streamIdConverter;
+	private readonly ICheckpoint _replicationChk;
+	private readonly int _chunkSize;
 
-		public ChunkReaderForAccumulator(
-			TFChunkManager manager,
-			IMetastreamLookup<TStreamId> metastreamLookup,
-			IStreamIdConverter<TStreamId> streamIdConverter,
-			ICheckpoint replicationChk,
-			int chunkSize) {
+	private readonly Func<int, byte[]> _getBuffer;
+	private readonly Action _releaseBuffer;
 
-			_manager = manager;
-			_metaStreamLookup = metastreamLookup;
-			_streamIdConverter = streamIdConverter;
-			_replicationChk = replicationChk;
-			_chunkSize = chunkSize;
+	public ChunkReaderForAccumulator(
+		TFChunkManager manager,
+		IMetastreamLookup<TStreamId> metastreamLookup,
+		IStreamIdConverter<TStreamId> streamIdConverter,
+		ICheckpoint replicationChk,
+		int chunkSize) {
 
-			var reusableRecordBuffer = new ReusableBuffer(8192);
-			_getBuffer = size => reusableRecordBuffer.AcquireAsByteArray(size);
-			_releaseBuffer = () => reusableRecordBuffer.Release();
-		}
+		_manager = manager;
+		_metaStreamLookup = metastreamLookup;
+		_streamIdConverter = streamIdConverter;
+		_replicationChk = replicationChk;
+		_chunkSize = chunkSize;
 
-		public IEnumerable<AccumulatorRecordType> ReadChunkInto(
-			int logicalChunkNumber,
-			RecordForAccumulator<TStreamId>.OriginalStreamRecord originalStreamRecord,
-			RecordForAccumulator<TStreamId>.MetadataStreamRecord metadataStreamRecord,
-			RecordForAccumulator<TStreamId>.TombStoneRecord tombStoneRecord) {
+		var reusableRecordBuffer = new ReusableBuffer(8192);
+		_getBuffer = size => reusableRecordBuffer.AcquireAsByteArray(size);
+		_releaseBuffer = () => reusableRecordBuffer.Release();
+	}
 
-			// the physical chunk might contain several logical chunks, we are only interested in one of them
-			var chunk = _manager.GetChunk(logicalChunkNumber);
-			long chunkStartPos = (long)_chunkSize * logicalChunkNumber;
-			long chunkEndPos = (long)_chunkSize * (logicalChunkNumber + 1);
-			long nextPos = chunkStartPos;
+	public async IAsyncEnumerable<AccumulatorRecordType> ReadChunkInto(
+		int logicalChunkNumber,
+		RecordForAccumulator<TStreamId>.OriginalStreamRecord originalStreamRecord,
+		RecordForAccumulator<TStreamId>.MetadataStreamRecord metadataStreamRecord,
+		RecordForAccumulator<TStreamId>.TombStoneRecord tombStoneRecord,
+		[EnumeratorCancellation] CancellationToken token) {
 
-			var replicationChk = _replicationChk.ReadNonFlushed();
+		// the physical chunk might contain several logical chunks, we are only interested in one of them
+		var chunk = _manager.GetChunk(logicalChunkNumber);
+		long chunkStartPos = (long)_chunkSize * logicalChunkNumber;
+		long chunkEndPos = (long)_chunkSize * (logicalChunkNumber + 1);
+		long nextPos = chunkStartPos;
 
-			while (true) {
-				if (nextPos >= chunkEndPos) // reached the end of this logical chunk
-					break;
+		var replicationChk = _replicationChk.ReadNonFlushed();
 
-				if (nextPos >= replicationChk)
-					throw new InvalidOperationException(
-						$"Attempt to read at position: {nextPos} which is after the " +
-						$"replication checkpoint: {replicationChk}.");
+		while (true) {
+			if (nextPos >= chunkEndPos) // reached the end of this logical chunk
+				break;
 
-				var localPos = chunk.ChunkHeader.GetLocalLogPosition(nextPos);
+			if (nextPos >= replicationChk)
+				throw new InvalidOperationException(
+					$"Attempt to read at position: {nextPos} which is after the " +
+					$"replication checkpoint: {replicationChk}.");
 
-				var result = chunk.TryReadClosestForwardRaw(localPos, _getBuffer);
+			var localPos = chunk.ChunkHeader.GetLocalLogPosition(nextPos);
 
-				if (!result.Success) {
-					// there is no need to release the reusable buffer here since result.Success is false
-					// when attempting to read outside the bounds of a chunk and thus, the buffer will not
-					// have been acquired. in other words, whenever the buffer is acquired, either result.Success
-					// is true or an exception is thrown.
-					break;
-				}
+			var result = await chunk.TryReadClosestForwardRaw(localPos, _getBuffer, token);
 
-				switch (result.RecordType) {
-					case LogRecordType.Prepare:
-						var prepareView = new PrepareLogRecordView(result.RecordBuffer, result.RecordLength);
-						var streamId = _streamIdConverter.ToStreamId(prepareView.EventStreamId);
-
-						if (prepareView.Flags.HasAnyOf(PrepareFlags.StreamDelete)) {
-							tombStoneRecord.Reset(
-								streamId,
-								prepareView.LogPosition,
-								prepareView.TimeStamp,
-								prepareView.ExpectedVersion + 1);
-							yield return AccumulatorRecordType.TombstoneRecord;
-
-						} else if (_metaStreamLookup.IsMetaStream(streamId)) {
-							metadataStreamRecord.Reset(
-								streamId,
-								prepareView.LogPosition,
-								prepareView.TimeStamp,
-								prepareView.ExpectedVersion + 1,
-								StreamMetadata.TryFromJsonBytes(prepareView.Version, prepareView.Data));
-							yield return AccumulatorRecordType.MetadataStreamRecord;
-
-						} else {
-							originalStreamRecord.Reset(
-								streamId,
-								prepareView.LogPosition,
-								prepareView.TimeStamp);
-							yield return AccumulatorRecordType.OriginalStreamRecord;
-						}
-						break;
-					case LogRecordType.Commit:
-						break;
-					case LogRecordType.System:
-						break;
-					default:
-						throw new ArgumentOutOfRangeException(nameof(result.RecordType),
-							$"Unexpected log record type: {result.RecordType}");
-				}
-
-				nextPos = chunk.ChunkHeader.GetGlobalLogPosition(result.NextPosition);
-				_releaseBuffer();
+			if (!result.Success) {
+				// there is no need to release the reusable buffer here since result.Success is false
+				// when attempting to read outside the bounds of a chunk and thus, the buffer will not
+				// have been acquired. in other words, whenever the buffer is acquired, either result.Success
+				// is true or an exception is thrown.
+				break;
 			}
+
+			switch (result.RecordType) {
+				case LogRecordType.Prepare:
+					var prepareView = new PrepareLogRecordView(result.RecordBuffer, result.RecordLength);
+					var streamId = _streamIdConverter.ToStreamId(prepareView.EventStreamId);
+
+					if (prepareView.Flags.HasAnyOf(PrepareFlags.StreamDelete)) {
+						tombStoneRecord.Reset(
+							streamId,
+							prepareView.LogPosition,
+							prepareView.TimeStamp,
+							prepareView.ExpectedVersion + 1);
+						yield return AccumulatorRecordType.TombstoneRecord;
+
+					} else if (_metaStreamLookup.IsMetaStream(streamId)) {
+						metadataStreamRecord.Reset(
+							streamId,
+							prepareView.LogPosition,
+							prepareView.TimeStamp,
+							prepareView.ExpectedVersion + 1,
+							StreamMetadata.TryFromJsonBytes(prepareView.Version, prepareView.Data));
+						yield return AccumulatorRecordType.MetadataStreamRecord;
+
+					} else {
+						originalStreamRecord.Reset(
+							streamId,
+							prepareView.LogPosition,
+							prepareView.TimeStamp);
+						yield return AccumulatorRecordType.OriginalStreamRecord;
+					}
+
+					break;
+				case LogRecordType.Commit:
+					break;
+				case LogRecordType.System:
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(result.RecordType),
+						$"Unexpected log record type: {result.RecordType}");
+			}
+
+			nextPos = chunk.ChunkHeader.GetGlobalLogPosition(result.NextPosition);
+			_releaseBuffer();
 		}
 	}
 }

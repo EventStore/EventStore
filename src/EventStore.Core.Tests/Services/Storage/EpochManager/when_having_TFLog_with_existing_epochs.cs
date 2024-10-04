@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_writer.Open();
 
 			_epochManager = GetManager();
-			_epochManager.Init();
+			await _epochManager.Init(CancellationToken.None);
 			_cache = GetCache(_epochManager);
 			Assert.NotNull(_cache);
 			Assert.That(_cache.Count == 0);
@@ -115,48 +115,48 @@ namespace EventStore.Core.Tests.Services.Storage {
 		// so this test will run through the test cases
 		// in order
 		[Test]
-		public void can_add_epochs_to_cache() {
+		public async Task can_add_epochs_to_cache() {
 
 			Assert.That(_cache.Count == 0);
 			//add fist epoch to empty cache
-			_epochManager.AddEpochToCache(_epochs[3]);
+			await _epochManager.AddEpochToCache(_epochs[3], CancellationToken.None);
 
-			Assert.That(_cache.Count == 4);
+			Assert.That(_cache.Count is 4);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[0].EpochNumber);
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[3].EpochNumber);
 
 			//add new last epoch
-			_epochManager.AddEpochToCache(_epochs[4]);
+			await _epochManager.AddEpochToCache(_epochs[4], CancellationToken.None);
 
-			Assert.That(_cache.Count == 5);
+			Assert.That(_cache.Count is 5);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[0].EpochNumber);
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[4].EpochNumber);
 
 			//idempotent add
-			_epochManager.AddEpochToCache(_epochs[1]);
-			_epochManager.AddEpochToCache(_epochs[2]);
-			_epochManager.AddEpochToCache(_epochs[3]);
+			await _epochManager.AddEpochToCache(_epochs[1], CancellationToken.None);
+			await _epochManager.AddEpochToCache(_epochs[2], CancellationToken.None);
+			await _epochManager.AddEpochToCache(_epochs[3], CancellationToken.None);
 
 			Assert.That(_cache.Count == 5);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[0].EpochNumber);
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[4].EpochNumber);
 
 			//add new skip 1 last epoch
-			_epochManager.AddEpochToCache(_epochs[6]);
+			await _epochManager.AddEpochToCache(_epochs[6], CancellationToken.None);
 
 			Assert.That(_cache.Count == 7);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[0].EpochNumber);
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[6].EpochNumber);
 
 			//add new skip 5 last epoch
-			_epochManager.AddEpochToCache(_epochs[11]);
+			await _epochManager.AddEpochToCache(_epochs[11], CancellationToken.None);
 
 			Assert.That(_cache.Count == 10);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[2].EpochNumber);
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[11].EpochNumber);
 
 			//add last rolls cache
-			_epochManager.AddEpochToCache(_epochs[12]);
+			await _epochManager.AddEpochToCache(_epochs[12], CancellationToken.None);
 
 			Assert.That(_cache.Count == 10);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[3].EpochNumber);
@@ -164,28 +164,28 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 
 			//add epoch before cache
-			_epochManager.AddEpochToCache(_epochs[1]);
+			await _epochManager.AddEpochToCache(_epochs[1], CancellationToken.None);
 
 			Assert.That(_cache.Count == 10);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[3].EpochNumber);
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[12].EpochNumber);
 
 			//add idempotent first epoch
-			_epochManager.AddEpochToCache(_epochs[2]);
+			await _epochManager.AddEpochToCache(_epochs[2], CancellationToken.None);
 
 			Assert.That(_cache.Count == 10);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[3].EpochNumber);
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[12].EpochNumber);
 
 			//add idempotent last epoch
-			_epochManager.AddEpochToCache(_epochs[12]);
+			await _epochManager.AddEpochToCache(_epochs[12], CancellationToken.None);
 
 			Assert.That(_cache.Count == 10);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[3].EpochNumber);
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[12].EpochNumber);
 
 			//add disjunct skip epoch
-			_epochManager.AddEpochToCache(_epochs[24]);
+			await _epochManager.AddEpochToCache(_epochs[24], CancellationToken.None);
 
 			Assert.That(_cache.Count == 10);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[15].EpochNumber);
@@ -193,7 +193,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 
 			//cannot get epoch ahead of last cached on master
-			var nextEpoch = _epochManager.GetEpochAfter(_epochs[24].EpochNumber, false);
+			var nextEpoch = await _epochManager.GetEpochAfter(_epochs[24].EpochNumber, false, CancellationToken.None);
 			Assert.Null(nextEpoch);
 
 			Assert.That(_cache.Count == 10);
@@ -201,7 +201,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[24].EpochNumber);
 
 			//cannot get epoch ahead of cache on master
-			nextEpoch = _epochManager.GetEpochAfter(_epochs[25].EpochNumber, false);
+			nextEpoch = await _epochManager.GetEpochAfter(_epochs[25].EpochNumber, false, CancellationToken.None);
 			Assert.Null(nextEpoch);
 
 			Assert.That(_cache.Count == 10);
@@ -209,7 +209,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[24].EpochNumber);
 
 			//can get next  in cache
-			nextEpoch = _epochManager.GetEpochAfter(_epochs[20].EpochNumber, false);
+			nextEpoch = await _epochManager.GetEpochAfter(_epochs[20].EpochNumber, false, CancellationToken.None);
 
 			Assert.That(nextEpoch.EpochPosition == _epochs[21].EpochPosition);
 			Assert.That(_cache.Count == 10);
@@ -217,7 +217,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[24].EpochNumber);
 
 			//can get next from first
-			nextEpoch = _epochManager.GetEpochAfter(_epochs[15].EpochNumber, false);
+			nextEpoch = await _epochManager.GetEpochAfter(_epochs[15].EpochNumber, false, CancellationToken.None);
 
 			Assert.That(nextEpoch.EpochPosition == _epochs[16].EpochPosition);
 			Assert.That(_cache.Count == 10);
@@ -225,7 +225,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[24].EpochNumber);
 
 			//can get next epoch from just before cache
-			nextEpoch = _epochManager.GetEpochAfter(_epochs[14].EpochNumber, false);
+			nextEpoch = await _epochManager.GetEpochAfter(_epochs[14].EpochNumber, false, CancellationToken.None);
 
 			Assert.That(nextEpoch.EpochPosition == _epochs[15].EpochPosition);
 			Assert.That(_cache.Count == 10);
@@ -233,7 +233,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[24].EpochNumber);
 
 			//can get next epoch from before cache
-			nextEpoch = _epochManager.GetEpochAfter(_epochs[10].EpochNumber, false);
+			nextEpoch = await _epochManager.GetEpochAfter(_epochs[10].EpochNumber, false, CancellationToken.None);
 
 			Assert.That(nextEpoch.EpochPosition == _epochs[11].EpochPosition);
 			Assert.That(_cache.Count == 10);
@@ -241,7 +241,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.That(_cache.Last.Value.EpochNumber == _epochs[24].EpochNumber);
 
 			//can get next epoch from 0 epoch
-			nextEpoch = _epochManager.GetEpochAfter(_epochs[0].EpochNumber, false);
+			nextEpoch = await _epochManager.GetEpochAfter(_epochs[0].EpochNumber, false, CancellationToken.None);
 
 			Assert.That(nextEpoch.EpochPosition == _epochs[1].EpochPosition);
 			Assert.That(_cache.Count == 10);
@@ -250,7 +250,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 
 			//can add last epoch in log
-			_epochManager.AddEpochToCache(_epochs[29]);
+			await _epochManager.AddEpochToCache(_epochs[29], CancellationToken.None);
 
 			Assert.That(_cache.Count == 10);
 			Assert.That(_cache.First.Value.EpochNumber == _epochs[20].EpochNumber);
@@ -258,8 +258,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 			// can write an epoch with epoch information (even though previous epochs
 			// dont have epoch information)
-			_epochManager.WriteNewEpoch(GetNextEpoch());
-			_epochManager.WriteNewEpoch(GetNextEpoch());
+			await _epochManager.WriteNewEpoch(GetNextEpoch(), CancellationToken.None);
+			await _epochManager.WriteNewEpoch(GetNextEpoch(), CancellationToken.None);
 			var epochsWritten = _published.OfType<SystemMessage.EpochWritten>().ToArray();
 			Assert.AreEqual(2, epochsWritten.Length);
 			for (int i = 0; i < epochsWritten.Length; i++) {

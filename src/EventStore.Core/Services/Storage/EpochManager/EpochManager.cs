@@ -4,6 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -19,11 +22,12 @@ using ILogger = Serilog.ILogger;
 using EventStore.LogCommon;
 
 namespace EventStore.Core.Services.Storage.EpochManager {
+
 	public abstract class Epochmanager {
 	}
 
 	public class EpochManager<TStreamId> : IEpochManager {
-		private static readonly ILogger Log = Serilog.Log.ForContext<EpochManager.Epochmanager>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<Epochmanager>();
 		private readonly IPublisher _bus;
 
 		private readonly ICheckpoint _checkpoint;
@@ -35,37 +39,48 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		private readonly IPartitionManager _partitionManager;
 		private readonly Guid _instanceId;
 
-		private readonly object _locker = new object();
+		// We have two async exclusive locks. There are three options to optimize them:
+		// 1. Replace exclusive lock with async reader/writer lock to enable horizontal scaling
+		// 2. Use copy-on-write immutable collection to avoid lock contention on read side
+		// 3. Combine two locks by writing a custom sync primitive using QueuedSynchronizer<T>
+		private readonly AsyncExclusiveLock _locker = new();
 		private readonly int _cacheSize;
-		private readonly LinkedList<EpochRecord> _epochs = new LinkedList<EpochRecord>();
+		private readonly LinkedList<EpochRecord> _epochs = new();
 
 		private LinkedListNode<EpochRecord> _firstCachedEpoch;
 		private LinkedListNode<EpochRecord> _lastCachedEpoch;
+
 		public EpochRecord GetLastEpoch() => _lastCachedEpoch?.Value;
+
 		public int LastEpochNumber => _lastCachedEpoch?.Value.EpochNumber ?? -1;
 		private bool _truncated;
-		private readonly object _truncateLock = new();
+		private readonly AsyncExclusiveLock _truncateLock = new();
 
 		// IMPORTANT
 		// Lock ordering to prevent deadlocks:
 		// 1)  _locker
 		// 2) _truncateLock
 
-		private long Checkpoint {
-			get {
-				lock (_truncateLock) {
-					if (_truncated)
-						throw new InvalidOperationException("Cannot read checkpoint since it has been truncated.");
-					return _checkpoint.Read();
-				}
+		private async ValueTask<long> GetCheckpointAsync(CancellationToken token) {
+			await _truncateLock.AcquireAsync(token);
+			try {
+				if (_truncated)
+					throw new InvalidOperationException("Cannot read checkpoint since it has been truncated.");
+				return _checkpoint.Read();
+			} finally {
+				_truncateLock.Release();
 			}
-			set {
-				lock (_truncateLock) {
-					if (_truncated)
-						throw new InvalidOperationException("Cannot write checkpoint since it has been truncated.");
-					_checkpoint.Write(value);
-					_checkpoint.Flush();
-				}
+		}
+
+		private async ValueTask SetCheckpointAsync(long value, CancellationToken token) {
+			await _truncateLock.AcquireAsync(token);
+			try {
+				if (_truncated)
+					throw new InvalidOperationException("Cannot write checkpoint since it has been truncated.");
+				_checkpoint.Write(value);
+				_checkpoint.Flush();
+			} finally {
+				_truncateLock.Release();
 			}
 		}
 
@@ -105,25 +120,26 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			_instanceId = instanceId;
 		}
 
-		public void Init() {
-			ReadEpochs(_cacheSize);
-		}
+		public ValueTask Init(CancellationToken token)
+			=> ReadEpochs(_cacheSize, token);
 
-		private void ReadEpochs(int maxEpochCount) {
-			lock (_locker) {
+		private async ValueTask ReadEpochs(int maxEpochCount, CancellationToken token) {
+			await _locker.AcquireAsync(token);
+			try {
 				var reader = _readers.Get();
 				try {
-					long epochPos = Checkpoint;
+					long epochPos = await GetCheckpointAsync(token);
 					if (epochPos < 0) {
 						// we probably have lost/uninitialized epoch checkpoint scan back to find the most recent epoch in the log
 						Log.Information("No epoch checkpoint. Scanning log backwards for most recent epoch...");
 						reader.Reposition(_writer.FlushedPosition);
 
-						SeqReadResult result;
-						while ((result = reader.TryReadPrev()).Success) {
+						for (SeqReadResult result;
+							 (result = reader.TryReadPrev()).Success;
+							 token.ThrowIfCancellationRequested()) {
 							var rec = result.LogRecord;
-							if (rec.RecordType != LogRecordType.System ||
-								((ISystemLogRecord)rec).SystemRecordType != SystemRecordType.Epoch)
+							if (rec.RecordType is not LogRecordType.System ||
+								((ISystemLogRecord)rec).SystemRecordType is not SystemRecordType.Epoch)
 								continue;
 							epochPos = rec.LogPosition;
 							break;
@@ -137,7 +153,8 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 					while (epochPos >= 0 && cnt < maxEpochCount) {
 						var epoch = ReadEpochAt(reader, epochPos);
 						_epochs.AddFirst(epoch);
-						if(epoch.EpochPosition == 0){ break;}
+						if (epoch.EpochPosition == 0) { break; }
+
 						epochPos = epoch.PrevEpochPosition;
 						cnt += 1;
 					}
@@ -147,6 +164,8 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				} finally {
 					_readers.Return(reader);
 				}
+			} finally {
+				_locker.Release();
 			}
 		}
 		private EpochRecord ReadEpochAt(ITransactionFileReader reader, long epochPos) {
@@ -162,8 +181,9 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 
 			return sysRec.GetEpochRecord();
 		}
-		public EpochRecord[] GetLastEpochs(int maxCount) {
-			lock (_locker) {
+		public async ValueTask<IReadOnlyList<EpochRecord>> GetLastEpochs(int maxCount, CancellationToken token) {
+			await _locker.AcquireAsync(token);
+			try {
 				var res = new List<EpochRecord>();
 				var node = _epochs.Last;
 				while (node != null && res.Count < maxCount) {
@@ -171,11 +191,13 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 					node = node.Previous;
 				}
 
-				return res.ToArray();
+				return res;
+			} finally {
+				_locker.Release();
 			}
 		}
 
-		public EpochRecord GetEpochAfter(int epochNumber, bool throwIfNotFound) {
+		public async ValueTask<EpochRecord> GetEpochAfter(int epochNumber, bool throwIfNotFound, CancellationToken token) {
 			if (epochNumber >= LastEpochNumber) {
 				if (!throwIfNotFound)
 					return null;
@@ -185,16 +207,19 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			}
 
 			EpochRecord epoch;
-			lock (_locker) {
+			await _locker.AcquireAsync(token);
+			try {
 				var epochNode = _epochs.Last;
 				while (epochNode != null && epochNode.Value.EpochNumber != epochNumber) {
 					epochNode = epochNode.Previous;
 				}
 
 				epoch = epochNode?.Next?.Value;
+			} finally {
+				_locker.Release();
 			}
 
-			if (epoch != null) {
+			if (epoch is not null) {
 				return epoch; //got it
 			}
 
@@ -227,15 +252,15 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 					_readers.Return(reader);
 				}
 			}
-			
-			if (epoch == null && throwIfNotFound) {
+
+			if (epoch is null && throwIfNotFound) {
 				throw new Exception($"Concurrency failure, epoch #{epochNumber} should not be null.");
 			}
 
 			return epoch;
 		}
 
-		public bool IsCorrectEpochAt(long epochPosition, int epochNumber, Guid epochId) {
+		public async ValueTask<bool> IsCorrectEpochAt(long epochPosition, int epochNumber, Guid epochId, CancellationToken token) {
 			Ensure.Nonnegative(epochPosition, "logPosition");
 			Ensure.Nonnegative(epochNumber, "epochNumber");
 			Ensure.NotEmptyGuid(epochId, "epochId");
@@ -244,15 +269,18 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				return false;
 
 			EpochRecord epoch;
-			lock (_locker) {
+			await _locker.AcquireAsync(token);
+			try {
 				epoch = _epochs.FirstOrDefault(e => e.EpochNumber == epochNumber);
 				if (epoch != null) {
 					return epoch.EpochId == epochId && epoch.EpochPosition == epochPosition;
 				}
 
-				if (_firstCachedEpoch.Value != null && epochNumber > _firstCachedEpoch.Value.EpochNumber)
+				if (_firstCachedEpoch.Value is not null && epochNumber > _firstCachedEpoch.Value.EpochNumber)
 					// This isn't a cache miss, we don't have that epoch on this node
 					return false;
+			} finally {
+				_locker.Release();
 			}
 
 			// epochNumber < _minCachedEpochNumber
@@ -276,9 +304,9 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		}
 
 		// This method should be called from single thread.
-		public void WriteNewEpoch(int epochNumber) {
-			// Now we write epoch record (with possible retry, if we are at the end of chunk) 
-			// and update EpochManager's state, by adjusting cache of records, epoch count and un-caching 
+		public async ValueTask WriteNewEpoch(int epochNumber, CancellationToken token) {
+			// Now we write epoch record (with possible retry, if we are at the end of chunk)
+			// and update EpochManager's state, by adjusting cache of records, epoch count and un-caching
 			// excessive record, if present.
 			// If we are writing the very first epoch, last position will be -1.
 			if (epochNumber < 0) {
@@ -294,7 +322,8 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 
 			var epoch = WriteEpochRecordWithRetry(epochNumber, Guid.NewGuid(),
 				_lastCachedEpoch?.Value.EpochPosition ?? -1, _instanceId);
-			AddEpochToCache(epoch);
+
+			await AddEpochToCache(epoch, token);
 		}
 
 		private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition,
@@ -421,39 +450,43 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			}
 		}
 
-		public void CacheEpoch(EpochRecord epoch) {
-			var added = AddEpochToCache(epoch);
+		public async ValueTask CacheEpoch(EpochRecord epoch, CancellationToken token) {
+			var added = await AddEpochToCache(epoch, token);
+
 			// Check each epoch as it is added to the cache for the first time from the chaser.
 			// n.b.: added will be false for idempotent CacheRequests
 			// If this check fails, then there is something very wrong with epochs, data corruption is possible.
-			if (added && !IsCorrectEpochAt(epoch.EpochPosition, epoch.EpochNumber, epoch.EpochId)) {
+			if (added && !await IsCorrectEpochAt(epoch.EpochPosition, epoch.EpochNumber, epoch.EpochId, token)) {
 				throw new Exception(
 					$"Not found epoch at {epoch.EpochPosition} with epoch number: {epoch.EpochNumber} and epoch ID: {epoch.EpochId}. " +
 					"SetLastEpoch FAILED! Data corruption risk!");
 			}
 		}
+
 		/// <summary>
 		/// Idempotently adds epochs to the cache
 		/// </summary>
 		/// <param name="epoch">the epoch to add</param>
+		/// <param name="token">The token that can be used to cancel the operation.</param>
 		/// <returns>if the submitted epoch was added to the cache, false if already present</returns>
-		public bool AddEpochToCache(EpochRecord epoch) {
+		public async ValueTask<bool> AddEpochToCache(EpochRecord epoch, CancellationToken token) {
 			Ensure.NotNull(epoch, "epoch");
 
-			lock (_locker) {
+			await _locker.AcquireAsync(token);
+			try {
 
-				// if it's already cached, just return false to indicate idempotent add 
+				// if it's already cached, just return false to indicate idempotent add
 				if (_epochs.Contains(ep => ep.EpochNumber == epoch.EpochNumber)) { return false; }
 
 				//new last epoch written or received, this is the normal case
 				//if the list is empty Last will be null
-				if (_epochs.Last == null || _epochs.Last.Value.EpochNumber < epoch.EpochNumber) {
+				if (_epochs.Last is null || _epochs.Last.Value.EpochNumber < epoch.EpochNumber) {
 					_epochs.AddLast(epoch);
 					_lastCachedEpoch = _epochs.Last;
 					// in some race conditions we might have a gap in the epoch list
 					//read the epochs from the TFLog to fill in the gaps
 					if (epoch.EpochPosition > 0 &&
-						epoch.PrevEpochPosition >= 0 && 						
+						epoch.PrevEpochPosition >= 0 &&
 						epoch.PrevEpochPosition > (_epochs.Last?.Previous?.Value?.EpochPosition ?? -1)) {
 						var reader = _readers.Get();
 						var previous = _epochs.Last;
@@ -472,69 +505,85 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 							_readers.Return(reader);
 						}
 					}
+
 					while (_epochs.Count > _cacheSize) { _epochs.RemoveFirst(); }
+
 					_firstCachedEpoch = _epochs.First;
 					// Now update epoch checkpoint, so on restart we don't scan sequentially TF.
-					Checkpoint = _epochs.Last.Value.EpochPosition;
+					await SetCheckpointAsync(_epochs.Last.Value.EpochPosition, token);
 					Log.Debug(
 						"=== Cached new Last Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
-						epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition, epoch.LeaderInstanceId);
+						epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition,
+						epoch.LeaderInstanceId);
 					return true;
-				}				
-				if (epoch.EpochNumber < _epochs.First.Value.EpochNumber) {					
+				}
+
+				if (epoch.EpochNumber < _epochs.First.Value.EpochNumber) {
 					return false;
-				}				
+				}
+
 				//this should never happen
-				Log.Error("=== Unable to cache Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
+				Log.Error(
+					"=== Unable to cache Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
 					epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition, epoch.LeaderInstanceId);
 				foreach (var epochRecord in _epochs) {
 					Log.Error(
 						"====== Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
-						epochRecord.EpochNumber, epochRecord.EpochPosition, epochRecord.EpochId, epochRecord.PrevEpochPosition, epochRecord.LeaderInstanceId);
+						epochRecord.EpochNumber, epochRecord.EpochPosition, epochRecord.EpochId,
+						epochRecord.PrevEpochPosition, epochRecord.LeaderInstanceId);
 				}
 
 				Log.Error(
 					"====== Last Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
-					_lastCachedEpoch.Value.EpochNumber, _lastCachedEpoch.Value.EpochPosition, _lastCachedEpoch.Value.EpochId, _lastCachedEpoch.Value.PrevEpochPosition, _lastCachedEpoch.Value.LeaderInstanceId);
+					_lastCachedEpoch.Value.EpochNumber, _lastCachedEpoch.Value.EpochPosition,
+					_lastCachedEpoch.Value.EpochId, _lastCachedEpoch.Value.PrevEpochPosition,
+					_lastCachedEpoch.Value.LeaderInstanceId);
 				Log.Error(
 					"====== First Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
-					_firstCachedEpoch.Value.EpochNumber, _firstCachedEpoch.Value.EpochPosition, _firstCachedEpoch.Value.EpochId, _firstCachedEpoch.Value.PrevEpochPosition, _firstCachedEpoch.Value.LeaderInstanceId);
+					_firstCachedEpoch.Value.EpochNumber, _firstCachedEpoch.Value.EpochPosition,
+					_firstCachedEpoch.Value.EpochId, _firstCachedEpoch.Value.PrevEpochPosition,
+					_firstCachedEpoch.Value.LeaderInstanceId);
 
-				throw new Exception($"This should never happen: Unable to find correct position to cache Epoch E{epoch.EpochNumber}@{epoch.EpochPosition}:{epoch.EpochId:B} (previous epoch at {epoch.PrevEpochPosition}) L={epoch.LeaderInstanceId:B}");
+				throw new Exception(
+					$"This should never happen: Unable to find correct position to cache Epoch E{epoch.EpochNumber}@{epoch.EpochPosition}:{epoch.EpochId:B} (previous epoch at {epoch.PrevEpochPosition}) L={epoch.LeaderInstanceId:B}");
+			} finally {
+				_locker.Release();
 			}
 		}
 
-		private bool TryGetEpochBefore(long position, out EpochRecord epoch) {
-			lock (_locker) {
-				var node = _epochs.Last;
-				while (node != null && node.Value.EpochPosition >= position) {
+		private async ValueTask<EpochRecord> TryGetEpochBefore(long position, CancellationToken token) {
+			await _locker.AcquireAsync(token);
+			try {
+				LinkedListNode<EpochRecord> node;
+				for (node = _epochs.Last;
+					 node is not null && node.Value.EpochPosition >= position;
+					 token.ThrowIfCancellationRequested()) {
 					node = node.Previous;
 				}
 
-				if (node != null) {
-					epoch = node.Value;
-					return true;
-				}
-
-				epoch = null;
-				return false;
+				return node?.Value;
+			} finally {
+				_locker.Release();
 			}
 		}
 
-		public bool TryTruncateBefore(long position, out EpochRecord epoch) {
-			lock (_truncateLock) {
+		public async ValueTask<EpochRecord> TryTruncateBefore(long position, CancellationToken token) {
+			await _truncateLock.AcquireAsync(token);
+			try {
 				if (_truncated)
 					throw new InvalidOperationException("Checkpoint has already been truncated.");
 				_truncated = true;
+			} finally {
+				_truncateLock.Release();
 			}
 
-			if (!TryGetEpochBefore(position, out epoch))
-				return false;
+			if (await TryGetEpochBefore(position, token) is not { } epoch)
+				return null;
 
 			_checkpoint.Write(epoch.EpochPosition);
 			_checkpoint.Flush();
 
-			return true;
+			return epoch;
 		}
 	}
 }

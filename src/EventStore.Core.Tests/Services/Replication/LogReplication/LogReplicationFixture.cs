@@ -297,13 +297,13 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		_leaderInfo = CreateLeader(leaderDb);
 		_replicaInfo = CreateReplica(replicaDb, _leaderInfo);
 
-		AddEpoch(epochNumber: 0, epochPosition: 0);
+		await AddEpoch(epochNumber: 0, epochPosition: 0);
 		StartLeader();
 	}
 
 	protected virtual Task SetUpDbs(TFChunkDb leaderDb, TFChunkDb replicaDb) => Task.CompletedTask;
 
-	private void AddEpoch(int epochNumber, long epochPosition) {
+	private async ValueTask AddEpoch(int epochNumber, long epochPosition, CancellationToken token = default) {
 		var epoch = new EpochRecord(
 			epochPosition: epochPosition,
 			epochNumber: epochNumber,
@@ -312,8 +312,8 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			timeStamp: DateTime.Now,
 			leaderInstanceId: Guid.Empty);
 
-		_leaderInfo.EpochManager.CacheEpoch(epoch);
-		_replicaInfo.EpochManager.CacheEpoch(epoch);
+		await _leaderInfo.EpochManager.CacheEpoch(epoch, token);
+		await _replicaInfo.EpochManager.CacheEpoch(epoch, token);
 	}
 
 	private Event[] CreateEvents(string streamId, string[] eventDatas) {

@@ -5,7 +5,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using DotNext;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -93,7 +95,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Service.Handle(new SystemMessage.SystemStart());
 			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
-			When();
+			await When();
 		}
 
 		[OneTimeTearDown]
@@ -111,10 +113,11 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				null, DateTime.UtcNow);
 		}
 
-		public Guid AddSubscription(Guid replicaId, bool isPromotable, Epoch[] epochs, long logPosition, out TcpConnectionManager manager) {
+		public async ValueTask<(Guid, TcpConnectionManager)> AddSubscription(Guid replicaId, bool isPromotable,
+			Epoch[] epochs, long logPosition, CancellationToken token = default) {
 			var tcpConn = new DummyTcpConnection() { ConnectionId = replicaId };
 
-			manager = new TcpConnectionManager(
+			var manager = new TcpConnectionManager(
 				"Test Subscription Connection manager", TcpServiceType.External, new ClientTcpDispatcher(2_000),
 				new SynchronousScheduler(), tcpConn, new SynchronousScheduler(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
@@ -135,11 +138,12 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				LeaderId,
 				replicaId,
 				isPromotable);
-			Service.Handle(subRequest);
-			return tcpConn.ConnectionId;
+			await Service.As<IAsyncHandle<ReplicationMessage.ReplicaSubscriptionRequest>>()
+				.HandleAsync(subRequest, token);
+			return (tcpConn.ConnectionId, manager);
 		}
 
-		public abstract void When();
+		public abstract Task When(CancellationToken token = default);
 
 		public TcpMessage.TcpSend[] GetTcpSendsFor(TcpConnectionManager connection) {
 			var sentMessages = new List<TcpMessage.TcpSend>();

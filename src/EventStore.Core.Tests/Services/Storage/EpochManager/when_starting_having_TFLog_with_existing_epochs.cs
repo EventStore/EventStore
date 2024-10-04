@@ -104,10 +104,10 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 
 		[Test]
-		public void starting_epoch_manager_loads_epochs() {
+		public async Task starting_epoch_manager_loads_epochs() {
 
 			_epochManager = GetManager();
-			_epochManager.Init();
+			await _epochManager.Init(CancellationToken.None);
 			_cache = GetCache(_epochManager);
 			Assert.NotNull(_cache);
 
@@ -117,7 +117,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 		}
 		[Test]
-		public void starting_epoch_manager_with_cache_larger_than_epoch_count_loads_all_epochs() {
+		public async Task starting_epoch_manager_with_cache_larger_than_epoch_count_loads_all_epochs() {
 
 			_epochManager = new EpochManager<TStreamId>(_mainBus,
 				1000,
@@ -134,7 +134,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 					reader: new TFChunkReader(_db, _db.Config.WriterCheckpoint),
 					writer: _writer),
 				_instanceId);
-			_epochManager.Init();
+			await _epochManager.Init(CancellationToken.None);
 			_cache = GetCache(_epochManager);
 			Assert.NotNull(_cache);
 

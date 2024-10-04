@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
+using DotNext;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -76,10 +78,10 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Service.Handle(new SystemMessage.SystemStart());
 			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
-			ReplicaSubscriptionId = AddSubscription(ReplicaId, ReplicationSubscriptionVersions.V_CURRENT, true, out ReplicaManager1);
-			ReplicaSubscriptionId2 = AddSubscription(ReplicaId2, ReplicationSubscriptionVersions.V_CURRENT, true, out ReplicaManager2);
-			ReadOnlyReplicaSubscriptionId = AddSubscription(ReadOnlyReplicaId, ReplicationSubscriptionVersions.V_CURRENT, false, out ReadOnlyReplicaManager);
-			ReplicaSubscriptionIdV0 = AddSubscription(ReplicaIdV0, ReplicationSubscriptionVersions.V0, true, out ReplicaManagerV0);
+			(ReplicaSubscriptionId, ReplicaManager1) = await AddSubscription(ReplicaId, ReplicationSubscriptionVersions.V_CURRENT, true);
+			(ReplicaSubscriptionId2, ReplicaManager2) = await AddSubscription(ReplicaId2, ReplicationSubscriptionVersions.V_CURRENT, true);
+			(ReadOnlyReplicaSubscriptionId, ReadOnlyReplicaManager) = await AddSubscription(ReadOnlyReplicaId, ReplicationSubscriptionVersions.V_CURRENT, false);
+			(ReplicaSubscriptionIdV0, ReplicaManagerV0) = await AddSubscription(ReplicaIdV0, ReplicationSubscriptionVersions.V0, true);
 
 			When();
 		}
@@ -90,10 +92,10 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
 		}
 
-		private Guid AddSubscription(Guid replicaId, int version, bool isPromotable, out TcpConnectionManager manager) {
+		private async ValueTask<(Guid, TcpConnectionManager)> AddSubscription(Guid replicaId, int version, bool isPromotable, CancellationToken token = default) {
 			var tcpConn = new DummyTcpConnection() { ConnectionId = replicaId };
 
-			manager = new TcpConnectionManager(
+			var manager = new TcpConnectionManager(
 				"Test Subscription Connection manager", TcpServiceType.External, new ClientTcpDispatcher(2000),
 				new SynchronousScheduler(), tcpConn, new SynchronousScheduler(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
@@ -114,8 +116,8 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				LeaderId,
 				replicaId,
 				isPromotable);
-			Service.Handle(subRequest);
-			return tcpConn.ConnectionId;
+			await Service.As<IAsyncHandle<ReplicationMessage.ReplicaSubscriptionRequest>>().HandleAsync(subRequest, token);
+			return (tcpConn.ConnectionId, manager);
 		}
 
 

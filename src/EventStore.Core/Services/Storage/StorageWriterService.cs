@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.Storage {
 
 	public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.StateChangeMessage>,
-		IHandle<SystemMessage.WriteEpoch>,
+		IAsyncHandle<SystemMessage.WriteEpoch>,
 		IHandle<SystemMessage.WaitForChaserToCatchUp>,
 		IHandle<StorageMessage.WritePrepares>,
 		IHandle<StorageMessage.WriteDelete>,
@@ -232,14 +232,14 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		void IHandle<SystemMessage.WriteEpoch>.Handle(SystemMessage.WriteEpoch message) {
+		async ValueTask IAsyncHandle<SystemMessage.WriteEpoch>.HandleAsync(SystemMessage.WriteEpoch message, CancellationToken token) {
 			if (_vnodeState != VNodeState.Leader && _vnodeState != VNodeState.PreLeader)
 				throw new Exception(string.Format("New Epoch request not in leader or preleader state. State: {0}.", _vnodeState));
 
 			if (Writer.NeedsNewChunk)
 				Writer.AddNewChunk();
 
-			EpochManager.WriteNewEpoch(message.EpochNumber);
+			await EpochManager.WriteNewEpoch(message.EpochNumber, token);
 			PurgeNotProcessedInfo();
 		}
 

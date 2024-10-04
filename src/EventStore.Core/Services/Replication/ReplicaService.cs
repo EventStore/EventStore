@@ -8,6 +8,8 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
@@ -27,7 +29,7 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core.Services.Replication {
 	public class ReplicaService : IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<ReplicationMessage.ReconnectToLeader>,
-		IHandle<ReplicationMessage.SubscribeToLeader>,
+		IAsyncHandle<ReplicationMessage.SubscribeToLeader>,
 		IHandle<ReplicationMessage.AckLogPosition>,
 		IHandle<ClientMessage.TcpForwardMessage> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ReplicaService>();
@@ -206,8 +208,8 @@ namespace EventStore.Core.Services.Replication {
 			return useSsl ? leader.InternalSecureTcpEndPoint : leader.InternalTcpEndPoint;
 		}
 
-		public void Handle(ReplicationMessage.SubscribeToLeader message) {
-			if (_state != VNodeState.PreReplica && _state != VNodeState.PreReadOnlyReplica)
+		async ValueTask IAsyncHandle<ReplicationMessage.SubscribeToLeader>.HandleAsync(ReplicationMessage.SubscribeToLeader message, CancellationToken token) {
+			if (_state is not VNodeState.PreReplica and not VNodeState.PreReadOnlyReplica)
 				throw new Exception(string.Format("_state is {0}, but is expected to be {1} or {2}", _state,
 					VNodeState.PreReplica, VNodeState.PreReadOnlyReplica));
 			if (_connection is null) {
@@ -217,7 +219,7 @@ namespace EventStore.Core.Services.Replication {
 			}
 
 			var logPosition = _db.Config.WriterCheckpoint.ReadNonFlushed();
-			var epochs = _epochManager.GetLastEpochs(ClusterConsts.SubscriptionLastEpochCount).ToArray();
+			var epochs = await _epochManager.GetLastEpochs(ClusterConsts.SubscriptionLastEpochCount, token);
 
 			Log.Information(
 				"Subscribing at LogPosition: {logPosition} (0x{logPosition:X}) to LEADER [{remoteEndPoint}, {leaderId:B}] as replica with SubscriptionId: {subscriptionId:B}, "
