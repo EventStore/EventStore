@@ -1,3 +1,8 @@
+---
+Title: "Manage Connectors"
+Order: 2
+---
+
 # Manage Connectors
 
 ::: note
@@ -8,9 +13,8 @@ The Connector management API is idempotent.
 
 Create a connector by sending a `POST` request to `connectors/{connector_id}` where `{connector_id}` is the unique identifier for the connector.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 $JSON = @"
 {
@@ -29,9 +33,7 @@ curl.exe -X POST `
   http://localhost:2113/connectors/demo-logger-sink
 ```
 
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 JSON='{
   "settings": {
@@ -47,9 +49,7 @@ curl -X POST \
   -d "$JSON" \
   http://localhost:2113/connectors/demo-logger-sink
 ```
-
 :::
-::::
 
 When you start the connector using the [Start command](#start), and append an
 event to the stream `some-stream`, the connector will consume the event and log
@@ -66,9 +66,8 @@ available configuration options for sink connectors, please refer to the
 
 List all connectors by sending a `GET` request to `/connectors`.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 $JSON = @"
 {
@@ -83,10 +82,7 @@ curl.exe -X GET `
   -d $JSON `
   http://localhost:2113/connectors
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 JSON='{
   "state": [],
@@ -99,9 +95,7 @@ curl -X GET \
   -d "$JSON" \
   http://localhost:2113/connectors
 ```
-
 :::
-::::
 
 <details>
   <summary>Example response</summary>
@@ -153,8 +147,8 @@ You can display settings for each connector by using the `includeSettings` param
 
 You can also paginate the results by specifying the `pageSize` and `page` parameters.
 
-:::: code-group
-::: code-group-item Powershell
+::: tabs
+@tab Powershell
 
 ```powershell
 $JSON = @"
@@ -174,10 +168,7 @@ curl.exe -X GET `
   -d $JSON `
   http://localhost:2113/connectors
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 JSON='{
   "state": [],
@@ -194,14 +185,12 @@ curl -X GET \
   -d "$JSON" \
   http://localhost:2113/connectors
 ```
-
 :::
-::::
 
 You can filter the results by specifying the `state`, `instanceType`, and `connectorId` parameters.
 
-:::: code-group
-::: code-group-item Powershell
+::: tabs
+@tab Powershell
 
 ```powershell
 $JSON = @"
@@ -221,10 +210,7 @@ curl.exe -X GET `
   -d $JSON `
   http://localhost:2113/connectors
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 JSON='{
   "state": ["CONNECTOR_STATE_STOPPED", "CONNECTOR_STATE_RUNNING"],
@@ -241,9 +227,7 @@ curl -X GET \
   -d "$JSON" \
   http://localhost:2113/connectors
 ```
-
 :::
-::::
 
 The following states are available:
 
@@ -259,22 +243,16 @@ The following states are available:
 
 View the settings for a connector by sending a `GET` request to `/connectors/{connector_id}/settings` where `{connector_id}` is the unique identifier of the connector.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 curl.exe -X GET http://localhost:2113/connectors/demo-logger-sink/settings
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 curl -X GET http://localhost:2113/connectors/demo-logger-sink/settings
 ```
-
 :::
-::::
 
 <details>
   <summary>Example response</summary>
@@ -297,44 +275,32 @@ curl -X GET http://localhost:2113/connectors/demo-logger-sink/settings
 
 Start a connector by sending a `POST` request to `connectors/{connector_id}/start` where `{connector_id}` is the unique identifier of the connector to be started.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 curl.exe -i -X POST http://localhost:2113/connectors/demo-logger-sink/start
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 curl -i -X POST -H http://localhost:2113/connectors/demo-logger-sink/start
 ```
-
 :::
-::::
 
 You can also start from a specific position by providing the start position in
 the query parameter. Do this by sending a `POST` request to
 `connectors/{connector_id}/start/{log_position}` where `{log_position}` is the position
 from which to start consuming events.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 curl.exe -i -X POST http://localhost:2113/connectors/demo-logger-sink/start/1
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 curl -i -X POST http://localhost:2113/connectors/demo-logger-sink/start/1
 ```
-
 :::
-::::
 
 ::: note
 If you do not provide a start position, the connector will start consuming
@@ -346,44 +312,32 @@ initial position if no checkpoint exists.
 
 Reset a connector by sending a `POST` request to `/connectors/{connector_id}/reset` where `{connector_id}` is the unique identifier of the connector to be reset.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 curl.exe -i -X POST http://localhost:2113/connectors/demo-logger-sink/reset
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 curl -i -X POST http://localhost:2113/connectors/demo-logger-sink/reset
 ```
-
 :::
-::::
 
 You can also reset the connector to a specific position by providing the reset
 position in the query parameter. Do this by sending a `POST` request to
 `/connectors/{connector_id}/reset/{log_position}` where `{log_position}` is the position
 to which the connector should be reset.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 curl.exe -i -X POST http://localhost:2113/connectors/demo-logger-sink/reset/25123
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 curl -i -X POST http://localhost:2113/connectors/demo-logger-sink/reset/25123
 ```
-
 :::
-::::
 
 ::: note
 If no reset position is provided, the connector will reset the position to the beginning of the stream.
@@ -393,22 +347,16 @@ If no reset position is provided, the connector will reset the position to the b
 
 Stop a connector by sending a `POST` request to `/connectors/{connector_id}/stop` where `{connector_id}` is the unique identifier of the connector to be stopped.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 curl.exe -i -X POST http://localhost:2113/connectors/demo-logger-sink/stop
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 curl -i -X POST http://localhost:2113/connectors/demo-logger-sink/stop
 ```
-
 :::
-::::
 
 ## Reconfigure
 
@@ -417,9 +365,8 @@ Reconfigure an existing connector by sending a `PUT` request to
 identifier of the connector to be reconfigured. This endpoint allows you to
 modify the settings of a connector without having to delete and recreate it.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 $JSON = @"
 {
@@ -433,10 +380,7 @@ curl.exe -X PUT `
   -d $JSON `
   http://localhost:2113/connectors/demo-logger-sink/settings
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 JSON='{
   "InstanceTypeName": "EventStore.Connectors.Testing.LoggerSink",
@@ -448,9 +392,7 @@ curl -X PUT \
   -d "$JSON" \
   http://localhost:2113/connectors/demo-logger-sink/settings
 ```
-
 :::
-::::
 
 For a comprehensive list of available configuration options for sink connectors, please refer to the [Settings](./sinks.md#settings) section.
 
@@ -464,30 +406,23 @@ before attempting to reconfigure it.
 
 Delete a connector by sending a `DELETE` request to `/connectors/{connector_id}/delete` where `{connector_id}` is the unique identifier of the connector to be deleted.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 curl.exe -X DELETE http://localhost:2113/connectors/demo-logger-sink
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 curl -X DELETE http://localhost:2113/connectors/demo-logger-sink
 ```
-
 :::
-::::
 
 ## Rename
 
 To rename a connector, send a `PUT` request to `/connectors/{connector_id}/rename` where `{connector_id}` is the unique identifier of the connector to be renamed.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 $JSON = @"
 {
@@ -500,10 +435,7 @@ curl.exe -X PUT `
   -d $JSON `
   http://localhost:2113/connectors/demo-logger-sink/rename
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 JSON='{
   "Name": "NewConnectorName"
@@ -514,6 +446,4 @@ curl -X PUT \
   -d "$JSON" \
   http://localhost:2113/connectors/demo-logger-sink/rename
 ```
-
 :::
-::::

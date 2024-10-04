@@ -1,4 +1,11 @@
+---
+Title: "Kafka Sink Connector"
+Order: 3
+---
+
 # Kafka Sink Connector
+
+<Badge type="info" vertical="middle" text="License Required"/>
 
 ## Overview
 
@@ -146,9 +153,8 @@ When the `RecordKey` source is chosen, the partition key is set to the value of 
 
 ## Usage
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 $JSON = @"
 {
@@ -168,10 +174,7 @@ curl.exe -X POST `
   -d $JSON `
   http://localhost:2113/connectors/kafka-sink-connector
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 JSON='{
   "settings": {
@@ -189,9 +192,7 @@ curl -X POST \
   -d "$JSON" \
   http://localhost:2113/connectors/kafka-sink-connector
 ```
-
 :::
-::::
 
 ## Settings
 

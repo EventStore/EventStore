@@ -1,3 +1,8 @@
+---
+Title: "Common Settings"
+Order: 3
+---
+
 # Common Settings
 
 All sinks share a common set of configuration options that can be used to
