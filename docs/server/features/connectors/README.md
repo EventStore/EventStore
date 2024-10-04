@@ -1,26 +1,26 @@
 ---
-title: "Introduction to Connectors"
+title: "Introduction to connectors"
 dir:
   text: "Connectors"
   order: 10
 ---
 
-# Connectors Introduction
+# Connectors introduction
 
 Connectors make it easy to integrate EventStoreDB data into other systems.
 
 Each connector runs on the server-side and uses a catch-up subscription to receive events, filter or transform them, and push them to an external system via a [sink](https://en.wikipedia.org/wiki/Sink_(computing)).
 
-![Connectors Anatomy](./images/connector-anatomy.png)
+![Connectors anatomy](./images/connector-anatomy.png)
 
 This reduces the amount of work needed to process data from EventStoreDB instances and makes it easy to create data pipelines to implement complex use cases.
 
 Connectors include the following built-in sinks:
 
-- [Logger Sink](./sinks/logger.md) for experimentation
-- [HTTP Sink](./sinks/http.md) for sending events to an HTTP endpoint
-- [Kafka Sink](./sinks/kafka.md) for sending events to a Kafka topic
-- [MongoDB Sink](./sinks/mongo.md) for sending events to a collection in MongoDB
+- [Logger sink](./sinks/logger.md) for experimentation
+- [HTTP sink](./sinks/http.md) for sending events to an HTTP endpoint
+- [Kafka sink](./sinks/kafka.md) for sending events to a Kafka topic
+- [MongoDB sink](./sinks/mongo.md) for sending events to a collection in MongoDB
 
 ::: note
 The Connector plugin is pre-installed in all EventStoreDB binaries and is enabled by default.
@@ -44,8 +44,8 @@ In addition, the subscription service that uses a catch-up subscription would ne
 
 With connectors, the subscription service is provided natively by EventStoreDB and the lambda function acts as the sink. For this particular example, the lambda function requires an accessible HTTP endpoint, or to be exposed via the AWS API Gateway.
 
-![Example with Connector and Lambda](./images/example-lambda-connector.png)
+![Example with connector and Lambda](./images/example-lambda-connector.png)
 
-## Getting Started
+## Getting started
 
-Try out Connectors by setting up and sending events to an HTTP sink with the [Quick Start](./quickstart.md) guide.
+Try out Connectors by setting up and sending events to an HTTP sink with the [Quick start](./quickstart.md) guide.

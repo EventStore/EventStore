@@ -1,9 +1,9 @@
 ---
-Title: "HTTP Sink Connector"
+Title: "HTTP sink connector"
 Order: 2
 ---
 
-# HTTP Sink Connector
+# HTTP sink connector
 
 ## Overview
 
@@ -21,7 +21,7 @@ retry logic and backoff strategies for handling request failures.
 ## Features
 
 - [At least once delivery](#at-least-once-delivery)
-- [Template Parameters](#template-parameters)
+- [Template parameters](#template-parameters)
 - [Transformation](#transformation)
 - [Authentication](#authentication)
 
@@ -35,7 +35,7 @@ is reached, ensuring each event is delivered at least once.
 If resilience is enabled (the default), the HTTP Sink connector will retry failed requests based on the configured HTTP
 status codes (e.g., 404, 408, 5xx). By default, it retries on any non-2xx status code.
 
-**Configuration Example**
+**Configuration example**
 
 ```json
 {
@@ -47,14 +47,14 @@ status codes (e.g., 404, 408, 5xx). By default, it retries on any non-2xx status
 }
 ```
 
-### Template Parameters
+### Template parameters
 
 The HTTP Sink connector supports the use of template parameters in the URL,
 allowing for dynamic construction of the request URL based on event data. This
 feature enables you to customize the destination URL for each event, making it
 easier to integrate with APIs that require specific URL structures.
 
-#### Available Template Parameters
+#### Available template parameters
 
 The following template parameters are available for use in the URL:
 
@@ -146,7 +146,7 @@ curl -X POST \
 ## Settings
 
 The HTTP sink inherits a set of common settings that are used to configure the connector. The settings can be found in
-the [Common Settings](../settings.md) page.
+the [Common settings](../settings.md) page.
 
 The HTTP Sink Connector can be configured with the following options:
 

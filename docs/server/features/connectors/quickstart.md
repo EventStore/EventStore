@@ -1,11 +1,11 @@
 ---
-Title: "Quick Start"
+Title: "Quick start"
 order: 1
 ---
 
 # Quick start
 
-The Connectors plugin is included in the EventStoreDB binaries. Anyone can use the [HTTP Sink Connector](./sinks/http.md), but a [valid license key](../../quick-start/installation.md#license-keys) is required to use the other sinks.
+The Connectors plugin is included in the EventStoreDB binaries. Anyone can use the [HTTP sink connector](./sinks/http.md), but a [valid license key](../../quick-start/installation.md#license-keys) is required to use the other sinks.
 
 ## Enable the plugin
 
@@ -90,7 +90,7 @@ curl -i -X POST -H http://localhost:2113/connectors/my-connector/start
 Visit the EventStoreDB web UI and append an event to a stream via the Stream Browser. You will find the `Add Event` button in the top right corner of the Stream Browser.
 Appending a new event will trigger the connector to send the event to the sink.
 
-![Create Event](./images/create-event.png)
+![Create event](./images/create-event.png)
 
 In this example, we are appending an event to the `guests` stream with event type `guest-check-in`
 
@@ -115,9 +115,9 @@ and the metadata is:
 
 Visit the public bin webpage and check that the event was received.
 
-![View Received Event](./images/receive-event.png)
+![View received event](./images/receive-event.png)
 
-## Applying Transformations
+## Applying transformations
 
 Now, let's apply a transformation to an event before it is sent to the sink.
 
@@ -220,7 +220,7 @@ transformation by viewing the event in the public bin.
 
 You can find other configuration options in the [settings](./settings.md#transformation-configuration) documentation.
 
-![View Transformed Event](./images/receive-transformed-event.png)
+![View transformed event](./images/receive-transformed-event.png)
 
 As you can see, the event data has been transformed by the transformation function and shows the `Name` field with the combined `FirstName` and `LastName` fields.
 

@@ -1,20 +1,20 @@
 ---
-Title: "Common Settings"
+Title: "Common settings"
 Order: 3
 ---
 
-# Common Settings
+# Common settings
 
 All sinks share a common set of configuration options that can be used to
 customize their behavior.
 
-## Instance Configuration
+## Instance configuration
 
 | Name               | Details                                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------------------------------- |
 | `InstanceTypeName` | _required_<br><br>**Type**: string<br><br>**Description:** The name of the instance type for the sink.<br><br> |
 
-## Subscription Configuration
+## Subscription configuration
 
 | Name                             | Details                                                                                                                                                                                                                                                                                                                                                                                        |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -26,7 +26,7 @@ customize their behavior.
 JsonPath filters apply exclusively to events with the `application/json` content type. By default, if no filter is specified, the system will consume from the `$all` stream, excluding system events.
 :::
 
-**Example usage of Stream ID Prefix Filter**
+**Example usage of stream ID prefix filter**
 
 ```json
 {
@@ -36,7 +36,7 @@ JsonPath filters apply exclusively to events with the `application/json` content
 }
 ```
 
-**Example usage of Record Regex Filter**
+**Example usage of record regex filter**
 
 ```json
 {
@@ -46,7 +46,7 @@ JsonPath filters apply exclusively to events with the `application/json` content
 }
 ```
 
-**Example usage of JsonPath Filter**
+**Example usage of JsonPath filter**
 
 ```json
 {
@@ -57,7 +57,7 @@ JsonPath filters apply exclusively to events with the `application/json` content
 }
 ```
 
-## Transformation Configuration
+## Transformation configuration
 
 | Name                             | Details                                                                                                                                                                       |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -76,4 +76,4 @@ JsonPath filters apply exclusively to events with the `application/json` content
 }
 ```
 
-For an example of how to use transformations, refer to the [Quick Start](./quickstart.md#applying-transformations) section.
+For an example of how to use transformations, refer to the [Quick start](./quickstart.md#applying-transformations) section.

@@ -1,9 +1,9 @@
 ---
-Title: "MongoDB Sink Connector"
+Title: "MongoDB sink connector"
 Order: 5
 ---
 
-# MongoDB Sink Connector
+# MongoDB sink connector
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
@@ -23,7 +23,7 @@ requests based on configurable resilience settings. It will continue to attempt
 delivery until the event is successfully sent or the maximum number of retries
 is reached, ensuring each event is delivered at least once.
 
-**Configuration Example**
+**Configuration example**
 
 ```json
 {
@@ -90,7 +90,7 @@ curl -X POST \
 ::: note
 The MongoDB sink connector inherits a set of common settings that are used to configure the connector. The settings can
 be found in
-the [Common Settings](../settings.md) page.
+the [Common settings](../settings.md) page.
 :::
 
 The MongoDB Sink Connector can be configured with the following options:

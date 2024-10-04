@@ -1,9 +1,9 @@
 ---
-Title: "Kafka Sink Connector"
+Title: "Kafka sink connector"
 Order: 3
 ---
 
-# Kafka Sink Connector
+# Kafka sink connector
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
@@ -18,9 +18,9 @@ features to handle transient errors.
 
 - [At least once delivery](#at-least-once-delivery)
 - [Transformation](#transformation)
-- [Broker Acknowledgment](#broker-acknowledgment)
+- [Broker acknowledgment](#broker-acknowledgment)
 - [Authentication](#authentication)
-- [Partition Key Extraction](#partition-key-extraction)
+- [Partition key extraction](#partition-key-extraction)
 
 ### At least once delivery
 
@@ -40,7 +40,7 @@ The Kafka Sink Connector currently retries transient errors based on the followi
 For detailed information on the listed error codes, refer to
 the [Kafka documentation](https://docs.confluent.io/platform/current/clients/confluent-kafka-dotnet/_site/api/Confluent.Kafka.ErrorCode.html).
 
-**Configuration Example**
+**Configuration example**
 
 ```json
 {
@@ -61,7 +61,7 @@ metadata, or to add additional information to the record headers.
 
 Learn more about transformations in the [Transformation](../quickstart.md#applying-transformations) section.
 
-### Broker Acknowledgment
+### Broker acknowledgment
 
 By default, the connector waits for broker acknowledgment. Enabling broker acknowledgment ensures that each message sent
 to Kafka is confirmed by the broker before the send operation is considered complete:
@@ -93,7 +93,7 @@ must provide the username and password in the configuration settings.
 To learn more about authentication in Kafka,
 see [Authentication using SASL](https://kafka.apache.org/documentation/#security_sasl)
 
-### Partition Key Extraction
+### Partition key extraction
 
 The sink connector can extract partition keys from the record based on various sources to ensure that messages are
 correctly partitioned in Kafka. This feature can be configured using the `PartitionKeyExtraction` option, to determine
@@ -198,7 +198,7 @@ curl -X POST \
 
 ::: note
 The Kafka sink inherits a set of common settings that are used to configure the connector. The settings can be found in
-the [Common Settings](../settings.md) page.
+the [Common settings](../settings.md) page.
 :::
 
 The Kafka Sink Connector can be configured with the following options:
