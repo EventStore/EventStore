@@ -159,7 +159,7 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 
 			state.LogAccumulationStats();
 
-			return ret.IsSuccess;
+			return ret.Continue;
 		} catch (Exception ex) {
 			if (ex is not OperationCanceledException) {
 				_logger.Error(ex, "SCAVENGING: Rolling back");
@@ -171,7 +171,6 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 		}
 	}
 
-	// returns true to continue
 	// do not assume that record TimeStamps are non descending, clocks can change.
 	private async ValueTask<AccumulationResult> AccumulateChunk(
 		ScavengePoint scavengePoint,
@@ -183,17 +182,22 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 		RecordForAccumulator<TStreamId>.TombStoneRecord tombStoneRecord,
 		CancellationToken cancellationToken) {
 
+		var countAccumulatedRecords = 0;
+		var countOriginalStreamRecords = 0;
+		var countMetaStreamRecords = 0;
+		var countTombstoneRecords = 0;
 		// start with empty range and expand it as we discover records.
-		var result = new AccumulationResult() {
-			ChunkTimeStamps = new() { Max = DateTime.MinValue, Min = DateTime.MaxValue },
-		};
+		var chunkMinTimeStamp = DateTime.MaxValue;
+		var chunkMaxTimeStamp = DateTime.MinValue;
+		bool @continue;
 
 		var scavengePointPosition = scavengePoint.Position;
 
 		if ((long)logicalChunkNumber * _chunkSize > scavengePointPosition) {
 			// this can happen if we accumulated the chunk with the scavenge point in it
 			// then checkpointed that we have done so.
-			return result;
+			@continue = false;
+			goto Return;
 		}
 
 		var cancellationCheckCounter = 0;
@@ -209,36 +213,35 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 				case AccumulatorRecordType.OriginalStreamRecord:
 					ProcessOriginalStreamRecord(originalStreamRecord, state);
 					record = originalStreamRecord;
-					result = result with { OriginalStreamRecordsCount = result.OriginalStreamRecordsCount + 1 };
+					countOriginalStreamRecords++;
 					break;
 				case AccumulatorRecordType.MetadataStreamRecord:
 					ProcessMetastreamRecord(metadataStreamRecord, scavengePoint, state, weights);
 					record = metadataStreamRecord;
-					result = result with { MetaStreamRecordsCount = result.MetaStreamRecordsCount + 1 };
+					countMetaStreamRecords++;
 					break;
 				case AccumulatorRecordType.TombstoneRecord:
 					ProcessTombstone(tombStoneRecord, scavengePoint, state, weights);
 					record = tombStoneRecord;
-					result = result with { TombstoneRecordsCount = result.TombstoneRecordsCount + 1 };
+					countTombstoneRecords++;
 					break;
 				default:
 					throw new InvalidOperationException($"Unexpected recordType: {recordType}");
 			}
 
-			if (record.TimeStamp < result.ChunkTimeStamps.Min)
-				result = result with { ChunkTimeStamps = result.ChunkTimeStamps with { Min = record.TimeStamp } };
+			if (record.TimeStamp < chunkMinTimeStamp)
+				chunkMinTimeStamp = record.TimeStamp;
 
-			if (record.TimeStamp > result.ChunkTimeStamps.Max)
-				result = result with { ChunkTimeStamps = result.ChunkTimeStamps with { Max = record.TimeStamp } };
+			if (record.TimeStamp > chunkMaxTimeStamp)
+				chunkMaxTimeStamp = record.TimeStamp;
 
-			result = result with { AccumulatedRecordsCount = result.AccumulatedRecordsCount + 1 };
+			countAccumulatedRecords++;
 
 			if (record.LogPosition == scavengePointPosition) {
 				// accumulated the scavenge point, time to stop.
-				return result;
-			}
-
-			if (record.LogPosition > scavengePointPosition) {
+				@continue = false;
+				goto Return;
+			} else if (record.LogPosition > scavengePointPosition) {
 				throw new Exception("Accumulator expected to find the scavenge point before now.");
 			}
 
@@ -249,7 +252,20 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 			}
 		}
 
-		return result with { IsSuccess = true };
+		@continue = true;
+
+		Return:
+		return new AccumulationResult {
+			AccumulatedRecordsCount = countAccumulatedRecords,
+			OriginalStreamRecordsCount = countOriginalStreamRecords,
+			MetaStreamRecordsCount = countMetaStreamRecords,
+			TombstoneRecordsCount = countTombstoneRecords,
+			ChunkTimeStamps = new() {
+				Min = chunkMinTimeStamp,
+				Max = chunkMaxTimeStamp,
+			},
+			Continue = @continue,
+		};
 	}
 
 	// For every* record in an original stream we need to see if its stream collides.
@@ -442,5 +458,5 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 		int MetaStreamRecordsCount,
 		int TombstoneRecordsCount,
 		ChunkTimeStampRange ChunkTimeStamps,
-		bool IsSuccess);
+		bool Continue);
 }
