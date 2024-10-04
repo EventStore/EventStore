@@ -1,28 +1,23 @@
 ---
-title: "Connectors Preview"
-dir:
-  text: "Connectors"
-  order: 10
+title: "Introduction"
 ---
 
-# Connectors Preview introduction 
+# Connectors Preview Introduction <Badge text="Commercial" type="warning" vertical="middle"/>
 
-<Badge text="Commercial" type="info" vertical="middle"/>
+Welcome to the Connectors Early Preview program!
 
-Connector Preview is available in EventStoreDB v24.2, Commercial distribution package.
-
-::: important
+::: note
 The Connector plugin is pre-installed in commercial versions of EventStoreDB but not enabled by default. 
 :::
 
-Connectors make it easy to integrate EventStoreDB data into other systems.
+Connectors simplify the integration of EventStoreDB data into other systems by reducing the work required to process data from EventStoreDB instances.  Connectors also reduce the work required to create data pipelines when implementing complex use cases.
 
-Each connector runs on the server-side and uses a catch-up subscription to receive events, filter or transform them, and push them to an external system via a [sink](https://en.wikipedia.org/wiki/Sink_(computing)).
+Each connector runs on the server-side and uses a catch-up subscription to:
+1. Receive events
+2. Filter (or transform) events
+3. Push events to an external system via a [sink](https://en.wikipedia.org/wiki/Sink_(computing))
 
-![Connectors Anatomy](./images/connector-anatomy.svg#light)
-![Connectors Anatomy](./images/connector-anatomy-dark.svg#dark)
-
-This reduces the amount of work needed to process data from EventStoreDB instances and makes it easy to create data pipelines to implement complex use cases.
+![Connectors Anatomy](./images/connector-anatomy.png)
 
 In this preview, there are two sinks:
 
@@ -31,25 +26,18 @@ In this preview, there are two sinks:
 
 ## Motivation
 
-Currently, a pain point that users experience is that, on one hand, they have a convenient EventStoreDB cloud service, on the other hand, they have a convenient downstream database or processing engine, but there's nothing in between. As a result, users need to host and maintain their own
-solution in their own infrastructure for subscribing to EventStoreDB and
-sending the events to a downstream service. This solution in the middle often needs to be highly available and needs to manage its own checkpoints: this quickly becomes cumbersome.
+Users can experience a pain point when subscribing to EventStoreDB and
+sending events to a downstream service requires the implementation, hosting, and maintainance of a highly avaiable solution that has to manage its own checkpoints. The management of a such a solution within the current infrastcuture can rapidly become cumbersome.
 
-EventStore Connectors remove the need for users to develop, host and maintain such a solution.
+Event Store Connectors remove the need for users to develop, host, and maintain such a solution.
 
-As an example, a developers want to send events to a lambda function, which projects events to an RDS instance.
+For example, assume a developer wants to send events to a lambda function, which projects them to an RDS instance.  In this scenario, the subscription service using a catch-up subscription needs to run as a single instance to ensure ordered event processing. The consequence is introducing a single point of failure.
 
-Without connectors, it requires to implement a subscription service. Such service then needs to be hosted, observed, and maintained. It also needs to manage its own checkpoints.
+![Example with EKS and Lambda](./images/example-lambda-eks.png)
 
-In addition, the subscription service that uses a catch-up subscription would need to run as a single instance to ensure ordered event processing. As a consequence, it becomes a single point of failure.
+With Event Store Connectors, the subscription service is provided natively by EventStoreDB and the lambda function acts the sink. For this particular example, the lambda function requires accessible HTTP endpoint, or be exposed via the AWS API Gateway.
 
-![Example with EKS and Lambda](./images/example-lambda-eks.svg#light)
-![Example with EKS and Lambda](./images/example-lambda-eks-dark.svg#dark)
-
-With connectors, the subscription service is provided by EventStoreDB, and the lambda function can be the sink. For this particular example, the lambda function would need an accessible HTTP endpoint, or be exposed via the AWS API Gateway.
-
-![Example with Connector and Lambda](./images/example-lambda-connector.svg#light)
-![Example with Connector and Lambda](./images/example-lambda-connector-dark.svg#dark)
+![Example with Connector and Lambda](./images/example-lambda-connector.png)
 
 ## Preview goals
 
@@ -67,8 +55,3 @@ Although the Connectors plugin is only available in commercial packages, we will
 Further, we plan to:
 * Add more sinks
 * Allow concurrent processing of events
-
-
-
-
-
