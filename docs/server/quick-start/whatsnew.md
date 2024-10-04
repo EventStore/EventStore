@@ -26,7 +26,7 @@ Refer to the [documentation](../features/connectors/quickstart.md) for instructi
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
-The Kafka Sink Connector writes events from EventStoreDB to a Kafka topic.
+The Kafka sink writes events from EventStoreDB to a Kafka topic.
 
 It can extract the partition key from the record based on specific sources such as the stream ID, headers, or record key and also supports basic authentication and resilience
 features to handle transient errors.
@@ -35,7 +35,7 @@ Refer to the [documentation](../features/connectors/sinks/kafka.md) for instruct
 
 #### HTTP Sink
 
-The HTTP Sink connector allows for integration between EventStoreDB and external
+The HTTP sink allows for integration between EventStoreDB and external
 APIs over HTTP or HTTPS.
 
 This connector consumes events from an EventStoreDB

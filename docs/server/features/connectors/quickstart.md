@@ -5,7 +5,7 @@ order: 1
 
 # Quick start
 
-The Connectors plugin is included in the EventStoreDB binaries. Anyone can use the [HTTP sink connector](./sinks/http.md), but a [valid license key](../../quick-start/installation.md#license-keys) is required to use the other sinks.
+The Connectors plugin is included in the EventStoreDB binaries. Anyone can use the [HTTP sink](./sinks/http.md), but a [valid license key](../../quick-start/installation.md#license-keys) is required to use the other sinks.
 
 ## Enable the plugin
 

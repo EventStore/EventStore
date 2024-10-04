@@ -1,9 +1,9 @@
 ---
-Title: "Logger sink connector"
+Title: "Logger sink"
 Order: 4
 ---
 
-# Logger sink connector
+# Logger sink
 
 ## Overview
 

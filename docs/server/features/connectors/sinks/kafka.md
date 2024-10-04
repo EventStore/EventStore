@@ -1,15 +1,15 @@
 ---
-Title: "Kafka sink connector"
+Title: "Kafka sink"
 Order: 3
 ---
 
-# Kafka sink connector
+# Kafka sink
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
 ## Overview
 
-The Kafka Sink Connector writes events to a Kafka topic. It can extract the
+The Kafka sink writes events to a Kafka topic. It can extract the
 partition key from the record based on specific sources such as the stream ID,
 headers, or record key and also supports basic authentication and resilience
 features to handle transient errors.
@@ -24,12 +24,12 @@ features to handle transient errors.
 
 ### At least once delivery
 
-The Kafka Sink connector guarantees at least once delivery by retrying failed
+The Kafka sink guarantees at least once delivery by retrying failed
 requests based on configurable resilience settings. It will continue to attempt
 delivery until the event is successfully sent or the maximum number of retries
 is reached, ensuring each event is delivered at least once.
 
-The Kafka Sink Connector currently retries transient errors based on the following error codes:
+The Kafka sink currently retries transient errors based on the following error codes:
 
 - **Local_AllBrokersDown**: All broker connections are down
 - **OutOfOrderSequenceNumber**: Broker received an out of order sequence number
@@ -55,7 +55,7 @@ the [Kafka documentation](https://docs.confluent.io/platform/current/clients/con
 
 ### Transformation
 
-The Kafka Sink connector supports transformation of event data before sending it
+The Kafka sink supports transformation of event data before sending it
 to the destination Kafka topic. This feature allows you to modify the event data or
 metadata, or to add additional information to the record headers.
 
@@ -79,7 +79,7 @@ performance is prioritized over delivery guarantees.
 
 ### Authentication
 
-The Kafka Sink Connector supports basic authentication for connecting to the Kafka broker. To enable authentication, you
+The Kafka sink supports basic authentication for connecting to the Kafka broker. To enable authentication, you
 must provide the username and password in the configuration settings.
 
 ```json
@@ -95,7 +95,7 @@ see [Authentication using SASL](https://kafka.apache.org/documentation/#security
 
 ### Partition key extraction
 
-The sink connector can extract partition keys from the record based on various sources to ensure that messages are
+The sink can extract partition keys from the record based on various sources to ensure that messages are
 correctly partitioned in Kafka. This feature can be configured using the `PartitionKeyExtraction` option, to determine
 how partition keys are derived from the records.
 
@@ -201,7 +201,7 @@ The Kafka sink inherits a set of common settings that are used to configure the 
 the [Common settings](../settings.md) page.
 :::
 
-The Kafka Sink Connector can be configured with the following options:
+The Kafka sink can be configured with the following options:
 
 | Name                                       | Details                                                                                                                                                                                                                                            |
 | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
