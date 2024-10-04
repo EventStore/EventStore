@@ -66,6 +66,81 @@ PTables are automatically upgraded when they are merged, or when the PTables are
 
 If 32bit PTables are present we detect them on startup and exit. If this happens, you can use a version between v3.9.0 and v24.10.0 to upgrade the PTables, or rebuild the index.
 
+#### Otel Exporter commercial plugin configuration changes
+
+The configuration for this plugin is now nested in the `EventStore` subsection for consistency with the other plugins. Additionally, this plugin used to be configured via JSON or environment variables, and can now additionally be configured directly in the server main config.
+
+For example an old JSON configuration file could look like this:
+
+```json
+{
+  "OpenTelemetry": {
+    "Otlp": {
+      "Endpoint": "http://localhost:4317"
+    }
+  }
+}
+```
+
+Which would now look like this:
+
+```json
+{
+  "EventStore": {
+    "OpenTelemetry": {
+      "Otlp": {
+        "Endpoint": "http://localhost:4317"
+      }
+    }
+  }
+}
+```
+
+And can instead be moved to the main config file like this:
+
+```yaml
+OpenTelemetry:
+  Otlp:
+    Endpoint: "http://localhost:4317"
+```
+
+#### User Certificates commercial plugin configuration changes
+
+The configuration for this plugin used to be nested in a subsection titled `Plugins`. This is no longer the case. Additionally, this plugin used to be configured via JSON or environment variables, and can now additionally be configured directly in the server main config.
+
+For example an old JSON configuration file could look like this:
+
+```json
+{
+  "EventStore": {
+    "Plugins": {
+      "UserCertificates": {
+        "Enabled": true
+      }
+    }
+  }
+}
+```
+
+Which would now look like this:
+
+```json
+{
+  "EventStore": {
+    "UserCertificates": {
+      "Enabled": true
+    }
+  }
+}
+```
+
+And can instead be moved to the main config file like this:
+
+```yaml
+UserCertificates:
+  Enabled: true
+```
+
 #### From version 23.10 and earlier
 
 ##### External TCP API removed
