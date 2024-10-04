@@ -44,7 +44,7 @@ The default resilience strategy has key features that include:
    for more details.
 
 > **Note:** You can find how to configure resilience for each sink in the
-> the [individual sink documentation](./sinks.md#built-in-sinks).
+> the [individual sink documentation](./sinks/README.md#built-in-sinks).
 
 ## Lifecycle Management
 
@@ -107,7 +107,6 @@ connectors across multiple nodes.
 
 ## Performance
 
-The preview version of connectors will be optimized even further. We are
-committed to enhancing the performance and scalability of our connectors. One of
+We are committed to enhancing the performance and scalability of our connectors. One of
 the key improvements will be the introduction of sharded writes on every sink,
 which will enable more efficient data distribution and processing.
