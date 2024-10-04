@@ -123,10 +123,10 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 				tombStoneRecord,
 				cancellationToken);
 
-			if (ret.ChunkTimeStamp.Min <= ret.ChunkTimeStamp.Max) {
+			if (ret.ChunkTimeStamps.Min <= ret.ChunkTimeStamps.Max) {
 				state.SetChunkTimeStampRange(
 					logicalChunkNumber: logicalChunkNumber,
-					ret.ChunkTimeStamp);
+					ret.ChunkTimeStamps);
 			} else {
 				// empty range, no need to store it.
 			}
@@ -185,7 +185,7 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 
 		// start with empty range and expand it as we discover records.
 		var result = new AccumulationResult() {
-			ChunkTimeStamp = new() { Max = DateTime.MinValue, Min = DateTime.MaxValue },
+			ChunkTimeStamps = new() { Max = DateTime.MinValue, Min = DateTime.MaxValue },
 		};
 
 		var scavengePointPosition = scavengePoint.Position;
@@ -225,11 +225,11 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 					throw new InvalidOperationException($"Unexpected recordType: {recordType}");
 			}
 
-			if (record.TimeStamp < result.ChunkTimeStamp.Min)
-				result = result with { ChunkTimeStamp = result.ChunkTimeStamp with { Min = record.TimeStamp } };
+			if (record.TimeStamp < result.ChunkTimeStamps.Min)
+				result = result with { ChunkTimeStamps = result.ChunkTimeStamps with { Min = record.TimeStamp } };
 
-			if (record.TimeStamp > result.ChunkTimeStamp.Max)
-				result = result with { ChunkTimeStamp = result.ChunkTimeStamp with { Max = record.TimeStamp } };
+			if (record.TimeStamp > result.ChunkTimeStamps.Max)
+				result = result with { ChunkTimeStamps = result.ChunkTimeStamps with { Max = record.TimeStamp } };
 
 			result = result with { AccumulatedRecordsCount = result.AccumulatedRecordsCount + 1 };
 
@@ -441,6 +441,6 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 		int OriginalStreamRecordsCount,
 		int MetaStreamRecordsCount,
 		int TombstoneRecordsCount,
-		ChunkTimeStampRange ChunkTimeStamp,
+		ChunkTimeStampRange ChunkTimeStamps,
 		bool IsSuccess);
 }
