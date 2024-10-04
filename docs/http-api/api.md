@@ -1848,6 +1848,16 @@ To perform this operation, you must be authenticated by means of one of the foll
 basicAuth
 </aside>
 
+### Resigning a leader
+
+Issue a `resign` command to the Leader node which will explicitly start a round of elections:
+
+```bash:no-line-numbers
+curl -X POST -d {} https://{leader_address}:2113/admin/node/resign -u admin:changeit
+```
+
+> **Note:** The resigned leader node automatically has reduced priority in the elections, but it is still possible that the same node will be elected leader again.
+
 ### Scavenge a node
 
 <a id="opIdScavenge a node"></a>
