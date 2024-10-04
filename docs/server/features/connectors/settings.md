@@ -31,8 +31,8 @@ JsonPath filters apply exclusively to events with the `application/json` content
 ```json
 {
   "InstanceTypeName": "EventStore.Connectors.Http.HttpSink",
-  "Subscription:ConsumeFilter:Scope": "Stream",
-  "Subscription:ConsumeFilter:Expression": "prefix_"
+  "Subscription:Filter:Scope": "Stream",
+  "Subscription:Filter:Expression": "prefix_"
 }
 ```
 
@@ -41,21 +41,34 @@ JsonPath filters apply exclusively to events with the `application/json` content
 ```json
 {
   "InstanceTypeName": "EventStore.Connectors.Http.HttpSink",
-  "Subscription:ConsumeFilter:Scope": "Record",
-  "Subscription:ConsumeFilter:Expression": "^eventType.*"
+  "Subscription:Filter:Scope": "Record",
+  "Subscription:Filter:Expression": "^eventType.*"
 }
 ```
 
 **Example usage of JsonPath filter**
 
+The following objects are accessible to the filter:
+
+- System metadata via $, for example $.eventType or $.stream
+- Event data via $.data, for example $.data.name or $.data.age
+- Event metadata via $.metadata, for example $.metadata.user or $.metadata.correlationId
+
 ```json
 {
   "InstanceTypeName": "EventStore.Connectors.Http.HttpSink",
   "Url": "https://enf4k0vsrz29w.x.pipedream.net/",
-  "Subscription:ConsumeFilter:Scope": "Record",
-  "Subscription:ConsumeFilter:Expression": "$[?($.data.testField=='testValue')]"
+  "Subscription:Filter:Scope": "Record",
+  "Subscription:Filter:Expression": "$[?($.data.testField=='testValue')]"
 }
 ```
+
+::: tip
+Learn more about [JsonPath](https://www.rfc-editor.org/rfc/rfc9535.html). You
+can also use the [JsonPath Playground](https://json-everything.net/json-path/)
+to test your expressions.
+:::
+
 
 ## Transformation configuration
 
