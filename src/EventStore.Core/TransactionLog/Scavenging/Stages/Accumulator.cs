@@ -151,7 +151,7 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 				"Commit: {commitElapsed}. " +
 				"Chunk total: {chunkTotalElapsed}",
 				ret.AccumulatedRecordsCount,
-				ret.OriginalStreamRecordscount, ret.MetaStreamRecordsCount, ret.TombstoneRecordsCount,
+				ret.OriginalStreamRecordsCount, ret.MetaStreamRecordsCount, ret.TombstoneRecordsCount,
 				logicalChunkNumber, accumulationElapsed,
 				rate,
 				commitElapsed - weightsElapsed,
@@ -209,7 +209,7 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 				case AccumulatorRecordType.OriginalStreamRecord:
 					ProcessOriginalStreamRecord(originalStreamRecord, state);
 					record = originalStreamRecord;
-					result = result with { OriginalStreamRecordscount = result.OriginalStreamRecordscount + 1 };
+					result = result with { OriginalStreamRecordsCount = result.OriginalStreamRecordsCount + 1 };
 					break;
 				case AccumulatorRecordType.MetadataStreamRecord:
 					ProcessMetastreamRecord(metadataStreamRecord, scavengePoint, state, weights);
@@ -438,7 +438,7 @@ public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 
 	private readonly record struct AccumulationResult(
 		int AccumulatedRecordsCount,
-		int OriginalStreamRecordscount,
+		int OriginalStreamRecordsCount,
 		int MetaStreamRecordsCount,
 		int TombstoneRecordsCount,
 		ChunkTimeStampRange ChunkTimeStamp,
