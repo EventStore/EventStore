@@ -125,15 +125,13 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		Assert.NotNull(_sink.Data["foo"]);
 		Assert.Equal(new JsonObject { ["bar"] = 42 }.ToString(), _sink.Data["foo"].ToString());
 
-		Assert.NotNull(_sink.Data["plugins"]);
+		Assert.NotNull(_sink.Data["fakeComponent"]);
 		Assert.Equal("""
 			{
-			  "fakeComponent": {
-			    "foo": "bar"
-			  }
+			  "foo": "bar"
 			}
 			""",
-			_sink.Data["plugins"].ToString());
+			_sink.Data["fakeComponent"].ToString());
 
 		Assert.Equal(_sink.Data["environment"]!["os"]!.ToString(), RuntimeInformation.OSDescription);
 	}
@@ -190,7 +188,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		Assert.Equal(Guid.Parse(_sink.Data["cluster"]["leaderId"].ToString()), _replicaStateMessage.Leader.InstanceId);
 		Assert.Equal(Int32.Parse(_sink.Data["database"]["epochNumber"].ToString()), _replicaStateMessage.Leader.EpochNumber);
 
-		Assert.NotNull(_sink.Data["plugins"]);
+		Assert.NotNull(_sink.Data["fakeComponent"]);
 	}
 
 	class FakePlugableComponent(string name = "fakeComponent") : Plugin(name) {
