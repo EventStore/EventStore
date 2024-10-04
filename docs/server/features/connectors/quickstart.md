@@ -9,25 +9,14 @@ The Connectors plugin is included in the EventStoreDB binaries. Anyone can use t
 
 ## Enable the plugin
 
-Refer to the general [plugins configuration](../../configuration/plugins.md) guide to see how to configure plugins with JSON files and environment variables.
+Refer to the [configuration guide](../../configuration/README.md) for configuration mechanisms other than YAML.
 
 > **Note:** By default, the connectors plugin is already enabled.
 
-Sample JSON configuration:
-
-```json
-{
-  "EventStore": {
-    "Plugins": {
-      "Connectors": {
-        "Enabled": true
-      }
-    }
-  }
-}
+```yaml
+Connectors:
+  Enabled: true
 ```
-
-Alternatively, set the environment variable `EVENTSTORE__PLUGINS__CONNECTORS__ENABLED` to `true`.
 
 Let's create a connector and send events to it.
 
