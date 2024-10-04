@@ -58,7 +58,7 @@ it to the console. Find out more about subscription filters in the
 
 
 For a list of available connectors and their respective configuration options,
-refer to the [Built-in Sinks](./sinks.md) section. For a comprehensive list of
+refer to the [Built-in Sinks](./sinks/README.md) section. For a comprehensive list of
 available configuration options for sink connectors, please refer to the
 [Settings](./settings.md) section.
 
@@ -394,7 +394,7 @@ curl -X PUT \
 ```
 :::
 
-For a comprehensive list of available configuration options for sink connectors, please refer to the [Settings](./sinks.md#settings) section.
+For a comprehensive list of available configuration options for sink connectors, please refer to the [Settings](./sinks/README.md#settings) section.
 
 ::: note
 The connector must be stopped before reconfiguring. If the connector is running,

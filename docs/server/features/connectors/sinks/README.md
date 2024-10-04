@@ -1,5 +1,5 @@
 ---
-Title: "Built-in Sinks"
+Title: "Sinks"
 Order: 1
 ---
 
@@ -14,3 +14,4 @@ The following built-in sinks are available:
 - [Logger Sink Connector](./sinks/logger.md)
 - [Http Sink Connector](./sinks/http.md)
 - [Kafka Sink Connector](./sinks/kafka.md)
+- [MongoDB Sink Connector](./sinks/mongo.md)
