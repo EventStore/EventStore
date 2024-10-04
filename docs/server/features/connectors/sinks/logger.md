@@ -1,3 +1,8 @@
+---
+Title: "Logger Sink Connector"
+Order: 4
+---
+
 # Logger Sink Connector
 
 ## Overview
@@ -6,9 +11,8 @@ The logger sink logs a message about the connector and record details and can be
 
 ## Usage
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 $JSON = @"
 {
@@ -26,10 +30,7 @@ curl.exe -X POST `
   -d $JSON `
   http://localhost:2113/connectors/logger-sink-connector
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 JSON='{
   "settings": {
@@ -45,6 +46,4 @@ curl -X POST \
   -d "$JSON" \
   http://localhost:2113/connectors/logger-sink-connector
 ```
-
 :::
-::::

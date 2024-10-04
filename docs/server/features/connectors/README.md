@@ -1,5 +1,8 @@
 ---
-title: "Introduction"
+title: "Connectors Preview"
+dir:
+  text: "Connectors"
+  order: 10
 ---
 
 # Connectors Preview Introduction <Badge text="alpha" type="warning" vertical="middle"/>
@@ -7,7 +10,7 @@ title: "Introduction"
 Welcome to the Connectors Early Preview program!
 
 ::: note
-The Connector plugin is pre-installed in commercial versions of EventStoreDB and is enabled by default.
+The Connector plugin is pre-installed in all EventStoreDB binaries and is enabled by default.
 :::
 
 Connectors make it easy to integrate EventStoreDB data into other systems.
@@ -40,8 +43,7 @@ In addition, the subscription service that uses a catch-up subscription would ne
 
 ![Example with EKS and Lambda](./images/example-lambda-eks.png)
 
-With connectors, the subscription service is provided by EventStoreDB, and the lambda function can be the sink. For this particular example, the lambda function would need an accessible HTTP endpoint, or be exposed via the AWS API Gateway.
-
+With connectors, the subscription service is provided natively by EventStoreDB and the lambda function acts the sink. For this particular example, the lambda function requires accessible HTTP endpoint, or be exposed via the AWS API Gateway.
 ![Example with Connector and Lambda](./images/example-lambda-connector.png)
 
 ## Preview goals
@@ -56,7 +58,7 @@ We will collect your input and feedback during the connectors preview program to
 ## Further plans
 
 Although the Connectors plugin will be available to everyone running on the
-leader node, some sinks, such as the Kafka one, will be made commercial. We will open
+leader node, some sinks, such as the Kafka one, will require a license key to use. We will open
 up the preview program to a wider audience in the coming months.
 
 Further, we plan to:

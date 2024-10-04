@@ -1,3 +1,8 @@
+---
+Title: "HTTP Sink Connector"
+Order: 2
+---
+
 # HTTP Sink Connector
 
 ## Overview
@@ -97,9 +102,8 @@ The authentication options are configured using the `Authentication` property in
 
 ## Usage
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 $JSON = @"
 {
@@ -118,10 +122,7 @@ curl.exe -X POST `
   -d $JSON `
   http://localhost:2113/connectors/http-sink-connector
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 JSON='{
   "settings": {
@@ -140,9 +141,7 @@ curl -X POST \
   -d "$JSON" \
   http://localhost:2113/connectors/http-sink-connector
 ```
-
 :::
-::::
 
 ## Settings
 

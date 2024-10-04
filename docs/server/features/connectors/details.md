@@ -1,3 +1,8 @@
+---
+Title: "Technical Details"
+Order: 5
+---
+
 # Technical Details
 
 ## Delivery guarantees
@@ -97,7 +102,7 @@ processing the same data concurrently.
 Connectors are hosted on EventStoreDB nodes with high availability, but they
 currently only operate on leader nodes. In the event of a node failure, the
 connectors will be restarted on the newly elected leader node. Future releases
-will enhance this functionality by supporting the commercial deployment of
+will enhance this functionality by supporting the deployment of
 connectors across multiple nodes.
 
 ## Performance

@@ -1,3 +1,8 @@
+---
+Title: "Built-in Sinks"
+Order: 1
+---
+
 # Built-in Sinks
 
 Sinks are Connector targets. They are the final destination for events from

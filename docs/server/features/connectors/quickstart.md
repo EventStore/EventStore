@@ -1,10 +1,15 @@
+---
+Title: "Quick Start"
+order: 1
+---
+
 # Quick start
 
-The Connectors plugin is pre-installed in the commercial edition. The first version of EventStoreDB to support Connectors is **v24.2**.
+The Connectors plugin is included in the EventStoreDB binaries. Anyone can use the [HTTP Sink Connector](./sinks/http.md), but a [valid license key](../../quick-start/installation.md#license-keys) is required to use the other sinks.
 
 ## Enable the plugin
 
-Refer to the general [plugins configuration](/server/v24.2/configuration.md#plugins-configuration) guide to see how to configure plugins with JSON files and environment variables.
+Refer to the general [plugins configuration](../../configuration/plugins.md) guide to see how to configure plugins with JSON files and environment variables.
 
 > **Note:** By default, the connectors plugin is already enabled.
 
@@ -36,9 +41,8 @@ When you create a public request bin, it will start waiting for requests. You ca
 
 Use `curl` or a similar utility to issue a `POST` request as follows. This will create a connector instance called `my-connector`, configure it to send events to our external system, and enable the connector instance.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 $JSON = @"
 {
@@ -56,10 +60,7 @@ curl.exe -X POST `
   -d $JSON `
   http://localhost:2113/connectors/my-connector
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 JSON='{
   "settings": {
@@ -75,9 +76,7 @@ curl -X POST \
   -d "$JSON" \
   http://localhost:2113/connectors/my-connector
 ```
-
 :::
-::::
 
 - The sink URL is where the sink will POST to. Adjust it to be your own URL created in the first step.
 - Ensure to use the correct URL for your EventStoreDB instance or cluster.
@@ -86,22 +85,16 @@ curl -X POST \
 
 Start the connector by sending a `POST` request to `connectors/my-connector/start`.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 curl.exe -i -X POST http://localhost:2113/connectors/my-connector/start
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 curl -i -X POST -H http://localhost:2113/connectors/my-connector/start
 ```
-
 :::
-::::
 
 ## Append an event
 
@@ -176,28 +169,21 @@ to encode your JavaScript function to a base64 string.
 
 Stop the connector by sending a `POST` request to `/connectors/my-connector/stop`
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 curl.exe -i -X POST http://localhost:2113/connectors/my-connector/stop
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 curl -i -X POST http://localhost:2113/connectors/my-connector/stop
 ```
-
 :::
-::::
 
 Update the connector instance with the transformation function. You can do this by sending a `PUT` request to the connector instance.
 
-:::: code-group
-::: code-group-item Powershell
-
+::: tabs
+@tab Powershell
 ```powershell
 $JSON = @"
 {
@@ -216,10 +202,7 @@ curl.exe -X PUT `
   -d $JSON `
   http://localhost:2113/connectors/my-connector/settings
 ```
-
-:::
-::: code-group-item Bash
-
+@tab Bash
 ```bash
 JSON='{
   "InstanceTypeName": "EventStore.Connectors.Http.HttpSink",
@@ -236,11 +219,9 @@ curl -X PUT \
   -d "$JSON" \
   http://localhost:2113/connectors/my-connector/settings
 ```
-
 :::
-::::
 
-:::note
+::: note
 Although it's possible to create a connector instance with the transformation function from the beginning, in this scenario, we're updating an existing connector instance instead.
 :::
 
