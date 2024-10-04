@@ -1301,6 +1301,8 @@ Refer to the [configuration guide](../configuration/README.md) for configuration
 Sample configuration:
 
 ```yaml
+Transform: aes-gcm
+
 EncryptionAtRest:
   Enabled: true
   MasterKey:
@@ -1310,12 +1312,6 @@ EncryptionAtRest:
     AesGcm:
       Enabled: true
       KeySize: 256 # optional. supported key sizes: 128, 192, 256 (default)
-```
-
-The `Transform` configuration parameter must be specified in the server's configuration file:
-
-```
-Transform: aes-gcm
 ```
 
 When using the `File` master key source, a master key must be generated using the es-genkey-cli tool and placed in the configured `KeyPath` directory. The master key having the highest ID will be chosen as the active one.
