@@ -1,6 +1,6 @@
 import {type ResolvedImport} from "../markdown/xode/types";
 import version from "./version";
-import {path} from "@vuepress/utils";
+import {path} from "vuepress/utils";
 
 const base = "../../samples";
 
