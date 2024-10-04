@@ -1,9 +1,9 @@
 ---
-Title: "Technical Details"
+Title: "Technical details"
 Order: 5
 ---
 
-# Technical Details
+# Technical details
 
 ## Delivery guarantees
 
@@ -16,7 +16,7 @@ Often, the system receiving the events will keep track of the position and the
 ID of the last event it has received. This allows the system to easily identify
 and discard any duplicate deliveries.
 
-#### Resilience Mechanism
+#### Resilience mechanism
 
 All connectors are have a built-in resilience mechanism to ensure the reliable
 delivery of data and messages, preserving system integrity and minimizing
@@ -24,11 +24,11 @@ downtime during unexpected disruptions.
 
 The default resilience strategy has key features that include:
 
-1. **Automatic Retries**: Connectors are configured to automatically retry
+1. **Automatic retries**: Connectors are configured to automatically retry
    failed operations due to transient errors. By default, retries are indefinite,
    but developers can specify a limit based on application needs.
 
-2. **Exponential Backoff**: To prevent system overload during retries, an
+2. **Exponential backoff**: To prevent system overload during retries, an
    exponential backoff strategy is used with three distinct phases:
 
    - **Phase 1**: Initial retries have a 5-second delay, continuing for up to 1
@@ -44,9 +44,9 @@ The default resilience strategy has key features that include:
    for more details.
 
 > **Note:** You can find how to configure resilience for each sink in the
-> the [individual sink documentation](./sinks/README.md#built-in-sinks).
+> the [individual sink documentation](./sinks/README.md).
 
-## Lifecycle Management
+## Lifecycle management
 
 When a connector is created in EventStoreDB, it automatically creates 4 system streams.
 
@@ -57,16 +57,16 @@ The following system streams are created for every connector:
 3. `$connectors/{connector-id}/lifecycle`
 4. `$connectors/{connector-id}/leases`
 
-### Management Stream
+### Management stream
 
 The `$connectors/{connector-id}` stream captures and stores events related to
 the operational state of the connector. These events provide a detailed log of
 the connector's status and transitions, making it easier to understand its
 current state and historical behavior.
 
-![Connector Management](./images/connectors-management.png)
+![Connector management](./images/connectors-management.png)
 
-### Checkpointing Stream
+### Checkpointing stream
 
 Connectors periodically store the position of the last event that they have
 successfully processed. Then, if the connector host is restarted, the connectors
@@ -76,9 +76,9 @@ EventStoreDB.
 
 Each connector has its own dedicated stream for storing checkpoints.
 
-![Connector Checkpoint](./images/connector-checkpoint-stream.png)
+![Connector checkpoint](./images/connector-checkpoint-stream.png)
 
-### Lifecycle Stream
+### Lifecycle stream
 
 The `$connectors/{connector-id}/lifecycle` stream tracks the state transitions
 and significant lifecycle events of a connector within EventStoreDB. It records
@@ -86,16 +86,16 @@ the `$conn-ctrl-processor-state-changed` event, which document every change
 in the connector’s operational state from starting and stopping to encountering
 errors or other critical transitions.
 
-![Connector Lifecycle](./images/connectors-lifecycle.png)
+![Connector lifecycle](./images/connectors-lifecycle.png)
 
-### Leases Stream
+### Leases stream
 
 The `$connectors/{connector-id}/leases` stream is used for managing leases in
 the connectors plugin. Leases are a mechanism to ensure that only one instance
 of a connector is active at a time, preventing multiple instances from
 processing the same data concurrently. 
 
-![Connector Leases](./images/connectors-leases.png)
+![Connector leases](./images/connectors-leases.png)
 
 ## High availability
 

@@ -1,9 +1,9 @@
 ---
-Title: "Manage Connectors"
+Title: "Manage connectors"
 Order: 2
 ---
 
-# Manage Connectors
+# Manage connectors
 
 ::: note
 The Connector management API is idempotent.
@@ -54,13 +54,13 @@ curl -X POST \
 When you start the connector using the [Start command](#start), and append an
 event to the stream `some-stream`, the connector will consume the event and log
 it to the console. Find out more about subscription filters in the
-[Subscription Configuration](./settings.md#subscription-configuration) section.
+[Subscription configuration](./settings.md#subscription-configuration) section.
 
 
 For a list of available connectors and their respective configuration options,
-refer to the [Built-in Sinks](./sinks/README.md) section. For a comprehensive list of
-available configuration options for sink connectors, please refer to the
-[Settings](./settings.md) section.
+refer to the [Built-in sinks](./sinks/README.md) section.
+
+For a comprehensive list of available configuration options available for all sink connectors, please refer to the [Common settings](./settings.md) section.
 
 ## List
 
@@ -394,7 +394,7 @@ curl -X PUT \
 ```
 :::
 
-For a comprehensive list of available configuration options for sink connectors, please refer to the [Settings](./sinks/README.md#settings) section.
+For a comprehensive list of available configuration options available for all sink connectors, please refer to the [Common settings](./settings.md) section.
 
 ::: note
 The connector must be stopped before reconfiguring. If the connector is running,
