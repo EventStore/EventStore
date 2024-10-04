@@ -116,7 +116,7 @@ namespace EventStore.Core.Services.Storage {
 					if (_systemStarted)
 						await ChaserIteration(_stopToken);
 					else
-						await Task.Yield();
+						await Task.Delay(1);
 				}
 			} catch (Exception exc) {
 				Log.Fatal(exc, "Error in StorageChaser. Terminating...");
