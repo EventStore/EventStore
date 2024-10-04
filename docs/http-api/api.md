@@ -1850,7 +1850,7 @@ basicAuth
 
 ### Resigning a leader
 
-Issue a resignation command on the Leader node which will explicitly start a round of elections:
+Issue a `resign` command to the Leader node which will explicitly start a round of elections:
 
 ```bash:no-line-numbers
 curl -X POST -d {} https://{leader_address}:2113/admin/node/resign -u admin:changeit
