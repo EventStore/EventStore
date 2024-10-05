@@ -112,24 +112,24 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void the_seconds_record_can_be_read_as_last() {
-			var res = _chunk.TryReadLast();
+		public async Task the_seconds_record_can_be_read_as_last() {
+			var res = await _chunk.TryReadLast(CancellationToken.None);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_prepare1.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
 			Assert.AreEqual(_prepare2, res.LogRecord);
 		}
 
 		[Test]
-		public void the_first_record_can_be_read_as_closest_backward_after_last() {
-			var res = _chunk.TryReadClosestBackward(_prepare1.GetSizeWithLengthPrefixAndSuffix());
+		public async Task the_first_record_can_be_read_as_closest_backward_after_last() {
+			var res = await _chunk.TryReadClosestBackward(_prepare1.GetSizeWithLengthPrefixAndSuffix(), CancellationToken.None);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(0, res.NextPosition);
 			Assert.AreEqual(_prepare1, res.LogRecord);
 		}
 
 		[Test]
-		public void cannot_read_backward_from_zero_pos() {
-			var res = _chunk.TryReadClosestBackward(0);
+		public async Task cannot_read_backward_from_zero_pos() {
+			var res = await _chunk.TryReadClosestBackward(0, CancellationToken.None);
 			Assert.IsFalse(res.Success);
 		}
 	}

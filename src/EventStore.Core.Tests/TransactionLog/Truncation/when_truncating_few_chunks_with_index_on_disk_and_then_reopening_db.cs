@@ -3,6 +3,8 @@
 
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using NUnit.Framework;
 
@@ -32,7 +34,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			_event4 = WriteSingleEvent("ES", 3, new string('.', 4000));
 			WriteSingleEvent("ES", 4, new string('.', 4000), retryOnFail: true); // chunk 2
 			WriteSingleEvent("ES", 5, new string('.', 4000)); // ptable 2
-			_event7 = WriteSingleEvent("ES", 6, new string('.', 4000), retryOnFail: true); // chunk 3 
+			_event7 = WriteSingleEvent("ES", 6, new string('.', 4000), retryOnFail: true); // chunk 3
 
 			TruncateCheckpoint = _event4.LogPosition;
 
@@ -136,8 +138,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		}
 
 		[Test]
-		public void read_all_backward_doesnt_return_truncated_records() {
-			var res = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100);
+		public async Task read_all_backward_doesnt_return_truncated_records() {
+			var res = (await ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, CancellationToken.None));
 			var records = res.EventRecords()
 				.Select(r => r.Event)
 				.ToArray();

@@ -135,7 +135,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 						reader.Reposition(_writer.FlushedPosition);
 
 						for (SeqReadResult result;
-							 (result = reader.TryReadPrev()).Success;
+							 (result = await reader.TryReadPrev(token)).Success;
 							 token.ThrowIfCancellationRequested()) {
 							var rec = result.LogRecord;
 							if (rec.RecordType is not LogRecordType.System ||

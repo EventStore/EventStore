@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
@@ -121,8 +123,9 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		}
 
 		[Test]
-		public void return_all_events_on_read_all_backward() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+		public async Task return_all_events_on_read_all_backward() {
+			var events = (await ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, CancellationToken.None))
+				.EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(3, events.Length);

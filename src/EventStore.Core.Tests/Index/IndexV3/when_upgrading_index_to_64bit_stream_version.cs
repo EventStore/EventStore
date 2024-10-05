@@ -7,6 +7,7 @@ using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 using EventStore.Core.Index.Hashes;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -138,9 +139,8 @@ namespace EventStore.Core.Tests.Index.IndexV3 {
 			throw new NotImplementedException();
 		}
 
-		public SeqReadResult TryReadPrev() {
-			throw new NotImplementedException();
-		}
+		public ValueTask<SeqReadResult> TryReadPrev(CancellationToken token)
+			=> ValueTask.FromException<SeqReadResult>(new NotImplementedException());
 
 		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
 			var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,

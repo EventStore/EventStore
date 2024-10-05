@@ -38,8 +38,8 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<StorageMessage.WritePrepares>,
 		IHandle<StorageMessage.WriteDelete>,
 		IHandle<StorageMessage.WriteTransactionStart>,
-		IHandle<StorageMessage.WriteTransactionData>,
-		IHandle<StorageMessage.WriteTransactionEnd>,
+		IAsyncHandle<StorageMessage.WriteTransactionData>,
+		IAsyncHandle<StorageMessage.WriteTransactionEnd>,
 		IHandle<StorageMessage.WriteCommit>,
 		IHandle<MonitoringMessage.InternalStatsRequest> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<StorageWriterService>();
@@ -539,11 +539,11 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		void IHandle<StorageMessage.WriteTransactionData>.Handle(StorageMessage.WriteTransactionData message) {
+		async ValueTask IAsyncHandle<StorageMessage.WriteTransactionData>.HandleAsync(StorageMessage.WriteTransactionData message, CancellationToken token) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
 				var logPosition = Writer.Position;
-				var transactionInfo = _indexWriter.GetTransactionInfo(Writer.FlushedPosition, message.TransactionId);
+				var transactionInfo = await _indexWriter.GetTransactionInfo(Writer.FlushedPosition, message.TransactionId, token);
 				if (!CheckTransactionInfo(message.TransactionId, transactionInfo))
 					return;
 
@@ -582,13 +582,13 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		void IHandle<StorageMessage.WriteTransactionEnd>.Handle(StorageMessage.WriteTransactionEnd message) {
+		async ValueTask IAsyncHandle<StorageMessage.WriteTransactionEnd>.HandleAsync(StorageMessage.WriteTransactionEnd message, CancellationToken token) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
 				if (message.LiveUntil < DateTime.UtcNow)
 					return;
 
-				var transactionInfo = _indexWriter.GetTransactionInfo(Writer.FlushedPosition, message.TransactionId);
+				var transactionInfo = await _indexWriter.GetTransactionInfo(Writer.FlushedPosition, message.TransactionId, token);
 				if (!CheckTransactionInfo(message.TransactionId, transactionInfo))
 					return;
 

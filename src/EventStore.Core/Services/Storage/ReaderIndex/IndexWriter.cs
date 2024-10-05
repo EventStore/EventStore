@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
@@ -27,7 +28,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		void PreCommit(CommitLogRecord commit);
 		void PreCommit(ReadOnlySpan<IPrepareLogRecord<TStreamId>> commitedPrepares);
 		void UpdateTransactionInfo(long transactionId, long logPosition, TransactionInfo<TStreamId> transactionInfo);
-		TransactionInfo<TStreamId> GetTransactionInfo(long writerCheckpoint, long transactionId);
+		ValueTask<TransactionInfo<TStreamId>> GetTransactionInfo(long writerCheckpoint, long transactionId, CancellationToken token);
 		void PurgeNotProcessedCommitsTill(long checkpoint);
 		void PurgeNotProcessedTransactions(long checkpoint);
 
@@ -222,7 +223,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					//in that case the position will need to come from the pre-index
 					var idempotentEvent = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, endEventNumber);
 					var logPos = idempotentEvent.Result == ReadEventResult.Success
-						? idempotentEvent.Record.LogPosition : -1; 					
+						? idempotentEvent.Record.LogPosition : -1;
 					if(isReplicated)
 						return new CommitCheckResult<TStreamId>(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber, false, logPos);
 					else
@@ -266,7 +267,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					//in that case the position will need to come from the pre-index
 					var idempotentEvent = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, eventNumber);
 					var logPos = idempotentEvent.Result == ReadEventResult.Success
-						? idempotentEvent.Record.LogPosition : -1; 
+						? idempotentEvent.Record.LogPosition : -1;
 					if(isReplicated)
 						return new CommitCheckResult<TStreamId>(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber, false,logPos);
 					else
@@ -348,13 +349,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_transactionInfoCache.Put(transactionId, transactionInfo, +1);
 		}
 
-		public TransactionInfo<TStreamId> GetTransactionInfo(long writerCheckpoint, long transactionId) {
+		public async ValueTask<TransactionInfo<TStreamId>> GetTransactionInfo(long writerCheckpoint, long transactionId, CancellationToken token) {
 			TransactionInfo<TStreamId> transactionInfo;
 			if (!_transactionInfoCache.TryGet(transactionId, out transactionInfo)) {
-				if (GetTransactionInfoUncached(writerCheckpoint, transactionId, out transactionInfo))
+				(var result, transactionInfo) = await GetTransactionInfoUncached(writerCheckpoint, transactionId, token);
+				if (result)
 					_transactionInfoCache.Put(transactionId, transactionInfo, 0);
 				else
 					transactionInfo = new TransactionInfo<TStreamId>(int.MinValue, default);
+
 				Interlocked.Increment(ref _notCachedTransInfo);
 			} else {
 				Interlocked.Increment(ref _cachedTransInfo);
@@ -363,26 +366,24 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return transactionInfo;
 		}
 
-		private bool GetTransactionInfoUncached(long writerCheckpoint, long transactionId,
-			out TransactionInfo<TStreamId> transactionInfo) {
+		private async ValueTask<(bool, TransactionInfo<TStreamId>)> GetTransactionInfoUncached(long writerCheckpoint, long transactionId,
+			CancellationToken token) {
 			using (var reader = _indexBackend.BorrowReader()) {
 				reader.Reposition(writerCheckpoint);
 				SeqReadResult result;
-				while ((result = reader.TryReadPrev()).Success) {
+				while ((result = await reader.TryReadPrev(token)).Success) {
 					if (result.LogRecord.LogPosition < transactionId)
 						break;
 					if (result.LogRecord.RecordType != LogRecordType.Prepare)
 						continue;
 					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 					if (prepare.TransactionPosition == transactionId) {
-						transactionInfo = new TransactionInfo<TStreamId>(prepare.TransactionOffset, prepare.EventStreamId);
-						return true;
+						return (true, new TransactionInfo<TStreamId>(prepare.TransactionOffset, prepare.EventStreamId));
 					}
 				}
 			}
 
-			transactionInfo = new TransactionInfo<TStreamId>(int.MinValue, default);
-			return false;
+			return (false, new TransactionInfo<TStreamId>(int.MinValue, default));
 		}
 
 		public void PurgeNotProcessedCommitsTill(long checkpoint) {

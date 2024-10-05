@@ -1,14 +1,6 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-namespace EventStore.Core.Services.Storage.ReaderIndex {
-	public struct TransactionInfo<TStreamId> {
-		public readonly int TransactionOffset;
-		public readonly TStreamId EventStreamId;
+namespace EventStore.Core.Services.Storage.ReaderIndex;
 
-		public TransactionInfo(int transactionOffset, TStreamId eventStreamId) {
-			TransactionOffset = transactionOffset;
-			EventStreamId = eventStreamId;
-		}
-	}
-}
+public readonly record struct TransactionInfo<TStreamId>(int TransactionOffset, TStreamId EventStreamId);

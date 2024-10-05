@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using NUnit.Framework;
@@ -476,9 +477,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			throw new NotImplementedException();
 		}
 
-		public SeqReadResult TryReadPrev() {
-			throw new NotImplementedException();
-		}
+		public ValueTask<SeqReadResult> TryReadPrev(CancellationToken token)
+			=> ValueTask.FromException<SeqReadResult>(new NotImplementedException());
 
 		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
 			var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,

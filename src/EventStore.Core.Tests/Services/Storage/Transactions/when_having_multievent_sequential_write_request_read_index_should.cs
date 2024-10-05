@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -99,8 +101,9 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		}
 
 		[Test]
-		public void read_all_events_backward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
+		public async Task read_all_events_backward_returns_all_events_in_correct_order() {
+			var records = (await ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, CancellationToken.None))
+				.Records;
 
 			Assert.AreEqual(3, records.Count);
 			Assert.AreEqual(_p1, records[2].Event);

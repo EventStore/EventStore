@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -17,7 +19,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			GetOrReserve("test3", out var streamId3, out var p0);
 
 			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
-			
+
 			long p1;
 			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, p0, Guid.NewGuid(), Guid.NewGuid(), p0, 0, streamId1, -1,
 					PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow),
@@ -60,8 +62,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		}
 
 		[Test]
-		public void read_all_events_backward_returns_no_events() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).EventRecords();
+		public async Task read_all_events_backward_returns_no_events() {
+			var records = (await ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10, CancellationToken.None)).EventRecords();
 			Assert.AreEqual(0, records.Count);
 		}
 	}

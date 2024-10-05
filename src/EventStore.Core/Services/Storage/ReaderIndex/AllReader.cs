@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
@@ -29,14 +31,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Returns event records in the reverse sequence they were committed into TF.
 		/// Positions is specified as post-positions (pointer after the end of record).
 		/// </summary>
-		IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
+		ValueTask<IndexReadAllResult> ReadAllEventsBackward(TFPos pos, int maxCount, CancellationToken token);
 
 		/// <summary>
 		/// Returns event records whose eventType matches the given <see cref="EventFilter"/> in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
-		IndexReadAllResult FilteredReadAllEventsBackward(TFPos pos, int maxCount, int maxSearchWindow,
-			IEventFilter eventFilter);
+		ValueTask<IndexReadAllResult> FilteredReadAllEventsBackward(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter, CancellationToken token);
 	}
 
 	public class AllReader<TStreamId> : IAllReader {
@@ -70,8 +72,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			IEventFilter eventFilter) {
 			var records = new List<CommitEventRecord>();
 			var nextPos = pos;
-			// in case we are at position after which there is no commit at all, in that case we have to force 
-			// PreparePosition to long.MaxValue, so if you decide to read backwards from PrevPos, 
+			// in case we are at position after which there is no commit at all, in that case we have to force
+			// PreparePosition to long.MaxValue, so if you decide to read backwards from PrevPos,
 			// you will receive all prepares.
 			var prevPos = new TFPos(pos.CommitPosition, long.MaxValue);
 			var consideredEventsCount = 0L;
@@ -128,7 +130,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							var commit = (CommitLogRecord)result.LogRecord;
 							if (firstCommit) {
 								firstCommit = false;
-								// for backward pass we want to allow read the same commit and skip read prepares, 
+								// for backward pass we want to allow read the same commit and skip read prepares,
 								// so we put post-position of commit and post-position of prepare as TFPos for backward pass
 								prevPos = new TFPos(result.RecordPostPosition, pos.PreparePosition);
 							}
@@ -162,7 +164,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 										records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
 									}
 
-									// for forward pass position is inclusive, 
+									// for forward pass position is inclusive,
 									// so we put pre-position of commit and post-position of prepare
 									nextPos = new TFPos(commit.LogPosition, result.RecordPostPosition);
 								}
@@ -183,22 +185,23 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return new IndexReadAllResult(records, pos, nextPos, prevPos, reachedEndOfStream, consideredEventsCount);
 			}
 		}
-		
-		public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount) {
-			return ReadAllEventsBackwardInternal(pos, maxCount, int.MaxValue, EventFilter.DefaultAllFilter);
+
+		public ValueTask<IndexReadAllResult> ReadAllEventsBackward(TFPos pos, int maxCount, CancellationToken token) {
+			return ReadAllEventsBackwardInternal(pos, maxCount, int.MaxValue, EventFilter.DefaultAllFilter, token);
 		}
 
-		public IndexReadAllResult FilteredReadAllEventsBackward(TFPos pos, int maxCount, int maxSearchWindow,
-			IEventFilter eventFilter) {
-			return ReadAllEventsBackwardInternal(pos, maxCount, maxSearchWindow, eventFilter);
+		public ValueTask<IndexReadAllResult> FilteredReadAllEventsBackward(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter, CancellationToken token) {
+			return ReadAllEventsBackwardInternal(pos, maxCount, maxSearchWindow, eventFilter, token);
 		}
 
-		private IndexReadAllResult ReadAllEventsBackwardInternal(TFPos pos, int maxCount, int maxSearchWindow,
-			IEventFilter eventFilter) {
+		private async ValueTask<IndexReadAllResult> ReadAllEventsBackwardInternal(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter,
+			CancellationToken token) {
 			var records = new List<CommitEventRecord>();
 			var nextPos = pos;
-			// in case we are at position after which there is no commit at all, in that case we have to force 
-			// PreparePosition to 0, so if you decide to read backwards from PrevPos, 
+			// in case we are at position after which there is no commit at all, in that case we have to force
+			// PreparePosition to 0, so if you decide to read backwards from PrevPos,
 			// you will receive all prepares.
 			var prevPos = new TFPos(pos.CommitPosition, 0);
 			var consideredEventsCount = 0L;
@@ -210,7 +213,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					reader.Reposition(nextCommitPostPos);
 
 					SeqReadResult result;
-					while ((result = reader.TryReadPrev()).Success && !IsCommitAlike(result.LogRecord)) {
+					while ((result = await reader.TryReadPrev(token)).Success && !IsCommitAlike(result.LogRecord)) {
 						// skip until commit
 					}
 
@@ -270,7 +273,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							// as we don't know exact position of the last record of transaction,
 							// we have to sequentially scan backwards, so no need to reposition
 							while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
-								result = reader.TryReadPrev();
+								result = await reader.TryReadPrev(token);
 								if (!result.Success) // no more records in TF
 									break;
 

@@ -770,11 +770,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return _readSide.TryReadClosestForwardRaw(logicalPosition, getBuffer);
 		}
 
-		public RecordReadResult TryReadLast() {
+		public async ValueTask<RecordReadResult> TryReadLast(CancellationToken token) {
+			token.ThrowIfCancellationRequested();
 			return _readSide.TryReadLast();
 		}
 
-		public RecordReadResult TryReadClosestBackward(long logicalPosition) {
+		public async ValueTask<RecordReadResult> TryReadClosestBackward(long logicalPosition, CancellationToken token) {
+			token.ThrowIfCancellationRequested();
 			return _readSide.TryReadClosestBackward(logicalPosition);
 		}
 

@@ -3,6 +3,8 @@
 
 using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -123,8 +125,9 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 		}
 
 		[Test]
-		public void read_all_backward_should_return_all_stream_records_except_uncommited() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+		public async Task read_all_backward_should_return_all_stream_records_except_uncommited() {
+			var events = (await ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, CancellationToken.None))
+				.EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(1, events.Length);
