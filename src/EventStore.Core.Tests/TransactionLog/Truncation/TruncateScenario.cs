@@ -7,37 +7,37 @@ using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Transforms.Identity;
 
-namespace EventStore.Core.Tests.TransactionLog.Truncation {
-	public abstract class TruncateScenario<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
-		protected TFChunkDbTruncator Truncator;
-		protected long TruncateCheckpoint = long.MinValue;
+namespace EventStore.Core.Tests.TransactionLog.Truncation;
 
-		protected TruncateScenario(int maxEntriesInMemTable = 100, int metastreamMaxCount = 1)
-			: base(maxEntriesInMemTable, metastreamMaxCount) {
-		}
+public abstract class TruncateScenario<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
+	protected TFChunkDbTruncator Truncator;
+	protected long TruncateCheckpoint = long.MinValue;
 
-		public override async Task TestFixtureSetUp() {
-			await base.TestFixtureSetUp();
+	protected TruncateScenario(int maxEntriesInMemTable = 100, int metastreamMaxCount = 1)
+		: base(maxEntriesInMemTable, metastreamMaxCount) {
+	}
 
-			if (TruncateCheckpoint == long.MinValue)
-				throw new InvalidOperationException("AckCheckpoint must be set in WriteTestScenario.");
+	public override async Task TestFixtureSetUp() {
+		await base.TestFixtureSetUp();
 
-			OnBeforeTruncating();
+		if (TruncateCheckpoint == long.MinValue)
+			throw new InvalidOperationException("AckCheckpoint must be set in WriteTestScenario.");
 
-			// need to close db before truncator can delete files
+		OnBeforeTruncating();
 
-			ReadIndex.Close();
-			ReadIndex.Dispose();
+		// need to close db before truncator can delete files
 
-			TableIndex.Close(removeFiles: false);
+		ReadIndex.Close();
+		ReadIndex.Dispose();
 
-			await Db.DisposeAsync();
+		TableIndex.Close(removeFiles: false);
 
-			var truncator = new TFChunkDbTruncator(Db.Config, _ => new IdentityChunkTransformFactory());
-			truncator.TruncateDb(TruncateCheckpoint);
-		}
+		await Db.DisposeAsync();
 
-		protected virtual void OnBeforeTruncating() {
-		}
+		var truncator = new TFChunkDbTruncator(Db.Config, _ => new IdentityChunkTransformFactory());
+		truncator.TruncateDb(TruncateCheckpoint);
+	}
+
+	protected virtual void OnBeforeTruncating() {
 	}
 }

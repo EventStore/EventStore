@@ -22,91 +22,91 @@ using System.Threading.Tasks;
 using EventStore.Core.Caching;
 using EventStore.Core.Metrics;
 
-namespace EventStore.Core.Tests.Services.Storage {
-	[TestFixture]
-	public abstract class RepeatableDbTestScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
-		protected readonly int MaxEntriesInMemTable;
-		protected TableIndex<TStreamId> TableIndex;
-		protected IReadIndex<TStreamId> ReadIndex;
-		protected LogFormatAbstractor<TStreamId> _logFormat;
+namespace EventStore.Core.Tests.Services.Storage;
 
-		protected DbResult DbRes;
-		protected TFChunkDbCreationHelper<TLogFormat, TStreamId> DbCreationHelper;
+[TestFixture]
+public abstract class RepeatableDbTestScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+	protected readonly int MaxEntriesInMemTable;
+	protected TableIndex<TStreamId> TableIndex;
+	protected IReadIndex<TStreamId> ReadIndex;
+	protected LogFormatAbstractor<TStreamId> _logFormat;
 
-		private readonly int _metastreamMaxCount;
+	protected DbResult DbRes;
+	protected TFChunkDbCreationHelper<TLogFormat, TStreamId> DbCreationHelper;
 
-		protected RepeatableDbTestScenario(int maxEntriesInMemTable = 20, int metastreamMaxCount = 1) {
-			Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
-			MaxEntriesInMemTable = maxEntriesInMemTable;
-			_metastreamMaxCount = metastreamMaxCount;
-		}
+	private readonly int _metastreamMaxCount;
 
-		public async ValueTask CreateDb(Rec[] records, CancellationToken token = default) {
-			if (DbRes is not null) {
-				await DbRes.Db.DisposeAsync();
-			}
+	protected RepeatableDbTestScenario(int maxEntriesInMemTable = 20, int metastreamMaxCount = 1) {
+		Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
+		MaxEntriesInMemTable = maxEntriesInMemTable;
+		_metastreamMaxCount = metastreamMaxCount;
+	}
 
-			var indexDirectory = GetFilePathFor("index");
-			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
-				IndexDirectory = indexDirectory,
-			});
-
-			var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
-			var dbHelper = await TFChunkDbCreationHelper<TLogFormat, TStreamId>.CreateAsync(dbConfig, _logFormat, token);
-
-			DbRes = await dbHelper.Chunk(records).CreateDb(token: token);
-
-			DbRes.Db.Config.WriterCheckpoint.Flush();
-			DbRes.Db.Config.ChaserCheckpoint.Write(DbRes.Db.Config.WriterCheckpoint.Read());
-			DbRes.Db.Config.ChaserCheckpoint.Flush();
-
-			var readers = new ObjectPool<ITransactionFileReader>(
-				"Readers", 2, 2, () => new TFChunkReader(DbRes.Db, DbRes.Db.Config.WriterCheckpoint));
-
-			var lowHasher = _logFormat.LowHasher;
-			var highHasher = _logFormat.HighHasher;
-			var emptyStreamId = _logFormat.EmptyStreamId;
-			TableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
-				() => new HashListMemTable(PTableVersions.IndexV3, MaxEntriesInMemTable * 2),
-				() => new TFReaderLease(readers),
-				PTableVersions.IndexV3,
-				int.MaxValue,
-				Constants.PTableMaxReaderCountDefault,
-				MaxEntriesInMemTable);
-			_logFormat.StreamNamesProvider.SetTableIndex(TableIndex);
-
-			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
-				readers,
-				TableIndex,
-				_logFormat.StreamNameIndexConfirmer,
-				_logFormat.StreamIds,
-				_logFormat.StreamNamesProvider,
-				_logFormat.EmptyStreamId,
-				_logFormat.StreamIdValidator,
-				_logFormat.StreamIdSizer,
-				_logFormat.StreamExistenceFilter,
-				_logFormat.StreamExistenceFilterReader,
-				_logFormat.EventTypeIndexConfirmer,
-				new NoLRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(),
-				new NoLRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(),
-				additionalCommitChecks: true,
-				metastreamMaxCount: _metastreamMaxCount,
-				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
-				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
-				replicationCheckpoint: DbRes.Db.Config.ReplicationCheckpoint,
-				indexCheckpoint: DbRes.Db.Config.IndexCheckpoint,
-				indexStatusTracker: new IndexStatusTracker.NoOp(),
-				indexTracker: new IndexTracker.NoOp(),
-				cacheTracker: new CacheHitsMissesTracker.NoOp());
-
-			readIndex.IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
-			ReadIndex = readIndex;
-		}
-
-		public override async Task TestFixtureTearDown() {
-			_logFormat?.Dispose();
+	public async ValueTask CreateDb(Rec[] records, CancellationToken token = default) {
+		if (DbRes is not null) {
 			await DbRes.Db.DisposeAsync();
-			await base.TestFixtureTearDown();
 		}
+
+		var indexDirectory = GetFilePathFor("index");
+		_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
+			IndexDirectory = indexDirectory,
+		});
+
+		var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
+		var dbHelper = await TFChunkDbCreationHelper<TLogFormat, TStreamId>.CreateAsync(dbConfig, _logFormat, token);
+
+		DbRes = await dbHelper.Chunk(records).CreateDb(token: token);
+
+		DbRes.Db.Config.WriterCheckpoint.Flush();
+		DbRes.Db.Config.ChaserCheckpoint.Write(DbRes.Db.Config.WriterCheckpoint.Read());
+		DbRes.Db.Config.ChaserCheckpoint.Flush();
+
+		var readers = new ObjectPool<ITransactionFileReader>(
+			"Readers", 2, 2, () => new TFChunkReader(DbRes.Db, DbRes.Db.Config.WriterCheckpoint));
+
+		var lowHasher = _logFormat.LowHasher;
+		var highHasher = _logFormat.HighHasher;
+		var emptyStreamId = _logFormat.EmptyStreamId;
+		TableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
+			() => new HashListMemTable(PTableVersions.IndexV3, MaxEntriesInMemTable * 2),
+			() => new TFReaderLease(readers),
+			PTableVersions.IndexV3,
+			int.MaxValue,
+			Constants.PTableMaxReaderCountDefault,
+			MaxEntriesInMemTable);
+		_logFormat.StreamNamesProvider.SetTableIndex(TableIndex);
+
+		var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
+			readers,
+			TableIndex,
+			_logFormat.StreamNameIndexConfirmer,
+			_logFormat.StreamIds,
+			_logFormat.StreamNamesProvider,
+			_logFormat.EmptyStreamId,
+			_logFormat.StreamIdValidator,
+			_logFormat.StreamIdSizer,
+			_logFormat.StreamExistenceFilter,
+			_logFormat.StreamExistenceFilterReader,
+			_logFormat.EventTypeIndexConfirmer,
+			new NoLRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(),
+			new NoLRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(),
+			additionalCommitChecks: true,
+			metastreamMaxCount: _metastreamMaxCount,
+			hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
+			skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
+			replicationCheckpoint: DbRes.Db.Config.ReplicationCheckpoint,
+			indexCheckpoint: DbRes.Db.Config.IndexCheckpoint,
+			indexStatusTracker: new IndexStatusTracker.NoOp(),
+			indexTracker: new IndexTracker.NoOp(),
+			cacheTracker: new CacheHitsMissesTracker.NoOp());
+
+		readIndex.IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
+		ReadIndex = readIndex;
+	}
+
+	public override async Task TestFixtureTearDown() {
+		_logFormat?.Dispose();
+		await DbRes.Db.DisposeAsync();
+		await base.TestFixtureTearDown();
 	}
 }

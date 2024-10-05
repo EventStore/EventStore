@@ -13,62 +13,62 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Replication;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.RequestManagement {
-	public abstract class RequestManagerSpecification<TManager>
-		where TManager : RequestManagerBase {
-		protected readonly TimeSpan PrepareTimeout = TimeSpan.FromMinutes(5);
-		protected readonly TimeSpan CommitTimeout = TimeSpan.FromMinutes(5);
+namespace EventStore.Core.Tests.Services.RequestManagement;
 
-		protected TManager Manager;
-		protected List<Message> Produced;
-		protected FakePublisher Publisher = new();
-		protected Guid InternalCorrId = Guid.NewGuid();
-		protected Guid ClientCorrId = Guid.NewGuid();
-		protected byte[] Metadata = new byte[255];
-		protected byte[] EventData = new byte[255];
-		protected FakeEnvelope Envelope = new();
-		protected CommitSource CommitSource = new();
-		protected SynchronousScheduler Dispatcher = new(nameof(RequestManagerSpecification<TManager>));
+public abstract class RequestManagerSpecification<TManager>
+	where TManager : RequestManagerBase {
+	protected readonly TimeSpan PrepareTimeout = TimeSpan.FromMinutes(5);
+	protected readonly TimeSpan CommitTimeout = TimeSpan.FromMinutes(5);
 
-		protected abstract TManager OnManager(FakePublisher publisher);
-		protected abstract IEnumerable<Message> WithInitialMessages();
-		protected virtual void Given(){ }
-		protected abstract Message When();
+	protected TManager Manager;
+	protected List<Message> Produced;
+	protected FakePublisher Publisher = new();
+	protected Guid InternalCorrId = Guid.NewGuid();
+	protected Guid ClientCorrId = Guid.NewGuid();
+	protected byte[] Metadata = new byte[255];
+	protected byte[] EventData = new byte[255];
+	protected FakeEnvelope Envelope = new();
+	protected CommitSource CommitSource = new();
+	protected SynchronousScheduler Dispatcher = new(nameof(RequestManagerSpecification<TManager>));
 
-		protected Event DummyEvent() {
-			return new Event(Guid.NewGuid(), "test", false, EventData, Metadata);
-		}
+	protected abstract TManager OnManager(FakePublisher publisher);
+	protected abstract IEnumerable<Message> WithInitialMessages();
+	protected virtual void Given(){ }
+	protected abstract Message When();
 
-		protected RequestManagerSpecification() {
-			Dispatcher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(CommitSource);
-		}
-		[OneTimeSetUp]
-		public virtual void Setup() {
-			Envelope.Replies.Clear();
-			Publisher.Messages.Clear();
-
-			Manager = OnManager(Publisher);
-			Dispatcher.Subscribe<StorageMessage.PrepareAck>(Manager);
-			Dispatcher.Subscribe<StorageMessage.InvalidTransaction>(Manager);
-			Dispatcher.Subscribe<StorageMessage.StreamDeleted>(Manager);
-			Dispatcher.Subscribe<StorageMessage.WrongExpectedVersion>(Manager);
-			Dispatcher.Subscribe<StorageMessage.AlreadyCommitted>(Manager);
-			Dispatcher.Subscribe<StorageMessage.RequestManagerTimerTick>(Manager);
-			Dispatcher.Subscribe<StorageMessage.CommitIndexed>(Manager);
-			Dispatcher.Subscribe<ReplicationTrackingMessage.IndexedTo>(CommitSource);
-			Dispatcher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(CommitSource);
-
-			Manager.Start();
-			Given();
-			foreach (var msg in WithInitialMessages()) {
-				Dispatcher.Publish(msg);
-			}
-
-			Publisher.Messages.Clear();
-			Envelope.Replies.Clear();
-			Dispatcher.Publish(When());
-			Produced = new List<Message>(Publisher.Messages);
-		}
-
+	protected Event DummyEvent() {
+		return new Event(Guid.NewGuid(), "test", false, EventData, Metadata);
 	}
+
+	protected RequestManagerSpecification() {
+		Dispatcher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(CommitSource);
+	}
+	[OneTimeSetUp]
+	public virtual void Setup() {
+		Envelope.Replies.Clear();
+		Publisher.Messages.Clear();
+
+		Manager = OnManager(Publisher);
+		Dispatcher.Subscribe<StorageMessage.PrepareAck>(Manager);
+		Dispatcher.Subscribe<StorageMessage.InvalidTransaction>(Manager);
+		Dispatcher.Subscribe<StorageMessage.StreamDeleted>(Manager);
+		Dispatcher.Subscribe<StorageMessage.WrongExpectedVersion>(Manager);
+		Dispatcher.Subscribe<StorageMessage.AlreadyCommitted>(Manager);
+		Dispatcher.Subscribe<StorageMessage.RequestManagerTimerTick>(Manager);
+		Dispatcher.Subscribe<StorageMessage.CommitIndexed>(Manager);
+		Dispatcher.Subscribe<ReplicationTrackingMessage.IndexedTo>(CommitSource);
+		Dispatcher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(CommitSource);
+
+		Manager.Start();
+		Given();
+		foreach (var msg in WithInitialMessages()) {
+			Dispatcher.Publish(msg);
+		}
+
+		Publisher.Messages.Clear();
+		Envelope.Replies.Clear();
+		Dispatcher.Publish(When());
+		Produced = new List<Message>(Publisher.Messages);
+	}
+
 }

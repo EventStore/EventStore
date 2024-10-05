@@ -6,7 +6,8 @@ using System.Threading;
 using Serilog;
 using Serilog.Events;
 
-namespace EventStore.Common.Log; 
+namespace EventStore.Common.Log;
+
 
 public class ThrottledLog<T> {
 

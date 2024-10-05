@@ -5,146 +5,146 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 
-namespace EventStore.Core.TransactionLog.Scavenging {
-	public interface IScavengeState<TStreamId> :
-		IScavengeStateForAccumulator<TStreamId>,
-		IScavengeStateForCalculator<TStreamId>,
-		IScavengeStateForIndexExecutor<TStreamId>,
-		IScavengeStateForChunkMerger,
-		IScavengeStateForChunkExecutor<TStreamId>,
-		IScavengeStateForCleaner,
-		IDisposable {
+namespace EventStore.Core.TransactionLog.Scavenging;
 
-		void Init();
+public interface IScavengeState<TStreamId> :
+	IScavengeStateForAccumulator<TStreamId>,
+	IScavengeStateForCalculator<TStreamId>,
+	IScavengeStateForIndexExecutor<TStreamId>,
+	IScavengeStateForChunkMerger,
+	IScavengeStateForChunkExecutor<TStreamId>,
+	IScavengeStateForCleaner,
+	IDisposable {
 
-		bool TryGetCheckpoint(out ScavengeCheckpoint checkpoint);
+	void Init();
 
-		IEnumerable<TStreamId> AllCollisions();
+	bool TryGetCheckpoint(out ScavengeCheckpoint checkpoint);
 
-		void LogStats();
-	}
+	IEnumerable<TStreamId> AllCollisions();
 
-	// all the components use these
-	public interface IScavengeStateCommon {
-		// begin a transaction, returns the started transaction so that it can be
-		// committed or rolled back
-		ITransactionCompleter BeginTransaction();
-	}
+	void LogStats();
+}
 
-	// abstraction to allow the components to commit/rollback
-	public interface ITransactionCompleter {
-		void Rollback();
-		void Commit(ScavengeCheckpoint checkpoint);
-	}
+// all the components use these
+public interface IScavengeStateCommon {
+	// begin a transaction, returns the started transaction so that it can be
+	// committed or rolled back
+	ITransactionCompleter BeginTransaction();
+}
 
-	public interface ITransactionManager : ITransactionCompleter{
-		void Begin();
-		void RegisterOnRollback(Action onRollback);
-		void UnregisterOnRollback();
-	}
+// abstraction to allow the components to commit/rollback
+public interface ITransactionCompleter {
+	void Rollback();
+	void Commit(ScavengeCheckpoint checkpoint);
+}
 
-	// abstraction for the backing store. memory, sqlite etc.
-	public interface ITransactionFactory<TTransaction> {
-		TTransaction Begin();
-		void Rollback(TTransaction transaction);
-		void Commit(TTransaction transaction);
-	}
+public interface ITransactionManager : ITransactionCompleter{
+	void Begin();
+	void RegisterOnRollback(Action onRollback);
+	void UnregisterOnRollback();
+}
 
-	public interface IScavengeStateForAccumulator<TStreamId> :
-		IScavengeStateCommon,
-		IIncreaseChunkWeights {
+// abstraction for the backing store. memory, sqlite etc.
+public interface ITransactionFactory<TTransaction> {
+	TTransaction Begin();
+	void Rollback(TTransaction transaction);
+	void Commit(TTransaction transaction);
+}
 
-		// call this for each record as we accumulate through the log so that we can spot every hash
-		// collision to save ourselves work later.
-		// this affects multiple parts of the scavengestate and must be called within a transaction so
-		// that its effect is atomic
-		void DetectCollisions(TStreamId streamId);
+public interface IScavengeStateForAccumulator<TStreamId> :
+	IScavengeStateCommon,
+	IIncreaseChunkWeights {
 
-		void SetMetastreamDiscardPoint(TStreamId metastreamId, DiscardPoint discardPoint);
+	// call this for each record as we accumulate through the log so that we can spot every hash
+	// collision to save ourselves work later.
+	// this affects multiple parts of the scavengestate and must be called within a transaction so
+	// that its effect is atomic
+	void DetectCollisions(TStreamId streamId);
 
-		// for when the _original_ stream is tombstoned, the metadata stream can be removed entirely.
-		void SetMetastreamTombstone(TStreamId metastreamId);
+	void SetMetastreamDiscardPoint(TStreamId metastreamId, DiscardPoint discardPoint);
 
-		void SetOriginalStreamMetadata(TStreamId originalStreamId, StreamMetadata metadata);
+	// for when the _original_ stream is tombstoned, the metadata stream can be removed entirely.
+	void SetMetastreamTombstone(TStreamId metastreamId);
 
-		void SetOriginalStreamTombstone(TStreamId originalStreamId);
+	void SetOriginalStreamMetadata(TStreamId originalStreamId, StreamMetadata metadata);
 
-		void SetChunkTimeStampRange(int logicalChunkNumber, ChunkTimeStampRange range);
+	void SetOriginalStreamTombstone(TStreamId originalStreamId);
 
-		StreamHandle<TStreamId> GetStreamHandle(TStreamId streamId);
+	void SetChunkTimeStampRange(int logicalChunkNumber, ChunkTimeStampRange range);
 
-		void LogAccumulationStats();
-	}
+	StreamHandle<TStreamId> GetStreamHandle(TStreamId streamId);
 
-	public interface IScavengeStateForCalculatorReadOnly<TStreamId> {
-		// Calculator iterates through the scavengable original streams and their metadata
-		// it doesn't need to do anything with the metadata streams, accumulator has done those.
-		IEnumerable<(StreamHandle<TStreamId>, OriginalStreamData)> OriginalStreamsToCalculate(
-			StreamHandle<TStreamId> checkpoint);
+	void LogAccumulationStats();
+}
 
-		bool TryGetChunkTimeStampRange(int logicaChunkNumber, out ChunkTimeStampRange range);
-	}
+public interface IScavengeStateForCalculatorReadOnly<TStreamId> {
+	// Calculator iterates through the scavengable original streams and their metadata
+	// it doesn't need to do anything with the metadata streams, accumulator has done those.
+	IEnumerable<(StreamHandle<TStreamId>, OriginalStreamData)> OriginalStreamsToCalculate(
+		StreamHandle<TStreamId> checkpoint);
 
-	public interface IScavengeStateForCalculator<TStreamId> :
-		IScavengeStateForCalculatorReadOnly<TStreamId>,
-		IScavengeStateCommon,
-		IIncreaseChunkWeights {
+	bool TryGetChunkTimeStampRange(int logicaChunkNumber, out ChunkTimeStampRange range);
+}
 
-		void SetOriginalStreamDiscardPoints(
-			StreamHandle<TStreamId> streamHandle,
-			CalculationStatus status,
-			DiscardPoint discardPoint,
-			DiscardPoint maybeDiscardPoint);
+public interface IScavengeStateForCalculator<TStreamId> :
+	IScavengeStateForCalculatorReadOnly<TStreamId>,
+	IScavengeStateCommon,
+	IIncreaseChunkWeights {
 
-		TStreamId LookupUniqueHashUser(ulong streamHash);
-	}
+	void SetOriginalStreamDiscardPoints(
+		StreamHandle<TStreamId> streamHandle,
+		CalculationStatus status,
+		DiscardPoint discardPoint,
+		DiscardPoint maybeDiscardPoint);
 
-	public interface IIncreaseChunkWeights {
-		void IncreaseChunkWeight(int logicalChunkNumber, float extraWeight);
-	}
+	TStreamId LookupUniqueHashUser(ulong streamHash);
+}
 
-	public interface IScavengeStateForChunkExecutor<TStreamId> : IScavengeStateCommon {
-		IScavengeStateForChunkExecutorWorker<TStreamId> BorrowStateForWorker();
-	}
+public interface IIncreaseChunkWeights {
+	void IncreaseChunkWeight(int logicalChunkNumber, float extraWeight);
+}
 
-	// implementations must be thread-safe
-	public interface IScavengeStateForChunkExecutorWorker<TStreamId> : IDisposable {
-		void ResetChunkWeights(int startLogicalChunkNumber, int endLogicalChunkNumber);
-		float SumChunkWeights(int startLogicalChunkNumber, int endLogicalChunkNumber);
-		bool TryGetChunkExecutionInfo(TStreamId streamId, out ChunkExecutionInfo info);
-		bool TryGetMetastreamData(TStreamId streamId, out MetastreamData metastreamData);
-	}
+public interface IScavengeStateForChunkExecutor<TStreamId> : IScavengeStateCommon {
+	IScavengeStateForChunkExecutorWorker<TStreamId> BorrowStateForWorker();
+}
 
-	public interface IScavengeStateForChunkMerger : IScavengeStateCommon {
-	}
+// implementations must be thread-safe
+public interface IScavengeStateForChunkExecutorWorker<TStreamId> : IDisposable {
+	void ResetChunkWeights(int startLogicalChunkNumber, int endLogicalChunkNumber);
+	float SumChunkWeights(int startLogicalChunkNumber, int endLogicalChunkNumber);
+	bool TryGetChunkExecutionInfo(TStreamId streamId, out ChunkExecutionInfo info);
+	bool TryGetMetastreamData(TStreamId streamId, out MetastreamData metastreamData);
+}
 
-	public interface IScavengeStateForIndexExecutor<TStreamId> : IScavengeStateCommon {
-		bool IsCollision(ulong streamHash);
-		bool TryGetIndexExecutionInfo(
-			StreamHandle<TStreamId> streamHandle,
-			out IndexExecutionInfo info);
-		TStreamId LookupUniqueHashUser(ulong streamHash);
-	}
+public interface IScavengeStateForChunkMerger : IScavengeStateCommon {
+}
 
-	public interface IScavengeStateForCleaner : IScavengeStateCommon {
-		bool AllChunksExecuted();
-		void DeleteMetastreamData();
-		void DeleteOriginalStreamData(bool deleteArchived);
-	}
+public interface IScavengeStateForIndexExecutor<TStreamId> : IScavengeStateCommon {
+	bool IsCollision(ulong streamHash);
+	bool TryGetIndexExecutionInfo(
+		StreamHandle<TStreamId> streamHandle,
+		out IndexExecutionInfo info);
+	TStreamId LookupUniqueHashUser(ulong streamHash);
+}
 
-	// this represents access to the actual state storage. these are grouped together into one inteface
-	// so that they can be accessed transactionally
-	public interface IScavengeStateBackend<TStreamId> : IDisposable {
-		void LogStats();
-		IScavengeMap<TStreamId, Unit> CollisionStorage { get; }
-		IScavengeMap<ulong, TStreamId> Hashes { get; }
-		IMetastreamScavengeMap<ulong> MetaStorage { get; }
-		IMetastreamScavengeMap<TStreamId> MetaCollisionStorage { get; }
-		IOriginalStreamScavengeMap<ulong> OriginalStorage { get; }
-		IOriginalStreamScavengeMap<TStreamId> OriginalCollisionStorage { get; }
-		IScavengeMap<Unit, ScavengeCheckpoint> CheckpointStorage { get; }
-		IScavengeMap<int, ChunkTimeStampRange> ChunkTimeStampRanges { get; }
-		IChunkWeightScavengeMap ChunkWeights { get; }
-		ITransactionManager TransactionManager { get; }
-	}
+public interface IScavengeStateForCleaner : IScavengeStateCommon {
+	bool AllChunksExecuted();
+	void DeleteMetastreamData();
+	void DeleteOriginalStreamData(bool deleteArchived);
+}
+
+// this represents access to the actual state storage. these are grouped together into one inteface
+// so that they can be accessed transactionally
+public interface IScavengeStateBackend<TStreamId> : IDisposable {
+	void LogStats();
+	IScavengeMap<TStreamId, Unit> CollisionStorage { get; }
+	IScavengeMap<ulong, TStreamId> Hashes { get; }
+	IMetastreamScavengeMap<ulong> MetaStorage { get; }
+	IMetastreamScavengeMap<TStreamId> MetaCollisionStorage { get; }
+	IOriginalStreamScavengeMap<ulong> OriginalStorage { get; }
+	IOriginalStreamScavengeMap<TStreamId> OriginalCollisionStorage { get; }
+	IScavengeMap<Unit, ScavengeCheckpoint> CheckpointStorage { get; }
+	IScavengeMap<int, ChunkTimeStampRange> ChunkTimeStampRanges { get; }
+	IChunkWeightScavengeMap ChunkWeights { get; }
+	ITransactionManager TransactionManager { get; }
 }

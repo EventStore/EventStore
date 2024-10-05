@@ -8,41 +8,41 @@ using DotNext.IO;
 using EventStore.Plugins.Transforms;
 using Microsoft.Win32.SafeHandles;
 
-namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
-	internal sealed class ReaderWorkItem : BinaryReader {
-		public const int BufferSize = 8192;
+namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
-		// if item was taken from the pool, the field contains position within the array (>= 0)
-		private readonly int _positionInPool = -1;
+internal sealed class ReaderWorkItem : BinaryReader {
+	public const int BufferSize = 8192;
 
-		public unsafe ReaderWorkItem(Stream sharedStream, IChunkReadTransform chunkReadTransform)
-			: base(CreateTransformedMemoryStream(sharedStream, chunkReadTransform), Encoding.UTF8, leaveOpen: true) {
-			IsMemory = true;
-		}
+	// if item was taken from the pool, the field contains position within the array (>= 0)
+	private readonly int _positionInPool = -1;
 
-		public ReaderWorkItem(SafeFileHandle handle, IChunkReadTransform chunkReadTransform)
-			: base(CreateTransformedFileStream(handle, chunkReadTransform), Encoding.UTF8, leaveOpen: false) {
-			IsMemory = false;
-		}
+	public unsafe ReaderWorkItem(Stream sharedStream, IChunkReadTransform chunkReadTransform)
+		: base(CreateTransformedMemoryStream(sharedStream, chunkReadTransform), Encoding.UTF8, leaveOpen: true) {
+		IsMemory = true;
+	}
 
-		private static Stream CreateTransformedMemoryStream(Stream memStream, IChunkReadTransform chunkReadTransform) {
-			return chunkReadTransform.TransformData(new ChunkDataReadStream(memStream));
-		}
+	public ReaderWorkItem(SafeFileHandle handle, IChunkReadTransform chunkReadTransform)
+		: base(CreateTransformedFileStream(handle, chunkReadTransform), Encoding.UTF8, leaveOpen: false) {
+		IsMemory = false;
+	}
 
-		private static ChunkDataReadStream CreateTransformedFileStream(SafeFileHandle handle, IChunkReadTransform chunkReadTransform) {
-			var fileStream = new BufferedStream(handle.AsUnbufferedStream(FileAccess.Read), BufferSize);
-			return chunkReadTransform.TransformData(new ChunkDataReadStream(fileStream));
-		}
+	private static Stream CreateTransformedMemoryStream(Stream memStream, IChunkReadTransform chunkReadTransform) {
+		return chunkReadTransform.TransformData(new ChunkDataReadStream(memStream));
+	}
 
-		public bool IsMemory { get; }
+	private static ChunkDataReadStream CreateTransformedFileStream(SafeFileHandle handle, IChunkReadTransform chunkReadTransform) {
+		var fileStream = new BufferedStream(handle.AsUnbufferedStream(FileAccess.Read), BufferSize);
+		return chunkReadTransform.TransformData(new ChunkDataReadStream(fileStream));
+	}
 
-		public int PositionInPool {
-			get => _positionInPool;
-			init {
-				Debug.Assert(value >= 0);
+	public bool IsMemory { get; }
 
-				_positionInPool = value;
-			}
+	public int PositionInPool {
+		get => _positionInPool;
+		init {
+			Debug.Assert(value >= 0);
+
+			_positionInPool = value;
 		}
 	}
 }

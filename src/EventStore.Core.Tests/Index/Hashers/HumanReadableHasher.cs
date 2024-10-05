@@ -4,33 +4,33 @@
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services;
 
-namespace EventStore.Core.Tests.Index.Hashers {
-	// Generates hashes that are obvious to humans based on the stream name.
-	// The first character of the stream name is the basis of the hash for the corresponding metastream
-	// The second character of the stream name is the basis of the hash for the original stream
-	// e.g.
-	//   "$$ma-1 -> 'm'
-	//   "ma-1" -> 'a' (97)
-	public class HumanReadableHasher : ILongHasher<string> {
-		private readonly HumanReadableHasher32 _hash32;
+namespace EventStore.Core.Tests.Index.Hashers;
 
-		public HumanReadableHasher() {
-			_hash32 = new HumanReadableHasher32();
-		}
+// Generates hashes that are obvious to humans based on the stream name.
+// The first character of the stream name is the basis of the hash for the corresponding metastream
+// The second character of the stream name is the basis of the hash for the original stream
+// e.g.
+//   "$$ma-1 -> 'm'
+//   "ma-1" -> 'a' (97)
+public class HumanReadableHasher : ILongHasher<string> {
+	private readonly HumanReadableHasher32 _hash32;
 
-		public ulong Hash(string x) => _hash32.Hash(x);
+	public HumanReadableHasher() {
+		_hash32 = new HumanReadableHasher32();
 	}
 
-	public class HumanReadableHasher32 : IHasher<string> {
-		public uint Hash(string x) {
-			if (x == "")
-				return 0;
+	public ulong Hash(string x) => _hash32.Hash(x);
+}
 
-			var c = SystemStreams.IsMetastream(x)
-				? x[2]
-				: x[1];
+public class HumanReadableHasher32 : IHasher<string> {
+	public uint Hash(string x) {
+		if (x == "")
+			return 0;
 
-			return c;
-		}
+		var c = SystemStreams.IsMetastream(x)
+			? x[2]
+			: x[1];
+
+		return c;
 	}
 }

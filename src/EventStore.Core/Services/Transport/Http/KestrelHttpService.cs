@@ -19,91 +19,91 @@ using MidFunc = System.Func<
 	System.Threading.Tasks.Task
 >;
 
-namespace EventStore.Core.Services.Transport.Http {
-	public class KestrelHttpService : IHttpService,
-		IHandle<SystemMessage.SystemInit>,
-		IHandle<SystemMessage.BecomeShuttingDown> {
-		private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
-		private static readonly ILogger Log = Serilog.Log.ForContext<KestrelHttpService>();
+namespace EventStore.Core.Services.Transport.Http;
 
-		public ServiceAccessibility Accessibility => _accessibility;
-		public bool IsListening => _isListening;
-		public IEnumerable<EndPoint> EndPoints { get; }
+public class KestrelHttpService : IHttpService,
+	IHandle<SystemMessage.SystemInit>,
+	IHandle<SystemMessage.BecomeShuttingDown> {
+	private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
+	private static readonly ILogger Log = Serilog.Log.ForContext<KestrelHttpService>();
 
-		public IEnumerable<ControllerAction> Actions => UriRouter.Actions;
+	public ServiceAccessibility Accessibility => _accessibility;
+	public bool IsListening => _isListening;
+	public IEnumerable<EndPoint> EndPoints { get; }
 
-		private readonly ServiceAccessibility _accessibility;
-		private readonly IPublisher _inputBus;
-		public IUriRouter UriRouter { get; }
-		public bool LogHttpRequests { get; }
+	public IEnumerable<ControllerAction> Actions => UriRouter.Actions;
 
-		public string AdvertiseAsHost { get; }
-		public int AdvertiseAsPort { get; }
+	private readonly ServiceAccessibility _accessibility;
+	private readonly IPublisher _inputBus;
+	public IUriRouter UriRouter { get; }
+	public bool LogHttpRequests { get; }
 
-		private bool _isListening;
+	public string AdvertiseAsHost { get; }
+	public int AdvertiseAsPort { get; }
 
-		public KestrelHttpService(ServiceAccessibility accessibility, IPublisher inputBus, IUriRouter uriRouter,
-			MultiQueuedHandler multiQueuedHandler, bool logHttpRequests, string advertiseAsHost,
-			int advertiseAsPort, bool disableAuthorization, params EndPoint[] endPoints) {
-			Ensure.NotNull(inputBus, nameof(inputBus));
-			Ensure.NotNull(uriRouter, nameof(uriRouter));
-			Ensure.NotNull(endPoints, nameof(endPoints));
+	private bool _isListening;
 
-			_accessibility = accessibility;
-			_inputBus = inputBus;
-			UriRouter = uriRouter;
-			LogHttpRequests = logHttpRequests;
+	public KestrelHttpService(ServiceAccessibility accessibility, IPublisher inputBus, IUriRouter uriRouter,
+		MultiQueuedHandler multiQueuedHandler, bool logHttpRequests, string advertiseAsHost,
+		int advertiseAsPort, bool disableAuthorization, params EndPoint[] endPoints) {
+		Ensure.NotNull(inputBus, nameof(inputBus));
+		Ensure.NotNull(uriRouter, nameof(uriRouter));
+		Ensure.NotNull(endPoints, nameof(endPoints));
 
-			AdvertiseAsHost = advertiseAsHost;
-			AdvertiseAsPort = advertiseAsPort;
+		_accessibility = accessibility;
+		_inputBus = inputBus;
+		UriRouter = uriRouter;
+		LogHttpRequests = logHttpRequests;
+
+		AdvertiseAsHost = advertiseAsHost;
+		AdvertiseAsPort = advertiseAsPort;
 
 
-			EndPoints = endPoints;
-		}
+		EndPoints = endPoints;
+	}
 
-		public void Handle(SystemMessage.SystemInit message) {
+	public void Handle(SystemMessage.SystemInit message) {
 
-			_isListening = true;
-		}
+		_isListening = true;
+	}
 
-		public void Handle(SystemMessage.BecomeShuttingDown message) {
-			if (message.ShutdownHttp)
-				Shutdown();
-			_inputBus.Publish(
-				new SystemMessage.ServiceShutdown(
-					$"HttpServer [{String.Join(", ", EndPoints)}]"));
-		}
+	public void Handle(SystemMessage.BecomeShuttingDown message) {
+		if (message.ShutdownHttp)
+			Shutdown();
+		_inputBus.Publish(
+			new SystemMessage.ServiceShutdown(
+				$"HttpServer [{String.Join(", ", EndPoints)}]"));
+	}
 
-		public void Shutdown() {
-			_isListening = false;
-		}
+	public void Shutdown() {
+		_isListening = false;
+	}
 
-		public void SetupController(IHttpController controller) {
-			Ensure.NotNull(controller, "controller");
-			controller.Subscribe(this);
-		}
+	public void SetupController(IHttpController controller) {
+		Ensure.NotNull(controller, "controller");
+		controller.Subscribe(this);
+	}
 
-		public void RegisterCustomAction(ControllerAction action,
-			Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler) {
-			Ensure.NotNull(action, "action");
-			Ensure.NotNull(handler, "handler");
+	public void RegisterCustomAction(ControllerAction action,
+		Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler) {
+		Ensure.NotNull(action, "action");
+		Ensure.NotNull(handler, "handler");
 
-			UriRouter.RegisterAction(action, handler);
-		}
+		UriRouter.RegisterAction(action, handler);
+	}
 
-		public void RegisterAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler) {
-			Ensure.NotNull(action, "action");
-			Ensure.NotNull(handler, "handler");
+	public void RegisterAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler) {
+		Ensure.NotNull(action, "action");
+		Ensure.NotNull(handler, "handler");
 
-			UriRouter.RegisterAction(action, (man, match) => {
-				handler(man, match);
-				return new RequestParams(ESConsts.HttpTimeout);
-			});
-		}
-		public List<UriToActionMatch> GetAllUriMatches(Uri uri) => UriRouter.GetAllUriMatches(uri);
-		public static void CreateAndSubscribePipeline(ISubscriber bus) {
-			var requestProcessor = new AuthenticatedHttpRequestProcessor();
-			bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
-		}
+		UriRouter.RegisterAction(action, (man, match) => {
+			handler(man, match);
+			return new RequestParams(ESConsts.HttpTimeout);
+		});
+	}
+	public List<UriToActionMatch> GetAllUriMatches(Uri uri) => UriRouter.GetAllUriMatches(uri);
+	public static void CreateAndSubscribePipeline(ISubscriber bus) {
+		var requestProcessor = new AuthenticatedHttpRequestProcessor();
+		bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
 	}
 }

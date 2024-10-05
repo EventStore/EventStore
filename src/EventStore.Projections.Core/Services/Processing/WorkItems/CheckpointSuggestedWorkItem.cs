@@ -5,48 +5,48 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Phases;
 
-namespace EventStore.Projections.Core.Services.Processing.WorkItems {
-	public class CheckpointSuggestedWorkItem : CheckpointWorkItemBase {
-		private readonly IProjectionPhaseCheckpointManager _projectionPhase;
-		private readonly EventReaderSubscriptionMessage.CheckpointSuggested _message;
-		private readonly ICoreProjectionCheckpointManager _checkpointManager;
+namespace EventStore.Projections.Core.Services.Processing.WorkItems;
 
-		private bool _completed = false;
-		private bool _completeRequested = false;
+public class CheckpointSuggestedWorkItem : CheckpointWorkItemBase {
+	private readonly IProjectionPhaseCheckpointManager _projectionPhase;
+	private readonly EventReaderSubscriptionMessage.CheckpointSuggested _message;
+	private readonly ICoreProjectionCheckpointManager _checkpointManager;
 
-		public CheckpointSuggestedWorkItem(
-			IProjectionPhaseCheckpointManager projectionPhase,
-			EventReaderSubscriptionMessage.CheckpointSuggested message,
-			ICoreProjectionCheckpointManager checkpointManager)
-			: base() {
-			_projectionPhase = projectionPhase;
-			_message = message;
-			_checkpointManager = checkpointManager;
+	private bool _completed = false;
+	private bool _completeRequested = false;
+
+	public CheckpointSuggestedWorkItem(
+		IProjectionPhaseCheckpointManager projectionPhase,
+		EventReaderSubscriptionMessage.CheckpointSuggested message,
+		ICoreProjectionCheckpointManager checkpointManager)
+		: base() {
+		_projectionPhase = projectionPhase;
+		_message = message;
+		_checkpointManager = checkpointManager;
+	}
+
+	protected override void WriteOutput() {
+		_projectionPhase.SetCurrentCheckpointSuggestedWorkItem(this);
+		if (_checkpointManager.CheckpointSuggested(_message.CheckpointTag, _message.Progress)) {
+			_projectionPhase.SetCurrentCheckpointSuggestedWorkItem(null);
+			_completed = true;
 		}
 
-		protected override void WriteOutput() {
-			_projectionPhase.SetCurrentCheckpointSuggestedWorkItem(this);
-			if (_checkpointManager.CheckpointSuggested(_message.CheckpointTag, _message.Progress)) {
-				_projectionPhase.SetCurrentCheckpointSuggestedWorkItem(null);
-				_completed = true;
-			}
+		_projectionPhase.NewCheckpointStarted(_message.CheckpointTag);
+		NextStage();
+	}
 
-			_projectionPhase.NewCheckpointStarted(_message.CheckpointTag);
+	protected override void CompleteItem() {
+		if (_completed)
 			NextStage();
-		}
+		else
+			_completeRequested = true;
+	}
 
-		protected override void CompleteItem() {
-			if (_completed)
-				NextStage();
-			else
-				_completeRequested = true;
-		}
-
-		internal void CheckpointCompleted() {
-			if (_completeRequested)
-				NextStage();
-			else
-				_completed = true;
-		}
+	internal void CheckpointCompleted() {
+		if (_completeRequested)
+			NextStage();
+		else
+			_completed = true;
 	}
 }

@@ -8,54 +8,54 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Infrastructure;
 
-namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
-	internal class SendOverGrpcProcessor : IHandle<GrpcMessage.SendOverGrpc> {
-		private readonly Random _rnd;
-		private readonly Dictionary<EndPoint, IPublisher> _httpBuses = new Dictionary<EndPoint, IPublisher>();
-		private readonly RandomTestRunner _runner;
-		private readonly double _lossProb;
-		private readonly double _dupProb;
-		private readonly int _maxDelay;
+namespace EventStore.Core.Tests.Services.ElectionsService.Randomized;
 
-		public SendOverGrpcProcessor(Random rnd, RandomTestRunner runner, double lossProb, double dupProb,
-			int maxDelay) {
-			if (rnd == null) throw new ArgumentNullException("rnd");
-			if (runner == null) throw new ArgumentNullException("runner");
-			if (lossProb < 0.0 || lossProb > 1.0) throw new ArgumentOutOfRangeException("lossProb");
-			if (dupProb < 0.0 || dupProb > 1.0) throw new ArgumentOutOfRangeException("dupProb");
-			if (maxDelay <= 0) throw new ArgumentOutOfRangeException("maxDelay");
+internal class SendOverGrpcProcessor : IHandle<GrpcMessage.SendOverGrpc> {
+	private readonly Random _rnd;
+	private readonly Dictionary<EndPoint, IPublisher> _httpBuses = new Dictionary<EndPoint, IPublisher>();
+	private readonly RandomTestRunner _runner;
+	private readonly double _lossProb;
+	private readonly double _dupProb;
+	private readonly int _maxDelay;
 
-			_rnd = rnd;
-			_runner = runner;
-			_lossProb = lossProb;
-			_dupProb = dupProb;
-			_maxDelay = maxDelay;
-		}
+	public SendOverGrpcProcessor(Random rnd, RandomTestRunner runner, double lossProb, double dupProb,
+		int maxDelay) {
+		if (rnd == null) throw new ArgumentNullException("rnd");
+		if (runner == null) throw new ArgumentNullException("runner");
+		if (lossProb < 0.0 || lossProb > 1.0) throw new ArgumentOutOfRangeException("lossProb");
+		if (dupProb < 0.0 || dupProb > 1.0) throw new ArgumentOutOfRangeException("dupProb");
+		if (maxDelay <= 0) throw new ArgumentOutOfRangeException("maxDelay");
 
-		public void RegisterEndPoint(EndPoint endPoint, IPublisher bus) {
-			_httpBuses.Add(endPoint, bus);
-		}
+		_rnd = rnd;
+		_runner = runner;
+		_lossProb = lossProb;
+		_dupProb = dupProb;
+		_maxDelay = maxDelay;
+	}
 
-		public void Handle(GrpcMessage.SendOverGrpc message) {
-			if (_rnd.NextDouble() < _lossProb)
-				return;
+	public void RegisterEndPoint(EndPoint endPoint, IPublisher bus) {
+		_httpBuses.Add(endPoint, bus);
+	}
 
-			if (ShouldSkipMessage(message))
-				return;
+	public void Handle(GrpcMessage.SendOverGrpc message) {
+		if (_rnd.NextDouble() < _lossProb)
+			return;
 
-			IPublisher publisher;
-			if (!_httpBuses.TryGetValue(message.DestinationEndpoint, out publisher))
-				throw new InvalidOperationException(string.Format("No HTTP bus subscribed for EndPoint: {0}.",
-					message.DestinationEndpoint));
+		if (ShouldSkipMessage(message))
+			return;
 
+		IPublisher publisher;
+		if (!_httpBuses.TryGetValue(message.DestinationEndpoint, out publisher))
+			throw new InvalidOperationException(string.Format("No HTTP bus subscribed for EndPoint: {0}.",
+				message.DestinationEndpoint));
+
+		_runner.Enqueue(message.DestinationEndpoint, message.Message, publisher, 1 + _rnd.Next(_maxDelay));
+
+		if (_rnd.NextDouble() < _dupProb)
 			_runner.Enqueue(message.DestinationEndpoint, message.Message, publisher, 1 + _rnd.Next(_maxDelay));
+	}
 
-			if (_rnd.NextDouble() < _dupProb)
-				_runner.Enqueue(message.DestinationEndpoint, message.Message, publisher, 1 + _rnd.Next(_maxDelay));
-		}
-
-		protected virtual bool ShouldSkipMessage(GrpcMessage.SendOverGrpc message) {
-			return false;
-		}
+	protected virtual bool ShouldSkipMessage(GrpcMessage.SendOverGrpc message) {
+		return false;
 	}
 }

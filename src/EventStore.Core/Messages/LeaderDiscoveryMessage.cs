@@ -5,20 +5,20 @@ using EventStore.Common.Utils;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Messages {
-	public static partial class LeaderDiscoveryMessage {
-		[DerivedMessage(CoreMessage.LeaderDiscovery)]
-		public partial class LeaderFound : Message {
-			public readonly MemberInfo Leader;
+namespace EventStore.Core.Messages;
 
-			public LeaderFound(MemberInfo leader) {
-				Ensure.NotNull(leader, "leader");
-				Leader = leader;
-			}
-		}
+public static partial class LeaderDiscoveryMessage {
+	[DerivedMessage(CoreMessage.LeaderDiscovery)]
+	public partial class LeaderFound : Message {
+		public readonly MemberInfo Leader;
 
-		[DerivedMessage(CoreMessage.LeaderDiscovery)]
-		public partial class DiscoveryTimeout : Message {
+		public LeaderFound(MemberInfo leader) {
+			Ensure.NotNull(leader, "leader");
+			Leader = leader;
 		}
+	}
+
+	[DerivedMessage(CoreMessage.LeaderDiscovery)]
+	public partial class DiscoveryTimeout : Message {
 	}
 }

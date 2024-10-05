@@ -11,76 +11,76 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
 
-namespace EventStore.Core.Tests.Certificates {
+namespace EventStore.Core.Tests.Certificates;
 
-	public class CertificateExpiryMonitorTests : with_certificates {
-		private FakePublisher _publisher;
-		private FakeLogger _logger;
 
-		private static X509Certificate2 GenCertificate(TimeSpan timeUntilExpiry) {
-			using var rsa = RSA.Create();
-			var certificate = new CertificateRequest(GenerateSubject(), rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
-				.CreateSelfSigned(
-					notBefore: DateTime.Now,
-					notAfter: DateTime.Now + timeUntilExpiry);
-			return certificate;
-		}
+public class CertificateExpiryMonitorTests : with_certificates {
+	private FakePublisher _publisher;
+	private FakeLogger _logger;
 
-		[SetUp]
-		public void SetUp() {
-			_publisher = new();
-			_logger = new();
-		}
+	private static X509Certificate2 GenCertificate(TimeSpan timeUntilExpiry) {
+		using var rsa = RSA.Create();
+		var certificate = new CertificateRequest(GenerateSubject(), rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
+			.CreateSelfSigned(
+				notBefore: DateTime.Now,
+				notAfter: DateTime.Now + timeUntilExpiry);
+		return certificate;
+	}
 
-		[Test]
-		public void on_start() {
-			// given
-			var certificate = GenCertificate(TimeSpan.FromDays(60));
-			var sut = new CertificateExpiryMonitor(_publisher, () => certificate, _logger);
+	[SetUp]
+	public void SetUp() {
+		_publisher = new();
+		_logger = new();
+	}
 
-			// when
-			sut.Handle(new SystemMessage.SystemStart());
+	[Test]
+	public void on_start() {
+		// given
+		var certificate = GenCertificate(TimeSpan.FromDays(60));
+		var sut = new CertificateExpiryMonitor(_publisher, () => certificate, _logger);
 
-			// then
-			Assert.IsInstanceOf<MonitoringMessage.CheckCertificateExpiry>(_publisher.Messages.Single());
-			Assert.IsEmpty(_logger.LogMessages);
-		}
+		// when
+		sut.Handle(new SystemMessage.SystemStart());
 
-		[Test]
-		public void certificate_is_going_to_expire_within_30_days() {
-			// given
-			var certificate = GenCertificate(TimeSpan.FromDays(29));
-			var sut = new CertificateExpiryMonitor(_publisher, () => certificate, _logger);
+		// then
+		Assert.IsInstanceOf<MonitoringMessage.CheckCertificateExpiry>(_publisher.Messages.Single());
+		Assert.IsEmpty(_logger.LogMessages);
+	}
 
-			// when
-			sut.Handle(new MonitoringMessage.CheckCertificateExpiry());
+	[Test]
+	public void certificate_is_going_to_expire_within_30_days() {
+		// given
+		var certificate = GenCertificate(TimeSpan.FromDays(29));
+		var sut = new CertificateExpiryMonitor(_publisher, () => certificate, _logger);
 
-			// then
-			var schedule = (TimerMessage.Schedule)_publisher.Messages.Single();
-			Assert.AreEqual(TimeSpan.FromHours(24), schedule.TriggerAfter);
-			Assert.IsInstanceOf<MonitoringMessage.CheckCertificateExpiry>(schedule.ReplyMessage);
+		// when
+		sut.Handle(new MonitoringMessage.CheckCertificateExpiry());
 
-			var logMessage = _logger.LogMessages.Single();
-			Assert.AreEqual(
-				"Certificates are going to expire in 29.0 days",
-				logMessage.RenderMessage());
-		}
+		// then
+		var schedule = (TimerMessage.Schedule)_publisher.Messages.Single();
+		Assert.AreEqual(TimeSpan.FromHours(24), schedule.TriggerAfter);
+		Assert.IsInstanceOf<MonitoringMessage.CheckCertificateExpiry>(schedule.ReplyMessage);
 
-		[Test]
-		public void certificate_is_not_going_to_expire_within_30_days() {
-			// given
-			var certificate = GenCertificate(TimeSpan.FromDays(31));
-			var sut = new CertificateExpiryMonitor(_publisher, () => certificate, _logger);
+		var logMessage = _logger.LogMessages.Single();
+		Assert.AreEqual(
+			"Certificates are going to expire in 29.0 days",
+			logMessage.RenderMessage());
+	}
 
-			// when
-			sut.Handle(new MonitoringMessage.CheckCertificateExpiry());
+	[Test]
+	public void certificate_is_not_going_to_expire_within_30_days() {
+		// given
+		var certificate = GenCertificate(TimeSpan.FromDays(31));
+		var sut = new CertificateExpiryMonitor(_publisher, () => certificate, _logger);
 
-			// then
-			var schedule = (TimerMessage.Schedule)_publisher.Messages.Single();
-			Assert.AreEqual(TimeSpan.FromHours(24), schedule.TriggerAfter);
-			Assert.IsInstanceOf<MonitoringMessage.CheckCertificateExpiry>(schedule.ReplyMessage);
+		// when
+		sut.Handle(new MonitoringMessage.CheckCertificateExpiry());
 
-			Assert.IsEmpty(_logger.LogMessages);
-		}
+		// then
+		var schedule = (TimerMessage.Schedule)_publisher.Messages.Single();
+		Assert.AreEqual(TimeSpan.FromHours(24), schedule.TriggerAfter);
+		Assert.IsInstanceOf<MonitoringMessage.CheckCertificateExpiry>(schedule.ReplyMessage);
+
+		Assert.IsEmpty(_logger.LogMessages);
 	}
 }

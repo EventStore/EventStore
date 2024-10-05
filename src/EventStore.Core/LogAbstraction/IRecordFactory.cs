@@ -4,43 +4,43 @@
 using System;
 using EventStore.Core.TransactionLog.LogRecords;
 
-namespace EventStore.Core.LogAbstraction {
-	public interface IRecordFactory {
-		ISystemLogRecord CreateEpoch(EpochRecord epoch);
-	}
+namespace EventStore.Core.LogAbstraction;
 
-	public interface IRecordFactory<TStreamId> : IRecordFactory {
-		bool ExplicitStreamCreation { get; }
-		bool ExplicitEventTypeCreation { get; }
+public interface IRecordFactory {
+	ISystemLogRecord CreateEpoch(EpochRecord epoch);
+}
 
-		IPrepareLogRecord<TStreamId> CreateStreamRecord(
-			Guid streamId,
-			long logPosition,
-			DateTime timeStamp,
-			TStreamId streamNumber,
-			string streamName);
+public interface IRecordFactory<TStreamId> : IRecordFactory {
+	bool ExplicitStreamCreation { get; }
+	bool ExplicitEventTypeCreation { get; }
 
-		IPrepareLogRecord<TStreamId> CreateEventTypeRecord(
-			Guid eventTypeId,
-			Guid parentEventTypeId,
-			string eventType,
-			TStreamId eventTypeNumber,
-			ushort eventTypeVersion,
-			long logPosition,
-			DateTime timeStamp);
+	IPrepareLogRecord<TStreamId> CreateStreamRecord(
+		Guid streamId,
+		long logPosition,
+		DateTime timeStamp,
+		TStreamId streamNumber,
+		string streamName);
 
-		IPrepareLogRecord<TStreamId> CreatePrepare(
-			long logPosition,
-			Guid correlationId,
-			Guid eventId,
-			long transactionPosition,
-			int transactionOffset,
-			TStreamId eventStreamId,
-			long expectedVersion,
-			DateTime timeStamp,
-			PrepareFlags flags,
-			TStreamId eventType,
-			ReadOnlyMemory<byte> data,
-			ReadOnlyMemory<byte> metadata);
-	}
+	IPrepareLogRecord<TStreamId> CreateEventTypeRecord(
+		Guid eventTypeId,
+		Guid parentEventTypeId,
+		string eventType,
+		TStreamId eventTypeNumber,
+		ushort eventTypeVersion,
+		long logPosition,
+		DateTime timeStamp);
+
+	IPrepareLogRecord<TStreamId> CreatePrepare(
+		long logPosition,
+		Guid correlationId,
+		Guid eventId,
+		long transactionPosition,
+		int transactionOffset,
+		TStreamId eventStreamId,
+		long expectedVersion,
+		DateTime timeStamp,
+		PrepareFlags flags,
+		TStreamId eventType,
+		ReadOnlyMemory<byte> data,
+		ReadOnlyMemory<byte> metadata);
 }

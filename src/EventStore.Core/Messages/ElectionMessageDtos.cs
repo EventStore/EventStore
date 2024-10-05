@@ -5,211 +5,211 @@ using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Cluster;
 
-namespace EventStore.Core.Messages {
-	public static class ElectionMessageDto {
-		public class ViewChangeDto {
-			public Guid ServerId { get; set; }
-			public string ServerHttpAddress { get; set; }
-			public int ServerHttpPort { get; set; }
+namespace EventStore.Core.Messages;
 
-			public int AttemptedView { get; set; }
+public static class ElectionMessageDto {
+	public class ViewChangeDto {
+		public Guid ServerId { get; set; }
+		public string ServerHttpAddress { get; set; }
+		public int ServerHttpPort { get; set; }
 
-			public ViewChangeDto() {
-			}
+		public int AttemptedView { get; set; }
 
-			public ViewChangeDto(ElectionMessage.ViewChange message) {
-				ServerId = message.ServerId;
-				ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
-				ServerHttpPort = message.ServerHttpEndPoint.GetPort();
-
-				AttemptedView = message.AttemptedView;
-			}
+		public ViewChangeDto() {
 		}
 
-		public class ViewChangeProofDto {
-			public Guid ServerId { get; set; }
-			public string ServerHttpAddress { get; set; }
-			public int ServerHttpPort { get; set; }
+		public ViewChangeDto(ElectionMessage.ViewChange message) {
+			ServerId = message.ServerId;
+			ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
+			ServerHttpPort = message.ServerHttpEndPoint.GetPort();
 
-			public int InstalledView { get; set; }
+			AttemptedView = message.AttemptedView;
+		}
+	}
 
-			public ViewChangeProofDto() {
-			}
+	public class ViewChangeProofDto {
+		public Guid ServerId { get; set; }
+		public string ServerHttpAddress { get; set; }
+		public int ServerHttpPort { get; set; }
 
-			public ViewChangeProofDto(ElectionMessage.ViewChangeProof message) {
-				ServerId = message.ServerId;
-				ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
-				ServerHttpPort = message.ServerHttpEndPoint.GetPort();
+		public int InstalledView { get; set; }
 
-				InstalledView = message.InstalledView;
-			}
+		public ViewChangeProofDto() {
 		}
 
-		public class PrepareDto {
-			public Guid ServerId { get; set; }
-			public string ServerHttpAddress { get; set; }
-			public int ServerHttpPort { get; set; }
+		public ViewChangeProofDto(ElectionMessage.ViewChangeProof message) {
+			ServerId = message.ServerId;
+			ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
+			ServerHttpPort = message.ServerHttpEndPoint.GetPort();
 
-			public int View { get; set; }
+			InstalledView = message.InstalledView;
+		}
+	}
 
-			public PrepareDto() {
-			}
+	public class PrepareDto {
+		public Guid ServerId { get; set; }
+		public string ServerHttpAddress { get; set; }
+		public int ServerHttpPort { get; set; }
 
-			public PrepareDto(ElectionMessage.Prepare message) {
-				ServerId = message.ServerId;
-				ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
-				ServerHttpPort = message.ServerHttpEndPoint.GetPort();
+		public int View { get; set; }
 
-				View = message.View;
-			}
+		public PrepareDto() {
 		}
 
-		public class PrepareOkDto {
-			public Guid ServerId { get; set; }
-			public string ServerHttpAddress { get; set; }
-			public int ServerHttpPort { get; set; }
+		public PrepareDto(ElectionMessage.Prepare message) {
+			ServerId = message.ServerId;
+			ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
+			ServerHttpPort = message.ServerHttpEndPoint.GetPort();
 
-			public int View { get; set; }
+			View = message.View;
+		}
+	}
 
-			public int EpochNumber { get; set; }
-			public long EpochPosition { get; set; }
-			public Guid EpochId { get; set; }
-			public Guid EpochLeaderInstanceId { get; set; }
-			public long LastCommitPosition { get; set; }
-			public long WriterCheckpoint { get; set; }
-			public long ChaserCheckpoint { get; set; }
+	public class PrepareOkDto {
+		public Guid ServerId { get; set; }
+		public string ServerHttpAddress { get; set; }
+		public int ServerHttpPort { get; set; }
 
-			public int NodePriority { get; set; }
-			public ClusterInfo ClusterInfo { get; set; }
+		public int View { get; set; }
 
-			public PrepareOkDto() {
-			}
+		public int EpochNumber { get; set; }
+		public long EpochPosition { get; set; }
+		public Guid EpochId { get; set; }
+		public Guid EpochLeaderInstanceId { get; set; }
+		public long LastCommitPosition { get; set; }
+		public long WriterCheckpoint { get; set; }
+		public long ChaserCheckpoint { get; set; }
 
-			public PrepareOkDto(ElectionMessage.PrepareOk message) {
-				ServerId = message.ServerId;
-				ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
-				ServerHttpPort = message.ServerHttpEndPoint.GetPort();
+		public int NodePriority { get; set; }
+		public ClusterInfo ClusterInfo { get; set; }
 
-				View = message.View;
-
-				EpochNumber = message.EpochNumber;
-				EpochPosition = message.EpochPosition;
-				EpochId = message.EpochId;
-				EpochLeaderInstanceId = message.EpochLeaderInstanceId;
-				LastCommitPosition = message.LastCommitPosition;
-				WriterCheckpoint = message.WriterCheckpoint;
-				ChaserCheckpoint = message.ChaserCheckpoint;
-
-				NodePriority = message.NodePriority;
-				ClusterInfo = message.ClusterInfo;
-			}
+		public PrepareOkDto() {
 		}
 
+		public PrepareOkDto(ElectionMessage.PrepareOk message) {
+			ServerId = message.ServerId;
+			ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
+			ServerHttpPort = message.ServerHttpEndPoint.GetPort();
 
-		public class ProposalDto {
-			public Guid ServerId { get; set; }
-			public Guid LeaderId { get; set; }
+			View = message.View;
 
-			public string ServerHttpAddress { get; set; }
-			public int ServerHttpPort { get; set; }
-			public string LeaderHttpAddress { get; set; }
-			public int LeaderHttpPort { get; set; }
+			EpochNumber = message.EpochNumber;
+			EpochPosition = message.EpochPosition;
+			EpochId = message.EpochId;
+			EpochLeaderInstanceId = message.EpochLeaderInstanceId;
+			LastCommitPosition = message.LastCommitPosition;
+			WriterCheckpoint = message.WriterCheckpoint;
+			ChaserCheckpoint = message.ChaserCheckpoint;
 
-			public int View { get; set; }
+			NodePriority = message.NodePriority;
+			ClusterInfo = message.ClusterInfo;
+		}
+	}
 
-			public long LastCommitPosition { get; set; }
-			public long WriterCheckpoint { get; set; }
-			public long ChaserCheckpoint { get; set; }
-			public int EpochNumber { get; set; }
-			public long EpochPosition { get; set; }
-			public Guid EpochId { get; set; }
-			public Guid EpochLeaderInstanceId { get; set; }
-			public int NodePriority { get; set; }
 
-			public ProposalDto() {
-			}
+	public class ProposalDto {
+		public Guid ServerId { get; set; }
+		public Guid LeaderId { get; set; }
 
-			public ProposalDto(ElectionMessage.Proposal message) {
-				ServerId = message.ServerId;
-				LeaderId = message.LeaderId;
+		public string ServerHttpAddress { get; set; }
+		public int ServerHttpPort { get; set; }
+		public string LeaderHttpAddress { get; set; }
+		public int LeaderHttpPort { get; set; }
 
-				ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
-				ServerHttpPort = message.ServerHttpEndPoint.GetPort();
-				LeaderHttpAddress = message.LeaderHttpEndPoint.GetHost();
-				LeaderHttpPort = message.LeaderHttpEndPoint.GetPort();
+		public int View { get; set; }
 
-				View = message.View;
-				EpochNumber = message.EpochNumber;
-				EpochPosition = message.EpochPosition;
-				EpochId = message.EpochId;
-				EpochLeaderInstanceId = message.EpochLeaderInstanceId;
-				LastCommitPosition = message.LastCommitPosition;
-				WriterCheckpoint = message.WriterCheckpoint;
-				ChaserCheckpoint = message.ChaserCheckpoint;
-				NodePriority = message.NodePriority;
-			}
+		public long LastCommitPosition { get; set; }
+		public long WriterCheckpoint { get; set; }
+		public long ChaserCheckpoint { get; set; }
+		public int EpochNumber { get; set; }
+		public long EpochPosition { get; set; }
+		public Guid EpochId { get; set; }
+		public Guid EpochLeaderInstanceId { get; set; }
+		public int NodePriority { get; set; }
+
+		public ProposalDto() {
 		}
 
+		public ProposalDto(ElectionMessage.Proposal message) {
+			ServerId = message.ServerId;
+			LeaderId = message.LeaderId;
 
-		public class AcceptDto {
-			public Guid ServerId { get; set; }
-			public Guid LeaderId { get; set; }
+			ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
+			ServerHttpPort = message.ServerHttpEndPoint.GetPort();
+			LeaderHttpAddress = message.LeaderHttpEndPoint.GetHost();
+			LeaderHttpPort = message.LeaderHttpEndPoint.GetPort();
 
-			public string ServerHttpAddress { get; set; }
-			public int ServerHttpPort { get; set; }
-			public string LeaderHttpAddress { get; set; }
-			public int LeaderHttpPort { get; set; }
-
-			public int View { get; set; }
-
-			public AcceptDto() {
-			}
-
-			public AcceptDto(ElectionMessage.Accept message) {
-				ServerId = message.ServerId;
-				LeaderId = message.LeaderId;
-
-				ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
-				ServerHttpPort = message.ServerHttpEndPoint.GetPort();
-				LeaderHttpAddress = message.LeaderHttpEndPoint.GetHost();
-				LeaderHttpPort = message.LeaderHttpEndPoint.GetPort();
-
-				View = message.View;
-			}
+			View = message.View;
+			EpochNumber = message.EpochNumber;
+			EpochPosition = message.EpochPosition;
+			EpochId = message.EpochId;
+			EpochLeaderInstanceId = message.EpochLeaderInstanceId;
+			LastCommitPosition = message.LastCommitPosition;
+			WriterCheckpoint = message.WriterCheckpoint;
+			ChaserCheckpoint = message.ChaserCheckpoint;
+			NodePriority = message.NodePriority;
 		}
-		
-		public class LeaderIsResigningDto {
-			public Guid LeaderId { get; set; }
-			public string LeaderHttpAddress { get; set; }
-			public int LeaderHttpPort { get; set; }
-			public LeaderIsResigningDto() {
-			}
+	}
 
-			public LeaderIsResigningDto(ElectionMessage.LeaderIsResigning message) {
-				LeaderId = message.LeaderId;
-				LeaderHttpAddress = message.LeaderHttpEndPoint.GetHost();
-				LeaderHttpPort = message.LeaderHttpEndPoint.GetPort();
-			}
+
+	public class AcceptDto {
+		public Guid ServerId { get; set; }
+		public Guid LeaderId { get; set; }
+
+		public string ServerHttpAddress { get; set; }
+		public int ServerHttpPort { get; set; }
+		public string LeaderHttpAddress { get; set; }
+		public int LeaderHttpPort { get; set; }
+
+		public int View { get; set; }
+
+		public AcceptDto() {
 		}
-		
-		public class LeaderIsResigningOkDto {
-			public Guid LeaderId { get; set; }
-			public string LeaderHttpAddress { get; set; }
-			public int LeaderHttpPort { get; set; }
-			public Guid ServerId { get; set; }
-			public string ServerHttpAddress { get; set; }
-			public int ServerHttpPort { get; set; }
-			public LeaderIsResigningOkDto() {
-			}
 
-			public LeaderIsResigningOkDto(ElectionMessage.LeaderIsResigningOk message) {
-				ServerId = message.ServerId;
-				ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
-				ServerHttpPort = message.ServerHttpEndPoint.GetPort();
-				LeaderId = message.LeaderId;
-				LeaderHttpAddress = message.LeaderHttpEndPoint.GetHost();
-				LeaderHttpPort = message.LeaderHttpEndPoint.GetPort();
-			}
+		public AcceptDto(ElectionMessage.Accept message) {
+			ServerId = message.ServerId;
+			LeaderId = message.LeaderId;
+
+			ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
+			ServerHttpPort = message.ServerHttpEndPoint.GetPort();
+			LeaderHttpAddress = message.LeaderHttpEndPoint.GetHost();
+			LeaderHttpPort = message.LeaderHttpEndPoint.GetPort();
+
+			View = message.View;
+		}
+	}
+	
+	public class LeaderIsResigningDto {
+		public Guid LeaderId { get; set; }
+		public string LeaderHttpAddress { get; set; }
+		public int LeaderHttpPort { get; set; }
+		public LeaderIsResigningDto() {
+		}
+
+		public LeaderIsResigningDto(ElectionMessage.LeaderIsResigning message) {
+			LeaderId = message.LeaderId;
+			LeaderHttpAddress = message.LeaderHttpEndPoint.GetHost();
+			LeaderHttpPort = message.LeaderHttpEndPoint.GetPort();
+		}
+	}
+	
+	public class LeaderIsResigningOkDto {
+		public Guid LeaderId { get; set; }
+		public string LeaderHttpAddress { get; set; }
+		public int LeaderHttpPort { get; set; }
+		public Guid ServerId { get; set; }
+		public string ServerHttpAddress { get; set; }
+		public int ServerHttpPort { get; set; }
+		public LeaderIsResigningOkDto() {
+		}
+
+		public LeaderIsResigningOkDto(ElectionMessage.LeaderIsResigningOk message) {
+			ServerId = message.ServerId;
+			ServerHttpAddress = message.ServerHttpEndPoint.GetHost();
+			ServerHttpPort = message.ServerHttpEndPoint.GetPort();
+			LeaderId = message.LeaderId;
+			LeaderHttpAddress = message.LeaderHttpEndPoint.GetHost();
+			LeaderHttpPort = message.LeaderHttpEndPoint.GetPort();
 		}
 	}
 }

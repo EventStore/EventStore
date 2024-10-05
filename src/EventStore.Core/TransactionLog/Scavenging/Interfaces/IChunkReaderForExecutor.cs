@@ -3,5 +3,5 @@
 
 using System.Collections.Generic;
 
-namespace EventStore.Core.TransactionLog.Scavenging {
-}
+namespace EventStore.Core.TransactionLog.Scavenging;
+

@@ -10,34 +10,34 @@ using EventStore.Core.Messages;
 using EventStore.Transport.Http.EntityManagement;
 using Microsoft.AspNetCore.Http;
 
-namespace EventStore.Core.Services.Transport.Http {
-	public interface IHttpController {
-		void Subscribe(IHttpService service);
-	}
+namespace EventStore.Core.Services.Transport.Http;
 
-	public interface IHttpSender {
-		void SubscribeSenders(HttpMessagePipe pipe);
-	}
+public interface IHttpController {
+	void Subscribe(IHttpService service);
+}
 
-	public interface IHttpForwarder {
-		bool ForwardRequest(HttpEntityManager manager);
-	}
+public interface IHttpSender {
+	void SubscribeSenders(HttpMessagePipe pipe);
+}
 
-	public interface IHttpService {
-		ServiceAccessibility Accessibility { get; }
-		bool IsListening { get; }
-		IEnumerable<EndPoint> EndPoints { get; }
-		IEnumerable<ControllerAction> Actions { get; }
+public interface IHttpForwarder {
+	bool ForwardRequest(HttpEntityManager manager);
+}
 
-		List<UriToActionMatch> GetAllUriMatches(Uri uri);
-		void SetupController(IHttpController controller);
+public interface IHttpService {
+	ServiceAccessibility Accessibility { get; }
+	bool IsListening { get; }
+	IEnumerable<EndPoint> EndPoints { get; }
+	IEnumerable<ControllerAction> Actions { get; }
 
-		void RegisterCustomAction(ControllerAction action,
-			Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler);
+	List<UriToActionMatch> GetAllUriMatches(Uri uri);
+	void SetupController(IHttpController controller);
 
-		void RegisterAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler);
+	void RegisterCustomAction(ControllerAction action,
+		Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler);
 
-		void Shutdown();
+	void RegisterAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler);
 
-	}
+	void Shutdown();
+
 }

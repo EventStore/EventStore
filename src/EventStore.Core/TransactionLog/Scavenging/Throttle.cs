@@ -6,75 +6,75 @@ using System.Diagnostics;
 using System.Threading;
 using Serilog;
 
-namespace EventStore.Core.TransactionLog.Scavenging {
-	// Call Rest from time to time and this will rest a suitable amount of time
-	// to achieve an overall % time spent working approximately equal to activePercent.
-	public class Throttle {
-		private readonly Stopwatch _stopwatch;
-		private readonly double _minimumRestMs;
-		private readonly double _logThresholdMs;
-		private readonly double _restFactor;
-		private readonly ManualResetEventSlim _mres;
-		private readonly ILogger _logger;
-		private double _totalRestingTimeMs;
+namespace EventStore.Core.TransactionLog.Scavenging;
 
-		public Throttle(
-			ILogger logger,
-			TimeSpan minimumRest,
-			TimeSpan restLoggingThreshold,
-			double activePercent) {
+// Call Rest from time to time and this will rest a suitable amount of time
+// to achieve an overall % time spent working approximately equal to activePercent.
+public class Throttle {
+	private readonly Stopwatch _stopwatch;
+	private readonly double _minimumRestMs;
+	private readonly double _logThresholdMs;
+	private readonly double _restFactor;
+	private readonly ManualResetEventSlim _mres;
+	private readonly ILogger _logger;
+	private double _totalRestingTimeMs;
 
-			if (activePercent <= 0 || 100 < activePercent)
-				throw new ArgumentOutOfRangeException(nameof(activePercent), activePercent, null);
+	public Throttle(
+		ILogger logger,
+		TimeSpan minimumRest,
+		TimeSpan restLoggingThreshold,
+		double activePercent) {
 
-			_logger = logger;
-			_stopwatch = new Stopwatch();
-			_minimumRestMs = minimumRest.TotalMilliseconds;
-			_logThresholdMs = restLoggingThreshold.TotalMilliseconds;
-			_restFactor = 1 - (activePercent / 100);
+		if (activePercent <= 0 || 100 < activePercent)
+			throw new ArgumentOutOfRangeException(nameof(activePercent), activePercent, null);
 
-			_mres = new ManualResetEventSlim(false, 0);
-			Reset();
-		}
+		_logger = logger;
+		_stopwatch = new Stopwatch();
+		_minimumRestMs = minimumRest.TotalMilliseconds;
+		_logThresholdMs = restLoggingThreshold.TotalMilliseconds;
+		_restFactor = 1 - (activePercent / 100);
 
-		public void Reset() {
-			_totalRestingTimeMs = 0;
-			_stopwatch.Restart();
-		}
+		_mres = new ManualResetEventSlim(false, 0);
+		Reset();
+	}
 
-		public void Rest(CancellationToken cancellationToken) {
-			if (_restFactor == 0)
-				return;
+	public void Reset() {
+		_totalRestingTimeMs = 0;
+		_stopwatch.Restart();
+	}
 
-			var totalTimeMs = _stopwatch.Elapsed.TotalMilliseconds;
+	public void Rest(CancellationToken cancellationToken) {
+		if (_restFactor == 0)
+			return;
 
-			// we want to have achieved the right proportion after the rest
-			var timeToRestMs = (_restFactor * totalTimeMs - _totalRestingTimeMs) / (1 - _restFactor);
+		var totalTimeMs = _stopwatch.Elapsed.TotalMilliseconds;
 
-			if (timeToRestMs < _minimumRestMs)
-				return;
+		// we want to have achieved the right proportion after the rest
+		var timeToRestMs = (_restFactor * totalTimeMs - _totalRestingTimeMs) / (1 - _restFactor);
 
-			var isLongRest = timeToRestMs >= _logThresholdMs;
-			if (isLongRest)
-				_logger.Debug("SCAVENGING: Resting {timeToRestMs:N0}ms", timeToRestMs);
+		if (timeToRestMs < _minimumRestMs)
+			return;
 
-			_totalRestingTimeMs += timeToRestMs;
+		var isLongRest = timeToRestMs >= _logThresholdMs;
+		if (isLongRest)
+			_logger.Debug("SCAVENGING: Resting {timeToRestMs:N0}ms", timeToRestMs);
 
-			// nothing will set the mres, we just wait until we timeout or are cancelled
-			_mres.Wait((int)timeToRestMs, cancellationToken);
+		_totalRestingTimeMs += timeToRestMs;
 
-			if (isLongRest)
-				_logger.Debug(PrettyPrint());
-		}
+		// nothing will set the mres, we just wait until we timeout or are cancelled
+		_mres.Wait((int)timeToRestMs, cancellationToken);
 
-		public string PrettyPrint() {
-			var totalMs = _stopwatch.Elapsed.TotalMilliseconds;
-			var totalActiveTimeMs = totalMs - _totalRestingTimeMs;
-			var activePercent = 100 * totalActiveTimeMs / totalMs;
-			return
-				$"Rested {TimeSpan.FromMilliseconds(_totalRestingTimeMs)} " +
-				$"out of {TimeSpan.FromMilliseconds(totalMs)}. " +
-				$"{activePercent:N2} percent active.";
-		}
+		if (isLongRest)
+			_logger.Debug(PrettyPrint());
+	}
+
+	public string PrettyPrint() {
+		var totalMs = _stopwatch.Elapsed.TotalMilliseconds;
+		var totalActiveTimeMs = totalMs - _totalRestingTimeMs;
+		var activePercent = 100 * totalActiveTimeMs / totalMs;
+		return
+			$"Rested {TimeSpan.FromMilliseconds(_totalRestingTimeMs)} " +
+			$"out of {TimeSpan.FromMilliseconds(totalMs)}. " +
+			$"{activePercent:N2} percent active.";
 	}
 }

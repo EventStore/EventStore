@@ -11,7 +11,8 @@ using Serilog.Core.Enrichers;
 using Serilog.Formatting.Display;
 using Serilog.Sinks.InMemory;
 
-namespace EventStore.Core.Tests.Helpers; 
+namespace EventStore.Core.Tests.Helpers;
+
 
 public static class MiniNodeLogging {
 	

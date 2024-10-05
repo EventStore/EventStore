@@ -5,42 +5,42 @@ using System.Collections.Generic;
 using System.Threading;
 using EventStore.Core.TransactionLog.Scavenging;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge {
-	public class TrackingChunkReaderForExecutor<TStreamId, TRecord> :
-		IChunkReaderForExecutor<TStreamId, TRecord> {
+namespace EventStore.Core.XUnit.Tests.Scavenge;
 
-		private readonly IChunkReaderForExecutor<TStreamId, TRecord> _wrapped;
-		private readonly Tracer _tracer;
+public class TrackingChunkReaderForExecutor<TStreamId, TRecord> :
+	IChunkReaderForExecutor<TStreamId, TRecord> {
 
-		public TrackingChunkReaderForExecutor(
-			IChunkReaderForExecutor<TStreamId, TRecord> wrapped,
-			Tracer tracer) {
+	private readonly IChunkReaderForExecutor<TStreamId, TRecord> _wrapped;
+	private readonly Tracer _tracer;
 
-			_wrapped = wrapped;
-			_tracer = tracer;
-		}
+	public TrackingChunkReaderForExecutor(
+		IChunkReaderForExecutor<TStreamId, TRecord> wrapped,
+		Tracer tracer) {
 
-		public string Name => _wrapped.Name;
+		_wrapped = wrapped;
+		_tracer = tracer;
+	}
 
-		public int FileSize => _wrapped.FileSize;
+	public string Name => _wrapped.Name;
 
-		public int ChunkStartNumber => _wrapped.ChunkStartNumber;
+	public int FileSize => _wrapped.FileSize;
 
-		public int ChunkEndNumber => _wrapped.ChunkEndNumber;
+	public int ChunkStartNumber => _wrapped.ChunkStartNumber;
 
-		public bool IsReadOnly => _wrapped.IsReadOnly;
+	public int ChunkEndNumber => _wrapped.ChunkEndNumber;
 
-		public long ChunkStartPosition => _wrapped.ChunkStartPosition;
+	public bool IsReadOnly => _wrapped.IsReadOnly;
 
-		public long ChunkEndPosition => _wrapped.ChunkEndPosition;
+	public long ChunkStartPosition => _wrapped.ChunkStartPosition;
 
-		public IAsyncEnumerable<bool> ReadInto(
-			RecordForExecutor<TStreamId, TRecord>.NonPrepare nonPrepare,
-			RecordForExecutor<TStreamId, TRecord>.Prepare prepare,
-			CancellationToken token) {
+	public long ChunkEndPosition => _wrapped.ChunkEndPosition;
 
-			_tracer.Trace($"Opening Chunk {ChunkStartNumber}-{ChunkEndNumber}");
-			return _wrapped.ReadInto(nonPrepare, prepare, token);
-		}
+	public IAsyncEnumerable<bool> ReadInto(
+		RecordForExecutor<TStreamId, TRecord>.NonPrepare nonPrepare,
+		RecordForExecutor<TStreamId, TRecord>.Prepare prepare,
+		CancellationToken token) {
+
+		_tracer.Trace($"Opening Chunk {ChunkStartNumber}-{ChunkEndNumber}");
+		return _wrapped.ReadInto(nonPrepare, prepare, token);
 	}
 }

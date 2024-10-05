@@ -4,39 +4,39 @@
 using System;
 using EventStore.Core.Index;
 
-namespace EventStore.Core.TransactionLog.Chunks {
-	public interface ITFChunkScavengerLog : IIndexScavengerLog {
-		string ScavengeId { get; }
+namespace EventStore.Core.TransactionLog.Chunks;
 
-		long SpaceSaved { get; }
+public interface ITFChunkScavengerLog : IIndexScavengerLog {
+	string ScavengeId { get; }
 
-		void ScavengeStarted();
+	long SpaceSaved { get; }
 
-		void ScavengeStarted(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk, int threads);
+	void ScavengeStarted();
 
-		void ChunksScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved);
+	void ScavengeStarted(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk, int threads);
 
-		void ChunksNotScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, string errorMessage);
+	void ChunksScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved);
 
-		void ChunksMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved);
+	void ChunksNotScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, string errorMessage);
 
-		void ChunksNotMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, string errorMessage);
+	void ChunksMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved);
 
-		void ScavengeCompleted(ScavengeResult result, string error, TimeSpan elapsed);
-	}
+	void ChunksNotMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, string errorMessage);
 
-	public enum ScavengeResult {
-		Success,
-		Stopped,
-		Errored,
-		Interrupted,
-	}
+	void ScavengeCompleted(ScavengeResult result, string error, TimeSpan elapsed);
+}
 
-	public enum LastScavengeResult {
-		Unknown,
-		InProgress,
-		Success,
-		Stopped,
-		Errored,
-	}
+public enum ScavengeResult {
+	Success,
+	Stopped,
+	Errored,
+	Interrupted,
+}
+
+public enum LastScavengeResult {
+	Unknown,
+	InProgress,
+	Success,
+	Stopped,
+	Errored,
 }

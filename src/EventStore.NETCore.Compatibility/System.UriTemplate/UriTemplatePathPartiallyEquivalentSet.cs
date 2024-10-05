@@ -3,8 +3,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace System
-{
+namespace System;
+
     using System.Collections.Generic;
 
     // This class was named UriTemplatePathEquivalentSet in the Orcas bits, where it used to
@@ -39,4 +39,3 @@ namespace System
             }
         }
     }
-}

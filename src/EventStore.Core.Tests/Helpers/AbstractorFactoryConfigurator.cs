@@ -4,27 +4,27 @@
 using System;
 using EventStore.Core.LogAbstraction;
 
-namespace EventStore.Core.Tests.Helpers {
-	public class AbstractorFactoryConfigurator<TStreamId> : ILogFormatAbstractorFactory<TStreamId> {
-		private readonly ILogFormatAbstractorFactory<TStreamId> _wrapped;
-		private readonly Func<LogFormatAbstractorOptions, LogFormatAbstractorOptions> _configure;
+namespace EventStore.Core.Tests.Helpers;
 
-		public AbstractorFactoryConfigurator(
-			ILogFormatAbstractorFactory<TStreamId> wrapped,
-			Func<LogFormatAbstractorOptions, LogFormatAbstractorOptions> configure) {
-			_wrapped = wrapped;
-			_configure = configure;
-		}
+public class AbstractorFactoryConfigurator<TStreamId> : ILogFormatAbstractorFactory<TStreamId> {
+	private readonly ILogFormatAbstractorFactory<TStreamId> _wrapped;
+	private readonly Func<LogFormatAbstractorOptions, LogFormatAbstractorOptions> _configure;
 
-		public LogFormatAbstractor<TStreamId> Create(LogFormatAbstractorOptions options) =>
-			_wrapped.Create(_configure(options));
+	public AbstractorFactoryConfigurator(
+		ILogFormatAbstractorFactory<TStreamId> wrapped,
+		Func<LogFormatAbstractorOptions, LogFormatAbstractorOptions> configure) {
+		_wrapped = wrapped;
+		_configure = configure;
 	}
 
-	public static class LogFormatFactoryExtensions {
-		public static ILogFormatAbstractorFactory<TStreamId> Configure<TStreamId>(
-			this ILogFormatAbstractorFactory<TStreamId> factory,
-			Func<LogFormatAbstractorOptions, LogFormatAbstractorOptions> configure) =>
+	public LogFormatAbstractor<TStreamId> Create(LogFormatAbstractorOptions options) =>
+		_wrapped.Create(_configure(options));
+}
 
-			new AbstractorFactoryConfigurator<TStreamId>(factory, configure);
-	}
+public static class LogFormatFactoryExtensions {
+	public static ILogFormatAbstractorFactory<TStreamId> Configure<TStreamId>(
+		this ILogFormatAbstractorFactory<TStreamId> factory,
+		Func<LogFormatAbstractorOptions, LogFormatAbstractorOptions> configure) =>
+
+		new AbstractorFactoryConfigurator<TStreamId>(factory, configure);
 }

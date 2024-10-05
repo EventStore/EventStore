@@ -8,23 +8,23 @@ using EventStore.Common.Utils;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Http.Info {
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_getting_options<TLogFormat, TStreamId> : HttpBehaviorSpecification<TLogFormat, TStreamId> {
-		protected override Task Given() => Task.CompletedTask;
+namespace EventStore.Core.Tests.Http.Info;
 
-		protected override async Task When() {
-			await Get("/info/options", "", credentials: DefaultData.AdminNetworkCredentials);
-		}
+[TestFixture(typeof(LogFormat.V2), typeof(string))]
+[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+public class when_getting_options<TLogFormat, TStreamId> : HttpBehaviorSpecification<TLogFormat, TStreamId> {
+	protected override Task Given() => Task.CompletedTask;
 
-		[Test]
-		public void sensitive_options_are_hidden_in_response() {
-			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+	protected override async Task When() {
+		await Get("/info/options", "", credentials: DefaultData.AdminNetworkCredentials);
+	}
 
-			var options = _lastResponseBody.ParseJson<JArray>();
-			var sensitiveOption = options.First(x => x.Value<string>("name") == "DefaultAdminPassword");
-			Assert.AreEqual("********", sensitiveOption.Value<string>("value"));
-		}
+	[Test]
+	public void sensitive_options_are_hidden_in_response() {
+		Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+
+		var options = _lastResponseBody.ParseJson<JArray>();
+		var sensitiveOption = options.First(x => x.Value<string>("name") == "DefaultAdminPassword");
+		Assert.AreEqual("********", sensitiveOption.Value<string>("value"));
 	}
 }

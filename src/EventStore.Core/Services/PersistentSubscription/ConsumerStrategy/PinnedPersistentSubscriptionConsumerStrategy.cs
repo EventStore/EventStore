@@ -4,17 +4,17 @@
 using EventStore.Core.Data;
 using EventStore.Core.Index.Hashes;
 
-namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy {
-	public class PinnedPersistentSubscriptionConsumerStrategy : PinnablePersistentSubscriptionConsumerStrategy {
-		public PinnedPersistentSubscriptionConsumerStrategy(IHasher<string> streamHasher) : base(streamHasher) {
-		}
+namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
-		public override string Name {
-			get { return SystemConsumerStrategies.Pinned; }
-		}
+public class PinnedPersistentSubscriptionConsumerStrategy : PinnablePersistentSubscriptionConsumerStrategy {
+	public PinnedPersistentSubscriptionConsumerStrategy(IHasher<string> streamHasher) : base(streamHasher) {
+	}
 
-		protected override string GetAssignmentSourceId(ResolvedEvent ev) {
-			return GetSourceStreamId(ev);
-		}
+	public override string Name {
+		get { return SystemConsumerStrategies.Pinned; }
+	}
+
+	protected override string GetAssignmentSourceId(ResolvedEvent ev) {
+		return GetSourceStreamId(ev);
 	}
 }

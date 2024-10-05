@@ -8,43 +8,43 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.Configuration {
-	public class EventStoreEnvironmentVariablesSourceTests {
-		[Theory]
-		[InlineData("EVENTSTORE_STREAM_INFO_CACHE_CAPACITY", "EventStore:StreamInfoCacheCapacity")]
-		public void AddsEventStoreEnvVars(string key, string normalizedKey) {
-			// Arrange
-			var environment = new Dictionary<string, string> { { key, key } };
+namespace EventStore.Core.XUnit.Tests.Configuration;
 
-			// Act
-			var configuration = new ConfigurationBuilder()
-				.AddEventStoreEnvironmentVariables(environment)
-				.Build();
+public class EventStoreEnvironmentVariablesSourceTests {
+	[Theory]
+	[InlineData("EVENTSTORE_STREAM_INFO_CACHE_CAPACITY", "EventStore:StreamInfoCacheCapacity")]
+	public void AddsEventStoreEnvVars(string key, string normalizedKey) {
+		// Arrange
+		var environment = new Dictionary<string, string> { { key, key } };
 
-			// Assert
-			configuration
-				.AsEnumerable()
-				.Any(x => x.Key == normalizedKey)
-				.Should().BeTrue();
-		}
+		// Act
+		var configuration = new ConfigurationBuilder()
+			.AddEventStoreEnvironmentVariables(environment)
+			.Build();
 
-		[Theory]
-		[InlineData("StreamInfoCacheCapacity")]
-		[InlineData("stream-info-cache-capacity")]
-		[InlineData("EventStore:Cluster:StreamInfoCacheCapacity")]
-		[InlineData("UNSUPPORTED_EVENTSTORE_TCP_API_ENABLED")]
-		public void IgnoresOtherEnvVars(string key) {
-			// Arrange
-			var environment = new Dictionary<string, string> { { key, key } };
+		// Assert
+		configuration
+			.AsEnumerable()
+			.Any(x => x.Key == normalizedKey)
+			.Should().BeTrue();
+	}
 
-			// Act
-			var configuration = new ConfigurationBuilder()
-				.AddEventStoreEnvironmentVariables(environment)
-				.Build();
+	[Theory]
+	[InlineData("StreamInfoCacheCapacity")]
+	[InlineData("stream-info-cache-capacity")]
+	[InlineData("EventStore:Cluster:StreamInfoCacheCapacity")]
+	[InlineData("UNSUPPORTED_EVENTSTORE_TCP_API_ENABLED")]
+	public void IgnoresOtherEnvVars(string key) {
+		// Arrange
+		var environment = new Dictionary<string, string> { { key, key } };
 
-			// Assert
-			configuration.AsEnumerable()
-				.Any().Should().BeFalse();
-		}
+		// Act
+		var configuration = new ConfigurationBuilder()
+			.AddEventStoreEnvironmentVariables(environment)
+			.Build();
+
+		// Assert
+		configuration.AsEnumerable()
+			.Any().Should().BeFalse();
 	}
 }

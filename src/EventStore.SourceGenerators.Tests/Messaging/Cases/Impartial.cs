@@ -1,5 +1,5 @@
-namespace EventStore.SourceGenerators.Tests.Messaging.Impartial {
-	[DerivedMessage(TestMessageGroup.Impartial)]
-	public class A : Message {
-	}
+namespace EventStore.SourceGenerators.Tests.Messaging.Impartial;
+
+[DerivedMessage(TestMessageGroup.Impartial)]
+public class A : Message {
 }

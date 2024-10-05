@@ -4,34 +4,34 @@
 using System.IO;
 using EventStore.Core.Exceptions;
 
-namespace EventStore.Core.Index {
-	public class PTableHeader {
-		public const int Size = 128;
+namespace EventStore.Core.Index;
 
-		public readonly FileType FileType;
-		public readonly byte Version;
+public class PTableHeader {
+	public const int Size = 128;
 
-		public PTableHeader(byte version) {
-			FileType = FileType.PTableFile;
-			Version = version;
-		}
+	public readonly FileType FileType;
+	public readonly byte Version;
 
-		public byte[] AsByteArray() {
-			var array = new byte[Size];
-			array[0] = (byte)FileType.PTableFile;
-			array[1] = Version;
-			return array;
-		}
+	public PTableHeader(byte version) {
+		FileType = FileType.PTableFile;
+		Version = version;
+	}
 
-		public static PTableHeader FromStream(Stream stream) {
-			var type = stream.ReadByte();
-			if (type != (int)FileType.PTableFile)
-				throw new CorruptIndexException("Corrupted PTable.", new InvalidFileException("Wrong type of PTable."));
-			var version = stream.ReadByte();
-			if (version == -1)
-				throw new CorruptIndexException("Couldn't read version of PTable from header.",
-					new InvalidFileException("Invalid PTable file."));
-			return new PTableHeader((byte)version);
-		}
+	public byte[] AsByteArray() {
+		var array = new byte[Size];
+		array[0] = (byte)FileType.PTableFile;
+		array[1] = Version;
+		return array;
+	}
+
+	public static PTableHeader FromStream(Stream stream) {
+		var type = stream.ReadByte();
+		if (type != (int)FileType.PTableFile)
+			throw new CorruptIndexException("Corrupted PTable.", new InvalidFileException("Wrong type of PTable."));
+		var version = stream.ReadByte();
+		if (version == -1)
+			throw new CorruptIndexException("Couldn't read version of PTable from header.",
+				new InvalidFileException("Invalid PTable file."));
+		return new PTableHeader((byte)version);
 	}
 }

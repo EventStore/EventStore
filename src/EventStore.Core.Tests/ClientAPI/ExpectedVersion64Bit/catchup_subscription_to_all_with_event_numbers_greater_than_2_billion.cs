@@ -9,53 +9,53 @@ using EventStore.Core.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	[Category("ClientAPI"), Category("LongRunning")]
-	public class catchup_subscription_to_all_with_event_numbers_greater_than_2_billion<TLogFormat, TStreamId>
-		: MiniNodeWithExistingRecords<TLogFormat, TStreamId> {
-		private const long intMaxValue = (long)int.MaxValue;
+namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit;
 
-		private string _streamId = "subscriptions-catchup-all";
+[TestFixture(typeof(LogFormat.V2), typeof(string))]
+[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+[Category("ClientAPI"), Category("LongRunning")]
+public class catchup_subscription_to_all_with_event_numbers_greater_than_2_billion<TLogFormat, TStreamId>
+	: MiniNodeWithExistingRecords<TLogFormat, TStreamId> {
+	private const long intMaxValue = (long)int.MaxValue;
 
-		private EventRecord _r1, _r2;
+	private string _streamId = "subscriptions-catchup-all";
 
-		public override async ValueTask WriteTestScenario(CancellationToken token) {
-			_r1 = await WriteSingleEvent(_streamId, intMaxValue + 1, new string('.', 3000), token: token);
-			_r2 = await WriteSingleEvent(_streamId, intMaxValue + 2, new string('.', 3000), token: token);
-		}
+	private EventRecord _r1, _r2;
 
-		public override async Task Given() {
-			_store = BuildConnection(Node);
-			await _store.ConnectAsync();
-			await _store.SetStreamMetadataAsync(_streamId, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
-		}
+	public override async ValueTask WriteTestScenario(CancellationToken token) {
+		_r1 = await WriteSingleEvent(_streamId, intMaxValue + 1, new string('.', 3000), token: token);
+		_r2 = await WriteSingleEvent(_streamId, intMaxValue + 2, new string('.', 3000), token: token);
+	}
 
-		[Test]
-		public async Task should_be_able_to_subscribe_to_all_with_catchup_subscription() {
-			var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
-			List<EventStore.ClientAPI.ResolvedEvent> receivedEvents = new List<EventStore.ClientAPI.ResolvedEvent>();
+	public override async Task Given() {
+		_store = BuildConnection(Node);
+		await _store.ConnectAsync();
+		await _store.SetStreamMetadataAsync(_streamId, EventStore.ClientAPI.ExpectedVersion.Any,
+			EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
+	}
 
-			var countdown = new CountdownEvent(3);
+	[Test]
+	public async Task should_be_able_to_subscribe_to_all_with_catchup_subscription() {
+		var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
+		List<EventStore.ClientAPI.ResolvedEvent> receivedEvents = new List<EventStore.ClientAPI.ResolvedEvent>();
 
-			_store.SubscribeToAllFrom(Position.Start, CatchUpSubscriptionSettings.Default, (s, e) => {
-				if (e.Event.EventStreamId == _streamId) {
-					receivedEvents.Add(e);
-					countdown.Signal();
-				}
+		var countdown = new CountdownEvent(3);
 
-				return Task.CompletedTask;
-			}, userCredentials: DefaultData.AdminCredentials);
+		_store.SubscribeToAllFrom(Position.Start, CatchUpSubscriptionSettings.Default, (s, e) => {
+			if (e.Event.EventStreamId == _streamId) {
+				receivedEvents.Add(e);
+				countdown.Signal();
+			}
 
-			await _store.AppendToStreamAsync(_streamId, intMaxValue + 2, evnt);
+			return Task.CompletedTask;
+		}, userCredentials: DefaultData.AdminCredentials);
 
-			Assert.That(countdown.Wait(TimeSpan.FromSeconds(10)), "Timed out waiting for events to appear");
+		await _store.AppendToStreamAsync(_streamId, intMaxValue + 2, evnt);
 
-			Assert.AreEqual(_r1.EventId, receivedEvents[0].Event.EventId);
-			Assert.AreEqual(_r2.EventId, receivedEvents[1].Event.EventId);
-			Assert.AreEqual(evnt.EventId, receivedEvents[2].Event.EventId);
-		}
+		Assert.That(countdown.Wait(TimeSpan.FromSeconds(10)), "Timed out waiting for events to appear");
+
+		Assert.AreEqual(_r1.EventId, receivedEvents[0].Event.EventId);
+		Assert.AreEqual(_r2.EventId, receivedEvents[1].Event.EventId);
+		Assert.AreEqual(evnt.EventId, receivedEvents[2].Event.EventId);
 	}
 }

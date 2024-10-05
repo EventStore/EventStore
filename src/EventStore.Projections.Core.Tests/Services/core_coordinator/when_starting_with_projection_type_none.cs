@@ -9,32 +9,32 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Core.Tests.Fakes;
 using System.Collections.Generic;
 
-namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
-	[TestFixture]
-	public class when_starting_with_projection_type_none {
-		private FakePublisher[] queues;
-		private FakePublisher publisher;
-		private ProjectionCoreCoordinator _coordinator;
+namespace EventStore.Projections.Core.Tests.Services.core_coordinator;
 
-		[SetUp]
-		public void Setup() {
-			queues = new List<FakePublisher>() {new FakePublisher()}.ToArray();
-			publisher = new FakePublisher();
+[TestFixture]
+public class when_starting_with_projection_type_none {
+	private FakePublisher[] queues;
+	private FakePublisher publisher;
+	private ProjectionCoreCoordinator _coordinator;
 
-			_coordinator =
-				new ProjectionCoreCoordinator(ProjectionType.None, queues, publisher);
-			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
-		}
+	[SetUp]
+	public void Setup() {
+		queues = new List<FakePublisher>() {new FakePublisher()}.ToArray();
+		publisher = new FakePublisher();
 
-		[Test]
-		public void should_publish_start_reader_messages() {
-			Assert.AreEqual(1, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StartReader).Count);
-		}
+		_coordinator =
+			new ProjectionCoreCoordinator(ProjectionType.None, queues, publisher);
+		_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
+	}
 
-		[Test]
-		public void should_not_publish_start_core_messages() {
-			Assert.AreEqual(0,
-				queues[0].Messages.FindAll(x => x.GetType() == typeof(ProjectionCoreServiceMessage.StartCore)).Count);
-		}
+	[Test]
+	public void should_publish_start_reader_messages() {
+		Assert.AreEqual(1, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StartReader).Count);
+	}
+
+	[Test]
+	public void should_not_publish_start_core_messages() {
+		Assert.AreEqual(0,
+			queues[0].Messages.FindAll(x => x.GetType() == typeof(ProjectionCoreServiceMessage.StartCore)).Count);
 	}
 }

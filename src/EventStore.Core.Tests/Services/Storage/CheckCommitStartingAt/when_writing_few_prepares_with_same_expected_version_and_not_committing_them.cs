@@ -7,48 +7,48 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_writing_few_prepares_with_same_expected_version_and_not_committing_them<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
-		private IPrepareLogRecord _prepare0;
-		private IPrepareLogRecord _prepare1;
-		private IPrepareLogRecord _prepare2;
+namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt;
 
-		protected override async ValueTask WriteTestScenario(CancellationToken token) {
-			_prepare0 = await WritePrepare("ES", -1, token: token);
-			_prepare1 = await WritePrepare("ES", -1, token: token);
-			_prepare2 = await WritePrepare("ES", -1, token: token);
-		}
+[TestFixture(typeof(LogFormat.V2), typeof(string))]
+[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+public class when_writing_few_prepares_with_same_expected_version_and_not_committing_them<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
+	private IPrepareLogRecord _prepare0;
+	private IPrepareLogRecord _prepare1;
+	private IPrepareLogRecord _prepare2;
 
-		[Test]
-		public void every_prepare_can_be_commited() {
-			var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare0.LogPosition,
-				WriterCheckpoint.ReadNonFlushed());
+	protected override async ValueTask WriteTestScenario(CancellationToken token) {
+		_prepare0 = await WritePrepare("ES", -1, token: token);
+		_prepare1 = await WritePrepare("ES", -1, token: token);
+		_prepare2 = await WritePrepare("ES", -1, token: token);
+	}
 
-			var streamId = _logFormat.StreamIds.LookupValue("ES");
+	[Test]
+	public void every_prepare_can_be_commited() {
+		var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare0.LogPosition,
+			WriterCheckpoint.ReadNonFlushed());
 
-			Assert.AreEqual(CommitDecision.Ok, res.Decision);
-			Assert.AreEqual(streamId, res.EventStreamId);
-			Assert.AreEqual(-1, res.CurrentVersion);
-			Assert.AreEqual(-1, res.StartEventNumber);
-			Assert.AreEqual(-1, res.EndEventNumber);
+		var streamId = _logFormat.StreamIds.LookupValue("ES");
 
-			res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare1.LogPosition, WriterCheckpoint.ReadNonFlushed());
+		Assert.AreEqual(CommitDecision.Ok, res.Decision);
+		Assert.AreEqual(streamId, res.EventStreamId);
+		Assert.AreEqual(-1, res.CurrentVersion);
+		Assert.AreEqual(-1, res.StartEventNumber);
+		Assert.AreEqual(-1, res.EndEventNumber);
 
-			Assert.AreEqual(CommitDecision.Ok, res.Decision);
-			Assert.AreEqual(streamId, res.EventStreamId);
-			Assert.AreEqual(-1, res.CurrentVersion);
-			Assert.AreEqual(-1, res.StartEventNumber);
-			Assert.AreEqual(-1, res.EndEventNumber);
+		res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare1.LogPosition, WriterCheckpoint.ReadNonFlushed());
 
-			res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare2.LogPosition, WriterCheckpoint.ReadNonFlushed());
+		Assert.AreEqual(CommitDecision.Ok, res.Decision);
+		Assert.AreEqual(streamId, res.EventStreamId);
+		Assert.AreEqual(-1, res.CurrentVersion);
+		Assert.AreEqual(-1, res.StartEventNumber);
+		Assert.AreEqual(-1, res.EndEventNumber);
 
-			Assert.AreEqual(CommitDecision.Ok, res.Decision);
-			Assert.AreEqual(streamId, res.EventStreamId);
-			Assert.AreEqual(-1, res.CurrentVersion);
-			Assert.AreEqual(-1, res.StartEventNumber);
-			Assert.AreEqual(-1, res.EndEventNumber);
-		}
+		res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare2.LogPosition, WriterCheckpoint.ReadNonFlushed());
+
+		Assert.AreEqual(CommitDecision.Ok, res.Decision);
+		Assert.AreEqual(streamId, res.EventStreamId);
+		Assert.AreEqual(-1, res.CurrentVersion);
+		Assert.AreEqual(-1, res.StartEventNumber);
+		Assert.AreEqual(-1, res.EndEventNumber);
 	}
 }

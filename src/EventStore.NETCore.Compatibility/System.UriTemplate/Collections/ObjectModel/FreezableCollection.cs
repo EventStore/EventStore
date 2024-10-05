@@ -3,8 +3,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace System.Collections.ObjectModel
-{
+namespace System.Collections.ObjectModel;
+
     using System;
     using System.Collections.Generic;
     using System.ServiceModel;
@@ -76,4 +76,3 @@ namespace System.Collections.ObjectModel
             }
         }
     }
-}

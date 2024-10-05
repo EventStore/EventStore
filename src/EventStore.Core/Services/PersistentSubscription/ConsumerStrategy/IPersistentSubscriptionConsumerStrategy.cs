@@ -3,14 +3,14 @@
 
 using EventStore.Core.Data;
 
-namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy {
-	public interface IPersistentSubscriptionConsumerStrategy {
-		string Name { get; }
+namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
-		void ClientAdded(PersistentSubscriptionClient client);
+public interface IPersistentSubscriptionConsumerStrategy {
+	string Name { get; }
 
-		void ClientRemoved(PersistentSubscriptionClient client);
+	void ClientAdded(PersistentSubscriptionClient client);
 
-		ConsumerPushResult PushMessageToClient(OutstandingMessage message);
-	}
+	void ClientRemoved(PersistentSubscriptionClient client);
+
+	ConsumerPushResult PushMessageToClient(OutstandingMessage message);
 }
