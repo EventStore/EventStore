@@ -14,43 +14,43 @@ using Google.Protobuf.Reflection;
 using Grpc.Net.Client;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.grpc_service {
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class ServerFeaturesTests<TLogFormat, TStreamId>: SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
-		private List<SupportedMethod> _supportedEndPoints = new ();
-		private List<SupportedMethod> _expectedEndPoints = new ();
+namespace EventStore.Projections.Core.Tests.Services.grpc_service;
 
-		public override Task Given() {
-			_expectedEndPoints.AddRange(GetEndPoints(Client.Projections.Projections.Descriptor));
-			var createEndPoint = _expectedEndPoints.FirstOrDefault(ep => ep.MethodName.Contains("create"));
-			createEndPoint?.Features.Add("track_emitted_streams");
+[TestFixture(typeof(LogFormat.V2), typeof(string))]
+[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+public class ServerFeaturesTests<TLogFormat, TStreamId>: SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
+	private List<SupportedMethod> _supportedEndPoints = new ();
+	private List<SupportedMethod> _expectedEndPoints = new ();
 
-			return Task.CompletedTask;
-		}
+	public override Task Given() {
+		_expectedEndPoints.AddRange(GetEndPoints(Client.Projections.Projections.Descriptor));
+		var createEndPoint = _expectedEndPoints.FirstOrDefault(ep => ep.MethodName.Contains("create"));
+		createEndPoint?.Features.Add("track_emitted_streams");
 
-		public override async Task When() {
+		return Task.CompletedTask;
+	}
 
-			using var channel = GrpcChannel.ForAddress(
-				new Uri($"https://{_node.HttpEndPoint}"),
-				new GrpcChannelOptions {
-					HttpHandler = _node.HttpMessageHandler
-				});
-			var client = new ServerFeatures.ServerFeaturesClient(channel);
+	public override async Task When() {
 
-			var resp = await client.GetSupportedMethodsAsync(new Empty());
-			_supportedEndPoints = resp.Methods.Where(x => x.ServiceName.Contains("projections")).ToList();
-		}
+		using var channel = GrpcChannel.ForAddress(
+			new Uri($"https://{_node.HttpEndPoint}"),
+			new GrpcChannelOptions {
+				HttpHandler = _node.HttpMessageHandler
+			});
+		var client = new ServerFeatures.ServerFeaturesClient(channel);
 
-		private SupportedMethod[] GetEndPoints(ServiceDescriptor desc) =>
-			desc.Methods.Select(x => new SupportedMethod {
-				MethodName = x.Name.ToLower(),
-				ServiceName = x.Service.FullName.ToLower()
-			}).ToArray();
+		var resp = await client.GetSupportedMethodsAsync(new Empty());
+		_supportedEndPoints = resp.Methods.Where(x => x.ServiceName.Contains("projections")).ToList();
+	}
 
-		[Test]
-		public void should_receive_expected_endpoints() {
-			CollectionAssert.AreEquivalent(_expectedEndPoints, _supportedEndPoints);
-		}
+	private SupportedMethod[] GetEndPoints(ServiceDescriptor desc) =>
+		desc.Methods.Select(x => new SupportedMethod {
+			MethodName = x.Name.ToLower(),
+			ServiceName = x.Service.FullName.ToLower()
+		}).ToArray();
+
+	[Test]
+	public void should_receive_expected_endpoints() {
+		CollectionAssert.AreEquivalent(_expectedEndPoints, _supportedEndPoints);
 	}
 }

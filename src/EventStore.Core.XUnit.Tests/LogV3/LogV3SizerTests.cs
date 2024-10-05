@@ -4,12 +4,12 @@
 using EventStore.Core.LogV3;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.LogV3 {
-	public class LogV3SizerTests {
-		[Fact]
-		public void can_get_size() {
-			var sut = new LogV3Sizer();
-			Assert.Equal(4, sut.GetSizeInBytes(12345));
-		}
+namespace EventStore.Core.XUnit.Tests.LogV3;
+
+public class LogV3SizerTests {
+	[Fact]
+	public void can_get_size() {
+		var sut = new LogV3Sizer();
+		Assert.Equal(4, sut.GetSizeInBytes(12345));
 	}
 }

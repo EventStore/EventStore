@@ -5,18 +5,18 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 
-namespace EventStore.Core.TransactionLog.Scavenging {
-	public interface IChunkMerger {
-		ValueTask MergeChunks(
-			ScavengePoint scavengePoint,
-			IScavengeStateForChunkMerger state,
-			ITFChunkScavengerLog scavengerLogger,
-			CancellationToken cancellationToken);
+namespace EventStore.Core.TransactionLog.Scavenging;
 
-		ValueTask MergeChunks(
-			ScavengeCheckpoint.MergingChunks checkpoint,
-			IScavengeStateForChunkMerger state,
-			ITFChunkScavengerLog scavengerLogger,
-			CancellationToken cancellationToken);
-	}
+public interface IChunkMerger {
+	ValueTask MergeChunks(
+		ScavengePoint scavengePoint,
+		IScavengeStateForChunkMerger state,
+		ITFChunkScavengerLog scavengerLogger,
+		CancellationToken cancellationToken);
+
+	ValueTask MergeChunks(
+		ScavengeCheckpoint.MergingChunks checkpoint,
+		IScavengeStateForChunkMerger state,
+		ITFChunkScavengerLog scavengerLogger,
+		CancellationToken cancellationToken);
 }

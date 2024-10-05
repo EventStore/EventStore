@@ -3,8 +3,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace System
-{
+namespace System;
+
     class UriTemplateTrieLocation
     {
         public UriTemplateTrieIntraNodeLocation locationWithin;
@@ -15,5 +15,3 @@ namespace System
             this.locationWithin = i;
         }
     }
-
-}

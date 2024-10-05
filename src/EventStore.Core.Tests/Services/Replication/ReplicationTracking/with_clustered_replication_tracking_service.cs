@@ -11,44 +11,44 @@ using EventStore.Core.Services.Replication;
 using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
-	public abstract class with_clustered_replication_tracking_service:
-		IHandle<ReplicationTrackingMessage.ReplicatedTo> {
-		protected string EventStreamId = "test_stream";
-		protected SynchronousScheduler Publisher = new("publisher");
-		protected ReplicationTrackingService Service;
-		protected ConcurrentQueue<ReplicationTrackingMessage.ReplicatedTo> ReplicatedTos = new ConcurrentQueue<ReplicationTrackingMessage.ReplicatedTo>();
-		protected ICheckpoint ReplicationCheckpoint = new InMemoryCheckpoint();
-		protected ICheckpoint WriterCheckpoint = new InMemoryCheckpoint();
+namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking;
 
-		protected abstract int ClusterSize { get; }
+public abstract class with_clustered_replication_tracking_service:
+	IHandle<ReplicationTrackingMessage.ReplicatedTo> {
+	protected string EventStreamId = "test_stream";
+	protected SynchronousScheduler Publisher = new("publisher");
+	protected ReplicationTrackingService Service;
+	protected ConcurrentQueue<ReplicationTrackingMessage.ReplicatedTo> ReplicatedTos = new ConcurrentQueue<ReplicationTrackingMessage.ReplicatedTo>();
+	protected ICheckpoint ReplicationCheckpoint = new InMemoryCheckpoint();
+	protected ICheckpoint WriterCheckpoint = new InMemoryCheckpoint();
 
-		[OneTimeSetUp]
-		public virtual void TestFixtureSetUp() {
-			Publisher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(this);
+	protected abstract int ClusterSize { get; }
 
-			Service = new ReplicationTrackingService(Publisher, ClusterSize,ReplicationCheckpoint, WriterCheckpoint);
-			Service.Start();
-			When();
-		}
+	[OneTimeSetUp]
+	public virtual void TestFixtureSetUp() {
+		Publisher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(this);
 
-		[OneTimeTearDown]
-		public virtual void TestFixtureTearDown() {
-			Service.Stop();
-		}
+		Service = new ReplicationTrackingService(Publisher, ClusterSize,ReplicationCheckpoint, WriterCheckpoint);
+		Service.Start();
+		When();
+	}
 
-		public abstract void When();
+	[OneTimeTearDown]
+	public virtual void TestFixtureTearDown() {
+		Service.Stop();
+	}
 
-		protected void BecomeLeader() {
-			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
-		}
+	public abstract void When();
 
-		protected void BecomeUnknown() {
-			Service.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
-		}
+	protected void BecomeLeader() {
+		Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+	}
 
-		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
-			ReplicatedTos.Enqueue(message);
-		}
+	protected void BecomeUnknown() {
+		Service.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+	}
+
+	public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
+		ReplicatedTos.Enqueue(message);
 	}
 }

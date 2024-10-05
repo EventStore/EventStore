@@ -18,111 +18,111 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Subsystem {
-	public class TestFixtureWithProjectionSubsystem {
-		private StandardComponents _standardComponents;
+namespace EventStore.Projections.Core.Tests.Subsystem;
 
-		protected ProjectionsSubsystem Subsystem;
-		protected const int WaitTimeoutMs = 3000;
+public class TestFixtureWithProjectionSubsystem {
+	private StandardComponents _standardComponents;
 
-		private readonly ManualResetEvent _stopReceived = new ManualResetEvent(false);
-		private ProjectionSubsystemMessage.StopComponents _lastStopMessage;
+	protected ProjectionsSubsystem Subsystem;
+	protected const int WaitTimeoutMs = 3000;
 
-		private readonly ManualResetEvent _startReceived = new ManualResetEvent(false);
-		private ProjectionSubsystemMessage.StartComponents _lastStartMessage;
+	private readonly ManualResetEvent _stopReceived = new ManualResetEvent(false);
+	private ProjectionSubsystemMessage.StopComponents _lastStopMessage;
 
-		protected Task Started { get; private set; }
+	private readonly ManualResetEvent _startReceived = new ManualResetEvent(false);
+	private ProjectionSubsystemMessage.StartComponents _lastStartMessage;
 
-		static readonly IConfiguration EmptyConfiguration = new ConfigurationBuilder().AddInMemoryCollection().Build();
+	protected Task Started { get; private set; }
 
-		private StandardComponents CreateStandardComponents() {
-			var dbConfig = TFChunkHelper.CreateDbConfig(Path.GetTempPath(), 0);
-			var mainQueue = new QueuedHandlerThreadPool
-			(new AdHocHandler<Message>(msg => {
-				/* Ignore messages */
-			}), "MainQueue", new QueueStatsManager(), new());
-			var mainBus = new InMemoryBus("mainBus");
-			var threadBasedScheduler = new ThreadBasedScheduler(new QueueStatsManager(), new());
-			var timerService = new TimerService(threadBasedScheduler);
+	static readonly IConfiguration EmptyConfiguration = new ConfigurationBuilder().AddInMemoryCollection().Build();
 
-			return new StandardComponents(dbConfig, mainQueue, mainBus,
-				timerService, timeProvider: null, httpForwarder: null, httpServices: new IHttpService[] { },
-				networkSendService: null, queueStatsManager: new QueueStatsManager(),
-				trackers: new(), true);
-		}
+	private StandardComponents CreateStandardComponents() {
+		var dbConfig = TFChunkHelper.CreateDbConfig(Path.GetTempPath(), 0);
+		var mainQueue = new QueuedHandlerThreadPool
+		(new AdHocHandler<Message>(msg => {
+			/* Ignore messages */
+		}), "MainQueue", new QueueStatsManager(), new());
+		var mainBus = new InMemoryBus("mainBus");
+		var threadBasedScheduler = new ThreadBasedScheduler(new QueueStatsManager(), new());
+		var timerService = new TimerService(threadBasedScheduler);
 
-		[OneTimeSetUp]
-		public void SetUp() {
-			_standardComponents = CreateStandardComponents();
+		return new StandardComponents(dbConfig, mainQueue, mainBus,
+			timerService, timeProvider: null, httpForwarder: null, httpServices: new IHttpService[] { },
+			networkSendService: null, queueStatsManager: new QueueStatsManager(),
+			trackers: new(), true);
+	}
 
-			var builder = WebApplication.CreateBuilder();
-			builder.Services.AddGrpc();
-			builder.Services.AddSingleton(_standardComponents);
+	[OneTimeSetUp]
+	public void SetUp() {
+		_standardComponents = CreateStandardComponents();
 
-			Subsystem = new ProjectionsSubsystem(
-				new ProjectionSubsystemOptions(1, ProjectionType.All, true, TimeSpan.FromSeconds(3), true, 500, 250));
+		var builder = WebApplication.CreateBuilder();
+		builder.Services.AddGrpc();
+		builder.Services.AddSingleton(_standardComponents);
 
-			Subsystem.ConfigureServices(builder.Services, new ConfigurationBuilder().Build());
-			Subsystem.ConfigureApplication(builder.Build().UseRouting(), EmptyConfiguration);
+		Subsystem = new ProjectionsSubsystem(
+			new ProjectionSubsystemOptions(1, ProjectionType.All, true, TimeSpan.FromSeconds(3), true, 500, 250));
 
-			// Unsubscribe from the actual components so we can test in isolation
-			Subsystem.LeaderInputBus.Unsubscribe<ProjectionSubsystemMessage.ComponentStarted>(Subsystem);
-			Subsystem.LeaderInputBus.Unsubscribe<ProjectionSubsystemMessage.ComponentStopped>(Subsystem);
+		Subsystem.ConfigureServices(builder.Services, new ConfigurationBuilder().Build());
+		Subsystem.ConfigureApplication(builder.Build().UseRouting(), EmptyConfiguration);
 
-			Subsystem.LeaderInputBus.Subscribe(new AdHocHandler<Message>(
-				msg => {
-					switch (msg) {
-						case ProjectionSubsystemMessage.StartComponents start: {
-							_lastStartMessage = start;
-							_startReceived.Set();
-							break;
-						}
-						case ProjectionSubsystemMessage.StopComponents stop: {
-							_lastStopMessage = stop;
-							_stopReceived.Set();
-							break;
-						}
+		// Unsubscribe from the actual components so we can test in isolation
+		Subsystem.LeaderInputBus.Unsubscribe<ProjectionSubsystemMessage.ComponentStarted>(Subsystem);
+		Subsystem.LeaderInputBus.Unsubscribe<ProjectionSubsystemMessage.ComponentStopped>(Subsystem);
+
+		Subsystem.LeaderInputBus.Subscribe(new AdHocHandler<Message>(
+			msg => {
+				switch (msg) {
+					case ProjectionSubsystemMessage.StartComponents start: {
+						_lastStartMessage = start;
+						_startReceived.Set();
+						break;
 					}
-				}));
+					case ProjectionSubsystemMessage.StopComponents stop: {
+						_lastStopMessage = stop;
+						_stopReceived.Set();
+						break;
+					}
+				}
+			}));
 
-			Started = Subsystem.Start();
+		Started = Subsystem.Start();
 
-			Given();
-		}
+		Given();
+	}
 
-		[OneTimeTearDown]
-		public void TearDown() {
-			_standardComponents.TimerService.Dispose();
-		}
+	[OneTimeTearDown]
+	public void TearDown() {
+		_standardComponents.TimerService.Dispose();
+	}
 
-		protected virtual void Given() {
-		}
+	protected virtual void Given() {
+	}
 
-		protected ProjectionSubsystemMessage.StartComponents WaitForStartMessage
-			(string timeoutMsg = null, bool failOnTimeout = true) {
-			timeoutMsg ??= "Timed out waiting for Start Components";
-			if (_startReceived.WaitOne(WaitTimeoutMs))
-				return _lastStartMessage;
-			if (failOnTimeout)
-				Assert.Fail(timeoutMsg);
-			return null;
-		}
-
-		protected ProjectionSubsystemMessage.StopComponents WaitForStopMessage(string timeoutMsg = null) {
-			timeoutMsg ??= "Timed out waiting for Stop Components";
-			if (_stopReceived.WaitOne(WaitTimeoutMs)) {
-				return _lastStopMessage;
-			}
-
+	protected ProjectionSubsystemMessage.StartComponents WaitForStartMessage
+		(string timeoutMsg = null, bool failOnTimeout = true) {
+		timeoutMsg ??= "Timed out waiting for Start Components";
+		if (_startReceived.WaitOne(WaitTimeoutMs))
+			return _lastStartMessage;
+		if (failOnTimeout)
 			Assert.Fail(timeoutMsg);
-			return null;
+		return null;
+	}
+
+	protected ProjectionSubsystemMessage.StopComponents WaitForStopMessage(string timeoutMsg = null) {
+		timeoutMsg ??= "Timed out waiting for Stop Components";
+		if (_stopReceived.WaitOne(WaitTimeoutMs)) {
+			return _lastStopMessage;
 		}
 
-		protected void ResetMessageEvents() {
-			_stopReceived.Reset();
-			_startReceived.Reset();
-			_lastStopMessage = null;
-			_lastStartMessage = null;
-		}
+		Assert.Fail(timeoutMsg);
+		return null;
+	}
+
+	protected void ResetMessageEvents() {
+		_stopReceived.Reset();
+		_startReceived.Reset();
+		_lastStopMessage = null;
+		_lastStartMessage = null;
 	}
 }

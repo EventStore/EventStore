@@ -1,33 +1,33 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-namespace EventStore.Core.TransactionLog.Scavenging {
-	public class InMemoryMetastreamScavengeMap<TKey> :
-		InMemoryScavengeMap<TKey, MetastreamData>,
-		IMetastreamScavengeMap<TKey> {
+namespace EventStore.Core.TransactionLog.Scavenging;
 
-		public void SetTombstone(TKey key) {
-			if (!TryGetValue(key, out var x))
-				x = new MetastreamData();
+public class InMemoryMetastreamScavengeMap<TKey> :
+	InMemoryScavengeMap<TKey, MetastreamData>,
+	IMetastreamScavengeMap<TKey> {
 
-			this[key] = new MetastreamData(
-				isTombstoned: true,
-				discardPoint: x.DiscardPoint);
-		}
+	public void SetTombstone(TKey key) {
+		if (!TryGetValue(key, out var x))
+			x = new MetastreamData();
 
-		public void SetDiscardPoint(TKey key, DiscardPoint discardPoint) {
-			if (!TryGetValue(key, out var x))
-				x = new MetastreamData();
+		this[key] = new MetastreamData(
+			isTombstoned: true,
+			discardPoint: x.DiscardPoint);
+	}
 
-			this[key] = new MetastreamData(
-				isTombstoned: x.IsTombstoned,
-				discardPoint: discardPoint);
-		}
+	public void SetDiscardPoint(TKey key, DiscardPoint discardPoint) {
+		if (!TryGetValue(key, out var x))
+			x = new MetastreamData();
 
-		public void DeleteAll() {
-			foreach (var kvp in AllRecords()) {
-				TryRemove(kvp.Key, out _);
-			}
+		this[key] = new MetastreamData(
+			isTombstoned: x.IsTombstoned,
+			discardPoint: discardPoint);
+	}
+
+	public void DeleteAll() {
+		foreach (var kvp in AllRecords()) {
+			TryRemove(kvp.Key, out _);
 		}
 	}
 }

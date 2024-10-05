@@ -1,19 +1,19 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-namespace EventStore.Core.TransactionLog.Scavenging {
-	public static class ScavengeStateExtensions {
-		public static void SetCheckpoint(
-			this IScavengeStateCommon state,
-			ScavengeCheckpoint checkpoint) {
+namespace EventStore.Core.TransactionLog.Scavenging;
 
-			var transaction = state.BeginTransaction();
-			try {
-				transaction.Commit(checkpoint);
-			} catch {
-				transaction.Rollback();
-				throw;
-			}
+public static class ScavengeStateExtensions {
+	public static void SetCheckpoint(
+		this IScavengeStateCommon state,
+		ScavengeCheckpoint checkpoint) {
+
+		var transaction = state.BeginTransaction();
+		try {
+			transaction.Commit(checkpoint);
+		} catch {
+			transaction.Rollback();
+			throw;
 		}
 	}
 }

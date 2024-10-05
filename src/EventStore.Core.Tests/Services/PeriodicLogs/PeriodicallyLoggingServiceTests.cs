@@ -9,7 +9,8 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.PeriodicLogs; 
+namespace EventStore.Core.Tests.Services.PeriodicLogs;
+
 
 public class PeriodicallyLoggingServiceTests {
 

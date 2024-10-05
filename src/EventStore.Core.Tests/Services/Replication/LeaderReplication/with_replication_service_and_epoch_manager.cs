@@ -26,155 +26,155 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
+namespace EventStore.Core.Tests.Services.Replication.LeaderReplication;
 
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public abstract class with_replication_service_and_epoch_manager<TLogFormat, TStreamId>  : SpecificationWithDirectoryPerTestFixture {
-		private const int _connectionPendingSendBytesThreshold = 10 * 1024;
-		private const int _connectionQueueSizeThreshold = 50000;
 
-		protected int ClusterSize = 3;
-		protected SynchronousScheduler Publisher = new("publisher");
-		protected SynchronousScheduler TcpSendPublisher = new("tcpSend");
-		protected LeaderReplicationService Service;
-		protected ConcurrentQueue<TcpMessage.TcpSend> TcpSends = new ConcurrentQueue<TcpMessage.TcpSend>();
-		protected LogFormatAbstractor<TStreamId> _logFormat;
-		protected Guid LeaderId = Guid.NewGuid();
+[TestFixture(typeof(LogFormat.V2), typeof(string))]
+[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+public abstract class with_replication_service_and_epoch_manager<TLogFormat, TStreamId>  : SpecificationWithDirectoryPerTestFixture {
+	private const int _connectionPendingSendBytesThreshold = 10 * 1024;
+	private const int _connectionQueueSizeThreshold = 50000;
 
-		protected TFChunkDbConfig DbConfig;
-		protected EpochManager<TStreamId> EpochManager;
-		protected TFChunkDb Db;
-		protected TFChunkWriter Writer;
+	protected int ClusterSize = 3;
+	protected SynchronousScheduler Publisher = new("publisher");
+	protected SynchronousScheduler TcpSendPublisher = new("tcpSend");
+	protected LeaderReplicationService Service;
+	protected ConcurrentQueue<TcpMessage.TcpSend> TcpSends = new ConcurrentQueue<TcpMessage.TcpSend>();
+	protected LogFormatAbstractor<TStreamId> _logFormat;
+	protected Guid LeaderId = Guid.NewGuid();
 
-		[OneTimeSetUp]
-		public override async Task TestFixtureSetUp() {
-			await base.TestFixtureSetUp();
+	protected TFChunkDbConfig DbConfig;
+	protected EpochManager<TStreamId> EpochManager;
+	protected TFChunkDb Db;
+	protected TFChunkWriter Writer;
 
-			var indexDirectory = GetFilePathFor("index");
-			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
-				IndexDirectory = indexDirectory,
-			});
+	[OneTimeSetUp]
+	public override async Task TestFixtureSetUp() {
+		await base.TestFixtureSetUp();
 
-			TcpSendPublisher.Subscribe(new AdHocHandler<TcpMessage.TcpSend>(msg => TcpSends.Enqueue(msg)));
+		var indexDirectory = GetFilePathFor("index");
+		_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
+			IndexDirectory = indexDirectory,
+		});
 
-			DbConfig = CreateDbConfig();
-			Db = new TFChunkDb(DbConfig);
-			Db.Open();
+		TcpSendPublisher.Subscribe(new AdHocHandler<TcpMessage.TcpSend>(msg => TcpSends.Enqueue(msg)));
 
-			Writer = new TFChunkWriter(Db);
-			Writer.Open();
+		DbConfig = CreateDbConfig();
+		Db = new TFChunkDb(DbConfig);
+		Db.Open();
 
-			EpochManager = new EpochManager<TStreamId>(
-				Publisher,
-				5,
-				DbConfig.EpochCheckpoint,
-				Writer,
-				1, 1,
-				() => new TFChunkReader(Db, Db.Config.WriterCheckpoint,
-					optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
-				_logFormat.RecordFactory,
-				_logFormat.StreamNameIndex,
-				_logFormat.EventTypeIndex,
-				_logFormat.CreatePartitionManager(
-					reader: new TFChunkReader(Db, Db.Config.WriterCheckpoint),
-					writer: Writer),
-				Guid.NewGuid());
-			Service = new LeaderReplicationService(
-				Publisher,
-				LeaderId,
-				Db,
-				TcpSendPublisher,
-				EpochManager,
-				ClusterSize,
-				false,
-				new QueueStatsManager());
+		Writer = new TFChunkWriter(Db);
+		Writer.Open();
 
-			Service.Handle(new SystemMessage.SystemStart());
-			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+		EpochManager = new EpochManager<TStreamId>(
+			Publisher,
+			5,
+			DbConfig.EpochCheckpoint,
+			Writer,
+			1, 1,
+			() => new TFChunkReader(Db, Db.Config.WriterCheckpoint,
+				optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
+			_logFormat.RecordFactory,
+			_logFormat.StreamNameIndex,
+			_logFormat.EventTypeIndex,
+			_logFormat.CreatePartitionManager(
+				reader: new TFChunkReader(Db, Db.Config.WriterCheckpoint),
+				writer: Writer),
+			Guid.NewGuid());
+		Service = new LeaderReplicationService(
+			Publisher,
+			LeaderId,
+			Db,
+			TcpSendPublisher,
+			EpochManager,
+			ClusterSize,
+			false,
+			new QueueStatsManager());
 
-			When();
+		Service.Handle(new SystemMessage.SystemStart());
+		Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+
+		When();
+	}
+
+	[OneTimeTearDown]
+	public override async Task TestFixtureTearDown() {
+		_logFormat?.Dispose();
+		await base.TestFixtureTearDown();
+		Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
+	}
+
+	public IPrepareLogRecord<TStreamId> CreateLogRecord(long eventNumber, string data = "*************") {
+		var tStreamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+		var eventType = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
+		return LogRecord.Prepare(_logFormat.RecordFactory, Writer.Position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
+			tStreamId, eventNumber, PrepareFlags.None, eventType, Encoding.UTF8.GetBytes(data),
+			null, DateTime.UtcNow);
+	}
+
+	public Guid AddSubscription(Guid replicaId, bool isPromotable, Epoch[] epochs, long logPosition, out TcpConnectionManager manager) {
+		var tcpConn = new DummyTcpConnection() { ConnectionId = replicaId };
+
+		manager = new TcpConnectionManager(
+			"Test Subscription Connection manager", TcpServiceType.External, new ClientTcpDispatcher(2_000),
+			new SynchronousScheduler(), tcpConn, new SynchronousScheduler(),
+			new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
+				new Core.Helpers.IODispatcher(new SynchronousScheduler(), new NoopEnvelope()),
+				new StubPasswordHashAlgorithm(), 1, false, DefaultData.DefaultUserOptions),
+			new AuthorizationGateway(new TestAuthorizationProvider()),
+			TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
+			_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
+		var subRequest = new ReplicationMessage.ReplicaSubscriptionRequest(
+			Guid.NewGuid(),
+			new NoopEnvelope(),
+			manager,
+			ReplicationSubscriptionVersions.V_CURRENT,
+			logPosition,
+			Guid.NewGuid(),
+			epochs,
+			PortsHelper.GetLoopback(),
+			LeaderId,
+			replicaId,
+			isPromotable);
+		Service.Handle(subRequest);
+		return tcpConn.ConnectionId;
+	}
+
+	public abstract void When();
+
+	public TcpMessage.TcpSend[] GetTcpSendsFor(TcpConnectionManager connection) {
+		var sentMessages = new List<TcpMessage.TcpSend>();
+		while (TcpSends.TryDequeue(out var msg)) {
+			if (msg.ConnectionManager == connection)
+				sentMessages.Add(msg);
 		}
 
-		[OneTimeTearDown]
-		public override async Task TestFixtureTearDown() {
-			_logFormat?.Dispose();
-			await base.TestFixtureTearDown();
-			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
-		}
+		return sentMessages.ToArray();
+	}
 
-		public IPrepareLogRecord<TStreamId> CreateLogRecord(long eventNumber, string data = "*************") {
-			var tStreamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
-			var eventType = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
-			return LogRecord.Prepare(_logFormat.RecordFactory, Writer.Position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
-				tStreamId, eventNumber, PrepareFlags.None, eventType, Encoding.UTF8.GetBytes(data),
-				null, DateTime.UtcNow);
-		}
-
-		public Guid AddSubscription(Guid replicaId, bool isPromotable, Epoch[] epochs, long logPosition, out TcpConnectionManager manager) {
-			var tcpConn = new DummyTcpConnection() { ConnectionId = replicaId };
-
-			manager = new TcpConnectionManager(
-				"Test Subscription Connection manager", TcpServiceType.External, new ClientTcpDispatcher(2_000),
-				new SynchronousScheduler(), tcpConn, new SynchronousScheduler(),
-				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
-					new Core.Helpers.IODispatcher(new SynchronousScheduler(), new NoopEnvelope()),
-					new StubPasswordHashAlgorithm(), 1, false, DefaultData.DefaultUserOptions),
-				new AuthorizationGateway(new TestAuthorizationProvider()),
-				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
-				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
-			var subRequest = new ReplicationMessage.ReplicaSubscriptionRequest(
-				Guid.NewGuid(),
-				new NoopEnvelope(),
-				manager,
-				ReplicationSubscriptionVersions.V_CURRENT,
-				logPosition,
-				Guid.NewGuid(),
-				epochs,
-				PortsHelper.GetLoopback(),
-				LeaderId,
-				replicaId,
-				isPromotable);
-			Service.Handle(subRequest);
-			return tcpConn.ConnectionId;
-		}
-
-		public abstract void When();
-
-		public TcpMessage.TcpSend[] GetTcpSendsFor(TcpConnectionManager connection) {
-			var sentMessages = new List<TcpMessage.TcpSend>();
-			while (TcpSends.TryDequeue(out var msg)) {
-				if (msg.ConnectionManager == connection)
-					sentMessages.Add(msg);
-			}
-
-			return sentMessages.ToArray();
-		}
-
-		private TFChunkDbConfig CreateDbConfig() {
-			ICheckpoint writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
-			ICheckpoint chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
-			ICheckpoint epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
-			ICheckpoint proposalChk = new InMemoryCheckpoint(Checkpoint.Proposal, initValue: -1);
-			ICheckpoint truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
-			ICheckpoint replicationCheckpoint = new InMemoryCheckpoint(-1);
-			ICheckpoint indexCheckpoint = new InMemoryCheckpoint(-1);
-			ICheckpoint streamExistenceFilterCheckpoint = new InMemoryCheckpoint(-1);
-			var nodeConfig = new TFChunkDbConfig(
-				PathName,
-				new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-				chunkSize: 1000,
-				maxChunksCacheSize: 10000,
-				writerChk,
-				chaserChk,
-				epochChk,
-				proposalChk,
-				truncateChk,
-				replicationCheckpoint,
-				indexCheckpoint,
-				streamExistenceFilterCheckpoint,
-				inMemDb: true);
-			return nodeConfig;
-		}
+	private TFChunkDbConfig CreateDbConfig() {
+		ICheckpoint writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
+		ICheckpoint chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
+		ICheckpoint epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
+		ICheckpoint proposalChk = new InMemoryCheckpoint(Checkpoint.Proposal, initValue: -1);
+		ICheckpoint truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
+		ICheckpoint replicationCheckpoint = new InMemoryCheckpoint(-1);
+		ICheckpoint indexCheckpoint = new InMemoryCheckpoint(-1);
+		ICheckpoint streamExistenceFilterCheckpoint = new InMemoryCheckpoint(-1);
+		var nodeConfig = new TFChunkDbConfig(
+			PathName,
+			new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
+			chunkSize: 1000,
+			maxChunksCacheSize: 10000,
+			writerChk,
+			chaserChk,
+			epochChk,
+			proposalChk,
+			truncateChk,
+			replicationCheckpoint,
+			indexCheckpoint,
+			streamExistenceFilterCheckpoint,
+			inMemDb: true);
+		return nodeConfig;
 	}
 }

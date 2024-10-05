@@ -3,14 +3,14 @@
 
 using System;
 
-namespace EventStore.Core.XUnit.Tests.Helpers {
-	public class FakeDisposable: IDisposable {
-		private readonly Action _disposeAction;
+namespace EventStore.Core.XUnit.Tests.Helpers;
 
-		public FakeDisposable(Action disposeAction) {
-			_disposeAction = disposeAction;
-		}
+public class FakeDisposable: IDisposable {
+	private readonly Action _disposeAction;
 
-		public void Dispose() => _disposeAction?.Invoke();
+	public FakeDisposable(Action disposeAction) {
+		_disposeAction = disposeAction;
 	}
+
+	public void Dispose() => _disposeAction?.Invoke();
 }

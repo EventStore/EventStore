@@ -7,37 +7,37 @@ using System.Threading.Tasks;
 using EventStore.Core.Tests;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests {
-	public class DirectoryFixture<T> : IAsyncLifetime {
-		public string Directory;
+namespace EventStore.Core.XUnit.Tests;
 
-		public DirectoryFixture() {
-			var typeName = typeof(T).Name.Length > 30 ? typeof(T).Name.Substring(0, 30) : typeof(T).Name;
-			Directory = Path.Combine(Path.GetTempPath(), string.Format("ESX-{0}-{1}", Guid.NewGuid(), typeName));
-			System.IO.Directory.CreateDirectory(Directory);
-		}
+public class DirectoryFixture<T> : IAsyncLifetime {
+	public string Directory;
 
-		~DirectoryFixture() {
-			DirectoryDeleter.TryForceDeleteDirectoryAsync(Directory).Wait();
-		}
+	public DirectoryFixture() {
+		var typeName = typeof(T).Name.Length > 30 ? typeof(T).Name.Substring(0, 30) : typeof(T).Name;
+		Directory = Path.Combine(Path.GetTempPath(), string.Format("ESX-{0}-{1}", Guid.NewGuid(), typeName));
+		System.IO.Directory.CreateDirectory(Directory);
+	}
 
-		public string GetTempFilePath() {
-			return Path.Combine(Directory, string.Format("{0}-{1}", Guid.NewGuid(), typeof(T).FullName));
-		}
+	~DirectoryFixture() {
+		DirectoryDeleter.TryForceDeleteDirectoryAsync(Directory).Wait();
+	}
 
-		public string GetFilePathFor(string fileName) {
-			return Path.Combine(Directory, fileName);
-		}
+	public string GetTempFilePath() {
+		return Path.Combine(Directory, string.Format("{0}-{1}", Guid.NewGuid(), typeof(T).FullName));
+	}
 
-		public Task InitializeAsync() {
-			return Task.CompletedTask;
-		}
+	public string GetFilePathFor(string fileName) {
+		return Path.Combine(Directory, fileName);
+	}
 
-		public async Task DisposeAsync() {
-			await DirectoryDeleter.TryForceDeleteDirectoryAsync(Directory);
+	public Task InitializeAsync() {
+		return Task.CompletedTask;
+	}
+
+	public async Task DisposeAsync() {
+		await DirectoryDeleter.TryForceDeleteDirectoryAsync(Directory);
 #pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
-			GC.SuppressFinalize(this);
+		GC.SuppressFinalize(this);
 #pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
-		}
 	}
 }

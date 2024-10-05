@@ -3,8 +3,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace System
-{
+namespace System;
+
     struct UriTemplateTableMatchCandidate
     {
         readonly object data;
@@ -40,4 +40,3 @@ namespace System
             }
         }
     }
-}

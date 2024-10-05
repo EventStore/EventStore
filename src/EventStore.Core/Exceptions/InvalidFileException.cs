@@ -3,15 +3,15 @@
 
 using System;
 
-namespace EventStore.Core.Exceptions {
-	public class InvalidFileException : Exception {
-		public InvalidFileException() {
-		}
+namespace EventStore.Core.Exceptions;
 
-		public InvalidFileException(string message) : base(message) {
-		}
+public class InvalidFileException : Exception {
+	public InvalidFileException() {
+	}
 
-		public InvalidFileException(string message, Exception innerException) : base(message, innerException) {
-		}
+	public InvalidFileException(string message) : base(message) {
+	}
+
+	public InvalidFileException(string message, Exception innerException) : base(message, innerException) {
 	}
 }

@@ -5,16 +5,16 @@ using System;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 
-namespace EventStore.Core.TransactionLog {
-	public interface ITransactionFileChaser : IDisposable {
-		ICheckpoint Checkpoint { get; }
+namespace EventStore.Core.TransactionLog;
 
-		void Open();
+public interface ITransactionFileChaser : IDisposable {
+	ICheckpoint Checkpoint { get; }
 
-		SeqReadResult TryReadNext();
-		bool TryReadNext(out ILogRecord record);
+	void Open();
 
-		void Close();
-		void Flush();
-	}
+	SeqReadResult TryReadNext();
+	bool TryReadNext(out ILogRecord record);
+
+	void Close();
+	void Flush();
 }

@@ -6,57 +6,57 @@ using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Serilog;
 
-namespace EventStore.Core.Services.Transport.Grpc {
-	// Detect calls that have been automatically retried per https://github.com/grpc/proposal/blob/master/A6-client-retries.md
-	// such calls may not have been intended by the user and as such may disguise a network interruption as a slow server response
-	class RetryInterceptor : Interceptor {
-		public static readonly ILogger Log = Serilog.Log.ForContext<RetryInterceptor>();
+namespace EventStore.Core.Services.Transport.Grpc;
 
-		public override Task<TResponse> ClientStreamingServerHandler<TRequest, TResponse>(
-			IAsyncStreamReader<TRequest> requestStream,
-			ServerCallContext context,
-			ClientStreamingServerMethod<TRequest, TResponse> continuation) {
+// Detect calls that have been automatically retried per https://github.com/grpc/proposal/blob/master/A6-client-retries.md
+// such calls may not have been intended by the user and as such may disguise a network interruption as a slow server response
+class RetryInterceptor : Interceptor {
+	public static readonly ILogger Log = Serilog.Log.ForContext<RetryInterceptor>();
 
-			LogRetries(context);
-			return base.ClientStreamingServerHandler(requestStream, context, continuation);
-		}
+	public override Task<TResponse> ClientStreamingServerHandler<TRequest, TResponse>(
+		IAsyncStreamReader<TRequest> requestStream,
+		ServerCallContext context,
+		ClientStreamingServerMethod<TRequest, TResponse> continuation) {
 
-		public override Task DuplexStreamingServerHandler<TRequest, TResponse>(
-			IAsyncStreamReader<TRequest> requestStream,
-			IServerStreamWriter<TResponse> responseStream,
-			ServerCallContext context,
-			DuplexStreamingServerMethod<TRequest, TResponse> continuation) {
+		LogRetries(context);
+		return base.ClientStreamingServerHandler(requestStream, context, continuation);
+	}
 
-			LogRetries(context);
-			return base.DuplexStreamingServerHandler(requestStream, responseStream, context, continuation);
-		}
+	public override Task DuplexStreamingServerHandler<TRequest, TResponse>(
+		IAsyncStreamReader<TRequest> requestStream,
+		IServerStreamWriter<TResponse> responseStream,
+		ServerCallContext context,
+		DuplexStreamingServerMethod<TRequest, TResponse> continuation) {
 
-		public override Task ServerStreamingServerHandler<TRequest, TResponse>(
-			TRequest request,
-			IServerStreamWriter<TResponse> responseStream,
-			ServerCallContext context,
-			ServerStreamingServerMethod<TRequest, TResponse> continuation) {
+		LogRetries(context);
+		return base.DuplexStreamingServerHandler(requestStream, responseStream, context, continuation);
+	}
 
-			LogRetries(context);
-			return base.ServerStreamingServerHandler(request, responseStream, context, continuation);
-		}
+	public override Task ServerStreamingServerHandler<TRequest, TResponse>(
+		TRequest request,
+		IServerStreamWriter<TResponse> responseStream,
+		ServerCallContext context,
+		ServerStreamingServerMethod<TRequest, TResponse> continuation) {
 
-		public override Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
-			TRequest request,
-			ServerCallContext context,
-			UnaryServerMethod<TRequest, TResponse> continuation) {
+		LogRetries(context);
+		return base.ServerStreamingServerHandler(request, responseStream, context, continuation);
+	}
 
-			LogRetries(context);
-			return base.UnaryServerHandler(request, context, continuation);
+	public override Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
+		TRequest request,
+		ServerCallContext context,
+		UnaryServerMethod<TRequest, TResponse> continuation) {
 
-		}
+		LogRetries(context);
+		return base.UnaryServerHandler(request, context, continuation);
 
-		private void LogRetries(ServerCallContext context) {
-			var entry = context.RequestHeaders.Get("grpc-previous-rpc-attempts");
-			if (entry is null)
-				return;
+	}
 
-			Log.Information("gRPC call to {method} received after {retries} retries", context.Method, entry.Value);
-		}
+	private void LogRetries(ServerCallContext context) {
+		var entry = context.RequestHeaders.Get("grpc-previous-rpc-attempts");
+		if (entry is null)
+			return;
+
+		Log.Information("gRPC call to {method} received after {retries} retries", context.Method, entry.Value);
 	}
 }

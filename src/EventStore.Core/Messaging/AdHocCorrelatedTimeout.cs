@@ -3,16 +3,16 @@
 
 using System;
 
-namespace EventStore.Core.Messaging {
-	public struct AdHocCorrelatedTimeout : ICorrelatedTimeout {
-		private readonly Action<Guid> _timeout;
+namespace EventStore.Core.Messaging;
 
-		public AdHocCorrelatedTimeout(Action<Guid> timeout) {
-			_timeout = timeout;
-		}
+public struct AdHocCorrelatedTimeout : ICorrelatedTimeout {
+	private readonly Action<Guid> _timeout;
 
-		public void Timeout(Guid correlationId) {
-			_timeout(correlationId);
-		}
+	public AdHocCorrelatedTimeout(Action<Guid> timeout) {
+		_timeout = timeout;
+	}
+
+	public void Timeout(Guid correlationId) {
+		_timeout(correlationId);
 	}
 }

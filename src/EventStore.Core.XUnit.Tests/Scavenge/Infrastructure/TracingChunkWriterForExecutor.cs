@@ -7,36 +7,36 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Scavenging;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge {
-	public class TracingChunkWriterForExecutor<TStreamId, TRecord> :
-		IChunkWriterForExecutor<TStreamId, TRecord> {
+namespace EventStore.Core.XUnit.Tests.Scavenge;
 
-		private readonly IChunkWriterForExecutor<TStreamId, TRecord> _wrapped;
-		private readonly Tracer _tracer;
+public class TracingChunkWriterForExecutor<TStreamId, TRecord> :
+	IChunkWriterForExecutor<TStreamId, TRecord> {
 
-		public TracingChunkWriterForExecutor(
-			IChunkWriterForExecutor<TStreamId, TRecord> wrapped,
-			Tracer tracer) {
+	private readonly IChunkWriterForExecutor<TStreamId, TRecord> _wrapped;
+	private readonly Tracer _tracer;
 
-			_wrapped = wrapped;
-			_tracer = tracer;
-		}
+	public TracingChunkWriterForExecutor(
+		IChunkWriterForExecutor<TStreamId, TRecord> wrapped,
+		Tracer tracer) {
 
-		public string FileName => _wrapped.FileName;
+		_wrapped = wrapped;
+		_tracer = tracer;
+	}
 
-		public void WriteRecord(RecordForExecutor<TStreamId, TRecord> record) {
-			_wrapped.WriteRecord(record);
-		}
+	public string FileName => _wrapped.FileName;
 
-		public async ValueTask<(string, long)> Complete(CancellationToken token) {
-			var result = await _wrapped.Complete(token);
-			_tracer.Trace($"Switched in {Path.GetFileName(result.NewFileName)}");
+	public void WriteRecord(RecordForExecutor<TStreamId, TRecord> record) {
+		_wrapped.WriteRecord(record);
+	}
 
-			return result;
-		}
+	public async ValueTask<(string, long)> Complete(CancellationToken token) {
+		var result = await _wrapped.Complete(token);
+		_tracer.Trace($"Switched in {Path.GetFileName(result.NewFileName)}");
 
-		public void Abort(bool deleteImmediately) {
-			_wrapped.Abort(deleteImmediately);
-		}
+		return result;
+	}
+
+	public void Abort(bool deleteImmediately) {
+		_wrapped.Abort(deleteImmediately);
 	}
 }

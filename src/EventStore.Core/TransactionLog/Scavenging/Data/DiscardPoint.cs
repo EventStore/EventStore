@@ -4,73 +4,73 @@
 using System;
 using EventStore.Common.Utils;
 
-namespace EventStore.Core.TransactionLog.Scavenging {
-	public readonly struct DiscardPoint : IEquatable<DiscardPoint> {
-		private DiscardPoint(long firstEventNumberToKeep) {
-			if (firstEventNumberToKeep < 0)
-				firstEventNumberToKeep = 0;
+namespace EventStore.Core.TransactionLog.Scavenging;
 
-			FirstEventNumberToKeep = firstEventNumberToKeep;
-		}
+public readonly struct DiscardPoint : IEquatable<DiscardPoint> {
+	private DiscardPoint(long firstEventNumberToKeep) {
+		if (firstEventNumberToKeep < 0)
+			firstEventNumberToKeep = 0;
 
-		public static DiscardPoint DiscardBefore(long eventNumber) =>
-			new DiscardPoint(eventNumber);
+		FirstEventNumberToKeep = firstEventNumberToKeep;
+	}
 
-		public static DiscardPoint DiscardIncluding(long eventNumber) {
-			if (eventNumber == long.MaxValue)
-				throw new ArgumentOutOfRangeException(
-					nameof(eventNumber),
-					eventNumber,
-					"eventNumber must be less than long.MaxValue");
+	public static DiscardPoint DiscardBefore(long eventNumber) =>
+		new DiscardPoint(eventNumber);
 
-			return DiscardBefore(eventNumber + 1);
-		}
+	public static DiscardPoint DiscardIncluding(long eventNumber) {
+		if (eventNumber == long.MaxValue)
+			throw new ArgumentOutOfRangeException(
+				nameof(eventNumber),
+				eventNumber,
+				"eventNumber must be less than long.MaxValue");
 
-		public static DiscardPoint KeepAll { get; } = DiscardBefore(0);
+		return DiscardBefore(eventNumber + 1);
+	}
 
-		public long FirstEventNumberToKeep { get; }
+	public static DiscardPoint KeepAll { get; } = DiscardBefore(0);
 
-		// Produces a discard point that discards when this OR that discard point would discard
-		// i.e. takes the bigger of the two.
-		public DiscardPoint Or(DiscardPoint x) =>
-			FirstEventNumberToKeep > x.FirstEventNumberToKeep ? this : x;
+	public long FirstEventNumberToKeep { get; }
 
-		public static bool operator <(DiscardPoint x, DiscardPoint y) =>
-			x.FirstEventNumberToKeep < y.FirstEventNumberToKeep;
+	// Produces a discard point that discards when this OR that discard point would discard
+	// i.e. takes the bigger of the two.
+	public DiscardPoint Or(DiscardPoint x) =>
+		FirstEventNumberToKeep > x.FirstEventNumberToKeep ? this : x;
 
-		public static bool operator >(DiscardPoint x, DiscardPoint y) =>
-			x.FirstEventNumberToKeep > y.FirstEventNumberToKeep;
+	public static bool operator <(DiscardPoint x, DiscardPoint y) =>
+		x.FirstEventNumberToKeep < y.FirstEventNumberToKeep;
 
-		public static bool operator <=(DiscardPoint x, DiscardPoint y) =>
-			x.FirstEventNumberToKeep <= y.FirstEventNumberToKeep;
+	public static bool operator >(DiscardPoint x, DiscardPoint y) =>
+		x.FirstEventNumberToKeep > y.FirstEventNumberToKeep;
 
-		public static bool operator >=(DiscardPoint x, DiscardPoint y) =>
-			x.FirstEventNumberToKeep >= y.FirstEventNumberToKeep;
+	public static bool operator <=(DiscardPoint x, DiscardPoint y) =>
+		x.FirstEventNumberToKeep <= y.FirstEventNumberToKeep;
 
-		public static bool operator ==(DiscardPoint x, DiscardPoint y) =>
-			x.FirstEventNumberToKeep == y.FirstEventNumberToKeep;
+	public static bool operator >=(DiscardPoint x, DiscardPoint y) =>
+		x.FirstEventNumberToKeep >= y.FirstEventNumberToKeep;
 
-		public static bool operator !=(DiscardPoint x, DiscardPoint y) =>
-			x.FirstEventNumberToKeep != y.FirstEventNumberToKeep;
+	public static bool operator ==(DiscardPoint x, DiscardPoint y) =>
+		x.FirstEventNumberToKeep == y.FirstEventNumberToKeep;
 
-		public bool Equals(DiscardPoint other) => this == other;
+	public static bool operator !=(DiscardPoint x, DiscardPoint y) =>
+		x.FirstEventNumberToKeep != y.FirstEventNumberToKeep;
 
-		public override bool Equals(object obj) =>
-			obj is DiscardPoint that && this == that;
+	public bool Equals(DiscardPoint other) => this == other;
 
-		public override int GetHashCode() =>
-			FirstEventNumberToKeep.GetHashCode();
+	public override bool Equals(object obj) =>
+		obj is DiscardPoint that && this == that;
 
-		public bool ShouldDiscard(long eventNumber) {
-			Ensure.Nonnegative(eventNumber, nameof(eventNumber));
-			return eventNumber < FirstEventNumberToKeep;
-		}
+	public override int GetHashCode() =>
+		FirstEventNumberToKeep.GetHashCode();
 
-		public override string ToString() {
-			if (this == KeepAll)
-				return "Keep all";
-			else
-				return $"Discard before {FirstEventNumberToKeep}";
-		}
+	public bool ShouldDiscard(long eventNumber) {
+		Ensure.Nonnegative(eventNumber, nameof(eventNumber));
+		return eventNumber < FirstEventNumberToKeep;
+	}
+
+	public override string ToString() {
+		if (this == KeepAll)
+			return "Keep all";
+		else
+			return $"Discard before {FirstEventNumberToKeep}";
 	}
 }

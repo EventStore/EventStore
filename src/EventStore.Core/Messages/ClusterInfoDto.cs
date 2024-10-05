@@ -6,25 +6,25 @@ using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Cluster;
 
-namespace EventStore.Core.Messages {
-	public class ClusterInfoDto {
-		public MemberInfoDto[] Members { get; set; }
-		public string ServerIp { get; set; }
-		public int ServerPort { get; set; }
+namespace EventStore.Core.Messages;
 
-		public ClusterInfoDto() {
-		}
+public class ClusterInfoDto {
+	public MemberInfoDto[] Members { get; set; }
+	public string ServerIp { get; set; }
+	public int ServerPort { get; set; }
 
-		public ClusterInfoDto(ClusterInfo clusterInfo, EndPoint serverEndPoint) {
-			Members = clusterInfo.Members.Select(x => new MemberInfoDto(x)).ToArray();
-			ServerIp = serverEndPoint.GetHost();
-			ServerPort = serverEndPoint.GetPort();
-		}
+	public ClusterInfoDto() {
+	}
 
-		public override string ToString() {
-			return string.Format("Server: {0}:{1}, Members: [{2}]",
-				ServerIp, ServerPort,
-				Members != null ? string.Join(",", Members.Select(m => m.ToString())) : "null");
-		}
+	public ClusterInfoDto(ClusterInfo clusterInfo, EndPoint serverEndPoint) {
+		Members = clusterInfo.Members.Select(x => new MemberInfoDto(x)).ToArray();
+		ServerIp = serverEndPoint.GetHost();
+		ServerPort = serverEndPoint.GetPort();
+	}
+
+	public override string ToString() {
+		return string.Format("Server: {0}:{1}, Members: [{2}]",
+			ServerIp, ServerPort,
+			Members != null ? string.Join(",", Members.Select(m => m.ToString())) : "null");
 	}
 }

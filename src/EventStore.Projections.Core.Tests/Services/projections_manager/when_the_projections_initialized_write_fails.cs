@@ -12,57 +12,57 @@ using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Messages;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager {
-	[TestFixture(typeof(LogFormat.V2), typeof(string), OperationResult.CommitTimeout)]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint), OperationResult.CommitTimeout)]
-	[TestFixture(typeof(LogFormat.V2), typeof(string), OperationResult.PrepareTimeout)]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint), OperationResult.PrepareTimeout)]
-	[TestFixture(typeof(LogFormat.V2), typeof(string), OperationResult.ForwardTimeout)]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint), OperationResult.ForwardTimeout)]
-	public class
-		when_writing_the_projections_initialized_event_fails<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
+namespace EventStore.Projections.Core.Tests.Services.projections_manager;
 
-		private OperationResult _failureCondition;
+[TestFixture(typeof(LogFormat.V2), typeof(string), OperationResult.CommitTimeout)]
+[TestFixture(typeof(LogFormat.V3), typeof(uint), OperationResult.CommitTimeout)]
+[TestFixture(typeof(LogFormat.V2), typeof(string), OperationResult.PrepareTimeout)]
+[TestFixture(typeof(LogFormat.V3), typeof(uint), OperationResult.PrepareTimeout)]
+[TestFixture(typeof(LogFormat.V2), typeof(string), OperationResult.ForwardTimeout)]
+[TestFixture(typeof(LogFormat.V3), typeof(uint), OperationResult.ForwardTimeout)]
+public class
+	when_writing_the_projections_initialized_event_fails<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 
-		public when_writing_the_projections_initialized_event_fails(OperationResult failureCondition) {
-			_failureCondition = failureCondition;
-		}
+	private OperationResult _failureCondition;
 
-		protected override void Given() {
-			AllWritesQueueUp();
-			NoStream(ProjectionNamesBuilder.ProjectionsRegistrationStream);
-		}
+	public when_writing_the_projections_initialized_event_fails(OperationResult failureCondition) {
+		_failureCondition = failureCondition;
+	}
 
-		protected override bool GivenInitializeSystemProjections() {
-			return false;
-		}
+	protected override void Given() {
+		AllWritesQueueUp();
+		NoStream(ProjectionNamesBuilder.ProjectionsRegistrationStream);
+	}
 
-		protected override IEnumerable<WhenStep> When() {
-			yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
-		}
+	protected override bool GivenInitializeSystemProjections() {
+		return false;
+	}
 
-		[Test, Category("v8")]
-		public void retries_writing_with_the_same_event_id() {
-			int retryCount = 0;
-			var projectionsInitializedWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x =>
+	protected override IEnumerable<WhenStep> When() {
+		yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
+	}
+
+	[Test, Category("v8")]
+	public void retries_writing_with_the_same_event_id() {
+		int retryCount = 0;
+		var projectionsInitializedWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x =>
+			x.EventStreamId == ProjectionNamesBuilder.ProjectionsRegistrationStream &&
+			x.Events[0].EventType == ProjectionEventTypes.ProjectionsInitialized).Last();
+		var eventId = projectionsInitializedWrite.Events[0].EventId;
+		while (retryCount < 5) {
+			Assert.AreEqual(eventId, projectionsInitializedWrite.Events[0].EventId);
+			projectionsInitializedWrite.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(
+				projectionsInitializedWrite.CorrelationId, _failureCondition,
+				Enum.GetName(typeof(OperationResult), _failureCondition)));
+			_queue.Process();
+			projectionsInitializedWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x =>
 				x.EventStreamId == ProjectionNamesBuilder.ProjectionsRegistrationStream &&
-				x.Events[0].EventType == ProjectionEventTypes.ProjectionsInitialized).Last();
-			var eventId = projectionsInitializedWrite.Events[0].EventId;
-			while (retryCount < 5) {
-				Assert.AreEqual(eventId, projectionsInitializedWrite.Events[0].EventId);
-				projectionsInitializedWrite.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(
-					projectionsInitializedWrite.CorrelationId, _failureCondition,
-					Enum.GetName(typeof(OperationResult), _failureCondition)));
-				_queue.Process();
-				projectionsInitializedWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x =>
-					x.EventStreamId == ProjectionNamesBuilder.ProjectionsRegistrationStream &&
-					x.Events[0].EventType == ProjectionEventTypes.ProjectionsInitialized).LastOrDefault();
-				if (projectionsInitializedWrite != null) {
-					retryCount++;
-				}
-
-				_consumer.HandledMessages.Clear();
+				x.Events[0].EventType == ProjectionEventTypes.ProjectionsInitialized).LastOrDefault();
+			if (projectionsInitializedWrite != null) {
+				retryCount++;
 			}
+
+			_consumer.HandledMessages.Clear();
 		}
 	}
 }

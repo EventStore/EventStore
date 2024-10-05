@@ -3,30 +3,30 @@
 
 using EventStore.Common.Utils;
 
-namespace EventStore.Core.Caching {
-	public abstract class CacheResizer {
-		public string Name => Cache.Name;
-		public long Size => Cache.Size;
-		public long Count => Cache.Count;
-		public long FreedSize => Cache.FreedSize;
-		protected IDynamicCache Cache { get; }
-		public ResizerUnit Unit { get; }
+namespace EventStore.Core.Caching;
 
-		protected CacheResizer(
-			ResizerUnit unit,
-			IDynamicCache cache) {
-			Ensure.NotNull(cache, nameof(cache));
+public abstract class CacheResizer {
+	public string Name => Cache.Name;
+	public long Size => Cache.Size;
+	public long Count => Cache.Count;
+	public long FreedSize => Cache.FreedSize;
+	protected IDynamicCache Cache { get; }
+	public ResizerUnit Unit { get; }
 
-			Cache = cache;
-			Unit = unit;
-		}
+	protected CacheResizer(
+		ResizerUnit unit,
+		IDynamicCache cache) {
+		Ensure.NotNull(cache, nameof(cache));
 
-		protected string BuildStatsKey(string parentKey) =>
-			parentKey.Length == 0 ? Name : $"{parentKey}-{Name}";
+		Cache = cache;
+		Unit = unit;
+	}
 
-		protected static string GetParentKey(string key) {
-			var index = key.LastIndexOf('-');
-			return index < 0 ? null : key[..index];
-		}
+	protected string BuildStatsKey(string parentKey) =>
+		parentKey.Length == 0 ? Name : $"{parentKey}-{Name}";
+
+	protected static string GetParentKey(string key) {
+		var index = key.LastIndexOf('-');
+		return index < 0 ? null : key[..index];
 	}
 }

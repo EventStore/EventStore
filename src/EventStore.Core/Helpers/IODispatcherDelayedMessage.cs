@@ -4,34 +4,34 @@
 using System;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Helpers {
-	[DerivedMessage(CoreMessage.IODispatcher)]
-	public sealed partial class IODispatcherDelayedMessage : Message {
-		private readonly Guid _correlationId;
-		private readonly ICorrelatedTimeout _timeout;
-		private readonly Guid? _messageCorrelationId;
+namespace EventStore.Core.Helpers;
 
-		public IODispatcherDelayedMessage(Guid correlationId, ICorrelatedTimeout timeout) {
-			_timeout = timeout;
-			_correlationId = correlationId;
-		}
+[DerivedMessage(CoreMessage.IODispatcher)]
+public sealed partial class IODispatcherDelayedMessage : Message {
+	private readonly Guid _correlationId;
+	private readonly ICorrelatedTimeout _timeout;
+	private readonly Guid? _messageCorrelationId;
 
-		public IODispatcherDelayedMessage(Guid correlationId, ICorrelatedTimeout timeout, Guid messageCorrelationId) {
-			_timeout = timeout;
-			_correlationId = correlationId;
-			_messageCorrelationId = messageCorrelationId;
-		}
+	public IODispatcherDelayedMessage(Guid correlationId, ICorrelatedTimeout timeout) {
+		_timeout = timeout;
+		_correlationId = correlationId;
+	}
 
-		public void Timeout() {
-			_timeout.Timeout(_messageCorrelationId ?? Guid.Empty);
-		}
+	public IODispatcherDelayedMessage(Guid correlationId, ICorrelatedTimeout timeout, Guid messageCorrelationId) {
+		_timeout = timeout;
+		_correlationId = correlationId;
+		_messageCorrelationId = messageCorrelationId;
+	}
 
-		public Guid CorrelationId {
-			get { return _correlationId; }
-		}
+	public void Timeout() {
+		_timeout.Timeout(_messageCorrelationId ?? Guid.Empty);
+	}
 
-		public Guid? MessageCorrelationId {
-			get { return _messageCorrelationId; }
-		}
+	public Guid CorrelationId {
+		get { return _correlationId; }
+	}
+
+	public Guid? MessageCorrelationId {
+		get { return _messageCorrelationId; }
 	}
 }

@@ -8,70 +8,70 @@ using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Strategies;
 using EventStore.Projections.Core.Services.Processing.Subscriptions;
 
-namespace EventStore.Projections.Core.Messages {
-	public static partial class ReaderSubscriptionManagement {
-		[DerivedMessage]
-		public abstract partial class ReaderSubscriptionManagementMessage : Message {
-			private readonly Guid _subscriptionId;
+namespace EventStore.Projections.Core.Messages;
 
-			protected ReaderSubscriptionManagementMessage(Guid subscriptionId) {
-				_subscriptionId = subscriptionId;
-			}
+public static partial class ReaderSubscriptionManagement {
+	[DerivedMessage]
+	public abstract partial class ReaderSubscriptionManagementMessage : Message {
+		private readonly Guid _subscriptionId;
 
-			public Guid SubscriptionId {
-				get { return _subscriptionId; }
-			}
+		protected ReaderSubscriptionManagementMessage(Guid subscriptionId) {
+			_subscriptionId = subscriptionId;
 		}
 
-		[DerivedMessage(ProjectionMessage.ReaderSubscriptionManagement)]
-		public partial class Subscribe : ReaderSubscriptionManagementMessage {
-			private readonly CheckpointTag _fromPosition;
-			private readonly IReaderStrategy _readerStrategy;
-			private readonly ReaderSubscriptionOptions _options;
+		public Guid SubscriptionId {
+			get { return _subscriptionId; }
+		}
+	}
 
-			public Subscribe(
-				Guid subscriptionId, CheckpointTag from,
-				IReaderStrategy readerStrategy, ReaderSubscriptionOptions readerSubscriptionOptions) : base(
-				subscriptionId) {
-				if (@from == null) throw new ArgumentNullException("from");
-				if (readerStrategy == null) throw new ArgumentNullException("readerStrategy");
-				_fromPosition = @from;
-				_readerStrategy = readerStrategy;
-				_options = readerSubscriptionOptions;
-			}
+	[DerivedMessage(ProjectionMessage.ReaderSubscriptionManagement)]
+	public partial class Subscribe : ReaderSubscriptionManagementMessage {
+		private readonly CheckpointTag _fromPosition;
+		private readonly IReaderStrategy _readerStrategy;
+		private readonly ReaderSubscriptionOptions _options;
 
-			public CheckpointTag FromPosition {
-				get { return _fromPosition; }
-			}
-
-			public IReaderStrategy ReaderStrategy {
-				get { return _readerStrategy; }
-			}
-
-			public ReaderSubscriptionOptions Options {
-				get { return _options; }
-			}
+		public Subscribe(
+			Guid subscriptionId, CheckpointTag from,
+			IReaderStrategy readerStrategy, ReaderSubscriptionOptions readerSubscriptionOptions) : base(
+			subscriptionId) {
+			if (@from == null) throw new ArgumentNullException("from");
+			if (readerStrategy == null) throw new ArgumentNullException("readerStrategy");
+			_fromPosition = @from;
+			_readerStrategy = readerStrategy;
+			_options = readerSubscriptionOptions;
 		}
 
-		[DerivedMessage(ProjectionMessage.ReaderSubscriptionManagement)]
-		public partial class Pause : ReaderSubscriptionManagementMessage {
-			public Pause(Guid subscriptionId)
-				: base(subscriptionId) {
-			}
+		public CheckpointTag FromPosition {
+			get { return _fromPosition; }
 		}
 
-		[DerivedMessage(ProjectionMessage.ReaderSubscriptionManagement)]
-		public partial class Resume : ReaderSubscriptionManagementMessage {
-			public Resume(Guid subscriptionId)
-				: base(subscriptionId) {
-			}
+		public IReaderStrategy ReaderStrategy {
+			get { return _readerStrategy; }
 		}
 
-		[DerivedMessage(ProjectionMessage.ReaderSubscriptionManagement)]
-		public partial class Unsubscribe : ReaderSubscriptionManagementMessage {
-			public Unsubscribe(Guid subscriptionId)
-				: base(subscriptionId) {
-			}
+		public ReaderSubscriptionOptions Options {
+			get { return _options; }
+		}
+	}
+
+	[DerivedMessage(ProjectionMessage.ReaderSubscriptionManagement)]
+	public partial class Pause : ReaderSubscriptionManagementMessage {
+		public Pause(Guid subscriptionId)
+			: base(subscriptionId) {
+		}
+	}
+
+	[DerivedMessage(ProjectionMessage.ReaderSubscriptionManagement)]
+	public partial class Resume : ReaderSubscriptionManagementMessage {
+		public Resume(Guid subscriptionId)
+			: base(subscriptionId) {
+		}
+	}
+
+	[DerivedMessage(ProjectionMessage.ReaderSubscriptionManagement)]
+	public partial class Unsubscribe : ReaderSubscriptionManagementMessage {
+		public Unsubscribe(Guid subscriptionId)
+			: base(subscriptionId) {
 		}
 	}
 }

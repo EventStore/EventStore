@@ -8,37 +8,37 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing.Verifiers;
 
-namespace EventStore.SourceGenerators.Tests.Messaging {
-	// https://github.com/dotnet/roslyn/blob/main/docs/features/source-generators.cookbook.md#unit-testing-of-generators
-	public static class CSharpSourceGeneratorVerifier<TSourceGenerator> 
-		where TSourceGenerator : ISourceGenerator, new() {
+namespace EventStore.SourceGenerators.Tests.Messaging;
 
-		public class Test : CSharpSourceGeneratorTest<TSourceGenerator, XUnitVerifier> {
-			public Test() {
-			}
+// https://github.com/dotnet/roslyn/blob/main/docs/features/source-generators.cookbook.md#unit-testing-of-generators
+public static class CSharpSourceGeneratorVerifier<TSourceGenerator> 
+	where TSourceGenerator : ISourceGenerator, new() {
 
-			protected override CompilationOptions CreateCompilationOptions() {
-				var compilationOptions = base.CreateCompilationOptions();
-				return compilationOptions.WithSpecificDiagnosticOptions(
-					 compilationOptions.SpecificDiagnosticOptions.SetItems(GetNullableWarningsFromCompiler()));
-			}
+	public class Test : CSharpSourceGeneratorTest<TSourceGenerator, XUnitVerifier> {
+		public Test() {
+		}
 
-			public LanguageVersion LanguageVersion { get; set; } = LanguageVersion.Default;
+		protected override CompilationOptions CreateCompilationOptions() {
+			var compilationOptions = base.CreateCompilationOptions();
+			return compilationOptions.WithSpecificDiagnosticOptions(
+				 compilationOptions.SpecificDiagnosticOptions.SetItems(GetNullableWarningsFromCompiler()));
+		}
 
-			private static ImmutableDictionary<string, ReportDiagnostic> GetNullableWarningsFromCompiler() {
-				string[] args = { "/warnaserror:nullable" };
-				var commandLineArguments = CSharpCommandLineParser.Default.Parse(
-					args: args,
-					baseDirectory: Environment.CurrentDirectory,
-					sdkDirectory: Environment.CurrentDirectory);
-				var nullableWarnings = commandLineArguments.CompilationOptions.SpecificDiagnosticOptions;
+		public LanguageVersion LanguageVersion { get; set; } = LanguageVersion.Default;
 
-				return nullableWarnings;
-			}
+		private static ImmutableDictionary<string, ReportDiagnostic> GetNullableWarningsFromCompiler() {
+			string[] args = { "/warnaserror:nullable" };
+			var commandLineArguments = CSharpCommandLineParser.Default.Parse(
+				args: args,
+				baseDirectory: Environment.CurrentDirectory,
+				sdkDirectory: Environment.CurrentDirectory);
+			var nullableWarnings = commandLineArguments.CompilationOptions.SpecificDiagnosticOptions;
 
-			protected override ParseOptions CreateParseOptions() {
-				return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion);
-			}
+			return nullableWarnings;
+		}
+
+		protected override ParseOptions CreateParseOptions() {
+			return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion);
 		}
 	}
 }

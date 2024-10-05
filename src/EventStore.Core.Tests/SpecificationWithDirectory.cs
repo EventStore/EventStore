@@ -6,31 +6,31 @@ using System.IO;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests {
-	public class SpecificationWithDirectory {
-		protected string PathName;
+namespace EventStore.Core.Tests;
 
-		protected string GetTempFilePath() {
-			return Path.Combine(PathName, string.Format("{0}-{1}", Guid.NewGuid(), GetType().FullName));
-		}
+public class SpecificationWithDirectory {
+	protected string PathName;
 
-		protected string GetFilePathFor(string fileName) {
-			return Path.Combine(PathName, fileName);
-		}
+	protected string GetTempFilePath() {
+		return Path.Combine(PathName, string.Format("{0}-{1}", Guid.NewGuid(), GetType().FullName));
+	}
 
-		[SetUp]
-		public virtual Task SetUp() {
-			var typeName = GetType().Name.Length > 30 ? GetType().Name.Substring(0, 30) : GetType().Name;
-			PathName = Path.Combine(Path.GetTempPath(), string.Format("ES-{0}-{1}", Guid.NewGuid(), typeName));
-			Directory.CreateDirectory(PathName);
+	protected string GetFilePathFor(string fileName) {
+		return Path.Combine(PathName, fileName);
+	}
 
-			return Task.CompletedTask;
-		}
+	[SetUp]
+	public virtual Task SetUp() {
+		var typeName = GetType().Name.Length > 30 ? GetType().Name.Substring(0, 30) : GetType().Name;
+		PathName = Path.Combine(Path.GetTempPath(), string.Format("ES-{0}-{1}", Guid.NewGuid(), typeName));
+		Directory.CreateDirectory(PathName);
 
-		[TearDown]
-		public virtual async Task TearDown() {
-			// kill whole tree
-			await DirectoryDeleter.TryForceDeleteDirectoryAsync(PathName, retries: 10);
-		}
+		return Task.CompletedTask;
+	}
+
+	[TearDown]
+	public virtual async Task TearDown() {
+		// kill whole tree
+		await DirectoryDeleter.TryForceDeleteDirectoryAsync(PathName, retries: 10);
 	}
 }

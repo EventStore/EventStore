@@ -6,49 +6,49 @@ using System.Linq;
 using EventStore.Core.TransactionLog.Scavenging;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge {
-	public class WeightAccumulatorTests {
-		private readonly WeightAccumulator _sut;
-		private readonly MockIncreaseChunkWeights _state;
+namespace EventStore.Core.XUnit.Tests.Scavenge;
 
-		class MockIncreaseChunkWeights : IIncreaseChunkWeights {
-			private readonly Dictionary<int, float> _weights = new Dictionary<int, float>();
+public class WeightAccumulatorTests {
+	private readonly WeightAccumulator _sut;
+	private readonly MockIncreaseChunkWeights _state;
 
-			public void IncreaseChunkWeight(int logicalChunkNumber, float extraWeight) {
-				if (!_weights.TryGetValue(logicalChunkNumber, out var w))
-					w = 0;
-				_weights[logicalChunkNumber] = w + extraWeight;
-			}
+	class MockIncreaseChunkWeights : IIncreaseChunkWeights {
+		private readonly Dictionary<int, float> _weights = new Dictionary<int, float>();
 
-			public float SumChunkWeights(int from, int to) =>
-				_weights
-					.Where(x => from <= x.Key && x.Key <= to)
-					.Select(x => x.Value)
-					.Sum();
+		public void IncreaseChunkWeight(int logicalChunkNumber, float extraWeight) {
+			if (!_weights.TryGetValue(logicalChunkNumber, out var w))
+				w = 0;
+			_weights[logicalChunkNumber] = w + extraWeight;
 		}
 
-		public WeightAccumulatorTests() {
-			_state = new MockIncreaseChunkWeights();
-			_sut = new WeightAccumulator(_state);
-		}
+		public float SumChunkWeights(int from, int to) =>
+			_weights
+				.Where(x => from <= x.Key && x.Key <= to)
+				.Select(x => x.Value)
+				.Sum();
+	}
 
-		[Fact]
-		public void sanity() {
-			_sut.OnDiscard(0);
-			_sut.OnDiscard(1);
-			_sut.OnMaybeDiscard(0);
+	public WeightAccumulatorTests() {
+		_state = new MockIncreaseChunkWeights();
+		_sut = new WeightAccumulator(_state);
+	}
 
-			Assert.Equal(0, _state.SumChunkWeights(0, 0));
-			Assert.Equal(0, _state.SumChunkWeights(1, 1));
+	[Fact]
+	public void sanity() {
+		_sut.OnDiscard(0);
+		_sut.OnDiscard(1);
+		_sut.OnMaybeDiscard(0);
 
-			_sut.Flush();
-			Assert.Equal(3, _state.SumChunkWeights(0, 0));
-			Assert.Equal(2, _state.SumChunkWeights(1, 1));
+		Assert.Equal(0, _state.SumChunkWeights(0, 0));
+		Assert.Equal(0, _state.SumChunkWeights(1, 1));
 
-			_sut.OnMaybeDiscard(1);
-			_sut.Flush();
-			Assert.Equal(3, _state.SumChunkWeights(0, 0));
-			Assert.Equal(3, _state.SumChunkWeights(1, 1));
-		}
+		_sut.Flush();
+		Assert.Equal(3, _state.SumChunkWeights(0, 0));
+		Assert.Equal(2, _state.SumChunkWeights(1, 1));
+
+		_sut.OnMaybeDiscard(1);
+		_sut.Flush();
+		Assert.Equal(3, _state.SumChunkWeights(0, 0));
+		Assert.Equal(3, _state.SumChunkWeights(1, 1));
 	}
 }

@@ -9,41 +9,41 @@ using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 
-namespace EventStore.Projections.Core.Services.Grpc {
-	internal partial class ProjectionManagement {
-		private static readonly Operation EnableOperation = new Operation(Operations.Projections.Enable);
-		public override async Task<EnableResp> Enable(EnableReq request, ServerCallContext context) {
-			var enableSource = new TaskCompletionSource<bool>();
+namespace EventStore.Projections.Core.Services.Grpc;
 
-			var options = request.Options;
+internal partial class ProjectionManagement {
+	private static readonly Operation EnableOperation = new Operation(Operations.Projections.Enable);
+	public override async Task<EnableResp> Enable(EnableReq request, ServerCallContext context) {
+		var enableSource = new TaskCompletionSource<bool>();
 
-			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, EnableOperation, context.CancellationToken)) {
-				throw RpcExceptions.AccessDenied();
-			}
-			var name = options.Name;
-			var runAs = new ProjectionManagementMessage.RunAs(user);
+		var options = request.Options;
 
-			var envelope = new CallbackEnvelope(OnMessage);
+		var user = context.GetHttpContext().User;
+		if (!await _authorizationProvider.CheckAccessAsync(user, EnableOperation, context.CancellationToken)) {
+			throw RpcExceptions.AccessDenied();
+		}
+		var name = options.Name;
+		var runAs = new ProjectionManagementMessage.RunAs(user);
 
-			_publisher.Publish(new ProjectionManagementMessage.Command.Enable(envelope, name, runAs));
+		var envelope = new CallbackEnvelope(OnMessage);
 
-			await enableSource.Task;
+		_publisher.Publish(new ProjectionManagementMessage.Command.Enable(envelope, name, runAs));
 
-			return new EnableResp();
+		await enableSource.Task;
 
-			void OnMessage(Message message) {
-				switch (message) {
-					case ProjectionManagementMessage.Updated:
-						enableSource.TrySetResult(true);
-						break;
-					case ProjectionManagementMessage.NotFound:
-						enableSource.TrySetException(ProjectionNotFound(name));
-						break;
-					default:
-						enableSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
-						break;
-				}
+		return new EnableResp();
+
+		void OnMessage(Message message) {
+			switch (message) {
+				case ProjectionManagementMessage.Updated:
+					enableSource.TrySetResult(true);
+					break;
+				case ProjectionManagementMessage.NotFound:
+					enableSource.TrySetException(ProjectionNotFound(name));
+					break;
+				default:
+					enableSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
+					break;
 			}
 		}
 	}

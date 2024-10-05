@@ -3,20 +3,20 @@
 
 using EventStore.Core.LogAbstraction;
 
-namespace EventStore.Core.XUnit.Tests.LogAbstraction {
-	public class MockExistenceFilterInitializer : INameExistenceFilterInitializer {
-		private readonly string[] _names;
+namespace EventStore.Core.XUnit.Tests.LogAbstraction;
 
-		public MockExistenceFilterInitializer(params string[] names) {
-			_names = names;
-		}
+public class MockExistenceFilterInitializer : INameExistenceFilterInitializer {
+	private readonly string[] _names;
 
-		public void Initialize(INameExistenceFilter filter, long truncateToPosition) {
-			int checkpoint = 0;
-			foreach (var name in _names) {
-				filter.Add(name);
-				filter.CurrentCheckpoint = checkpoint++;
-			}
+	public MockExistenceFilterInitializer(params string[] names) {
+		_names = names;
+	}
+
+	public void Initialize(INameExistenceFilter filter, long truncateToPosition) {
+		int checkpoint = 0;
+		foreach (var name in _names) {
+			filter.Add(name);
+			filter.CurrentCheckpoint = checkpoint++;
 		}
 	}
 }

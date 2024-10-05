@@ -30,6 +30,10 @@ csharp_new_line_within_query_expression_clauses = true
 # disable hint to use primary constructor
 dotnet_diagnostic.IDE0290.severity = none
 
+# use file-scoped namespaces
+csharp_style_namespace_declarations = file_scoped
+dotnet_diagnostic.IDE0161.severity = error
+
 # use ValueTasks correctly
 dotnet_diagnostic.CA2012.severity = error
 
