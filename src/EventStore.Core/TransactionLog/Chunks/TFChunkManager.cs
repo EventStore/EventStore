@@ -35,7 +35,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private volatile bool _cachingEnabled;
 
 		// protects _chunksCount and _chunks
-		private readonly AsyncReaderWriterLock _chunksLocker = new();
+		private readonly AsyncExclusiveLock _chunksLocker = new();
 		private int _backgroundPassesRemaining;
 		private int _backgroundRunning;
 
@@ -67,7 +67,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private async ValueTask CacheUncacheReadOnlyChunks(CancellationToken token = default) {
 			int lastChunkToCache;
 
-			await _chunksLocker.EnterReadLockAsync(token);
+			await _chunksLocker.AcquireAsync(token);
 			try {
 				long totalSize = 0;
 				lastChunkToCache = _chunksCount;
@@ -127,7 +127,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public async ValueTask<TFChunk.TFChunk> AddNewChunk(CancellationToken token) {
 			TFChunk.TFChunk chunk;
-			await _chunksLocker.EnterWriteLockAsync(token);
+			await _chunksLocker.AcquireAsync(token);
 			try {
 				var chunkNumber = _chunksCount;
 				var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
@@ -158,7 +158,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			Ensure.Positive(fileSize, "fileSize");
 
 			TFChunk.TFChunk chunk;
-			await _chunksLocker.EnterWriteLockAsync(token);
+			await _chunksLocker.AcquireAsync(token);
 			try {
 				if (chunkHeader.ChunkStartNumber != _chunksCount)
 					throw new Exception(string.Format(
@@ -189,7 +189,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		private void AddChunk(TFChunk.TFChunk chunk) {
 			Debug.Assert(chunk is not null);
-			Debug.Assert(_chunksLocker.IsWriteLockHeld);
+			Debug.Assert(_chunksLocker.IsLockHeld);
 
 			for (int i = chunk.ChunkHeader.ChunkStartNumber; i <= chunk.ChunkHeader.ChunkEndNumber; ++i) {
 				_chunks[i] = chunk;
@@ -201,7 +201,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public async ValueTask AddChunk(TFChunk.TFChunk chunk, CancellationToken token) {
 			Ensure.NotNull(chunk, "chunk");
 
-			await _chunksLocker.EnterWriteLockAsync(token);
+			await _chunksLocker.AcquireAsync(token);
 			try {
 				AddChunk(chunk);
 			} finally {
@@ -254,7 +254,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					_config.OptimizeReadSideCache, _config.ReduceFileCachePressure);
 			}
 
-			await _chunksLocker.EnterWriteLockAsync(token);
+			await _chunksLocker.AcquireAsync(token);
 			try {
 				if (!ReplaceChunksWith(newChunk, "Old")) {
 					Log.Information("Chunk {chunk} will be not switched, marking for remove...", newChunk);
@@ -321,7 +321,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void RemoveChunks(int chunkStartNumber, int chunkEndNumber, string chunkExplanation) {
-			Debug.Assert(_chunksLocker.IsWriteLockHeld);
+			Debug.Assert(_chunksLocker.IsLockHeld);
 
 			TFChunk.TFChunk lastRemovedChunk = null;
 			for (int i = chunkStartNumber; i <= chunkEndNumber; i += 1) {
@@ -382,7 +382,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public async ValueTask<bool> TryClose(CancellationToken token) {
 			var allChunksClosed = true;
 
-			await _chunksLocker.EnterWriteLockAsync(token);
+			await _chunksLocker.AcquireAsync(token);
 			try {
 				for (int i = 0; i < _chunksCount; ++i) {
 					if (_chunks[i] != null)
