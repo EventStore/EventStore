@@ -1,6 +1,7 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using NUnit.Framework;
@@ -9,8 +10,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture]
 	public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDirectory {
 		[Test]
-		public void the_file_will_not_be_deleted_until_reader_released() {
-			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
+		public async Task the_file_will_not_be_deleted_until_reader_released() {
+			var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
 			using (var reader = chunk.AcquireRawReader()) {
 				chunk.MarkForDeletion();
 				var buffer = new byte[1024];
@@ -23,8 +24,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void a_read_on_new_file_can_be_performed() {
-			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
+		public async Task a_read_on_new_file_can_be_performed() {
+			var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
 			using (var reader = chunk.AcquireRawReader()) {
 				var buffer = new byte[1024];
 				var result = reader.ReadNextBytes(1024, buffer);
@@ -70,8 +71,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 */
 
 		[Test]
-		public void if_asked_for_more_than_buffer_size_will_only_read_buffer_size() {
-			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 3000);
+		public async Task if_asked_for_more_than_buffer_size_will_only_read_buffer_size() {
+			var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 3000);
 			using (var reader = chunk.AcquireRawReader()) {
 				var buffer = new byte[1024];
 				var result = reader.ReadNextBytes(3000, buffer);
@@ -84,8 +85,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void a_read_past_eof_returns_eof_and_no_footer() {
-			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
+		public async Task a_read_past_eof_returns_eof_and_no_footer() {
+			var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
 			using (var reader = chunk.AcquireRawReader()) {
 				var buffer = new byte[8092];
 				var result = reader.ReadNextBytes(8092, buffer);

@@ -24,25 +24,24 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		private long secondEventNumber = (long)int.MaxValue + 2;
 		private long thirdEventNumber = (long)int.MaxValue + 3;
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			_id1 = Guid.NewGuid();
 			_id2 = Guid.NewGuid();
 			_id3 = Guid.NewGuid();
-			long pos0, pos1, pos2, pos3, pos4, pos5, pos6;
 			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
-			GetOrReserve("test1", out var test1StreamId, out _);
-			GetOrReserve("test2", out var test2StreamId, out pos0);
+			var (test1StreamId, _) = await GetOrReserve("test1", token);
+			var (test2StreamId, pos0) = await GetOrReserve("test2", token);
 
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, test1StreamId, firstEventNumber,
-				eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), out pos1);
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, test2StreamId, secondEventNumber,
-				eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), out pos2);
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos2, _id3, _id3, test2StreamId, thirdEventNumber,
-				eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), out pos3);
-			Writer.Write(new CommitLogRecord(pos3, _id1, pos0, DateTime.UtcNow, firstEventNumber), out pos4);
-			Writer.Write(new CommitLogRecord(pos4, _id2, pos1, DateTime.UtcNow, secondEventNumber), out pos5);
-			Writer.Write(new CommitLogRecord(pos5, _id3, pos2, DateTime.UtcNow, thirdEventNumber), out pos6);
+			var (_, pos1) = await Writer.Write(LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, test1StreamId, firstEventNumber,
+				eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), token);
+			var (_, pos2) = await Writer.Write(LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, test2StreamId, secondEventNumber,
+				eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), token);
+			var (_, pos3) = await Writer.Write(LogRecord.SingleWrite(_recordFactory, pos2, _id3, _id3, test2StreamId, thirdEventNumber,
+				eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), token);
+			var (_, pos4) = await Writer.Write(new CommitLogRecord(pos3, _id1, pos0, DateTime.UtcNow, firstEventNumber), token);
+			var (_, pos5) = await Writer.Write(new CommitLogRecord(pos4, _id2, pos1, DateTime.UtcNow, secondEventNumber), token);
+			await Writer.Write(new CommitLogRecord(pos5, _id3, pos2, DateTime.UtcNow, thirdEventNumber), token);
 		}
 
 		[Test]

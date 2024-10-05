@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader {
@@ -15,11 +17,11 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 			_stream = stream;
 		}
 
-		protected override void WriteTestScenario() {
-			WriteSingleEvent(_stream, 1, new string('.', 3000), eventId: Guid.NewGuid(),
-				eventType: "event-type-1", retryOnFail: true);
-			WriteSingleEvent(_stream, 2, new string('.', 3000), eventId: Guid.NewGuid(),
-				eventType: "event-type-1", retryOnFail: true);
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			await WriteSingleEvent(_stream, 1, new string('.', 3000), eventId: Guid.NewGuid(),
+				eventType: "event-type-1", retryOnFail: true, token: token);
+			await WriteSingleEvent(_stream, 2, new string('.', 3000), eventId: Guid.NewGuid(),
+				eventType: "event-type-1", retryOnFail: true, token: token);
 		}
 
 		[Test]

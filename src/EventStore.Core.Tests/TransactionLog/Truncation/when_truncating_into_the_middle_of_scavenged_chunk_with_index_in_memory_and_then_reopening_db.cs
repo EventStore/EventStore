@@ -25,19 +25,19 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		private EventRecord _event2;
 		private EventRecord _chunkEdge;
 
-		protected override void WriteTestScenario() {
-			WriteSingleEvent("ES1", 0, new string('.', 3000)); // chunk 0
-			WriteSingleEvent("ES1", 1, new string('.', 3000));
-			_event2 = WriteSingleEvent("ES2", 0, new string('.', 3000));
-			_chunkEdge = WriteSingleEvent("ES1", 2, new string('.', 3000), retryOnFail: true); // chunk 1
-			var rec = WriteSingleEvent("ES1", 3, new string('.', 3000));
-			WriteSingleEvent("ES1", 4, new string('.', 3000));
-			WriteSingleEvent("ES1", 5, new string('.', 3000), retryOnFail: true); // chunk 2
-			WriteSingleEvent("ES1", 6, new string('.', 3000));
-			WriteSingleEvent("ES1", 7, new string('.', 3000));
-			WriteSingleEvent("ES1", 8, new string('.', 3000), retryOnFail: true); // chunk 3
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			await WriteSingleEvent("ES1", 0, new string('.', 3000), token: token); // chunk 0
+			await WriteSingleEvent("ES1", 1, new string('.', 3000), token: token);
+			_event2 = await WriteSingleEvent("ES2", 0, new string('.', 3000), token: token);
+			_chunkEdge = await WriteSingleEvent("ES1", 2, new string('.', 3000), retryOnFail: true, token: token); // chunk 1
+			var rec = await WriteSingleEvent("ES1", 3, new string('.', 3000), token: token);
+			await WriteSingleEvent("ES1", 4, new string('.', 3000), token: token);
+			await WriteSingleEvent("ES1", 5, new string('.', 3000), retryOnFail: true, token: token); // chunk 2
+			await WriteSingleEvent("ES1", 6, new string('.', 3000), token: token);
+			await WriteSingleEvent("ES1", 7, new string('.', 3000), token: token);
+			await WriteSingleEvent("ES1", 8, new string('.', 3000), retryOnFail: true, token: token); // chunk 3
 
-			WriteDelete("ES1");
+			await WriteDelete("ES1", token);
 			Scavenge(completeLast: false, mergeChunks: false);
 
 			TruncateCheckpoint = rec.LogPosition;

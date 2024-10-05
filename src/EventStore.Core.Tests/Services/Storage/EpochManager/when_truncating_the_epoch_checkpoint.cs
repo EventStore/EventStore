@@ -26,11 +26,11 @@ namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 		private readonly int _numEpochs;
 		private const int CachedEpochCount = 10;
 
-		private EpochRecord WriteEpoch(int epochNumber, long lastPos, Guid instanceId) {
+		private async ValueTask<EpochRecord> WriteEpoch(int epochNumber, long lastPos, Guid instanceId, CancellationToken token) {
 			long pos = _writer.Position;
 			var epoch = new EpochRecord(pos, epochNumber, Guid.NewGuid(), lastPos, DateTime.UtcNow, instanceId);
 			var rec = _logFormat.RecordFactory.CreateEpoch(epoch);
-			_writer.Write(rec, out _);
+			await _writer.Write(rec, token);
 			_writer.Flush();
 			return epoch;
 		}
@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 			});
 
 			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
-			_db.Open();
+			await _db.Open();
 			_writer = new TFChunkWriter(_db);
 			_writer.Open();
 			_epochManager = new EpochManager<TStreamId>(_mainBus,
@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 
 			var lastPos = 0L;
 			for (int i = 0; i < _numEpochs; i++) {
-				var epoch = WriteEpoch(i, lastPos, _instanceId);
+				var epoch = await WriteEpoch(i, lastPos, _instanceId, CancellationToken.None);
 				await _epochManager.AddEpochToCache(epoch, CancellationToken.None);
 				_epochs.Add(epoch);
 				lastPos = epoch.EpochPosition;
@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 
 
 		[TearDown]
-		public void TearDown() {
+		public async Task TearDown() {
 			try {
 				_logFormat?.Dispose();
 				_writer?.Dispose();
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 				//workaround for TearDown error
 			}
 
-			_db?.Dispose();
+			await (_db?.DisposeAsync() ?? ValueTask.CompletedTask);
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]

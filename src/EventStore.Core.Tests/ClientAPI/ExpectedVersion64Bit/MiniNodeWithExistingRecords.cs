@@ -20,6 +20,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
 
@@ -71,7 +72,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			ChaserCheckpoint = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser);
 
 			Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(dbPath, WriterCheckpoint, ChaserCheckpoint, TFConsts.ChunkSize));
-			Db.Open();
+			await Db.Open();
 
 			// create DB
 			Writer = new TFChunkWriter(Db);
@@ -80,16 +81,16 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			var pm = _logFormatFactory.CreatePartitionManager(
 				reader: new TFChunkReader(Db, WriterCheckpoint),
 				writer: Writer);
-			pm.Initialize();
+			await pm.Initialize(CancellationToken.None);
 
-			WriteTestScenario();
+			await WriteTestScenario(CancellationToken.None);
 
 			Writer.Close();
 			Writer = null;
 			WriterCheckpoint.Flush();
 			ChaserCheckpoint.Write(WriterCheckpoint.Read());
 			ChaserCheckpoint.Flush();
-			Db.Close();
+			await Db.DisposeAsync();
 
 			// start node with our created DB
 			Node = new MiniNode<TLogFormat, TStreamId>(PathName, inMemDb: false, dbPath: dbPath);
@@ -111,15 +112,16 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			await base.TestFixtureTearDown();
 		}
 
-		public abstract void WriteTestScenario();
+		public abstract ValueTask WriteTestScenario(CancellationToken token);
 		public abstract Task Given();
 
-		protected EventRecord WriteSingleEvent(string eventStreamName,
+		protected async ValueTask<EventRecord> WriteSingleEvent(string eventStreamName,
 			long eventNumber,
 			string data,
 			DateTime? timestamp = null,
 			Guid eventId = default(Guid),
-			string eventType = "some-type") {
+			string eventType = "some-type",
+			CancellationToken token = default) {
 
 			long pos = Writer.Position;
 			_logFormatFactory.StreamNameIndex.GetOrReserve(
@@ -129,8 +131,8 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				out var eventStreamId,
 				out var streamRecord);
 
-			if (streamRecord != null) {
-				Writer.Write(streamRecord, out pos);
+			if (streamRecord is not null) {
+				(_, pos) = await Writer.Write(streamRecord, token);
 			}
 
 			_logFormatFactory.EventTypeIndex.GetOrReserveEventType(
@@ -141,7 +143,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				out var eventTypeRecord);
 
 			if (eventTypeRecord != null) {
-				Writer.Write(eventTypeRecord, out pos);
+				(_, pos) = await Writer.Write(eventTypeRecord, token);
 			}
 
 			var prepare = LogRecord.SingleWrite(
@@ -155,10 +157,12 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				Helper.UTF8NoBom.GetBytes(data),
 				null,
 				timestamp);
-			Assert.IsTrue(Writer.Write(prepare, out pos));
+
+			(var written, pos) = await Writer.Write(prepare, token);
+			Assert.IsTrue(written);
 			var commit = LogRecord.Commit(pos, prepare.CorrelationId, prepare.LogPosition,
 				eventNumber);
-			Assert.IsTrue(Writer.Write(commit, out pos));
+			Assert.IsTrue(await Writer.Write(commit, token) is (true, _));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
 			var eventRecord = new EventRecord(eventNumber, prepare, eventStreamName, eventType);

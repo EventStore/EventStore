@@ -13,10 +13,10 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_reading_all<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 
-		protected override void WriteTestScenario() {
-			WritePrepare("ES1", 0, Guid.NewGuid(), "event-type", new string('.', 3000), PrepareFlags.IsCommitted);
-			WritePrepare("ES2", 0, Guid.NewGuid(), "event-type", new string('.', 3000), PrepareFlags.IsCommitted);
-			WritePrepare("ES2", 1, Guid.NewGuid(), "event-type", new string('.', 3000), PrepareFlags.IsCommitted);
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			await WritePrepare("ES1", 0, Guid.NewGuid(), "event-type", new string('.', 3000), PrepareFlags.IsCommitted, token);
+			await WritePrepare("ES2", 0, Guid.NewGuid(), "event-type", new string('.', 3000), PrepareFlags.IsCommitted, token);
+			await WritePrepare("ES2", 1, Guid.NewGuid(), "event-type", new string('.', 3000), PrepareFlags.IsCommitted, token);
 		}
 
 		[Test]

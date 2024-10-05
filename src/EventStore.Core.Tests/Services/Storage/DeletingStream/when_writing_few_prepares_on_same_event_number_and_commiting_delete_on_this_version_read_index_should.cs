@@ -19,12 +19,11 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 			ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord _deleteTombstone;
 
-		protected override void WriteTestScenario() {
-			long pos;
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			string stream = "ES";
 			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
-			GetOrReserve(stream, out var streamId, out pos);
-			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
+			var (streamId, _) = await GetOrReserve(stream, token);
+			var (streamDeletedEventTypeId, pos) = await GetOrReserveEventType(SystemEventTypes.StreamDeleted, token);
 
 			var prepare1 = LogRecord.SingleWrite(_recordFactory, pos, // prepare1
 				Guid.NewGuid(),
@@ -35,7 +34,9 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 				LogRecord.NoData,
 				null,
 				DateTime.UtcNow);
-			Assert.IsTrue(Writer.Write(prepare1, out pos));
+
+			(var written, pos) = await Writer.Write(prepare1, token);
+			Assert.IsTrue(written);
 
 			var prepare2 = LogRecord.SingleWrite(_recordFactory, pos, // prepare2
 				Guid.NewGuid(),
@@ -46,13 +47,17 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 				LogRecord.NoData,
 				null,
 				DateTime.UtcNow);
-			Assert.IsTrue(Writer.Write(prepare2, out pos));
+
+			(written, pos) = await Writer.Write(prepare2, token);
+			Assert.IsTrue(written);
 
 
 			var deletePrepare = LogRecord.DeleteTombstone(_recordFactory, pos, // delete prepare
 				Guid.NewGuid(), Guid.NewGuid(), streamId, streamDeletedEventTypeId, -1);
 			_deleteTombstone = new EventRecord(EventNumber.DeletedStream, deletePrepare, stream, SystemEventTypes.StreamDeleted);
-			Assert.IsTrue(Writer.Write(deletePrepare, out pos));
+
+			(written, pos) = await Writer.Write(deletePrepare, token);
+			Assert.IsTrue(written);
 
 			var prepare3 = LogRecord.SingleWrite(_recordFactory, pos, // prepare3
 				Guid.NewGuid(),
@@ -63,13 +68,15 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 				LogRecord.NoData,
 				null,
 				DateTime.UtcNow);
-			Assert.IsTrue(Writer.Write(prepare3, out pos));
+
+			(written, pos) = await Writer.Write(prepare3, token);
+			Assert.IsTrue(written);
 
 			var commit = LogRecord.Commit(pos, // committing delete
 				deletePrepare.CorrelationId,
 				deletePrepare.LogPosition,
 				EventNumber.DeletedStream);
-			Assert.IsTrue(Writer.Write(commit, out pos));
+			Assert.IsTrue(await Writer.Write(commit, token) is (true, _));
 		}
 
 		[Test]

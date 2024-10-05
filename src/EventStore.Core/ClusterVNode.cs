@@ -1592,7 +1592,10 @@ public class ClusterVNode<TStreamId> :
 				return;
 			}
 
-			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads, createNewChunks: false);
+			using (var task = Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads,
+				       createNewChunks: false).AsTask()) {
+				task.Wait(); // No timeout or cancellation, this is intended
+			}
 
 			using (var task = epochManager.Init(CancellationToken.None).AsTask()) {
 				task.Wait(); // No timeout or cancellation, this is intended

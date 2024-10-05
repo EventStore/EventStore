@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Index.Hashers;
@@ -29,8 +31,6 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 		}
 
 		public class VerifyCollision : ReadEventInfoForward_KnownCollisions {
-			protected override void WriteTestScenario() { }
-
 			[Test]
 			public void verify_that_streams_collide() {
 				Assert.AreEqual(Hasher.Hash(Stream), Hasher.Hash(CollidingStream));
@@ -39,9 +39,9 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 		}
 
 		public class WithNoEvents : ReadEventInfoForward_KnownCollisions {
-			protected override void WriteTestScenario() {
-				WriteSingleEvent(CollidingStream, 0, "test data");
-				WriteSingleEvent(CollidingStream1, 0, "test data");
+			protected override async ValueTask WriteTestScenario(CancellationToken token) {
+				await WriteSingleEvent(CollidingStream, 0, "test data", token: token);
+				await WriteSingleEvent(CollidingStream1, 0, "test data", token: token);
 			}
 
 			[Test]
@@ -60,9 +60,9 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 		public class WithOneEvent : ReadEventInfoForward_KnownCollisions {
 			private EventRecord _event, _collidingEvent;
 
-			protected override void WriteTestScenario() {
-				_event = WriteSingleEvent(Stream, 0, "test data");
-				_collidingEvent = WriteSingleEvent(CollidingStream, 0, "test data");
+			protected override async ValueTask WriteTestScenario(CancellationToken token) {
+				_event = await WriteSingleEvent(Stream, 0, "test data", token: token);
+				_collidingEvent = await WriteSingleEvent(CollidingStream, 0, "test data", token: token);
 			}
 
 			[Test]
@@ -108,22 +108,22 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 		}
 
 		public class WithMultipleEvents : ReadEventInfoForward_KnownCollisions {
-			private readonly List<EventRecord> _events = new List<EventRecord>();
+			private readonly List<EventRecord> _events = new();
 
-			protected override void WriteTestScenario() {
+			protected override async ValueTask WriteTestScenario(CancellationToken token) {
 				// PTable 1
-				WriteSingleEvent(CollidingStream, 0, string.Empty);
-				WriteSingleEvent(CollidingStream, 1, string.Empty);
-				_events.Add(WriteSingleEvent(Stream, 0, string.Empty));
+				await WriteSingleEvent(CollidingStream, 0, string.Empty);
+				await WriteSingleEvent(CollidingStream, 1, string.Empty);
+				_events.Add(await WriteSingleEvent(Stream, 0, string.Empty));
 
 				// PTable 2
-				_events.Add(WriteSingleEvent(Stream, 1, string.Empty));
-				_events.Add(WriteSingleEvent(Stream, 2, string.Empty));
-				WriteSingleEvent(CollidingStream, 2, string.Empty);
+				_events.Add(await WriteSingleEvent(Stream, 1, string.Empty, token: token));
+				_events.Add(await WriteSingleEvent(Stream, 2, string.Empty, token: token));
+				await WriteSingleEvent(CollidingStream, 2, string.Empty, token: token);
 
 				// MemTable
-				_events.Add(WriteSingleEvent(Stream, 3, string.Empty));
-				WriteSingleEvent(CollidingStream, 3, string.Empty);
+				_events.Add(await WriteSingleEvent(Stream, 3, string.Empty, token: token));
+				await WriteSingleEvent(CollidingStream, 3, string.Empty, token: token);
 			}
 
 			[Test]
@@ -176,15 +176,15 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 		}
 
 		public class WithDeletedStream : ReadEventInfoForward_KnownCollisions {
-			private readonly List<EventRecord> _events = new List<EventRecord>();
+			private readonly List<EventRecord> _events = new();
 
-			protected override void WriteTestScenario() {
-				_events.Add(WriteSingleEvent(Stream, 0, "test data"));
-				WriteSingleEvent(CollidingStream, 1, "test data");
-				_events.Add(WriteSingleEvent(Stream, 1, "test"));
+			protected override async ValueTask WriteTestScenario(CancellationToken token) {
+				_events.Add(await WriteSingleEvent(Stream, 0, "test data", token: token));
+				await WriteSingleEvent(CollidingStream, 1, "test data", token: token);
+				_events.Add(await WriteSingleEvent(Stream, 1, "test", token: token));
 
-				var prepare = WriteDeletePrepare(Stream);
-				WriteDeleteCommit(prepare);
+				var prepare = await WriteDeletePrepare(Stream, token);
+				await WriteDeleteCommit(prepare, token);
 			}
 
 			[Test]
@@ -226,23 +226,23 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 		}
 
 		public class WithGapsBetweenEvents : ReadEventInfoForward_KnownCollisions {
-			private readonly List<EventRecord> _events = new List<EventRecord>();
+			private readonly List<EventRecord> _events = new();
 
-			protected override void WriteTestScenario() {
+			protected override async ValueTask WriteTestScenario(CancellationToken token) {
 				// PTable 1
-				WriteSingleEvent(CollidingStream, 0, string.Empty);
-				WriteSingleEvent(CollidingStream, 1, string.Empty);
-				_events.Add(WriteSingleEvent(Stream, 0, string.Empty));
+				await WriteSingleEvent(CollidingStream, 0, string.Empty, token: token);
+				await WriteSingleEvent(CollidingStream, 1, string.Empty, token: token);
+				_events.Add(await WriteSingleEvent(Stream, 0, string.Empty, token: token));
 
 				// PTable 2
-				_events.Add(WriteSingleEvent(Stream, 4, string.Empty));
-				_events.Add(WriteSingleEvent(Stream, 5, string.Empty));
-				WriteSingleEvent(CollidingStream, 2, string.Empty);
+				_events.Add(await WriteSingleEvent(Stream, 4, string.Empty, token: token));
+				_events.Add(await WriteSingleEvent(Stream, 5, string.Empty, token: token));
+				await WriteSingleEvent(CollidingStream, 2, string.Empty, token: token);
 
 				// MemTable
-				_events.Add(WriteSingleEvent(Stream, 11, string.Empty));
-				WriteSingleEvent(CollidingStream, 3, string.Empty);
-				WriteSingleEvent(CollidingStream1, 15, string.Empty);
+				_events.Add(await WriteSingleEvent(Stream, 11, string.Empty, token: token));
+				await WriteSingleEvent(CollidingStream, 3, string.Empty, token: token);
+				await WriteSingleEvent(CollidingStream1, 15, string.Empty, token: token);
 			}
 
 			[Test]
@@ -314,23 +314,23 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 
 
 		public class WithDuplicateEvents : ReadEventInfoForward_KnownCollisions {
-			private readonly List<EventRecord> _events = new List<EventRecord>();
+			private readonly List<EventRecord> _events = new();
 
-			protected override void WriteTestScenario() {
+			protected override async ValueTask WriteTestScenario(CancellationToken token) {
 				// PTable 1
-				WriteSingleEvent(CollidingStream, 0, string.Empty);
-				WriteSingleEvent(CollidingStream, 1, string.Empty);
-				_events.Add(WriteSingleEvent(Stream, 0, string.Empty));
+				await WriteSingleEvent(CollidingStream, 0, string.Empty, token: token);
+				await WriteSingleEvent(CollidingStream, 1, string.Empty, token: token);
+				_events.Add(await WriteSingleEvent(Stream, 0, string.Empty, token: token));
 
 				// PTable 2
-				_events.Add(WriteSingleEvent(Stream, 1, string.Empty));
-				_events.Add(WriteSingleEvent(Stream, 1, string.Empty));
-				WriteSingleEvent(CollidingStream, 2, string.Empty);
+				_events.Add(await WriteSingleEvent(Stream, 1, string.Empty, token: token));
+				_events.Add(await WriteSingleEvent(Stream, 1, string.Empty, token: token));
+				await WriteSingleEvent(CollidingStream, 2, string.Empty, token: token);
 
 				// MemTable
-				_events.Add(WriteSingleEvent(Stream, 2, string.Empty));
-				_events.Add(WriteSingleEvent(Stream, 2, string.Empty));
-				_events.Add(WriteSingleEvent(Stream, 2, string.Empty));
+				_events.Add(await WriteSingleEvent(Stream, 2, string.Empty, token: token));
+				_events.Add(await WriteSingleEvent(Stream, 2, string.Empty, token: token));
+				_events.Add(await WriteSingleEvent(Stream, 2, string.Empty, token: token));
 			}
 
 			[Test]

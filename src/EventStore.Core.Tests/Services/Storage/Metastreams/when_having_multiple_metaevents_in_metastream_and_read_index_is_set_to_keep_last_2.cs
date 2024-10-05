@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
@@ -16,7 +18,7 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams {
 			: base(metastreamMaxCount: 2) {
 		}
 
-		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+		protected override ValueTask<DbResult> CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator, CancellationToken token) {
 			return dbCreator.Chunk(
 					Rec.Prepare(0, "$$test", "0", metadata: new StreamMetadata(10, null, null, null, null)),
 					Rec.Prepare(0, "$$test", "1", metadata: new StreamMetadata(9, null, null, null, null)),
@@ -24,7 +26,7 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams {
 					Rec.Prepare(0, "$$test", "3", metadata: new StreamMetadata(7, null, null, null, null)),
 					Rec.Prepare(0, "$$test", "4", metadata: new StreamMetadata(6, null, null, null, null)),
 					Rec.Commit(0, "$$test"))
-				.CreateDb();
+				.CreateDb(token: token);
 		}
 
 		[Test]

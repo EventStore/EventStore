@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using DotNext.Runtime.CompilerServices;
 using EventStore.Core.Metrics;
 using EventStore.Core.Tests;
 using Xunit;
@@ -14,18 +15,22 @@ using static EventStore.Common.Configuration.MetricsConfiguration;
 namespace EventStore.Core.XUnit.Tests.Metrics;
 
 public sealed class CacheHitsMissesTrackerTests : IDisposable {
-	private readonly Disposables _disposables = new();
+	private Scope _disposables = new();
 
 	public void Dispose() {
-		_disposables?.Dispose();
+		_disposables.Dispose();
 	}
 
 	private (CacheHitsMissesTracker, TestMeterListener<long>) GenSut(
 		Cache[] enabledCaches,
 		[CallerMemberName] string callerName = "") {
 
-		var meter = new Meter($"{typeof(CacheHitsMissesTrackerTests)}-{callerName}").DisposeWith(_disposables);
-		var listener = new TestMeterListener<long>(meter).DisposeWith(_disposables);
+		var meter = new Meter($"{typeof(CacheHitsMissesTrackerTests)}-{callerName}");
+		_disposables.RegisterForDispose(meter);
+
+		var listener = new TestMeterListener<long>(meter);
+		_disposables.RegisterForDispose(listener);
+
 		var metric = new CacheHitsMissesMetric(meter, enabledCaches, "the-metric", new() {
 			{ Cache.StreamInfo, "stream-info" },
 			{ Cache.Chunk, "chunk" },

@@ -21,30 +21,30 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		private const string _deletedEventStreamId = "Deleted-ES";
 		private PrepareLogRecord _event1, _event2, _event3, _event4, _deleted;
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			// Stream that will be kept
-			_event1 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
-				0);
-			_event2 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
-				1);
+			_event1 = await WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
+				0, token: token);
+			_event2 = await WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
+				1, token: token);
 
 			// Stream that will be deleted
-			WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId, Writer.Position,
-				0);
-			WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId, Writer.Position,
-				1);
-			_deleted = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId,
+			await WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId, Writer.Position,
+				0, token: token);
+			await WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId, Writer.Position,
+				1, token: token);
+			_deleted = await WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId,
 				Writer.Position, int.MaxValue - 1,
-				PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd);
+				PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, token);
 
 			// Stream that will be kept
-			_event3 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
-				2);
-			_event4 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
-				3);
+			_event3 = await WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
+				2, token: token);
+			_event4 = await WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
+				3, token: token);
 
 			Writer.CompleteChunk();
-			Writer.AddNewChunk();
+			await Writer.AddNewChunk(token: token);
 
 			Scavenge(completeLast: false, mergeChunks: true);
 		}

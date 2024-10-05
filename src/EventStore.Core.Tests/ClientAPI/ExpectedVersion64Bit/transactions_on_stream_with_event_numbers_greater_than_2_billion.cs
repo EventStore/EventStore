@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using NUnit.Framework;
@@ -18,12 +19,12 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 
 		private EventRecord _r1, _r2, _r3, _r4, _r5;
 
-		public override void WriteTestScenario() {
-			_r1 = WriteSingleEvent(StreamName, intMaxValue + 1, new string('.', 3000));
-			_r2 = WriteSingleEvent(StreamName, intMaxValue + 2, new string('.', 3000));
-			_r3 = WriteSingleEvent(StreamName, intMaxValue + 3, new string('.', 3000));
-			_r4 = WriteSingleEvent(StreamName, intMaxValue + 4, new string('.', 3000));
-			_r5 = WriteSingleEvent(StreamName, intMaxValue + 5, new string('.', 3000));
+		public override async ValueTask WriteTestScenario(CancellationToken token) {
+			_r1 = await WriteSingleEvent(StreamName, intMaxValue + 1, new string('.', 3000), token: token);
+			_r2 = await WriteSingleEvent(StreamName, intMaxValue + 2, new string('.', 3000), token: token);
+			_r3 = await WriteSingleEvent(StreamName, intMaxValue + 3, new string('.', 3000), token: token);
+			_r4 = await WriteSingleEvent(StreamName, intMaxValue + 4, new string('.', 3000), token: token);
+			_r5 = await WriteSingleEvent(StreamName, intMaxValue + 5, new string('.', 3000), token: token);
 		}
 
 		public override async Task Given() {

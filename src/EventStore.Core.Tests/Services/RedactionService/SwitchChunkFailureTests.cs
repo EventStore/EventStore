@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data.Redaction;
 using EventStore.Core.TransactionLog.Chunks;
@@ -136,8 +137,8 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 
 			newChunk = $"{nameof(cannot_switch_with_chunk_having_mismatched_range)}-chunk-0-2.tmp";
 			var chunkHeader = new ChunkHeader(1, 1, 1024, 0, 2, true, Guid.NewGuid(), TransformType.Identity);
-			var chunk = TFChunk.CreateWithHeader(Path.Combine(PathName, newChunk), chunkHeader, 1024, false, false, false, false,
-				new TFChunkTracker.NoOp(), new IdentityChunkTransformFactory(), ReadOnlyMemory<byte>.Empty);
+			var chunk = await TFChunk.CreateWithHeader(Path.Combine(PathName, newChunk), chunkHeader, 1024, false, false, false, false,
+				new TFChunkTracker.NoOp(), new IdentityChunkTransformFactory(), ReadOnlyMemory<byte>.Empty, CancellationToken.None);
 			chunk.Dispose();
 			msg = await SwitchChunk(GetChunk(0, 0), newChunk);
 			Assert.AreEqual(SwitchChunkResult.ChunkRangeDoesNotMatch, msg.Result);

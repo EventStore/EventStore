@@ -1,3 +1,6 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
@@ -14,15 +17,15 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge {
 		private EventRecord _r5;
 		private EventRecord _r6;
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			const string metadata = @"{""$tb"":1}";
 
-			_r1 = WriteStreamMetadata("ES", 0, metadata);
-			WriteSingleEvent("ES", 0, "bla1");
-			_r3 = WriteSingleEvent("ES", 1, "bla1");
-			_r4 = WriteSingleEvent("ES", 2, "bla1");
-			_r5 = WriteSingleEvent("ES", 3, "bla1");
-			_r6 = WriteSingleEvent("ES", 4, "bla1");
+			_r1 = await WriteStreamMetadata("ES", 0, metadata, token: token);
+			await WriteSingleEvent("ES", 0, "bla1", token: token);
+			_r3 = await WriteSingleEvent("ES", 1, "bla1", token: token);
+			_r4 = await WriteSingleEvent("ES", 2, "bla1", token: token);
+			_r5 = await WriteSingleEvent("ES", 3, "bla1", token: token);
+			_r6 = await WriteSingleEvent("ES", 4, "bla1", token: token);
 
 			Scavenge(completeLast: true, mergeChunks: false);
 		}

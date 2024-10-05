@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -51,8 +52,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 			new FileCheckpoint(path, Path.GetFileName(path));
 
 		[SetUp]
-		public override Task SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 
 			CreateChunk(GetFilePathFor("chunk-000000.000000"), 10_000);
 
@@ -61,14 +62,14 @@ namespace EventStore.Core.Tests.TransactionLog {
 				OpenCheckpoint(GetFilePathFor("writer.chk")),
 				OpenCheckpoint(GetFilePathFor("chaser.chk")),
 				10_000));
-			_db.Open();
+			await _db.Open();
 
-			return Task.CompletedTask;
+			await Task.CompletedTask;
 		}
 
 		[TestCase(true)]
 		[TestCase(false)]
-		public void checkpoints_should_be_flushed_only_when_chunks_are_properly_closed(bool chunksClosed) {
+		public async Task checkpoints_should_be_flushed_only_when_chunks_are_properly_closed(bool chunksClosed) {
 			if (!chunksClosed) {
 				// acquire a reader to prevent the chunk from being properly closed
 				_db.Manager.GetChunk(0).AcquireRawReader();
@@ -76,11 +77,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			var writer = new TFChunkWriter(_db);
 			writer.Open();
-			Assert.IsTrue(writer.Write(CreateRecord(), out _));
+			Assert.IsTrue(await writer.Write(CreateRecord(), CancellationToken.None) is (true, _));
 
 			_db.Config.ChaserCheckpoint.Write(1); // any non-zero value just to test if the checkpoint is flushed
 
-			_db.Close();
+			await _db.DisposeAsync();
 
 			// reopen the checkpoints
 			var writerChk = OpenCheckpoint(GetFilePathFor("writer.chk"));

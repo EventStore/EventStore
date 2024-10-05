@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.LogAbstraction;
@@ -34,14 +35,14 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		protected TFChunkChaser Chaser;
 		protected TFChunkWriter Writer;
 
-		protected ConcurrentQueue<StorageMessage.PrepareAck> PrepareAcks = new ConcurrentQueue<StorageMessage.PrepareAck>();
-		protected ConcurrentQueue<StorageMessage.CommitAck> CommitAcks = new ConcurrentQueue<StorageMessage.CommitAck>();
+		protected ConcurrentQueue<StorageMessage.PrepareAck> PrepareAcks = new();
+		protected ConcurrentQueue<StorageMessage.CommitAck> CommitAcks = new();
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 			Db = new TFChunkDb(CreateDbConfig());
-			Db.Open();
+			await Db.Open();
 			Chaser = new TFChunkChaser(Db, _writerChk, _chaserChk, false);
 			Chaser.Open();
 			Writer = new TFChunkWriter(Db);
@@ -64,7 +65,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitAck>(CommitAcks.Enqueue));
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.PrepareAck>(PrepareAcks.Enqueue));
 
-			When();
+			await When(CancellationToken.None);
 		}
 
 		[OneTimeTearDown]
@@ -74,7 +75,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		}
 
 
-		public abstract void When();
+		public abstract ValueTask When(CancellationToken token);
 
 		private TFChunkDbConfig CreateDbConfig() {
 

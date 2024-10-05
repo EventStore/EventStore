@@ -53,8 +53,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			});
 
 			var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
-			var dbCreationHelper = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig, _logFormat);
-			_dbResult = CreateDb(dbCreationHelper);
+			var dbCreationHelper = await TFChunkDbCreationHelper<TLogFormat, TStreamId>.CreateAsync(dbConfig, _logFormat);
+			_dbResult = await CreateDb(dbCreationHelper, CancellationToken.None);
 			_keptRecords = KeptRecords(_dbResult);
 
 			_dbResult.Db.Config.WriterCheckpoint.Flush();
@@ -105,7 +105,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		public override async Task TestFixtureTearDown() {
 			_logFormat?.Dispose();
 			ReadIndex.Close();
-			_dbResult.Db.Close();
+			await _dbResult.Db.DisposeAsync();
 
 			await base.TestFixtureTearDown();
 
@@ -113,7 +113,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				throw new Exception("Records were not checked. Probably you forgot to call CheckRecords() method.");
 		}
 
-		protected abstract DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator);
+		protected abstract ValueTask<DbResult> CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator, CancellationToken token);
 
 		protected abstract ILogRecord[][] KeptRecords(DbResult dbResult);
 

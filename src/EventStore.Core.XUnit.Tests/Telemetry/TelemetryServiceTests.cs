@@ -34,7 +34,10 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 	public TelemetryServiceTests() {
 		var config = TFChunkHelper.CreateSizedDbConfig(_fixture.Directory, 0, chunkSize: 4096);
 		_db = new TFChunkDb(config);
-		_db.Open(false);
+		using (var task = _db.Open(false).AsTask()) {
+			task.Wait();
+		}
+
 		var channel = Channel.CreateUnbounded<Message>();
 		_channelReader = channel.Reader;
 		_sink = new InMemoryTelemetrySink();
@@ -55,7 +58,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 	public async Task DisposeAsync() {
 		_plugin.Dispose();
 		_sut.Dispose();
-		_db.Close();
+		await _db.DisposeAsync();
 		await _fixture.DisposeAsync();
 	}
 

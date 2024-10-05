@@ -10,8 +10,8 @@ using RuntimeInformation = System.Runtime.RuntimeInformation;
 namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture]
 	public class when_writing_a_memorymappedpoint_to_a_file : SpecificationWithFile {
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 			if (!RuntimeInformation.IsWindows) {
 				Assert.Ignore($"{nameof(MemoryMappedFileCheckpoint)} is for windows only.");
 			}

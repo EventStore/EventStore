@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
@@ -13,13 +15,13 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
 		private EventRecord _event4;
 		private EventRecord _event5;
 
-		protected override void WriteTestScenario() {
-			WriteStreamMetadata("ES", 0, @"{""$maxCount"":3}");
-			WriteSingleEvent("ES", 0, "bla");
-			WriteSingleEvent("ES", 1, "bla");
-			_event3 = WriteSingleEvent("ES", 2, "bla");
-			_event4 = WriteSingleEvent("ES", 3, "bla");
-			_event5 = WriteSingleEvent("ES", 4, "bla");
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			await WriteStreamMetadata("ES", 0, @"{""$maxCount"":3}", token: token);
+			await WriteSingleEvent("ES", 0, "bla", token: token);
+			await WriteSingleEvent("ES", 1, "bla", token: token);
+			_event3 = await WriteSingleEvent("ES", 2, "bla", token: token);
+			_event4 = await WriteSingleEvent("ES", 3, "bla", token: token);
+			_event5 = await WriteSingleEvent("ES", 4, "bla", token: token);
 		}
 
 		[Test]

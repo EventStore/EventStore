@@ -2,14 +2,17 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
 
-namespace EventStore.Core.LogV2 {
-	public class LogV2PartitionManager : IPartitionManager {
+namespace EventStore.Core.LogV2;
 
-		public Guid? RootId => Guid.Empty;
-		public Guid? RootTypeId => Guid.Empty;
+public class LogV2PartitionManager : IPartitionManager {
 
-		public void Initialize(){}
-	}
+	public Guid? RootId => Guid.Empty;
+	public Guid? RootTypeId => Guid.Empty;
+
+	public ValueTask Initialize(CancellationToken token)
+		=> token.IsCancellationRequested ? ValueTask.FromCanceled(token) : ValueTask.CompletedTask;
 }

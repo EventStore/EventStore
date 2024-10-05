@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using NUnit.Framework;
@@ -12,14 +14,14 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams {
 	public class
 		when_having_multiple_metaevents_in_metastream_and_read_index_is_set_to_keep_just_last<TLogFormat, TStreamId>
 		: SimpleDbTestScenario<TLogFormat, TStreamId> {
-		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+		protected override ValueTask<DbResult> CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator, CancellationToken token) {
 			return dbCreator.Chunk(Rec.Prepare(0, "$$test", "0", metadata: new StreamMetadata(maxCount: 10)),
 					Rec.Prepare(0, "$$test", "1", metadata: new StreamMetadata(maxCount: 9)),
 					Rec.Prepare(0, "$$test", "2", metadata: new StreamMetadata(maxCount: 8)),
 					Rec.Prepare(0, "$$test", "3", metadata: new StreamMetadata(maxCount: 7)),
 					Rec.Prepare(0, "$$test", "4", metadata: new StreamMetadata(maxCount: 6)),
 					Rec.Commit(0, "$$test"))
-				.CreateDb();
+				.CreateDb(token: token);
 		}
 
 		[Test]

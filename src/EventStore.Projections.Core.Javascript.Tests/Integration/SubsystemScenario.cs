@@ -25,7 +25,7 @@ using Xunit.Abstractions;
 
 namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 	public abstract class SubsystemScenario  : IHandle<Message>, IAsyncLifetime {
-		private readonly Action _stop;
+		private readonly Func<ValueTask> _stop;
 		private readonly SynchronousScheduler _mainBus;
 		private readonly IQueuedHandler _mainQueue;
 
@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 		private readonly Task _ready;
 		readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _notifications;
 
-		protected SubsystemScenario(Func<SynchronousScheduler, IQueuedHandler, ICheckpoint, (Action stopAction, IPublisher subsystemCommands)> createSubsystem, string readyStream, CancellationToken testTimeout) {
+		protected SubsystemScenario(Func<SynchronousScheduler, IQueuedHandler, ICheckpoint, (Func<ValueTask> stopAction, IPublisher subsystemCommands)> createSubsystem, string readyStream, CancellationToken testTimeout) {
 			_mainBus = new SynchronousScheduler("main");
 			_mainQueue = new QueuedHandlerThreadPool(_mainBus, "bossQ", new QueueStatsManager(), new());
 			_writerCheckpoint = new InMemoryCheckpoint(0);
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 		public async Task DisposeAsync() {
 			_miniStore.Complete();
 			await _complete;
-			_stop();
+			await _stop();
 			_mainQueue.Stop();
 		}
 

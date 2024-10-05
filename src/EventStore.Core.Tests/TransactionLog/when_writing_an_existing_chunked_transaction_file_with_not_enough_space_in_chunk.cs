@@ -3,6 +3,8 @@
 
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -23,7 +25,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private InMemoryCheckpoint _checkpoint;
 
 		[Test]
-		public void a_record_is_not_written_at_first_but_written_on_second_try() {
+		public async Task a_record_is_not_written_at_first_but_written_on_second_try() {
 			var filename1 = GetFilePathFor("chunk-000000.000000");
 			var filename2 = GetFilePathFor("chunk-000001.000000");
 			var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid(), TransformType.Identity);
@@ -34,10 +36,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			_checkpoint = new InMemoryCheckpoint(0);
 			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, _checkpoint, new InMemoryCheckpoint()));
-			db.Open();
+			await db.Open();
 			var tf = new TFChunkWriter(db);
 			tf.Open();
-			long pos;
 
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
@@ -57,7 +58,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 				eventType: eventTypeId,
 				data: new byte[] {1, 2, 3, 4, 5},
 				metadata: new byte[8000]);
-			Assert.IsTrue(tf.Write(record1, out pos)); // almost fill up first chunk
+
+			var (written, pos) = await tf.Write(record1, CancellationToken.None);
+			Assert.IsTrue(written); // almost fill up first chunk
 
 			var record2 = LogRecord.Prepare(
 				factory: recordFactory,
@@ -73,7 +76,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 				eventType: eventTypeId,
 				data: new byte[] {1, 2, 3, 4, 5},
 				metadata: new byte[8000]);
-			Assert.IsFalse(tf.Write(record2, out pos)); // chunk has too small space
+
+			(written, pos) = await tf.Write(record2, CancellationToken.None);
+			Assert.IsFalse(written); // chunk has too small space
 
 			var record3 = LogRecord.Prepare(
 				factory: recordFactory,
@@ -89,9 +94,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 				eventType: eventTypeId,
 				data: new byte[] {1, 2, 3, 4, 5},
 				metadata: new byte[2000]);
-			Assert.IsTrue(tf.Write(record3, out pos));
+
+			(written, _) = await tf.Write(record3, CancellationToken.None);
+			Assert.IsTrue(written);
 			tf.Close();
-			db.Dispose();
+			await db.DisposeAsync();
 
 			Assert.AreEqual(record3.GetSizeWithLengthPrefixAndSuffix() + 10000, _checkpoint.Read());
 			using (var filestream = File.Open(filename2, FileMode.Open, FileAccess.Read)) {

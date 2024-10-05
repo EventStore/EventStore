@@ -29,29 +29,29 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 		private EventRecord _r25;
 		private EventRecord _r26;
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			var now = DateTime.UtcNow;
 
 			var metadata1 = string.Format(@"{{""$maxAge"":{0}}}", (int)TimeSpan.FromMinutes(25).TotalSeconds);
 			const string metadata2 = @"{""$maxCount"":2}";
 
-			_r11 = WriteStreamMetadata("ES1", 0, metadata1);
-			_r21 = WriteStreamMetadata("ES2", 0, metadata2);
+			_r11 = await WriteStreamMetadata("ES1", 0, metadata1, token: token);
+			_r21 = await WriteStreamMetadata("ES2", 0, metadata2, token: token);
 
-			_r12 = WriteSingleEvent("ES1", 0, "bla1", now.AddMinutes(-100));
-			_r13 = WriteSingleEvent("ES1", 1, "bla1", now.AddMinutes(-20));
+			_r12 = await WriteSingleEvent("ES1", 0, "bla1", now.AddMinutes(-100), token: token);
+			_r13 = await WriteSingleEvent("ES1", 1, "bla1", now.AddMinutes(-20), token: token);
 
-			_r22 = WriteSingleEvent("ES2", 0, "bla1", now.AddMinutes(-100));
-			_r23 = WriteSingleEvent("ES2", 1, "bla1", now.AddMinutes(-20));
+			_r22 = await WriteSingleEvent("ES2", 0, "bla1", now.AddMinutes(-100), token: token);
+			_r23 = await WriteSingleEvent("ES2", 1, "bla1", now.AddMinutes(-20), token: token);
 
-			_r14 = WriteSingleEvent("ES1", 2, "bla1", now.AddMinutes(-11));
-			_r24 = WriteSingleEvent("ES2", 2, "bla1", now.AddMinutes(-10));
+			_r14 = await WriteSingleEvent("ES1", 2, "bla1", now.AddMinutes(-11), token: token);
+			_r24 = await WriteSingleEvent("ES2", 2, "bla1", now.AddMinutes(-10), token: token);
 
-			_r15 = WriteSingleEvent("ES1", 3, "bla1", now.AddMinutes(-5));
-			_r16 = WriteSingleEvent("ES1", 4, "bla1", now.AddMinutes(-2));
+			_r15 = await WriteSingleEvent("ES1", 3, "bla1", now.AddMinutes(-5), token: token);
+			_r16 = await WriteSingleEvent("ES1", 4, "bla1", now.AddMinutes(-2), token: token);
 
-			_r25 = WriteSingleEvent("ES2", 3, "bla1", now.AddMinutes(-1));
-			_r26 = WriteSingleEvent("ES2", 4, "bla1", now.AddMinutes(-1));
+			_r25 = await WriteSingleEvent("ES2", 3, "bla1", now.AddMinutes(-1), token: token);
+			_r26 = await WriteSingleEvent("ES2", 4, "bla1", now.AddMinutes(-1), token: token);
 		}
 
 		[Test]

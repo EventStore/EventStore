@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Caching;
@@ -97,11 +98,11 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, WriterCheckpoint, ChaserCheckpoint,
 				replicationCheckpoint: new InMemoryCheckpoint(-1), chunkSize: _chunkSize));
 
-			Db.Open();
+			await Db.Open();
 			// create db
 			Writer = new TFChunkWriter(Db);
 			Writer.Open();
-			WriteTestScenario();
+			await WriteTestScenario(CancellationToken.None);
 			Writer.Close();
 			Writer = null;
 
@@ -161,50 +162,55 @@ namespace EventStore.Core.Tests.Services.Storage {
 			}
 		}
 
-		public override Task TestFixtureTearDown() {
+		public override async Task TestFixtureTearDown() {
 			_logFormat?.Dispose();
 			ReadIndex?.Close();
 			ReadIndex?.Dispose();
 
 			TableIndex?.Close();
 
-			Db?.Close();
-			Db?.Dispose();
-
-			return base.TestFixtureTearDown();
+			await (Db?.DisposeAsync() ?? ValueTask.CompletedTask);
+			await base.TestFixtureTearDown();
 		}
 
 		protected virtual ITableIndex<TStreamId> TransformTableIndex(ITableIndex<TStreamId> tableIndex) {
 			return tableIndex;
 		}
 
-		protected abstract void WriteTestScenario();
+		protected virtual ValueTask WriteTestScenario(CancellationToken token)
+			=> token.IsCancellationRequested ? ValueTask.FromCanceled(token) : ValueTask.CompletedTask;
 
-		protected void GetOrReserve(string eventStreamName, out TStreamId eventStreamId, out long newPos) {
-			newPos = Writer.Position;
-			_streamNameIndex.GetOrReserve(_logFormat.RecordFactory, eventStreamName, newPos, out eventStreamId, out var streamRecord);
-			if (streamRecord != null) {
-				Writer.Write(streamRecord, out newPos);
+		protected async ValueTask<(TStreamId, long)> GetOrReserve(string eventStreamName, CancellationToken token) {
+			var newPos = Writer.Position;
+			_streamNameIndex.GetOrReserve(_logFormat.RecordFactory, eventStreamName, newPos, out var eventStreamId, out var streamRecord);
+			if (streamRecord is not null) {
+				(_, newPos) = await Writer.Write(streamRecord, token);
 			}
-		}
-		
-		protected void GetOrReserveEventType(string eventType, out TStreamId eventTypeId, out long newPos) {
-			newPos = Writer.Position;
-			_eventTypeIndex.GetOrReserveEventType(_logFormat.RecordFactory, eventType, newPos, out eventTypeId, out var eventTypeRecord);
-			if (eventTypeRecord != null) {
-				Writer.Write(eventTypeRecord, out newPos);
-			}
+
+			return (eventStreamId, newPos);
 		}
 
-		protected EventRecord WriteSingleEvent(string eventStreamName,
+		protected async ValueTask<(TStreamId, long)> GetOrReserveEventType(string eventType, CancellationToken token) {
+			var newPos = Writer.Position;
+			_eventTypeIndex.GetOrReserveEventType(_logFormat.RecordFactory, eventType, newPos, out var eventTypeId, out var eventTypeRecord);
+			if (eventTypeRecord is not null) {
+				(_, newPos) = await Writer.Write(eventTypeRecord, token);
+			}
+
+			return (eventTypeId, newPos);
+		}
+
+		protected async ValueTask<EventRecord> WriteSingleEvent(string eventStreamName,
 			long eventNumber,
 			string data,
 			DateTime? timestamp = null,
-			Guid eventId = default(Guid),
+			Guid eventId = default,
 			bool retryOnFail = false,
-			string eventType = "some-type") {
-			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
-			GetOrReserveEventType(eventType, out var eventTypeId, out pos);
+			string eventType = "some-type",
+			CancellationToken token = default) {
+			var (eventStreamId, _) = await GetOrReserve(eventStreamName, token);
+			var (eventTypeId, pos) = await GetOrReserveEventType(eventType, token);
+
 			var prepare = LogRecord.SingleWrite(_recordFactory, pos,
 				eventId == default(Guid) ? Guid.NewGuid() : eventId,
 				Guid.NewGuid(),
@@ -216,10 +222,11 @@ namespace EventStore.Core.Tests.Services.Storage {
 				timestamp);
 
 			if (!retryOnFail) {
-				Assert.IsTrue(Writer.Write(prepare, out pos));
+				Assert.IsTrue(await Writer.Write(prepare, token) is (true, _));
 			} else {
 				long firstPos = prepare.LogPosition;
-				if (!Writer.Write(prepare, out pos)) {
+				(var success, pos) = await Writer.Write(prepare, token);
+				if (!success) {
 					prepare = LogRecord.SingleWrite(_recordFactory, pos,
 						prepare.CorrelationId,
 						prepare.EventId,
@@ -229,23 +236,25 @@ namespace EventStore.Core.Tests.Services.Storage {
 						prepare.Data,
 						prepare.Metadata,
 						prepare.TimeStamp);
-					if (!Writer.Write(prepare, out pos))
+
+					if (await Writer.Write(prepare, token) is (false, _))
 						Assert.Fail("Second write try failed when first writing prepare at {0}, then at {1}.", firstPos,
 							prepare.LogPosition);
 				}
 			}
 
-			
+
 			var commit = LogRecord.Commit(Writer.Position, prepare.CorrelationId, prepare.LogPosition,
 				eventNumber);
 			if (!retryOnFail) {
-				Assert.IsTrue(Writer.Write(commit, out pos));
+				Assert.IsTrue(await Writer.Write(commit, token) is (true, _));
 			} else {
 				var firstPos = commit.LogPosition;
-				if (!Writer.Write(commit, out pos)) {
+				(var success, pos) = await Writer.Write(commit, token);
+				if (!success) {
 					commit = LogRecord.Commit(pos, prepare.CorrelationId, prepare.LogPosition,
 						eventNumber);
-					if (!Writer.Write(commit, out pos))
+					if (await Writer.Write(commit, token) is (false, _))
 						Assert.Fail("Second write try failed when first writing prepare at {0}, then at {1}.", firstPos,
 							prepare.LogPosition);
 				}
@@ -256,10 +265,11 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return eventRecord;
 		}
 
-		protected EventRecord WriteStreamMetadata(string eventStreamName, long eventNumber, string metadata,
-			DateTime? timestamp = null) {
-			GetOrReserve(SystemStreams.MetastreamOf(eventStreamName), out var eventStreamId, out var pos);
-			GetOrReserveEventType(SystemEventTypes.StreamMetadata, out var eventTypeId, out pos);
+		protected async ValueTask<EventRecord> WriteStreamMetadata(string eventStreamName, long eventNumber, string metadata,
+			DateTime? timestamp = null,
+			CancellationToken token = default) {
+			var (eventStreamId, _) = await GetOrReserve(SystemStreams.MetastreamOf(eventStreamName), token);
+			var ( eventTypeId, pos) = await GetOrReserveEventType(SystemEventTypes.StreamMetadata, token);
 			var prepare = LogRecord.SingleWrite(_recordFactory, pos,
 				Guid.NewGuid(),
 				Guid.NewGuid(),
@@ -270,22 +280,22 @@ namespace EventStore.Core.Tests.Services.Storage {
 				null,
 				timestamp ?? DateTime.UtcNow,
 				PrepareFlags.IsJson);
-			Assert.IsTrue(Writer.Write(prepare, out pos));
+			Assert.IsTrue(await Writer.Write(prepare, token) is (true, _));
 
 			var commit = LogRecord.Commit(Writer.Position, prepare.CorrelationId, prepare.LogPosition,
 				eventNumber);
-			Assert.IsTrue(Writer.Write(commit, out pos));
+			Assert.IsTrue(await Writer.Write(commit, token) is (true, _));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
 			var eventRecord = new EventRecord(eventNumber, prepare, SystemStreams.MetastreamOf(eventStreamName), SystemEventTypes.StreamMetadata);
 			return eventRecord;
 		}
 
-		protected EventRecord WriteTransactionBegin(string eventStreamName, long expectedVersion, long eventNumber,
-			string eventData) {
+		protected async ValueTask<EventRecord> WriteTransactionBegin(string eventStreamName, long expectedVersion, long eventNumber,
+			string eventData, CancellationToken token) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
-			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
-			GetOrReserveEventType("some-type", out var eventTypeId, out pos);
+			var (eventStreamId, _) = await GetOrReserve(eventStreamName, token);
+			var (eventTypeId, pos) = await GetOrReserveEventType("some-type", token);
 			var prepare = LogRecord.Prepare(_recordFactory, pos,
 				Guid.NewGuid(),
 				Guid.NewGuid(),
@@ -297,22 +307,22 @@ namespace EventStore.Core.Tests.Services.Storage {
 				eventTypeId,
 				Helper.UTF8NoBom.GetBytes(eventData),
 				null);
-			Assert.IsTrue(Writer.Write(prepare, out pos));
+			Assert.IsTrue(await Writer.Write(prepare, token) is (true, _));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
 			return new EventRecord(eventNumber, prepare, eventStreamName, "some-type");
 		}
 
-		protected IPrepareLogRecord<TStreamId> WriteTransactionBegin(string eventStreamName, long expectedVersion) {
+		protected async ValueTask<IPrepareLogRecord<TStreamId>> WriteTransactionBegin(string eventStreamName, long expectedVersion, CancellationToken token) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
-			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
+			var (eventStreamId, pos) = await GetOrReserve(eventStreamName, token);
 			var prepare = LogRecord.TransactionBegin(_recordFactory, pos, Guid.NewGuid(), eventStreamId,
 				expectedVersion);
-			Assert.IsTrue(Writer.Write(prepare, out pos));
+			Assert.IsTrue(await Writer.Write(prepare, token) is (true, _));
 			return prepare;
 		}
 
-		protected EventRecord WriteTransactionEvent(Guid correlationId,
+		protected async ValueTask<EventRecord> WriteTransactionEvent(Guid correlationId,
 			long transactionPos,
 			int transactionOffset,
 			string eventStreamName,
@@ -320,11 +330,12 @@ namespace EventStore.Core.Tests.Services.Storage {
 			string eventData,
 			PrepareFlags flags,
 			bool retryOnFail = false,
-			string eventType = "some-type") {
+			string eventType = "some-type",
+			CancellationToken token = default) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
 
-			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
-			GetOrReserveEventType(eventType, out var eventTypeId, out pos);
+			var (eventStreamId, _) = await GetOrReserve(eventStreamName, token);
+			var (eventTypeId, pos) = await GetOrReserveEventType(eventType, token);
 
 			var prepare = LogRecord.Prepare(_recordFactory, pos,
 				correlationId,
@@ -340,15 +351,15 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 			if (retryOnFail) {
 				long firstPos = prepare.LogPosition;
-				long newPos;
-				if (!Writer.Write(prepare, out newPos)) {
+				var (success, newPos) = await Writer.Write(prepare, token);
+				if (!success) {
 					var tPos = prepare.TransactionPosition == prepare.LogPosition
 						? newPos
 						: prepare.TransactionPosition;
 					prepare = prepare.CopyForRetry(
 						logPosition: newPos,
 						transactionPosition: tPos);
-					if (!Writer.Write(prepare, out newPos))
+					if (await Writer.Write(prepare, token) is (false, _))
 						Assert.Fail("Second write try failed when first writing prepare at {0}, then at {1}.", firstPos,
 							prepare.LogPosition);
 				}
@@ -357,41 +368,41 @@ namespace EventStore.Core.Tests.Services.Storage {
 				return new EventRecord(eventNumber, prepare, eventStreamName, eventType);
 			}
 
-			Assert.IsTrue(Writer.Write(prepare, out pos));
+			Assert.IsTrue(await Writer.Write(prepare, token) is (true, _));
 
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 			return new EventRecord(eventNumber, prepare, eventStreamName, eventType);
 		}
 
-		protected IPrepareLogRecord<TStreamId> WriteTransactionEnd(Guid correlationId, long transactionId, string eventStreamName) {
+		protected async ValueTask<IPrepareLogRecord<TStreamId>> WriteTransactionEnd(Guid correlationId, long transactionId, string eventStreamName, CancellationToken token) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
-			GetOrReserve(eventStreamName, out var eventStreamId, out _);
-			return WriteTransactionEnd(correlationId, transactionId, eventStreamId);
+			var (eventStreamId, _) = await GetOrReserve(eventStreamName, token);
+			return await WriteTransactionEnd(correlationId, transactionId, eventStreamId, token);
 		}
 
-		protected IPrepareLogRecord<TStreamId> WriteTransactionEnd(Guid correlationId, long transactionId, TStreamId eventStreamId) {
+		protected async ValueTask<IPrepareLogRecord<TStreamId>> WriteTransactionEnd(Guid correlationId, long transactionId, TStreamId eventStreamId, CancellationToken token) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
 			var prepare = LogRecord.TransactionEnd(_recordFactory, Writer.Position,
 				correlationId,
 				Guid.NewGuid(),
 				transactionId,
 				eventStreamId);
-			long pos;
-			Assert.IsTrue(Writer.Write(prepare, out pos));
+			Assert.IsTrue(await Writer.Write(prepare, token) is (true, _));
 			return prepare;
 		}
 
-		protected IPrepareLogRecord<TStreamId> WritePrepare(string eventStreamName,
+		protected async ValueTask<IPrepareLogRecord<TStreamId>> WritePrepare(string eventStreamName,
 			long expectedVersion,
-			Guid eventId = default(Guid),
+			Guid eventId = default,
 			string eventType = null,
 			string data = null,
-			PrepareFlags additionalFlags = PrepareFlags.None) {
-			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
-			GetOrReserveEventType(eventType.IsEmptyString() ? "some-type" : eventType, out var eventTypeId, out pos);
+			PrepareFlags additionalFlags = PrepareFlags.None,
+			CancellationToken token = default) {
+			var (eventStreamId, _) = await GetOrReserve(eventStreamName, token);
+			var (eventTypeId, pos) = await GetOrReserveEventType(eventType.IsEmptyString() ? "some-type" : eventType, token);
 			var prepare = LogRecord.SingleWrite(_recordFactory, pos,
 				Guid.NewGuid(),
-				eventId == default(Guid) ? Guid.NewGuid() : eventId,
+				eventId == default ? Guid.NewGuid() : eventId,
 				eventStreamId,
 				expectedVersion,
 				eventTypeId,
@@ -399,85 +410,85 @@ namespace EventStore.Core.Tests.Services.Storage {
 				LogRecord.NoData,
 				DateTime.UtcNow,
 				additionalFlags);
-			Assert.IsTrue(Writer.Write(prepare, out pos));
+			Assert.IsTrue(await Writer.Write(prepare, token) is (true, _));
 
 			return prepare;
 		}
 
-		protected CommitLogRecord WriteCommit(long preparePos, string eventStreamName, long eventNumber) {
+		protected async ValueTask<CommitLogRecord> WriteCommit(long preparePos, string eventStreamName, long eventNumber, CancellationToken token) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
 			var commit = LogRecord.Commit(Writer.Position, Guid.NewGuid(), preparePos, eventNumber);
-			long pos;
-			Assert.IsTrue(Writer.Write(commit, out pos));
+			Assert.IsTrue(await Writer.Write(commit, token) is (true, _));
 			return commit;
 		}
 
-		protected long WriteCommit(Guid correlationId, long transactionId, string eventStreamName, long eventNumber) {
+		protected async ValueTask<long> WriteCommit(Guid correlationId, long transactionId, string eventStreamName,
+			long eventNumber, CancellationToken token) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
-			GetOrReserve(eventStreamName, out var eventStreamId, out _);
-			return WriteCommit(correlationId, transactionId, eventStreamId, eventNumber);
+			var (eventStreamId, _) = await GetOrReserve(eventStreamName, token);
+			return await WriteCommit(correlationId, transactionId, eventStreamId, eventNumber, token);
 		}
 
-		protected long WriteCommit(Guid correlationId, long transactionId, TStreamId eventStreamId, long eventNumber) {
+		protected async ValueTask<long> WriteCommit(Guid correlationId, long transactionId, TStreamId eventStreamId, long eventNumber, CancellationToken token) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
 			var commit = LogRecord.Commit(Writer.Position, correlationId, transactionId, eventNumber);
-			long pos;
-			Assert.IsTrue(Writer.Write(commit, out pos));
+			Assert.IsTrue(await Writer.Write(commit, token) is (true, _));
 			return commit.LogPosition;
 		}
 
-		protected EventRecord WriteDelete(string eventStreamName) {
-			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
-			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
+		protected async ValueTask<EventRecord> WriteDelete(string eventStreamName, CancellationToken token) {
+			var (eventStreamId, _) = await GetOrReserve(eventStreamName, token);
+			var (streamDeletedEventTypeId, pos) = await GetOrReserveEventType(SystemEventTypes.StreamDeleted, token);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos,
 				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, streamDeletedEventTypeId, EventNumber.DeletedStream - 1);
-			Assert.IsTrue(Writer.Write(prepare, out pos));
+			Assert.IsTrue(await Writer.Write(prepare, token) is (true, _));
 			var commit = LogRecord.Commit(Writer.Position,
 				prepare.CorrelationId,
 				prepare.LogPosition,
 				EventNumber.DeletedStream);
-			Assert.IsTrue(Writer.Write(commit, out pos));
+			Assert.IsTrue(await Writer.Write(commit, token) is (true, _));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
 			return new EventRecord(EventNumber.DeletedStream, prepare, eventStreamName, SystemEventTypes.StreamDeleted);
 		}
 
-		protected IPrepareLogRecord<TStreamId> WriteDeletePrepare(string eventStreamName) {
-			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
-			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
+		protected async ValueTask<IPrepareLogRecord<TStreamId>> WriteDeletePrepare(string eventStreamName, CancellationToken token) {
+			var (eventStreamId, _) = await GetOrReserve(eventStreamName, token);
+			var (streamDeletedEventTypeId, pos) = await GetOrReserveEventType(SystemEventTypes.StreamDeleted, token);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos,
 				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, streamDeletedEventTypeId, ExpectedVersion.Any);
-			Assert.IsTrue(Writer.Write(prepare, out pos));
+			Assert.IsTrue(await Writer.Write(prepare, token) is (true, _));
 
 			return prepare;
 		}
 
-		protected CommitLogRecord WriteDeleteCommit(IPrepareLogRecord prepare) {
+		protected async ValueTask<CommitLogRecord> WriteDeleteCommit(IPrepareLogRecord prepare, CancellationToken token) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
-			long pos;
 			var commit = LogRecord.Commit(Writer.Position,
 				prepare.CorrelationId,
 				prepare.LogPosition,
 				EventNumber.DeletedStream);
-			Assert.IsTrue(Writer.Write(commit, out pos));
+			Assert.IsTrue(await Writer.Write(commit, token) is (true, _));
 
 			return commit;
 		}
 
 		// This is LogV2 specific
-		protected PrepareLogRecord WriteSingleEventWithLogVersion0(Guid id, string streamId, long position,
-			long expectedVersion, PrepareFlags? flags = null) {
+		protected async ValueTask<PrepareLogRecord> WriteSingleEventWithLogVersion0(Guid id, string streamId,
+			long position,
+			long expectedVersion, PrepareFlags? flags = null,
+			CancellationToken token = default) {
 			if (!flags.HasValue) {
 				flags = PrepareFlags.SingleWrite;
 			}
 
-			long pos;
-			var record = new PrepareLogRecord(position, id, id, position, 0, streamId, null, expectedVersion, DateTime.UtcNow,
+			var record = new PrepareLogRecord(position, id, id, position, 0, streamId, null, expectedVersion,
+				DateTime.UtcNow,
 				flags.Value, "type", null, new byte[10], new byte[0], LogRecordVersion.LogRecordV0);
-			Writer.Write(record, out pos);
-			Writer.Write(
+			var (_, pos) = await Writer.Write(record, token);
+			await Writer.Write(
 				new CommitLogRecord(pos, id, position, DateTime.UtcNow, expectedVersion, LogRecordVersion.LogRecordV0),
-				out pos);
+				token);
 			return record;
 		}
 

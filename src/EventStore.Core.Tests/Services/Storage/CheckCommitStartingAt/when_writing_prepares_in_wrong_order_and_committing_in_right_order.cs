@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -15,15 +17,15 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 		private IPrepareLogRecord _prepare3;
 		private IPrepareLogRecord _prepare4;
 
-		protected override void WriteTestScenario() {
-			_prepare0 = WritePrepare("ES", expectedVersion: -1);
-			_prepare1 = WritePrepare("ES", expectedVersion: 2);
-			_prepare2 = WritePrepare("ES", expectedVersion: 0);
-			_prepare3 = WritePrepare("ES", expectedVersion: 1);
-			_prepare4 = WritePrepare("ES", expectedVersion: 3);
-			WriteCommit(_prepare0.LogPosition, "ES", eventNumber: 0);
-			WriteCommit(_prepare2.LogPosition, "ES", eventNumber: 1);
-			WriteCommit(_prepare3.LogPosition, "ES", eventNumber: 2);
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			_prepare0 = await WritePrepare("ES", expectedVersion: -1, token: token);
+			_prepare1 = await WritePrepare("ES", expectedVersion: 2, token: token);
+			_prepare2 = await WritePrepare("ES", expectedVersion: 0, token: token);
+			_prepare3 = await WritePrepare("ES", expectedVersion: 1, token: token);
+			_prepare4 = await WritePrepare("ES", expectedVersion: 3, token: token);
+			await WriteCommit(_prepare0.LogPosition, "ES", eventNumber: 0, token: token);
+			await WriteCommit(_prepare2.LogPosition, "ES", eventNumber: 1, token: token);
+			await WriteCommit(_prepare3.LogPosition, "ES", eventNumber: 2, token: token);
 		}
 
 		[Test]

@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -11,7 +12,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_deleted_stream_with_a_lot_of_data_is_scavenged<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
-		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+		protected override ValueTask<DbResult> CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator, CancellationToken token) {
 			return dbCreator
 				.Chunk(Rec.Prepare(0, "bla"),
 					Rec.Prepare(0, "bla"),
@@ -24,7 +25,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 					Rec.Delete(2, "bla"),
 					Rec.Commit(2, "bla"))
 				.CompleteLastChunk()
-				.CreateDb();
+				.CreateDb(token: token);
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
@@ -50,7 +51,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 			return true;
 		}
 
-		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+		protected override ValueTask<DbResult> CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator, CancellationToken token) {
 			return dbCreator
 				.Chunk(Rec.Prepare(0, "bla"),
 					Rec.Prepare(0, "bla"),
@@ -63,7 +64,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 					Rec.Delete(2, "bla"),
 					Rec.Commit(2, "bla"))
 				.CompleteLastChunk()
-				.CreateDb();
+				.CreateDb(token: token);
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {

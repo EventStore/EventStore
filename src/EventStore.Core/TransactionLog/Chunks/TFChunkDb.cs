@@ -9,12 +9,10 @@ using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Transforms;
-using EventStore.Core.Transforms.Identity;
-using EventStore.Plugins.Transforms;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
-	public class TFChunkDb : IDisposable {
+	public class TFChunkDb : IAsyncDisposable {
 		public readonly TFChunkDbConfig Config;
 		public readonly TFChunkManager Manager;
 		public readonly DbTransformManager TransformManager;
@@ -53,7 +51,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		public void Open(bool verifyHash = true, bool readOnly = false, int threads = 1, bool createNewChunks = true) {
+		public async ValueTask Open(bool verifyHash = true, bool readOnly = false, int threads = 1, bool createNewChunks = true, CancellationToken token = default) {
 			Ensure.Positive(threads, "threads");
 
 			ValidateReaderChecksumsMustBeLess(Config);
@@ -61,7 +59,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			if (Config.InMemDb) {
 				if (createNewChunks)
-					Manager.AddNewChunk();
+					await Manager.AddNewChunk(token);
 				return;
 			}
 
@@ -70,9 +68,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			var chunkEnumerator = new TFChunkEnumerator(Config.FileNamingStrategy);
 
 			try {
-				Parallel.ForEach(GetAllLatestChunksExceptLast(chunkEnumerator, lastChunkNum), // the last chunk is dealt with separately
-					new ParallelOptions {MaxDegreeOfParallelism = threads},
-					chunkInfo => {
+				await Parallel.ForEachAsync(GetAllLatestChunksExceptLast(chunkEnumerator, lastChunkNum), // the last chunk is dealt with separately
+					new ParallelOptions {MaxDegreeOfParallelism = threads, CancellationToken = token},
+					async (chunkInfo, token) => {
 						TFChunk.TFChunk chunk;
 						if (lastChunkVersions.Length == 0 &&
 						    (chunkInfo.ChunkStartNumber + 1) * (long)Config.ChunkSize == checkpoint) {
@@ -88,12 +86,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 									reduceFileCachePressure: Config.ReduceFileCachePressure,
 									getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type));
 							else {
-								chunk = TFChunk.TFChunk.FromOngoingFile(chunkInfo.ChunkFileName, Config.ChunkSize,
+								chunk = await TFChunk.TFChunk.FromOngoingFile(chunkInfo.ChunkFileName, Config.ChunkSize,
 									unbuffered: Config.Unbuffered,
 									writethrough: Config.WriteThrough,
 									reduceFileCachePressure: Config.ReduceFileCachePressure,
 									tracker: _tracker,
-									getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type));
+									getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type),
+									token);
 								// chunk is full with data, we should complete it right here
 								if (!readOnly)
 									chunk.Complete();
@@ -108,7 +107,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						}
 
 						// This call is theadsafe.
-						Manager.AddChunk(chunk);
+						await Manager.AddChunk(chunk, token);
 					});
 			} catch (AggregateException aggEx) {
 				// We only really care that *something* is wrong - throw the first inner exception.
@@ -122,7 +121,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(lastChunkNum, 0)));
 
 				if (!readOnly && createNewChunks)
-					Manager.AddNewChunk();
+					await Manager.AddNewChunk(token);
 			} else {
 				var chunkFileName = lastChunkVersions[0];
 				var chunkHeader = ReadChunkHeader(chunkFileName);
@@ -153,7 +152,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 					lastChunkNum = lastChunk.ChunkHeader.ChunkEndNumber + 1;
 
-					Manager.AddChunk(lastChunk);
+					await Manager.AddChunk(lastChunk, token);
 					if (!readOnly) {
 						_log.Information(
 							"Moving the writer checkpoint from {checkpoint} to {chunkEndPosition}, as it points to a scavenged chunk.",
@@ -168,16 +167,17 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							RemoveFile("Removing excessive chunk: {chunk}", newChunk);
 
 						if (createNewChunks)
-							Manager.AddNewChunk();
+							await Manager.AddNewChunk(token);
 					}
 				} else {
-					var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos,
+					var lastChunk = await TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos,
 						unbuffered: Config.Unbuffered,
 						writethrough: Config.WriteThrough,
 						reduceFileCachePressure: Config.ReduceFileCachePressure,
 						tracker: _tracker,
-						getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type));
-					Manager.AddChunk(lastChunk);
+						getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type),
+						token);
+					await Manager.AddChunk(lastChunk, token);
 				}
 			}
 
@@ -223,7 +223,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				});
 			}
 
-			Manager.EnableCaching();
+			await Manager.EnableCaching(token);
 		}
 
 		private void ValidateReaderChecksumsMustBeLess(TFChunkDbConfig config) {
@@ -324,18 +324,16 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			File.Delete(file);
 		}
 
-		public void Dispose() {
-			Close();
-		}
+		public ValueTask DisposeAsync() => Close(CancellationToken.None);
 
-		public void Close() {
+		public async ValueTask Close(CancellationToken token) {
 			if (Interlocked.CompareExchange(ref _closed, 1, 0) != 0)
 				return;
 
 			bool chunksClosed = false;
 
 			try {
-				chunksClosed = Manager.TryClose();
+				chunksClosed = await Manager.TryClose(token);
 			} catch (Exception ex) {
 				_log.Error(ex, "An error has occurred while closing the chunks.");
 			}

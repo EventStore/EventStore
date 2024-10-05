@@ -26,17 +26,17 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 		private const long fourth = (long)int.MaxValue + 4;
 		private const long fifth = (long)int.MaxValue + 5;
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			var now = DateTime.UtcNow;
 
 			string metadata = @"{""$tb"":" + third + "}";
 
-			_r1 = WriteStreamMetadata("ES", 0, metadata, now.AddSeconds(-100));
-			_r2 = WriteSingleEvent("ES", first, "bla1", now.AddSeconds(-50));
-			_r3 = WriteSingleEvent("ES", second, "bla1", now.AddSeconds(-20));
-			_r4 = WriteSingleEvent("ES", third, "bla1", now.AddSeconds(-11));
-			_r5 = WriteSingleEvent("ES", fourth, "bla1", now.AddSeconds(-5));
-			_r6 = WriteSingleEvent("ES", fifth, "bla1", now.AddSeconds(-1));
+			_r1 = await WriteStreamMetadata("ES", 0, metadata, now.AddSeconds(-100), token: token);
+			_r2 = await WriteSingleEvent("ES", first, "bla1", now.AddSeconds(-50), token: token);
+			_r3 = await WriteSingleEvent("ES", second, "bla1", now.AddSeconds(-20), token: token);
+			_r4 = await WriteSingleEvent("ES", third, "bla1", now.AddSeconds(-11), token: token);
+			_r5 = await WriteSingleEvent("ES", fourth, "bla1", now.AddSeconds(-5), token: token);
+			_r6 = await WriteSingleEvent("ES", fifth, "bla1", now.AddSeconds(-1), token: token);
 		}
 
 		[Test]

@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.IO;
+using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
@@ -11,8 +12,8 @@ namespace EventStore.Core.Tests.Index.IndexVAny {
 	[TestFixture]
 	public class when_opening_ptable_without_right_flag_in_header : SpecificationWithFile {
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 			using (var stream = File.OpenWrite(Filename)) {
 				var bytes = new byte[128];
 				bytes[0] = 0x27;

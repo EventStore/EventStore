@@ -3,6 +3,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
 
@@ -16,16 +18,16 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
 			maxEntriesInMemTable: 500_000, chunkSize: TFConsts.ChunkSize) {
 		}
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			var now = DateTime.UtcNow;
 			var metadata = string.Format(@"{{""$maxAge"":{0}}}", (int)TimeSpan.FromMinutes(20).TotalSeconds);
-			WriteStreamMetadata("ES", 0, metadata, now.AddMinutes(-100));
+			await WriteStreamMetadata("ES", 0, metadata, now.AddMinutes(-100), token: token);
 			for (int i = 0; i < 20; i++) {
-				WriteSingleEvent("ES", i, "bla", now.AddMinutes(-50), retryOnFail: true);
+				await WriteSingleEvent("ES", i, "bla", now.AddMinutes(-50), retryOnFail: true, token: token);
 			}
 
 			for (int i = 20; i < 1_000_000; i++) {
-				WriteSingleEvent("ES", i, "bla", now.AddMinutes(-1), retryOnFail: true);
+				await WriteSingleEvent("ES", i, "bla", now.AddMinutes(-1), retryOnFail: true, token: token);
 			}
 		}
 

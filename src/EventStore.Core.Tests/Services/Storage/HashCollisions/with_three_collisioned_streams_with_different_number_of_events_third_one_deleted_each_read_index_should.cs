@@ -20,23 +20,23 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		private EventRecord[] _prepares3;
 		private EventRecord _delete3;
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			_prepares1 = new EventRecord[3];
 			for (int i = 0; i < _prepares1.Length; i++) {
-				_prepares1[i] = WriteSingleEvent("AB", i, "test" + i);
+				_prepares1[i] = await WriteSingleEvent("AB", i, "test" + i, token: token);
 			}
 
 			_prepares2 = new EventRecord[5];
 			for (int i = 0; i < _prepares2.Length; i++) {
-				_prepares2[i] = WriteSingleEvent("CD", i, "test" + i);
+				_prepares2[i] = await WriteSingleEvent("CD", i, "test" + i, token: token);
 			}
 
 			_prepares3 = new EventRecord[7];
 			for (int i = 0; i < _prepares3.Length; i++) {
-				_prepares3[i] = WriteSingleEvent("EF", i, "test" + i);
+				_prepares3[i] = await WriteSingleEvent("EF", i, "test" + i, token: token);
 			}
 
-			_delete3 = WriteDelete("EF");
+			_delete3 = await WriteDelete("EF", token);
 		}
 
 		#region first

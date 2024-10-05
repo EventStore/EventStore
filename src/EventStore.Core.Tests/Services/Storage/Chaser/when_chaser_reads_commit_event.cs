@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -13,7 +15,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		private Guid _eventId;
 		private Guid _transactionId;
 
-		public override void When() {
+		public override async ValueTask When(CancellationToken token) {
 			_eventId = Guid.NewGuid();
 			_transactionId = Guid.NewGuid();
 
@@ -35,7 +37,9 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 				eventType: eventTypeId,
 				data: new byte[] { 1, 2, 3, 4, 5 },
 				metadata: new byte[] { 7, 17 });
-			Assert.True(Writer.Write(record, out _logPosition));
+
+			(var written, _logPosition) = await Writer.Write(record, token);
+			Assert.True(written);
 			Writer.Flush();
 
 			IndexCommitter.AddPendingPrepare(new[]{ record},_logPosition);
@@ -46,7 +50,8 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 				timeStamp: new DateTime(2012, 12, 21),
 				firstEventNumber: 10);
 
-			Assert.True(Writer.Write(record2, out _logPosition));
+			(written, _) = await Writer.Write(record2, token);
+			Assert.True(written);
 			Writer.Flush();
 		}
 		[Test]

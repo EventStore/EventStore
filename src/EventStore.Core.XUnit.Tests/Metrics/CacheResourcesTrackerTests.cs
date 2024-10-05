@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using DotNext.Runtime.CompilerServices;
 using EventStore.Core.Metrics;
 using EventStore.Core.Tests;
 using Xunit;
@@ -12,17 +13,21 @@ using Xunit;
 namespace EventStore.Core.XUnit.Tests.Metrics;
 
 public sealed class CacheResourcesTrackerTests : IDisposable {
-	private readonly Disposables _disposables = new();
+	private Scope _disposables = new();
 
 	public void Dispose() {
-		_disposables?.Dispose();
+		_disposables.Dispose();
 	}
 
 	private (CacheResourcesTracker, TestMeterListener<long>) GenSut(
 		[CallerMemberName] string callerName = "") {
 
-		var meter = new Meter($"{typeof(CacheResourcesTrackerTests)}-{callerName}").DisposeWith(_disposables);
-		var listener = new TestMeterListener<long>(meter).DisposeWith(_disposables);
+		var meter = new Meter($"{typeof(CacheResourcesTrackerTests)}-{callerName}");
+		_disposables.RegisterForDispose(meter);
+
+		var listener = new TestMeterListener<long>(meter);
+		_disposables.RegisterForDispose(listener);
+
 		var metrics = new CacheResourcesMetrics(meter, "the-metric");
 		var sut =  new CacheResourcesTracker(metrics);
 		return (sut, listener);

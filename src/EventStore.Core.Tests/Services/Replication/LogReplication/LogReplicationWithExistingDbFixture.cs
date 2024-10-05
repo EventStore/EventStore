@@ -25,7 +25,7 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 
 	protected abstract Task CreateChunks(TFChunkDb leaderDb);
 
-	protected static async Task CreateChunk(TFChunkDb db, bool raw, bool complete, int chunkStartNumber, int chunkEndNumber, ILogRecord[] logRecords) {
+	protected static async Task CreateChunk(TFChunkDb db, bool raw, bool complete, int chunkStartNumber, int chunkEndNumber, ILogRecord[] logRecords, CancellationToken token = default) {
 		var filename = db.Config.FileNamingStrategy.GetFilenameFor(chunkStartNumber, raw ? 1 : 0);
 
 		if (raw && !complete)
@@ -45,7 +45,7 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 			chunkId: Guid.NewGuid(),
 			transformType: TransformType.Identity);
 
-		var chunk = TFChunk.CreateWithHeader(
+		var chunk = await TFChunk.CreateWithHeader(
 			filename: filename,
 			header: header,
 			fileSize: TFChunk.GetAlignedSize(db.Config.ChunkSize + ChunkHeader.Size + ChunkFooter.Size),
@@ -55,7 +55,8 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 			reduceFileCachePressure: db.Config.ReduceFileCachePressure,
 			tracker: new TFChunkTracker.NoOp(),
 			transformFactory: new IdentityChunkTransformFactory(),
-			transformHeader: ReadOnlyMemory<byte>.Empty);
+			transformHeader: ReadOnlyMemory<byte>.Empty,
+			token);
 
 		var posMaps = new List<PosMap>();
 
@@ -81,7 +82,7 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 		}
 
 		if (raw)
-			await chunk.CompleteScavenge(posMaps, CancellationToken.None);
+			await chunk.CompleteScavenge(posMaps, token);
 		else if (complete)
 			chunk.Complete();
 		else

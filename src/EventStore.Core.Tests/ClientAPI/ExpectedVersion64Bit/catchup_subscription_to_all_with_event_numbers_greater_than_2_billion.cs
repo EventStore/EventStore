@@ -21,9 +21,9 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 
 		private EventRecord _r1, _r2;
 
-		public override void WriteTestScenario() {
-			_r1 = WriteSingleEvent(_streamId, intMaxValue + 1, new string('.', 3000));
-			_r2 = WriteSingleEvent(_streamId, intMaxValue + 2, new string('.', 3000));
+		public override async ValueTask WriteTestScenario(CancellationToken token) {
+			_r1 = await WriteSingleEvent(_streamId, intMaxValue + 1, new string('.', 3000), token: token);
+			_r2 = await WriteSingleEvent(_streamId, intMaxValue + 2, new string('.', 3000), token: token);
 		}
 
 		public override async Task Given() {

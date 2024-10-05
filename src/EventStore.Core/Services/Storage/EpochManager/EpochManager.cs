@@ -320,14 +320,14 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 					nameof(epochNumber));
 			}
 
-			var epoch = WriteEpochRecordWithRetry(epochNumber, Guid.NewGuid(),
-				_lastCachedEpoch?.Value.EpochPosition ?? -1, _instanceId);
+			var epoch = await WriteEpochRecordWithRetry(epochNumber, Guid.NewGuid(),
+				_lastCachedEpoch?.Value.EpochPosition ?? -1, _instanceId, token);
 
 			await AddEpochToCache(epoch, token);
 		}
 
-		private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition,
-			Guid instanceId) {
+		private async ValueTask<EpochRecord> WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition,
+			Guid instanceId, CancellationToken token) {
 			long pos = _writer.Position;
 			var epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow, instanceId);
 			var rec = _recordFactory.CreateEpoch(epoch);
@@ -335,15 +335,18 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			Log.Debug(
 							"=== Writing E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}). L={leaderId:B}.",
 							epochNumber, epoch.EpochPosition, epochId, lastEpochPosition, epoch.LeaderInstanceId);
-			if (!_writer.Write(rec, out pos)) {
+
+			(var written, pos) = await _writer.Write(rec, token);
+			if (!written) {
 				epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow, instanceId);
 				rec = _recordFactory.CreateEpoch(epoch);
 
-				if (!_writer.Write(rec, out pos))
+				if (await _writer.Write(rec, token) is (false, _))
 					throw new Exception($"Second write try failed at {epoch.EpochPosition}.");
 			}
-			_partitionManager.Initialize();
-			WriteEpochInformationWithRetry(epoch);
+
+			await _partitionManager.Initialize(token);
+			await WriteEpochInformationWithRetry(epoch, token);
 			_writer.Flush();
 			_bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 			_bus.Publish(new SystemMessage.EpochWritten(epoch));
@@ -362,7 +365,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			return eventTypeId;
 		}
 
-		void WriteEpochInformationWithRetry(EpochRecord epoch) {
+		async ValueTask WriteEpochInformationWithRetry(EpochRecord epoch, CancellationToken token) {
 			if (!TryGetExpectedVersionForEpochInformation(epoch, out var expectedVersion))
 				expectedVersion = ExpectedVersion.NoStream;
 
@@ -382,12 +385,13 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 					data: epoch.AsSerialized(),
 					metadata: Empty.ByteArray);
 
-			if (_writer.Write(epochInformation, out var retryLogPosition))
+			var (written, retryLogPosition) = await _writer.Write(epochInformation, token);
+			if (written)
 				return;
 
 			epochInformation = epochInformation.CopyForRetry(retryLogPosition, retryLogPosition);
 
-			if (_writer.Write(epochInformation, out _))
+			if (await _writer.Write(epochInformation, token) is (true, _))
 				return;
 
 			throw new Exception(

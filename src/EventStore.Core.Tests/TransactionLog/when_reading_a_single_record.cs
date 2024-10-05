@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.LogV2;
@@ -25,7 +26,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 			_db = new TFChunkDb(TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 4096));
-			_db.Open();
+			await _db.Open();
 
 			var chunk = _db.Manager.GetChunk(0);
 			_records = new ILogRecord[RecordsCount];
@@ -40,7 +41,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				if (i > 0 && i % 3 == 0) {
 					pos = i / 3 * _db.Config.ChunkSize;
 					chunk.Complete();
-					chunk = _db.Manager.AddNewChunk();
+					chunk = await _db.Manager.AddNewChunk(CancellationToken.None);
 				}
 
 				_records[i] = LogRecord.SingleWrite(recordFactory, pos,
@@ -57,10 +58,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_db.Config.WriterCheckpoint.Flush();
 		}
 
-		public override Task TestFixtureTearDown() {
-			_db.Dispose();
+		public override async Task TestFixtureTearDown() {
+			await _db.DisposeAsync();
 
-			return base.TestFixtureTearDown();
+			await base.TestFixtureTearDown();
 		}
 
 		private TFChunkReader GetTFChunkReader(long from) {

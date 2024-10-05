@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			if (scavenged && !completed)
 				throw new ArgumentException("scavenged chunk must be completed");
 
-			var chunk = TFChunkHelper.CreateNewChunk(Path.Combine(PathName, $"{Guid.NewGuid()}.chunk"), 4096, scavenged);
+			var chunk = await TFChunkHelper.CreateNewChunk(Path.Combine(PathName, $"{Guid.NewGuid()}.chunk"), 4096, scavenged);
 
 			var actualPos = 0;
 			for (int i = 0; i < numEvents; i++) {

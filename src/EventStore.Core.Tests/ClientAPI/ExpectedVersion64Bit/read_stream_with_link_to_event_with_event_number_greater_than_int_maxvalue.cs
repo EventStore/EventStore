@@ -6,6 +6,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Services;
 using NUnit.Framework;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
@@ -21,14 +22,14 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		private string _linkedStreamName = "linked-" + StreamName;
 		private EventRecord _event1, _event2;
 
-		public override void WriteTestScenario() {
-			_event1 = WriteSingleEvent(StreamName, intMaxValue + 1, new string('.', 3000));
-			_event2 = WriteSingleEvent(StreamName, intMaxValue + 2, new string('.', 3000));
+		public override async ValueTask WriteTestScenario(CancellationToken token) {
+			_event1 = await WriteSingleEvent(StreamName, intMaxValue + 1, new string('.', 3000), token: token);
+			_event2 = await WriteSingleEvent(StreamName, intMaxValue + 2, new string('.', 3000), token: token);
 
-			WriteSingleEvent(_linkedStreamName, 0, string.Format("{0}@{1}", intMaxValue + 1, StreamName),
-				eventType: SystemEventTypes.LinkTo);
-			WriteSingleEvent(_linkedStreamName, 1, string.Format("{0}@{1}", intMaxValue + 2, StreamName),
-				eventType: SystemEventTypes.LinkTo);
+			await WriteSingleEvent(_linkedStreamName, 0, string.Format("{0}@{1}", intMaxValue + 1, StreamName),
+				eventType: SystemEventTypes.LinkTo, token: token);
+			await WriteSingleEvent(_linkedStreamName, 1, string.Format("{0}@{1}", intMaxValue + 2, StreamName),
+				eventType: SystemEventTypes.LinkTo, token: token);
 		}
 
 		public override async Task Given() {

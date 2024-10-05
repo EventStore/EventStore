@@ -22,29 +22,29 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		private long _t1CommitPos;
 		private long _t2CommitPos;
 
-		protected override void WriteTestScenario() {
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
 			const string streamId1 = "ES";
 			const string streamId2 = "ABC";
 
-			var t1 = WriteTransactionBegin(streamId1, ExpectedVersion.NoStream);
-			var t2 = WriteTransactionBegin(streamId2, ExpectedVersion.NoStream);
+			var t1 = await WriteTransactionBegin(streamId1, ExpectedVersion.NoStream, token);
+			var t2 = await WriteTransactionBegin(streamId2, ExpectedVersion.NoStream, token);
 
-			_p1 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 0, streamId1, 0, "es1",
-				PrepareFlags.Data);
-			_p2 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 0, streamId2, 0, "abc1",
-				PrepareFlags.Data);
-			_p3 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 1, streamId1, 1, "es1",
-				PrepareFlags.Data);
-			_p4 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 1, streamId2, 1, "abc1",
-				PrepareFlags.Data);
-			_p5 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 2, streamId1, 2, "es1",
-				PrepareFlags.Data);
+			_p1 = await WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 0, streamId1, 0, "es1",
+				PrepareFlags.Data, token: token);
+			_p2 = await WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 0, streamId2, 0, "abc1",
+				PrepareFlags.Data, token: token);
+			_p3 = await WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 1, streamId1, 1, "es1",
+				PrepareFlags.Data, token: token);
+			_p4 = await WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 1, streamId2, 1, "abc1",
+				PrepareFlags.Data, token: token);
+			_p5 = await WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 2, streamId1, 2, "es1",
+				PrepareFlags.Data, token: token);
 
-			WriteTransactionEnd(t2.CorrelationId, t2.TransactionPosition, streamId2);
-			WriteTransactionEnd(t1.CorrelationId, t1.TransactionPosition, streamId1);
+			await WriteTransactionEnd(t2.CorrelationId, t2.TransactionPosition, streamId2, token: token);
+			await WriteTransactionEnd(t1.CorrelationId, t1.TransactionPosition, streamId1, token: token);
 
-			_t2CommitPos = WriteCommit(t2.CorrelationId, t2.TransactionPosition, streamId2, _p2.EventNumber);
-			_t1CommitPos = WriteCommit(t1.CorrelationId, t1.TransactionPosition, streamId1, _p1.EventNumber);
+			_t2CommitPos = await WriteCommit(t2.CorrelationId, t2.TransactionPosition, streamId2, _p2.EventNumber, token);
+			_t1CommitPos = await WriteCommit(t1.CorrelationId, t1.TransactionPosition, streamId1, _p1.EventNumber, token);
 		}
 
 		[Test]

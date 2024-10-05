@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
@@ -14,14 +15,14 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	public class append_to_stream_with_event_numbers_greater_than_2_billion<TLogFormat, TStreamId>
 		: MiniNodeWithExistingRecords<TLogFormat, TStreamId> {
 		private const string StreamName = "append_to_stream_with_event_numbers_greater_than_2_billion";
-		private const long intMaxValue = (long)int.MaxValue;
+		private const long intMaxValue = int.MaxValue;
 
-		public override void WriteTestScenario() {
-			WriteSingleEvent(StreamName, intMaxValue + 1, new string('.', 3000));
-			WriteSingleEvent(StreamName, intMaxValue + 2, new string('.', 3000));
-			WriteSingleEvent(StreamName, intMaxValue + 3, new string('.', 3000));
-			WriteSingleEvent(StreamName, intMaxValue + 4, new string('.', 3000));
-			WriteSingleEvent(StreamName, intMaxValue + 5, new string('.', 3000));
+		public override async ValueTask WriteTestScenario(CancellationToken token) {
+			await WriteSingleEvent(StreamName, intMaxValue + 1, new string('.', 3000), token: token);
+			await WriteSingleEvent(StreamName, intMaxValue + 2, new string('.', 3000), token: token);
+			await WriteSingleEvent(StreamName, intMaxValue + 3, new string('.', 3000), token: token);
+			await WriteSingleEvent(StreamName, intMaxValue + 4, new string('.', 3000), token: token);
+			await WriteSingleEvent(StreamName, intMaxValue + 5, new string('.', 3000), token: token);
 		}
 
 		public override async Task Given() {

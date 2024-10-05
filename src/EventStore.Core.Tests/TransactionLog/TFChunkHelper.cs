@@ -1,13 +1,13 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-using EventStore.Core.Settings;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Transforms.Identity;
-using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	public static class TFChunkHelper {
@@ -69,11 +69,12 @@ namespace EventStore.Core.Tests.TransactionLog {
 				new InMemoryCheckpoint(-1));
 		}
 
-		public static TFChunk CreateNewChunk(string fileName, int chunkSize = 4096, bool isScavenged = false) {
+		public static ValueTask<TFChunk> CreateNewChunk(string fileName, int chunkSize = 4096, bool isScavenged = false, CancellationToken token = default) {
 			return TFChunk.CreateNew(fileName, chunkSize, 0, 0,
 				isScavenged: isScavenged, inMem: false, unbuffered: false,
 				writethrough: false, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
-				transformFactory: new IdentityChunkTransformFactory());
+				transformFactory: new IdentityChunkTransformFactory(),
+				token);
 		}
 	}
 }

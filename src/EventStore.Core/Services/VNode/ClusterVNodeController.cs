@@ -1307,11 +1307,11 @@ public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController {
 		await _outputBus.DispatchAsync(message, token);
 	}
 
-	private ValueTask Shutdown(CancellationToken token) {
+	private async ValueTask Shutdown(CancellationToken token) {
 		Debug.Assert(State is VNodeState.ShuttingDown);
 
-		_db.Close();
-		return _fsm.HandleAsync(new SystemMessage.BecomeShutdown(_stateCorrelationId), token);
+		await _db.Close(token);
+		await _fsm.HandleAsync(new SystemMessage.BecomeShutdown(_stateCorrelationId), token);
 	}
 
 	private static bool IsAliveLeader(MemberInfo member)

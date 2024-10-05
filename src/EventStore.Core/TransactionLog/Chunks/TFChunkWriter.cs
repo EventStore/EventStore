@@ -59,20 +59,20 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			return _currentChunk.ChunkHeader.ChunkEndPosition - _nextRecordPosition >= numBytes;
 		}
 
-		public bool Write(ILogRecord record, out long newPos) {
+		public async ValueTask<(bool, long)> Write(ILogRecord record, CancellationToken token) {
 			OpenTransaction();
 
-			if (!TryWriteToTransaction(record, out newPos)) {
+			if (!TryWriteToTransaction(record, out var newPos)) {
 				CompleteChunkInTransaction();
-				AddNewChunk();
+				await AddNewChunk(token: token);
 				CommitTransaction();
 				Flush();
 				newPos = _nextRecordPosition;
-				return false;
+				return (false, newPos);
 			}
 
 			CommitTransaction();
-			return true;
+			return (true, newPos);
 		}
 
 		public void OpenTransaction() {
@@ -109,14 +109,14 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public bool HasOpenTransaction() => _inTransaction;
 
-		public void AddNewChunk(ChunkHeader chunkHeader = null, ReadOnlyMemory<byte> transformHeader = default, int? chunkSize = null) {
+		public async ValueTask AddNewChunk(ChunkHeader chunkHeader = null,
+			ReadOnlyMemory<byte> transformHeader = default, int? chunkSize = null, CancellationToken token = default) {
 			var nextChunkNumber = _currentChunk?.ChunkHeader.ChunkEndNumber + 1 ?? 0;
 			VerifyChunkNumberLimits(nextChunkNumber);
 
-			if (chunkHeader == null)
-				_currentChunk = _db.Manager.AddNewChunk();
-			else
-				_currentChunk = _db.Manager.AddNewChunk(chunkHeader, transformHeader, chunkSize!.Value);
+			_currentChunk = await (chunkHeader is null
+				? _db.Manager.AddNewChunk(token)
+				: _db.Manager.AddNewChunk(chunkHeader, transformHeader, chunkSize!.Value, token));
 		}
 
 		private void CompleteChunkInTransaction() {
@@ -131,9 +131,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			Flush();
 		}
 
-		private async ValueTask CompleteReplicatedRawChunkInTransaction(TFChunk.TFChunk rawChunk, CancellationToken token) {
+		private async ValueTask CompleteReplicatedRawChunkInTransaction(TFChunk.TFChunk rawChunk,
+			CancellationToken token) {
 			await rawChunk.CompleteRaw(token);
-			_currentChunk = _db.Manager.SwitchChunk(rawChunk, verifyHash: true, removeChunksWithGreaterNumbers: true);
+			_currentChunk = await _db.Manager.SwitchChunk(rawChunk, verifyHash: true,
+				removeChunksWithGreaterNumbers: true, token);
 
 			_nextRecordPosition = rawChunk.ChunkHeader.ChunkEndPosition;
 		}

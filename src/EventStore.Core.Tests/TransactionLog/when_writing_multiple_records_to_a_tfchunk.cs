@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_chunk = TFChunkHelper.CreateNewChunk(Filename);
+			_chunk = await TFChunkHelper.CreateNewChunk(Filename);
 
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId1 = LogFormatHelper<TLogFormat, TStreamId>.StreamId;

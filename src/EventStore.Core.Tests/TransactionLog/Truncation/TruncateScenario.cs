@@ -31,8 +31,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 
 			TableIndex.Close(removeFiles: false);
 
-			Db.Close();
-			Db.Dispose();
+			await Db.DisposeAsync();
 
 			var truncator = new TFChunkDbTruncator(Db.Config, _ => new IdentityChunkTransformFactory());
 			truncator.TruncateDb(TruncateCheckpoint);

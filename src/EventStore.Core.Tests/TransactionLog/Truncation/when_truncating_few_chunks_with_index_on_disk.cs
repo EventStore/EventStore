@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using NUnit.Framework;
 
@@ -20,14 +22,14 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			: base(maxEntriesInMemTable: 3) {
 		}
 
-		protected override void WriteTestScenario() {
-			WriteSingleEvent("ES", 0, new string('.', 4000));
-			WriteSingleEvent("ES", 1, new string('.', 4000));
-			WriteSingleEvent("ES", 2, new string('.', 4000), retryOnFail: true); // ptable 1, chunk 1
-			_event4 = WriteSingleEvent("ES", 3, new string('.', 4000));
-			WriteSingleEvent("ES", 4, new string('.', 4000), retryOnFail: true); // chunk 2
-			WriteSingleEvent("ES", 5, new string('.', 4000)); // ptable 2
-			WriteSingleEvent("ES", 6, new string('.', 4000), retryOnFail: true); // chunk 3 
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			await WriteSingleEvent("ES", 0, new string('.', 4000), token: token);
+			await WriteSingleEvent("ES", 1, new string('.', 4000), token: token);
+			await WriteSingleEvent("ES", 2, new string('.', 4000), retryOnFail: true, token: token); // ptable 1, chunk 1
+			_event4 = await WriteSingleEvent("ES", 3, new string('.', 4000), token: token);
+			await WriteSingleEvent("ES", 4, new string('.', 4000), retryOnFail: true, token: token); // chunk 2
+			await WriteSingleEvent("ES", 5, new string('.', 4000), token: token); // ptable 2
+			await WriteSingleEvent("ES", 6, new string('.', 4000), retryOnFail: true, token: token); // chunk 3
 
 			TruncateCheckpoint = _event4.LogPosition;
 

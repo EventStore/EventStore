@@ -65,11 +65,12 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return (LinkedList<EpochRecord>)typeof(EpochManager<TStreamId>).GetField("_epochs", BindingFlags.NonPublic | BindingFlags.Instance)
 				.GetValue(_epochManager);
 		}
-		private EpochRecord WriteEpoch(int epochNumber, long lastPos, Guid instanceId) {
+
+		private async ValueTask<EpochRecord> WriteEpoch(int epochNumber, long lastPos, Guid instanceId, CancellationToken token) {
 			long pos = _writer.Position;
 			var epoch = new EpochRecord(pos, epochNumber, Guid.NewGuid(), lastPos, DateTime.UtcNow, instanceId);
 			var rec = _logFormat.RecordFactory.CreateEpoch(epoch);
-			_writer.Write(rec, out _);
+			await _writer.Write(rec, token);
 			_writer.Flush();
 			return epoch;
 		}
@@ -85,7 +86,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_mainBus = new(nameof(when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId>));
 			_mainBus.Subscribe(new AdHocHandler<SystemMessage.EpochWritten>(m => _published.Add(m)));
 			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
-			_db.Open();
+			await _db.Open();
 			_reader = new TFChunkReader(_db, _db.Config.WriterCheckpoint);
 			_writer = new TFChunkWriter(_db);
 			_writer.Open();
@@ -98,7 +99,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_epochs = new List<EpochRecord>();
 			var lastPos = 0L;
 			for (int i = 0; i < 30; i++) {
-				var epoch = WriteEpoch(GetNextEpoch(), lastPos, _instanceId);
+				var epoch = await WriteEpoch(GetNextEpoch(), lastPos, _instanceId, CancellationToken.None);
 				_epochs.Add(epoch);
 				lastPos = epoch.EpochPosition;
 			}
@@ -300,7 +301,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 			} catch {
 				//workaround for TearDown error
 			}
-			_db?.Dispose();
+
+			using var task = _db?.DisposeAsync().AsTask() ?? Task.CompletedTask;
+			task.Wait();
 		}
 	}
 }

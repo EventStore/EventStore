@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		private const string _deletedMetaStream = "$$test";
 		private const string _keptStream = "other";
 
-		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+		protected override ValueTask<DbResult> CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator, CancellationToken token) {
 			return dbCreator.Chunk(
 					Rec.Prepare(0, _deletedMetaStream, metadata: new StreamMetadata(tempStream: true),
 						version: LogRecordVersion.LogRecordV0),
@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 						version: LogRecordVersion.LogRecordV1),
 					Rec.Commit(6, _deletedMetaStream, version: LogRecordVersion.LogRecordV0))
 				.CompleteLastChunk()
-				.CreateDb();
+				.CreateDb(token: token);
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {

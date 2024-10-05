@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
@@ -11,15 +13,15 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 		long secondEventNumber = (long)int.MaxValue + 2;
 		long thirdEventNumber = (long)int.MaxValue + 3;
 
-		protected override void WriteTestScenario() {
-			WriteSingleEvent("ES", firstEventNumber, new string('.', 3000));
-			WriteSingleEvent("KEEP", firstEventNumber, new string('.', 3000));
-			WriteSingleEvent("KEEP", secondEventNumber, new string('.', 3000));
-			WriteSingleEvent("ES", secondEventNumber, new string('.', 3000), retryOnFail: true);
-			WriteSingleEvent("KEEP", thirdEventNumber, new string('.', 3000));
-			WriteSingleEvent("ES", thirdEventNumber, new string('.', 3000));
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			await WriteSingleEvent("ES", firstEventNumber, new string('.', 3000), token: token);
+			await WriteSingleEvent("KEEP", firstEventNumber, new string('.', 3000), token: token);
+			await WriteSingleEvent("KEEP", secondEventNumber, new string('.', 3000), token: token);
+			await WriteSingleEvent("ES", secondEventNumber, new string('.', 3000), retryOnFail: true, token: token);
+			await WriteSingleEvent("KEEP", thirdEventNumber, new string('.', 3000), token: token);
+			await WriteSingleEvent("ES", thirdEventNumber, new string('.', 3000), token: token);
 
-			WriteDelete("ES");
+			await WriteDelete("ES", token);
 		}
 
 		[Test]

@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
@@ -9,15 +11,15 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 	public class
 		when_deleting_stream_with_1_hash_collision_and_1_stream_with_other_hash_read_index_should<TLogFormat, TStreamId> :
 			ReadIndexTestScenario<TLogFormat, TStreamId> {
-		protected override void WriteTestScenario() {
-			WriteSingleEvent("S1", 0, "bla1");
-			WriteSingleEvent("S1", 1, "bla1");
-			WriteSingleEvent("S2", 0, "bla1");
-			WriteSingleEvent("S2", 1, "bla1");
-			WriteSingleEvent("S1", 2, "bla1");
-			WriteSingleEvent("SSS", 0, "bla1");
+		protected override async ValueTask WriteTestScenario(CancellationToken token) {
+			await WriteSingleEvent("S1", 0, "bla1", token: token);
+			await WriteSingleEvent("S1", 1, "bla1", token: token);
+			await WriteSingleEvent("S2", 0, "bla1", token: token);
+			await WriteSingleEvent("S2", 1, "bla1", token: token);
+			await WriteSingleEvent("S1", 2, "bla1", token: token);
+			await WriteSingleEvent("SSS", 0, "bla1", token: token);
 
-			WriteDelete("S1");
+			await WriteDelete("S1", token);
 		}
 
 		[Test]

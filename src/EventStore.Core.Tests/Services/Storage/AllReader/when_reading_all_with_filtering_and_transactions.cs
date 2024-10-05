@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		: RepeatableDbTestScenario<TLogFormat, TStreamId> {
 
 		[Test]
-		public void should_receive_all_events_forward() {
+		public async Task should_receive_all_events_forward() {
 			// create a db with explicit transactions, some of which are filtered out on read.
 			// previously, a bug caused those filtered-out records to prevent the successful
 			// reading of subsequent events that are contained within an explicit transaction.
@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 			];
 
 			var i = 0;
-			CreateDb([
+			await CreateDb([
 				.. ExplicitTransaction(i++, "excludedStream"),
 				.. ExplicitTransaction(i++, "includedStream0"),
 				.. ExplicitTransaction(i++, "includedStream1"),
@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 			];
 
 			var i = 0;
-			CreateDb([
+			await CreateDb([
 				.. ExplicitTransaction(i++, "includedStream0"),
 				.. ExplicitTransaction(i++, "includedStream1"),
 				.. ExplicitTransaction(i++, "includedStream2"),
