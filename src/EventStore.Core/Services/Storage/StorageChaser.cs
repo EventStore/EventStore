@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -16,7 +15,6 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using System.Threading.Tasks;
-using DotNext.Runtime.CompilerServices;
 using ILogger = Serilog.ILogger;
 using EventStore.LogCommon;
 using static System.Threading.Timeout;
@@ -45,7 +43,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly IIndexCommitterService<TStreamId> _indexCommitterService;
 		private readonly IEpochManager _epochManager;
 		private readonly CancellationToken _stopToken; // cached to avoid ObjectDisposedException
-		private volatile CancellationTokenSource _stop;
+		private readonly CancellationTokenSource _stop;
 
 		private volatile bool _systemStarted;
 
@@ -118,7 +116,7 @@ namespace EventStore.Core.Services.Storage {
 					if (_systemStarted)
 						await ChaserIteration(_stopToken);
 					else
-						await Task.Yield();
+						await Task.Delay(1);
 				}
 			} catch (Exception exc) {
 				Log.Fatal(exc, "Error in StorageChaser. Terminating...");
@@ -277,10 +275,9 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
-			if (Interlocked.Exchange(ref _stop, null) is { } cts) {
-				using (cts) {
-					cts.Cancel();
-				}
+			if (!_stop.IsCancellationRequested) {
+				_stop.Cancel();
+				_stop.Dispose();
 			}
 		}
 
