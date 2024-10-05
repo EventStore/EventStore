@@ -2,3 +2,7 @@
 
 # adding the license header to the test cases would make the tests more complicated
 dotnet_diagnostic.IDE0073.severity = none
+
+# let namespaces be filed/blocked scoped as necessary for the tests
+dotnet_diagnostic.IDE0160.severity = none
+dotnet_diagnostic.IDE0161.severity = none
