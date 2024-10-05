@@ -399,16 +399,16 @@ namespace EventStore.Core.Services.Storage {
 			return (eventTypeId, logPosition);
 		}
 
-		private ValueTask SoftUndeleteMetastream(TStreamId metastreamId, CancellationToken token) {
+		private async ValueTask SoftUndeleteMetastream(TStreamId metastreamId, CancellationToken token) {
 			var origStreamId = _systemStreams.OriginalStreamOf(metastreamId);
 			var rawMetaInfo = _indexWriter.GetStreamRawMeta(origStreamId);
-			return SoftUndeleteStream(origStreamId, rawMetaInfo.MetaLastEventNumber, rawMetaInfo.RawMeta,
+			await SoftUndeleteStream(origStreamId, rawMetaInfo.MetaLastEventNumber, rawMetaInfo.RawMeta,
 				recreateFrom: _indexWriter.GetStreamLastEventNumber(origStreamId) + 1, token);
 		}
 
-		private ValueTask SoftUndeleteStream(TStreamId streamId, long recreateFromEventNumber, CancellationToken token) {
+		private async ValueTask SoftUndeleteStream(TStreamId streamId, long recreateFromEventNumber, CancellationToken token) {
 			var rawInfo = _indexWriter.GetStreamRawMeta(streamId);
-			return SoftUndeleteStream(streamId, rawInfo.MetaLastEventNumber, rawInfo.RawMeta, recreateFromEventNumber, token);
+			await SoftUndeleteStream(streamId, rawInfo.MetaLastEventNumber, rawInfo.RawMeta, recreateFromEventNumber, token);
 		}
 
 		private async ValueTask SoftUndeleteStream(TStreamId streamId, long metaLastEventNumber, ReadOnlyMemory<byte> rawMeta, long recreateFrom, CancellationToken token) {

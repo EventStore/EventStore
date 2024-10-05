@@ -214,7 +214,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return chunk;
 		}
 
-		public static ValueTask<TFChunk> CreateNew(string filename,
+		public static async ValueTask<TFChunk> CreateNew(string filename,
 			int chunkDataSize,
 			int chunkStartNumber,
 			int chunkEndNumber,
@@ -235,7 +235,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				isScavenged, Guid.NewGuid(), transformFactory.Type);
 			var fileSize = GetAlignedSize(transformFactory.TransformDataPosition(chunkDataSize) + ChunkHeader.Size + ChunkFooter.Size);
 
-			return CreateWithHeader(filename, chunkHeader, fileSize, inMem, unbuffered, writethrough,
+			return await CreateWithHeader(filename, chunkHeader, fileSize, inMem, unbuffered, writethrough,
 				reduceFileCachePressure, tracker, transformFactory, transformFactory.CreateTransformHeader(), token);
 		}
 
@@ -319,7 +319,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				VerifyFileHash();
 		}
 
-		private ValueTask InitNew(ChunkHeader chunkHeader, int fileSize, ITransactionFileTracker tracker,
+		private async ValueTask InitNew(ChunkHeader chunkHeader, int fileSize, ITransactionFileTracker tracker,
 			IChunkTransformFactory transformFactory, ReadOnlyMemory<byte> transformHeader,
 			CancellationToken token) {
 			Ensure.NotNull(chunkHeader, "chunkHeader");
@@ -346,12 +346,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			// Always cache the active chunk
 			// If the chunk is scavenged we will definitely mark it readonly before we are done writing to it.
-			return chunkHeader.IsScavenged
-				? ValueTask.CompletedTask
-				: CacheInMemory(token);
+			if (!chunkHeader.IsScavenged) {
+				await CacheInMemory(token);
+			}
 		}
 
-		private ValueTask InitOngoing(int writePosition, ITransactionFileTracker tracker,
+		private async ValueTask InitOngoing(int writePosition, ITransactionFileTracker tracker,
 			Func<TransformType, IChunkTransformFactory> getTransformFactory,
 			CancellationToken token) {
 			Ensure.Nonnegative(writePosition, "writePosition");
@@ -375,7 +375,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			_readSide = new TFChunkReadSideUnscavenged(this, tracker);
 
 			// Always cache the active chunk
-			return CacheInMemory(token);
+			await CacheInMemory(token);
 		}
 
 		// If one file stream writes to a file, and another file stream happens to have that part of
