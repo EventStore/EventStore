@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using EventStore.Common.Utils;
-using System.Linq;
 using System.Threading.Tasks;
 using DotNext.Threading;
 using EventStore.Core.Transforms;
@@ -46,11 +45,16 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_transformManager = transformManager;
 		}
 
-		public void EnableCaching() {
-			lock (_chunksLocker) {
+		public async ValueTask EnableCaching(CancellationToken token) {
+			await _chunksLocker.AcquireAsync(token);
+			try {
 				_cachingEnabled = true;
-				TriggerBackgroundCaching();
+			} finally {
+				_chunksLocker.Release();
 			}
+
+			// trigger caching out of lock to avoid lock contention
+			TriggerBackgroundCaching();
 		}
 
 		async void IThreadPoolWorkItem.Execute() {

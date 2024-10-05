@@ -223,7 +223,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				});
 			}
 
-			Manager.EnableCaching();
+			await Manager.EnableCaching(token);
 		}
 
 		private void ValidateReaderChecksumsMustBeLess(TFChunkDbConfig config) {
