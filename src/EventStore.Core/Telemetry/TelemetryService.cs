@@ -208,7 +208,7 @@ public sealed class TelemetryService :
 			.ForEach(evt => {
 				try {
 					var payload = JsonSerializer.SerializeToNode(evt.Data);
-					message.Envelope.ReplyWith(new TelemetryMessage.Response("plugins", evt.Source, payload));
+					message.Envelope.ReplyWith(new TelemetryMessage.Response(evt.Source, payload));
 				}
 				catch (Exception ex) {
 					Logger.Warning(ex, "Failed to collect telemetry from pluggable component {Source}", evt.Source);

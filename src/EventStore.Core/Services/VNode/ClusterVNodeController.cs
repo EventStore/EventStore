@@ -248,6 +248,7 @@ public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController {
 			.When<ClientMessage.TransactionWriteCompleted>().ForwardTo(_outputBus)
 			.When<ClientMessage.TransactionCommitCompleted>().ForwardTo(_outputBus)
 			.When<ClientMessage.DeleteStreamCompleted>().ForwardTo(_outputBus)
+			.When<SystemMessage.BecomeShuttingDown>().Do(Handle)
 			.InAllStatesExcept(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown,
 			VNodeState.ReadOnlyLeaderless, VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 			.When<ElectionMessage.ElectionsDone>().Do(Handle)
@@ -338,9 +339,6 @@ public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController {
 			.When<StorageMessage.WriteTransactionData>().Ignore()
 			.When<StorageMessage.WriteTransactionEnd>().Ignore()
 			.When<StorageMessage.WriteCommit>().Ignore()
-			.InAllStatesExcept(VNodeState.ShuttingDown, VNodeState.Shutdown)
-			.When<ClientMessage.RequestShutdown>().Do(Handle)
-			.When<SystemMessage.BecomeShuttingDown>().Do(Handle)
 			.InState(VNodeState.ShuttingDown)
 			.When<SystemMessage.BecomeShutdown>().Do(Handle)
 			.When<SystemMessage.ShutdownTimeout>().Do(Handle)
@@ -603,8 +601,9 @@ public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController {
 			message.ServiceName);
 		_serviceInitsToExpect -= 1;
 		await _outputBus.DispatchAsync(message, token);
-		if (_serviceInitsToExpect == 0)
+		if (_serviceInitsToExpect == 0) {
 			_mainQueue.Publish(new SystemMessage.SystemStart());
+		}
 	}
 
 	private async ValueTask Handle(AuthenticationMessage.AuthenticationProviderInitialized message,
@@ -1252,7 +1251,7 @@ public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController {
 					_leader.InternalTcpEndPoint == null ? "n/a" : _leader.InternalTcpEndPoint.ToString(),
 					_leader.InternalSecureTcpEndPoint == null ? "n/a" : _leader.InternalSecureTcpEndPoint.ToString(),
 					message.LeaderId);
-				task = _fsm.HandleAsync(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true), token);
+				task = _outputBus.DispatchAsync(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true), token);
 			} else {
 				task = ValueTask.CompletedTask;
 			}
@@ -1285,12 +1284,6 @@ public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController {
 		}
 
 		return true;
-	}
-
-	private async ValueTask Handle(ClientMessage.RequestShutdown message, CancellationToken token) {
-		await _outputBus.DispatchAsync(message, token);
-		await _fsm.HandleAsync(
-			new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), message.ExitProcess, message.ShutdownHttp), token);
 	}
 
 	private async ValueTask Handle(SystemMessage.ServiceShutdown message, CancellationToken token) {

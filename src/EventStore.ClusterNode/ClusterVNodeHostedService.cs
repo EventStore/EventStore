@@ -64,7 +64,7 @@ namespace EventStore.ClusterNode {
 			} catch {
 				throw new
 					InvalidConfigurationException(
-						"Failed to configure MD5. If FIPS mode is enabled, please use the FIPS commercial plugin or disable FIPS mode.");
+						"Failed to configure MD5. If FIPS mode is enabled in your OS, please use the MD5 commercial plugin.");
 			}
 
 			var projectionMode = options.DevMode.Dev && options.Projection.RunProjections == ProjectionType.None
@@ -142,7 +142,7 @@ namespace EventStore.ClusterNode {
 				// Temporary: get the policy plugin configuration
 				// TODO: Allow specifying multiple policy selectors
 				var policyPluginType =
-					_options.ConfigurationRoot!.GetValue<string>("EventStore:Plugins:Authorization:PolicyType") ??
+					_options.ConfigurationRoot!.GetValue<string>("EventStore:Authorization:PolicyType") ??
 					string.Empty;
 
 				var policyPlugins = pluginLoader.Load<IPolicySelectorFactory>().ToArray();
