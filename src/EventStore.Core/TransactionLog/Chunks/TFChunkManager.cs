@@ -127,6 +127,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public async ValueTask<TFChunk.TFChunk> AddNewChunk(CancellationToken token) {
 			TFChunk.TFChunk chunk;
+			bool triggerCaching;
 			await _chunksLocker.AcquireAsync(token);
 			try {
 				var chunkNumber = _chunksCount;
@@ -144,12 +145,14 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					transformFactory: _transformManager.GetFactoryForNewChunk(),
 					token);
 				AddChunk(chunk);
+				triggerCaching = _cachingEnabled;
 			} finally {
 				_chunksLocker.Release();
 			}
 
 			// trigger caching out of lock to avoid lock contention
-			TriggerBackgroundCaching();
+			if (triggerCaching)
+				TriggerBackgroundCaching();
 			return chunk;
 		}
 
@@ -158,6 +161,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			Ensure.Positive(fileSize, "fileSize");
 
 			TFChunk.TFChunk chunk;
+			bool triggerCaching;
 			await _chunksLocker.AcquireAsync(token);
 			try {
 				if (chunkHeader.ChunkStartNumber != _chunksCount)
@@ -178,12 +182,14 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					transformHeader: transformHeader,
 					token);
 				AddChunk(chunk);
+				triggerCaching = _cachingEnabled;
 			} finally {
 				_chunksLocker.Release();
 			}
 
 			// trigger caching out of lock to avoid lock contention
-			TriggerBackgroundCaching();
+			if (triggerCaching)
+				TriggerBackgroundCaching();
 			return chunk;
 		}
 
@@ -201,15 +207,18 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public async ValueTask AddChunk(TFChunk.TFChunk chunk, CancellationToken token) {
 			Ensure.NotNull(chunk, "chunk");
 
+			bool triggerCaching;
 			await _chunksLocker.AcquireAsync(token);
 			try {
 				AddChunk(chunk);
+				triggerCaching = _cachingEnabled;
 			} finally {
 				_chunksLocker.Release();
 			}
 
 			// trigger caching out of lock to avoid lock contention
-			TriggerBackgroundCaching();
+			if (triggerCaching)
+				TriggerBackgroundCaching();
 		}
 
 		public async ValueTask<TFChunk.TFChunk> SwitchChunk(TFChunk.TFChunk chunk, bool verifyHash,
@@ -254,6 +263,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					_config.OptimizeReadSideCache, _config.ReduceFileCachePressure);
 			}
 
+			bool triggerCaching;
 			await _chunksLocker.AcquireAsync(token);
 			try {
 				if (!ReplaceChunksWith(newChunk, "Old")) {
@@ -269,16 +279,20 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						throw new Exception(string.Format("Excessive chunk #{0} found after raw replication switch.",
 							_chunksCount));
 				}
+				triggerCaching = _cachingEnabled;
 			} finally {
 				_chunksLocker.Release();
 			}
 
 			// trigger caching out of lock to avoid lock contention
-			TriggerBackgroundCaching();
+			if (triggerCaching)
+				TriggerBackgroundCaching();
 			return newChunk;
 		}
 
 		private bool ReplaceChunksWith(TFChunk.TFChunk newChunk, string chunkExplanation) {
+			Debug.Assert(_chunksLocker.IsLockHeld);
+
 			var chunkStartNumber = newChunk.ChunkHeader.ChunkStartNumber;
 			var chunkEndNumber = newChunk.ChunkHeader.ChunkEndNumber;
 			for (int i = chunkStartNumber; i <= chunkEndNumber;) {
@@ -336,9 +350,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void TriggerBackgroundCaching() {
-			if (!_cachingEnabled)
-				return;
-
 			Interlocked.Increment(ref _backgroundPassesRemaining);
 			if (Interlocked.CompareExchange(ref _backgroundRunning, 1, 0) == 0)
 				ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
