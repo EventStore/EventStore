@@ -37,7 +37,7 @@ EventStore__Plugins__Licensing__LicenseKey={Your key}
 
 Configuration file:
 
-```
+```json
 {
   "EventStore": {
     "Plugins": {
@@ -58,14 +58,49 @@ The name of the EventStoreDB package is `eventstoredb-ee`.
 
 ### Debian packages
 
+#### Distribution setup
+
+To install packages, you can quickly set up the repository automatically (recommended):
+
+```bash
+curl -1sLf \
+  'https://packages.eventstore.com/public/eventstore-preview/setup.deb.sh' \
+  | sudo -E bash
+```
+
+If you need to force a specific distribution, release/version, architecture, or component (if supported), you can also do that (e.g. if your system is compatible but not identical):
+
+```bash
+curl -1sLf \
+  'https://packages.eventstore.com/public/eventstore-preview/setup.deb.sh' \
+  | sudo -E distro=DISTRO codename=CODENAME arch=ARCH component=COMPONENT bash
+```
+
+Alternatively, you can manually configure it yourself before installing packages:
+
+```bash
+apt-get install -y debian-keyring  # debian only
+apt-get install -y debian-archive-keyring  # debian only
+apt-get install -y apt-transport-https
+# For Debian Stretch, Ubuntu 16.04 and later
+keyring_location=/usr/share/keyrings/eventstore-eventstore-preview-archive-keyring.gpg
+# For Debian Jessie, Ubuntu 15.10 and earlier
+keyring_location=/etc/apt/trusted.gpg.d/eventstore-eventstore-preview.gpg
+curl -1sLf 'https://packages.eventstore.com/public/eventstore-preview/gpg.EFEC87A4F8F5849D.key' |  gpg --dearmor >> ${keyring_location}
+curl -1sLf 'https://packages.eventstore.com/public/eventstore-preview/config.deb.txt?distro=ubuntu&codename=xenial&component=main' > /etc/apt/sources.list.d/eventstore-eventstore-preview.list
+sudo chmod 644 ${keyring_location}
+sudo chmod 644 /etc/apt/sources.list.d/eventstore-eventstore-preview.list
+apt-get update
+```
+
 #### Install with apt-get
 
 Add the repository to your system according to the [instructions on Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore-preview/setup/#formats-deb).
 
 Then, install the package:
 
-```bash:no-line-numbers
-sudo apt-get install eventstoredb-ee=24.10.0~preview1
+```bash
+apt-get install eventstoredb-ee=24.10.0~preview1
 ```
 
 #### Uninstall with apt-get
@@ -73,16 +108,34 @@ sudo apt-get install eventstoredb-ee=24.10.0~preview1
 You can uninstall the package with:
 
 ```bash
-sudo apt-get remove eventstoredb-ee
+apt-get remove eventstoredb-ee
 ```
 
 If you want to also remove any configuration files and user settings, use:
 
 ```bash
-sudo apt-get purge eventstoredb-ee
+apt-get purge eventstoredb-ee
 ```
 
 ### RedHat packages
+
+#### Distribution setup
+
+To install packages, you can quickly set up the repository automatically (recommended):
+
+```bash
+curl -1sLf \
+  'https://packages.eventstore.com/public/eventstore-preview/setup.rpm.sh' \
+  | sudo -E bash
+```
+
+If you need to force a specific distribution, release/version, or architecture, you can also do that (e.g. if your system is compatible but not identical):
+
+```bash
+curl -1sLf \
+  'https://packages.eventstore.com/public/eventstore-preview/setup.rpm.sh' \
+  | sudo -E distro=DISTRO codename=CODENAME arch=ARCH bash
+```
 
 #### Install with yum
 
@@ -90,24 +143,38 @@ Add the repository to your system according to the [instructions on Cloudsmith](
 
 Then, install the package:
 
-```bash:no-line-numbers
-sudo yum install eventstoredb-ee-24.10.0~preview1-1.x86_64
+```bash
+yum install eventstoredb-ee-24.10.0~preview1-1.x86_64
 ```
+
+Alternatively, you can manually configure it yourself before installing packages:
+
+```bash
+yum install yum-utils pygpgme
+rpm --import 'https://packages.eventstore.com/public/eventstore-preview/gpg.EFEC87A4F8F5849D.key'
+curl -1sLf 'https://packages.eventstore.com/public/eventstore-preview/config.rpm.txt?distro=el&codename=7' > /tmp/eventstore-eventstore-preview.repo
+yum-config-manager --add-repo '/tmp/eventstore-eventstore-preview.repo'
+yum -q makecache -y --disablerepo='*' --enablerepo='eventstore-eventstore-preview'
+```
+
+::: note
+Please replace el and 7 above with your actual distribution and version and use wildcards when enabling multiple repos.
+:::
 
 #### Uninstall with yum
 
 You can uninstall the package with:
 
 ```bash
-sudo yum remove eventstoredb-ee
+yum remove eventstoredb-ee
 ```
 
 ### Running the eventstore service
 
 Once installed, the server is registered as a service. Therefore, you can start EventStoreDB with:
 
-```bash:no-line-numbers
-sudo systemctl start eventstore
+```bash
+systemctl start eventstore
 ```
 
 When you install the EventStoreDB package, the service doesn't start by default. This allows you to change the configuration located at `etc/eventstore/eventstore.conf` and to prevent creating database and index files in the default location.
@@ -115,17 +182,6 @@ When you install the EventStoreDB package, the service doesn't start by default.
 ::: warning
 We recommend that when using Linux you set the 'open file limit' to a high number. The precise value depends on your use case, but at least between `30,000` and `60,000`.
 :::
-
-### Download the binaries
-
-You can also [download](https://eventstore.com/downloads/) a binary, extract the archive and run from the folder location.
-
-The following command starts EventStoreDB in dev mode with the database stored at the path `./db` and the logs in `./logs`.
-Read more about configuring the EventStoreDB server in the [Configuration section](../configuration/README.md).
-
-```bash
-./eventstored --dev --db ./db --log ./logs
-```
 
 ## Windows
 
@@ -138,19 +194,23 @@ starts automatically.
 
 EventStoreDB has NuGet packages available on Cloudsmith, which replaces the previous Chocolatey packages.
 
-Follow the [instructions on Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore-preview/setup/#formats-nuget) to set up the NuGet sources.
+Add a new package source to your Chocolatey configuration:
+
+```powershell
+choco source add -n eventstore-eventstore-preview -s https://nuget.eventstore.com/eventstore-preview/v2/
+```
 
 #### Install with Chocolatey
 
 You can install EventStoreDB through Chocolatey:
 
-```powershell:no-line-numbers
+```powershell
 choco install eventstoredb-ee -s eventstore-eventstore-preview --version 24.10.0-preview1
 ```
 
 EventStoreDB can then be run with `EventStore.ClusterNode.exe`:
 
-```powershell:no-line-numbers
+```powershell
 EventStore.ClusterNode.exe --config {your config file}
 ```
 
@@ -158,19 +218,8 @@ EventStore.ClusterNode.exe --config {your config file}
 
 You can uninstall EventStoreDB through Chocolatey with:
 
-```powershell:no-line-numbers
+```powershell
 choco uninstall eventstoredb-ee
-```
-
-### Download the binaries
-
-You can also [download](https://eventstore.com/downloads/) a binary, unzip the archive and run from the folder location.
-
-The following command starts EventStoreDB in dev mode with the database stored at the path `./db` and the logs in `./logs`.
-Read more about configuring the EventStoreDB server in the [Configuration section](../configuration/README.md).
-
-```powershell:no-line-numbers
-./EventStore.ClusterNode.exe --dev --db ./db --log ./logs
 ```
 
 ## Docker
@@ -183,17 +232,17 @@ closer to what you'd run in production.
 
 ### Run with Docker
 
-EventStoreDB Docker images are now hosted [on Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore-preview/setup/#formats-docker) under the registry `docker.eventstore.com/eventstore-preview`.
+EventStoreDB Docker images are now hosted in the registry `docker.eventstore.com/eventstore-preview`.
 
 Pull the container with:
 
-```bash:no-line-numbers
+```bash
 docker pull docker.eventstore.com/eventstore-preview/eventstoredb-ee:latest
 ```
 
 The following command will start the EventStoreDB node using the default HTTP port, without security. You can then connect to it using one of the clients and the `esdb://localhost:2113?tls=false` connection string. You can also access the Admin UI by opening http://localhost:2113 in your browser.
 
-```bash:no-line-numbers
+```bash
 docker run --name esdb-node -it -p 2113:2113 \
     docker.eventstore.com/eventstore-preview/eventstoredb-ee --insecure --run-projections=All
     --enable-atom-pub-over-http
@@ -218,7 +267,7 @@ Create a file `docker-compose.yaml` with the following content:
 
 Run the instance:
 
-```bash:no-line-numbers
+```bash
 docker compose up
 ```
 
@@ -246,13 +295,13 @@ Containers will use the shared volume using the local `./certs` directory for ce
 let Docker create the directory on startup, the container won't be able to get write access to it.
 Therefore, you should create the `certs` directory manually. You only need to do it once.
 
-```bash:no-line-numbers
+```bash
 mkdir certs
 ```
 
 Now you are ready to start the cluster.
 
-```bash:no-line-numbers
+```bash
 docker compose up
 ```
 
