@@ -4,54 +4,54 @@
 using System;
 using EventStore.Core.DataStructures;
 
-namespace EventStore.Core.TransactionLog {
-	public interface ITransactionFileReader {
-		void Reposition(long position);
+namespace EventStore.Core.TransactionLog;
 
-		SeqReadResult TryReadNext();
-		SeqReadResult TryReadPrev();
+public interface ITransactionFileReader {
+	void Reposition(long position);
 
-		RecordReadResult TryReadAt(long position, bool couldBeScavenged);
-		bool ExistsAt(long position);
+	SeqReadResult TryReadNext();
+	SeqReadResult TryReadPrev();
+
+	RecordReadResult TryReadAt(long position, bool couldBeScavenged);
+	bool ExistsAt(long position);
+}
+
+public struct TFReaderLease : IDisposable {
+	public readonly ITransactionFileReader Reader;
+	private readonly ObjectPool<ITransactionFileReader> _pool;
+
+	public TFReaderLease(ObjectPool<ITransactionFileReader> pool) {
+		_pool = pool;
+		Reader = pool.Get();
 	}
 
-	public struct TFReaderLease : IDisposable {
-		public readonly ITransactionFileReader Reader;
-		private readonly ObjectPool<ITransactionFileReader> _pool;
+	public TFReaderLease(ITransactionFileReader reader) {
+		_pool = null;
+		Reader = reader;
+	}
 
-		public TFReaderLease(ObjectPool<ITransactionFileReader> pool) {
-			_pool = pool;
-			Reader = pool.Get();
-		}
+	void IDisposable.Dispose() {
+		if (_pool != null)
+			_pool.Return(Reader);
+	}
 
-		public TFReaderLease(ITransactionFileReader reader) {
-			_pool = null;
-			Reader = reader;
-		}
+	public void Reposition(long position) {
+		Reader.Reposition(position);
+	}
 
-		void IDisposable.Dispose() {
-			if (_pool != null)
-				_pool.Return(Reader);
-		}
+	public SeqReadResult TryReadNext() {
+		return Reader.TryReadNext();
+	}
 
-		public void Reposition(long position) {
-			Reader.Reposition(position);
-		}
+	public SeqReadResult TryReadPrev() {
+		return Reader.TryReadPrev();
+	}
 
-		public SeqReadResult TryReadNext() {
-			return Reader.TryReadNext();
-		}
+	public bool ExistsAt(long position) {
+		return Reader.ExistsAt(position);
+	}
 
-		public SeqReadResult TryReadPrev() {
-			return Reader.TryReadPrev();
-		}
-
-		public bool ExistsAt(long position) {
-			return Reader.ExistsAt(position);
-		}
-
-		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
-			return Reader.TryReadAt(position, couldBeScavenged);
-		}
+	public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+		return Reader.TryReadAt(position, couldBeScavenged);
 	}
 }

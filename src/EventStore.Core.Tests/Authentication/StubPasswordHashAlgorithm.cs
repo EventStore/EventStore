@@ -5,19 +5,19 @@ using System;
 using System.Linq;
 using EventStore.Core.Authentication.InternalAuthentication;
 
-namespace EventStore.Core.Tests.Authentication {
-	public class StubPasswordHashAlgorithm : PasswordHashAlgorithm {
-		public override void Hash(string password, out string hash, out string salt) {
-			hash = password;
-			salt = ReverseString(password);
-		}
+namespace EventStore.Core.Tests.Authentication;
 
-		public override bool Verify(string password, string hash, string salt) {
-			return password == hash && ReverseString(password) == salt;
-		}
+public class StubPasswordHashAlgorithm : PasswordHashAlgorithm {
+	public override void Hash(string password, out string hash, out string salt) {
+		hash = password;
+		salt = ReverseString(password);
+	}
 
-		private static string ReverseString(string s) {
-			return new String(s.Reverse().ToArray());
-		}
+	public override bool Verify(string password, string hash, string salt) {
+		return password == hash && ReverseString(password) == salt;
+	}
+
+	private static string ReverseString(string s) {
+		return new String(s.Reverse().ToArray());
 	}
 }

@@ -10,82 +10,82 @@ using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Emitting;
 using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 
-namespace EventStore.Projections.Core.Standard {
-	public class CategorizeStreamByPath : IProjectionStateHandler {
-		private readonly StreamCategoryExtractor _streamCategoryExtractor;
+namespace EventStore.Projections.Core.Standard;
 
-		public CategorizeStreamByPath(string source, Action<string, object[]> logger) {
-			var extractor = StreamCategoryExtractor.GetExtractor(source, logger);
-			// we will need to declare event types we are interested in
-			_streamCategoryExtractor = extractor;
-		}
+public class CategorizeStreamByPath : IProjectionStateHandler {
+	private readonly StreamCategoryExtractor _streamCategoryExtractor;
 
-		public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder) {
-			builder.FromAll();
-			builder.AllEvents();
-			builder.SetIncludeLinks();
-		}
+	public CategorizeStreamByPath(string source, Action<string, object[]> logger) {
+		var extractor = StreamCategoryExtractor.GetExtractor(source, logger);
+		// we will need to declare event types we are interested in
+		_streamCategoryExtractor = extractor;
+	}
 
-		public void Load(string state) {
-		}
+	public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder) {
+		builder.FromAll();
+		builder.AllEvents();
+		builder.SetIncludeLinks();
+	}
 
-		public void LoadShared(string state) {
-			throw new NotImplementedException();
-		}
+	public void Load(string state) {
+	}
 
-		public void Initialize() {
-		}
+	public void LoadShared(string state) {
+		throw new NotImplementedException();
+	}
 
-		public void InitializeShared() {
-		}
+	public void Initialize() {
+	}
 
-		public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data) {
-			throw new NotImplementedException();
-		}
+	public void InitializeShared() {
+	}
 
-		public bool ProcessEvent(
-			string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
-			out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents) {
-			newSharedState = null;
-			emittedEvents = null;
-			newState = null;
+	public string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data) {
+		throw new NotImplementedException();
+	}
 
-			if (data.PositionSequenceNumber != 0)
-				return false; // not our event
+	public bool ProcessEvent(
+		string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
+		out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents) {
+		newSharedState = null;
+		emittedEvents = null;
+		newState = null;
 
-			var category = _streamCategoryExtractor.GetCategoryByStreamId(data.PositionStreamId);
-			if (category == null)
-				return true; // handled but not interesting
+		if (data.PositionSequenceNumber != 0)
+			return false; // not our event
 
-			emittedEvents = new[] {
-				new EmittedEventEnvelope(
-					new EmittedDataEvent(
-						"$category" + "-" + category, Guid.NewGuid(), SystemEventTypes.StreamReference, false,
-						data.PositionStreamId, null, eventPosition, expectedTag: null))
-			};
+		var category = _streamCategoryExtractor.GetCategoryByStreamId(data.PositionStreamId);
+		if (category == null)
+			return true; // handled but not interesting
 
-			return true;
-		}
+		emittedEvents = new[] {
+			new EmittedEventEnvelope(
+				new EmittedDataEvent(
+					"$category" + "-" + category, Guid.NewGuid(), SystemEventTypes.StreamReference, false,
+					data.PositionStreamId, null, eventPosition, expectedTag: null))
+		};
 
-		public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent data,
-			out EmittedEventEnvelope[] emittedEvents) {
-			emittedEvents = null;
-			return false;
-		}
+		return true;
+	}
 
-		public bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string newState) {
-			throw new NotImplementedException();
-		}
+	public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent data,
+		out EmittedEventEnvelope[] emittedEvents) {
+		emittedEvents = null;
+		return false;
+	}
 
-		public string TransformStateToResult() {
-			throw new NotImplementedException();
-		}
+	public bool ProcessPartitionDeleted(string partition, CheckpointTag deletePosition, out string newState) {
+		throw new NotImplementedException();
+	}
 
-		public void Dispose() {
-		}
+	public string TransformStateToResult() {
+		throw new NotImplementedException();
+	}
 
-		public IQuerySources GetSourceDefinition() {
-			return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
-		}
+	public void Dispose() {
+	}
+
+	public IQuerySources GetSourceDefinition() {
+		return SourceDefinitionBuilder.From(ConfigureSourceProcessingStrategy);
 	}
 }

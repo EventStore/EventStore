@@ -4,23 +4,23 @@
 using System;
 using System.Net;
 
-namespace EventStore.Core.Services.Gossip {
-	public class KnownEndpointGossipSeedSource : IGossipSeedSource {
-		private readonly EndPoint[] _ipEndPoints;
+namespace EventStore.Core.Services.Gossip;
 
-		public KnownEndpointGossipSeedSource(EndPoint[] ipEndPoints) {
-			if (ipEndPoints == null)
-				throw new ArgumentNullException("ipEndPoints");
-			_ipEndPoints = ipEndPoints;
-		}
+public class KnownEndpointGossipSeedSource : IGossipSeedSource {
+	private readonly EndPoint[] _ipEndPoints;
 
-		public IAsyncResult BeginGetHostEndpoints(AsyncCallback requestCallback, object state) {
-			requestCallback(null);
-			return null;
-		}
+	public KnownEndpointGossipSeedSource(EndPoint[] ipEndPoints) {
+		if (ipEndPoints == null)
+			throw new ArgumentNullException("ipEndPoints");
+		_ipEndPoints = ipEndPoints;
+	}
 
-		public EndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult) {
-			return _ipEndPoints;
-		}
+	public IAsyncResult BeginGetHostEndpoints(AsyncCallback requestCallback, object state) {
+		requestCallback(null);
+		return null;
+	}
+
+	public EndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult) {
+		return _ipEndPoints;
 	}
 }

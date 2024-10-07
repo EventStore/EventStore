@@ -10,53 +10,53 @@ using EventStore.Core.Services.Transport.Common;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
-namespace EventStore.Core.Services.Transport.Grpc {
-	internal partial class Redaction {
-		private static readonly Operation ReadOperation = new(Plugins.Authorization.Operations.Streams.Read);
+namespace EventStore.Core.Services.Transport.Grpc;
 
-		public override async Task GetEventPositions(
-			IAsyncStreamReader<GetEventPositionReq> requestStream,
-			IServerStreamWriter<GetEventPositionResp> responseStream,
-			ServerCallContext context) {
+internal partial class Redaction {
+	private static readonly Operation ReadOperation = new(Plugins.Authorization.Operations.Streams.Read);
 
-			var user = context.GetHttpContext().User;
+	public override async Task GetEventPositions(
+		IAsyncStreamReader<GetEventPositionReq> requestStream,
+		IServerStreamWriter<GetEventPositionResp> responseStream,
+		ServerCallContext context) {
 
-			await foreach (var request in requestStream.ReadAllAsync()) {
-				var streamId = request.StreamIdentifier.StreamName.ToStringUtf8();
-				var streamRevision = new StreamRevision(request.StreamRevision);
+		var user = context.GetHttpContext().User;
 
-				var op = ReadOperation.WithParameter(
-					Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamId));
+		await foreach (var request in requestStream.ReadAllAsync()) {
+			var streamId = request.StreamIdentifier.StreamName.ToStringUtf8();
+			var streamRevision = new StreamRevision(request.StreamRevision);
 
-				if (!await _authorizationProvider.CheckAccessAsync(user, op, context.CancellationToken))
-					throw RpcExceptions.AccessDenied();
+			var op = ReadOperation.WithParameter(
+				Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamId));
 
-				var tcsEnvelope = new TcsEnvelope<RedactionMessage.GetEventPositionCompleted>();
-				_bus.Publish(new RedactionMessage.GetEventPosition(tcsEnvelope, streamId, streamRevision.ToInt64()));
+			if (!await _authorizationProvider.CheckAccessAsync(user, op, context.CancellationToken))
+				throw RpcExceptions.AccessDenied();
 
-				var completionMsg = await tcsEnvelope.Task;
-				var result = completionMsg.Result;
-				if (result != GetEventPositionResult.Success)
-					throw RpcExceptions.RedactionGetEventPositionFailed(result.GetErrorMessage());
+			var tcsEnvelope = new TcsEnvelope<RedactionMessage.GetEventPositionCompleted>();
+			_bus.Publish(new RedactionMessage.GetEventPosition(tcsEnvelope, streamId, streamRevision.ToInt64()));
 
-				var eventPositions = completionMsg.EventPositions;
+			var completionMsg = await tcsEnvelope.Task;
+			var result = completionMsg.Result;
+			if (result != GetEventPositionResult.Success)
+				throw RpcExceptions.RedactionGetEventPositionFailed(result.GetErrorMessage());
 
-				var response = new GetEventPositionResp();
-				foreach (var eventPosition in eventPositions) {
-					var pos = Position.FromInt64(eventPosition.LogPosition, eventPosition.LogPosition);
-					response.EventPositions.Add(new EventStore.Client.Redaction.EventPosition {
-						LogPosition = pos.PreparePosition,
-						ChunkInfo = new EventStore.Client.Redaction.ChunkInfo {
-							FileName = eventPosition.ChunkInfo.FileName,
-							Version = eventPosition.ChunkInfo.Version,
-							IsComplete = eventPosition.ChunkInfo.IsComplete,
-							EventOffset = eventPosition.ChunkInfo.EventOffset
-						}
-					});
-				}
+			var eventPositions = completionMsg.EventPositions;
 
-				await responseStream.WriteAsync(response);
+			var response = new GetEventPositionResp();
+			foreach (var eventPosition in eventPositions) {
+				var pos = Position.FromInt64(eventPosition.LogPosition, eventPosition.LogPosition);
+				response.EventPositions.Add(new EventStore.Client.Redaction.EventPosition {
+					LogPosition = pos.PreparePosition,
+					ChunkInfo = new EventStore.Client.Redaction.ChunkInfo {
+						FileName = eventPosition.ChunkInfo.FileName,
+						Version = eventPosition.ChunkInfo.Version,
+						IsComplete = eventPosition.ChunkInfo.IsComplete,
+						EventOffset = eventPosition.ChunkInfo.EventOffset
+					}
+				});
 			}
+
+			await responseStream.WriteAsync(response);
 		}
 	}
 }

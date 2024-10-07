@@ -11,103 +11,104 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.TestClient.Commands.DvuBasic;
 
-namespace EventStore.TestClient.Commands.RunTestScenarios {
-	internal class ProjectionsKillScenario : ProjectionsScenarioBase {
-		public ProjectionsKillScenario(Action<IPEndPoint, byte[]> directSendOverTcp,
-			int maxConcurrentRequests,
-			int connections,
-			int streams,
-			int eventsPerStream,
-			int streamDeleteStep,
-			string dbParentPath,
-			NodeConnectionInfo customNode)
-			: base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep,
-				dbParentPath, customNode) {
-		}
+namespace EventStore.TestClient.Commands.RunTestScenarios;
 
-		private EventData CreateBankEvent(int version) {
-			var accountObject = BankAccountEventFactory.CreateAccountObject(version);
-			var @event = BankAccountEvent.FromEvent(accountObject);
-			return @event;
-		}
+internal class ProjectionsKillScenario : ProjectionsScenarioBase {
+	public ProjectionsKillScenario(Action<IPEndPoint, byte[]> directSendOverTcp,
+		int maxConcurrentRequests,
+		int connections,
+		int streams,
+		int eventsPerStream,
+		int streamDeleteStep,
+		string dbParentPath,
+		NodeConnectionInfo customNode)
+		: base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep,
+			dbParentPath, customNode) {
+	}
 
-		protected virtual int GetIterationCode() {
-			return 0;
-		}
+	private EventData CreateBankEvent(int version) {
+		var accountObject = BankAccountEventFactory.CreateAccountObject(version);
+		var @event = BankAccountEvent.FromEvent(accountObject);
+		return @event;
+	}
 
-		protected override void RunInternal() {
-			var nodeProcessId = StartNode();
-			EnableProjectionByCategory();
+	protected virtual int GetIterationCode() {
+		return 0;
+	}
 
-			var countItem = CreateCountItem();
-			var sumCheckForBankAccount0 = CreateSumCheckForBankAccount0();
+	protected override void RunInternal() {
+		var nodeProcessId = StartNode();
+		EnableProjectionByCategory();
 
-			var writeTask = WriteData();
+		var countItem = CreateCountItem();
+		var sumCheckForBankAccount0 = CreateSumCheckForBankAccount0();
 
-			var success = false;
-			var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
-			var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
+		var writeTask = WriteData();
 
-			var isWatchStarted = false;
+		var success = false;
+		var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
+		var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
 
-			var stopWatch = new Stopwatch();
+		var isWatchStarted = false;
 
-			var waitDuration = TimeSpan.FromMilliseconds(20 * 1000 + 5 * Streams * EventsPerStream);
-			while (stopWatch.Elapsed < waitDuration) {
-				if (writeTask.IsFaulted)
-					throw new ApplicationException("Failed to write data");
+		var stopWatch = new Stopwatch();
 
-				if (writeTask.IsCompleted && !stopWatch.IsRunning) {
-					stopWatch.Start();
-					isWatchStarted = true;
-				}
+		var waitDuration = TimeSpan.FromMilliseconds(20 * 1000 + 5 * Streams * EventsPerStream);
+		while (stopWatch.Elapsed < waitDuration) {
+			if (writeTask.IsFaulted)
+				throw new ApplicationException("Failed to write data");
 
-				success = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount)
-				          && CheckProjectionState(sumCheckForBankAccount0, "success",
-					          x => x == lastExpectedEventVersion);
-
-				if (success)
-					break;
-
-				if (isWatchStarted)
-					stopWatch.Stop();
-
-				Thread.Sleep((int)(waitDuration.TotalMilliseconds / 10));
-
-				KillNode(nodeProcessId);
-				nodeProcessId = StartNode();
-
-				if (isWatchStarted)
-					stopWatch.Start();
+			if (writeTask.IsCompleted && !stopWatch.IsRunning) {
+				stopWatch.Start();
+				isWatchStarted = true;
 			}
 
-			writeTask.Wait();
+			success = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount)
+			          && CheckProjectionState(sumCheckForBankAccount0, "success",
+				          x => x == lastExpectedEventVersion);
+
+			if (success)
+				break;
+
+			if (isWatchStarted)
+				stopWatch.Stop();
+
+			Thread.Sleep((int)(waitDuration.TotalMilliseconds / 10));
 
 			KillNode(nodeProcessId);
+			nodeProcessId = StartNode();
 
-			if (!success)
-				throw new ApplicationException(
-					string.Format("Projections did not complete with expected result in time"));
+			if (isWatchStarted)
+				stopWatch.Start();
 		}
 
-		protected Task WriteData() {
-			var streams = Enumerable.Range(0, Streams)
-				.Select(i => string.Format("bank_account_it{0}-{1}", GetIterationCode(), i)).ToArray();
-			var slices = Split(streams, 3);
+		writeTask.Wait();
 
-			var w1 = Write(WriteMode.SingleEventAtTime, slices[0], EventsPerStream, CreateBankEvent);
-			var w2 = Write(WriteMode.Bucket, slices[1], EventsPerStream, CreateBankEvent);
-			var w3 = Write(WriteMode.Transactional, slices[2], EventsPerStream, CreateBankEvent);
+		KillNode(nodeProcessId);
 
-			var task = Task.Factory.ContinueWhenAll(new[] {w1, w2, w3}, Task.WaitAll);
-			return task.ContinueWith(x => Log.Information("Data written for iteration {iteration}.", GetIterationCode()));
-		}
+		if (!success)
+			throw new ApplicationException(
+				string.Format("Projections did not complete with expected result in time"));
+	}
 
-		protected string CreateCountItem() {
-			var projectionManager = GetProjectionsManager();
+	protected Task WriteData() {
+		var streams = Enumerable.Range(0, Streams)
+			.Select(i => string.Format("bank_account_it{0}-{1}", GetIterationCode(), i)).ToArray();
+		var slices = Split(streams, 3);
 
-			string countItemsProjectionName = string.Format("CountItems_it{0}", GetIterationCode());
-			string countItemsProjection = string.Format(@"
+		var w1 = Write(WriteMode.SingleEventAtTime, slices[0], EventsPerStream, CreateBankEvent);
+		var w2 = Write(WriteMode.Bucket, slices[1], EventsPerStream, CreateBankEvent);
+		var w3 = Write(WriteMode.Transactional, slices[2], EventsPerStream, CreateBankEvent);
+
+		var task = Task.Factory.ContinueWhenAll(new[] {w1, w2, w3}, Task.WaitAll);
+		return task.ContinueWith(x => Log.Information("Data written for iteration {iteration}.", GetIterationCode()));
+	}
+
+	protected string CreateCountItem() {
+		var projectionManager = GetProjectionsManager();
+
+		string countItemsProjectionName = string.Format("CountItems_it{0}", GetIterationCode());
+		string countItemsProjection = string.Format(@"
                 fromCategory('bank_account_it{0}').when({{
                 $init: function() {{ return {{count:0}}; }},
                 AccountCredited: function (state, event) {{ 
@@ -122,14 +123,14 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
                 }})
 ", GetIterationCode());
 
-			projectionManager.CreateContinuousAsync(countItemsProjectionName, countItemsProjection, AdminCredentials)
-				.Wait();
-			return countItemsProjectionName;
-		}
+		projectionManager.CreateContinuousAsync(countItemsProjectionName, countItemsProjection, AdminCredentials)
+			.Wait();
+		return countItemsProjectionName;
+	}
 
-		protected string CreateSumCheckForBankAccount0() {
-			string countItemsProjectionName = string.Format("CheckSumsInAccounts_it{0}", GetIterationCode());
-			string countItemsProjection = string.Format(@"
+	protected string CreateSumCheckForBankAccount0() {
+		string countItemsProjectionName = string.Format("CheckSumsInAccounts_it{0}", GetIterationCode());
+		string countItemsProjection = string.Format(@"
                 fromStream('bank_account_it{0}-0').when({{
                     $init: function() {{ 
                         return {{credited:0, credsum:'', debited:0, debsum:''}}; 
@@ -166,10 +167,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
                 }})                
 ", GetIterationCode());
 
-			GetProjectionsManager()
-				.CreateContinuousAsync(countItemsProjectionName, countItemsProjection, AdminCredentials).Wait();
+		GetProjectionsManager()
+			.CreateContinuousAsync(countItemsProjectionName, countItemsProjection, AdminCredentials).Wait();
 
-			return countItemsProjectionName;
-		}
+		return countItemsProjectionName;
 	}
 }

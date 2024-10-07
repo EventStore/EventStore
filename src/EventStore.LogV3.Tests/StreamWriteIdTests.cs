@@ -4,48 +4,48 @@
 using System;
 using Xunit;
 
-namespace EventStore.LogV3.Tests {
-	public class StreamWriteIdTests {
-		[Theory]
-		[InlineData(Raw.StreamWriteId.MaxStartingEventNumber + 2)]
-		[InlineData(-1)]
-		public void cant_set_starting_event_number_out_of_range(long x) {
-			var writeId = new Raw.StreamWriteId {
-				ParentTopicNumber = 15,
-			};
+namespace EventStore.LogV3.Tests;
 
-			Assert.Throws<ArgumentOutOfRangeException>(() => {
-				writeId.StartingEventNumber = x;
-			});
-			Assert.Equal(15, writeId.ParentTopicNumber);
-		}
+public class StreamWriteIdTests {
+	[Theory]
+	[InlineData(Raw.StreamWriteId.MaxStartingEventNumber + 2)]
+	[InlineData(-1)]
+	public void cant_set_starting_event_number_out_of_range(long x) {
+		var writeId = new Raw.StreamWriteId {
+			ParentTopicNumber = 15,
+		};
 
-		[Theory]
-		[InlineData(Raw.StreamWriteId.EventNumberDeletedStream)]
-		[InlineData(Raw.StreamWriteId.MaxStartingEventNumber)]
-		[InlineData(0)]
-		public void can_set_starting_event_number(long x) {
-			var writeId = new Raw.StreamWriteId {
-				StartingEventNumber = 123,
-				ParentTopicNumber = 15,
-			};
-
+		Assert.Throws<ArgumentOutOfRangeException>(() => {
 			writeId.StartingEventNumber = x;
+		});
+		Assert.Equal(15, writeId.ParentTopicNumber);
+	}
 
-			Assert.Equal(15, writeId.ParentTopicNumber);
-			Assert.Equal(x, writeId.StartingEventNumber);
-		}
+	[Theory]
+	[InlineData(Raw.StreamWriteId.EventNumberDeletedStream)]
+	[InlineData(Raw.StreamWriteId.MaxStartingEventNumber)]
+	[InlineData(0)]
+	public void can_set_starting_event_number(long x) {
+		var writeId = new Raw.StreamWriteId {
+			StartingEventNumber = 123,
+			ParentTopicNumber = 15,
+		};
 
-		[Fact]
-		public void can_get_starting_event_number() {
-			var writeId = new Raw.StreamWriteId {
-				StartingEventNumber = Raw.StreamWriteId.MaxStartingEventNumber,
-			};
+		writeId.StartingEventNumber = x;
 
-			writeId.ParentTopicNumber = 15;
+		Assert.Equal(15, writeId.ParentTopicNumber);
+		Assert.Equal(x, writeId.StartingEventNumber);
+	}
 
-			Assert.Equal(15, writeId.ParentTopicNumber);
-			Assert.Equal(Raw.StreamWriteId.MaxStartingEventNumber, writeId.StartingEventNumber);
-		}
+	[Fact]
+	public void can_get_starting_event_number() {
+		var writeId = new Raw.StreamWriteId {
+			StartingEventNumber = Raw.StreamWriteId.MaxStartingEventNumber,
+		};
+
+		writeId.ParentTopicNumber = 15;
+
+		Assert.Equal(15, writeId.ParentTopicNumber);
+		Assert.Equal(Raw.StreamWriteId.MaxStartingEventNumber, writeId.StartingEventNumber);
 	}
 }

@@ -1,59 +1,59 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-namespace EventStore.Projections.Core.Messages {
-	public interface IQuerySources {
-		bool AllStreams { get; }
+namespace EventStore.Projections.Core.Messages;
 
-		string[] Categories { get; }
+public interface IQuerySources {
+	bool AllStreams { get; }
 
-		string[] Streams { get; }
+	string[] Categories { get; }
 
-		bool AllEvents { get; }
+	string[] Streams { get; }
 
-		string[] Events { get; }
+	bool AllEvents { get; }
 
-		bool ByStreams { get; }
+	string[] Events { get; }
 
-		bool ByCustomPartitions { get; }
+	bool ByStreams { get; }
 
-		bool DefinesStateTransform { get; }
+	bool ByCustomPartitions { get; }
 
-		bool DefinesFold { get; }
+	bool DefinesStateTransform { get; }
 
-		bool HandlesDeletedNotifications { get; }
+	bool DefinesFold { get; }
 
-		bool ProducesResults { get; }
+	bool HandlesDeletedNotifications { get; }
 
-		bool IsBiState { get; }
+	bool ProducesResults { get; }
 
-		bool IncludeLinksOption { get; }
+	bool IsBiState { get; }
 
-		string ResultStreamNameOption { get; }
+	bool IncludeLinksOption { get; }
 
-		string PartitionResultStreamNamePatternOption { get; }
+	string ResultStreamNameOption { get; }
 
-		bool ReorderEventsOption { get; }
+	string PartitionResultStreamNamePatternOption { get; }
 
-		int? ProcessingLagOption { get; }
+	bool ReorderEventsOption { get; }
 
-		long? LimitingCommitPosition { get; }
+	int? ProcessingLagOption { get; }
+
+	long? LimitingCommitPosition { get; }
+}
+
+public static class QuerySourcesExtensions {
+	public static bool HasStreams(this IQuerySources sources) {
+		var streams = sources.Streams;
+		return streams != null && streams.Length > 0;
 	}
 
-	public static class QuerySourcesExtensions {
-		public static bool HasStreams(this IQuerySources sources) {
-			var streams = sources.Streams;
-			return streams != null && streams.Length > 0;
-		}
+	public static bool HasCategories(this IQuerySources sources) {
+		var categories = sources.Categories;
+		return categories != null && categories.Length > 0;
+	}
 
-		public static bool HasCategories(this IQuerySources sources) {
-			var categories = sources.Categories;
-			return categories != null && categories.Length > 0;
-		}
-
-		public static bool HasEvents(this IQuerySources sources) {
-			var events = sources.Events;
-			return events != null && events.Length > 0;
-		}
+	public static bool HasEvents(this IQuerySources sources) {
+		var events = sources.Events;
+		return events != null && events.Length > 0;
 	}
 }

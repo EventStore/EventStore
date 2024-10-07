@@ -7,38 +7,38 @@ using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Partitioning;
 using EventStore.Projections.Core.Services.Processing.WorkItems;
 
-namespace EventStore.Projections.Core.Services.Processing.Phases {
-	public interface IProjectionPhaseCompleter {
-		void Complete();
-	}
+namespace EventStore.Projections.Core.Services.Processing.Phases;
 
-	public interface IProjectionPhaseCheckpointManager {
-		void NewCheckpointStarted(CheckpointTag checkpointTag);
-		void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem);
-	}
+public interface IProjectionPhaseCompleter {
+	void Complete();
+}
 
-	public interface IProjectionPhaseStateManager {
-		void BeginGetPartitionStateAt(
-			string statePartition, CheckpointTag at, Action<PartitionState> loadCompleted,
-			bool lockLoaded);
+public interface IProjectionPhaseCheckpointManager {
+	void NewCheckpointStarted(CheckpointTag checkpointTag);
+	void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem);
+}
 
-		void UnlockAndForgetBefore(CheckpointTag checkpointTag);
+public interface IProjectionPhaseStateManager {
+	void BeginGetPartitionStateAt(
+		string statePartition, CheckpointTag at, Action<PartitionState> loadCompleted,
+		bool lockLoaded);
 
-		CheckpointTag LastProcessedEventPosition { get; }
-	}
+	void UnlockAndForgetBefore(CheckpointTag checkpointTag);
 
-	public interface IEventProcessingProjectionPhase : IProjectionPhaseStateManager {
-		EventProcessedResult ProcessCommittedEvent(EventReaderSubscriptionMessage.CommittedEventReceived message,
-			string partition);
+	CheckpointTag LastProcessedEventPosition { get; }
+}
 
-		void FinalizeEventProcessing(
-			EventProcessedResult result, CheckpointTag eventCheckpointTag, float progress);
+public interface IEventProcessingProjectionPhase : IProjectionPhaseStateManager {
+	EventProcessedResult ProcessCommittedEvent(EventReaderSubscriptionMessage.CommittedEventReceived message,
+		string partition);
 
-		void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action completed);
+	void FinalizeEventProcessing(
+		EventProcessedResult result, CheckpointTag eventCheckpointTag, float progress);
 
-		void EmitEofResult(
-			string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId);
+	void RecordEventOrder(ResolvedEvent resolvedEvent, CheckpointTag orderCheckpointTag, Action completed);
 
-		EventProcessedResult ProcessPartitionDeleted(string partition, CheckpointTag deletedPosition);
-	}
+	void EmitEofResult(
+		string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid, string correlationId);
+
+	EventProcessedResult ProcessPartitionDeleted(string partition, CheckpointTag deletedPosition);
 }

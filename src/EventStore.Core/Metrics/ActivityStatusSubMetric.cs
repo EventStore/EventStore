@@ -3,24 +3,24 @@
 
 using System;
 
-namespace EventStore.Core.Metrics {
-	// When there is one activity at a time and it is disposed before starting the next.
-	// It would be possible to drive a version of this from ActivitySource/ActivityListener
-	// for cases where we are already incurring the cost of allocating the Activities
-	public class ActivityStatusSubMetric : StatusSubMetric, IDisposable {
-		private const string Idle = "Idle";
+namespace EventStore.Core.Metrics;
 
-		public ActivityStatusSubMetric(string componentName, StatusMetric metric)
-			: base(componentName, Idle, metric) {
-		}
+// When there is one activity at a time and it is disposed before starting the next.
+// It would be possible to drive a version of this from ActivitySource/ActivityListener
+// for cases where we are already incurring the cost of allocating the Activities
+public class ActivityStatusSubMetric : StatusSubMetric, IDisposable {
+	private const string Idle = "Idle";
 
-		public IDisposable StartActivity(string name) {
-			SetStatus(name);
-			return this;
-		}
+	public ActivityStatusSubMetric(string componentName, StatusMetric metric)
+		: base(componentName, Idle, metric) {
+	}
 
-		public void Dispose() {
-			SetStatus(Idle);
-		}
+	public IDisposable StartActivity(string name) {
+		SetStatus(name);
+		return this;
+	}
+
+	public void Dispose() {
+		SetStatus(Idle);
 	}
 }

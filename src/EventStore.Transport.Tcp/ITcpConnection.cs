@@ -6,23 +6,23 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
-namespace EventStore.Transport.Tcp {
-	public interface ITcpConnection {
-		event Action<ITcpConnection, SocketError> ConnectionClosed;
+namespace EventStore.Transport.Tcp;
 
-		Guid ConnectionId { get; }
-		string ClientConnectionName { get; }
-		IPEndPoint RemoteEndPoint { get; }
-		IPEndPoint LocalEndPoint { get; }
-		int SendQueueSize { get; }
-		int PendingSendBytes { get; }
-		long TotalBytesSent { get; }
-		long TotalBytesReceived { get; }
-		bool IsClosed { get; }
+public interface ITcpConnection {
+	event Action<ITcpConnection, SocketError> ConnectionClosed;
 
-		void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback);
-		void EnqueueSend(IEnumerable<ArraySegment<byte>> data);
-		void Close(string reason);
-		void SetClientConnectionName(string clientConnectionName);
-	}
+	Guid ConnectionId { get; }
+	string ClientConnectionName { get; }
+	IPEndPoint RemoteEndPoint { get; }
+	IPEndPoint LocalEndPoint { get; }
+	int SendQueueSize { get; }
+	int PendingSendBytes { get; }
+	long TotalBytesSent { get; }
+	long TotalBytesReceived { get; }
+	bool IsClosed { get; }
+
+	void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback);
+	void EnqueueSend(IEnumerable<ArraySegment<byte>> data);
+	void Close(string reason);
+	void SetClientConnectionName(string clientConnectionName);
 }

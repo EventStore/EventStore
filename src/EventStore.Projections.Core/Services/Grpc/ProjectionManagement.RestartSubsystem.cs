@@ -9,37 +9,37 @@ using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 
-namespace EventStore.Projections.Core.Services.Grpc {
-	internal partial class ProjectionManagement {
-		private static readonly Operation RestartOperation = new Operation(Operations.Projections.Restart);
+namespace EventStore.Projections.Core.Services.Grpc;
 
-		public override async Task<Empty> RestartSubsystem(Empty empty, ServerCallContext context) {
-			var restart = new TaskCompletionSource<bool>();
-			var envelope = new CallbackEnvelope(OnMessage);
+internal partial class ProjectionManagement {
+	private static readonly Operation RestartOperation = new Operation(Operations.Projections.Restart);
 
-			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, RestartOperation, context.CancellationToken)) {
-				throw RpcExceptions.AccessDenied();
-			}
+	public override async Task<Empty> RestartSubsystem(Empty empty, ServerCallContext context) {
+		var restart = new TaskCompletionSource<bool>();
+		var envelope = new CallbackEnvelope(OnMessage);
 
-			_publisher.Publish(new ProjectionSubsystemMessage.RestartSubsystem(envelope));
+		var user = context.GetHttpContext().User;
+		if (!await _authorizationProvider.CheckAccessAsync(user, RestartOperation, context.CancellationToken)) {
+			throw RpcExceptions.AccessDenied();
+		}
 
-			await restart.Task;
-			return new Empty();
+		_publisher.Publish(new ProjectionSubsystemMessage.RestartSubsystem(envelope));
 
-			void OnMessage(Message message) {
-				switch (message) {
-					case ProjectionSubsystemMessage.SubsystemRestarting _:
-						restart.TrySetResult(true);
-						break;
-					case ProjectionSubsystemMessage.InvalidSubsystemRestart fail:
-						restart.TrySetException(InvalidSubsystemRestart(fail.SubsystemState));
-						break;
-					default:
-						restart.TrySetException(
-							UnknownMessage<ProjectionSubsystemMessage.SubsystemRestarting>(message));
-						break;
-				}
+		await restart.Task;
+		return new Empty();
+
+		void OnMessage(Message message) {
+			switch (message) {
+				case ProjectionSubsystemMessage.SubsystemRestarting _:
+					restart.TrySetResult(true);
+					break;
+				case ProjectionSubsystemMessage.InvalidSubsystemRestart fail:
+					restart.TrySetException(InvalidSubsystemRestart(fail.SubsystemState));
+					break;
+				default:
+					restart.TrySetException(
+						UnknownMessage<ProjectionSubsystemMessage.SubsystemRestarting>(message));
+					break;
 			}
 		}
 	}

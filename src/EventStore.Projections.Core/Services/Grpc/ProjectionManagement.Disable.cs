@@ -9,43 +9,43 @@ using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 
-namespace EventStore.Projections.Core.Services.Grpc {
-	internal partial class ProjectionManagement {
-		private static readonly Operation DisableOperation = new Operation(Operations.Projections.Disable);
-		public override async Task<DisableResp> Disable(DisableReq request, ServerCallContext context) {
-			var disableSource = new TaskCompletionSource<bool>();
+namespace EventStore.Projections.Core.Services.Grpc;
 
-			var options = request.Options;
+internal partial class ProjectionManagement {
+	private static readonly Operation DisableOperation = new Operation(Operations.Projections.Disable);
+	public override async Task<DisableResp> Disable(DisableReq request, ServerCallContext context) {
+		var disableSource = new TaskCompletionSource<bool>();
 
-			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, DisableOperation, context.CancellationToken)) {
-				throw RpcExceptions.AccessDenied();
-			}
-			var name = options.Name;
-			var runAs = new ProjectionManagementMessage.RunAs(user);
+		var options = request.Options;
 
-			var envelope = new CallbackEnvelope(OnMessage);
+		var user = context.GetHttpContext().User;
+		if (!await _authorizationProvider.CheckAccessAsync(user, DisableOperation, context.CancellationToken)) {
+			throw RpcExceptions.AccessDenied();
+		}
+		var name = options.Name;
+		var runAs = new ProjectionManagementMessage.RunAs(user);
 
-			_publisher.Publish(options.WriteCheckpoint
-				? new ProjectionManagementMessage.Command.Disable(envelope, name, runAs)
-				: (Message)new ProjectionManagementMessage.Command.Abort(envelope, name, runAs));
+		var envelope = new CallbackEnvelope(OnMessage);
 
-			await disableSource.Task;
+		_publisher.Publish(options.WriteCheckpoint
+			? new ProjectionManagementMessage.Command.Disable(envelope, name, runAs)
+			: (Message)new ProjectionManagementMessage.Command.Abort(envelope, name, runAs));
 
-			return new DisableResp();
+		await disableSource.Task;
 
-			void OnMessage(Message message) {
-				switch (message) {
-					case ProjectionManagementMessage.Updated:
-						disableSource.TrySetResult(true);
-						break;
-					case ProjectionManagementMessage.NotFound:
-						disableSource.TrySetException(ProjectionNotFound(name));
-						break;
-					default:
-						disableSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
-						break;
-				}
+		return new DisableResp();
+
+		void OnMessage(Message message) {
+			switch (message) {
+				case ProjectionManagementMessage.Updated:
+					disableSource.TrySetResult(true);
+					break;
+				case ProjectionManagementMessage.NotFound:
+					disableSource.TrySetException(ProjectionNotFound(name));
+					break;
+				default:
+					disableSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
+					break;
 			}
 		}
 	}

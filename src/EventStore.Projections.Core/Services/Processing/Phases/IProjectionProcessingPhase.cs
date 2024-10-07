@@ -7,28 +7,28 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Emitting;
 
-namespace EventStore.Projections.Core.Services.Processing.Phases {
-	public interface IProjectionProcessingPhase : IDisposable,
-		IHandle<CoreProjectionManagementMessage.GetState>,
-		IHandle<CoreProjectionManagementMessage.GetResult>,
-		IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded> {
-		CheckpointTag AdjustTag(CheckpointTag tag);
+namespace EventStore.Projections.Core.Services.Processing.Phases;
 
-		void InitializeFromCheckpoint(CheckpointTag checkpointTag);
+public interface IProjectionProcessingPhase : IDisposable,
+	IHandle<CoreProjectionManagementMessage.GetState>,
+	IHandle<CoreProjectionManagementMessage.GetResult>,
+	IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded> {
+	CheckpointTag AdjustTag(CheckpointTag tag);
 
-		//TODO: remove from - it is passed for validation purpose only
-		void Subscribe(CheckpointTag from, bool fromCheckpoint);
+	void InitializeFromCheckpoint(CheckpointTag checkpointTag);
 
-		void ProcessEvent();
+	//TODO: remove from - it is passed for validation purpose only
+	void Subscribe(CheckpointTag from, bool fromCheckpoint);
 
-		void EnsureUnsubscribed();
+	void ProcessEvent();
 
-		void SetProjectionState(PhaseState state);
+	void EnsureUnsubscribed();
 
-		void GetStatistics(ProjectionStatistics info);
+	void SetProjectionState(PhaseState state);
 
-		CheckpointTag MakeZeroCheckpointTag();
-		ICoreProjectionCheckpointManager CheckpointManager { get; }
-		IEmittedStreamsTracker EmittedStreamsTracker { get; }
-	}
+	void GetStatistics(ProjectionStatistics info);
+
+	CheckpointTag MakeZeroCheckpointTag();
+	ICoreProjectionCheckpointManager CheckpointManager { get; }
+	IEmittedStreamsTracker EmittedStreamsTracker { get; }
 }

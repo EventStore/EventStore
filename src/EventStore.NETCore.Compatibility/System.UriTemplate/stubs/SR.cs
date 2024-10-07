@@ -3,16 +3,16 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace System.ServiceModel
-{
-	using System.Globalization;
+namespace System.ServiceModel;
+
+using System.Globalization;
     using System.Resources;
     using System.Threading;
 
     internal sealed class SR
     {
-	    internal const string BindUriTemplateToNullOrEmptyPathParam = "BindUriTemplateToNullOrEmptyPathParam";
-	    internal const string ObjectIsReadOnly = "ObjectIsReadOnly";
+    internal const string BindUriTemplateToNullOrEmptyPathParam = "BindUriTemplateToNullOrEmptyPathParam";
+    internal const string ObjectIsReadOnly = "ObjectIsReadOnly";
         internal const string UTAdditionalDefaultIsInvalid = "UTAdditionalDefaultIsInvalid";
         internal const string UTBadBaseAddress = "UTBadBaseAddress";
         internal const string UTBindByNameCalledWithEmptyKey = "UTBindByNameCalledWithEmptyKey";
@@ -137,4 +137,3 @@ namespace System.ServiceModel
             }
         }
     }
-}

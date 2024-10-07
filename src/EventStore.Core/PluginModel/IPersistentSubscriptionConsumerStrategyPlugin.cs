@@ -4,12 +4,12 @@
 using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
-namespace EventStore.Core.PluginModel {
-	public interface IPersistentSubscriptionConsumerStrategyPlugin {
-		string Name { get; }
+namespace EventStore.Core.PluginModel;
 
-		string Version { get; }
+public interface IPersistentSubscriptionConsumerStrategyPlugin {
+	string Name { get; }
 
-		IPersistentSubscriptionConsumerStrategyFactory GetConsumerStrategyFactory();
-	}
+	string Version { get; }
+
+	IPersistentSubscriptionConsumerStrategyFactory GetConsumerStrategyFactory();
 }

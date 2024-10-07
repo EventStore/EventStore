@@ -16,54 +16,54 @@ using EventStore.Projections.Core.Services.Processing.Checkpointing;
 using EventStore.Projections.Core.Services.Processing.Emitting;
 using EventStore.Projections.Core.Services.Processing.Emitting.EmittedEvents;
 
-namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_a_read_completes_before_a_timeout_in_recovery<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
-		private const string TestStreamId = "test_stream";
-		private EmittedStream _stream;
-		private TestCheckpointManagerMessageHandler _readyHandler;
-		private List<TimerMessage.Schedule> timerMessages = new();
+namespace EventStore.Projections.Core.Tests.Services.emitted_stream;
 
-		protected override void Given() {
-			AllWritesQueueUp();
-			ExistingEvent(TestStreamId, "type", @"{""c"": 100, ""p"": 50}", "data");
-			ReadsBackwardQueuesUp();
-		}
+[TestFixture(typeof(LogFormat.V2), typeof(string))]
+[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+public class when_a_read_completes_before_a_timeout_in_recovery<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
+	private const string TestStreamId = "test_stream";
+	private EmittedStream _stream;
+	private TestCheckpointManagerMessageHandler _readyHandler;
+	private List<TimerMessage.Schedule> timerMessages = new();
 
-		[SetUp]
-		public void setup() {
-			_readyHandler = new TestCheckpointManagerMessageHandler();
-			_bus.Subscribe(new AdHocHandler<TimerMessage.Schedule>(msg => timerMessages.Add(msg)));
+	protected override void Given() {
+		AllWritesQueueUp();
+		ExistingEvent(TestStreamId, "type", @"{""c"": 100, ""p"": 50}", "data");
+		ReadsBackwardQueuesUp();
+	}
 
-			_stream = new EmittedStream(
-				TestStreamId,
-				new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),
-					new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
-				new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0),
-				CheckpointTag.FromPosition(0, 40, 30),
-				_bus, _ioDispatcher, _readyHandler);
-			_stream.Start();
-			_stream.EmitEvents(
-				new[] {
-					new EmittedDataEvent(
-						TestStreamId, Guid.NewGuid(), "type", true, "data", null,
-						CheckpointTag.FromPosition(0, 200, 150), null)
-				});
-			CompleteOneReadBackwards();
-		}
+	[SetUp]
+	public void setup() {
+		_readyHandler = new TestCheckpointManagerMessageHandler();
+		_bus.Subscribe(new AdHocHandler<TimerMessage.Schedule>(msg => timerMessages.Add(msg)));
 
-		[Test]
-		public void should_not_retry_the_read_upon_the_read_timing_out() {
-			var timerMessage = timerMessages.FirstOrDefault();
-			Assert.NotNull(timerMessage,
-				$"Expected a {nameof(TimerMessage.Schedule)} to have been published, but none were received");
-			timerMessage.Reply();
+		_stream = new EmittedStream(
+			TestStreamId,
+			new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),
+				new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
+			new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0),
+			CheckpointTag.FromPosition(0, 40, 30),
+			_bus, _ioDispatcher, _readyHandler);
+		_stream.Start();
+		_stream.EmitEvents(
+			new[] {
+				new EmittedDataEvent(
+					TestStreamId, Guid.NewGuid(), "type", true, "data", null,
+					CheckpointTag.FromPosition(0, 200, 150), null)
+			});
+		CompleteOneReadBackwards();
+	}
 
-			var readEventsBackwards = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>()
-				.Where(x => x.EventStreamId == TestStreamId);
+	[Test]
+	public void should_not_retry_the_read_upon_the_read_timing_out() {
+		var timerMessage = timerMessages.FirstOrDefault();
+		Assert.NotNull(timerMessage,
+			$"Expected a {nameof(TimerMessage.Schedule)} to have been published, but none were received");
+		timerMessage.Reply();
 
-			Assert.AreEqual(1, readEventsBackwards.Count());
-		}
+		var readEventsBackwards = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>()
+			.Where(x => x.EventStreamId == TestStreamId);
+
+		Assert.AreEqual(1, readEventsBackwards.Count());
 	}
 }

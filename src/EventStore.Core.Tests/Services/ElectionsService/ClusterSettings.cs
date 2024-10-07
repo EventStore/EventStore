@@ -7,36 +7,36 @@ using EventStore.Common.Utils;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
 
-namespace EventStore.Core.Tests.Services.ElectionsService {
-	public sealed class ClusterSettings {
-		public string ClusterDns { get; }
+namespace EventStore.Core.Tests.Services.ElectionsService;
 
-		public ClusterVNodeSettings Self { get; }
-		public ClusterVNodeSettings[] GroupMembers { get; }
+public sealed class ClusterSettings {
+	public string ClusterDns { get; }
 
-		public IPEndPoint ClusterManager { get; }
+	public ClusterVNodeSettings Self { get; }
+	public ClusterVNodeSettings[] GroupMembers { get; }
 
-		public int ClusterNodesCount { get; }
+	public IPEndPoint ClusterManager { get; }
 
-		public ClusterSettings(string clusterDns,
-			IPEndPoint clusterManager,
-			ClusterVNodeSettings self,
-			ClusterVNodeSettings[] groupMembers,
-			int expectedNodesCount) {
-			if (string.IsNullOrWhiteSpace(clusterDns))
-				throw new ArgumentException($"Wrong cluster DNS name: {clusterDns}", clusterDns);
-			if (self == null)
-				throw new ArgumentNullException(nameof(self));
-			if (groupMembers == null)
-				throw new ArgumentNullException(nameof(groupMembers));
-			if (clusterManager == null)
-				throw new ArgumentNullException(nameof(clusterManager));
+	public int ClusterNodesCount { get; }
 
-			ClusterDns = clusterDns;
-			Self = self;
-			GroupMembers = groupMembers;
-			ClusterManager = clusterManager;
-			ClusterNodesCount = expectedNodesCount;
-		}
+	public ClusterSettings(string clusterDns,
+		IPEndPoint clusterManager,
+		ClusterVNodeSettings self,
+		ClusterVNodeSettings[] groupMembers,
+		int expectedNodesCount) {
+		if (string.IsNullOrWhiteSpace(clusterDns))
+			throw new ArgumentException($"Wrong cluster DNS name: {clusterDns}", clusterDns);
+		if (self == null)
+			throw new ArgumentNullException(nameof(self));
+		if (groupMembers == null)
+			throw new ArgumentNullException(nameof(groupMembers));
+		if (clusterManager == null)
+			throw new ArgumentNullException(nameof(clusterManager));
+
+		ClusterDns = clusterDns;
+		Self = self;
+		GroupMembers = groupMembers;
+		ClusterManager = clusterManager;
+		ClusterNodesCount = expectedNodesCount;
 	}
 }

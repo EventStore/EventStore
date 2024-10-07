@@ -10,29 +10,29 @@ using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.ClientAPI.UserManagement {
-	[Category("LongRunning"), Category("ClientAPI")]
-	public abstract class TestWithNode<TLogFormat, TStreamId>  : SpecificationWithDirectoryPerTestFixture {
-		protected MiniNode<TLogFormat, TStreamId> _node;
-		protected UsersManager _manager;
+namespace EventStore.Core.Tests.ClientAPI.UserManagement;
 
-		[OneTimeSetUp]
-		public override async Task TestFixtureSetUp() {
-			await base.TestFixtureSetUp();
-			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
-			await _node.Start();
-			_manager = new UsersManager(new NoopLogger(), _node.HttpEndPoint, TimeSpan.FromSeconds(5), httpMessageHandler: _node.HttpMessageHandler);
-		}
+[Category("LongRunning"), Category("ClientAPI")]
+public abstract class TestWithNode<TLogFormat, TStreamId>  : SpecificationWithDirectoryPerTestFixture {
+	protected MiniNode<TLogFormat, TStreamId> _node;
+	protected UsersManager _manager;
 
-		[OneTimeTearDown]
-		public override async Task TestFixtureTearDown() {
-			await _node.Shutdown();
-			await base.TestFixtureTearDown();
-		}
+	[OneTimeSetUp]
+	public override async Task TestFixtureSetUp() {
+		await base.TestFixtureSetUp();
+		_node = new MiniNode<TLogFormat, TStreamId>(PathName);
+		await _node.Start();
+		_manager = new UsersManager(new NoopLogger(), _node.HttpEndPoint, TimeSpan.FromSeconds(5), httpMessageHandler: _node.HttpMessageHandler);
+	}
+
+	[OneTimeTearDown]
+	public override async Task TestFixtureTearDown() {
+		await _node.Shutdown();
+		await base.TestFixtureTearDown();
+	}
 
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
-		}
+	protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+		return TestConnection.Create(node.TcpEndPoint);
 	}
 }

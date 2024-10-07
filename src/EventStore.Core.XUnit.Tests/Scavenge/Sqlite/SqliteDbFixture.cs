@@ -8,47 +8,47 @@ using EventStore.Core.TransactionLog.Chunks;
 using Microsoft.Data.Sqlite;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge.Sqlite {
-	public class SqliteDbFixture<T> : IAsyncLifetime {
-		private readonly string _connectionString;
+namespace EventStore.Core.XUnit.Tests.Scavenge.Sqlite;
 
-		public SqliteConnection DbConnection { get; set; }
-		public ObjectPool<SqliteConnection> DbConnectionPool { get; set; }
+public class SqliteDbFixture<T> : IAsyncLifetime {
+	private readonly string _connectionString;
 
-		public string Directory { get; }
+	public SqliteConnection DbConnection { get; set; }
+	public ObjectPool<SqliteConnection> DbConnectionPool { get; set; }
 
-		public SqliteDbFixture(string dir) {
-			Directory = dir;
-			var fileName = typeof(T).Name + ".db";
-			var connectionStringBuilder = new SqliteConnectionStringBuilder();
-			connectionStringBuilder.Pooling = false; // prevents the db files from being locked
-			connectionStringBuilder.DataSource = Path.Combine(dir, fileName);
-			_connectionString = connectionStringBuilder.ConnectionString;
-		}
-		
-		public Task InitializeAsync() {
-			DbConnection = new SqliteConnection(_connectionString);
-			DbConnectionPool = new ObjectPool<SqliteConnection>(
-				objectPoolName: "sqlite connections",
-				initialCount: 0,
-				maxCount: TFChunkScavenger.MaxThreadCount + 1,
-				factory: () => {
-					var dbConnection = new SqliteConnection(_connectionString);
-					dbConnection.Open();
-					return dbConnection;
-				},
-				dispose: dbConnection => {
-					dbConnection.Close();
-					dbConnection.Dispose();
-				});
-			return DbConnection.OpenAsync();
-		}
+	public string Directory { get; }
 
-		public Task DisposeAsync() {
-			DbConnection.Close();
-			DbConnection.Dispose();
-			DbConnectionPool.Dispose();
-			return Task.CompletedTask;
-		}
+	public SqliteDbFixture(string dir) {
+		Directory = dir;
+		var fileName = typeof(T).Name + ".db";
+		var connectionStringBuilder = new SqliteConnectionStringBuilder();
+		connectionStringBuilder.Pooling = false; // prevents the db files from being locked
+		connectionStringBuilder.DataSource = Path.Combine(dir, fileName);
+		_connectionString = connectionStringBuilder.ConnectionString;
+	}
+	
+	public Task InitializeAsync() {
+		DbConnection = new SqliteConnection(_connectionString);
+		DbConnectionPool = new ObjectPool<SqliteConnection>(
+			objectPoolName: "sqlite connections",
+			initialCount: 0,
+			maxCount: TFChunkScavenger.MaxThreadCount + 1,
+			factory: () => {
+				var dbConnection = new SqliteConnection(_connectionString);
+				dbConnection.Open();
+				return dbConnection;
+			},
+			dispose: dbConnection => {
+				dbConnection.Close();
+				dbConnection.Dispose();
+			});
+		return DbConnection.OpenAsync();
+	}
+
+	public Task DisposeAsync() {
+		DbConnection.Close();
+		DbConnection.Dispose();
+		DbConnectionPool.Dispose();
+		return Task.CompletedTask;
 	}
 }

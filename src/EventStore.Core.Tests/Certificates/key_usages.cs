@@ -7,108 +7,108 @@ using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Certificates {
-	public class key_usages {
-		private readonly Oid _serverAuth = Oid.FromOidValue("1.3.6.1.5.5.7.3.1", OidGroup.EnhancedKeyUsage);
-		private readonly Oid _clientAuth = Oid.FromOidValue("1.3.6.1.5.5.7.3.2", OidGroup.EnhancedKeyUsage);
-		private const X509KeyUsageFlags DefaultKeyUsages = X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment;
+namespace EventStore.Core.Tests.Certificates;
 
-		private static X509Certificate2 GenSut(X509KeyUsageFlags keyUsages, OidCollection extendedKeyUsages) {
-			using (RSA rsa = RSA.Create()) {
-				var certReq =
-					new CertificateRequest("CN=hello", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+public class key_usages {
+	private readonly Oid _serverAuth = Oid.FromOidValue("1.3.6.1.5.5.7.3.1", OidGroup.EnhancedKeyUsage);
+	private readonly Oid _clientAuth = Oid.FromOidValue("1.3.6.1.5.5.7.3.2", OidGroup.EnhancedKeyUsage);
+	private const X509KeyUsageFlags DefaultKeyUsages = X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment;
 
-				var keyUsageExtension = new X509KeyUsageExtension(keyUsages, false);
-				var extendedKeyUsageExtension = new X509EnhancedKeyUsageExtension(extendedKeyUsages, false);
+	private static X509Certificate2 GenSut(X509KeyUsageFlags keyUsages, OidCollection extendedKeyUsages) {
+		using (RSA rsa = RSA.Create()) {
+			var certReq =
+				new CertificateRequest("CN=hello", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
-				certReq.CertificateExtensions.Add(keyUsageExtension);
+			var keyUsageExtension = new X509KeyUsageExtension(keyUsages, false);
+			var extendedKeyUsageExtension = new X509EnhancedKeyUsageExtension(extendedKeyUsages, false);
 
-				if (extendedKeyUsages.Count != 0)
-					certReq.CertificateExtensions.Add(extendedKeyUsageExtension);
+			certReq.CertificateExtensions.Add(keyUsageExtension);
 
-				return certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1),
-					DateTimeOffset.UtcNow.AddMonths(1));
-			}
+			if (extendedKeyUsages.Count != 0)
+				certReq.CertificateExtensions.Add(extendedKeyUsageExtension);
+
+			return certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1),
+				DateTimeOffset.UtcNow.AddMonths(1));
+		}
+	}
+
+	private static OidCollection GenOids(params Oid[] oids) {
+		var oidCollection = new OidCollection();
+		foreach (var oid in oids) {
+			oidCollection.Add(oid);
 		}
 
-		private static OidCollection GenOids(params Oid[] oids) {
-			var oidCollection = new OidCollection();
-			foreach (var oid in oids) {
-				oidCollection.Add(oid);
-			}
+		return oidCollection;
+	}
 
-			return oidCollection;
-		}
+	[Test]
+	public void certificate_with_client_auth_eku() {
+		var sut = GenSut(
+			keyUsages: DefaultKeyUsages,
+			extendedKeyUsages: GenOids(_clientAuth));
 
-		[Test]
-		public void certificate_with_client_auth_eku() {
-			var sut = GenSut(
-				keyUsages: DefaultKeyUsages,
-				extendedKeyUsages: GenOids(_clientAuth));
+		Assert.True(sut.IsClientCertificate(out _));
+		Assert.False(sut.IsServerCertificate(out _));
+	}
 
-			Assert.True(sut.IsClientCertificate(out _));
-			Assert.False(sut.IsServerCertificate(out _));
-		}
+	[Test]
+	public void certificate_with_client_and_server_auth_eku() {
+		var sut = GenSut(
+			keyUsages: DefaultKeyUsages,
+			extendedKeyUsages: GenOids(_clientAuth, _serverAuth));
 
-		[Test]
-		public void certificate_with_client_and_server_auth_eku() {
-			var sut = GenSut(
-				keyUsages: DefaultKeyUsages,
-				extendedKeyUsages: GenOids(_clientAuth, _serverAuth));
+		Assert.True(sut.IsServerCertificate(out _));
+		Assert.True(sut.IsClientCertificate(out _));
+	}
 
-			Assert.True(sut.IsServerCertificate(out _));
-			Assert.True(sut.IsClientCertificate(out _));
-		}
+	[Test]
+	public void certificate_with_server_auth_eku_only() {
+		var sut = GenSut(
+			keyUsages: DefaultKeyUsages,
+			extendedKeyUsages: GenOids(_serverAuth));
 
-		[Test]
-		public void certificate_with_server_auth_eku_only() {
-			var sut = GenSut(
-				keyUsages: DefaultKeyUsages,
-				extendedKeyUsages: GenOids(_serverAuth));
+		// historically, server certificates also have the clientAuth EKU
+		Assert.False(sut.IsServerCertificate(out _));
+		Assert.False(sut.IsClientCertificate(out _));
+	}
 
-			// historically, server certificates also have the clientAuth EKU
-			Assert.False(sut.IsServerCertificate(out _));
-			Assert.False(sut.IsClientCertificate(out _));
-		}
+	[Test]
+	public void certificate_with_no_ekus() {
+		var sut = GenSut(
+			keyUsages: DefaultKeyUsages,
+			extendedKeyUsages: GenOids());
 
-		[Test]
-		public void certificate_with_no_ekus() {
-			var sut = GenSut(
-				keyUsages: DefaultKeyUsages,
-				extendedKeyUsages: GenOids());
+		Assert.True(sut.IsServerCertificate(out _));
+		Assert.False(sut.IsClientCertificate(out _));
+	}
 
-			Assert.True(sut.IsServerCertificate(out _));
-			Assert.False(sut.IsClientCertificate(out _));
-		}
+	[Test]
+	public void certificate_with_no_key_usage() {
+		var sut = GenSut(
+			keyUsages: X509KeyUsageFlags.None,
+			extendedKeyUsages: GenOids(_clientAuth, _serverAuth));
 
-		[Test]
-		public void certificate_with_no_key_usage() {
-			var sut = GenSut(
-				keyUsages: X509KeyUsageFlags.None,
-				extendedKeyUsages: GenOids(_clientAuth, _serverAuth));
+		Assert.False(sut.IsClientCertificate(out _));
+		Assert.False(sut.IsServerCertificate(out _));
+	}
 
-			Assert.False(sut.IsClientCertificate(out _));
-			Assert.False(sut.IsServerCertificate(out _));
-		}
+	[Test]
+	public void certificate_with_missing_key_usage() {
+		var sut = GenSut(
+			keyUsages: X509KeyUsageFlags.KeyEncipherment,
+			extendedKeyUsages: GenOids(_clientAuth, _serverAuth));
 
-		[Test]
-		public void certificate_with_missing_key_usage() {
-			var sut = GenSut(
-				keyUsages: X509KeyUsageFlags.KeyEncipherment,
-				extendedKeyUsages: GenOids(_clientAuth, _serverAuth));
+		Assert.False(sut.IsClientCertificate(out _));
+		Assert.False(sut.IsServerCertificate(out _));
+	}
 
-			Assert.False(sut.IsClientCertificate(out _));
-			Assert.False(sut.IsServerCertificate(out _));
-		}
+	[Test]
+	public void certificate_with_key_agreement_instead_of_key_encipherment_key_usage() {
+		var sut = GenSut(
+			keyUsages: X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyAgreement,
+			extendedKeyUsages: GenOids(_clientAuth, _serverAuth));
 
-		[Test]
-		public void certificate_with_key_agreement_instead_of_key_encipherment_key_usage() {
-			var sut = GenSut(
-				keyUsages: X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyAgreement,
-				extendedKeyUsages: GenOids(_clientAuth, _serverAuth));
-
-			Assert.True(sut.IsClientCertificate(out _));
-			Assert.True(sut.IsServerCertificate(out _));
-		}
+		Assert.True(sut.IsClientCertificate(out _));
+		Assert.True(sut.IsServerCertificate(out _));
 	}
 }

@@ -9,33 +9,33 @@ using EventStore.Client.Users;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
-namespace EventStore.Core.Services.Transport.Grpc {
-	internal partial class Users {
-		private static readonly Operation UpdateOperation = new Operation(Plugins.Authorization.Operations.Users.Update);
-		
-		public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
-			var options = request.Options;
+namespace EventStore.Core.Services.Transport.Grpc;
 
-			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, UpdateOperation, context.CancellationToken)) {
-				throw RpcExceptions.AccessDenied();
-			}
-			var updateSource = new TaskCompletionSource<bool>();
+internal partial class Users {
+	private static readonly Operation UpdateOperation = new Operation(Plugins.Authorization.Operations.Users.Update);
+	
+	public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
+		var options = request.Options;
 
-			var envelope = new CallbackEnvelope(OnMessage);
+		var user = context.GetHttpContext().User;
+		if (!await _authorizationProvider.CheckAccessAsync(user, UpdateOperation, context.CancellationToken)) {
+			throw RpcExceptions.AccessDenied();
+		}
+		var updateSource = new TaskCompletionSource<bool>();
 
-			_publisher.Publish(new UserManagementMessage.Update(envelope, user, options.LoginName, options.FullName,
-				options.Groups.ToArray()));
+		var envelope = new CallbackEnvelope(OnMessage);
 
-			await updateSource.Task;
+		_publisher.Publish(new UserManagementMessage.Update(envelope, user, options.LoginName, options.FullName,
+			options.Groups.ToArray()));
 
-			return new UpdateResp();
+		await updateSource.Task;
 
-			void OnMessage(Message message) {
-				if (HandleErrors(options.LoginName, message, updateSource)) return;
+		return new UpdateResp();
 
-				updateSource.TrySetResult(true);
-			}
+		void OnMessage(Message message) {
+			if (HandleErrors(options.LoginName, message, updateSource)) return;
+
+			updateSource.TrySetResult(true);
 		}
 	}
 }

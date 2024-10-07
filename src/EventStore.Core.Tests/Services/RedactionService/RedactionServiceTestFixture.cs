@@ -8,25 +8,25 @@ using EventStore.Core.Tests.Bus;
 using EventStore.Core.Tests.Services.Storage;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.RedactionService {
-	[TestFixture]
-	public abstract class RedactionServiceTestFixture<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
-		private SemaphoreSlimLock _switchChunksLock;
-		public RedactionService<TStreamId> RedactionService { get; private set; }
+namespace EventStore.Core.Tests.Services.RedactionService;
 
-		public RedactionServiceTestFixture() : base(chunkSize: 1024) { }
+[TestFixture]
+public abstract class RedactionServiceTestFixture<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
+	private SemaphoreSlimLock _switchChunksLock;
+	public RedactionService<TStreamId> RedactionService { get; private set; }
 
-		[SetUp]
-		public virtual Task SetUp() {
-			_switchChunksLock = new SemaphoreSlimLock();
-			RedactionService = new RedactionService<TStreamId>(new FakeQueuedHandler(), Db, ReadIndex, _switchChunksLock);
-			return Task.CompletedTask;
-		}
+	public RedactionServiceTestFixture() : base(chunkSize: 1024) { }
 
-		[TearDown]
-		public virtual Task TearDown() {
-			_switchChunksLock?.Dispose();
-			return Task.CompletedTask;
-		}
+	[SetUp]
+	public virtual Task SetUp() {
+		_switchChunksLock = new SemaphoreSlimLock();
+		RedactionService = new RedactionService<TStreamId>(new FakeQueuedHandler(), Db, ReadIndex, _switchChunksLock);
+		return Task.CompletedTask;
+	}
+
+	[TearDown]
+	public virtual Task TearDown() {
+		_switchChunksLock?.Dispose();
+		return Task.CompletedTask;
 	}
 }

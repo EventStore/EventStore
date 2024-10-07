@@ -15,84 +15,84 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Storage.Chaser {
-	public abstract class with_storage_chaser_service<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
-		readonly ICheckpoint _writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
-		readonly ICheckpoint _chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
-		readonly ICheckpoint _epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
-		readonly ICheckpoint _proposalChk = new InMemoryCheckpoint(Checkpoint.Proposal, initValue: -1);
-		readonly ICheckpoint _truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
-		readonly ICheckpoint _replicationCheckpoint = new InMemoryCheckpoint(-1);
-		readonly ICheckpoint _indexCheckpoint = new InMemoryCheckpoint(-1);
-		readonly ICheckpoint _streamExistenceFilterCheckpoint = new InMemoryCheckpoint(-1);
+namespace EventStore.Core.Tests.Services.Storage.Chaser;
 
-		protected SynchronousScheduler Publisher = new("publisher");
-		protected StorageChaser<TStreamId> Service;
-		protected FakeIndexCommitterService<TStreamId> IndexCommitter;
-		protected IEpochManager EpochManager;
-		protected TFChunkDb Db;
-		protected TFChunkChaser Chaser;
-		protected TFChunkWriter Writer;
+public abstract class with_storage_chaser_service<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+	readonly ICheckpoint _writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
+	readonly ICheckpoint _chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
+	readonly ICheckpoint _epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
+	readonly ICheckpoint _proposalChk = new InMemoryCheckpoint(Checkpoint.Proposal, initValue: -1);
+	readonly ICheckpoint _truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
+	readonly ICheckpoint _replicationCheckpoint = new InMemoryCheckpoint(-1);
+	readonly ICheckpoint _indexCheckpoint = new InMemoryCheckpoint(-1);
+	readonly ICheckpoint _streamExistenceFilterCheckpoint = new InMemoryCheckpoint(-1);
 
-		protected ConcurrentQueue<StorageMessage.PrepareAck> PrepareAcks = new ConcurrentQueue<StorageMessage.PrepareAck>();
-		protected ConcurrentQueue<StorageMessage.CommitAck> CommitAcks = new ConcurrentQueue<StorageMessage.CommitAck>();
+	protected SynchronousScheduler Publisher = new("publisher");
+	protected StorageChaser<TStreamId> Service;
+	protected FakeIndexCommitterService<TStreamId> IndexCommitter;
+	protected IEpochManager EpochManager;
+	protected TFChunkDb Db;
+	protected TFChunkChaser Chaser;
+	protected TFChunkWriter Writer;
 
-		[OneTimeSetUp]
-		public override async Task TestFixtureSetUp() {
-			await base.TestFixtureSetUp();
-			Db = new TFChunkDb(CreateDbConfig());
-			Db.Open();
-			Chaser = new TFChunkChaser(Db, _writerChk, _chaserChk, false);
-			Chaser.Open();
-			Writer = new TFChunkWriter(Db);
-			Writer.Open();
+	protected ConcurrentQueue<StorageMessage.PrepareAck> PrepareAcks = new ConcurrentQueue<StorageMessage.PrepareAck>();
+	protected ConcurrentQueue<StorageMessage.CommitAck> CommitAcks = new ConcurrentQueue<StorageMessage.CommitAck>();
 
-			IndexCommitter = new FakeIndexCommitterService<TStreamId>();
-			EpochManager = new FakeEpochManager();
+	[OneTimeSetUp]
+	public override async Task TestFixtureSetUp() {
+		await base.TestFixtureSetUp();
+		Db = new TFChunkDb(CreateDbConfig());
+		Db.Open();
+		Chaser = new TFChunkChaser(Db, _writerChk, _chaserChk, false);
+		Chaser.Open();
+		Writer = new TFChunkWriter(Db);
+		Writer.Open();
 
-			Service = new StorageChaser<TStreamId>(
-				Publisher,
-				_writerChk,
-				Chaser,
-				IndexCommitter,
-				EpochManager,
-				new QueueStatsManager());
+		IndexCommitter = new FakeIndexCommitterService<TStreamId>();
+		EpochManager = new FakeEpochManager();
 
-			Service.Handle(new SystemMessage.SystemStart());
-			Service.Handle(new SystemMessage.SystemInit());
+		Service = new StorageChaser<TStreamId>(
+			Publisher,
+			_writerChk,
+			Chaser,
+			IndexCommitter,
+			EpochManager,
+			new QueueStatsManager());
 
-			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitAck>(CommitAcks.Enqueue));
-			Publisher.Subscribe(new AdHocHandler<StorageMessage.PrepareAck>(PrepareAcks.Enqueue));
+		Service.Handle(new SystemMessage.SystemStart());
+		Service.Handle(new SystemMessage.SystemInit());
 
-			When();
-		}
+		Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitAck>(CommitAcks.Enqueue));
+		Publisher.Subscribe(new AdHocHandler<StorageMessage.PrepareAck>(PrepareAcks.Enqueue));
 
-		[OneTimeTearDown]
-		public override async Task TestFixtureTearDown() {
-			await base.TestFixtureTearDown();
-			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
-		}
+		When();
+	}
+
+	[OneTimeTearDown]
+	public override async Task TestFixtureTearDown() {
+		await base.TestFixtureTearDown();
+		Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
+	}
 
 
-		public abstract void When();
+	public abstract void When();
 
-		private TFChunkDbConfig CreateDbConfig() {
+	private TFChunkDbConfig CreateDbConfig() {
 
-			var nodeConfig = new TFChunkDbConfig(
-				PathName,
-				new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-				1000,
-				10000,
-				_writerChk,
-				_chaserChk,
-				_epochChk,
-				_proposalChk,
-				_truncateChk,
-				_replicationCheckpoint,
-				_indexCheckpoint,
-				_streamExistenceFilterCheckpoint,
-				true);
-			return nodeConfig;
-		}
+		var nodeConfig = new TFChunkDbConfig(
+			PathName,
+			new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
+			1000,
+			10000,
+			_writerChk,
+			_chaserChk,
+			_epochChk,
+			_proposalChk,
+			_truncateChk,
+			_replicationCheckpoint,
+			_indexCheckpoint,
+			_streamExistenceFilterCheckpoint,
+			true);
+		return nodeConfig;
 	}
 }

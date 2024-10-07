@@ -10,115 +10,115 @@ using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
-namespace EventStore.SourceGenerators.Tests.Messaging {
-	using Test = CSharpSourceGeneratorVerifier<MessageSourceGenerator>.Test;
+namespace EventStore.SourceGenerators.Tests.Messaging;
 
-	public class GeneratorTests {
-		private static uint GenHash(int fileNumber) => (uint)$"/0/Test{fileNumber}.cs".GetHashCode();
-		private static string ReadFile(string fileName) => File.ReadAllText($"./Messaging/Cases/{fileName}");
+using Test = CSharpSourceGeneratorVerifier<MessageSourceGenerator>.Test;
 
-		private static async Task RunTestAsync(
-			string sourcePath,
-			string expectedPath,
-			params DiagnosticResult[] expectedDiagnostics) {
+public class GeneratorTests {
+	private static uint GenHash(int fileNumber) => (uint)$"/0/Test{fileNumber}.cs".GetHashCode();
+	private static string ReadFile(string fileName) => File.ReadAllText($"./Messaging/Cases/{fileName}");
 
-			var test = new Test() {
-				TestState = {
-					Sources = {
-						ReadFile("Message.cs"),
-						ReadFile(sourcePath),
-					},
-					GeneratedSources = {
-						(
-							typeof(MessageSourceGenerator),
-							$"Test0-{GenHash(0)}.g.cs",
-							SourceText.From(ReadFile("Message.g.cs"), Encoding.UTF8, SourceHashAlgorithm.Sha256)
-						),
-						(
-							typeof(MessageSourceGenerator),
-							$"Test1-{GenHash(1)}.g.cs",
-							SourceText.From(ReadFile(expectedPath), Encoding.UTF8, SourceHashAlgorithm.Sha256)
-						)
-					},
-					AdditionalReferences = {
-						typeof(DerivedMessageAttribute).Assembly,
-					},
-				}
-			};
+	private static async Task RunTestAsync(
+		string sourcePath,
+		string expectedPath,
+		params DiagnosticResult[] expectedDiagnostics) {
 
-			test.TestState.ExpectedDiagnostics.AddRange(expectedDiagnostics);
+		var test = new Test() {
+			TestState = {
+				Sources = {
+					ReadFile("Message.cs"),
+					ReadFile(sourcePath),
+				},
+				GeneratedSources = {
+					(
+						typeof(MessageSourceGenerator),
+						$"Test0-{GenHash(0)}.g.cs",
+						SourceText.From(ReadFile("Message.g.cs"), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+					),
+					(
+						typeof(MessageSourceGenerator),
+						$"Test1-{GenHash(1)}.g.cs",
+						SourceText.From(ReadFile(expectedPath), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+					)
+				},
+				AdditionalReferences = {
+					typeof(DerivedMessageAttribute).Assembly,
+				},
+			}
+		};
 
-			await test.RunAsync();
-		}
+		test.TestState.ExpectedDiagnostics.AddRange(expectedDiagnostics);
 
-		[Fact]
-		public async Task Simple() =>
-			await RunTestAsync("Simple.cs", "Simple.g.cs");
-
-		[Fact]
-		public async Task Abstract() =>
-			await RunTestAsync("Abstract.cs", "Abstract.g.cs");
-
-		[Fact]
-		public async Task FileScopedNamespace() =>
-			await RunTestAsync("FileScopedNamespace.cs", "FileScopedNamespace.g.cs");
-
-		[Fact]
-		public async Task Nested() =>
-			await RunTestAsync("Nested.cs", "Nested.g.cs");
-
-		[Fact]
-		public async Task NestedDerived() =>
-			await RunTestAsync("NestedDerived.cs", "NestedDerived.g.cs");
-
-		[Fact]
-		public async Task Impartial() =>
-			await RunTestAsync(
-				"Impartial.cs",
-				"Impartial.NOTCOMPILED.g.cs",
-				new DiagnosticResult("ESGEN001", DiagnosticSeverity.Error)
-					.WithSpan("/0/Test1.cs", 2, 2, 4, 3)
-					.WithMessage("Class \"A\" is not partial"),
-				new DiagnosticResult("CS0101", DiagnosticSeverity.Error)
-					.WithSpan(
-						$"EventStore.SourceGenerators{Path.DirectorySeparatorChar}" +
-						$"EventStore.SourceGenerators.Messaging.{nameof(MessageSourceGenerator)}{Path.DirectorySeparatorChar}" +
-						$"Test1-{GenHash(1)}.g.cs", 7, 15, 7, 16)
-					.WithArguments("A", "EventStore.SourceGenerators.Tests.Messaging.Impartial"));
-
-		[Fact]
-		public async Task ImpartialNested() =>
-			await RunTestAsync(
-				"ImpartialNested.cs",
-				"ImpartialNested.NOTCOMPILED.g.cs",
-				new DiagnosticResult("ESGEN001", DiagnosticSeverity.Error)
-					.WithSpan("/0/Test1.cs", 2, 2, 6, 3)
-					.WithMessage("Class \"N\" is not partial"),
-				new DiagnosticResult("CS0101", DiagnosticSeverity.Error)
-					.WithSpan(
-						$"EventStore.SourceGenerators{Path.DirectorySeparatorChar}" +
-						$"EventStore.SourceGenerators.Messaging.{nameof(MessageSourceGenerator)}{Path.DirectorySeparatorChar}" +
-						$"Test1-{GenHash(1)}.g.cs", 7, 15, 7, 16)
-					.WithArguments("N", "EventStore.SourceGenerators.Tests.Messaging.ImpartialNested"));
-
-		[Fact]
-		public async Task AbstractWithGroup() =>
-			await RunTestAsync(
-				"AbstractWithGroup.cs",
-				"AbstractWithGroup.NOTCOMPILED.g.cs",
-				new DiagnosticResult("ESGEN002", DiagnosticSeverity.Error)
-					.WithSpan("/0/Test1.cs", 2, 2, 4, 3)
-					.WithMessage("Abstract class \"A\" has a group specified")
-					.WithArguments("A"));
-
-		[Fact]
-		public async Task ConcreteWithoutGroup() =>
-			await RunTestAsync(
-				"ConcreteWithoutGroup.cs",
-				"ConcreteWithoutGroup.NOTCOMPILED.g.cs",
-				new DiagnosticResult("ESGEN003", DiagnosticSeverity.Error)
-					.WithSpan("/0/Test1.cs", 2, 2, 4, 3)
-					.WithMessage("Concrete class \"A\" does not have a group specified")
-					.WithArguments("A"));
+		await test.RunAsync();
 	}
+
+	[Fact]
+	public async Task Simple() =>
+		await RunTestAsync("Simple.cs", "Simple.g.cs");
+
+	[Fact]
+	public async Task Abstract() =>
+		await RunTestAsync("Abstract.cs", "Abstract.g.cs");
+
+	[Fact]
+	public async Task FileScopedNamespace() =>
+		await RunTestAsync("FileScopedNamespace.cs", "FileScopedNamespace.g.cs");
+
+	[Fact]
+	public async Task Nested() =>
+		await RunTestAsync("Nested.cs", "Nested.g.cs");
+
+	[Fact]
+	public async Task NestedDerived() =>
+		await RunTestAsync("NestedDerived.cs", "NestedDerived.g.cs");
+
+	[Fact]
+	public async Task Impartial() =>
+		await RunTestAsync(
+			"Impartial.cs",
+			"Impartial.NOTCOMPILED.g.cs",
+			new DiagnosticResult("ESGEN001", DiagnosticSeverity.Error)
+				.WithSpan("/0/Test1.cs", 2, 2, 4, 3)
+				.WithMessage("Class \"A\" is not partial"),
+			new DiagnosticResult("CS0101", DiagnosticSeverity.Error)
+				.WithSpan(
+					$"EventStore.SourceGenerators{Path.DirectorySeparatorChar}" +
+					$"EventStore.SourceGenerators.Messaging.{nameof(MessageSourceGenerator)}{Path.DirectorySeparatorChar}" +
+					$"Test1-{GenHash(1)}.g.cs", 7, 15, 7, 16)
+				.WithArguments("A", "EventStore.SourceGenerators.Tests.Messaging.Impartial"));
+
+	[Fact]
+	public async Task ImpartialNested() =>
+		await RunTestAsync(
+			"ImpartialNested.cs",
+			"ImpartialNested.NOTCOMPILED.g.cs",
+			new DiagnosticResult("ESGEN001", DiagnosticSeverity.Error)
+				.WithSpan("/0/Test1.cs", 2, 2, 6, 3)
+				.WithMessage("Class \"N\" is not partial"),
+			new DiagnosticResult("CS0101", DiagnosticSeverity.Error)
+				.WithSpan(
+					$"EventStore.SourceGenerators{Path.DirectorySeparatorChar}" +
+					$"EventStore.SourceGenerators.Messaging.{nameof(MessageSourceGenerator)}{Path.DirectorySeparatorChar}" +
+					$"Test1-{GenHash(1)}.g.cs", 7, 15, 7, 16)
+				.WithArguments("N", "EventStore.SourceGenerators.Tests.Messaging.ImpartialNested"));
+
+	[Fact]
+	public async Task AbstractWithGroup() =>
+		await RunTestAsync(
+			"AbstractWithGroup.cs",
+			"AbstractWithGroup.NOTCOMPILED.g.cs",
+			new DiagnosticResult("ESGEN002", DiagnosticSeverity.Error)
+				.WithSpan("/0/Test1.cs", 2, 2, 4, 3)
+				.WithMessage("Abstract class \"A\" has a group specified")
+				.WithArguments("A"));
+
+	[Fact]
+	public async Task ConcreteWithoutGroup() =>
+		await RunTestAsync(
+			"ConcreteWithoutGroup.cs",
+			"ConcreteWithoutGroup.NOTCOMPILED.g.cs",
+			new DiagnosticResult("ESGEN003", DiagnosticSeverity.Error)
+				.WithSpan("/0/Test1.cs", 2, 2, 4, 3)
+				.WithMessage("Concrete class \"A\" does not have a group specified")
+				.WithArguments("A"));
 }

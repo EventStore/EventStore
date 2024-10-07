@@ -11,56 +11,56 @@ using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using ILogger = Serilog.ILogger;
 
-namespace EventStore.Core.Services.Transport.Http.Controllers {
-	public class ClusterWebUiController : CommunicationController {
-		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterWebUiController>();
+namespace EventStore.Core.Services.Transport.Http.Controllers;
 
-		private readonly NodeSubsystems[] _enabledNodeSubsystems;
+public class ClusterWebUiController : CommunicationController {
+	private static readonly ILogger Log = Serilog.Log.ForContext<ClusterWebUiController>();
 
-		//private readonly MiniWeb _commonWeb;
-		private readonly MiniWeb _clusterNodeWeb;
+	private readonly NodeSubsystems[] _enabledNodeSubsystems;
 
-		public ClusterWebUiController(IPublisher publisher, NodeSubsystems[] enabledNodeSubsystems)
-			: base(publisher) {
-			_enabledNodeSubsystems = enabledNodeSubsystems;
-			_clusterNodeWeb = new MiniWeb("/web");
-		}
+	//private readonly MiniWeb _commonWeb;
+	private readonly MiniWeb _clusterNodeWeb;
 
-		protected override void SubscribeCore(IHttpService service) {
-			_clusterNodeWeb.RegisterControllerActions(service);
-			RegisterRedirectAction(service, "", "/web/index.html");
-			RegisterRedirectAction(service, "/web", "/web/index.html");
+	public ClusterWebUiController(IPublisher publisher, NodeSubsystems[] enabledNodeSubsystems)
+		: base(publisher) {
+		_enabledNodeSubsystems = enabledNodeSubsystems;
+		_clusterNodeWeb = new MiniWeb("/web");
+	}
 
-			service.RegisterAction(
-				new ControllerAction("/sys/subsystems", HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.Json}, new Operation(Operations.Node.Information.Subsystems)),
-				OnListNodeSubsystems);
-		}
+	protected override void SubscribeCore(IHttpService service) {
+		_clusterNodeWeb.RegisterControllerActions(service);
+		RegisterRedirectAction(service, "", "/web/index.html");
+		RegisterRedirectAction(service, "/web", "/web/index.html");
 
-		private void OnListNodeSubsystems(HttpEntityManager http, UriTemplateMatch match) {
-			http.ReplyTextContent(
-				Codec.Json.To(_enabledNodeSubsystems),
-				200,
-				"OK",
-				"application/json",
-				null,
-				ex => Log.Information(ex, "Failed to prepare main menu")
-			);
-		}
+		service.RegisterAction(
+			new ControllerAction("/sys/subsystems", HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.Json}, new Operation(Operations.Node.Information.Subsystems)),
+			OnListNodeSubsystems);
+	}
 
-		private static void RegisterRedirectAction(IHttpService service, string fromUrl, string toUrl) {
-			service.RegisterAction(
-				new ControllerAction(
-					fromUrl,
-					HttpMethod.Get,
-					Codec.NoCodecs,
-					new ICodec[] {Codec.ManualEncoding},
-					new Operation(Operations.Node.Redirect)),
-				(http, match) => http.ReplyTextContent(
-					"Moved", 302, "Found", "text/plain",
-					new[] {
-						new KeyValuePair<string, string>(
-							"Location", new Uri(http.HttpEntity.RequestedUrl, toUrl).AbsoluteUri)
-					}, Console.WriteLine));
-		}
+	private void OnListNodeSubsystems(HttpEntityManager http, UriTemplateMatch match) {
+		http.ReplyTextContent(
+			Codec.Json.To(_enabledNodeSubsystems),
+			200,
+			"OK",
+			"application/json",
+			null,
+			ex => Log.Information(ex, "Failed to prepare main menu")
+		);
+	}
+
+	private static void RegisterRedirectAction(IHttpService service, string fromUrl, string toUrl) {
+		service.RegisterAction(
+			new ControllerAction(
+				fromUrl,
+				HttpMethod.Get,
+				Codec.NoCodecs,
+				new ICodec[] {Codec.ManualEncoding},
+				new Operation(Operations.Node.Redirect)),
+			(http, match) => http.ReplyTextContent(
+				"Moved", 302, "Found", "text/plain",
+				new[] {
+					new KeyValuePair<string, string>(
+						"Location", new Uri(http.HttpEntity.RequestedUrl, toUrl).AbsoluteUri)
+				}, Console.WriteLine));
 	}
 }

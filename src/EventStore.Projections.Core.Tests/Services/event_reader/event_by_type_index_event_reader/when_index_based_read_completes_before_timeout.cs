@@ -17,80 +17,80 @@ using EventStore.Projections.Core.Services.Processing.EventByType;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
-namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_event_reader {
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_index_based_read_completes_before_timeout<TLogFormat, TStreamId> : EventByTypeIndexEventReaderTestFixture<TLogFormat, TStreamId> {
-		private EventByTypeIndexEventReader _eventReader;
-		private Guid _distributionCorrelationId;
+namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_event_reader;
 
-		protected override void Given() {
-			TicksAreHandledImmediately();
-		}
+[TestFixture(typeof(LogFormat.V2), typeof(string))]
+[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+public class when_index_based_read_completes_before_timeout<TLogFormat, TStreamId> : EventByTypeIndexEventReaderTestFixture<TLogFormat, TStreamId> {
+	private EventByTypeIndexEventReader _eventReader;
+	private Guid _distributionCorrelationId;
 
-		private FakeTimeProvider _fakeTimeProvider;
+	protected override void Given() {
+		TicksAreHandledImmediately();
+	}
 
-		[SetUp]
-		public new void When() {
-			_distributionCorrelationId = Guid.NewGuid();
-			_fakeTimeProvider = new FakeTimeProvider();
-			var fromPositions = new Dictionary<string, long>();
-			fromPositions.Add("$et-eventTypeOne", 0);
-			fromPositions.Add("$et-eventTypeTwo", 0);
-			_eventReader = new EventByTypeIndexEventReader(_bus, _distributionCorrelationId,
-				null, new string[] {"eventTypeOne", "eventTypeTwo"},
-				false, new TFPos(-1, -1),
-				fromPositions, true,
-				_fakeTimeProvider,
-				stopOnEof: true);
+	private FakeTimeProvider _fakeTimeProvider;
 
-			_eventReader.Resume();
+	[SetUp]
+	public new void When() {
+		_distributionCorrelationId = Guid.NewGuid();
+		_fakeTimeProvider = new FakeTimeProvider();
+		var fromPositions = new Dictionary<string, long>();
+		fromPositions.Add("$et-eventTypeOne", 0);
+		fromPositions.Add("$et-eventTypeTwo", 0);
+		_eventReader = new EventByTypeIndexEventReader(_bus, _distributionCorrelationId,
+			null, new string[] {"eventTypeOne", "eventTypeTwo"},
+			false, new TFPos(-1, -1),
+			fromPositions, true,
+			_fakeTimeProvider,
+			stopOnEof: true);
 
-			var correlationId = CompleteForwardStreamRead("$et-eventTypeOne", Guid.Empty, new[] {
-				ResolvedEvent.ForUnresolvedEvent(
-					new EventRecord(
-						1, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "$et-eventTypeOne", ExpectedVersion.Any,
-						DateTime.UtcNow,
-						PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd |
-						PrepareFlags.IsJson,
-						"$>", Helper.UTF8NoBom.GetBytes("0@test-stream"),
-						Helper.UTF8NoBom.GetBytes(TFPosToMetadata(new TFPos(50, 50))))),
-				ResolvedEvent.ForUnresolvedEvent(
-					new EventRecord(
-						2, 150, Guid.NewGuid(), Guid.NewGuid(), 150, 0, "$et-eventTypeOne", ExpectedVersion.Any,
-						DateTime.UtcNow,
-						PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-						"$>", Helper.UTF8NoBom.GetBytes("1@test-stream"),
-						Helper.UTF8NoBom.GetBytes(TFPosToMetadata(new TFPos(150, 150)))))
-			});
+		_eventReader.Resume();
 
-			TimeoutRead("$et-eventTypeOne", correlationId);
+		var correlationId = CompleteForwardStreamRead("$et-eventTypeOne", Guid.Empty, new[] {
+			ResolvedEvent.ForUnresolvedEvent(
+				new EventRecord(
+					1, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "$et-eventTypeOne", ExpectedVersion.Any,
+					DateTime.UtcNow,
+					PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd |
+					PrepareFlags.IsJson,
+					"$>", Helper.UTF8NoBom.GetBytes("0@test-stream"),
+					Helper.UTF8NoBom.GetBytes(TFPosToMetadata(new TFPos(50, 50))))),
+			ResolvedEvent.ForUnresolvedEvent(
+				new EventRecord(
+					2, 150, Guid.NewGuid(), Guid.NewGuid(), 150, 0, "$et-eventTypeOne", ExpectedVersion.Any,
+					DateTime.UtcNow,
+					PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+					"$>", Helper.UTF8NoBom.GetBytes("1@test-stream"),
+					Helper.UTF8NoBom.GetBytes(TFPosToMetadata(new TFPos(150, 150)))))
+		});
 
-			correlationId = CompleteForwardStreamRead("$et-eventTypeTwo", Guid.Empty, new[] {
-				ResolvedEvent.ForUnresolvedEvent(
-					new EventRecord(
-						1, 100, Guid.NewGuid(), Guid.NewGuid(), 100, 0, "$et-eventTypeTwo", ExpectedVersion.Any,
-						DateTime.UtcNow,
-						PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd |
-						PrepareFlags.IsJson,
-						"$>", Helper.UTF8NoBom.GetBytes("2@test-stream"),
-						Helper.UTF8NoBom.GetBytes(TFPosToMetadata(new TFPos(100, 100))))),
-				ResolvedEvent.ForUnresolvedEvent(
-					new EventRecord(
-						2, 200, Guid.NewGuid(), Guid.NewGuid(), 200, 0, "$et-eventTypeTwo", ExpectedVersion.Any,
-						DateTime.UtcNow,
-						PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-						"$>", Helper.UTF8NoBom.GetBytes("3@test-stream"),
-						Helper.UTF8NoBom.GetBytes(TFPosToMetadata(new TFPos(200, 200)))))
-			});
+		TimeoutRead("$et-eventTypeOne", correlationId);
 
-			TimeoutRead("$et-eventTypeTwo", correlationId);
-		}
+		correlationId = CompleteForwardStreamRead("$et-eventTypeTwo", Guid.Empty, new[] {
+			ResolvedEvent.ForUnresolvedEvent(
+				new EventRecord(
+					1, 100, Guid.NewGuid(), Guid.NewGuid(), 100, 0, "$et-eventTypeTwo", ExpectedVersion.Any,
+					DateTime.UtcNow,
+					PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd |
+					PrepareFlags.IsJson,
+					"$>", Helper.UTF8NoBom.GetBytes("2@test-stream"),
+					Helper.UTF8NoBom.GetBytes(TFPosToMetadata(new TFPos(100, 100))))),
+			ResolvedEvent.ForUnresolvedEvent(
+				new EventRecord(
+					2, 200, Guid.NewGuid(), Guid.NewGuid(), 200, 0, "$et-eventTypeTwo", ExpectedVersion.Any,
+					DateTime.UtcNow,
+					PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+					"$>", Helper.UTF8NoBom.GetBytes("3@test-stream"),
+					Helper.UTF8NoBom.GetBytes(TFPosToMetadata(new TFPos(200, 200)))))
+		});
 
-		[Test]
-		public void should_deliver_events() {
-			Assert.AreEqual(3,
-				_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>().Count());
-		}
+		TimeoutRead("$et-eventTypeTwo", correlationId);
+	}
+
+	[Test]
+	public void should_deliver_events() {
+		Assert.AreEqual(3,
+			_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.CommittedEventDistributed>().Count());
 	}
 }
