@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext;
 using DotNext.Buffers;
 using DotNext.Collections.Concurrent;
 using DotNext.Diagnostics;
@@ -555,13 +556,9 @@ public partial class TFChunk : IDisposable {
 				hash = md5.Hash;
 			}
 
-			if (footer.MD5Hash == null || footer.MD5Hash.Length != hash.Length)
+			// Perf: use hardware accelerated byte array comparison
+			if (!MemoryExtensions.SequenceEqual<byte>(footer.MD5Hash, hash))
 				throw new HashValidationException();
-
-			for (int i = 0; i < hash.Length; ++i) {
-				if (footer.MD5Hash[i] != hash[i])
-					throw new HashValidationException();
-			}
 		}
 	}
 
