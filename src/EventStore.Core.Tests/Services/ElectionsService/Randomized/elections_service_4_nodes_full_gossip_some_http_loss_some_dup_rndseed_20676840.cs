@@ -5,34 +5,34 @@ using System;
 using System.Linq;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
-	[TestFixture]
-	public class elections_service_4_nodes_full_gossip_some_http_loss_some_dup_rndseed_20676840 {
-		private RandomizedElectionsTestCase _randomCase;
+namespace EventStore.Core.Tests.Services.ElectionsService.Randomized;
 
-		[SetUp]
-		public void SetUp() {
-			_randomCase = new RandomizedElectionsTestCase(ElectionParams.MaxIterationCount,
-				instancesCnt: 4,
-				httpLossProbability: 0.5,
-				httpDupProbability: 0.3,
-				httpMaxDelay: 20,
-				timerMinDelay: 100,
-				timerMaxDelay: 200,
-				rndSeed: 20676840);
+[TestFixture]
+public class elections_service_4_nodes_full_gossip_some_http_loss_some_dup_rndseed_20676840 {
+	private RandomizedElectionsTestCase _randomCase;
 
-			_randomCase.Init();
-		}
+	[SetUp]
+	public void SetUp() {
+		_randomCase = new RandomizedElectionsTestCase(ElectionParams.MaxIterationCount,
+			instancesCnt: 4,
+			httpLossProbability: 0.5,
+			httpDupProbability: 0.3,
+			httpMaxDelay: 20,
+			timerMinDelay: 100,
+			timerMaxDelay: 200,
+			rndSeed: 20676840);
 
-		[Test]
-		[Category("Network")]
-		public void should_always_arrive_at_coherent_results() {
-			var success = _randomCase.Run();
-			if (!success)
-				_randomCase.Logger.LogMessages();
-			Console.WriteLine("There were a total of {0} messages in this run.",
-				_randomCase.Logger.ProcessedItems.Count());
-			Assert.True(success);
-		}
+		_randomCase.Init();
+	}
+
+	[Test]
+	[Category("Network")]
+	public void should_always_arrive_at_coherent_results() {
+		var success = _randomCase.Run();
+		if (!success)
+			_randomCase.Logger.LogMessages();
+		Console.WriteLine("There were a total of {0} messages in this run.",
+			_randomCase.Logger.ProcessedItems.Count());
+		Assert.True(success);
 	}
 }

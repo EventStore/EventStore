@@ -4,18 +4,18 @@
 using System;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Projections.Core.Messages {
-	[DerivedMessage]
-	public abstract partial class CoreProjectionManagementControlMessage : CoreProjectionManagementMessageBase {
-		private readonly Guid _workerId;
+namespace EventStore.Projections.Core.Messages;
 
-		public Guid WorkerId {
-			get { return _workerId; }
-		}
+[DerivedMessage]
+public abstract partial class CoreProjectionManagementControlMessage : CoreProjectionManagementMessageBase {
+	private readonly Guid _workerId;
 
-		public CoreProjectionManagementControlMessage(Guid projectionId, Guid workerId)
-			: base(projectionId) {
-			_workerId = workerId;
-		}
+	public Guid WorkerId {
+		get { return _workerId; }
+	}
+
+	public CoreProjectionManagementControlMessage(Guid projectionId, Guid workerId)
+		: base(projectionId) {
+		_workerId = workerId;
 	}
 }

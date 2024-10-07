@@ -4,35 +4,35 @@
 using System.Collections.Generic;
 using EventStore.Core.LogAbstraction;
 
-namespace EventStore.Core.XUnit.Tests.LogV3 {
-	public class MockExistenceFilter : INameExistenceFilter {
-		public HashSet<string> Streams { get; } = new();
+namespace EventStore.Core.XUnit.Tests.LogV3;
 
-		public long CurrentCheckpoint { get; set; } = -1;
+public class MockExistenceFilter : INameExistenceFilter {
+	public HashSet<string> Streams { get; } = new();
 
-		public void Add(string name) {
-			Streams.Add(name);
-		}
+	public long CurrentCheckpoint { get; set; } = -1;
 
-		public void Add(ulong hash) {
-			throw new System.NotImplementedException();
-		}
+	public void Add(string name) {
+		Streams.Add(name);
+	}
 
-		public void Dispose() {
-		}
+	public void Add(ulong hash) {
+		throw new System.NotImplementedException();
+	}
 
-		public void Initialize(INameExistenceFilterInitializer source, long truncateToPosition) {
-			source.Initialize(this, truncateToPosition);
-		}
+	public void Dispose() {
+	}
 
-		public void TruncateTo(long checkpoint) {
-			CurrentCheckpoint = checkpoint;
-		}
+	public void Initialize(INameExistenceFilterInitializer source, long truncateToPosition) {
+		source.Initialize(this, truncateToPosition);
+	}
 
-		public void Verify(double corruptionThreshold) { }
+	public void TruncateTo(long checkpoint) {
+		CurrentCheckpoint = checkpoint;
+	}
 
-		public bool MightContain(string item) {
-			return Streams.Contains(item);
-		}
+	public void Verify(double corruptionThreshold) { }
+
+	public bool MightContain(string item) {
+		return Streams.Contains(item);
 	}
 }

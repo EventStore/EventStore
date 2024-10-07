@@ -10,18 +10,19 @@ using EventStore.Projections.Core.Services;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace EventStore.Projections.Core.Javascript.Tests.Integration {
-	public class MetadataSerializationTests : ProjectionRuntimeScenario {
-		[Fact]
-		public async Task CanHandleNulls() {
-			var notification = Notify("emitted-stream");
+namespace EventStore.Projections.Core.Javascript.Tests.Integration;
+
+public class MetadataSerializationTests : ProjectionRuntimeScenario {
+	[Fact]
+	public async Task CanHandleNulls() {
+		var notification = Notify("emitted-stream");
 
 
-			await WriteEvents("source-stream", ExpectedVersion.NoStream,
-				new Event(Guid.NewGuid(), "foo", true,
-					JsonSerializer.SerializeToUtf8Bytes(new object()), Array.Empty<byte>()));
+		await WriteEvents("source-stream", ExpectedVersion.NoStream,
+			new Event(Guid.NewGuid(), "foo", true,
+				JsonSerializer.SerializeToUtf8Bytes(new object()), Array.Empty<byte>()));
 
-			var js = @"
+		var js = @"
 fromStream('source-stream').
     when({
         $any: function (s, e) {
@@ -32,30 +33,30 @@ fromStream('source-stream').
 		}
 	});
 ";
-			await SendProjectionMessage<ProjectionManagementMessage.Updated>(envelope =>
-				new ProjectionManagementMessage.Command.Post(envelope, ProjectionMode.Continuous,
-					"can-handle-null-metadata", ProjectionManagementMessage.RunAs.System, "js", js,
-					true, true, true,
-					false,
-					true));
+		await SendProjectionMessage<ProjectionManagementMessage.Updated>(envelope =>
+			new ProjectionManagementMessage.Command.Post(envelope, ProjectionMode.Continuous,
+				"can-handle-null-metadata", ProjectionManagementMessage.RunAs.System, "js", js,
+				true, true, true,
+				false,
+				true));
 
-			await notification.WaitAsync(TestTimeout);
-			var events = await ReadStream("emitted-stream", 0);
-			var e = Assert.Single(events);
-			JsonDocument doc = JsonDocument.Parse(e.Event.Metadata);
-			Assert.True(doc.RootElement.TryGetProperty("test", out var prop));
-			Assert.Equal(JsonValueKind.Null, prop.ValueKind);
-		}
+		await notification.WaitAsync(TestTimeout);
+		var events = await ReadStream("emitted-stream", 0);
+		var e = Assert.Single(events);
+		JsonDocument doc = JsonDocument.Parse(e.Event.Metadata);
+		Assert.True(doc.RootElement.TryGetProperty("test", out var prop));
+		Assert.Equal(JsonValueKind.Null, prop.ValueKind);
+	}
 
-		[Fact]
-		public async Task CanHandleEscapedMetadata() {
-			var notification = Notify("emitted-stream");
+	[Fact]
+	public async Task CanHandleEscapedMetadata() {
+		var notification = Notify("emitted-stream");
 
-			await WriteEvents("source-stream", ExpectedVersion.NoStream,
-				new Event(Guid.NewGuid(), "foo", true,
-					JsonSerializer.SerializeToUtf8Bytes(new object()), Array.Empty<byte>()));
+		await WriteEvents("source-stream", ExpectedVersion.NoStream,
+			new Event(Guid.NewGuid(), "foo", true,
+				JsonSerializer.SerializeToUtf8Bytes(new object()), Array.Empty<byte>()));
 
-			var js = @"
+		var js = @"
 fromStream('source-stream').
     when({
         $any: function (s, e) {
@@ -66,21 +67,20 @@ fromStream('source-stream').
 		}
 	});
 ";
-			await SendProjectionMessage<ProjectionManagementMessage.Updated>(envelope =>
-				new ProjectionManagementMessage.Command.Post(envelope, ProjectionMode.Continuous,
-					"can-handle-null-metadata", ProjectionManagementMessage.RunAs.System, "js", js,
-					true, true, true,
-					false,
-					true));
+		await SendProjectionMessage<ProjectionManagementMessage.Updated>(envelope =>
+			new ProjectionManagementMessage.Command.Post(envelope, ProjectionMode.Continuous,
+				"can-handle-null-metadata", ProjectionManagementMessage.RunAs.System, "js", js,
+				true, true, true,
+				false,
+				true));
 
 
-			await notification.WaitAsync(TestTimeout);
-			var events = await ReadStream("emitted-stream", 0);
-			var e = Assert.Single(events);
-			JsonDocument doc = JsonDocument.Parse(e.Event.Metadata);
-			Assert.True(doc.RootElement.TryGetProperty("test", out var prop));
-			Assert.Equal(JsonValueKind.String, prop.ValueKind);
-			Assert.Equal("\"some-data\"", prop.GetString());
-		}
+		await notification.WaitAsync(TestTimeout);
+		var events = await ReadStream("emitted-stream", 0);
+		var e = Assert.Single(events);
+		JsonDocument doc = JsonDocument.Parse(e.Event.Metadata);
+		Assert.True(doc.RootElement.TryGetProperty("test", out var prop));
+		Assert.Equal(JsonValueKind.String, prop.ValueKind);
+		Assert.Equal("\"some-data\"", prop.GetString());
 	}
 }

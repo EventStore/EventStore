@@ -3,13 +3,13 @@
 
 using EventStore.Common.Utils;
 
-namespace EventStore.Core.LogV2 {
-	public class LogV2StreamIdValidator : IValidator<string> {
-		public LogV2StreamIdValidator() {
-		}
+namespace EventStore.Core.LogV2;
 
-		public void Validate(string streamId) {
-			Ensure.NotNullOrEmpty(streamId, "streamId");
-		}
+public class LogV2StreamIdValidator : IValidator<string> {
+	public LogV2StreamIdValidator() {
+	}
+
+	public void Validate(string streamId) {
+		Ensure.NotNullOrEmpty(streamId, "streamId");
 	}
 }

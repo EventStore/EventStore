@@ -19,38 +19,37 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xunit.Abstractions;
 
-namespace EventStore.Projections.Core.Javascript.Tests.Integration
-{
-	public abstract class ProjectionRuntimeScenario: SubsystemScenario {
-		static readonly IConfiguration EmptyConfiguration = new ConfigurationBuilder().AddInMemoryCollection().Build();
+namespace EventStore.Projections.Core.Javascript.Tests.Integration;
 
-		protected ProjectionRuntimeScenario() : base(CreateRuntime, "$et", new CancellationTokenSource(System.Diagnostics.Debugger.IsAttached?5*60*1000: 5*1000).Token){
+public abstract class ProjectionRuntimeScenario: SubsystemScenario {
+	static readonly IConfiguration EmptyConfiguration = new ConfigurationBuilder().AddInMemoryCollection().Build();
 
-		}
+	protected ProjectionRuntimeScenario() : base(CreateRuntime, "$et", new CancellationTokenSource(System.Diagnostics.Debugger.IsAttached?5*60*1000: 5*1000).Token){
 
-		static (Func<ValueTask>, IPublisher) CreateRuntime(SynchronousScheduler mainBus, IQueuedHandler mainQueue, ICheckpoint writerCheckpoint) {
-			var options = new ProjectionSubsystemOptions(3, ProjectionType.All, true, TimeSpan.FromMinutes(5), false, 500, 500);
-			var config = new TFChunkDbConfig("mem", new VersionedPatternFileNamingStrategy("mem", "chunk-"), 10000, 0, writerCheckpoint, new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), true);
-			var db = new TFChunkDb(config);
-			var qs = new QueueStatsManager();
-			var timeProvider = new RealTimeProvider();
-			var ts = new TimerService(new TimerBasedScheduler(new RealTimer(), timeProvider));
-			var sc = new StandardComponents(db.Config, mainQueue, mainBus, ts, timeProvider, null, new IHttpService[] { }, mainBus, qs, new(), true);
+	}
 
-			var subsystem = new ProjectionsSubsystem(options);
+	static (Func<ValueTask>, IPublisher) CreateRuntime(SynchronousScheduler mainBus, IQueuedHandler mainQueue, ICheckpoint writerCheckpoint) {
+		var options = new ProjectionSubsystemOptions(3, ProjectionType.All, true, TimeSpan.FromMinutes(5), false, 500, 500);
+		var config = new TFChunkDbConfig("mem", new VersionedPatternFileNamingStrategy("mem", "chunk-"), 10000, 0, writerCheckpoint, new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), new InMemoryCheckpoint(-1), true);
+		var db = new TFChunkDb(config);
+		var qs = new QueueStatsManager();
+		var timeProvider = new RealTimeProvider();
+		var ts = new TimerService(new TimerBasedScheduler(new RealTimer(), timeProvider));
+		var sc = new StandardComponents(db.Config, mainQueue, mainBus, ts, timeProvider, null, new IHttpService[] { }, mainBus, qs, new(), true);
 
-			var builder = WebApplication.CreateBuilder();
-			builder.Services.AddGrpc();
-			builder.Services.AddSingleton(sc);
-			subsystem.ConfigureServices(builder.Services, new ConfigurationBuilder().Build());
+		var subsystem = new ProjectionsSubsystem(options);
 
-			subsystem.ConfigureApplication(builder.Build().UseRouting(), EmptyConfiguration);
-			subsystem.Start();
+		var builder = WebApplication.CreateBuilder();
+		builder.Services.AddGrpc();
+		builder.Services.AddSingleton(sc);
+		subsystem.ConfigureServices(builder.Services, new ConfigurationBuilder().Build());
 
-			return (() => {
-				subsystem.Stop();
-				return db.DisposeAsync();
-			}, subsystem.LeaderInputQueue);
-		}
+		subsystem.ConfigureApplication(builder.Build().UseRouting(), EmptyConfiguration);
+		subsystem.Start();
+
+		return (() => {
+			subsystem.Stop();
+			return db.DisposeAsync();
+		}, subsystem.LeaderInputQueue);
 	}
 }

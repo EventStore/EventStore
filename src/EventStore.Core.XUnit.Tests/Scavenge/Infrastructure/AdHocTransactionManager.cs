@@ -4,37 +4,37 @@
 using System;
 using EventStore.Core.TransactionLog.Scavenging;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge {
-	public class AdHocTransactionManager : ITransactionManager {
-		private readonly ITransactionManager _wrapped;
-		private readonly Action<Action<ScavengeCheckpoint>, ScavengeCheckpoint> _f;
+namespace EventStore.Core.XUnit.Tests.Scavenge;
 
-		public AdHocTransactionManager(
-			ITransactionManager wrapped,
-			Action<Action<ScavengeCheckpoint>, ScavengeCheckpoint> f) {
+public class AdHocTransactionManager : ITransactionManager {
+	private readonly ITransactionManager _wrapped;
+	private readonly Action<Action<ScavengeCheckpoint>, ScavengeCheckpoint> _f;
 
-			_wrapped = wrapped;
-			_f = f;
-		}
+	public AdHocTransactionManager(
+		ITransactionManager wrapped,
+		Action<Action<ScavengeCheckpoint>, ScavengeCheckpoint> f) {
 
-		public void RegisterOnRollback(Action onRollback) {
-			_wrapped.RegisterOnRollback(onRollback);
-		}
+		_wrapped = wrapped;
+		_f = f;
+	}
 
-		public void UnregisterOnRollback() {
-			_wrapped.UnregisterOnRollback();
-		}
+	public void RegisterOnRollback(Action onRollback) {
+		_wrapped.RegisterOnRollback(onRollback);
+	}
 
-		public void Begin() {
-			_wrapped.Begin();
-		}
+	public void UnregisterOnRollback() {
+		_wrapped.UnregisterOnRollback();
+	}
 
-		public void Commit(ScavengeCheckpoint checkpoint) {
-			_f(_wrapped.Commit, checkpoint);
-		}
+	public void Begin() {
+		_wrapped.Begin();
+	}
 
-		public void Rollback() {
-			_wrapped.Rollback();
-		}
+	public void Commit(ScavengeCheckpoint checkpoint) {
+		_f(_wrapped.Commit, checkpoint);
+	}
+
+	public void Rollback() {
+		_wrapped.Rollback();
 	}
 }

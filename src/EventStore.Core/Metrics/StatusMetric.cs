@@ -5,33 +5,33 @@ using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using EventStore.Core.Time;
 
-namespace EventStore.Core.Metrics {
-	// A metric that tracks the statuses of multiple components.
-	// We are only expecting to have a handful of components.
-	public class StatusMetric {
-		private readonly List<StatusSubMetric> _subMetrics = new();
-		private readonly IClock _clock;
+namespace EventStore.Core.Metrics;
 
-		public StatusMetric(Meter meter, string name, IClock clock = null) {
-			_clock = clock ?? Clock.Instance;
+// A metric that tracks the statuses of multiple components.
+// We are only expecting to have a handful of components.
+public class StatusMetric {
+	private readonly List<StatusSubMetric> _subMetrics = new();
+	private readonly IClock _clock;
 
-			// The submetrics only go up, so we use a counter
-			// Observable because the value is the current time in seconds
-			meter.CreateObservableCounter(name, Observe);
+	public StatusMetric(Meter meter, string name, IClock clock = null) {
+		_clock = clock ?? Clock.Instance;
+
+		// The submetrics only go up, so we use a counter
+		// Observable because the value is the current time in seconds
+		meter.CreateObservableCounter(name, Observe);
+	}
+
+	public void Add(StatusSubMetric subMetric) {
+		lock (_subMetrics) {
+			_subMetrics.Add(subMetric);
 		}
+	}
 
-		public void Add(StatusSubMetric subMetric) {
-			lock (_subMetrics) {
-				_subMetrics.Add(subMetric);
-			}
-		}
-
-		private IEnumerable<Measurement<long>> Observe() {
-			var secondsSinceEpoch = _clock.SecondsSinceEpoch;
-			lock (_subMetrics) {
-				foreach (var instance in _subMetrics) {
-					yield return instance.Observe(secondsSinceEpoch);
-				}
+	private IEnumerable<Measurement<long>> Observe() {
+		var secondsSinceEpoch = _clock.SecondsSinceEpoch;
+		lock (_subMetrics) {
+			foreach (var instance in _subMetrics) {
+				yield return instance.Observe(secondsSinceEpoch);
 			}
 		}
 	}

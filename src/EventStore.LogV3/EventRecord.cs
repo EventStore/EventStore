@@ -5,30 +5,30 @@ using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
 
-namespace EventStore.LogV3 {
-	// View of an event in a stream write record
-	public struct EventRecord {
-		private readonly ReadOnlyMemory<byte> _headerMemory;
-		private readonly ReadOnlyMemory<byte> _data;
-		private readonly ReadOnlyMemory<byte> _metadata;
+namespace EventStore.LogV3;
 
-		public ref readonly Raw.EventHeader Header => ref MemoryMarshal.AsRef<Raw.EventHeader>(_headerMemory.Span);
-		public ReadOnlyMemory<byte> Data => _data;
-		public ReadOnlyMemory<byte> Metadata => _metadata;
-		public EventSystemMetadata SystemMetadata { get; }
+// View of an event in a stream write record
+public struct EventRecord {
+	private readonly ReadOnlyMemory<byte> _headerMemory;
+	private readonly ReadOnlyMemory<byte> _data;
+	private readonly ReadOnlyMemory<byte> _metadata;
 
-		// bytes already populated with a event record to read
-		public EventRecord(ReadOnlyMemory<byte> bytes) {
-			var slicer = bytes.Slicer();
-			_headerMemory = slicer.Slice(Raw.EventHeader.Size);
+	public ref readonly Raw.EventHeader Header => ref MemoryMarshal.AsRef<Raw.EventHeader>(_headerMemory.Span);
+	public ReadOnlyMemory<byte> Data => _data;
+	public ReadOnlyMemory<byte> Metadata => _metadata;
+	public EventSystemMetadata SystemMetadata { get; }
 
-			ref readonly var header = ref MemoryMarshal.AsRef<Raw.EventHeader>(_headerMemory.Span);
+	// bytes already populated with a event record to read
+	public EventRecord(ReadOnlyMemory<byte> bytes) {
+		var slicer = bytes.Slicer();
+		_headerMemory = slicer.Slice(Raw.EventHeader.Size);
 
-			var systemMetadata = slicer.Slice(header.SystemMetadataSize);
-			_data = slicer.Slice(header.DataSize);
-			_metadata = slicer.Remaining;
+		ref readonly var header = ref MemoryMarshal.AsRef<Raw.EventHeader>(_headerMemory.Span);
 
-			SystemMetadata = EventSystemMetadata.Parser.ParseFrom(new ReadOnlySequence<byte>(systemMetadata));
-		}
+		var systemMetadata = slicer.Slice(header.SystemMetadataSize);
+		_data = slicer.Slice(header.DataSize);
+		_metadata = slicer.Remaining;
+
+		SystemMetadata = EventSystemMetadata.Parser.ParseFrom(new ReadOnlySequence<byte>(systemMetadata));
 	}
 }

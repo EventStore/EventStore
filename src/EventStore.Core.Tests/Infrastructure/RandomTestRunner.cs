@@ -8,51 +8,51 @@ using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Tests.Infrastructure {
-	public class RandomTestRunner {
-		private readonly int _maxIterCnt;
-		private readonly PairingHeap<RandTestQueueItem> _queue;
+namespace EventStore.Core.Tests.Infrastructure;
 
-		private int _iter;
-		private int _curLogicalTime;
-		private int _globalMsgId;
+public class RandomTestRunner {
+	private readonly int _maxIterCnt;
+	private readonly PairingHeap<RandTestQueueItem> _queue;
 
-		public RandomTestRunner(int maxIterCnt) {
-			_maxIterCnt = maxIterCnt;
-			_queue = new PairingHeap<RandTestQueueItem>(new GlobalQueueItemComparer());
-		}
+	private int _iter;
+	private int _curLogicalTime;
+	private int _globalMsgId;
 
-		public bool Run(IRandTestFinishCondition finishCondition, params IRandTestItemProcessor[] processors) {
-			Ensure.NotNull(finishCondition, "finishCondition");
+	public RandomTestRunner(int maxIterCnt) {
+		_maxIterCnt = maxIterCnt;
+		_queue = new PairingHeap<RandTestQueueItem>(new GlobalQueueItemComparer());
+	}
 
-			while (++_iter <= _maxIterCnt && _queue.Count > 0) {
-				var item = _queue.DeleteMin();
-				_curLogicalTime = item.LogicalTime;
-				foreach (var processor in processors) {
-					processor.Process(_iter, item);
-				}
+	public bool Run(IRandTestFinishCondition finishCondition, params IRandTestItemProcessor[] processors) {
+		Ensure.NotNull(finishCondition, "finishCondition");
 
-				finishCondition.Process(_iter, item);
-				if (finishCondition.Done)
-					break;
-
-				item.Bus.Publish(item.Message);
+		while (++_iter <= _maxIterCnt && _queue.Count > 0) {
+			var item = _queue.DeleteMin();
+			_curLogicalTime = item.LogicalTime;
+			foreach (var processor in processors) {
+				processor.Process(_iter, item);
 			}
 
-			return finishCondition.Success;
+			finishCondition.Process(_iter, item);
+			if (finishCondition.Done)
+				break;
+
+			item.Bus.Publish(item.Message);
 		}
 
-		public void Enqueue(EndPoint endPoint, Message message, IPublisher bus, int timeDelay = 1) {
-			System.Diagnostics.Debug.Assert(timeDelay >= 1);
-			_queue.Add(new RandTestQueueItem(_curLogicalTime + timeDelay, _globalMsgId++, endPoint, message, bus));
-		}
+		return finishCondition.Success;
+	}
 
-		private class GlobalQueueItemComparer : IComparer<RandTestQueueItem> {
-			public int Compare(RandTestQueueItem x, RandTestQueueItem y) {
-				if (x.LogicalTime == y.LogicalTime)
-					return x.GlobalId - y.GlobalId;
-				return x.LogicalTime - y.LogicalTime;
-			}
+	public void Enqueue(EndPoint endPoint, Message message, IPublisher bus, int timeDelay = 1) {
+		System.Diagnostics.Debug.Assert(timeDelay >= 1);
+		_queue.Add(new RandTestQueueItem(_curLogicalTime + timeDelay, _globalMsgId++, endPoint, message, bus));
+	}
+
+	private class GlobalQueueItemComparer : IComparer<RandTestQueueItem> {
+		public int Compare(RandTestQueueItem x, RandTestQueueItem y) {
+			if (x.LogicalTime == y.LogicalTime)
+				return x.GlobalId - y.GlobalId;
+			return x.LogicalTime - y.LogicalTime;
 		}
 	}
 }

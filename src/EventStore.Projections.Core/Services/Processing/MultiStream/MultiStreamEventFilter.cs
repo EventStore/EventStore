@@ -3,25 +3,25 @@
 
 using System.Collections.Generic;
 
-namespace EventStore.Projections.Core.Services.Processing.MultiStream {
-	public class MultiStreamEventFilter : EventFilter {
-		private readonly HashSet<string> _streams;
+namespace EventStore.Projections.Core.Services.Processing.MultiStream;
 
-		public MultiStreamEventFilter(HashSet<string> streams, bool allEvents, HashSet<string> events)
-			: base(allEvents, false, events) {
-			_streams = streams;
-		}
+public class MultiStreamEventFilter : EventFilter {
+	private readonly HashSet<string> _streams;
 
-		protected override bool DeletedNotificationPasses(string positionStreamId) {
-			return false;
-		}
+	public MultiStreamEventFilter(HashSet<string> streams, bool allEvents, HashSet<string> events)
+		: base(allEvents, false, events) {
+		_streams = streams;
+	}
 
-		public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType) {
-			return _streams.Contains(positionStreamId);
-		}
+	protected override bool DeletedNotificationPasses(string positionStreamId) {
+		return false;
+	}
 
-		public override string GetCategory(string positionStreamId) {
-			return null;
-		}
+	public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId, string eventType) {
+		return _streams.Contains(positionStreamId);
+	}
+
+	public override string GetCategory(string positionStreamId) {
+		return null;
 	}
 }

@@ -8,90 +8,90 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Storage.AllReader {
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "Explicit transactions are not supported yet by Log V3")]
-	public class when_reading_all_with_filtering_and_transactions<TLogFormat, TStreamId>
-		: RepeatableDbTestScenario<TLogFormat, TStreamId> {
+namespace EventStore.Core.Tests.Services.Storage.AllReader;
 
-		[Test]
-		public async Task should_receive_all_events_forward() {
-			// create a db with explicit transactions, some of which are filtered out on read.
-			// previously, a bug caused those filtered-out records to prevent the successful
-			// reading of subsequent events that are contained within an explicit transaction.
+[TestFixture(typeof(LogFormat.V2), typeof(string))]
+[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "Explicit transactions are not supported yet by Log V3")]
+public class when_reading_all_with_filtering_and_transactions<TLogFormat, TStreamId>
+	: RepeatableDbTestScenario<TLogFormat, TStreamId> {
 
-			static Rec[] ExplicitTransaction(int transaction, string stream) => [
-				Rec.TransSt(transaction, stream),
-				Rec.Prepare(transaction, stream),
-				Rec.TransEnd(transaction, stream),
-				Rec.Commit(transaction, stream),
-			];
+	[Test]
+	public async Task should_receive_all_events_forward() {
+		// create a db with explicit transactions, some of which are filtered out on read.
+		// previously, a bug caused those filtered-out records to prevent the successful
+		// reading of subsequent events that are contained within an explicit transaction.
 
-			var i = 0;
-			await CreateDb([
-				.. ExplicitTransaction(i++, "excludedStream"),
-				.. ExplicitTransaction(i++, "includedStream0"),
-				.. ExplicitTransaction(i++, "includedStream1"),
-				.. ExplicitTransaction(i++, "includedStream2"),
-				.. ExplicitTransaction(i++, "includedStream3"),
-				.. ExplicitTransaction(i++, "includedStream4"),
-				.. ExplicitTransaction(i++, "includedStream5"),
-				.. ExplicitTransaction(i++, "includedStream6"),
-				.. ExplicitTransaction(i++, "includedStream7"),
-				.. ExplicitTransaction(i++, "includedStream8"),
-				.. ExplicitTransaction(i++, "includedStream9"),
-			]);
+		static Rec[] ExplicitTransaction(int transaction, string stream) => [
+			Rec.TransSt(transaction, stream),
+			Rec.Prepare(transaction, stream),
+			Rec.TransEnd(transaction, stream),
+			Rec.Commit(transaction, stream),
+		];
 
-			var read = ReadIndex.ReadAllEventsForwardFiltered(
-				pos: new Data.TFPos(0, 0),
-				maxCount: 10,
-				maxSearchWindow: int.MaxValue,
-				eventFilter: EventFilter.StreamName.Prefixes(false, "included"));
+		var i = 0;
+		await CreateDb([
+			.. ExplicitTransaction(i++, "excludedStream"),
+			.. ExplicitTransaction(i++, "includedStream0"),
+			.. ExplicitTransaction(i++, "includedStream1"),
+			.. ExplicitTransaction(i++, "includedStream2"),
+			.. ExplicitTransaction(i++, "includedStream3"),
+			.. ExplicitTransaction(i++, "includedStream4"),
+			.. ExplicitTransaction(i++, "includedStream5"),
+			.. ExplicitTransaction(i++, "includedStream6"),
+			.. ExplicitTransaction(i++, "includedStream7"),
+			.. ExplicitTransaction(i++, "includedStream8"),
+			.. ExplicitTransaction(i++, "includedStream9"),
+		]);
 
-			Assert.AreEqual(10, read.Records.Count);
-			for (int j = 0; j < 10; j++)
-				Assert.AreEqual($"includedStream{j}", read.Records[j].Event.EventStreamId);
-		}
+		var read = ReadIndex.ReadAllEventsForwardFiltered(
+			pos: new Data.TFPos(0, 0),
+			maxCount: 10,
+			maxSearchWindow: int.MaxValue,
+			eventFilter: EventFilter.StreamName.Prefixes(false, "included"));
 
-		[Test]
-		public async Task should_receive_all_events_backward() {
-			// create a db with explicit transactions, some of which are filtered out on read.
-			// previously, a bug caused those filtered-out records to prevent the successful
-			// reading of subsequent events that are contained within an explicit transaction.
+		Assert.AreEqual(10, read.Records.Count);
+		for (int j = 0; j < 10; j++)
+			Assert.AreEqual($"includedStream{j}", read.Records[j].Event.EventStreamId);
+	}
 
-			static Rec[] ExplicitTransaction(int transaction, string stream) => [
-				Rec.TransSt(transaction, stream),
-				Rec.Prepare(transaction, stream),
-				Rec.TransEnd(transaction, stream),
-				Rec.Commit(transaction, stream),
-			];
+	[Test]
+	public async Task should_receive_all_events_backward() {
+		// create a db with explicit transactions, some of which are filtered out on read.
+		// previously, a bug caused those filtered-out records to prevent the successful
+		// reading of subsequent events that are contained within an explicit transaction.
 
-			var i = 0;
-			await CreateDb([
-				.. ExplicitTransaction(i++, "includedStream0"),
-				.. ExplicitTransaction(i++, "includedStream1"),
-				.. ExplicitTransaction(i++, "includedStream2"),
-				.. ExplicitTransaction(i++, "includedStream3"),
-				.. ExplicitTransaction(i++, "includedStream4"),
-				.. ExplicitTransaction(i++, "includedStream5"),
-				.. ExplicitTransaction(i++, "includedStream6"),
-				.. ExplicitTransaction(i++, "includedStream7"),
-				.. ExplicitTransaction(i++, "includedStream8"),
-				.. ExplicitTransaction(i++, "includedStream9"),
-				.. ExplicitTransaction(i++, "excludedStream"),
-			]);
+		static Rec[] ExplicitTransaction(int transaction, string stream) => [
+			Rec.TransSt(transaction, stream),
+			Rec.Prepare(transaction, stream),
+			Rec.TransEnd(transaction, stream),
+			Rec.Commit(transaction, stream),
+		];
 
-			var writerCp = DbRes.Db.Config.WriterCheckpoint.Read();
-			var read = await ReadIndex.ReadAllEventsBackwardFiltered(
-				pos: new TFPos(writerCp, writerCp),
-				maxCount: 10,
-				maxSearchWindow: int.MaxValue,
-				eventFilter: EventFilter.StreamName.Prefixes(false, "included"),
-				CancellationToken.None);
+		var i = 0;
+		await CreateDb([
+			.. ExplicitTransaction(i++, "includedStream0"),
+			.. ExplicitTransaction(i++, "includedStream1"),
+			.. ExplicitTransaction(i++, "includedStream2"),
+			.. ExplicitTransaction(i++, "includedStream3"),
+			.. ExplicitTransaction(i++, "includedStream4"),
+			.. ExplicitTransaction(i++, "includedStream5"),
+			.. ExplicitTransaction(i++, "includedStream6"),
+			.. ExplicitTransaction(i++, "includedStream7"),
+			.. ExplicitTransaction(i++, "includedStream8"),
+			.. ExplicitTransaction(i++, "includedStream9"),
+			.. ExplicitTransaction(i++, "excludedStream"),
+		]);
 
-			Assert.AreEqual(10, read.Records.Count);
-			for (int j = 9; j <= 0; j--)
-				Assert.AreEqual($"includedStream{j}", read.Records[j].Event.EventStreamId);
-		}
+		var writerCp = DbRes.Db.Config.WriterCheckpoint.Read();
+		var read = await ReadIndex.ReadAllEventsBackwardFiltered(
+			pos: new TFPos(writerCp, writerCp),
+			maxCount: 10,
+			maxSearchWindow: int.MaxValue,
+			eventFilter: EventFilter.StreamName.Prefixes(false, "included"),
+			CancellationToken.None);
+
+		Assert.AreEqual(10, read.Records.Count);
+		for (int j = 9; j <= 0; j--)
+			Assert.AreEqual($"includedStream{j}", read.Records[j].Event.EventStreamId);
 	}
 }

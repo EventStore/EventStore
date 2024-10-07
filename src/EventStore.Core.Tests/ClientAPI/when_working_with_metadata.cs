@@ -14,46 +14,46 @@ using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 using Newtonsoft.Json.Linq;
 
-namespace EventStore.Core.Tests.ClientAPI {
-	[Category("ClientAPI"), Category("LongRunning")]
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_working_with_metadata<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
-		private MiniNode<TLogFormat, TStreamId> _node;
-		private IEventStoreConnection _connection;
+namespace EventStore.Core.Tests.ClientAPI;
 
-		[OneTimeSetUp]
-		public override async Task TestFixtureSetUp() {
-			await base.TestFixtureSetUp();
-			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
-			await _node.Start();
+[Category("ClientAPI"), Category("LongRunning")]
+[TestFixture(typeof(LogFormat.V2), typeof(string))]
+[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+public class when_working_with_metadata<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+	private MiniNode<TLogFormat, TStreamId> _node;
+	private IEventStoreConnection _connection;
 
-			_connection = BuildConnection(_node);
-			await _connection.ConnectAsync();
-		}
+	[OneTimeSetUp]
+	public override async Task TestFixtureSetUp() {
+		await base.TestFixtureSetUp();
+		_node = new MiniNode<TLogFormat, TStreamId>(PathName);
+		await _node.Start();
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection.Create(node.TcpEndPoint);
-		}
+		_connection = BuildConnection(_node);
+		await _connection.ConnectAsync();
+	}
 
-		[OneTimeTearDown]
-		public override async Task TestFixtureTearDown() {
-			_connection.Close();
-			await _node.Shutdown();
-			await base.TestFixtureTearDown();
-		}
+	protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+		return TestConnection.Create(node.TcpEndPoint);
+	}
 
-		[Test]
-		public async Task when_getting_metadata_for_an_existing_stream_and_no_metadata_exists() {
-			const string stream = "when_getting_metadata_for_an_existing_stream_and_no_metadata_exists";
+	[OneTimeTearDown]
+	public override async Task TestFixtureTearDown() {
+		_connection.Close();
+		await _node.Shutdown();
+		await base.TestFixtureTearDown();
+	}
 
-			await _connection.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent());
+	[Test]
+	public async Task when_getting_metadata_for_an_existing_stream_and_no_metadata_exists() {
+		const string stream = "when_getting_metadata_for_an_existing_stream_and_no_metadata_exists";
 
-			var meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
-			Assert.AreEqual(stream, meta.Stream);
-			Assert.AreEqual(false, meta.IsStreamDeleted);
-			Assert.AreEqual(-1, meta.MetastreamVersion);
-			Assert.AreEqual(Helper.UTF8NoBom.GetBytes(""), meta.StreamMetadata);
-		}
+		await _connection.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent());
+
+		var meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
+		Assert.AreEqual(stream, meta.Stream);
+		Assert.AreEqual(false, meta.IsStreamDeleted);
+		Assert.AreEqual(-1, meta.MetastreamVersion);
+		Assert.AreEqual(Helper.UTF8NoBom.GetBytes(""), meta.StreamMetadata);
 	}
 }

@@ -13,83 +13,83 @@ using EventStore.Core.Tests;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using NUnit.Framework;
 
-namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests {
-	[TestFixture]
-	public abstract class SingleNodeScenario<TLogFormat, TStreamId> {
-		protected ClusterVNode _node;
-		protected ClusterVNodeOptions _options;
-		private ILogFormatAbstractorFactory<TStreamId> _logFormatFactory;
-		private readonly bool _disableMemoryOptimization;
+namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests;
 
-		public SingleNodeScenario (bool disableMemoryOptimization=false) {
-			_disableMemoryOptimization = disableMemoryOptimization;
-		}
+[TestFixture]
+public abstract class SingleNodeScenario<TLogFormat, TStreamId> {
+	protected ClusterVNode _node;
+	protected ClusterVNodeOptions _options;
+	private ILogFormatAbstractorFactory<TStreamId> _logFormatFactory;
+	private readonly bool _disableMemoryOptimization;
 
-		[OneTimeSetUp]
-		public virtual void TestFixtureSetUp() {
-			_logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
+	public SingleNodeScenario (bool disableMemoryOptimization=false) {
+		_disableMemoryOptimization = disableMemoryOptimization;
+	}
 
-			var options = _disableMemoryOptimization
-				? new ClusterVNodeOptions()
-				: new ClusterVNodeOptions().ReduceMemoryUsageForTests();
+	[OneTimeSetUp]
+	public virtual void TestFixtureSetUp() {
+		_logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 
-			_options = WithOptions(options
-				.RunInMemory()
-				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
-					ssl_connections.GetServerCertificate()));
-			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
-				new AuthenticationProviderFactory(c =>
-					new InternalAuthenticationProviderFactory(c, _options.DefaultUser)),
-				new AuthorizationProviderFactory(c => new InternalAuthorizationProviderFactory([
+		var options = _disableMemoryOptimization
+			? new ClusterVNodeOptions()
+			: new ClusterVNodeOptions().ReduceMemoryUsageForTests();
+
+		_options = WithOptions(options
+			.RunInMemory()
+			.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
+				ssl_connections.GetServerCertificate()));
+		_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
+			new AuthenticationProviderFactory(c =>
+				new InternalAuthenticationProviderFactory(c, _options.DefaultUser)),
+			new AuthorizationProviderFactory(c => new InternalAuthorizationProviderFactory([
+			new LegacyPolicySelectorFactory(
+				_options.Application.AllowAnonymousEndpointAccess,
+				_options.Application.AllowAnonymousStreamAccess,
+				_options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue, c.MainBus)])),
+			certificateProvider: new OptionsCertificateProvider());
+		_node.Start();
+	}
+
+	[OneTimeTearDown]
+	public virtual Task TestFixtureTearDown() => _node?.StopAsync() ?? Task.CompletedTask;
+
+	protected abstract ClusterVNodeOptions WithOptions(ClusterVNodeOptions options);
+
+}
+
+[TestFixture, Category("LongRunning")]
+public abstract class ClusterMemberScenario<TLogFormat, TStreamId> {
+	protected ClusterVNode _node;
+	protected int _clusterSize = 3;
+	protected int _quorumSize;
+	protected ClusterVNodeOptions _options;
+	protected ILogFormatAbstractorFactory<TStreamId> _logFormatFactory;
+
+	[OneTimeSetUp]
+	public virtual void TestFixtureSetUp() {
+		_logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
+		_quorumSize = _clusterSize / 2 + 1;
+
+		_options = WithOptions(new ClusterVNodeOptions()
+			.ReduceMemoryUsageForTests()
+			.InCluster(_clusterSize)
+			.RunInMemory()
+			.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
+				ssl_connections.GetServerCertificate()));
+		_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
+			new AuthenticationProviderFactory(_ =>
+				new InternalAuthenticationProviderFactory(_, _options.DefaultUser)),
+			new AuthorizationProviderFactory(c => new InternalAuthorizationProviderFactory([
 				new LegacyPolicySelectorFactory(
-					_options.Application.AllowAnonymousEndpointAccess,
-					_options.Application.AllowAnonymousStreamAccess,
-					_options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue, c.MainBus)])),
-				certificateProvider: new OptionsCertificateProvider());
-			_node.Start();
-		}
-
-		[OneTimeTearDown]
-		public virtual Task TestFixtureTearDown() => _node?.StopAsync() ?? Task.CompletedTask;
-
-		protected abstract ClusterVNodeOptions WithOptions(ClusterVNodeOptions options);
-
+						_options.Application.AllowAnonymousEndpointAccess,
+						_options.Application.AllowAnonymousStreamAccess,
+						_options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue, c.MainBus)])),
+			certificateProvider: new OptionsCertificateProvider());
+		_node.Start();
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public abstract class ClusterMemberScenario<TLogFormat, TStreamId> {
-		protected ClusterVNode _node;
-		protected int _clusterSize = 3;
-		protected int _quorumSize;
-		protected ClusterVNodeOptions _options;
-		protected ILogFormatAbstractorFactory<TStreamId> _logFormatFactory;
+	[OneTimeTearDown]
+	public virtual Task TestFixtureTearDown() => _node?.StopAsync() ?? Task.CompletedTask;
 
-		[OneTimeSetUp]
-		public virtual void TestFixtureSetUp() {
-			_logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
-			_quorumSize = _clusterSize / 2 + 1;
-
-			_options = WithOptions(new ClusterVNodeOptions()
-				.ReduceMemoryUsageForTests()
-				.InCluster(_clusterSize)
-				.RunInMemory()
-				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
-					ssl_connections.GetServerCertificate()));
-			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
-				new AuthenticationProviderFactory(_ =>
-					new InternalAuthenticationProviderFactory(_, _options.DefaultUser)),
-				new AuthorizationProviderFactory(c => new InternalAuthorizationProviderFactory([
-					new LegacyPolicySelectorFactory(
-							_options.Application.AllowAnonymousEndpointAccess,
-							_options.Application.AllowAnonymousStreamAccess,
-							_options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue, c.MainBus)])),
-				certificateProvider: new OptionsCertificateProvider());
-			_node.Start();
-		}
-
-		[OneTimeTearDown]
-		public virtual Task TestFixtureTearDown() => _node?.StopAsync() ?? Task.CompletedTask;
-
-		protected abstract ClusterVNodeOptions WithOptions(ClusterVNodeOptions options);
-	}
+	protected abstract ClusterVNodeOptions WithOptions(ClusterVNodeOptions options);
 }

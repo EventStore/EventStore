@@ -7,115 +7,115 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.ElectionsService {
-	[TestFixture]
-	public sealed class elections_service_should_stuck_with_single_node_response {
-		private ElectionsServiceUnit _electionsUnit;
+namespace EventStore.Core.Tests.Services.ElectionsService;
 
-		[SetUp]
-		public void SetUp() {
-			var clusterSettings = ClusterSettingsFactory.GetClusterSettings(1, 3, false);
+[TestFixture]
+public sealed class elections_service_should_stuck_with_single_node_response {
+	private ElectionsServiceUnit _electionsUnit;
 
-			_electionsUnit = new ElectionsServiceUnit(clusterSettings);
+	[SetUp]
+	public void SetUp() {
+		var clusterSettings = ClusterSettingsFactory.GetClusterSettings(1, 3, false);
 
-			ProcessElections();
-		}
+		_electionsUnit = new ElectionsServiceUnit(clusterSettings);
 
-		private void ProcessElections() {
-			var gossipUpdate = new GossipMessage.GossipUpdated(_electionsUnit.ClusterInfo);
-			_electionsUnit.Publish(gossipUpdate);
-
-			_electionsUnit.Publish(new ElectionMessage.StartElections());
-
-			_electionsUnit.RepublishFromPublisher();
-		}
-
-		[Test]
-		public void elections_should_time_out() {
-			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
-		}
+		ProcessElections();
 	}
 
-	[TestFixture]
-	public sealed class elections_service_should_stuck_with_single_node_response_2_iterations {
-		private ElectionsServiceUnit _electionsUnit;
+	private void ProcessElections() {
+		var gossipUpdate = new GossipMessage.GossipUpdated(_electionsUnit.ClusterInfo);
+		_electionsUnit.Publish(gossipUpdate);
 
-		[SetUp]
-		public void SetUp() {
-			var clusterSettings = ClusterSettingsFactory.GetClusterSettings(1, 3, false);
+		_electionsUnit.Publish(new ElectionMessage.StartElections());
 
-			_electionsUnit = new ElectionsServiceUnit(clusterSettings);
-
-			ProcessElections();
-		}
-
-		private void ProcessElections() {
-			var gossipUpdate = new GossipMessage.GossipUpdated(_electionsUnit.ClusterInfo);
-			_electionsUnit.Publish(gossipUpdate);
-
-			_electionsUnit.Publish(new ElectionMessage.StartElections());
-
-			_electionsUnit.RepublishFromPublisher();
-
-			_electionsUnit.RepublishFromPublisher();
-			Assert.That(
-				_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
-				Is.True,
-				"Only SendOverGrpc or Schedule messages are expected.");
-
-			_electionsUnit.RepublishFromPublisher();
-		}
-
-		[Test]
-		public void elections_should_time_out() {
-			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
-		}
+		_electionsUnit.RepublishFromPublisher();
 	}
 
-	[TestFixture]
-	public sealed class elections_service_should_stuck_with_single_alive_node {
-		private ElectionsServiceUnit _electionsUnit;
+	[Test]
+	public void elections_should_time_out() {
+		Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
+	}
+}
 
-		[SetUp]
-		public void SetUp() {
-			var clusterSettings = ClusterSettingsFactory.GetClusterSettings(1, 3, false);
+[TestFixture]
+public sealed class elections_service_should_stuck_with_single_node_response_2_iterations {
+	private ElectionsServiceUnit _electionsUnit;
 
-			_electionsUnit = new ElectionsServiceUnit(clusterSettings);
-			_electionsUnit.UpdateClusterMemberInfo(0, isAlive: false);
-			_electionsUnit.UpdateClusterMemberInfo(2, isAlive: false);
-			_electionsUnit.UpdateClusterMemberInfo(3, isAlive: false);
+	[SetUp]
+	public void SetUp() {
+		var clusterSettings = ClusterSettingsFactory.GetClusterSettings(1, 3, false);
 
-			ProcessElections();
-		}
+		_electionsUnit = new ElectionsServiceUnit(clusterSettings);
 
-		private void ProcessElections() {
-			var gossipUpdate = new GossipMessage.GossipUpdated(_electionsUnit.ClusterInfo);
-			_electionsUnit.Publish(gossipUpdate);
+		ProcessElections();
+	}
 
-			_electionsUnit.Publish(new ElectionMessage.StartElections());
+	private void ProcessElections() {
+		var gossipUpdate = new GossipMessage.GossipUpdated(_electionsUnit.ClusterInfo);
+		_electionsUnit.Publish(gossipUpdate);
 
-			_electionsUnit.RepublishFromPublisher();
+		_electionsUnit.Publish(new ElectionMessage.StartElections());
 
-			_electionsUnit.RepublishFromPublisher();
-			Assert.That(
-				_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
-				Is.True,
-				"Only OverGrpc or Schedule messages are expected.");
+		_electionsUnit.RepublishFromPublisher();
 
-			_electionsUnit.RepublishFromPublisher();
+		_electionsUnit.RepublishFromPublisher();
+		Assert.That(
+			_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
+			Is.True,
+			"Only SendOverGrpc or Schedule messages are expected.");
 
-			_electionsUnit.RepublishFromPublisher();
-			Assert.That(
-				_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
-				Is.True,
-				"Only OverGrpc or Schedule messages are expected.");
+		_electionsUnit.RepublishFromPublisher();
+	}
 
-			_electionsUnit.RepublishFromPublisher();
-		}
+	[Test]
+	public void elections_should_time_out() {
+		Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
+	}
+}
 
-		[Test]
-		public void elections_should_time_out() {
-			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
-		}
+[TestFixture]
+public sealed class elections_service_should_stuck_with_single_alive_node {
+	private ElectionsServiceUnit _electionsUnit;
+
+	[SetUp]
+	public void SetUp() {
+		var clusterSettings = ClusterSettingsFactory.GetClusterSettings(1, 3, false);
+
+		_electionsUnit = new ElectionsServiceUnit(clusterSettings);
+		_electionsUnit.UpdateClusterMemberInfo(0, isAlive: false);
+		_electionsUnit.UpdateClusterMemberInfo(2, isAlive: false);
+		_electionsUnit.UpdateClusterMemberInfo(3, isAlive: false);
+
+		ProcessElections();
+	}
+
+	private void ProcessElections() {
+		var gossipUpdate = new GossipMessage.GossipUpdated(_electionsUnit.ClusterInfo);
+		_electionsUnit.Publish(gossipUpdate);
+
+		_electionsUnit.Publish(new ElectionMessage.StartElections());
+
+		_electionsUnit.RepublishFromPublisher();
+
+		_electionsUnit.RepublishFromPublisher();
+		Assert.That(
+			_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
+			Is.True,
+			"Only OverGrpc or Schedule messages are expected.");
+
+		_electionsUnit.RepublishFromPublisher();
+
+		_electionsUnit.RepublishFromPublisher();
+		Assert.That(
+			_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
+			Is.True,
+			"Only OverGrpc or Schedule messages are expected.");
+
+		_electionsUnit.RepublishFromPublisher();
+	}
+
+	[Test]
+	public void elections_should_time_out() {
+		Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
 	}
 }

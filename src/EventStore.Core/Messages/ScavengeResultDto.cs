@@ -3,17 +3,17 @@
 
 using System;
 
-namespace EventStore.Core.Messages {
-	public class ScavengeResultDto {
-		public string ScavengeId { get; set; }
+namespace EventStore.Core.Messages;
 
-		public ScavengeResultDto() {
-		}
+public class ScavengeResultDto {
+	public string ScavengeId { get; set; }
 
-		public ScavengeResultDto(string scavengeId) {
-			ScavengeId = scavengeId;
-		}
-
-		public override string ToString() => $"ScavengeId: {ScavengeId}";
+	public ScavengeResultDto() {
 	}
+
+	public ScavengeResultDto(string scavengeId) {
+		ScavengeId = scavengeId;
+	}
+
+	public override string ToString() => $"ScavengeId: {ScavengeId}";
 }

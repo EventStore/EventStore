@@ -11,93 +11,93 @@ using EventStore.Projections.Core.Messages;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
-namespace EventStore.Projections.Core.Services.Grpc {
-	internal partial class ProjectionManagement {
-		private static readonly Operation ResultOperation = new Operation(Operations.Projections.Result);
-		private static readonly Operation StateOperation = new Operation(Operations.Projections.State);
-		public override async Task<ResultResp> Result(ResultReq request, ServerCallContext context) {
+namespace EventStore.Projections.Core.Services.Grpc;
 
-			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, ResultOperation, context.CancellationToken)) {
-				throw RpcExceptions.AccessDenied();
-			}
+internal partial class ProjectionManagement {
+	private static readonly Operation ResultOperation = new Operation(Operations.Projections.Result);
+	private static readonly Operation StateOperation = new Operation(Operations.Projections.State);
+	public override async Task<ResultResp> Result(ResultReq request, ServerCallContext context) {
 
-			var resultSource = new TaskCompletionSource<Value>();
-			var options = request.Options;
-
-			var name = options.Name;
-			var partition = options.Partition ?? string.Empty;
-
-			var envelope = new CallbackEnvelope(OnMessage);
-
-			_publisher.Publish(new ProjectionManagementMessage.Command.GetResult(envelope, name, partition));
-
-			return new ResultResp {
-				Result = await resultSource.Task
-			};
-
-			void OnMessage(Message message) {
-				switch (message) {
-					case ProjectionManagementMessage.ProjectionResult result:
-						if (string.IsNullOrEmpty(result.Result)) {
-							resultSource.TrySetResult(new Value {
-								StructValue = new Struct()
-							});
-						} else {
-							var document = JsonDocument.Parse(result.Result);
-							resultSource.TrySetResult(GetProtoValue(document.RootElement));
-						}
-						break;
-					case ProjectionManagementMessage.NotFound:
-						resultSource.TrySetException(ProjectionNotFound(name));
-						break;
-					default:
-						resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionResult>(message));
-						break;
-				}
-			}
+		var user = context.GetHttpContext().User;
+		if (!await _authorizationProvider.CheckAccessAsync(user, ResultOperation, context.CancellationToken)) {
+			throw RpcExceptions.AccessDenied();
 		}
 
-		public override async Task<StateResp> State(StateReq request, ServerCallContext context) {
+		var resultSource = new TaskCompletionSource<Value>();
+		var options = request.Options;
 
-			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, StateOperation, context.CancellationToken)) {
-				throw RpcExceptions.AccessDenied();
+		var name = options.Name;
+		var partition = options.Partition ?? string.Empty;
+
+		var envelope = new CallbackEnvelope(OnMessage);
+
+		_publisher.Publish(new ProjectionManagementMessage.Command.GetResult(envelope, name, partition));
+
+		return new ResultResp {
+			Result = await resultSource.Task
+		};
+
+		void OnMessage(Message message) {
+			switch (message) {
+				case ProjectionManagementMessage.ProjectionResult result:
+					if (string.IsNullOrEmpty(result.Result)) {
+						resultSource.TrySetResult(new Value {
+							StructValue = new Struct()
+						});
+					} else {
+						var document = JsonDocument.Parse(result.Result);
+						resultSource.TrySetResult(GetProtoValue(document.RootElement));
+					}
+					break;
+				case ProjectionManagementMessage.NotFound:
+					resultSource.TrySetException(ProjectionNotFound(name));
+					break;
+				default:
+					resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionResult>(message));
+					break;
 			}
-			var resultSource = new TaskCompletionSource<Value>();
+		}
+	}
 
-			var options = request.Options;
+	public override async Task<StateResp> State(StateReq request, ServerCallContext context) {
 
-			var name = options.Name;
-			var partition = options.Partition ?? string.Empty;
+		var user = context.GetHttpContext().User;
+		if (!await _authorizationProvider.CheckAccessAsync(user, StateOperation, context.CancellationToken)) {
+			throw RpcExceptions.AccessDenied();
+		}
+		var resultSource = new TaskCompletionSource<Value>();
 
-			var envelope = new CallbackEnvelope(OnMessage);
+		var options = request.Options;
 
-			_publisher.Publish(new ProjectionManagementMessage.Command.GetState(envelope, name, partition));
+		var name = options.Name;
+		var partition = options.Partition ?? string.Empty;
 
-			return new StateResp {
-				State = await resultSource.Task
-			};
+		var envelope = new CallbackEnvelope(OnMessage);
 
-			void OnMessage(Message message) {
-				switch (message) {
-					case ProjectionManagementMessage.ProjectionState result:
-						if (string.IsNullOrEmpty(result.State)) {
-							resultSource.TrySetResult(new Value {
-								StructValue = new Struct()
-							});
-						} else {
-							var document = JsonDocument.Parse(result.State);
-							resultSource.TrySetResult(GetProtoValue(document.RootElement));
-						}
-						break;
-					case ProjectionManagementMessage.NotFound:
-						resultSource.TrySetException(ProjectionNotFound(name));
-						break;
-					default:
-						resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionState>(message));
-						break;
-				}
+		_publisher.Publish(new ProjectionManagementMessage.Command.GetState(envelope, name, partition));
+
+		return new StateResp {
+			State = await resultSource.Task
+		};
+
+		void OnMessage(Message message) {
+			switch (message) {
+				case ProjectionManagementMessage.ProjectionState result:
+					if (string.IsNullOrEmpty(result.State)) {
+						resultSource.TrySetResult(new Value {
+							StructValue = new Struct()
+						});
+					} else {
+						var document = JsonDocument.Parse(result.State);
+						resultSource.TrySetResult(GetProtoValue(document.RootElement));
+					}
+					break;
+				case ProjectionManagementMessage.NotFound:
+					resultSource.TrySetException(ProjectionNotFound(name));
+					break;
+				default:
+					resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionState>(message));
+					break;
 			}
 		}
 	}

@@ -3,8 +3,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace System.Runtime
-{
+namespace System.Runtime;
+
     using System.Collections;
     using System.Collections.Specialized;
     using System.Runtime.Serialization;
@@ -627,4 +627,3 @@ namespace System.Runtime
             }
         }
     }
-}

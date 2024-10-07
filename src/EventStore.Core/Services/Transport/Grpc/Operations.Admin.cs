@@ -10,109 +10,109 @@ using EventStore.Core.Messaging;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
-namespace EventStore.Core.Services.Transport.Grpc {
-	internal partial class Operations {
-		private static readonly Operation ShutdownOperation =
-			new Operation(Plugins.Authorization.Operations.Node.Shutdown);
+namespace EventStore.Core.Services.Transport.Grpc;
 
-		private static readonly Operation MergeIndexesOperation =
-			new Operation(Plugins.Authorization.Operations.Node.MergeIndexes);
+internal partial class Operations {
+	private static readonly Operation ShutdownOperation =
+		new Operation(Plugins.Authorization.Operations.Node.Shutdown);
 
-		private static readonly Operation ResignOperation = new Operation(Plugins.Authorization.Operations.Node.Resign);
+	private static readonly Operation MergeIndexesOperation =
+		new Operation(Plugins.Authorization.Operations.Node.MergeIndexes);
 
-		private static readonly Operation SetNodePriorityOperation =
-			new Operation(Plugins.Authorization.Operations.Node.SetPriority);
+	private static readonly Operation ResignOperation = new Operation(Plugins.Authorization.Operations.Node.Resign);
 
-		private static readonly Operation RestartPersistentSubscriptionsOperation =
-			new Operation(Plugins.Authorization.Operations.Subscriptions.Restart);
+	private static readonly Operation SetNodePriorityOperation =
+		new Operation(Plugins.Authorization.Operations.Node.SetPriority);
 
-		private static readonly Empty EmptyResult = new Empty();
+	private static readonly Operation RestartPersistentSubscriptionsOperation =
+		new Operation(Plugins.Authorization.Operations.Subscriptions.Restart);
 
-		public override async Task<Empty> Shutdown(Empty request, ServerCallContext context) {
-			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, ShutdownOperation, context.CancellationToken)) {
-				throw RpcExceptions.AccessDenied();
-			}
+	private static readonly Empty EmptyResult = new Empty();
 
-			_publisher.Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
-			return EmptyResult;
+	public override async Task<Empty> Shutdown(Empty request, ServerCallContext context) {
+		var user = context.GetHttpContext().User;
+		if (!await _authorizationProvider.CheckAccessAsync(user, ShutdownOperation, context.CancellationToken)) {
+			throw RpcExceptions.AccessDenied();
 		}
 
-		public override async Task<Empty> MergeIndexes(Empty request, ServerCallContext context) {
-			var mergeResultSource = new TaskCompletionSource<string>();
+		_publisher.Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
+		return EmptyResult;
+	}
 
-			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, MergeIndexesOperation, context.CancellationToken)) {
-				throw RpcExceptions.AccessDenied();
-			}
+	public override async Task<Empty> MergeIndexes(Empty request, ServerCallContext context) {
+		var mergeResultSource = new TaskCompletionSource<string>();
 
-			var correlationId = Guid.NewGuid();
-			_publisher.Publish(new ClientMessage.MergeIndexes(new CallbackEnvelope(OnMessage), correlationId, user));
-
-			await mergeResultSource.Task;
-			return EmptyResult;
-
-			void OnMessage(Message message) {
-				var completed = message as ClientMessage.MergeIndexesResponse;
-				if (completed is null) {
-					mergeResultSource.TrySetException(
-						RpcExceptions.UnknownMessage<ClientMessage.MergeIndexesResponse>(message));
-				} else {
-					mergeResultSource.SetResult(completed.CorrelationId.ToString());
-				}
-			}
+		var user = context.GetHttpContext().User;
+		if (!await _authorizationProvider.CheckAccessAsync(user, MergeIndexesOperation, context.CancellationToken)) {
+			throw RpcExceptions.AccessDenied();
 		}
 
-		public override async Task<Empty> ResignNode(Empty request, ServerCallContext context) {
-			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, ResignOperation, context.CancellationToken)) {
-				throw RpcExceptions.AccessDenied();
-			}
+		var correlationId = Guid.NewGuid();
+		_publisher.Publish(new ClientMessage.MergeIndexes(new CallbackEnvelope(OnMessage), correlationId, user));
 
-			_publisher.Publish(new ClientMessage.ResignNode());
-			return EmptyResult;
+		await mergeResultSource.Task;
+		return EmptyResult;
+
+		void OnMessage(Message message) {
+			var completed = message as ClientMessage.MergeIndexesResponse;
+			if (completed is null) {
+				mergeResultSource.TrySetException(
+					RpcExceptions.UnknownMessage<ClientMessage.MergeIndexesResponse>(message));
+			} else {
+				mergeResultSource.SetResult(completed.CorrelationId.ToString());
+			}
+		}
+	}
+
+	public override async Task<Empty> ResignNode(Empty request, ServerCallContext context) {
+		var user = context.GetHttpContext().User;
+		if (!await _authorizationProvider.CheckAccessAsync(user, ResignOperation, context.CancellationToken)) {
+			throw RpcExceptions.AccessDenied();
 		}
 
-		public override async Task<Empty> SetNodePriority(SetNodePriorityReq request, ServerCallContext context) {
-			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider
-				.CheckAccessAsync(user, SetNodePriorityOperation, context.CancellationToken)) {
-				throw RpcExceptions.AccessDenied();
-			}
+		_publisher.Publish(new ClientMessage.ResignNode());
+		return EmptyResult;
+	}
 
-			_publisher.Publish(new ClientMessage.SetNodePriority(request.Priority));
-			return EmptyResult;
+	public override async Task<Empty> SetNodePriority(SetNodePriorityReq request, ServerCallContext context) {
+		var user = context.GetHttpContext().User;
+		if (!await _authorizationProvider
+			.CheckAccessAsync(user, SetNodePriorityOperation, context.CancellationToken)) {
+			throw RpcExceptions.AccessDenied();
 		}
 
-		public override async Task<Empty> RestartPersistentSubscriptions(Empty request, ServerCallContext context) {
-			var restart = new TaskCompletionSource<bool>();
-			var envelope = new CallbackEnvelope(OnMessage);
+		_publisher.Publish(new ClientMessage.SetNodePriority(request.Priority));
+		return EmptyResult;
+	}
 
-			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, RestartPersistentSubscriptionsOperation,
-					context.CancellationToken)) {
-				throw RpcExceptions.AccessDenied();
-			}
+	public override async Task<Empty> RestartPersistentSubscriptions(Empty request, ServerCallContext context) {
+		var restart = new TaskCompletionSource<bool>();
+		var envelope = new CallbackEnvelope(OnMessage);
 
-			_publisher.Publish(new SubscriptionMessage.PersistentSubscriptionsRestart(envelope));
+		var user = context.GetHttpContext().User;
+		if (!await _authorizationProvider.CheckAccessAsync(user, RestartPersistentSubscriptionsOperation,
+				context.CancellationToken)) {
+			throw RpcExceptions.AccessDenied();
+		}
 
-			await restart.Task;
-			return new Empty();
+		_publisher.Publish(new SubscriptionMessage.PersistentSubscriptionsRestart(envelope));
 
-			void OnMessage(Message message) {
-				switch (message) {
-					case SubscriptionMessage.PersistentSubscriptionsRestarting _:
-						restart.TrySetResult(true);
-						break;
-					case SubscriptionMessage.InvalidPersistentSubscriptionsRestart _:
-						restart.TrySetResult(true);
-						break;
-					default:
-						restart.TrySetException(
-							RpcExceptions
-								.UnknownMessage<SubscriptionMessage.PersistentSubscriptionsRestarting>(message));
-						break;
-				}
+		await restart.Task;
+		return new Empty();
+
+		void OnMessage(Message message) {
+			switch (message) {
+				case SubscriptionMessage.PersistentSubscriptionsRestarting _:
+					restart.TrySetResult(true);
+					break;
+				case SubscriptionMessage.InvalidPersistentSubscriptionsRestart _:
+					restart.TrySetResult(true);
+					break;
+				default:
+					restart.TrySetException(
+						RpcExceptions
+							.UnknownMessage<SubscriptionMessage.PersistentSubscriptionsRestarting>(message));
+					break;
 			}
 		}
 	}

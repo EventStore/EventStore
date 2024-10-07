@@ -11,98 +11,98 @@ using System.Net;
 using System.Text;
 using EventStore.Transport.Http;
 
-namespace EventStore.Core.Tests.Services.Transport.Http {
-	[TestFixture]
-	class compress_response_should {
-		private string inputData = "my test string 123456.";
+namespace EventStore.Core.Tests.Services.Transport.Http;
 
-		[Test]
-		public void with_gzip_compression_algo_data_is_gzipped() {
-			var response =
-				HttpEntityManager.CompressResponse(Encoding.ASCII.GetBytes(inputData), CompressionAlgorithms.Gzip);
+[TestFixture]
+class compress_response_should {
+	private string inputData = "my test string 123456.";
 
-			String uncompressed;
+	[Test]
+	public void with_gzip_compression_algo_data_is_gzipped() {
+		var response =
+			HttpEntityManager.CompressResponse(Encoding.ASCII.GetBytes(inputData), CompressionAlgorithms.Gzip);
 
-			using (var inputStream = new MemoryStream(response))
-			using (var uncompressedStream = new GZipStream(inputStream, CompressionMode.Decompress))
-			using (var outputStream = new MemoryStream()) {
-				uncompressedStream.CopyTo(outputStream);
-				uncompressed = Encoding.UTF8.GetString(outputStream.ToArray());
-			}
+		String uncompressed;
 
-			Assert.AreEqual(uncompressed, inputData);
+		using (var inputStream = new MemoryStream(response))
+		using (var uncompressedStream = new GZipStream(inputStream, CompressionMode.Decompress))
+		using (var outputStream = new MemoryStream()) {
+			uncompressedStream.CopyTo(outputStream);
+			uncompressed = Encoding.UTF8.GetString(outputStream.ToArray());
 		}
 
-		[Test]
-		public void with_gzip_compression_algo_and_string_larger_than_50kb_data_is_gzipped() {
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < 60 * 1024; i++) sb.Append("A");
-			String testString = sb.ToString();
+		Assert.AreEqual(uncompressed, inputData);
+	}
 
-			var response =
-				HttpEntityManager.CompressResponse(Encoding.ASCII.GetBytes(testString), CompressionAlgorithms.Gzip);
+	[Test]
+	public void with_gzip_compression_algo_and_string_larger_than_50kb_data_is_gzipped() {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < 60 * 1024; i++) sb.Append("A");
+		String testString = sb.ToString();
 
-			String uncompressed;
+		var response =
+			HttpEntityManager.CompressResponse(Encoding.ASCII.GetBytes(testString), CompressionAlgorithms.Gzip);
 
-			using (var inputStream = new MemoryStream(response))
-			using (var uncompressedStream = new GZipStream(inputStream, CompressionMode.Decompress))
-			using (var outputStream = new MemoryStream()) {
-				uncompressedStream.CopyTo(outputStream);
-				uncompressed = Encoding.UTF8.GetString(outputStream.ToArray());
-			}
+		String uncompressed;
 
-			Assert.AreEqual(uncompressed, testString);
+		using (var inputStream = new MemoryStream(response))
+		using (var uncompressedStream = new GZipStream(inputStream, CompressionMode.Decompress))
+		using (var outputStream = new MemoryStream()) {
+			uncompressedStream.CopyTo(outputStream);
+			uncompressed = Encoding.UTF8.GetString(outputStream.ToArray());
 		}
 
-		[Test]
-		public void with_deflate_compression_algo_data_is_deflated() {
-			var response =
-				HttpEntityManager.CompressResponse(Encoding.ASCII.GetBytes(inputData), CompressionAlgorithms.Deflate);
+		Assert.AreEqual(uncompressed, testString);
+	}
 
-			String uncompressed;
+	[Test]
+	public void with_deflate_compression_algo_data_is_deflated() {
+		var response =
+			HttpEntityManager.CompressResponse(Encoding.ASCII.GetBytes(inputData), CompressionAlgorithms.Deflate);
 
-			using (var inputStream = new MemoryStream(response))
-			using (var uncompressedStream = new DeflateStream(inputStream, CompressionMode.Decompress))
-			using (var outputStream = new MemoryStream()) {
-				uncompressedStream.CopyTo(outputStream);
-				uncompressed = Encoding.UTF8.GetString(outputStream.ToArray());
-			}
+		String uncompressed;
 
-			Assert.AreEqual(uncompressed, inputData);
+		using (var inputStream = new MemoryStream(response))
+		using (var uncompressedStream = new DeflateStream(inputStream, CompressionMode.Decompress))
+		using (var outputStream = new MemoryStream()) {
+			uncompressedStream.CopyTo(outputStream);
+			uncompressed = Encoding.UTF8.GetString(outputStream.ToArray());
 		}
 
-		[Test]
-		public void with_deflate_compression_algo_and_string_larger_than_50kb_data_is_deflated() {
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < 60 * 1024; i++) sb.Append("A");
-			String testString = sb.ToString();
+		Assert.AreEqual(uncompressed, inputData);
+	}
 
-			var response =
-				HttpEntityManager.CompressResponse(Encoding.ASCII.GetBytes(testString), CompressionAlgorithms.Deflate);
+	[Test]
+	public void with_deflate_compression_algo_and_string_larger_than_50kb_data_is_deflated() {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < 60 * 1024; i++) sb.Append("A");
+		String testString = sb.ToString();
 
-			String uncompressed;
+		var response =
+			HttpEntityManager.CompressResponse(Encoding.ASCII.GetBytes(testString), CompressionAlgorithms.Deflate);
 
-			using (var inputStream = new MemoryStream(response))
-			using (var uncompressedStream = new DeflateStream(inputStream, CompressionMode.Decompress))
-			using (var outputStream = new MemoryStream()) {
-				uncompressedStream.CopyTo(outputStream);
-				uncompressed = Encoding.UTF8.GetString(outputStream.ToArray());
-			}
+		String uncompressed;
 
-			Assert.AreEqual(uncompressed, testString);
+		using (var inputStream = new MemoryStream(response))
+		using (var uncompressedStream = new DeflateStream(inputStream, CompressionMode.Decompress))
+		using (var outputStream = new MemoryStream()) {
+			uncompressedStream.CopyTo(outputStream);
+			uncompressed = Encoding.UTF8.GetString(outputStream.ToArray());
 		}
 
-		[Test]
-		public void with_invalid_compression_algo_data_remains_the_same() {
-			var response =
-				HttpEntityManager.CompressResponse(Encoding.ASCII.GetBytes(inputData), "invalid_compression_algo");
-			Assert.AreEqual(Encoding.ASCII.GetString(response), inputData);
-		}
+		Assert.AreEqual(uncompressed, testString);
+	}
 
-		[Test]
-		public void with_null_compression_algo_data_remains_the_same() {
-			var response = HttpEntityManager.CompressResponse(Encoding.ASCII.GetBytes(inputData), null);
-			Assert.AreEqual(Encoding.ASCII.GetString(response), inputData);
-		}
+	[Test]
+	public void with_invalid_compression_algo_data_remains_the_same() {
+		var response =
+			HttpEntityManager.CompressResponse(Encoding.ASCII.GetBytes(inputData), "invalid_compression_algo");
+		Assert.AreEqual(Encoding.ASCII.GetString(response), inputData);
+	}
+
+	[Test]
+	public void with_null_compression_algo_data_remains_the_same() {
+		var response = HttpEntityManager.CompressResponse(Encoding.ASCII.GetBytes(inputData), null);
+		Assert.AreEqual(Encoding.ASCII.GetString(response), inputData);
 	}
 }

@@ -3,24 +3,23 @@
 
 using EventStore.Core.LogAbstraction;
 
-namespace EventStore.Core.LogV3
-{
-	public class EventTypeLookupSystemTypesDecorator : INameLookup<uint> {
-		private readonly INameLookup<uint> _wrapped;
+namespace EventStore.Core.LogV3;
 
-		public EventTypeLookupSystemTypesDecorator(INameLookup<uint> wrapped) {
-			_wrapped = wrapped;
-		}
+public class EventTypeLookupSystemTypesDecorator : INameLookup<uint> {
+	private readonly INameLookup<uint> _wrapped;
 
-		public bool TryGetName(uint eventTypeId, out string name) {
-			if (LogV3SystemEventTypes.TryGetVirtualEventType(eventTypeId, out name))
-				return true;
+	public EventTypeLookupSystemTypesDecorator(INameLookup<uint> wrapped) {
+		_wrapped = wrapped;
+	}
 
-			return _wrapped.TryGetName(eventTypeId, out name);
-		}
+	public bool TryGetName(uint eventTypeId, out string name) {
+		if (LogV3SystemEventTypes.TryGetVirtualEventType(eventTypeId, out name))
+			return true;
 
-		public bool TryGetLastValue(out uint last) {
-			return _wrapped.TryGetLastValue(out last);
-		}
+		return _wrapped.TryGetName(eventTypeId, out name);
+	}
+
+	public bool TryGetLastValue(out uint last) {
+		return _wrapped.TryGetLastValue(out last);
 	}
 }

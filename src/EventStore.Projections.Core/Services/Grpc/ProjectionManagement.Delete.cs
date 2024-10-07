@@ -9,44 +9,44 @@ using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 
-namespace EventStore.Projections.Core.Services.Grpc {
-	internal partial class ProjectionManagement {
-		private static readonly Operation DeleteOperation = new Operation(Operations.Projections.Delete);
-		public override async Task<DeleteResp> Delete(DeleteReq request, ServerCallContext context) {
-			var deletedSource = new TaskCompletionSource<bool>();
-			var options = request.Options;
+namespace EventStore.Projections.Core.Services.Grpc;
 
-			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, DeleteOperation, context.CancellationToken)) {
-				throw RpcExceptions.AccessDenied();
-			}
-			var name = options.Name;
-			var deleteCheckpointStream = options.DeleteCheckpointStream;
-			var deleteStateStream = options.DeleteStateStream;
-			var deleteEmittedStreams = options.DeleteEmittedStreams;
-			var runAs = new ProjectionManagementMessage.RunAs(user);
+internal partial class ProjectionManagement {
+	private static readonly Operation DeleteOperation = new Operation(Operations.Projections.Delete);
+	public override async Task<DeleteResp> Delete(DeleteReq request, ServerCallContext context) {
+		var deletedSource = new TaskCompletionSource<bool>();
+		var options = request.Options;
 
-			var envelope = new CallbackEnvelope(OnMessage);
+		var user = context.GetHttpContext().User;
+		if (!await _authorizationProvider.CheckAccessAsync(user, DeleteOperation, context.CancellationToken)) {
+			throw RpcExceptions.AccessDenied();
+		}
+		var name = options.Name;
+		var deleteCheckpointStream = options.DeleteCheckpointStream;
+		var deleteStateStream = options.DeleteStateStream;
+		var deleteEmittedStreams = options.DeleteEmittedStreams;
+		var runAs = new ProjectionManagementMessage.RunAs(user);
 
-			_publisher.Publish(new ProjectionManagementMessage.Command.Delete(envelope, name, runAs,
-				deleteCheckpointStream, deleteStateStream, deleteEmittedStreams));
+		var envelope = new CallbackEnvelope(OnMessage);
 
-			await deletedSource.Task;
+		_publisher.Publish(new ProjectionManagementMessage.Command.Delete(envelope, name, runAs,
+			deleteCheckpointStream, deleteStateStream, deleteEmittedStreams));
 
-			return new DeleteResp();
+		await deletedSource.Task;
 
-			void OnMessage(Message message) {
-				switch (message) {
-					case ProjectionManagementMessage.Updated:
-						deletedSource.TrySetResult(true);
-						break;
-					case ProjectionManagementMessage.NotFound:
-						deletedSource.TrySetException(ProjectionNotFound(name));
-						break;
-					default:
-						deletedSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
-						break;
-				}
+		return new DeleteResp();
+
+		void OnMessage(Message message) {
+			switch (message) {
+				case ProjectionManagementMessage.Updated:
+					deletedSource.TrySetResult(true);
+					break;
+				case ProjectionManagementMessage.NotFound:
+					deletedSource.TrySetException(ProjectionNotFound(name));
+					break;
+				default:
+					deletedSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
+					break;
 			}
 		}
 	}

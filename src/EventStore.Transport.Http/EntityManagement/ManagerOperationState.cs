@@ -5,31 +5,31 @@ using System;
 using System.IO;
 using EventStore.Common.Utils;
 
-namespace EventStore.Transport.Http.EntityManagement {
-	internal class ManagerOperationState : IDisposable {
-		public readonly Action<HttpEntityManager, byte[]> OnReadSuccess;
-		public readonly Action<Exception> OnError;
+namespace EventStore.Transport.Http.EntityManagement;
 
-		public readonly Stream InputStream;
-		public readonly Stream OutputStream;
+internal class ManagerOperationState : IDisposable {
+	public readonly Action<HttpEntityManager, byte[]> OnReadSuccess;
+	public readonly Action<Exception> OnError;
 
-		public ManagerOperationState(Stream inputStream,
-			Stream outputStream,
-			Action<HttpEntityManager, byte[]> onReadSuccess,
-			Action<Exception> onError) {
-			Ensure.NotNull(inputStream, "inputStream");
-			Ensure.NotNull(outputStream, "outputStream");
-			Ensure.NotNull(onReadSuccess, "onReadSuccess");
-			Ensure.NotNull(onError, "onError");
+	public readonly Stream InputStream;
+	public readonly Stream OutputStream;
 
-			InputStream = inputStream;
-			OutputStream = outputStream;
-			OnReadSuccess = onReadSuccess;
-			OnError = onError;
-		}
+	public ManagerOperationState(Stream inputStream,
+		Stream outputStream,
+		Action<HttpEntityManager, byte[]> onReadSuccess,
+		Action<Exception> onError) {
+		Ensure.NotNull(inputStream, "inputStream");
+		Ensure.NotNull(outputStream, "outputStream");
+		Ensure.NotNull(onReadSuccess, "onReadSuccess");
+		Ensure.NotNull(onError, "onError");
 
-		public void Dispose() {
-			IOStreams.SafelyDispose(InputStream, OutputStream);
-		}
+		InputStream = inputStream;
+		OutputStream = outputStream;
+		OnReadSuccess = onReadSuccess;
+		OnError = onError;
+	}
+
+	public void Dispose() {
+		IOStreams.SafelyDispose(InputStream, OutputStream);
 	}
 }

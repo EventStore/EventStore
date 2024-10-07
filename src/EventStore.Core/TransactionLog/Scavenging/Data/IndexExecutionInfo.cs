@@ -3,30 +3,30 @@
 
 using System;
 
-namespace EventStore.Core.TransactionLog.Scavenging {
-	public struct IndexExecutionInfo : IEquatable<IndexExecutionInfo> {
-		public IndexExecutionInfo(
-			bool isMetastream,
-			bool isTombstoned,
-			DiscardPoint discardPoint) {
+namespace EventStore.Core.TransactionLog.Scavenging;
 
-			IsMetastream = isMetastream;
-			IsTombstoned = isTombstoned;
-			DiscardPoint = discardPoint;
-		}
+public struct IndexExecutionInfo : IEquatable<IndexExecutionInfo> {
+	public IndexExecutionInfo(
+		bool isMetastream,
+		bool isTombstoned,
+		DiscardPoint discardPoint) {
 
-		public bool IsMetastream { get; }
-
-		/// <summary>
-		/// True when the corresponding original stream is tombstoned
-		/// </summary>
-		public bool IsTombstoned { get; }
-
-		public DiscardPoint DiscardPoint { get; }
-
-		// avoid the default, reflection based, implementations if we ever need to call these
-		public override int GetHashCode() => throw new NotImplementedException();
-		public override bool Equals(object other) => throw new NotImplementedException();
-		public bool Equals(IndexExecutionInfo other) => throw new NotImplementedException();
+		IsMetastream = isMetastream;
+		IsTombstoned = isTombstoned;
+		DiscardPoint = discardPoint;
 	}
+
+	public bool IsMetastream { get; }
+
+	/// <summary>
+	/// True when the corresponding original stream is tombstoned
+	/// </summary>
+	public bool IsTombstoned { get; }
+
+	public DiscardPoint DiscardPoint { get; }
+
+	// avoid the default, reflection based, implementations if we ever need to call these
+	public override int GetHashCode() => throw new NotImplementedException();
+	public override bool Equals(object other) => throw new NotImplementedException();
+	public bool Equals(IndexExecutionInfo other) => throw new NotImplementedException();
 }

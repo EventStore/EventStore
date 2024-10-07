@@ -4,26 +4,26 @@
 using System.Collections.Generic;
 using EventStore.Core.Data;
 
-namespace EventStore.Core.TransactionLog.Scavenging {
-	public interface IOriginalStreamScavengeMap<TKey> :
-		IScavengeMap<TKey, OriginalStreamData> {
+namespace EventStore.Core.TransactionLog.Scavenging;
 
-		IEnumerable<KeyValuePair<TKey, OriginalStreamData>> ActiveRecords();
+public interface IOriginalStreamScavengeMap<TKey> :
+	IScavengeMap<TKey, OriginalStreamData> {
 
-		IEnumerable<KeyValuePair<TKey, OriginalStreamData>> ActiveRecordsFromCheckpoint(TKey checkpoint);
+	IEnumerable<KeyValuePair<TKey, OriginalStreamData>> ActiveRecords();
 
-		void SetTombstone(TKey key);
+	IEnumerable<KeyValuePair<TKey, OriginalStreamData>> ActiveRecordsFromCheckpoint(TKey checkpoint);
 
-		void SetMetadata(TKey key, StreamMetadata metadata);
+	void SetTombstone(TKey key);
 
-		void SetDiscardPoints(
-			TKey key,
-			CalculationStatus status,
-			DiscardPoint discardPoint,
-			DiscardPoint maybeDiscardPoint);
+	void SetMetadata(TKey key, StreamMetadata metadata);
 
-		bool TryGetChunkExecutionInfo(TKey key, out ChunkExecutionInfo info);
+	void SetDiscardPoints(
+		TKey key,
+		CalculationStatus status,
+		DiscardPoint discardPoint,
+		DiscardPoint maybeDiscardPoint);
 
-		void DeleteMany(bool deleteArchived);
-	}
+	bool TryGetChunkExecutionInfo(TKey key, out ChunkExecutionInfo info);
+
+	void DeleteMany(bool deleteArchived);
 }

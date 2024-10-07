@@ -5,147 +5,147 @@ using System;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
-namespace EventStore.Core.Services.PersistentSubscription {
-	public class PersistentSubscriptionParams {
-		private readonly bool _resolveLinkTos;
-		private readonly string _subscriptionId;
-		private readonly IPersistentSubscriptionEventSource _eventSource;
-		private readonly string _groupName;
-		private readonly IPersistentSubscriptionStreamPosition _startFrom;
-		private readonly bool _extraStatistics;
-		private readonly TimeSpan _messageTimeout;
-		private readonly TimeSpan _checkPointAfter;
-		private readonly int _minCheckPointCount;
-		private readonly int _maxCheckPointCount;
-		private readonly int _maxSubscriberCount;
-		private readonly IPersistentSubscriptionConsumerStrategy _consumerStrategy;
+namespace EventStore.Core.Services.PersistentSubscription;
 
-		private readonly int _maxRetryCount;
-		private readonly int _liveBufferSize;
-		private readonly int _bufferSize;
-		private readonly int _readBatchSize;
-		private readonly IPersistentSubscriptionStreamReader _streamReader;
-		private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
-		private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
-		private IPersistentSubscriptionMessageParker _messageParker;
+public class PersistentSubscriptionParams {
+	private readonly bool _resolveLinkTos;
+	private readonly string _subscriptionId;
+	private readonly IPersistentSubscriptionEventSource _eventSource;
+	private readonly string _groupName;
+	private readonly IPersistentSubscriptionStreamPosition _startFrom;
+	private readonly bool _extraStatistics;
+	private readonly TimeSpan _messageTimeout;
+	private readonly TimeSpan _checkPointAfter;
+	private readonly int _minCheckPointCount;
+	private readonly int _maxCheckPointCount;
+	private readonly int _maxSubscriberCount;
+	private readonly IPersistentSubscriptionConsumerStrategy _consumerStrategy;
 
-		public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId,
-			IPersistentSubscriptionEventSource eventSource,
-			string groupName,
-			IPersistentSubscriptionStreamPosition startFrom,
-			bool extraStatistics, TimeSpan messageTimeout,
-			int maxRetryCount, int liveBufferSize, int bufferSize, int readBatchSize,
-			TimeSpan checkPointAfter, int minCheckPointCount,
-			int maxCheckPointCount, int maxSubscriberCount,
-			IPersistentSubscriptionConsumerStrategy consumerStrategy,
-			IPersistentSubscriptionStreamReader streamReader,
-			IPersistentSubscriptionCheckpointReader checkpointReader,
-			IPersistentSubscriptionCheckpointWriter checkpointWriter,
-			IPersistentSubscriptionMessageParker messageParker) {
-			_resolveLinkTos = resolveLinkTos;
-			_subscriptionId = subscriptionId;
-			_eventSource = eventSource;
-			_groupName = groupName;
-			_startFrom = startFrom;
-			_extraStatistics = extraStatistics;
-			_messageTimeout = messageTimeout;
-			_maxRetryCount = maxRetryCount;
-			_liveBufferSize = liveBufferSize;
-			_bufferSize = bufferSize;
-			_checkPointAfter = checkPointAfter;
-			_minCheckPointCount = minCheckPointCount;
-			_maxCheckPointCount = maxCheckPointCount;
-			_maxSubscriberCount = maxSubscriberCount;
-			_consumerStrategy = consumerStrategy;
-			_readBatchSize = readBatchSize;
-			_streamReader = streamReader;
-			_checkpointReader = checkpointReader;
-			_checkpointWriter = checkpointWriter;
-			_messageParker = messageParker;
-		}
+	private readonly int _maxRetryCount;
+	private readonly int _liveBufferSize;
+	private readonly int _bufferSize;
+	private readonly int _readBatchSize;
+	private readonly IPersistentSubscriptionStreamReader _streamReader;
+	private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
+	private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
+	private IPersistentSubscriptionMessageParker _messageParker;
 
-		public bool ResolveLinkTos {
-			get { return _resolveLinkTos; }
-		}
+	public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId,
+		IPersistentSubscriptionEventSource eventSource,
+		string groupName,
+		IPersistentSubscriptionStreamPosition startFrom,
+		bool extraStatistics, TimeSpan messageTimeout,
+		int maxRetryCount, int liveBufferSize, int bufferSize, int readBatchSize,
+		TimeSpan checkPointAfter, int minCheckPointCount,
+		int maxCheckPointCount, int maxSubscriberCount,
+		IPersistentSubscriptionConsumerStrategy consumerStrategy,
+		IPersistentSubscriptionStreamReader streamReader,
+		IPersistentSubscriptionCheckpointReader checkpointReader,
+		IPersistentSubscriptionCheckpointWriter checkpointWriter,
+		IPersistentSubscriptionMessageParker messageParker) {
+		_resolveLinkTos = resolveLinkTos;
+		_subscriptionId = subscriptionId;
+		_eventSource = eventSource;
+		_groupName = groupName;
+		_startFrom = startFrom;
+		_extraStatistics = extraStatistics;
+		_messageTimeout = messageTimeout;
+		_maxRetryCount = maxRetryCount;
+		_liveBufferSize = liveBufferSize;
+		_bufferSize = bufferSize;
+		_checkPointAfter = checkPointAfter;
+		_minCheckPointCount = minCheckPointCount;
+		_maxCheckPointCount = maxCheckPointCount;
+		_maxSubscriberCount = maxSubscriberCount;
+		_consumerStrategy = consumerStrategy;
+		_readBatchSize = readBatchSize;
+		_streamReader = streamReader;
+		_checkpointReader = checkpointReader;
+		_checkpointWriter = checkpointWriter;
+		_messageParker = messageParker;
+	}
 
-		public string SubscriptionId {
-			get { return _subscriptionId; }
-		}
+	public bool ResolveLinkTos {
+		get { return _resolveLinkTos; }
+	}
 
-		public IPersistentSubscriptionEventSource EventSource {
-			get { return _eventSource; }
-		}
+	public string SubscriptionId {
+		get { return _subscriptionId; }
+	}
 
-		public string GroupName {
-			get { return _groupName; }
-		}
+	public IPersistentSubscriptionEventSource EventSource {
+		get { return _eventSource; }
+	}
 
-		public IPersistentSubscriptionStreamPosition StartFrom {
-			get { return _startFrom; }
-		}
+	public string GroupName {
+		get { return _groupName; }
+	}
 
-		public bool ExtraStatistics {
-			get { return _extraStatistics; }
-		}
+	public IPersistentSubscriptionStreamPosition StartFrom {
+		get { return _startFrom; }
+	}
 
-		public TimeSpan MessageTimeout {
-			get { return _messageTimeout; }
-		}
+	public bool ExtraStatistics {
+		get { return _extraStatistics; }
+	}
 
-		public IPersistentSubscriptionStreamReader StreamReader {
-			get { return _streamReader; }
-		}
+	public TimeSpan MessageTimeout {
+		get { return _messageTimeout; }
+	}
 
-		public IPersistentSubscriptionCheckpointReader CheckpointReader {
-			get { return _checkpointReader; }
-		}
+	public IPersistentSubscriptionStreamReader StreamReader {
+		get { return _streamReader; }
+	}
 
-		public IPersistentSubscriptionCheckpointWriter CheckpointWriter {
-			get { return _checkpointWriter; }
-		}
+	public IPersistentSubscriptionCheckpointReader CheckpointReader {
+		get { return _checkpointReader; }
+	}
 
-		public IPersistentSubscriptionMessageParker MessageParker {
-			get { return _messageParker; }
-		}
+	public IPersistentSubscriptionCheckpointWriter CheckpointWriter {
+		get { return _checkpointWriter; }
+	}
 
-		public int MaxRetryCount {
-			get { return _maxRetryCount; }
-		}
+	public IPersistentSubscriptionMessageParker MessageParker {
+		get { return _messageParker; }
+	}
 
-		public int LiveBufferSize {
-			get { return _liveBufferSize; }
-		}
+	public int MaxRetryCount {
+		get { return _maxRetryCount; }
+	}
 
-		public int BufferSize {
-			get { return _bufferSize; }
-		}
+	public int LiveBufferSize {
+		get { return _liveBufferSize; }
+	}
 
-		public int ReadBatchSize {
-			get { return _readBatchSize; }
-		}
+	public int BufferSize {
+		get { return _bufferSize; }
+	}
 
-		public TimeSpan CheckPointAfter {
-			get { return _checkPointAfter; }
-		}
+	public int ReadBatchSize {
+		get { return _readBatchSize; }
+	}
 
-		public int MinCheckPointCount {
-			get { return _minCheckPointCount; }
-		}
+	public TimeSpan CheckPointAfter {
+		get { return _checkPointAfter; }
+	}
 
-		public int MaxCheckPointCount {
-			get { return _maxCheckPointCount; }
-		}
+	public int MinCheckPointCount {
+		get { return _minCheckPointCount; }
+	}
 
-		public int MaxSubscriberCount {
-			get { return _maxSubscriberCount; }
-		}
+	public int MaxCheckPointCount {
+		get { return _maxCheckPointCount; }
+	}
 
-		public IPersistentSubscriptionConsumerStrategy ConsumerStrategy {
-			get { return _consumerStrategy; }
-		}
+	public int MaxSubscriberCount {
+		get { return _maxSubscriberCount; }
+	}
 
-		public string ParkedMessageStream {
-			get { return "$persistentsubscription-" + _eventSource + "::" + _groupName + "-parked"; }
-		}
+	public IPersistentSubscriptionConsumerStrategy ConsumerStrategy {
+		get { return _consumerStrategy; }
+	}
+
+	public string ParkedMessageStream {
+		get { return "$persistentsubscription-" + _eventSource + "::" + _groupName + "-parked"; }
 	}
 }

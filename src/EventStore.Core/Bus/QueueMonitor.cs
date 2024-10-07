@@ -8,29 +8,29 @@ using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring.Stats;
 using ILogger = Serilog.ILogger;
 
-namespace EventStore.Core.Bus {
-	public class QueueMonitor {
-		private static readonly ILogger Log = Serilog.Log.ForContext<QueueMonitor>();
-		public static readonly QueueMonitor Default = new QueueMonitor();
+namespace EventStore.Core.Bus;
 
-		private readonly ConcurrentDictionary<IMonitoredQueue, IMonitoredQueue> _queues =
-			new ConcurrentDictionary<IMonitoredQueue, IMonitoredQueue>();
+public class QueueMonitor {
+	private static readonly ILogger Log = Serilog.Log.ForContext<QueueMonitor>();
+	public static readonly QueueMonitor Default = new QueueMonitor();
 
-		private QueueMonitor() {
-		}
+	private readonly ConcurrentDictionary<IMonitoredQueue, IMonitoredQueue> _queues =
+		new ConcurrentDictionary<IMonitoredQueue, IMonitoredQueue>();
 
-		public void Register(IMonitoredQueue monitoredQueue) {
-			_queues[monitoredQueue] = monitoredQueue;
-		}
+	private QueueMonitor() {
+	}
 
-		public void Unregister(IMonitoredQueue monitoredQueue) {
-			IMonitoredQueue v;
-			_queues.TryRemove(monitoredQueue, out v);
-		}
+	public void Register(IMonitoredQueue monitoredQueue) {
+		_queues[monitoredQueue] = monitoredQueue;
+	}
 
-		public QueueStats[] GetStats() {
-			var stats = _queues.Keys.OrderBy(x => x.Name).Select(queue => queue.GetStatistics()).ToArray();
-			return stats;
-		}
+	public void Unregister(IMonitoredQueue monitoredQueue) {
+		IMonitoredQueue v;
+		_queues.TryRemove(monitoredQueue, out v);
+	}
+
+	public QueueStats[] GetStats() {
+		var stats = _queues.Keys.OrderBy(x => x.Name).Select(queue => queue.GetStatistics()).ToArray();
+		return stats;
 	}
 }

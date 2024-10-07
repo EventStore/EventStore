@@ -3,18 +3,18 @@
 
 using EventStore.Projections.Core.Services.Processing.Phases;
 
-namespace EventStore.Projections.Core.Services.Processing.WorkItems {
-	class CompletedWorkItem : CheckpointWorkItemBase {
-		private readonly IProjectionPhaseCompleter _projection;
+namespace EventStore.Projections.Core.Services.Processing.WorkItems;
 
-		public CompletedWorkItem(IProjectionPhaseCompleter projection)
-			: base() {
-			_projection = projection;
-		}
+class CompletedWorkItem : CheckpointWorkItemBase {
+	private readonly IProjectionPhaseCompleter _projection;
 
-		protected override void WriteOutput() {
-			_projection.Complete();
-			NextStage();
-		}
+	public CompletedWorkItem(IProjectionPhaseCompleter projection)
+		: base() {
+		_projection = projection;
+	}
+
+	protected override void WriteOutput() {
+		_projection.Complete();
+		NextStage();
 	}
 }

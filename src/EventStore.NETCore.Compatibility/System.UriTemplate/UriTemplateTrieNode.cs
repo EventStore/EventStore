@@ -3,8 +3,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace System
-{
+namespace System;
+
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Runtime;
@@ -804,4 +804,3 @@ namespace System
             }
         }
     }
-}

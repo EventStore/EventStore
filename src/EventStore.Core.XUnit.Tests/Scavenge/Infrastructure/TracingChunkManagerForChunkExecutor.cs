@@ -5,32 +5,32 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Scavenging;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge {
-	public class TracingChunkManagerForChunkExecutor<TStreamId, TRecord> :
-		IChunkManagerForChunkExecutor<TStreamId, TRecord> {
+namespace EventStore.Core.XUnit.Tests.Scavenge;
 
-		private readonly IChunkManagerForChunkExecutor<TStreamId, TRecord> _wrapped;
-		private readonly Tracer _tracer;
+public class TracingChunkManagerForChunkExecutor<TStreamId, TRecord> :
+	IChunkManagerForChunkExecutor<TStreamId, TRecord> {
 
-		public TracingChunkManagerForChunkExecutor(
-			IChunkManagerForChunkExecutor<TStreamId, TRecord> wrapped, Tracer tracer) {
+	private readonly IChunkManagerForChunkExecutor<TStreamId, TRecord> _wrapped;
+	private readonly Tracer _tracer;
 
-			_wrapped = wrapped;
-			_tracer = tracer;
-		}
+	public TracingChunkManagerForChunkExecutor(
+		IChunkManagerForChunkExecutor<TStreamId, TRecord> wrapped, Tracer tracer) {
 
-		public async ValueTask<IChunkWriterForExecutor<TStreamId, TRecord>> CreateChunkWriter(
-			IChunkReaderForExecutor<TStreamId, TRecord> sourceChunk,
-			CancellationToken token) {
+		_wrapped = wrapped;
+		_tracer = tracer;
+	}
 
-			return new TracingChunkWriterForExecutor<TStreamId, TRecord>(
-				await _wrapped.CreateChunkWriter(sourceChunk, token),
-				_tracer);
-		}
+	public async ValueTask<IChunkWriterForExecutor<TStreamId, TRecord>> CreateChunkWriter(
+		IChunkReaderForExecutor<TStreamId, TRecord> sourceChunk,
+		CancellationToken token) {
 
-		public IChunkReaderForExecutor<TStreamId, TRecord> GetChunkReaderFor(long position) {
-			var reader = _wrapped.GetChunkReaderFor(position);
-			return new TrackingChunkReaderForExecutor<TStreamId, TRecord>(reader, _tracer);
-		}
+		return new TracingChunkWriterForExecutor<TStreamId, TRecord>(
+			await _wrapped.CreateChunkWriter(sourceChunk, token),
+			_tracer);
+	}
+
+	public IChunkReaderForExecutor<TStreamId, TRecord> GetChunkReaderFor(long position) {
+		var reader = _wrapped.GetChunkReaderFor(position);
+		return new TrackingChunkReaderForExecutor<TStreamId, TRecord>(reader, _tracer);
 	}
 }

@@ -6,35 +6,35 @@ using System.Collections.Generic;
 using System.Threading;
 using EventStore.Core.TransactionLog.Scavenging;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge {
-	public class TracingChunkReaderForAccumulator<TStreamId> : IChunkReaderForAccumulator<TStreamId> {
-		private readonly IChunkReaderForAccumulator<TStreamId> _wrapped;
-		private readonly Action<string> _trace;
+namespace EventStore.Core.XUnit.Tests.Scavenge;
 
-		public TracingChunkReaderForAccumulator(
-			IChunkReaderForAccumulator<TStreamId> wrapped,
-			Action<string> trace) {
+public class TracingChunkReaderForAccumulator<TStreamId> : IChunkReaderForAccumulator<TStreamId> {
+	private readonly IChunkReaderForAccumulator<TStreamId> _wrapped;
+	private readonly Action<string> _trace;
 
-			_wrapped = wrapped;
-			_trace = trace;
-		}
+	public TracingChunkReaderForAccumulator(
+		IChunkReaderForAccumulator<TStreamId> wrapped,
+		Action<string> trace) {
 
-		public IAsyncEnumerable<AccumulatorRecordType> ReadChunkInto(
-			int logicalChunkNumber,
-			RecordForAccumulator<TStreamId>.OriginalStreamRecord originalStreamRecord,
-			RecordForAccumulator<TStreamId>.MetadataStreamRecord metadataStreamRecord,
-			RecordForAccumulator<TStreamId>.TombStoneRecord tombStoneRecord,
-			CancellationToken token) {
+		_wrapped = wrapped;
+		_trace = trace;
+	}
 
-			var ret = _wrapped.ReadChunkInto(
-				logicalChunkNumber,
-				originalStreamRecord,
-				metadataStreamRecord,
-				tombStoneRecord,
-				token);
+	public IAsyncEnumerable<AccumulatorRecordType> ReadChunkInto(
+		int logicalChunkNumber,
+		RecordForAccumulator<TStreamId>.OriginalStreamRecord originalStreamRecord,
+		RecordForAccumulator<TStreamId>.MetadataStreamRecord metadataStreamRecord,
+		RecordForAccumulator<TStreamId>.TombStoneRecord tombStoneRecord,
+		CancellationToken token) {
 
-			_trace($"Reading Chunk {logicalChunkNumber}");
-			return ret;
-		}
+		var ret = _wrapped.ReadChunkInto(
+			logicalChunkNumber,
+			originalStreamRecord,
+			metadataStreamRecord,
+			tombStoneRecord,
+			token);
+
+		_trace($"Reading Chunk {logicalChunkNumber}");
+		return ret;
 	}
 }

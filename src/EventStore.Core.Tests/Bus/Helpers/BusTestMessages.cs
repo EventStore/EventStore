@@ -3,30 +3,30 @@
 
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Tests.Bus.Helpers {
-	public class TestMessage : Message {
-	}
+namespace EventStore.Core.Tests.Bus.Helpers;
 
-	public class TestMessage2 : Message {
-	}
+public class TestMessage : Message {
+}
 
-	public class TestMessage3 : Message {
-	}
+public class TestMessage2 : Message {
+}
 
-	public class ParentTestMessage : Message {
-	}
+public class TestMessage3 : Message {
+}
 
-	public class ChildTestMessage : ParentTestMessage {
-	}
+public class ParentTestMessage : Message {
+}
 
-	public class GrandChildTestMessage : ChildTestMessage {
-	}
+public class ChildTestMessage : ParentTestMessage {
+}
 
-	public class TestMessageWithId : Message {
-		public readonly int Id;
+public class GrandChildTestMessage : ChildTestMessage {
+}
 
-		public TestMessageWithId(int id) {
-			Id = id;
-		}
+public class TestMessageWithId : Message {
+	public readonly int Id;
+
+	public TestMessageWithId(int id) {
+		Id = id;
 	}
 }

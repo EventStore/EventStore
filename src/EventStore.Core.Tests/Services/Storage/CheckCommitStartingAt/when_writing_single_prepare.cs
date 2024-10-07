@@ -7,28 +7,28 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_writing_single_prepare<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
-		private IPrepareLogRecord _prepare;
+namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt;
 
-		protected override async ValueTask WriteTestScenario(CancellationToken token) {
-			_prepare = await WritePrepare("ES", -1, token: token);
-		}
+[TestFixture(typeof(LogFormat.V2), typeof(string))]
+[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+public class when_writing_single_prepare<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
+	private IPrepareLogRecord _prepare;
 
-		[Test]
-		public void check_commmit_should_return_ok_decision() {
-			var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare.LogPosition,
-				WriterCheckpoint.ReadNonFlushed());
+	protected override async ValueTask WriteTestScenario(CancellationToken token) {
+		_prepare = await WritePrepare("ES", -1, token: token);
+	}
 
-			var streamId = _logFormat.StreamIds.LookupValue("ES");
+	[Test]
+	public void check_commmit_should_return_ok_decision() {
+		var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare.LogPosition,
+			WriterCheckpoint.ReadNonFlushed());
 
-			Assert.AreEqual(CommitDecision.Ok, res.Decision);
-			Assert.AreEqual(streamId, res.EventStreamId);
-			Assert.AreEqual(-1, res.CurrentVersion);
-			Assert.AreEqual(-1, res.StartEventNumber);
-			Assert.AreEqual(-1, res.EndEventNumber);
-		}
+		var streamId = _logFormat.StreamIds.LookupValue("ES");
+
+		Assert.AreEqual(CommitDecision.Ok, res.Decision);
+		Assert.AreEqual(streamId, res.EventStreamId);
+		Assert.AreEqual(-1, res.CurrentVersion);
+		Assert.AreEqual(-1, res.StartEventNumber);
+		Assert.AreEqual(-1, res.EndEventNumber);
 	}
 }
