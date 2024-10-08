@@ -5,6 +5,7 @@ ARG RUNTIME=linux-x64
 
 WORKDIR /build
 COPY ./LICENSE.md .
+COPY ./LICENSE_CONTRIBUTIONS.md .
 COPY ./NOTICE.html .
 
 WORKDIR /build/ci
