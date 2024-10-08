@@ -3,6 +3,65 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [24.10.0-preview1] - 2024-09-30
+
+### Changed
+
+- Separated projections metrics into multiple instruments. [EventStore#4312](https://github.com/EventStore/EventStore/pull/4312)
+- Separated persistent subscription metrics into multiple instruments. [EventStore#4315](https://github.com/EventStore/EventStore/pull/4315)
+- Upgraded all grpc and proto related packages. [EventStore#4340](https://github.com/EventStore/EventStore/pull/4340)
+- Upgraded all serilog packages. [EventStore#4341](https://github.com/EventStore/EventStore/pull/4341)
+- Console logging now includes SourceContext with component name. [EventStore#4341](https://github.com/EventStore/EventStore/pull/4341)
+- Default log uses EventStore as the name. [EventStore#4341](https://github.com/EventStore/EventStore/pull/4341)
+- When adding serilog to the host we now correctly clear all existing providers. [EventStore#4341](https://github.com/EventStore/EventStore/pull/4341)
+- Take whether a leader is resigning into account before the node priority when selecting the best candidate for an election. [EventStore#4371](https://github.com/EventStore/EventStore/pull/4371)
+- Internal message bus is changed to be lock-free for better performance. Also, the change drives further perf improvements. [EventStore#4390](https://github.com/EventStore/EventStore/pull/4390)
+- Group projection processing classes into namespaces. [EventStore#4412](https://github.com/EventStore/EventStore/pull/4412)
+-  Refactor projections to use `IPublisher` and `ISubscriber` instead of `IQueuedHandler` and `IBus`. [EventStore#4413](https://github.com/EventStore/EventStore/pull/4413)
+- Removed async modifier where the async method is awaited in a tail position to reduce overhead caused by compiler-generated async state machines. [EventStore#4428](https://github.com/EventStore/EventStore/pull/4428)
+- `TFChunk.CompleteRaw` transformed into async method. [EventStore#4438](https://github.com/EventStore/EventStore/pull/4438)
+- Move `TFChunk.CompleteScavenge` to async. [EventStore#4440](https://github.com/EventStore/EventStore/pull/4440)
+- Moved `TFChunk.TryReadFirst` to async. [EventStore#4446](https://github.com/EventStore/EventStore/pull/4446)
+- Add policy selector to ClusterVNode's plugable components if it is one so that they are correctly configured. [EventStore#4444](https://github.com/EventStore/EventStore/pull/4444)
+- Software License (https://www.eventstore.com/blog/introducing-event-store-license-v2-eslv2). [EventStore#4452](https://github.com/EventStore/EventStore/pull/4452)
+
+### Fixed
+
+- Prevent 64-bit integer overflow in `GetMidpointIndex()` / `IsMidpointIndex()`. [EventStore#4330](https://github.com/EventStore/EventStore/pull/4330)
+- Transitive dependency vulnerabilities with `System.Text.Json` and `System.Formats.Asn1`. [EventStore#4340](https://github.com/EventStore/EventStore/pull/4340)
+- Avoid Replaying deleted events from source stream to persistent subscription consumers. [EventStore#4300](https://github.com/EventStore/EventStore/pull/4300)
+- Redaction: Return the chunk's MinCompatibleVersion instead of Version when retrieving event positions [EventStore#4354](https://github.com/EventStore/EventStore/pull/4354)
+- Optimize CPU usage of the timer service when the database is idle. [EventStore#4224](https://github.com/EventStore/EventStore/pull/4224) - thanks [@taspeotis](https://github.com/taspeotis)!
+- Gossip on single node using too short a gossip interval. [EventStore#4367](https://github.com/EventStore/EventStore/pull/4367)
+- Ignore dlls that are not .NET assemblies when loading plugins. [EventStore#4380](https://github.com/EventStore/EventStore/pull/4380)
+- Projections shutdown timeout check is now published on the correct thread. [EventStore#4405](https://github.com/EventStore/EventStore/pull/4405)
+- Multistream projections don't always start properly when the input stream is truncated or deleted. [EventStore#4422](https://github.com/EventStore/EventStore/pull/4422)
+- Don't write the database default ProjectionExecutionTimeout in the projection persisted state on creation. [EventStore#4432](https://github.com/EventStore/EventStore/pull/4432)
+
+### Added
+
+- Allow loading multiple policies for authorization. [EventStore#4305](https://github.com/EventStore/EventStore/pull/4305)
+- Padding after the SourceContext in the console log output. [EventStore#4376](https://github.com/EventStore/EventStore/pull/4376)
+- Facilitate node-to-node communication over HTTP for plugins. [EventStore#4409](https://github.com/EventStore/EventStore/pull/4409)
+- Groundwork for Archive. [EventStore#4417](https://github.com/EventStore/EventStore/pull/4417)
+- Handling for missing labels in `metricsconfig.json`. [EventStore#4420](https://github.com/EventStore/EventStore/pull/4420)
+- Operating System to telemetry. [EventStore#4443](https://github.com/EventStore/EventStore/pull/4443)
+- Chunk read distribution metric. [EventStore#4445](https://github.com/EventStore/EventStore/pull/4445)
+- Licence header to source files. [EventStore#4455](https://github.com/EventStore/EventStore/pull/4455)
+- `GET /admin/scavenge/last` endpoint. [EventStore#4419](https://github.com/EventStore/EventStore/pull/4419)
+
+### Removed
+- The `/histogram/{name}` endpoint. [EventStore#4394](https://github.com/EventStore/EventStore/pull/4394)
+- Replace the generic `PublishSubscribeDisptacher` with a more specific `ReaderSubscriptionDispatcher` in projections. [EventStore#4413](https://github.com/EventStore/EventStore/pull/4413)
+- Unused TimeoutScheduler from projections. [EventStore#4434](https://github.com/EventStore/EventStore/pull/4434)
+- Byte order marks from source code. [EventStore#4450](https://github.com/EventStore/EventStore/pull/4450)
+- Support for extremely old (V1) PTables. [EventStore#4447](https://github.com/EventStore/EventStore/pull/4447)
+
+### Breaking Changes
+
+- The `/histogram/{name}` endpoint has been removed. [EventStore#4394](https://github.com/EventStore/EventStore/pull/4394)
+- Removed support for extremely old (V1) PTables. [EventStore#4447](https://github.com/EventStore/EventStore/pull/4447)
+
 ## [23.10.3] - 2024-09-18
 
 ### Changed
