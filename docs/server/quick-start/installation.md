@@ -137,16 +137,6 @@ curl -1sLf \
   | sudo -E distro=DISTRO codename=CODENAME arch=ARCH bash
 ```
 
-#### Install with yum
-
-Add the repository to your system according to the [instructions on Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore-staging-ee/setup/#formats-rpm).
-
-Then, install the package:
-
-```bash
-yum install eventstoredb-ee-24.10.0~preview1-1.x86_64
-```
-
 Alternatively, you can manually configure it yourself before installing packages:
 
 ```bash
@@ -160,6 +150,16 @@ yum -q makecache -y --disablerepo='*' --enablerepo='eventstore-eventstore-previe
 ::: note
 Please replace el and 7 above with your actual distribution and version and use wildcards when enabling multiple repos.
 :::
+
+#### Install with yum
+
+Add the repository to your system according to the [instructions on Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore-staging-ee/setup/#formats-rpm).
+
+Then, install the package:
+
+```bash
+yum install eventstoredb-ee-24.10.0~preview1-1.x86_64
+```
 
 #### Uninstall with yum
 
