@@ -28,10 +28,12 @@ public class ArchiverService : IPlugableComponent {
 	public string LicensePublicKey => LicenseConstants.LicensePublicKey;
 
 	public void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {
+		var licenseService = builder.ApplicationServices.GetRequiredService<ILicenseService>();
 		_ = LicenseMonitor.MonitorAsync(
 			featureName: Name,
 			requiredEntitlements: [],
-			licenseService: builder.ApplicationServices.GetRequiredService<ILicenseService>(),
+			licenseService: licenseService,
+			onLicenseException: licenseService.RejectLicense,
 			logger: builder.ApplicationServices.GetRequiredService<ILoggerFactory>().CreateLogger(GetType()));
 	}
 
