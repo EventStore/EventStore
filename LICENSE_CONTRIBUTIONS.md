@@ -1,6 +1,6 @@
 EventStoreDB code after versions 24.6.x is generally subject to the terms of the
-Event Store License v2 (ESLv2), however, some parts of the code remain subject
-to the terms of the Event Store License, which they were contributed under.
+Event Store License v2 (ESLv2, see LICENSE.md), however, some parts of the code remain
+subject to the terms of the Event Store License, which they were contributed under.
 
 # Event Store License
 
