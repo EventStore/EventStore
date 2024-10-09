@@ -79,7 +79,7 @@ public partial class TFChunk : IDisposable {
 		get { return _transformHeader; }
 	}
 
-	public readonly int MidpointsDepth;
+	private readonly int _midpointsDepth;
 
 	public int RawWriterPosition {
 		get {
@@ -167,7 +167,7 @@ public partial class TFChunk : IDisposable {
 		Ensure.Nonnegative(midpointsDepth, "midpointsDepth");
 
 		_filename = filename;
-		MidpointsDepth = midpointsDepth;
+		_midpointsDepth = midpointsDepth;
 		_inMem = inMem;
 		_unbuffered = unbuffered;
 		_writeThrough = writethrough;
@@ -180,13 +180,13 @@ public partial class TFChunk : IDisposable {
 		FreeCachedData();
 	}
 
-	public static TFChunk FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead,
+	public static async ValueTask<TFChunk> FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead,
 		ITransactionFileTracker tracker, Func<TransformType, IChunkTransformFactory> getTransformFactory,
-		bool optimizeReadSideCache = false, bool reduceFileCachePressure = false) {
+		bool optimizeReadSideCache = false, bool reduceFileCachePressure = false, CancellationToken token = default) {
 		var chunk = new TFChunk(filename,
 			TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure);
 		try {
-			chunk.InitCompleted(verifyHash, optimizeReadSideCache, tracker, getTransformFactory);
+			await chunk.InitCompleted(verifyHash, optimizeReadSideCache, tracker, getTransformFactory, token);
 		} catch {
 			chunk.Dispose();
 			throw;
@@ -267,8 +267,8 @@ public partial class TFChunk : IDisposable {
 		return chunk;
 	}
 
-	private void InitCompleted(bool verifyHash, bool optimizeReadSideCache, ITransactionFileTracker tracker,
-		Func<TransformType, IChunkTransformFactory> getTransformFactory) {
+	private async ValueTask InitCompleted(bool verifyHash, bool optimizeReadSideCache, ITransactionFileTracker tracker,
+		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
 		var fileInfo = new FileInfo(_filename);
 		if (!fileInfo.Exists)
 			throw new CorruptDatabaseException(new ChunkNotFoundException(_filename));
@@ -317,7 +317,7 @@ public partial class TFChunk : IDisposable {
 		_readSide.RequestCaching();
 
 		if (verifyHash)
-			VerifyFileHash();
+			await VerifyFileHash(token);
 	}
 
 	private async ValueTask InitNew(ChunkHeader chunkHeader, int fileSize, ITransactionFileTracker tracker,
@@ -537,9 +537,11 @@ public partial class TFChunk : IDisposable {
 		});
 	}
 
-	public void VerifyFileHash() {
+	public async ValueTask VerifyFileHash(CancellationToken token) {
 		if (!IsReadOnly)
 			throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
+
+		token.ThrowIfCancellationRequested();
 
 		Log.Debug("Verifying hash for TFChunk '{chunk}'...", _filename);
 		using (var reader = AcquireRawReader()) {
@@ -555,13 +557,9 @@ public partial class TFChunk : IDisposable {
 				hash = md5.Hash;
 			}
 
-			if (footer.MD5Hash == null || footer.MD5Hash.Length != hash.Length)
+			// Perf: use hardware accelerated byte array comparison
+			if (!MemoryExtensions.SequenceEqual<byte>(footer.MD5Hash, hash))
 				throw new HashValidationException();
-
-			for (int i = 0; i < hash.Length; ++i) {
-				if (footer.MD5Hash[i] != hash[i])
-					throw new HashValidationException();
-			}
 		}
 	}
 

@@ -80,31 +80,33 @@ public class TFChunkDb : IAsyncDisposable {
 						// but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
 						var footer = ReadChunkFooter(chunkInfo.ChunkFileName);
 						if (footer.IsCompleted)
-							chunk = TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
+							chunk = await TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 								unbufferedRead: Config.Unbuffered,
 								tracker: _tracker,
 								optimizeReadSideCache: Config.OptimizeReadSideCache,
 								reduceFileCachePressure: Config.ReduceFileCachePressure,
-								getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type));
+								getTransformFactory: TransformManager.GetFactoryForExistingChunk,
+								token: token);
 						else {
 							chunk = await TFChunk.TFChunk.FromOngoingFile(chunkInfo.ChunkFileName, Config.ChunkSize,
 								unbuffered: Config.Unbuffered,
 								writethrough: Config.WriteThrough,
 								reduceFileCachePressure: Config.ReduceFileCachePressure,
 								tracker: _tracker,
-								getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type),
+								getTransformFactory: TransformManager.GetFactoryForExistingChunk,
 								token);
 							// chunk is full with data, we should complete it right here
 							if (!readOnly)
 								chunk.Complete();
 						}
 					} else {
-						chunk = TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
+						chunk = await TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 							unbufferedRead: Config.Unbuffered,
 							optimizeReadSideCache: Config.OptimizeReadSideCache,
 							reduceFileCachePressure: Config.ReduceFileCachePressure,
 							tracker: _tracker,
-							getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type));
+							getTransformFactory: TransformManager.GetFactoryForExistingChunk,
+							token: token);
 					}
 
 					// This call is theadsafe.
@@ -144,12 +146,13 @@ public class TFChunkDb : IAsyncDisposable {
 						$"Writer checkpoint: {checkpoint}."));
 				}
 
-				var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false,
+				var lastChunk = await TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false,
 					unbufferedRead: Config.Unbuffered,
 					optimizeReadSideCache: Config.OptimizeReadSideCache,
 					reduceFileCachePressure: Config.ReduceFileCachePressure,
 					tracker: _tracker,
-					getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type));
+					getTransformFactory: TransformManager.GetFactoryForExistingChunk,
+					token: token);
 
 				lastChunkNum = lastChunk.ChunkHeader.ChunkEndNumber + 1;
 
@@ -199,11 +202,11 @@ public class TFChunkDb : IAsyncDisposable {
 		if (verifyHash && lastChunkNum > 0) {
 			var preLastChunk = Manager.GetChunk(lastChunkNum - 1);
 			var lastBgChunkNum = preLastChunk.ChunkHeader.ChunkStartNumber;
-			ThreadPool.QueueUserWorkItem(_ => {
+			ThreadPool.UnsafeQueueUserWorkItem(async token => {
 				for (int chunkNum = lastBgChunkNum; chunkNum >= 0;) {
 					var chunk = Manager.GetChunk(chunkNum);
 					try {
-						chunk.VerifyFileHash();
+						await chunk.VerifyFileHash(token);
 					} catch (FileBeingDeletedException exc) {
 						_log.Debug(
 							"{exceptionType} exception was thrown while doing background validation of chunk {chunk}.",
@@ -221,7 +224,7 @@ public class TFChunkDb : IAsyncDisposable {
 
 					chunkNum = chunk.ChunkHeader.ChunkStartNumber - 1;
 				}
-			});
+			}, token, preferLocal: false);
 		}
 
 		await Manager.EnableCaching(token);

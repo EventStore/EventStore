@@ -36,7 +36,7 @@ public class when_uncaching_a_tfchunk<TLogFormat, TStreamId> : SpecificationWith
 		_result = _chunk.TryAppend(_record);
 		_chunk.Flush();
 		_chunk.Complete();
-		_uncachedChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true, unbufferedRead: false,
+		_uncachedChunk = await TFChunk.FromCompletedFile(Filename, verifyHash: true, unbufferedRead: false,
 			reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
 			getTransformFactory: _ => new IdentityChunkTransformFactory());
 		await _uncachedChunk.CacheInMemory(CancellationToken.None);

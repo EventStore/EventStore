@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data.Redaction;
@@ -147,18 +148,23 @@ public class RedactionService<TStreamId> :
 	}
 
 	private async ValueTask SwitchChunk(string targetChunkFile, string newChunkFile, IEnvelope envelope, CancellationToken token) {
-		if (!IsValidSwitchChunkRequest(targetChunkFile, newChunkFile, out var newChunk, out var failReason)) {
-			envelope.ReplyWith(new RedactionMessage.SwitchChunkCompleted(failReason));
-			return;
+		Message reply;
+		switch (await IsValidSwitchChunkRequest(targetChunkFile, newChunkFile, token)) {
+			case { ValueOrDefault: { } newChunk }:
+				await _db.Manager.SwitchChunk(
+					chunk: newChunk,
+					verifyHash: false,
+					removeChunksWithGreaterNumbers: false,
+					token);
+
+				reply = new RedactionMessage.SwitchChunkCompleted(SwitchChunkResult.Success);
+				break;
+			case var result:
+				reply = new RedactionMessage.SwitchChunkCompleted(result.Error);
+				break;
 		}
 
-		await _db.Manager.SwitchChunk(
-			chunk: newChunk,
-			verifyHash: false,
-			removeChunksWithGreaterNumbers: false,
-			token);
-
-		envelope.ReplyWith(new RedactionMessage.SwitchChunkCompleted(SwitchChunkResult.Success));
+		envelope.ReplyWith(reply);
 	}
 
 	private static bool IsUnsafeFileName(string fileName) {
@@ -166,64 +172,52 @@ public class RedactionService<TStreamId> :
 		return fileName.Contains('/') || fileName.Contains('\\') || fileName.Contains("..");
 	}
 
-	private bool IsValidSwitchChunkRequest(string targetChunkFile, string newChunkFile, out TFChunk newChunk, out SwitchChunkResult failReason) {
-		newChunk = null;
-
+	private async ValueTask<Result<TFChunk, SwitchChunkResult>> IsValidSwitchChunkRequest(string targetChunkFile, string newChunkFile, CancellationToken token) {
 		if (IsUnsafeFileName(targetChunkFile)) {
-			failReason = SwitchChunkResult.TargetChunkFileNameInvalid;
-			return false;
+			return new(SwitchChunkResult.TargetChunkFileNameInvalid);
 		}
 
 		if (IsUnsafeFileName(newChunkFile)) {
-			failReason = SwitchChunkResult.NewChunkFileNameInvalid;
-			return false;
+			return new(SwitchChunkResult.NewChunkFileNameInvalid);
 		}
 
 		int targetChunkNumber;
 		try {
 			targetChunkNumber = _db.Config.FileNamingStrategy.GetIndexFor(targetChunkFile);
 		} catch {
-			failReason = SwitchChunkResult.TargetChunkFileNameInvalid;
-			return false;
+			return new(SwitchChunkResult.TargetChunkFileNameInvalid);
 		}
 
 		if (Path.GetExtension(newChunkFile) != NewChunkFileExtension) {
-			failReason = SwitchChunkResult.NewChunkFileNameInvalid;
-			return false;
+			return new(SwitchChunkResult.NewChunkFileNameInvalid);
 		}
 
 		if (!File.Exists(Path.Combine(_db.Config.Path, targetChunkFile))) {
-			failReason = SwitchChunkResult.TargetChunkFileNotFound;
-			return false;
+			return new(SwitchChunkResult.TargetChunkFileNotFound);
 		}
 
 		var newChunkPath = Path.Combine(_db.Config.Path, newChunkFile);
 		if (!File.Exists(newChunkPath)) {
-			failReason = SwitchChunkResult.NewChunkFileNotFound;
-			return false;
+			return new(SwitchChunkResult.NewChunkFileNotFound);
 		}
 
 		TFChunk targetChunk;
 		try {
 			targetChunk = _db.Manager.GetChunk(targetChunkNumber);
 		} catch(ArgumentOutOfRangeException) {
-			failReason = SwitchChunkResult.TargetChunkExcessive;
-			return false;
+			return new(SwitchChunkResult.TargetChunkExcessive);
 		}
 
 		if (Path.GetFileName(targetChunk.FileName) != targetChunkFile) {
-			failReason = SwitchChunkResult.TargetChunkInactive;
-			return false;
+			return new(SwitchChunkResult.TargetChunkInactive);
 		}
 
 		if (targetChunk.ChunkFooter is not { IsCompleted: true }) {
-			failReason = SwitchChunkResult.TargetChunkNotCompleted;
-			return false;
+			return new(SwitchChunkResult.TargetChunkNotCompleted);
 		}
 
-		if (targetChunk.ChunkHeader.TransformType != TransformType.Identity) {
-			failReason = SwitchChunkResult.TargetChunkFormatNotSupported;
-			return false;
+		if (targetChunk.ChunkHeader.TransformType is not TransformType.Identity) {
+			return new(SwitchChunkResult.TargetChunkFormatNotSupported);
 		}
 
 		ChunkHeader newChunkHeader;
@@ -235,45 +229,37 @@ public class RedactionService<TStreamId> :
 				fs.Seek(-ChunkFooter.Size, SeekOrigin.End);
 				newChunkFooter = ChunkFooter.FromStream(fs);
 			} catch {
-				failReason = SwitchChunkResult.NewChunkHeaderOrFooterInvalid;
-				return false;
+				return new(SwitchChunkResult.NewChunkHeaderOrFooterInvalid);
 			}
 		} catch {
-			failReason = SwitchChunkResult.NewChunkOpenFailed;
-			return false;
+			return new(SwitchChunkResult.NewChunkOpenFailed);
 		}
 
 		if (newChunkHeader.ChunkStartNumber != targetChunk.ChunkHeader.ChunkStartNumber ||
 		    newChunkHeader.ChunkEndNumber != targetChunk.ChunkHeader.ChunkEndNumber) {
-			failReason = SwitchChunkResult.ChunkRangeDoesNotMatch;
-			return false;
+			return new(SwitchChunkResult.ChunkRangeDoesNotMatch);
 		}
 
 		if (!newChunkFooter.IsCompleted) {
-			failReason = SwitchChunkResult.NewChunkNotCompleted;
-			return false;
+			return new(SwitchChunkResult.NewChunkNotCompleted);
 		}
 
 		try {
 			// temporarily open the chunk to verify its integrity
-			newChunk = TFChunk.FromCompletedFile(
+			return await TFChunk.FromCompletedFile(
 				filename: newChunkPath,
 				verifyHash: true,
 				unbufferedRead: _db.Config.Unbuffered,
 				optimizeReadSideCache: false,
 				reduceFileCachePressure: true,
 				tracker: new TFChunkTracker.NoOp(),
-				getTransformFactory: type => _db.TransformManager.GetFactoryForExistingChunk(type));
+				getTransformFactory: _db.TransformManager.GetFactoryForExistingChunk,
+				token: token);
 		} catch (HashValidationException) {
-			failReason = SwitchChunkResult.NewChunkHashInvalid;
-			return false;
+			return new(SwitchChunkResult.NewChunkHashInvalid);
 		} catch {
-			failReason = SwitchChunkResult.NewChunkOpenFailed;
-			return false;
+			return new(SwitchChunkResult.NewChunkOpenFailed);
 		}
-
-		failReason = SwitchChunkResult.None;
-		return true;
 	}
 
 	public void Handle(SystemMessage.BecomeShuttingDown message) {

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -52,7 +53,7 @@ public class TransformTests<TLogFormat, TStreamId>: SpecificationWithDirectoryPe
 			(node, connection) = await CreateNode(dbPath, transform, memDb: false);
 
 			// then verify the chunk checksums
-			VerifyChecksums(node);
+			await VerifyChecksums(node);
 
 			// and verify the events again
 			await VerifyEvents(connection, writtenIds);
@@ -61,7 +62,7 @@ public class TransformTests<TLogFormat, TStreamId>: SpecificationWithDirectoryPe
 		}
 	}
 
-	private void VerifyChecksums(MiniNode<TLogFormat,TStreamId> node) {
+	private async ValueTask VerifyChecksums(MiniNode<TLogFormat,TStreamId> node, CancellationToken token = default) {
 		var completedChunks = new List<TFChunk>();
 		for (var i = 0 ; ; i++) {
 			try {
@@ -74,7 +75,7 @@ public class TransformTests<TLogFormat, TStreamId>: SpecificationWithDirectoryPe
 		}
 
 		foreach(var chunk in completedChunks)
-			chunk.VerifyFileHash();
+			await chunk.VerifyFileHash(token);
 	}
 
 	private async Task<(MiniNode<TLogFormat,TStreamId>, IEventStoreConnection)> CreateNode(string dbPath, string transform, bool memDb) {
