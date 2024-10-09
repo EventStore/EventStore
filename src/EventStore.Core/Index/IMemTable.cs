@@ -8,5 +8,5 @@ namespace EventStore.Core.Index;
 public interface IMemTable : ISearchTable {
 	bool MarkForConversion();
 	void Add(ulong stream, long version, long position);
-	void AddEntries(IList<IndexEntry> entries);
+	void AddEntries(IReadOnlyList<IndexEntry> entries);
 }

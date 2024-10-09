@@ -44,10 +44,10 @@ public class HashListMemTable : IMemTable, ISearchTable {
 	}
 
 	public void Add(ulong stream, long version, long position) {
-		AddEntries(new[] {new IndexEntry(stream, version, position)});
+		AddEntries([new IndexEntry(stream, version, position)]);
 	}
 
-	public void AddEntries(IList<IndexEntry> entries) {
+	public void AddEntries(IReadOnlyList<IndexEntry> entries) {
 		Ensure.NotNull(entries, "entries");
 		Ensure.Positive(entries.Count, "entries.Count");
 
@@ -280,11 +280,9 @@ public class HashListMemTable : IMemTable, ISearchTable {
 		_hash.Clear();
 	}
 
-	public IList<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null) {
-		if (startNumber < 0)
-			throw new ArgumentOutOfRangeException("startNumber");
-		if (endNumber < 0)
-			throw new ArgumentOutOfRangeException("endNumber");
+	public IReadOnlyList<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null) {
+		ArgumentOutOfRangeException.ThrowIfNegative(startNumber);
+		ArgumentOutOfRangeException.ThrowIfNegative(endNumber);
 
 		ulong hash = GetHash(stream);
 		var ret = new List<IndexEntry>();
