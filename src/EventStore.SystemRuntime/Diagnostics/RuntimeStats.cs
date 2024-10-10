@@ -53,7 +53,7 @@ public static class RuntimeStats {
         };
 
         static async ValueTask<long> GetFreeMemoryLinux() {
-            var output = await ExecuteShellCommandAsync("grep MemFree /proc/meminfo"); // old code uses MemAvailable
+            var output = await ExecuteShellCommandAsync("grep MemAvailable /proc/meminfo");
             var parts  = output.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var value  = ToInt64(parts[1]) * 1024; // Convert KB to bytes
             return value;
