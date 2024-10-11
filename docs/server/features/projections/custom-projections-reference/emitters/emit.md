@@ -1,3 +1,8 @@
+---
+title: emit
+order: 1
+---
+
 # emit
 
 Appends an event to a stream. Can only be used within the handler of [`when`](../when.md).
