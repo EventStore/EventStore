@@ -26,6 +26,8 @@
 		<EmbeddedResource Include="Specs\DocsExamples\from-streams-emit.js" />
 		<EmbeddedResource Include="Specs\DocsExamples\from-streams-linkto-spec.json" />
 		<EmbeddedResource Include="Specs\DocsExamples\from-streams-linkto.js" />
+		<EmbeddedResource Include="Specs\DocsExamples\filter-by-spec.json" />
+		<EmbeddedResource Include="Specs\DocsExamples\filter-by.js" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="GitHubActionsTestLogger" Version="2.3.3" />
