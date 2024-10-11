@@ -1,16 +1,14 @@
-// ReSharper disable CheckNamespace
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Net;
 using System.Reflection;
-using System.Runtime;
 using System.Text;
 using EventStore.Common.Configuration;
-using EventStore.Core.Configuration;
-using EventStore.Core.Configuration.Sources;
+using EventStore.Common.Utils;
 using Microsoft.Extensions.Configuration;
+using ConfigurationRootExtensions = EventStore.Common.Configuration.ConfigurationRootExtensions;
 
 #nullable enable
 namespace EventStore.Core {
@@ -18,45 +16,33 @@ namespace EventStore.Core {
 		private static readonly IEnumerable<Type> OptionSections;
 		public static readonly string HelpText;
 		public string GetComponentName() => $"{Interface.NodeIp}-{Interface.NodePort}-cluster-node";
-		public static readonly List<SectionMetadata> Metadata;
-
 		static ClusterVNodeOptions() {
 			OptionSections = typeof(ClusterVNodeOptions)
 				.GetProperties(BindingFlags.Public | BindingFlags.Instance)
 				.Where(p => p.GetCustomAttribute<OptionGroupAttribute>() != null)
 				.Select(p => p.PropertyType);
-
 			HelpText = GetHelpText();
-
-			Metadata = typeof(ClusterVNodeOptions)
-				.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-				.Where(prop => prop.GetCustomAttribute<OptionGroupAttribute>() != null)
-				.Select(SectionMetadata.FromPropertyInfo)
-				.ToList();
-
-			DefaultValues = OptionSections.SelectMany(GetDefaultValues);
-
-			return;
-
-			static IEnumerable<KeyValuePair<string, object?>> GetDefaultValues(Type type) {
-				var defaultInstance = Activator.CreateInstance(type)!;
-
-				return type.GetProperties().Select(property =>
-					new KeyValuePair<string, object?>(property.Name, property.PropertyType switch {
-						{IsArray: true} => string.Join(",",
-							((Array)(property.GetValue(defaultInstance) ?? Array.Empty<object>())).OfType<object>()),
-						_ => property.GetValue(defaultInstance)
-					}));
-			}
 		}
 
-		public static IEnumerable<KeyValuePair<string, object?>> DefaultValues { get; }
+		public static IEnumerable<KeyValuePair<string, object?>> DefaultValues =>
+			OptionSections.SelectMany(GetDefaultValues);
+
+		private static IEnumerable<KeyValuePair<string, object?>> GetDefaultValues(Type type) {
+			var defaultInstance = Activator.CreateInstance(type)!;
+
+			return type.GetProperties().Select(property =>
+				new KeyValuePair<string, object?>(property.Name, property.PropertyType switch {
+					{IsArray: true} => string.Join(",",
+						((Array)(property.GetValue(defaultInstance) ?? Array.Empty<object>())).OfType<object>()),
+					_ => property.GetValue(defaultInstance)
+				}));
+		}
 
 		public string? DumpOptions() =>
-			ConfigurationRoot == null ? null : ClusterVNodeOptionsPrinter.Print(LoadedOptions);
+			ConfigurationRoot == null ? null : new OptionsDumper(OptionSections).Dump(ConfigurationRoot);
 
-		public IReadOnlyDictionary<string, LoadedOption> LoadedOptions { get; init; } =
-			new Dictionary<string, LoadedOption>();
+		public PrintableOption[]? GetPrintableOptions() =>
+			ConfigurationRoot == null ? null : new OptionsDumper(OptionSections).GetOptionSourceInfo(ConfigurationRoot).Values.ToArray();
 
 		public string? GetDeprecationWarnings() {
 			var defaultValues = new Dictionary<string, object?>(DefaultValues, StringComparer.OrdinalIgnoreCase);
@@ -65,7 +51,7 @@ namespace EventStore.Core {
 				from option in section.GetProperties()
 				let deprecationWarning = option.GetCustomAttribute<DeprecatedAttribute>()?.Message
 				where deprecationWarning is not null
-				let value = ConfigurationRoot?.GetValue<string?>(EventStoreConfigurationKeys.Normalize(option.Name))
+				let value = ConfigurationRoot?.GetValue<string?>(option.Name)
 				where defaultValues.TryGetValue(option.Name, out var defaultValue)
 				      && !string.Equals(value, defaultValue?.ToString(), StringComparison.OrdinalIgnoreCase)
 				      select deprecationWarning;
@@ -76,55 +62,29 @@ namespace EventStore.Core {
 			return builder.Length != 0 ? builder.ToString() : null;
 		}
 
-		public string? CheckForEnvironmentOnlyOptions() =>
-			ConfigurationRoot.CheckProvidersForEnvironmentVariables(OptionSections);
-
-		public static IReadOnlyDictionary<string, LoadedOption> GetLoadedOptions(IConfigurationRoot configurationRoot) {
-			var loadedOptions = new Dictionary<string, LoadedOption>();
-
-			// because we always start with defaults, we can just add them all first.
-			// then we can override them with the actual values.
-			foreach (var provider in configurationRoot.Providers) {
-				var providerType = provider.GetType();
-
-				foreach (var option in Metadata.SelectMany(x => x.Options)) {
-					if (!provider.TryGet(option.Value.Key, out var value)) continue;
-
-					var title = GetTitle(option);
-					var sourceDisplayName = GetSourceDisplayName(providerType);
-					var isDefault = providerType == typeof(EventStoreDefaultValuesConfigurationProvider);
-
-					loadedOptions[option.Value.Key] = new(
-						metadata: option.Value,
-						title: title,
-						value: value,
-						sourceDisplayName: sourceDisplayName,
-						isDefault: isDefault
-					);
-				}
-			}
-
-			return loadedOptions;
-
-			static string GetTitle(KeyValuePair<string, OptionMetadata> option) =>
-				CombineByPascalCase(EventStoreConfigurationKeys.StripConfigurationPrefix(option.Value.Key)).ToUpper();
+		public string? CheckForEnvironmentOnlyOptions() {
+			return ConfigurationRootExtensions
+				.CheckProvidersForEnvironmentVariables(ConfigurationRoot, OptionSections);
 		}
+		
+		private static EndPoint ParseGossipEndPoint(string val) {
+			var parts = val.Split(':', 2);
+			
+			if (parts.Length != 2)
+				throw new Exception("You must specify the ports in the gossip seed");
 
-		public static string GetSourceDisplayName(Type source) {
-			var name = source == typeof(EventStoreDefaultValuesConfigurationProvider)
-				? "<DEFAULT>"
-				: CombineByPascalCase(
-					source.Name
-						.Replace("EventStore", "")
-						.Replace("ConfigurationProvider", "")
-				);
+			if (!int.TryParse(parts[1], out var port))
+				throw new Exception($"Invalid format for gossip seed port: {parts[1]}");
 
-			return name;
+			return IPAddress.TryParse(parts[0], out var ip)
+				? new IPEndPoint(ip, port)
+				: new DnsEndPoint(parts[0], port);
 		}
 
 		private static string GetHelpText() {
 			const string OPTION = nameof(OPTION);
 			const string DESCRIPTION = nameof(DESCRIPTION);
+			const string DEFAULT = nameof(DEFAULT);
 
 			var optionColumnWidth = Options().Max(o =>
 				OptionHeaderColumnWidth(o.Name, DefaultValue(o)));
@@ -138,7 +98,7 @@ namespace EventStore.Core {
 
 			var environmentOnlyOptionsBuilder = environmentOnlyOptions
 				.Aggregate(new StringBuilder(),
-					(builder, property) => builder.Append(GetEnvironmentOption(property, optionColumnWidth)).AppendLine())
+					(builder, property) => builder.Append(ConfigurationRootExtensions.GetEnvironmentOption(property, optionColumnWidth)).AppendLine())
 				.ToString();
 
 			var options = Options().Where(option =>
@@ -187,7 +147,7 @@ namespace EventStore.Core {
 
 			static string DefaultValue(PropertyInfo option) {
 				var value = option.GetValue(Activator.CreateInstance(option.DeclaringType!));
-				return (value, RuntimeInformation.IsWindows) switch {
+				return (value, Runtime.IsWindows) switch {
 					(bool b, false) => b.ToString().ToLower(),
 					(bool b, true) => b.ToString(),
 					(Array {Length: 0}, _) => string.Empty,
@@ -206,29 +166,9 @@ namespace EventStore.Core {
 					yield return char.ToLower(c);
 				}
 			}
-
-			static string GetEnvironmentOption(PropertyInfo property, int optionColumnWidth) {
-				const string Prefix = "EVENTSTORE";
-
-				var builder = new StringBuilder();
-
-				builder.Append($"{Prefix}_")
-					.Append(CombineByPascalCase(property.Name, "_").ToUpper());
-
-				var description = property.GetCustomAttribute<EnvironmentOnlyAttribute>()?.Message;
-
-				return builder.ToString().PadRight(optionColumnWidth, ' ') + description;
-
-			}
-		}
-
-		static string CombineByPascalCase(string name, string token = " ") {
-			var regex = new System.Text.RegularExpressions.Regex(
-				@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
-			return regex.Replace(name, token);
 		}
 
 		[AttributeUsage(AttributeTargets.Property)]
-		internal class OptionGroupAttribute : Attribute;
+		internal class OptionGroupAttribute : Attribute{}
 	}
 }

@@ -6,6 +6,9 @@ ARG RUNTIME=linux-x64
 WORKDIR /build/ci
 COPY ./ci ./
 
+WORKDIR /build/docs
+COPY ./docs ./
+
 WORKDIR /build/src
 COPY ./src/EventStore.sln ./src/*/*.csproj ./src/Directory.Build.* ./
 RUN for file in $(ls *.csproj); do mkdir -p ./${file%.*}/ && mv $file ./${file%.*}/; done
@@ -13,7 +16,7 @@ RUN dotnet restore --runtime=${RUNTIME}
 COPY ./src .
 
 WORKDIR /build/.git
-COPY ./.git/ .
+COPY ./.git .
 
 WORKDIR /build/src
 RUN find /build/src -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -I{} -0 -n1 sh -c \

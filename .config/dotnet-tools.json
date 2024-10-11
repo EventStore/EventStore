@@ -2,5 +2,11 @@
   "version": 1,
   "isRoot": true,
   "tools": {
+    "minver-cli": {
+      "version": "4.3.0",
+      "commands": [
+        "minver"
+      ]
+    }
   }
 }

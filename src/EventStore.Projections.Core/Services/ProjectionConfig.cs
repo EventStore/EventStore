@@ -1,7 +1,6 @@
 using EventStore.Projections.Core.Common;
 using System;
 using System.Security.Claims;
-using EventStore.Core;
 
 namespace EventStore.Projections.Core.Services {
 	public class ProjectionConfig {
@@ -21,7 +20,7 @@ namespace EventStore.Projections.Core.Services {
 		public ProjectionConfig(ClaimsPrincipal runAs, int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold,
 			int pendingEventsThreshold, int maxWriteBatchLength, bool emitEventEnabled, bool checkpointsEnabled,
 			bool createTempStreams, bool stopOnEof, bool trackEmittedStreams,
-			int checkpointAfterMs, int maximumAllowedWritesInFlight, int projectionExecutionTimeout = ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout) {
+			int checkpointAfterMs, int maximumAllowedWritesInFlight, int? projectionExecutionTimeout) {
 			if (checkpointsEnabled) {
 				if (checkpointHandledThreshold <= 0)
 					throw new ArgumentOutOfRangeException("checkpointHandledThreshold");
@@ -40,7 +39,7 @@ namespace EventStore.Projections.Core.Services {
 					$"The Maximum Number of Allowed Writes in Flight cannot be less than {AllowedWritesInFlight.Unbounded}");
 			}
 
-			if (projectionExecutionTimeout <= 0) {
+			if (projectionExecutionTimeout is not null && projectionExecutionTimeout <= 0) {
 				throw new ArgumentException(
 					$"The projection execution timeout should be positive. Found : {projectionExecutionTimeout}");
 			}
@@ -108,11 +107,6 @@ namespace EventStore.Projections.Core.Services {
 			get { return _maximumAllowedWritesInFlight; }
 		}
 		
-		public int ProjectionExecutionTimeout { get; }
-
-		public static ProjectionConfig GetTest() {
-			return new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, true, 10000,
-				1);
-		}
+		public int? ProjectionExecutionTimeout { get; }
 	}
 }

@@ -1,4 +1,7 @@
 <!-- Generator: Widdershins v4.0.1 -->
+---
+order: 6
+---
 
 # HTTP API Reference
 
@@ -734,7 +737,7 @@ curl -X PUT https://eventstore.com/subscriptions/{stream}/{subscription} \
  `PUT /subscriptions/{stream}/{subscription}`
 *Create a persistent subscription*
 
-Before interacting with a subscription group, you need to create one. You will receive an error if you attempt to create a subscription group more than once. This requires [admin permissions](@server/security.md#access-control-lists).
+Before interacting with a subscription group, you need to create one. You will receive an error if you attempt to create a subscription group more than once. This requires [admin permissions](@server/configuration/security.md#access-control-lists).
 
 > Body parameter
 
@@ -1847,6 +1850,22 @@ Issues a shut down command to a node.
 To perform this operation, you must be authenticated by means of one of the following methods:
 basicAuth
 </aside>
+
+### Resigning a leader
+Steps to Force a Leadership Change in an EventStoreDB Cluster
+
+1.  Reduce the current leader node's priority by issuing the following command, so that during the next election it becomes a Follower node
+
+```bash:no-line-numbers
+curl -X POST -d {} https://{leader_address}:2113/admin/node/priority/-1 -u admin:changeit
+```
+2. Issue a resignation command on the Leader node which will explicitly start a round of elections by issuing the following command:
+
+```bash:no-line-numbers
+curl -X POST -d {} https://{leader_address}:2113/admin/node/resign -u admin:changeit
+```
+
+> **Note:** This does not guarantee that a new Leader is elected.
 
 ### Scavenge a node
 

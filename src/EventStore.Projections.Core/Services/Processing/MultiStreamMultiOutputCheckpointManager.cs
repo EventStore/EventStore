@@ -161,10 +161,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ReadPrerecordedEventStream(streamId, eventNumber, completed => {
 				switch (completed.Result) {
 					case ReadStreamResult.Success:
-						if (completed.Events.Length != 1)
-							throw new Exception(
-								string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Error));
-						item.SetLoadedEvent(completed.Events[0]);
+					case ReadStreamResult.NoStream:
+					case ReadStreamResult.StreamDeleted:
+						if (completed.Events.Length == 1)
+							item.SetLoadedEvent(completed.Events[0]);
 						_loadingItemsCount--;
 						CheckAllEventsLoaded();
 						break;
@@ -191,8 +191,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 					var item = _loadQueue.Pop();
 					var @event = item._result;
 					lastTag = item.Tag;
-					SendPrerecordedEvent(@event, lastTag, number);
-					number++;
+					if (@event.HasValue) {
+						SendPrerecordedEvent(@event.Value, lastTag, number);
+						number++;
+					}
 				}
 
 				_loadingItemsCount = -1; // completed - do not dispatch one more time
@@ -206,7 +208,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		private class Item {
-			internal EventStore.Core.Data.ResolvedEvent _result;
+			internal EventStore.Core.Data.ResolvedEvent? _result;
 			private readonly CheckpointTag _tag;
 
 			public Item(CheckpointTag tag) {

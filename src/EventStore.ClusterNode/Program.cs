@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Security;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Configuration;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -21,34 +23,28 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using System.Runtime;
 using EventStore.Common.DevCertificates;
-using EventStore.Core.Configuration;
 using Serilog.Events;
-using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.ClusterNode {
 	internal static class Program {
 		public static async Task<int> Main(string[] args) {
-			var configuration = EventStoreConfiguration.Build(args);
-
 			ThreadPool.SetMaxThreads(1000, 1000);
 			var exitCodeSource = new TaskCompletionSource<int>();
 			var cts = new CancellationTokenSource();
 
 			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 			try {
-				var options = ClusterVNodeOptions.FromConfiguration(configuration);
-
-				var logsDirectory = string.IsNullOrWhiteSpace(options.Logging.Log)
+				var options = ClusterVNodeOptions.FromConfiguration(args, Environment.GetEnvironmentVariables());
+				var logsDirectory = string.IsNullOrWhiteSpace(options.Log.Log)
 					? Locations.DefaultLogDirectory
-					: options.Logging.Log;
-
+					: options.Log.Log;
 				EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName(),
-					options.Logging.LogConsoleFormat,
-					options.Logging.LogFileSize,
-					options.Logging.LogFileInterval,
-					options.Logging.LogFileRetentionCount,
-					options.Logging.DisableLogFile,
-					options.Logging.LogConfig);
+					options.Log.LogConsoleFormat,
+					options.Log.LogFileSize,
+					options.Log.LogFileInterval,
+					options.Log.LogFileRetentionCount,
+					options.Log.DisableLogFile,
+					options.Log.LogConfig);
 
 				if (options.Application.Help) {
 					await Console.Out.WriteLineAsync(ClusterVNodeOptions.HelpText);
@@ -62,23 +58,26 @@ namespace EventStore.ClusterNode {
 
 				if (options.DevMode.RemoveDevCerts) {
 					Log.Information("Removing EventStoreDB dev certs.");
-					CertificateManager.Instance.CleanupHttpsCertificates();
+					Common.DevCertificates.CertificateManager.Instance.CleanupHttpsCertificates();
 					Log.Information("Dev certs removed. Exiting.");
 					return 0;
 				}
 
-				Log.Information(
-                    "{description,-25} {version} {edition} ({buildId}/{commitSha}, {timestamp})", "ES VERSION:",
-					VersionInfo.Version, VersionInfo.Edition, VersionInfo.BuildId, VersionInfo.CommitSha, VersionInfo.Timestamp
-                );
-
-				Log.Information("{description,-25} {osArchitecture} ", "OS ARCHITECTURE:", System.Runtime.InteropServices.RuntimeInformation.OSArchitecture);
-				Log.Information("{description,-25} {osFlavor} ({osVersion})", "OS:", RuntimeInformation.OsPlatform, Environment.OSVersion);
-				Log.Information("{description,-25} {osRuntimeVersion} ({architecture}-bit)", "RUNTIME:", RuntimeInformation.RuntimeVersion, RuntimeInformation.RuntimeMode);
-				Log.Information("{description,-25} {maxGeneration} IsServerGC: {isServerGC} Latency Mode: {latencyMode}", "GC:",
-					GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : $"{GC.MaxGeneration + 1} GENERATIONS",
-					GCSettings.IsServerGC,
-					GCSettings.LatencyMode);
+				Log.Information("\n{description,-25} {version} ({branch}/{hashtag}, {timestamp})", "ES VERSION:",
+					VersionInfo.Version, VersionInfo.Tag, VersionInfo.Hashtag, VersionInfo.Timestamp);
+				Log.Information("{description,-25} {osArchitecture} ", "OS ARCHITECTURE:",
+					RuntimeInformation.OSArchitecture);
+				Log.Information("{description,-25} {osFlavor} ({osVersion})", "OS:", OS.OsFlavor,
+					Environment.OSVersion);
+				Log.Information("{description,-25} {osRuntimeVersion} ({architecture}-bit)", "RUNTIME:",
+					OS.GetRuntimeVersion(),
+					Marshal.SizeOf(typeof(IntPtr)) * 8);
+				Log.Information("{description,-25} {maxGeneration} {isServerGC} {latencyMode}", "GC:",
+					GC.MaxGeneration == 0
+						? "NON-GENERATION (PROBABLY BOEHM)"
+						: $"{GC.MaxGeneration + 1} GENERATIONS",
+					$"IsServerGC: {GCSettings.IsServerGC}",
+					$"Latency Mode: {GCSettings.LatencyMode}");
 				Log.Information("{description,-25} {logsDirectory}", "LOGS:", logsDirectory);
 				Log.Information(options.DumpOptions());
 
@@ -88,13 +87,13 @@ namespace EventStore.ClusterNode {
 
 				foreach (var (option, suggestion) in options.Unknown.Options) {
 					if (string.IsNullOrEmpty(suggestion)) {
-						Log.Write(level, "The option {option} is not a known option.", option);
+						Log.Write(level, "The option {option} is not a known option.", option);	
 					} else {
 						Log.Write(level, "The option {option} is not a known option. Did you mean {suggestion}?", option, suggestion);
 					}
 				}
 
-				if (options.UnknownOptionsDetected && !options.Application.AllowUnknownOptions) {
+				if (options.Unknown.Options.Any() && !options.Application.AllowUnknownOptions) {
 					Log.Fatal(
 						$"Found unknown options. To continue anyway, set {nameof(ClusterVNodeOptions.ApplicationOptions.AllowUnknownOptions)} to true.");
 					Log.Information("Use the --help option in the command line to see the full list of EventStoreDB configuration options.");
@@ -124,7 +123,7 @@ namespace EventStore.ClusterNode {
 						Log.Fatal("Could not create dev certificate.");
 						return 1;
 					}
-					if (!manager.IsTrusted(certs[0]) && RuntimeInformation.IsWindows) {
+					if (!manager.IsTrusted(certs[0]) && OperatingSystem.IsWindows()) {
 						Log.Information("Dev certificate {cert} is not trusted. Adding it to the trusted store.", certs[0]);
 						manager.TrustCertificate(certs[0]);
 					} else {
@@ -143,7 +142,7 @@ namespace EventStore.ClusterNode {
 					Log.Warning($"DEPRECATED{Environment.NewLine}{deprecationWarnings}");
 				}
 
-				if (!ClusterVNodeOptionsValidator.ValidateForStartup(options)) {
+				if (!ClusterVNodeOptionsValidator.ValdiateForStartup(options)) {
 					return 1;
 				}
 
@@ -154,14 +153,13 @@ namespace EventStore.ClusterNode {
 						"INSECURE MODE WILL DISABLE ALL AUTHENTICATION, AUTHORIZATION AND TRANSPORT SECURITY FOR ALL CLIENTS AND NODES.\n" +
 						"==============================================================================================================\n");
 				}
-
+				
 				if (options.Application.WhatIf) {
 					return 0;
 				}
 
 				Application.RegisterExitAction(code => {
-					// add a small delay to allow the host to start up in case there's a premature shutdown
-					cts.CancelAfter(TimeSpan.FromSeconds(1));
+					cts.Cancel();
 					exitCodeSource.SetResult(code);
 				});
 
@@ -169,7 +167,8 @@ namespace EventStore.ClusterNode {
 					Application.Exit(0, "Cancelled.");
 				};
 
-				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, configuration)) {
+				var metricsConfiguration = MetricsConfiguration.FromFile();
+				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, metricsConfiguration.Get<MetricsConfiguration>())) {
 					using var signal = new ManualResetEventSlim(false);
 					_ = Run(hostedService, signal);
 					// ReSharper disable MethodSupportsCancellation
@@ -182,13 +181,17 @@ namespace EventStore.ClusterNode {
 				async Task Run(ClusterVNodeHostedService hostedService, ManualResetEventSlim signal) {
 					try {
 						await new HostBuilder()
-							.ConfigureHostConfiguration(builder => builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
-							.ConfigureAppConfiguration(builder => builder.AddConfiguration(configuration))
+							.ConfigureHostConfiguration(builder =>
+								builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
+							.ConfigureAppConfiguration(builder =>
+								builder.AddEnvironmentVariables().AddCommandLine(args))
+							.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
 							.ConfigureLogging(logging => logging.AddSerilog())
-							.ConfigureServices(services => services
-								.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel"))
-								.Configure<HostOptions>(x => x.ShutdownTimeout = TimeSpan.FromSeconds(5))
-							)
+							.ConfigureServices(services => services.Configure<KestrelServerOptions>(
+								EventStoreKestrelConfiguration.GetConfiguration()))
+							.ConfigureServices(services => services.Configure<MetricsConfiguration>(metricsConfiguration))
+							.ConfigureServices(services => services.Configure<HostOptions>(
+							 	opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(5)))
 							.ConfigureWebHostDefaults(builder => builder
 								.UseKestrel(server => {
 									server.Limits.Http2.KeepAlivePingDelay =
@@ -202,14 +205,8 @@ namespace EventStore.ClusterNode {
 										TryListenOnUnixSocket(hostedService, server);
 								})
 								.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
-								.Configure(hostedService.Node.Startup.Configure)
-							)
-							// Order is important, configure IHostedService after the WebHost to make the sure
-							// ClusterVNodeHostedService and the subsystems are started after configuration is finished.
-							// Allows the subsystems to resolve dependencies out of the DI in Configure() before being started.
-							// Later it may be possible to use constructor injection instead if it fits with the bootstrapping strategy.
-							.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
-							.RunConsoleAsync(x => x.SuppressStatusMessages = true, cts.Token);
+								.Configure(hostedService.Node.Startup.Configure))
+							.RunConsoleAsync(options => options.SuppressStatusMessages = true, cts.Token);
 
 						exitCodeSource.TrySetResult(0);
 					} catch (Exception ex) {
@@ -228,7 +225,7 @@ namespace EventStore.ClusterNode {
 				Log.Fatal(ex, "Host terminated unexpectedly.");
 				return 1;
 			} finally {
-				await Log.CloseAndFlushAsync();
+				Log.CloseAndFlush();
 			}
 		}
 
@@ -246,7 +243,7 @@ namespace EventStore.ClusterNode {
 				return;
 			}
 
-			if (!RuntimeInformation.IsLinux && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 17063)) {
+			if (!OperatingSystem.IsLinux() && !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 17063)) {
 				Log.Error("Not listening on a UNIX domain socket since it is not supported by the operating system.");
 				return;
 			}

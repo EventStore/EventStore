@@ -1,39 +1,35 @@
-// ReSharper disable CheckNamespace
-
-#nullable enable
-
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common;
 using EventStore.Common.Configuration;
+using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
-using EventStore.Core.Configuration;
-using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
-using EventStore.Plugins;
-using EventStore.Plugins.Subsystems;
-using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Quickenshtein;
 
+#nullable enable
 namespace EventStore.Core {
-	[PublicAPI]
 	public partial record ClusterVNodeOptions {
-		public ClusterVNodeOptions() => FileStreamExtensions.ConfigureFlush(Database.UnsafeDisableFlushToDisk);
+		public static readonly ClusterVNodeOptions Default = new();
 
-		public IConfigurationRoot? ConfigurationRoot { get; init; }
+		internal IConfigurationRoot? ConfigurationRoot { get; init; }
 		[OptionGroup] public ApplicationOptions Application { get; init; } = new();
 		[OptionGroup] public DevModeOptions DevMode { get; init; } = new();
 		[OptionGroup] public DefaultUserOptions DefaultUser { get; init; } = new();
-		[OptionGroup] public LoggingOptions Logging { get; init; } = new();
+		[OptionGroup] public LoggingOptions Log { get; init; } = new();
 		[OptionGroup] public AuthOptions Auth { get; init; } = new();
 		[OptionGroup] public CertificateOptions Certificate { get; init; } = new();
 		[OptionGroup] public CertificateFileOptions CertificateFile { get; init; } = new();
@@ -42,75 +38,92 @@ namespace EventStore.Core {
 		[OptionGroup] public DatabaseOptions Database { get; init; } = new();
 		[OptionGroup] public GrpcOptions Grpc { get; init; } = new();
 		[OptionGroup] public InterfaceOptions Interface { get; init; } = new();
-		[OptionGroup] public ProjectionOptions Projection { get; init; } = new();
-		public UnknownOptions Unknown { get; init; } = new([]);
+		[OptionGroup] public ProjectionOptions Projections { get; init; } = new();
+		public UnknownOptions Unknown { get; init; } = new(Array.Empty<(string, string)>());
 
 		public byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
 
+		public IReadOnlyList<ISubsystemFactory> Subsystems { get; init; } = Array.Empty<ISubsystemFactory>();
+
+		public ClusterVNodeOptions WithSubsystem(ISubsystemFactory subsystem) => this with {
+			Subsystems = new List<ISubsystemFactory>(Subsystems) { subsystem }
+		};
+
 		public X509Certificate2? ServerCertificate { get; init; }
+
 		public X509Certificate2Collection? TrustedRootCertificates { get; init; }
-		public IReadOnlyList<IPlugableComponent> PlugableComponents { get; init; } = [];
 
-		public IReadOnlyList<ISubsystem> Subsystems => PlugableComponents.OfType<ISubsystem>().ToArray();
+		internal string? DebugView => ConfigurationRoot?.GetDebugView();
 
-		public bool UnknownOptionsDetected => Unknown.Options.Any();
+		public static ClusterVNodeOptions FromConfiguration(string[] args, IDictionary environment) {
+			if (args == null) throw new ArgumentNullException(nameof(args));
+			if (environment == null) throw new ArgumentNullException(nameof(environment));
+			
+			try {
+				var configurationRoot = new ConfigurationBuilder()
+					.AddEventStore(nameof(ApplicationOptions.Config), args, environment, DefaultValues)
+					.Build();
+				return FromConfiguration(configurationRoot);
+			} catch (Exception e) {
+				throw new InvalidConfigurationException(e.Message);
+			}
+		}
 
 		public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
-			var configuration = configurationRoot.GetRequiredSection("EventStore");
-
-			// required because of a bug in the configuration system that
-			// is not reading the attribute from the property itself
-			TypeDescriptor.AddAttributes(typeof(EndPoint[]), new TypeConverterAttribute(typeof(GossipSeedConverter)));
-			TypeDescriptor.AddAttributes(typeof(IPAddress), new TypeConverterAttribute(typeof(IPAddressConverter)));
-
-			// with full keys we would not even need to do all these binds, just a single one
-			// configurationRoot.BindOptions<ClusterVNodeOptions>();
-
-			var options = new ClusterVNodeOptions {
-				Application = configuration.BindOptions<ApplicationOptions>(),
-				DevMode = configuration.BindOptions<DevModeOptions>(),
-				DefaultUser = configuration.BindOptions<DefaultUserOptions>(),
-				Logging = configuration.BindOptions<LoggingOptions>(),
-				Auth = configuration.BindOptions<AuthOptions>(),
-				Certificate = configuration.BindOptions<CertificateOptions>(),
-				CertificateFile = configuration.BindOptions<CertificateFileOptions>(),
-				CertificateStore = configuration.BindOptions<CertificateStoreOptions>(),
-				Cluster = configuration.BindOptions<ClusterOptions>(),
-				Database = configuration.BindOptions<DatabaseOptions>(),
-				Grpc = configuration.BindOptions<GrpcOptions>(),
-				Interface = configuration.BindOptions<InterfaceOptions>(),
-				Projection = configuration.BindOptions<ProjectionOptions>(),
-
-				Unknown = UnknownOptions.FromConfiguration(configuration),
+			return new ClusterVNodeOptions {
+				Application = ApplicationOptions.FromConfiguration(configurationRoot),
+				DevMode = DevModeOptions.FromConfiguration(configurationRoot),
+				DefaultUser = DefaultUserOptions.FromConfiguration(configurationRoot),
+				Log = LoggingOptions.FromConfiguration(configurationRoot),
+				Auth = AuthOptions.FromConfiguration(configurationRoot),
+				Certificate = CertificateOptions.FromConfiguration(configurationRoot),
+				CertificateFile = CertificateFileOptions.FromConfiguration(configurationRoot),
+				CertificateStore = CertificateStoreOptions.FromConfiguration(configurationRoot),
+				Cluster = ClusterOptions.FromConfiguration(configurationRoot),
+				Database = DatabaseOptions.FromConfiguration(configurationRoot),
+				Grpc = GrpcOptions.FromConfiguration(configurationRoot),
+				Interface = InterfaceOptions.FromConfiguration(configurationRoot),
+				Projections = ProjectionOptions.FromConfiguration(configurationRoot),
+				Unknown = UnknownOptions.FromConfiguration(configurationRoot),
 				ConfigurationRoot = configurationRoot,
-				LoadedOptions = GetLoadedOptions(configurationRoot)
 			};
-
-			return options;
 		}
+
+		public ClusterVNodeOptions Reload() => ConfigurationRoot == null ? this : FromConfiguration(ConfigurationRoot);
 
 		[Description("Default User Options")]
 		public record DefaultUserOptions {
+			
 			[Description("Admin Default password"), Sensitive, EnvironmentOnly("The Admin user password can only be set using Environment Variables")]
 			public string DefaultAdminPassword { get; init; } = "changeit";
-
-			[Description("Ops Default password"), Sensitive, EnvironmentOnly("The Ops user password can only be set using Environment Variables")]
+			
+			[Description("Ops Default password"), Sensitive, EnvironmentOnly("The Ops user password can only be set using Environment Variables")] 
 			public string DefaultOpsPassword { get; init; } = "changeit";
+ 
+			internal static DefaultUserOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				DefaultAdminPassword = configurationRoot.GetString(nameof(DefaultAdminPassword)),
+				DefaultOpsPassword = configurationRoot.GetString(nameof(DefaultOpsPassword))
+			};
 		}
-
-		[Description("Dev Mode Options")]
+		
+		[Description("Dev mode Options")]
 		public record DevModeOptions {
 			[Description("Runs EventStoreDB in dev mode. This will create and add dev certificates to your certificate store, enable atompub over http, and run standard projections.")]
 			public bool Dev { get; init; } = false;
 
 			[Description("Removes any dev certificates installed on this computer without starting EventStoreDB.")]
 			public bool RemoveDevCerts { get; init; } = false;
+
+			internal static DevModeOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				Dev = configurationRoot.GetValue<bool>(nameof(Dev)),
+				RemoveDevCerts = configurationRoot.GetValue<bool>(nameof(RemoveDevCerts))
+			};
 		}
 
 		[Description("Application Options")]
 		public record ApplicationOptions {
 			[Description("Show help.")] public bool Help { get; init; } = false;
-
+			
 			[Description("Show version.")] public bool Version { get; init; } = false;
 
 			[Description("Configuration files.")]
@@ -125,8 +138,7 @@ namespace EventStore.Core {
 
 			[Description("Disable HTTP caching.")] public bool DisableHttpCaching { get; init; } = false;
 
-			[Description("The number of seconds between statistics gathers."),
-			 Unit("s")]
+			[Description("The number of seconds between statistics gathers.")]
 			public int StatsPeriodSec { get; init; } = 30;
 
 			[Description("The number of threads to use for pool of worker services. Set to '0' to scale automatically (Default)")]
@@ -158,12 +170,34 @@ namespace EventStore.Core {
 			[Description("Allow anonymous access to streams.")]
 			public bool AllowAnonymousStreamAccess { get; init; } = false;
 
-			[Description("Overrides anonymous access for the gossip endpoint. If set to true, the gossip endpoint will accept anonymous access. " +
-			             $"Otherwise anonymous access will be dis/allowed based on the value of the '{nameof(AllowAnonymousEndpointAccess)}' option")]
+			[Description("Overrides anonymous access for the gossip enpdoint. If set to true, the gossip endpoint will accept anonymous access. " +
+			             $"Otherwise anonymous access wil be dis/allowed based on the value of the '{nameof(AllowAnonymousEndpointAccess)}' option")]
 			public bool OverrideAnonymousEndpointAccessForGossip { get; init; } = true;
 
 			[Description("Disable telemetry data collection."), EnvironmentOnly("You can only opt-out of telemetry using Environment Variables")]
 			public bool TelemetryOptout { get; init; } = false;
+
+			internal static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				Config = configurationRoot.GetString(nameof(Config)),
+				Help = configurationRoot.GetValue<bool>(nameof(Help)),
+				Version = configurationRoot.GetValue<bool>(nameof(Version)),
+				EnableHistograms = configurationRoot.GetValue<bool>(nameof(EnableHistograms)),
+				WhatIf = configurationRoot.GetValue<bool>(nameof(WhatIf)),
+				AllowUnknownOptions = configurationRoot.GetValue<bool>(nameof(AllowUnknownOptions)),
+				WorkerThreads = configurationRoot.GetValue<int>(nameof(WorkerThreads)),
+				DisableHttpCaching = configurationRoot.GetValue<bool>(nameof(DisableHttpCaching)),
+				LogHttpRequests = configurationRoot.GetValue<bool>(nameof(LogHttpRequests)),
+				MaxAppendSize = configurationRoot.GetValue<int>(nameof(MaxAppendSize)),
+				StatsPeriodSec = configurationRoot.GetValue<int>(nameof(StatsPeriodSec)),
+				LogFailedAuthenticationAttempts =
+					configurationRoot.GetValue<bool>(nameof(LogFailedAuthenticationAttempts)),
+				SkipIndexScanOnReads = configurationRoot.GetValue<bool>(nameof(SkipIndexScanOnReads)),
+				Insecure = configurationRoot.GetValue<bool>(nameof(Insecure)),
+				AllowAnonymousEndpointAccess = configurationRoot.GetValue<bool>(key:nameof(AllowAnonymousEndpointAccess)),
+				AllowAnonymousStreamAccess = configurationRoot.GetValue<bool>(key:nameof(AllowAnonymousStreamAccess)),
+				OverrideAnonymousEndpointAccessForGossip = configurationRoot.GetValue<bool>(key:nameof(OverrideAnonymousEndpointAccessForGossip)),
+				TelemetryOptout = configurationRoot.GetValue<bool>(key:nameof(TelemetryOptout))
+			};
 		}
 
 		[Description("Logging Options")]
@@ -191,6 +225,17 @@ namespace EventStore.Core {
 
 			[Description("Disable log to disk.")]
 			public bool DisableLogFile { get; init; } = false;
+
+			public static LoggingOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				Log = configurationRoot.GetString(nameof(Log)),
+				LogConfig = configurationRoot.GetString(nameof(LogConfig)),
+				LogLevel = configurationRoot.GetValue<LogLevel>(nameof(LogLevel)),
+				LogConsoleFormat = configurationRoot.GetValue<LogConsoleFormat>(nameof(LogConsoleFormat)),
+				LogFileSize = configurationRoot.GetValue<int>(nameof(LogFileSize)),
+				LogFileInterval = configurationRoot.GetValue<RollingInterval>(nameof(LogFileInterval)),
+				LogFileRetentionCount = configurationRoot.GetValue<int>(nameof(LogFileRetentionCount)),
+				DisableLogFile = configurationRoot.GetValue<bool>(nameof(DisableLogFile))
+			};
 		}
 
 		[Description("Authentication/Authorization Options")]
@@ -210,6 +255,15 @@ namespace EventStore.Core {
 			[Description("Disables first level authorization checks on all HTTP endpoints. " +
 			             "This option can be enabled for backwards compatibility with EventStore 5.0.1 or earlier.")]
 			public bool DisableFirstLevelHttpAuthorization { get; init; } = false;
+
+			internal static AuthOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				AuthorizationType = configurationRoot.GetString(nameof(AuthorizationType)),
+				AuthenticationConfig = configurationRoot.GetValue<string>(nameof(AuthenticationConfig)),
+				AuthenticationType = configurationRoot.GetString(nameof(AuthenticationType)),
+				AuthorizationConfig = configurationRoot.GetValue<string>(nameof(AuthorizationConfig)),
+				DisableFirstLevelHttpAuthorization =
+					configurationRoot.GetValue<bool>(nameof(DisableFirstLevelHttpAuthorization))
+			};
 		}
 
 		[Description("Certificate Options (from file)")]
@@ -225,10 +279,17 @@ namespace EventStore.Core {
 			[Description("The password to the certificate if a PKCS #12 (.p12/.pfx) certificate file is provided."),
 			 Sensitive]
 			public string? CertificatePassword { get; init; }
-
+			
 			[Description("The password to the certificate private key file if an encrypted PKCS #8 private key file is provided."),
 			 Sensitive]
 			public string? CertificatePrivateKeyPassword { get; init; }
+
+			public static CertificateFileOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				CertificatePassword = configurationRoot.GetValue<string>(nameof(CertificatePassword)),
+				CertificatePrivateKeyPassword = configurationRoot.GetValue<string>(nameof(CertificatePrivateKeyPassword)),
+				CertificatePrivateKeyFile = configurationRoot.GetValue<string>(nameof(CertificatePrivateKeyFile)),
+				CertificateFile = configurationRoot.GetValue<string>(nameof(CertificateFile))
+			};
 		}
 
 		[Description("Certificate Options")]
@@ -240,6 +301,11 @@ namespace EventStore.Core {
 
 			[Description("The pattern the CN (Common Name) of a connecting EventStoreDB node must match to be authenticated. A wildcard FQDN can be specified if using wildcard certificates or if the CN is not the same on all nodes. Leave empty to automatically use the CN of this node's certificate.")]
 			public string CertificateReservedNodeCommonName { get; init; } = string.Empty;
+
+			internal static CertificateOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				TrustedRootCertificatesPath = configurationRoot.GetValue<string>(nameof(TrustedRootCertificatesPath)),
+				CertificateReservedNodeCommonName = configurationRoot.GetString(nameof(CertificateReservedNodeCommonName))
+			};
 		}
 
 		[Description("Certificate Options (from store)")]
@@ -267,6 +333,17 @@ namespace EventStore.Core {
 
 			[Description("The trusted root certificate fingerprint/thumbprint.")]
 			public string TrustedRootCertificateThumbprint { get; init; } = string.Empty;
+
+			internal static CertificateStoreOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				CertificateStoreLocation = configurationRoot.GetString(nameof(CertificateStoreLocation)),
+				CertificateStoreName = configurationRoot.GetString(nameof(CertificateStoreName)),
+				CertificateSubjectName = configurationRoot.GetString(nameof(CertificateSubjectName)),
+				CertificateThumbprint = configurationRoot.GetString(nameof(CertificateThumbprint)),
+				TrustedRootCertificateStoreLocation = configurationRoot.GetString(nameof(TrustedRootCertificateStoreLocation)),
+				TrustedRootCertificateStoreName = configurationRoot.GetString(nameof(TrustedRootCertificateStoreName)),
+				TrustedRootCertificateThumbprint = configurationRoot.GetString(nameof(TrustedRootCertificateThumbprint)),
+				TrustedRootCertificateSubjectName = configurationRoot.GetString(nameof(TrustedRootCertificateSubjectName))
+			};
 		}
 
 		[Description("Cluster Options")]
@@ -290,18 +367,15 @@ namespace EventStore.Core {
 			public int ClusterGossipPort { get; init; } = 2113;
 
 			[Description("Endpoints for other cluster nodes from which to seed gossip.")]
-			public EndPoint[] GossipSeed { get; init; } = [];
+			public EndPoint[] GossipSeed { get; init; } = Array.Empty<EndPoint>();
 
-			[Description("The interval, in ms, nodes should try to gossip with each other."),
-			 Unit("ms")]
+			[Description("The interval, in ms, nodes should try to gossip with each other.")]
 			public int GossipIntervalMs { get; init; } = 2_000;
 
-			[Description("The amount of drift, in ms, between clocks on nodes allowed before gossip is rejected."),
-			 Unit("ms")]
+			[Description("The amount of drift, in ms, between clocks on nodes allowed before gossip is rejected.")]
 			public int GossipAllowedDifferenceMs { get; init; } = 60_000;
 
-			[Description("The timeout, in ms, on gossip to another node."),
-			 Unit("ms")]
+			[Description("The timeout, in ms, on gossip to another node.")]
 			public int GossipTimeoutMs { get; init; } = 2_500;
 
 			[Description("Sets this node as a read only replica that is not allowed to participate in elections " +
@@ -312,28 +386,42 @@ namespace EventStore.Core {
 			             "(UNSAFE: can cause data loss if a clone is promoted as leader)")]
 			public bool UnsafeAllowSurplusNodes { get; init; } = false;
 
-			[Description("The number of seconds a dead node will remain in the gossip before being pruned."),
-			 Unit("s")]
+			[Description("The number of seconds a dead node will remain in the gossip before being pruned.")]
 			public int DeadMemberRemovalPeriodSec { get; init; } = 1_800;
 
-			[Description("The timeout, in milliseconds, on election messages to other nodes."),
-			 Unit("ms")]
+			[Description("The timeout, in milliseconds, on election messages to other nodes.")]
 			public int LeaderElectionTimeoutMs { get; init; } = 1_000;
 
 			public int QuorumSize => ClusterSize == 1 ? 1 : ClusterSize / 2 + 1;
+
+			internal static ClusterOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				GossipSeed = Array.ConvertAll(configurationRoot.GetCommaSeparatedValueAsArray(nameof(GossipSeed)),
+					ParseGossipEndPoint),
+				DiscoverViaDns = configurationRoot.GetValue<bool>(nameof(DiscoverViaDns)),
+				ClusterSize = configurationRoot.GetValue<int>(nameof(ClusterSize)),
+				NodePriority = configurationRoot.GetValue<int>(nameof(NodePriority)),
+				ClusterDns = configurationRoot.GetString(nameof(ClusterDns)),
+				ClusterGossipPort = configurationRoot.GetValue<int>(nameof(ClusterGossipPort)),
+				GossipIntervalMs = configurationRoot.GetValue<int>(nameof(GossipIntervalMs)),
+				GossipAllowedDifferenceMs = configurationRoot.GetValue<int>(nameof(GossipAllowedDifferenceMs)),
+				GossipTimeoutMs = configurationRoot.GetValue<int>(nameof(GossipTimeoutMs)),
+				ReadOnlyReplica = configurationRoot.GetValue<bool>(nameof(ReadOnlyReplica)),
+				UnsafeAllowSurplusNodes = configurationRoot.GetValue<bool>(nameof(UnsafeAllowSurplusNodes)),
+				DeadMemberRemovalPeriodSec = configurationRoot.GetValue<int>(nameof(DeadMemberRemovalPeriodSec)),
+				StreamInfoCacheCapacity = configurationRoot.GetValue<int>(nameof(StreamInfoCacheCapacity)),
+				LeaderElectionTimeoutMs = configurationRoot.GetValue<int>(nameof(LeaderElectionTimeoutMs))
+			};
 		}
 
 		[Description("Database Options")]
 		public record DatabaseOptions {
-			[Description("The minimum flush delay in milliseconds."),
-			 Unit("ms")]
+			[Description("The minimum flush delay in milliseconds.")]
 			public double MinFlushDelayMs { get; init; } = TFConsts.MinFlushDelayMs.TotalMilliseconds;
 
 			[Description("Disables the merging of chunks when scavenge is running.")]
 			public bool DisableScavengeMerging { get; init; } = false;
 
-			[Description("The number of days to keep scavenge history."),
-			Unit("d")]
+			[Description("The number of days to keep scavenge history.")]
 			public int ScavengeHistoryMaxAge { get; init; } = 30;
 
 			[Description("The number of chunks to cache in unmanaged memory.")]
@@ -354,9 +442,6 @@ namespace EventStore.Core {
 			[Description("The path the index should be loaded/saved to.")]
 			public string? Index { get; init; } = null;
 
-			[Description("The type of transformation to apply to the database.")]
-			public string Transform { get; init; } = "identity";
-
 			[Description("Keep everything in memory, no directories or files are created.")]
 			public bool MemDb { get; init; } = false;
 
@@ -375,28 +460,30 @@ namespace EventStore.Core {
 
 			[Description("Enables Unbuffered/DirectIO when writing to the file system, this bypasses filesystem " +
 			             "caches.")]
-			[Deprecated("The Unbuffered setting has been deprecated as of version 24.6.0 and currently has no effect. " +
-			            "Please contact EventStore if this feature is of interest to you.")]
 			public bool Unbuffered { get; init; } = false;
 
 			[Description("The initial number of readers to start when opening a TFChunk.")]
-			[Deprecated("The ChunkInitialReaderCount parameter has been deprecated as of version 24.6.0 and currently has no effect.")]
 			public int ChunkInitialReaderCount { get; init; } = 5;
 
-			[Description("Prepare timeout (in milliseconds)."),
-			 Unit("ms")]
+			[Description("Prepare timeout (in milliseconds).")]
 			public int PrepareTimeoutMs { get; init; } = 2_000;
 
-			[Description("Commit timeout (in milliseconds)."),
-			 Unit("ms")]
+			[Description("Commit timeout (in milliseconds).")]
 			public int CommitTimeoutMs { get; init; } = 2_000;
 
-			[Description("Write timeout (in milliseconds)."),
-			 Unit("ms")]
+			[Description("Write timeout (in milliseconds).")]
 			public int WriteTimeoutMs { get; init; } = 2_000;
 
+			private readonly bool _unsafeDisableFlushToDisk = false;
+
 			[Description("Disable flushing to disk. (UNSAFE: on power off)")]
-			public bool UnsafeDisableFlushToDisk { get; init; }
+			public bool UnsafeDisableFlushToDisk {
+				get => _unsafeDisableFlushToDisk;
+				init {
+					_unsafeDisableFlushToDisk = value;
+					FileStreamExtensions.ConfigureFlush(value);
+				}
+			}
 
 			[Description("Disables Hard Deletes. (UNSAFE: use to remove hard deletes)")]
 			[Deprecated("This setting is unsafe and not recommended")]
@@ -435,10 +522,7 @@ namespace EventStore.Core {
 			[Description("Set this option to write statistics to the database.")]
 			public bool WriteStatsToDb {
 				get => (StatsStorage.Stream & StatsStorage) != 0;
-				init => StatsStorage =
-					value
-						? StatsStorage.StreamAndFile
-						: StatsStorage.File; // TODO SS: not sure if we should do this here
+				init => StatsStorage = value ? StatsStorage.StreamAndFile : StatsStorage.File;
 			}
 
 			[Description("When truncate.chk is set, the database will be truncated on startup. " +
@@ -470,22 +554,83 @@ namespace EventStore.Core {
 
 			[Description("The number of stream hashes to remember when checking for collisions.")]
 			public int ScavengeHashUsersCacheCapacity { get; init; } = Opts.ScavengeHashUsersCacheCapacityDefault;
+
+			public static int GetPTableMaxReaderCount(int readerThreadsCount) {
+				var ptableMaxReaderCount = 1 /* StorageWriter */
+				                           + 1 /* StorageChaser */
+				                           + 1 /* Projections */
+				                           + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
+				                           + 1 /* Redaction */
+				                           + 1 /* Subscription LinkTos resolving */
+				                           + readerThreadsCount
+				                           + 5 /* just in case reserve :) */;
+				return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
+			}
+
+
+			public static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
+				var tfChunkMaxReaderCount =
+					GetPTableMaxReaderCount(readerThreadsCount) +
+					2 + /* for caching/uncaching, populating midpoints */
+					1 + /* for epoch manager usage of elections/replica service */
+					1 /* for epoch manager usage of leader replication service */;
+				return Math.Max(tfChunkMaxReaderCount, chunkInitialReaderCount);
+			}
+
+
+			internal static DatabaseOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				MinFlushDelayMs = configurationRoot.GetValue<double>(nameof(MinFlushDelayMs)),
+				DisableScavengeMerging = configurationRoot.GetValue<bool>(nameof(DisableScavengeMerging)),
+				MemDb = configurationRoot.GetValue<bool>(nameof(MemDb)),
+				Db = configurationRoot.GetString(nameof(Db)),
+				ScavengeHistoryMaxAge = configurationRoot.GetValue<int>(nameof(ScavengeHistoryMaxAge)),
+				CachedChunks = configurationRoot.GetValue<int>(nameof(CachedChunks)),
+				ChunksCacheSize = configurationRoot.GetValue<long>(nameof(ChunksCacheSize)),
+				MaxMemTableSize = configurationRoot.GetValue<int>(nameof(MaxMemTableSize)),
+				HashCollisionReadLimit = configurationRoot.GetValue<int>(nameof(HashCollisionReadLimit)),
+				Index = configurationRoot.GetValue<string?>(nameof(Index)),
+				UseIndexBloomFilters = configurationRoot.GetValue<bool>(nameof(UseIndexBloomFilters)),
+				IndexCacheSize = configurationRoot.GetValue<int>(nameof(IndexCacheSize)),
+				SkipDbVerify = configurationRoot.GetValue<bool>(nameof(SkipDbVerify)),
+				WriteThrough = configurationRoot.GetValue<bool>(nameof(WriteThrough)),
+				Unbuffered = configurationRoot.GetValue<bool>(nameof(Unbuffered)),
+				ChunkInitialReaderCount = configurationRoot.GetValue<int>(nameof(ChunkInitialReaderCount)),
+				PrepareTimeoutMs = configurationRoot.GetValue<int>(nameof(PrepareTimeoutMs)),
+				CommitTimeoutMs = configurationRoot.GetValue<int>(nameof(CommitTimeoutMs)),
+				WriteTimeoutMs = configurationRoot.GetValue<int>(nameof(WriteTimeoutMs)),
+				UnsafeDisableFlushToDisk = configurationRoot.GetValue<bool>(nameof(UnsafeDisableFlushToDisk)),
+				UnsafeIgnoreHardDelete = configurationRoot.GetValue<bool>(nameof(UnsafeIgnoreHardDelete)),
+				SkipIndexVerify = configurationRoot.GetValue<bool>(nameof(SkipIndexVerify)),
+				IndexCacheDepth = configurationRoot.GetValue<int>(nameof(IndexCacheDepth)),
+				OptimizeIndexMerge = configurationRoot.GetValue<bool>(nameof(OptimizeIndexMerge)),
+				AlwaysKeepScavenged = configurationRoot.GetValue<bool>(nameof(AlwaysKeepScavenged)),
+				ReduceFileCachePressure = configurationRoot.GetValue<bool>(nameof(ReduceFileCachePressure)),
+				InitializationThreads = configurationRoot.GetValue<int>(nameof(InitializationThreads)),
+				ReaderThreadsCount = configurationRoot.GetValue<int>(nameof(ReaderThreadsCount)),
+				MaxAutoMergeIndexLevel = configurationRoot.GetValue<int>(nameof(MaxAutoMergeIndexLevel)),
+				WriteStatsToDb = configurationRoot.GetValue<bool>(nameof(WriteStatsToDb)),
+				MaxTruncation = configurationRoot.GetValue<long>(nameof(MaxTruncation)),
+				DbLogFormat = configurationRoot.GetValue<DbLogFormat>(nameof(DbLogFormat)),
+				StreamExistenceFilterSize = configurationRoot.GetValue<long>(nameof(StreamExistenceFilterSize)),
+				ScavengeBackendPageSize = configurationRoot.GetValue<int>(nameof(ScavengeBackendPageSize)),
+				ScavengeBackendCacheSize = configurationRoot.GetValue<long>(nameof(ScavengeBackendCacheSize)),
+				ScavengeHashUsersCacheCapacity =
+					configurationRoot.GetValue<int>(nameof(ScavengeHashUsersCacheCapacity)),
+			};
 		}
 
 		[Description("gRPC Options")]
 		public record GrpcOptions {
 			[Description("Controls the period (in milliseconds) after which a keepalive ping " +
-			             "is sent on the transport."),
-			 Unit("ms")]
+			             "is sent on the transport.")]
 			public int KeepAliveInterval { get; init; } = 10_000;
 
 			[Description("Controls the amount of time (in milliseconds) the sender of the keepalive ping waits " +
 			             "for an acknowledgement. If it does not receive an acknowledgment within this time, " +
-			             "it will close the connection."),
-			 Unit("ms")]
+			             "it will close the connection.")]
 			public int KeepAliveTimeout { get; init; } = 10_000;
 
-			internal static GrpcOptions FromConfiguration(IConfiguration configurationRoot) => new() {
+			internal static GrpcOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				KeepAliveInterval = configurationRoot.GetValue<int>(nameof(KeepAliveInterval)),
 				KeepAliveTimeout = configurationRoot.GetValue<int>(nameof(KeepAliveTimeout))
 			};
@@ -499,7 +644,7 @@ namespace EventStore.Core {
 				 "The IntIp parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationIp parameter instead.")]
 			[Obsolete("IntIp is deprecated, use ReplicationIp instead")]
 			public IPAddress IntIp { get; init; } = IPAddress.Loopback;
-
+			
 			private readonly IPAddress _replicationIp = IPAddress.Loopback;
 			[Description("The IP Address used by internal replication between nodes in the cluster.")]
 			public IPAddress ReplicationIp {
@@ -514,7 +659,7 @@ namespace EventStore.Core {
 				 "The ExtIp parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeIp parameter instead.")]
 			[Obsolete("ExtIp is deprecated, use NodeIp instead")]
 			public IPAddress ExtIp { get; init; } = IPAddress.Loopback;
-
+			
 			private readonly IPAddress _nodeIp = IPAddress.Loopback;
 			[Description("The IP Address for the node.")]
 			public IPAddress NodeIp {
@@ -542,6 +687,11 @@ namespace EventStore.Core {
 				}
 			}
 
+			[Description("Whether to enable external TCP communication"),
+			 Deprecated(
+				 "The Legacy TCP Client Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead.")]
+			public bool EnableExternalTcp { get; init; } = false;
+
 			[Description("Internal TCP Port."),
 			 Deprecated(
 				 "The IntTcpPort parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationPort parameter instead.")]
@@ -559,15 +709,46 @@ namespace EventStore.Core {
 				}
 			}
 
+			[Description("External TCP Port."),
+			 Deprecated(
+				 "This ExtTcpPort parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeTcpPort parameter instead.")]
+			[Obsolete("ExtTcpPort is deprecated, use NodeTcpPort instead")]
+			public int ExtTcpPort { get; init; } = 1113;
+			
+			private readonly int _nodeTcpPort = 1113;
+			[Description("The TCP Port that external clients can connect to.")]
+			public int NodeTcpPort {
+				get {
+					return _nodeTcpPort == 1113 ? ExtTcpPort : _nodeTcpPort;
+				}
+				init {
+					_nodeTcpPort = value;
+				}
+			}
+
+			[Description("Advertise External Tcp Address As."),
+			 Deprecated(
+				 "The ExtHostAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeHostAdvertiseAs instead.")]
+			[Obsolete("ExtHostAdvertiseAs is deprecated, use NodeHostAdvertiseAs instead")]
+			public string? ExtHostAdvertiseAs { get; init; } = null;
+
+			private readonly string? _nodeHostAdvertiseAs = null;
 			[Description("Advertise the Node's host name to other nodes and external clients as.")]
-			public string? NodeHostAdvertiseAs { get; init; } = null;
+			public string? NodeHostAdvertiseAs {
+				get {
+					return _nodeHostAdvertiseAs ?? ExtHostAdvertiseAs;
+				}
+				init {
+					_nodeHostAdvertiseAs = value;
+				}
+			}
 
 			[Description("Advertise Internal Tcp Address As."),
 			 Deprecated(
 				 "The IntHostAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHostAdvertiseAs parameter instead.")]
 			[Obsolete("IntHostAdvertiseAs is deprecated, use ReplicationHostAdvertiseAs instead")]
 			public string? IntHostAdvertiseAs { get; init; } = null;
-
+			
 			private readonly string? _replicationHostAdvertiseAs = null;
 			[Description("Advertise the Replication host name to other nodes in the cluster as.")]
 			public string? ReplicationHostAdvertiseAs {
@@ -602,12 +783,32 @@ namespace EventStore.Core {
 				}
 			}
 
+			[Description("Advertise TCP Port in Gossip to Client As.")]
+			public int AdvertiseTcpPortToClientAs { get; init; } = 0;
+
+			[Description("Advertise External Tcp Port As."),
+			 Deprecated(
+				 "The ExtTcpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeTcpPortAdvertiseAs parameter instead.")]
+			[Obsolete("ExtTcpPortAdvertiseAs is deprecated, use NodeTcpPortAdvertiseAs instead")]
+			public int ExtTcpPortAdvertiseAs { get; init; } = 0;
+
+			private readonly int _nodeTcpPortAdvertiseAs = 0;
+			[Description("Advertise Node Tcp Port As.")]
+			public int NodeTcpPortAdvertiseAs {
+				get {
+					return _nodeTcpPortAdvertiseAs == 0 ? ExtTcpPortAdvertiseAs : _nodeTcpPortAdvertiseAs;
+				}
+				init {
+					_nodeTcpPortAdvertiseAs = value;
+				}
+			}
+
 			[Description("Advertise Http Port As."),
 			 Deprecated(
 				 "The HttpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the NodePortAdvertiseAs parameter instead.")]
 			[Obsolete("HttpPortAdvertiseAs is deprecated, use NodePortAdvertiseAs instead")]
 			public int HttpPortAdvertiseAs { get; init; } = 0;
-
+			
 			private readonly int _nodePortAdvertiseAs = 0;
 			[Description("Advertise Http Port As.")]
 			public int NodePortAdvertiseAs {
@@ -624,7 +825,7 @@ namespace EventStore.Core {
 				 "The IntTcpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationTcpPortAdvertiseAs parameter instead.")]
 			[Obsolete("IntTcpPortAdvertiseAs is deprecated, use ReplicationTcpPortAdvertiseAs instead")]
 			public int IntTcpPortAdvertiseAs { get; init; } = 0;
-
+			
 			private readonly int _replicationTcpPortAdvertiseAs = 0;
 			[Description("Advertise Replication Tcp Port As.")]
 			public int ReplicationTcpPortAdvertiseAs {
@@ -637,15 +838,13 @@ namespace EventStore.Core {
 			}
 
 			[Description("Heartbeat timeout for internal TCP sockets."),
-			 Unit("ms"),
 			 Deprecated(
 				 "The IntTcpHeartbeatTimeout parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHeartbeatTimeout parameter instead.")]
 			[Obsolete("IntTcpHeartbeatTimeout is deprecated, use ReplicationHeartbeatTimeout instead")]
 			public int IntTcpHeartbeatTimeout { get; init; } = 700;
-
+			
 			private readonly int _replicationHeartbeatTimeout = 700;
-			[Description("Heartbeat timeout for Replication TCP sockets."),
-			 Unit("ms")]
+			[Description("Heartbeat timeout for Replication TCP sockets.")]
 			public int ReplicationHeartbeatTimeout {
 				get {
 					return _replicationHeartbeatTimeout == 700 ? IntTcpHeartbeatTimeout : _replicationHeartbeatTimeout;
@@ -655,16 +854,31 @@ namespace EventStore.Core {
 				}
 			}
 
+			[Description("Heartbeat timeout for external TCP sockets."),
+			 Deprecated(
+				 "The ExtTcpHeartbeatTimeout parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeHeartbeatTimeout parameter instead.")]
+			[Obsolete("ExtTcpHeartbeatTimeout is deprecated, use NodeHeartbeatTimeout instead")]
+			public int ExtTcpHeartbeatTimeout { get; init; } = 1_000;
+			
+			private readonly int _nodeHeartbeatTimeout = 1000;
+			[Description("Heartbeat timeout for Node/external TCP sockets.")]
+			public int NodeHeartbeatTimeout {
+				get {
+					return _nodeHeartbeatTimeout == 1000 ? ExtTcpHeartbeatTimeout : _nodeHeartbeatTimeout;
+				}
+				init {
+					_nodeHeartbeatTimeout = value;
+				}
+			}
+
 			[Description("Heartbeat interval for internal TCP sockets."),
-			 Unit("ms"),
 			 Deprecated(
 				 "The IntTcpHeartbeatInterval parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHeartbeatInterval parameter instead.")]
 			[Obsolete("IntTcpHeartbeatInterval is deprecated, use ReplicationHeartbeatInterval instead")]
 			public int IntTcpHeartbeatInterval { get; init; } = 700;
 
 			private readonly int _replicationHeartbeatInterval = 700;
-			[Description("Heartbeat interval for Replication TCP sockets."),
-			 Unit("ms")]
+			[Description("Heartbeat interval for Replication TCP sockets.")]
 			public int ReplicationHeartbeatInterval {
 				get {
 					return _replicationHeartbeatInterval == 700
@@ -673,6 +887,23 @@ namespace EventStore.Core {
 				}
 				init {
 					_replicationHeartbeatInterval = value;
+				}
+			}
+
+			[Description("Heartbeat interval for external TCP sockets."),
+			 Deprecated(
+				 "The ExtTcpHeartbeatInterval parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeHeartbeatInterval parameter instead.")]
+			[Obsolete("ExtTcpHeartbeatInterval is deprecated, use NodeHeartbeatInterval instead")]
+			public int ExtTcpHeartbeatInterval { get; init; } = 2_000;
+
+			private readonly int _nodeHeartbeatInterval = 2000;
+			[Description("Heartbeat interval for Node/external TCP sockets.")]
+			public int NodeHeartbeatInterval {
+				get {
+					return _nodeHeartbeatInterval == 2000 ? ExtTcpHeartbeatInterval : _nodeHeartbeatInterval;
+				}
+				init {
+					_nodeHeartbeatInterval = value;
 				}
 			}
 
@@ -707,9 +938,65 @@ namespace EventStore.Core {
 			            nameof(Application.Insecure) + "' option instead.")]
 			public bool DisableInternalTcpTls { get; init; } = false;
 
+			[Description("Whether to disable secure external TCP communication."),
+			 Deprecated("The '" + nameof(DisableExternalTcpTls) + "' option has been deprecated as of version 20.6.1.")]
+			public bool DisableExternalTcpTls { get; init; } = false;
+
 			[Description("Enable AtomPub over HTTP Interface."),
 			 Deprecated("AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]
 			public bool EnableAtomPubOverHttp { get; init; } = false;
+
+			internal static InterfaceOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				GossipOnSingleNode = configurationRoot.GetValue<bool?>(nameof(GossipOnSingleNode)),
+				IntIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(IntIp)) ??
+				                        IPAddress.Loopback.ToString()),
+				ReplicationIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ReplicationIp)) ??
+				                                IPAddress.Loopback.ToString()),
+				ExtIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ExtIp)) ??
+				                        IPAddress.Loopback.ToString()),
+				NodeIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(NodeIp)) ??
+				                        IPAddress.Loopback.ToString()),
+				HttpPort = configurationRoot.GetValue<int>(nameof(HttpPort)),
+				NodePort = configurationRoot.GetValue<int>(nameof(NodePort)),
+				EnableExternalTcp = configurationRoot.GetValue<bool>(nameof(EnableExternalTcp)),
+				ExtTcpPort = configurationRoot.GetValue<int>(nameof(ExtTcpPort)),
+				NodeTcpPort = configurationRoot.GetValue<int>(nameof(NodeTcpPort)),
+				IntTcpPort = configurationRoot.GetValue<int>(nameof(IntTcpPort)),
+				ReplicationPort = configurationRoot.GetValue<int>(nameof(ReplicationPort)),
+				ExtHostAdvertiseAs = configurationRoot.GetValue<string?>(nameof(ExtHostAdvertiseAs)),
+				NodeHostAdvertiseAs = configurationRoot.GetValue<string?>(nameof(NodeHostAdvertiseAs)),
+				AdvertiseHostToClientAs = configurationRoot.GetValue<string?>(nameof(AdvertiseHostToClientAs)),
+				AdvertiseHttpPortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseHttpPortToClientAs)),
+				AdvertiseNodePortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseNodePortToClientAs)),
+				AdvertiseTcpPortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseTcpPortToClientAs)),
+				ExtTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(ExtTcpPortAdvertiseAs)),
+				NodeTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(NodeTcpPortAdvertiseAs)),
+				IntHostAdvertiseAs = configurationRoot.GetValue<string>(nameof(IntHostAdvertiseAs)),
+				ReplicationHostAdvertiseAs = configurationRoot.GetValue<string>(nameof(ReplicationHostAdvertiseAs)),
+				HttpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(HttpPortAdvertiseAs)),
+				NodePortAdvertiseAs = configurationRoot.GetValue<int>(nameof(NodePortAdvertiseAs)),
+				IntTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(IntTcpPortAdvertiseAs)),
+				ReplicationTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(ReplicationTcpPortAdvertiseAs)),
+				ExtTcpHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(ExtTcpHeartbeatTimeout)),
+				NodeHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(NodeHeartbeatTimeout)),
+				IntTcpHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(IntTcpHeartbeatTimeout)),
+				ReplicationHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(ReplicationHeartbeatTimeout)),
+				ExtTcpHeartbeatInterval = configurationRoot.GetValue<int>(nameof(ExtTcpHeartbeatInterval)),
+				NodeHeartbeatInterval = configurationRoot.GetValue<int>(nameof(NodeHeartbeatInterval)),
+				IntTcpHeartbeatInterval = configurationRoot.GetValue<int>(nameof(IntTcpHeartbeatInterval)),
+				ReplicationHeartbeatInterval = configurationRoot.GetValue<int>(nameof(ReplicationHeartbeatInterval)),
+				EnableUnixSocket = configurationRoot.GetValue<bool>(nameof(EnableUnixSocket)),
+				ConnectionPendingSendBytesThreshold =
+					configurationRoot.GetValue<int>(nameof(ConnectionPendingSendBytesThreshold)),
+				ConnectionQueueSizeThreshold = configurationRoot.GetValue<int>(nameof(ConnectionQueueSizeThreshold)),
+				DisableAdminUi = configurationRoot.GetValue<bool>(nameof(DisableAdminUi)),
+				DisableStatsOnHttp = configurationRoot.GetValue<bool>(nameof(DisableStatsOnHttp)),
+				DisableGossipOnHttp = configurationRoot.GetValue<bool>(nameof(DisableGossipOnHttp)),
+				EnableTrustedAuth = configurationRoot.GetValue<bool>(nameof(EnableTrustedAuth)),
+				DisableInternalTcpTls = configurationRoot.GetValue<bool>(nameof(DisableInternalTcpTls)),
+				DisableExternalTcpTls = configurationRoot.GetValue<bool>(nameof(DisableExternalTcpTls)),
+				EnableAtomPubOverHttp = configurationRoot.GetValue<bool>(nameof(EnableAtomPubOverHttp))
+			};
 #pragma warning restore 0618
 		}
 
@@ -726,79 +1013,65 @@ namespace EventStore.Core {
 			[Description("The number of threads to use for projections.")]
 			public int ProjectionThreads { get; init; } = 3;
 
-			[Description("The number of minutes a query can be idle before it expires."),
-			 Unit("m")]
+			[Description("The number of minutes a query can be idle before it expires.")]
 			public int ProjectionsQueryExpiry { get; init; } = 5;
 
 			[Description("Fault the projection if the Event number that was expected in the stream differs " +
 			             "from what is received. This may happen if events have been deleted or expired.")]
 			public bool FaultOutOfOrderProjections { get; init; } = false;
 
-			[Description("The time in milliseconds allowed for the compilation phase of user projections"),
-			 Unit("ms")]
+			[Description("The time in milliseconds allowed for the compilation phase of user projections")]
 			public int ProjectionCompilationTimeout { get; set; } = 500;
 
-			[Description("The maximum execution time in milliseconds for executing a handler in a user projection. It can be overridden for a specific projection by setting ProjectionExecutionTimeout config for that projection"),
-			 Unit("ms")]
+			[Description("The maximum execution time in milliseconds for executing a handler in a user projection. It can be overridden for a specific projection by setting ProjectionExecutionTimeout config for that projection")]
 			public int ProjectionExecutionTimeout { get; set; } = DefaultProjectionExecutionTimeout;
+
+			internal static ProjectionOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				RunProjections = configurationRoot.GetValue<ProjectionType>(nameof(RunProjections)),
+				StartStandardProjections = configurationRoot.GetValue<bool>(nameof(StartStandardProjections)),
+				ProjectionThreads = configurationRoot.GetValue<int>(nameof(ProjectionThreads)),
+				ProjectionsQueryExpiry = configurationRoot.GetValue<int>(nameof(ProjectionsQueryExpiry)),
+				FaultOutOfOrderProjections = configurationRoot.GetValue<bool>(nameof(FaultOutOfOrderProjections)),
+				ProjectionCompilationTimeout = configurationRoot.GetValue<int>(nameof(ProjectionCompilationTimeout)),
+				ProjectionExecutionTimeout = configurationRoot.GetValue<int>(nameof(ProjectionExecutionTimeout))
+			};
 		}
 
-		public record UnknownOptions(IReadOnlyList<(string, string)> Options) {
-			/// <summary>
-			/// Identifies unknown options in the configuration and provides suggestions for known options.
-			/// </summary>
-			public static UnknownOptions FromConfiguration(IConfiguration configuration) {
-				var knownKeys = Metadata
-					.SelectMany(x => x.Options)
-					.Select(x => x.Key)
+		public record UnknownOptions {
+			public IReadOnlyList<(string, string)> Options { get; init; }
+
+			public UnknownOptions(IReadOnlyList<(string, string)> keys) {
+				Options = keys;
+			}
+
+			internal static UnknownOptions FromConfiguration(IConfigurationRoot configurationRoot) {
+				var allKnownKeys = typeof(ClusterVNodeOptions).GetProperties()
+					.SelectMany(property => property
+						.PropertyType
+						.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+					.Select(x => x.Name)
 					.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-				var unknownKeys = FindUnknownKeys(configuration, knownKeys);
-
-				var result = unknownKeys
-					.Select(unknownKey => CreateUnknownOptionResult(knownKeys, unknownKey))
+				var unknownKeys = configurationRoot
+					.AsEnumerable()
+					.Select(kvp => kvp.Key)
+					.Where(key => !allKnownKeys.Contains(key))
 					.ToList();
 
-				return new(result);
+				var unknownOptions = unknownKeys
+					.Select(unknownKey => {
+						var first = allKnownKeys
+							.Select(allowedKey => {
+								var distance = Levenshtein.GetDistance(unknownKey, allowedKey);
+								return (allowedKey, distance);
+							})
+							.OrderBy(x => x.distance)
+							.First();
+						return (unknownKey, first.distance > 5 ? "" : first.allowedKey);
+					})
+					.ToList();
 
-				static IEnumerable<string> FindUnknownKeys(IConfiguration configuration,
-					IReadOnlySet<string> knownKeys) {
-					var unknownKeys = configuration
-						.AsEnumerable()
-						.Select(kvp => kvp.Key)
-						.Where(key => key != EventStoreConfigurationKeys.Prefix
-						              && !knownKeys.Contains(EventStoreConfigurationKeys.Normalize(key)))
-						.ToList();
-
-					var unknownSections = FindUnknownSections(unknownKeys);
-
-					return unknownKeys
-						.Where(key => !unknownSections.Any(key.StartsWith));
-				}
-
-				static HashSet<string> FindUnknownSections(IEnumerable<string> keys) {
-					// if it has more than 2 sections, we found a value with an unknown section
-					var hashSet = new HashSet<string>();
-
-					foreach (var key in keys.Where(key => key.Split(":").Length > 2))
-						hashSet.Add(key[..key.LastIndexOf(':')]);
-
-					return hashSet;
-				}
-
-				static (string UnknownKey, string SuggestedKey) CreateUnknownOptionResult(IEnumerable<string> knownKeys,
-					string unknownKey, int distanceThreshold = 5) {
-					var suggestion = knownKeys
-						.Select(key => (AllowedKey: key, Distance: Levenshtein.GetDistance(unknownKey, key)))
-						.MinBy(x => x.Distance);
-
-					return (
-						UnknownKey: EventStoreConfigurationKeys.StripConfigurationPrefix(unknownKey),
-						SuggestedKey: suggestion.Distance > distanceThreshold
-							? ""
-							: EventStoreConfigurationKeys.StripConfigurationPrefix(suggestion.AllowedKey)
-					);
-				}
+				return new UnknownOptions(unknownOptions);
 			}
 		}
 	}

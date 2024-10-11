@@ -1,4 +1,6 @@
-﻿using EventStore.Core.Data;
+﻿using System;
+using System.Linq;
+using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using NUnit.Framework;
@@ -15,27 +17,27 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 			// previously, a bug caused those filtered-out records to prevent the successful
 			// reading of subsequent events that are contained within an explicit transaction.
 
-			static Rec[] ExplicitTransaction(int transaction, string stream) => [
+			static Rec[] ExplicitTransaction(int transaction, string stream) => new[] {
 				Rec.TransSt(transaction, stream),
 				Rec.Prepare(transaction, stream),
 				Rec.TransEnd(transaction, stream),
 				Rec.Commit(transaction, stream),
-			];
+			};
 
 			var i = 0;
-			CreateDb([
-				.. ExplicitTransaction(i++, "excludedStream"),
-				.. ExplicitTransaction(i++, "includedStream0"),
-				.. ExplicitTransaction(i++, "includedStream1"),
-				.. ExplicitTransaction(i++, "includedStream2"),
-				.. ExplicitTransaction(i++, "includedStream3"),
-				.. ExplicitTransaction(i++, "includedStream4"),
-				.. ExplicitTransaction(i++, "includedStream5"),
-				.. ExplicitTransaction(i++, "includedStream6"),
-				.. ExplicitTransaction(i++, "includedStream7"),
-				.. ExplicitTransaction(i++, "includedStream8"),
-				.. ExplicitTransaction(i++, "includedStream9"),
-			]);
+			CreateDb(Array.Empty<Rec>()
+				.Concat(ExplicitTransaction(i++, "excludedStream"))
+				.Concat(ExplicitTransaction(i++, "includedStream0"))
+				.Concat(ExplicitTransaction(i++, "includedStream1"))
+				.Concat(ExplicitTransaction(i++, "includedStream2"))
+				.Concat(ExplicitTransaction(i++, "includedStream3"))
+				.Concat(ExplicitTransaction(i++, "includedStream4"))
+				.Concat(ExplicitTransaction(i++, "includedStream5"))
+				.Concat(ExplicitTransaction(i++, "includedStream6"))
+				.Concat(ExplicitTransaction(i++, "includedStream7"))
+				.Concat(ExplicitTransaction(i++, "includedStream8"))
+				.Concat(ExplicitTransaction(i++, "includedStream9"))
+				.ToArray());
 
 			var read = ReadIndex.ReadAllEventsForwardFiltered(
 				pos: new Data.TFPos(0, 0),
@@ -54,27 +56,27 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 			// previously, a bug caused those filtered-out records to prevent the successful
 			// reading of subsequent events that are contained within an explicit transaction.
 
-			static Rec[] ExplicitTransaction(int transaction, string stream) => [
+			static Rec[] ExplicitTransaction(int transaction, string stream) => new[] {
 				Rec.TransSt(transaction, stream),
 				Rec.Prepare(transaction, stream),
 				Rec.TransEnd(transaction, stream),
 				Rec.Commit(transaction, stream),
-			];
+			};
 
 			var i = 0;
-			CreateDb([
-				.. ExplicitTransaction(i++, "includedStream0"),
-				.. ExplicitTransaction(i++, "includedStream1"),
-				.. ExplicitTransaction(i++, "includedStream2"),
-				.. ExplicitTransaction(i++, "includedStream3"),
-				.. ExplicitTransaction(i++, "includedStream4"),
-				.. ExplicitTransaction(i++, "includedStream5"),
-				.. ExplicitTransaction(i++, "includedStream6"),
-				.. ExplicitTransaction(i++, "includedStream7"),
-				.. ExplicitTransaction(i++, "includedStream8"),
-				.. ExplicitTransaction(i++, "includedStream9"),
-				.. ExplicitTransaction(i++, "excludedStream"),
-			]);
+			CreateDb(Array.Empty<Rec>()
+				.Concat(ExplicitTransaction(i++, "includedStream0"))
+				.Concat(ExplicitTransaction(i++, "includedStream1"))
+				.Concat(ExplicitTransaction(i++, "includedStream2"))
+				.Concat(ExplicitTransaction(i++, "includedStream3"))
+				.Concat(ExplicitTransaction(i++, "includedStream4"))
+				.Concat(ExplicitTransaction(i++, "includedStream5"))
+				.Concat(ExplicitTransaction(i++, "includedStream6"))
+				.Concat(ExplicitTransaction(i++, "includedStream7"))
+				.Concat(ExplicitTransaction(i++, "includedStream8"))
+				.Concat(ExplicitTransaction(i++, "includedStream9"))
+				.Concat(ExplicitTransaction(i++, "excludedStream"))
+				.ToArray());
 
 			var writerCp = DbRes.Db.Config.WriterCheckpoint.Read();
 			var read = ReadIndex.ReadAllEventsBackwardFiltered(

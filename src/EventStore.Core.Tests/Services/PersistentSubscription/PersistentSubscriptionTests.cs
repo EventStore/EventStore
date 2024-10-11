@@ -172,11 +172,10 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 		private readonly FakeStorage _storage;
 		private ClientMessage.CreatePersistentSubscriptionToAll _create;
 		private IEventFilter _filterWhenCreate = EventFilter.EventType.Prefixes(isAllStream: true, new[] { "prefixFilter" });
-
+		
 		public when_updating_all_stream_subscription_with_filter() {
 			var bus = new InMemoryBus("bus");
 			var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
-			var trackers = new Trackers();
 
 			_storage = new FakeStorage(cfgs => cfgs.Count() >= 2);
 
@@ -190,7 +189,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 				new FakeReadIndex<TLogFormat,TStreamId>(_ => false, new MetaStreamLookup()),
 				ioDispatcher, bus,
 				new PersistentSubscriptionConsumerStrategyRegistry(bus, bus,
-					Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()), trackers.PersistentSubscriptionTracker);
+					Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()));
 
 			_sut.Start();
 			_sut.Handle(new SystemMessage.BecomeLeader(correlationId: Guid.NewGuid()));
@@ -201,7 +200,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 		public async Task should_not_overwrite_filter() {
 
 			_sut.Handle(UpdateMessage(_create.GroupName, new NoopEnvelope()));
-
+			
 			await _storage.FinishedWriting.Task;
 
 			var filterWhenCreateDto = EventFilter.ParseToDto(_filterWhenCreate);
@@ -210,7 +209,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					e => (e.Filter is not null
 						&& e.Filter.Data.Equals(filterWhenCreateDto.Data)
 						&& e.Filter.IsAllStream)));
-
+			
 			Assert.True(allFiltersSet, "Expected all filters to be set!");
 		}
 
@@ -2240,7 +2239,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			fakeCheckpointReader.Load(null);
 
 			var clientConnectionId = Guid.NewGuid();
-
+			
 			Assert.IsFalse(sub.RemoveClientByConnectionId(clientConnectionId));
 		}
 	}
@@ -2301,7 +2300,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			//retry parked messages stop at version 5000
 			sub.RetryParkedMessages(5000);
-
+			
 			//this should invoke message parker's BeginReadEndSequence
 			Assert.AreEqual(1, parker.BeginReadEndSequenceCount);
 		}
@@ -2325,9 +2324,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MinimumToCheckPoint(1)
 					.MaximumToCheckPoint(1));
 			reader.Load(null);
-
+			
 			loadCount.Clear(); // clear loads from checkpoint reader
-
+			
 			var clientConnectionId = Guid.NewGuid();
 			var clientCorrelationId = Guid.NewGuid();
 			sub.AddClient(clientCorrelationId, clientConnectionId, "connection-1", new FakeEnvelope(), 50, "foo", "bar");
@@ -2338,22 +2337,22 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			foreach (var parkedEvent in parkedEvents) {
 				messageParker.BeginParkMessage(parkedEvent, "parked", (ev, res) => { });
 			}
-
+			
 			sub.RetryParkedMessages(null);
-
-			Assert.AreEqual(20, loadCount[0]);
-
+			
+			Assert.AreEqual(19, loadCount[0]);
+			
 			sub.HandleParkedReadCompleted(
 				parkedEvents,
 				new PersistentSubscriptionSingleStreamPosition(19),
 				true,
 				20);
-
+			
 			Assert.AreEqual(19, messageParker.MarkedAsProcessed);
 			Assert.AreEqual(19, sub.OutstandingMessageCount);
 
 		}
-
+		
 		[Test]
 		public void retrying_parked_messages_with_stop_at_replays_parkedEvents_until_that_version() {
 			var messageParker = new FakeMessageParker();
@@ -2371,9 +2370,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MinimumToCheckPoint(1)
 					.MaximumToCheckPoint(1));
 			reader.Load(null);
-
+			
 			loadCount.Clear(); // clear loads from checkpoint reader
-
+			
 			var clientConnectionId = Guid.NewGuid();
 			var clientCorrelationId = Guid.NewGuid();
 			sub.AddClient(clientCorrelationId, clientConnectionId, "connection-1", new FakeEnvelope(), 50, "foo", "bar");
@@ -2387,18 +2386,18 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			var stopAt = 7L;
 			sub.RetryParkedMessages(stopAt);
-
+			
 			// stopAt == Count
-			Assert.AreEqual(stopAt + 1, loadCount[0]);
+			Assert.AreEqual(stopAt, loadCount[0]);
 
 			sub.HandleParkedReadCompleted(
 				parkedEvents.Where(re => re.OriginalEventNumber < 7).ToArray(),
 				new PersistentSubscriptionSingleStreamPosition(7),
 				false,
 				stopAt);
-
+			
 			Assert.AreEqual(7, messageParker.MarkedAsProcessed);
-
+			
 			Assert.AreEqual(7, sub.OutstandingMessageCount);
 
 		}
@@ -2609,7 +2608,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 				completed(_lastParkedEventNumber);
 		}
 
-		public void BeginMarkParkedMessagesReprocessed(long sequence, DateTime? dateTime, bool updateOldestParkedMessage) {
+		public void BeginMarkParkedMessagesReprocessed(long sequence) {
 			MarkedAsProcessed = sequence;
 		}
 
@@ -2628,8 +2627,6 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 		public void BeginLoadStats(Action completed) {
 			completed();
 		}
-
-		public DateTime? GetOldestParkedMessage { get; }
 	}
 
 

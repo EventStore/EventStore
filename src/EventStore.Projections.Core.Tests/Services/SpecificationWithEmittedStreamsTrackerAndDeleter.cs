@@ -29,7 +29,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 			_projectionNamesBuilder = ProjectionNamesBuilder.CreateForTest(_projectionName);
 			_emittedStreamsTracker = new EmittedStreamsTracker(_ioDispatcher,
 				new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false,
-					_trackEmittedStreams, 10000, 1), _projectionNamesBuilder);
+					_trackEmittedStreams, 10000, 1, 250), _projectionNamesBuilder);
 			_emittedStreamsDeleter = new EmittedStreamsDeleter(_ioDispatcher,
 				_projectionNamesBuilder.GetEmittedStreamsName(),
 				_projectionNamesBuilder.GetEmittedStreamsCheckpointName());

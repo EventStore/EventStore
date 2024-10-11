@@ -8,17 +8,26 @@
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<PackageProjectUrl>https://eventstore.com</PackageProjectUrl>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<Copyright>Copyright 2012-2024 Event Store Ltd</Copyright>
+		<Copyright>Copyright 2012-2020 Event Store Ltd</Copyright>
 		<PackageReleaseNotes>https://eventstore.com/blog/</PackageReleaseNotes>
-		<TargetFramework>net8.0</TargetFramework>
 		<LangVersion>12.0</LangVersion>
-		<Platforms>AnyCPU;x64;ARM64</Platforms>
 		<IsPackable>false</IsPackable>
-		<VersionPrefix>24.6.0</VersionPrefix>
-		<VersionSuffix>prerelease</VersionSuffix>
+		<MinVerTagPrefix>oss-v</MinVerTagPrefix>
+		<MinVerMinimumMajorMinor>22.2</MinVerMinimumMajorMinor>
 	</PropertyGroup>
+	<Target Name="UpdateAssemblyVersion" AfterTargets="MinVer">
+  		<PropertyGroup>
+    		<AssemblyVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).0</AssemblyVersion>
+  		</PropertyGroup>
+	</Target>
 	<ItemGroup>
-		<None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" />
-		<None Include="..\..\ouro.png" Pack="true" PackagePath="\" />
+		<None Include="..\..\LICENSE.md" Pack="true" PackagePath="\"/>
+		<None Include="..\..\ouro.png" Pack="true" PackagePath="\"/>
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="MinVer" Version="4.3.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
 </Project>

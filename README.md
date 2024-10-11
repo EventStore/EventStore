@@ -1,6 +1,6 @@
 <a href="https://www.eventstore.com/"><img src="https://lh3.googleusercontent.com/G6tLxSbJvFodjR_FHrsXs5WOIls0VfuXkWgv60vbRB0WSuJoe-m1cADCsroUHQgJUQMcwp_HNKCLfiTWuCfVwlT607G8niENuGfq5DsnEmWUx_4Szx3GAWI6X1GKRA5iwv_loW0T75cWCAZsRZm3DL4" height=50% width=50% alt="EventStoreDB" /></a>
 
-EventStoreDB is the event-native database, where business events are immutably stored and streamed. Designed for event-sourced, event-driven, and microservices architectures
+EventStoreDB is an operational database built to store events, powered by the state-transition data model, for developers building true data-driven applications for next-generation use cases.
 
 - [What is EventStoreDB ](#what-is-eventstoredb)
 - [What is EventStore Cloud ](#what-is-event-store-cloud)
@@ -83,7 +83,6 @@ Legacy TCP Clients (support ends with 23.10 LTS)
 ## Communities
 
 - [Discuss](https://discuss.eventstore.com/)
-- [Discord (Event Store)](https://discord.gg/Phn9pmCw3t)
 - [Discord (ddd-cqrs-es)](https://discord.com/invite/sEZGSHNNbH)
 
 ## Contributing
@@ -184,3 +183,15 @@ docker run --rm myeventstore --insecure --what-if
 - [Articles](https://www.eventstore.com/blog)
 - [Webinars ](https://www.eventstore.com/webinars)
 - [Contact us](https://www.eventstore.com/contact)
+
+## CI Status
+
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-ubuntu-18.04.yml/badge.svg)
+
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-windows-2019.yml/badge.svg)
+
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-alpine.yml/badge.svg)
+
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-bookworm-slim.yml/badge.svg)
+
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-jammy.yml/badge.svg)

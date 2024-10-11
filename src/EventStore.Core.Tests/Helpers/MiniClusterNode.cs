@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using EventStore.Common.Options;
@@ -25,10 +25,6 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using ILogger = Serilog.ILogger;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Plugins.Subsystems;
-using EventStore.TcpUnitTestPlugin;
-using Microsoft.Extensions.Configuration;
-using RuntimeInformation = System.Runtime.RuntimeInformation;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode<TLogFormat, TStreamId> {
@@ -58,19 +54,21 @@ namespace EventStore.Core.Tests.Helpers {
 		public VNodeState NodeState = VNodeState.Unknown;
 		private readonly IWebHost _host;
 
-		private static bool EnableHttps() => !RuntimeInformation.IsOSX;
+		private static bool EnableHttps() {
+			return !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+		}
 
-        public MiniClusterNode(string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint externalTcp,
-			IPEndPoint httpEndPoint, EndPoint[] gossipSeeds, ISubsystem[] subsystems = null,
+		public MiniClusterNode(string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint externalTcp,
+			IPEndPoint httpEndPoint, EndPoint[] gossipSeeds, ISubsystemFactory[] subsystems = null,
 			bool enableTrustedAuth = false, int memTableSize = 1000, bool inMemDb = true,
 			bool disableFlushToDisk = false, bool readOnlyReplica = false, int nodePriority = 0,
 			string intHostAdvertiseAs = null, IExpiryStrategy expiryStrategy = null) {
 
-			if (RuntimeInformation.IsOSX) {
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
 					true); //TODO JPB Remove this sadness when dotnet core supports kestrel + http2 on macOS
 			}
-
+			
 			RunningTime.Start();
 			RunCount += 1;
 
@@ -87,9 +85,6 @@ namespace EventStore.Core.Tests.Helpers {
 			FileStreamExtensions.ConfigureFlush(disableFlushToDisk);
 
 			var useHttps = EnableHttps();
-
-			subsystems ??= [];
-			subsystems = [..subsystems, new TcpApiTestPlugin()];
 
 			var options = new ClusterVNodeOptions {
 				Application = new() {
@@ -116,9 +111,14 @@ namespace EventStore.Core.Tests.Helpers {
 					ReplicationIp = InternalTcpEndPoint.Address,
 					NodeIp = ExternalTcpEndPoint.Address,
 					ReplicationPort = InternalTcpEndPoint.Port,
+					NodeTcpPort = ExternalTcpEndPoint.Port,
+					EnableExternalTcp = ExternalTcpEndPoint != null,
 					NodePort = HttpEndPoint.Port,
+					DisableExternalTcpTls = false,
 					DisableInternalTcpTls = false,
+					NodeHeartbeatTimeout = 2_000,
 					ReplicationHeartbeatTimeout = 2_000,
+					NodeHeartbeatInterval = 2_000,
 					ReplicationHeartbeatInterval = 2_000,
 					EnableAtomPubOverHttp = true,
 					EnableTrustedAuth = enableTrustedAuth,
@@ -140,21 +140,12 @@ namespace EventStore.Core.Tests.Helpers {
 					ChunksCacheSize = MiniNode.CachedChunkSize,
 					StreamExistenceFilterSize = 10_000
 				},
-				Projection = new() {
+				Projections = new() {
 					RunProjections = ProjectionType.None
 				},
-				PlugableComponents = subsystems
+				Subsystems = subsystems ?? Array.Empty<ISubsystemFactory>()
 			};
 
-			var inMemConf = new ConfigurationBuilder()
-				.AddInMemoryCollection(new KeyValuePair<string, string>[] {
-					new("EventStore:TcpPlugin:NodeTcpPort", externalTcp.Port.ToString()),
-					new("EventStore:TcpPlugin:EnableExternalTcp", "true"),
-					new("EventStore:TcpUnitTestPlugin:NodeTcpPort", externalTcp.Port.ToString()),
-					new("EventStore:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
-					new("EventStore:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
-					new("EventStore:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
-				}).Build();
 			var serverCertificate = useHttps ? ssl_connections.GetServerCertificate() : null;
 			var trustedRootCertificates =
 				useHttps ? new X509Certificate2Collection(ssl_connections.GetRootCertificate()) : null;
@@ -167,9 +158,9 @@ namespace EventStore.Core.Tests.Helpers {
 			Log.Information(
 				"\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
 				+ "{11,-25} {12}\n" + "{13,-25} {14}\n" + "{15,-25} {16}\n" + "{17,-25} {18}\n\n",
-				"ES VERSION:", VersionInfo.Version, VersionInfo.Edition, VersionInfo.CommitSha, VersionInfo.Timestamp,
-				"OS:", RuntimeInformation.OsPlatform, Environment.OSVersion, "RUNTIME:", RuntimeInformation.RuntimeVersion,
-				RuntimeInformation.RuntimeMode, "GC:",
+				"ES VERSION:", VersionInfo.Version, VersionInfo.Tag, VersionInfo.Hashtag, VersionInfo.Timestamp,
+				"OS:", OS.OsFlavor, Environment.OSVersion, "RUNTIME:", OS.GetRuntimeVersion(),
+				Marshal.SizeOf(typeof(IntPtr)) * 8, "GC:",
 				GC.MaxGeneration == 0
 					? "NON-GENERATION (PROBABLY BOEHM)"
 					: $"{GC.MaxGeneration + 1} GENERATIONS", "DBPATH:", _dbPath, "ExTCP ENDPOINT:",
@@ -186,7 +177,7 @@ namespace EventStore.Core.Tests.Helpers {
 						options.Application.OverrideAnonymousEndpointAccessForGossip)),
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(),
 				new OptionsCertificateProvider(),
-				configuration: inMemConf,
+				metricsConfiguration: null,
 				expiryStrategy,
 				Guid.NewGuid(), debugIndex);
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));
@@ -194,9 +185,9 @@ namespace EventStore.Core.Tests.Helpers {
 			_host = new WebHostBuilder()
 				.UseKestrel(o => {
 					o.Listen(HttpEndPoint, options => {
-						if (RuntimeInformation.IsOSX) {
+						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 							options.Protocols = HttpProtocols.Http2;
-						} else {
+						} else { 
 							options.UseHttps(new HttpsConnectionAdapterOptions {
 								ServerCertificate = serverCertificate,
 								ClientCertificateMode = ClientCertificateMode.AllowCertificate,
@@ -258,7 +249,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_host.Start();
 			Node.Start();
 		}
-
+		
 		public HttpClient CreateHttpClient() {
 			var httpClient = new HttpClient(new SocketsHttpHandler {
 				AllowAutoRedirect = false,
@@ -266,7 +257,7 @@ namespace EventStore.Core.Tests.Helpers {
 					RemoteCertificateValidationCallback = delegate { return true; }
 				}
 			}, true);
-
+			
 			var scheme = Node.DisableHttps ? "http://" : "https://";
 			httpClient.BaseAddress = new Uri($"{scheme}{HttpEndPoint}");
 			return httpClient;
@@ -275,13 +266,13 @@ namespace EventStore.Core.Tests.Helpers {
 		public async Task Shutdown(bool keepDb = false) {
 			StoppingTime.Start();
 			_host?.Dispose();
-			await Node.StopAsync().WithTimeout(TimeSpan.FromSeconds(20));
+			await Node.StopAsync().WithTimeout(TimeSpan.FromSeconds(20));			
 
 			// the same message 'BecomeShutdown' triggers the disposal of the ReadIndex
 			// and also the notification here that the node as stopped so there is a race.
 			// For now let's wait for a moment before we try to delete the directory.
 			await Task.Delay(500);
-
+			
 			if (!keepDb)
 				TryDeleteDirectory(_dbPath);
 

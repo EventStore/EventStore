@@ -493,6 +493,7 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 			return def.Execute(_output).AsTask();
 		}
 
+		
 		public class TestDefinition {
 			private readonly string _name;
 			private readonly Func<ITestOutputHelper, ValueTask> _step;
