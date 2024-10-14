@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Exceptions;
 using EventStore.Core.Bus;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -22,8 +23,9 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	IAuthorizationPolicyRegistry {
 	private readonly string _stream = SystemStreams.AuthorizationPolicyRegistryStream;
 	private readonly ILogger _logger = Log.ForContext<StreamBasedAuthorizationPolicyRegistry>();
-	private readonly FallbackPolicySelector _fallbackPolicySelector = new ();
 	private readonly IPublisher _publisher;
+
+	private readonly FallbackPolicySelector _fallbackPolicySelector = new ();
 	private readonly IPolicySelector _legacyPolicySelector;
 	private readonly IPolicySelectorFactory[] _pluginSelectorFactories;
 	private readonly AuthorizationPolicySettings _defaultSettings;
@@ -67,8 +69,8 @@ public class StreamBasedAuthorizationPolicyRegistry :
 				_logger.Verbose("Subscription to {settingsStream}: timeout, retrying...", _stream);
 				await Task.Delay(TimeSpan.FromSeconds(3), _cts.Token);
 			} catch (Exception exc) {
-				_logger.Fatal(exc, "Fatal error in subscription to {settingsStream}", _stream);
-				return;
+				_logger.Fatal(exc, "Fatal error starting the subscription to {settingsStream}", _stream);
+				throw new ApplicationInitializationException($"Fatal error starting the subscription to {_stream}");
 			}
 		} while (true);
 	}
@@ -112,18 +114,17 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	}
 
 	private async ValueTask ApplyFallbackPolicySelector() {
+		_effectivePolicySelectors = [];
 		foreach (var factory in _pluginSelectorFactories) {
 			await factory.Disable();
 		}
-
-		_effectivePolicySelectors = [];
 	}
 
 	private async ValueTask ApplyLegacyPolicySelector() {
+		_effectivePolicySelectors = [_legacyPolicySelector];
 		foreach (var factory in _pluginSelectorFactories) {
 			await factory.Disable();
 		}
-		_effectivePolicySelectors = [_legacyPolicySelector];
 	}
 
 	private (bool success, AuthorizationPolicySettings settings) TryParseAuthorizationPolicySettings(ResolvedEvent evnt) {
@@ -190,28 +191,35 @@ public class StreamBasedAuthorizationPolicyRegistry :
 
 	private async ValueTask<ulong?> LoadSettings(CancellationToken ct) {
 		ulong? checkpoint = null;
+		try {
+			var read = new Enumerator.ReadStreamBackwards(_publisher, _stream,
+				StreamRevision.End, ulong.MaxValue, false, SystemAccounts.System, false, DateTime.MaxValue, 1, ct);
+			while (await read.MoveNextAsync()) {
+				var readResponse = read.Current;
+				switch (readResponse) {
+					case ReadResponse.EventReceived evnt:
+						checkpoint ??= (ulong)evnt.Event.OriginalEventNumber;
+						var (success, settings) = TryParseAuthorizationPolicySettings(evnt.Event);
+						if (!success) {
+							Log.Error(
+								"Could not load authorization policy settings from event {eventNumber}@{eventStream}",
+								evnt.Event.OriginalEventNumber, evnt.Event.OriginalStreamId);
+						} else {
+							if (await TryApplyAuthorizationPolicySettings(settings)) {
+								Log.Information("Authorization settings successfully loaded.");
+								return checkpoint;
+							}
 
-		var read = new Enumerator.ReadStreamBackwards(_publisher, _stream,
-			StreamRevision.End, ulong.MaxValue, false, SystemAccounts.System, false, DateTime.MaxValue, 1, ct);
-		while (await read.MoveNextAsync()) {
-			var readResponse = read.Current;
-			switch (readResponse) {
-				case ReadResponse.EventReceived evnt:
-					checkpoint ??= (ulong)evnt.Event.OriginalEventNumber;
-					var (success, settings) = TryParseAuthorizationPolicySettings(evnt.Event);
-					if (!success) {
-						Log.Error("Could not load authorization policy settings from event {eventNumber}@{eventStream}",
-							evnt.Event.OriginalEventNumber, evnt.Event.OriginalStreamId);
-					} else {
-						if (await TryApplyAuthorizationPolicySettings(settings)) {
-							Log.Information("Authorization settings successfully loaded.");
-							return checkpoint;
+							Log.Error("Could not apply authorization settings.");
 						}
 
-						Log.Error("Could not apply authorization settings.");
-					}
-					break;
+						break;
+				}
 			}
+		} catch (ReadResponseException.StreamDeleted) {
+			_logger.Warning("Authorization policy settings stream {stream} has been deleted.", _stream);
+		} catch (ReadResponseException.StreamNotFound) {
+			// ignore
 		}
 
 		if (checkpoint is null) {
