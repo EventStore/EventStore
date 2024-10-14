@@ -136,8 +136,7 @@ public class HashListMemTable : IMemTable, ISearchTable {
 	}
 
 	public bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
-		if (beforePosition < 0)
-			throw new ArgumentOutOfRangeException(nameof(beforePosition));
+		ArgumentOutOfRangeException.ThrowIfNegative(beforePosition);
 
 		ulong hash = GetHash(stream);
 		entry = TableIndex.InvalidIndexEntry;
