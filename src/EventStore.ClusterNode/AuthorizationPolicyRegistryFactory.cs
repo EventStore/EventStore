@@ -2,12 +2,11 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 #nullable enable
+using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
-using EventStore.Common.Utils;
 using EventStore.Core;
 using EventStore.Core.Authorization.AuthorizationPolicies;
 using EventStore.Core.Bus;
@@ -28,57 +27,38 @@ public class AuthorizationPolicyRegistryFactory: ISubsystemsPlugin, ISubsystem {
 	public bool Enabled => true;
 	public string? LicensePublicKey => null;
 	public string CommandLineName => Name.ToLowerInvariant();
-	public IAuthorizationPolicyRegistry AuthorizationPolicyRegistry => _authorizationPolicyRegistry!;
+
 	private readonly ILogger _logger = Log.ForContext<AuthorizationPolicyRegistryFactory>();
+	private readonly IPolicySelectorFactory[] _pluginSelectorFactories = [];
+	private readonly Func<IPublisher, IAuthorizationPolicyRegistry> _createRegistry;
 	private IAuthorizationPolicyRegistry? _authorizationPolicyRegistry;
-	private readonly ClusterVNodeOptions _options;
-	private IPolicySelectorFactory[] _pluginSelectorFactories = [];
 
-	public AuthorizationPolicyRegistryFactory(ClusterVNodeOptions options) {
-		_options = options;
-	}
+	public AuthorizationPolicyRegistryFactory(ClusterVNodeOptions options, IConfiguration configuration, PluginLoader pluginLoader) {
+		if (options.Application.Insecure) {
+			_createRegistry = _ => new StaticAuthorizationPolicyRegistry([]);
+			return;
+		}
 
-	public IReadOnlyList<ISubsystem> GetSubsystems() {
 		// Load up all policy selectors in the plugins directory
-		var pluginsDir = new DirectoryInfo(Locations.PluginsDirectory);
-		var pluginLoader = new PluginLoader(pluginsDir);
-
 		var factories = pluginLoader.Load<IPolicySelectorFactory>();
-
-		var subsystems = new List<ISubsystem> { this };
 		_pluginSelectorFactories = factories?
 			.Select(x => {
 				_logger.Information("Loaded Authorization Policy plugin: {plugin}.", x.CommandLineName);
 				return x;
 			}).ToArray() ?? [];
-		// ReSharper disable once SuspiciousTypeConversion.Global
-		subsystems.AddRange(_pluginSelectorFactories.OfType<ISubsystem>());
-		return subsystems.ToArray();
-	}
 
-	public void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
-	}
-
-	public void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {
-		if (_options.Application.Insecure) {
-			_authorizationPolicyRegistry = new StaticAuthorizationPolicyRegistry([]);
-			return;
-		}
-
-		var publisher = builder.ApplicationServices.GetRequiredService<IPublisher>();
 		// Set up the legacy policy selector factory
-		var allowAnonymousEndpointAccess = _options.Application.AllowAnonymousEndpointAccess;
-		var allowAnonymousStreamAccess = _options.Application.AllowAnonymousStreamAccess;
-		var overrideAnonymousGossipEndpointAccess = _options.Application.OverrideAnonymousEndpointAccessForGossip;
+		var allowAnonymousEndpointAccess = options.Application.AllowAnonymousEndpointAccess;
+		var allowAnonymousStreamAccess = options.Application.AllowAnonymousStreamAccess;
+		var overrideAnonymousGossipEndpointAccess = options.Application.OverrideAnonymousEndpointAccessForGossip;
 		var legacyPolicyFactory = new LegacyPolicySelectorFactory(
 			allowAnonymousEndpointAccess,
 			allowAnonymousStreamAccess,
 			overrideAnonymousGossipEndpointAccess);
-		var legacyPolicySelector = legacyPolicyFactory.Create(publisher);
 
 		// Check if there is a default policy type. Use this if the settings stream is empty
 		var defaultPolicyType =
-			configuration.GetValue<string>("EventStore::Authorization:PolicyType") ?? string.Empty;
+			configuration.GetValue<string>("EventStore:Authorization:PolicyType") ?? string.Empty;
 		AuthorizationPolicySettings defaultSettings;
 		if (!string.IsNullOrEmpty(defaultPolicyType)) {
 			if (_pluginSelectorFactories.Any(x => x.CommandLineName == defaultPolicyType)) {
@@ -97,12 +77,35 @@ public class AuthorizationPolicyRegistryFactory: ISubsystemsPlugin, ISubsystem {
 		// Don't use the stream based registry
 		if (_pluginSelectorFactories.Length == 0) {
 			_logger.Information("No authorization policy plugins found. Only ACLs will be used.");
-			_authorizationPolicyRegistry = new StaticAuthorizationPolicyRegistry([legacyPolicySelector]);
+			_createRegistry = publisher => new StaticAuthorizationPolicyRegistry([legacyPolicyFactory.Create(publisher)]);
 			return;
 		}
 
 		_logger.Information("The default authorization policy settings are: {settings}", defaultSettings);
-		_authorizationPolicyRegistry = new StreamBasedAuthorizationPolicyRegistry(publisher, legacyPolicySelector, _pluginSelectorFactories, defaultSettings);
+		_createRegistry = publisher => new StreamBasedAuthorizationPolicyRegistry(publisher, legacyPolicyFactory.Create(publisher), _pluginSelectorFactories, defaultSettings);
+	}
+
+	// Use a factory rather than ConfigureApplication because the authorization providers
+	// are built (and requires this registry) before ConfigureApplication is called
+	public IAuthorizationPolicyRegistry Create(IPublisher publisher) {
+		if (_authorizationPolicyRegistry is not null) {
+			return _authorizationPolicyRegistry;
+		}
+		_authorizationPolicyRegistry = _createRegistry(publisher);
+		return _authorizationPolicyRegistry;
+	}
+
+	public IReadOnlyList<ISubsystem> GetSubsystems() {
+		var subsystems = new List<ISubsystem> { this };
+		// ReSharper disable once SuspiciousTypeConversion.Global
+		subsystems.AddRange(_pluginSelectorFactories.OfType<ISubsystem>());
+		return subsystems.ToArray();
+	}
+
+	public void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
+	}
+
+	public void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {
 	}
 
 	public Task Start() {

@@ -105,7 +105,10 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			? _options.Application.Config
 			: _options.Auth.AuthenticationConfig;
 
-		(_options, var authPolicyRegistry) = ConfigureAuthorizationPolicyRegistry();
+		var authPolicyRegistry = new AuthorizationPolicyRegistryFactory(_options, configuration, pluginLoader);
+		foreach (var authSubsystem in authPolicyRegistry.GetSubsystems()) {
+			_options = _options.WithPlugableComponent(authSubsystem);
+		}
 		if (_options.Database.DbLogFormat == DbLogFormat.V2) {
 			var logFormatFactory = new LogV2FormatAbstractorFactory();
 			Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
@@ -129,23 +132,14 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 		RegisterWebControllers(enabledNodeSubsystems);
 		return;
 
-		(ClusterVNodeOptions, AuthorizationPolicyRegistryFactory) ConfigureAuthorizationPolicyRegistry() {
-			var registry = new AuthorizationPolicyRegistryFactory(_options);
-			foreach (var subsystem in registry.GetSubsystems()) {
-				options = _options.WithPlugableComponent(subsystem);
-			}
-
-			return (options, registry);
-		}
-
-		AuthorizationProviderFactory GetAuthorizationProviderFactory(AuthorizationPolicyRegistryFactory registry) {
+		AuthorizationProviderFactory GetAuthorizationProviderFactory(AuthorizationPolicyRegistryFactory registryFactory) {
 			if (_options.Application.Insecure) {
 				return new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory());
 			}
 			var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
 				{
-					"internal", new AuthorizationProviderFactory(_ =>
-						new InternalAuthorizationProviderFactory(registry.AuthorizationPolicyRegistry)
+					"internal", new AuthorizationProviderFactory(components =>
+						new InternalAuthorizationProviderFactory(registryFactory.Create(components.MainQueue))
 					)
 				}
 			};
