@@ -41,7 +41,7 @@ public class LegacyPolicySelectorFactory : IPolicySelectorFactory {
 	public Task Disable() => Task.CompletedTask;
 
 	public IPolicySelector Create(IPublisher publisher) {
-		var policy = new Policy("Legacy", 1, DateTimeOffset.MinValue);
+		var policy = new Policy(LegacyPolicySelectorName, 1, DateTimeOffset.MinValue);
 		var legacyStreamAssertion = new LegacyStreamPermissionAssertion(publisher);
 
 		// The Node.Ping is set to allow anonymous as it does not disclose any secure information.
