@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Authorization;
+using EventStore.Core.Authorization.AuthorizationPolicies;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -42,11 +43,12 @@ public class LegacyPolicyVerification {
 		_allowAnonymousEndpointAccess = allowAnonymousEndpointAccess;
 		_allowAnonymousStreamAccess = allowAnonymousStreamAccess;
 		_overrideAnonymousGossipEndpointAccess = overrideAnonymousGossipEndpointAccess;
-		_authorizationProvider = new InternalAuthorizationProviderFactory([new LegacyPolicySelectorFactory(
-			allowAnonymousEndpointAccess,
-			allowAnonymousStreamAccess,
-			overrideAnonymousGossipEndpointAccess).Create(_aclResponder, default)])
-			.Build();
+		_authorizationProvider = new InternalAuthorizationProviderFactory(
+			new StaticAuthorizationPolicyRegistry([new LegacyPolicySelectorFactory(
+				allowAnonymousEndpointAccess,
+				allowAnonymousStreamAccess,
+				overrideAnonymousGossipEndpointAccess).Create(_aclResponder)]))
+		.Build();
 	}
 
 	public abstract class PolicyVerificationParameters {
@@ -174,7 +176,7 @@ public class LegacyPolicyVerification {
 					false
 				);
 			}
-			
+
 			foreach (var operation in AuthenticatedOperations()) {
 				yield return new StaticPolicyVerificationParameters(user,
 					operation.Item1, operation.Item2, operation.Item3,
@@ -182,7 +184,7 @@ public class LegacyPolicyVerification {
 					false
 				);
 			}
-			
+
 			foreach (var operation in AnonymousOperations()) {
 				yield return new StaticPolicyVerificationParameters(user,
 					operation.Item1, operation.Item2, operation.Item3,
@@ -398,16 +400,16 @@ public class LegacyPolicyVerification {
 			yield return CreateOperation(Operations.Node.Information.Options);
 			yield return (new Operation(Operations.Subscriptions.ReplayParked).WithParameter(Operations.Subscriptions.Parameters.StreamId(_streamWithCustomPermissions)), _streamWithCustomPermissions, null);
 			yield return (new Operation(Operations.Subscriptions.ReplayParked).WithParameter(Operations.Subscriptions.Parameters.StreamId(_streamWithDefaultPermissions)), _streamWithDefaultPermissions, null);
-			
+
 			yield return CreateOperation(Operations.Projections.UpdateConfiguration);
-			
+
 			yield return CreateOperation(Operations.Projections.ReadConfiguration);
 			yield return CreateOperation(Operations.Projections.Delete);
 			yield return CreateOperation(Operations.Projections.Restart);
 		}
 
 		IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> UserOperations() {
-			
+
 			yield return (new Operation(Operations.Subscriptions.ProcessMessages).WithParameter(Operations.Subscriptions.Parameters.StreamId(_streamWithCustomPermissions)), _streamWithCustomPermissions, userStreamPermission);
 			yield return (new Operation(Operations.Subscriptions.ProcessMessages).WithParameter(Operations.Subscriptions.Parameters.StreamId(_streamWithDefaultPermissions)), _streamWithDefaultPermissions, defaultUseruserStreamPermission);
 			yield return CreateOperation(Operations.Projections.List);
@@ -447,7 +449,7 @@ public class LegacyPolicyVerification {
 			yield return CreateOperation(Operations.Node.Statistics.Tcp);
 			yield return CreateOperation(Operations.Node.Statistics.Custom);
 		}
-		
+
 		IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> AllowAnonymousStreamAccessOperations() {
 			yield return (new Operation(Operations.Streams.Read).WithParameter(
 					Operations.Streams.Parameters.StreamId(_streamWithDefaultPermissions)),
@@ -465,7 +467,7 @@ public class LegacyPolicyVerification {
 					Operations.Streams.Parameters.StreamId(_streamWithDefaultPermissions)),
 				_streamWithDefaultPermissions, defaultUseruserStreamPermission);
 		}
-		
+
 		(Operation, string, StorageMessage.EffectiveAcl) CreateOperation(OperationDefinition def) {
 			return (new Operation(def),null, null);
 		}

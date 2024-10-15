@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
+using EventStore.Core.Authorization.AuthorizationPolicies;
 using EventStore.Core.Bus;
 using EventStore.Core.Certificates;
 using EventStore.Core.Messaging;
@@ -29,11 +30,11 @@ public abstract class specification_with_bare_vnode<TLogFormat, TStreamId> : IPu
 		_node = new ClusterVNode<TStreamId>(options, logFormatFactory,
 			new AuthenticationProviderFactory(
 				c => new InternalAuthenticationProviderFactory(c, options.DefaultUser)),
-			new AuthorizationProviderFactory(c => new InternalAuthorizationProviderFactory([
-			new LegacyPolicySelectorFactory(
-				options.Application.AllowAnonymousEndpointAccess,
-				options.Application.AllowAnonymousStreamAccess,
-				options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue, default)])),
+			new AuthorizationProviderFactory(c => new InternalAuthorizationProviderFactory(
+				new StaticAuthorizationPolicyRegistry([new LegacyPolicySelectorFactory(
+					options.Application.AllowAnonymousEndpointAccess,
+					options.Application.AllowAnonymousStreamAccess,
+					options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue)]))),
 			certificateProvider: new OptionsCertificateProvider());
 
 		var builder = WebApplication.CreateBuilder();
