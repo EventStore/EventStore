@@ -29,6 +29,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	private readonly IPolicySelector _legacyPolicySelector;
 	private readonly IPolicySelectorFactory[] _pluginSelectorFactories;
 	private readonly AuthorizationPolicySettings _defaultSettings;
+	public event EventHandler? PolicyChanged;
 
 	private CancellationTokenSource? _cts;
 	private IPolicySelector[] _effectivePolicySelectors = [];
@@ -118,6 +119,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 		foreach (var factory in _pluginSelectorFactories) {
 			await factory.Disable();
 		}
+		PolicyChanged?.Invoke(this, EventArgs.Empty);
 	}
 
 	private async ValueTask ApplyLegacyPolicySelector() {
@@ -125,6 +127,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 		foreach (var factory in _pluginSelectorFactories) {
 			await factory.Disable();
 		}
+		PolicyChanged?.Invoke(this, EventArgs.Empty);
 	}
 
 	private (bool success, AuthorizationPolicySettings settings) TryParseAuthorizationPolicySettings(ResolvedEvent evnt) {
@@ -165,6 +168,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 			}
 		}
 
+		PolicyChanged?.Invoke(this, EventArgs.Empty);
 		return true;
 	}
 
@@ -192,7 +196,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	private async ValueTask<ulong?> LoadSettings(CancellationToken ct) {
 		ulong? checkpoint = null;
 		try {
-			var read = new Enumerator.ReadStreamBackwards(_publisher, _stream,
+			await using var read = new Enumerator.ReadStreamBackwards(_publisher, _stream,
 				StreamRevision.End, ulong.MaxValue, false, SystemAccounts.System, false, DateTime.MaxValue, 1, ct);
 			while (await read.MoveNextAsync()) {
 				var readResponse = read.Current;
