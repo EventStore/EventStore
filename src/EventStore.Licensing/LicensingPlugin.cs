@@ -16,7 +16,7 @@ using Serilog;
 
 namespace EventStore.Licensing;
 
-public class LicensingPlugin : SubsystemsPlugin {
+public class LicensingPlugin : Plugin {
 	private static readonly ILogger Log = Serilog.Log.ForContext<LicensingPlugin>();
 
 	private readonly ILicenseProvider? _licenseProvider;
@@ -39,8 +39,7 @@ public class LicensingPlugin : SubsystemsPlugin {
 			.RequireAuthorization());
 
 	public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
-		// esdbPrivateKey is not truly private. tampering with the license mechanism is possible but against the license agreement.
-		// we just want to make sure it would require tampering to bypass
+		// esdbPrivateKey is not truly private (obviously, here it is in the source). circumventing the license mechanism is against the license agreement.
 		var esdbPrivateKey = "MIIBPAIBAAJBAMa1FchaZ4mqR2lCvIl0oEVW8tow0cWQNxVdKhoPODVqGu0KsCDBikBEC8bIWzRtzBgllplK31o3CmCQA849AzkCAwEAAQJBALFULYpNU5UBhxUi34pzsAvxWmzpoGsFFoNUTxxOdMUExvprTltFKQ/hDAyNsc8oUg0AdBzt/jDzTce/W0WerHkCIQDq6SIeuUjWqGOG/+thcLJSj0jnNJ7NFJTPZDqaiocQDwIhANiL53qkAlWIg0uPlxARDtGI/bx5irIBn9Hed81WrnA3AiEApL4U4KkebPQwwHdwEqjfVkkIXqUnjTmW1w86jjECYX8CIQCa/Hcupdgt08j0+c6K50qN2diRXwRPpy32DZ39T38GPQIgSBL+EU/YRy6nwsqLLB+6+qtMd0s1T5kpI3l9VyNM3Uc=";
 		var esdbPublicKey = "MEgCQQDGtRXIWmeJqkdpQryJdKBFVvLaMNHFkDcVXSoaDzg1ahrtCrAgwYpARAvGyFs0bcwYJZaZSt9aNwpgkAPOPQM5AgMBAAE=";
 
