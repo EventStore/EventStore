@@ -79,7 +79,7 @@ partial class Enumerator {
 				return ValueTask.CompletedTask;
 			}
 
-			Log.Debug("Subscription {subscriptionId} to $all:{eventFilter} disposed.", _subscriptionId, _eventFilter);
+			Log.Verbose("Subscription {subscriptionId} to $all:{eventFilter} disposed.", _subscriptionId, _eventFilter);
 
 			_disposed = true;
 			Unsubscribe();
@@ -155,7 +155,7 @@ partial class Enumerator {
 
 		private async Task MainLoop(Position? checkpointPosition, CancellationToken ct) {
 			try {
-				Log.Information("Subscription {subscriptionId} to $all:{eventFilter} has started at checkpoint {position}",
+				Log.Debug("Subscription {subscriptionId} to $all:{eventFilter} has started at checkpoint {position}",
 					_subscriptionId, _eventFilter, checkpointPosition?.ToString() ?? "Start");
 
 				var confirmationLastPos = await SubscribeToLive();
@@ -182,7 +182,7 @@ partial class Enumerator {
 						_subscriptionId, _eventFilter);
 				_channel.Writer.TryComplete(ex);
 			} finally {
-				Log.Information("Subscription {subscriptionId} to $all:{eventFilter} has ended.",
+				Log.Debug("Subscription {subscriptionId} to $all:{eventFilter} has ended.",
 					_subscriptionId, _eventFilter);
 			}
 		}
