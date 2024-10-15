@@ -105,20 +105,18 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			? _options.Application.Config
 			: _options.Auth.AuthenticationConfig;
 
-		var authPolicyRegistry = new AuthorizationPolicyRegistryFactory(_options, configuration, pluginLoader);
-		foreach (var authSubsystem in authPolicyRegistry.GetSubsystems()) {
-			_options = _options.WithPlugableComponent(authSubsystem);
-		}
+
+		(_options, var authProviderFactory) = GetAuthorizationProviderFactory();
 		if (_options.Database.DbLogFormat == DbLogFormat.V2) {
 			var logFormatFactory = new LogV2FormatAbstractorFactory();
 			Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-				GetAuthorizationProviderFactory(authPolicyRegistry),
+				authProviderFactory,
 				GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 				configuration);
 		} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
 			var logFormatFactory = new LogV3FormatAbstractorFactory();
 			Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-				GetAuthorizationProviderFactory(authPolicyRegistry),
+				authProviderFactory,
 				GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 				configuration);
 		} else {
@@ -132,10 +130,17 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 		RegisterWebControllers(enabledNodeSubsystems);
 		return;
 
-		AuthorizationProviderFactory GetAuthorizationProviderFactory(AuthorizationPolicyRegistryFactory registryFactory) {
+		(ClusterVNodeOptions, AuthorizationProviderFactory) GetAuthorizationProviderFactory() {
 			if (_options.Application.Insecure) {
-				return new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory());
+				return (_options, new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory()));
 			}
+
+			var modifiedOptions = _options;
+			var registryFactory = new AuthorizationPolicyRegistryFactory(_options, configuration, pluginLoader);
+			foreach (var authSubsystem in registryFactory.GetSubsystems()) {
+				modifiedOptions = modifiedOptions.WithPlugableComponent(authSubsystem);
+			}
+
 			var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
 				{
 					"internal", new AuthorizationProviderFactory(components =>
@@ -167,7 +172,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 					$"Valid options for authorization are: {string.Join(", ", authorizationTypeToPlugin.Keys)}.");
 			}
 
-			return factory;
+			return (modifiedOptions, factory);
 		}
 
 		static CompositionContainer FindPlugins() {
