@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<EnableDynamicLoading>true</EnableDynamicLoading>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="EventStore.Plugins" Version="24.10.5" />
+		<PackageReference Include="RestSharp" Version="112.0.0" />
+		<PackageReference Include="Serilog" Version="2.12.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="../../EventStore/src/EventStore.SourceGenerators/EventStore.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<ItemGroup>
+			<PluginReferences Include="$(OutDir)\EventStore.Licensing.deps.json" />
+			<PluginReferences Include="$(OutDir)\EventStore.Licensing.dll" />
+			<PluginReferences Include="$(OutDir)\EventStore.Licensing.pdb" />
+			<PluginReferences Include="$(OutDir)\RestSharp.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(PluginReferences)" DestinationFolder="..\..\EventStore\src\EventStore.ClusterNode\$(OutDir)\plugins\$(ProjectName)" />
+		<Copy SourceFiles="@(PluginRuntimeDependencies)" DestinationFolder="..\..\EventStore\src\EventStore.ClusterNode\$(OutDir)\plugins\$(ProjectName)\runtimes\%(RecursiveDir)" />
+	</Target>
+
+	<Target Name="PublishPlugin" AfterTargets="Publish">
+		<ItemGroup>
+			<PluginOutputFiles Include="$(PublishDir)\LICENSE.md" />
+			<PluginOutputFiles Include="$(PublishDir)\NOTICE.html" />
+			<PluginOutputFiles Include="$(PublishDir)\EventStore.Licensing.deps.json" />
+			<PluginOutputFiles Include="$(PublishDir)\EventStore.Licensing.dll" />
+			<PluginOutputFiles Include="$(PublishDir)\RestSharp.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(PluginOutputFiles)" DestinationFolder="$(PublishDir)/package" />
+	</Target>
+
+</Project>
