@@ -80,6 +80,7 @@ using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 using TimeoutControl = DotNext.Threading.Timeout;
 using EventStore.Core.Services.Archiver;
+using EventStore.Licensing;
 
 namespace EventStore.Core;
 public abstract class ClusterVNode {
@@ -924,6 +925,8 @@ public class ClusterVNode<TStreamId> :
 		var modifiedOptions = options
 			.WithPlugableComponent(_authorizationProvider)
 			.WithPlugableComponent(_authenticationProvider);
+
+		modifiedOptions = modifiedOptions.WithPlugableComponent(new LicensingPlugin());
 
 		var authorizationGateway = new AuthorizationGateway(_authorizationProvider);
 		{
