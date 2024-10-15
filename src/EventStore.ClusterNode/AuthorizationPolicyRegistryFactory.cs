@@ -11,6 +11,7 @@ using EventStore.Core;
 using EventStore.Core.Authorization.AuthorizationPolicies;
 using EventStore.Core.Bus;
 using EventStore.PluginHosting;
+using EventStore.Plugins;
 using EventStore.Plugins.Subsystems;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -19,15 +20,7 @@ using Serilog;
 
 namespace EventStore.ClusterNode;
 
-public class AuthorizationPolicyRegistryFactory: ISubsystemsPlugin, ISubsystem {
-	public string Name => "AuthorizationPolicyRegistryFactory";
-	public string DiagnosticsName => Name;
-	public KeyValuePair<string, object?>[] DiagnosticsTags => [];
-	public string Version => "1.0.0";
-	public bool Enabled => true;
-	public string? LicensePublicKey => null;
-	public string CommandLineName => Name.ToLowerInvariant();
-
+public class AuthorizationPolicyRegistryFactory: SubsystemsPlugin {
 	private readonly ILogger _logger = Log.ForContext<AuthorizationPolicyRegistryFactory>();
 	private readonly IPolicySelectorFactory[] _pluginSelectorFactories = [];
 	private readonly Func<IPublisher, IAuthorizationPolicyRegistry> _createRegistry;
@@ -95,24 +88,18 @@ public class AuthorizationPolicyRegistryFactory: ISubsystemsPlugin, ISubsystem {
 		return _authorizationPolicyRegistry;
 	}
 
-	public IReadOnlyList<ISubsystem> GetSubsystems() {
+	public override IReadOnlyList<ISubsystem> GetSubsystems() {
 		var subsystems = new List<ISubsystem> { this };
 		// ReSharper disable once SuspiciousTypeConversion.Global
 		subsystems.AddRange(_pluginSelectorFactories.OfType<ISubsystem>());
 		return subsystems.ToArray();
 	}
 
-	public void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
-	}
-
-	public void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {
-	}
-
-	public Task Start() {
+	public override Task Start() {
 		return _authorizationPolicyRegistry!.Start();
 	}
 
-	public Task Stop() {
+	public override Task Stop() {
 		return _authorizationPolicyRegistry!.Stop();
 	}
 }
