@@ -14,7 +14,6 @@ using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core;
 using EventStore.Core.Authentication;
-using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication.InternalAuthentication;
@@ -106,17 +105,20 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			? _options.Application.Config
 			: _options.Auth.AuthenticationConfig;
 
-		(_options, var policySelectorsFactory) = ConfigurePolicySelectorsFactory();
+		var authPolicyRegistry = new AuthorizationPolicyRegistryFactory(_options, configuration, pluginLoader);
+		foreach (var authSubsystem in authPolicyRegistry.GetSubsystems()) {
+			_options = _options.WithPlugableComponent(authSubsystem);
+		}
 		if (_options.Database.DbLogFormat == DbLogFormat.V2) {
 			var logFormatFactory = new LogV2FormatAbstractorFactory();
-            	Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-                GetAuthorizationProviderFactory(policySelectorsFactory),
-                GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
+			Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
+				GetAuthorizationProviderFactory(authPolicyRegistry),
+				GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 				configuration);
 		} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
 			var logFormatFactory = new LogV3FormatAbstractorFactory();
 			Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-				GetAuthorizationProviderFactory(policySelectorsFactory),
+				GetAuthorizationProviderFactory(authPolicyRegistry),
 				GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 				configuration);
 		} else {
@@ -130,68 +132,14 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 		RegisterWebControllers(enabledNodeSubsystems);
 		return;
 
-		(ClusterVNodeOptions, PolicySelectorsFactory) ConfigurePolicySelectorsFactory() {
-			if (_options.Application.Insecure) {
-				return (_options, new PolicySelectorsFactory());
-			}
-
-			var defaultPolicySelector = new LegacyPolicySelectorFactory(
-				_options.Application.AllowAnonymousEndpointAccess,
-				_options.Application.AllowAnonymousStreamAccess,
-				_options.Application.OverrideAnonymousEndpointAccessForGossip);
-
-			// Temporary: get the policy plugin configuration
-			// TODO: Allow specifying multiple policy selectors
-			var policyPluginType =
-				_options.ConfigurationRoot!.GetValue<string>("EventStore:Authorization:PolicyType") ??
-				string.Empty;
-
-			var policyPlugins = pluginLoader.Load<IPolicySelectorFactory>().ToArray();
-			var policySelectors = new Dictionary<string, IPolicySelectorFactory>();
-			foreach (var policyPlugin in policyPlugins)
-			{
-				try {
-					var commandLine = policyPlugin.Name.Replace("Plugin", "").ToLowerInvariant();
-					Log.Information(
-						"Loaded authorization policy plugin: {plugin} version {version} (Command Line: {commandLine})",
-						policyPlugin.Name, policyPlugin.Version, commandLine);
-					policySelectors.Add(commandLine, policyPlugin);
-				} catch (CompositionException ex) {
-					Log.Error(ex, "Error loading authorization policy plugin.");
-				}
-			}
-
-			if (policyPluginType == string.Empty) {
-				Log.Information("Using default authorization policy");
-				return (_options, new PolicySelectorsFactory(defaultPolicySelector));
-			}
-			if (!policySelectors.TryGetValue(policyPluginType, out var selectedPolicy)) {
-				throw new ApplicationInitializationException(
-					$"The authorization policy plugin type {policyPluginType} is not recognised. If this is supposed " +
-					$"to be provided by an authorization policy plugin, confirm the plugin DLL is located in {Locations.PluginsDirectory}." +
-					Environment.NewLine +
-					$"Valid options for authorization policies are: {string.Join(", ", policySelectors.Keys)}.");
-			}
-
-			Log.Information("Using authorization policy plugin: {plugin} version {version}", selectedPolicy.Name,
-				selectedPolicy.Version);
-			// Policies will be applied in order, so the default should always be last
-			var factory = new PolicySelectorsFactory([selectedPolicy, defaultPolicySelector]);
-
-			if (selectedPolicy is IPlugableComponent plugablePolicy) {
-				return (_options.WithPlugableComponent(plugablePolicy), factory);
-			}
-			return (_options, factory);
-		}
-
-		AuthorizationProviderFactory GetAuthorizationProviderFactory(PolicySelectorsFactory policySelectorsFactory) {
+		AuthorizationProviderFactory GetAuthorizationProviderFactory(AuthorizationPolicyRegistryFactory registryFactory) {
 			if (_options.Application.Insecure) {
 				return new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory());
 			}
 			var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
 				{
 					"internal", new AuthorizationProviderFactory(components =>
-						new InternalAuthorizationProviderFactory(policySelectorsFactory.Create(components))
+						new InternalAuthorizationProviderFactory(registryFactory.Create(components.MainQueue))
 					)
 				}
 			};
