@@ -1,0 +1,54 @@
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
+
+using EventStore.Plugins.Licensing;
+using Microsoft.Extensions.Hosting;
+using Serilog;
+
+namespace EventStore.Licensing;
+
+public class LicenseService : ILicenseService {
+	private static readonly ILogger Log = Serilog.Log.ForContext<LicenseService>();
+	private readonly IHostApplicationLifetime _lifetime;
+
+	public LicenseService(
+		string esdbPublicKey,
+		string esdbPrivateKey,
+		IHostApplicationLifetime lifetime,
+		ILicenseProvider licenseProvider) {
+
+		_lifetime = lifetime;
+		SelfLicense = License.Create(esdbPublicKey, esdbPrivateKey);
+		Licenses = licenseProvider.Licenses;
+		Licenses.Subscribe(
+			license => {
+				CurrentLicense = license;
+			},
+			ex => {
+				CurrentLicense = null;
+			});
+	}
+
+	public License SelfLicense { get; private set; }
+
+	public License? CurrentLicense { get; private set; }
+
+	public IObservable<License> Licenses { get; private set; }
+
+	public void RejectLicense(Exception ex) {
+		Log.Warning("Shutting down due to licensing error: {Message}", ex.Message);
+
+		// we wait for the application to start before stopping it so that
+		// 1. we can log the error message after stopping, to be really clear what the cause was
+		// 2. stopping the appliation during startup results in several other exceptions being thrown which are just noise
+		_lifetime.ApplicationStarted.Register(_lifetime.StopApplication);
+		_lifetime.ApplicationStopped.Register(() => Log.Fatal(ex.Message));
+
+		// belt and braces (in case the above fails due to application somehow never fully starting)
+		Task.Run(async () => {
+			await Task.Delay(TimeSpan.FromMinutes(1));
+			Log.Fatal(ex.Message);
+			_lifetime.StopApplication();
+		});
+	}
+}
