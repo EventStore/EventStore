@@ -207,8 +207,9 @@ public sealed class TelemetryService :
 				.Where(evt => evt.CollectionMode == Snapshot))
 			.ForEach(evt => {
 				try {
-					var payload = JsonSerializer.SerializeToNode(evt.Data);
-					message.Envelope.ReplyWith(new TelemetryMessage.Response(evt.Source, payload));
+					var payload = JsonSerializer.SerializeToNode(
+						evt.Data.ToDictionary(kvp => LowerFirstLetter(kvp.Key), kvp => kvp.Value));
+					message.Envelope.ReplyWith(new TelemetryMessage.Response(LowerFirstLetter(evt.Source), payload));
 				}
 				catch (Exception ex) {
 					Logger.Warning(ex, "Failed to collect telemetry from pluggable component {Source}", evt.Source);
@@ -216,6 +217,13 @@ public sealed class TelemetryService :
 			});
 
 		_publisher.Publish(new GossipMessage.ReadGossip(new CallbackEnvelope(resp => OnGossipReceived(message.Envelope, resp))));
+	}
+
+	private static string LowerFirstLetter(string x) {
+		if (string.IsNullOrEmpty(x) || char.IsLower(x[0]))
+			return x;
+
+		return $"{char.ToLower(x[0])}{x[1..]}";
 	}
 
 	private static void OnGossipReceived(IEnvelope<TelemetryMessage.Response> envelope, Message message) {

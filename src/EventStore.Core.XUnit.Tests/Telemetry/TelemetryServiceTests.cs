@@ -131,7 +131,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		Assert.NotNull(_sink.Data["fakeComponent"]);
 		Assert.Equal("""
 			{
-			  "foo": "bar"
+			  "baz": "qux"
 			}
 			""",
 			_sink.Data["fakeComponent"].ToString());
@@ -194,14 +194,14 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		Assert.NotNull(_sink.Data["fakeComponent"]);
 	}
 
-	class FakePlugableComponent(string name = "fakeComponent") : Plugin(name) {
+	class FakePlugableComponent(string name = "FakeComponent") : Plugin(name) {
 		public void PublishSomeTelemetry() {
 			PublishDiagnosticsData(new() {
 				["enabled"] = Enabled
 			}, Snapshot);
 
 			PublishDiagnosticsData(new() {
-				["foo"] = "bar"
+				["Baz"] = "qux"
 			}, Snapshot);
 		}
 	}
