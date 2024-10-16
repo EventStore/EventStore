@@ -554,20 +554,6 @@ Import-Certificate -FilePath .\ca.crt -CertStoreLocation Cert:\LocalMachine\CA
 ```
 :::
 
-### TCP protocol security
-
-Although TCP is disabled by default for external connections (clients), cluster nodes still use TCP for replication. If you aren't running EventStoreDB in insecure mode, all TCP communication will use TLS using the same certificates as SSL.
-
-You can, however, disable TLS for both internal and external TCP.
-
-| Format               | Syntax                                |
-|:---------------------|:--------------------------------------|
-| Command line         | `--disable-internal-tcp-tls`          |
-| YAML                 | `DisableInternalTcpTls`               |
-| Environment variable | `EVENTSTORE_DISABLE_INTERNAL_TCP_TLS` |
-
-**Default**: `false`
-
 ## Authentication
 
 EventStoreDB supports authentication based on usernames and passwords out of the box. The Enterprise version
