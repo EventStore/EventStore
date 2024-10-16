@@ -25,7 +25,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	private readonly ILogger _logger = Log.ForContext<StreamBasedAuthorizationPolicyRegistry>();
 	private readonly IPublisher _publisher;
 
-	private readonly FallbackPolicySelector _fallbackPolicySelector = new ();
+	private readonly FallbackStreamAccessPolicySelector _fallbackStreamAccessPolicySelector = new ();
 	private readonly IPolicySelector _legacyPolicySelector;
 	private readonly IPolicySelectorFactory[] _pluginSelectorFactories;
 	private readonly AuthorizationPolicySettings _defaultSettings;
@@ -49,7 +49,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 		get {
 			return _effectivePolicySelectors.Length != 0
 				? _effectivePolicySelectors.Select(x => x.Select()).ToArray()
-				: [_fallbackPolicySelector.Select()];
+				: [_fallbackStreamAccessPolicySelector.Select(), _legacyPolicySelector.Select()];
 		}
 	}
 
@@ -174,7 +174,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 
 	private async ValueTask<bool> TryApplyAuthorizationPolicySettings(AuthorizationPolicySettings settings) {
 		switch (settings.StreamAccessPolicyType) {
-			case FallbackPolicySelector.FallbackPolicyName:
+			case FallbackStreamAccessPolicySelector.FallbackPolicyName:
 				await ApplyFallbackPolicySelector();
 				return true;
 			case LegacyPolicySelectorFactory.LegacyPolicySelectorName:

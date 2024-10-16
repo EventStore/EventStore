@@ -7,7 +7,7 @@ public class AuthorizationPolicySettings {
 	public string StreamAccessPolicyType { get; set; }
 
 	public AuthorizationPolicySettings() {
-		StreamAccessPolicyType = FallbackPolicySelector.FallbackPolicyName;
+		StreamAccessPolicyType = FallbackStreamAccessPolicySelector.FallbackPolicyName;
 	}
 
 	public AuthorizationPolicySettings(string streamAccessPolicyType) {
