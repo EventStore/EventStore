@@ -428,7 +428,7 @@ public class ClusterVNode<TStreamId> :
 				options.Database.MemDb,
 				unbuffered: false,
 				options.Database.WriteThrough,
-				options.Database.OptimizeIndexMerge,
+				optimizeReadSideCache: false,
 				options.Database.ReduceFileCachePressure,
 				options.Database.MaxTruncation);
 		}

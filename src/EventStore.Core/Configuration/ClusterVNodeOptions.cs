@@ -418,10 +418,6 @@ public partial record ClusterVNodeOptions {
 		[Description("Sets the depth to cache for the mid point cache in index.")]
 		public int IndexCacheDepth { get; init; } = 16;
 
-		[Description("Makes index merges faster and reduces disk pressure during merges.")]
-		[Deprecated("This setting is ignored by the new scavenge algorithm and will be removed in future versions.")]
-		public bool OptimizeIndexMerge { get; init; } = false;
-
 		[Description("Change the way the DB files are opened to reduce their stickiness in the system file cache.")]
 		public bool ReduceFileCachePressure { get; init; } = false;
 
