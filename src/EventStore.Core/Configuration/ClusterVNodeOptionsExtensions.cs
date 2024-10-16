@@ -105,35 +105,6 @@ public static class ClusterVNodeOptionsExtensions {
 	/// Sets the external tcp endpoint to the specified value
 	/// </summary>
 	/// <param name="options">The <see cref="ClusterVNodeOptions"/></param>
-	/// <param name="endPoint">The external secure endpoint to use</param>
-	/// <returns>A <see cref="ClusterVNodeOptions"/> with the options set</returns>
-	public static ClusterVNodeOptions WithExternalSecureTcpOn(
-		this ClusterVNodeOptions options, IPEndPoint endPoint) =>
-		options with {
-			Interface = options.Interface with {
-				NodeIp = endPoint.Address,
-			}
-		};
-
-	/// <summary>
-	/// Sets the internal secure tcp endpoint to the specified value
-	/// </summary>
-	/// <param name="options">The <see cref="ClusterVNodeOptions"/></param>
-	/// <param name="endPoint">The internal secure endpoint to use</param>
-	/// <returns>A <see cref="ClusterVNodeOptions"/> with the options set</returns>
-	public static ClusterVNodeOptions WithInternalSecureTcpOn(
-		this ClusterVNodeOptions options, IPEndPoint endPoint) =>
-		options with {
-			Interface = options.Interface with {
-				ReplicationIp = endPoint.Address,
-				ReplicationPort = endPoint.Port
-			}
-		};
-
-	/// <summary>
-	/// Sets the external tcp endpoint to the specified value
-	/// </summary>
-	/// <param name="options">The <see cref="ClusterVNodeOptions"/></param>
 	/// <param name="endPoint">The external endpoint to use</param>
 	/// <returns>A <see cref="ClusterVNodeOptions"/> with the options set</returns>
 	public static ClusterVNodeOptions WithExternalTcpOn(
@@ -150,7 +121,7 @@ public static class ClusterVNodeOptionsExtensions {
 	/// <param name="options">The <see cref="ClusterVNodeOptions"/></param>
 	/// <param name="endPoint">The internal endpoint to use</param>
 	/// <returns>A <see cref="ClusterVNodeOptions"/> with the options set</returns>
-	public static ClusterVNodeOptions WithInternalTcpOn(
+	public static ClusterVNodeOptions WithReplicationEndpointOn(
 		this ClusterVNodeOptions options, IPEndPoint endPoint) =>
 		options with {
 			Interface = options.Interface with {
@@ -165,7 +136,7 @@ public static class ClusterVNodeOptionsExtensions {
 	/// <param name="options">The <see cref="ClusterVNodeOptions"/></param>
 	/// <param name="endPoint">The http endpoint to use</param>
 	/// <returns>A <see cref="ClusterVNodeOptions"/> with the options set</returns>
-	public static ClusterVNodeOptions WithHttpOn(
+	public static ClusterVNodeOptions WithNodeEndpointOn(
 		this ClusterVNodeOptions options, IPEndPoint endPoint) =>
 		options with {
 			Interface = options.Interface with {
@@ -208,7 +179,7 @@ public static class ClusterVNodeOptionsExtensions {
 	/// <param name="options">The <see cref="ClusterVNodeOptions"/></param>
 	/// <param name="endPoint">The advertised host</param>
 	/// <returns>A <see cref="ClusterVNodeOptions"/> with the options set</returns>
-	public static ClusterVNodeOptions AdvertiseHttpHostAs(this ClusterVNodeOptions options, EndPoint endPoint) =>
+	public static ClusterVNodeOptions AdvertiseNodeAs(this ClusterVNodeOptions options, EndPoint endPoint) =>
 		options with {
 			Interface = options.Interface with {
 				NodeHostAdvertiseAs = endPoint.GetHost(),

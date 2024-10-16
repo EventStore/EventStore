@@ -22,7 +22,7 @@ public class with_ssl_enabled_and_using_a_security_certificate_from_file<TLogFor
 
 	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 
-		return options.WithInternalSecureTcpOn(_internalSecTcp).WithExternalSecureTcpOn(_externalSecTcp) with {
+		return options.WithReplicationEndpointOn(_internalSecTcp).WithExternalTcpOn(_externalSecTcp) with {
 			CertificateFile = new() {
 				CertificateFile = GetCertificatePath(),
 				CertificatePrivateKeyFile = string.Empty,
@@ -61,8 +61,8 @@ public class with_ssl_enabled_and_using_a_security_certificate<TLogFormat, TStre
 
 	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 		return options
-			.WithInternalSecureTcpOn(_internalSecTcp)
-			.WithExternalSecureTcpOn(_externalSecTcp)
+			.WithReplicationEndpointOn(_internalSecTcp)
+			.WithExternalTcpOn(_externalSecTcp)
 			.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()), _certificate);
 	}
 
@@ -91,8 +91,8 @@ public class with_secure_tcp_endpoints_and_no_certificates<TLogFormat, TStreamId
 		_options = new ClusterVNodeOptions()
 			.ReduceMemoryUsageForTests()
 			.RunInMemory()
-			.WithInternalSecureTcpOn(internalSecTcp)
-			.WithExternalSecureTcpOn(externalSecTcp);
+			.WithReplicationEndpointOn(internalSecTcp)
+			.WithExternalTcpOn(externalSecTcp);
 		try {
 			_ = new ClusterVNode<TStreamId>(_options, LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory,
 				certificateProvider: new OptionsCertificateProvider());
