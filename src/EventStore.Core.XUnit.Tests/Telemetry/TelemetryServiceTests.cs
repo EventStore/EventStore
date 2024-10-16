@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
@@ -17,6 +18,7 @@ using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
+using Microsoft.Extensions.Configuration;
 using Xunit;
 using static EventStore.Plugins.Diagnostics.PluginDiagnosticsDataCollectionMode;
 
@@ -44,6 +46,9 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 		_sut = new TelemetryService(
 			_db.Manager,
 			new ClusterVNodeOptions().WithPlugableComponent(_plugin),
+			new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>() {
+				{ "EventStore:Telemetry:CloudIdentifier", "abc"},
+			}).Build(),
 			new EnvelopePublisher(new ChannelEnvelope(channel)),
 			_sink,
 			new InMemoryCheckpoint(0),
@@ -134,6 +139,14 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 			_sink.Data["fakeComponent"].ToString());
 
 		Assert.Equal(_sink.Data["environment"]!["os"]!.ToString(), RuntimeInformation.OSDescription);
+
+		Assert.NotNull(_sink.Data["telemetry"]);
+		Assert.Equal("""
+			{
+			  "cloudIdentifier": "abc"
+			}
+			""",
+			_sink.Data["telemetry"].ToString());
 	}
 
 	[Fact]

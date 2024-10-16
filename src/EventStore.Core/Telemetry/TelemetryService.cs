@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -19,6 +20,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Plugins.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using static EventStore.Plugins.Diagnostics.PluginDiagnosticsDataCollectionMode;
 
@@ -38,6 +40,7 @@ public sealed class TelemetryService :
 	private static readonly TimeSpan FlushDelay = TimeSpan.FromSeconds(10);
 
 	private readonly ClusterVNodeOptions _nodeOptions;
+	private readonly IConfiguration _configuration;
 	private readonly CancellationTokenSource _cts = new();
 	private readonly IPublisher _publisher;
 	private readonly IReadOnlyCheckpoint _writerCheckpoint;
@@ -54,6 +57,7 @@ public sealed class TelemetryService :
 	public TelemetryService(
 		TFChunkManager manager,
 		ClusterVNodeOptions nodeOptions,
+		IConfiguration configuration,
 		IPublisher publisher,
 		ITelemetrySink sink,
 		IReadOnlyCheckpoint writerCheckpoint,
@@ -61,6 +65,7 @@ public sealed class TelemetryService :
 	) {
 		_manager = manager;
 		_nodeOptions = nodeOptions;
+		_configuration = configuration;
 		_publisher = publisher;
 		_writerCheckpoint = writerCheckpoint;
 		_nodeId = nodeId;
@@ -217,6 +222,13 @@ public sealed class TelemetryService :
 			});
 
 		_publisher.Publish(new GossipMessage.ReadGossip(new CallbackEnvelope(resp => OnGossipReceived(message.Envelope, resp))));
+
+		{
+			var extraTelemetry = _configuration.GetSection("EventStore:Telemetry").Get<Dictionary<string, string>>() ?? [];
+			var payload = JsonSerializer.SerializeToNode(extraTelemetry.ToDictionary(kvp => LowerFirstLetter(kvp.Key), kvp => kvp.Value));
+			message.Envelope.ReplyWith(new TelemetryMessage.Response(
+				"telemetry", payload));
+		}
 	}
 
 	private static string LowerFirstLetter(string x) {
