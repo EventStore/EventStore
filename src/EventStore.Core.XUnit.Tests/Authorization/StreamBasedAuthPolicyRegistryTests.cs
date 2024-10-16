@@ -41,7 +41,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 
 	[Theory]
 	[InlineData(LegacyPolicySelectorFactory.LegacyPolicySelectorName, new[]{LegacyPolicySelectorFactory.LegacyPolicySelectorName})]
-	[InlineData(FallbackPolicySelector.FallbackPolicyName, new[]{FallbackPolicySelector.FallbackPolicyName})]
+	[InlineData(FallbackStreamAccessPolicySelector.FallbackPolicyName, new[]{FallbackStreamAccessPolicySelector.FallbackPolicyName})]
 	[InlineData("plugin", new[]{"plugin", LegacyPolicySelectorFactory.LegacyPolicySelectorName})]
 	public async Task when_starting_with_no_existing_settings_events_the_default_is_used(string defaultPolicy, string[] expected) {
 		var subscribed = new TaskCompletionSource<ClientMessage.SubscribeToStream>();
@@ -155,6 +155,15 @@ public class StreamBasedAuthPolicyRegistryTests {
 			} },
 		};
 
+	[Fact]
+	public void when_starting_and_read_backwards_has_not_completed_yet() {
+		var sut = CreateSut([], WithAclDefault, new AsyncManualResetEvent(false));
+		// It uses the fallback policy for stream access, and the legacy policy for endpoint access
+		Assert.Equal(2, sut.EffectivePolicies.Length);
+		Assert.Equal(FallbackStreamAccessPolicySelector.FallbackPolicyName, sut.EffectivePolicies[0].Information.Name);
+		Assert.Equal(LegacyPolicySelectorFactory.LegacyPolicySelectorName, sut.EffectivePolicies[1].Information.Name);
+	}
+
 	[Theory]
 	[MemberData(nameof(InvalidAuthorizationPolicySettings))]
 	public async Task when_starting_and_all_existing_settings_events_are_invalid(AuthPolicyRegistryTestCase[] readResult) {
@@ -166,10 +175,11 @@ public class StreamBasedAuthPolicyRegistryTests {
 				}));
 		var sut = CreateSut([], WithAclDefault, policyUpdated);
 		await sut.Start();
-		// It uses the fallback policy
+		// It uses the fallback policy for stream access, and the legacy policy for endpoint access
 		Assert.True(await policyUpdated.WaitAsync(Timeout));
-		Assert.Single(sut.EffectivePolicies);
-		Assert.Equal(FallbackPolicySelector.FallbackPolicyName, sut.EffectivePolicies[0].Information.Name);
+		Assert.Equal(2, sut.EffectivePolicies.Length);
+		Assert.Equal(FallbackStreamAccessPolicySelector.FallbackPolicyName, sut.EffectivePolicies[0].Information.Name);
+		Assert.Equal(LegacyPolicySelectorFactory.LegacyPolicySelectorName, sut.EffectivePolicies[1].Information.Name);
 	}
 
 	// Start from event number 1 in case the test includes a default event
