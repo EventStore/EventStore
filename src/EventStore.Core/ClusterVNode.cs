@@ -428,7 +428,7 @@ public class ClusterVNode<TStreamId> :
 				options.Database.MemDb,
 				unbuffered: false,
 				options.Database.WriteThrough,
-				options.Database.OptimizeIndexMerge,
+				optimizeReadSideCache: false,
 				options.Database.ReduceFileCachePressure,
 				options.Database.MaxTruncation);
 		}
@@ -1200,162 +1200,143 @@ public class ClusterVNode<TStreamId> :
 		_mainBus.Subscribe<IODispatcherDelayedMessage>(scavengerDispatcher);
 		_mainBus.Subscribe<ClientMessage.NotHandled>(scavengerDispatcher);
 
-		var newScavenge = true;
-		if (newScavenge) {
-			// reuse the same buffer; it's quite big.
-			var calculatorBuffer = new Calculator<TStreamId>.Buffer(32_768);
+		// reuse the same buffer; it's quite big.
+		var calculatorBuffer = new Calculator<TStreamId>.Buffer(32_768);
 
-			scavengerFactory = new ScavengerFactory((message, scavengerLogger, logger) => {
-				// currently on the main queue
-				var throttle = new Throttle(
-					logger: logger,
-					minimumRest: TimeSpan.FromMilliseconds(1000),
-					restLoggingThreshold: TimeSpan.FromMilliseconds(10_000),
-					activePercent: message.ThrottlePercent ?? 100);
+		scavengerFactory = new ScavengerFactory((message, scavengerLogger, logger) => {
+			// currently on the main queue
+			var throttle = new Throttle(
+				logger: logger,
+				minimumRest: TimeSpan.FromMilliseconds(1000),
+				restLoggingThreshold: TimeSpan.FromMilliseconds(10_000),
+				activePercent: message.ThrottlePercent ?? 100);
 
-				if (logFormat is not LogFormatAbstractor<string> logFormatV2)
-					throw new NotSupportedException("Scavenge is not yet supported on Log V3");
+			if (logFormat is not LogFormatAbstractor<string> logFormatV2)
+				throw new NotSupportedException("Scavenge is not yet supported on Log V3");
 
-				if (options.Database.MemDb)
-					throw new NotSupportedException("Scavenge is not supported on in-memory databases");
+			if (options.Database.MemDb)
+				throw new NotSupportedException("Scavenge is not supported on in-memory databases");
 
-				var cancellationCheckPeriod = 1024;
+			var cancellationCheckPeriod = 1024;
 
-				var longHasher = new CompositeHasher<TStreamId>(logFormat.LowHasher, logFormat.HighHasher);
+			var longHasher = new CompositeHasher<TStreamId>(logFormat.LowHasher, logFormat.HighHasher);
 
-				// the backends (and therefore connections) are scoped to the run of the scavenge
-				// so that we don't keep hold of memory used for the page caches between scavenges
-				var backendPool = new ObjectPool<IScavengeStateBackend<TStreamId>>(
-					objectPoolName: "scavenge backend pool",
-					initialCount: 0, // so that factory is not called on the main queue
-					maxCount: TFChunkScavenger.MaxThreadCount + 1,
-					factory: () => {
-						// not on the main queue
-						var scavengeDirectory = Path.Combine(indexPath, "scavenging");
-						Directory.CreateDirectory(scavengeDirectory);
-						var dbPath = Path.Combine(scavengeDirectory, "scavenging.db");
-						var connectionStringBuilder = new SqliteConnectionStringBuilder {
-							DataSource = dbPath,
-							Pooling = false,
-						};
-						var connection = new SqliteConnection(connectionStringBuilder.ConnectionString);
-						connection.Open();
-						Log.Information("Opened scavenging database {scavengeDatabase} with version {version}",
-							dbPath, connection.ServerVersion);
-						var sqlite = new SqliteScavengeBackend<TStreamId>(
-							logger: logger,
-							pageSizeInBytes: options.Database.ScavengeBackendPageSize,
-							cacheSizeInBytes: options.Database.ScavengeBackendCacheSize);
-						sqlite.Initialize(connection);
-						return sqlite;
-					},
-					dispose: backend => backend.Dispose());
-
-				var state = new ScavengeState<TStreamId>(
-					logger,
-					longHasher,
-					logFormat.Metastreams,
-					backendPool,
-					options.Database.ScavengeHashUsersCacheCapacity);
-
-				var accumulator = new Accumulator<TStreamId>(
-					logger: logger,
-					chunkSize: TFConsts.ChunkSize,
-					metastreamLookup: logFormat.Metastreams,
-					chunkReader: new ChunkReaderForAccumulator<TStreamId>(
-						Db.Manager,
-						logFormat.Metastreams,
-						logFormat.StreamIdConverter,
-						Db.Config.ReplicationCheckpoint,
-						TFConsts.ChunkSize),
-					index: new IndexReaderForAccumulator<TStreamId>(readIndex),
-					cancellationCheckPeriod: cancellationCheckPeriod,
-					throttle: throttle);
-
-				var calculator = new Calculator<TStreamId>(
-					logger: logger,
-					new IndexReaderForCalculator<TStreamId>(
-						readIndex,
-						() => new TFReaderLease(readerPool),
-						state.LookupUniqueHashUser),
-					chunkSize: TFConsts.ChunkSize,
-					cancellationCheckPeriod: cancellationCheckPeriod,
-					buffer: calculatorBuffer,
-					throttle: throttle);
-
-				var chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
-					logger,
-					logFormat.Metastreams,
-					new ChunkManagerForExecutor<TStreamId>(logger, Db.Manager, Db.Config, Db.TransformManager),
-					chunkSize: Db.Config.ChunkSize,
-					unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
-					cancellationCheckPeriod: cancellationCheckPeriod,
-					threads: message.Threads,
-					throttle: throttle);
-
-				var chunkMerger = new ChunkMerger(
-					logger: logger,
-					mergeChunks: !options.Database.DisableScavengeMerging,
-					backend: new OldScavengeChunkMergerBackend(logger, db: Db),
-					throttle: throttle);
-
-				var indexExecutor = new IndexExecutor<TStreamId>(
-					logger,
-					new IndexScavenger(tableIndex),
-					new ChunkReaderForIndexExecutor<TStreamId>(() => new TFReaderLease(readerPool)),
-					unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
-					restPeriod: 32_768,
-					throttle: throttle);
-
-				var cleaner = new Cleaner(
-					logger: logger,
-					unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete);
-
-				var scavengePointSource = new ScavengePointSource(logger, scavengerDispatcher);
-
-				return new Scavenger<TStreamId>(
-					logger: logger,
-					checkPreconditions: () => {
-						tableIndex.Visit(table => {
-							if (table.Version <= PTableVersions.IndexV1)
-								throw new NotSupportedException(
-									$"PTable {table.Filename} has version {table.Version}. Scavenge requires V2 index files and above. Please rebuild the indexes to upgrade them.");
-						});
-					},
-					state: state,
-					accumulator: accumulator,
-					calculator: calculator,
-					chunkExecutor: chunkExecutor,
-					chunkMerger: chunkMerger,
-					indexExecutor: indexExecutor,
-					cleaner: cleaner,
-					scavengePointSource: scavengePointSource,
-					scavengerLogger: scavengerLogger,
-					statusTracker: trackers.ScavengeStatusTracker,
-					// threshold < 0: execute all chunks, even those with no weight
-					// threshold = 0: execute all chunks with weight greater than 0
-					// threshold > 0: execute all chunks above a certain weight
-					thresholdForNewScavenge: message.Threshold ?? 0,
-					syncOnly: message.SyncOnly,
-					getThrottleStats: () => throttle.PrettyPrint());
-			});
-
-		} else {
-			scavengerFactory = new ScavengerFactory((message, scavengerLogger, logger) =>
-				new OldScavenger<TStreamId>(
-					alwaysKeepScaveged: options.Database.AlwaysKeepScavenged,
-					mergeChunks: !options.Database.DisableScavengeMerging,
-					startFromChunk: message.StartFromChunk,
-					tfChunkScavenger: new TFChunkScavenger<TStreamId>(
+			// the backends (and therefore connections) are scoped to the run of the scavenge
+			// so that we don't keep hold of memory used for the page caches between scavenges
+			var backendPool = new ObjectPool<IScavengeStateBackend<TStreamId>>(
+				objectPoolName: "scavenge backend pool",
+				initialCount: 0, // so that factory is not called on the main queue
+				maxCount: TFChunkScavenger.MaxThreadCount + 1,
+				factory: () => {
+					// not on the main queue
+					var scavengeDirectory = Path.Combine(indexPath, "scavenging");
+					Directory.CreateDirectory(scavengeDirectory);
+					var dbPath = Path.Combine(scavengeDirectory, "scavenging.db");
+					var connectionStringBuilder = new SqliteConnectionStringBuilder {
+						DataSource = dbPath,
+						Pooling = false,
+					};
+					var connection = new SqliteConnection(connectionStringBuilder.ConnectionString);
+					connection.Open();
+					Log.Information("Opened scavenging database {scavengeDatabase} with version {version}",
+						dbPath, connection.ServerVersion);
+					var sqlite = new SqliteScavengeBackend<TStreamId>(
 						logger: logger,
-						db: Db,
-						scavengerLog: scavengerLogger,
-						tableIndex: tableIndex,
-						readIndex: readIndex,
-						metastreams: logFormat.SystemStreams,
-						unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
-						threads: message.Threads)));
-		}
+						pageSizeInBytes: options.Database.ScavengeBackendPageSize,
+						cacheSizeInBytes: options.Database.ScavengeBackendCacheSize);
+					sqlite.Initialize(connection);
+					return sqlite;
+				},
+				dispose: backend => backend.Dispose());
+
+			var state = new ScavengeState<TStreamId>(
+				logger,
+				longHasher,
+				logFormat.Metastreams,
+				backendPool,
+				options.Database.ScavengeHashUsersCacheCapacity);
+
+			var accumulator = new Accumulator<TStreamId>(
+				logger: logger,
+				chunkSize: TFConsts.ChunkSize,
+				metastreamLookup: logFormat.Metastreams,
+				chunkReader: new ChunkReaderForAccumulator<TStreamId>(
+					Db.Manager,
+					logFormat.Metastreams,
+					logFormat.StreamIdConverter,
+					Db.Config.ReplicationCheckpoint,
+					TFConsts.ChunkSize),
+				index: new IndexReaderForAccumulator<TStreamId>(readIndex),
+				cancellationCheckPeriod: cancellationCheckPeriod,
+				throttle: throttle);
+
+			var calculator = new Calculator<TStreamId>(
+				logger: logger,
+				new IndexReaderForCalculator<TStreamId>(
+					readIndex,
+					() => new TFReaderLease(readerPool),
+					state.LookupUniqueHashUser),
+				chunkSize: TFConsts.ChunkSize,
+				cancellationCheckPeriod: cancellationCheckPeriod,
+				buffer: calculatorBuffer,
+				throttle: throttle);
+
+			var chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
+				logger,
+				logFormat.Metastreams,
+				new ChunkManagerForExecutor<TStreamId>(logger, Db.Manager, Db.Config, Db.TransformManager),
+				chunkSize: Db.Config.ChunkSize,
+				unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
+				cancellationCheckPeriod: cancellationCheckPeriod,
+				threads: message.Threads,
+				throttle: throttle);
+
+			var chunkMerger = new ChunkMerger(
+				logger: logger,
+				mergeChunks: !options.Database.DisableScavengeMerging,
+				backend: new OldScavengeChunkMergerBackend(logger, db: Db),
+				throttle: throttle);
+
+			var indexExecutor = new IndexExecutor<TStreamId>(
+				logger,
+				new IndexScavenger(tableIndex),
+				new ChunkReaderForIndexExecutor<TStreamId>(() => new TFReaderLease(readerPool)),
+				unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
+				restPeriod: 32_768,
+				throttle: throttle);
+
+			var cleaner = new Cleaner(
+				logger: logger,
+				unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete);
+
+			var scavengePointSource = new ScavengePointSource(logger, scavengerDispatcher);
+
+			return new Scavenger<TStreamId>(
+				logger: logger,
+				checkPreconditions: () => {
+					tableIndex.Visit(table => {
+						if (table.Version <= PTableVersions.IndexV1)
+							throw new NotSupportedException(
+								$"PTable {table.Filename} has version {table.Version}. Scavenge requires V2 index files and above. Please rebuild the indexes to upgrade them.");
+					});
+				},
+				state: state,
+				accumulator: accumulator,
+				calculator: calculator,
+				chunkExecutor: chunkExecutor,
+				chunkMerger: chunkMerger,
+				indexExecutor: indexExecutor,
+				cleaner: cleaner,
+				scavengePointSource: scavengePointSource,
+				scavengerLogger: scavengerLogger,
+				statusTracker: trackers.ScavengeStatusTracker,
+				// threshold < 0: execute all chunks, even those with no weight
+				// threshold = 0: execute all chunks with weight greater than 0
+				// threshold > 0: execute all chunks above a certain weight
+				thresholdForNewScavenge: message.Threshold ?? 0,
+				syncOnly: message.SyncOnly,
+				getThrottleStats: () => throttle.PrettyPrint());
+		});
 
 		var scavengerLogManager = new TFChunkScavengerLogManager(
 			nodeEndpoint: $"{GossipAdvertiseInfo.HttpEndPoint.Host}:{GossipAdvertiseInfo.HttpEndPoint.Port}",
@@ -1484,50 +1465,48 @@ public class ClusterVNode<TStreamId> :
 			electionsService.SubscribeMessages(_mainBus);
 		}
 
-		if (!isSingleNode || (options.Interface.GossipOnSingleNode ?? true)) {
-			// GOSSIP
+		// GOSSIP
 
-			var gossipSeedSource = (
-				options.Cluster.DiscoverViaDns,
-				options.Cluster.ClusterSize > 1,
-				options.Cluster.GossipSeed is { Length: > 0 }) switch {
-					(true, true, _) => (IGossipSeedSource)new DnsGossipSeedSource(options.Cluster.ClusterDns,
-						options.Cluster.ClusterGossipPort),
-					(false, true, false) => throw new InvalidConfigurationException(
-						"DNS discovery is disabled, but no gossip seed endpoints have been specified. "
-						+ "Specify gossip seeds using the `GossipSeed` option."),
-					_ => new KnownEndpointGossipSeedSource(options.Cluster.GossipSeed)
-				};
+		var gossipSeedSource = (
+			options.Cluster.DiscoverViaDns,
+			options.Cluster.ClusterSize > 1,
+			options.Cluster.GossipSeed is { Length: > 0 }) switch {
+				(true, true, _) => (IGossipSeedSource)new DnsGossipSeedSource(options.Cluster.ClusterDns,
+					options.Cluster.ClusterGossipPort),
+				(false, true, false) => throw new InvalidConfigurationException(
+					"DNS discovery is disabled, but no gossip seed endpoints have been specified. "
+					+ "Specify gossip seeds using the `GossipSeed` option."),
+				_ => new KnownEndpointGossipSeedSource(options.Cluster.GossipSeed)
+			};
 
-			var gossip = new NodeGossipService(
-				_mainQueue,
-				options.Cluster.ClusterSize,
-				gossipSeedSource,
-				memberInfo,
-				Db.Config.WriterCheckpoint.AsReadOnly(),
-				Db.Config.ChaserCheckpoint.AsReadOnly(),
-				epochManager, () => readIndex.LastIndexedPosition,
-				options.Cluster.NodePriority, TimeSpan.FromMilliseconds(options.Cluster.GossipIntervalMs),
-				TimeSpan.FromMilliseconds(options.Cluster.GossipAllowedDifferenceMs),
-				TimeSpan.FromMilliseconds(options.Cluster.GossipTimeoutMs),
-				TimeSpan.FromSeconds(options.Cluster.DeadMemberRemovalPeriodSec),
-				_timeProvider);
-			_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
-			_mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
-			_mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
-			_mainBus.Subscribe<GossipMessage.Gossip>(gossip);
-			_mainBus.Subscribe<GossipMessage.GossipReceived>(gossip);
-			_mainBus.Subscribe<GossipMessage.ReadGossip>(gossip);
-			_mainBus.Subscribe<GossipMessage.ClientGossip>(gossip);
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(gossip);
-			_mainBus.Subscribe<GossipMessage.GossipSendFailed>(gossip);
-			_mainBus.Subscribe<GossipMessage.UpdateNodePriority>(gossip);
-			_mainBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
-			_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
-			_mainBus.Subscribe<GossipMessage.GetGossipFailed>(gossip);
-			_mainBus.Subscribe<GossipMessage.GetGossipReceived>(gossip);
-			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
-		}
+		var gossip = new NodeGossipService(
+			_mainQueue,
+			options.Cluster.ClusterSize,
+			gossipSeedSource,
+			memberInfo,
+			Db.Config.WriterCheckpoint.AsReadOnly(),
+			Db.Config.ChaserCheckpoint.AsReadOnly(),
+			epochManager, () => readIndex.LastIndexedPosition,
+			options.Cluster.NodePriority, TimeSpan.FromMilliseconds(options.Cluster.GossipIntervalMs),
+			TimeSpan.FromMilliseconds(options.Cluster.GossipAllowedDifferenceMs),
+			TimeSpan.FromMilliseconds(options.Cluster.GossipTimeoutMs),
+			TimeSpan.FromSeconds(options.Cluster.DeadMemberRemovalPeriodSec),
+			_timeProvider);
+		_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
+		_mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
+		_mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
+		_mainBus.Subscribe<GossipMessage.Gossip>(gossip);
+		_mainBus.Subscribe<GossipMessage.GossipReceived>(gossip);
+		_mainBus.Subscribe<GossipMessage.ReadGossip>(gossip);
+		_mainBus.Subscribe<GossipMessage.ClientGossip>(gossip);
+		_mainBus.Subscribe<SystemMessage.StateChangeMessage>(gossip);
+		_mainBus.Subscribe<GossipMessage.GossipSendFailed>(gossip);
+		_mainBus.Subscribe<GossipMessage.UpdateNodePriority>(gossip);
+		_mainBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
+		_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
+		_mainBus.Subscribe<GossipMessage.GetGossipFailed>(gossip);
+		_mainBus.Subscribe<GossipMessage.GetGossipReceived>(gossip);
+		_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
 
 		var clusterStateChangeListener = new ClusterMultipleVersionsLogger();
 		_mainBus.Subscribe<GossipMessage.GossipUpdated>(clusterStateChangeListener);
