@@ -252,16 +252,6 @@ stays in the database:
 
 **Default**: `30` (days)
 
-### Always keep scavenged (_Deprecated_)
-
-This option ensures that the newer chunk from a scavenge operation is always kept.
-
-| Format               | Syntax                             |
-|:---------------------|:-----------------------------------|
-| Command line         | `--always-keep-scavenged`          |
-| YAML                 | `AlwaysKeepScavenged`              |
-| Environment variable | `EVENTSTORE_ALWAYS_KEEP_SCAVENGED` |
-
 ### Scavenge backend page size
 
 Specify the page size of the scavenge database. The default value is 16 KiB.
