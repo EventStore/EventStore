@@ -12,9 +12,10 @@ using EventStore.Core.Exceptions;
 
 namespace EventStore.Core.Index;
 
-public class HashListMemTable : IMemTable, ISearchTable {
+public class HashListMemTable : IMemTable {
 	private static readonly IComparer<Entry> MemTableComparer = new EventNumberComparer();
 	private static readonly IComparer<Entry> LogPosComparer = new LogPositionComparer();
+	private static readonly TimeSpan DefaultLockTimeout = TimeSpan.FromMilliseconds(10_000);
 
 	public long Count {
 		get { return _count; }
@@ -63,14 +64,14 @@ public class HashListMemTable : IMemTable, ISearchTable {
 
 		if (!_hash.TryGetValue(stream, out list)) {
 			list = new(MemTableComparer);
-			if (!Monitor.TryEnter(list, 10000))
+			if (!list.Lock.TryEnterWriteLock(DefaultLockTimeout))
 				throw new UnableToAcquireLockInReasonableTimeException();
 			_hash.AddOrUpdate(stream, list,
 				(x, y) => {
 					throw new Exception("This should never happen as MemTable updates are single-threaded.");
 				});
 		} else{
-			if (!Monitor.TryEnter(list, 10000))
+			if (!list.Lock.TryEnterWriteLock(DefaultLockTimeout))
 				throw new UnableToAcquireLockInReasonableTimeException();
 		}
 
@@ -83,23 +84,21 @@ public class HashListMemTable : IMemTable, ISearchTable {
 				list.Add(new Entry(entry.Version, entry.Position), 0);
 			}
 		} finally {
-			if(list is not null)
-				Monitor.Exit(list);
+			list?.Lock.Release();
 		}
 	}
 
 	public bool TryGetOneValue(ulong stream, long number, out long position) {
-		if (number < 0)
-			throw new ArgumentOutOfRangeException("number");
+		ArgumentOutOfRangeException.ThrowIfNegative(number);
 		ulong hash = GetHash(stream);
 
 		position = 0;
 
 		if (_hash.TryGetValue(hash, out var list)) {
-			if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
+			if (!list.Lock.TryEnterReadLock(DefaultLockTimeout)) throw new UnableToAcquireLockInReasonableTimeException();
 			try {
 				int endIdx = list.UpperBound(new Entry(number, long.MaxValue));
-				if (endIdx == -1)
+				if (endIdx is -1)
 					return false;
 
 				var key = list.Keys[endIdx];
@@ -108,7 +107,7 @@ public class HashListMemTable : IMemTable, ISearchTable {
 					return true;
 				}
 			} finally {
-				Monitor.Exit(list);
+				list.Lock.Release();
 			}
 		}
 
@@ -120,14 +119,14 @@ public class HashListMemTable : IMemTable, ISearchTable {
 		entry = TableIndex.InvalidIndexEntry;
 
 		if (_hash.TryGetValue(hash, out var list)) {
-			if (!Monitor.TryEnter(list, 10000))
+			if (!list.Lock.TryEnterReadLock(DefaultLockTimeout))
 				throw new UnableToAcquireLockInReasonableTimeException();
 			try {
 				var latest = list.Keys[list.Count - 1];
 				entry = new IndexEntry(hash, latest.EvNum, latest.LogPos);
 				return true;
 			} finally {
-				Monitor.Exit(list);
+				list.Lock.Release();
 			}
 		}
 
@@ -143,7 +142,7 @@ public class HashListMemTable : IMemTable, ISearchTable {
 		if (!_hash.TryGetValue(hash, out var list))
 			return false;
 
-		if (!Monitor.TryEnter(list, 10000))
+		if (!list.Lock.TryEnterReadLock(DefaultLockTimeout))
 			throw new UnableToAcquireLockInReasonableTimeException();
 
 		try {
@@ -154,7 +153,7 @@ public class HashListMemTable : IMemTable, ISearchTable {
 				comparer: LogPosComparer,
 				continueSearch: e => isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos)));
 
-			if (endIdx == -1)
+			if (endIdx is -1)
 				return false;
 
 			var latestBeforePosition = list.Keys[endIdx];
@@ -166,14 +165,14 @@ public class HashListMemTable : IMemTable, ISearchTable {
 				e.LogPos < beforePosition &&
 				isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos)));
 
-			if (maxIdx == -1)
+			if (maxIdx is -1)
 				return false;
 
 			var latestBeforePosition = list.Keys[maxIdx];
 			entry = new IndexEntry(hash, latestBeforePosition.EvNum, latestBeforePosition.LogPos);
 			return true;
 		} finally {
-			Monitor.Exit(list);
+			list.Lock.Release();
 		}
 	}
 
@@ -182,14 +181,14 @@ public class HashListMemTable : IMemTable, ISearchTable {
 		entry = TableIndex.InvalidIndexEntry;
 
 		if (_hash.TryGetValue(hash, out var list)) {
-			if (!Monitor.TryEnter(list, 10000))
+			if (!list.Lock.TryEnterReadLock(DefaultLockTimeout))
 				throw new UnableToAcquireLockInReasonableTimeException();
 			try {
 				var oldest = list.Keys[0];
 				entry = new IndexEntry(hash, oldest.EvNum, oldest.LogPos);
 				return true;
 			} finally {
-				Monitor.Exit(list);
+				list.Lock.Release();
 			}
 		}
 
@@ -197,8 +196,7 @@ public class HashListMemTable : IMemTable, ISearchTable {
 	}
 
 	public bool TryGetNextEntry(ulong stream, long afterNumber, out IndexEntry entry) {
-		if (afterNumber < 0)
-			throw new ArgumentOutOfRangeException(nameof(afterNumber));
+		ArgumentOutOfRangeException.ThrowIfNegative(afterNumber);
 
 		ulong hash = GetHash(stream);
 		entry = TableIndex.InvalidIndexEntry;
@@ -207,18 +205,18 @@ public class HashListMemTable : IMemTable, ISearchTable {
 			return false;
 
 		if (_hash.TryGetValue(hash, out var list)) {
-			if (!Monitor.TryEnter(list, 10000))
+			if (!list.Lock.TryEnterReadLock(DefaultLockTimeout))
 				throw new UnableToAcquireLockInReasonableTimeException();
 			try {
 				int endIdx = list.LowerBound(new Entry(afterNumber + 1, 0));
-				if (endIdx == -1)
+				if (endIdx is -1)
 					return false;
 
 				var e = list.Keys[endIdx];
 				entry = new IndexEntry(hash, e.EvNum, e.LogPos);
 				return true;
 			} finally {
-				Monitor.Exit(list);
+				list.Lock.Release();
 			}
 		}
 
@@ -226,8 +224,7 @@ public class HashListMemTable : IMemTable, ISearchTable {
 	}
 
 	public bool TryGetPreviousEntry(ulong stream, long beforeNumber, out IndexEntry entry) {
-		if (beforeNumber < 0)
-			throw new ArgumentOutOfRangeException(nameof(beforeNumber));
+		ArgumentOutOfRangeException.ThrowIfNegative(beforeNumber);
 
 		ulong hash = GetHash(stream);
 		entry = TableIndex.InvalidIndexEntry;
@@ -236,18 +233,18 @@ public class HashListMemTable : IMemTable, ISearchTable {
 			return false;
 
 		if (_hash.TryGetValue(hash, out var list)) {
-			if (!Monitor.TryEnter(list, 10000))
+			if (!list.Lock.TryEnterReadLock(DefaultLockTimeout))
 				throw new UnableToAcquireLockInReasonableTimeException();
 			try {
 				int endIdx = list.UpperBound(new Entry(beforeNumber - 1, long.MaxValue));
-				if (endIdx == -1)
+				if (endIdx is -1)
 					return false;
 
 				var e = list.Keys[endIdx];
 				entry = new IndexEntry(hash, e.EvNum, e.LogPos);
 				return true;
 			} finally {
-				Monitor.Exit(list);
+				list.Lock.Release();
 			}
 		}
 
@@ -283,7 +280,7 @@ public class HashListMemTable : IMemTable, ISearchTable {
 		var ret = new List<IndexEntry>();
 
 		if (_hash.TryGetValue(hash, out var list)) {
-			if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
+			if (!list.Lock.TryEnterReadLock(DefaultLockTimeout)) throw new UnableToAcquireLockInReasonableTimeException();
 			try {
 				var endIdx = list.UpperBound(new Entry(endNumber, long.MaxValue));
 				for (int i = endIdx; i >= 0; i--) {
@@ -293,7 +290,7 @@ public class HashListMemTable : IMemTable, ISearchTable {
 					ret.Add(new IndexEntry(hash, version: key.EvNum, position: key.LogPos));
 				}
 			} finally {
-				Monitor.Exit(list);
+				list.Lock.Release();
 			}
 		}
 
@@ -301,7 +298,7 @@ public class HashListMemTable : IMemTable, ISearchTable {
 	}
 
 	private ulong GetHash(ulong hash) {
-		return _version == PTableVersions.IndexV1 ? hash >> 32 : hash;
+		return _version is PTableVersions.IndexV1 ? hash >> 32 : hash;
 	}
 
 	private readonly record struct Entry(long EvNum, long LogPos);
