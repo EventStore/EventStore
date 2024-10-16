@@ -9,7 +9,7 @@ using EventStore.Plugins.Authentication;
 
 namespace EventStore.Core.Authentication.PassthroughAuthentication;
 
-public class PassthroughAuthenticationProvider() : AuthenticationProviderBase(name: "insecure")  {
+public class PassthroughAuthenticationProvider() : AuthenticationProviderBase(name: "insecure", diagnosticsName: "PassthroughAuthentication") {
 	public override void Authenticate(AuthenticationRequest authenticationRequest) =>
 		authenticationRequest.Authenticated(SystemAccounts.System);
 
