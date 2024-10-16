@@ -309,7 +309,19 @@ public class ClusterVNode<TStreamId> :
 		var metricsConfiguration = MetricsConfiguration.Get((configuration));
 		MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
-		Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker, transformManager: new DbTransformManager());
+		Db = new TFChunkDb(
+			dbConfig,
+			tracker: trackers.TransactionFileTracker,
+			transformManager: new DbTransformManager(),
+			onChunkLoaded: chunkInfo => {
+				_mainQueue.Publish(new SystemMessage.ChunkLoaded(chunkInfo));
+			},
+			onChunkCompleted: chunkInfo => {
+				_mainQueue.Publish(new SystemMessage.ChunkCompleted(chunkInfo));
+			},
+			onChunkSwitched: chunkInfo => {
+				_mainQueue.Publish(new SystemMessage.ChunkSwitched(chunkInfo));
+			});
 
 		TFChunkDbConfig CreateDbConfig(
 			out SystemStatsHelper statsHelper,
@@ -1006,7 +1018,7 @@ public class ClusterVNode<TStreamId> :
 		httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
 
 		if (options.Cluster.Archiver) {
-			modifiedOptions = modifiedOptions.WithPlugableComponent(new ArchiverService());
+			modifiedOptions = modifiedOptions.WithPlugableComponent(new ArchiverPlugableComponent());
 		}
 
 		var adminController = new AdminController(_mainQueue, _workersHandler);
@@ -1569,7 +1581,9 @@ public class ClusterVNode<TStreamId> :
 			if (!Db.TransformManager.TrySetActiveTransform(options.Database.Transform))
 				throw new InvalidConfigurationException(
 					$"Unknown {nameof(options.Database.Transform)} specified: {options.Database.Transform}");
+		}
 
+		void StartNode() {
 			// TRUNCATE IF NECESSARY
 			var truncPos = Db.Config.TruncateCheckpoint.Read();
 			if (truncPos != -1) {
@@ -1595,6 +1609,9 @@ public class ClusterVNode<TStreamId> :
 				return;
 			}
 
+			// start the main queue as we publish messages to it while opening the db
+			AddTask(_controller.Start());
+
 			using (var task = Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads,
 				       createNewChunks: false).AsTask()) {
 				task.Wait(); // No timeout or cancellation, this is intended
@@ -1608,7 +1625,6 @@ public class ClusterVNode<TStreamId> :
 			AddTasks(storageWriter.Tasks);
 
 			AddTasks(_workersHandler.Start());
-			AddTask(_controller.Start());
 			AddTask(monitoringQueue.Start());
 			AddTask(subscrQueue.Start());
 			AddTask(perSubscrQueue.Start());
@@ -1629,7 +1645,8 @@ public class ClusterVNode<TStreamId> :
 			trackers,
 			options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
 			ConfigureNodeServices,
-			ConfigureNode);
+			ConfigureNode,
+			StartNode);
 
 		_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
