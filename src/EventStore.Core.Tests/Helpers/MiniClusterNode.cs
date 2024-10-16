@@ -123,7 +123,6 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 				NodeIp = ExternalTcpEndPoint.Address,
 				ReplicationPort = InternalTcpEndPoint.Port,
 				NodePort = HttpEndPoint.Port,
-				DisableInternalTcpTls = false,
 				ReplicationHeartbeatTimeout = 2_000,
 				ReplicationHeartbeatInterval = 2_000,
 				EnableAtomPubOverHttp = true,

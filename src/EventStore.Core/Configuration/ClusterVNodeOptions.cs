@@ -422,10 +422,6 @@ public partial record ClusterVNodeOptions {
 		[Deprecated("This setting is ignored by the new scavenge algorithm and will be removed in future versions.")]
 		public bool OptimizeIndexMerge { get; init; } = false;
 
-		[Description("Always keeps the newer chunks from a scavenge operation.")]
-		[Deprecated("This setting is ignored by the new scavenge algorithm and will be removed in future versions.")]
-		public bool AlwaysKeepScavenged { get; init; } = false;
-
 		[Description("Change the way the DB files are opened to reduce their stickiness in the system file cache.")]
 		public bool ReduceFileCachePressure { get; init; } = false;
 
@@ -502,195 +498,46 @@ public partial record ClusterVNodeOptions {
 
 	[Description("Interface Options")]
 	public record InterfaceOptions {
-#pragma warning disable 0618
-		[Description("Internal IP Address."),
-		 Deprecated(
-			 "The IntIp parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationIp parameter instead.")]
-		[Obsolete("IntIp is deprecated, use ReplicationIp instead")]
-		public IPAddress IntIp { get; init; } = IPAddress.Loopback;
-
-		private readonly IPAddress _replicationIp = IPAddress.Loopback;
 		[Description("The IP Address used by internal replication between nodes in the cluster.")]
-		public IPAddress ReplicationIp {
-			get {
-				return _replicationIp.Equals(IPAddress.Loopback) ? IntIp : _replicationIp;
-			}
-			init { _replicationIp = value; }
-		}
+		public IPAddress ReplicationIp { get; init; } = IPAddress.Loopback;
 
-		[Description("External IP Address."),
-		 Deprecated(
-			 "The ExtIp parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeIp parameter instead.")]
-		[Obsolete("ExtIp is deprecated, use NodeIp instead")]
-		public IPAddress ExtIp { get; init; } = IPAddress.Loopback;
-
-		private readonly IPAddress _nodeIp = IPAddress.Loopback;
 		[Description("The IP Address for the node.")]
-		public IPAddress NodeIp {
-			get {
-				return _nodeIp.Equals(IPAddress.Loopback) ? ExtIp : _nodeIp;
-			}
-			init { _nodeIp = value; }
-		}
-
-		[Description("The port to run the HTTP server on."),
-		 Deprecated(
-			 "The HttpPort parameter has been deprecated as of version 23.10.0. It is recommended to use the NodePort parameter instead.")]
-		[Obsolete("HttpPort is deprecated, use NodePort instead")]
-		public int HttpPort { get; init; } = 2113;
-
-		private readonly int _nodePort = 2113;
+		public IPAddress NodeIp { get; init; } = IPAddress.Loopback;
 
 		[Description("The Port to run the HTTP server on.")]
-		public int NodePort {
-			get {
-				return _nodePort == 2113 ? HttpPort : _nodePort;
-			}
-			init {
-				_nodePort = value;
-			}
-		}
+		public int NodePort { get; init; } = 2113;
 
-		[Description("Internal TCP Port."),
-		 Deprecated(
-			 "The IntTcpPort parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationPort parameter instead.")]
-		[Obsolete("IntTcpPort is deprecated, use ReplicationPort instead")]
-		public int IntTcpPort { get; init; } = 1112;
-
-		private readonly int _replicationPort = 1112;
 		[Description("The TCP port used by internal replication between nodes in the cluster.")]
-		public int ReplicationPort {
-			get {
-				return _replicationPort == 1112 ? IntTcpPort : _replicationPort;
-			}
-			init {
-				_replicationPort = value;
-			}
-		}
+		public int ReplicationPort { get; init; } = 1112;
 
 		[Description("Advertise the Node's host name to other nodes and external clients as.")]
 		public string? NodeHostAdvertiseAs { get; init; } = null;
 
-		[Description("Advertise Internal Tcp Address As."),
-		 Deprecated(
-			 "The IntHostAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHostAdvertiseAs parameter instead.")]
-		[Obsolete("IntHostAdvertiseAs is deprecated, use ReplicationHostAdvertiseAs instead")]
-		public string? IntHostAdvertiseAs { get; init; } = null;
-
-		private readonly string? _replicationHostAdvertiseAs = null;
 		[Description("Advertise the Replication host name to other nodes in the cluster as.")]
-		public string? ReplicationHostAdvertiseAs {
-			get {
-				return _replicationHostAdvertiseAs ?? IntHostAdvertiseAs;
-			}
-			init {
-				_replicationHostAdvertiseAs = value;
-			}
-		}
+		public string? ReplicationHostAdvertiseAs { get; init; } = null;
 
 		[Description("Advertise Host in Gossip to Client As.")]
 		public string? AdvertiseHostToClientAs { get; init; } = null;
 
-		[Description("Advertise HTTP Port in Gossip to Client As."),
-		 Deprecated(
-			 "The AdvertiseHttpPortToClientAs parameter has been deprecated as of version 23.10.0. It is recommended to use the AdvertiseNodePortToClientAs parameter instead.")]
-		[Obsolete("AdvertiseHttpPortToClientAs is deprecated, use AdvertiseNodePortToClientAs instead")]
-		public int AdvertiseHttpPortToClientAs { get; init; } = 0;
-
-		private readonly int _advertiseNodePortToClientAs = 0;
-
 		[Description("Advertise Node Port in Gossip to Client As.")]
-		public int AdvertiseNodePortToClientAs {
-			get {
-				return _advertiseNodePortToClientAs == 0
-					? AdvertiseHttpPortToClientAs
-					: _advertiseNodePortToClientAs;
-			}
-			init {
-				_advertiseNodePortToClientAs = value;
-			}
-		}
+		public int AdvertiseNodePortToClientAs { get; init; } = 0;
 
-		[Description("Advertise Http Port As."),
-		 Deprecated(
-			 "The HttpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the NodePortAdvertiseAs parameter instead.")]
-		[Obsolete("HttpPortAdvertiseAs is deprecated, use NodePortAdvertiseAs instead")]
-		public int HttpPortAdvertiseAs { get; init; } = 0;
-
-		private readonly int _nodePortAdvertiseAs = 0;
 		[Description("Advertise Http Port As.")]
-		public int NodePortAdvertiseAs {
-			get {
-				return _nodePortAdvertiseAs == 0 ? HttpPortAdvertiseAs : _nodePortAdvertiseAs;
-			}
-			init {
-				_nodePortAdvertiseAs = value;
-			}
-		}
+		public int NodePortAdvertiseAs { get; init; } = 0;
 
-		[Description("Advertise Internal Tcp Port As."),
-		 Deprecated(
-			 "The IntTcpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationTcpPortAdvertiseAs parameter instead.")]
-		[Obsolete("IntTcpPortAdvertiseAs is deprecated, use ReplicationTcpPortAdvertiseAs instead")]
-		public int IntTcpPortAdvertiseAs { get; init; } = 0;
-
-		private readonly int _replicationTcpPortAdvertiseAs = 0;
 		[Description("Advertise Replication Tcp Port As.")]
-		public int ReplicationTcpPortAdvertiseAs {
-			get {
-				return _replicationTcpPortAdvertiseAs == 0 ? IntTcpPortAdvertiseAs : _replicationTcpPortAdvertiseAs;
-			}
-			init {
-				_replicationTcpPortAdvertiseAs = value;
-			}
-		}
+		public int ReplicationTcpPortAdvertiseAs { get; init; } = 0;
 
-		[Description("Heartbeat timeout for internal TCP sockets."),
-		 Unit("ms"),
-		 Deprecated(
-			 "The IntTcpHeartbeatTimeout parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHeartbeatTimeout parameter instead.")]
-		[Obsolete("IntTcpHeartbeatTimeout is deprecated, use ReplicationHeartbeatTimeout instead")]
-		public int IntTcpHeartbeatTimeout { get; init; } = 700;
-
-		private readonly int _replicationHeartbeatTimeout = 700;
 		[Description("Heartbeat timeout for Replication TCP sockets."),
 		 Unit("ms")]
-		public int ReplicationHeartbeatTimeout {
-			get {
-				return _replicationHeartbeatTimeout == 700 ? IntTcpHeartbeatTimeout : _replicationHeartbeatTimeout;
-			}
-			init {
-				_replicationHeartbeatTimeout = value;
-			}
-		}
+		public int ReplicationHeartbeatTimeout { get; init; } = 700;
 
-		[Description("Heartbeat interval for internal TCP sockets."),
-		 Unit("ms"),
-		 Deprecated(
-			 "The IntTcpHeartbeatInterval parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHeartbeatInterval parameter instead.")]
-		[Obsolete("IntTcpHeartbeatInterval is deprecated, use ReplicationHeartbeatInterval instead")]
-		public int IntTcpHeartbeatInterval { get; init; } = 700;
-
-		private readonly int _replicationHeartbeatInterval = 700;
 		[Description("Heartbeat interval for Replication TCP sockets."),
 		 Unit("ms")]
-		public int ReplicationHeartbeatInterval {
-			get {
-				return _replicationHeartbeatInterval == 700
-					? IntTcpHeartbeatInterval
-					: _replicationHeartbeatInterval;
-			}
-			init {
-				_replicationHeartbeatInterval = value;
-			}
-		}
+		public int ReplicationHeartbeatInterval { get; init; } = 700;
 
 		[Description("Whether to allow local connections via a UNIX domain socket.")]
 		public bool EnableUnixSocket { get; init; } = false;
-
-		[Description("When enabled, tells a single node to run gossip as if it is a cluster."),
-		 Deprecated("The '" + nameof(GossipOnSingleNode) + "' option has been deprecated as of version 21.2.")]
-		public bool? GossipOnSingleNode { get; init; } = null;
 
 		[Description("The maximum number of pending send bytes allowed before a connection is closed.")]
 		public int ConnectionPendingSendBytesThreshold { get; init; } = 10 * 1_024 * 1_024;
@@ -710,16 +557,9 @@ public partial record ClusterVNodeOptions {
 		[Description("Enables trusted authentication by an intermediary in the HTTP.")]
 		public bool EnableTrustedAuth { get; init; } = false;
 
-		[Description("Whether to disable secure internal TCP communication."),
-		 Deprecated("The '" + nameof(DisableInternalTcpTls) +
-		            "' option has been deprecated as of version 20.6.1 and currently has no effect. Please use the '" +
-		            nameof(Application.Insecure) + "' option instead.")]
-		public bool DisableInternalTcpTls { get; init; } = false;
-
 		[Description("Enable AtomPub over HTTP Interface."),
 		 Deprecated("AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]
 		public bool EnableAtomPubOverHttp { get; init; } = false;
-#pragma warning restore 0618
 	}
 
 	[Description("Projection Options")]

@@ -126,7 +126,6 @@ public static class ClusterVNodeOptionsExtensions {
 		options with {
 			Interface = options.Interface with {
 				ReplicationIp = endPoint.Address,
-				DisableInternalTcpTls = false,
 				ReplicationPort = endPoint.Port
 			}
 		};
@@ -157,7 +156,6 @@ public static class ClusterVNodeOptionsExtensions {
 			Interface = options.Interface with {
 				ReplicationIp = endPoint.Address,
 				ReplicationPort = endPoint.Port,
-				DisableInternalTcpTls = true
 			}
 		};
 

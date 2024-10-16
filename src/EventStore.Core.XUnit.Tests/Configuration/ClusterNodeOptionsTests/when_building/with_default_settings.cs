@@ -38,11 +38,6 @@ public class with_default_node_as_single_node<TLogFormat, TStreamId> : SingleNod
 	}
 
 	[Test]
-	public void should_use_tls() {
-		Assert.IsFalse(_options.Interface.DisableInternalTcpTls);
-	}
-
-	[Test]
 	public void should_set_command_line_args_to_default_values() {
 		Assert.AreEqual(false, _options.Interface.EnableTrustedAuth, "EnableTrustedAuth");
 		Assert.AreEqual(false, _options.Application.LogHttpRequests, "LogHttpRequests");
@@ -101,11 +96,6 @@ public class with_default_node_as_node_in_a_cluster<TLogFormat, TStreamId> : Clu
 
 		Assert.AreEqual(internalTcp.ToDnsEndPoint(), _node.GossipAdvertiseInfo.InternalSecureTcp);
 		Assert.AreEqual(httpEndPoint.ToDnsEndPoint(), _node.GossipAdvertiseInfo.HttpEndPoint);
-	}
-
-	[Test]
-	public void should_use_tls() {
-		Assert.IsFalse(_options.Interface.DisableInternalTcpTls);
 	}
 
 	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
