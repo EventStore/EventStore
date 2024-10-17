@@ -13,7 +13,7 @@ namespace EventStore.Core.Authorization.AuthorizationPolicies;
 /// but none of them are valid or can be started.
 /// Only admins have stream access to prevent falling back to a more permissive policy.
 /// </summary>
-public class FallbackPolicySelector : IPolicySelector {
+public class FallbackStreamAccessPolicySelector : IPolicySelector {
 	public const string FallbackPolicyName = "system-fallback";
 	private static readonly Claim[] Admins =
 		{new Claim(ClaimTypes.Role, SystemRoles.Admins), new Claim(ClaimTypes.Name, SystemUsers.Admin)};
