@@ -1400,6 +1400,7 @@ public class ClusterVNode<TStreamId> :
 		var telemetryService = new TelemetryService(
 			Db.Manager,
 			modifiedOptions,
+			configuration,
 			_mainQueue,
 			new TelemetrySink(options.Application.TelemetryOptout),
 			Db.Config.WriterCheckpoint.AsReadOnly(),
