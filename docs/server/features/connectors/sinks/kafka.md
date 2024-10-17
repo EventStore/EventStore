@@ -1,6 +1,6 @@
 ---
 Title: "Kafka sink"
-Order: 3
+Order: 2
 ---
 
 # Kafka sink
