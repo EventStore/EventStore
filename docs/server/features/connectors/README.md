@@ -22,6 +22,7 @@ Connectors include the following built-in sinks:
 - [HTTP sink](./sinks/http.md) for sending events to an HTTP endpoint
 - [Kafka sink](./sinks/kafka.md) for sending events to a Kafka topic
 - [MongoDB sink](./sinks/mongo.md) for sending events to a collection in MongoDB
+- [RabbitMQ sink](./sinks/rabbitmq.md) for sending messages to a RabbitMQ exchange
 
 ::: note
 The Connector plugin is pre-installed in all EventStoreDB binaries and is enabled by default.
