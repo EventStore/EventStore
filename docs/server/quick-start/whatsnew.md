@@ -8,6 +8,8 @@ order: 2
 
 * Connectors:
     * Kafka
+    * MongoDB
+    * RabbitMQ
     * HTTP
 * AutoScavenge: Schedule and execute scavenges automatically across a cluster.
 * Stream Policy: Define stream access policies based on stream prefixes, rather than using stream ACLs.
@@ -22,7 +24,7 @@ You can use the HTTP sink without a license, but a license is required for all o
 
 Refer to the [documentation](../features/connectors/quickstart.md) for instructions on setting up and configuring connectors and sinks.
 
-#### Kafka Sink
+#### Kafka sink
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
@@ -33,7 +35,29 @@ features to handle transient errors.
 
 Refer to the [documentation](../features/connectors/sinks/kafka.md) for instructions on setting up a Kafka sink.
 
-#### HTTP Sink
+#### MongoDB sink
+
+<Badge type="info" vertical="middle" text="License Required"/>
+
+The MongoDB sink pulls messages from an EventStoreDB stream and stores the messages to a collection.
+
+It supports data transformation to allow you to modify event data or metadata, or allow you to add additional headers before sending messages to the MongoDB collection. It also supports at-least-once delivery and resilience features to handle transient errors.
+
+Refer to the [documentation](../features/connectors/sinks/mongo.md) for instructions on setting up a MongoDB sink.
+
+#### RabbitMQ sink
+
+<Badge type="info" vertical="middle" text="License Required"/>
+
+The RabbitMQ sink pulls messages from EventStoreDB and sends the messages to a RabbitMQ exchange using a specified routing key.
+
+It efficiently handles message delivery by abstracting the complexities of RabbitMQ's exchange and queue management, ensuring that messages are routed to the appropriate destinations based on the provided routing key.
+
+This sink is designed for high reliability and supports graceful error handling and recovery mechanisms to ensure consistent message delivery in a production environment.
+
+Refer to the [documentation](../features/connectors/sinks/rabbitmq.md) for instructions on setting up a RabbitMQ sink.
+
+#### HTTP sink
 
 The HTTP sink allows for integration between EventStoreDB and external
 APIs over HTTP or HTTPS.

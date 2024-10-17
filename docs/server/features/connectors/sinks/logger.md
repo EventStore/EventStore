@@ -1,6 +1,6 @@
 ---
 Title: "Logger sink"
-Order: 4
+Order: 3
 ---
 
 # Logger sink
