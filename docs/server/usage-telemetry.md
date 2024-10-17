@@ -8,6 +8,7 @@ EventStoreDB telemetry only tracks non-Personally-Identifiable Information. Coll
 
 Examples of the telemetry data collected:
 
+
 * EventStoreDB version number
 * Cluster or instance size
 * Node machine size
