@@ -80,7 +80,7 @@ static partial class Enumerator {
 				return ValueTask.CompletedTask;
 			}
 
-			Log.Debug("Subscription {subscriptionId} to {streamName} disposed.", _subscriptionId,
+			Log.Verbose("Subscription {subscriptionId} to {streamName} disposed.", _subscriptionId,
 				_streamName);
 			_disposed = true;
 
@@ -142,7 +142,7 @@ static partial class Enumerator {
 
 		private async Task MainLoop(StreamRevision? checkpointRevision, CancellationToken ct) {
 			try {
-				Log.Information("Subscription {subscriptionId} to {streamName} has started at checkpoint {streamRevision:N0}",
+				Log.Debug("Subscription {subscriptionId} to {streamName} has started at checkpoint {streamRevision:N0}",
 					_subscriptionId, _streamName, checkpointRevision?.ToString() ?? "Start");
 
 				var confirmationLastEventNumber = await SubscribeToLive();
@@ -168,7 +168,7 @@ static partial class Enumerator {
 					Log.Error(ex, "Subscription {subscriptionId} to {streamName} experienced an error.", _subscriptionId, _streamName);
 				_channel.Writer.TryComplete(ex);
 			} finally {
-				Log.Information("Subscription {subscriptionId} to {streamName} has ended.", _subscriptionId, _streamName);
+				Log.Debug("Subscription {subscriptionId} to {streamName} has ended.", _subscriptionId, _streamName);
 			}
 		}
 

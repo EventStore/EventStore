@@ -32,6 +32,8 @@ public static class SystemStreams {
 	public const string EpochInformationStream = "$epoch-information";
 	public const string ScavengePointsStream = "$scavengePoints";
 
+	public const string AuthorizationPolicyRegistryStream = "$authorization-policy-settings";
+
 	// mem streams
 	public const string NodeStateStream = "$mem-node-state";
 	public const string GossipStream = "$mem-gossip";
@@ -98,6 +100,8 @@ public static class SystemEventTypes {
 	public const string EmptyEventType = "";
 	public const string EventTypeDefined = "$event-type";
 	public const string ScavengePoint = "$scavengePoint";
+
+	public const string AuthorizationPolicyChanged = "$authorization-policy-changed";
 
 	public static string StreamReferenceEventToStreamId(string eventType, ReadOnlyMemory<byte> data) {
 		string streamId = null;
@@ -168,13 +172,13 @@ public static class SystemConsumerStrategies {
 	public const string RoundRobin = "RoundRobin";
 
 	/// <summary>
-	/// Distribute events of the same streamId to the same client until it disconnects on a best efforts basis. 
+	/// Distribute events of the same streamId to the same client until it disconnects on a best efforts basis.
 	/// Designed to be used with indexes such as the category projection.
 	/// </summary>
 	public const string Pinned = "Pinned";
 
 	/// <summary>
-	/// Distribute events of the same correlationId to the same client until it disconnects on a best efforts basis. 
+	/// Distribute events of the same correlationId to the same client until it disconnects on a best efforts basis.
 	/// </summary>
 	public const string PinnedByCorrelation = "PinnedByCorrelation";
 }

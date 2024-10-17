@@ -431,7 +431,7 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 			Log.Information("Starting scavenge of TableIndex.");
 			ScavengeInternal(shouldKeep, log, ct);
 		} finally {
-			// Since scavenging indexes is the only place the ExistsAt optimization makes sense (and takes up a lot of memory), we can clear it after an index scavenge has completed. 
+			// Since scavenging indexes is the only place the ExistsAt optimization makes sense (and takes up a lot of memory), we can clear it after an index scavenge has completed.
 			TFChunkReaderExistsAtOptimizer.Instance.DeOptimizeAll();
 
 			lock (_awaitingTablesLock) {
@@ -829,7 +829,7 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 
 		// 1. assemble results per table for memtables and ptables
 		// discard any results with 0 entries.
-		var resultsPerTable = new List<IList<IndexEntry>>(16);
+		var resultsPerTable = new List<IReadOnlyList<IndexEntry>>(16);
 
 		var awaiting = _awaitingMemTables;
 		for (int index = 0; index < awaiting.Count; index++) {

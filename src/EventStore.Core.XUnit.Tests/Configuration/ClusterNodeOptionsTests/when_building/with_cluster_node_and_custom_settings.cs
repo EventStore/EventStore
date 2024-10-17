@@ -113,9 +113,9 @@ public class with_custom_external_ip_address_as_advertise_info<TLogFormat, TStre
 		return options
 			.Insecure()
 			.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, 11130))
-			.WithInternalTcpOn(new IPEndPoint(IPAddress.Loopback, 11120))
+			.WithReplicationEndpointOn(new IPEndPoint(IPAddress.Loopback, 11120))
 			.AdvertiseExternalHostAs(new DnsEndPoint("196.168.1.1", 11131))
-			.AdvertiseHttpHostAs(new DnsEndPoint("196.168.1.1", 21130));
+			.AdvertiseNodeAs(new DnsEndPoint("196.168.1.1", 21130));
 	}
 
 	[Test]
@@ -136,7 +136,7 @@ public class with_0_0_0_0_as_external_ip_address_and_custom_advertise_info<TLogF
 	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 		return options
 			.Insecure()
-			.WithInternalTcpOn(new IPEndPoint(IPAddress.Any, 11120))
+			.WithReplicationEndpointOn(new IPEndPoint(IPAddress.Any, 11120))
 			.WithExternalTcpOn(new IPEndPoint(IPAddress.Any, 11130))
 			.AdvertiseExternalHostAs(new DnsEndPoint("10.0.0.1", 11131));
 	}
@@ -160,9 +160,9 @@ public class with_0_0_0_0_as_external_ip_address_with_no_explicit_advertise_info
 	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 		return options
 			.Insecure()
-			.WithHttpOn(new IPEndPoint(IPAddress.Any, 21130))
+			.WithNodeEndpointOn(new IPEndPoint(IPAddress.Any, 21130))
 			.WithExternalTcpOn(new IPEndPoint(IPAddress.Any, 11130))
-			.WithInternalTcpOn(new IPEndPoint(IPAddress.Loopback, 11120));
+			.WithReplicationEndpointOn(new IPEndPoint(IPAddress.Loopback, 11120));
 	}
 
 	[Test]
@@ -184,11 +184,11 @@ public class
 	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 		return options
 			.Insecure()
-			.WithHttpOn(new IPEndPoint(IPAddress.Loopback, 21130))
+			.WithNodeEndpointOn(new IPEndPoint(IPAddress.Loopback, 21130))
 			.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, 11130))
-			.WithInternalTcpOn(new IPEndPoint(IPAddress.Any, 11120))
+			.WithReplicationEndpointOn(new IPEndPoint(IPAddress.Any, 11120))
 			.AdvertiseExternalHostAs(new DnsEndPoint("10.0.0.1", 11131))
-			.AdvertiseHttpHostAs(new DnsEndPoint("10.0.0.1", 21131));
+			.AdvertiseNodeAs(new DnsEndPoint("10.0.0.1", 21131));
 	}
 
 	[Test]

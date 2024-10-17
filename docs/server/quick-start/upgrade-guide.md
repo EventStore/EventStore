@@ -48,6 +48,35 @@ If you modified the Linux service file to increase the open files limit, those c
 
 ### Breaking changes
 
+#### From version 24.10 and earlier
+
+##### Removed configuration options
+
+A number of configuration options have been removed in 25.2.0. EventStoreDB will not start by default if any of these options are present in the database configuration.
+
+The following options were renamed in version 23.10. EventStoreDB will no longer start if the deprecated option is present in the database configuration:
+
+| Deprecated Option             | Use Instead                     |
+|:------------------------------|:--------------------------------|
+| `ExtIp`                       | `NodeIp`                        |
+| `ExtPort`                     | `NodePort`                      |
+| `HttpPortAdvertiseAs`         | `NodePortAdvertiseAs`           |
+| `ExtHostAdvertiseAs`          | `NodeHostAdvertiseAs`           |
+| `AdvertiseHttpPortToClientAs` | `AdvertiseNodePortToClientAs`   |
+| `IntIp`                       | `ReplicationIp`                 |
+| `IntTcpPort`                  | `ReplicationPort`               |
+| `IntTcpPortAdvertiseAs`       | `ReplicationTcpPortAdvertiseAs` |
+| `IntHostAdvertiseAs`          | `ReplicationHostAdvertiseAs`    |
+| `IntTcpHeartbeatTimeout`      | `ReplicationHeartbeatTimeout`   |
+| `IntTcpHeartbeatInterval`     | `ReplicationHeartbeatInterval`  |
+
+The following deprecated options were removed as they had no effect:
+
+- `AlwaysKeepScavenged`
+- `GossipOnSingleNode`
+- `DisableInternalTcpTls`
+- `OptimizeIndexMerge`
+
 #### From version 24.6 and earlier
 
 ##### Histograms endpoint has been removed
@@ -210,21 +239,3 @@ The server now uses Proto3 for messages sent over TCP. This affects replication 
 
 EventStoreDB nodes on version 22.10 cannot replicate data to version 21.10 and below, but older nodes can still replicate to version 22.10 and above.
 Follow the [upgrade procedure](#upgrade-procedure) and ensure that the Leader node is the last node to be upgraded to avoid any issues.
-
-##### Deprecated configuration options
-
-Several options are deprecated and slated for removal in future releases. See the table below for guidance.
-
-| Deprecated Option             | Use Instead                     |
-|:------------------------------|:--------------------------------|
-| `ExtIp`                       | `NodeIp`                        |
-| `ExtPort`                     | `NodePort`                      |
-| `HttpPortAdvertiseAs`         | `NodePortAdvertiseAs`           |
-| `ExtHostAdvertiseAs`          | `NodeHostAdvertiseAs`           |
-| `AdvertiseHttpPortToClientAs` | `AdvertiseNodePortToClientAs`   |
-| `IntIp`                       | `ReplicationIp`                 |
-| `IntTcpPort`                  | `ReplicationPort`               |
-| `IntTcpPortAdvertiseAs`       | `ReplicationTcpPortAdvertiseAs` |
-| `IntHostAdvertiseAs`          | `ReplicationHostAdvertiseAs`    |
-| `IntTcpHeartbeatTimeout`      | `ReplicationHeartbeatTimeout`   |
-| `IntTcpHeartbeatInterval`     | `ReplicationHeartbeatInterval`  |

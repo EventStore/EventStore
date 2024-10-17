@@ -116,8 +116,10 @@ public class ScavengePointSource : IScavengePointSource {
 			}
 		);
 
-		using (cancellationToken.Register(() => writeTcs.TrySetCanceled())) {
-			await writeTcs.Task;
+		try {
+			await writeTcs.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+		} catch (TimeoutException ex) {
+			throw new TimeoutException("Timed out while trying to write a scavenge point", ex);
 		}
 
 		_logger.Information("SCAVENGING: Added new scavenge point.");

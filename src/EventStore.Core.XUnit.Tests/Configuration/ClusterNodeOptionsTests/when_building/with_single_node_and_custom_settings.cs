@@ -53,9 +53,9 @@ public class with_custom_ip_endpoints<TLogFormat, TStreamId> : SingleNodeScenari
 
 	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 		return options
-			.WithHttpOn(_httpEndPoint)
-			.WithExternalSecureTcpOn(_externalTcp)
-			.WithInternalSecureTcpOn(_internalTcp);
+			.WithNodeEndpointOn(_httpEndPoint)
+			.WithExternalTcpOn(_externalTcp)
+			.WithReplicationEndpointOn(_internalTcp);
 	}
 
 	[Test]
@@ -134,12 +134,12 @@ public class with_custom_advertise_as<TLogFormat, TStreamId> : SingleNodeScenari
 
 	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) {
 		return options
-			.WithHttpOn(_httpEndpoint)
-			.WithExternalSecureTcpOn(_extTcpEndpoint)
-			.WithInternalSecureTcpOn(_intTcpEndpoint)
+			.WithNodeEndpointOn(_httpEndpoint)
+			.WithExternalTcpOn(_extTcpEndpoint)
+			.WithReplicationEndpointOn(_intTcpEndpoint)
 			.AdvertiseInternalHostAs(new DnsEndPoint($"{InternalIp}.com", _intTcpEndpoint.Port + 1000))
 			.AdvertiseExternalHostAs(new DnsEndPoint($"{ExternalIp}.com", _extTcpEndpoint.Port + 1000))
-			.AdvertiseHttpHostAs(new DnsEndPoint($"{ExternalIp}.com", _httpEndpoint.Port + 1000));
+			.AdvertiseNodeAs(new DnsEndPoint($"{ExternalIp}.com", _httpEndpoint.Port + 1000));
 	}
 
 	[Test]
