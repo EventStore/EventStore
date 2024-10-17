@@ -1928,7 +1928,7 @@ public class ClusterVNode<TStreamId> :
 
 	private static void LogPluginSubsectionWarnings(IConfiguration configuration) {
 		var pluginSubsectionOptions = configuration.GetSection("EventStore:Plugins").AsEnumerable().ToList();
-		if (pluginSubsectionOptions.Count == 0)
+		if (pluginSubsectionOptions.Count <= 1)
 			return;
 
 		Log.Warning(
@@ -1937,7 +1937,8 @@ public class ClusterVNode<TStreamId> :
 			"Please move them out of the \"Plugins\" subsection and directly into the \"EventStore\" root.");
 
 		foreach (var kvp in pluginSubsectionOptions) {
-			Log.Warning("Ignoring option nested in \"Plugins\" subsection: {IgnoredOption}", kvp.Key);
+			if (kvp.Value is not null)
+				Log.Warning("Ignoring option nested in \"Plugins\" subsection: {IgnoredOption}", kvp.Key);
 		}
 	}
 
