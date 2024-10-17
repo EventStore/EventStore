@@ -867,11 +867,11 @@ public partial class PTable : ISearchTable, IDisposable {
 		}
 	}
 
-	public IList<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null) {
+	public IReadOnlyList<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null) {
 		Ensure.Nonnegative(startNumber, "startNumber");
 		Ensure.Nonnegative(endNumber, "endNumber");
 
-		return _lruCache == null
+		return _lruCache is null
 			? GetRangeNoCache(GetHash(stream), startNumber, endNumber, limit)
 			: GetRangeWithCache(GetHash(stream), startNumber, endNumber, limit);
 	}

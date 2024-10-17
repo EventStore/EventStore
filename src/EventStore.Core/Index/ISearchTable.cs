@@ -17,6 +17,6 @@ public interface ISearchTable {
 	bool TryGetOldestEntry(ulong stream, out IndexEntry entry);
 	bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry);
 	bool TryGetPreviousEntry(ulong stream, long beforeVersion, out IndexEntry entry);
-	IList<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null);
+	IReadOnlyList<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null);
 	IEnumerable<IndexEntry> IterateAllInOrder();
 }
