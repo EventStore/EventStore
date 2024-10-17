@@ -233,6 +233,8 @@ public class ClusterVNode<TStreamId> :
 
 		configuration ??= new ConfigurationBuilder().Build();
 
+		LogPluginSubsectionWarnings(configuration);
+
 		_certificateProvider = certificateProvider;
 
 		ClusterVNodeOptionsValidator.Validate(options);
@@ -1938,6 +1940,21 @@ public class ClusterVNode<TStreamId> :
 
 		if (_certificateProvider?.LoadCertificates(options) == LoadCertificateResult.VerificationFailed) {
 			throw new InvalidConfigurationException("Aborting certificate loading due to verification errors.");
+		}
+	}
+
+	private static void LogPluginSubsectionWarnings(IConfiguration configuration) {
+		var pluginSubsectionOptions = configuration.GetSection("EventStore:Plugins").AsEnumerable().ToList();
+		if (pluginSubsectionOptions.Count == 0)
+			return;
+
+		Log.Warning(
+			"The \"Plugins\" configuration subsection has been removed. " +
+			"The following settings will be ignored. " +
+			"Please move them out of the \"Plugins\" subsection and directly into the \"EventStore\" root.");
+
+		foreach (var kvp in pluginSubsectionOptions) {
+			Log.Warning("Ignoring option nested in \"Plugins\" subsection: {IgnoredOption}", kvp.Key);
 		}
 	}
 
