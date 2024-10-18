@@ -13,9 +13,7 @@ using EventStore.Core.Bus;
 using EventStore.PluginHosting;
 using EventStore.Plugins;
 using EventStore.Plugins.Subsystems;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 namespace EventStore.ClusterNode;
@@ -51,7 +49,7 @@ public class AuthorizationPolicyRegistryFactory: SubsystemsPlugin {
 
 		// Check if there is a default policy type. Use this if the settings stream is empty
 		var defaultPolicyType =
-			configuration.GetValue<string>("EventStore:Authorization:PolicyType") ?? string.Empty;
+			configuration.GetValue<string>("EventStore:Authorization:DefaultPolicyType") ?? string.Empty;
 		AuthorizationPolicySettings defaultSettings;
 		if (!string.IsNullOrEmpty(defaultPolicyType)) {
 			if (_pluginSelectorFactories.Any(x => x.CommandLineName == defaultPolicyType)) {
