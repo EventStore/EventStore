@@ -995,6 +995,13 @@ You still need to specify default stream rules when you update the `$policies` s
 ```
 {
   "streamPolicies": {
+    "customPolicy": {
+        "$r": ["ouro", "readers"],
+        "$w": ["ouro"],
+        "$d": ["ouro"],
+        "$mr": ["ouro"],
+        "$mw": ["ouro"]
+    },
     "publicDefault": {
       "$r": ["$all"],
       "$w": ["$all"],
@@ -1015,13 +1022,6 @@ You still need to specify default stream rules when you update the `$policies` s
       "$d": ["$admins"],
       "$mr": ["$all"],
       "$mw": ["$admins"]
-    },
-    "customPolicy": {
-      "$r": ["$all"],
-      "$w": ["$all"],
-      "$d": ["$all"],
-      "$mr": ["$all"],
-      "$mw": ["$all"]
     }
   },
   "streamRules": [
