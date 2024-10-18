@@ -774,19 +774,19 @@ If you enable the Stream Policy feature, EventStoreDB will not enforce [stream A
 
 If the `$authorization-policy-settings` stream is empty and there is no configuration, EventStoreDB will default to using ACLs.
 
-If you would rather default to stream policies, you can do this by setting the `Authorization:PolicyType` option to `streampolicy`.
+If you would rather default to stream policies, you can do this by setting the `Authorization:DefaultPolicyType` option to `streampolicy`.
 
 You can do this by adding the following to the server configuration file:
 
 ```yaml
 Authorization:
-  PolicyType: streampolicy
+  DefaultPolicyType: streampolicy
 ```
 
 Refer to the [configuration guide](../configuration/README.md) for configuration mechanisms other than YAML.
 
 ::: warning
-If the policy type configured in `Authorization:PolicyType` is not present at startup, EventStoreDB will not start.
+If the policy type configured in `Authorization:DefaultPolicyType` is not present at startup, EventStoreDB will not start.
 :::
 
 ### Fallback stream access policy
