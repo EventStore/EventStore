@@ -78,7 +78,6 @@ using Microsoft.Extensions.DependencyInjection;
 using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
-using TimeoutControl = DotNext.Threading.Timeout;
 using EventStore.Core.Services.Archiver;
 using EventStore.Licensing;
 
@@ -1749,7 +1748,7 @@ public class ClusterVNode<TStreamId> :
 			return;
 		}
 
-		_mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess: false, shutdownHttp: true));
+		_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
 		try {
 			await _shutdownSource.Task.WaitAsync(timeout ?? DefaultShutdownTimeout, cancellationToken);
