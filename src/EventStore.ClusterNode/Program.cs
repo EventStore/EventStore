@@ -222,7 +222,7 @@ internal static class Program {
 
 					exitCodeSource.TrySetResult(0);
 				} catch (Exception ex) {
-					Log.Fatal("Error occurred during setup: {e}", ex);
+					Log.Fatal(ex, "Exiting");
 					exitCodeSource.TrySetResult(1);
 				} finally {
 					signal.Set();

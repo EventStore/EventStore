@@ -23,14 +23,12 @@ public class ShutdownService :
 
 	private int _componentsNeedingTermination;
 	private bool _shutdown;
+	private bool _exitProcess;
+	private bool _shutdownHttp;
 
 	public ShutdownService(IPublisher mainQueue, VNodeInfo nodeInfo) {
 		_mainQueue = mainQueue;
 		_nodeInfo = nodeInfo;
-	}
-
-	public void Shutdown() {
-		Handle(new ClientMessage.RequestShutdown(true, true));
 	}
 
 	public void Handle(SystemMessage.RegisterForGracefulTermination message) {
@@ -45,14 +43,19 @@ public class ShutdownService :
 			return;
 
 		_shutdown = true;
-		Log.Information("========== [{httpEndPoint}] IS SHUTTING DOWN...", _nodeInfo.HttpEndPoint);
+		_exitProcess = message.ExitProcess;
+		_shutdownHttp = message.ShutdownHttp;
 		_componentsNeedingTermination = _shutdownActions.Count;
 
 		if (_componentsNeedingTermination == 0) {
-			_mainQueue.Publish(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
+			_mainQueue.Publish(new SystemMessage.BecomeShuttingDown(
+				correlationId: Guid.NewGuid(),
+				exitProcess: _exitProcess,
+				shutdownHttp: _shutdownHttp));
 			return;
 		}
 
+		Log.Information("========== [{httpEndPoint}] IS SHUTTING DOWN HIGHER LEVEL COMPONENTS...", _nodeInfo.HttpEndPoint);
 		foreach (var action in _shutdownActions)
 			action();
 	}
@@ -65,7 +68,10 @@ public class ShutdownService :
 
 		if (_componentsNeedingTermination == 0) {
 			Log.Information("========== [{HttpEndPoint}] All Components Shutdown.", _nodeInfo.HttpEndPoint);
-			_mainQueue.Publish(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
+			_mainQueue.Publish(new SystemMessage.BecomeShuttingDown(
+				correlationId: Guid.NewGuid(),
+				exitProcess: _exitProcess,
+				shutdownHttp: _shutdownHttp));
 		}
 	}
 }
