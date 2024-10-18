@@ -28,15 +28,34 @@ public class LicensingPlugin : Plugin {
 		_licenseProvider = licenseProvider;
 	}
 
-	public override void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) =>
+
+	public override void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {
+		var licenseService = builder.ApplicationServices.GetRequiredService<ILicenseService>();
+
+		License? currentLicense = null;
+		Exception? licenseError = null;
+		licenseService.Licenses.Subscribe(
+			license => {
+				currentLicense = license;
+				licenseError = null;
+			},
+			ex => {
+				currentLicense = null;
+				licenseError = ex;
+			});
+
 		builder.UseEndpoints(endpoints => endpoints
-			.MapGet("/license", (HttpContext context, ILicenseService licenseService) => {
-				var license = licenseService.CurrentLicense;
-				return license is null
-					? Results.NotFound()
-					: Results.Json(LicenseSummary.SelectForEndpoint(license));
+			.MapGet("/license", (HttpContext context) => {
+				if (currentLicense is { } license )
+					return Results.Json(LicenseSummary.SelectForEndpoint(license));
+
+				if (licenseError is NoLicenseKeyException)
+					return Results.NotFound();
+
+				return Results.NotFound(licenseError?.Message ?? "Unknown eror");
 			})
 			.RequireAuthorization());
+	}
 
 	public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
 		// esdbPrivateKey is not truly private (obviously, here it is in the source). circumventing the license mechanism is against the license agreement.
@@ -54,7 +73,7 @@ public class LicensingPlugin : Plugin {
 
 		if (string.IsNullOrWhiteSpace(clientOptions.LicenseKey)) {
 			var sub = new Subject<LicenseInfo>();
-			sub.OnError(new Exception("No license key specified"));
+			sub.OnError(new NoLicenseKeyException());
 			licenses = sub;
 		} else {
 			var lifecycleService = new KeygenLifecycleService(
@@ -91,5 +110,8 @@ public class LicensingPlugin : Plugin {
 			.AddHostedService(sp => new LicenseTelemetryService(
 				sp.GetRequiredService<ILicenseService>(),
 				telemetry => PublishDiagnosticsData(telemetry, Plugins.Diagnostics.PluginDiagnosticsDataCollectionMode.Snapshot)));
+	}
+
+	class NoLicenseKeyException : Exception {
 	}
 }

@@ -103,7 +103,7 @@ public class LicensingPluginTests : IAsyncLifetime {
 		// then
 		Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
 		var responseString = await result.Content.ReadAsStringAsync();
-		Assert.Equal("", responseString);
+		Assert.Equal("\"license is expired, say\"", responseString);
 	}
 
 	[Fact]
