@@ -34,7 +34,7 @@ public class when_scavenging_an_index_is_cancelled : SpecificationWithDirectoryP
 		};
 
 		_expectedOutputFile = GetTempFilePath();
-		Assert.ThrowsAsync<OperationCanceledException>(async () => await PTable.Scavenged(_oldTable, _expectedOutputFile,
+		Assert.ThrowsAsync<TaskCanceledException>(async () => await PTable.Scavenged(_oldTable, _expectedOutputFile,
 			PTableVersions.IndexV4, existsAt.ToAsync(), ct: cancellationTokenSource.Token,
 			initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault,
 			useBloomFilter: true));
