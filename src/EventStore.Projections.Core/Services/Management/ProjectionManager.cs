@@ -710,7 +710,8 @@ namespace EventStore.Projections.Core.Services.Management {
 					requireLeader: false,
 					validationStreamVersion: null,
 					user: SystemAccounts.System,
-					replyOnExpired: false),
+					replyOnExpired: false,
+					expires: DateTime.MaxValue),
 				m => OnProjectionsListReadCompleted(m, registeredProjections, from, completedAction));
 		}
 
@@ -1052,7 +1053,8 @@ namespace EventStore.Projections.Core.Services.Management {
 					resolveLinkTos: false,
 					requireLeader: false,
 					validationStreamVersion: null,
-					user: SystemAccounts.System),
+					user: SystemAccounts.System,
+					expires: DateTime.MaxValue),
 				new ReadStreamEventsBackwardHandlers.Optimistic(onComplete));
 		}
 
