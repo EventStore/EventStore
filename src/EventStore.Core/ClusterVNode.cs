@@ -78,7 +78,6 @@ using Microsoft.Extensions.DependencyInjection;
 using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
-using TimeoutControl = DotNext.Threading.Timeout;
 using EventStore.Core.Services.Archiver;
 using EventStore.Licensing;
 
@@ -197,7 +196,6 @@ public class ClusterVNode<TStreamId> :
 	private readonly ClusterVNodeStartup<TStreamId> _startup;
 	private readonly INodeHttpClientFactory _nodeHttpClientFactory;
 	private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
-	private readonly ShutdownService _shutdownService;
 
 	private int _stopCalled;
 	private int _reloadingConfig;
@@ -509,10 +507,10 @@ public class ClusterVNode<TStreamId> :
 		_mainQueue = _controller.MainQueue;
 		_mainBus = _controller.MainBus;
 
-		_shutdownService = new ShutdownService(_mainQueue, NodeInfo);
-		_mainBus.Subscribe<SystemMessage.RegisterForGracefulTermination>(_shutdownService);
-		_mainBus.Subscribe<ClientMessage.RequestShutdown>(_shutdownService);
-		_mainBus.Subscribe<SystemMessage.ComponentTerminated>(_shutdownService);
+		var shutdownService = new ShutdownService(_mainQueue, NodeInfo);
+		_mainBus.Subscribe<SystemMessage.RegisterForGracefulTermination>(shutdownService);
+		_mainBus.Subscribe<ClientMessage.RequestShutdown>(shutdownService);
+		_mainBus.Subscribe<SystemMessage.ComponentTerminated>(shutdownService);
 
 		var uriScheme = options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps;
 		var clusterDns = options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null;
@@ -1733,27 +1731,22 @@ public class ClusterVNode<TStreamId> :
 			return;
 		}
 
-		// TODO - We might want to increase that value here.
-		timeout ??= TimeSpan.FromSeconds(5);
-		_shutdownService.Shutdown();
+		_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
-		_reloadConfigSignalRegistration?.Dispose();
-		_reloadConfigSignalRegistration = null;
-
-		TimeSpan remainingTime;
-		var timeoutCtl = new TimeoutControl(timeout ?? DefaultShutdownTimeout);
-		foreach (var subsystem in _subsystems ?? []) {
-			timeoutCtl.ThrowIfExpired(out remainingTime);
-			await subsystem.Stop().WaitAsync(remainingTime, cancellationToken);
+		try {
+			await _shutdownSource.Task.WaitAsync(timeout ?? DefaultShutdownTimeout, cancellationToken);
 		}
-
-		timeoutCtl.ThrowIfExpired(out remainingTime);
-		await _shutdownSource.Task.WaitAsync(remainingTime, cancellationToken);
+		catch (Exception) {
+			Log.Error("Graceful shutdown not complete. Forcing shutdown now.");
+			throw;
+		}
 
 		_switchChunksLock?.Dispose();
 	}
 
 	public async ValueTask HandleAsync(SystemMessage.BecomeShuttingDown message, CancellationToken token) {
+		Log.Information("========== [{httpEndPoint}] IS SHUTTING DOWN SUBSYSTEMS...", NodeInfo.HttpEndPoint);
+
 		_reloadConfigSignalRegistration?.Dispose();
 		_reloadConfigSignalRegistration = null;
 
