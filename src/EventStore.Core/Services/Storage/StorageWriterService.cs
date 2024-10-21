@@ -195,7 +195,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			return;
 		}
 
-		if (_vnodeState != VNodeState.Leader && _vnodeState != VNodeState.ResigningLeader && message is StorageMessage.ILeaderWriteMessage) {
+		if (_vnodeState is not VNodeState.Leader and not VNodeState.ResigningLeader && message is StorageMessage.ILeaderWriteMessage) {
 			Log.Fatal("{message} appeared in StorageWriter during state {vnodeStrate}.", message.GetType().Name,
 				_vnodeState);
 			var msg = String.Format("{0} appeared in StorageWriter during state {1}.", message.GetType().Name,
@@ -236,7 +236,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	}
 
 	async ValueTask IAsyncHandle<SystemMessage.WriteEpoch>.HandleAsync(SystemMessage.WriteEpoch message, CancellationToken token) {
-		if (_vnodeState != VNodeState.Leader && _vnodeState != VNodeState.PreLeader)
+		if (_vnodeState is not VNodeState.Leader and not VNodeState.PreLeader)
 			throw new Exception(string.Format("New Epoch request not in leader or preleader state. State: {0}.", _vnodeState));
 
 		if (Writer.NeedsNewChunk)
@@ -248,9 +248,9 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 	void IHandle<SystemMessage.WaitForChaserToCatchUp>.Handle(SystemMessage.WaitForChaserToCatchUp message) {
 		// if we are in states, that doesn't need to wait for chaser, ignore
-		if (_vnodeState != VNodeState.PreLeader &&
-			_vnodeState != VNodeState.PreReplica &&
-			_vnodeState != VNodeState.PreReadOnlyReplica)
+		if (_vnodeState is not VNodeState.PreLeader
+		    and not VNodeState.PreReplica
+		    and not VNodeState.PreReadOnlyReplica)
 			throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));
 
 		if (Writer.HasOpenTransaction())
@@ -296,7 +296,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				streamId: out var streamId,
 				streamRecord: out var streamRecord);
 
-			if (streamRecord != null) {
+			if (streamRecord is not null) {
 				prepares.Add(streamRecord);
 				logPosition += streamRecord.SizeOnDisk;
 			}
@@ -468,7 +468,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				streamId: out var streamId,
 				streamRecord: out var streamRecord);
 
-			if (streamRecord != null) {
+			if (streamRecord is not null) {
 				var res = await WritePrepareWithRetry(streamRecord, token);
 				logPosition = res.NewPos;
 			}
