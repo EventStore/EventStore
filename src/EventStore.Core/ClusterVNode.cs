@@ -1521,7 +1521,7 @@ public class ClusterVNode<TStreamId> :
 		_subsystems = options.Subsystems;
 
 		var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
-			httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
+			httpSendService, [_httpService], _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
 
 		IServiceCollection ConfigureNodeServices(IServiceCollection services) {
 			services
@@ -1530,7 +1530,7 @@ public class ClusterVNode<TStreamId> :
 				.AddSingleton(standardComponents)
 				.AddSingleton(authorizationGateway)
 				.AddSingleton(certificateProvider)
-				.AddSingleton<IReadOnlyList<IDbTransform>>(new List<IDbTransform> { new IdentityDbTransform() })
+				.AddSingleton<IReadOnlyList<IDbTransform>>([new IdentityDbTransform()])
 				.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
 				.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates,
 						X509Certificate2Collection Roots)>>
