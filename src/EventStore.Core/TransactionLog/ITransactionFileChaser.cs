@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -12,8 +14,7 @@ public interface ITransactionFileChaser : IDisposable {
 
 	void Open();
 
-	SeqReadResult TryReadNext();
-	bool TryReadNext(out ILogRecord record);
+	ValueTask<SeqReadResult> TryReadNext(CancellationToken token);
 
 	void Close();
 	void Flush();

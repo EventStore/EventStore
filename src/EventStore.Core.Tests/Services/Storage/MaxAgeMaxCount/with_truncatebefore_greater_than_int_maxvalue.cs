@@ -41,38 +41,38 @@ public class with_truncatebefore_greater_than_int_maxvalue<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void metastream_read_returns_metaevent() {
-		var result = ReadIndex.ReadEvent(SystemStreams.MetastreamOf("ES"), 0);
+	public async Task metastream_read_returns_metaevent() {
+		var result = await ReadIndex.ReadEvent(SystemStreams.MetastreamOf("ES"), 0, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_r1, result.Record);
 	}
 
 	[Test]
-	public void single_event_read_returns_records_after_truncate_before() {
-		var result = ReadIndex.ReadEvent("ES", first);
+	public async Task single_event_read_returns_records_after_truncate_before() {
+		var result = await ReadIndex.ReadEvent("ES", first, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NotFound, result.Result);
 		Assert.IsNull(result.Record);
 
-		result = ReadIndex.ReadEvent("ES", second);
+		result = await ReadIndex.ReadEvent("ES", second, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NotFound, result.Result);
 		Assert.IsNull(result.Record);
 
-		result = ReadIndex.ReadEvent("ES", third);
+		result = await ReadIndex.ReadEvent("ES", third, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_r4, result.Record);
 
-		result = ReadIndex.ReadEvent("ES", fourth);
+		result = await ReadIndex.ReadEvent("ES", fourth, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_r5, result.Record);
 
-		result = ReadIndex.ReadEvent("ES", fifth);
+		result = await ReadIndex.ReadEvent("ES", fifth, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_r6, result.Record);
 	}
 
 	[Test]
-	public void forward_range_read_returns_records_after_truncate_before() {
-		var result = ReadIndex.ReadStreamEventsForward("ES", first, 100);
+	public async Task forward_range_read_returns_records_after_truncate_before() {
+		var result = await ReadIndex.ReadStreamEventsForward("ES", first, 100, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(3, result.Records.Length);
 		Assert.AreEqual(_r4, result.Records[0]);
@@ -81,8 +81,8 @@ public class with_truncatebefore_greater_than_int_maxvalue<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void backward_range_read_returns_records_after_truncate_before() {
-		var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
+	public async Task backward_range_read_returns_records_after_truncate_before() {
+		var result = await ReadIndex.ReadStreamEventsBackward("ES", -1, 100, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(3, result.Records.Length);
 		Assert.AreEqual(_r6, result.Records[0]);
@@ -91,8 +91,8 @@ public class with_truncatebefore_greater_than_int_maxvalue<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void read_all_forward_returns_all_records() {
-		var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords();
+	public async Task read_all_forward_returns_all_records() {
+		var records = (await ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, CancellationToken.None)).EventRecords();
 		Assert.AreEqual(6, records.Count);
 		Assert.AreEqual(_r1, records[0].Event);
 		Assert.AreEqual(_r2, records[1].Event);

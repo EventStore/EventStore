@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
 
@@ -36,9 +37,9 @@ public class MockExistenceFilter : INameExistenceFilter {
 	public void Dispose() {
 	}
 
-	public void Initialize(INameExistenceFilterInitializer source, long truncateToPosition) {
-		source.Initialize(this, truncateToPosition);
-	}
+	public ValueTask Initialize(INameExistenceFilterInitializer source, long truncateToPosition,
+		CancellationToken token)
+		=> source.Initialize(this, truncateToPosition, token);
 
 	public void TruncateTo(long checkpoint) {
 		CurrentCheckpoint = checkpoint;

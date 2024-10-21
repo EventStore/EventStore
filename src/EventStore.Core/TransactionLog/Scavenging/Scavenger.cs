@@ -180,10 +180,9 @@ public class Scavenger<TStreamId> : IScavenger {
 					accumulating.ScavengePoint, scavengerLogger, stopwatch, cancellationToken);
 
 			} else if (checkpoint is ScavengeCheckpoint.Calculating<TStreamId> calculating) {
-				await Time(stopwatch, "Calculation", cancellationToken => {
-					_calculator.Calculate(calculating, _state, cancellationToken);
-					return ValueTask.CompletedTask;
-				}, cancellationToken);
+				await Time(stopwatch, "Calculation", cancellationToken =>
+					_calculator.Calculate(calculating, _state, cancellationToken),
+					cancellationToken);
 				await AfterCalculation(
 					calculating.ScavengePoint, scavengerLogger, stopwatch, cancellationToken);
 
@@ -202,10 +201,9 @@ public class Scavenger<TStreamId> : IScavenger {
 					mergingChunks.ScavengePoint, scavengerLogger, stopwatch, cancellationToken);
 
 			} else if (checkpoint is ScavengeCheckpoint.ExecutingIndex executingIndex) {
-				await Time(stopwatch, "Index execution", cancellationToken => {
-					_indexExecutor.Execute(executingIndex, _state, scavengerLogger, cancellationToken);
-					return ValueTask.CompletedTask;
-				}, cancellationToken);
+				await Time(stopwatch, "Index execution", cancellationToken =>
+					_indexExecutor.Execute(executingIndex, _state, scavengerLogger, cancellationToken),
+					cancellationToken);
 				await AfterIndexExecution(
 					executingIndex.ScavengePoint, stopwatch, cancellationToken);
 
@@ -309,10 +307,9 @@ public class Scavenger<TStreamId> : IScavenger {
 		CancellationToken cancellationToken) {
 
 		LogCollisions();
-		await Time(stopwatch, "Calculation", cancellationToken => {
-			_calculator.Calculate(scavengepoint, _state, cancellationToken);
-			return ValueTask.CompletedTask;
-		}, cancellationToken);
+		await Time(stopwatch, "Calculation", cancellationToken =>
+			_calculator.Calculate(scavengepoint, _state, cancellationToken),
+			cancellationToken);
 		await AfterCalculation(scavengepoint, scavengerLogger, stopwatch, cancellationToken);
 	}
 
@@ -344,10 +341,9 @@ public class Scavenger<TStreamId> : IScavenger {
 		Stopwatch stopwatch,
 		CancellationToken cancellationToken) {
 
-		await Time(stopwatch, "Index execution", cancellationToken => {
-			_indexExecutor.Execute(scavengePoint, _state, scavengerLogger, cancellationToken);
-			return ValueTask.CompletedTask;
-		}, cancellationToken);
+		await Time(stopwatch, "Index execution", cancellationToken =>
+			_indexExecutor.Execute(scavengePoint, _state, scavengerLogger, cancellationToken),
+			cancellationToken);
 		await AfterIndexExecution(scavengePoint, stopwatch, cancellationToken);
 	}
 

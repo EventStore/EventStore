@@ -8,12 +8,14 @@ using System.Text;
 using System.Text.Unicode;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Threading;
 using EventStore.Core.DataStructures;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogAbstraction.Common;
 using FASTER.core;
 using Serilog;
 using Value = System.UInt32;
+using static System.Threading.Timeout;
 
 namespace EventStore.Core.LogV3.FASTER;
 
@@ -45,7 +47,7 @@ public class FASTERNameIndexPersistence :
 	private readonly Value _valueInterval;
 
 	// not expecting any contention for _lastValueAdded but do need the memory barrriers
-	private readonly object _lastValueLock = new();
+	private readonly AsyncExclusiveLock _lastValueLock = new();
 	private Value _lastValueAdded;
 
 	private bool _disposed = false;
@@ -96,7 +98,7 @@ public class FASTERNameIndexPersistence :
 
 		_store = new FasterKV<SpanByte, Value>(
 			// todo: dynamic settings according to available memory
-			// but bear in mind if we have taken an index checkpoint there is a 
+			// but bear in mind if we have taken an index checkpoint there is a
 			// procedure to resize it.
 			size: 1L << 20,
 			checkpointSettings: checkpointSettings,
@@ -156,9 +158,14 @@ public class FASTERNameIndexPersistence :
 		try {
 			_store.Recover();
 			var (name, value) = ScanBackwards().FirstOrDefault();
-			lock (_lastValueLock) {
+
+			_lastValueLock.TryAcquire(InfiniteTimeSpan);
+			try {
 				_lastValueAdded = name == null ? default : value;
+			} finally {
+				_lastValueLock.Release();
 			}
+
 			Log.Information(
 				"{indexName} has been recovered. " +
 				"Last entry was {name}:{value}",
@@ -176,20 +183,20 @@ public class FASTERNameIndexPersistence :
 	// after we make it that the indexes only contain replicated records then there
 	// will be no need for the truncation case and we will remove it with the associated
 	// scanning code.
-	public void Init(INameLookup<Value> source) {
+	public async ValueTask Init(INameLookup<Value> source, CancellationToken token) {
 		Log.Information("{indexName} initializing...", _indexName);
 		var iter = ScanBackwards().GetEnumerator();
 
 		if (!iter.MoveNext()) {
 			Log.Information("{indexName} is empty. Catching up from beginning of source.", _indexName);
-			CatchUp(source, previousValue: 0);
+			await CatchUp(source, previousValue: 0, token);
 
-		} else if (source.TryGetName(iter.Current.Value, out var sourceName)) {
+		} else if (await source.LookupName(iter.Current.Value, token) is { } sourceName) {
 			if (sourceName != iter.Current.Name)
 				ThrowNameMismatch(iter.Current.Value, iter.Current.Name, sourceName);
 
 			Log.Information("{indexName} has entry {value}. Catching up from there", _indexName, iter.Current.Value);
-			CatchUp(source, previousValue: iter.Current.Value);
+			await CatchUp(source, previousValue: iter.Current.Value, token);
 
 		} else {
 			// we have a most recent entry but it is not in the source.
@@ -197,45 +204,56 @@ public class FASTERNameIndexPersistence :
 			// truncate everything in between.
 			var keysToTruncate = new List<string>();
 			var keysToTruncateSet = new HashSet<string>();
-			void PopEntry() {
+
+			async ValueTask PopEntry() {
 				var name = iter.Current.Name;
 				var value = iter.Current.Value;
 				if (keysToTruncateSet.Add(name)) {
 					keysToTruncate.Add(iter.Current.Name);
 
-					lock (_lastValueLock) {
+					await _lastValueLock.AcquireAsync(token);
+					try {
 						if (_lastValueAdded != value)
-							throw new Exception($"Trying to remove the last entry added \"{name}\":{value} but the last entry was really {_lastValueAdded}");
+							throw new Exception(
+								$"Trying to remove the last entry added \"{name}\":{value} but the last entry was really {_lastValueAdded}");
 
 						_lastValueAdded = _lastValueAdded > _firstValue
 							? _lastValueAdded - _valueInterval
 							: default;
+					} finally {
+						_lastValueLock.Release();
 					}
 
 					Log.Verbose("{indexName} is going to delete {name}:{value}", _indexName, name, value);
 				}
 			}
 
-			PopEntry();
+			await PopEntry();
 
 			bool found = false;
-			lock (_lastValueLock) {
+			await _lastValueLock.AcquireAsync(token);
+			sourceName = null;
+			try {
 				while (!found && iter.MoveNext()) {
-					found = source.TryGetName(iter.Current.Value, out sourceName);
-					if (!found) {
-						PopEntry();
+					sourceName = await source.LookupName(iter.Current.Value, token);
+					if (sourceName is null) {
+						await PopEntry();
+					} else {
+						found = true;
 					}
 				}
+			} finally {
+				_lastValueLock.Release();
 			}
 
+			var last = await source.TryGetLastValue(token);
 			if (found) {
-				source.TryGetLastValue(out var last);
-				if (iter.Current.Value != last)
+				if (iter.Current.Value != last.Value)
 					throw new Exception($"{_indexName} this should never happen. expecting source to have values up to {iter.Current.Value} but was {last}");
 				if (iter.Current.Name != sourceName)
 					ThrowNameMismatch(iter.Current.Value, iter.Current.Name, sourceName);
 			} else {
-				if (source.TryGetLastValue(out var last))
+				if (last.HasValue)
 					throw new Exception($"{_indexName} this should never happen. expecting source to have been empty but it wasn't. has values up to {last}");
 			}
 
@@ -245,9 +263,13 @@ public class FASTERNameIndexPersistence :
 
 		CheckpointLogSynchronously();
 
-		lock (_lastValueLock) {
+		await _lastValueLock.AcquireAsync(token);
+		try {
 			Log.Information("{indexName} initialized. Last value is {value}", _indexName, _lastValueAdded);
+		} finally {
+			_lastValueLock.Release();
 		}
+
 		Log.Information("{indexName} total memory after initialization {totalMemoryMib:N0} MiB.", _indexName, CalcTotalMemoryMib());
 	}
 
@@ -257,14 +279,8 @@ public class FASTERNameIndexPersistence :
 			$"value: {value} name: \"{ourName}\"/\"{sourceName}\"");
 	}
 
-	void ThrowValueMismatch(string name, Value ourValue, Value sourceValue) {
-		throw new Exception(
-			$"{_indexName} this should never happen. value mismatch. " +
-			$"name: \"{name}\" value: {ourValue}/{sourceValue}");
-	}
-
-	void CatchUp(INameLookup<Value> source, Value previousValue) {
-		if (!source.TryGetLastValue(out var sourceLastValue)) {
+	async ValueTask CatchUp(INameLookup<Value> source, Value previousValue, CancellationToken token) {
+		if (!(await source.TryGetLastValue(token)).TryGet(out var sourceLastValue)) {
 			Log.Information("{indexName} source is empty, nothing to catch up", _indexName);
 			return;
 		}
@@ -278,7 +294,7 @@ public class FASTERNameIndexPersistence :
 		var count = 0;
 		for (var sourceValue = startValue; sourceValue <= sourceLastValue; sourceValue += _valueInterval) {
 			count++;
-			if (!source.TryGetName(sourceValue, out var name))
+			if (await source.LookupName(sourceValue, token) is not { } name)
 				throw new Exception($"{_indexName} this should never happen. could not find {sourceValue} in source");
 
 			Add(name, sourceValue);
@@ -406,11 +422,15 @@ public class FASTERNameIndexPersistence :
 		if (string.IsNullOrEmpty(name))
 			throw new ArgumentNullException(nameof(name));
 
-		lock (_lastValueLock) {
+		_lastValueLock.TryAcquire(InfiniteTimeSpan);
+		try {
 			var validFirst = _lastValueAdded == default && value == _firstValue;
 			var validNext = value == _lastValueAdded + _valueInterval;
 			if (!validFirst && !validNext)
-				throw new Exception($"{_indexName} attempting to add entry out of order: \"{name}\":{value} when last value added was {_lastValueAdded}");
+				throw new Exception(
+					$"{_indexName} attempting to add entry out of order: \"{name}\":{value} when last value added was {_lastValueAdded}");
+		} finally {
+			_lastValueLock.Release();
 		}
 
 		// convert the name into a UTF8 span which we can use as a key in FASTER.
@@ -433,9 +453,13 @@ public class FASTERNameIndexPersistence :
 				throw new Exception($"{_indexName} Unexpected status {status} upserting \"{name}\":{value}");
 		}
 
-		lock (_lastValueLock) {
+		_lastValueLock.TryAcquire(InfiniteTimeSpan);
+		try {
 			_lastValueAdded = value;
+		} finally {
+			_lastValueLock.Release();
 		}
+
 		_logCheckpointer.Trigger();
 
 		Log.Verbose("{indexName} added new entry: {name}:{value}", _indexName, name, value);

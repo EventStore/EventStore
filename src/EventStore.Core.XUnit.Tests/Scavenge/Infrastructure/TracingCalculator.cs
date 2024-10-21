@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Scavenging;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge;
@@ -15,14 +16,14 @@ public class TracingCalculator<TStreamId> : ICalculator<TStreamId> {
 		_tracer = tracer;
 	}
 
-	public void Calculate(
+	public async ValueTask Calculate(
 		ScavengePoint scavengePoint,
 		IScavengeStateForCalculator<TStreamId> source,
 		CancellationToken cancellationToken) {
 
 		_tracer.TraceIn($"Calculating {scavengePoint.GetName()}");
 		try {
-			_wrapped.Calculate(scavengePoint, source, cancellationToken);
+			await _wrapped.Calculate(scavengePoint, source, cancellationToken);
 			_tracer.TraceOut("Done");
 		} catch {
 			_tracer.TraceOut("Exception calculating");
@@ -30,14 +31,14 @@ public class TracingCalculator<TStreamId> : ICalculator<TStreamId> {
 		}
 	}
 
-	public void Calculate(
+	public async ValueTask Calculate(
 		ScavengeCheckpoint.Calculating<TStreamId> checkpoint,
 		IScavengeStateForCalculator<TStreamId> source,
 		CancellationToken cancellationToken) {
 
 		_tracer.TraceIn($"Calculating from checkpoint: {checkpoint}");
 		try {
-			_wrapped.Calculate(checkpoint, source, cancellationToken);
+			await _wrapped.Calculate(checkpoint, source, cancellationToken);
 			_tracer.TraceOut("Done");
 		} catch {
 			_tracer.TraceOut("Exception calculating");

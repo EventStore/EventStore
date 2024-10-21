@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -73,9 +75,9 @@ public class NameIndex :
 			_indexName, count, nextValue);
 	}
 
-	public void InitializeWithConfirmed(INameLookup<Value> source) {
+	public async ValueTask InitializeWithConfirmed(INameLookup<Value> source, CancellationToken token) {
 		_reservations.Clear();
-		_persistence.Init(source);
+		await _persistence.Init(source, token);
 		var nextValue = CalcNextValue();
 		Log.Information("{indexName} initialized. Next value is {value}", _indexName, nextValue);
 	}

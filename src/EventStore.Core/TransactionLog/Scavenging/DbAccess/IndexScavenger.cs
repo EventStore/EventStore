@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 
 namespace EventStore.Core.TransactionLog.Scavenging;
@@ -14,12 +15,12 @@ public class IndexScavenger : IIndexScavenger {
 		_tableIndex = tableIndex;
 	}
 
-	public void ScavengeIndex(
+	public ValueTask ScavengeIndex(
 		long scavengePoint,
-		Func<IndexEntry, bool> shouldKeep,
+		Func<IndexEntry, CancellationToken, ValueTask<bool>> shouldKeep,
 		IIndexScavengerLog log,
 		CancellationToken cancellationToken) {
 
-		_tableIndex.Scavenge(shouldKeep, log, cancellationToken);
+		return _tableIndex.Scavenge(shouldKeep, log, cancellationToken);
 	}
 }

@@ -57,31 +57,35 @@ public class ReadEventInfoBackward_KnownCollisions_Randomized : ReadIndexTestSce
 	}
 
 	[Test]
-	public void returns_correct_events_before_position() {
+	public async Task returns_correct_events_before_position() {
 		var curEvents = new List<EventRecord>();
 
 		foreach (var @event in _events)
 		{
 			IndexReadEventInfoResult result;
 			if (@event.EventStreamId == Stream) {
-				result = ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream,
-					@event.EventNumber - 1, int.MaxValue, @event.LogPosition);
+				result = await ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream,
+					@event.EventNumber - 1, int.MaxValue, @event.LogPosition,
+					CancellationToken.None);
 				CheckResult(curEvents.ToArray(),result);
 				Assert.True(result.IsEndOfStream);
 
 				// events >= @event.EventNumber should be filtered out
-				result = ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream,
-					@event.EventNumber, int.MaxValue, @event.LogPosition);
+				result = await ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream,
+					@event.EventNumber, int.MaxValue, @event.LogPosition,
+					CancellationToken.None);
 				CheckResult(curEvents.ToArray(), result);
 				Assert.True(result.IsEndOfStream);
 
-				result = ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream,
-					@event.EventNumber + 1, int.MaxValue, @event.LogPosition);
+				result = await ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream,
+					@event.EventNumber + 1, int.MaxValue, @event.LogPosition,
+					CancellationToken.None);
 				CheckResult(curEvents.ToArray(), result);
 				Assert.True(result.IsEndOfStream);
 			}
 
-			result = ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream, -1, int.MaxValue, @event.LogPosition);
+			result = await ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream, -1, int.MaxValue, @event.LogPosition,
+				CancellationToken.None);
 			CheckResult(curEvents.ToArray(), result);
 			Assert.True(result.IsEndOfStream);
 
@@ -91,7 +95,7 @@ public class ReadEventInfoBackward_KnownCollisions_Randomized : ReadIndexTestSce
 	}
 
 	[Test]
-	public void returns_correct_events_with_max_count() {
+	public async Task returns_correct_events_with_max_count() {
 		var curEvents = new List<EventRecord>();
 
 		foreach (var @event in _events) {
@@ -104,8 +108,8 @@ public class ReadEventInfoBackward_KnownCollisions_Randomized : ReadIndexTestSce
 			Assert.Greater(maxCount, 0);
 			Assert.GreaterOrEqual(fromEventNumber, 0);
 
-			var result = ReadIndex.ReadEventInfoBackward_KnownCollisions(
-				Stream, fromEventNumber, maxCount, long.MaxValue);
+			var result = await ReadIndex.ReadEventInfoBackward_KnownCollisions(
+				Stream, fromEventNumber, maxCount, long.MaxValue, CancellationToken.None);
 			CheckResult(curEvents.Skip(curEvents.Count - maxCount).ToArray(), result);
 
 			if (fromEventNumber - maxCount < 0)

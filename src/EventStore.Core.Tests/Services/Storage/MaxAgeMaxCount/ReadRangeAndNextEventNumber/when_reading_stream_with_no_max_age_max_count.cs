@@ -27,9 +27,9 @@ public class when_reading_stream_with_no_max_age_max_count<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void
+	public async Task
 		on_read_forward_from_start_to_middle_next_event_number_is_middle_plus_1_and_its_not_end_of_stream() {
-		var res = ReadIndex.ReadStreamEventsForward("ES", 0, 3);
+		var res = await ReadIndex.ReadStreamEventsForward("ES", 0, 3, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, res.Result);
 		Assert.AreEqual(3, res.NextEventNumber);
 		Assert.AreEqual(4, res.LastEventNumber);
@@ -43,8 +43,8 @@ public class when_reading_stream_with_no_max_age_max_count<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void on_read_forward_from_the_middle_to_end_next_event_number_is_end_plus_1_and_its_end_of_stream() {
-		var res = ReadIndex.ReadStreamEventsForward("ES", 1, 4);
+	public async Task on_read_forward_from_the_middle_to_end_next_event_number_is_end_plus_1_and_its_end_of_stream() {
+		var res = await ReadIndex.ReadStreamEventsForward("ES", 1, 4, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, res.Result);
 		Assert.AreEqual(5, res.NextEventNumber);
 		Assert.AreEqual(4, res.LastEventNumber);
@@ -59,9 +59,9 @@ public class when_reading_stream_with_no_max_age_max_count<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void
+	public async Task
 		on_read_forward_from_the_middle_to_out_of_bounds_next_event_number_is_end_plus_1_and_its_end_of_stream() {
-		var res = ReadIndex.ReadStreamEventsForward("ES", 1, 5);
+		var res = await ReadIndex.ReadStreamEventsForward("ES", 1, 5, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, res.Result);
 		Assert.AreEqual(5, res.NextEventNumber);
 		Assert.AreEqual(4, res.LastEventNumber);
@@ -76,9 +76,9 @@ public class when_reading_stream_with_no_max_age_max_count<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void
+	public async Task
 		on_read_forward_from_the_out_of_bounds_to_out_of_bounds_next_event_number_is_end_plus_1_and_its_end_of_stream() {
-		var res = ReadIndex.ReadStreamEventsForward("ES", 6, 2);
+		var res = await ReadIndex.ReadStreamEventsForward("ES", 6, 2, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, res.Result);
 		Assert.AreEqual(5, res.NextEventNumber);
 		Assert.AreEqual(4, res.LastEventNumber);
@@ -90,9 +90,9 @@ public class when_reading_stream_with_no_max_age_max_count<TLogFormat, TStreamId
 
 
 	[Test]
-	public void
+	public async Task
 		on_read_backward_from_the_end_to_middle_next_event_number_is_middle_minus_1_and_its_not_end_of_stream() {
-		var res = ReadIndex.ReadStreamEventsBackward("ES", 4, 3);
+		var res = await ReadIndex.ReadStreamEventsBackward("ES", 4, 3, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, res.Result);
 		Assert.AreEqual(1, res.NextEventNumber);
 		Assert.AreEqual(4, res.LastEventNumber);
@@ -106,8 +106,8 @@ public class when_reading_stream_with_no_max_age_max_count<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void on_read_backward_from_middle_to_start_next_event_number_is_minus_1_and_its_end_of_stream() {
-		var res = ReadIndex.ReadStreamEventsBackward("ES", 2, 3);
+	public async Task on_read_backward_from_middle_to_start_next_event_number_is_minus_1_and_its_end_of_stream() {
+		var res = await ReadIndex.ReadStreamEventsBackward("ES", 2, 3, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, res.Result);
 		Assert.AreEqual(-1, res.NextEventNumber);
 		Assert.AreEqual(4, res.LastEventNumber);
@@ -121,8 +121,8 @@ public class when_reading_stream_with_no_max_age_max_count<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void on_read_backward_from_middle_to_before_start_next_event_number_is_minus_1_and_its_end_of_stream() {
-		var res = ReadIndex.ReadStreamEventsBackward("ES", 2, 5);
+	public async Task on_read_backward_from_middle_to_before_start_next_event_number_is_minus_1_and_its_end_of_stream() {
+		var res = await ReadIndex.ReadStreamEventsBackward("ES", 2, 5, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, res.Result);
 		Assert.AreEqual(-1, res.NextEventNumber);
 		Assert.AreEqual(4, res.LastEventNumber);
@@ -136,9 +136,9 @@ public class when_reading_stream_with_no_max_age_max_count<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void
+	public async Task
 		on_read_backward_from_out_of_bounds_to_middle_next_event_number_is_middle_minus_1_and_its_not_end_of_stream() {
-		var res = ReadIndex.ReadStreamEventsBackward("ES", 6, 5);
+		var res = await ReadIndex.ReadStreamEventsBackward("ES", 6, 5, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, res.Result);
 		Assert.AreEqual(1, res.NextEventNumber);
 		Assert.AreEqual(4, res.LastEventNumber);
@@ -152,9 +152,9 @@ public class when_reading_stream_with_no_max_age_max_count<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void
+	public async Task
 		on_read_backward_from_out_of_bounds_to_out_of_bounds_next_event_number_is_end_and_its_not_end_of_stream() {
-		var res = ReadIndex.ReadStreamEventsBackward("ES", 10, 3);
+		var res = await ReadIndex.ReadStreamEventsBackward("ES", 10, 3, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, res.Result);
 		Assert.AreEqual(4, res.NextEventNumber);
 		Assert.AreEqual(4, res.LastEventNumber);

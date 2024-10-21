@@ -69,18 +69,20 @@ public sealed class TelemetryService :
 			_nodeOptions.PlugableComponents.Select(x => x.DiagnosticsName).ToArray()
 		);
 
-		_ = Task.Run(async () => {
-			try {
-				await ProcessAsync(publisher, sink);
-			} catch (Exception ex) when (ex is not OperationCanceledException) {
-				Logger.Error(ex, "Telemetry loop stopped");
-			}
-		});
+		ThreadPool.UnsafeQueueUserWorkItem(ProcessAsync, sink, preferLocal: false);
 	}
 
 	public void Dispose() {
 		_cts.Cancel();
 		_cts.Dispose();
+	}
+
+	private async void ProcessAsync(ITelemetrySink sink) {
+		try {
+			await ProcessAsync(_publisher, sink);
+		} catch (Exception ex) when (ex is not OperationCanceledException) {
+			Logger.Error(ex, "Telemetry loop stopped");
+		}
 	}
 
 	// we send messages on the publisher, and receive responses directly to the channel
@@ -103,7 +105,7 @@ public sealed class TelemetryService :
 		await foreach (var message in channel.Reader.ReadAllAsync(_cts.Token)) {
 			switch (message) {
 				case TelemetryMessage.Collect:
-					Handle(usageRequest);
+					await Handle(usageRequest, _cts.Token);
 					publisher.Publish(usageRequest);
 					publisher.Publish(scheduleFlush);
 					break;
@@ -152,9 +154,9 @@ public sealed class TelemetryService :
 		_leaderId = message.Leader.InstanceId;
 	}
 
-	private void Handle(TelemetryMessage.Request message) {
+	private async ValueTask Handle(TelemetryMessage.Request message, CancellationToken token = default) {
 		if (_firstEpochId == Guid.Empty)
-			ReadFirstEpoch();
+			await ReadFirstEpoch(token);
 
 		message.Envelope.ReplyWith(new TelemetryMessage.Response(
 			"version", JsonValue.Create(VersionInfo.Version)));
@@ -231,10 +233,10 @@ public sealed class TelemetryService :
 		envelope.ReplyWith(new TelemetryMessage.Response("gossip", seeds));
 	}
 
-	private void ReadFirstEpoch() {
+	private async ValueTask ReadFirstEpoch(CancellationToken token) {
 		try {
 			var chunk = _manager.GetChunkFor(0);
-			var result = chunk.TryReadAt(0, false);
+			var result = await chunk.TryReadAt(0, false, token);
 
 			if (!result.Success)
 				return;

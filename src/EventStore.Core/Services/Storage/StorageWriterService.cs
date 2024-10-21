@@ -27,6 +27,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ILogger = Serilog.ILogger;
+using List = DotNext.Collections.Generic.List;
 
 namespace EventStore.Core.Services.Storage;
 
@@ -300,10 +301,10 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				logPosition += streamRecord.SizeOnDisk;
 			}
 
-			var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
-				msg.Events.Select(x => x.EventId), streamMightExist: preExisting);
-			if (commitCheck.Decision != CommitDecision.Ok) {
-				ActOnCommitCheckFailure(msg.Envelope, msg.CorrelationId, commitCheck);
+			var commitCheck = await _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
+				msg.Events.Select(static x => x.EventId).ToAsyncEnumerable(), streamMightExist: preExisting, token);
+			if (commitCheck.Decision is not CommitDecision.Ok) {
+				await ActOnCommitCheckFailure(msg.Envelope, msg.CorrelationId, commitCheck, token);
 				return;
 			}
 
@@ -347,7 +348,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			}
 
 			if (!await TryWritePreparesWithRetry(prepares, token)) {
-				ActOnCommitCheckFailure(
+				await ActOnCommitCheckFailure(
 					envelope: msg.Envelope,
 					correlationId: msg.CorrelationId,
 					result: new CommitCheckResult<TStreamId>(
@@ -356,11 +357,12 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 						currentVersion: commitCheck.CurrentVersion,
 						startEventNumber: -1,
 						endEventNumber: -1,
-						isSoftDeleted: false));
+						isSoftDeleted: false),
+					token);
 			}
 
 			bool softUndeleteMetastream = _systemStreams.IsMetaStream(streamId)
-										  && _indexWriter.IsSoftDeleted(_systemStreams.OriginalStreamOf(streamId));
+										  && await _indexWriter.IsSoftDeleted(_systemStreams.OriginalStreamOf(streamId), token);
 
 			// note: the stream & event type records are indexed separately and must not be pre-committed to the main index
 			_indexWriter.PreCommit(CollectionsMarshal.AsSpan(prepares)[^msg.Events.Length..]);
@@ -402,13 +404,13 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 	private async ValueTask SoftUndeleteMetastream(TStreamId metastreamId, CancellationToken token) {
 		var origStreamId = _systemStreams.OriginalStreamOf(metastreamId);
-		var rawMetaInfo = _indexWriter.GetStreamRawMeta(origStreamId);
+		var rawMetaInfo = await _indexWriter.GetStreamRawMeta(origStreamId, token);
 		await SoftUndeleteStream(origStreamId, rawMetaInfo.MetaLastEventNumber, rawMetaInfo.RawMeta,
-			recreateFrom: _indexWriter.GetStreamLastEventNumber(origStreamId) + 1, token);
+			recreateFrom: await _indexWriter.GetStreamLastEventNumber(origStreamId, token) + 1, token);
 	}
 
 	private async ValueTask SoftUndeleteStream(TStreamId streamId, long recreateFromEventNumber, CancellationToken token) {
-		var rawInfo = _indexWriter.GetStreamRawMeta(streamId);
+		var rawInfo = await _indexWriter.GetStreamRawMeta(streamId, token);
 		await SoftUndeleteStream(streamId, rawInfo.MetaLastEventNumber, rawInfo.RawMeta, recreateFromEventNumber, token);
 	}
 
@@ -471,10 +473,10 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				logPosition = res.NewPos;
 			}
 
-			var commitCheck = _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
-				[eventId], streamMightExist: preExisting);
+			var commitCheck = await _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
+				List.Singleton(eventId).ToAsyncEnumerable(), streamMightExist: preExisting, token);
 			if (commitCheck.Decision != CommitDecision.Ok) {
-				ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
+				await ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck, token);
 				return;
 			}
 
@@ -491,12 +493,12 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			} else {
 				// SOFT DELETE
 				var metastreamId = _systemStreams.MetaStreamOf(streamId);
-				var expectedVersion = _indexWriter.GetStreamLastEventNumber(metastreamId);
+				var expectedVersion = await _indexWriter.GetStreamLastEventNumber(metastreamId, token);
 
-				if (_indexWriter.GetStreamLastEventNumber(streamId) < 0 && expectedVersion < 0) {
+				if (await _indexWriter.GetStreamLastEventNumber(streamId, token) < 0 && expectedVersion < 0) {
 					var result = new CommitCheckResult<TStreamId>(CommitDecision.WrongExpectedVersion, streamId,
 						-1, -1, -1, false);
-					ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, result);
+					await ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, result, token);
 					return;
 				}
 
@@ -634,9 +636,9 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		Interlocked.Decrement(ref FlushMessagesInQueue);
 		try {
 			var commitPos = Writer.Position;
-			var commitCheck = _indexWriter.CheckCommitStartingAt(message.TransactionPosition, commitPos);
-			if (commitCheck.Decision != CommitDecision.Ok) {
-				ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
+			var commitCheck = await _indexWriter.CheckCommitStartingAt(message.TransactionPosition, commitPos, token);
+			if (commitCheck.Decision is not CommitDecision.Ok) {
+				await ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck, token);
 				return;
 			}
 
@@ -649,10 +651,10 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 			bool softUndeleteMetastream = _systemStreams.IsMetaStream(commitCheck.EventStreamId)
 										  &&
-										  _indexWriter.IsSoftDeleted(
-											  _systemStreams.OriginalStreamOf(commitCheck.EventStreamId));
+										  await _indexWriter.IsSoftDeleted(
+											  _systemStreams.OriginalStreamOf(commitCheck.EventStreamId), token);
 
-			_indexWriter.PreCommit(commit);
+			await _indexWriter.PreCommit(commit, token);
 
 			if (commitCheck.IsSoftDeleted)
 				await SoftUndeleteStream(commitCheck.EventStreamId, commitCheck.CurrentVersion + 1, token);
@@ -666,7 +668,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		}
 	}
 
-	private void ActOnCommitCheckFailure(IEnvelope envelope, Guid correlationId, CommitCheckResult<TStreamId> result) {
+	private async ValueTask ActOnCommitCheckFailure(IEnvelope envelope, Guid correlationId, CommitCheckResult<TStreamId> result, CancellationToken token) {
 		switch (result.Decision) {
 			case CommitDecision.WrongExpectedVersion:
 				envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(correlationId, result.CurrentVersion));
@@ -675,7 +677,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				envelope.ReplyWith(new StorageMessage.StreamDeleted(correlationId));
 				break;
 			case CommitDecision.Idempotent:
-				var eventStreamName = _indexWriter.GetStreamName(result.EventStreamId);
+				var eventStreamName = await _indexWriter.GetStreamName(result.EventStreamId, token);
 				envelope.ReplyWith(new StorageMessage.AlreadyCommitted(correlationId,
 					eventStreamName,
 					result.StartEventNumber,

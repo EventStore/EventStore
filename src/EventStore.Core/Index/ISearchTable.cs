@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Index;
 
@@ -13,7 +15,7 @@ public interface ISearchTable {
 
 	bool TryGetOneValue(ulong stream, long number, out long position);
 	bool TryGetLatestEntry(ulong stream, out IndexEntry entry);
-	bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry,bool> isForThisStream, out IndexEntry entry);
+	ValueTask<IndexEntry?> TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream, CancellationToken token);
 	bool TryGetOldestEntry(ulong stream, out IndexEntry entry);
 	bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry);
 	bool TryGetPreviousEntry(ulong stream, long beforeVersion, out IndexEntry entry);

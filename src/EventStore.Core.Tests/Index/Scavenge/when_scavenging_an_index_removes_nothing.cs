@@ -3,7 +3,9 @@
 
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
+using DotNext;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
@@ -38,12 +40,11 @@ public class when_scavenging_an_index_removes_nothing : SpecificationWithDirecto
 		table.Add(0x010300000000, 1, 4);
 		_oldTable = PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault);
 
-		long spaceSaved;
 		Func<IndexEntry, bool> existsAt = x => true;
 
 		_expectedOutputFile = GetTempFilePath();
-		_newtable = PTable.Scavenged(_oldTable, _expectedOutputFile,
-			PTableVersions.IndexV4, existsAt, out spaceSaved, skipIndexVerify: _skipIndexVerify,
+		(_newtable, var spaceSaved) = await PTable.Scavenged(_oldTable, _expectedOutputFile,
+			PTableVersions.IndexV4, existsAt.ToAsync(), skipIndexVerify: _skipIndexVerify,
 			initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault);
 	}
 

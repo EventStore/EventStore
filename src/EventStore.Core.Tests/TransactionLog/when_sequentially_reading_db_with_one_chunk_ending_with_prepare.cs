@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.LogV2;
@@ -82,12 +83,11 @@ public class when_sequentially_reading_db_with_one_chunk_ending_with_prepare<TLo
 	}
 
 	[Test]
-	public void only_the_last_record_is_marked_eof() {
+	public async Task only_the_last_record_is_marked_eof() {
 		var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, 0);
 
-		SeqReadResult res;
 		int count = 0;
-		while ((res = seqReader.TryReadNext()).Success) {
+		while (await seqReader.TryReadNext(CancellationToken.None) is { Success: true } res) {
 			++count;
 			Assert.AreEqual(count == RecordsCount, res.Eof);
 		}

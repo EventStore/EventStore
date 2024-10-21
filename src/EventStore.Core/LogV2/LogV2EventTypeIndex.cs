@@ -2,6 +2,9 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext;
 using EventStore.Common.Utils;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -14,19 +17,19 @@ public class LogV2EventTypeIndex :
 	INameIndexConfirmer<string>,
 	IValueLookup<string>,
 	INameLookup<string> {
-		
+
 	public void Dispose() {
 	}
 
-	public void InitializeWithConfirmed(INameLookup<string> source) {
-	}
+	public ValueTask InitializeWithConfirmed(INameLookup<string> source, CancellationToken token)
+		=> token.IsCancellationRequested ? ValueTask.FromCanceled(token) : ValueTask.CompletedTask;
 
 	public void CancelReservations() {
 	}
 
 	public void Confirm(IList<IPrepareLogRecord<string>> prepares, bool catchingUp, IIndexBackend<string> backend) {
 	}
-	
+
 	public void Confirm(
 		IList<IPrepareLogRecord<string>> prepares,
 		CommitLogRecord commit,
@@ -45,12 +48,9 @@ public class LogV2EventTypeIndex :
 
 	public string LookupValue(string eventTypeName) => eventTypeName;
 
-	public bool TryGetName(string eventTypeId, out string name) {
-		name = eventTypeId;
-		return true;
-	}
+	public ValueTask<string> LookupName(string eventTypeId, CancellationToken token)
+		=> token.IsCancellationRequested ? ValueTask.FromCanceled<string>(token) : ValueTask.FromResult(eventTypeId);
 
-	public bool TryGetLastValue(out string last) {
-		throw new System.NotImplementedException();
-	}
+	public ValueTask<Optional<string>> TryGetLastValue(CancellationToken token)
+		=> ValueTask.FromException<Optional<string>>(new System.NotImplementedException());
 }

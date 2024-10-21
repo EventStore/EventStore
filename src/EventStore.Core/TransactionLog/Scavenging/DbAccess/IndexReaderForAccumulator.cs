@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.TransactionLog.Scavenging;
@@ -14,11 +16,12 @@ public class IndexReaderForAccumulator<TStreamId> : IIndexReaderForAccumulator<T
 	}
 
 	// reads a stream forward but only returns event info not the full event.
-	public IndexReadEventInfoResult ReadEventInfoForward(
+	public ValueTask<IndexReadEventInfoResult> ReadEventInfoForward(
 		StreamHandle<TStreamId> handle,
 		long fromEventNumber,
 		int maxCount,
-		ScavengePoint scavengePoint) {
+		ScavengePoint scavengePoint,
+		CancellationToken token) {
 
 		switch (handle.Kind) {
 			case StreamHandle.Kind.Hash:
@@ -27,26 +30,29 @@ public class IndexReaderForAccumulator<TStreamId> : IIndexReaderForAccumulator<T
 					handle.StreamHash,
 					fromEventNumber,
 					maxCount,
-					scavengePoint.Position);
+					scavengePoint.Position,
+					token);
 			case StreamHandle.Kind.Id:
 				// uses log to check for hash collisions
 				return _readIndex.ReadEventInfoForward_KnownCollisions(
 					handle.StreamId,
 					fromEventNumber,
 					maxCount,
-					scavengePoint.Position);
+					scavengePoint.Position,
+					token);
 			default:
 				throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
 		}
 	}
 
 	// reads a stream backward but only returns event info not the full event.
-	public IndexReadEventInfoResult ReadEventInfoBackward(
+	public ValueTask<IndexReadEventInfoResult> ReadEventInfoBackward(
 		TStreamId streamId,
 		StreamHandle<TStreamId> handle,
 		long fromEventNumber,
 		int maxCount,
-		ScavengePoint scavengePoint) {
+		ScavengePoint scavengePoint,
+		CancellationToken token) {
 
 		switch (handle.Kind) {
 			case StreamHandle.Kind.Hash:
@@ -56,14 +62,16 @@ public class IndexReaderForAccumulator<TStreamId> : IIndexReaderForAccumulator<T
 					_ => streamId,
 					fromEventNumber,
 					maxCount,
-					scavengePoint.Position);
+					scavengePoint.Position,
+					token);
 			case StreamHandle.Kind.Id:
 				// uses log to check for hash collisions
 				return _readIndex.ReadEventInfoBackward_KnownCollisions(
 					handle.StreamId,
 					fromEventNumber,
 					maxCount,
-					scavengePoint.Position);
+					scavengePoint.Position,
+					token);
 			default:
 				throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
 		}

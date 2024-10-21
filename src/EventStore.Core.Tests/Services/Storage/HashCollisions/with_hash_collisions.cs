@@ -108,8 +108,8 @@ public class when_stream_does_not_exist : HashCollisionTestFixture {
 	}
 
 	[Test]
-	public void should_return_no_stream() {
-		Assert.AreEqual(ExpectedVersion.NoStream, _indexReader.GetStreamLastEventNumber("account--696193173"));
+	public async Task should_return_no_stream() {
+		Assert.AreEqual(ExpectedVersion.NoStream, await _indexReader.GetStreamLastEventNumber("account--696193173", CancellationToken.None));
 	}
 }
 
@@ -144,9 +144,9 @@ public class when_stream_is_out_of_range_of_read_limit : HashCollisionTestFixtur
 	}
 
 	[Test]
-	public void should_return_invalid_event_number() {
+	public async Task should_return_invalid_event_number() {
 		Assert.AreEqual(EventStore.Core.Data.EventNumber.Invalid,
-			_indexReader.GetStreamLastEventNumber(stream1Id));
+			await _indexReader.GetStreamLastEventNumber(stream1Id, CancellationToken.None));
 	}
 }
 
@@ -181,8 +181,8 @@ public class when_stream_is_in_of_range_of_read_limit : HashCollisionTestFixture
 	}
 
 	[Test]
-	public void should_return_last_event_number() {
-		Assert.AreEqual(0, _indexReader.GetStreamLastEventNumber(stream1Id));
+	public async Task should_return_last_event_number() {
+		Assert.AreEqual(0, await _indexReader.GetStreamLastEventNumber(stream1Id, CancellationToken.None));
 	}
 }
 
@@ -215,9 +215,9 @@ public class when_hash_read_limit_is_not_reached : HashCollisionTestFixture {
 	}
 
 	[Test]
-	public void should_return_invalid_event_number() {
+	public async Task should_return_invalid_event_number() {
 		Assert.AreEqual(EventStore.Core.Data.EventNumber.Invalid,
-			_indexReader.GetStreamLastEventNumber("account--696193173"));
+			await _indexReader.GetStreamLastEventNumber("account--696193173", CancellationToken.None));
 	}
 }
 
@@ -246,8 +246,8 @@ public class when_index_contains_duplicate_entries : HashCollisionTestFixture {
 	}
 
 	[Test]
-	public void should_be_able_to_read_stream_events_forward_and_exclude_duplicates() {
-		var result = _indexReader.ReadStreamEventsForward(streamId, 0, int.MaxValue);
+	public async Task should_be_able_to_read_stream_events_forward_and_exclude_duplicates() {
+		var result = await _indexReader.ReadStreamEventsForward(streamId, 0, int.MaxValue, CancellationToken.None);
 		Assert.AreEqual(3, result.Records.Length);
 
 		Assert.AreEqual(streamId, result.Records[0].EventStreamId);
@@ -264,8 +264,8 @@ public class when_index_contains_duplicate_entries : HashCollisionTestFixture {
 	}
 
 	[Test]
-	public void should_be_able_to_read_stream_events_backward_and_exclude_duplicates() {
-		var result = _indexReader.ReadStreamEventsBackward(streamId, 2, int.MaxValue);
+	public async Task should_be_able_to_read_stream_events_backward_and_exclude_duplicates() {
+		var result = await _indexReader.ReadStreamEventsBackward(streamId, 2, int.MaxValue, CancellationToken.None);
 		Assert.AreEqual(3, result.Records.Length);
 
 		Assert.AreEqual(streamId, result.Records[2].EventStreamId);
@@ -282,8 +282,8 @@ public class when_index_contains_duplicate_entries : HashCollisionTestFixture {
 	}
 
 	[Test]
-	public void should_be_able_to_read_single_event_and_exclude_duplicates() {
-		var result = _indexReader.ReadEvent(streamId, 0);
+	public async Task should_be_able_to_read_single_event_and_exclude_duplicates() {
+		var result = await _indexReader.ReadEvent(streamId, 0, CancellationToken.None);
 
 		Assert.AreEqual(streamId, result.Record.EventStreamId);
 		Assert.AreEqual(0, result.Record.EventNumber);
@@ -337,14 +337,14 @@ public class
 	}
 
 	[Test]
-	public void should_return_the_correct_last_event_number() {
-		var result = _indexReader.GetStreamLastEventNumber(streamId);
+	public async Task should_return_the_correct_last_event_number() {
+		var result = await _indexReader.GetStreamLastEventNumber(streamId, CancellationToken.None);
 		Assert.AreEqual(2, result);
 	}
 
 	[Test]
-	public void should_be_able_to_read_stream_events_forward_and_exclude_duplicates() {
-		var result = _indexReader.ReadStreamEventsForward(streamId, 0, int.MaxValue);
+	public async Task should_be_able_to_read_stream_events_forward_and_exclude_duplicates() {
+		var result = await _indexReader.ReadStreamEventsForward(streamId, 0, int.MaxValue, CancellationToken.None);
 		Assert.AreEqual(3, result.Records.Length);
 
 		Assert.AreEqual(streamId, result.Records[0].EventStreamId);
@@ -361,8 +361,8 @@ public class
 	}
 
 	[Test]
-	public void should_be_able_to_read_stream_events_backward_and_exclude_duplicates() {
-		var result = _indexReader.ReadStreamEventsBackward(streamId, 2, int.MaxValue);
+	public async Task should_be_able_to_read_stream_events_backward_and_exclude_duplicates() {
+		var result = await _indexReader.ReadStreamEventsBackward(streamId, 2, int.MaxValue, CancellationToken.None);
 		Assert.AreEqual(3, result.Records.Length);
 
 		Assert.AreEqual(streamId, result.Records[2].EventStreamId);
@@ -379,8 +379,8 @@ public class
 	}
 
 	[Test]
-	public void should_be_able_to_read_single_event_and_exclude_duplicates() {
-		var result = _indexReader.ReadEvent(streamId, 0);
+	public async Task should_be_able_to_read_single_event_and_exclude_duplicates() {
+		var result = await _indexReader.ReadEvent(streamId, 0, CancellationToken.None);
 
 		Assert.AreEqual(streamId, result.Record.EventStreamId);
 		Assert.AreEqual(0, result.Record.EventNumber);
@@ -406,11 +406,12 @@ public class when_stream_has_max_age : HashCollisionTestFixture {
 	}
 
 	[Test]
-	public void can_read() {
-		var result = _indexReader.ReadStreamEventsForward(
+	public async Task can_read() {
+		var result = await _indexReader.ReadStreamEventsForward(
 			streamName: _evenStream,
 			fromEventNumber: 0,
-			maxCount: 2);
+			maxCount: 2,
+			CancellationToken.None);
 
 		Assert.AreEqual(2, result.Records.Length);
 		Assert.AreEqual(5, result.Records[0].EventNumber);
@@ -474,21 +475,19 @@ public class FakeReader : ITransactionFileReader {
 		throw new NotImplementedException();
 	}
 
-	public SeqReadResult TryReadNext() {
-		throw new NotImplementedException();
-	}
+	public ValueTask<SeqReadResult> TryReadNext(CancellationToken token)
+		=> ValueTask.FromException<SeqReadResult>(new NotImplementedException());
 
 	public ValueTask<SeqReadResult> TryReadPrev(CancellationToken token)
 		=> ValueTask.FromException<SeqReadResult>(new NotImplementedException());
 
-	public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+	public ValueTask<RecordReadResult> TryReadAt(long position, bool couldBeScavenged, CancellationToken token) {
 		var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 			position % 2 == 0 ? "account--696193173" : "LPN-FC002_LPK51001", null, -1, DateTime.UtcNow, PrepareFlags.None,
 			"type", null, new byte[0], null);
-		return new RecordReadResult(true, position + 1, record, 1);
+		return new(new RecordReadResult(true, position + 1, record, 1));
 	}
 
-	public bool ExistsAt(long position) {
-		return true;
-	}
+	public ValueTask<bool> ExistsAt(long position, CancellationToken token)
+		=> token.IsCancellationRequested ? ValueTask.FromCanceled<bool>(token) : ValueTask.FromResult(true);
 }

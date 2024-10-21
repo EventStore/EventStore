@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
@@ -133,44 +134,43 @@ public class HashListMemTable : IMemTable {
 		return false;
 	}
 
-	public bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+	public async ValueTask<IndexEntry?> TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream, CancellationToken token) {
 		ArgumentOutOfRangeException.ThrowIfNegative(beforePosition);
 
 		ulong hash = GetHash(stream);
-		entry = TableIndex.InvalidIndexEntry;
 
 		if (!_hash.TryGetValue(hash, out var list))
-			return false;
+			return null;
 
-		if (!list.Lock.TryEnterReadLock(DefaultLockTimeout))
+		if (!await list.Lock.TryEnterReadLockAsync(DefaultLockTimeout, token))
 			throw new UnableToAcquireLockInReasonableTimeException();
 
 		try {
 			// we use LogPosComparer here so that it only compares the position part of the key we
 			// are passing in and not the evNum (maxvalue) which is meaningless
-			int endIdx = list.UpperBound(
+			int endIdx = await list.UpperBound(
 				key: new Entry(long.MaxValue, beforePosition - 1),
 				comparer: LogPosComparer,
-				continueSearch: e => isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos)));
+				continueSearch: async (e, token) => await isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos), token),
+				token);
 
 			if (endIdx is -1)
-				return false;
+				return null;
 
 			var latestBeforePosition = list.Keys[endIdx];
-			entry = new IndexEntry(hash, latestBeforePosition.EvNum, latestBeforePosition.LogPos);
-			return true;
+			return new(hash, latestBeforePosition.EvNum, latestBeforePosition.LogPos);
 		} catch (SearchStoppedException) {
 			// fall back to linear search if there was a hash collision
-			int maxIdx = list.FindMax(e =>
+			int maxIdx = await list.FindMax(async (e, token) =>
 				e.LogPos < beforePosition &&
-				isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos)));
+				await isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos), token),
+				token);
 
 			if (maxIdx is -1)
-				return false;
+				return null;
 
 			var latestBeforePosition = list.Keys[maxIdx];
-			entry = new IndexEntry(hash, latestBeforePosition.EvNum, latestBeforePosition.LogPos);
-			return true;
+			return new(hash, latestBeforePosition.EvNum, latestBeforePosition.LogPos);
 		} finally {
 			list.Lock.Release();
 		}

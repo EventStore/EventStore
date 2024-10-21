@@ -65,8 +65,8 @@ public class when_appending_to_a_tfchunk_and_flushing<TLogFormat, TStreamId> : S
 	}
 
 	[Test]
-	public void the_record_can_be_read_at_exact_position() {
-		var res = _chunk.TryReadAt(0, couldBeScavenged: false);
+	public async Task the_record_can_be_read_at_exact_position() {
+		var res = await _chunk.TryReadAt(0, couldBeScavenged: false, CancellationToken.None);
 		Assert.IsTrue(res.Success);
 		Assert.AreEqual(_record, res.LogRecord);
 		Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);
@@ -81,8 +81,8 @@ public class when_appending_to_a_tfchunk_and_flushing<TLogFormat, TStreamId> : S
 	}
 
 	[Test]
-	public void the_record_can_be_read_as_closest_forward_to_pos_zero() {
-		var res = _chunk.TryReadClosestForward(0);
+	public async Task the_record_can_be_read_as_closest_forward_to_pos_zero() {
+		var res = await _chunk.TryReadClosestForward(0, CancellationToken.None);
 		Assert.IsTrue(res.Success);
 		Assert.AreEqual(_record, res.LogRecord);
 		Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);

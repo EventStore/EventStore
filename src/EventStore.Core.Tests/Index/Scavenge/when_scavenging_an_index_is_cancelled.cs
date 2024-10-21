@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
@@ -27,19 +28,16 @@ public class when_scavenging_an_index_is_cancelled : SpecificationWithDirectoryP
 		_oldTable = PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault);
 
 		var cancellationTokenSource = new CancellationTokenSource();
-		long spaceSaved;
 		Func<IndexEntry, bool> existsAt = x => {
 			cancellationTokenSource.Cancel();
 			return true;
 		};
 
 		_expectedOutputFile = GetTempFilePath();
-		Assert.That(
-			() => PTable.Scavenged(_oldTable, _expectedOutputFile,
-				PTableVersions.IndexV4, existsAt, out spaceSaved, ct: cancellationTokenSource.Token,
-				initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault,
-				useBloomFilter: true),
-			Throws.InstanceOf<OperationCanceledException>());
+		Assert.ThrowsAsync<OperationCanceledException>(async () => await PTable.Scavenged(_oldTable, _expectedOutputFile,
+			PTableVersions.IndexV4, existsAt.ToAsync(), ct: cancellationTokenSource.Token,
+			initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault,
+			useBloomFilter: true));
 	}
 
 	[OneTimeTearDown]

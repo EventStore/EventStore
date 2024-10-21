@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using Serilog;
 
@@ -32,7 +33,7 @@ public class IndexExecutor<TStreamId> : IIndexExecutor<TStreamId> {
 		_throttle = throttle;
 	}
 
-	public void Execute(
+	public ValueTask Execute(
 		ScavengePoint scavengePoint,
 		IScavengeStateForIndexExecutor<TStreamId> state,
 		IIndexScavengerLog scavengerLogger,
@@ -43,10 +44,10 @@ public class IndexExecutor<TStreamId> : IIndexExecutor<TStreamId> {
 
 		var checkpoint = new ScavengeCheckpoint.ExecutingIndex(scavengePoint);
 		state.SetCheckpoint(checkpoint);
-		Execute(checkpoint, state, scavengerLogger, cancellationToken);
+		return Execute(checkpoint, state, scavengerLogger, cancellationToken);
 	}
 
-	public void Execute(
+	public ValueTask Execute(
 		ScavengeCheckpoint.ExecutingIndex checkpoint,
 		IScavengeStateForIndexExecutor<TStreamId> state,
 		IIndexScavengerLog scavengerLogger,
@@ -54,20 +55,18 @@ public class IndexExecutor<TStreamId> : IIndexExecutor<TStreamId> {
 
 		_logger.Debug("SCAVENGING: Executing indexes from checkpoint: {checkpoint}", checkpoint);
 
-		_indexScavenger.ScavengeIndex(
+		return _indexScavenger.ScavengeIndex(
 			scavengePoint: checkpoint.ScavengePoint.Position,
 			shouldKeep: GenShouldKeep(
 				checkpoint.ScavengePoint,
-				state,
-				cancellationToken),
+				state),
 			log: scavengerLogger,
 			cancellationToken: cancellationToken);
 	}
 
-	private Func<IndexEntry, bool> GenShouldKeep(
+	private Func<IndexEntry, CancellationToken, ValueTask<bool>> GenShouldKeep(
 		ScavengePoint scavengePoint,
-		IScavengeStateForIndexExecutor<TStreamId> state,
-		CancellationToken cancellationToken) {
+		IScavengeStateForIndexExecutor<TStreamId> state) {
 
 		// we cache some stream info between invocations of ShouldKeep out here since it will
 		// typically be invoked repeatedly for the same stream.
@@ -81,11 +80,11 @@ public class IndexExecutor<TStreamId> : IIndexExecutor<TStreamId> {
 		var restCounter = 0;
 		var scavengePointPosition = scavengePoint.Position;
 
-		bool ShouldKeep(IndexEntry indexEntry) {
+		async ValueTask<bool> ShouldKeep(IndexEntry indexEntry, CancellationToken token) {
 			// Rest occasionally
 			if (++restCounter == _restPeriod) {
 				restCounter = 0;
-				_throttle.Rest(cancellationToken);
+				_throttle.Rest(token);
 			}
 
 			if (indexEntry.Position >= scavengePointPosition) {
@@ -102,21 +101,23 @@ public class IndexExecutor<TStreamId> : IIndexExecutor<TStreamId> {
 				currentHashIsCollision = state.IsCollision(indexEntry.Stream);
 				currentPosition = indexEntry.Position;
 
-				StreamHandle<TStreamId> handle = default;
+				StreamHandle<TStreamId> handle;
 
 				if (currentHashIsCollision) {
 					// hash isn't enough to identify the stream. get its id.
-					if (!_streamLookup.TryGetStreamId(indexEntry.Position, out var streamId)) {
-						// there is no record at this position to get the stream from.
-						// we should definitely discard the entry (just like old index scavenge does)
-						// we can't even tell which stream it is for.
-						return false;
-					} else {
-						// we got a streamId, which means we must have found a record at this
-						// position, but that doesn't necessarily mean we want to keep the IndexEntry
-						// the log record might still exist only because its chunk hasn't reached
-						// the threshold.
-						handle = StreamHandle.ForStreamId(streamId);
+					switch (await _streamLookup.TryGetStreamId(indexEntry.Position, token)) {
+						case { HasValue: false }:
+							// there is no record at this position to get the stream from.
+							// we should definitely discard the entry (just like old index scavenge does)
+							// we can't even tell which stream it is for.
+							return false;
+						case var result:
+							// we got a streamId, which means we must have found a record at this
+							// position, but that doesn't necessarily mean we want to keep the IndexEntry
+							// the log record might still exist only because its chunk hasn't reached
+							// the threshold.
+							handle = StreamHandle.ForStreamId(result.ValueOrDefault);
+							break;
 					}
 				} else {
 					// not a collision, we can get the discard point by hash.

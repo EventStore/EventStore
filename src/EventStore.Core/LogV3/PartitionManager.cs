@@ -32,13 +32,12 @@ public class PartitionManager : IPartitionManager {
 		_recordFactory = recordFactory;
 	}
 
-	public ValueTask Initialize(CancellationToken token) {
+	public async ValueTask Initialize(CancellationToken token) {
 		if (RootId.HasValue)
-			return ValueTask.CompletedTask;
+			return;
 
-		ReadRootPartition();
-
-		return EnsureRootPartitionIsWritten(token);
+		await ReadRootPartition(token);
+		await EnsureRootPartitionIsWritten(token);
 	}
 
 	private async ValueTask EnsureRootPartitionIsWritten(CancellationToken token) {
@@ -85,10 +84,10 @@ public class PartitionManager : IPartitionManager {
 		}
 	}
 
-	private void ReadRootPartition() {
+	private async ValueTask ReadRootPartition(CancellationToken token) {
 		SeqReadResult result;
 		_reader.Reposition(0);
-		while ((result = _reader.TryReadNext()).Success) {
+		while ((result = await _reader.TryReadNext(token)).Success) {
 			var rec = result.LogRecord;
 			switch (rec.RecordType) {
 				case LogRecordType.PartitionType:
