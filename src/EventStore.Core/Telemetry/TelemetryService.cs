@@ -3,12 +3,15 @@
 
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using DotNext;
 using DotNext.Collections.Generic;
+using DotNext.Runtime.CompilerServices;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -25,11 +28,12 @@ using static EventStore.Plugins.Diagnostics.PluginDiagnosticsDataCollectionMode;
 namespace EventStore.Core.Telemetry;
 
 public sealed class TelemetryService :
+	Disposable,
 	IHandle<SystemMessage.StateChangeMessage>,
 	IHandle<ElectionMessage.ElectionsDone>,
 	IHandle<SystemMessage.ReplicaStateMessage>,
 	IHandle<LeaderDiscoveryMessage.LeaderFound>,
-	IDisposable
+	IAsyncDisposable
 {
 	private static readonly ILogger Logger = Log.ForContext<TelemetryService>();
 
@@ -38,7 +42,8 @@ public sealed class TelemetryService :
 	private static readonly TimeSpan FlushDelay = TimeSpan.FromSeconds(10);
 
 	private readonly ClusterVNodeOptions _nodeOptions;
-	private readonly CancellationTokenSource _cts = new();
+	private readonly CancellationToken _token; // cached to avoid ObjectDisposedException
+	private readonly Task _task;
 	private readonly IPublisher _publisher;
 	private readonly IReadOnlyCheckpoint _writerCheckpoint;
 	private readonly long _startTime = TimeProvider.System.GetTimestamp();
@@ -46,6 +51,7 @@ public sealed class TelemetryService :
 	private readonly TFChunkManager _manager;
 	private readonly PluginDiagnosticsDataCollector _pluginDiagnosticsDataCollector;
 
+	private volatile CancellationTokenSource _cts;
 	private VNodeState _nodeState;
 	private int _epochNumber;
 	private Guid _leaderId = Guid.Empty;
@@ -69,15 +75,36 @@ public sealed class TelemetryService :
 			_nodeOptions.PlugableComponents.Select(x => x.DiagnosticsName).ToArray()
 		);
 
-		ThreadPool.UnsafeQueueUserWorkItem(ProcessAsync, sink, preferLocal: false);
+		_cts = new();
+		_token = _cts.Token;
+		_task = ProcessAsync(sink);
 	}
 
-	public void Dispose() {
-		_cts.Cancel();
-		_cts.Dispose();
+	private void Cancel() {
+		if (Interlocked.Exchange(ref _cts, null) is { } cts) {
+			using (cts) {
+				cts.Cancel();
+			}
+		}
 	}
 
-	private async void ProcessAsync(ITelemetrySink sink) {
+	protected override void Dispose(bool disposing) {
+		if (disposing) {
+			Cancel();
+		}
+		base.Dispose(disposing);
+	}
+
+	protected override async ValueTask DisposeAsyncCore() {
+		Dispose(true);
+		await _task.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing |
+		                           ConfigureAwaitOptions.ContinueOnCapturedContext);
+	}
+
+	public new ValueTask DisposeAsync() => base.DisposeAsync();
+
+	[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))]
+	private async Task ProcessAsync(ITelemetrySink sink) {
 		try {
 			await ProcessAsync(_publisher, sink);
 		} catch (Exception ex) when (ex is not OperationCanceledException) {
