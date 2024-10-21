@@ -45,8 +45,7 @@ public abstract class TruncateAndReOpenDbScenario<TLogFormat, TStreamId> : Trunc
 			() => new TFChunkReader(Db, Db.Config.WriterCheckpoint));
 		var lowHasher = _logFormat.LowHasher;
 		var highHasher = _logFormat.HighHasher;
-		var emptyStreamId = _logFormat.EmptyStreamId;
-		TableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
+		TableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher,
 			() => new HashListMemTable(PTableVersions.IndexV3, MaxEntriesInMemTable * 2),
 			() => new TFReaderLease(readers),
 			PTableVersions.IndexV3,

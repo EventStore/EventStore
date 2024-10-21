@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
 using NUnit.Framework;
@@ -34,7 +35,7 @@ public class table_index_on_range_query : SpecificationWithDirectoryPerTestFixtu
 
 		_lowHasher = new XXHashUnsafe();
 		_highHasher = new Murmur3AUnsafe();
-		_tableIndex = new TableIndex<string>(PathName, _lowHasher, _highHasher, "",
+		_tableIndex = new TableIndex<string>(PathName, _lowHasher, _highHasher,
 			() => new HashListMemTable(version: _ptableVersion, maxSize: 40),
 			() => { throw new InvalidOperationException(); },
 			_ptableVersion,
@@ -43,30 +44,30 @@ public class table_index_on_range_query : SpecificationWithDirectoryPerTestFixtu
 			skipIndexVerify: _skipIndexVerify);
 		_tableIndex.Initialize(long.MaxValue);
 
-		_tableIndex.Add(0, "0xDEAD", 0, 0xFF00);
-		_tableIndex.Add(0, "0xDEAD", 1, 0xFF01);
+		await _tableIndex.Add(0, "0xDEAD", 0, 0xFF00, CancellationToken.None);
+		await _tableIndex.Add(0, "0xDEAD", 1, 0xFF01, CancellationToken.None);
 
-		_tableIndex.Add(0, "0xJEEP", 0, 0xFF00);
-		_tableIndex.Add(0, "0xJEEP", 1, 0xFF01);
+		await _tableIndex.Add(0, "0xJEEP", 0, 0xFF00, CancellationToken.None);
+		await _tableIndex.Add(0, "0xJEEP", 1, 0xFF01, CancellationToken.None);
 
-		_tableIndex.Add(0, "0xABBA", 0, 0xFF00);
-		_tableIndex.Add(0, "0xABBA", 1, 0xFF01);
-		_tableIndex.Add(0, "0xABBA", 2, 0xFF02);
-		_tableIndex.Add(0, "0xABBA", 3, 0xFF03);
+		await _tableIndex.Add(0, "0xABBA", 0, 0xFF00, CancellationToken.None);
+		await _tableIndex.Add(0, "0xABBA", 1, 0xFF01, CancellationToken.None);
+		await _tableIndex.Add(0, "0xABBA", 2, 0xFF02, CancellationToken.None);
+		await _tableIndex.Add(0, "0xABBA", 3, 0xFF03, CancellationToken.None);
 
-		_tableIndex.Add(0, "0xDEAD", 0, 0xFF10);
-		_tableIndex.Add(0, "0xDEAD", 1, 0xFF11);
+		await _tableIndex.Add(0, "0xDEAD", 0, 0xFF10, CancellationToken.None);
+		await _tableIndex.Add(0, "0xDEAD", 1, 0xFF11, CancellationToken.None);
 
-		_tableIndex.Add(0, "0xADA", 0, 0xFF00);
+		await _tableIndex.Add(0, "0xADA", 0, 0xFF00, CancellationToken.None);
 
-		_tableIndex.Add(0, "0xJEEP", 2, 0xFFF0);
-		_tableIndex.Add(0, "0xJEEP", 3, 0xFFF1);
+		await _tableIndex.Add(0, "0xJEEP", 2, 0xFFF0, CancellationToken.None);
+		await _tableIndex.Add(0, "0xJEEP", 3, 0xFFF1, CancellationToken.None);
 	}
 
 	[OneTimeTearDown]
-	public override Task TestFixtureTearDown() {
-		_tableIndex.Close();
-		return base.TestFixtureTearDown();
+	public override async Task TestFixtureTearDown() {
+		await _tableIndex.Close();
+		await base.TestFixtureTearDown();
 	}
 
 	[Test]

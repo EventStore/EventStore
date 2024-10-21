@@ -13,20 +13,20 @@ public interface ITableIndex {
 	long PrepareCheckpoint { get; }
 
 	void Initialize(long chaserCheckpoint);
-	void Close(bool removeFiles = true);
+	ValueTask Close(bool removeFiles = true);
 
 	// this overload keeps IndexEntries that exist in the log
 	ValueTask Scavenge(IIndexScavengerLog log, CancellationToken ct);
 	// this overload keeps IndexEntries that pass the keep predicate
 	ValueTask Scavenge(Func<IndexEntry, CancellationToken, ValueTask<bool>> shouldKeep, IIndexScavengerLog log, CancellationToken ct);
-	Task MergeIndexes();
+	ValueTask MergeIndexes(CancellationToken token);
 	IEnumerable<ISearchTable> IterateAllInOrder();
 	bool IsBackgroundTaskRunning { get; }
 }
 
 public interface ITableIndex<TStreamId> : ITableIndex {
-	void Add(long commitPos, TStreamId streamId, long version, long position);
-	void AddEntries(long commitPos, IList<IndexKey<TStreamId>> entries);
+	ValueTask Add(long commitPos, TStreamId streamId, long version, long position, CancellationToken token);
+	ValueTask AddEntries(long commitPos, IReadOnlyList<IndexKey<TStreamId>> entries, CancellationToken token);
 
 	bool TryGetOneValue(TStreamId streamId, long version, out long position);
 	bool TryGetLatestEntry(TStreamId streamId, out IndexEntry entry);
@@ -41,5 +41,5 @@ public interface ITableIndex<TStreamId> : ITableIndex {
 	IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion, int? limit = null);
 	IReadOnlyList<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null);
 
-	void WaitForBackgroundTasks(int millisecondsTimeout);
+	ValueTask WaitForBackgroundTasks(int millisecondsTimeout, CancellationToken token);
 }

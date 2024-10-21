@@ -31,7 +31,7 @@ class when_scavenging_a_table_index_cancelled_while_waiting_for_lock : Specifica
 		var fakeReader = new TFReaderLease(new FakeIndexReader());
 		_lowHasher = new XXHashUnsafe();
 		_highHasher = new Murmur3AUnsafe();
-		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
+		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher,
 			() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
 			() => fakeReader,
 			PTableVersions.IndexV4,
@@ -40,12 +40,12 @@ class when_scavenging_a_table_index_cancelled_while_waiting_for_lock : Specifica
 			maxTablesPerLevel: 5);
 		_tableIndex.Initialize(long.MaxValue);
 
-		_tableIndex.Add(1, "testStream-1", 0, 0);
-		_tableIndex.Add(1, "testStream-1", 1, 100);
-		_tableIndex.Add(1, "testStream-1", 2, 200);
-		_tableIndex.Add(1, "testStream-1", 3, 300);
-		_tableIndex.Add(1, "testStream-1", 4, 400);
-		_tableIndex.Add(1, "testStream-1", 5, 500);
+		await _tableIndex.Add(1, "testStream-1", 0, 0, CancellationToken.None);
+		await _tableIndex.Add(1, "testStream-1", 1, 100, CancellationToken.None);
+		await _tableIndex.Add(1, "testStream-1", 2, 200, CancellationToken.None);
+		await _tableIndex.Add(1, "testStream-1", 3, 300, CancellationToken.None);
+		await _tableIndex.Add(1, "testStream-1", 4, 400, CancellationToken.None);
+		await _tableIndex.Add(1, "testStream-1", 5, 500, CancellationToken.None);
 
 		_log = new FakeTFScavengerLog();
 
@@ -56,9 +56,9 @@ class when_scavenging_a_table_index_cancelled_while_waiting_for_lock : Specifica
 			Throws.InstanceOf<OperationCanceledException>());
 
 		// Check it's loadable still.
-		_tableIndex.Close(false);
+		await _tableIndex.Close(false);
 
-		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
+		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher,
 			() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
 			() => fakeReader,
 			PTableVersions.IndexV4,
@@ -70,10 +70,10 @@ class when_scavenging_a_table_index_cancelled_while_waiting_for_lock : Specifica
 	}
 
 	[OneTimeTearDown]
-	public override Task TestFixtureTearDown() {
-		_tableIndex.Close();
+	public override async Task TestFixtureTearDown() {
+		await _tableIndex.Close();
 
-		return base.TestFixtureTearDown();
+		await base.TestFixtureTearDown();
 	}
 
 	[Test]

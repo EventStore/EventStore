@@ -25,16 +25,16 @@ public class FilteredTableIndex<TStreamId> : ITableIndex<TStreamId> {
 
 	public bool IsBackgroundTaskRunning => _wrapped.IsBackgroundTaskRunning;
 
-	public void Add(long commitPos, TStreamId streamId, long version, long position) {
-		_wrapped.Add(commitPos, streamId, version, position);
+	public ValueTask Add(long commitPos, TStreamId streamId, long version, long position, CancellationToken token) {
+		return _wrapped.Add(commitPos, streamId, version, position, token);
 	}
 
-	public void AddEntries(long commitPos, IList<IndexKey<TStreamId>> entries) {
-		_wrapped.AddEntries(commitPos, entries);
+	public ValueTask AddEntries(long commitPos, IReadOnlyList<IndexKey<TStreamId>> entries, CancellationToken token) {
+		return _wrapped.AddEntries(commitPos, entries, token);
 	}
 
-	public void Close(bool removeFiles = true) {
-		_wrapped.Close(removeFiles);
+	public ValueTask Close(bool removeFiles = true) {
+		return _wrapped.Close(removeFiles);
 	}
 
 	public IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion, int? limit = null) {
@@ -59,8 +59,8 @@ public class FilteredTableIndex<TStreamId> : ITableIndex<TStreamId> {
 		return _wrapped.IterateAllInOrder();
 	}
 
-	public Task MergeIndexes() {
-		return _wrapped.MergeIndexes();
+	public ValueTask MergeIndexes(CancellationToken token) {
+		return _wrapped.MergeIndexes(token);
 	}
 
 	public ValueTask Scavenge(IIndexScavengerLog log, CancellationToken ct)
@@ -147,7 +147,7 @@ public class FilteredTableIndex<TStreamId> : ITableIndex<TStreamId> {
 		throw new NotImplementedException();
 	}
 
-	public void WaitForBackgroundTasks(int millisecondsTimeout) {
-		_wrapped.WaitForBackgroundTasks(millisecondsTimeout);
+	public ValueTask WaitForBackgroundTasks(int millisecondsTimeout, CancellationToken token) {
+		return _wrapped.WaitForBackgroundTasks(millisecondsTimeout, token);
 	}
 }

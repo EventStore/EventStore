@@ -6,10 +6,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext;
+using DotNext.Collections.Generic;
 using DotNext.Diagnostics;
+using DotNext.Runtime.CompilerServices;
+using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
@@ -25,7 +30,7 @@ using EventStore.LogCommon;
 namespace EventStore.Core.Index;
 
 public abstract class TableIndex {
-	internal static readonly IndexEntry InvalidIndexEntry = new IndexEntry(0, -1, -1);
+	internal static readonly IndexEntry InvalidIndexEntry = new(0, -1, -1);
 	public const string IndexMapFilename = "indexmap";
 	public const string ForceIndexVerifyFilename = ".forceverify";
 	protected static readonly ILogger Log = Serilog.Log.ForContext<TableIndex>();
@@ -58,7 +63,9 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 	private readonly IIndexFilenameProvider _fileNameProvider;
 	private readonly IIndexStatusTracker _statusTracker;
 
-	private readonly object _awaitingTablesLock = new object();
+	private readonly AsyncExclusiveLock _awaitingTablesLock = new();
+	private readonly CancellationToken _lifetimeToken;
+	private volatile CancellationTokenSource _lifetimeTokenSource;
 
 	private IndexMap _indexMap;
 	private List<TableItem> _awaitingMemTables;
@@ -69,11 +76,10 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 
 	// there are two background processes, scavenge and writing/merging ptables.
 	private volatile bool _backgroundRunning;
-	private readonly ManualResetEventSlim _backgroundRunningEvent = new ManualResetEventSlim(true);
+	private readonly AsyncManualResetEvent _backgroundRunningEvent = new(true);
 
 	private IHasher<TStreamId> _lowHasher;
 	private IHasher<TStreamId> _highHasher;
-	private readonly TStreamId _emptyStreamId;
 
 	private bool _initialized;
 	private readonly int _maxAutoMergeIndexLevel;
@@ -82,7 +88,6 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 	public TableIndex(string directory,
 		IHasher<TStreamId> lowHasher,
 		IHasher<TStreamId> highHasher,
-		TStreamId emptyStreamId,
 		Func<IMemTable> memTableFactory,
 		Func<TFReaderLease> tfReaderFactory,
 		byte ptableVersion,
@@ -131,10 +136,11 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 
 		_lowHasher = lowHasher;
 		_highHasher = highHasher;
-		_emptyStreamId = emptyStreamId;
 
 		_maxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
 		_pTableMaxReaderCount = pTableMaxReaderCount;
+		_lifetimeTokenSource = new();
+		_lifetimeToken = _lifetimeTokenSource.Token;
 	}
 
 	public void Initialize(long chaserCheckpoint) {
@@ -238,15 +244,15 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 			Directory.CreateDirectory(directory);
 	}
 
-	public void Add(long commitPos, TStreamId streamId, long version, long position) {
+	public ValueTask Add(long commitPos, TStreamId streamId, long version, long position, CancellationToken token) {
 		Ensure.Nonnegative(commitPos, "commitPos");
 		Ensure.Nonnegative(version, "version");
 		Ensure.Nonnegative(position, "position");
 
-		AddEntries(commitPos, new[] {CreateIndexKey(streamId, version, position)});
+		return AddEntries(commitPos, [CreateIndexKey(streamId, version, position)], token);
 	}
 
-	public void AddEntries(long commitPos, IList<IndexKey<TStreamId>> entries) {
+	public async ValueTask AddEntries(long commitPos, IReadOnlyList<IndexKey<TStreamId>> entries, CancellationToken token) {
 		//should only be called on a single thread.
 		var table = (IMemTable)_awaitingMemTables[0].Table; // always a memtable
 
@@ -259,13 +265,12 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 				prepareCheckpoint = Math.Max(prepareCheckpoint, collection[i].Position);
 			}
 
-			TryProcessAwaitingTables(commitPos, prepareCheckpoint);
+			await TryProcessAwaitingTables(commitPos, prepareCheckpoint, token);
 		}
 	}
 
-	public Task MergeIndexes() {
-		TryManualMerge();
-		return Task.CompletedTask;
+	public ValueTask MergeIndexes(CancellationToken token) {
+		return TryManualMerge(token);
 	}
 
 	public bool IsBackgroundTaskRunning {
@@ -273,9 +278,10 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 	}
 
 	//Automerge only
-	private void TryProcessAwaitingTables(long commitPos, long prepareCheckpoint) {
-		lock (_awaitingTablesLock) {
-			var newTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1, 0)};
+	private async ValueTask TryProcessAwaitingTables(long commitPos, long prepareCheckpoint, CancellationToken token) {
+		await _awaitingTablesLock.AcquireAsync(token);
+		try {
+			var newTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1, 0) };
 			newTables.AddRange(_awaitingMemTables.Select(
 				(x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos, x.Level) : x));
 
@@ -286,26 +292,34 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 			TryProcessAwaitingTables();
 
 			if (_additionalReclaim)
-				ThreadPool.QueueUserWorkItem(x => ReclaimMemoryIfNeeded(_awaitingMemTables));
+				_ = ReclaimMemoryIfNeeded(_awaitingMemTables, _lifetimeToken);
+		} finally {
+			_awaitingTablesLock.Release();
 		}
 	}
 
-	public void TryManualMerge() {
+	private async ValueTask TryManualMerge(CancellationToken token) {
 		_isManualMergePending = true;
-		TryProcessAwaitingTables();
+
+		await _awaitingTablesLock.AcquireAsync(token);
+		try {
+			TryProcessAwaitingTables();
+		} finally {
+			_awaitingTablesLock.Release();
+		}
 	}
 
 	private void TryProcessAwaitingTables() {
-		lock (_awaitingTablesLock) {
-			if (!_backgroundRunning) {
-				_backgroundRunningEvent.Reset();
-				_backgroundRunning = true;
-				ThreadPool.QueueUserWorkItem(x => ReadOffQueue());
-			}
+		Debug.Assert(_awaitingTablesLock.IsLockHeld);
+
+		if (!_backgroundRunning) {
+			_backgroundRunningEvent.Reset();
+			_backgroundRunning = true;
+			_ = ReadOffQueue(_lifetimeToken);
 		}
 	}
 
-	private void ReadOffQueue() {
+	private async Task ReadOffQueue(CancellationToken token) {
 		try {
 			using var _ = _statusTracker.StartMerging();
 			while (true) {
@@ -333,18 +347,20 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 
 				TableItem tableItem;
 				//ISearchTable table;
-				lock (_awaitingTablesLock) {
+				await _awaitingTablesLock.AcquireAsync(token);
+				try {
 					Log.Debug("Awaiting tables queue size is: {awaitingMemTables}.", _awaitingMemTables.Count);
-					if (_awaitingMemTables.Count == 1) {
+					if (_awaitingMemTables.Count is 1) {
 						return;
 					}
 
-					tableItem = _awaitingMemTables[_awaitingMemTables.Count - 1];
+					tableItem = _awaitingMemTables[^1];
+				} finally {
+					_awaitingTablesLock.Release();
 				}
 
 				PTable ptable;
-				var memtable = tableItem.Table as IMemTable;
-				if (memtable != null) {
+				if (tableItem.Table is IMemTable memtable) {
 					memtable.MarkForConversion();
 					ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(),
 						ESConsts.PTableInitialReaderCount,
@@ -379,7 +395,8 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 					} while (mergeResult.CanMergeAny);
 				}
 
-				lock (_awaitingTablesLock) {
+				await _awaitingTablesLock.AcquireAsync(token);
+				try {
 					var memTables = _awaitingMemTables.ToList();
 
 					var corrTable = memTables.First(x => x.Table.Id == ptable.Id);
@@ -393,6 +410,8 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 
 					Log.Debug("There are now {awaitingMemTables} awaiting tables.", memTables.Count);
 					_awaitingMemTables = memTables;
+				} finally {
+					_awaitingTablesLock.Release();
 				}
 			}
 		} catch (FileBeingDeletedException exc) {
@@ -402,15 +421,18 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 			Log.Error(exc, "Error in TableIndex.ReadOffQueue");
 			throw;
 		} finally {
-			lock (_awaitingTablesLock) {
+			await _awaitingTablesLock.AcquireAsync(_lifetimeToken);
+			try {
 				_backgroundRunning = false;
 				_backgroundRunningEvent.Set();
+			} finally {
+				_awaitingTablesLock.Release();
 			}
 		}
 	}
 
-	public void WaitForBackgroundTasks(int millisecondsTimeout = 7_000) {
-		if (!_backgroundRunningEvent.Wait(millisecondsTimeout)) {
+	public async ValueTask WaitForBackgroundTasks(int millisecondsTimeout = 7_000, CancellationToken token = default) {
+		if (!await _backgroundRunningEvent.WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout), token)) {
 			throw new TimeoutException(
 				$"Waiting for TableIndex background tasks took longer than {millisecondsTimeout:N0} ms.");
 		}
@@ -424,8 +446,8 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		IIndexScavengerLog log,
 		CancellationToken ct) {
 
-		GetExclusiveBackgroundTask(ct);
-		var sw = Stopwatch.StartNew();
+		await GetExclusiveBackgroundTask(ct);
+		var sw = new Timestamp();
 
 		try {
 			using var _ = _statusTracker.StartScavenging();
@@ -435,11 +457,14 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 			// Since scavenging indexes is the only place the ExistsAt optimization makes sense (and takes up a lot of memory), we can clear it after an index scavenge has completed.
 			TFChunkReaderExistsAtOptimizer.Instance.DeOptimizeAll();
 
-			lock (_awaitingTablesLock) {
+			await _awaitingTablesLock.AcquireAsync(_lifetimeToken);
+			try {
 				_backgroundRunning = false;
 				_backgroundRunningEvent.Set();
 
 				TryProcessAwaitingTables();
+			} finally {
+				_awaitingTablesLock.Release();
 			}
 
 			Log.Information("Completed scavenge of TableIndex.  Elapsed: {elapsed}", sw.Elapsed);
@@ -498,26 +523,29 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		}
 	}
 
-	private void GetExclusiveBackgroundTask(CancellationToken ct) {
+	private async ValueTask GetExclusiveBackgroundTask(CancellationToken ct) {
 		while (true) {
-			lock (_awaitingTablesLock) {
+			await _awaitingTablesLock.AcquireAsync(ct);
+			try {
 				if (!_backgroundRunning) {
 					_backgroundRunningEvent.Reset();
 					_backgroundRunning = true;
 					return;
 				}
+			} finally {
+				_awaitingTablesLock.Release();
 			}
 
 			Log.Information("Waiting for TableIndex background task to complete before starting scavenge.");
-			_backgroundRunningEvent.Wait(ct);
+			await _backgroundRunningEvent.WaitAsync(ct);
 		}
 	}
 
-	private void ReclaimMemoryIfNeeded(List<TableItem> awaitingMemTables) {
+	[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))]
+	private async Task ReclaimMemoryIfNeeded(IReadOnlyList<TableItem> awaitingMemTables, CancellationToken token) {
 		var toPutOnDisk = awaitingMemTables.OfType<IMemTable>().Count() - MaxMemoryTables;
 		for (var i = awaitingMemTables.Count - 1; i >= 1 && toPutOnDisk > 0; i--) {
-			var memtable = awaitingMemTables[i].Table as IMemTable;
-			if (memtable == null || !memtable.MarkForConversion())
+			if (awaitingMemTables[i].Table is not IMemTable memtable || !memtable.MarkForConversion())
 				continue;
 
 			Log.Debug("Putting awaiting file as PTable instead of MemTable [{id}].", memtable.Id);
@@ -530,7 +558,8 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 				useBloomFilter: _useBloomFilter,
 				lruCacheSize: _lruCacheSize);
 			var swapped = false;
-			lock (_awaitingTablesLock) {
+			await _awaitingTablesLock.AcquireAsync(token);
+			try {
 				for (var j = _awaitingMemTables.Count - 1; j >= 1; j--) {
 					var tableItem = _awaitingMemTables[j];
 					if (!(tableItem.Table is IMemTable) || tableItem.Table.Id != ptable.Id) continue;
@@ -541,6 +570,8 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 						tableItem.Level);
 					break;
 				}
+			} finally {
+				_awaitingTablesLock.Release();
 			}
 
 			if (!swapped)
@@ -903,7 +934,7 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		return sortedCandidates;
 	}
 
-	private static int GetMaxOf(List<IEnumerator<IndexEntry>> enumerators) {
+	private static int GetMaxOf(IReadOnlyList<IEnumerator<IndexEntry>> enumerators) {
 		var max = new IndexEntry(
 			stream: ulong.MinValue,
 			version: 0,
@@ -921,24 +952,33 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		return idx;
 	}
 
-	public void Close(bool removeFiles = true) {
-		if (!_backgroundRunningEvent.Wait(7000))
+	public async ValueTask Close(bool removeFiles = true) {
+		if (Interlocked.Exchange(ref _lifetimeTokenSource, null) is { } cts) {
+			using (cts) {
+				cts.Cancel();
+			}
+		}
+
+		if (!await _backgroundRunningEvent.WaitAsync(TimeSpan.FromMilliseconds(7_000)))
 			throw new TimeoutException("Could not finish background thread in reasonable time.");
+
 		if (_inMem)
 			return;
-		if (_indexMap == null) return;
+		if (_indexMap is null) return;
+
+		var orderedIndexMap = _indexMap.InOrder();
 		if (removeFiles) {
-			_indexMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
+			orderedIndexMap.ForEach(static x => x.MarkForDestruction());
 			var fileName = Path.Combine(_directory, IndexMapFilename);
 			if (File.Exists(fileName)) {
 				File.SetAttributes(fileName, FileAttributes.Normal);
 				File.Delete(fileName);
 			}
 		} else {
-			_indexMap.InOrder().ToList().ForEach(x => x.Dispose());
+			Disposable.Dispose(orderedIndexMap);
 		}
 
-		_indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
+		orderedIndexMap.ForEach(static x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
 	}
 
 	private IndexEntry CreateIndexEntry(IndexKey<TStreamId> key) {

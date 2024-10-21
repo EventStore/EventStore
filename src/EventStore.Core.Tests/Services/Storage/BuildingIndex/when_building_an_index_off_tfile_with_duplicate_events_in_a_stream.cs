@@ -144,8 +144,7 @@ public abstract class DuplicateReadIndexTestScenario<TLogFormat, TStreamId> : Sp
 			() => new TFChunkReader(_db, _db.Config.WriterCheckpoint));
 		var lowHasher = _logFormat.LowHasher;
 		var highHasher = _logFormat.HighHasher;
-		var emptyStreamId = _logFormat.EmptyStreamId;
-		_tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
+		_tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher,
 			() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
 			() => new TFReaderLease(readers),
 			IndexBitnessVersion,
@@ -182,7 +181,7 @@ public abstract class DuplicateReadIndexTestScenario<TLogFormat, TStreamId> : Sp
 		await readIndex.IndexCommitter.Init(chaserCheckpoint.Read(), CancellationToken.None);
 		ReadIndex = readIndex;
 
-		_tableIndex.Close(false);
+		await _tableIndex.Close(false);
 
 		Writer = new TFChunkWriter(_db);
 		Writer.Open();
@@ -194,7 +193,7 @@ public abstract class DuplicateReadIndexTestScenario<TLogFormat, TStreamId> : Sp
 		chaserCheckpoint.Write(writerCheckpoint.Read());
 		chaserCheckpoint.Flush();
 
-		_tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
+		_tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher,
 			() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
 			() => new TFReaderLease(readers),
 			IndexBitnessVersion,
@@ -232,10 +231,9 @@ public abstract class DuplicateReadIndexTestScenario<TLogFormat, TStreamId> : Sp
 
 	public override async Task TestFixtureTearDown() {
 		_logFormat?.Dispose();
-		ReadIndex.Close();
-		ReadIndex.Dispose();
+		await ReadIndex.DisposeAsync();
 
-		_tableIndex.Close();
+		await _tableIndex.Close();
 
 		await _db.DisposeAsync();
 

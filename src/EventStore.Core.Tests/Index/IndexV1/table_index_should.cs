@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
 using NUnit.Framework;
@@ -30,7 +31,7 @@ public class table_index_should : SpecificationWithDirectoryPerTestFixture {
 		await base.TestFixtureSetUp();
 		var lowHasher = new XXHashUnsafe();
 		var highHasher = new Murmur3AUnsafe();
-		_tableIndex = new TableIndex<string>(PathName, lowHasher, highHasher, "",
+		_tableIndex = new TableIndex<string>(PathName, lowHasher, highHasher,
 			() => new HashListMemTable(_ptableVersion, maxSize: 20),
 			() => { throw new InvalidOperationException(); },
 			_ptableVersion,
@@ -40,9 +41,9 @@ public class table_index_should : SpecificationWithDirectoryPerTestFixture {
 		_tableIndex.Initialize(long.MaxValue);
 	}
 
-	public override Task TestFixtureTearDown() {
-		_tableIndex.Close();
-		return base.TestFixtureTearDown();
+	public override async Task TestFixtureTearDown() {
+		await _tableIndex.Close();
+		await base.TestFixtureTearDown();
 	}
 
 	[Test]
@@ -64,16 +65,16 @@ public class table_index_should : SpecificationWithDirectoryPerTestFixture {
 
 	[Test]
 	public void throw_argumentoutofrangeexception_on_adding_entry_with_negative_commit_position() {
-		Assert.Throws<ArgumentOutOfRangeException>(() => _tableIndex.Add(-1, "0x0000", 0, 0));
+		Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await _tableIndex.Add(-1, "0x0000", 0, 0, CancellationToken.None));
 	}
 
 	[Test]
 	public void throw_argumentoutofrangeexception_on_adding_entry_with_negative_version() {
-		Assert.Throws<ArgumentOutOfRangeException>(() => _tableIndex.Add(0, "0x0000", -1, 0));
+		Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await _tableIndex.Add(0, "0x0000", -1, 0, CancellationToken.None));
 	}
 
 	[Test]
 	public void throw_argumentoutofrangeexception_on_adding_entry_with_negative_position() {
-		Assert.Throws<ArgumentOutOfRangeException>(() => _tableIndex.Add(0, "0x0000", 0, -1));
+		Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await _tableIndex.Add(0, "0x0000", 0, -1, CancellationToken.None));
 	}
 }

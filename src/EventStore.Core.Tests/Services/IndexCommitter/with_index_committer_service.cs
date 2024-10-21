@@ -98,8 +98,7 @@ public class FakeIndexCommitter<TStreamId> : IIndexCommitter<TStreamId> {
 	public ValueTask Init(long buildToPosition, CancellationToken token)
 		=> ValueTask.CompletedTask;
 
-	public void Dispose() {
-	}
+	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
 	public ValueTask<long> Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber, CancellationToken token) {
 		CommittedCommits.Enqueue(commit);

@@ -133,11 +133,5 @@ internal class FakeReadIndex<TLogFormat, TStreamId> : IReadIndex<TStreamId> {
 	public ValueTask<string> GetStreamName(TStreamId streamId, CancellationToken token)
 		=> ValueTask.FromException<string>(new NotImplementedException());
 
-	public void Close() {
-		throw new NotImplementedException();
-	}
-
-	public void Dispose() {
-		throw new NotImplementedException();
-	}
+	ValueTask IAsyncDisposable.DisposeAsync() => ValueTask.CompletedTask;
 }

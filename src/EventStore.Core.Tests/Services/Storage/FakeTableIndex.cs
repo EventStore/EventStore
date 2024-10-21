@@ -24,16 +24,13 @@ public class FakeTableIndex<TStreamId> : ITableIndex<TStreamId> {
 	public void Initialize(long chaserCheckpoint) {
 	}
 
-	public void Close(bool removeFiles = true) {
-	}
+	public ValueTask Close(bool removeFiles = true) => ValueTask.CompletedTask;
 
-	public void Add(long commitPos, TStreamId streamId, long version, long position) {
-		throw new NotImplementedException();
-	}
+	public ValueTask Add(long commitPos, TStreamId streamId, long version, long position, CancellationToken token)
+		=> ValueTask.FromException(new NotImplementedException());
 
-	public void AddEntries(long commitPos, IList<IndexKey<TStreamId>> entries) {
-		throw new NotImplementedException();
-	}
+	public ValueTask AddEntries(long commitPos, IReadOnlyList<IndexKey<TStreamId>> entries, CancellationToken token)
+		=> ValueTask.FromException(new NotImplementedException());
 
 	public bool TryGetOneValue(TStreamId streamId, long version, out long position) {
 		position = -1;
@@ -98,13 +95,11 @@ public class FakeTableIndex<TStreamId> : ITableIndex<TStreamId> {
 		return Scavenge(log, ct);
 	}
 
-	public Task MergeIndexes() {
-		return Task.CompletedTask;
-	}
+	public ValueTask MergeIndexes(CancellationToken token)
+		=> token.IsCancellationRequested ? ValueTask.FromCanceled(token) : ValueTask.CompletedTask;
 
-	public void WaitForBackgroundTasks(int millisecondsTimeout) {
-		throw new NotImplementedException();
-	}
+	public ValueTask WaitForBackgroundTasks(int millisecondsTimeout, CancellationToken token)
+		=> ValueTask.FromException(new NotImplementedException());
 
 	public bool IsBackgroundTaskRunning {
 		get { return false; }

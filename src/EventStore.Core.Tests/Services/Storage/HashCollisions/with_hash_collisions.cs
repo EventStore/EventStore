@@ -40,11 +40,10 @@ public class HashCollisionTestFixture : SpecificationWithDirectoryPerTestFixture
 	protected virtual void given() {
 	}
 
-	protected virtual void when() {
-	}
+	protected virtual ValueTask when(CancellationToken token) => ValueTask.CompletedTask;
 
 	[OneTimeSetUp]
-	public void Setup() {
+	public async Task Setup() {
 		given();
 		_indexDir = PathName;
 		_fakeReader = new TFReaderLease(new FakeReader());
@@ -58,7 +57,7 @@ public class HashCollisionTestFixture : SpecificationWithDirectoryPerTestFixture
 
 		_lowHasher = _logFormat.LowHasher;
 		_highHasher = _logFormat.HighHasher;
-		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, _logFormat.EmptyStreamId,
+		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher,
 			() => new HashListMemTable(PTableVersions.IndexV4, maxSize: _maxMemTableSize),
 			() => _fakeReader,
 			PTableVersions.IndexV4,
@@ -74,15 +73,16 @@ public class HashCollisionTestFixture : SpecificationWithDirectoryPerTestFixture
 			new EventStore.Core.Data.StreamMetadata(),
 			_hashCollisionReadLimit, skipIndexScanOnRead: false);
 
-		when();
+		await when(CancellationToken.None);
+
 		//wait for the mem table to be dumped
-		System.Threading.Thread.Sleep(500);
+		await Task.Delay(500);
 	}
 
-	public override Task TestFixtureTearDown() {
+	public override async Task TestFixtureTearDown() {
 		_logFormat.Dispose();
-		_tableIndex.Close();
-		return base.TestFixtureTearDown();
+		await _tableIndex.Close();
+		await base.TestFixtureTearDown();
 	}
 }
 
@@ -101,10 +101,10 @@ public class when_stream_does_not_exist : HashCollisionTestFixture {
 		_hashCollisionReadLimit = 5;
 	}
 
-	protected override void when() {
+	protected override async ValueTask when(CancellationToken token) {
 		//mem table
-		_tableIndex.Add(1, "LPN-FC002_LPK51001", 0, 3);
-		_tableIndex.Add(1, "LPN-FC002_LPK51001", 1, 5);
+		await _tableIndex.Add(1, "LPN-FC002_LPK51001", 0, 3, token);
+		await _tableIndex.Add(1, "LPN-FC002_LPK51001", 1, 5, token);
 	}
 
 	[Test]
@@ -128,19 +128,19 @@ public class when_stream_is_out_of_range_of_read_limit : HashCollisionTestFixtur
 		_hashCollisionReadLimit = 1;
 	}
 
-	protected override void when() {
+	protected override async ValueTask when(CancellationToken token) {
 		if (_useMaxAge) {
 			_indexBackend.SetStreamMetadata(stream1Id, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
 			_indexBackend.SetStreamMetadata(stream2Id, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
 		}
 		//ptable 1
-		_tableIndex.Add(1, stream1Id, 0, 0);
-		_tableIndex.Add(1, stream2Id, 0, 3);
-		_tableIndex.Add(1, stream2Id, 1, 5);
-		_tableIndex.Add(1, stream2Id, 2, 7);
-		_tableIndex.Add(1, stream2Id, 3, 9);
+		await _tableIndex.Add(1, stream1Id, 0, 0, token);
+		await _tableIndex.Add(1, stream2Id, 0, 3, token);
+		await _tableIndex.Add(1, stream2Id, 1, 5, token);
+		await _tableIndex.Add(1, stream2Id, 2, 7, token);
+		await _tableIndex.Add(1, stream2Id, 3, 9, token);
 		//mem table
-		_tableIndex.Add(1, stream2Id, 4, 13);
+		await _tableIndex.Add(1, stream2Id, 4, 13, token);
 	}
 
 	[Test]
@@ -165,19 +165,19 @@ public class when_stream_is_in_of_range_of_read_limit : HashCollisionTestFixture
 		_hashCollisionReadLimit = 5;
 	}
 
-	protected override void when() {
+	protected override async ValueTask when(CancellationToken token) {
 		if (_useMaxAge) {
 			_indexBackend.SetStreamMetadata(stream1Id, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
 			_indexBackend.SetStreamMetadata(stream2Id, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
 		}
 		//ptable 1
-		_tableIndex.Add(1, stream1Id, 0, 0);
-		_tableIndex.Add(1, stream2Id, 0, 3);
-		_tableIndex.Add(1, stream2Id, 1, 5);
-		_tableIndex.Add(1, stream2Id, 2, 7);
-		_tableIndex.Add(1, stream2Id, 3, 9);
+		await _tableIndex.Add(1, stream1Id, 0, 0, token);
+		await _tableIndex.Add(1, stream2Id, 0, 3, token);
+		await _tableIndex.Add(1, stream2Id, 1, 5, token);
+		await _tableIndex.Add(1, stream2Id, 2, 7, token);
+		await _tableIndex.Add(1, stream2Id, 3, 9, token);
 		//mem table
-		_tableIndex.Add(1, stream2Id, 4, 13);
+		await _tableIndex.Add(1, stream2Id, 4, 13, token);
 	}
 
 	[Test]
@@ -199,7 +199,7 @@ public class when_hash_read_limit_is_not_reached : HashCollisionTestFixture {
 		_hashCollisionReadLimit = 3;
 	}
 
-	protected override void when() {
+	protected override async ValueTask when(CancellationToken token) {
 		string stream1Id = "account--696193173";
 		string stream2Id = "LPN-FC002_LPK51001";
 		if (_useMaxAge) {
@@ -207,11 +207,11 @@ public class when_hash_read_limit_is_not_reached : HashCollisionTestFixture {
 			_indexBackend.SetStreamMetadata(stream2Id, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
 		}
 		//ptable 1
-		_tableIndex.Add(1, stream1Id, 0, 0);
-		_tableIndex.Add(1, stream2Id, 0, 3);
-		_tableIndex.Add(1, stream2Id, 1, 5);
-		_tableIndex.Add(1, stream2Id, 2, 7);
-		_tableIndex.Add(1, stream2Id, 3, 9);
+		await _tableIndex.Add(1, stream1Id, 0, 0, token);
+		await _tableIndex.Add(1, stream2Id, 0, 3, token);
+		await _tableIndex.Add(1, stream2Id, 1, 5, token);
+		await _tableIndex.Add(1, stream2Id, 2, 7, token);
+		await _tableIndex.Add(1, stream2Id, 3, 9, token);
 	}
 
 	[Test]
@@ -234,15 +234,15 @@ public class when_index_contains_duplicate_entries : HashCollisionTestFixture {
 		_hashCollisionReadLimit = 5;
 	}
 
-	protected override void when() {
+	protected override async ValueTask when(CancellationToken token) {
 		if (_useMaxAge) {
 			_indexBackend.SetStreamMetadata(streamId, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
 		}
 		//ptable 1
-		_tableIndex.Add(1, streamId, 0, 2);
-		_tableIndex.Add(1, streamId, 0, 4);
-		_tableIndex.Add(1, streamId, 1, 6);
-		_tableIndex.Add(1, streamId, 2, 8);
+		await _tableIndex.Add(1, streamId, 0, 2, token);
+		await _tableIndex.Add(1, streamId, 0, 4, token);
+		await _tableIndex.Add(1, streamId, 1, 6, token);
+		await _tableIndex.Add(1, streamId, 2, 8, token);
 	}
 
 	[Test]
@@ -307,17 +307,17 @@ public class
 		_hashCollisionReadLimit = 5;
 	}
 
-	protected override void when() {
+	protected override async ValueTask when(CancellationToken token) {
 		if (_useMaxAge) {
 			_indexBackend.SetStreamMetadata(streamId, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
 		}
 		//ptable 1 with 32bit indexes
-		_tableIndex.Add(1, streamId, 0, 2);
-		_tableIndex.Add(1, streamId, 1, 4);
-		_tableIndex.Add(1, streamId, 2, 6);
-		System.Threading.Thread.Sleep(500);
-		_tableIndex.Close(false);
-		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
+		await _tableIndex.Add(1, streamId, 0, 2, token);
+		await _tableIndex.Add(1, streamId, 1, 4, token);
+		await _tableIndex.Add(1, streamId, 2, 6, token);
+		await Task.Delay(500, token);
+		await _tableIndex.Close(false);
+		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher,
 			() => new HashListMemTable(PTableVersions.IndexV2, maxSize: _maxMemTableSize),
 			() => _fakeReader,
 			PTableVersions.IndexV2,
@@ -333,7 +333,7 @@ public class
 			new EventStore.Core.Data.StreamMetadata(),
 			_hashCollisionReadLimit, skipIndexScanOnRead: false);
 		//memtable with 64bit indexes
-		_tableIndex.Add(1, streamId, 0, 8);
+		await _tableIndex.Add(1, streamId, 0, 8, token);
 	}
 
 	[Test]
@@ -393,16 +393,16 @@ public class when_stream_has_max_age : HashCollisionTestFixture {
 	private readonly string _oddStream = "LPN-FC002_LPK51001";
 	private readonly string _evenStream = "account--696193173";
 
-	protected override void when() {
+	protected override async ValueTask when(CancellationToken token) {
 		_indexBackend.SetStreamMetadata(
 			_evenStream,
 			new StreamMetadata(maxAge: TimeSpan.FromDays(1)));
 
-		_tableIndex.Add(1, _evenStream, 5, 0);
-		_tableIndex.Add(1, _evenStream, 6, 2);
-		_tableIndex.Add(1, _oddStream, 5, 3);
-		_tableIndex.Add(1, _oddStream, 6, 5);
-		_tableIndex.Add(1, _oddStream, 7, 7);
+		await _tableIndex.Add(1, _evenStream, 5, 0, token);
+		await _tableIndex.Add(1, _evenStream, 6, 2, token);
+		await _tableIndex.Add(1, _oddStream, 5, 3, token);
+		await _tableIndex.Add(1, _oddStream, 6, 5, token);
+		await _tableIndex.Add(1, _oddStream, 7, 7, token);
 	}
 
 	[Test]

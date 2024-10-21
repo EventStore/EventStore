@@ -638,7 +638,6 @@ public class ClusterVNode<TStreamId> :
 		var tableIndex = new TableIndex<TStreamId>(indexPath,
 			logFormat.LowHasher,
 			logFormat.HighHasher,
-			logFormat.EmptyStreamId,
 			() => new HashListMemTable(options.IndexBitnessVersion,
 				maxSize: options.Database.MaxMemTableSize * 2),
 			() => new TFReaderLease(readerPool),
