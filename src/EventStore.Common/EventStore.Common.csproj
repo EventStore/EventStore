@@ -32,8 +32,8 @@
 		<PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
 		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.0" />
 		<PackageReference Include="YamlDotnet" Version="13.7.1" />
-		<!-- upgrade because of transitive dependency vulnerability https://github.com/advisories/GHSA-hh2w-p6rv-4g7w -->
-		<PackageReference Include="System.Text.Json" Version="8.0.4" />
+		<!-- upgrade because of transitive dependency vulnerability https://github.com/advisories/GHSA-8g4q-xg66-9fp4 -->
+		<PackageReference Include="System.Text.Json" Version="8.0.5" />
 		<!-- upgrade because of transitive dependency vulnerability https://github.com/advisories/GHSA-447r-wph3-92pm -->
 		<PackageReference Include="System.Formats.Asn1" Version="8.0.1" />
 	</ItemGroup>

@@ -1,3 +1,4 @@
+using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
@@ -42,12 +43,17 @@ namespace EventStore.Projections.Core.Services.Processing {
 					msg.EventStreamId, msg.ExpectedVersion, msg.HardDelete, msg.User));
 		}
 
+		// Historically the forwarding we do here has discarded the Expiration of the msg when forwarding it, resetting it
+		// to the default, which is 10 seconds from now. We should probably propagate the Expiration of all the source messages.
+		// However, in this fix we make the minimum impact change necessary which is to only pass the expiration that we
+		// need (DateTime.MaxValue) and only for the messages that we need.
 		public void Handle(ClientMessage.ReadStreamEventsBackward msg) {
 			_externalRequestQueue.Publish(
 				new ClientMessage.ReadStreamEventsBackward(
 					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
 					msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.ResolveLinkTos, msg.RequireLeader,
-					msg.ValidationStreamVersion, msg.User));
+					msg.ValidationStreamVersion, msg.User,
+					expires: msg.Expires == DateTime.MaxValue ? msg.Expires : null));
 		}
 
 		public void Handle(ClientMessage.ReadStreamEventsForward msg) {
@@ -55,7 +61,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				new ClientMessage.ReadStreamEventsForward(
 					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
 					msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.ResolveLinkTos, msg.RequireLeader,
-					msg.ValidationStreamVersion, msg.User, replyOnExpired: false));
+					msg.ValidationStreamVersion, msg.User, replyOnExpired: false,
+					expires: msg.Expires == DateTime.MaxValue ? msg.Expires : null));
 		}
 
 		public void Handle(ClientMessage.ReadAllEventsForward msg) {
