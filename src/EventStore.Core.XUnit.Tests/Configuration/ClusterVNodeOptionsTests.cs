@@ -116,9 +116,9 @@ public class ClusterVNodeOptionsTests {
 		var result = options.CheckForEnvironmentOnlyOptions();
 
 		result.Should().BeEquivalentTo(
-			"Provided by: Command Line. " +
+			"\"DefaultAdminPassword\" Provided by: Command Line. " +
 			"The Admin user password can only be set using Environment Variables" + Environment.NewLine +
-			"Provided by: Command Line. " +
+			"\"DefaultOpsPassword\" Provided by: Command Line. " +
 			"The Ops user password can only be set using Environment Variables" + Environment.NewLine);
 	}
 
