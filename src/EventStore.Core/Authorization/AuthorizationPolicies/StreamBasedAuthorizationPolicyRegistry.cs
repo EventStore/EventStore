@@ -149,7 +149,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	}
 
 	private async ValueTask<bool> TryApplyPluginPolicySelector(IPolicySelectorFactory pluginFactory) {
-		_logger.Information("Starting factory {factory}", pluginFactory.CommandLineName);
+		_logger.Information("Starting authorization policy factory {factory}", pluginFactory.CommandLineName);
 		if (!await pluginFactory.Enable()) {
 			_logger.Error("Failed to enable policy selector plugin {pluginName}. " +
 			              "Authorization settings will not be applied", pluginFactory.CommandLineName);
@@ -231,7 +231,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 			// Use the default.
 			Log.Information("No existing authorization policy settings were found in {stream}. Using the default", _stream);
 			if (await TryApplyAuthorizationPolicySettings(_defaultSettings)) {
-				_logger.Information("Successfully applied default settings");
+				_logger.Verbose("Successfully applied default settings");
 				return checkpoint;
 			}
 		}

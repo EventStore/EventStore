@@ -78,7 +78,6 @@ using Microsoft.Extensions.DependencyInjection;
 using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
-using TimeoutControl = DotNext.Threading.Timeout;
 using EventStore.Core.Services.Archiver;
 using EventStore.Licensing;
 
@@ -136,7 +135,7 @@ public class ClusterVNode<TStreamId> :
 	IHandle<SystemMessage.BecomeShutdown>,
 	IHandle<SystemMessage.SystemStart>,
 	IHandle<ClientMessage.ReloadConfig> {
-	private static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromSeconds(10);
+	private static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromSeconds(5);
 
 	private readonly ClusterVNodeOptions _options;
 
@@ -197,7 +196,6 @@ public class ClusterVNode<TStreamId> :
 	private readonly ClusterVNodeStartup<TStreamId> _startup;
 	private readonly INodeHttpClientFactory _nodeHttpClientFactory;
 	private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
-	private readonly ShutdownService _shutdownService;
 
 	private int _stopCalled;
 	private int _reloadingConfig;
@@ -232,6 +230,8 @@ public class ClusterVNode<TStreamId> :
 		Action<IServiceCollection> configureAdditionalNodeServices = null) {
 
 		configuration ??= new ConfigurationBuilder().Build();
+
+		LogPluginSubsectionWarnings(configuration);
 
 		_certificateProvider = certificateProvider;
 
@@ -507,10 +507,10 @@ public class ClusterVNode<TStreamId> :
 		_mainQueue = _controller.MainQueue;
 		_mainBus = _controller.MainBus;
 
-		_shutdownService = new ShutdownService(_mainQueue, NodeInfo);
-		_mainBus.Subscribe<SystemMessage.RegisterForGracefulTermination>(_shutdownService);
-		_mainBus.Subscribe<ClientMessage.RequestShutdown>(_shutdownService);
-		_mainBus.Subscribe<SystemMessage.ComponentTerminated>(_shutdownService);
+		var shutdownService = new ShutdownService(_mainQueue, NodeInfo);
+		_mainBus.Subscribe<SystemMessage.RegisterForGracefulTermination>(shutdownService);
+		_mainBus.Subscribe<ClientMessage.RequestShutdown>(shutdownService);
+		_mainBus.Subscribe<SystemMessage.ComponentTerminated>(shutdownService);
 
 		var uriScheme = options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps;
 		var clusterDns = options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null;
@@ -1521,7 +1521,7 @@ public class ClusterVNode<TStreamId> :
 		_subsystems = options.Subsystems;
 
 		var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
-			httpSendService, [_httpService], _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
+			httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
 
 		IServiceCollection ConfigureNodeServices(IServiceCollection services) {
 			services
@@ -1530,7 +1530,7 @@ public class ClusterVNode<TStreamId> :
 				.AddSingleton(standardComponents)
 				.AddSingleton(authorizationGateway)
 				.AddSingleton(certificateProvider)
-				.AddSingleton<IReadOnlyList<IDbTransform>>([new IdentityDbTransform()])
+				.AddSingleton<IReadOnlyList<IDbTransform>>(new List<IDbTransform> { new IdentityDbTransform() })
 				.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
 				.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates,
 						X509Certificate2Collection Roots)>>
@@ -1731,26 +1731,22 @@ public class ClusterVNode<TStreamId> :
 			return;
 		}
 
-		// TODO - We might want to increase that value here.
-		_shutdownService.Shutdown();
+		_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
-		_reloadConfigSignalRegistration?.Dispose();
-		_reloadConfigSignalRegistration = null;
-
-		TimeSpan remainingTime;
-		var timeoutCtl = new TimeoutControl(timeout ?? DefaultShutdownTimeout);
-		foreach (var subsystem in _subsystems ?? []) {
-			timeoutCtl.ThrowIfExpired(out remainingTime);
-			await subsystem.Stop().WaitAsync(remainingTime, cancellationToken);
+		try {
+			await _shutdownSource.Task.WaitAsync(timeout ?? DefaultShutdownTimeout, cancellationToken);
 		}
-
-		timeoutCtl.ThrowIfExpired(out remainingTime);
-		await _shutdownSource.Task.WaitAsync(remainingTime, cancellationToken);
+		catch (Exception) {
+			Log.Error("Graceful shutdown not complete. Forcing shutdown now.");
+			throw;
+		}
 
 		_switchChunksLock?.Dispose();
 	}
 
 	public async ValueTask HandleAsync(SystemMessage.BecomeShuttingDown message, CancellationToken token) {
+		Log.Information("========== [{httpEndPoint}] IS SHUTTING DOWN SUBSYSTEMS...", NodeInfo.HttpEndPoint);
+
 		_reloadConfigSignalRegistration?.Dispose();
 		_reloadConfigSignalRegistration = null;
 
@@ -1920,6 +1916,22 @@ public class ClusterVNode<TStreamId> :
 
 		if (_certificateProvider?.LoadCertificates(options) == LoadCertificateResult.VerificationFailed) {
 			throw new InvalidConfigurationException("Aborting certificate loading due to verification errors.");
+		}
+	}
+
+	private static void LogPluginSubsectionWarnings(IConfiguration configuration) {
+		var pluginSubsectionOptions = configuration.GetSection("EventStore:Plugins").AsEnumerable().ToList();
+		if (pluginSubsectionOptions.Count <= 1)
+			return;
+
+		Log.Warning(
+			"The \"Plugins\" configuration subsection has been removed. " +
+			"The following settings will be ignored. " +
+			"Please move them out of the \"Plugins\" subsection and directly into the \"EventStore\" root.");
+
+		foreach (var kvp in pluginSubsectionOptions) {
+			if (kvp.Value is not null)
+				Log.Warning("Ignoring option nested in \"Plugins\" subsection: {IgnoredOption}", kvp.Key);
 		}
 	}
 
