@@ -9,7 +9,7 @@ using EventStore.Core.Messages;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex;
 
-public interface IReadIndex : IAsyncDisposable {
+public interface IReadIndex {
 	long LastIndexedPosition { get; }
 
 	ReadIndexStats GetStatistics();
@@ -39,6 +39,9 @@ public interface IReadIndex : IAsyncDisposable {
 	/// </summary>
 	ValueTask<IndexReadAllResult> ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
 		IEventFilter eventFilter, CancellationToken token);
+
+	void Close();
+	void Dispose();
 }
 
 public interface IReadIndex<TStreamId> : IReadIndex {

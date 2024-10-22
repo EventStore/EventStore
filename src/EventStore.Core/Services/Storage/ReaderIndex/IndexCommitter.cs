@@ -21,9 +21,10 @@ using EventStore.LogCommon;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex;
 
-public interface IIndexCommitter : IAsyncDisposable {
+public interface IIndexCommitter {
 	long LastIndexedPosition { get; }
 	ValueTask Init(long buildToPosition, CancellationToken token);
+	void Dispose();
 	ValueTask<long> Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber, CancellationToken token);
 	ValueTask<long> GetCommitLastEventNumber(CommitLogRecord commit, CancellationToken token);
 }
@@ -227,12 +228,12 @@ public class IndexCommitter<TStreamId> : IndexCommitter, IIndexCommitter<TStream
 		_indexRebuild = false;
 	}
 
-	public async ValueTask DisposeAsync() {
+	public void Dispose() {
 		_streamNameIndex?.Dispose();
 		_eventTypeIndex?.Dispose();
 		_streamExistenceFilter?.Dispose();
 		try {
-			await _tableIndex.Close(removeFiles: false);
+			_tableIndex.Close(removeFiles: false);
 		} catch (TimeoutException exc) {
 			Log.Error(exc, "Timeout exception when trying to close TableIndex.");
 			throw;
@@ -297,7 +298,7 @@ public class IndexCommitter<TStreamId> : IndexCommitter, IIndexCommitter<TStream
 				await CheckDuplicateEvents(streamId, commit, indexEntries, prepares, token);
 			}
 
-			await _tableIndex.AddEntries(commit.LogPosition, indexEntries, token); // atomically add a whole bulk of entries
+			_tableIndex.AddEntries(commit.LogPosition, indexEntries); // atomically add a whole bulk of entries
 		}
 
 		if (eventNumber != EventNumber.Invalid) {
@@ -407,7 +408,7 @@ public class IndexCommitter<TStreamId> : IndexCommitter, IIndexCommitter<TStream
 				await CheckDuplicateEvents(streamId, null, indexEntries, prepares, token); // TODO AN: bad passing null commit
 			}
 
-			await _tableIndex.AddEntries(lastPrepare.LogPosition, indexEntries, token); // atomically add a whole bulk of entries
+			_tableIndex.AddEntries(lastPrepare.LogPosition, indexEntries); // atomically add a whole bulk of entries
 		}
 
 		if (eventNumber != EventNumber.Invalid) {

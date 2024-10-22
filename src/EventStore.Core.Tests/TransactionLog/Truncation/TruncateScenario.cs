@@ -27,9 +27,10 @@ public abstract class TruncateScenario<TLogFormat, TStreamId> : ReadIndexTestSce
 
 		// need to close db before truncator can delete files
 
-		await ReadIndex.DisposeAsync();
+		ReadIndex.Close();
+		ReadIndex.Dispose();
 
-		await TableIndex.Close(removeFiles: false);
+		TableIndex.Close(removeFiles: false);
 
 		await Db.DisposeAsync();
 

@@ -260,6 +260,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 			directory: indexPath,
 			lowHasher: lowHasher,
 			highHasher: highHasher,
+			emptyStreamId: logFormat.EmptyStreamId,
 			memTableFactory: () => new HashListMemTable(PTableVersions.IndexV4, maxSize: 200),
 			tfReaderFactory: () => new TFReaderLease(readerPool),
 			ptableVersion: PTableVersions.IndexV4,
@@ -299,7 +300,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 		// wait for tables to be merged. for one of the tests this takes a while
 		for (int i = 0; i < 10; i++) {
 			try {
-				await tableIndex.WaitForBackgroundTasks();
+				tableIndex.WaitForBackgroundTasks();
 				break;
 			} catch {
 			}
@@ -567,7 +568,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 
 		} finally {
 			sut?.Dispose();
-			await readIndex.DisposeAsync();
+			readIndex.Close();
 			await dbResult.Db.DisposeAsync();
 		}
 	}

@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.LogAbstraction;
@@ -23,7 +21,7 @@ public abstract class StorageReaderService {
 
 public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<SystemMessage.SystemInit>,
 	IHandle<SystemMessage.BecomeShuttingDown>,
-	IAsyncHandle<SystemMessage.BecomeShutdown>,
+	IHandle<SystemMessage.BecomeShutdown>,
 	IHandle<MonitoringMessage.InternalStatsRequest> {
 
 	private readonly IPublisher _bus;
@@ -106,9 +104,9 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 		_bus.Publish(new SystemMessage.ServiceShutdown("StorageReader"));
 	}
 
-	ValueTask IAsyncHandle<SystemMessage.BecomeShutdown>.HandleAsync(SystemMessage.BecomeShutdown message, CancellationToken token) {
+	void IHandle<SystemMessage.BecomeShutdown>.Handle(SystemMessage.BecomeShutdown message) {
 		// by now (in case of successful shutdown process), all readers and writers should not be using ReadIndex
-		return _readIndex.DisposeAsync();
+		_readIndex.Close();
 	}
 
 	void IHandle<MonitoringMessage.InternalStatsRequest>.Handle(MonitoringMessage.InternalStatsRequest message) {

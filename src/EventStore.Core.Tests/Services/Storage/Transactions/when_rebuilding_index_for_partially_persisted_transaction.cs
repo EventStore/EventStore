@@ -30,14 +30,16 @@ public class when_rebuilding_index_for_partially_persisted_transaction<TLogForma
 	public override async Task TestFixtureSetUp() {
 		await base.TestFixtureSetUp();
 
-		await ReadIndex.DisposeAsync();
-		await TableIndex.Close(removeFiles: false);
+		ReadIndex.Close();
+		ReadIndex.Dispose();
+		TableIndex.Close(removeFiles: false);
 
 		var readers =
 			new ObjectPool<ITransactionFileReader>("Readers", 2, 2, () => new TFChunkReader(Db, WriterCheckpoint));
 		var lowHasher = _logFormat.LowHasher;
 		var highHasher = _logFormat.HighHasher;
-		TableIndex = new TableIndex<TStreamId>(GetFilePathFor("index"), lowHasher, highHasher,
+		var emptyStreamId = _logFormat.EmptyStreamId;
+		TableIndex = new TableIndex<TStreamId>(GetFilePathFor("index"), lowHasher, highHasher, emptyStreamId,
 			() => new HashListMemTable(PTableVersions.IndexV2, maxSize: MaxEntriesInMemTable * 2),
 			() => new TFReaderLease(readers),
 			PTableVersions.IndexV2,

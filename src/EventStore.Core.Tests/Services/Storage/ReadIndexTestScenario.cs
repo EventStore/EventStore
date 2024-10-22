@@ -113,7 +113,8 @@ public abstract class ReadIndexTestScenario<TLogFormat, TStreamId> : Specificati
 
 		var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 5,
 			() => new TFChunkReader(Db, Db.Config.WriterCheckpoint));
-		TableIndex = TransformTableIndex(new TableIndex<TStreamId>(indexDirectory, LowHasher, HighHasher,
+		var emptyStreamId = _logFormat.EmptyStreamId;
+		TableIndex = TransformTableIndex(new TableIndex<TStreamId>(indexDirectory, LowHasher, HighHasher, emptyStreamId,
 			() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
 			() => new TFReaderLease(readers),
 			IndexBitnessVersion,
@@ -150,7 +151,7 @@ public abstract class ReadIndexTestScenario<TLogFormat, TStreamId> : Specificati
 		ReadIndex = readIndex;
 
 		// wait for tables to be merged
-		await TableIndex.WaitForBackgroundTasks(16_000, CancellationToken.None);
+		TableIndex.WaitForBackgroundTasks(16_000);
 
 		// scavenge must run after readIndex is built
 		if (_scavenge) {
@@ -164,9 +165,10 @@ public abstract class ReadIndexTestScenario<TLogFormat, TStreamId> : Specificati
 
 	public override async Task TestFixtureTearDown() {
 		_logFormat?.Dispose();
-		await (ReadIndex?.DisposeAsync() ?? ValueTask.CompletedTask);
+		ReadIndex?.Close();
+		ReadIndex?.Dispose();
 
-		await (TableIndex?.Close() ?? ValueTask.CompletedTask);
+		TableIndex?.Close();
 
 		await (Db?.DisposeAsync() ?? ValueTask.CompletedTask);
 		await base.TestFixtureTearDown();

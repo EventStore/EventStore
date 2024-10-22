@@ -2,7 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Tests.Fakes;
@@ -39,7 +38,7 @@ public class table_index_with_two_ptables_and_memtable_on_range_query : Specific
 		var fakeReader = new TFReaderLease(new FakeIndexReader());
 		_lowHasher = new FakeIndexHasher();
 		_highHasher = new FakeIndexHasher();
-		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher,
+		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 			() => new HashListMemTable(_ptableVersion, maxSize: 10),
 			() => fakeReader,
 			_ptableVersion,
@@ -50,36 +49,36 @@ public class table_index_with_two_ptables_and_memtable_on_range_query : Specific
 		_tableIndex.Initialize(long.MaxValue);
 
 		// ptable level 2
-		await _tableIndex.Add(0, "1", 0, 0xFF00, CancellationToken.None);
-		await _tableIndex.Add(0, "1", 1, 0xFF01, CancellationToken.None);
-		await _tableIndex.Add(0, "2", 0, 0xFF00, CancellationToken.None);
-		await _tableIndex.Add(0, "2", 1, 0xFF01, CancellationToken.None);
-		await _tableIndex.Add(0, "3", 0, 0xFF00, CancellationToken.None);
-		await _tableIndex.Add(0, "3", 1, 0xFF01, CancellationToken.None);
-		await _tableIndex.Add(0, "3", 0, 0xFF02, CancellationToken.None);
-		await _tableIndex.Add(0, "3", 1, 0xFF03, CancellationToken.None);
+		_tableIndex.Add(0, "1", 0, 0xFF00);
+		_tableIndex.Add(0, "1", 1, 0xFF01);
+		_tableIndex.Add(0, "2", 0, 0xFF00);
+		_tableIndex.Add(0, "2", 1, 0xFF01);
+		_tableIndex.Add(0, "3", 0, 0xFF00);
+		_tableIndex.Add(0, "3", 1, 0xFF01);
+		_tableIndex.Add(0, "3", 0, 0xFF02);
+		_tableIndex.Add(0, "3", 1, 0xFF03);
 
 		// ptable level 1
-		await _tableIndex.Add(0, "4", 0, 0xFF00, CancellationToken.None);
-		await _tableIndex.Add(0, "5", 10, 0xFFF1, CancellationToken.None);
-		await _tableIndex.Add(0, "6", 0, 0xFF00, CancellationToken.None);
-		await _tableIndex.Add(0, "1", 0, 0xFF10, CancellationToken.None);
+		_tableIndex.Add(0, "4", 0, 0xFF00);
+		_tableIndex.Add(0, "5", 10, 0xFFF1);
+		_tableIndex.Add(0, "6", 0, 0xFF00);
+		_tableIndex.Add(0, "1", 0, 0xFF10);
 
 		// ptable level 0
-		await _tableIndex.Add(0, "6", 1, 0xFF01, CancellationToken.None);
-		await _tableIndex.Add(0, "1", 1, 0xFF11, CancellationToken.None);
+		_tableIndex.Add(0, "6", 1, 0xFF01);
+		_tableIndex.Add(0, "1", 1, 0xFF11);
 
 		// memtable
-		await _tableIndex.Add(0, "4", 0, 0xFF01, CancellationToken.None);
+		_tableIndex.Add(0, "4", 0, 0xFF01);
 
 		await Task.Delay(500);
 	}
 
 	[OneTimeTearDown]
-	public override async Task TestFixtureTearDown() {
-		await _tableIndex.Close();
+	public override Task TestFixtureTearDown() {
+		_tableIndex.Close();
 
-		await base.TestFixtureTearDown();
+		return base.TestFixtureTearDown();
 	}
 
 	private ulong GetHash(string streamId) {

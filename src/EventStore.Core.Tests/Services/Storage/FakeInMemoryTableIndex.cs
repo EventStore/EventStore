@@ -17,26 +17,23 @@ public class FakeInMemoryTableIndex<TStreamId> : ITableIndex<TStreamId> {
 	public bool IsBackgroundTaskRunning => throw new NotImplementedException();
 
 	private Dictionary<TStreamId, List<IndexKey<TStreamId>> > _indexEntries = new Dictionary<TStreamId, List<IndexKey<TStreamId>> >();
-
-	public ValueTask Add(long commitPos, TStreamId streamId, long version, long position, CancellationToken token)
-		=> ValueTask.FromException(new NotImplementedException());
-
-	public ValueTask AddEntries(long commitPos, IReadOnlyList<IndexKey<TStreamId>> entries, CancellationToken token) {
-		var task = ValueTask.CompletedTask;
-		try {
-			foreach (var entry in entries) {
-				if (!_indexEntries.ContainsKey(entry.StreamId))
-					_indexEntries[entry.StreamId] = new List<IndexKey<TStreamId>>();
-				_indexEntries[entry.StreamId].Add(entry);
-			}
-		} catch (Exception e) {
-			task = ValueTask.FromException(e);
-		}
-
-		return task;
+	public void Add(long commitPos, TStreamId streamId, long version, long position)
+	{
+		throw new NotImplementedException();
 	}
 
-	public ValueTask Close(bool removeFiles = true) => ValueTask.CompletedTask;
+	public void AddEntries(long commitPos, IList<IndexKey<TStreamId>> entries)
+	{
+		foreach(var entry in entries){
+			if(!_indexEntries.ContainsKey(entry.StreamId))
+				_indexEntries[entry.StreamId] = new List<IndexKey<TStreamId>>();
+			_indexEntries[entry.StreamId].Add(entry);
+		}
+	}
+
+	public void Close(bool removeFiles = true)
+	{
+	}
 
 	public IEnumerable<ISearchTable> IterateAllInOrder() => throw new NotImplementedException();
 
@@ -60,8 +57,10 @@ public class FakeInMemoryTableIndex<TStreamId> : ITableIndex<TStreamId> {
 	{
 	}
 
-	public ValueTask MergeIndexes(CancellationToken token)
-		=> ValueTask.FromException(new NotImplementedException());
+	public Task MergeIndexes()
+	{
+		throw new NotImplementedException();
+	}
 
 	public ValueTask Scavenge(IIndexScavengerLog log, CancellationToken ct)
 		=> ValueTask.FromException(new NotImplementedException());
@@ -124,6 +123,7 @@ public class FakeInMemoryTableIndex<TStreamId> : ITableIndex<TStreamId> {
 		throw new NotImplementedException();
 	}
 
-	public ValueTask WaitForBackgroundTasks(int millisecondsTimeout, CancellationToken token)
-		=> ValueTask.FromException(new NotImplementedException());
+	public void WaitForBackgroundTasks(int millisecondsTimeout) {
+		throw new NotImplementedException();
+	}
 }

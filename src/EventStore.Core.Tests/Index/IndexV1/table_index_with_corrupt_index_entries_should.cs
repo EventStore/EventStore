@@ -10,7 +10,6 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.Tests.Fakes;
 using System.IO;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 
@@ -23,14 +22,13 @@ public class table_index_with_corrupt_index_entries_should : SpecificationWithDi
 	public const string StreamName = "stream";
 	public const int NumIndexEntries = 512;
 
-	public async ValueTask ConstructTableIndexWithCorruptIndexEntries(byte version, bool skipIndexVerify,
-		bool createForceVerifyFile = false,
-		CancellationToken token = default) {
+	public void ConstructTableIndexWithCorruptIndexEntries(byte version, bool skipIndexVerify,
+		bool createForceVerifyFile = false) {
 		var lowHasher = new XXHashUnsafe();
 		var highHasher = new Murmur3AUnsafe();
 		var fakeReader = new TFReaderLease(new FakeIndexReader());
 
-		_tableIndex = new TableIndex<string>(PathName, lowHasher, highHasher,
+		_tableIndex = new TableIndex<string>(PathName, lowHasher, highHasher, "",
 			() => new HashListMemTable(version, maxSize: NumIndexEntries),
 			() => fakeReader,
 			version,
@@ -41,10 +39,10 @@ public class table_index_with_corrupt_index_entries_should : SpecificationWithDi
 
 		//create index entries
 		for (int i = 1; i <= NumIndexEntries; i++) {
-			await _tableIndex.Add(i * 1337, StreamName, i, i * 1337, token);
+			_tableIndex.Add(i * 1337, StreamName, i, i * 1337);
 		}
 
-		await _tableIndex.Close(false);
+		_tableIndex.Close(false);
 
 		//load index map to obtain ptable filenames
 		_indexMap = IndexMapTestFactory.FromFile(Path.Combine(PathName, TableIndex.IndexMapFilename));
@@ -71,7 +69,7 @@ public class table_index_with_corrupt_index_entries_should : SpecificationWithDi
 		}
 
 		//load table index again
-		_tableIndex = new TableIndex<string>(PathName, lowHasher, highHasher,
+		_tableIndex = new TableIndex<string>(PathName, lowHasher, highHasher, "",
 			() => new HashListMemTable(version, maxSize: NumIndexEntries),
 			() => fakeReader,
 			version,
@@ -83,8 +81,8 @@ public class table_index_with_corrupt_index_entries_should : SpecificationWithDi
 	}
 
 	[TearDown]
-	public async Task TearDown() {
-		await _tableIndex.Close();
+	public void TearDown() {
+		_tableIndex.Close();
 	}
 
 	private ulong GetOriginalHash(ulong stream, byte version) {
@@ -142,9 +140,9 @@ public class table_index_with_corrupt_index_entries_should : SpecificationWithDi
 	[TestCase(PTableVersions.IndexV2)]
 	[TestCase(PTableVersions.IndexV3)]
 	[TestCase(PTableVersions.IndexV4)]
-	public async Task throws_corrupt_index_exception_if_verification_enabled(byte version) {
+	public void throws_corrupt_index_exception_if_verification_enabled(byte version) {
 		//the CorruptIndexException is caught internally and should trigger an index file deletion if caught
-		await ConstructTableIndexWithCorruptIndexEntries(version, false);
+		ConstructTableIndexWithCorruptIndexEntries(version, false);
 		//index map file should be deleted if index verification fails
 		Assert.False(File.Exists(Path.Combine(PathName, TableIndex.IndexMapFilename)));
 		//force verify file should be cleared after rebuild/verification
@@ -154,10 +152,10 @@ public class table_index_with_corrupt_index_entries_should : SpecificationWithDi
 	[TestCase(PTableVersions.IndexV2)]
 	[TestCase(PTableVersions.IndexV3)]
 	[TestCase(PTableVersions.IndexV4)]
-	public async Task throws_maybe_corrupt_index_exception_if_verification_disabled(byte version) {
+	public void throws_maybe_corrupt_index_exception_if_verification_disabled(byte version) {
 		//the MaybeCorruptIndexException is caught internally and should trigger an index file deletion if caught
 
-		await ConstructTableIndexWithCorruptIndexEntries(version, true);
+		ConstructTableIndexWithCorruptIndexEntries(version, true);
 		Assert.Throws<MaybeCorruptIndexException>(() => {
 			//since index entries are sorted in descending order, the corrupted index entry corresponds to NumIndexEntries/2+1
 			_tableIndex.GetRange(StreamName, NumIndexEntries / 2 + 1, NumIndexEntries / 2 + 1, null).ToArray();
@@ -170,10 +168,10 @@ public class table_index_with_corrupt_index_entries_should : SpecificationWithDi
 	[TestCase(PTableVersions.IndexV2)]
 	[TestCase(PTableVersions.IndexV3)]
 	[TestCase(PTableVersions.IndexV4)]
-	public async Task force_verification_of_index_if_verification_disabled_but_force_verification_file_present(
+	public void force_verification_of_index_if_verification_disabled_but_force_verification_file_present(
 		byte version) {
 		//the CorruptIndexException is caught internally and should trigger an index file deletion if caught
-		await ConstructTableIndexWithCorruptIndexEntries(version, true, createForceVerifyFile: true);
+		ConstructTableIndexWithCorruptIndexEntries(version, true, createForceVerifyFile: true);
 
 		//index map file should be deleted if index verification fails
 		Assert.False(File.Exists(Path.Combine(PathName, TableIndex.IndexMapFilename)));

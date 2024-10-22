@@ -28,6 +28,7 @@ public class LogV2StreamExistenceFilterInitializerTests : DirectoryPerTest<LogV2
 			directory: Fixture.Directory,
 			lowHasher: new XXHashUnsafe(),
 			highHasher: new Murmur3AUnsafe(),
+			emptyStreamId: string.Empty,
 			memTableFactory: () => new HashListMemTable(
 				version: PTableVersions.IndexV4,
 				maxSize: 1_000_000 * 2),
@@ -46,7 +47,7 @@ public class LogV2StreamExistenceFilterInitializerTests : DirectoryPerTest<LogV2
 
 	}
 
-	private async ValueTask AddEventToSut(string stream, int eventNumber, CancellationToken token = default) {
+	private void AddEventToSut(string stream, int eventNumber) {
 		var record = LogRecord.SingleWrite(
 			factory: new LogV2RecordFactory(),
 			logPosition: _nextLogPosition,
@@ -59,12 +60,11 @@ public class LogV2StreamExistenceFilterInitializerTests : DirectoryPerTest<LogV2
 			metadata: ReadOnlyMemory<byte>.Empty);
 
 		_log.AddRecord(record, _nextLogPosition);
-		await _tableIndex.Add(
+		_tableIndex.Add(
 			commitPos: _nextLogPosition,
 			streamId: stream,
 			version: record.ExpectedVersion + 1,
-			position: _nextLogPosition,
-			token);
+			position: _nextLogPosition);
 
 		_nextLogPosition += _recordOffset;
 	}
@@ -85,12 +85,12 @@ public class LogV2StreamExistenceFilterInitializerTests : DirectoryPerTest<LogV2
 	public async Task can_truncate(long truncateTo, long expectedCheckpoint) {
 		_filter.CurrentCheckpoint = 1000;
 
-		await AddEventToSut("1", 0);
-		await AddEventToSut("2", 0);
-		await AddEventToSut("3", 0);
-		await AddEventToSut("4", 0);
-		await AddEventToSut("5", 0);
-		await AddEventToSut("6", 0);
+		AddEventToSut("1", 0);
+		AddEventToSut("2", 0);
+		AddEventToSut("3", 0);
+		AddEventToSut("4", 0);
+		AddEventToSut("5", 0);
+		AddEventToSut("6", 0);
 
 		await _sut.Initialize(_filter, truncateTo, CancellationToken.None);
 
@@ -100,12 +100,12 @@ public class LogV2StreamExistenceFilterInitializerTests : DirectoryPerTest<LogV2
 	[Fact]
 	public async Task can_initialize_from_beginning() {
 		// (implementation detail: initializes from index)
-		await AddEventToSut("1", 0);
-		await AddEventToSut("1", 1);
-		await AddEventToSut("2", 0);
-		await AddEventToSut("2", 1);
-		await AddEventToSut("3", 0);
-		await AddEventToSut("3", 1);
+		AddEventToSut("1", 0);
+		AddEventToSut("1", 1);
+		AddEventToSut("2", 0);
+		AddEventToSut("2", 1);
+		AddEventToSut("3", 0);
+		AddEventToSut("3", 1);
 
 		await _sut.Initialize(_filter, 0, CancellationToken.None);
 
@@ -118,12 +118,12 @@ public class LogV2StreamExistenceFilterInitializerTests : DirectoryPerTest<LogV2
 	[Fact]
 	public async Task can_initialize_from_beginning_unique() {
 		// (implementation detail: initializes from index)
-		await AddEventToSut("1", 0);
-		await AddEventToSut("2", 0);
-		await AddEventToSut("3", 0);
-		await AddEventToSut("4", 0);
-		await AddEventToSut("5", 0);
-		await AddEventToSut("6", 0);
+		AddEventToSut("1", 0);
+		AddEventToSut("2", 0);
+		AddEventToSut("3", 0);
+		AddEventToSut("4", 0);
+		AddEventToSut("5", 0);
+		AddEventToSut("6", 0);
 
 		await _sut.Initialize(_filter, 0, CancellationToken.None);
 
@@ -137,12 +137,12 @@ public class LogV2StreamExistenceFilterInitializerTests : DirectoryPerTest<LogV2
 		// (implementation detail: initializes from log)
 		_filter.CurrentCheckpoint = 0;
 
-		await AddEventToSut("1", 0);
-		await AddEventToSut("1", 1);
-		await AddEventToSut("2", 0);
-		await AddEventToSut("2", 1);
-		await AddEventToSut("3", 0);
-		await AddEventToSut("3", 1);
+		AddEventToSut("1", 0);
+		AddEventToSut("1", 1);
+		AddEventToSut("2", 0);
+		AddEventToSut("2", 1);
+		AddEventToSut("3", 0);
+		AddEventToSut("3", 1);
 
 		await _sut.Initialize(_filter, 0, CancellationToken.None);
 
@@ -162,7 +162,7 @@ public class LogV2StreamExistenceFilterInitializerTests : DirectoryPerTest<LogV2
 		var numEvents = eventsPerStream * numStreams;
 		for (int i = 0; i < numStreams; i++) {
 			for (int j = 0; j < eventsPerStream; j++) {
-				await AddEventToSut(stream: $"stream-{i}", eventNumber: j);
+				AddEventToSut(stream: $"stream-{i}", eventNumber: j);
 			}
 		}
 
@@ -182,6 +182,7 @@ public class LogV2StreamExistenceFilterInitializerTests : DirectoryPerTest<LogV2
 			directory: Fixture.Directory,
 			lowHasher: new XXHashUnsafe(),
 			highHasher: new Murmur3AUnsafe(),
+			emptyStreamId: string.Empty,
 			memTableFactory: () => new HashListMemTable(
 				version: PTableVersions.IndexV1,
 				maxSize: 1_000_000 * 2),

@@ -38,7 +38,7 @@ class when_scavenging_a_table_index_fails : SpecificationWithDirectoryPerTestFix
 		var fakeReader = new TFReaderLease(new FakeIndexReader());
 		_lowHasher = new XXHashUnsafe();
 		_highHasher = new Murmur3AUnsafe();
-		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher,
+		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 			() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
 			() => throw new Exception("Expected exception") /* throw an exception when the first PTable scavenge starts and tries to acquire a reader */,
 			PTableVersions.IndexV4,
@@ -48,21 +48,21 @@ class when_scavenging_a_table_index_fails : SpecificationWithDirectoryPerTestFix
 			useBloomFilter: _useBloomFilter);
 		_tableIndex.Initialize(long.MaxValue);
 
-		await _tableIndex.Add(1, "testStream-1", 0, 0, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-1", 1, 100, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-1", 2, 200, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-1", 3, 300, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-1", 4, 400, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-1", 5, 500, CancellationToken.None);
+		_tableIndex.Add(1, "testStream-1", 0, 0);
+		_tableIndex.Add(1, "testStream-1", 1, 100);
+		_tableIndex.Add(1, "testStream-1", 2, 200);
+		_tableIndex.Add(1, "testStream-1", 3, 300);
+		_tableIndex.Add(1, "testStream-1", 4, 400);
+		_tableIndex.Add(1, "testStream-1", 5, 500);
 
 		_log = new FakeTFScavengerLog();
 		Assert.That(() => _tableIndex.Scavenge(_log, CancellationToken.None),
 			Throws.Exception.With.Message.EqualTo("Expected exception"));
 
 		// Check it's loadable still.
-		await _tableIndex.Close(false);
+		_tableIndex.Close(false);
 
-		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher,
+		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 			() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
 			() => fakeReader,
 			PTableVersions.IndexV4,
@@ -75,9 +75,10 @@ class when_scavenging_a_table_index_fails : SpecificationWithDirectoryPerTestFix
 	}
 
 	[OneTimeTearDown]
-	public override async Task TestFixtureTearDown() {
-		await _tableIndex.Close();
-		await base.TestFixtureTearDown();
+	public override Task TestFixtureTearDown() {
+		_tableIndex.Close();
+
+		return base.TestFixtureTearDown();
 	}
 
 	[Test]

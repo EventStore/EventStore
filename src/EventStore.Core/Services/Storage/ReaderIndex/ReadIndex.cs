@@ -19,7 +19,7 @@ using static EventStore.Common.Configuration.MetricsConfiguration;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex;
 
-public sealed class ReadIndex<TStreamId> : IReadIndex<TStreamId> {
+public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId> {
 	public long LastIndexedPosition {
 		get { return _indexCommitter.LastIndexedPosition; }
 	}
@@ -210,5 +210,11 @@ public sealed class ReadIndex<TStreamId> : IReadIndex<TStreamId> {
 			_indexWriter.NotCachedTransInfo);
 	}
 
-	public ValueTask DisposeAsync() => _indexCommitter.DisposeAsync();
+	public void Close() {
+		Dispose();
+	}
+
+	public void Dispose() {
+		_indexCommitter.Dispose();
+	}
 }

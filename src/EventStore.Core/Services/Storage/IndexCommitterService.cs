@@ -38,7 +38,7 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 	IHandle<SystemMessage.BecomeShuttingDown>,
 	IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 	IHandle<StorageMessage.CommitAck>,
-	IAsyncHandle<ClientMessage.MergeIndexes>,
+	IHandle<ClientMessage.MergeIndexes>,
 	IThreadPoolWorkItem {
 	private readonly IIndexCommitter<TStreamId> _indexCommitter;
 	private readonly IPublisher _publisher;
@@ -291,14 +291,14 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 		}
 	}
 
-	async ValueTask IAsyncHandle<ClientMessage.MergeIndexes>.HandleAsync(ClientMessage.MergeIndexes message, CancellationToken token) {
+	public void Handle(ClientMessage.MergeIndexes message) {
 		if (_tableIndex.IsBackgroundTaskRunning) {
 			Log.Information("A background operation is already running...");
 			MakeReplyForMergeIndexes(message);
 			return;
 		}
 
-		await _tableIndex.MergeIndexes(token);
+		_tableIndex.MergeIndexes();
 		MakeReplyForMergeIndexes(message);
 	}
 

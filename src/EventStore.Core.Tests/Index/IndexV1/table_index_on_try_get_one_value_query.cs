@@ -2,7 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Tests.Fakes;
@@ -39,7 +38,7 @@ public class table_index_on_try_get_one_value_query : SpecificationWithDirectory
 		var fakeReader = new TFReaderLease(new FakeTfReader());
 		_lowHasher = new XXHashUnsafe();
 		_highHasher = new Murmur3AUnsafe();
-		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher,
+		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 			() => new HashListMemTable(_ptableVersion, maxSize: 10),
 			() => fakeReader,
 			_ptableVersion,
@@ -48,32 +47,32 @@ public class table_index_on_try_get_one_value_query : SpecificationWithDirectory
 			skipIndexVerify: _skipIndexVerify);
 		_tableIndex.Initialize(long.MaxValue);
 
-		await _tableIndex.Add(0, "0xDEAD", 0, 0xFF00, CancellationToken.None);
-		await _tableIndex.Add(0, "0xDEAD", 1, 0xFF01, CancellationToken.None);
+		_tableIndex.Add(0, "0xDEAD", 0, 0xFF00);
+		_tableIndex.Add(0, "0xDEAD", 1, 0xFF01);
 
-		await _tableIndex.Add(0, "0xBEEF", 0, 0xFF00, CancellationToken.None);
-		await _tableIndex.Add(0, "0xBEEF", 1, 0xFF01, CancellationToken.None);
+		_tableIndex.Add(0, "0xBEEF", 0, 0xFF00);
+		_tableIndex.Add(0, "0xBEEF", 1, 0xFF01);
 
-		await _tableIndex.Add(0, "0xABBA", 0, 0xFF00, CancellationToken.None); // 1st ptable0
+		_tableIndex.Add(0, "0xABBA", 0, 0xFF00); // 1st ptable0
 
-		await _tableIndex.Add(0, "0xABBA", 1, 0xFF01, CancellationToken.None);
-		await _tableIndex.Add(0, "0xABBA", 2, 0xFF02, CancellationToken.None);
-		await _tableIndex.Add(0, "0xABBA", 3, 0xFF03, CancellationToken.None);
+		_tableIndex.Add(0, "0xABBA", 1, 0xFF01);
+		_tableIndex.Add(0, "0xABBA", 2, 0xFF02);
+		_tableIndex.Add(0, "0xABBA", 3, 0xFF03);
 
-		await _tableIndex.Add(0, "0xADA", 0,
-			0xFF00, CancellationToken.None); // simulates duplicate due to concurrency in TableIndex (see memtable below)
-		await _tableIndex.Add(0, "0xDEAD", 0, 0xFF10, CancellationToken.None); // 2nd ptable0
+		_tableIndex.Add(0, "0xADA", 0,
+			0xFF00); // simulates duplicate due to concurrency in TableIndex (see memtable below)
+		_tableIndex.Add(0, "0xDEAD", 0, 0xFF10); // 2nd ptable0
 
-		await _tableIndex.Add(0, "0xDEAD", 1, 0xFF11, CancellationToken.None); // in memtable
-		await _tableIndex.Add(0, "0xADA", 0, 0xFF00, CancellationToken.None); // in memtable
+		_tableIndex.Add(0, "0xDEAD", 1, 0xFF11); // in memtable
+		_tableIndex.Add(0, "0xADA", 0, 0xFF00); // in memtable
 	}
 
 
 	[OneTimeTearDown]
-	public override async Task TestFixtureTearDown() {
-		await _tableIndex.Close();
+	public override Task TestFixtureTearDown() {
+		_tableIndex.Close();
 
-		await base.TestFixtureTearDown();
+		return base.TestFixtureTearDown();
 	}
 
 	[Test]

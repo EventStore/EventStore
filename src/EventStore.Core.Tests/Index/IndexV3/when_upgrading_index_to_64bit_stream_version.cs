@@ -33,7 +33,7 @@ public class when_upgrading_index_to_64bit_stream_version : SpecificationWithDir
 		var fakeReader = new TFReaderLease(new FakeIndexReader());
 		_lowHasher = new XXHashUnsafe();
 		_highHasher = new Murmur3AUnsafe();
-		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher,
+		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 			() => new HashListMemTable(PTableVersions.IndexV2, maxSize: 5),
 			() => fakeReader,
 			PTableVersions.IndexV2,
@@ -42,15 +42,15 @@ public class when_upgrading_index_to_64bit_stream_version : SpecificationWithDir
 			maxTablesPerLevel: 2);
 		_tableIndex.Initialize(long.MaxValue);
 
-		await _tableIndex.Add(1, "testStream-1", 0, 1, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-2", 0, 2, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-1", 1, 3, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-2", 1, 4, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-1", 2, 5, CancellationToken.None);
+		_tableIndex.Add(1, "testStream-1", 0, 1);
+		_tableIndex.Add(1, "testStream-2", 0, 2);
+		_tableIndex.Add(1, "testStream-1", 1, 3);
+		_tableIndex.Add(1, "testStream-2", 1, 4);
+		_tableIndex.Add(1, "testStream-1", 2, 5);
 
-		await _tableIndex.Close(false);
+		_tableIndex.Close(false);
 
-		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher,
+		_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 			() => new HashListMemTable(_ptableVersion, maxSize: 5),
 			() => fakeReader,
 			_ptableVersion,
@@ -59,20 +59,20 @@ public class when_upgrading_index_to_64bit_stream_version : SpecificationWithDir
 			maxTablesPerLevel: 2);
 		_tableIndex.Initialize(long.MaxValue);
 
-		await _tableIndex.Add(1, "testStream-2", 2, 6, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-1", 3, 7, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-2", 3, 8, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-1", 4, 9, CancellationToken.None);
-		await _tableIndex.Add(1, "testStream-2", 4, 10, CancellationToken.None);
+		_tableIndex.Add(1, "testStream-2", 2, 6);
+		_tableIndex.Add(1, "testStream-1", 3, 7);
+		_tableIndex.Add(1, "testStream-2", 3, 8);
+		_tableIndex.Add(1, "testStream-1", 4, 9);
+		_tableIndex.Add(1, "testStream-2", 4, 10);
 
 		await Task.Delay(500);
 	}
 
 	[OneTimeTearDown]
-	public override async Task TestFixtureTearDown() {
-		await _tableIndex.Close();
+	public override Task TestFixtureTearDown() {
+		_tableIndex.Close();
 
-		await base.TestFixtureTearDown();
+		return base.TestFixtureTearDown();
 	}
 
 	[Test]

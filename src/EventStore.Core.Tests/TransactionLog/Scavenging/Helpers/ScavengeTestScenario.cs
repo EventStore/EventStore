@@ -67,7 +67,8 @@ public abstract class ScavengeTestScenario<TLogFormat, TStreamId> : Specificatio
 			() => new TFChunkReader(_dbResult.Db, _dbResult.Db.Config.WriterCheckpoint));
 		var lowHasher = _logFormat.LowHasher;
 		var highHasher = _logFormat.HighHasher;
-		var tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher,
+		var emptyStreamId = _logFormat.EmptyStreamId;
+		var tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 			() => new HashListMemTable(PTableVersions.IndexV3, maxSize: 200),
 			() => new TFReaderLease(readerPool),
 			PTableVersions.IndexV3,
@@ -104,7 +105,7 @@ public abstract class ScavengeTestScenario<TLogFormat, TStreamId> : Specificatio
 
 	public override async Task TestFixtureTearDown() {
 		_logFormat?.Dispose();
-		await ReadIndex.DisposeAsync();
+		ReadIndex.Close();
 		await _dbResult.Db.DisposeAsync();
 
 		await base.TestFixtureTearDown();
