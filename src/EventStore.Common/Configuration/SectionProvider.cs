@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 
@@ -22,6 +23,22 @@ public sealed class SectionProvider : ConfigurationProvider, IDisposable {
 	}
 
 	public IEnumerable<IConfigurationProvider> Providers => _configuration.Providers;
+
+	public bool TryGetProviderFor(string key, out IConfigurationProvider provider) {
+		var prefix = _sectionName + ":";
+		if (key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) {
+			key = key[prefix.Length..];
+			foreach (var candidate in Providers) {
+				if (candidate.TryGet(key, out _)) {
+					provider = candidate;
+					return true;
+				}
+			}
+		}
+
+		provider = default;
+		return false;
+	}
 
 	public void Dispose() {
 		_registration.Dispose();
