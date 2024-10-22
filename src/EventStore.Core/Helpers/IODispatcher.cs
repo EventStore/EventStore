@@ -271,7 +271,8 @@ public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>, IHandle<
 		bool resolveLinks,
 		ClaimsPrincipal principal,
 		Action<ClientMessage.ReadStreamEventsBackwardCompleted> action,
-		Guid? corrId = null) {
+		Guid? corrId = null,
+		DateTime? expires = null) {
 		if (!corrId.HasValue)
 			corrId = Guid.NewGuid();
 
@@ -286,7 +287,8 @@ public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>, IHandle<
 					resolveLinks,
 					false,
 					null,
-					principal),
+					principal,
+					expires: expires),
 			new ReadStreamEventsBackwardHandlers.Optimistic(action));
 	}
 
