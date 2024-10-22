@@ -1,8 +1,10 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Reflection;
 using EventStore.Common.Configuration;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Memory;
 
 namespace EventStore.Common.Tests.Configuration;
 
@@ -42,5 +44,14 @@ public class SectionTests {
 		Assert.Equal("v section2:sub:b", config.GetSection("section2").GetSection("sub")["b"]);
 
 		Assert.Equal("v section3:a", config.GetSection("section3")["a"]);
+
+		// SectionProvider reloads when mounted section changes
+		var memConfigProvider = config
+			.Providers.OfType<SectionProvider>().First()
+			.Providers.OfType<MemoryConfigurationProvider>().First();
+		memConfigProvider.Add("new", "v section2:new");
+		typeof(ConfigurationProvider).GetMethod("OnReload", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(memConfigProvider, null);
+
+		Assert.Equal("v section2:new", config.GetSection("section2")["new"]);
 	}
 }
