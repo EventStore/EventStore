@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.Unicode;
@@ -205,30 +206,32 @@ public class FASTERNameIndexPersistence :
 			var keysToTruncate = new List<string>();
 			var keysToTruncateSet = new HashSet<string>();
 
-			async ValueTask PopEntry() {
+			void PopEntry() {
+				Debug.Assert(_lastValueLock.IsLockHeld);
+
 				var name = iter.Current.Name;
 				var value = iter.Current.Value;
 				if (keysToTruncateSet.Add(name)) {
 					keysToTruncate.Add(iter.Current.Name);
 
-					await _lastValueLock.AcquireAsync(token);
-					try {
-						if (_lastValueAdded != value)
-							throw new Exception(
-								$"Trying to remove the last entry added \"{name}\":{value} but the last entry was really {_lastValueAdded}");
+					if (_lastValueAdded != value)
+						throw new Exception(
+							$"Trying to remove the last entry added \"{name}\":{value} but the last entry was really {_lastValueAdded}");
 
-						_lastValueAdded = _lastValueAdded > _firstValue
-							? _lastValueAdded - _valueInterval
-							: default;
-					} finally {
-						_lastValueLock.Release();
-					}
+					_lastValueAdded = _lastValueAdded > _firstValue
+						? _lastValueAdded - _valueInterval
+						: default;
 
 					Log.Verbose("{indexName} is going to delete {name}:{value}", _indexName, name, value);
 				}
 			}
 
-			await PopEntry();
+			await _lastValueLock.AcquireAsync(token);
+			try {
+				PopEntry();
+			} finally {
+				_lastValueLock.Release();
+			}
 
 			bool found = false;
 			await _lastValueLock.AcquireAsync(token);
@@ -237,7 +240,7 @@ public class FASTERNameIndexPersistence :
 				while (!found && iter.MoveNext()) {
 					sourceName = await source.LookupName(iter.Current.Value, token);
 					if (sourceName is null) {
-						await PopEntry();
+						PopEntry();
 					} else {
 						found = true;
 					}
