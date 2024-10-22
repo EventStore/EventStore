@@ -1732,7 +1732,6 @@ public class ClusterVNode<TStreamId> :
 		}
 
 		// TODO - We might want to increase that value here.
-		timeout ??= TimeSpan.FromSeconds(5);
 		_shutdownService.Shutdown();
 
 		_reloadConfigSignalRegistration?.Dispose();
