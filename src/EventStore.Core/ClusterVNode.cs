@@ -136,7 +136,7 @@ public class ClusterVNode<TStreamId> :
 	IHandle<SystemMessage.BecomeShutdown>,
 	IHandle<SystemMessage.SystemStart>,
 	IHandle<ClientMessage.ReloadConfig> {
-	private static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromSeconds(5);
+	private static readonly TimeSpan DefaultShutdownTimeout = TimeSpan.FromSeconds(10);
 
 	private readonly ClusterVNodeOptions _options;
 
