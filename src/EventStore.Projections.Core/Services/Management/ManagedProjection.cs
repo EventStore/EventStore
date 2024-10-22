@@ -633,7 +633,8 @@ public static class PersistedStateExtensions {
 				corrId, corrId, _readDispatcher.Envelope, ProjectionNamesBuilder.ProjectionsStreamPrefix + name, -1,
 				1,
 				resolveLinkTos: false, requireLeader: false, validationStreamVersion: null,
-				user: SystemAccounts.System),
+				user: SystemAccounts.System,
+				expires: DateTime.MaxValue),
 			new ReadStreamEventsBackwardHandlers.Optimistic(PersistedStateReadCompleted));
 	}
 
