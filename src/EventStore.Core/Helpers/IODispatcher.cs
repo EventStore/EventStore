@@ -267,7 +267,8 @@ namespace EventStore.Core.Helpers {
 			bool resolveLinks,
 			ClaimsPrincipal principal,
 			Action<ClientMessage.ReadStreamEventsBackwardCompleted> action,
-			Guid? corrId = null) {
+			Guid? corrId = null,
+			DateTime? expires = null) {
 			if (!corrId.HasValue)
 				corrId = Guid.NewGuid();
 
@@ -282,7 +283,8 @@ namespace EventStore.Core.Helpers {
 						resolveLinks,
 						false,
 						null,
-						principal),
+						principal,
+						expires: expires),
 				new ReadStreamEventsBackwardHandlers.Optimistic(action));
 		}
 
