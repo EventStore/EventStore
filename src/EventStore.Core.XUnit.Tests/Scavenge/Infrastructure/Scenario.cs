@@ -364,7 +364,10 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 			var cancellationWrappedIndexScavenger = new AdHocIndexScavengerInterceptor(
 				indexScavenger,
 				f => (entry, token) => {
-					if (_executingIndexEntryCancellationTrigger != null &&
+					if (token.IsCancellationRequested)
+						return ValueTask.FromCanceled<bool>(token);
+
+					if (_executingIndexEntryCancellationTrigger is not null &&
 						entry.Stream == hasher.Hash(_executingIndexEntryCancellationTrigger)) {
 
 						cancellationTokenSource.Cancel();
