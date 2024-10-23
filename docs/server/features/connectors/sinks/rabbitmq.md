@@ -18,6 +18,47 @@ This sink is designed for high reliability and supports graceful error handling 
 - [Secured connection](#secured-connection)
 - [Routing key extraction](#partition-key-extraction)
 
+## Usage
+
+::: tabs
+@tab Powershell
+```powershell
+$JSON = @"
+{
+  "settings": {
+    "InstanceTypeName": "EventStore.Connectors.RabbitMQ.RabbitMqSink",
+    "Exchange:Name": "some-exchange",
+    "Subscription:Filter:Scope": "Stream",
+    "Subscription:Filter:Expression": "some-stream",
+    "Subscription:InitialPosition": "Earliest"
+  }
+}
+"@ `
+
+curl.exe -X POST `
+  -H "Content-Type: application/json" `
+  -d $JSON `
+  http://localhost:2113/connectors/rabbitmq-sink-connector
+```
+@tab Bash
+```bash
+JSON='{
+  "settings": {
+    "InstanceTypeName": "EventStore.Connectors.RabbitMQ.RabbitMqSink",
+    "Exchange:Name": "some-exchange",
+    "Subscription:Filter:Scope": "Stream",
+    "Subscription:Filter:Expression": "some-stream",
+    "Subscription:InitialPosition": "Earliest"
+  }
+}'
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d "$JSON" \
+  http://localhost:2113/connectors/rabbitmq-sink-connector
+```
+:::
+
 ### Broker acknowledgment
 
 By default, the connector waits for broker acknowledgment. Enabling broker acknowledgment ensures that each message sent to RabbitMQ is confirmed by the broker before the publish operation is considered complete:

@@ -81,7 +81,7 @@ curl.exe -i -X POST http://localhost:2113/connectors/my-connector/start
 ```
 @tab Bash
 ```bash
-curl -i -X POST -H http://localhost:2113/connectors/my-connector/start
+curl -i -X POST http://localhost:2113/connectors/my-connector/start
 ```
 :::
 
