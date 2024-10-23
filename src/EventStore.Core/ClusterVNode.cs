@@ -511,6 +511,7 @@ public class ClusterVNode<TStreamId> :
 		_mainBus.Subscribe<SystemMessage.RegisterForGracefulTermination>(shutdownService);
 		_mainBus.Subscribe<ClientMessage.RequestShutdown>(shutdownService);
 		_mainBus.Subscribe<SystemMessage.ComponentTerminated>(shutdownService);
+		_mainBus.Subscribe<SystemMessage.PeripheralShutdownTimeout>(shutdownService);
 
 		var uriScheme = options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps;
 		var clusterDns = options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null;
