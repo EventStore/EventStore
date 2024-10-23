@@ -45,7 +45,7 @@ public class ShutdownService :
 
 	public void Handle(SystemMessage.RegisterForGracefulTermination message) {
 		if (_state is not State.Running) {
-			Log.Warning("Component {ComponentName} registered for graceful shutdown while the server is shutting down",
+			Log.Warning("Component {ComponentName} tried to register for graceful shutdown while the server is shutting down",
 				message.ComponentName);
 			return;
 		}
@@ -59,7 +59,7 @@ public class ShutdownService :
 
 	public void Handle(ClientMessage.RequestShutdown message) {
 		if (_state is not State.Running) {
-			Log.Information("Ignored request shutdown message because the server is already shutting down");
+			Log.Debug("Ignored request shutdown message because the server is already shutting down");
 			return;
 		}
 
@@ -102,8 +102,10 @@ public class ShutdownService :
 	}
 
 	public void Handle(SystemMessage.PeripheralShutdownTimeout message) {
-		if (_state is not State.ShuttingDownPeriphery)
+		if (_state is not State.ShuttingDownPeriphery) {
+			Log.Debug("Received an invalid shutdown timeout message when in state {State}", _state);
 			return;
+		}
 
 		Log.Information("========== [{httpEndPoint}] TIMED OUT SHUTTING DOWN PERIPHERAL COMPONENTS {Components}...",
 			_nodeInfo.HttpEndPoint,
