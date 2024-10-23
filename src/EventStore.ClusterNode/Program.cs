@@ -194,9 +194,11 @@ internal static class Program {
 							.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel"))
 							.Configure<HostOptions>(x => {
 								x.ShutdownTimeout = TimeSpan.FromSeconds(5);
-								#if DEBUG
+#if DEBUG
 								x.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
-								#endif
+#else
+								x.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+#endif
 							})
 						)
 						.ConfigureWebHostDefaults(builder => builder

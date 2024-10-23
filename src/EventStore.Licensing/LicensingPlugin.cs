@@ -20,12 +20,14 @@ public class LicensingPlugin : Plugin {
 	private static readonly ILogger Log = Serilog.Log.ForContext<LicensingPlugin>();
 
 	private readonly ILicenseProvider? _licenseProvider;
+	private readonly Action<Exception> _requestShutdown;
 
-	public LicensingPlugin() : this(null) {
+	public LicensingPlugin(Action<Exception> requestShutdown) : this(requestShutdown, null) {
 	}
 
-	public LicensingPlugin(ILicenseProvider? licenseProvider) : base() {
+	public LicensingPlugin(Action<Exception> requestShutdown, ILicenseProvider? licenseProvider) : base() {
 		_licenseProvider = licenseProvider;
+		_requestShutdown = requestShutdown;
 	}
 
 
@@ -105,6 +107,7 @@ public class LicensingPlugin : Plugin {
 					esdbPublicKey,
 					esdbPrivateKey,
 					sp.GetRequiredService<IHostApplicationLifetime>(),
+					_requestShutdown,
 					licenseProvider);
 			})
 			.AddHostedService(sp => new LicenseTelemetryService(

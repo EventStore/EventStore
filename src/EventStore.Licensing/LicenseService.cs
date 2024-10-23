@@ -10,14 +10,17 @@ namespace EventStore.Licensing;
 public class LicenseService : ILicenseService {
 	private static readonly ILogger Log = Serilog.Log.ForContext<LicenseService>();
 	private readonly IHostApplicationLifetime _lifetime;
+	private readonly Action<Exception> _requestShutdown;
 
 	public LicenseService(
 		string esdbPublicKey,
 		string esdbPrivateKey,
 		IHostApplicationLifetime lifetime,
+		Action<Exception> requestShutdown,
 		ILicenseProvider licenseProvider) {
 
 		_lifetime = lifetime;
+		_requestShutdown = requestShutdown;
 		SelfLicense = License.Create(esdbPublicKey, esdbPrivateKey);
 		Licenses = licenseProvider.Licenses;
 		Licenses.Subscribe(
@@ -36,12 +39,12 @@ public class LicenseService : ILicenseService {
 	public IObservable<License> Licenses { get; private set; }
 
 	public void RejectLicense(Exception ex) {
-		Log.Warning("Shutting down due to licensing error: {Message}", ex.Message);
-
 		// we wait for the application to start before stopping it so that
 		// 1. we can log the error message after stopping, to be really clear what the cause was
-		// 2. stopping the appliation during startup results in several other exceptions being thrown which are just noise
-		_lifetime.ApplicationStarted.Register(_lifetime.StopApplication);
+		// 2. stopping the application during startup results in several other exceptions being thrown which are just noise
+		_lifetime.ApplicationStarted.Register(() => {
+			_requestShutdown(ex);
+		});
 		_lifetime.ApplicationStopped.Register(() => Log.Fatal(ex.Message));
 
 		// belt and braces (in case the above fails due to application somehow never fully starting)

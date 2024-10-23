@@ -23,14 +23,24 @@ public class LicenseServiceTests {
 
 	[Fact]
 	public async Task self_license_is_valid() {
-		var sut = new LicenseService(_publicKey, _privateKey, new FakeLifetime(), new AdHocLicenseProvider(new Exception()));
+		var sut = new LicenseService(
+			_publicKey,
+			_privateKey,
+			new FakeLifetime(),
+			ex => { },
+			new AdHocLicenseProvider(new Exception()));
 		Assert.True(await sut.SelfLicense.ValidateAsync(_publicKey));
 	}
 
 	[Fact]
 	public async Task current_license_respects_provider() {
 		var licenseProvider = new AdHocLicenseProvider(License.Create(_publicKey, _privateKey));
-		var sut = new LicenseService(_publicKey, _privateKey, new FakeLifetime(), licenseProvider);
+		var sut = new LicenseService(
+			_publicKey,
+			_privateKey,
+			new FakeLifetime(),
+			ex => { },
+			licenseProvider);
 		Assert.True(await sut.CurrentLicense!.ValidateAsync(_publicKey));
 
 		licenseProvider.LicenseSubject.OnError(new Exception("an error"));
@@ -41,28 +51,36 @@ public class LicenseServiceTests {
 	public void can_reject() {
 		var lifetime = new FakeLifetime();
 		var licenseProvider = new AdHocLicenseProvider(License.Create(_publicKey, _privateKey));
-		var sut = new LicenseService(_publicKey, _privateKey, lifetime, licenseProvider);
-		var stopped = false;
-		lifetime.ApplicationStopped.Register(() => stopped = true);
+		var shutdownRequested = false;
+		var sut = new LicenseService(
+			_publicKey,
+			_privateKey,
+			lifetime,
+			requestShutdown: ex => { shutdownRequested = true; },
+			licenseProvider);
 
 		sut.RejectLicense(new Exception("an error"));
 		lifetime.StartApplication();
 
-		Assert.True(stopped);
+		Assert.True(shutdownRequested);
 	}
 
 	[Fact]
 	public void can_reject_after_startup() {
 		var lifetime = new FakeLifetime();
 		var licenseProvider = new AdHocLicenseProvider(License.Create(_publicKey, _privateKey));
-		var sut = new LicenseService(_publicKey, _privateKey, lifetime, licenseProvider);
-		var stopped = false;
-		lifetime.ApplicationStopped.Register(() => stopped = true);
+		var shutdownRequested = false;
+		var sut = new LicenseService(
+			_publicKey,
+			_privateKey,
+			lifetime,
+			requestShutdown: ex => { shutdownRequested = true; },
+			licenseProvider);
 
 		lifetime.StartApplication();
 		sut.RejectLicense(new Exception("an error"));
 
-		Assert.True(stopped);
+		Assert.True(shutdownRequested);
 	}
 
 	class FakeLifetime : IHostApplicationLifetime {
