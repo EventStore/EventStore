@@ -147,7 +147,10 @@ public class StreamBasedAuthPolicyRegistryTests {
 	public static IEnumerable<object[]> InvalidAuthorizationPolicySettings =>
 		new List<object[]> {
 			new object[] { new[]{new AuthPolicyRegistryTestCase(new AuthorizationPolicySettings("not found"), 0)} },
+			new object[] { new[]{new AuthPolicyRegistryTestCase(new AuthorizationPolicySettings(""), 0)} },
 			new object[] { new[]{new AuthPolicyRegistryTestCase(SystemEventTypes.AuthorizationPolicyChanged, "invalid"u8.ToArray(), 0)} },
+			new object[] { new[]{new AuthPolicyRegistryTestCase(SystemEventTypes.AuthorizationPolicyChanged, "{}"u8.ToArray(), 0)} },
+			new object[] { new[]{new AuthPolicyRegistryTestCase(SystemEventTypes.AuthorizationPolicyChanged, "{ \"notPolicyType\": \"plugin\" }"u8.ToArray(), 0)} },
 			new object[] { new[]{new AuthPolicyRegistryTestCase("invalid", JsonSerializer.SerializeToUtf8Bytes(WithAclDefault), 0)} },
 			new object[] { new[] {
 				new AuthPolicyRegistryTestCase("invalid", JsonSerializer.SerializeToUtf8Bytes(WithAclDefault), 1),
