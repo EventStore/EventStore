@@ -1,13 +1,9 @@
 ---
 Title: "Manage connectors"
-Order: 2
+Order: 4
 ---
 
 # Manage connectors
-
-::: note
-The Connector management API is idempotent.
-:::
 
 ## Create
 
@@ -19,10 +15,10 @@ Create a connector by sending a `POST` request to `connectors/{connector_id}` wh
 $JSON = @"
 {
   "settings": {
-    "InstanceTypeName": "EventStore.Connectors.Testing.LoggerSink",
-    "Subscription:Filter:Scope": "Stream",
-    "Subscription:Filter:Expression": "some-stream",
-    "Subscription:InitialPosition": "Earliest"
+    "instanceTypeName": "logger-sink",
+    "subscription:filter:scope": "Stream",
+    "subscription:filter:expression": "some-stream",
+    "subscription:initialPosition": "Earliest"
   }
 }
 "@ `
@@ -30,24 +26,24 @@ $JSON = @"
 curl.exe -X POST `
   -H "Content-Type: application/json" `
   -d $JSON `
-  http://localhost:2113/connectors/demo-logger-sink
+  http://localhost:2113/connectors/logger-sink
 ```
 
 @tab Bash
 ```bash
 JSON='{
   "settings": {
-    "InstanceTypeName": "EventStore.Connectors.Testing.LoggerSink",
-    "Subscription:Filter:Scope": "Stream",
-    "Subscription:Filter:Expression": "some-stream",
-    "Subscription:InitialPosition": "Earliest"
+    "instanceTypeName": "logger-sink",
+    "subscription:filter:scope": "Stream",
+    "subscription:filter:expression": "some-stream",
+    "subscription:initialPosition": "Earliest"
   }
 }'
 
 curl -X POST \
   -H "Content-Type: application/json" \
   -d "$JSON" \
-  http://localhost:2113/connectors/demo-logger-sink
+  http://localhost:2113/connectors/logger-sink
 ```
 :::
 
@@ -56,11 +52,7 @@ event to the stream `some-stream`, the connector will consume the event and log
 it to the console. Find out more about subscription filters in the
 [Subscription configuration](./settings.md#subscription-configuration) section.
 
-
-For a list of available connectors and their respective configuration options,
-refer to the [Built-in sinks](./sinks/README.md) section.
-
-For a comprehensive list of available configuration options available for all sinks, please refer to the [Common settings](./settings.md) section.
+For a comprehensive list of available configuration options available for all sinks, please refer to the [Connector Settings](./settings.md) page.
 
 ## List
 
@@ -72,7 +64,7 @@ List all connectors by sending a `GET` request to `/connectors`.
 $JSON = @"
 {
   "state": [],
-  "instanceType": [],
+  "instanceTypeName": [],
   "connectorId": []
 }
 "@ `
@@ -86,7 +78,7 @@ curl.exe -X GET `
 ```bash
 JSON='{
   "state": [],
-  "instanceType": [],
+  "instanceTypeName": [],
   "connectorId": []
 }'
 
@@ -97,37 +89,36 @@ curl -X GET \
 ```
 :::
 
-<details>
-  <summary>Example response</summary>
+::: details Click here to see a list example
 
 ```json
 {
   "items": [
     {
-      "connectorId": "demo-http-sink",
+      "connectorId": "http-sink",
       "name": "Demo HTTP Sink",
       "state": "CONNECTOR_STATE_STOPPED",
       "stateTimestamp": "2024-08-13T12:21:50.506102900Z",
       "settings": {
-        "InstanceTypeName": "EventStore.Connectors.Http.HttpSink",
-        "Url": "http://localhost:8080/sink",
-        "Transformer:Enabled": "true",
-        "Transformer:Function": "ZnVuY3Rpb24gdHJhbnNmb3JtKHIpe2xldHtWYWx1ZTplfT1yO3JldHVybnsuLi5yLFZhbHVlOnsuLi5lLFRyYW5zZm9ybWVkUHJvcGVydHk6IkkndmUgYmVlbiB0cmFuc2Zvcm1lZCEifX19",
-        "Subscription:Filter:Scope": "Stream",
-        "Subscription:Filter:Expression": "^\\$connectors\\/[^\\/]+\\/leases"
+        "instanceTypeName": "http-sink",
+        "url": "http://localhost:8080/sink",
+        "transformer:Enabled": "true",
+        "transformer:Function": "ZnVuY3Rpb24gdHJhbnNmb3JtKHJlY29yZCkgewogIGxldCB7IG1ha2UsIG1vZGVsIH0gPSByZWNvcmQudmFsdWUudmVoaWNsZTsKICByZWNvcmQuc2NoZW1hSW5mby5zdWJqZWN0ID0gJ1ZlaGljbGUnOwogIHJlY29yZC52YWx1ZS52ZWhpY2xlLm1ha2Vtb2RlbCA9IGAke21ha2V9ICR7bW9kZWx9YDsKfQ==",
+        "subscription:filter:scope": "Stream",
+        "subscription:filter:expression": "^\\$connectors\\/[^\\/]+\\/leases"
       },
       "settingsTimestamp": "2024-08-13T12:21:50.506102900Z"
     },
     {
-      "connectorId": "demo-logger-sink",
+      "connectorId": "logger-sink",
       "name": "Demo Logger Sink",
       "state": "CONNECTOR_STATE_RUNNING",
       "stateTimestamp": "2024-08-13T12:21:47.459327600Z",
       "settings": {
-        "InstanceTypeName": "EventStore.Connectors.Testing.LoggerSink",
-        "Subscription:Filter:Scope": "Stream",
-        "Subscription:Filter:Expression": "some-stream",
-        "Subscription:InitialPosition": "Earliest"
+        "instanceTypeName": "logger-sink",
+        "subscription:filter:scope": "Stream",
+        "subscription:filter:expression": "some-stream",
+        "subscription:initialPosition": "Earliest"
       },
       "settingsTimestamp": "2024-08-13T12:21:47.366197400Z",
       "position": 16829
@@ -140,8 +131,7 @@ curl -X GET \
   }
 }
 ```
-
-</details>
+:::
 
 You can display settings for each connector by using the `includeSettings` parameter in the request.
 
@@ -154,7 +144,7 @@ You can also paginate the results by specifying the `pageSize` and `page` parame
 $JSON = @"
 {
   "state": [],
-  "instanceType": [],
+  "instanceTypeName": [],
   "connectorId": [],
   "paging": {
       "page": 1,
@@ -172,7 +162,7 @@ curl.exe -X GET `
 ```bash
 JSON='{
   "state": [],
-  "instanceType": [],
+  "instanceTypeName": [],
   "connectorId": [],
   "paging": {
       "page": 1,
@@ -196,8 +186,8 @@ You can filter the results by specifying the `state`, `instanceType`, and `conne
 $JSON = @"
 {
   "state": ["CONNECTOR_STATE_STOPPED", "CONNECTOR_STATE_RUNNING"],
-  "instanceType": ["EventStore.Connectors.Testing.LoggerSink"],
-  "connectorId": ["demo-logger-sink"],
+  "instanceTypeName": ["logger-sink"],
+  "connectorId": ["logger-sink"],
   "paging": {
       "page": 1,
       "pageSize": 100
@@ -214,8 +204,8 @@ curl.exe -X GET `
 ```bash
 JSON='{
   "state": ["CONNECTOR_STATE_STOPPED", "CONNECTOR_STATE_RUNNING"],
-  "instanceType": ["EventStore.Connectors.Testing.LoggerSink"],
-  "connectorId": ["demo-logger-sink"],
+  "instanceTypeName": ["logger-sink"],
+  "connectorId": ["logger-sink"],
   "paging": {
       "page": 1,
       "pageSize": 100
@@ -246,30 +236,28 @@ View the settings for a connector by sending a `GET` request to `/connectors/{co
 ::: tabs
 @tab Powershell
 ```powershell
-curl.exe -X GET http://localhost:2113/connectors/demo-logger-sink/settings
+curl.exe -X GET http://localhost:2113/connectors/logger-sink/settings
 ```
 @tab Bash
 ```bash
-curl -X GET http://localhost:2113/connectors/demo-logger-sink/settings
+curl -X GET http://localhost:2113/connectors/logger-sink/settings
 ```
 :::
 
-<details>
-  <summary>Example response</summary>
+::: details Click here to see an example of the settings
 
 ```json
 {
   "settings": {
-    "InstanceTypeName": "EventStore.Connectors.Testing.LoggerSink",
-    "Subscription:Filter:Scope": "Stream",
-    "Subscription:Filter:Expression": "some-stream",
-    "Subscription:InitialPosition": "Earliest"
+    "instanceTypeName": "logger-sink",
+    "subscription:filter:scope": "Stream",
+    "subscription:filter:expression": "some-stream",
+    "subscription:initialPosition": "Latest"
   },
   "settingsUpdateTime": "2024-08-14T18:12:16.500822500Z"
 }
 ```
-
-</details>
+:::
 
 ## Start
 
@@ -278,11 +266,11 @@ Start a connector by sending a `POST` request to `connectors/{connector_id}/star
 ::: tabs
 @tab Powershell
 ```powershell
-curl.exe -i -X POST http://localhost:2113/connectors/demo-logger-sink/start
+curl.exe -i -X POST http://localhost:2113/connectors/logger-sink/start
 ```
 @tab Bash
 ```bash
-curl -i -X POST -H http://localhost:2113/connectors/demo-logger-sink/start
+curl -i -X POST -H http://localhost:2113/connectors/logger-sink/start
 ```
 :::
 
@@ -294,11 +282,11 @@ from which to start consuming events.
 ::: tabs
 @tab Powershell
 ```powershell
-curl.exe -i -X POST http://localhost:2113/connectors/demo-logger-sink/start/1
+curl.exe -i -X POST http://localhost:2113/connectors/logger-sink/start/1
 ```
 @tab Bash
 ```bash
-curl -i -X POST http://localhost:2113/connectors/demo-logger-sink/start/1
+curl -i -X POST http://localhost:2113/connectors/logger-sink/start/1
 ```
 :::
 
@@ -315,11 +303,11 @@ Reset a connector by sending a `POST` request to `/connectors/{connector_id}/res
 ::: tabs
 @tab Powershell
 ```powershell
-curl.exe -i -X POST http://localhost:2113/connectors/demo-logger-sink/reset
+curl.exe -i -X POST http://localhost:2113/connectors/logger-sink/reset
 ```
 @tab Bash
 ```bash
-curl -i -X POST http://localhost:2113/connectors/demo-logger-sink/reset
+curl -i -X POST http://localhost:2113/connectors/logger-sink/reset
 ```
 :::
 
@@ -331,11 +319,11 @@ to which the connector should be reset.
 ::: tabs
 @tab Powershell
 ```powershell
-curl.exe -i -X POST http://localhost:2113/connectors/demo-logger-sink/reset/25123
+curl.exe -i -X POST http://localhost:2113/connectors/logger-sink/reset/25123
 ```
 @tab Bash
 ```bash
-curl -i -X POST http://localhost:2113/connectors/demo-logger-sink/reset/25123
+curl -i -X POST http://localhost:2113/connectors/logger-sink/reset/25123
 ```
 :::
 
@@ -350,11 +338,11 @@ Stop a connector by sending a `POST` request to `/connectors/{connector_id}/stop
 ::: tabs
 @tab Powershell
 ```powershell
-curl.exe -i -X POST http://localhost:2113/connectors/demo-logger-sink/stop
+curl.exe -i -X POST http://localhost:2113/connectors/logger-sink/stop
 ```
 @tab Bash
 ```bash
-curl -i -X POST http://localhost:2113/connectors/demo-logger-sink/stop
+curl -i -X POST http://localhost:2113/connectors/logger-sink/stop
 ```
 :::
 
@@ -370,31 +358,31 @@ modify the settings of a connector without having to delete and recreate it.
 ```powershell
 $JSON = @"
 {
-  "InstanceTypeName": "EventStore.Connectors.Testing.LoggerSink",
-  "Logging:Enabled": "false"
+  "instanceTypeName": "logger-sink",
+  "logging:enabled": "false"
 }
 "@ `
 
 curl.exe -X PUT `
   -H "Content-Type: application/json" `
   -d $JSON `
-  http://localhost:2113/connectors/demo-logger-sink/settings
+  http://localhost:2113/connectors/logger-sink/settings
 ```
 @tab Bash
 ```bash
 JSON='{
-  "InstanceTypeName": "EventStore.Connectors.Testing.LoggerSink",
-  "Logging:Enabled": "false"
+  "instanceTypeName": "logger-sink",
+  "logging:Enabled": "false"
 }'
 
 curl -X PUT \
   -H "Content-Type: application/json" \
   -d "$JSON" \
-  http://localhost:2113/connectors/demo-logger-sink/settings
+  http://localhost:2113/connectors/logger-sink/settings
 ```
 :::
 
-For a comprehensive list of available configuration options available for all sinks, please refer to the [Common settings](./settings.md) section.
+For a comprehensive list of available configuration options available for all sinks, please refer to the [Connector Settings](./settings.md) page.
 
 ::: note
 The connector must be stopped before reconfiguring. If the connector is running,
@@ -409,11 +397,11 @@ Delete a connector by sending a `DELETE` request to `/connectors/{connector_id}/
 ::: tabs
 @tab Powershell
 ```powershell
-curl.exe -X DELETE http://localhost:2113/connectors/demo-logger-sink
+curl.exe -X DELETE http://localhost:2113/connectors/logger-sink
 ```
 @tab Bash
 ```bash
-curl -X DELETE http://localhost:2113/connectors/demo-logger-sink
+curl -X DELETE http://localhost:2113/connectors/logger-sink
 ```
 :::
 
@@ -426,24 +414,24 @@ To rename a connector, send a `PUT` request to `/connectors/{connector_id}/renam
 ```powershell
 $JSON = @"
 {
-  "name": "NewConnectorName"
+  "name": "New connector name"
 }
 "@ `
 
 curl.exe -X PUT `
   -H "Content-Type: application/json" `
   -d $JSON `
-  http://localhost:2113/connectors/demo-logger-sink/rename
+  http://localhost:2113/connectors/logger-sink/rename
 ```
 @tab Bash
 ```bash
 JSON='{
-  "Name": "NewConnectorName"
+  "name": "New connector name"
 }'
 
 curl -X PUT \
   -H "Content-Type: application/json" \
   -d "$JSON" \
-  http://localhost:2113/connectors/demo-logger-sink/rename
+  http://localhost:2113/connectors/logger-sink/rename
 ```
 :::

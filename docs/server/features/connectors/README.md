@@ -2,7 +2,7 @@
 title: "Introduction to connectors"
 dir:
   text: "Connectors"
-  order: 10
+  order: 1
 ---
 
 # Connectors introduction
@@ -15,14 +15,6 @@ Each connector runs on the server-side and uses a catch-up subscription to recei
 ![Connectors anatomy](./images/connector-anatomy-dark.svg#dark)
 
 This reduces the amount of work needed to process data from EventStoreDB instances and makes it easy to create data pipelines to implement complex use cases.
-
-Connectors include the following built-in sinks:
-
-- [Logger sink](./sinks/logger.md) for experimentation
-- [HTTP sink](./sinks/http.md) for sending events to an HTTP endpoint
-- [Kafka sink](./sinks/kafka.md) for sending events to a Kafka topic
-- [MongoDB sink](./sinks/mongo.md) for sending events to a collection in MongoDB
-- [RabbitMQ sink](./sinks/rabbitmq.md) for sending messages to a RabbitMQ exchange
 
 ::: note
 The Connector plugin is pre-installed in all EventStoreDB binaries and is enabled by default.
@@ -50,7 +42,3 @@ With connectors, the subscription service is provided natively by EventStoreDB a
 
 ![Example with Connector and Lambda](./images/example-lambda-connector.svg#light)
 ![Example with Connector and Lambda](./images/example-lambda-connector-dark.svg#dark)
-
-## Getting started
-
-Try out Connectors by setting up and sending events to an HTTP sink with the [Quick start](./quickstart.md) guide.
