@@ -3,7 +3,7 @@
 
 using System;
 using System.Security.Claims;
-using EventStore.Core.Services;
+using System.Threading.Tasks;
 using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Authorization.AuthorizationPolicies;
@@ -15,16 +15,30 @@ namespace EventStore.Core.Authorization.AuthorizationPolicies;
 /// </summary>
 public class FallbackStreamAccessPolicySelector : IPolicySelector {
 	public const string FallbackPolicyName = "system-fallback";
-	private static readonly Claim[] Admins =
-		{new Claim(ClaimTypes.Role, SystemRoles.Admins), new Claim(ClaimTypes.Name, SystemUsers.Admin)};
+
 	public ReadOnlyPolicy Select() {
-		var isAdmin = new MultipleClaimMatchAssertion(Grant.Allow, MultipleMatchMode.Any, Admins);
+		var restrictedAccess = new RestrictedAccessAssertion();
 		var policy = new Policy(FallbackPolicyName, 1, DateTimeOffset.MinValue);
-		policy.Add(Operations.Streams.Read, isAdmin);
-		policy.Add(Operations.Streams.Write, isAdmin);
-		policy.Add(Operations.Streams.Delete, isAdmin);
-		policy.Add(Operations.Streams.MetadataRead, isAdmin);
-		policy.Add(Operations.Streams.MetadataWrite, isAdmin);
+		policy.Add(Operations.Streams.Read, restrictedAccess);
+		policy.Add(Operations.Streams.Write, restrictedAccess);
+		policy.Add(Operations.Streams.Delete, restrictedAccess);
+		policy.Add(Operations.Streams.MetadataRead, restrictedAccess);
+		policy.Add(Operations.Streams.MetadataWrite, restrictedAccess);
 		return policy.AsReadOnly();
+	}
+}
+
+public class RestrictedAccessAssertion : IStreamPermissionAssertion {
+	public Grant Grant => Grant.Deny;
+	public AssertionInformation Information { get; } = new("stream", "restricted access", Grant.Deny);
+
+	public async ValueTask<bool> Evaluate(ClaimsPrincipal cp, Operation operation, PolicyInformation policy,
+		EvaluationContext context) {
+		if (await WellKnownAssertions.System.Evaluate(cp, operation, policy, context) ||
+		    await WellKnownAssertions.Admin.Evaluate(cp, operation, policy, context))
+			return true;
+		context.Add(new AssertionMatch(policy,
+			new AssertionInformation("stream", $"operation {operation} restricted to system or admin users only", Grant.Deny)));
+		return true;
 	}
 }
