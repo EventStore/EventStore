@@ -25,7 +25,9 @@ public class LicensingPluginTests : IAsyncLifetime {
 	public Task InitializeAsync() => Task.CompletedTask;
 
 	private static LicensingPlugin CreateUnLicensedSutAsync() {
-		return new LicensingPlugin(new AdHocLicenseProvider(new Exception("license is expired, say")));
+		return new LicensingPlugin(
+			ex => { },
+			new AdHocLicenseProvider(new Exception("license is expired, say")));
 	}
 
 	private static async Task<LicensingPlugin> CreateLicensedSutAsync(Dictionary<string, object> claims) {
@@ -33,7 +35,9 @@ public class LicensingPluginTests : IAsyncLifetime {
 		var publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
 		var privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
 		var license = await License.CreateAsync(publicKey, privateKey, claims);
-		return new LicensingPlugin(new AdHocLicenseProvider(license));
+		return new LicensingPlugin(
+			ex => { },
+			new AdHocLicenseProvider(license));
 	}
 
 	private static async Task<TestServer> InitializeServerAsync(LicensingPlugin sut) {
@@ -46,12 +50,6 @@ public class LicensingPluginTests : IAsyncLifetime {
 		if (_server != null) {
 			await _server.DisposeAsync();
 		}
-	}
-
-	[Fact]
-	public void has_parameterless_constructor() {
-		// needed for all plugins
-		Activator.CreateInstance<LicensingPlugin>();
 	}
 
 	[Fact]
