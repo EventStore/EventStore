@@ -103,7 +103,7 @@ public class ShutdownService :
 
 	public void Handle(SystemMessage.PeripheralShutdownTimeout message) {
 		if (_state is not State.ShuttingDownPeriphery) {
-			Log.Debug("Received an invalid shutdown timeout message when in state {State}", _state);
+			Log.Debug("Ignored shutdown timeout message when in state {State}", _state);
 			return;
 		}
 
