@@ -20,7 +20,7 @@ public class ShutdownService :
 	IHandle<SystemMessage.PeripheralShutdownTimeout> {
 
 	private static readonly ILogger Log = Serilog.Log.ForContext<ShutdownService>();
-	private static readonly TimeSpan PeripheryShutdownTimeout = TimeSpan.FromSeconds(10);
+	private static readonly TimeSpan PeripheryShutdownTimeout = TimeSpan.FromSeconds(30);
 
 	private readonly IPublisher _mainQueue;
 	private readonly VNodeInfo _nodeInfo;
