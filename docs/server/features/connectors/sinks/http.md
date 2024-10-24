@@ -128,8 +128,6 @@ JSON='{
   "settings": {
     "InstanceTypeName": "EventStore.Connectors.Http.HttpSink",
     "Url": "https://api.example.com",
-    "Topic": "your-topic",
-    "BootstrapServers": "localhost:9092",
     "Subscription:Filter:Scope": "Stream",
     "Subscription:Filter:Expression": "some-stream",
     "Subscription:InitialPosition": "Earliest"

@@ -50,9 +50,10 @@ metadata, or to add additional information to the record headers.
 $JSON = @"
 {
   "settings": {
-    "InstanceTypeName": "EventStore.Connectors.Mongo.MongoSink",
-    "ConnectionString": "mongo://admin:changeit@localhost:27017",
+    "InstanceTypeName": "EventStore.Connectors.Mongo.MongoDbSink",
+    "ConnectionString": "mongodb://admin:changeit@localhost:27017",
     "Collection": "some-collection",
+    "Database": "some-db",
     "Subscription:Filter:Scope": "Stream",
     "Subscription:Filter:Expression": "some-stream",
     "Subscription:InitialPosition": "Earliest"
@@ -69,9 +70,10 @@ curl.exe -X POST `
 ```bash
 JSON='{
   "settings": {
-    "InstanceTypeName": "EventStore.Connectors.Mongo.MongoSink",
-    "ConnectionString": "mongo://admin:changeit@localhost:27017",
+    "InstanceTypeName": "EventStore.Connectors.Mongo.MongoDbSink",
+    "ConnectionString": "mongodb://admin:changeit@localhost:27017",
     "Collection": "some-collection",
+    "Database": "some-db",
     "Subscription:Filter:Scope": "Stream",
     "Subscription:Filter:Expression": "some-stream",
     "Subscription:InitialPosition": "Earliest"
