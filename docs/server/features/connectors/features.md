@@ -166,7 +166,6 @@ Transformation can be enabled as follows:
 }
 ```
 
-
 ## Checkpointing
 
 Connectors periodically store the position of the last event that they have
@@ -186,22 +185,19 @@ that events may be delivered more than once. Events are delivered _in order_,
 ensuring that event `x` is not delivered until all preceding events have been
 delivered.
 
-All connectors are have a built-in resilience mechanism to ensure the reliable
+Most connectors have a built-in resilience mechanism to ensure the reliable
 delivery of data and messages, preserving system integrity and minimizing
-downtime during unexpected disruptions.
+downtime during unexpected disruptions. To see if a connector supports
+resilience, refer to the connector's individual page.
 
 The default resilience strategy has key features that include:
 
-1. **Automatic retries**: Connectors are configured to automatically retry
-   failed operations due to transient errors. By default, retries are indefinite,
-   but developers can specify a limit based on application needs.
+### Automatic retries
 
-2. **Exponential backoff**: To prevent system overload during retries, an
-   exponential backoff strategy is used with three distinct phases:
+[Exponential backoff](https://en.wikipedia.org/wiki/Exponential_backoff) strategy will be used to manage the timing of retries after a failure.
 
-   - **Phase 1**: Initial retries have a 5-second delay, continuing for up to 1
-     minute, aimed at resolving short-lived issues quickly.
-   - **Phase 2**: If the problem persists, the delay increases to 10 minutes,
-     extending up to 1 hour to allow time for more significant issues to resolve.
-   - **Phase 3**: For prolonged errors, retries occur with a fixed 1-hour delay
-     to address persistent issues that require more time to resolve.
+In the first phase, the delay between retries starts with a small value, (5 seconds). If the operation continues to fail, the delay increases exponentially, moving to the second phase where the delay might be several minutes, (10 minutes). This gradual increase helps to balance the need for quick recovery with the risk of overwhelming the system.
+
+The third phase is reached if the operation still fails after several retries with increasing delays. In this phase, the delay can become quite long, potentially up to 1 hour or more. This phase ensures that the system has ample time to recover from any underlying issues before another retry is attempted. If necessary, the delay can be set to an indefinite period, allowing for manual intervention if required.
+
+Refer to the [Resilience Configuration](./settings.md#resilience-configuration) section on the settings page for more details on how to configure these settings.

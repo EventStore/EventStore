@@ -18,7 +18,6 @@ sink connector.
 Individual connectors also include their own specific settings. To view them, go to their individual pages.
 :::
 
-
 ### Instance configuration
 
 | Name               | Details                                                                                                                                                                                             |
@@ -30,9 +29,9 @@ Individual connectors also include their own specific settings. To view them, go
 | Name                             | Details                                                                                                                                                                                                                                                                                                                                                                                |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `subscription:filter:scope`      | **Type**: enum<br><br>**Description:** Events can be filtered by Stream or Record scopes using either regular expressions, JsonPath expressions, or prefixes. The expression is first checked as a regex, then as JsonPath, and if neither, it's used as a prefix for filtering.<br><br>**Accepted Values:**<br>- `Unspecified`, `Stream`, `Record`.<br><br>**Default**: `Unspecified` |
-| `subscription:filter:expression` | **Type**: string<br><br>**Description:** A regex or JsonPath expression to filter records.<br><br>**Default**: `""`                                                                                                                                                                                                                                                                    |
-| `subscription:initialPosition`   | **Type**: enum<br><br>**Description:** Where to start consuming events from.<br><br>**Accepted Values:**<br>- `Latest`, `Earliest`.<br><br>**Default**: `Latest`                                                                                                                                                                                                                       |
-| `subscription:startPosition`     | **Type**: ulong<br><br>**Description:** Explicit position in the log from which to start consuming records. If an enum value like `Latest` is used, it will automatically convert to the corresponding `ulong` value.<br><br>**Accepted Values:**<br>- Enum values: `Latest`, `Earliest`, `Unset`<br>- `ulong` values<br><br>**Default**: `Unset`                                      |
+| `subscription:filter:expression` | **Type**: string<br><br>**Description:** A regex, JsonPath expression or prefix to filter records.<br><br>**Default**: `""` (all)                                                                                                                                                                                                                                                      |
+| `subscription:initialPosition`   | **Type**: enum<br><br>**Description:** The position in the message stream from which a consumer starts consuming messages when there is no prior checkpoint.<br><br>**Accepted Values:**<br>- `Latest`, `Earliest`.<br><br>**Default**: `Latest`                                                                                                                                       |
+| `subscription:startPosition`     | **Type**: ulong<br><br>**Description:** The precise position in the log from which to start consuming records.<br><br>- **Default**: ""                                                                                                                                                                                                                                                           |
 
 For details and examples on subscriptions, see [Subscriptions](./features#subscriptions).
 
@@ -45,7 +44,21 @@ For details and examples on subscriptions, see [Subscriptions](./features#subscr
 
 For details and examples on transformations, see [Transformations](./features#transformations).
 
-### Logging
+### Resilience configuration
+
+| Name                                       | Details                                                                                                                                                                |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resilience:enabled`                       | **Type**: bool<br><br>**Description:** Enables or disables resilience.<br><br>**Default**: `true`                                                                      |
+| `resilience:firstDelayBound:upperLimitMs`  | **Type**: int<br><br>**Description:** The upper limit for the first delay bound in milliseconds.<br><br>**Default**: `60000` (1 minute)                                |
+| `resilience:firstDelayBound:delayMs`       | **Type**: int<br><br>**Description:** The delay for the first delay bound in milliseconds.<br><br>**Default**: `5000` (5 seconds)                                      |
+| `resilience:secondDelayBound:upperLimitMs` | **Type**: int<br><br>**Description:** The upper limit for the second delay bound in milliseconds.<br><br>**Default**: `3600000` (1 hour)                               |
+| `resilience:secondDelayBound:delayMs`      | **Type**: int<br><br>**Description:** The delay for the second delay bound in milliseconds.<br><br>**Default**: `600000` (10 minutes)                                  |
+| `resilience:thirdDelayBound:upperLimitMs`  | **Type**: int<br><br>**Description:** The upper limit for the third delay bound in milliseconds. A value of `-1` indicates forever.<br><br>**Default**: `-1` (forever) |
+| `resilience:thirdDelayBound:delayMs`       | **Type**: int<br><br>**Description:** The delay for the third delay bound in milliseconds.<br><br>**Default**: `3600000` (1 hour)                                      |
+
+For details on resilience, see [Resilience](./features.md#resilience).
+
+### Logging configuration
 
 | Name              | Details                                                                                        |
 | ----------------- | ---------------------------------------------------------------------------------------------- |
