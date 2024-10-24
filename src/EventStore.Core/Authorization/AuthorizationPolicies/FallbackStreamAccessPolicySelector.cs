@@ -19,11 +19,14 @@ public class FallbackStreamAccessPolicySelector : IPolicySelector {
 	public ReadOnlyPolicy Select() {
 		var restrictedAccess = new RestrictedAccessAssertion();
 		var policy = new Policy(FallbackPolicyName, 1, DateTimeOffset.MinValue);
+		// Streams
 		policy.Add(Operations.Streams.Read, restrictedAccess);
 		policy.Add(Operations.Streams.Write, restrictedAccess);
 		policy.Add(Operations.Streams.Delete, restrictedAccess);
 		policy.Add(Operations.Streams.MetadataRead, restrictedAccess);
 		policy.Add(Operations.Streams.MetadataWrite, restrictedAccess);
+		// Persistent Subscriptions
+		policy.Add(Operations.Subscriptions.ProcessMessages, restrictedAccess);
 		return policy.AsReadOnly();
 	}
 }
