@@ -788,6 +788,8 @@ public class StorageReaderWorker<TStreamId> :
 			reply = new StorageMessage.StreamIdFromTransactionIdResponse(streamName);
 		} catch (OperationCanceledException e) when (e.CausedBy(cts, message.CancellationToken)) {
 			reply = new StorageMessage.OperationCancelledMessage(message.CancellationToken);
+		} finally {
+			cts?.Dispose();
 		}
 
 		message.Envelope.ReplyWith(reply);
