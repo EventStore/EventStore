@@ -756,7 +756,8 @@ public partial class TFChunk : IDisposable {
 		}
 	}
 
-	public bool ExistsAt(long logicalPosition) {
+	public async ValueTask<bool> ExistsAt(long logicalPosition, CancellationToken token) {
+		token.ThrowIfCancellationRequested();
 		return _readSide.ExistsAt(logicalPosition);
 	}
 
@@ -770,7 +771,8 @@ public partial class TFChunk : IDisposable {
 		((TFChunkReadSideScavenged)_readSide).DeOptimizeExistsAt();
 	}
 
-	public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged) {
+	public async ValueTask<RecordReadResult> TryReadAt(long logicalPosition, bool couldBeScavenged, CancellationToken token) {
+		token.ThrowIfCancellationRequested();
 		return _readSide.TryReadAt(logicalPosition, couldBeScavenged);
 	}
 
@@ -779,7 +781,8 @@ public partial class TFChunk : IDisposable {
 		return _readSide.TryReadFirst();
 	}
 
-	public RecordReadResult TryReadClosestForward(long logicalPosition) {
+	public async ValueTask<RecordReadResult> TryReadClosestForward(long logicalPosition, CancellationToken token) {
+		token.ThrowIfCancellationRequested();
 		return _readSide.TryReadClosestForward(logicalPosition);
 	}
 

@@ -30,9 +30,9 @@ public class when_writing_prepares_in_wrong_order_and_committing_in_right_order<
 	}
 
 	[Test]
-	public void check_commmit_on_expected_prepare_should_return_ok_decision() {
-		var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare1.LogPosition,
-			WriterCheckpoint.ReadNonFlushed());
+	public async Task check_commmit_on_expected_prepare_should_return_ok_decision() {
+		var res = await ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare1.LogPosition,
+			WriterCheckpoint.ReadNonFlushed(), CancellationToken.None);
 
 		Assert.AreEqual(CommitDecision.Ok, res.Decision);
 		Assert.AreEqual("ES", res.EventStreamId);
@@ -42,9 +42,9 @@ public class when_writing_prepares_in_wrong_order_and_committing_in_right_order<
 	}
 
 	[Test]
-	public void check_commmit_on_not_expected_prepare_should_return_wrong_expected_version() {
-		var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare4.LogPosition,
-			WriterCheckpoint.ReadNonFlushed());
+	public async Task check_commmit_on_not_expected_prepare_should_return_wrong_expected_version() {
+		var res = await ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare4.LogPosition,
+			WriterCheckpoint.ReadNonFlushed(), CancellationToken.None);
 
 		Assert.AreEqual(CommitDecision.WrongExpectedVersion, res.Decision);
 		Assert.AreEqual("ES", res.EventStreamId);

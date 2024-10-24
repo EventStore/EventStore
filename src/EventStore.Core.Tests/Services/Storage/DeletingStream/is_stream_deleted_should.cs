@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream;
@@ -11,11 +12,11 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream;
 public class is_stream_deleted_should<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 	[Test]
 	public void crash_on_null_stream_argument() {
-		Assert.Throws<ArgumentNullException>(() => ReadIndex.IsStreamDeleted(null));
+		Assert.ThrowsAsync<ArgumentNullException>(async () => await ReadIndex.IsStreamDeleted(null, CancellationToken.None));
 	}
 
 	[Test]
 	public void throw_on_empty_stream_argument() {
-		Assert.Throws<ArgumentNullException>(() => ReadIndex.IsStreamDeleted(string.Empty));
+		Assert.ThrowsAsync<ArgumentNullException>(async () => await ReadIndex.IsStreamDeleted(string.Empty, CancellationToken.None));
 	}
 }

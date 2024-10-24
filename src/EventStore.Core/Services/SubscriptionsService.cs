@@ -40,14 +40,14 @@ public class SubscriptionsService<TStreamId> :
 	IHandle<SystemMessage.SystemStart>,
 	IHandle<SystemMessage.BecomeShuttingDown>,
 	IHandle<TcpMessage.ConnectionClosed>,
-	IHandle<ClientMessage.SubscribeToStream>,
-	IHandle<ClientMessage.FilteredSubscribeToStream>,
+	IAsyncHandle<ClientMessage.SubscribeToStream>,
+	IAsyncHandle<ClientMessage.FilteredSubscribeToStream>,
 	IHandle<ClientMessage.UnsubscribeFromStream>,
 	IHandle<SubscriptionMessage.DropSubscription>,
 	IHandle<SubscriptionMessage.PollStream>,
 	IHandle<SubscriptionMessage.CheckPollTimeout>,
-	IHandle<StorageMessage.InMemoryEventCommitted>,
-	IHandle<StorageMessage.EventCommitted> {
+	IAsyncHandle<StorageMessage.InMemoryEventCommitted>,
+	IAsyncHandle<StorageMessage.EventCommitted> {
 	private const int DontReportCheckpointReached = -1;
 
 	private static readonly TimeSpan TimeoutPeriod = TimeSpan.FromSeconds(1);
@@ -132,7 +132,7 @@ public class SubscriptionsService<TStreamId> :
 		}
 	}
 
-	public void Handle(ClientMessage.SubscribeToStream msg) {
+	async ValueTask IAsyncHandle<ClientMessage.SubscribeToStream>.HandleAsync(ClientMessage.SubscribeToStream msg, CancellationToken token) {
 		var isInMemoryStream = SystemStreams.IsInMemoryStream(msg.EventStreamId);
 
 		long? lastEventNumber = null;
@@ -152,7 +152,7 @@ public class SubscriptionsService<TStreamId> :
 			var readResult = _inMemReader.ReadBackwards(readMsg);
 			lastEventNumber = readResult.LastEventNumber;
 		} else if (!msg.EventStreamId.IsEmptyString()) {
-			lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
+			lastEventNumber = await _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId), token);
 		}
 
 		if (lastEventNumber == EventNumber.DeletedStream) {
@@ -173,14 +173,14 @@ public class SubscriptionsService<TStreamId> :
 		msg.Envelope.ReplyWith(subscribedMessage);
 	}
 
-	public void Handle(ClientMessage.FilteredSubscribeToStream msg) {
+	async ValueTask IAsyncHandle<ClientMessage.FilteredSubscribeToStream>.HandleAsync(ClientMessage.FilteredSubscribeToStream msg, CancellationToken token) {
 		var isInMemoryStream = SystemStreams.IsInMemoryStream(msg.EventStreamId);
 
 		long? lastEventNumber = null;
 		if (isInMemoryStream) {
 			lastEventNumber = -1;
 		} else if (!msg.EventStreamId.IsEmptyString()) {
-			lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
+			lastEventNumber = await _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId), token);
 		}
 
 		var lastIndexedPos = isInMemoryStream ? -1 : _readIndex.LastIndexedPosition;
@@ -308,16 +308,14 @@ public class SubscriptionsService<TStreamId> :
 	}
 
 	private Message CloneReadRequestWithNoPollFlag(Message originalRequest) {
-		var streamReq = originalRequest as ClientMessage.ReadStreamEventsForward;
-		if (streamReq != null)
+		if (originalRequest is ClientMessage.ReadStreamEventsForward streamReq)
 			return new ClientMessage.ReadStreamEventsForward(
 				streamReq.InternalCorrId, streamReq.CorrelationId, streamReq.Envelope,
 				streamReq.EventStreamId, streamReq.FromEventNumber, streamReq.MaxCount, streamReq.ResolveLinkTos,
 				streamReq.RequireLeader, streamReq.ValidationStreamVersion, streamReq.User,
 				replyOnExpired: streamReq.ReplyOnExpired);
 
-		var allReq = originalRequest as ClientMessage.ReadAllEventsForward;
-		if (allReq != null)
+		if (originalRequest is ClientMessage.ReadAllEventsForward allReq)
 			return new ClientMessage.ReadAllEventsForward(
 				allReq.InternalCorrId, allReq.CorrelationId, allReq.Envelope,
 				allReq.CommitPosition, allReq.PreparePosition, allReq.MaxCount, allReq.ResolveLinkTos,
@@ -328,12 +326,12 @@ public class SubscriptionsService<TStreamId> :
 			originalRequest.GetType(), originalRequest));
 	}
 
-	public void Handle(StorageMessage.EventCommitted message) {
+	async ValueTask IAsyncHandle<StorageMessage.EventCommitted>.HandleAsync(StorageMessage.EventCommitted message, CancellationToken token) {
 		_lastSeenCommitPosition = message.CommitPosition;
 
 		var resolvedEvent =
-			ProcessEventCommited(AllStreamsSubscriptionId, message.CommitPosition, message.Event, null);
-		ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, resolvedEvent);
+			await ProcessEventCommited(AllStreamsSubscriptionId, message.CommitPosition, message.Event, null, token);
+		await ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, resolvedEvent, token);
 
 		ProcessStreamMetadataChanges(message.Event.EventStreamId);
 		ProcessSettingsStreamChanges(message.Event.EventStreamId);
@@ -342,16 +340,17 @@ public class SubscriptionsService<TStreamId> :
 		ReissueReadsFor(message.Event.EventStreamId, message.CommitPosition, message.Event.EventNumber);
 	}
 
-	public void Handle(StorageMessage.InMemoryEventCommitted message) {
+	async ValueTask IAsyncHandle<StorageMessage.InMemoryEventCommitted>.HandleAsync(StorageMessage.InMemoryEventCommitted message, CancellationToken token) {
 		_lastSeenInMemoryCommitPosition = message.CommitPosition;
-		ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, null);
+		await ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, null, token);
 		ProcessStreamMetadataChanges(message.Event.EventStreamId);
 		ProcessSettingsStreamChanges(message.Event.EventStreamId);
 		ReissueReadsFor(message.Event.EventStreamId, message.CommitPosition, message.Event.EventNumber);
 	}
 
-	private ResolvedEvent? ProcessEventCommited(
-		string eventStreamId, long commitPosition, EventRecord evnt, ResolvedEvent? resolvedEvent) {
+	private async ValueTask<ResolvedEvent?> ProcessEventCommited(
+		string eventStreamId, long commitPosition, EventRecord evnt, ResolvedEvent? resolvedEvent,
+		CancellationToken token) {
 		List<Subscription> subscriptions;
 		if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscriptions))
 			return resolvedEvent;
@@ -363,7 +362,7 @@ public class SubscriptionsService<TStreamId> :
 			var pair = ResolvedEvent.ForUnresolvedEvent(evnt, commitPosition);
 			if (subscr.ResolveLinkTos)
 				// resolve event if has not been previously resolved
-				resolvedEvent = pair = resolvedEvent ?? ResolveLinkToEvent(evnt, commitPosition);
+				resolvedEvent = pair = resolvedEvent ?? await ResolveLinkToEvent(evnt, commitPosition, token);
 
 			if (subscr.EventFilter.IsEventAllowed(evnt)) {
 				subscr.Envelope.ReplyWith(new ClientMessage.StreamEventAppeared(subscr.CorrelationId, pair));
@@ -456,16 +455,16 @@ public class SubscriptionsService<TStreamId> :
 		}
 	}
 
-	private ResolvedEvent ResolveLinkToEvent(EventRecord eventRecord, long commitPosition) {
-		if (eventRecord.EventType == SystemEventTypes.LinkTo) {
+	private async ValueTask<ResolvedEvent> ResolveLinkToEvent(EventRecord eventRecord, long commitPosition, CancellationToken token) {
+		if (eventRecord.EventType is SystemEventTypes.LinkTo) {
 			try {
 				string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data.Span).Split(_linkToSeparator, 2);
 				long eventNumber = long.Parse(parts[0]);
 				string streamName = parts[1];
 				var streamId = _readIndex.GetStreamId(streamName);
-				var res = _readIndex.ReadEvent(streamName, streamId, eventNumber);
+				var res = await _readIndex.ReadEvent(streamName, streamId, eventNumber, token);
 
-				if (res.Result == ReadEventResult.Success)
+				if (res.Result is ReadEventResult.Success)
 					return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);
 
 				return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);

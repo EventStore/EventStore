@@ -72,7 +72,7 @@ public partial class EventByTypeIndexEventReader
 			//we may receive read replies in any order (we read multiple streams)
 			if (message.TfLastCommitPosition > _reader._lastPosition)
 				_reader._lastPosition = message.TfLastCommitPosition;
-			if (message.EventStreamId == "$et") {
+			if (message.EventStreamId is "$et") {
 				ReadIndexCheckpointStreamCompleted(message.Result, message.Events);
 				return;
 			}
@@ -98,7 +98,7 @@ public partial class EventByTypeIndexEventReader
 					break;
 				case ReadStreamResult.Success:
 					_reader.UpdateNextStreamPosition(message.EventStreamId, message.NextEventNumber);
-					_eofs[message.EventStreamId] = (message.Events.Length == 0) && message.IsEndOfStream;
+					_eofs[message.EventStreamId] = message.Events is [] && message.IsEndOfStream;
 					EnqueueEvents(message);
 					ProcessBuffersAndContinue(eventStreamId: message.EventStreamId);
 					break;
@@ -153,7 +153,7 @@ public partial class EventByTypeIndexEventReader
 		}
 
 		private void EnqueueEvents(ClientMessage.ReadStreamEventsForwardCompleted message) {
-			for (int index = 0; index < message.Events.Length; index++) {
+			for (int index = 0; index < message.Events.Count; index++) {
 				var @event = message.Events[index].Event;
 				var @link = message.Events[index].Link;
 				EventRecord positionEvent = (link ?? @event);
@@ -182,7 +182,7 @@ public partial class EventByTypeIndexEventReader
 		}
 
 		private void ReadIndexCheckpointStreamCompleted(
-			ReadStreamResult result, EventStore.Core.Data.ResolvedEvent[] events) {
+			ReadStreamResult result, IReadOnlyList<EventStore.Core.Data.ResolvedEvent> events) {
 			if (_disposed)
 				return;
 
@@ -198,7 +198,7 @@ public partial class EventByTypeIndexEventReader
 					ProcessBuffersAndContinue(null);
 					break;
 				case ReadStreamResult.Success:
-					if (events.Length == 0) {
+					if (events is []) {
 						_indexStreamEof = true;
 						if (_lastKnownIndexCheckpointPosition == null)
 							_lastKnownIndexCheckpointPosition = default(TFPos);

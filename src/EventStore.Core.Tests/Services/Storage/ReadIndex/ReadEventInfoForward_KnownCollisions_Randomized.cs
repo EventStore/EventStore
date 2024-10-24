@@ -56,11 +56,11 @@ public class ReadEventInfoForward_KnownCollisions_Randomized : ReadIndexTestScen
 	}
 
 	[Test]
-	public void returns_correct_events_before_position() {
+	public async Task returns_correct_events_before_position() {
 		var curEvents = new List<EventRecord>();
 		foreach (var @event in _events) {
 			var result =
-				ReadIndex.ReadEventInfoForward_KnownCollisions(Stream, 0, int.MaxValue, @event.LogPosition);
+				await ReadIndex.ReadEventInfoForward_KnownCollisions(Stream, 0, int.MaxValue, @event.LogPosition, CancellationToken.None);
 			CheckResult(curEvents.ToArray(), result);
 			if (curEvents.Count == 0)
 				Assert.True(result.IsEndOfStream);
@@ -73,7 +73,7 @@ public class ReadEventInfoForward_KnownCollisions_Randomized : ReadIndexTestScen
 	}
 
 	[Test]
-	public void returns_correct_events_with_max_count() {
+	public async Task returns_correct_events_with_max_count() {
 		var curEvents = new List<EventRecord>();
 
 		foreach (var @event in _events) {
@@ -86,8 +86,8 @@ public class ReadEventInfoForward_KnownCollisions_Randomized : ReadIndexTestScen
 			Assert.Greater(maxCount, 0);
 			Assert.GreaterOrEqual(fromEventNumber, 0);
 
-			var result = ReadIndex.ReadEventInfoForward_KnownCollisions(
-				Stream, fromEventNumber, maxCount, long.MaxValue);
+			var result = await ReadIndex.ReadEventInfoForward_KnownCollisions(
+				Stream, fromEventNumber, maxCount, long.MaxValue, CancellationToken.None);
 			CheckResult(curEvents.Skip(curEvents.Count - maxCount).ToArray(), result);
 			Assert.AreEqual(@event.EventNumber + 1, result.NextEventNumber);
 		}

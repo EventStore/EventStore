@@ -13,18 +13,15 @@ public class FakeTfReader : ITransactionFileReader {
 		throw new NotImplementedException();
 	}
 
-	public SeqReadResult TryReadNext() {
-		throw new NotImplementedException();
-	}
+	public ValueTask<SeqReadResult> TryReadNext(CancellationToken token)
+		=> ValueTask.FromException<SeqReadResult>(new NotImplementedException());
 
 	public ValueTask<SeqReadResult> TryReadPrev(CancellationToken token)
 		=> ValueTask.FromException<SeqReadResult>(new NotImplementedException());
 
-	public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<RecordReadResult> TryReadAt(long position, bool couldBeScavenged, CancellationToken token)
+		=> ValueTask.FromException<RecordReadResult>(new NotImplementedException());
 
-	public bool ExistsAt(long position) {
-		return true;
-	}
+	public ValueTask<bool> ExistsAt(long position, CancellationToken token)
+		=> token.IsCancellationRequested ? ValueTask.FromCanceled<bool>(token) : ValueTask.FromResult(true);
 }

@@ -32,12 +32,13 @@ public abstract class GetStreamLastEventNumber_NoCollisions : ReadIndexTestScena
 
 	public class WithNoEvents : GetStreamLastEventNumber_NoCollisions {
 		[Test]
-		public void with_no_events() {
+		public async Task with_no_events() {
 			Assert.AreEqual(ExpectedVersion.NoStream,
-				ReadIndex.GetStreamLastEventNumber_NoCollisions(
+				await ReadIndex.GetStreamLastEventNumber_NoCollisions(
 					Hash,
 					GetStreamId,
-					long.MaxValue));
+					long.MaxValue,
+					CancellationToken.None));
 		}
 	}
 
@@ -47,12 +48,13 @@ public abstract class GetStreamLastEventNumber_NoCollisions : ReadIndexTestScena
 		}
 
 		[Test]
-		public void with_one_event() {
+		public async Task with_one_event() {
 			Assert.AreEqual(0,
-				ReadIndex.GetStreamLastEventNumber_NoCollisions(
+				await ReadIndex.GetStreamLastEventNumber_NoCollisions(
 					Hash,
 					GetStreamId,
-					long.MaxValue));
+					long.MaxValue,
+					CancellationToken.None));
 		}
 	}
 
@@ -76,45 +78,51 @@ public abstract class GetStreamLastEventNumber_NoCollisions : ReadIndexTestScena
 		}
 
 		[Test]
-		public void with_multiple_events() {
+		public async Task with_multiple_events() {
 			Assert.AreEqual(3,
-				ReadIndex.GetStreamLastEventNumber_NoCollisions(
+				await ReadIndex.GetStreamLastEventNumber_NoCollisions(
 					Hash,
 					GetStreamId,
-					long.MaxValue));
+					long.MaxValue,
+					CancellationToken.None));
 		}
 
 		[Test]
-		public void with_multiple_events_and_before_position() {
+		public async Task with_multiple_events_and_before_position() {
 			Assert.AreEqual(3,
-				ReadIndex.GetStreamLastEventNumber_NoCollisions(
+				await ReadIndex.GetStreamLastEventNumber_NoCollisions(
 					Hash,
 					GetStreamId,
-					_third.LogPosition + 1));
+					_third.LogPosition + 1,
+					CancellationToken.None));
 
 			Assert.AreEqual(2,
-				ReadIndex.GetStreamLastEventNumber_NoCollisions(
+				await ReadIndex.GetStreamLastEventNumber_NoCollisions(
 					Hash,
 					GetStreamId,
-					_third.LogPosition));
+					_third.LogPosition,
+					CancellationToken.None));
 
 			Assert.AreEqual(1,
-				ReadIndex.GetStreamLastEventNumber_NoCollisions(
+				await ReadIndex.GetStreamLastEventNumber_NoCollisions(
 					Hash,
 					GetStreamId,
-					_second.LogPosition));
+					_second.LogPosition,
+					CancellationToken.None));
 
 			Assert.AreEqual(0,
-				ReadIndex.GetStreamLastEventNumber_NoCollisions(
+				await ReadIndex.GetStreamLastEventNumber_NoCollisions(
 					Hash,
 					GetStreamId,
-					_first.LogPosition));
+					_first.LogPosition,
+					CancellationToken.None));
 
 			Assert.AreEqual(ExpectedVersion.NoStream,
-				ReadIndex.GetStreamLastEventNumber_NoCollisions(
+				await ReadIndex.GetStreamLastEventNumber_NoCollisions(
 					Hash,
 					GetStreamId,
-					_zeroth.LogPosition));
+					_zeroth.LogPosition,
+					CancellationToken.None));
 		}
 	}
 
@@ -128,12 +136,13 @@ public abstract class GetStreamLastEventNumber_NoCollisions : ReadIndexTestScena
 		}
 
 		[Test]
-		public void with_deleted_stream() {
+		public async Task with_deleted_stream() {
 			Assert.AreEqual(EventNumber.DeletedStream,
-				ReadIndex.GetStreamLastEventNumber_NoCollisions(
+				await ReadIndex.GetStreamLastEventNumber_NoCollisions(
 					Hash,
 					GetStreamId,
-					long.MaxValue));
+					long.MaxValue,
+					CancellationToken.None));
 		}
 	}
 }

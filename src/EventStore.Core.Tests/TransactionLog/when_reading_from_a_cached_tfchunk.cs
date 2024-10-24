@@ -62,8 +62,8 @@ public class when_reading_from_a_cached_tfchunk<TLogFormat, TStreamId> : Specifi
 	}
 
 	[Test]
-	public void the_record_can_be_read_at_exact_position() {
-		var res = _cachedChunk.TryReadAt(0, couldBeScavenged: true);
+	public async Task the_record_can_be_read_at_exact_position() {
+		var res = await _cachedChunk.TryReadAt(0, couldBeScavenged: true, CancellationToken.None);
 		Assert.IsTrue(res.Success);
 		Assert.AreEqual(_record, res.LogRecord);
 		Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);
@@ -79,8 +79,8 @@ public class when_reading_from_a_cached_tfchunk<TLogFormat, TStreamId> : Specifi
 	}
 
 	[Test]
-	public void the_record_can_be_read_as_closest_forward_to_zero_pos() {
-		var res = _cachedChunk.TryReadClosestForward(0);
+	public async Task the_record_can_be_read_as_closest_forward_to_zero_pos() {
+		var res = await _cachedChunk.TryReadClosestForward(0, CancellationToken.None);
 		Assert.IsTrue(res.Success);
 		Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
 		Assert.AreEqual(_record, res.LogRecord);

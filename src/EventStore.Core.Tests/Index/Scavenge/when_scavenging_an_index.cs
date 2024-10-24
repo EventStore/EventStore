@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+using DotNext;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
@@ -36,11 +37,10 @@ public class when_scavenging_an_index : SpecificationWithDirectoryPerTestFixture
 		table.Add(0x010300000000, 1, 4);
 		_oldTable = PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault);
 
-		long spaceSaved;
 		Func<IndexEntry, bool> existsAt = x => x.Position % 2 == 0;
 
-		_newtable = PTable.Scavenged(_oldTable, GetTempFilePath(),
-			PTableVersions.IndexV4, existsAt, out spaceSaved, skipIndexVerify: _skipIndexVerify,
+		(_newtable, _) = await PTable.Scavenged(_oldTable, GetTempFilePath(),
+			PTableVersions.IndexV4, existsAt.ToAsync(), skipIndexVerify: _skipIndexVerify,
 			initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault,
 			useBloomFilter: true);
 	}

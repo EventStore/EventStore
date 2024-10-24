@@ -224,7 +224,7 @@ public partial class EmittedStream : IDisposable,
 
 		if (_lastCommittedOrSubmittedEventPosition == null) {
 			var parsed = default(CheckpointTagVersion);
-			if (!newPhysicalStream && message.Events.Length > 0) {
+			if (!newPhysicalStream && message.Events is not []) {
 				parsed = message.Events[0].Event.Metadata.ParseCheckpointTagVersionExtraJson(_projectionVersion);
 				if (parsed.Tag == null) {
 					Failed(string.Format(

@@ -2,6 +2,9 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
@@ -25,8 +28,8 @@ public class LogV2StreamNameIndex :
 	public void Dispose() {
 	}
 
-	public void InitializeWithConfirmed(INameLookup<string> source) {
-	}
+	public ValueTask InitializeWithConfirmed(INameLookup<string> source, CancellationToken token)
+		=> token.IsCancellationRequested ? ValueTask.FromCanceled(token) : ValueTask.CompletedTask;
 
 	public void CancelReservations() {
 	}
@@ -83,12 +86,9 @@ public class LogV2StreamNameIndex :
 
 	public string LookupValue(string streamName) => streamName;
 
-	public bool TryGetName(string value, out string name) {
-		name = value;
-		return true;
-	}
+	public ValueTask<string> LookupName(string value, CancellationToken token)
+		=> token.IsCancellationRequested ? ValueTask.FromCanceled<string>(token) : ValueTask.FromResult(value);
 
-	public bool TryGetLastValue(out string last) {
-		throw new System.NotImplementedException();
-	}
+	public ValueTask<Optional<string>> TryGetLastValue(CancellationToken token)
+		=> ValueTask.FromException<Optional<string>>(new System.NotImplementedException());
 }

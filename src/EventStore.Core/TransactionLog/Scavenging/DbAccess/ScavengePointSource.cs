@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
@@ -27,7 +28,7 @@ public class ScavengePointSource : IScavengePointSource {
 
 		_logger.Information("SCAVENGING: Getting latest scavenge point...");
 
-		var readTcs = new TaskCompletionSource<ResolvedEvent[]>(
+		var readTcs = new TaskCompletionSource<IReadOnlyList<ResolvedEvent>>(
 			TaskCreationOptions.RunContinuationsAsynchronously);
 		var endStreamPosition = -1;
 
@@ -53,16 +54,16 @@ public class ScavengePointSource : IScavengePointSource {
 			},
 			corrId: Guid.NewGuid());
 
-		ResolvedEvent[] events;
+		IReadOnlyList<ResolvedEvent> events;
 		using (cancellationToken.Register(() => readTcs.TrySetCanceled())) {
 			events = await readTcs.Task;
 		}
 
-		if (events.Length == 0) {
+		if (events is []) {
 			_logger.Information("SCAVENGING: No scavenge points exist");
 			return default;
-		} else if (events.Length != 1) {
-			throw new Exception($"Expected 1 event but got {events.Length}");
+		} else if (events.Count is not 1) {
+			throw new Exception($"Expected 1 event but got {events.Count}");
 		}
 
 		var scavengePointEvent = events[0].Event;

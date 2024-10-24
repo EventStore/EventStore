@@ -44,8 +44,7 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 		var chaser = new TFChunkChaser(db, writerchk, new InMemoryCheckpoint(), false);
 		chaser.Open();
 
-		ILogRecord record;
-		Assert.IsFalse(chaser.TryReadNext(out record));
+		Assert.IsTrue(await chaser.TryReadNext(CancellationToken.None) is { LogRecord: null });
 
 		chaser.Close();
 	}
@@ -64,8 +63,7 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 		var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
 		chaser.Open();
 
-		ILogRecord record;
-		Assert.IsFalse(chaser.TryReadNext(out record));
+		Assert.IsTrue(await chaser.TryReadNext(CancellationToken.None) is { LogRecord: null });
 		Assert.AreEqual(12, chaserchk.Read());
 
 		chaser.Close();
@@ -110,13 +108,12 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 		var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
 		chaser.Open();
 
-		ILogRecord record;
-		var recordRead = chaser.TryReadNext(out record);
+		var recordRead = await chaser.TryReadNext(CancellationToken.None);
 		chaser.Close();
 
-		Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), chaserchk.Read());
-		Assert.IsTrue(recordRead);
-		Assert.AreEqual(recordToWrite, record);
+		Assert.AreEqual(recordRead.LogRecord.GetSizeWithLengthPrefixAndSuffix(), chaserchk.Read());
+		Assert.IsTrue(recordRead.Success);
+		Assert.AreEqual(recordToWrite, recordRead.LogRecord);
 	}
 
 
@@ -157,13 +154,12 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 		var reader = new TFChunkChaser(db, writerchk, chaserchk, false);
 		reader.Open();
 
-		ILogRecord record;
-		var readRecord = reader.TryReadNext(out record);
+		var readRecord = await reader.TryReadNext(CancellationToken.None);
 		reader.Close();
 
-		Assert.IsTrue(readRecord);
-		Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), chaserchk.Read());
-		Assert.AreEqual(recordToWrite, record);
+		Assert.IsTrue(readRecord.Success);
+		Assert.AreEqual(readRecord.LogRecord.GetSizeWithLengthPrefixAndSuffix(), chaserchk.Read());
+		Assert.AreEqual(recordToWrite, readRecord.LogRecord);
 	}
 
 	[Test]
@@ -202,13 +198,12 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 		var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
 		chaser.Open();
 
-		ILogRecord record;
-		var readRecord = chaser.TryReadNext(out record);
+		var readRecord = await chaser.TryReadNext(CancellationToken.None);
 		chaser.Close();
 
-		Assert.IsTrue(readRecord);
-		Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), chaserchk.Read());
-		Assert.AreEqual(recordToWrite, record);
+		Assert.IsTrue(readRecord.Success);
+		Assert.AreEqual(readRecord.LogRecord.GetSizeWithLengthPrefixAndSuffix(), chaserchk.Read());
+		Assert.AreEqual(recordToWrite, readRecord.LogRecord);
 	}
 
 	/*   [Test]

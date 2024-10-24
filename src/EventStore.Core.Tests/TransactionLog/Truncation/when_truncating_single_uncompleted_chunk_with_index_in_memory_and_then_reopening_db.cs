@@ -37,43 +37,43 @@ public class
 	}
 
 	[Test]
-	public void read_one_by_one_doesnt_return_truncated_records() {
-		var res = ReadIndex.ReadEvent("ES", 0);
+	public async Task read_one_by_one_doesnt_return_truncated_records() {
+		var res = await ReadIndex.ReadEvent("ES", 0, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, res.Result);
 		Assert.AreEqual(_event1, res.Record);
 
-		res = ReadIndex.ReadEvent("ES", 1);
+		res = await ReadIndex.ReadEvent("ES", 1, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NotFound, res.Result);
 		Assert.IsNull(res.Record);
 
-		res = ReadIndex.ReadEvent("ES", 2);
+		res = await ReadIndex.ReadEvent("ES", 2, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NotFound, res.Result);
 		Assert.IsNull(res.Record);
 
-		res = ReadIndex.ReadEvent("ES", 3);
+		res = await ReadIndex.ReadEvent("ES", 3, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NotFound, res.Result);
 		Assert.IsNull(res.Record);
 	}
 
 	[Test]
-	public void read_stream_forward_doesnt_return_truncated_records() {
-		var res = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
+	public async Task read_stream_forward_doesnt_return_truncated_records() {
+		var res = await ReadIndex.ReadStreamEventsForward("ES", 0, 100, CancellationToken.None);
 		var records = res.Records;
 		Assert.AreEqual(1, records.Length);
 		Assert.AreEqual(_event1, records[0]);
 	}
 
 	[Test]
-	public void read_stream_backward_doesnt_return_truncated_records() {
-		var res = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
+	public async Task read_stream_backward_doesnt_return_truncated_records() {
+		var res = await ReadIndex.ReadStreamEventsBackward("ES", -1, 100, CancellationToken.None);
 		var records = res.Records;
 		Assert.AreEqual(1, records.Length);
 		Assert.AreEqual(_event1, records[0]);
 	}
 
 	[Test]
-	public void read_all_forward_doesnt_return_truncated_records() {
-		var res = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100);
+	public async Task read_all_forward_doesnt_return_truncated_records() {
+		var res = await ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, CancellationToken.None);
 		var records = res.EventRecords()
 			.Select(r => r.Event)
 			.ToArray();
@@ -92,9 +92,9 @@ public class
 	}
 
 	[Test]
-	public void read_all_backward_from_last_truncated_record_returns_no_records() {
+	public async Task read_all_backward_from_last_truncated_record_returns_no_records() {
 		var pos = new TFPos(_event3.LogPosition, _event3.LogPosition);
-		var res = ReadIndex.ReadAllEventsForward(pos, 100);
+		var res = await ReadIndex.ReadAllEventsForward(pos, 100, CancellationToken.None);
 		var records = res.EventRecords()
 			.Select(r => r.Event)
 			.ToArray();

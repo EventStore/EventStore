@@ -37,7 +37,7 @@ public class PasswordChangeNotificationReader : IHandle<SystemMessage.SystemStar
 						ReadNotificationsFrom(0);
 						break;
 					case ReadStreamResult.Success:
-						if (completed.Events.Length == 0)
+						if (completed.Events is [])
 							ReadNotificationsFrom(0);
 						else
 							ReadNotificationsFrom(completed.Events[0].Event.EventNumber + 1);

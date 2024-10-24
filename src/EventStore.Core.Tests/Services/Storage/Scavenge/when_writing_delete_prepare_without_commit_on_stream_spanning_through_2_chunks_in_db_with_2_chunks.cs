@@ -32,19 +32,19 @@ public class when_writing_delete_prepare_without_commit_and_scavenging<TLogForma
 	}
 
 	[Test]
-	public void read_one_by_one_returns_all_commited_events() {
-		var result = ReadIndex.ReadEvent("ES", 0);
+	public async Task read_one_by_one_returns_all_commited_events() {
+		var result = await ReadIndex.ReadEvent("ES", 0, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_event0, result.Record);
 
-		result = ReadIndex.ReadEvent("ES", 1);
+		result = await ReadIndex.ReadEvent("ES", 1, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_event1, result.Record);
 	}
 
 	[Test]
-	public void read_stream_events_forward_should_return_all_events() {
-		var result = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
+	public async Task read_stream_events_forward_should_return_all_events() {
+		var result = await ReadIndex.ReadStreamEventsForward("ES", 0, 100, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(2, result.Records.Length);
 		Assert.AreEqual(_event0, result.Records[0]);
@@ -52,8 +52,8 @@ public class when_writing_delete_prepare_without_commit_and_scavenging<TLogForma
 	}
 
 	[Test]
-	public void read_stream_events_backward_should_return_stream_deleted() {
-		var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
+	public async Task read_stream_events_backward_should_return_stream_deleted() {
+		var result = await ReadIndex.ReadStreamEventsBackward("ES", -1, 100, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(2, result.Records.Length);
 		Assert.AreEqual(_event1, result.Records[0]);
@@ -61,8 +61,9 @@ public class when_writing_delete_prepare_without_commit_and_scavenging<TLogForma
 	}
 
 	[Test]
-	public void read_all_forward_returns_all_events() {
-		var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+	public async Task read_all_forward_returns_all_events() {
+		var events = (await ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, CancellationToken.None))
+			.EventRecords()
 			.Select(r => r.Event)
 			.ToArray();
 		Assert.AreEqual(2, events.Length);

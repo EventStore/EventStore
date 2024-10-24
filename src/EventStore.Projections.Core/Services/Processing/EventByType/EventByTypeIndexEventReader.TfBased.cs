@@ -61,7 +61,7 @@ public partial class EventByTypeIndexEventReader
 			_tfEventsRequested = false;
 			switch (message.Result) {
 				case ReadAllResult.Success:
-					var eof = message.Events.Length == 0;
+					var eof = message.Events is [];
 					_eof = eof;
 					var willDispose = _reader._stopOnEof && eof;
 					_fromTfPosition = message.NextPos;

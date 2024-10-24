@@ -31,35 +31,35 @@ public class
 	}
 
 	[Test]
-	public void last_event_read_returns_correct_event() {
-		var res = ReadIndex.ReadEvent("$$test", -1);
+	public async Task last_event_read_returns_correct_event() {
+		var res = await ReadIndex.ReadEvent("$$test", -1, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, res.Result);
 		Assert.AreEqual("4", res.Record.EventType);
 	}
 
 	[Test]
-	public void last_event_stream_number_is_correct() {
-		Assert.AreEqual(4, ReadIndex.GetStreamLastEventNumber("$$test"));
+	public async Task last_event_stream_number_is_correct() {
+		Assert.AreEqual(4, await ReadIndex.GetStreamLastEventNumber("$$test", CancellationToken.None));
 	}
 
 	[Test]
-	public void single_event_read_returns_last_two_events() {
-		Assert.AreEqual(ReadEventResult.NotFound, ReadIndex.ReadEvent("$$test", 0).Result);
-		Assert.AreEqual(ReadEventResult.NotFound, ReadIndex.ReadEvent("$$test", 1).Result);
-		Assert.AreEqual(ReadEventResult.NotFound, ReadIndex.ReadEvent("$$test", 2).Result);
+	public async Task single_event_read_returns_last_two_events() {
+		Assert.AreEqual(ReadEventResult.NotFound, (await ReadIndex.ReadEvent("$$test", 0, CancellationToken.None)).Result);
+		Assert.AreEqual(ReadEventResult.NotFound, (await ReadIndex.ReadEvent("$$test", 1, CancellationToken.None)).Result);
+		Assert.AreEqual(ReadEventResult.NotFound, (await ReadIndex.ReadEvent("$$test", 2, CancellationToken.None)).Result);
 
-		var res = ReadIndex.ReadEvent("$$test", 3);
+		var res = await ReadIndex.ReadEvent("$$test", 3, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, res.Result);
 		Assert.AreEqual("3", res.Record.EventType);
 
-		res = ReadIndex.ReadEvent("$$test", 4);
+		res = await ReadIndex.ReadEvent("$$test", 4, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, res.Result);
 		Assert.AreEqual("4", res.Record.EventType);
 	}
 
 	[Test]
-	public void stream_read_forward_returns_last_two_events() {
-		var res = ReadIndex.ReadStreamEventsForward("$$test", 0, 100);
+	public async Task stream_read_forward_returns_last_two_events() {
+		var res = await ReadIndex.ReadStreamEventsForward("$$test", 0, 100, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, res.Result);
 		Assert.AreEqual(2, res.Records.Length);
 		Assert.AreEqual("3", res.Records[0].EventType);
@@ -67,8 +67,8 @@ public class
 	}
 
 	[Test]
-	public void stream_read_backward_returns_last_two_events() {
-		var res = ReadIndex.ReadStreamEventsBackward("$$test", -1, 100);
+	public async Task stream_read_backward_returns_last_two_events() {
+		var res = await ReadIndex.ReadStreamEventsBackward("$$test", -1, 100, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, res.Result);
 		Assert.AreEqual(2, res.Records.Length);
 		Assert.AreEqual("4", res.Records[0].EventType);
@@ -76,15 +76,15 @@ public class
 	}
 
 	[Test]
-	public void metastream_metadata_is_correct() {
-		var metadata = ReadIndex.GetStreamMetadata("$$test");
+	public async Task metastream_metadata_is_correct() {
+		var metadata = await ReadIndex.GetStreamMetadata("$$test", CancellationToken.None);
 		Assert.AreEqual(2, metadata.MaxCount);
 		Assert.AreEqual(null, metadata.MaxAge);
 	}
 
 	[Test]
-	public void original_stream_metadata_is_taken_from_last_metaevent() {
-		var metadata = ReadIndex.GetStreamMetadata("test");
+	public async Task original_stream_metadata_is_taken_from_last_metaevent() {
+		var metadata = await ReadIndex.GetStreamMetadata("test", CancellationToken.None);
 		Assert.AreEqual(6, metadata.MaxCount);
 		Assert.AreEqual(null, metadata.MaxAge);
 	}

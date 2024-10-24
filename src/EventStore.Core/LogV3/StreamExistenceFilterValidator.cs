@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
 
@@ -19,8 +21,8 @@ public class StreamExistenceFilterValidator : INameExistenceFilter {
 		set => _wrapped.CurrentCheckpoint = value;
 	}
 
-	public void Initialize(INameExistenceFilterInitializer source, long truncateToPosition) =>
-		_wrapped.Initialize(source, truncateToPosition);
+	public ValueTask Initialize(INameExistenceFilterInitializer source, long truncateToPosition, CancellationToken token)
+		=> _wrapped.Initialize(source, truncateToPosition, token);
 
 	public void TruncateTo(long checkpoint) =>
 		_wrapped.TruncateTo(checkpoint);

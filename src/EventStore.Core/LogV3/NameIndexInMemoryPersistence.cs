@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
 using StreamId = System.UInt32;
 
@@ -21,8 +23,8 @@ public class NameIndexInMemoryPersistence :
 	public void Dispose() {
 	}
 
-	public void Init(INameLookup<StreamId> source) {
-	}
+	public ValueTask Init(INameLookup<StreamId> source, CancellationToken token)
+		=> token.IsCancellationRequested ? ValueTask.FromCanceled(token) : ValueTask.CompletedTask;
 
 	public void Add(string name, StreamId value) {
 		_dict[name] = value;

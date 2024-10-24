@@ -76,7 +76,7 @@ public class CoreProjectionCheckpointReader : ICoreProjectionCheckpointReader {
 
 
 	private void OnLoadStateReadRequestCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message) {
-		if (message.Events.Length > 0) {
+		if (message.Events is not []) {
 			var checkpoint = message.Events
 				.Where(v => v.Event.EventType == ProjectionEventTypes.ProjectionCheckpoint).Select(x => x.Event)
 				.FirstOrDefault();

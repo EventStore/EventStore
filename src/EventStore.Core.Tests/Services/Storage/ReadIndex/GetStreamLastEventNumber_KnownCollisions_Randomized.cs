@@ -46,17 +46,17 @@ public class GetStreamLastEventNumber_KnownCollisions_Randomized : ReadIndexTest
 	}
 
 	[Test]
-	public void returns_correct_last_event_number_before_position() {
+	public async Task returns_correct_last_event_number_before_position() {
 		var streamLast = ExpectedVersion.NoStream;
 		var collidingStreamLast = ExpectedVersion.NoStream;
 
 		foreach (var @event in _events)
 		{
 			Assert.AreEqual(streamLast,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(Stream, @event.LogPosition));
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(Stream, @event.LogPosition, CancellationToken.None));
 
 			Assert.AreEqual(collidingStreamLast,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(CollidingStream, @event.LogPosition));
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(CollidingStream, @event.LogPosition, CancellationToken.None));
 
 			switch (@event.EventStreamId)
 			{

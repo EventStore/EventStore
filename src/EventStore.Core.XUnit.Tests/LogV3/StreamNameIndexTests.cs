@@ -149,7 +149,7 @@ public class StreamNameIndexTests : IDisposable {
 		await _persistence.CheckpointLogAsync();
 
 		// call init with an empty source, removing streamA.
-		_sut.InitializeWithConfirmed(new MockNameLookup(new()));
+		await _sut.InitializeWithConfirmed(new MockNameLookup(new()), CancellationToken.None);
 
 		// simulate restart
 		GenSut();
@@ -172,7 +172,7 @@ public class StreamNameIndexTests : IDisposable {
 	// populate the sut with a given number of confirmed streams.
 	void PopulateSut(int numStreams) {
 		var xs = _streamsSource.Take(numStreams).ToList();
-			
+
 		foreach (var (streamId, streamName) in xs) {
 			_sut.GetOrReserve(streamName, out var outStreamId, out var _, out var _);
 			Assert.Equal(streamId, outStreamId);
@@ -180,24 +180,24 @@ public class StreamNameIndexTests : IDisposable {
 		}
 	}
 
-	void DeleteStreams(int numTotalStreams, int numToDelete) {
+	ValueTask DeleteStreams(int numTotalStreams, int numToDelete, CancellationToken token) {
 		var streamsStream = GenerateStreamsStream(numTotalStreams - numToDelete);
 		var source = new MockNameLookup(streamsStream.ToDictionary(x => x.StreamId, x => x.StreamName));
-		_sut.InitializeWithConfirmed(source);
+		return _sut.InitializeWithConfirmed(source, token);
 	}
 
 	static IList<(StreamId StreamId, string StreamName)> GenerateStreamsStream(int numStreams) {
 		return _streamsSource.Take(numStreams).ToList();
 	}
 
-	void TestInit(int numInStreamNameIndex, int numInStandardIndex) {
+	async ValueTask TestInit(int numInStreamNameIndex, int numInStandardIndex, CancellationToken token = default) {
 		// given: sut populated with x streams
 		PopulateSut(numInStreamNameIndex);
 
 		// when: initialisting with source populated with y streams
 		var streamsStream = GenerateStreamsStream(numInStandardIndex);
 		var source = new MockNameLookup(streamsStream.ToDictionary(x => x.StreamId, x => x.StreamName));
-		_sut.InitializeWithConfirmed(source);
+		await _sut.InitializeWithConfirmed(source, token);
 
 		// then: after initialisation sut should contains the same as source.
 		// check that all of the streams stream is in the stream name index
@@ -210,7 +210,8 @@ public class StreamNameIndexTests : IDisposable {
 
 		// check that the streamnameindex doesn't contain anything extra.
 		foreach (var (name, value) in _persistence.Scan()) {
-			Assert.True(source.TryGetName(value, out var outName));
+			var outName = await source.LookupName(value, token);
+			Assert.NotEmpty(outName);
 			Assert.Equal(name, outName);
 		}
 
@@ -220,22 +221,22 @@ public class StreamNameIndexTests : IDisposable {
 	}
 
 	[Fact]
-	public void on_init_can_catchup() {
-		TestInit(
+	public async Task on_init_can_catchup() {
+		await TestInit(
 			numInStreamNameIndex: 3000,
 			numInStandardIndex: 5000);
 	}
 
 	[Fact]
-	public void on_init_can_catchup_from_0() {
-		TestInit(
+	public async Task on_init_can_catchup_from_0() {
+		await TestInit(
 			numInStreamNameIndex: 0,
 			numInStandardIndex: 5000);
 	}
 
 	[Fact]
-	public void on_init_can_truncate() {
-		TestInit(
+	public async Task on_init_can_truncate() {
+		await TestInit(
 			numInStreamNameIndex: 5000,
 			numInStandardIndex: 3000);
 	}
@@ -320,12 +321,12 @@ public class StreamNameIndexTests : IDisposable {
 	}
 
 	[Fact]
-	public void can_scan_forwards_skipping_truncated() {
+	public async Task can_scan_forwards_skipping_truncated() {
 		var numStreams = 10000;
 		var deletedStreams = 500;
 		var remainingStreams = numStreams - deletedStreams;
 		PopulateSut(numStreams);
-		DeleteStreams(numStreams, deletedStreams);
+		await DeleteStreams(numStreams, deletedStreams, CancellationToken.None);
 
 		var scanned = _persistence.Scan().ToList();
 
@@ -340,12 +341,12 @@ public class StreamNameIndexTests : IDisposable {
 	}
 
 	[Fact]
-	public void can_scan_backwards_skipping_truncated() {
+	public async Task can_scan_backwards_skipping_truncated() {
 		var numStreams = 10000;
 		var deletedStreams = 500;
 		var remainingStreams = numStreams - deletedStreams;
 		PopulateSut(numStreams);
-		DeleteStreams(numStreams, deletedStreams);
+		await DeleteStreams(numStreams, deletedStreams, CancellationToken.None);
 
 		var scanned = _persistence.ScanBackwards().ToList();
 		scanned.Reverse();

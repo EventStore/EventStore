@@ -581,7 +581,7 @@ public static partial class ClientMessage {
 		public readonly int MaxCount;
 
 		public readonly ReadStreamResult Result;
-		public readonly ResolvedEvent[] Events;
+		public readonly IReadOnlyList<ResolvedEvent> Events;
 		public readonly StreamMetadata StreamMetadata;
 		public readonly bool IsCachePublic;
 		public readonly string Error;
@@ -592,7 +592,7 @@ public static partial class ClientMessage {
 
 		public ReadStreamEventsForwardCompleted(Guid correlationId, string eventStreamId, long fromEventNumber,
 			int maxCount,
-			ReadStreamResult result, ResolvedEvent[] events,
+			ReadStreamResult result, IReadOnlyList<ResolvedEvent> events,
 			StreamMetadata streamMetadata, bool isCachePublic,
 			string error, long nextEventNumber, long lastEventNumber, bool isEndOfStream,
 			long tfLastCommitPosition) {
@@ -664,7 +664,7 @@ public static partial class ClientMessage {
 		public readonly int MaxCount;
 
 		public readonly ReadStreamResult Result;
-		public readonly ResolvedEvent[] Events;
+		public readonly IReadOnlyList<ResolvedEvent> Events;
 		public readonly StreamMetadata StreamMetadata;
 		public readonly bool IsCachePublic;
 		public readonly string Error;
@@ -678,7 +678,7 @@ public static partial class ClientMessage {
 			long fromEventNumber,
 			int maxCount,
 			ReadStreamResult result,
-			ResolvedEvent[] events,
+			IReadOnlyList<ResolvedEvent> events,
 			StreamMetadata streamMetadata,
 			bool isCachePublic,
 			string error,
@@ -758,7 +758,7 @@ public static partial class ClientMessage {
 		public readonly ReadAllResult Result;
 		public readonly string Error;
 
-		public readonly ResolvedEvent[] Events;
+		public readonly IReadOnlyList<ResolvedEvent> Events;
 		public readonly StreamMetadata StreamMetadata;
 		public readonly bool IsCachePublic;
 		public readonly int MaxCount;
@@ -768,11 +768,11 @@ public static partial class ClientMessage {
 		public readonly long TfLastCommitPosition;
 
 		public bool IsEndOfStream {
-			get { return Events == null || Events.Length < MaxCount; }
+			get { return Events == null || Events.Count < MaxCount; }
 		}
 
 		public ReadAllEventsForwardCompleted(Guid correlationId, ReadAllResult result, string error,
-			ResolvedEvent[] events,
+			IReadOnlyList<ResolvedEvent> events,
 			StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
 			TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition) {
 			Ensure.NotNull(events, "events");
@@ -832,7 +832,7 @@ public static partial class ClientMessage {
 		public readonly ReadAllResult Result;
 		public readonly string Error;
 
-		public readonly ResolvedEvent[] Events;
+		public readonly IReadOnlyList<ResolvedEvent> Events;
 		public readonly StreamMetadata StreamMetadata;
 		public readonly bool IsCachePublic;
 		public readonly int MaxCount;
@@ -842,11 +842,11 @@ public static partial class ClientMessage {
 		public readonly long TfLastCommitPosition;
 
 		public bool IsEndOfStream {
-			get { return Events == null || Events.Length < MaxCount; }
+			get { return Events == null || Events.Count < MaxCount; }
 		}
 
 		public ReadAllEventsBackwardCompleted(Guid correlationId, ReadAllResult result, string error,
-			ResolvedEvent[] events,
+			IReadOnlyList<ResolvedEvent> events,
 			StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
 			TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition) {
 			Ensure.NotNull(events, "events");
@@ -919,7 +919,7 @@ public static partial class ClientMessage {
 		public readonly FilteredReadAllResult Result;
 		public readonly string Error;
 
-		public readonly ResolvedEvent[] Events;
+		public readonly IReadOnlyList<ResolvedEvent> Events;
 		public readonly StreamMetadata StreamMetadata;
 		public readonly bool IsCachePublic;
 		public readonly int MaxCount;
@@ -931,7 +931,7 @@ public static partial class ClientMessage {
 		public readonly long ConsideredEventsCount;
 
 		public FilteredReadAllEventsForwardCompleted(Guid correlationId, FilteredReadAllResult result, string error,
-			ResolvedEvent[] events,
+			IReadOnlyList<ResolvedEvent> events,
 			StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
 			TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition,
 			bool isEndOfStream, long consideredEventsCount) {
@@ -1003,7 +1003,7 @@ public static partial class ClientMessage {
 		public readonly FilteredReadAllResult Result;
 		public readonly string Error;
 
-		public readonly ResolvedEvent[] Events;
+		public readonly IReadOnlyList<ResolvedEvent> Events;
 		public readonly StreamMetadata StreamMetadata;
 		public readonly bool IsCachePublic;
 		public readonly int MaxCount;
@@ -1014,7 +1014,7 @@ public static partial class ClientMessage {
 		public readonly bool IsEndOfStream;
 
 		public FilteredReadAllEventsBackwardCompleted(Guid correlationId, FilteredReadAllResult result, string error,
-			ResolvedEvent[] events,
+			IReadOnlyList<ResolvedEvent> events,
 			StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
 			TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition,
 			bool isEndOfStream) {

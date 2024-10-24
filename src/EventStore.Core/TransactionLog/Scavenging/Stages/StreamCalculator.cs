@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.TransactionLog.Scavenging;
@@ -42,14 +44,10 @@ public class StreamCalculator<TStreamId> {
 	// Returns NoStream (-1) if there are no events before the scavenge point.
 	// Caller must handle that
 	private long? _lastEventNumber;
-	public long LastEventNumber {
-		get {
-			if (!_lastEventNumber.HasValue) {
-				_lastEventNumber = Index.GetLastEventNumber(OriginalStreamHandle, ScavengePoint);
-			}
 
-			return _lastEventNumber.Value;
-		}
+	public async ValueTask<long> GetLastEventNumber(CancellationToken token) {
+		_lastEventNumber ??= await Index.GetLastEventNumber(OriginalStreamHandle, ScavengePoint, token);
+		return _lastEventNumber.GetValueOrDefault();
 	}
 
 	public DiscardPoint TruncateBeforeDiscardPoint =>
@@ -57,22 +55,17 @@ public class StreamCalculator<TStreamId> {
 			? DiscardPoint.DiscardBefore(OriginalStreamData.TruncateBefore.Value)
 			: DiscardPoint.KeepAll;
 
-	public DiscardPoint MaxCountDiscardPoint =>
+	public async ValueTask<DiscardPoint> GetMaxCountDiscardPoint(CancellationToken token) =>
 		// if LastEventNumber is NoStream (-1) this will always KeepAll as intended
 		OriginalStreamData.MaxCount.HasValue
-			? DiscardPoint.DiscardIncluding(LastEventNumber - OriginalStreamData.MaxCount.Value)
+			? DiscardPoint.DiscardIncluding(await GetLastEventNumber(token) - OriginalStreamData.MaxCount.Value)
 			: DiscardPoint.KeepAll;
 
 	private DiscardPoint? _truncateBeforeOrMaxCountDiscardPoint;
-	public DiscardPoint TruncateBeforeOrMaxCountDiscardPoint {
-		get {
-			if (!_truncateBeforeOrMaxCountDiscardPoint.HasValue) {
-				_truncateBeforeOrMaxCountDiscardPoint =
-					TruncateBeforeDiscardPoint.Or(MaxCountDiscardPoint);
-			}
 
-			return _truncateBeforeOrMaxCountDiscardPoint.Value;
-		}
+	public async ValueTask<DiscardPoint> GetTruncateBeforeOrMaxCountDiscardPoint(CancellationToken token) {
+		_truncateBeforeOrMaxCountDiscardPoint ??= TruncateBeforeDiscardPoint.Or(await GetMaxCountDiscardPoint(token));
+		return _truncateBeforeOrMaxCountDiscardPoint.GetValueOrDefault();
 	}
 
 	public bool IsTombstoned => OriginalStreamData.IsTombstoned;
@@ -82,7 +75,7 @@ public class StreamCalculator<TStreamId> {
 
 	// Calculates whether this stream needs recalculating, assuming the metadata and istombstoned
 	// do not change (either of these updates will cause the calculator to reactivate it).
-	public CalculationStatus CalculateStatus() {
+	public async ValueTask<CalculationStatus> CalculateStatus(CancellationToken token) {
 		if (OriginalStreamData.IsTombstoned) {
 			// discard points will not move after this, BUT it cannot be deleted because we might
 			// run a scavenge with UnsafeIgnoreHardDeletes in which case we will need to know this is
@@ -104,8 +97,8 @@ public class StreamCalculator<TStreamId> {
 
 		var tb = OriginalStreamData.TruncateBefore;
 		if (tb.HasValue &&
-			tb != EventNumber.DeletedStream &&
-			LastEventNumber < tb) {
+			tb.GetValueOrDefault() is not EventNumber.DeletedStream &&
+			await GetLastEventNumber(token) < tb.GetValueOrDefault()) {
 
 			// unspent TB. new events would cause the discard point to move.
 			// EventNumber.DeletedStream counts as spent because we would only need to

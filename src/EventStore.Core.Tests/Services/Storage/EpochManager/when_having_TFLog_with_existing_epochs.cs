@@ -266,10 +266,10 @@ public class when_having_TFLog_with_existing_epochs<TLogFormat, TStreamId> : Spe
 		Assert.AreEqual(2, epochsWritten.Length);
 		for (int i = 0; i < epochsWritten.Length; i++) {
 			_reader.Reposition(epochsWritten[i].Epoch.EpochPosition);
-			_reader.TryReadNext(); // read epoch
+			await _reader.TryReadNext(CancellationToken.None); // read epoch
 			IPrepareLogRecord<TStreamId> epochInfo;
 			while (true) {
-				var result = _reader.TryReadNext();
+				var result = await _reader.TryReadNext(CancellationToken.None);
 				Assert.True(result.Success);
 				if (result.LogRecord is IPrepareLogRecord<TStreamId> prepare) {
 					epochInfo = prepare;

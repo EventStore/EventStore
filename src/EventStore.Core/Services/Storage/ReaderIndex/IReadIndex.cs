@@ -18,7 +18,7 @@ public interface IReadIndex {
 	/// Returns event records in the sequence they were committed into TF.
 	/// Positions is specified as pre-positions (pointer at the beginning of the record).
 	/// </summary>
-	IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
+	ValueTask<IndexReadAllResult> ReadAllEventsForward(TFPos pos, int maxCount, CancellationToken token);
 
 	/// <summary>
 	/// Returns event records in the reverse sequence they were committed into TF.
@@ -30,8 +30,8 @@ public interface IReadIndex {
 	/// Returns event records whose eventType matches the given EventFilter in the sequence they were committed into TF.
 	/// Positions is specified as pre-positions (pointer at the beginning of the record).
 	/// </summary>
-	IndexReadAllResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
-		IEventFilter eventFilter);
+	ValueTask<IndexReadAllResult> ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+		IEventFilter eventFilter, CancellationToken token);
 
 	/// <summary>
 	/// Returns event records whose eventType matches the given EventFilter in the sequence they were committed into TF.
@@ -52,33 +52,33 @@ public interface IReadIndex<TStreamId> : IReadIndex {
 	// - duplicates are removed, keeping only the earliest event in the log
 	// - streamId drives the read, streamName is only for populating on the result.
 	//   this was less messy than safely adding the streamName to the EventRecord at some point after construction.
-	IndexReadEventResult ReadEvent(string streamName, TStreamId streamId, long eventNumber);
-	IndexReadStreamResult ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
-	IndexReadStreamResult ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
+	ValueTask<IndexReadEventResult> ReadEvent(string streamName, TStreamId streamId, long eventNumber, CancellationToken token);
+	ValueTask<IndexReadStreamResult> ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount, CancellationToken token);
+	ValueTask<IndexReadStreamResult> ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount, CancellationToken token);
 
 	// ReadEventInfo_KeepDuplicates() :
 	// - deleted events are not filtered out
 	// - duplicates are kept, in ascending order of log position
 	// - next event number is always -1
-	IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber);
+	ValueTask<IndexReadEventInfoResult> ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber, CancellationToken token);
 
 	// ReadEventInfo*Collisions() :
 	// - deleted events are not filtered out
 	// - duplicates are removed, keeping only the earliest event in the log
 	// - only events that are before "beforePosition" in the transaction log are returned
-	IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition);
-	IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition);
-	IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition);
-	IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long fromEventNumber, int maxCount, long beforePosition);
+	ValueTask<IndexReadEventInfoResult> ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition, CancellationToken token);
+	ValueTask<IndexReadEventInfoResult> ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition, CancellationToken token);
+	ValueTask<IndexReadEventInfoResult> ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition, CancellationToken token);
+	ValueTask<IndexReadEventInfoResult> ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long fromEventNumber, int maxCount, long beforePosition, CancellationToken token);
 
-	bool IsStreamDeleted(TStreamId streamId);
-	long GetStreamLastEventNumber(TStreamId streamId);
-	long GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition);
-	long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition);
-	StreamMetadata GetStreamMetadata(TStreamId streamId);
-	StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId);
-	TStreamId GetEventStreamIdByTransactionId(long transactionId);
+	ValueTask<bool> IsStreamDeleted(TStreamId streamId, CancellationToken token);
+	ValueTask<long> GetStreamLastEventNumber(TStreamId streamId, CancellationToken token);
+	ValueTask<long> GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition, CancellationToken token);
+	ValueTask<long> GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition, CancellationToken token);
+	ValueTask<StreamMetadata> GetStreamMetadata(TStreamId streamId, CancellationToken token);
+	ValueTask<StorageMessage.EffectiveAcl> GetEffectiveAcl(TStreamId streamId, CancellationToken token);
+	ValueTask<TStreamId> GetEventStreamIdByTransactionId(long transactionId, CancellationToken token);
 
 	TStreamId GetStreamId(string streamName);
-	string GetStreamName(TStreamId streamId);
+	ValueTask<string> GetStreamName(TStreamId streamId, CancellationToken token);
 }

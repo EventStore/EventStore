@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
@@ -40,13 +42,13 @@ public class LogV2StreamExistenceFilterInitializer : INameExistenceFilterInitial
 		_tableIndex = tableIndex;
 	}
 
-	public void Initialize(INameExistenceFilter filter, long truncateToPosition) {
+	public async ValueTask Initialize(INameExistenceFilter filter, long truncateToPosition, CancellationToken token) {
 		if (truncateToPosition < filter.CurrentCheckpoint) {
 			filter.TruncateTo(checkpoint: truncateToPosition);
 		}
 
 		InitializeFromIndex(filter);
-		InitializeFromLog(filter);
+		await InitializeFromLog(filter, token);
 	}
 
 	private void InitializeFromIndex(INameExistenceFilter filter) {
@@ -133,7 +135,7 @@ public class LogV2StreamExistenceFilterInitializer : INameExistenceFilterInitial
 		throw new InvalidOperationException("Failed to get enumerators for the index.");
 	}
 
-	private void InitializeFromLog(INameExistenceFilter filter) {
+	private async ValueTask InitializeFromLog(INameExistenceFilter filter, CancellationToken token) {
 		// if we have a checkpoint, start from that position in the log. this will work
 		// whether the checkpoint is the pre or post position of the last processed record.
 		var startPosition = filter.CurrentCheckpoint == -1 ? 0 : filter.CurrentCheckpoint;
@@ -141,7 +143,7 @@ public class LogV2StreamExistenceFilterInitializer : INameExistenceFilterInitial
 		using var reader = _tfReaderFactory();
 		reader.Reposition(startPosition);
 
-		while (TryReadNextLogRecord(reader, out var result)) {
+		while (await reader.TryReadNext(token) is { Success: true } result) {
 			switch (result.LogRecord.RecordType) {
 				case LogRecordType.Prepare:
 					// add regardless of expectedVersion because event 0 may be scavenged
@@ -153,10 +155,5 @@ public class LogV2StreamExistenceFilterInitializer : INameExistenceFilterInitial
 				// no need to handle commits here, see comments in the prepare handling.
 			}
 		}
-	}
-
-	private static bool TryReadNextLogRecord(TFReaderLease reader, out SeqReadResult result) {
-		result = reader.TryReadNext();
-		return result.Success;
 	}
 }

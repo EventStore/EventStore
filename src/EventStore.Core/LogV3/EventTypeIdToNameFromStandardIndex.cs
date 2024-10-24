@@ -2,6 +2,9 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -16,27 +19,23 @@ public class EventTypeIdToNameFromStandardIndex : INameLookup<uint> {
 		_indexReader = indexReader;
 	}
 
-	public bool TryGetName(uint eventTypeId, out string name) {
-		var record = _indexReader.ReadPrepare(
+	public async ValueTask<string> LookupName(uint eventTypeId, CancellationToken token) {
+		var record = await _indexReader.ReadPrepare(
 			streamId: LogV3SystemStreams.EventTypesStreamNumber,
-			eventNumber: EventTypeIdConverter.ToEventNumber(eventTypeId));
+			eventNumber: EventTypeIdConverter.ToEventNumber(eventTypeId),
+			token);
 
-		if (record is null) {
-			name = null;
-			return false;
-		}
-
-		if (record is not LogV3EventTypeRecord eventTypeRecord)
-			throw new Exception($"Unexpected log record type: {record}.");
-
-		name = eventTypeRecord.EventTypeName;
-		return true;
+		return record switch {
+			null => null,
+			LogV3EventTypeRecord eventTypeRecord => eventTypeRecord.EventTypeName,
+			_ => throw new Exception($"Unexpected log record type: {record}."),
+		};
 	}
 
-	public bool TryGetLastValue(out uint lastValue) {
-		var lastEventNumber = _indexReader.GetStreamLastEventNumber(LogV3SystemStreams.EventTypesStreamNumber);
-		var success = ExpectedVersion.NoStream < lastEventNumber && lastEventNumber != EventNumber.DeletedStream;
-		lastValue = EventTypeIdConverter.ToEventTypeId(lastEventNumber);
-		return success;
+	public async ValueTask<Optional<uint>> TryGetLastValue(CancellationToken token) {
+		var lastEventNumber = await _indexReader.GetStreamLastEventNumber(LogV3SystemStreams.EventTypesStreamNumber, token);
+		return lastEventNumber is > ExpectedVersion.NoStream and not EventNumber.DeletedStream
+			? EventTypeIdConverter.ToEventTypeId(lastEventNumber)
+			: Optional.None<uint>();
 	}
 }

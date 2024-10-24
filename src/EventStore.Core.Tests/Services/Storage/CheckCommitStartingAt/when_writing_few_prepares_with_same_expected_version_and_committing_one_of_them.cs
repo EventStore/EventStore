@@ -25,9 +25,9 @@ public class
 	}
 
 	[Test]
-	public void other_prepares_cannot_be_committed() {
-		var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare0.LogPosition,
-			WriterCheckpoint.ReadNonFlushed());
+	public async Task other_prepares_cannot_be_committed() {
+		var res = await ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare0.LogPosition,
+			WriterCheckpoint.ReadNonFlushed(), CancellationToken.None);
 
 		Assert.AreEqual(CommitDecision.WrongExpectedVersion, res.Decision);
 		Assert.AreEqual("ES", res.EventStreamId);
@@ -35,7 +35,7 @@ public class
 		Assert.AreEqual(-1, res.StartEventNumber);
 		Assert.AreEqual(-1, res.EndEventNumber);
 
-		res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare2.LogPosition, WriterCheckpoint.ReadNonFlushed());
+		res = await ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare2.LogPosition, WriterCheckpoint.ReadNonFlushed(), CancellationToken.None);
 
 		Assert.AreEqual(CommitDecision.WrongExpectedVersion, res.Decision);
 		Assert.AreEqual("ES", res.EventStreamId);

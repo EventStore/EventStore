@@ -26,12 +26,12 @@ public class when_deleting_stream_with_version_numbers_greater_than_int_maxvalue
 	}
 
 	[Test]
-	public void indicate_that_stream_is_deleted() {
-		Assert.That(ReadIndex.IsStreamDeleted("ES"));
+	public async Task indicate_that_stream_is_deleted() {
+		Assert.That(await ReadIndex.IsStreamDeleted("ES", CancellationToken.None));
 	}
 
 	[Test]
-	public void indicate_that_other_stream_is_not_deleted() {
-		Assert.IsFalse(ReadIndex.IsStreamDeleted("KEEP"));
+	public async Task indicate_that_other_stream_is_not_deleted() {
+		Assert.IsFalse(await ReadIndex.IsStreamDeleted("KEEP", CancellationToken.None));
 	}
 }

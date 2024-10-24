@@ -16,9 +16,9 @@ public interface ITableIndex {
 	void Close(bool removeFiles = true);
 
 	// this overload keeps IndexEntries that exist in the log
-	void Scavenge(IIndexScavengerLog log, CancellationToken ct);
+	ValueTask Scavenge(IIndexScavengerLog log, CancellationToken ct);
 	// this overload keeps IndexEntries that pass the keep predicate
-	void Scavenge(Func<IndexEntry, bool> shouldKeep, IIndexScavengerLog log, CancellationToken ct);
+	ValueTask Scavenge(Func<IndexEntry, CancellationToken, ValueTask<bool>> shouldKeep, IIndexScavengerLog log, CancellationToken ct);
 	Task MergeIndexes();
 	IEnumerable<ISearchTable> IterateAllInOrder();
 	bool IsBackgroundTaskRunning { get; }
@@ -30,8 +30,8 @@ public interface ITableIndex<TStreamId> : ITableIndex {
 
 	bool TryGetOneValue(TStreamId streamId, long version, out long position);
 	bool TryGetLatestEntry(TStreamId streamId, out IndexEntry entry);
-	bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry);
-	bool TryGetLatestEntry(TStreamId streamId, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry);
+	ValueTask<IndexEntry?> TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream, CancellationToken token);
+	ValueTask<IndexEntry?> TryGetLatestEntry(TStreamId streamId, long beforePosition, Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream, CancellationToken token);
 	bool TryGetOldestEntry(TStreamId streamId, out IndexEntry entry);
 	bool TryGetNextEntry(TStreamId streamId, long afterVersion, out IndexEntry entry);
 	bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry);

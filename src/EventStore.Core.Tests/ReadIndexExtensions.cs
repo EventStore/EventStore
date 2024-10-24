@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -12,34 +14,34 @@ namespace EventStore.Core.Tests;
 // Extensions to perform streamlookups inline
 // mainly to facilitate conversion of existing LogV2 tests.
 public static class IReadIndexExtensions {
-	public static bool IsStreamDeleted<TStreamId>(this IReadIndex<TStreamId> self, string streamName) {
+	public static ValueTask<bool> IsStreamDeleted<TStreamId>(this IReadIndex<TStreamId> self, string streamName, CancellationToken token) {
 		var streamId = self.GetStreamId(streamName);
-		return self.IsStreamDeleted(streamId);
+		return self.IsStreamDeleted(streamId, token);
 	}
 
-	public static long GetStreamLastEventNumber<TStreamId>(this IReadIndex<TStreamId> self, string streamName) {
+	public static ValueTask<long> GetStreamLastEventNumber<TStreamId>(this IReadIndex<TStreamId> self, string streamName, CancellationToken token) {
 		var streamId = self.GetStreamId(streamName);
-		return self.GetStreamLastEventNumber(streamId);
+		return self.GetStreamLastEventNumber(streamId, token);
 	}
 
-	public static IndexReadEventResult ReadEvent<TStreamId>(this IReadIndex<TStreamId> self, string streamName, long eventNumber) {
+	public static ValueTask<IndexReadEventResult> ReadEvent<TStreamId>(this IReadIndex<TStreamId> self, string streamName, long eventNumber, CancellationToken token) {
 		var streamId = self.GetStreamId(streamName);
-		return self.ReadEvent(streamName, streamId, eventNumber);
+		return self.ReadEvent(streamName, streamId, eventNumber, token);
 	}
 
-	public static IndexReadStreamResult ReadStreamEventsForward<TStreamId>(this IReadIndex<TStreamId> self, string streamName, long fromEventNumber, int maxCount) {
+	public static ValueTask<IndexReadStreamResult> ReadStreamEventsForward<TStreamId>(this IReadIndex<TStreamId> self, string streamName, long fromEventNumber, int maxCount, CancellationToken token) {
 		var streamId = self.GetStreamId(streamName);
-		return self.ReadStreamEventsForward(streamName, streamId, fromEventNumber, maxCount);
+		return self.ReadStreamEventsForward(streamName, streamId, fromEventNumber, maxCount, token);
 	}
 
-	public static IndexReadStreamResult ReadStreamEventsBackward<TStreamId>(this IReadIndex<TStreamId> self, string streamName, long fromEventNumber, int maxCount) {
+	public static ValueTask<IndexReadStreamResult> ReadStreamEventsBackward<TStreamId>(this IReadIndex<TStreamId> self, string streamName, long fromEventNumber, int maxCount, CancellationToken token) {
 		var streamId = self.GetStreamId(streamName);
-		return self.ReadStreamEventsBackward(streamName, streamId, fromEventNumber, maxCount);
+		return self.ReadStreamEventsBackward(streamName, streamId, fromEventNumber, maxCount, token);
 	}
 
-	public static StreamMetadata GetStreamMetadata<TStreamId>(this IReadIndex<TStreamId> self, string streamName) {
+	public static ValueTask<StreamMetadata> GetStreamMetadata<TStreamId>(this IReadIndex<TStreamId> self, string streamName, CancellationToken token) {
 		var streamId = self.GetStreamId(streamName);
-		return self.GetStreamMetadata(streamId);
+		return self.GetStreamMetadata(streamId, token);
 	}
 
 	public static List<CommitEventRecord> EventRecords(this IndexReadAllResult result) {

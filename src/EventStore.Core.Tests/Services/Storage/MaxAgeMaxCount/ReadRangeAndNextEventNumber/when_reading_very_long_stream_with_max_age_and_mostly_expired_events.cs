@@ -31,22 +31,22 @@ public class
 	}
 
 	[Test, Explicit, Category("LongRunning")]
-	public void on_read_from_beginning() {
+	public async Task on_read_from_beginning() {
 		Stopwatch sw = Stopwatch.StartNew();
-		var res = ReadIndex.ReadStreamEventsForward("ES", 1, 10);
+		var res = await ReadIndex.ReadStreamEventsForward("ES", 1, 10, CancellationToken.None);
 		var elapsed = sw.Elapsed;
 
 		Assert.AreEqual(1_000_000, res.NextEventNumber);
 		Assert.AreEqual(0, res.Records.Length);
 		Assert.AreEqual(false, res.IsEndOfStream);
 
-		res = ReadIndex.ReadStreamEventsForward("ES", res.NextEventNumber, 10);
+		res = await ReadIndex.ReadStreamEventsForward("ES", res.NextEventNumber, 10, CancellationToken.None);
 
 		Assert.AreEqual(1_000_010, res.NextEventNumber);
 		Assert.AreEqual(10, res.Records.Length);
 		Assert.AreEqual(false, res.IsEndOfStream);
 
-		res = ReadIndex.ReadStreamEventsForward("ES", res.NextEventNumber, 10);
+		res = await ReadIndex.ReadStreamEventsForward("ES", res.NextEventNumber, 10, CancellationToken.None);
 
 		Assert.AreEqual(1_000_015, res.NextEventNumber);
 		Assert.AreEqual(5, res.Records.Length);

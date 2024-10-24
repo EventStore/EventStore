@@ -48,11 +48,13 @@ public class when_writing_commit_record_to_file : SpecificationWithDirectoryPerT
 	}
 
 	[Test]
-	public void the_data_is_written() {
+	public async Task the_data_is_written() {
 		using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint, false)) {
 			reader.Open();
-			ILogRecord r;
-			Assert.IsTrue(reader.TryReadNext(out r));
+			ILogRecord r = await reader.TryReadNext(CancellationToken.None) is { Success: true } res
+				? res.LogRecord
+				: null;
+			Assert.NotNull(r);
 
 			Assert.True(r is CommitLogRecord);
 			var c = (CommitLogRecord)r;
@@ -70,8 +72,8 @@ public class when_writing_commit_record_to_file : SpecificationWithDirectoryPerT
 	}
 
 	[Test]
-	public void trying_to_read_past_writer_checksum_returns_false() {
+	public async Task trying_to_read_past_writer_checksum_returns_false() {
 		var reader = new TFChunkReader(_db, _writerCheckpoint);
-		Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read(), couldBeScavenged: true).Success);
+		Assert.IsFalse((await reader.TryReadAt(_writerCheckpoint.Read(), couldBeScavenged: true, CancellationToken.None)).Success);
 	}
 }

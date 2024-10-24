@@ -639,7 +639,7 @@ public static class PersistedStateExtensions {
 	}
 
 	private void PersistedStateReadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed) {
-		if (completed.Result == ReadStreamResult.Success && completed.Events.Length == 1) {
+		if (completed.Result == ReadStreamResult.Success && completed.Events.Count is 1) {
 			var persistedState = completed.Events[0].Event.Data.ParseJson<PersistedState>();
 
 			_lastWrittenVersion = completed.Events[0].Event.EventNumber;

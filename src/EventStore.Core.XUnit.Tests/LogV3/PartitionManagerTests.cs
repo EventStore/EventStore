@@ -225,23 +225,20 @@ class FakeReader : ITransactionFileReader {
 		_resultIndex = (int) position;
 	}
 
-	public SeqReadResult TryReadNext() {
+	public ValueTask<SeqReadResult> TryReadNext(CancellationToken token) {
 		_readCount++;
 
-		if(_resultIndex < _results.Count)
-			return _results[_resultIndex++];
-
-		return SeqReadResult.Failure;
+		return new(_resultIndex < _results.Count
+			? _results[_resultIndex++]
+			: SeqReadResult.Failure);
 	}
 
 	public ValueTask<SeqReadResult> TryReadPrev(CancellationToken token)
 		=> ValueTask.FromException<SeqReadResult>(new NotImplementedException());
 
-	public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<RecordReadResult> TryReadAt(long position, bool couldBeScavenged, CancellationToken token)
+		=> ValueTask.FromException<RecordReadResult>(new NotImplementedException());
 
-	public bool ExistsAt(long position) {
-		return true;
-	}
+	public ValueTask<bool> ExistsAt(long position, CancellationToken token)
+		=> new(true);
 }

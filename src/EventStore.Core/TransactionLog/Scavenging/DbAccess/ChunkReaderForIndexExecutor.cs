@@ -2,6 +2,9 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.TransactionLog.Scavenging;
@@ -13,19 +16,16 @@ public class ChunkReaderForIndexExecutor<TStreamId> : IChunkReaderForIndexExecut
 		_tfReaderFactory = tfReaderFactory;
 	}
 
-	public bool TryGetStreamId(long position, out TStreamId streamId) {
-		using (var reader = _tfReaderFactory()) {
-			var result = reader.TryReadAt(position, couldBeScavenged: true);
-			if (!result.Success) {
-				streamId = default;
-				return false;
-			}
-
-			if (result.LogRecord is not IPrepareLogRecord<TStreamId> prepare)
-				throw new Exception($"Record in index at position {position} is not a prepare");
-
-			streamId = prepare.EventStreamId;
-			return true;
+	public async ValueTask<Optional<TStreamId>> TryGetStreamId(long position, CancellationToken token) {
+		using var reader = _tfReaderFactory();
+		var result = await reader.TryReadAt(position, couldBeScavenged: true, token);
+		if (!result.Success) {
+			return Optional.None<TStreamId>();
 		}
+
+		if (result.LogRecord is not IPrepareLogRecord<TStreamId> prepare)
+			throw new Exception($"Record in index at position {position} is not a prepare");
+
+		return prepare.EventStreamId;
 	}
 }

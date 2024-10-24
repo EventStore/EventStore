@@ -73,14 +73,14 @@ public class tfchunkreader_existsat_optimizer_should : SpecificationWithDirector
 		//before optimization
 		Assert.AreEqual(false, _existsAtOptimizer.IsOptimized(chunk));
 		foreach (var p in posmap) {
-			Assert.AreEqual(true, chunk.ExistsAt(p.LogPos));
+			Assert.AreEqual(true, await chunk.ExistsAt(p.LogPos, CancellationToken.None));
 		}
 
 		//after optimization
 		_existsAtOptimizer.Optimize(chunk);
 		Assert.AreEqual(true, _existsAtOptimizer.IsOptimized(chunk));
 		foreach (var p in posmap) {
-			Assert.AreEqual(true, chunk.ExistsAt(p.LogPos));
+			Assert.AreEqual(true, await chunk.ExistsAt(p.LogPos, CancellationToken.None));
 		}
 
 		chunk.MarkForDeletion();

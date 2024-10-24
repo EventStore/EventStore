@@ -147,7 +147,7 @@ public abstract class ReadIndexTestScenario<TLogFormat, TStreamId> : Specificati
 			indexTracker: new IndexTracker.NoOp(),
 			cacheTracker: new CacheHitsMissesTracker.NoOp());
 
-		readIndex.IndexCommitter.Init(ChaserCheckpoint.Read());
+		await readIndex.IndexCommitter.Init(ChaserCheckpoint.Read(), CancellationToken.None);
 		ReadIndex = readIndex;
 
 		// wait for tables to be merged

@@ -34,11 +34,12 @@ public abstract class GetStreamLastEventNumber_KnownCollisions : ReadIndexTestSc
 		}
 
 		[Test]
-		public void with_no_events() {
+		public async Task with_no_events() {
 			Assert.AreEqual(ExpectedVersion.NoStream,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					Stream,
-					long.MaxValue));
+					long.MaxValue,
+					CancellationToken.None));
 		}
 	}
 
@@ -49,16 +50,18 @@ public abstract class GetStreamLastEventNumber_KnownCollisions : ReadIndexTestSc
 		}
 
 		[Test]
-		public void with_one_event() {
+		public async Task with_one_event() {
 			Assert.AreEqual(2,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					Stream,
-					long.MaxValue));
+					long.MaxValue,
+					CancellationToken.None));
 
 			Assert.AreEqual(3,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					CollidingStream,
-					long.MaxValue));
+					long.MaxValue,
+					CancellationToken.None));
 
 		}
 	}
@@ -83,49 +86,57 @@ public abstract class GetStreamLastEventNumber_KnownCollisions : ReadIndexTestSc
 		}
 
 		[Test]
-		public void with_multiple_events() {
+		public async Task with_multiple_events() {
 			Assert.AreEqual(3,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					Stream,
-					long.MaxValue));
+					long.MaxValue,
+					CancellationToken.None));
 
 			Assert.AreEqual(2,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					CollidingStream,
-					long.MaxValue));
+					long.MaxValue,
+					CancellationToken.None));
 
 			Assert.AreEqual(0,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					CollidingStream1,
-					long.MaxValue));
+					long.MaxValue,
+					CancellationToken.None));
 		}
 
 		[Test]
-		public void with_multiple_events_and_before_position() {
+		public async Task with_multiple_events_and_before_position() {
 			Assert.AreEqual(3,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					Stream,
-					_third.LogPosition + 1));
+					_third.LogPosition + 1,
+					CancellationToken.None));
 
 			Assert.AreEqual(2,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					Stream,
-					_third.LogPosition));
+					_third.LogPosition,
+					CancellationToken.None));
 
 			Assert.AreEqual(1,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					Stream,
-					_second.LogPosition));
+					_second.LogPosition,
+					CancellationToken.None));
 
 			Assert.AreEqual(0,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					Stream,
-					_first.LogPosition));
+					_first.LogPosition,
+					CancellationToken.None));
 
 			Assert.AreEqual(ExpectedVersion.NoStream,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					Stream,
-					_zeroth.LogPosition));
+					_zeroth.LogPosition,
+					CancellationToken.None));
 		}
 	}
 
@@ -139,16 +150,18 @@ public abstract class GetStreamLastEventNumber_KnownCollisions : ReadIndexTestSc
 		}
 
 		[Test]
-		public void with_deleted_stream() {
+		public async Task with_deleted_stream() {
 			Assert.AreEqual(EventNumber.DeletedStream,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					Stream,
-					long.MaxValue));
+					long.MaxValue,
+					CancellationToken.None));
 
 			Assert.AreEqual(1,
-				ReadIndex.GetStreamLastEventNumber_KnownCollisions(
+				await ReadIndex.GetStreamLastEventNumber_KnownCollisions(
 					CollidingStream,
-					long.MaxValue));
+					long.MaxValue,
+					CancellationToken.None));
 		}
 	}
 }

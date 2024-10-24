@@ -41,8 +41,8 @@ public class when_having_stream_with_maxcount_specified_and_long_transactions_wr
 	}
 
 	[Test]
-	public void forward_range_read_returns_last_transaction_events_and_doesnt_return_expired_ones() {
-		var result = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
+	public async Task forward_range_read_returns_last_transaction_events_and_doesnt_return_expired_ones() {
+		var result = await ReadIndex.ReadStreamEventsForward("ES", 0, 100, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(2, result.Records.Length);
 		Assert.AreEqual(_records[7], result.Records[0]);

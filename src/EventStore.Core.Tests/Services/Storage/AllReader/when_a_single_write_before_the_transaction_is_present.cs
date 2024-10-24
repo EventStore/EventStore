@@ -1,6 +1,7 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -23,7 +24,7 @@ public class when_a_single_write_before_the_transaction_is_present<TLogFormat, T
 			Rec.Prepare(4, "single_write_stream_id_4", prepareFlags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted)
 			]);
 
-		var firstRead = ReadIndex.ReadAllEventsForward(new Data.TFPos(0, 0), 10);
+		var firstRead = await ReadIndex.ReadAllEventsForward(new Data.TFPos(0, 0), 10, CancellationToken.None);
 
 		Assert.AreEqual(4, firstRead.Records.Count);
 		Assert.AreEqual("single_write_stream_id_1", firstRead.Records[0].Event.EventStreamId);
@@ -42,7 +43,7 @@ public class when_a_single_write_before_the_transaction_is_present<TLogFormat, T
 			Rec.Commit(1, "transaction_stream_id")
 			]);
 
-		var transactionRead = ReadIndex.ReadAllEventsForward(firstRead.NextPos, 10);
+		var transactionRead = await ReadIndex.ReadAllEventsForward(firstRead.NextPos, 10, CancellationToken.None);
 
 		Assert.AreEqual(1, transactionRead.Records.Count);
 		Assert.AreEqual("transaction_stream_id", transactionRead.Records[0].Event.EventStreamId);

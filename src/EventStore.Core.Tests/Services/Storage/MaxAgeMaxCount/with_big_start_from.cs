@@ -35,52 +35,53 @@ public class with_softdelete_truncatebefore<TLogFormat, TStreamId> : ReadIndexTe
 	}
 
 	[Test]
-	public void metastream_read_returns_metaevent() {
-		var result = ReadIndex.ReadEvent(SystemStreams.MetastreamOf("ES"), 0);
+	public async Task metastream_read_returns_metaevent() {
+		var result = await ReadIndex.ReadEvent(SystemStreams.MetastreamOf("ES"), 0, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_r1, result.Record);
 	}
 
 	[Test]
-	public void single_event_read_returns_no_records() {
-		var result = ReadIndex.ReadEvent("ES", 0);
+	public async Task single_event_read_returns_no_records() {
+		var result = await ReadIndex.ReadEvent("ES", 0, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NoStream, result.Result);
 		Assert.IsNull(result.Record);
 
-		result = ReadIndex.ReadEvent("ES", 1);
+		result = await ReadIndex.ReadEvent("ES", 1, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NoStream, result.Result);
 		Assert.IsNull(result.Record);
 
-		result = ReadIndex.ReadEvent("ES", 2);
+		result = await ReadIndex.ReadEvent("ES", 2, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NoStream, result.Result);
 		Assert.IsNull(result.Record);
 
-		result = ReadIndex.ReadEvent("ES", 3);
+		result = await ReadIndex.ReadEvent("ES", 3, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NoStream, result.Result);
 		Assert.IsNull(result.Record);
 
-		result = ReadIndex.ReadEvent("ES", 4);
+		result = await ReadIndex.ReadEvent("ES", 4, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NoStream, result.Result);
 		Assert.IsNull(result.Record);
 	}
 
 	[Test]
-	public void forward_range_read_returns_no_records() {
-		var result = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
+	public async Task forward_range_read_returns_no_records() {
+		var result = await ReadIndex.ReadStreamEventsForward("ES", 0, 100, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.NoStream, result.Result);
 		Assert.AreEqual(0, result.Records.Length);
 	}
 
 	[Test]
-	public void backward_range_read_returns_no_records() {
-		var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
+	public async Task backward_range_read_returns_no_records() {
+		var result = await ReadIndex.ReadStreamEventsBackward("ES", -1, 100, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.NoStream, result.Result);
 		Assert.AreEqual(0, result.Records.Length);
 	}
 
 	[Test]
-	public void read_all_forward_returns_all_records() {
-		var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords();
+	public async Task read_all_forward_returns_all_records() {
+		var records = (await ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, CancellationToken.None))
+			.EventRecords();
 		Assert.AreEqual(6, records.Count);
 		Assert.AreEqual(_r1, records[0].Event);
 		Assert.AreEqual(_r2, records[1].Event);

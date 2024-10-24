@@ -14,6 +14,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using System.Threading.Tasks;
+using DotNext.Threading;
 using EventStore.Core.Index;
 using ILogger = Serilog.ILogger;
 
@@ -21,9 +22,9 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core.Services.Storage;
 
 public interface IIndexCommitterService<TStreamId> {
-	void Init(long checkpointPosition);
+	ValueTask Init(long checkpointPosition, CancellationToken token);
 	void Stop();
-	long GetCommitLastEventNumber(CommitLogRecord record);
+	ValueTask<long> GetCommitLastEventNumber(CommitLogRecord record, CancellationToken token);
 	void AddPendingPrepare(IPrepareLogRecord<TStreamId>[] prepares, long postPosition);
 	void AddPendingCommit(CommitLogRecord commit, long postPosition);
 }
@@ -37,14 +38,17 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 	IHandle<SystemMessage.BecomeShuttingDown>,
 	IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 	IHandle<StorageMessage.CommitAck>,
-	IHandle<ClientMessage.MergeIndexes> {
+	IHandle<ClientMessage.MergeIndexes>,
+	IThreadPoolWorkItem {
 	private readonly IIndexCommitter<TStreamId> _indexCommitter;
 	private readonly IPublisher _publisher;
 	private readonly IReadOnlyCheckpoint _replicationCheckpoint;
 	private readonly IReadOnlyCheckpoint _writerCheckpoint;
 	private readonly ITableIndex _tableIndex;
-	private Thread _thread;
-	private bool _stop;
+
+	// cached to avoid ObjectDisposedException
+	private readonly CancellationToken _stopToken;
+	private volatile CancellationTokenSource _stop;
 
 	public string Name {
 		get { return _queueStats.Name; }
@@ -52,16 +56,14 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 
 	private readonly QueueStatsCollector _queueStats;
 
-	private readonly ConcurrentQueueWrapper<StorageMessage.CommitAck> _replicatedQueue =
-		new ConcurrentQueueWrapper<StorageMessage.CommitAck>();
+	private readonly ConcurrentQueueWrapper<StorageMessage.CommitAck> _replicatedQueue = new();
 
-	private readonly ConcurrentDictionary<long, PendingTransaction> _pendingTransactions =
-		new ConcurrentDictionary<long, PendingTransaction>();
+	private readonly ConcurrentDictionary<long, PendingTransaction> _pendingTransactions = new();
 
-	private readonly SortedList<long, StorageMessage.CommitAck> _commitAcks = new SortedList<long, StorageMessage.CommitAck>();
-	private readonly ManualResetEventSlim _addMsgSignal = new ManualResetEventSlim(false, 1);
+	private readonly SortedList<long, StorageMessage.CommitAck> _commitAcks = new();
+	private readonly AsyncManualResetEvent _addMsgSignal = new(initialState: false);
 	private TimeSpan _waitTimeoutMs = TimeSpan.FromMilliseconds(100);
-	private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+	private readonly TaskCompletionSource<object> _tcs = new();
 
 	public Task Task {
 		get { return _tcs.Task; }
@@ -78,7 +80,7 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 		Ensure.NotNull(publisher, nameof(publisher));
 		Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
 		Ensure.NotNull(replicationCheckpoint, nameof(replicationCheckpoint));
-		
+
 
 		_indexCommitter = indexCommitter;
 		_publisher = publisher;
@@ -86,29 +88,32 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 		_replicationCheckpoint = replicationCheckpoint;
 		_tableIndex = tableIndex;
 		_queueStats = queueStatsManager.CreateQueueStatsCollector("Index Committer");
+		_stop = new();
+		_stopToken = _stop.Token;
 	}
 
-	public void Init(long chaserCheckpoint) {
-		_indexCommitter.Init(chaserCheckpoint);
+	public async ValueTask Init(long chaserCheckpoint, CancellationToken token) {
+		await _indexCommitter.Init(chaserCheckpoint, token);
 		_publisher.Publish(new ReplicationTrackingMessage.IndexedTo(_indexCommitter.LastIndexedPosition));
-		_thread = new Thread(HandleReplicatedQueue);
-		_thread.IsBackground = true;
-		_thread.Name = Name;
-		_thread.Start();
+		ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
 	}
 
 	public void Stop() {
-		_stop = true;
+		if (Interlocked.Exchange(ref _stop, null) is { } cts) {
+			using (cts) {
+				cts.Cancel();
+			}
+		}
 	}
 
-	public void HandleReplicatedQueue() {
+	async void IThreadPoolWorkItem.Execute() {
 		try {
 			_queueStats.Start();
 			QueueMonitor.Default.Register(this);
 
 			StorageMessage.CommitAck replicatedMessage;
 			var msgType = typeof(StorageMessage.CommitAck);
-			while (!_stop) {
+			while (!_stopToken.IsCancellationRequested) {
 				_addMsgSignal.Reset();
 				if (_replicatedQueue.TryDequeue(out replicatedMessage)) {
 					_queueStats.EnterBusy();
@@ -116,13 +121,15 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 					_queueStats.Dequeued(replicatedMessage);
 #endif
 					_queueStats.ProcessingStarted(msgType, _replicatedQueue.Count);
-					ProcessCommitReplicated(replicatedMessage);
+					await ProcessCommitReplicated(replicatedMessage, _stopToken);
 					_queueStats.ProcessingEnded(1);
 				} else {
 					_queueStats.EnterIdle();
-					_addMsgSignal.Wait(_waitTimeoutMs);
+					await _addMsgSignal.WaitAsync(_waitTimeoutMs, _stopToken);
 				}
 			}
+		} catch (OperationCanceledException exc) when (exc.CancellationToken == _stopToken) {
+			return; // shutdown gracefully on cancellation
 		} catch (Exception exc) {
 			_queueStats.EnterIdle();
 			_queueStats.ProcessingStarted<FaultedIndexCommitterServiceState>(0);
@@ -130,8 +137,10 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 			_tcs.TrySetException(exc);
 			Application.Exit(ExitCode.Error,
 				"Error in IndexCommitterService. Terminating...\nError: " + exc.Message);
-			while (!_stop) {
-				Thread.Sleep(100);
+
+			while (!_stopToken.IsCancellationRequested) {
+				await Task.Delay(100, _stopToken).ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext |
+				                                                 ConfigureAwaitOptions.SuppressThrowing);
 			}
 
 			_queueStats.ProcessingEnded(0);
@@ -143,17 +152,17 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 		_publisher.Publish(new SystemMessage.ServiceShutdown(Name));
 	}
 
-	private void ProcessCommitReplicated(StorageMessage.CommitAck message) {
+	private async ValueTask ProcessCommitReplicated(StorageMessage.CommitAck message, CancellationToken token) {
 		PendingTransaction transaction;
 		long lastEventNumber = message.LastEventNumber;
 		if (_pendingTransactions.TryRemove(message.TransactionPosition, out transaction)) {
 			var isTfEof = IsTfEof(transaction.PostPosition);
 			if (transaction.Prepares.Count > 0) {
-				_indexCommitter.Commit(transaction.Prepares, isTfEof, true);
+				await _indexCommitter.Commit(transaction.Prepares, isTfEof, true, token);
 			}
 
-			if (transaction.Commit != null) {
-				lastEventNumber = _indexCommitter.Commit(transaction.Commit, isTfEof, true);
+			if (transaction.Commit is not null) {
+				lastEventNumber = await _indexCommitter.Commit(transaction.Commit, isTfEof, true, token);
 			}
 		}
 
@@ -169,9 +178,8 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 		return postPosition == _writerCheckpoint.Read();
 	}
 
-	public long GetCommitLastEventNumber(CommitLogRecord commit) {
-		return _indexCommitter.GetCommitLastEventNumber(commit);
-	}
+	public ValueTask<long> GetCommitLastEventNumber(CommitLogRecord commit, CancellationToken token)
+		=> _indexCommitter.GetCommitLastEventNumber(commit, token);
 
 	public void AddPendingPrepare(IPrepareLogRecord<TStreamId>[] prepares, long postPosition) {
 		var transactionPosition = prepares[0].TransactionPosition;
@@ -208,7 +216,7 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 	}
 
 	public void Handle(SystemMessage.BecomeShuttingDown message) {
-		_stop = true;
+		Stop();
 	}
 	public void Handle(StorageMessage.CommitAck message) {
 		lock (_commitAcks) {

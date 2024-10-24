@@ -34,23 +34,23 @@ public class
 	}
 
 	[Test]
-	public void indicate_that_streams_are_deleted() {
-		Assert.That(ReadIndex.IsStreamDeleted("ES1"));
-		Assert.That(ReadIndex.IsStreamDeleted("ES2"));
+	public async Task indicate_that_streams_are_deleted() {
+		Assert.That(await ReadIndex.IsStreamDeleted("ES1", CancellationToken.None));
+		Assert.That(await ReadIndex.IsStreamDeleted("ES2", CancellationToken.None));
 	}
 
 	[Test]
-	public void indicate_that_nonexisting_stream_with_same_hash_is_not_deleted() {
-		Assert.That(ReadIndex.IsStreamDeleted("XXX"), Is.False);
+	public async Task indicate_that_nonexisting_stream_with_same_hash_is_not_deleted() {
+		Assert.That(await ReadIndex.IsStreamDeleted("XXX", CancellationToken.None), Is.False);
 	}
 
 	[Test]
-	public void indicate_that_nonexisting_stream_with_different_hash_is_not_deleted() {
-		Assert.That(ReadIndex.IsStreamDeleted("XXXX"), Is.False);
+	public async Task indicate_that_nonexisting_stream_with_different_hash_is_not_deleted() {
+		Assert.That(await ReadIndex.IsStreamDeleted("XXXX", CancellationToken.None), Is.False);
 	}
 
 	[Test]
-	public void indicate_that_existing_stream_with_different_hash_is_not_deleted() {
-		Assert.That(ReadIndex.IsStreamDeleted("ES"), Is.False);
+	public async Task indicate_that_existing_stream_with_different_hash_is_not_deleted() {
+		Assert.That(await ReadIndex.IsStreamDeleted("ES", CancellationToken.None), Is.False);
 	}
 }

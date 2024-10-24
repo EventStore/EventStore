@@ -116,7 +116,7 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 		RecordReadResult result = await chunk.TryReadFirst(CancellationToken.None);
 		while (result.Success) {
 			chunkRecords.Add(result.LogRecord);
-			result = chunk.TryReadClosestForward(result.NextPosition);
+			result = await chunk.TryReadClosestForward(result.NextPosition, CancellationToken.None);
 		}
 
 		Assert.IsTrue(chunkRecords.All(x => x.Version == LogRecordVersion.LogRecordV0));
@@ -131,48 +131,48 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 		RecordReadResult result = await chunk.TryReadFirst(CancellationToken.None);
 		while (result.Success) {
 			chunkRecords.Add(result.LogRecord);
-			result = chunk.TryReadClosestForward(result.NextPosition);
+			result = await chunk.TryReadClosestForward(result.NextPosition, CancellationToken.None);
 		}
 
 		Assert.IsTrue(chunkRecords.All(x => x.Version == LogRecordVersion.LogRecordV0));
 		Assert.AreEqual(2, chunkRecords.Count);
 	}
 
-	public void return_correct_last_event_version_for_larger_stream() {
-		Assert.AreEqual(2, ReadIndex.GetStreamLastEventNumber(_streamIdOne));
+	public async Task return_correct_last_event_version_for_larger_stream() {
+		Assert.AreEqual(2, (await ReadIndex.GetStreamLastEventNumber(_streamIdOne, CancellationToken.None)));
 	}
 
 	[Test]
-	public void return_correct_first_record_for_larger_stream() {
-		var result = ReadIndex.ReadEvent(_streamIdOne, 0);
+	public async Task return_correct_first_record_for_larger_stream() {
+		var result = await ReadIndex.ReadEvent(_streamIdOne, 0, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_p1.EventId, result.Record.EventId);
 	}
 
 	[Test]
-	public void return_correct_second_record_for_larger_stream() {
-		var result = ReadIndex.ReadEvent(_streamIdOne, 1);
+	public async Task return_correct_second_record_for_larger_stream() {
+		var result = await ReadIndex.ReadEvent(_streamIdOne, 1, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_p3.EventId, result.Record.EventId);
 	}
 
 	[Test]
-	public void return_correct_third_record_for_larger_stream() {
-		var result = ReadIndex.ReadEvent(_streamIdOne, 2);
+	public async Task return_correct_third_record_for_larger_stream() {
+		var result = await ReadIndex.ReadEvent(_streamIdOne, 2, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_p5.EventId, result.Record.EventId);
 	}
 
 	[Test]
-	public void not_find_record_with_nonexistent_version_for_larger_stream() {
-		var result = ReadIndex.ReadEvent(_streamIdOne, 3);
+	public async Task not_find_record_with_nonexistent_version_for_larger_stream() {
+		var result = await ReadIndex.ReadEvent(_streamIdOne, 3, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NotFound, result.Result);
 		Assert.IsNull(result.Record);
 	}
 
 	[Test]
-	public void return_correct_range_on_from_start_range_query_for_larger_stream() {
-		var result = ReadIndex.ReadStreamEventsForward(_streamIdOne, 0, 3);
+	public async Task return_correct_range_on_from_start_range_query_for_larger_stream() {
+		var result = await ReadIndex.ReadStreamEventsForward(_streamIdOne, 0, 3, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(3, result.Records.Length);
 		Assert.AreEqual(_p1.EventId, result.Records[0].EventId);
@@ -181,8 +181,8 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 	}
 
 	[Test]
-	public void return_correct_range_on_from_end_range_query_for_larger_stream_with_specific_version() {
-		var result = ReadIndex.ReadStreamEventsBackward(_streamIdOne, 2, 3);
+	public async Task return_correct_range_on_from_end_range_query_for_larger_stream_with_specific_version() {
+		var result = await ReadIndex.ReadStreamEventsBackward(_streamIdOne, 2, 3, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(3, result.Records.Length);
 		Assert.AreEqual(_p5.EventId, result.Records[0].EventId);
@@ -191,8 +191,8 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 	}
 
 	[Test]
-	public void return_correct_range_on_from_end_range_query_for_larger_stream_with_from_end_version() {
-		var result = ReadIndex.ReadStreamEventsBackward(_streamIdOne, -1, 3);
+	public async Task return_correct_range_on_from_end_range_query_for_larger_stream_with_from_end_version() {
+		var result = await ReadIndex.ReadStreamEventsBackward(_streamIdOne, -1, 3, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(3, result.Records.Length);
 		Assert.AreEqual(_p5.EventId, result.Records[0].EventId);
@@ -201,34 +201,34 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 	}
 
 	[Test]
-	public void return_correct_last_event_version_for_smaller_stream() {
-		Assert.AreEqual(1, ReadIndex.GetStreamLastEventNumber(_streamIdTwo));
+	public async Task return_correct_last_event_version_for_smaller_stream() {
+		Assert.AreEqual(1, await ReadIndex.GetStreamLastEventNumber(_streamIdTwo, CancellationToken.None));
 	}
 
 	[Test]
-	public void return_correct_first_record_for_smaller_stream() {
-		var result = ReadIndex.ReadEvent(_streamIdTwo, 0);
+	public async Task return_correct_first_record_for_smaller_stream() {
+		var result = await ReadIndex.ReadEvent(_streamIdTwo, 0, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_p2.EventId, result.Record.EventId);
 	}
 
 	[Test]
-	public void return_correct_second_record_for_smaller_stream() {
-		var result = ReadIndex.ReadEvent(_streamIdTwo, 1);
+	public async Task return_correct_second_record_for_smaller_stream() {
+		var result = await ReadIndex.ReadEvent(_streamIdTwo, 1, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_p4.EventId, result.Record.EventId);
 	}
 
 	[Test]
-	public void not_find_record_with_nonexistent_version_for_smaller_stream() {
-		var result = ReadIndex.ReadEvent(_streamIdTwo, 2);
+	public async Task not_find_record_with_nonexistent_version_for_smaller_stream() {
+		var result = await ReadIndex.ReadEvent(_streamIdTwo, 2, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NotFound, result.Result);
 		Assert.IsNull(result.Record);
 	}
 
 	[Test]
-	public void return_correct_range_on_from_start_range_query_for_smaller_stream() {
-		var result = ReadIndex.ReadStreamEventsForward(_streamIdTwo, 0, 2);
+	public async Task return_correct_range_on_from_start_range_query_for_smaller_stream() {
+		var result = await ReadIndex.ReadStreamEventsForward(_streamIdTwo, 0, 2, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(2, result.Records.Length);
 		Assert.AreEqual(_p2.EventId, result.Records[0].EventId);
@@ -236,8 +236,8 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 	}
 
 	[Test]
-	public void return_correct_range_on_from_end_range_query_for_smaller_stream_with_specific_version() {
-		var result = ReadIndex.ReadStreamEventsBackward(_streamIdTwo, 1, 2);
+	public async Task return_correct_range_on_from_end_range_query_for_smaller_stream_with_specific_version() {
+		var result = await ReadIndex.ReadStreamEventsBackward(_streamIdTwo, 1, 2, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(2, result.Records.Length);
 		Assert.AreEqual(_p4.EventId, result.Records[0].EventId);
@@ -245,8 +245,8 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 	}
 
 	[Test]
-	public void return_correct_range_on_from_end_range_query_for_smaller_stream_with_from_end_version() {
-		var result = ReadIndex.ReadStreamEventsBackward(_streamIdTwo, -1, 2);
+	public async Task return_correct_range_on_from_end_range_query_for_smaller_stream_with_from_end_version() {
+		var result = await ReadIndex.ReadStreamEventsBackward(_streamIdTwo, -1, 2, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(2, result.Records.Length);
 		Assert.AreEqual(_p4.EventId, result.Records[0].EventId);
@@ -254,8 +254,8 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 	}
 
 	[Test]
-	public void read_all_events_forward_returns_all_events_in_correct_order() {
-		var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).Records;
+	public async Task read_all_events_forward_returns_all_events_in_correct_order() {
+		var records = (await ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10, CancellationToken.None)).Records;
 		Assert.AreEqual(6, records.Count);
 		Assert.AreEqual(_p2.EventId, records[0].Event.EventId);
 		Assert.AreEqual(_p4.EventId, records[1].Event.EventId);
@@ -280,9 +280,10 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 	}
 
 	[Test]
-	public void
+	public async Task
 		read_all_events_forward_returns_no_transaction_records_when_prepare_position_is_greater_than_last_prepare_in_commit() {
-		var records = ReadIndex.ReadAllEventsForward(new TFPos(_t1CommitPos, _t1CommitPos), 10).Records;
+		var records = (await ReadIndex.ReadAllEventsForward(new TFPos(_t1CommitPos, _t1CommitPos), 10, CancellationToken.None))
+			.Records;
 		Assert.AreEqual(1, records.Count);
 		Assert.AreEqual(_random1.EventId, records[0].Event.EventId);
 	}
@@ -297,8 +298,8 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 
 	[Test]
 	public async Task read_all_events_forward_returns_correct_events_starting_in_the_middle_of_tf() {
-		var res1 = ReadIndex.ReadAllEventsForward(new TFPos(_t2CommitPos, _p4.LogPosition),
-			10); // end of first commit
+		var res1 = await ReadIndex.ReadAllEventsForward(new TFPos(_t2CommitPos, _p4.LogPosition),
+			10, CancellationToken.None); // end of first commit
 		Assert.AreEqual(5, res1.Records.Count);
 		Assert.AreEqual(_p4.EventId, res1.Records[0].Event.EventId);
 		Assert.AreEqual(_p1.EventId, res1.Records[1].Event.EventId);
@@ -322,19 +323,19 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 		Assert.AreEqual(_p4.EventId, res1.Records[2].Event.EventId);
 		Assert.AreEqual(_p2.EventId, res1.Records[3].Event.EventId);
 
-		var res2 = ReadIndex.ReadAllEventsForward(res1.PrevPos, 10);
+		var res2 = await ReadIndex.ReadAllEventsForward(res1.PrevPos, 10, CancellationToken.None);
 		Assert.AreEqual(2, res2.Records.Count);
 		Assert.AreEqual(_p5.EventId, res2.Records[0].Event.EventId);
 	}
 
 	[Test]
-	public void all_records_can_be_read_sequentially_page_by_page_in_forward_pass() {
+	public async Task all_records_can_be_read_sequentially_page_by_page_in_forward_pass() {
 		var recs = new[] {_p2, _p4, _p1, _p3, _p5, _random1}; // in committed order
 
 		int count = 0;
 		var pos = new TFPos(0, 0);
 		IndexReadAllResult result;
-		while ((result = ReadIndex.ReadAllEventsForward(pos, 1)).Records.Count != 0) {
+		while ((result = await ReadIndex.ReadAllEventsForward(pos, 1, CancellationToken.None)).Records.Count != 0) {
 			Assert.AreEqual(1, result.Records.Count);
 			Assert.AreEqual(recs[count].EventId, result.Records[0].Event.EventId);
 			pos = result.NextPos;
@@ -368,7 +369,7 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 		int count = 0;
 		var pos = new TFPos(0, 0);
 		IndexReadAllResult result;
-		while ((result = ReadIndex.ReadAllEventsForward(pos, 1)).Records.Count != 0) {
+		while ((result = await ReadIndex.ReadAllEventsForward(pos, 1, CancellationToken.None)).Records.Count != 0) {
 			Assert.AreEqual(1, result.Records.Count);
 			Assert.AreEqual(recs[count].EventId, result.Records[0].Event.EventId);
 
@@ -403,7 +404,7 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 			var localPos = result.PrevPos;
 			int localCount = 0;
 			IndexReadAllResult localResult;
-			while ((localResult = ReadIndex.ReadAllEventsForward(localPos, 1)).Records.Count != 0) {
+			while ((localResult = await ReadIndex.ReadAllEventsForward(localPos, 1, CancellationToken.None)).Records.Count != 0) {
 				Assert.AreEqual(1, localResult.Records.Count);
 				Assert.AreEqual(recs[count - 1 - localCount].EventId, localResult.Records[0].Event.EventId);
 				localPos = localResult.NextPos;

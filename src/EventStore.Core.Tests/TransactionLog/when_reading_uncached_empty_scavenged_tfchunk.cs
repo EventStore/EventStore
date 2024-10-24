@@ -27,8 +27,8 @@ public class when_reading_uncached_empty_scavenged_tfchunk : SpecificationWithFi
 	}
 
 	[Test]
-	public void no_record_at_exact_position_can_be_read() {
-		Assert.IsFalse(_chunk.TryReadAt(0, couldBeScavenged: true).Success);
+	public async Task no_record_at_exact_position_can_be_read() {
+		Assert.IsTrue(await _chunk.TryReadAt(0, couldBeScavenged: true, CancellationToken.None) is { Success: false });
 	}
 
 	[Test]
@@ -37,8 +37,8 @@ public class when_reading_uncached_empty_scavenged_tfchunk : SpecificationWithFi
 	}
 
 	[Test]
-	public void no_record_can_be_read_as_closest_forward_record() {
-		Assert.IsFalse(_chunk.TryReadClosestForward(0).Success);
+	public async Task no_record_can_be_read_as_closest_forward_record() {
+		Assert.IsTrue(await _chunk.TryReadClosestForward(0, CancellationToken.None) is { Success: false });
 	}
 
 	[Test]

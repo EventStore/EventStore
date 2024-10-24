@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -31,14 +33,14 @@ public class LogFormatAbstractorV2Tests :
 	}
 
 	[Fact]
-	public void can_init() {
-		_sut.StreamExistenceFilter.Initialize(new MockExistenceFilterInitializer("1"), 0);
+	public async Task can_init() {
+		await _sut.StreamExistenceFilter.Initialize(new MockExistenceFilterInitializer("1"), 0, CancellationToken.None);
 		Assert.True(_sut.StreamExistenceFilterReader.MightContain("1"));
 	}
 
 	[Fact]
-	public void can_confirm() {
-		_sut.StreamExistenceFilter.Initialize(new MockExistenceFilterInitializer(), 0);
+	public async Task can_confirm() {
+		await _sut.StreamExistenceFilter.Initialize(new MockExistenceFilterInitializer(), 0, CancellationToken.None);
 
 		var prepare = LogRecord.SingleWrite(
 			factory: _sut.RecordFactory,

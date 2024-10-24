@@ -2,12 +2,15 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.LogAbstraction;
 
-public interface INameIndexPersistence<TValue> : IValueLookup<TValue>, IDisposable {
+public interface INameIndexPersistence<TValue> : IValueLookup<TValue>, IDisposable
+	where TValue : struct {
 	TValue LastValueAdded { get; }
-	void Init(INameLookup<TValue> source);
+	ValueTask Init(INameLookup<TValue> source, CancellationToken token);
 	bool TryGetValue(string name, out TValue value);
 	void Add(string name, TValue value);
 }

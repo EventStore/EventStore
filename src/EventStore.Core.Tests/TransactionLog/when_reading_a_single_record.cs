@@ -85,13 +85,13 @@ public class when_reading_a_single_record<TLogFormat, TStreamId> : Specification
 	}
 
 	[Test]
-	public void all_records_can_be_read() {
+	public async Task all_records_can_be_read() {
 		var reader = GetTFChunkReader(0);
 
 		RecordReadResult res;
 		for (var i = 0; i < RecordsCount; i++) {
 			var rec = _records[i];
-			res = reader.TryReadAt(rec.LogPosition, couldBeScavenged: true);
+			res = await reader.TryReadAt(rec.LogPosition, couldBeScavenged: true, CancellationToken.None);
 
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(rec, res.LogRecord);

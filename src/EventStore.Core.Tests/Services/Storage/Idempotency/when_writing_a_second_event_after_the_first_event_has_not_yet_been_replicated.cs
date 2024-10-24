@@ -2,6 +2,9 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
@@ -14,7 +17,7 @@ public class when_writing_a_second_event_after_the_first_event_has_not_yet_been_
 	private Guid _eventId = Guid.NewGuid();
 	private TStreamId _streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
-	public override void WriteEvents() {
+	public override ValueTask WriteEvents(CancellationToken token) {
 		var expectedEventNumber = -1;
 		var transactionPosition = 1000;
 		var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
@@ -26,34 +29,34 @@ public class when_writing_a_second_event_after_the_first_event_has_not_yet_been_
 		PreCommitToIndex(prepares);
 
 		WriteToDB(commit);
-		PreCommitToIndex(commit);
+		return PreCommitToIndex(commit, token);
 	}
 
 	[Test]
-	public void check_commit_with_same_expectedversion_should_return_idempotentnotready_decision() {
+	public async Task check_commit_with_same_expectedversion_should_return_idempotentnotready_decision() {
 		/*Second, idempotent write*/
-		var commitCheckResult = _indexWriter.CheckCommit(_streamId, -1, new Guid[] { _eventId }, streamMightExist: true);
+		var commitCheckResult = await _indexWriter.CheckCommit(_streamId, -1, AsyncEnumerable.Singleton(_eventId), streamMightExist: true, CancellationToken.None);
 		Assert.AreEqual(CommitDecision.IdempotentNotReady, commitCheckResult.Decision);
 	}
 
 	[Test]
-	public void check_commit_with_expectedversion_any_should_return_idempotentnotready_decision() {
+	public async Task check_commit_with_expectedversion_any_should_return_idempotentnotready_decision() {
 		/*Second, idempotent write*/
-		var commitCheckResult = _indexWriter.CheckCommit(_streamId, ExpectedVersion.Any, new Guid[] { _eventId }, streamMightExist: true);
+		var commitCheckResult = await _indexWriter.CheckCommit(_streamId, ExpectedVersion.Any, AsyncEnumerable.Singleton(_eventId), streamMightExist: true, CancellationToken.None);
 		Assert.AreEqual(CommitDecision.IdempotentNotReady, commitCheckResult.Decision);
 	}
 
 	[Test]
-	public void check_commit_with_next_expectedversion_should_return_ok_decision() {
+	public async Task check_commit_with_next_expectedversion_should_return_ok_decision() {
 		/*Second, idempotent write*/
-		var commitCheckResult = _indexWriter.CheckCommit(_streamId, 0, new Guid[] { _eventId }, streamMightExist: true);
+		var commitCheckResult = await _indexWriter.CheckCommit(_streamId, 0, AsyncEnumerable.Singleton(_eventId), streamMightExist: true, CancellationToken.None);
 		Assert.AreEqual(CommitDecision.Ok, commitCheckResult.Decision);
 	}
 
 	[Test]
-	public void check_commit_with_incorrect_expectedversion_should_return_wrongexpectedversion_decision() {
+	public async Task check_commit_with_incorrect_expectedversion_should_return_wrongexpectedversion_decision() {
 		/*Second, idempotent write*/
-		var commitCheckResult = _indexWriter.CheckCommit(_streamId, 1, new Guid[] { _eventId }, streamMightExist: true);
+		var commitCheckResult = await _indexWriter.CheckCommit(_streamId, 1, AsyncEnumerable.Singleton(_eventId), streamMightExist: true, CancellationToken.None);
 		Assert.AreEqual(CommitDecision.WrongExpectedVersion, commitCheckResult.Decision);
 	}
-    }
+}

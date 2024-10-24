@@ -194,7 +194,7 @@ public class PersistentSubscription {
 		_state &= ~PersistentSubscriptionState.Live;
 	}
 
-	public void HandleReadCompleted(ResolvedEvent[] events, IPersistentSubscriptionStreamPosition newPosition, bool isEndOfStream) {
+	public void HandleReadCompleted(IReadOnlyList<ResolvedEvent> events, IPersistentSubscriptionStreamPosition newPosition, bool isEndOfStream) {
 		lock (_lock) {
 			if (!TryGetStreamBuffer(out var streamBuffer))
 				return;
@@ -209,7 +209,7 @@ public class PersistentSubscription {
 				streamBuffer.AddReadMessage(OutstandingMessage.ForNewEvent(ev, _settings.EventSource.GetStreamPositionFor(ev)));
 			}
 
-			if (events.Length > 0) {
+			if (events.Count > 0) {
 				_statistics.SetLastKnownEventPosition(_settings.EventSource.GetStreamPositionFor(events[^1]));
 			}
 
@@ -567,7 +567,7 @@ public class PersistentSubscription {
 		_settings.ParkedMessageStream, _settings.SubscriptionId, error);
 	}
 
-	public void HandleParkedReadCompleted(ResolvedEvent[] events, IPersistentSubscriptionStreamPosition newPosition, bool isEndofStream, long stopAt) {
+	public void HandleParkedReadCompleted(IReadOnlyList<ResolvedEvent> events, IPersistentSubscriptionStreamPosition newPosition, bool isEndofStream, long stopAt) {
 		lock (_lock) {
 			if (!TryGetStreamBuffer(out var streamBuffer))
 				return;
@@ -579,7 +579,7 @@ public class PersistentSubscription {
 					break;
 				}
 
-				if (ev.Event == null) {
+				if (ev.Event is null) {
 					continue;
 				}
 
@@ -611,7 +611,7 @@ public class PersistentSubscription {
 		}
 	}
 
-	private static (DateTime?, bool) GetOldestParkedMessageTimeStamp(ResolvedEvent[] events, long replayedEnd) {
+	private static (DateTime?, bool) GetOldestParkedMessageTimeStamp(IReadOnlyList<ResolvedEvent> events, long replayedEnd) {
 		foreach (var resolvedEvent in events) {
 			if (resolvedEvent.OriginalEvent.EventNumber != replayedEnd) continue;
 				return (resolvedEvent.OriginalEvent.TimeStamp, true);

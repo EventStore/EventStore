@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
 using StreamId = System.UInt32;
 
@@ -16,16 +18,17 @@ public class LogV3StreamExistenceFilterInitializer : INameExistenceFilterInitial
 		_streamNames = streamNames;
 	}
 
-	public void Initialize(INameExistenceFilter filter, long truncateToPosition) {
+	public async ValueTask Initialize(INameExistenceFilter filter, long truncateToPosition, CancellationToken token) {
 		// todo: truncate if necessary. implementation will likely depend on how the indexes come out
 
-		if (!_streamNames.TryGetLastValue(out var sourceLastStreamId))
+		if (!(await _streamNames.TryGetLastValue(token)).TryGet(out var sourceLastStreamId))
 			return;
 
 		var startStreamId = (uint)Math.Max(LogV3SystemStreams.FirstRealStream, filter.CurrentCheckpoint);
 		for (var streamId = startStreamId; streamId <= sourceLastStreamId; streamId += LogV3SystemStreams.StreamInterval) {
-			if (!_streamNames.TryGetName(streamId, out var name))
-				throw new Exception($"NameExistenceFilter: this should never happen. could not find {streamId} in source");
+			if (await _streamNames.LookupName(streamId, token) is not { } name)
+				throw new Exception(
+					$"NameExistenceFilter: this should never happen. could not find {streamId} in source");
 
 			filter.Add(name);
 			filter.CurrentCheckpoint = streamId;

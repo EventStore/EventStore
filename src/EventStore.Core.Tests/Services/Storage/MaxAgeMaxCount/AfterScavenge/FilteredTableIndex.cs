@@ -63,13 +63,11 @@ public class FilteredTableIndex<TStreamId> : ITableIndex<TStreamId> {
 		return _wrapped.MergeIndexes();
 	}
 
-	public void Scavenge(IIndexScavengerLog log, CancellationToken ct) {
-		throw new NotImplementedException();
-	}
+	public ValueTask Scavenge(IIndexScavengerLog log, CancellationToken ct)
+		=> ValueTask.FromException(new NotImplementedException());
 
-	public void Scavenge(Func<IndexEntry, bool> shouldKeep, IIndexScavengerLog log, CancellationToken ct) {
-		throw new NotImplementedException();
-	}
+	public ValueTask Scavenge(Func<IndexEntry, CancellationToken, ValueTask<bool>> shouldKeep, IIndexScavengerLog log, CancellationToken ct)
+		=> ValueTask.FromException(new NotImplementedException());
 
 	public bool TryGetLatestEntry(TStreamId streamId, out IndexEntry entry) {
 		var got = _wrapped.TryGetLatestEntry(streamId, out entry);
@@ -86,13 +84,11 @@ public class FilteredTableIndex<TStreamId> : ITableIndex<TStreamId> {
 		return true;
 	}
 
-	public bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IndexEntry?> TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream, CancellationToken token)
+		=> ValueTask.FromException<IndexEntry?>(new NotImplementedException());
 
-	public bool TryGetLatestEntry(TStreamId streamId, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IndexEntry?> TryGetLatestEntry(TStreamId stream, long beforePosition, Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream, CancellationToken token)
+		=> ValueTask.FromException<IndexEntry?>(new NotImplementedException());
 
 	public bool TryGetNextEntry(TStreamId streamId, long afterVersion, out IndexEntry entry) {
 		var got = _wrapped.TryGetNextEntry(streamId, afterVersion, out entry);

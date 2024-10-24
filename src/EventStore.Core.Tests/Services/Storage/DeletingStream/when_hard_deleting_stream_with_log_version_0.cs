@@ -49,7 +49,7 @@ public class when_hard_deleting_stream_with_log_version_0<TLogFormat, TStreamId>
 		RecordReadResult result = await chunk.TryReadFirst(CancellationToken.None);
 		while (result.Success) {
 			chunkRecords.Add(result.LogRecord);
-			result = chunk.TryReadClosestForward(result.NextPosition);
+			result = await chunk.TryReadClosestForward(result.NextPosition, CancellationToken.None);
 		}
 
 		Assert.That(chunkRecords.Any(x =>

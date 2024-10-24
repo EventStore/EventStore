@@ -41,8 +41,8 @@ public class EmittedStreamsDeleter : IEmittedStreamsDeleter {
 
 	private int GetPositionToDeleteFrom(ClientMessage.ReadStreamEventsBackwardCompleted onReadCompleted) {
 		int deleteFromPosition = 0;
-		if (onReadCompleted.Result == ReadStreamResult.Success) {
-			if (onReadCompleted.Events.Length > 0) {
+		if (onReadCompleted.Result is ReadStreamResult.Success) {
+			if (onReadCompleted.Events is not []) {
 				var checkpoint = onReadCompleted.Events
 					.Where(v => v.Event.EventType == ProjectionEventTypes.ProjectionCheckpoint).Select(x => x.Event)
 					.FirstOrDefault();
@@ -64,14 +64,13 @@ public class EmittedStreamsDeleter : IEmittedStreamsDeleter {
 
 	private void ReadCompleted(ClientMessage.ReadStreamEventsForwardCompleted onReadCompleted,
 		Action onEmittedStreamsDeleted) {
-		if (onReadCompleted.Result == ReadStreamResult.Success ||
-		    onReadCompleted.Result == ReadStreamResult.NoStream) {
-			if (onReadCompleted.Events.Length == 0 && !onReadCompleted.IsEndOfStream) {
+		if (onReadCompleted.Result is ReadStreamResult.Success or ReadStreamResult.NoStream) {
+			if (onReadCompleted.Events is [] && !onReadCompleted.IsEndOfStream) {
 				DeleteEmittedStreamsFrom(onReadCompleted.NextEventNumber, onEmittedStreamsDeleted);
 				return;
 			}
 
-			if (onReadCompleted.Events.Length == 0) {
+			if (onReadCompleted.Events is []) {
 				_ioDispatcher.DeleteStream(_emittedStreamsCheckpointStreamId, ExpectedVersion.Any, false,
 					SystemAccounts.System, x => {
 						// currently, WrongExpectedVersion is returned when deleting non-existing streams, even when specifying ExpectedVersion.Any.

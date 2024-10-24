@@ -1,6 +1,7 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
 using NUnit.Framework;
@@ -72,61 +73,64 @@ public class when_trying_to_get_latest_entry_before_position : SpecificationWith
 
 	[TestCase(true)]
 	[TestCase(false)]
-	public void when_hash_doesnt_exist_returns_false(bool memTableOrPTable) {
+	public async Task when_hash_doesnt_exist_returns_false(bool memTableOrPTable) {
 		var table = GetTable(memTableOrPTable);
-		Assert.False(table.TryGetLatestEntry(HNotExists, 10, x => {
+		Assert.Null(await table.TryGetLatestEntry(HNotExists, 10, (x, token) => {
 			Assert.AreEqual(GetHash(HNotExists), x.Stream);
-			return true;
-		}, out _));
+			return new(true);
+		}, CancellationToken.None));
 	}
 
 	[TestCase(true)]
 	[TestCase(false)]
-	public void when_hash_exists_but_not_before_position_limit_returns_false(bool memTableOrPTable) {
+	public async Task when_hash_exists_but_not_before_position_limit_returns_false(bool memTableOrPTable) {
 		var table = GetTable(memTableOrPTable);
-		Assert.False(table.TryGetLatestEntry(HNormal, 0, x => {
+		Assert.Null(await table.TryGetLatestEntry(HNormal, 0, (x, token) => {
 			Assert.AreEqual(GetHash(HNormal), x.Stream);
-			return true;
-		}, out _));
+			return new(true);
+		}, CancellationToken.None));
 
-		Assert.False(table.TryGetLatestEntry(HTombstoned, 3, x => {
+		Assert.Null(await table.TryGetLatestEntry(HTombstoned, 3, (x, token) => {
 			Assert.AreEqual(GetHash(HTombstoned), x.Stream);
-			return true;
-		}, out _));
+			return new(true);
+		}, CancellationToken.None));
 
-		Assert.False(table.TryGetLatestEntry(HDuplicate, 6, x => {
+		Assert.Null(await table.TryGetLatestEntry(HDuplicate, 6, (x, token) => {
 			Assert.AreEqual(GetHash(HDuplicate), x.Stream);
-			return true;
-		}, out _));
+			return new(true);
+		}, CancellationToken.None));
 	}
 
 	[TestCase(true)]
 	[TestCase(false)]
-	public void when_hash_exists_before_position_limit_returns_correct_entry(bool memTableOrPTable) {
+	public async Task when_hash_exists_before_position_limit_returns_correct_entry(bool memTableOrPTable) {
 		var table = GetTable(memTableOrPTable);
-		Assert.True(table.TryGetLatestEntry(HNormal, 5, x => {
+		var res = await table.TryGetLatestEntry(HNormal, 5, (x, token) => {
 			Assert.AreEqual(GetHash(HNormal), x.Stream);
-			return true;
-		}, out var res));
-		Assert.AreEqual(4, res.Position);
-		Assert.AreEqual(GetHash(HNormal), res.Stream);
-		Assert.AreEqual(5, res.Version);
+			return new(true);
+		}, CancellationToken.None);
+		Assert.True(res.HasValue);
+		Assert.AreEqual(4, res.GetValueOrDefault().Position);
+		Assert.AreEqual(GetHash(HNormal), res.GetValueOrDefault().Stream);
+		Assert.AreEqual(5, res.GetValueOrDefault().Version);
 
-		Assert.True(table.TryGetLatestEntry(HTombstoned, 5, x => {
+		res = await table.TryGetLatestEntry(HTombstoned, 5, (x, token) => {
 			Assert.AreEqual(GetHash(HTombstoned), x.Stream);
-			return true;
-		}, out res));
-		Assert.AreEqual(3, res.Position);
-		Assert.AreEqual(GetHash(HTombstoned), res.Stream);
-		Assert.AreEqual(1, res.Version);
+			return new(true);
+		}, CancellationToken.None);
+		Assert.True(res.HasValue);
+		Assert.AreEqual(3, res.GetValueOrDefault().Position);
+		Assert.AreEqual(GetHash(HTombstoned), res.GetValueOrDefault().Stream);
+		Assert.AreEqual(1, res.GetValueOrDefault().Version);
 
-		Assert.True(table.TryGetLatestEntry(HDuplicate, 7, x => {
+		res = await table.TryGetLatestEntry(HDuplicate, 7, (x, token) => {
 			Assert.AreEqual(GetHash(HDuplicate), x.Stream);
-			return true;
-		}, out res));
-		Assert.AreEqual(6, res.Position);
-		Assert.AreEqual(GetHash(HDuplicate), res.Stream);
-		Assert.AreEqual(0, res.Version);
+			return new(true);
+		}, CancellationToken.None);
+		Assert.True(res.HasValue);
+		Assert.AreEqual(6, res.GetValueOrDefault().Position);
+		Assert.AreEqual(GetHash(HDuplicate), res.GetValueOrDefault().Stream);
+		Assert.AreEqual(0, res.GetValueOrDefault().Version);
 	}
 
 	[TestCase(true)]
@@ -134,36 +138,38 @@ public class when_trying_to_get_latest_entry_before_position : SpecificationWith
 	// at the moment, this TryGetLatestEntry overload is used only for scavenging purposes
 	// and we are only interested with finding the latest event number before a position limit,
 	// not the actual index entry
-	public void when_duplicate_returns_entry_with_highest_position(bool memTableOrPTable) {
+	public async Task when_duplicate_returns_entry_with_highest_position(bool memTableOrPTable) {
 		var table = GetTable(memTableOrPTable);
 
-		Assert.True(table.TryGetLatestEntry(HDuplicate, 8, x => {
+		var res = await table.TryGetLatestEntry(HDuplicate, 8, (x, token) => {
 			Assert.AreEqual(GetHash(HDuplicate), x.Stream);
-			return true;
-		}, out var res));
-		Assert.AreEqual(7, res.Position);
-		Assert.AreEqual(GetHash(HDuplicate), res.Stream);
-		Assert.AreEqual(0, res.Version);
+			return new(true);
+		}, CancellationToken.None);
+		Assert.True(res.HasValue);
+		Assert.AreEqual(7, res.GetValueOrDefault().Position);
+		Assert.AreEqual(GetHash(HDuplicate), res.GetValueOrDefault().Stream);
+		Assert.AreEqual(0, res.GetValueOrDefault().Version);
 	}
 
 	[TestCase(true)]
 	[TestCase(false)]
-	public void when_hash_collision_returns_correct_result(bool memTableOrPTable) {
+	public async Task when_hash_collision_returns_correct_result(bool memTableOrPTable) {
 		var table = GetTable(memTableOrPTable);
 
-		Assert.True(table.TryGetLatestEntry(HNormal, 10,
-			x => {
+		var res = await table.TryGetLatestEntry(HNormal, 10,
+			(x, token) => {
 				Assert.AreEqual(GetHash(HNormal), x.Stream);
-				return x.Position % 2 == 1;
-			}, out var res));
-		Assert.AreEqual(1, res.Position);
-		Assert.AreEqual(GetHash(HNormal), res.Stream);
-		Assert.AreEqual(1, res.Version);
+				return new(x.Position % 2 is 1);
+			}, CancellationToken.None);
+		Assert.True(res.HasValue);
+		Assert.AreEqual(1, res.GetValueOrDefault().Position);
+		Assert.AreEqual(GetHash(HNormal), res.GetValueOrDefault().Stream);
+		Assert.AreEqual(1, res.GetValueOrDefault().Version);
 
-		Assert.False(table.TryGetLatestEntry(HNormal, 10, x => {
+		Assert.Null(await table.TryGetLatestEntry(HNormal, 10, (x, token) => {
 			Assert.AreEqual(GetHash(HNormal), x.Stream);
-			return false;
-		}, out _));
+			return new(false);
+		}, CancellationToken.None));
 	}
 
 	[TestCase(true)]
@@ -174,15 +180,16 @@ public class when_trying_to_get_latest_entry_before_position : SpecificationWith
 	// however, the consequences are not so bad: it can only result in less events
 	// being scavenged. during index execution, detection of these out of order events
 	// in PTables is done and logged.
-	public void when_out_of_order_may_return_incorrect_entry_with_smaller_event_number(bool memTableOrPTable) {
+	public async Task when_out_of_order_may_return_incorrect_entry_with_smaller_event_number(bool memTableOrPTable) {
 		var table = GetTable(memTableOrPTable);
-		Assert.True(table.TryGetLatestEntry(HOutOfOrder, 12, x => {
+		var res = await table.TryGetLatestEntry(HOutOfOrder, 12, (x, token) => {
 			Assert.AreEqual(GetHash(HOutOfOrder), x.Stream);
-			return true;
-		}, out var res));
-		Assert.AreEqual(GetHash(HOutOfOrder), res.Stream);
+			return new(true);
+		}, CancellationToken.None);
+		Assert.True(res.HasValue);
+		Assert.AreEqual(GetHash(HOutOfOrder), res.GetValueOrDefault().Stream);
 
 		// correct last event number should be 2
-		Assert.AreEqual(0, res.Version);
+		Assert.AreEqual(0, res.GetValueOrDefault().Version);
 	}
 }

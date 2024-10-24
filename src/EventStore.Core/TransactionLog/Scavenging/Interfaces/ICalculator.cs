@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.TransactionLog.Scavenging;
 
@@ -19,12 +20,12 @@ namespace EventStore.Core.TransactionLog.Scavenging;
 // For streams that do not collide (which is ~all of them) the calculation can be done index-only.
 // that is, without hitting the log at all.
 public interface ICalculator<TStreamId> {
-	void Calculate(
+	ValueTask Calculate(
 		ScavengePoint scavengePoint,
 		IScavengeStateForCalculator<TStreamId> source,
 		CancellationToken cancellationToken);
 
-	void Calculate(
+	ValueTask Calculate(
 		ScavengeCheckpoint.Calculating<TStreamId> checkpoint,
 		IScavengeStateForCalculator<TStreamId> source,
 		CancellationToken cancellationToken);

@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.TransactionLog.Scavenging;
@@ -40,7 +42,7 @@ public class EventCalculator<TStreamId> {
 
 	public int LogicalChunkNumber => (int)(EventInfo.LogPosition / ChunkSize);
 
-	public DiscardDecision DecideEvent() {
+	public async ValueTask<DiscardDecision> DecideEvent(CancellationToken token) {
 		// Events in original streams can be discarded because of:
 		//   Tombstones, TruncateBefore, MaxCount, MaxAge.
 		//
@@ -55,7 +57,7 @@ public class EventCalculator<TStreamId> {
 
 		// keep last event in stream
 		// to be extra safe, we keep if it is after the 'last event' too, which should never happen.
-		if (EventInfo.EventNumber >= Stream.LastEventNumber) {
+		if (EventInfo.EventNumber >= await Stream.GetLastEventNumber(token)) {
 			return DiscardDecision.Keep;
 		}
 
@@ -73,7 +75,7 @@ public class EventCalculator<TStreamId> {
 			// and keep the tombstone and any the events after it. without this check we would
 			// discard the tombstone and subsequent events except the last one, leaving the stream
 			// in a state where it is unclear why events were removed.
-			if (EventInfo.EventNumber == int.MaxValue && Index.IsTombstone(EventInfo.LogPosition)) {
+			if (EventInfo.EventNumber == int.MaxValue && await Index.IsTombstone(EventInfo.LogPosition, token)) {
 				return DiscardDecision.Keep;
 			}
 
@@ -82,7 +84,7 @@ public class EventCalculator<TStreamId> {
 		}
 
 		// truncatebefore, maxcount
-		if (Stream.TruncateBeforeOrMaxCountDiscardPoint.ShouldDiscard(EventInfo.EventNumber)) {
+		if ((await Stream.GetTruncateBeforeOrMaxCountDiscardPoint(token)).ShouldDiscard(EventInfo.EventNumber)) {
 			return DiscardDecision.Discard;
 		}
 

@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -14,69 +16,60 @@ class FakeIndexReader<TStreamId> : IIndexReader<TStreamId> {
 	public long NotCachedStreamInfo { get; }
 	public long HashCollisions { get; }
 
-	public IndexReadEventResult ReadEvent(string streamName, TStreamId streamId, long eventNumber) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IndexReadEventResult> ReadEvent(string streamName, TStreamId streamId, long eventNumber,
+		CancellationToken token)
+		=> ValueTask.FromException<IndexReadEventResult>(new NotImplementedException());
 
-	public IndexReadStreamResult
-		ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IndexReadStreamResult>
+		ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount,
+			CancellationToken token)
+		=> ValueTask.FromException<IndexReadStreamResult>(new NotImplementedException());
 
-	public IndexReadStreamResult ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber,
-		int maxCount) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IndexReadStreamResult> ReadStreamEventsBackward(string streamName, TStreamId streamId,
+		long fromEventNumber,
+		int maxCount, CancellationToken token)
+		=> ValueTask.FromException<IndexReadStreamResult>(new NotImplementedException());
 
-	public StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<StorageMessage.EffectiveAcl> GetEffectiveAcl(TStreamId streamId, CancellationToken token)
+		=> ValueTask.FromException<StorageMessage.EffectiveAcl>(new NotImplementedException());
 
-	public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IndexReadEventInfoResult> ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber,
+		CancellationToken token)
+		=> ValueTask.FromException<IndexReadEventInfoResult>(new NotImplementedException());
 
-	public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount,
-		long beforePosition) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IndexReadEventInfoResult> ReadEventInfoForward_KnownCollisions(TStreamId streamId,
+		long fromEventNumber, int maxCount,
+		long beforePosition, CancellationToken token)
+		=> ValueTask.FromException<IndexReadEventInfoResult>(new NotImplementedException());
 
-	public IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount,
-		long beforePosition) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IndexReadEventInfoResult> ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount,
+		long beforePosition, CancellationToken token)
+		=> ValueTask.FromException<IndexReadEventInfoResult>(new NotImplementedException());
 
-	public IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount,
-		long beforePosition) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IndexReadEventInfoResult> ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount,
+		long beforePosition, CancellationToken token)
+		=> ValueTask.FromException<IndexReadEventInfoResult>(new NotImplementedException());
 
-	public IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long fromEventNumber,
-		int maxCount, long beforePosition) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IndexReadEventInfoResult> ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long fromEventNumber,
+		int maxCount, long beforePosition, CancellationToken token)
+		=> ValueTask.FromException<IndexReadEventInfoResult>(new NotImplementedException());
 
-	public IPrepareLogRecord<TStreamId> ReadPrepare(TStreamId streamId, long eventNumber) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IPrepareLogRecord<TStreamId>> ReadPrepare(TStreamId streamId, long eventNumber,
+		CancellationToken token)
+		=> ValueTask.FromException<IPrepareLogRecord<TStreamId>>(new NotImplementedException());
 
-	public TStreamId GetEventStreamIdByTransactionId(long transactionId) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<TStreamId> GetEventStreamIdByTransactionId(long transactionId, CancellationToken token)
+		=> ValueTask.FromException<TStreamId>(new NotImplementedException());
 
-	public StreamMetadata GetStreamMetadata(TStreamId streamId) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<StreamMetadata> GetStreamMetadata(TStreamId streamId, CancellationToken token)
+		=> ValueTask.FromException<StreamMetadata>(new NotImplementedException());
 
-	public long GetStreamLastEventNumber(TStreamId streamId) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<long> GetStreamLastEventNumber(TStreamId streamId, CancellationToken token)
+		=> ValueTask.FromException<long>(new NotImplementedException());
 
-	public long GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<long> GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition, CancellationToken token)
+		=> ValueTask.FromException<long>(new NotImplementedException());
 
-	public long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<long> GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition, CancellationToken token)
+		=> ValueTask.FromException<long>(new NotImplementedException());
 }

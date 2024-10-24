@@ -35,7 +35,7 @@ public abstract class TruncateAndReOpenDbScenario<TLogFormat, TStreamId> : Trunc
 	private async ValueTask ReOpenDb(CancellationToken token) {
 		Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, WriterCheckpoint, ChaserCheckpoint));
 
-		await Db.Open();
+		await Db.Open(token: token);
 
 		var indexDirectory = GetFilePathFor("index");
 		_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
@@ -77,7 +77,7 @@ public abstract class TruncateAndReOpenDbScenario<TLogFormat, TStreamId> : Trunc
 			indexStatusTracker: new IndexStatusTracker.NoOp(),
 			indexTracker: new IndexTracker.NoOp(),
 			cacheTracker: new CacheHitsMissesTracker.NoOp());
-		readIndex.IndexCommitter.Init(ChaserCheckpoint.Read());
+		await readIndex.IndexCommitter.Init(ChaserCheckpoint.Read(), token);
 		ReadIndex = readIndex;
 	}
 }
