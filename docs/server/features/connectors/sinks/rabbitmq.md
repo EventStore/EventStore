@@ -5,6 +5,10 @@ Order: 4
 
 # RabbitMQ sink
 
+<Badge type="info" vertical="middle" text="License Required"/>
+
+## Overview
+
 This sink is responsible for sending messages to a RabbitMQ exchange using a specified routing key. It efficiently
 handles message delivery by abstracting the complexities of RabbitMQ's exchange and queue management, ensuring that
 messages are routed to the appropriate destinations based on the provided routing key. This sink is designed for high
@@ -31,7 +35,7 @@ $JSON = @"
 curl.exe -X POST `
   -H "Content-Type: application/json" `
   -d $JSON `
-  http://localhost:2113/connectors/mongo-sink-connector
+  http://localhost:2113/connectors/rabbit-sink-connector
 ```
 
 @tab Bash
@@ -49,12 +53,15 @@ JSON='{
 curl -X POST \
   -H "Content-Type: application/json" \
   -d "$JSON" \
-  http://localhost:2113/connectors/mongo-sink-connector
+  http://localhost:2113/connectors/rabbit-sink-connector
 ```
 
 :::
 
-Now, every time an event is appended to the `example-stream`, the RabbitMQ sink connector will send the record to the specified queue in RabbitMQ.
+After creating and starting the RabbitMQ sink connector, every time an event is
+appended to the `example-stream`, the RabbitMQ sink connector will send the
+record to the specified queue in RabbitMQ. You can find a list of available
+management API endpoints in the [API Reference](../manage.md).
 
 ## Settings
 
@@ -67,23 +74,23 @@ the [Sink Options](../settings.md#sink-options) page.
 
 The RabbitMQ sink can be configured with the following options:
 
-| Option                            | Description                                                                                                                                                                                                                                                                                                                  |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `exchange:name`                   | _required_<br><br>**Type**: string<br><br>**Description:** Exchange's name.                                                                                                                                                                                                                                                  |
-| `exchange:type`                   | _required_<br><br>**Type**: string<br><br>**Description:** Exchange's type. Default is fanout.                                                                                                                                                                                                                               |
-| `routingKey`                      | **Type**: string<br><br>**Description:** A Routing Key is a string used by an Exchange to determine how to route a message to the appropriate queue(s). The routing key is evaluated against the binding rules of the queues associated with the exchange, influencing the message's delivery path.<br><br>**Default**: `""` |
-| `host`                            | **Type**: string<br><br>**Description:** Hostname of the server.<br><br>**Default**: `"localhost"`                                                                                                                                                                                                                           |
-| `port`                            | **Type**: string<br><br>**Description:** Port number of the server.<br><br>**Default**: `5672`                                                                                                                                                                                                                               |
-| `connectionName`                  | **Type**: string<br><br>**Description:** Connection name used for logging and diagnostics. The default value is the connector ID.Connection name used for logging and diagnostics.<br><br>**Default**: The connector id                                                                                                      |
-| `virtualHost`                     | **Type**: string<br><br>**Description:** Represents the VirtualHost (vhost) used in RabbitMQ. <br><br>**Default**: `/`                                                                                                                                                                                                       |
-| `waitForBrokerAck`                | **Type**: boolean<br><br>**Description:** Whether the channel waits for broker acknowledgment before considering the send operation complete.<br><br>**Default**: `false`                                                                                                                                                    |
-| `authentication:username`         | **Type**: string<br><br>**Description:** Username for authentication.<br><br>**Default**: "guest"                                                                                                                                                                                                                            |
-| `authentication:password`         | **Type**: string<br><br>**Description:** Password for authentication.<br><br>**Default**: "guest"                                                                                                                                                                                                                            |
-| `autoDelete`                      | **Type**: string<br><br>**Description:** Whether the exchange is automatically deleted when no longer in use.<br><br>**Default**: `false`                                                                                                                                                                                    |
-| `durable`                         | **Type**: string<br><br>**Description:** Whether the exchange is durable. Default true.                                                                                                                                                                                                                                      |
-| `resilience:connectionTimeoutMs`  | **Type**: int<br><br>**Description:** Connection TCP establishment timeout in milliseconds. 0 for infinite.<br><br>**Default**: `60000`                                                                                                                                                                                      |
-| `resilience:handshakeTimeoutMs`   | **Type**: int<br><br>**Description:** The protocol handshake timeout in milliseconds.<br><br>**Default**: `10000`                                                                                                                                                                                                            |
-| `resilience:requestedHeartbeatMs` | **Type**: int<br><br>**Description:** The requested heartbeat timeout in milliseconds. 0 means "heartbeats are disabled". Should be no lower than 1 second.<br><br>**Default**: `60000`                                                                                                                                      |
+| Option                            | Description                                                                                                                                                                                                                                                                                         |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `exchange:name`                   | _required_<br><br>**Type**: string<br><br>**Description:** Exchange's name.                                                                                                                                                                                                                         |
+| `exchange:type`                   | _required_<br><br>**Type**: string<br><br>**Description:** Exchange's type. Default is fanout.                                                                                                                                                                                                      |
+| `routingKey`                      | **Type**: string<br><br>**Description:** Used by the exchange to determine how to route a message to the appropriate queue(s). The routing key is evaluated against the binding rules of the queues associated with the exchange, influencing the message's delivery path.<br><br>**Default**: `""` |
+| `host`                            | **Type**: string<br><br>**Description:** Hostname of the server.<br><br>**Default**: `"localhost"`                                                                                                                                                                                                  |
+| `port`                            | **Type**: string<br><br>**Description:** Port number of the server.<br><br>**Default**: `5672`                                                                                                                                                                                                      |
+| `connectionName`                  | **Type**: string<br><br>**Description:** Connection name used for logging and diagnostics. The default value is the connector ID.Connection name used for logging and diagnostics.<br><br>**Default**: The connector id                                                                             |
+| `virtualHost`                     | **Type**: string<br><br>**Description:** Represents the VirtualHost (vhost) used in RabbitMQ. <br><br>**Default**: `/`                                                                                                                                                                              |
+| `waitForBrokerAck`                | **Type**: boolean<br><br>**Description:** Whether the channel waits for broker acknowledgment before considering the send operation complete.<br><br>**Default**: `false`                                                                                                                           |
+| `authentication:username`         | **Type**: string<br><br>**Description:** Username for authentication.<br><br>**Default**: "guest"                                                                                                                                                                                                   |
+| `authentication:password`         | **Type**: string<br><br>**Description:** Password for authentication.<br><br>**Default**: "guest"                                                                                                                                                                                                   |
+| `autoDelete`                      | **Type**: string<br><br>**Description:** Whether the exchange is automatically deleted when no longer in use.<br><br>**Default**: `false`                                                                                                                                                           |
+| `durable`                         | **Type**: string<br><br>**Description:** Whether the exchange is durable. Default true.                                                                                                                                                                                                             |
+| `resilience:connectionTimeoutMs`  | **Type**: int<br><br>**Description:** Connection TCP establishment timeout in milliseconds. 0 for infinite.<br><br>**Default**: `60000`                                                                                                                                                             |
+| `resilience:handshakeTimeoutMs`   | **Type**: int<br><br>**Description:** The protocol handshake timeout in milliseconds.<br><br>**Default**: `10000`                                                                                                                                                                                   |
+| `resilience:requestedHeartbeatMs` | **Type**: int<br><br>**Description:** The requested heartbeat timeout in milliseconds. 0 means "heartbeats are disabled". Should be no lower than 1 second.<br><br>**Default**: `60000`                                                                                                             |
 
 ## Resilience
 

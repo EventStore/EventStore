@@ -57,7 +57,10 @@ curl -X POST \
 ```
 :::
 
-Now, every time an event is appended to the `example-stream`, the HTTP sink connector will send the record to the specified URL.
+After creating and starting the HTTP sink connector, every time an event is
+appended to the `example-stream`, the HTTP sink connector will send the record
+to the specified URL. You can find a list of available management API endpoints
+in the [API Reference](../manage.md).
 
 ## Settings
 

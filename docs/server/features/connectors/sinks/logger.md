@@ -50,7 +50,10 @@ curl -X POST \
 
 :::
 
-Now, every time an event is appended to the `example-stream`, the Logger sink connector will print the record to the console
+After creating and starting the logger sink connector, every time an event is
+appended to the `example-stream`, the Logger sink connector will print the
+record to the console. You can find a list of available management API endpoints
+in the [API Reference](../manage.md).
 
 Here is an example:
 

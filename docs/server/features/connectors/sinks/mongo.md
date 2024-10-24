@@ -58,7 +58,10 @@ curl -X POST \
 
 :::
 
-Now, every time an event is appended to the `example-stream`, the MongoDB sink connector will send the record to the specified collection in the database.
+After creating and starting the MongoDB sink connector, every time an event is
+appended to the `example-stream`, the MongoDB sink connector will send the
+record to the specified collection in the database. You can find a list of
+available management API endpoints in the [API Reference](../manage.md).
 
 ## Settings
 
@@ -71,17 +74,17 @@ the [Sink Options](../settings.md#sink-options) page.
 
 The MongoDB sink can be configured with the following options:
 
-| Name               | Details                                                                                                                                                                                                                                                                                          |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `database`         | _required_<br><br>**Type**: string<br><br>**Description:** The name of the database where the records will be stored.                                                                                                                                                                            |
-| `collection`       | _required_<br><br>**Type**: string<br><br>**Description:** The collection name that resides in the database to push records to.                                                                                                                                                                  |
-| `connectionString` | _required_<br><br>**Type**: string<br><br>**Description:** The MongoDB URI to which the connector connects. <br><br>See [connection string URI format](https://www.mongodb.com/docs/manual/reference/connection-string/)<br><br>**Default**: `mongodb://mongoadmin:secret@localhost:27017/admin` |
-| `documentId:source`     | **Type**: string<br><br>**Description:** The attribute used to generate the document id.<br><br>**Default**: `RecordId`<br><br>**Accepted Values:**<br>- `RecordId`, `Stream`, `Headers`, `StreamSuffix`, `PartitionKey`. |
-| `documentId:expression` | **Type**: string<br><br>**Description:** The expression used to format the document id based on the selected source. This allows for custom id generation logic.<br><br>**Default**: `250`                                |
-| `certificate:rawData`  | **Type**: string<br><br>**Description:** Base64 encoded x509 certificate.<br><br>**Default**: ""                                         |
-| `certificate:password` | **Type**: string<br><br>**Description:** The password used to access the x509 certificate for secure connections.<br><br>**Default**: "" |
-| `batching:batchSize`      | **Type**: string<br><br>**Description:** Threshold batch size at which the sink will push the batch of records to the MongoDB collection.<br><br>**Default**: `1000`                                                |
-| `batching:batchTimeoutMs` | **Type**: string<br><br>**Description:** Threshold time in milliseconds at which the sink will push the current batch of records to the MongoDB collection, regardless of the batch size.<br><br>**Default**: `250` |
+| Name                      | Details                                                                                                                                                                                                                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `database`                | _required_<br><br>**Type**: string<br><br>**Description:** The name of the database where the records will be stored.                                                                                                                                                                            |
+| `collection`              | _required_<br><br>**Type**: string<br><br>**Description:** The collection name that resides in the database to push records to.                                                                                                                                                                  |
+| `connectionString`        | _required_<br><br>**Type**: string<br><br>**Description:** The MongoDB URI to which the connector connects. <br><br>See [connection string URI format](https://www.mongodb.com/docs/manual/reference/connection-string/)<br><br>**Default**: `mongodb://mongoadmin:secret@localhost:27017/admin` |
+| `documentId:source`       | **Type**: string<br><br>**Description:** The attribute used to generate the document id.<br><br>**Default**: `recordId`<br><br>**Accepted Values:**<br>- `recordId`, `stream`, `headers`, `streamSuffix`, `PartitionKey`.                                                                        |
+| `documentId:expression`   | **Type**: string<br><br>**Description:** The expression used to format the document id based on the selected source. This allows for custom id generation logic.<br><br>**Default**: `250`                                                                                                       |
+| `certificate:rawData`     | **Type**: string<br><br>**Description:** Base64 encoded x509 certificate.<br><br>**Default**: ""                                                                                                                                                                                                 |
+| `certificate:password`    | **Type**: string<br><br>**Description:** The password used to access the x509 certificate for secure connections.<br><br>**Default**: ""                                                                                                                                                         |
+| `batching:batchSize`      | **Type**: string<br><br>**Description:** Threshold batch size at which the sink will push the batch of records to the MongoDB collection.<br><br>**Default**: `1000`                                                                                                                             |
+| `batching:batchTimeoutMs` | **Type**: string<br><br>**Description:** Threshold time in milliseconds at which the sink will push the current batch of records to the MongoDB collection, regardless of the batch size.<br><br>**Default**: `250`                                                                              |
 
 ## Examples
 
@@ -119,48 +122,49 @@ certificate and the password in the settings. You can use an online tool like
 
 The id of the document can be generated automatically based on the source specified and expression if needed. The following options are available:
 
-By default, the MongoDB sink uses the `RecordId` as the document ID. This is the unique identifier generated for every record in EventStoreDB.
+By default, the MongoDB sink uses the `recordId` as the document ID. This is the unique identifier generated for every record in EventStoreDB.
 
 Here are some examples that demonstrate how to configure the MongoDB sink to generate document IDs based on different sources.
 
-**1. Set document ID from Stream Name**
+**Set Document ID using Stream ID**
 
-You can extract part of the stream name using a regular expression (regex) to define the document ID. In this example, the expression captures the stream name up to `-stream`.
-
-```json
-{
-  "documentId:source": "Stream",
-  "documentId:expression": "^(.*)-stream$"
-}
-```
-The `Stream` source uses the full stream name as the base for the document ID,
-and the regex pattern `^(.*)-stream$` is used to extract only the part before
-`-stream`. This is helpful when streams follow a naming convention and you only
-want a portion of it for the document ID.
-
-**2. Extract the Last Part of the Stream Name with StreamSuffix**
-
-If you only need the last segment of the stream name (after a hyphen or similar delimiter), you can use the `StreamSuffix` source. This doesn't require an expression since it automatically extracts the suffix.
+You can extract part of the stream name using a regular expression (regex) to
+define the document id. The expression is optional and can be customized based
+on your naming convention. In this example, the expression captures the stream
+name up to `_data`.
 
 ```json
 {
-  "documentId:source": "StreamSuffix"
+  "documentId:source": "stream",
+  "documentId:expression": "^(.*)_data$"
 }
 ```
-The `StreamSuffix` source is useful when stream names follow a structured
+
+Alternatively, if you only need the last segment of the stream name (after a
+hyphen), you can use the `streamSuffix` source. This
+doesn't require an expression since it automatically extracts the suffix.
+
+```json
+{
+  "documentId:source": "streamSuffix"
+}
+```
+
+The `streamSuffix` source is useful when stream names follow a structured
 format, and you want to use only the trailing part as the document ID. For
 example, if the stream is named `user-123`, the document ID would be `123`.
 
-**3. Set Document ID from Headers**
+**Set Document ID from Headers**
 
 You can generate the document ID by concatenating values from specific event headers. In this case, two header values (`key1` and `key2`) are combined to form the ID.
 
 ```json
 {
-  "documentId:source": "Headers",
+  "documentId:source": "headers",
   "documentId:expression": "key1,key2"
 }
 ```
+
 The `Headers` source allows you to pull values from the event's metadata. The
 `documentId:expression` field lists the header keys (in this case, `key1` and
 `key2`), and their values are concatenated to generate the document ID. This is
@@ -177,6 +181,7 @@ unique identifier, such as region, user ID, or other identifiers.
 
 // outputs "value1-value2"
 ```
+
 :::
 
 **4. Set Document ID from Partition Key**
