@@ -115,6 +115,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	}
 
 	private async ValueTask ApplyFallbackPolicySelector() {
+		_logger.Debug("Applying fallback stream access policy.");
 		_effectivePolicySelectors = [];
 		foreach (var factory in _pluginSelectorFactories) {
 			await factory.Disable();
@@ -123,6 +124,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	}
 
 	private async ValueTask ApplyLegacyPolicySelector() {
+		_logger.Debug("Applying ACL stream access policy.");
 		_effectivePolicySelectors = [_legacyPolicySelector];
 		foreach (var factory in _pluginSelectorFactories) {
 			await factory.Disable();
