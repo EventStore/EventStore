@@ -57,7 +57,7 @@ curl -X POST \
 ```
 :::
 
-Now, every time an event is appended to the `example-stream`, the HTTP sink connector will send the event data to the specified URL.
+Now, every time an event is appended to the `example-stream`, the HTTP sink connector will send the record to the specified URL.
 
 ## Settings
 

@@ -58,7 +58,7 @@ curl -X POST \
 
 :::
 
-Now, every time an event is appended to the `example-stream`, the MongoDB sink connector will send the event data to the specified collection in the database.
+Now, every time an event is appended to the `example-stream`, the MongoDB sink connector will send the record to the specified collection in the database.
 
 ## Settings
 
