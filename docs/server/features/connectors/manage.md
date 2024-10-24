@@ -16,9 +16,9 @@ $JSON = @"
 {
   "settings": {
     "instanceTypeName": "logger-sink",
-    "subscription:filter:scope": "Stream",
+    "subscription:filter:scope": "stream",
     "subscription:filter:expression": "some-stream",
-    "subscription:initialPosition": "Earliest"
+    "subscription:initialPosition": "earliest"
   }
 }
 "@ `
@@ -34,9 +34,9 @@ curl.exe -X POST `
 JSON='{
   "settings": {
     "instanceTypeName": "logger-sink",
-    "subscription:filter:scope": "Stream",
+    "subscription:filter:scope": "stream",
     "subscription:filter:expression": "some-stream",
-    "subscription:initialPosition": "Earliest"
+    "subscription:initialPosition": "earliest"
   }
 }'
 
@@ -104,7 +104,7 @@ curl -X GET \
         "url": "http://localhost:8080/sink",
         "transformer:Enabled": "true",
         "transformer:Function": "ZnVuY3Rpb24gdHJhbnNmb3JtKHJlY29yZCkgewogIGxldCB7IG1ha2UsIG1vZGVsIH0gPSByZWNvcmQudmFsdWUudmVoaWNsZTsKICByZWNvcmQuc2NoZW1hSW5mby5zdWJqZWN0ID0gJ1ZlaGljbGUnOwogIHJlY29yZC52YWx1ZS52ZWhpY2xlLm1ha2Vtb2RlbCA9IGAke21ha2V9ICR7bW9kZWx9YDsKfQ==",
-        "subscription:filter:scope": "Stream",
+        "subscription:filter:scope": "stream",
         "subscription:filter:expression": "^\\$connectors\\/[^\\/]+\\/leases"
       },
       "settingsTimestamp": "2024-08-13T12:21:50.506102900Z"
@@ -116,9 +116,9 @@ curl -X GET \
       "stateTimestamp": "2024-08-13T12:21:47.459327600Z",
       "settings": {
         "instanceTypeName": "logger-sink",
-        "subscription:filter:scope": "Stream",
+        "subscription:filter:scope": "stream",
         "subscription:filter:expression": "some-stream",
-        "subscription:initialPosition": "Earliest"
+        "subscription:initialPosition": "earliest"
       },
       "settingsTimestamp": "2024-08-13T12:21:47.366197400Z",
       "position": 16829
@@ -250,9 +250,9 @@ curl -X GET http://localhost:2113/connectors/logger-sink/settings
 {
   "settings": {
     "instanceTypeName": "logger-sink",
-    "subscription:filter:scope": "Stream",
+    "subscription:filter:scope": "stream",
     "subscription:filter:expression": "some-stream",
-    "subscription:initialPosition": "Latest"
+    "subscription:initialPosition": "latest"
   },
   "settingsUpdateTime": "2024-08-14T18:12:16.500822500Z"
 }

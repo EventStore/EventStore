@@ -111,7 +111,7 @@ To use X.509 certificate authentication, include the base64 encoded x509
 certificate and the password in the settings. You can use an online tool like
 [base64encode](https://www.base64encode.org/) to encode your certificate.
 
-```
+```json
 {
   "certificate:rawData": "base64encodedstring",
   "certificate:password": "password"

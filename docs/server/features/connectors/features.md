@@ -80,7 +80,7 @@ An example of a Regex expression is shown below:
 
 ```json
 {
-  "subscription:filter:scope": "Stream",
+  "subscription:filter:scope": "stream",
   "subscription:filter:expression": "^eventType.*"
 }
 ```
@@ -91,7 +91,7 @@ You can also filter records by prefix using the following configuration:
 
 ```json
 {
-  "subscription:filter:scope": "Stream",
+  "subscription:filter:scope": "stream",
   "subscription:filter:expression": "prefix-"
 }
 ```
@@ -106,7 +106,7 @@ An example of a JsonPath filter is shown below:
 
 ```json
 {
-  "Subscription:Filter:Expression": "$[?($.value.vehicle.year==2018)]"
+  "subscription:filter:expression": "$[?($.value.vehicle.year==2018)]"
 }
 ```
 
@@ -143,13 +143,13 @@ function transform(record) {
 
 The transformation function must be a JavaScript function named **transform**.
 
-Additionally, it must adhere to the EventStore Record structure; otherwise, it will not start. For example, the following will **NOT** work:
+Additionally, it must adhere to the EventStore Record structure. Otherwise, it will not start. For example, the following will **NOT** work:
 
 ```js
 {
   function transform(record) {
     return {
-      name: 'invalid',
+      name: 'invalid'
     };
   }
 }
@@ -157,9 +157,9 @@ Additionally, it must adhere to the EventStore Record structure; otherwise, it w
 
 It also doesn't support advanced Javascript syntax such as generators and tail calls.
 
-Transformation can be enabled as follows:
+Transformation can be configured as follows:
 
-```js
+```json
 {
   "transformer:enabled": "true",
   "transformer:function": "ZnVuY3Rpb24gdHJhbnNmb3JtKHJlY29yZCkgewogIGxldCB7IG1ha2UsIG1vZGVsIH0gPSByZWNvcmQudmFsdWUudmVoaWNsZTsKICByZWNvcmQuc2NoZW1hSW5mby5zdWJqZWN0ID0gJ1ZlaGljbGUnOwogIHJlY29yZC52YWx1ZS52ZWhpY2xlLm1ha2Vtb2RlbCA9IGAke21ha2V9ICR7bW9kZWx9YDsKfQ=="
@@ -172,11 +172,15 @@ Connectors periodically store the position of the last event that they have
 successfully processed. Then, if the connector host is restarted, the connectors
 can continue from close to where they got up to. The checkpoint information is
 stored in the `$connectors/{connector-id}/checkpoints` system stream in
-EventStoreDB.
+EventStoreDB. Each connector has its own dedicated stream for storing
+checkpoints.
 
-Each connector has its own dedicated stream for storing checkpoints.
-
-![Connector checkpoint](./images/connector-checkpoint-stream.png)
+By default, when the connector is started and there are no checkpoints, it will
+begin from the latest position in the stream. You can configure this behavior
+using the `initialPosition` property in the settings. If you need to start from
+a specific position, you can use the `startPosition` property in the settings.
+You can find more information about these settings in the [Subscription
+Configuration](./settings.md#subscription-configuration) section on the settings
 
 ## Resilience
 
