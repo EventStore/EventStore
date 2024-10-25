@@ -29,7 +29,7 @@ graph TD
 
 This reduces the amount of work needed to process data from EventStoreDB instances and makes it easy to create data pipelines to implement complex use cases.
 
-::: note
+::: info
 The Connector plugin is pre-installed in all EventStoreDB binaries and is enabled by default.
 :::
 

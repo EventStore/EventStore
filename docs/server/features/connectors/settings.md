@@ -1,5 +1,5 @@
 ---
-title: 'Connector Settings'
+title: 'Configure Connector'
 order: 3
 ---
 
@@ -61,3 +61,15 @@ For details on resilience, see [Resilience](./features.md#resilience).
 | Name              | Details                                                                                        |
 | ----------------- | ---------------------------------------------------------------------------------------------- |
 | `logging:enabled` | **Type**: bool<br><br>**Description:** Enables or disables logging.<br><br>**Default**: `true` |
+
+
+## Disable the Plugin
+
+The Connector plugin is pre-installed in all EventStoreDB binaries and is enabled by default. It can be disabled with the following configuration. 
+
+Refer to the [configuration guide](../../configuration/README.md) for configuration mechanisms other than YAML.
+
+```yaml
+Connectors:
+  Enabled: false
+```
