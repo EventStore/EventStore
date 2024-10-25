@@ -29,7 +29,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	private readonly IPolicySelector _legacyPolicySelector;
 	private readonly IPolicySelectorFactory[] _pluginSelectorFactories;
 	private readonly AuthorizationPolicySettings _defaultSettings;
-	public event EventHandler? PolicyChanged;
+	public event EventHandler<PolicyChangedEventArgs>? PolicyChanged;
 
 	private CancellationTokenSource? _cts;
 	private IPolicySelector[] _effectivePolicySelectors = [];
@@ -37,6 +37,14 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	private static readonly JsonSerializerOptions SerializeOptions = new() {
 		PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 	};
+
+	public class PolicyChangedEventArgs : EventArgs {
+		public ReadOnlyPolicy[] EffectivePolicies { get; }
+
+		public PolicyChangedEventArgs(ReadOnlyPolicy[] effectivePolicies) {
+			EffectivePolicies = effectivePolicies;
+		}
+	}
 
 	public StreamBasedAuthorizationPolicyRegistry(IPublisher publisher, IPolicySelector legacyPolicySelector, IPolicySelectorFactory[] pluginSelectorFactories, AuthorizationPolicySettings defaultSettings) {
 		_publisher = publisher;
@@ -120,7 +128,8 @@ public class StreamBasedAuthorizationPolicyRegistry :
 		foreach (var factory in _pluginSelectorFactories) {
 			await factory.Disable();
 		}
-		PolicyChanged?.Invoke(this, EventArgs.Empty);
+
+		PolicyChanged?.Invoke(this, new PolicyChangedEventArgs(EffectivePolicies));
 	}
 
 	private async ValueTask ApplyLegacyPolicySelector() {
@@ -129,7 +138,8 @@ public class StreamBasedAuthorizationPolicyRegistry :
 		foreach (var factory in _pluginSelectorFactories) {
 			await factory.Disable();
 		}
-		PolicyChanged?.Invoke(this, EventArgs.Empty);
+
+		PolicyChanged?.Invoke(this, new PolicyChangedEventArgs(EffectivePolicies));
 	}
 
 	private (bool success, AuthorizationPolicySettings settings) TryParseAuthorizationPolicySettings(ResolvedEvent evnt) {
@@ -170,7 +180,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 			}
 		}
 
-		PolicyChanged?.Invoke(this, EventArgs.Empty);
+		PolicyChanged?.Invoke(this, new PolicyChangedEventArgs(EffectivePolicies));
 		return true;
 	}
 
