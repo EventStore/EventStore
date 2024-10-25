@@ -13,15 +13,13 @@ public class LicenseService : ILicenseService {
 	private readonly Action<Exception> _requestShutdown;
 
 	public LicenseService(
-		string esdbPublicKey,
-		string esdbPrivateKey,
 		IHostApplicationLifetime lifetime,
 		Action<Exception> requestShutdown,
 		ILicenseProvider licenseProvider) {
 
 		_lifetime = lifetime;
 		_requestShutdown = requestShutdown;
-		SelfLicense = License.Create(esdbPublicKey, esdbPrivateKey);
+		SelfLicense = License.Create([]);
 		Licenses = licenseProvider.Licenses;
 		Licenses.Subscribe(
 			license => {

@@ -5,7 +5,6 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using EventStore.Licensing.Keygen;
 using Xunit;
@@ -13,21 +12,10 @@ using Xunit;
 namespace EventStore.Licensing.Tests.Keygen;
 
 public class KeygenLicenseProviderTests {
-	readonly string _publicKey;
-	readonly string _privateKey;
-
-	public KeygenLicenseProviderTests() {
-		using var rsa = RSA.Create(512);
-		_publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
-		_privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
-	}
-
 	[Fact]
 	public async Task conclusive_valid() {
 		var licenses = new Subject<LicenseInfo>();
 		var sut = new KeygenLicenseProvider(
-			_publicKey,
-			_privateKey,
 			licenses);
 
 		licenses.OnNext(new LicenseInfo.Conclusive(
@@ -43,7 +31,7 @@ public class KeygenLicenseProviderTests {
 		licenses.OnCompleted();
 		var esdbLicense = (await sut.Licenses.ToList()).Single();
 
-		Assert.True(await esdbLicense.ValidateAsync(_publicKey));
+		Assert.True(await esdbLicense.ValidateAsync());
 		Assert.True(esdbLicense.HasEntitlement("FUTURE_TECH_3"));
 
 		var endpointInfo = LicenseSummary.SelectForEndpoint(esdbLicense);
@@ -70,8 +58,6 @@ public class KeygenLicenseProviderTests {
 	public async Task conclusive_invalid() {
 		var licenses = new Subject<LicenseInfo>();
 		var sut = new KeygenLicenseProvider(
-			_publicKey,
-			_privateKey,
 			licenses);
 
 		licenses.OnNext(new LicenseInfo.Conclusive(
@@ -94,15 +80,13 @@ public class KeygenLicenseProviderTests {
 	public async Task inconclusive() {
 		var licenses = new Subject<LicenseInfo>();
 		var sut = new KeygenLicenseProvider(
-			_publicKey,
-			_privateKey,
 			licenses);
 
 		licenses.OnNext(new LicenseInfo.Inconclusive());
 		licenses.OnCompleted();
 		var esdbLicense = (await sut.Licenses.ToList()).Single();
 
-		Assert.True(await esdbLicense.ValidateAsync(_publicKey));
+		Assert.True(await esdbLicense.ValidateAsync());
 		Assert.True(esdbLicense.HasEntitlement("ALL"));
 
 		var endpointInfo = LicenseSummary.SelectForEndpoint(esdbLicense);

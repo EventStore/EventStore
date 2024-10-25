@@ -16,6 +16,7 @@ using Serilog;
 
 namespace EventStore.Licensing;
 
+// circumventing the license mechanism is against the ESLv2 license.
 public class LicensingPlugin : Plugin {
 	private static readonly ILogger Log = Serilog.Log.ForContext<LicensingPlugin>();
 
@@ -60,10 +61,6 @@ public class LicensingPlugin : Plugin {
 	}
 
 	public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
-		// esdbPrivateKey is not truly private (obviously, here it is in the source). circumventing the license mechanism is against the license agreement.
-		var esdbPrivateKey = "MIIBPAIBAAJBAMa1FchaZ4mqR2lCvIl0oEVW8tow0cWQNxVdKhoPODVqGu0KsCDBikBEC8bIWzRtzBgllplK31o3CmCQA849AzkCAwEAAQJBALFULYpNU5UBhxUi34pzsAvxWmzpoGsFFoNUTxxOdMUExvprTltFKQ/hDAyNsc8oUg0AdBzt/jDzTce/W0WerHkCIQDq6SIeuUjWqGOG/+thcLJSj0jnNJ7NFJTPZDqaiocQDwIhANiL53qkAlWIg0uPlxARDtGI/bx5irIBn9Hed81WrnA3AiEApL4U4KkebPQwwHdwEqjfVkkIXqUnjTmW1w86jjECYX8CIQCa/Hcupdgt08j0+c6K50qN2diRXwRPpy32DZ39T38GPQIgSBL+EU/YRy6nwsqLLB+6+qtMd0s1T5kpI3l9VyNM3Uc=";
-		var esdbPublicKey = "MEgCQQDGtRXIWmeJqkdpQryJdKBFVvLaMNHFkDcVXSoaDzg1ahrtCrAgwYpARAvGyFs0bcwYJZaZSt9aNwpgkAPOPQM5AgMBAAE=";
-
 		var baseUrl = $"https://licensing.eventstore.com/v1/";
 		var clientOptions = configuration.GetSection("EventStore:Licensing").Get<KeygenClientOptions>() ?? new();
 		if (clientOptions.BaseUrl is not null) {
@@ -98,14 +95,9 @@ public class LicensingPlugin : Plugin {
 			.AddSingleton<ILicenseService>(sp => {
 				var licenseProvider =
 					_licenseProvider ??
-					new KeygenLicenseProvider(
-						esdbPublicKey,
-						esdbPrivateKey,
-						licenses);
+					new KeygenLicenseProvider(licenses);
 
 				return new LicenseService(
-					esdbPublicKey,
-					esdbPrivateKey,
 					sp.GetRequiredService<IHostApplicationLifetime>(),
 					_requestShutdown,
 					licenseProvider);
