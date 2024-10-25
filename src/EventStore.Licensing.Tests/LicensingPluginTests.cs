@@ -7,7 +7,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.Plugins;
@@ -31,10 +30,7 @@ public class LicensingPluginTests : IAsyncLifetime {
 	}
 
 	private static async Task<LicensingPlugin> CreateLicensedSutAsync(Dictionary<string, object> claims) {
-		using var rsa = RSA.Create(512);
-		var publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
-		var privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
-		var license = await License.CreateAsync(publicKey, privateKey, claims);
+		var license = await License.CreateAsync(claims);
 		return new LicensingPlugin(
 			ex => { },
 			new AdHocLicenseProvider(license));
