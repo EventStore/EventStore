@@ -46,6 +46,228 @@ Upgrading the cluster this way keeps the cluster online and able to service requ
 If you modified the Linux service file to increase the open files limit, those changes will be overridden during the upgrade. You will need to reapply them after the upgrade.
 :::
 
+### Upgrading from 24.10-preview1
+
+There have been a few changes to 24.10 since the preview, both in the configuration and the behaviour of some of the new features.
+
+Be aware of the following if you are upgrading from or tested out 24.10.0-preview1.
+
+#### Plugins configuration section removed
+
+The configuration for some features was previously nested in a subsection titled `Plugins`. This has been changed so that all configuration is nested in the `EventStore` subsection.
+
+Additionally, these features can now be configured directly in the server main config as well as via JSON or environment variables.
+
+This specifically affects the following features in the preview:
+
+- [License keys](#license-keys)
+- [Auto-scavenge](#auto-scavenge)
+- [Stream policy authorization](#stream-policy-authorization)
+- [Connectors](#connectors)
+- [Encryption-at-rest](#encryption-at-rest)
+
+And the following features from versions 23.10 and below:
+
+- [Otel exporter](#otel-exporter-commercial-plugin-configuration-changes)
+- [User certificates](#user-certificates-commercial-plugin-configuration-changes)
+
+As an example, if a feature was enabled with a json file with a `Plugins` subsection, the json would previously have been structured like this:
+
+```json
+{
+  "EventStore": {
+    "Plugins": {
+      "Feature_Name": {
+        "Feature_Option": "value"
+      }
+    }
+  }
+}
+```
+
+With the subsection removed, it would look like this:
+
+```json
+{
+  "EventStore": {
+    "Feature_Name": {
+      "Feature_Option": "value"
+    }
+  }
+}
+```
+
+And can instead be moved to the main config file like this:
+
+```yaml
+Feature_Name:
+  Feature_Option: "value"
+```
+
+In the same manner, environment variables with the `PLUGINS` section have been changed. From this:
+
+```bash
+EVENTSTORE__PLUGINS__FEATURE_NAME__FEATURE_OPTION="value"
+```
+
+To this:
+
+```bash
+EVENTSTORE_FEATURE_NAME__FEATURE_OPTION="value"
+```
+
+If EventStoreDB detects any configuration in the `Plugins` subsection at startup, it will log a warning:
+
+```
+[29364, 1,10:42:37.475,WRN] ClusterVNode    The "Plugins" configuration subsection has been removed. The following settings will be ignored. Please move them out of the "Plugins" subsection and directly into the "EventStore" root.
+[29364, 1,10:42:37.476,WRN] ClusterVNode    Ignoring option nested in "Plugins" subsection: EventStore:Plugins:Licensing:LicenseKey
+```
+
+Refer to the [configuration guide](../configuration/README.md) for more details about the available configuration mechanisms.
+
+#### License keys
+
+The configuration for providing license keys has changed to remove the `Plugins` subsection.
+
+For example, an old JSON configuration file for a license key would have looked like this:
+
+```json
+{
+  "EventStore": {
+    "Plugins": {
+      "Licensing": {
+        "LicenseKey": "Your key"
+      }
+    }
+  }
+}
+```
+
+Which would now look like this:
+
+```json
+{
+  "EventStore": {
+    "Licensing": {
+      "LicenseKey": "Your key"
+    }
+  }
+}
+```
+
+And can be moved to the main config file like this:
+
+```yaml
+Licensing:
+  LicenseKey: Yourkey
+```
+
+Or with the environment variable:
+
+```bash
+EVENTSTORE_LICENSING__LICENSE_KEY="Your key"
+```
+
+#### Auto-scavenge 
+
+Auto-scavenge no longer needs to be enabled through the configuration.
+
+Instead, it is automatically enabled by default when a valid license key is provided. It can be disabled with the following configuration:
+
+```yaml
+AutoScavenge:
+  Enabled: false
+```
+
+::: note
+EventStoreDB will not run any scavenges until a schedule is set via the HTTP endpoint.
+:::
+
+Refer to [auto-scavenge](../operations/auto-scavenge.md) for more details about this feature.
+
+#### Stream policy authorization
+
+Stream policy authorization can now be enabled across a cluster via the `$authorization-policy-settings` stream. A default policy type may be specified with the following configuration:
+
+```yaml
+Authorization:
+  DefaultPolicyType: streampolicy
+```
+
+Refer to [stream policy authorization](../configuration/security.md#stream-policy-authorization) for more details about enabling and configuring this feature.
+
+#### Connectors
+
+<!--TODO: Connectors changes?-->
+
+#### Encrytpion-at-rest
+
+Only the configuration for encryption-at-rest has changed since 24.10.0-preview1.
+
+For example, an old JSON configuration file for encryption-at-rest would have looked like this:
+
+```json
+{
+  "EventStore": {
+    "Plugins": {
+      "EncryptionAtRest": {
+        "Enabled": true,
+        "MasterKey": {
+          "File": {
+            "KeyPath": "/path/to/keys/"
+          }
+        },
+        "Encryption": {
+          "AesGcm": {
+            "Enabled": true,
+            "KeySize": 256
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Which would now look like this:
+
+```json
+{
+  "EventStore": {
+    "EncryptionAtRest": {
+      "Enabled": true,
+      "MasterKey": {
+        "File": {
+          "KeyPath": "/path/to/keys/"
+        }
+      },
+      "Encryption": {
+        "AesGcm": {
+          "Enabled": true,
+          "KeySize": 256
+        }
+      }
+    }
+  }
+}
+```
+
+And could be moved to the main config file like this:
+
+```yaml
+Transform: aes-gcm
+
+EncryptionAtRest:
+  Enabled: true
+  MasterKey:
+    File:
+      KeyPath: /path/to/keys/
+  Encryption:
+    AesGcm:
+      Enabled: true
+      KeySize: 256
+```
+
 ### Breaking changes
 
 #### From version 24.6 and earlier

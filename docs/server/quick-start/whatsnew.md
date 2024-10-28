@@ -80,7 +80,7 @@ Refer to the [documentation](../features/connectors/sinks/http.md) for instructi
 
 The Autoscavenge feature automatically schedules _cluster scavenges_ which are composed of multiple _node scavenges_. Only one node scavenge can be executed at a time in the cluster. The Autoscavenge feature allows to schedule said _cluster scavenges_.
 
-This feature is disabled by default.
+The autoscavenge feature requires a license to use. EventStoreDB will only start auto-scavenging once an administrator has set up a schedule for running cluster scavenges.
 
 Refer to the [documentation](../operations/auto-scavenge.md) for instructions on how to enable and use this feature.
 
@@ -92,9 +92,7 @@ Define stream access policies in one place based on stream prefixes, rather than
 
 Stream access policies can be created to grant users or groups read, write, delete, or metadata access; and then these policies can be applied to streams based on their prefix, or to system or user streams in general.
 
-The Stream Policy feature requires a license to use, and is disabled by default.
-
-Refer to the [documentation](../configuration/security.md#stream-policy-authorization) for more information about using and configuring this feature.
+The Stream Policy feature requires a license to use. Refer to the [documentation](../configuration/security.md#stream-policy-authorization) for more information about using and configuring this feature.
 
 ### Encryption-at-rest
 
