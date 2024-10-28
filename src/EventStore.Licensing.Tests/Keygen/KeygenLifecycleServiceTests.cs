@@ -109,6 +109,7 @@ public sealed class KeygenLifecycleServiceTests : IDisposable {
 	}
 
 	[Theory]
+	[InlineData("MACHINE_LIMIT_EXCEEDED", true)]
 	[InlineData("MACHINE_CORE_LIMIT_EXCEEDED", true)]
 	[InlineData("something_we_didnt_anticipate", false)]
 	public async Task when_license_validation_requires_machine_activation_which_fails(string code, bool conclusive) {
