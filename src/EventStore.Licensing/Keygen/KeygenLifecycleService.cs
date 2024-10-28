@@ -85,12 +85,7 @@ public sealed class KeygenLifecycleService : IHostedService, IDisposable {
 	async Task<LicenseInfo> Validate(CancellationToken cancellationToken) {
 		var restResponse = await _client.ValidateLicense(_fingerprint, cancellationToken);
 		if (!TryGetParsedResponse(restResponse, "License validation", out var response, out var error)) {
-			// todo: other conclusive errors?
-			return error.Code switch {
-				"LICENSE_INVALID" or
-				"LICENSE_SUSPENDED" => error.ToConclusiveInfo(),
-				_ => LicenseInfo.Inconclusive.Instance,
-			};
+			return error.ToLicenseInfo();
 		}
 
 		var validationData = response.Meta;
@@ -118,9 +113,8 @@ public sealed class KeygenLifecycleService : IHostedService, IDisposable {
 
 		// status is Valid
 		var entitlementRestResponse = await _client.GetEntitlements(licenseData.Id);
-		if (!TryGetParsedResponse(entitlementRestResponse, "License GetEntitlements", out var entitlementResponse, out var _)) {
-			// todo: any conclusive errors?
-			return LicenseInfo.Inconclusive.Instance;
+		if (!TryGetParsedResponse(entitlementRestResponse, "License GetEntitlements", out var entitlementResponse, out var entitlementError)) {
+			return entitlementError.ToLicenseInfo();
 		}
 
 		var entitlements = entitlementResponse.Data!.Select(x => x.Attributes).ToArray();
@@ -148,11 +142,7 @@ public sealed class KeygenLifecycleService : IHostedService, IDisposable {
 			var restResponse = await _client.ActivateMachine(licenseData.Id, _fingerprint, Fingerprint.CpuCount, Fingerprint.Ram, cancellationToken);
 
 			if (!TryGetParsedResponse(restResponse, "License machine activation", out var response, out var error)) {
-				// todo: other conclusive errors?
-				if (error.Code == "MACHINE_CORE_LIMIT_EXCEEDED")
-					return error.ToConclusiveInfo();
-
-				return LicenseInfo.Inconclusive.Instance;
+				return error.ToLicenseInfo();
 			}
 
 			Log.Information("Machine activated");
@@ -175,7 +165,7 @@ public sealed class KeygenLifecycleService : IHostedService, IDisposable {
 	// completes when the heartbeat fails
 	async Task HeartbeatAsNecessary(CancellationToken cancellationToken) {
 		var restResponse = await _client.GetMachine(_fingerprint, cancellationToken);
-		if (!TryGetParsedResponse(restResponse, "License GetMachine", out var response, out var error)) {
+		if (!TryGetParsedResponse(restResponse, "License GetMachine", out var response, out var _)) {
 			// doesn't matter what the error is, we will revalidate from the top.
 			return;
 		}
@@ -200,7 +190,7 @@ public sealed class KeygenLifecycleService : IHostedService, IDisposable {
 			await Task.Delay(delay, cancellationToken);
 
 			var restResponse = await _client.SendHeartbeat(_fingerprint, cancellationToken);
-			if (!TryGetParsedResponse(restResponse, "License Heartbeat", out var response, out var error)) {
+			if (!TryGetParsedResponse(restResponse, "License Heartbeat", out var response, out var _)) {
 				// doesn't matter what the error is, we will revalidate from the top.
 				return;
 			}
@@ -259,7 +249,16 @@ public sealed class KeygenLifecycleService : IHostedService, IDisposable {
 }
 
 static class ErrorExtensions {
-	public static LicenseInfo.Conclusive ToConclusiveInfo(this KeygenError error) {
-		return LicenseInfo.Conclusive.FromError($"{error.Title}. {error.Detail}");
-	}
+	static readonly string[] _conclusiveErrors = [
+		"LICENSE_INVALID",
+		"LICENSE_SUSPENDED",
+		"MACHINE_CORE_LIMIT_EXCEEDED",
+		"MACHINE_LIMIT_EXCEEDED",
+		"MACHINE_PROCESS_LIMIT_EXCEEDED",
+	];
+
+	public static LicenseInfo ToLicenseInfo(this KeygenError error) =>
+		_conclusiveErrors.Contains(error.Code)
+			? LicenseInfo.Conclusive.FromError($"{error.Title}. {error.Detail}")
+			: LicenseInfo.Inconclusive.Instance;
 }
