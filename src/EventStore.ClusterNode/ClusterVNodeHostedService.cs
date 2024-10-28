@@ -268,9 +268,20 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 		}
 
 		IPlugableComponent ConfigureMD5() {
-			var md5Provider = GetMD5ProviderFactories().FirstOrDefault()?.Build() ?? new NetMD5Provider();
-			MD5.UseProvider(md5Provider);
-			return md5Provider;
+			IMD5Provider provider;
+			try {
+				// use the default net md5 provider if we can - i.e. in non fips environments.
+				provider = new NetMD5Provider();
+				MD5.UseProvider(provider);
+			} catch {
+				// didn't work, we are probably in a fips environment, try to load a plugin
+				provider = GetMD5ProviderFactories().FirstOrDefault()?.Build() ??
+					throw new ApplicationInitializationException("Could not find an enabled FileHashProviderFactory");
+				MD5.UseProvider(provider);
+			}
+
+			Log.Information("Using {Name} FileHashProvider.", provider.Name);
+			return provider;
 		}
 
 		IEnumerable<IMD5ProviderFactory> GetMD5ProviderFactories() {
