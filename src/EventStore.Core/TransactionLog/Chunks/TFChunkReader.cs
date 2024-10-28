@@ -24,12 +24,9 @@ public class TFChunkReader : ITransactionFileReader {
 	private readonly TFChunkDb _db;
 	private readonly IReadOnlyCheckpoint _writerCheckpoint;
 	private long _curPos;
-	private bool _optimizeReadSideCache;
-	private readonly TFChunkReaderExistsAtOptimizer _existsAtOptimizer;
 	private readonly ILogger _log = Log.ForContext<TFChunkReader>();
 
-	public TFChunkReader(TFChunkDb db, IReadOnlyCheckpoint writerCheckpoint, long initialPosition = 0,
-		bool optimizeReadSideCache = false) {
+	public TFChunkReader(TFChunkDb db, IReadOnlyCheckpoint writerCheckpoint, long initialPosition = 0) {
 		Ensure.NotNull(db, "dbConfig");
 		Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 		Ensure.Nonnegative(initialPosition, "initialPosition");
@@ -37,10 +34,6 @@ public class TFChunkReader : ITransactionFileReader {
 		_db = db;
 		_writerCheckpoint = writerCheckpoint;
 		_curPos = initialPosition;
-
-		_optimizeReadSideCache = optimizeReadSideCache;
-		if (_optimizeReadSideCache)
-			_existsAtOptimizer = TFChunkReaderExistsAtOptimizer.Instance;
 	}
 
 	public void Reposition(long position) {
@@ -176,8 +169,6 @@ public class TFChunkReader : ITransactionFileReader {
 		var chunk = _db.Manager.GetChunkFor(position);
 		try {
 			CountRead(chunk.IsCached);
-			if (_optimizeReadSideCache)
-				_existsAtOptimizer.Optimize(chunk);
 			return await chunk.ExistsAt(chunk.ChunkHeader.GetLocalLogPosition(position), token);
 		} catch (FileBeingDeletedException) {
 			if (retries > MaxRetries)

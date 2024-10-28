@@ -182,11 +182,11 @@ public partial class TFChunk : IDisposable {
 
 	public static async ValueTask<TFChunk> FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead,
 		ITransactionFileTracker tracker, Func<TransformType, IChunkTransformFactory> getTransformFactory,
-		bool optimizeReadSideCache = false, bool reduceFileCachePressure = false, CancellationToken token = default) {
+		bool reduceFileCachePressure = false, CancellationToken token = default) {
 		var chunk = new TFChunk(filename,
 			TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure);
 		try {
-			await chunk.InitCompleted(verifyHash, optimizeReadSideCache, tracker, getTransformFactory, token);
+			await chunk.InitCompleted(verifyHash, tracker, getTransformFactory, token);
 		} catch {
 			chunk.Dispose();
 			throw;
@@ -267,7 +267,7 @@ public partial class TFChunk : IDisposable {
 		return chunk;
 	}
 
-	private async ValueTask InitCompleted(bool verifyHash, bool optimizeReadSideCache, ITransactionFileTracker tracker,
+	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
 		var fileInfo = new FileInfo(_filename);
 		if (!fileInfo.Exists)
@@ -310,7 +310,7 @@ public partial class TFChunk : IDisposable {
 		CreateReaderStreams();
 
 		_readSide = _chunkHeader.IsScavenged
-			? new TFChunkReadSideScavenged(this, optimizeReadSideCache, tracker)
+			? new TFChunkReadSideScavenged(this, tracker)
 			: new TFChunkReadSideUnscavenged(this, tracker);
 
 		// do not actually cache now because it is too slow when opening the database
@@ -342,7 +342,7 @@ public partial class TFChunk : IDisposable {
 		}
 
 		_readSide = chunkHeader.IsScavenged
-			? new TFChunkReadSideScavenged(this, false, tracker)
+			? new TFChunkReadSideScavenged(this, tracker)
 			: new TFChunkReadSideUnscavenged(this, tracker);
 
 		// Always cache the active chunk
@@ -759,16 +759,6 @@ public partial class TFChunk : IDisposable {
 	public async ValueTask<bool> ExistsAt(long logicalPosition, CancellationToken token) {
 		token.ThrowIfCancellationRequested();
 		return _readSide.ExistsAt(logicalPosition);
-	}
-
-	public void OptimizeExistsAt() {
-		if (!ChunkHeader.IsScavenged) return;
-		((TFChunkReadSideScavenged)_readSide).OptimizeExistsAt();
-	}
-
-	public void DeOptimizeExistsAt() {
-		if (!ChunkHeader.IsScavenged) return;
-		((TFChunkReadSideScavenged)_readSide).DeOptimizeExistsAt();
 	}
 
 	public async ValueTask<RecordReadResult> TryReadAt(long logicalPosition, bool couldBeScavenged, CancellationToken token) {

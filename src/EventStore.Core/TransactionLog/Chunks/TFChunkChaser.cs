@@ -16,14 +16,13 @@ public class TFChunkChaser : ITransactionFileChaser {
 	private readonly ICheckpoint _chaserCheckpoint;
 	private readonly TFChunkReader _reader;
 
-	public TFChunkChaser(TFChunkDb db, IReadOnlyCheckpoint writerCheckpoint, ICheckpoint chaserCheckpoint,
-		bool optimizeReadSideCache) {
+	public TFChunkChaser(TFChunkDb db, IReadOnlyCheckpoint writerCheckpoint, ICheckpoint chaserCheckpoint) {
 		Ensure.NotNull(db, "dbConfig");
 		Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 		Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
 
 		_chaserCheckpoint = chaserCheckpoint;
-		_reader = new TFChunkReader(db, writerCheckpoint, _chaserCheckpoint.Read(), optimizeReadSideCache);
+		_reader = new TFChunkReader(db, writerCheckpoint, _chaserCheckpoint.Read());
 	}
 
 	public void Open() {

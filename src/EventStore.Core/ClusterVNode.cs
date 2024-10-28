@@ -428,7 +428,6 @@ public class ClusterVNode<TStreamId> :
 				options.Database.MemDb,
 				unbuffered: false,
 				options.Database.WriteThrough,
-				optimizeReadSideCache: false,
 				options.Database.ReduceFileCachePressure,
 				options.Database.MaxTruncation);
 		}
@@ -578,8 +577,7 @@ public class ClusterVNode<TStreamId> :
 			pTableMaxReaderCount,
 			() => new TFChunkReader(
 				Db,
-				Db.Config.WriterCheckpoint.AsReadOnly(),
-				optimizeReadSideCache: Db.Config.OptimizeReadSideCache));
+				Db.Config.WriterCheckpoint.AsReadOnly()));
 
 		var logFormat = logFormatAbstractorFactory.Create(new() {
 			InMemory = options.Database.MemDb,
@@ -686,8 +684,7 @@ public class ClusterVNode<TStreamId> :
 
 		var partitionManager = logFormat.CreatePartitionManager(new TFChunkReader(
 				Db,
-				Db.Config.WriterCheckpoint.AsReadOnly(),
-				optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
+				Db.Config.WriterCheckpoint.AsReadOnly()),
 			writer);
 
 		var epochManager = new EpochManager<TStreamId>(_mainQueue,
@@ -698,8 +695,7 @@ public class ClusterVNode<TStreamId> :
 			maxReaderCount: 5,
 			readerFactory: () => new TFChunkReader(
 				Db,
-				Db.Config.WriterCheckpoint.AsReadOnly(),
-				optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
+				Db.Config.WriterCheckpoint.AsReadOnly()),
 			logFormat.RecordFactory,
 			logFormat.StreamNameIndex,
 			logFormat.EventTypeIndex,
@@ -792,8 +788,7 @@ public class ClusterVNode<TStreamId> :
 		var chaser = new TFChunkChaser(
 			Db,
 			Db.Config.WriterCheckpoint.AsReadOnly(),
-			Db.Config.ChaserCheckpoint,
-			Db.Config.OptimizeReadSideCache);
+			Db.Config.ChaserCheckpoint);
 
 		var storageChaser = new StorageChaser<TStreamId>(
 			_mainQueue,

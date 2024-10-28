@@ -23,7 +23,6 @@ public class TFChunkDbConfig {
 	public readonly bool InMemDb;
 	public readonly bool Unbuffered;
 	public readonly bool WriteThrough;
-	public readonly bool OptimizeReadSideCache;
 	public readonly bool ReduceFileCachePressure;
 	public readonly long MaxTruncation;
 
@@ -42,7 +41,6 @@ public class TFChunkDbConfig {
 		bool inMemDb = false,
 		bool unbuffered = false,
 		bool writethrough = false,
-		bool optimizeReadSideCache = false,
 		bool reduceFileCachePressure = false,
 		long maxTruncation = 256 * 1024 * 1024) {
 		Ensure.NotNullOrEmpty(path, "path");
@@ -73,7 +71,6 @@ public class TFChunkDbConfig {
 		InMemDb = inMemDb;
 		Unbuffered = unbuffered;
 		WriteThrough = writethrough;
-		OptimizeReadSideCache = optimizeReadSideCache;
 		ReduceFileCachePressure = reduceFileCachePressure;
 		MaxTruncation = maxTruncation;
 	}

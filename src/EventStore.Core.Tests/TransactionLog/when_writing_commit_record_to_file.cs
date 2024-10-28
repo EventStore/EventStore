@@ -49,7 +49,7 @@ public class when_writing_commit_record_to_file : SpecificationWithDirectoryPerT
 
 	[Test]
 	public async Task the_data_is_written() {
-		using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint, false)) {
+		using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint)) {
 			reader.Open();
 			ILogRecord r = await reader.TryReadNext(CancellationToken.None) is { Success: true } res
 				? res.LogRecord
