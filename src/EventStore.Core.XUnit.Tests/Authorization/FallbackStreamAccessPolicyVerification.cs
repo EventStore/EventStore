@@ -17,6 +17,7 @@ namespace EventStore.Core.XUnit.Tests.Authorization;
 public class FallbackStreamAccessPolicyVerification {
 	private const string StreamId = "test-stream";
 	private const string StreamsResource = "streams";
+	private const string SubscriptionsResource = "subscriptions";
 
 	private readonly ClaimsPrincipal _claimsPrincipal = new(new ClaimsIdentity(
 		new[] { new Claim(ClaimTypes.Name, "test-user") }));
@@ -57,6 +58,14 @@ public class FallbackStreamAccessPolicyVerification {
 		Operations.Users.ChangePassword
 	];
 
+	public static TheoryData<OperationDefinition> SubscriptionOperations() {
+		var data = new TheoryData<OperationDefinition>();
+		SampleOperations.Where(x => x.Resource == SubscriptionsResource)
+		.ForEach(x => data.Add(x));
+
+		return data;
+	}
+
 	public static TheoryData<OperationDefinition> StreamOperations() {
 		var data = new TheoryData<OperationDefinition>();
 		SampleOperations.Where(x => x.Resource == StreamsResource)
@@ -65,9 +74,9 @@ public class FallbackStreamAccessPolicyVerification {
 		return data;
 	}
 
-	public static TheoryData<OperationDefinition> NonStreamOperations() {
+	public static TheoryData<OperationDefinition> OtherOperations() {
 		var data = new TheoryData<OperationDefinition>();
-		SampleOperations.Where(x => x.Resource != StreamsResource)
+		SampleOperations.Where(x => x.Resource != StreamsResource && x.Resource != SubscriptionsResource)
 			.ForEach(x => data.Add(x));
 
 		return data;
@@ -87,7 +96,24 @@ public class FallbackStreamAccessPolicyVerification {
 	}
 
 	[Theory]
-	[MemberData(nameof(NonStreamOperations))]
+	[MemberData(nameof(SubscriptionOperations))]
+	public async Task restricts_processing_subscription_messages(OperationDefinition operationDefinition) {
+		var sut = CreateSut();
+
+		var operation = new Operation(operationDefinition)
+			.WithParameter(Operations.Subscriptions.Parameters.StreamId(StreamId));
+		var res = await sut.EvaluateAsync(_claimsPrincipal, operation, CancellationToken.None);
+
+		if (operation.Action == Operations.Subscriptions.ProcessMessages.Action) {
+			Assert.Equal(Grant.Deny, res.Grant);
+			Assert.Contains("restricted to system or admin users only", res.ToString());
+		} else {
+			Assert.Equal(Grant.Allow, res.Grant);
+		}
+	}
+
+	[Theory]
+	[MemberData(nameof(OtherOperations))]
 	public async Task does_not_restrict_other_operations(OperationDefinition operationDefinition) {
 		var sut = CreateSut();
 
