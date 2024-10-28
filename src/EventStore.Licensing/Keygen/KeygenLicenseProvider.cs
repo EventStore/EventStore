@@ -15,16 +15,8 @@ namespace EventStore.Licensing.Keygen;
 public class KeygenLicenseProvider : ILicenseProvider {
 	private static readonly ILogger Log = Serilog.Log.ForContext<KeygenLicenseProvider>();
 
-	private readonly string _esdbPublicKey;
-	private readonly string _esdbPrivateKey;
-
 	public KeygenLicenseProvider(
-		string esdbPublicKey,
-		string esdbPrivateKey,
 		IObservable<LicenseInfo> keygenLicenses) {
-
-		_esdbPublicKey = esdbPublicKey;
-		_esdbPrivateKey = esdbPrivateKey;
 
 		// not sure that another subject is the right answer here
 		var licenses = keygenLicenses
@@ -105,16 +97,13 @@ public class KeygenLicenseProvider : ILicenseProvider {
 		return CreateLicense(summary, licenseInfo.Entitlements);
 	}
 
-	License CreateLicense(LicenseSummary summary, string[] entitlements) {
+	static License CreateLicense(LicenseSummary summary, string[] entitlements) {
 		var claims = entitlements.ToDictionary(
 			x => x,
 			x => (object)"true");
 
 		summary?.Export(claims);
 
-		return License.Create(
-			publicKey: _esdbPublicKey,
-			privateKey: _esdbPrivateKey,
-			claims: claims);
+		return License.Create(claims: claims);
 	}
 }
