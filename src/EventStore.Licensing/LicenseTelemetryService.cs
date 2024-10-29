@@ -19,16 +19,31 @@ public class LicenseTelemetryService : IHostedService {
 	}
 
 	public Task StartAsync(CancellationToken cancellationToken) {
+		License? current = null;
 		_licenseProvider.Licenses.Subscribe(
 			onNext: license => {
+				current = license;
 				var telemetry = LicenseSummary.SelectForTelemetry(license);
 				_publish(telemetry);
 			},
 			onError: ex => {
+				current = null;
 				_publish([]);
 			});
 
+		_ = TelemetryLoop();
+
 		return Task.CompletedTask;
+
+		async Task TelemetryLoop() {
+			while (true) {
+				await Task.Delay(TimeSpan.FromHours(1), cancellationToken);
+				if (current is { } currentLicense) {
+					var telemetry = LicenseSummary.SelectForTelemetry(currentLicense);
+					_publish(telemetry);
+				}
+			}
+		}
 	}
 
 	public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
