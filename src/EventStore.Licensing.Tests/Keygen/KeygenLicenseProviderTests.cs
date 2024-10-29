@@ -66,14 +66,14 @@ public class KeygenLicenseProviderTests {
 			Valid: false,
 			Trial: false,
 			Warning: false,
-			Detail: "is not valid",
+			Detail: "License is suspended",
 			Expiry: DateTimeOffset.UtcNow + TimeSpan.FromHours(24 + 24 + 1),
 			Entitlements: ["FUTURE_TECH_3"]));
 
 		licenses.OnCompleted();
 
 		var ex = await Assert.ThrowsAnyAsync<Exception>(async () => await sut.Licenses.ToList());
-		Assert.Equal("Invalid license: acme", ex.Message);
+		Assert.Equal("Invalid license: acme. License is suspended", ex.Message);
 	}
 
 	[Fact]
