@@ -292,5 +292,3 @@ curl https://user:password@localhost:2113/admin/logs/log20240205.json --output l
 - **404 Not Found:** Verify that you have a valid license key.
 
 - **401 Unauthorized:** Confirm the credentials are correct and the user belongs to the `$ops` or `$admins` group.
-
-- **Log Files Directory Not Found:** Check the `NodeIp` and `NodePort` settings are current and not using the deprecated settings `HttpIp` or `HttpPort`.
