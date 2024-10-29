@@ -859,7 +859,7 @@ public partial class TFChunk : IDisposable {
 		CompleteNonRaw(null);
 	}
 
-	public async ValueTask CompleteScavenge(ICollection<PosMap> mapping, CancellationToken token) {
+	public async ValueTask CompleteScavenge(IReadOnlyCollection<PosMap> mapping, CancellationToken token) {
 		if (!ChunkHeader.IsScavenged)
 			throw new InvalidOperationException("CompleteScavenged should not be used for non-scavenged chunks.");
 
@@ -867,7 +867,7 @@ public partial class TFChunk : IDisposable {
 		CompleteNonRaw(mapping);
 	}
 
-	private void CompleteNonRaw(ICollection<PosMap> mapping) {
+	private void CompleteNonRaw(IReadOnlyCollection<PosMap> mapping) {
 		if (IsReadOnly)
 			throw new InvalidOperationException("Cannot complete a read-only TFChunk.");
 
@@ -912,12 +912,12 @@ public partial class TFChunk : IDisposable {
 		}
 	}
 
-	private ChunkFooter WriteFooter(ICollection<PosMap> mapping) {
+	private ChunkFooter WriteFooter(IReadOnlyCollection<PosMap> mapping) {
 		var workItem = _writerWorkItem;
 		workItem.ResizeStream((int)workItem.WorkingStream.Position);
 
 		int mapSize = 0;
-		if (mapping != null) {
+		if (mapping is not null) {
 			if (_inMem)
 				throw new InvalidOperationException(
 					"Cannot write an in-memory chunk with a PosMap. " +
