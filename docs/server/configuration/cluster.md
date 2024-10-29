@@ -1,6 +1,6 @@
 ---
 title: Clustering
-order: 4
+order: 3
 ---
 
 # Highly-available cluster
