@@ -55,8 +55,15 @@ public class LicensingPluginTests : IAsyncLifetime {
 			{"another_claim", "another_value" } // excluded from endpoint
 		};
 
-		new LicenseSummary("license123", "the_company", true, true, true, true, 4, new DateTime(2024, 4, 15), "somenotes")
-			.Export(claims);
+		new LicenseSummary(
+			licenseId: "license123",
+			company: "the_company",
+			isTrial: true,
+			isExpired: true,
+			expiry: new DateTimeOffset(1970, 1, 1, 0, 0, 55, default),
+			isValid: true,
+			notes: "somenotes")
+			.ExportClaims(claims);
 
 		var sut = await CreateLicensedSutAsync(claims);
 		_server = await InitializeServerAsync(sut);
@@ -71,15 +78,15 @@ public class LicensingPluginTests : IAsyncLifetime {
 		Assert.DoesNotContain("another", responseString);
 		Assert.Equal("""
 			{
+			  "isExpired": "true",
 			  "licenseId": "license123",
 			  "company": "the_company",
 			  "isTrial": "true",
-			  "isExpired": "true",
+			  "daysRemaining": "0.00",
 			  "isValid": "true",
+			  "notes": "somenotes",
 			  "isFloating": "true",
-			  "daysRemaining": "4",
-			  "startDate": "1713139200",
-			  "notes": "somenotes"
+			  "startDate": "0"
 			}
 			""".Replace(" ", "").Replace(Environment.NewLine, ""),
 			responseString);

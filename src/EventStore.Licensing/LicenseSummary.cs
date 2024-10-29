@@ -12,17 +12,18 @@ public record LicenseSummary(
 	string Company,
 	bool IsTrial,
 	bool IsExpired,
+	long ExpiryUnixTimeSeconds,
 	bool IsValid,
-	bool IsFloating,
-	int DaysRemaining,
-	long StartDate,
 	string Notes) {
 
-	public LicenseSummary(string licenseId, string company, bool isTrial, bool isExpired, bool isValid, bool isFloating, int daysRemaining, DateTime startDate, string notes)
-		: this(licenseId, company, isTrial, isExpired, isValid, isFloating, daysRemaining, (long)(startDate - DateTime.UnixEpoch).TotalSeconds, notes) {
+	static readonly string IsExpiredName = ToCamelCase(nameof(IsExpired));
+	static readonly string ExpiryUnixTimeSecondsName = ToCamelCase(nameof(ExpiryUnixTimeSeconds));
+
+	public LicenseSummary(string licenseId, string company, bool isTrial, bool isExpired, DateTimeOffset expiry, bool isValid, string notes)
+		: this(licenseId, company, isTrial, isExpired, expiry.ToUnixTimeSeconds(), isValid, notes) {
 	}
 
-	public void Export(in Dictionary<string, object> props) {
+	public void ExportClaims(in Dictionary<string, object> props) {
 		foreach (var property in GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
 			props.Add(ToCamelCase(property.Name), property.GetValue(this)!);
 	}
@@ -35,12 +36,30 @@ public record LicenseSummary(
 	public static Dictionary<string, object?> SelectForEndpoint(License license) {
 		var dict = new Dictionary<string, object?>();
 
+		dict[IsExpiredName] = "false";
+
 		foreach (var claim in license.Token.Claims ?? []) {
-			if (Properties.Contains(claim.Type)) {
+			if (claim.Type == ExpiryUnixTimeSecondsName) {
+				var expiryUnixTimeSeconds = long.Parse(claim.Value);
+				var expiry = DateTimeOffset.FromUnixTimeSeconds(expiryUnixTimeSeconds);
+				var daysRemaining = (expiry - DateTimeOffset.UtcNow).TotalDays;
+				daysRemaining = Math.Max(daysRemaining, 0);
+				dict["daysRemaining"] = $"{daysRemaining:N2}";
+				if (daysRemaining <= 0)
+					dict[IsExpiredName] = "true";
+
+			} else if (claim.Type == IsExpiredName) {
+				if (claim.Value == "true")
+					dict[IsExpiredName] = "true";
+
+			} else if (Properties.Contains(claim.Type)) {
 				dict[claim.Type] = claim.Value;
 			}
 		}
 
+		// needed for backwards compatibility with the webui
+		dict["isFloating"] = "true";
+		dict["startDate"] = "0";
 		return dict;
 	}
 
