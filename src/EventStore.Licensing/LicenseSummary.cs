@@ -11,18 +11,18 @@ public record LicenseSummary(
 	string LicenseId,
 	string Company,
 	bool IsTrial,
-	bool IsExpired,
+	long ExpiryUnixTimeSeconds,
 	bool IsValid,
-	bool IsFloating,
-	int DaysRemaining,
-	long StartDate,
 	string Notes) {
 
-	public LicenseSummary(string licenseId, string company, bool isTrial, bool isExpired, bool isValid, bool isFloating, int daysRemaining, DateTime startDate, string notes)
-		: this(licenseId, company, isTrial, isExpired, isValid, isFloating, daysRemaining, (long)(startDate - DateTime.UnixEpoch).TotalSeconds, notes) {
+	static readonly string IsExpiredName = "isExpired";
+	static readonly string ExpiryUnixTimeSecondsName = ToCamelCase(nameof(ExpiryUnixTimeSeconds));
+
+	public LicenseSummary(string licenseId, string company, bool isTrial, DateTimeOffset expiry, bool isValid, string notes)
+		: this(licenseId, company, isTrial, expiry.ToUnixTimeSeconds(), isValid, notes) {
 	}
 
-	public void Export(in Dictionary<string, object> props) {
+	public void ExportClaims(in Dictionary<string, object> props) {
 		foreach (var property in GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
 			props.Add(ToCamelCase(property.Name), property.GetValue(this)!);
 	}
@@ -35,13 +35,33 @@ public record LicenseSummary(
 	public static Dictionary<string, object?> SelectForEndpoint(License license) {
 		var dict = new Dictionary<string, object?>();
 
+		dict[IsExpiredName] = "false";
+
 		foreach (var claim in license.Token.Claims ?? []) {
-			if (Properties.Contains(claim.Type)) {
+			if (claim.Type == ExpiryUnixTimeSecondsName) {
+				var daysRemaining = CalcDaysRemaining(claim.Value);
+
+				dict["daysRemaining"] = $"{daysRemaining:N2}";
+				if (daysRemaining <= 0)
+					dict[IsExpiredName] = "true";
+
+			} else if (Properties.Contains(claim.Type)) {
 				dict[claim.Type] = claim.Value;
 			}
 		}
 
+		// needed for backwards compatibility with the webui
+		dict["isFloating"] = "true";
+		dict["startDate"] = "0";
 		return dict;
+	}
+
+	static double CalcDaysRemaining(string expiryUnixTimeSecondsString) {
+		var expiryUnixTimeSeconds = long.Parse(expiryUnixTimeSecondsString);
+		var expiry = DateTimeOffset.FromUnixTimeSeconds(expiryUnixTimeSeconds);
+		var daysRemaining = (expiry - DateTimeOffset.UtcNow).TotalDays;
+		daysRemaining = Math.Max(daysRemaining, 0);
+		return daysRemaining;
 	}
 
 	public static Dictionary<string, object?> SelectForTelemetry(License license) {
@@ -49,7 +69,11 @@ public record LicenseSummary(
 
 		AddString(nameof(LicenseId), license, dict);
 		AddBool(nameof(IsTrial), license, dict);
-		AddBool(nameof(IsExpired), license, dict);
+
+		if (TryGet(ExpiryUnixTimeSecondsName, license, out var _, out var value)) {
+			dict[IsExpiredName] = CalcDaysRemaining(value) <= 0;
+		}
+
 		AddBool(nameof(IsValid), license, dict);
 
 		static void AddString(string property, License license, Dictionary<string, object?> dict) {
