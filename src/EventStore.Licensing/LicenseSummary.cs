@@ -3,7 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Security.Claims;
 using EventStore.Plugins.Licensing;
 
 namespace EventStore.Licensing;
@@ -71,7 +70,7 @@ public record LicenseSummary(
 		AddString(nameof(LicenseId), license, dict);
 		AddBool(nameof(IsTrial), license, dict);
 
-		if (TryGet(ExpiryUnixTimeSecondsName, license, out var key, out var value)) {
+		if (TryGet(ExpiryUnixTimeSecondsName, license, out var _, out var value)) {
 			dict[IsExpiredName] = CalcDaysRemaining(value) <= 0;
 		}
 
