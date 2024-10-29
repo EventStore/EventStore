@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Security.Claims;
 using EventStore.Plugins.Licensing;
 
 namespace EventStore.Licensing;
@@ -11,16 +12,15 @@ public record LicenseSummary(
 	string LicenseId,
 	string Company,
 	bool IsTrial,
-	bool IsExpired,
 	long ExpiryUnixTimeSeconds,
 	bool IsValid,
 	string Notes) {
 
-	static readonly string IsExpiredName = ToCamelCase(nameof(IsExpired));
+	static readonly string IsExpiredName = "isExpired";
 	static readonly string ExpiryUnixTimeSecondsName = ToCamelCase(nameof(ExpiryUnixTimeSeconds));
 
-	public LicenseSummary(string licenseId, string company, bool isTrial, bool isExpired, DateTimeOffset expiry, bool isValid, string notes)
-		: this(licenseId, company, isTrial, isExpired, expiry.ToUnixTimeSeconds(), isValid, notes) {
+	public LicenseSummary(string licenseId, string company, bool isTrial, DateTimeOffset expiry, bool isValid, string notes)
+		: this(licenseId, company, isTrial, expiry.ToUnixTimeSeconds(), isValid, notes) {
 	}
 
 	public void ExportClaims(in Dictionary<string, object> props) {
@@ -40,16 +40,10 @@ public record LicenseSummary(
 
 		foreach (var claim in license.Token.Claims ?? []) {
 			if (claim.Type == ExpiryUnixTimeSecondsName) {
-				var expiryUnixTimeSeconds = long.Parse(claim.Value);
-				var expiry = DateTimeOffset.FromUnixTimeSeconds(expiryUnixTimeSeconds);
-				var daysRemaining = (expiry - DateTimeOffset.UtcNow).TotalDays;
-				daysRemaining = Math.Max(daysRemaining, 0);
+				var daysRemaining = CalcDaysRemaining(claim.Value);
+
 				dict["daysRemaining"] = $"{daysRemaining:N2}";
 				if (daysRemaining <= 0)
-					dict[IsExpiredName] = "true";
-
-			} else if (claim.Type == IsExpiredName) {
-				if (claim.Value == "true")
 					dict[IsExpiredName] = "true";
 
 			} else if (Properties.Contains(claim.Type)) {
@@ -63,12 +57,24 @@ public record LicenseSummary(
 		return dict;
 	}
 
+	static double CalcDaysRemaining(string expiryUnixTimeSecondsString) {
+		var expiryUnixTimeSeconds = long.Parse(expiryUnixTimeSecondsString);
+		var expiry = DateTimeOffset.FromUnixTimeSeconds(expiryUnixTimeSeconds);
+		var daysRemaining = (expiry - DateTimeOffset.UtcNow).TotalDays;
+		daysRemaining = Math.Max(daysRemaining, 0);
+		return daysRemaining;
+	}
+
 	public static Dictionary<string, object?> SelectForTelemetry(License license) {
 		var dict = new Dictionary<string, object?>();
 
 		AddString(nameof(LicenseId), license, dict);
 		AddBool(nameof(IsTrial), license, dict);
-		AddBool(nameof(IsExpired), license, dict);
+
+		if (TryGet(ExpiryUnixTimeSecondsName, license, out var key, out var value)) {
+			dict[IsExpiredName] = CalcDaysRemaining(value) <= 0;
+		}
+
 		AddBool(nameof(IsValid), license, dict);
 
 		static void AddString(string property, License license, Dictionary<string, object?> dict) {

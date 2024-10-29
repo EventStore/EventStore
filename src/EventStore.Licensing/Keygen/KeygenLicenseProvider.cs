@@ -49,7 +49,6 @@ public class KeygenLicenseProvider : ILicenseProvider {
 			LicenseId: "Temporary License",
 			Company: "EventStore Ltd",
 			IsTrial: false,
-			IsExpired: false,
 			ExpiryUnixTimeSeconds: DateTimeOffset.MaxValue.ToUnixTimeSeconds(),
 			IsValid: false,
 			Notes: "License could not be validated. Please contact EventStore support.");
@@ -67,7 +66,7 @@ public class KeygenLicenseProvider : ILicenseProvider {
 			licenseInfo.Name,
 			licenseInfo.Valid, licenseInfo.Trial, licenseInfo.Expiry);
 
-		if (licenseInfo.Expired)
+		if (licenseInfo.Expiry < DateTimeOffset.UtcNow)
 			Log.Warning($"The license expired at {licenseInfo.Expiry}");
 
 		// whether an expired license is valid or not is up to the policy in keygen
@@ -81,7 +80,6 @@ public class KeygenLicenseProvider : ILicenseProvider {
 			LicenseId: licenseInfo.LicenseId,
 			Company: licenseInfo.Name, // todo: name may not necessarily be the company name, depends what we do in the keygen dashboard
 			IsTrial: licenseInfo.Trial,
-			IsExpired: licenseInfo.Expired,
 			ExpiryUnixTimeSeconds: (licenseInfo.Expiry ?? DateTimeOffset.MaxValue).ToUnixTimeSeconds(),
 			IsValid: licenseInfo.Valid,
 			Notes: licenseInfo.Detail);

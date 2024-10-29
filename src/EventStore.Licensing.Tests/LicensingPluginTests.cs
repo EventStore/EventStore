@@ -59,7 +59,6 @@ public class LicensingPluginTests : IAsyncLifetime {
 			licenseId: "license123",
 			company: "the_company",
 			isTrial: true,
-			isExpired: true,
 			expiry: new DateTimeOffset(1970, 1, 1, 0, 0, 55, default),
 			isValid: true,
 			notes: "somenotes")

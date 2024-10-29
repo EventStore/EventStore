@@ -14,8 +14,6 @@ public record LicenseInfo {
 		DateTimeOffset? Expiry,
 		string[] Entitlements) : LicenseInfo {
 
-		public bool Expired => Expiry < DateTimeOffset.UtcNow;
-
 		public static Conclusive FromError(string error) => new(
 			LicenseId: "Unknown",
 			Name: "Unknown",
