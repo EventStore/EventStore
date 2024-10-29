@@ -250,6 +250,7 @@ public sealed class KeygenLifecycleService : IHostedService, IDisposable {
 
 static class ErrorExtensions {
 	static readonly string[] _conclusiveErrors = [
+		"LICENSE_EXPIRED",
 		"LICENSE_INVALID",
 		"LICENSE_SUSPENDED",
 		"MACHINE_CORE_LIMIT_EXCEEDED",

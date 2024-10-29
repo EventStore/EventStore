@@ -187,6 +187,7 @@ public sealed class KeygenLifecycleServiceTests : IDisposable {
 	[Theory]
 	[InlineData("LICENSE_INVALID", true)]
 	[InlineData("LICENSE_SUSPENDED", true)]
+	[InlineData("LICENSE_EXPIRED", true)]
 	[InlineData("something_we_didnt_anticipate", false)]
 	public async Task when_license_validation_fails(string code, bool conclusive) {
 		await _sut.StartAsync(CancellationToken.None);
