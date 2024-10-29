@@ -76,7 +76,7 @@ public class KeygenLicenseProvider : ILicenseProvider {
 		// so we don't need any logic for it here
 		if (!licenseInfo.Valid) {
 			Log.Warning("License {Name} is not valid", licenseInfo.Name);
-			throw new Exception($"Invalid license: {licenseInfo.Name}");
+			throw new Exception($"Invalid license: {licenseInfo.Name}. {licenseInfo.Detail}");
 		}
 
 		var daysRemaining = int.MaxValue;
