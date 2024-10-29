@@ -61,6 +61,7 @@ export default defineUserConfig({
                 imgSize: true,
                 tabs: true,
                 codetabs: true,
+                mermaid: true
             },
             sitemap:{
                 devServer: process.env.NODE_ENV === 'development',
