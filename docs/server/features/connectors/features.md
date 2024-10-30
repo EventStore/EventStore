@@ -70,6 +70,20 @@ When a connector consumes events from EventStoreDB, you have access to the follo
 
 You can use this schema as a reference when creating your filters. The `value` object contains the actual event data, while the `schemaInfo` object contains the event type and subject. The `streamId` and `partitionId` properties are used to identify the stream and partition from which the event originated.
 
+### Stream ID Filter
+
+The stream ID filter allows you to filter events based on the stream ID. This filter is applied at the stream scope, meaning it filters events by their stream ID. An example of a stream ID filter is shown below:
+
+```json
+{
+  "subscription:filter:scope": "stream",
+  "subscription:filter:filterType": "streamId",
+  "subscription:filter:expression": "some-stream"
+}
+```
+
+In this case, the filter will only match events from the `some-stream` stream.
+
 ### Regex Filters
 
 The simplest and fastest way to filter events is by using regular expressions.
@@ -81,20 +95,29 @@ An example of a Regex expression is shown below:
 ```json
 {
   "subscription:filter:scope": "record",
+  "subscription:filter:filterType": "regex",
   "subscription:filter:expression": "^eventType.*"
 }
 ```
 
-This filter will only match records where the event type starts with `eventType`.
+This filter will only match records where the event type starts with
+`eventType`. This filter type can be used for both `stream` and `record` scopes.
+
+### Prefix Filters
 
 You can also filter records by prefix using the following configuration:
 
 ```json
 {
   "subscription:filter:scope": "stream",
-  "subscription:filter:expression": "prefix-"
+  "subscription:filter:filterType": "prefix",
+  "subscription:filter:expression": "prefix1,prefix2"
 }
 ```
+
+In this case, the filter will only match events where the stream ID starts with
+`prefix1` or `prefix2`. This filter type can be used for both `stream` and
+`record` scopes.
 
 ### JsonPath Filters
 
@@ -104,6 +127,8 @@ An example of a JsonPath filter is shown below:
 
 ```json
 {
+  "subscription:filter:scope": "record",
+  "subscription:filter:filterType": "jsonPath",
   "subscription:filter:expression": "$[?($.value.vehicle.year==2018)]"
 }
 ```
@@ -188,9 +213,8 @@ checkpoints.
 By default, when the connector is started and there are no checkpoints, it will
 begin from the latest position in the stream. You can configure this behavior
 using the `initialPosition` property in the settings. If you need to start from
-a specific position, you can use the `startPosition` property in the settings.
-You can find more information about these settings in [Subscription
-Configuration](./settings.md#subscription-configuration).
+a specific position, you can use the [Start API](./manage.md#start) with the
+`position` parameter.
 
 ## Resilience
 
@@ -232,7 +256,7 @@ graph TD
 
 ### Automatic retries
 
-[Exponential backoff](https://en.wikipedia.org/wiki/Exponential_backoff) strategy will be used to manage the timing of retries after a failure.
+[Exponential backoff](https://en.wikipedia.org/wiki/Exponential_backoff) strategy is used to manage the timing of retries after a failure.
 
 In the first phase, the delay between retries starts with a small value, (5 seconds). If the operation continues to fail, the delay increases exponentially, moving to the second phase where the delay might be several minutes, (10 minutes). This gradual increase helps to balance the need for quick recovery with the risk of overwhelming the system.
 

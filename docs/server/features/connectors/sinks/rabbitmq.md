@@ -27,7 +27,10 @@ $JSON = @"
     "instanceTypeName": "rabbit-mq-sink",
     "exchange:name": "example-exchange",
     "exchange:type": "direct",
-    "routingKey": "my-routing-key"
+    "routingKey": "my-routing-key",
+    "subscription:filter:scope": "stream",
+    "subscription:filter:filterType": "streamId",
+    "subscription:filter:expression": "example-stream"
   }
 }
 "@ `
@@ -46,7 +49,10 @@ JSON='{
     "instanceTypeName": "rabbit-mq-sink",
     "exchange:name": "example-exchange",
     "exchange:type": "direct",
-    "routingKey": "my-routing-key"
+    "routingKey": "my-routing-key",
+    "subscription:filter:scope": "stream",
+    "subscription:filter:filterType": "streamId",
+    "subscription:filter:expression": "example-stream"
   }
 }'
 

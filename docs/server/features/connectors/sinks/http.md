@@ -26,7 +26,8 @@ $JSON = @"
   "settings": {
     "instanceTypeName": "http-sink",
     "url": "https://api.example.com/",
-    "subscription:filter:scope": "Stream",
+    "subscription:filter:scope": "stream",
+    "subscription:filter:filterType": "streamId",
     "subscription:filter:expression": "example-stream"
   }
 }
@@ -45,7 +46,8 @@ JSON='{
   "settings": {
     "instanceTypeName": "http-sink",
     "url": "https://api.example.com/",
-    "subscription:filter:scope": "Stream",
+    "subscription:filter:scope": "stream",
+    "subscription:filter:filterType": "streamId",
     "subscription:filter:expression": "example-stream"
   }
 }'
@@ -75,10 +77,10 @@ the [Sink Options](../settings.md#sink-options) page.
 
 | Name                       | Details                                                                                                                                                                                                                           |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Url`                      | _required_<br><br> **Type**: string<br><br>**Description:** The URL or endpoint to which the request or message will be sent. See [Template Parameters](http#template-parameters) for advanced settings.<br><br>**Default**: `""` |
-| `Method`                   | **Type**: string<br><br>**Description:** The method or operation to use for the request or message.<br><br>**Default**: `"POST"`                                                                                                  |
-| `DefaultHeaders`           | **Type**: string<br><br>**Description:** Headers included in all messages.<br><br>**Default**: `Accept-Encoding:*`                                                                                                                |
-| `PooledConnectionLifetime` | **Type**: TimeSpan<br><br>**Description:** Maximum time a connection can stay in the pool before it is no longer reusable.<br><br>**Default**: `00:05:00` (5 minutes)                                                             |
+| `url`                      | _required_<br><br> **Type**: string<br><br>**Description:** The URL or endpoint to which the request or message will be sent. See [Template Parameters](http#template-parameters) for advanced settings.<br><br>**Default**: `""` |
+| `method`                   | **Type**: string<br><br>**Description:** The method or operation to use for the request or message.<br><br>**Default**: `"POST"`                                                                                                  |
+| `defaultHeaders`           | **Type**: string<br><br>**Description:** Headers included in all messages.<br><br>**Default**: `Accept-Encoding:*`                                                                                                                |
+| `pooledConnectionLifetime` | **Type**: TimeSpan<br><br>**Description:** Maximum time a connection can stay in the pool before it is no longer reusable.<br><br>**Default**: `00:05:00` (5 minutes)                                                             |
 
 ### Authentication
 
@@ -86,20 +88,20 @@ The HTTP sink connector supports both [Basic](https://datatracker.ietf.org/doc/h
 
 | Name                    | Details                                                                                                                                                   |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Authentication:Method` | **Type**: string<br><br>**Description:** The authentication method to use.<br><br>**Default**: `None`<br><br>**Accepted Values:** `None`,`Basic`,`Bearer` |
+| `authentication:method` | **Type**: string<br><br>**Description:** The authentication method to use.<br><br>**Default**: `None`<br><br>**Accepted Values:** `None`,`Basic`,`Bearer` |
 
 #### Basic Authentication
 
 | Name                            | Details                                                                                                  |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `Authentication:Basic:Username` | **Type**: string<br><br>**Description:** The username for basic authentication.<br><br>**Default**: `""` |
-| `Authentication:Basic:Password` | **Type**: string<br><br>**Description:** The password for basic authentication.<br><br>**Default**: `""` |
+| `authentication:basic:username` | **Type**: string<br><br>**Description:** The username for basic authentication.<br><br>**Default**: `""` |
+| `authentication:basic:password` | **Type**: string<br><br>**Description:** The password for basic authentication.<br><br>**Default**: `""` |
 
 #### Bearer Authentication
 
 | Name                          | Details                                                                                                |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `Authentication:Bearer:Token` | **Type**: string<br><br>**Description:** The token for bearer authentication.<br><br>**Default**: `""` |
+| `authentication:bearer:token` | **Type**: string<br><br>**Description:** The token for bearer authentication.<br><br>**Default**: `""` |
 
 ## Template parameters
 
