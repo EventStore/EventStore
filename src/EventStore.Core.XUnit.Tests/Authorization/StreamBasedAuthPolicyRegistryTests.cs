@@ -16,7 +16,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
-using EventStore.Core.Tests;
 using EventStore.Core.TransactionLog.LogRecords;
 using Xunit;
 using EventRecord = EventStore.Core.Data.EventRecord;
@@ -30,7 +29,6 @@ public class StreamBasedAuthPolicyRegistryTests {
 
 	private readonly SynchronousScheduler _publisher = new();
 	private List<ReadOnlyPolicy[]> _policyUpdates = new();
-	private TaskCompletionSource<ClientMessage.SubscribeToStream> _subscribed = new ();
 	private AsyncManualResetEvent _policyUpdated = new(false);
 
 	private static readonly JsonSerializerOptions SerializerOptions = new()
@@ -38,15 +36,15 @@ public class StreamBasedAuthPolicyRegistryTests {
 	private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(1);
 
 	private StreamBasedAuthorizationPolicyRegistry CreateSut(
-		FakePolicySelectorPlugin[] plugins, AuthorizationPolicySettings defaultSettings) {
-		_subscribed = new TaskCompletionSource<ClientMessage.SubscribeToStream>();
+		FakePolicySelectorPlugin[] plugins, AuthorizationPolicySettings defaultSettings,
+		TaskCompletionSource<ClientMessage.SubscribeToStream> subscribed) {
 		_policyUpdated = new AsyncManualResetEvent(false);
 		_policyUpdates = [];
 
 		_publisher.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(
 			m => {
 				m.Envelope.ReplyWith(new ClientMessage.SubscriptionConfirmation(m.CorrelationId, 100, 0));
-				_subscribed.TrySetResult(m);
+				subscribed.TrySetResult(m);
 			}));
 
 		var legacySelector = new LegacyPolicySelectorFactory(false, false, false).Create(_publisher);
@@ -70,6 +68,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 	[Theory]
 	[MemberData(nameof(DefaultSettingsCases))]
 	public async Task when_starting_with_no_existing_settings_events_the_default_is_used(DefaultSettingsTestCase testCase) {
+		var subscribed = new TaskCompletionSource<ClientMessage.SubscribeToStream>();
 		_publisher.Subscribe(
 			new AdHocHandler<ClientMessage.ReadStreamEventsBackward>(
 				m => {
@@ -77,7 +76,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 				}));
 
 		var sut = CreateSut(
-			testCase.CustomPlugin is null ? [] : [testCase.CustomPlugin], testCase.DefaultSettings);
+			testCase.CustomPlugin is null ? [] : [testCase.CustomPlugin], testCase.DefaultSettings, subscribed);
 
 		await sut.Start();
 		Assert.True(await _policyUpdated.WaitAsync(Timeout));
@@ -86,13 +85,14 @@ public class StreamBasedAuthPolicyRegistryTests {
 		Assert.Equal(testCase.AppliesPolicies, sut.EffectivePolicies.Select(x => x.Information.Name).ToArray());
 
 		// It should subscribe
-		var subscribeMsg = await _subscribed.Task.WithTimeout();
+		var subscribeMsg = await subscribed.Task.WaitAsync(Timeout);
 		Assert.Equal(SystemStreams.AuthorizationPolicyRegistryStream, subscribeMsg.EventStreamId);
 	}
 
 	[Fact]
 	public void when_starting_and_read_backwards_has_not_completed_yet() {
-		var sut = CreateSut([], new AuthorizationPolicySettings(AclsPolicy));
+		var sut = CreateSut([], new AuthorizationPolicySettings(AclsPolicy),
+			new TaskCompletionSource<ClientMessage.SubscribeToStream>());
 
 		// It uses the fallback policy for stream access, and the legacy policy for endpoint access
 		Assert.Equal(2, sut.EffectivePolicies.Length);
@@ -105,6 +105,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 	[InlineData(ClientMessage.NotHandled.Types.NotHandledReason.TooBusy)]
 	public async Task when_starting_and_the_read_backwards_is_not_handled(
 		ClientMessage.NotHandled.Types.NotHandledReason notHandledReason) {
+		var subscribed = new TaskCompletionSource<ClientMessage.SubscribeToStream>();
 		var longerTimeout = TimeSpan.FromSeconds(20); // Retries have a delay
 		var failed = false;
 		_publisher.Subscribe(
@@ -119,7 +120,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 				}));
 
 		var sut = CreateSut(
-			[new FakePolicySelectorPlugin("plugin", true)], new AuthorizationPolicySettings(AclsPolicy));
+			[new FakePolicySelectorPlugin("plugin", true)], new AuthorizationPolicySettings(AclsPolicy), subscribed);
 
 		await sut.Start();
 
@@ -129,7 +130,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 		Assert.Equal(AclsPolicy, sut.EffectivePolicies[1].Information.Name);
 
 		// It should subscribe
-		var subscribeMsg = await _subscribed.Task.WithTimeout(longerTimeout);
+		var subscribeMsg = await subscribed.Task.WaitAsync(longerTimeout);
 		Assert.Equal(SystemStreams.AuthorizationPolicyRegistryStream, subscribeMsg.EventStreamId);
 	}
 
@@ -142,6 +143,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 	[InlineData(ReadStreamResult.NoStream, false, "plugin")]
 	public async Task when_starting_and_the_read_backwards_fails_and_cannot_be_retried(
 		ReadStreamResult readResult, bool fatal, string defaultPolicy) {
+		var subscribed = new TaskCompletionSource<ClientMessage.SubscribeToStream>();
 		Exception? actualException = null;
 
 		_publisher.Subscribe(
@@ -151,7 +153,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 				}));
 
 		var sut = CreateSut(
-			[new FakePolicySelectorPlugin("plugin", true)], new AuthorizationPolicySettings(defaultPolicy));
+			[new FakePolicySelectorPlugin("plugin", true)], new AuthorizationPolicySettings(defaultPolicy), subscribed);
 
 		try {
 			await sut.Start();
@@ -177,7 +179,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 				sut.EffectivePolicies.Select(x => x.Information.Name).ToArray());
 
 			// It subscribes
-			var subscribeMsg = await _subscribed.Task.WithTimeout();
+			var subscribeMsg = await subscribed.Task.WaitAsync(Timeout);
 			Assert.Equal(SystemStreams.AuthorizationPolicyRegistryStream, subscribeMsg.EventStreamId);
 		}
 	}
@@ -199,6 +201,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 	[Theory]
 	[MemberData(nameof(SettingsTestCases))]
 	public async Task when_settings_events_exist_in_the_stream(SettingsEventTestCase testCase) {
+		var subscribed = new TaskCompletionSource<ClientMessage.SubscribeToStream>();
 		var finishedEvent = CreateResolvedEvent(new AuthorizationPolicySettings("finished"), 3);
 
 		// Set up expected policies
@@ -225,7 +228,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 				}));
 
 		var sut = CreateSut(
-			availablePlugins.Values.ToArray(), new AuthorizationPolicySettings(AclsPolicy));
+			availablePlugins.Values.ToArray(), new AuthorizationPolicySettings(AclsPolicy), subscribed);
 		await sut.Start();
 
 		// Wait for the policy to be updated
@@ -250,7 +253,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 		}
 
 		// It should subscribe
-		var subscribeMsg = await _subscribed.Task.WithTimeout();
+		var subscribeMsg = await subscribed.Task.WaitAsync(Timeout);
 
 		// Send the finished event
 		subscribeMsg.Envelope.ReplyWith(
@@ -274,6 +277,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 	[Theory]
 	[MemberData(nameof(SettingsTestCases))]
 	public async Task when_settings_events_are_received_by_the_subscription(SettingsEventTestCase testCase) {
+		var subscribed = new TaskCompletionSource<ClientMessage.SubscribeToStream>();
 		var finishedEvent = CreateResolvedEvent(new AuthorizationPolicySettings("finished"), 3);
 
 		// Set up expected policies
@@ -301,7 +305,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 				}));
 
 		var sut = CreateSut(
-			availablePlugins.Values.ToArray(), new AuthorizationPolicySettings(AclsPolicy));
+			availablePlugins.Values.ToArray(), new AuthorizationPolicySettings(AclsPolicy), subscribed);
 		await sut.Start();
 
 		// Load the start policy
@@ -310,7 +314,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 		Assert.Equal("start", sut.EffectivePolicies[0].Information.Name);
 
 		// Wait for the subscription
-		var subscribeMsg = await _subscribed.Task.WithTimeout();
+		var subscribeMsg = await subscribed.Task.WaitAsync(Timeout);
 
 		// Send the new settings
 		subscribeMsg.Envelope.ReplyWith(
