@@ -63,6 +63,8 @@ partial class KeygenSimulator {
 		Assert.Equal(Dns.GetHostName(), $"{attributes["hostname"]}");
 		Assert.Equal($"{Fingerprint.CpuCount}", $"{attributes["cores"]}");
 		Assert.Equal($"{Fingerprint.Ram}", $"{attributes["metadata"]!["ram"]}");
+		Assert.Equal($"true", $"{attributes["metadata"]!["readOnlyReplica"]}");
+		Assert.Equal($"true", $"{attributes["metadata"]!["archiver"]}");
 
 		var relationships = data!["relationships"]!["license"]!["data"];
 		Assert.Equal("licenses", $"{relationships!["type"]}");

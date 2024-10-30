@@ -80,13 +80,14 @@ partial class KeygenSimulator {
 			Data = new(),
 		});
 
-	public async Task ReplyWith_ActivationError(string code) => await Send(
+	public async Task ReplyWith_ActivationError(string code, string detail) => await Send(
 		HttpStatusCode.UnprocessableContent,
 		new Models.ActivateMachineResponse {
 			Errors = [
 				new() {
 					Title = code.ToLower(),
 					Code = code,
+					Detail = detail,
 				}
 			],
 		});

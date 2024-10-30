@@ -62,15 +62,15 @@ public class LicensingPlugin : Plugin {
 
 	public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
 		var baseUrl = $"https://licensing.eventstore.com/v1/";
-		var clientOptions = configuration.GetSection("EventStore:Licensing").Get<KeygenClientOptions>() ?? new();
-		if (clientOptions.BaseUrl is not null) {
-			baseUrl = clientOptions.BaseUrl;
+		var clientOptions = configuration.GetSection("EventStore").Get<KeygenClientOptions>() ?? new();
+		if (clientOptions.Licensing.BaseUrl is not null) {
+			baseUrl = clientOptions.Licensing.BaseUrl;
 			Log.Information("Using custom licensing URL: {Url}. This requires permission from EventStore Ltd.", baseUrl);
 		}
 
 		IObservable<LicenseInfo> licenses;
 
-		if (string.IsNullOrWhiteSpace(clientOptions.LicenseKey)) {
+		if (string.IsNullOrWhiteSpace(clientOptions.Licensing.LicenseKey)) {
 			var sub = new Subject<LicenseInfo>();
 			sub.OnError(new NoLicenseKeyException());
 			licenses = sub;
@@ -80,10 +80,10 @@ public class LicensingPlugin : Plugin {
 					clientOptions,
 					restClient: new RestClient(
 						new RestClientOptions(baseUrl) {
-							Authenticator = new OAuth2AuthorizationRequestHeaderAuthenticator(clientOptions.LicenseKey, "License"),
+							Authenticator = new OAuth2AuthorizationRequestHeaderAuthenticator(clientOptions.Licensing.LicenseKey, "License"),
 							// todo: Interceptors = [new KeygenSignatureInterceptor()],
 						})),
-				new Fingerprint(),
+				new Fingerprint(clientOptions.Licensing.IncludePortInFingerprint ? clientOptions.NodePort : null),
 				revalidationDelay: TimeSpan.FromSeconds(10));
 
 			licenses = lifecycleService.Licenses;
