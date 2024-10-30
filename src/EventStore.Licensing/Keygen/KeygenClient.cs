@@ -26,11 +26,11 @@ public sealed class KeygenClient : IDisposable {
 		PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 	};
 
+	readonly KeygenClientOptions _options;
 	readonly RestClient _client;
-	readonly string _licenseKey;
 
 	public KeygenClient(KeygenClientOptions options, RestClient restClient) {
-		_licenseKey = options.LicenseKey!;
+		_options = options;
 		_client = restClient;
 		_client.AcceptedContentTypes = [ContentType];
 		_client.AddDefaultHeader("Keygen-Accept-Signature", "algorithm=\"rsa-sha256\"");
@@ -41,10 +41,11 @@ public sealed class KeygenClient : IDisposable {
 	// Validates that this machine is licensed with this license.
 	// https://keygen.sh/docs/api/licenses/#licenses-actions-validate-key
 	public async Task<RestResponse<ValidateLicenseResponse>> ValidateLicense(string fingerprint, CancellationToken cancellationToken) {
+		Log.Information("Validating license with fingerprint \"{Fingerprint}\"", fingerprint);
 		var request = new RestRequest("licenses/actions/validate-key")
 			.AddJsonBody(new ValidateLicenseRequest(
 				Meta: new(
-					Key: _licenseKey,
+					Key: _options.Licensing.LicenseKey,
 					Scope: new(Fingerprint: fingerprint))));
 
 		var response = await _client.ExecutePostAsync<ValidateLicenseResponse>(request, cancellationToken);
@@ -67,7 +68,9 @@ public sealed class KeygenClient : IDisposable {
 							hostname = machineName,
 							cores = cpu,
 							metadata = new Dictionary<string, string> {
-								["ram"] = ram.ToString()
+								["ram"] = ram.ToString(),
+								["readOnlyReplica"] = _options.ReadOnlyReplica.ToString().ToLower(),
+								["archiver"] = _options.Archiver.ToString().ToLower(),
 							},
 						},
 						relationships = new {

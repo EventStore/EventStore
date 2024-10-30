@@ -9,6 +9,7 @@ using System.Threading.Channels;
 using System.Text.Json;
 using System.Text;
 using System.Net;
+using System;
 
 namespace EventStore.Licensing.Tests.Keygen;
 
@@ -16,7 +17,7 @@ partial class KeygenSimulator : HttpMessageHandler {
 	readonly Channel<HttpRequestMessage> _requests;
 	readonly Channel<HttpResponseMessage> _responses;
 	readonly JsonSerializerOptions _serializerOptions;
-	readonly string _fingerprint = new Fingerprint().Get();
+	readonly string _fingerprint = new Fingerprint(port: null).Get();
 
 	public KeygenSimulator() {
 		_requests = Channel.CreateUnbounded<HttpRequestMessage>();
@@ -36,7 +37,8 @@ partial class KeygenSimulator : HttpMessageHandler {
 	}
 
 
-	ValueTask<HttpRequestMessage> Receive() => _requests.Reader.ReadAsync();
+	Task<HttpRequestMessage> Receive() => _requests.Reader.ReadAsync()
+		.AsTask().WaitAsync(TimeSpan.FromSeconds(2));
 
 	async Task Send<TResponse>(HttpStatusCode httpStatusCode, TResponse response) {
 		var content = JsonSerializer.Serialize(response, _serializerOptions);
