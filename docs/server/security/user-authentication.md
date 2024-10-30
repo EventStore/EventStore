@@ -5,39 +5,44 @@ order: 2
 
 # Authentication
 
-- [Basic](#basic-authentication) to authenticate users with a username and password. Users are created and stored in EventStoreDB.
-- [X509 certificates]() to authenticate users with an X509 certificate instead of username and password
-- [LDAP]() to connect to an LDAPS server to authenticate users
-- [OAuth]() to authenticate users against an identity provider (TODO: SSO)
+EventStoreDB provides the following means to authenticate users connecting to the database:
+
+- [Basic authentication](#basic-authentication) is enabled by default, and allows you to authenticate users with a username and password. Users are created and managed in EventStoreDB.
+- [User X.509 certificates](#user-x509-certificates) to authenticate users with an X.509 certificate. This is in addition to basic authentication.
+- [LDAP authentication](#ldap-authentication) to authenticate users against an LDAP server such as OpenLDAP or Acive Directory.
+<!-- TODO: - [OAuth authentication](#oauth-authentication) to authenticate users against an identity provider such as Auth0 or Identity Server -->
+
+Once a user has been authenticated, they must be [authorized](./user-authorization.md) before they can perform actions on the database.
 
 ## Basic authentication
 
-EventStoreDB supports authentication based on usernames and passwords out of the box. The Enterprise version
-also supports LDAP as the authentication source.
+EventStoreDB supports authentication based on usernames and passwords out of the box.
 
-Authentication is applied to all HTTP endpoints, except `/info`, `/ping`, `/stats`, `/elections` (only `GET`)
-, `/gossip` (only `GET`) and static web content.
+These users are created and managed within EventStoreDB. So if you back up and restore a database with configured users, the same users will exist on the restored node.
 
 ### Default users
 
 EventStoreDB provides two default users, `$ops` and `$admin`.
 
-`$admin` has full access to everything in EventStoreDB. It can read and write to protected streams, which is
-any stream that starts with \$, such as `$projections-master`. Protected streams are usually system streams,
-for example, `$projections-master` manages some projections' states. The `$admin` user can also run
-operational commands, such as scavenges and shutdowns on EventStoreDB.
+`$admin` has full access to everything in EventStoreDB. It can read and write to protected streams, which is any stream that starts with `$`, such as `$projections-$all` or `$users`. Protected streams are usually system streams, for example, `$projections-$all` manages which projections exist in EventStoreDB.
 
-An `$ops` user can do everything that an `$admin` can do except manage users and read from system streams (
-except for `$scavenges` and `$scavenges-streams`).
+The `$admin` user can also run operational commands, such as scavenges and shutdowns on EventStoreDB.
+
+An `$ops` user can do everything that an `$admin` can do except manage users and read from system streams.
 
 ### New users
 
-New users created in EventStoreDB are standard non-authenticated users. Non-authenticated users are
-allowed `GET` access to the `/info`, `/ping`, `/stats`, `/elections`, and `/gossip` system streams.
+New users can be created through the following means:
 
-`POST` access to the `/elections` and `/gossip` system streams is only allowed on the internal HTTP service.
+- The [HTTP API](../../http-api/security.md#creating-users)
+- The [Admin UI](../features/admin-ui.md#users)
+<!-- TODO A [gRPC client]() -->
 
-By default, any user can read any non-protected stream unless there is an ACL preventing that.
+Users are created with a username, password, and optional set of groups or roles. These roles are used for [authorization](./user-authorization.md#roles).
+
+::: tip
+Users managed in EventStoreDB are always granted a role that matches their username.
+:::
 
 ### Externalised authentication
 
@@ -256,7 +261,6 @@ Signature Hash: 6d922badaba2372070f13c69b620286262eab1d8d2d2156a271a1d73aaaf64e4
 | Feature not enabled                        | The feature has to be enabled in order to authenticate user requests.<br/><br/> The following log indicates that the feature was not enabled: `UserCertificatesPlugin is not enabled`.                                                                                                                                                                                                                                                                                                                             |
 | Feature enabled and user not authenticated | If the feature has been enabled but there are still access denied errors, check the following: <ul><li>The user exists and is enabled in the EventStoreDB database. Can you log in with the username and password?</li><li>The user certificate is valid, and has a valid chain up to a trusted root CA.</li><li>The user certificate and node certificate share a common root CA.</li><li>Use 'requires leader' (which is the default) in your client configuration to rule out issues with forwarding requests.</li></ul> |
 
-
 ## LDAP authentication 
 
 <Badge type="info" vertical="middle" text="License Required"/>
@@ -297,7 +301,7 @@ LdapsAuth:
       'cn=ES-Admins,ou=Staff,dc=mycompany,dc=local': '$admins'
 ```
 
-Upon successful LDAP authentication, users are assigned roles based on their domain group memberships, as specified in the `LdapGroupRoles` section. EventStoreDB supports two built-in roles: `$admins` and `$ops`, which can be assigned to users. 
+Upon successful LDAP authentication, users are assigned [roles](./user-authorization.md#roles) based on their domain group memberships, as specified in the `LdapGroupRoles` section.
 
 ### Troubleshooting 
 
@@ -310,9 +314,6 @@ If you encounter issues, check the server's log. Common problems include:
 | 'Server Certificate Error' or 'Connect Error - The authentication or decryption has failed' | Verify that the server certificate is valid. If it is a self-signed certificate, set `ValidateServerCertificate` to `false`.                                                                                                                                                                                                                                                                                                                    |
 | LDAP Server Unavailable                                                                     | Verify connectivity to the LDAP server from an EventStoreDB node (e.g. using `netcat` or `telnet`). Verify the `Host` and `Port` parameters.                                                                                                                                                                                                                                                                                                    |
 | Error Authenticating with LDAP server                                                       | Verify the `ObjectClass` and `Filter` parameters. If you have set `RequireGroupMembership` to `true`, verify that the user is part of the group specified by `RequiredGroupDn` and that the LDAP record has `GroupMembershipAttribute` set to `memberOf`.                                                                                                                                                                                       |
-| Error Authenticating with LDAP server. System.AggregateException                            | This packaging error may occur when setting `UseSSL: true` on Windows. Extract `Mono.Security.dll` to the _EventStore_ folder (where _EventStore.ClusterNode.exe_ is located) as a workaround.                                                                                                                                                                                                                                                  |
 | No Errors in Server Logs But Cannot Login                                                   | <ul><li>Verify that the user is part of the group specified by `RequiredGroupDn` and that the LDAP record has `GroupMembershipAttribute` set to `memberOf`.</li><li>Verify the `ObjectClass` and `Filter` parameters.</li><li>If you have set `RequireGroupMembership` to `true`, verify that the user is part of the group specified by `RequiredGroupDn` and that the LDAP record has `GroupMembershipAttribute` set to `memberOf`.</li></ul> |
 
-## OAuth authentication
-
-<!-- TODO -->
+<!-- TODO: OAuth authentication-->

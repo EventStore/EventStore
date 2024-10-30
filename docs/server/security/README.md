@@ -44,9 +44,9 @@ When running with protocol security disabled, everything is sent unencrypted ove
 
 ### Set initial passwords
 
-We are adding an ability to set default admin and ops passwords on the first run of the database. It will not impact the existing credentials, the user can log into their accounts with exising passwords.
+You can set the admin and ops passwords on the first run of the database. This will not impact the existing credentials, the user can log into their accounts with exising passwords. Additionally, this will only take effect if you are using [basic authentication](./user-authentication.md#basic-authentication).
 
-For this to work, you can use the `DefaultAdminPassword` option:
+Set the password for the `admin` user with the `DefaultAdminPassword` option:
 
 | Format               | Syntax                              |
 |:---------------------|:------------------------------------|
@@ -54,7 +54,7 @@ For this to work, you can use the `DefaultAdminPassword` option:
 
 **Default**: `changeit`
 
-For this to work, you can use the `DefaultOpsPassword` option:
+And set the password for the `ops` user with the `DefaultOpsPassword` option:
 
 | Format               | Syntax                              |
 |:---------------------|:------------------------------------|

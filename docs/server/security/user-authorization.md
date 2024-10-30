@@ -7,19 +7,77 @@ order: 3
 
 Authorization governs what an authenticated user can access and what actions they can perform, based on that user's roles.
 
-<!--TODO: Add some details about endpoint access and operations, system roles, etc -->
+## Roles
+
+Users are granted roles by the [authentication mechanism](./user-authentication.md). These roles are then used to determine what operations, endpoints, and streams a user has access to.
+
+EventStoreDB provides the `$admins` and `$ops` roles by default, granted respectively to the `admin` and `ops` default users. Custom roles can also be created.
+
+### Admins role
+
+The `$admins` role is granted to the `admin` user by default, and authorizes the user to do the following:
+
+- Read all streams, including `$all` and system streams.
+- Manage users and reset their passwords.
+- Perform all administrative operations on a node or cluster, such as scavenges, restarts, and triggering leader elections.
+- Manage projections and persistent subscriptions.
+- View statistics for the node, subscriptions, or projections
+
+You can create additional admin users by assigning the `$admins` group to a user.
+
+::: note
+The `$admins` role bypasses all stream access checks such as [ACLs](#access-control-lists) or [stream policies](#stream-policy-authorization).
+:::
+
+### Ops role
+
+The `$ops` role is granted to the `ops` user by default. This role grants similar permissions to the `$admins` role, but without the user management and stream access.
+
+The `$ops` role authorizes the user to do the following:
+
+- Perform maintenance operations on a node or cluster, such as scavenges, restarts, and triggering leader elections.
+- Manage projections and persistent subscriptions.
+- View statistics for the node, subscriptions, or projections
+- Stream access is determined by the [authorization mechanism used](#stream-access)
+
+You can create additional ops users by assigning the `$ops` group to a user.
+
+### Custom roles
+
+Custom roles are any role assigned to an authenticated user, outside of the `$admins` and `$ops` roles.
+These can be groups assigned to the user, their username, or a mapping from the authentication mechanism used. These roles can be anything, but typically describe the group or tenant that a user is part of. Example of custom roles are `accounting`, `sales`, or `tenant-123`.
+
+Users with custom (or no) roles are authorized to do the following:
+
+- View statistics for the node, subscriptions, or projections
+- Stream access is determined by the [authorization mechanism used](#stream-access)
+
+::: tip
+Users managed in EventStoreDB are always granted a role that matches their username.
+:::
+
+## Stream access
+
+Stream access covers what actions a user can perform on a stream within EventStoreDB. These actions are:
+
+| Name              | Key   | Description |
+|-------------------|-------|-------------|
+| Read              | `$r`  | The permission to read from a stream. |
+| Write             | `$w`  | The permission to write to a stream. |
+| Delete            | `$d`  | The permission to delete a stream. |
+| Metadata read     | `$mr` | The permission to read the metadata associated with a stream. |
+| Metadata write    | `$mw` | The permission to write the metadata associated with a stream. |
 
 EventStoreDB supports these methods of authorizing user access to streams:
 - [Access control lists](#access-control-lists) to restrict user access to streams based on metadata in each stream.
 - [Stream policies](#stream-policy-authorization) to restrict user acces to streams based on configured policies.
 
-## Access control lists
+### Access control lists
 
-By default, authenticated users have access to the whole EventStoreDB database. In addition to that, it allows
-you to use Access Control Lists (ACLs) to set up more granular access control. In fact, the default access
+By default, authenticated users have access to all non-system streams in the EventStoreDB database. You can use Access Control Lists (ACLs) to set up more granular access control. In fact, the default access
 level is also controlled by a special ACL, which is called the [default ACL](#default-acl).
 
-### Stream ACL
+#### Stream ACL
 
 EventStoreDB keeps the ACL of a stream in the stream metadata as JSON with the below definition:
 
@@ -51,7 +109,7 @@ and this has the effect of removing all users from that permission.
 We recommend you don't give people access to `$mw` as then they can then change the ACL.
 :::
 
-### Default ACL
+#### Default ACL
 
 The `$settings` stream has a special ACL used as the default ACL. This stream controls the default ACL for
 streams without an ACL and also controls who can create streams in the system, the default state of these is
@@ -84,8 +142,7 @@ The `$userStreamAcl` controls the default ACL for user streams, while all system
 the `$systemStreamAcl` as the default.
 
 ::: tip 
-The `$w` in `$userStreamAcl` also applies to the ability to create a stream. Members of `$admins`
-always have access to everything, you cannot remove this permission.
+Members of `$admins` always have access to everything, you cannot remove this permission.
 :::
 
 When you set a permission on a stream, it overrides the default values. However, it's not necessary to specify
@@ -119,13 +176,13 @@ access to `$settings` unless you specifically override it.
 Refer to the documentation of the HTTP API or SDK of your choice for more information about changing ACLs
 programmatically.
 
-## Stream Policy Authorization
+### Stream Policy Authorization
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
 This allows administrators to define stream access policies for EventStoreDB based on stream prefix.
 
-### Enabling
+#### Enabling
 
 You require a [license key](../quick-start/installation.md#license-keys) to use this feature.
 
@@ -257,7 +314,7 @@ If you do not have a valid license, stream policies will log the following error
 If you enable the Stream Policy feature, EventStoreDB will not enforce [stream ACLs](#access-control-lists).
 :::
 
-### Overriding the default
+#### Overriding the default
 
 If the `$authorization-policy-settings` stream is empty and there is no configuration, EventStoreDB will default to using ACLs.
 
@@ -280,7 +337,7 @@ Refer to the [configuration guide](../configuration/README.md) for configuration
 If the policy type configured in `Authorization:DefaultPolicyType` is not present at startup, EventStoreDB will not start.
 :::
 
-### Fallback stream access policy
+#### Fallback stream access policy
 
 If none of the events in the `$authorization-policy-settings` stream are valid, or if the stream policy plugin could not be started (for example, due to it being unlicensed), EventStoreDB will fall back to restricted access.
 
@@ -294,11 +351,11 @@ To recover from this, either fix the issue preventing the plugin from loading, o
 }
 ```
 
-### Stream Policies and Rules
+#### Stream Policies and Rules
 
 Stream policies and Stream Rules are configured by events written to the `$policies` stream.
 
-#### Default Stream Policy
+##### Default Stream Policy
 
 When the Stream Policy feature is run for the first time, it will create a default policy in the `$policies` stream.
 The default policy does the following
@@ -374,7 +431,7 @@ EventStoreDB will log when the default policy is created:
 Operations users in the `$ops` group are excluded from the `$all` group and do not have access to user streams by default.
 :::
 
-#### Custom Stream Policies
+##### Custom Stream Policies
 
 You can create a custom stream policy by writing an event with event type `$policy-updated` to the `$policies` stream.
 
@@ -484,9 +541,9 @@ You still need to specify default stream rules when you update the `$policies` s
 If a policy update is invalid, it will not be applied and an error will be logged. EventStoreDB will continue running with the previous valid policy in place.
 :::
 
-#### Stream Policy Schema
+##### Stream Policy Schema
 
-##### Policy
+###### Policy
 
 | Key                   | Type                                  | Description | Required |
 |-----------------------|---------------------------------------|-------------|----------|
@@ -494,7 +551,7 @@ If a policy update is invalid, it will not be applied and an error will be logge
 | `streamRules`         | `StreamRule[]`                        | An array of rules to apply for stream access.  The ordering is important, and the first match wins. | Yes |
 | `defaultStreamRules`  | `DefaultStreamRules`                  | The default policies to apply if no other policies are defined for a stream | Yes |
 
-##### AccessPolicy
+###### AccessPolicy
 
 | Key   | Type	    | Description	| Required |
 |-------|-----------|---------------|----------|
@@ -508,14 +565,14 @@ If a policy update is invalid, it will not be applied and an error will be logge
 Having metadata read or metadata write access to a stream does not grant read or write access to that stream.
 :::
 
-##### DefaultStreamRules
+###### DefaultStreamRules
 
 |Key                | Type           | Description   | Required |
 |-------------------|----------------|---------------|----------|
 | `userStreams`     | `AccessPolicy` | The default policy to apply for non-system streams. | Yes |
 | `systemStreams`   | `AccessPolicy` | The default policy to apply for system streams. | Yes |
 
-##### StreamRule
+###### StreamRule
 
 | Key           | Type     | Description   | Required |
 |---------------|----------|---------------|----------|
