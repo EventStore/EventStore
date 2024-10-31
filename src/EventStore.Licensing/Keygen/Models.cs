@@ -12,6 +12,8 @@ public static class Models {
 	// Is a given license currently valid for use with a given machine?
 	public class ValidateLicenseResponse : KeygenResponse<LicenseAttributes, LicenseValidationResult, LicenseRelationships> {
 		public LicenseStatus GetStatus() => Meta switch {
+			// TOO_MANY_MACHINES/CORES/PROCESSES can come back here, but in those cases all we care about
+			// is Valid or not which is determined by the overage strategy on the policy.
 			{ Valid: false, Code: "NO_MACHINES" } => LicenseStatus.InvalidNoMachines,
 			{ Valid: false, Code: "FINGERPRINT_SCOPE_MISMATCH" } => LicenseStatus.InvalidMachineMismatch,
 			{ Valid: false, Code: "HEARTBEAT_NOT_STARTED" } => LicenseStatus.InvalidHeartbeatNotStarted,
