@@ -267,7 +267,7 @@ You have to tell your client to use secure connection.
 
 As you might've noticed, the connection string has a setting to disable the certificate validation (`tlsVerifyCert=false`). It would prevent the invalid certificate error since the cluster uses a private, auto-generated CA.
 
-However, **we do not recommend using this setting in production**. Instead, you can either add the CA certificate to the trusted root CA store or instruct your application to use such a certificate. See the [security section](../configuration/security.md#certificate-installation-on-a-client-environment) for detailed instructions.
+However, **we do not recommend using this setting in production**. Instead, you can either add the CA certificate to the trusted root CA store or instruct your application to use such a certificate. See the [security section](../security/protocol-security.md#certificate-installation-on-a-client-environment) for detailed instructions.
 
 ## Building from source
 

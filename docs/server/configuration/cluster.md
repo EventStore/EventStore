@@ -8,7 +8,7 @@ order: 3
 EventStoreDB allows you to run more than one node in a cluster for high availability.
 
 ::: info Cluster member authentication
-EventStoreDB starts in secure mode by default, which requires configuration [settings for certificates](security.md#certificates-configuration).
+EventStoreDB starts in secure mode by default, which requires configuration [settings for certificates](../security/protocol-security.md#certificates-configuration).
 Cluster members authenticate each other using the certificate Common Name. All the cluster nodes must have the same common name in their certificates.
 :::
 

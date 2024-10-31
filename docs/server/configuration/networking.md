@@ -28,7 +28,7 @@ When the `NodeIp` setting is not provided, EventStoreDB will use the first avail
 Please note that the `ExtIp` setting has been removed as of version 25.2.0, use the `NodeIp` setting instead.
 :::
 
-The default HTTP port is `2113`. Depending on the [security settings](security.md) of the node, it either responds over plain HTTP or via HTTPS. There is no HSTS redirect, so if you try reaching a secure node via HTTP, you can get an empty response.
+The default HTTP port is `2113`. Depending on the [security settings](../security/README.md) of the node, it either responds over plain HTTP or via HTTPS. There is no HSTS redirect, so if you try reaching a secure node via HTTP, you can get an empty response.
 
 You can change the HTTP port using the `NodePort` setting (previously `HttpPort` setting) :
 
