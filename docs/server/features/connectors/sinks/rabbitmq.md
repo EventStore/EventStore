@@ -27,7 +27,10 @@ $JSON = @"
     "instanceTypeName": "rabbit-mq-sink",
     "exchange:name": "example-exchange",
     "exchange:type": "direct",
-    "routingKey": "my-routing-key"
+    "routingKey": "my-routing-key",
+    "subscription:filter:scope": "stream",
+    "subscription:filter:filterType": "streamId",
+    "subscription:filter:expression": "example-stream"
   }
 }
 "@ `
@@ -46,7 +49,10 @@ JSON='{
     "instanceTypeName": "rabbit-mq-sink",
     "exchange:name": "example-exchange",
     "exchange:type": "direct",
-    "routingKey": "my-routing-key"
+    "routingKey": "my-routing-key",
+    "subscription:filter:scope": "stream",
+    "subscription:filter:filterType": "streamId",
+    "subscription:filter:expression": "example-stream"
   }
 }'
 
@@ -94,7 +100,7 @@ The RabbitMQ sink can be configured with the following options:
 
 ## Resilience
 
-The RabbitMQ sink connector uses its own resilience mechanism and doesn't include the configuration from [Resilience configuration](../settings.md#resilience-configuration).
+The RabbitMQ sink connector relies on its own RabbitMQ retry mechanism and doesn't include the configuration from [Resilience configuration](../settings.md#resilience-configuration).
 
 ## Broker Acknowledgment
 
