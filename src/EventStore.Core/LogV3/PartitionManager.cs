@@ -55,7 +55,7 @@ public class PartitionManager : IPartitionManager {
 			if (await _writer.Write(rootPartitionType, token) is (false, _))
 				throw new Exception($"Failed to write root partition type!");
 
-			_writer.Flush();
+			await _writer.Flush(token);
 
 			_log.Debug("Root partition type created, id: {id}", RootTypeId);
 		}
@@ -76,7 +76,7 @@ public class PartitionManager : IPartitionManager {
 			if (await _writer.Write(rootPartition, token) is (false, _))
 				throw new Exception($"Failed to write root partition!");
 
-			_writer.Flush();
+			await _writer.Flush(token);
 
 			_recordFactory.SetRootPartitionId(RootId.Value);
 

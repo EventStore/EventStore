@@ -96,7 +96,7 @@ public class TFChunkDb : IAsyncDisposable {
 								token);
 							// chunk is full with data, we should complete it right here
 							if (!readOnly)
-								chunk.Complete();
+								await chunk.Complete(token);
 						}
 					} else {
 						chunk = await TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,

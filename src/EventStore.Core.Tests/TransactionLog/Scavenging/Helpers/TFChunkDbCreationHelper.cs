@@ -235,16 +235,16 @@ public class TFChunkDbCreationHelper<TLogFormat, TStreamId> {
 				records[i].Add(record);
 				if (record is IPrepareLogRecord<TStreamId> prepare &&
 					StreamIdComparer.Equals(prepare.EventType, _scavengePointEventTypeId)) {
-					chunk.Complete();
+					await chunk.Complete(token);
 					completedChunk = true;
 				}
 			}
 
 			if (!completedChunk) {
 				if (i < _chunkRecs.Count - 1 || (_completeLast && i == _chunkRecs.Count - 1)) {
-					chunk.Complete();
+					await chunk.Complete(token);
 				} else {
-					chunk.Flush();
+					await chunk.Flush(token);
 				}
 			}
 		}

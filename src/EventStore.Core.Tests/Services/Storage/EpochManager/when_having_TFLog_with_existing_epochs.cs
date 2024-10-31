@@ -71,7 +71,7 @@ public class when_having_TFLog_with_existing_epochs<TLogFormat, TStreamId> : Spe
 		var epoch = new EpochRecord(pos, epochNumber, Guid.NewGuid(), lastPos, DateTime.UtcNow, instanceId);
 		var rec = _logFormat.RecordFactory.CreateEpoch(epoch);
 		await _writer.Write(rec, token);
-		_writer.Flush();
+		await _writer.Flush(token);
 		return epoch;
 	}
 	[OneTimeSetUp]
@@ -297,12 +297,14 @@ public class when_having_TFLog_with_existing_epochs<TLogFormat, TStreamId> : Spe
 		//reader?.Dispose();
 		try {
 			_logFormat?.Dispose();
-			_writer?.Dispose();
+			using var task = _writer?.DisposeAsync().AsTask() ?? Task.CompletedTask;
+			task.Wait();
 		} catch {
 			//workaround for TearDown error
 		}
 
-		using var task = _db?.DisposeAsync().AsTask() ?? Task.CompletedTask;
-		task.Wait();
+		using (var task = _db?.DisposeAsync().AsTask() ?? Task.CompletedTask) {
+			task.Wait();
+		}
 	}
 }

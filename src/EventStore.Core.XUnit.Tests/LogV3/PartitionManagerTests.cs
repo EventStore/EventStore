@@ -177,13 +177,12 @@ class FakeWriter: ITransactionFileWriter {
 
 	public bool HasOpenTransaction() => throw new NotImplementedException();
 
-	public void Flush() {
+	public ValueTask Flush(CancellationToken token) {
 		IsFlushed = true;
+		return ValueTask.CompletedTask;
 	}
 
-	public void Close() {}
-
-	public void Dispose() {}
+	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
 
 class FakeReader : ITransactionFileReader {

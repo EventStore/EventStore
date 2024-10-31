@@ -54,7 +54,7 @@ public class when_scavenging_tfchunk_with_version0_log_records_using_transaction
 		(_t1CommitPos, _postCommitPos) = await WriteCommitV0(t1.CorrelationId, Writer.Position, t1.TransactionPosition,
 			t1.EventStreamId, 0, token);
 
-		Writer.CompleteChunk();
+		await Writer.CompleteChunk(token);
 		await Writer.AddNewChunk(token: token);
 
 		// Need to have a second chunk as otherwise the checkpoints will be off

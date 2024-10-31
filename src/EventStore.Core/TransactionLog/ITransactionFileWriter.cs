@@ -8,7 +8,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.TransactionLog;
 
-public interface ITransactionFileWriter : IDisposable {
+public interface ITransactionFileWriter : IAsyncDisposable {
 	void Open();
 	bool CanWrite(int numBytes);
 	ValueTask<(bool, long)> Write(ILogRecord record, CancellationToken token);
@@ -17,8 +17,7 @@ public interface ITransactionFileWriter : IDisposable {
 	bool TryWriteToTransaction(ILogRecord record, out long newPos);
 	void CommitTransaction();
 	bool HasOpenTransaction();
-	void Flush();
-	void Close();
+	ValueTask Flush(CancellationToken token);
 
 	long Position { get; }
 	long FlushedPosition { get; }

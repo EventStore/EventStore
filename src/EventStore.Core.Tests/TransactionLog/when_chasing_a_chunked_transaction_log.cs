@@ -147,7 +147,7 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 		writer.Open();
 
 		Assert.IsTrue(await writer.Write(recordToWrite, CancellationToken.None) is (true, _));
-		writer.Close();
+		await writer.DisposeAsync();
 
 		writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
 
@@ -191,7 +191,7 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 		writer.Open();
 
 		Assert.IsTrue(await writer.Write(recordToWrite, CancellationToken.None) is (true, _));
-		writer.Close();
+		await writer.DisposeAsync();
 
 		writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
 

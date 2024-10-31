@@ -41,7 +41,7 @@ public class when_reading_a_single_record<TLogFormat, TStreamId> : Specification
 		for (int i = 0; i < RecordsCount; ++i) {
 			if (i > 0 && i % 3 == 0) {
 				pos = i / 3 * _db.Config.ChunkSize;
-				chunk.Complete();
+				await chunk.Complete(CancellationToken.None);
 				chunk = await _db.Manager.AddNewChunk(CancellationToken.None);
 			}
 
@@ -53,7 +53,7 @@ public class when_reading_a_single_record<TLogFormat, TStreamId> : Specification
 			pos += _records[i].GetSizeWithLengthPrefixAndSuffix();
 		}
 
-		chunk.Flush();
+		await chunk.Flush(CancellationToken.None);
 		_db.Config.WriterCheckpoint.Write((RecordsCount / 3) * _db.Config.ChunkSize +
 										  _results[RecordsCount - 1].NewPosition);
 		_db.Config.WriterCheckpoint.Flush();

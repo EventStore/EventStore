@@ -39,7 +39,7 @@ public class when_chaser_reads_prepare_event<TLogFormat, TStreamId> : with_stora
 			metadata: new byte[] { 7, 17 });
 
 		Assert.True(await Writer.Write(record, token) is (true, _));
-		Writer.Flush();
+		await Writer.Flush(token);
 	}
 	[Test]
 	public void prepare_ack_should_be_published() {

@@ -37,7 +37,7 @@ public class when_having_commit_spanning_multiple_chunks<TLogFormat, TStreamId> 
 				new byte[3],
 				new byte[3]);
 			Assert.IsTrue(await Writer.Write(r, token) is (true, _));
-			Writer.CompleteChunk();
+			await Writer.CompleteChunk(token);
 			await Writer.AddNewChunk(token: token);
 
 			_scavenged.Add(r);
@@ -46,19 +46,19 @@ public class when_having_commit_spanning_multiple_chunks<TLogFormat, TStreamId> 
 		var r2 = await WriteCommit(transPos, "s1", 0, token);
 		_survivors.Add(r2);
 
-		Writer.CompleteChunk();
+		await Writer.CompleteChunk(token);
 		await Writer.AddNewChunk(token: token);
 
 		var r3 = await WriteDeletePrepare("s1", token);
 		_survivors.Add(r3);
 
-		Writer.CompleteChunk();
+		await Writer.CompleteChunk(token);
 		await Writer.AddNewChunk(token: token);
 
 		var r4 = await WriteDeleteCommit(r3, token);
 		_survivors.Add(r4);
 
-		Writer.CompleteChunk();
+		await Writer.CompleteChunk(token);
 		await Writer.AddNewChunk(token: token);
 
 		Scavenge(completeLast: false, mergeChunks: true);

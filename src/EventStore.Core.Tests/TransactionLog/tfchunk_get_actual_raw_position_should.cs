@@ -28,11 +28,11 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 	}
 
 	private async ValueTask<TFChunk> CreateChunk(int numEvents, bool completed, bool scavenged,
-		List<long> logicalPositions, List<PosMap> posMap) {
+		List<long> logicalPositions, List<PosMap> posMap, CancellationToken token = default) {
 		if (scavenged && !completed)
 			throw new ArgumentException("scavenged chunk must be completed");
 
-		var chunk = await TFChunkHelper.CreateNewChunk(Path.Combine(PathName, $"{Guid.NewGuid()}.chunk"), 4096, scavenged);
+		var chunk = await TFChunkHelper.CreateNewChunk(Path.Combine(PathName, $"{Guid.NewGuid()}.chunk"), 4096, scavenged, token);
 
 		var actualPos = 0;
 		for (int i = 0; i < numEvents; i++) {
@@ -50,12 +50,12 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 			actualPos = (int) result.NewPosition;
 		}
 
-		chunk.Flush();
+		await chunk.Flush(token);
 
 		if (scavenged)
-			await chunk.CompleteScavenge(posMap, CancellationToken.None);
+			await chunk.CompleteScavenge(posMap, token);
 		else if (completed)
-			chunk.Complete();
+			await chunk.Complete(token);
 
 		return chunk;
 	}

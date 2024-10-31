@@ -32,7 +32,7 @@ public abstract class
 		var epoch = new EpochRecord(pos, epochNumber, Guid.NewGuid(), lastPos, DateTime.UtcNow, instanceId);
 		var rec = _logFormat.RecordFactory.CreateEpoch(epoch);
 		await _writer.Write(rec, token);
-		_writer.Flush();
+		await _writer.Flush(token);
 		return epoch;
 	}
 
@@ -85,7 +85,7 @@ public abstract class
 	public async Task TearDown() {
 		try {
 			_logFormat?.Dispose();
-			_writer?.Dispose();
+			await (_writer?.DisposeAsync() ?? ValueTask.CompletedTask);
 		} catch {
 			//workaround for TearDown error
 		}

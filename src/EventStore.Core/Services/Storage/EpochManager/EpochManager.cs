@@ -348,7 +348,7 @@ public class EpochManager<TStreamId> : IEpochManager {
 
 		await _partitionManager.Initialize(token);
 		await WriteEpochInformationWithRetry(epoch, token);
-		_writer.Flush();
+		await _writer.Flush(token);
 		_bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 		_bus.Publish(new SystemMessage.EpochWritten(epoch));
 		return epoch;
