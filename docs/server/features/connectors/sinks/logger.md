@@ -20,6 +20,7 @@ $JSON = @"
   "settings": {
     "instanceTypeName": "logger-sink",
     "subscription:filter:scope": "stream",
+    "subscription:filter:filterType": "streamId",
     "subscription:filter:expression": "example-stream"
   }
 }
@@ -38,6 +39,7 @@ JSON='{
   "settings": {
     "instanceTypeName": "logger-sink",
     "subscription:filter:scope": "stream",
+    "subscription:filter:filterType": "streamId",
     "subscription:filter:expression": "example-stream"
   }
 }'
