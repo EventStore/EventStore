@@ -194,7 +194,7 @@ Authorization:
   DefaultPolicyType: streampolicy
 ```
 
-Refer to [stream policy authorization](../configuration/security.md#stream-policy-authorization) for more details about enabling and configuring this feature.
+Refer to [stream policy authorization](../security/user-authorization.md#stream-policy-authorization) for more details about enabling and configuring this feature.
 
 #### Connectors
 
