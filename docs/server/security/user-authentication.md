@@ -10,7 +10,7 @@ EventStoreDB provides the following means to authenticate users connecting to th
 - [Basic authentication](#basic-authentication) is enabled by default, and allows you to authenticate users with a username and password. Users are created and managed in EventStoreDB.
 - [User X.509 certificates](#user-x509-certificates) to authenticate users with an X.509 certificate. This is in addition to basic authentication.
 - [LDAP authentication](#ldap-authentication) to authenticate users against an LDAP server such as OpenLDAP or Acive Directory.
-<!-- TODO: - [OAuth authentication](#oauth-authentication) to authenticate users against an identity provider such as Auth0 or Identity Server -->
+- [OAuth authentication](#oauth-authentication) to authenticate users against an identity provider such as Auth0 or Identity Server
 
 Once a user has been authenticated, they must be [authorized](./user-authorization.md) before they can perform actions on the database.
 
@@ -316,4 +316,219 @@ If you encounter issues, check the server's log. Common problems include:
 | Error Authenticating with LDAP server                                                       | Verify the `ObjectClass` and `Filter` parameters. If you have set `RequireGroupMembership` to `true`, verify that the user is part of the group specified by `RequiredGroupDn` and that the LDAP record has `GroupMembershipAttribute` set to `memberOf`.                                                                                                                                                                                       |
 | No Errors in Server Logs But Cannot Login                                                   | <ul><li>Verify that the user is part of the group specified by `RequiredGroupDn` and that the LDAP record has `GroupMembershipAttribute` set to `memberOf`.</li><li>Verify the `ObjectClass` and `Filter` parameters.</li><li>If you have set `RequireGroupMembership` to `true`, verify that the user is part of the group specified by `RequiredGroupDn` and that the LDAP record has `GroupMembershipAttribute` set to `memberOf`.</li></ul> |
 
-<!-- TODO: OAuth authentication-->
+## OAuth Authentication
+
+<Badge type="info" vertical="middle" text="License Required"/>
+
+The OAuth plugin allows EventStoreDB to connect to an identity server and authenticate users based on a JWT rather than username and password.
+
+Access tokens can contain a "role" claim, which will be used for [authorization](./user-authorization.md).
+
+::: tip
+With the default basic authentication, EventStoreDB treats the username as a "role" in addition to the groups they are in. If you want to have the same behaviour with OAuth authentication, you will need to add the user's username as an additional role claim.
+:::
+
+### Configuration
+
+You require a [license key](../quick-start/installation.md#license-keys) to use this feature.
+
+Refer to the [configuration guide](../configuration/README.md) for configuration mechanisms other than YAML.
+
+You can enable the OAuth plugin by setting the following options in you eventstore config file:
+- Set the `AuthenticationType` to `oauth`
+- Provide an oath config file with the `AuthenticationConfig` option.
+
+For example:
+
+```yaml
+---
+AuthenticationType: oauth
+AuthenticationConfig: es-oauth.conf
+```
+
+Create a separate configuration file `es-oauth.conf` (the name is not important) to configure the OAuth plugin.
+The configuration options are:
+
+| Name 			 | Type	| Required?	| Default 	|Description |
+|------------------------|----------|-----------|-----------|------------|
+| Audience 			 | string 	| Y 		| - 		| The audience used in your identity provider. |
+| Issuer 			 | string 	| Y 		| - 		| The issuer endpoint for your identity provider. |
+| ClientId			 | string 	| N 		| "" 		| The id of the client configured in the identity provider. |
+| ClientSecret 		 | string 	| N 		| "" 		| The client secret configured in the identity provider. |
+| DisableIssuerValidation| bool 	| N 		| false 	| Disable issuer validation for testing purposes. |
+| Insecure 			 | bool 	| N 		| false 	| Whether to validate the certificates for the identity provider. This is not related to `Insecure` in the EventStoreDB configuration. |
+
+For example:
+
+```yaml
+---
+OAuth:
+  Audience: eventstore-client
+  Issuer: https://localhost:5001/
+  ClientId: eventstore-client
+  ClientSecret: {client_secret}
+  # For testing
+  DisableIssuerValidation: true
+  Insecure: true
+```
+### Testing with a local identity server
+
+You can try out the OAuth feature locally with this [Identity Server 4 docker container](https://github.com/EventStore/idsrv4). This container is not intended to be used in production.
+
+1. Create a `users.conf.json` file to configure the users for your test.
+
+::: details users.conf.json
+```json
+[
+  {
+    "subjectId": "1",
+    "username": "admin",
+    "password": "password",
+    "claims": [{
+        "type": "role",
+        "value": "$admins"
+      }, {
+        "type": "role",
+        "value": "$ops"
+      }]
+  }, {
+    "subjectId": "2",
+    "username": "operator",
+    "password": "password",
+    "claims": [{
+      "type": "role",
+      "value": "$ops"
+    }]
+  }, {
+    "subjectId": "3",
+    "username": "ouro",
+    "password": "password",
+    "claims": [{
+      "type": "role",
+      "value": "custom"
+    }]
+  }, {
+    "subjectId": "4",
+    "username": "user",
+    "password": "password",
+    "claims": []
+  }
+]
+```
+:::
+
+This creates the following users:
+
+| Username 		  | Password 		| Roles |
+|---------------|-------------|-------|
+| `admin`		    | `password` 	| `$admins`, `$ops` |
+| `operator` 	  | `password` 	| `$ops` |
+| `ouro`		    | `password`	| `custom` |
+| `user`		    | `password`	| None |
+
+2. Create an identity server config file, `idsrv4.conf.json`.
+
+You need to configure the following:
+
+- A role claim (`http://schemas.microsoft.com/ws/2008/06/identity/claims/role`) must be added to the token.
+- The grant types of `password` and `authorization_code` must be allowed.
+- A redirect uri of `{eventstore_server_ip}/oauth/callback` must be allowed for the legacy UI to function.
+
+::: details idsrv4.conf.json
+```json
+{
+	"IdentityResources": [
+		{
+			"Name": "openid",
+			"DisplayName": "Your user identifier",
+			"Required": true,
+			"UserClaims": [
+				"sub",
+				"role"
+			]
+		},
+		{
+			"Name": "profile",
+			"DisplayName": "User profile",
+			"Description": "Your user profile information (first name, last name, etc.)",
+			"Emphasize": true,
+			"UserClaims": [
+				"name",
+				"given_name",
+				"middle_name",
+			]
+		}
+	],
+	"ApiResources": [
+		{
+			"Name": "eventstore-client",
+			"Scopes": [
+				"streams",
+				"openid",
+				"profile"
+			]
+		}
+	],
+	"ApiScopes": [
+		{
+			"Name": "streams",
+			"UserClaims": [
+				"http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+				"role"
+			]
+		}
+	],
+	"Clients": [
+		{
+			"ClientId": "eventstore-client",
+			"AllowedGrantTypes": [
+				"password",
+				"authorization_code"
+			],
+			"ClientSecrets": [
+				{
+					"Value": "{client_secret}"
+				}
+			],
+			"AllowedScopes": [
+				"streams",
+				"openid",
+				"profile",
+			],
+			"RedirectUris": ["https://localhost:2113/oauth/callback"],
+			"AlwaysIncludeUserClaimsInIdToken": true,
+			"RequireConsent": false,
+			"AlwaysSendClientClaims": true,
+			"AllowOfflineAccess": true,
+			"RequireClientSecret": false,
+			"AllowAccessTokensViaBrowser": true
+		}
+	]
+}
+```
+:::
+
+3. Pull and run the `eventstore/idsrv4` docker container:
+
+```bash
+docker pull ghcr.io/eventstore/idsrv4/idsrv4
+
+docker run \
+    --rm -it \
+    -p 5000:5000 \                                            # HTTP port
+    -p 5001:5001 \                                            # HTTPS port
+    --volume $PWD/users.conf.json:/etc/idsrv4/users.conf \    # mount users file; required
+    --volume $PWD/idsrv4.conf.json:/etc/idsrv4/idsrv4.conf \  # mount configuration file
+    ghcr.io/eventstore/idsrv4/idsrv4
+```
+
+You should see the identity server start up and start listening on the ports `5000` and `5001`:
+
+```
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: https://[::]:5000
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: https://[::]:5001
+```
+
+You should now be able to log into the UI with the configured users.
