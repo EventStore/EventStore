@@ -36,7 +36,7 @@ The buttons on the top right when you are viewing an event stream are:
 
 - _Pause_: Stop showing events arriving into this stream.
 - _Resume_: Resume showing events arriving into this stream.
-- _Edit ACL_: Edit [the access control lists](../configuration/security.md#access-control-lists) for a stream.
+- _Edit ACL_: Edit [the access control lists](../security/user-authorization.md#access-control-lists) for a stream.
 - _Add Event_: [Add a new event](@clients/http-api/README.md#appending-events) to the stream.
 - _Delete_: [Delete a stream](@clients/http-api/README.md#deleting-a-stream) to the stream.
 - _Query_:
@@ -104,7 +104,7 @@ The _Admin_ tab shows subsystems enabled (currently only [projections](projectio
 
 ![Web admin interface projections tab](images/wai-users.png)
 
-The _Users_ tab shows [the users defined in EventStoreDB](../configuration/security.md#authentication), clicking an individual user shows a JSON representation of that user's details.
+The _Users_ tab shows [the users defined in EventStoreDB](../security/user-authentication.md), clicking an individual user shows a JSON representation of that user's details.
 
 ## Log out
 
