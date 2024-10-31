@@ -4,6 +4,19 @@
 namespace EventStore.Licensing.Keygen;
 
 public record KeygenClientOptions {
-	public string? LicenseKey { get; set; }
-	public string? BaseUrl { get; set; }
+	public int NodePort { get; set; }
+
+	public bool Archiver { get; set; }
+
+	public bool ReadOnlyReplica { get; set; }
+
+	public LicensingOptions Licensing { get; set; } = new();
+
+	public record LicensingOptions {
+		public string LicenseKey { get; set; } = "";
+
+		public string? BaseUrl { get; set; }
+
+		public bool IncludePortInFingerprint { get; set; }
+	}
 }
