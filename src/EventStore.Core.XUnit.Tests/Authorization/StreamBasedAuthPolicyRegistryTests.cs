@@ -20,6 +20,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using Xunit;
 using EventRecord = EventStore.Core.Data.EventRecord;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
+using System.Threading;
 
 namespace EventStore.Core.XUnit.Tests.Authorization;
 
@@ -179,6 +180,11 @@ public class StreamBasedAuthPolicyRegistryTests {
 				sut.EffectivePolicies.Select(x => x.Information.Name).ToArray());
 
 			// It subscribes
+			try {
+				await sut._startSubscriptionTask!.WaitAsync(Timeout);
+			} catch (Exception) {
+				Assert.Null(sut._startSubscriptionTask!.Exception);
+			}
 			var subscribeMsg = await subscribed.Task.WaitAsync(Timeout);
 			Assert.Equal(SystemStreams.AuthorizationPolicyRegistryStream, subscribeMsg.EventStreamId);
 		}

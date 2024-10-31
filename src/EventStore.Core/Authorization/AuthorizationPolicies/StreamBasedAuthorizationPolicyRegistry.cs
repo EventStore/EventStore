@@ -61,12 +61,14 @@ public class StreamBasedAuthorizationPolicyRegistry :
 		}
 	}
 
+	public Task? _startSubscriptionTask;
+
 	public async Task Start() {
 		_cts = new CancellationTokenSource();
 		do {
 			try {
 				var checkpoint = await LoadSettings(_cts.Token);
-				_ = StartSubscription(checkpoint, _cts.Token);
+				_startSubscriptionTask = StartSubscription(checkpoint, _cts.Token);
 				return;
 			} catch (ReadResponseException.NotHandled.ServerNotReady) {
 				_logger.Verbose("Subscription to {settingsStream}: server is not ready, retrying...", _stream);
