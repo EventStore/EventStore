@@ -33,7 +33,7 @@ public class IndexExecutor<TStreamId> : IIndexExecutor<TStreamId> {
 		_throttle = throttle;
 	}
 
-	public ValueTask Execute(
+	public async ValueTask Execute(
 		ScavengePoint scavengePoint,
 		IScavengeStateForIndexExecutor<TStreamId> state,
 		IIndexScavengerLog scavengerLogger,
@@ -44,7 +44,7 @@ public class IndexExecutor<TStreamId> : IIndexExecutor<TStreamId> {
 
 		var checkpoint = new ScavengeCheckpoint.ExecutingIndex(scavengePoint);
 		state.SetCheckpoint(checkpoint);
-		return Execute(checkpoint, state, scavengerLogger, cancellationToken);
+		await Execute(checkpoint, state, scavengerLogger, cancellationToken);
 	}
 
 	public ValueTask Execute(

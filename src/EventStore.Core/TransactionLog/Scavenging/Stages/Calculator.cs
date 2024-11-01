@@ -41,7 +41,7 @@ public class Calculator<TStreamId> : ICalculator<TStreamId> {
 		_throttle = throttle;
 	}
 
-	public ValueTask Calculate(
+	public async ValueTask Calculate(
 		ScavengePoint scavengePoint,
 		IScavengeStateForCalculator<TStreamId> state,
 		CancellationToken cancellationToken) {
@@ -53,7 +53,7 @@ public class Calculator<TStreamId> : ICalculator<TStreamId> {
 			scavengePoint: scavengePoint,
 			doneStreamHandle: default);
 		state.SetCheckpoint(checkpoint);
-		return Calculate(checkpoint, state, cancellationToken);
+		await Calculate(checkpoint, state, cancellationToken);
 	}
 
 	public async ValueTask Calculate(

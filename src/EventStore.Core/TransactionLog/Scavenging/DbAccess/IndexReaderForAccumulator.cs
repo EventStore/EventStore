@@ -41,7 +41,7 @@ public class IndexReaderForAccumulator<TStreamId> : IIndexReaderForAccumulator<T
 					scavengePoint.Position,
 					token);
 			default:
-				throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
+				return ValueTask.FromException<IndexReadEventInfoResult>(new ArgumentOutOfRangeException(nameof(handle), handle, null));
 		}
 	}
 
@@ -73,7 +73,7 @@ public class IndexReaderForAccumulator<TStreamId> : IIndexReaderForAccumulator<T
 					scavengePoint.Position,
 					token);
 			default:
-				throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
+				return ValueTask.FromException<IndexReadEventInfoResult>(new ArgumentOutOfRangeException(nameof(handle), handle, null));
 		}
 	}
 }
