@@ -26,7 +26,7 @@ public interface IIndexWriter<TStreamId> {
 
 	void Reset();
 	ValueTask<CommitCheckResult<TStreamId>> CheckCommitStartingAt(long transactionPosition, long commitPosition, CancellationToken token);
-	ValueTask<CommitCheckResult<TStreamId>> CheckCommit(TStreamId streamId, long expectedVersion, IAsyncEnumerable<Guid> eventIds, bool streamMightExist, CancellationToken token);
+	ValueTask<CommitCheckResult<TStreamId>> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool streamMightExist, CancellationToken token);
 	ValueTask PreCommit(CommitLogRecord commit, CancellationToken token);
 	void PreCommit(ReadOnlySpan<IPrepareLogRecord<TStreamId>> commitedPrepares);
 	void UpdateTransactionInfo(long transactionId, long logPosition, TransactionInfo<TStreamId> transactionInfo);
@@ -150,9 +150,10 @@ public class IndexWriter<TStreamId> : IndexWriter, IIndexWriter<TStreamId> {
 
 		// we should skip prepares without data, as they don't mean anything for idempotency
 		// though we have to check deletes, otherwise they always will be considered idempotent :)
-		var eventIds = GetTransactionPrepares(transactionPosition, commitPosition, token)
+		var eventIds = await GetTransactionPrepares(transactionPosition, commitPosition, token)
 			.Where(static prepare => prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete))
-			.Select(static prepare => prepare.EventId);
+			.Select(static prepare => prepare.EventId)
+			.ToListAsync(token);
 		return await CheckCommit(streamId, expectedVersion, eventIds, streamMightExist: true, token);
 	}
 
@@ -175,7 +176,7 @@ public class IndexWriter<TStreamId> : IndexWriter, IIndexWriter<TStreamId> {
 		return new CommitCheckResult<TStreamId>(commitDecision, streamId, ExpectedVersion.NoStream, -1, -1, false);
 	}
 
-	public async ValueTask<CommitCheckResult<TStreamId>> CheckCommit(TStreamId streamId, long expectedVersion, IAsyncEnumerable<Guid> eventIds, bool streamMightExist, CancellationToken token) {
+	public async ValueTask<CommitCheckResult<TStreamId>> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool streamMightExist, CancellationToken token) {
 		if (!streamMightExist) {
 			// fast path for completely new streams
 			return CheckCommitForNewStream(streamId, expectedVersion);
@@ -204,7 +205,7 @@ public class IndexWriter<TStreamId> : IndexWriter, IIndexWriter<TStreamId> {
 			var first = true;
 			long startEventNumber = -1;
 			long endEventNumber = -1;
-			await foreach (var eventId in eventIds.WithCancellation(token)) {
+			foreach (var eventId in eventIds) {
 				if (!_committedEvents.TryGetRecord(eventId, out var prepInfo) || !StreamIdComparer.Equals(prepInfo.StreamId, streamId))
 					return new CommitCheckResult<TStreamId>(first ? CommitDecision.Ok : CommitDecision.CorruptedIdempotency,
 						streamId, curVersion, -1, -1, first && await IsSoftDeleted(streamId, token));
@@ -233,7 +234,7 @@ public class IndexWriter<TStreamId> : IndexWriter, IIndexWriter<TStreamId> {
 
 		if (expectedVersion < curVersion) {
 			var eventNumber = expectedVersion;
-			await foreach (var eventId in eventIds.WithCancellation(token)) {
+			foreach (var eventId in eventIds) {
 				eventNumber += 1;
 
 				if (_committedEvents.TryGetRecord(eventId, out var prepInfo)

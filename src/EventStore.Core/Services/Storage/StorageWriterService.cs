@@ -27,7 +27,6 @@ using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ILogger = Serilog.ILogger;
-using List = DotNext.Collections.Generic.List;
 
 namespace EventStore.Core.Services.Storage;
 
@@ -302,7 +301,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			}
 
 			var commitCheck = await _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
-				msg.Events.Select(static x => x.EventId).ToAsyncEnumerable(), streamMightExist: preExisting, token);
+				msg.Events.Select(static x => x.EventId), streamMightExist: preExisting, token);
 			if (commitCheck.Decision is not CommitDecision.Ok) {
 				await ActOnCommitCheckFailure(msg.Envelope, msg.CorrelationId, commitCheck, token);
 				return;
@@ -474,7 +473,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			}
 
 			var commitCheck = await _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
-				List.Singleton(eventId).ToAsyncEnumerable(), streamMightExist: preExisting, token);
+				[eventId], streamMightExist: preExisting, token);
 			if (commitCheck.Decision != CommitDecision.Ok) {
 				await ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck, token);
 				return;
