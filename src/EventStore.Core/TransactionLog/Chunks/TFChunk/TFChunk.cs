@@ -608,9 +608,10 @@ public partial class TFChunk : IDisposable {
 	// (d) raw (byte offset in file, which is actual - header size)
 	//
 	// this method takes (b) and returns (d)
-	public long GetActualRawPosition(long logicalPosition) {
+	public async ValueTask<long> GetActualRawPosition(long logicalPosition, CancellationToken token) {
 		ArgumentOutOfRangeException.ThrowIfNegative(logicalPosition);
 
+		token.ThrowIfCancellationRequested();
 		var actualPosition = _readSide.GetActualPosition(logicalPosition);
 
 		if (actualPosition < 0)
