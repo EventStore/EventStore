@@ -48,7 +48,7 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 
 	// cached to avoid ObjectDisposedException
 	private readonly CancellationToken _stopToken;
-	private volatile CancellationTokenSource _stop;
+	private CancellationTokenSource _stop;
 
 	public string Name {
 		get { return _queueStats.Name; }
@@ -129,7 +129,7 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 				}
 			}
 		} catch (OperationCanceledException exc) when (exc.CancellationToken == _stopToken) {
-			return; // shutdown gracefully on cancellation
+			// shutdown gracefully on cancellation
 		} catch (Exception exc) {
 			_queueStats.EnterIdle();
 			_queueStats.ProcessingStarted<FaultedIndexCommitterServiceState>(0);
@@ -138,10 +138,7 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 			Application.Exit(ExitCode.Error,
 				"Error in IndexCommitterService. Terminating...\nError: " + exc.Message);
 
-			while (!_stopToken.IsCancellationRequested) {
-				await Task.Delay(100, _stopToken).ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext |
-				                                                 ConfigureAwaitOptions.SuppressThrowing);
-			}
+			await _stopToken.WaitAsync();
 
 			_queueStats.ProcessingEnded(0);
 		} finally {
