@@ -250,7 +250,6 @@ public class RedactionService<TStreamId> :
 				filename: newChunkPath,
 				verifyHash: true,
 				unbufferedRead: _db.Config.Unbuffered,
-				optimizeReadSideCache: false,
 				reduceFileCachePressure: true,
 				tracker: new TFChunkTracker.NoOp(),
 				getTransformFactory: _db.TransformManager.GetFactoryForExistingChunk,

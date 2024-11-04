@@ -41,7 +41,7 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 		await using var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
 		await db.Open();
 
-		var chaser = new TFChunkChaser(db, writerchk, new InMemoryCheckpoint(), false);
+		var chaser = new TFChunkChaser(db, writerchk, new InMemoryCheckpoint());
 		chaser.Open();
 
 		Assert.IsTrue(await chaser.TryReadNext(CancellationToken.None) is { LogRecord: null });
@@ -60,7 +60,7 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 		chaserchk.Write(12);
 		chaserchk.Flush();
 
-		var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
+		var chaser = new TFChunkChaser(db, writerchk, chaserchk);
 		chaser.Open();
 
 		Assert.IsTrue(await chaser.TryReadNext(CancellationToken.None) is { LogRecord: null });
@@ -105,7 +105,7 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 		await using var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
 		await db.Open();
 
-		var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
+		var chaser = new TFChunkChaser(db, writerchk, chaserchk);
 		chaser.Open();
 
 		var recordRead = await chaser.TryReadNext(CancellationToken.None);
@@ -151,7 +151,7 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 
 		writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
 
-		var reader = new TFChunkChaser(db, writerchk, chaserchk, false);
+		var reader = new TFChunkChaser(db, writerchk, chaserchk);
 		reader.Open();
 
 		var readRecord = await reader.TryReadNext(CancellationToken.None);
@@ -195,7 +195,7 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 
 		writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
 
-		var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
+		var chaser = new TFChunkChaser(db, writerchk, chaserchk);
 		chaser.Open();
 
 		var readRecord = await chaser.TryReadNext(CancellationToken.None);

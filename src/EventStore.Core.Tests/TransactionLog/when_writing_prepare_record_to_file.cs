@@ -64,7 +64,7 @@ public class when_writing_prepare_record_to_file<TLogFormat, TStreamId> : Specif
 	[Test]
 	public async Task the_data_is_written() {
 		//TODO MAKE THIS ACTUALLY ASSERT OFF THE FILE AND READER FROM KNOWN FILE
-		using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint, false)) {
+		using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint)) {
 			reader.Open();
 			ILogRecord r = await reader.TryReadNext(CancellationToken.None) is { Success: true } res
 				? res.LogRecord
