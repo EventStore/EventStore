@@ -320,7 +320,7 @@ If you encounter issues, check the server's log. Common problems include:
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
-The OAuth plugin allows EventStoreDB to connect to an identity server and authenticate users based on a JWT rather than username and password.
+The OAuth feature allows EventStoreDB to connect to an identity server and authenticate users based on a JWT rather than username and password.
 
 Access tokens can contain a "role" claim, which will be used for [authorization](./user-authorization.md).
 
@@ -336,17 +336,47 @@ Refer to the [configuration guide](../configuration/README.md) for configuration
 
 You can enable the OAuth plugin by setting the following options in you eventstore config file:
 - Set the `AuthenticationType` to `oauth`
-- Provide an oath config file with the `AuthenticationConfig` option.
+- Provide oauth configuration in a section named `OAuth`
 
 For example:
 
+:::tabs
+@tab eventstore.conf
 ```yaml
----
 AuthenticationType: oauth
-AuthenticationConfig: es-oauth.conf
+OAuth:
+  Audience: eventstore-client
+  Issuer: https://localhost:5001/
+  ClientId: eventstore-client
+  ClientSecret: {client_secret}
+  # For testing
+  DisableIssuerValidation: true
+  Insecure: true
+```
+:::
+
+Alternatively you can provide a path to a separate config file with the `AuthenticationConfig` option. For example:
+
+:::tabs
+@tab eventstore.conf
+```yaml
+AuthenticationType: oauth
+AuthenticationConfig: ./es-oauth.conf
 ```
 
-Create a separate configuration file `es-oauth.conf` (the name is not important) to configure the OAuth plugin.
+@tab es-oauth.conf
+```yaml
+OAuth:
+  Audience: eventstore-client
+  Issuer: https://localhost:5001/
+  ClientId: eventstore-client
+  ClientSecret: {client_secret}
+  # For testing
+  DisableIssuerValidation: true
+  Insecure: true
+```
+:::
+
 The configuration options are:
 
 | Name 			 | Type	| Required?	| Default 	|Description |
@@ -358,19 +388,6 @@ The configuration options are:
 | DisableIssuerValidation| bool 	| N 		| false 	| Disable issuer validation for testing purposes. |
 | Insecure 			 | bool 	| N 		| false 	| Whether to validate the certificates for the identity provider. This is not related to `Insecure` in the EventStoreDB configuration. |
 
-For example:
-
-```yaml
----
-OAuth:
-  Audience: eventstore-client
-  Issuer: https://localhost:5001/
-  ClientId: eventstore-client
-  ClientSecret: {client_secret}
-  # For testing
-  DisableIssuerValidation: true
-  Insecure: true
-```
 ### Testing with a local identity server
 
 You can try out the OAuth feature locally with this [Identity Server 4 docker container](https://github.com/EventStore/idsrv4). This container is not intended to be used in production.
