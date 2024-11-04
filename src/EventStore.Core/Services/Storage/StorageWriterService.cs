@@ -743,9 +743,9 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 		Writer.OpenTransaction();
 		var writerPos = Writer.Position;
-		foreach (var prepare in prepares)
-		{
-			Writer.WriteToTransaction(prepare, out var newWriterPos);
+		foreach (var prepare in prepares) {
+			long newWriterPos = await Writer.WriteToTransaction(prepare, token)
+			                    ?? throw new InvalidOperationException("The transaction does not fit in the current chunk.");
 			if (newWriterPos - writerPos != prepare.SizeOnDisk)
 				throw new Exception($"Expected writer position to be at: {writerPos + prepare.SizeOnDisk} but it was at {newWriterPos}");
 

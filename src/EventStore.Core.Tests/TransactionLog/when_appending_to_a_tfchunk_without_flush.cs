@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -30,7 +31,7 @@ public class when_appending_to_a_tfchunk_without_flush<TLogFormat, TStreamId> : 
 		_record = LogRecord.Prepare(recordFactory, 0, _corrId, _eventId, 0, 0, streamId, 1,
 			PrepareFlags.None, eventTypeId, new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 		_chunk = await TFChunkHelper.CreateNewChunk(Filename);
-		_result = _chunk.TryAppend(_record);
+		_result = await _chunk.TryAppend(_record, CancellationToken.None);
 	}
 
 	[OneTimeTearDown]

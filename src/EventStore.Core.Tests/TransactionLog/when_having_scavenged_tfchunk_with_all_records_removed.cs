@@ -44,39 +44,39 @@ public class when_having_scavenged_tfchunk_with_all_records_removed<TLogFormat, 
 		var pos = 0L;
 		_logFormat.StreamNameIndex.GetOrReserve(_logFormat.RecordFactory, streamName, 0, out var streamId, out var streamRecord);
 		if (streamRecord is not null) {
-			var res = chunk.TryAppend(streamRecord);
+			var res = await chunk.TryAppend(streamRecord, CancellationToken.None);
 			pos = res.NewPosition;
 		}
 
 		_logFormat.EventTypeIndex.GetOrReserveEventType(_logFormat.RecordFactory, "et1", pos, out var eventTypeId, out var eventTypeRecord);
 		if (eventTypeRecord is not null) {
-			var res = chunk.TryAppend(eventTypeRecord);
+			var res = await chunk.TryAppend(eventTypeRecord, CancellationToken.None);
 			pos = res.NewPosition;
 		}
 
 		var expectedVersion = ExpectedVersion.NoStream;
 		_p1 = LogRecord.SingleWrite(_logFormat.RecordFactory, pos, Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, eventTypeId,
 			new byte[2048], new byte[] { 5, 7 });
-		_res1 = chunk.TryAppend(_p1);
+		_res1 = await chunk.TryAppend(_p1, CancellationToken.None);
 
 		_c1 = LogRecord.Commit(_res1.NewPosition, Guid.NewGuid(), _p1.LogPosition, 0);
-		_cres1 = chunk.TryAppend(_c1);
+		_cres1 = await chunk.TryAppend(_c1, CancellationToken.None);
 
 		_p2 = LogRecord.SingleWrite(_logFormat.RecordFactory, _cres1.NewPosition,
 			Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, eventTypeId,
 			new byte[2048], new byte[] { 5, 7 });
-		_res2 = chunk.TryAppend(_p2);
+		_res2 = await chunk.TryAppend(_p2, CancellationToken.None);
 
 		_c2 = LogRecord.Commit(_res2.NewPosition, Guid.NewGuid(), _p2.LogPosition, 1);
-		_cres2 = chunk.TryAppend(_c2);
+		_cres2 = await chunk.TryAppend(_c2, CancellationToken.None);
 
 		_p3 = LogRecord.SingleWrite(_logFormat.RecordFactory, _cres2.NewPosition,
 			Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, eventTypeId,
 			new byte[2048], new byte[] { 5, 7 });
-		_res3 = chunk.TryAppend(_p3);
+		_res3 = await chunk.TryAppend(_p3, CancellationToken.None);
 
 		_c3 = LogRecord.Commit(_res3.NewPosition, Guid.NewGuid(), _p3.LogPosition, 2);
-		_cres3 = chunk.TryAppend(_c3);
+		_cres3 = await chunk.TryAppend(_c3, CancellationToken.None);
 
 		await chunk.Complete(CancellationToken.None);
 		_originalFileSize = chunk.FileSize;

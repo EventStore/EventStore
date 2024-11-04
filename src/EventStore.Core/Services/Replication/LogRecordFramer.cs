@@ -4,29 +4,30 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Transport.Tcp.Framing;
 
 namespace EventStore.Core.Services.Replication;
 
+internal sealed class LogRecordFramer : IAsyncMessageFramer<ILogRecord> {
+	private readonly IAsyncMessageFramer<BinaryReader> _inner;
+	private Func<ILogRecord, CancellationToken, ValueTask> _handler = static (_, _) => ValueTask.CompletedTask;
 
-public class LogRecordFramer : IMessageFramer<ILogRecord> {
-	private readonly IMessageFramer<BinaryReader> _inner;
-	private Action<ILogRecord> _handler = _ => { };
-
-	public LogRecordFramer(IMessageFramer<BinaryReader> inner) {
+	public LogRecordFramer(IAsyncMessageFramer<BinaryReader> inner) {
 		_inner = inner;
 		_inner.RegisterMessageArrivedCallback(OnMessageArrived);
 	}
 
 	public bool HasData => _inner.HasData;
 	public IEnumerable<ArraySegment<byte>> FrameData(ArraySegment<byte> data) => _inner.FrameData(data);
-	public void UnFrameData(IEnumerable<ArraySegment<byte>> data) => _inner.UnFrameData(data);
-	public void UnFrameData(ArraySegment<byte> data) => _inner.UnFrameData(data);
+	public ValueTask UnFrameData(IEnumerable<ArraySegment<byte>> data, CancellationToken token) => _inner.UnFrameData(data, token);
+	public ValueTask UnFrameData(ArraySegment<byte> data, CancellationToken token) => _inner.UnFrameData(data, token);
 	public void Reset() => _inner.Reset();
 
-	private void OnMessageArrived(BinaryReader reader) {
+	private async ValueTask OnMessageArrived(BinaryReader reader, CancellationToken token) {
 		var rawLength = reader.BaseStream.Length;
 
 		if (rawLength >= int.MaxValue)
@@ -37,10 +38,10 @@ public class LogRecordFramer : IMessageFramer<ILogRecord> {
 		var length = (int)rawLength;
 
 		var record = LogRecord.ReadFrom(reader, length: length);
-		_handler(record);
+		await _handler(record, token);
 	}
 
-	public void RegisterMessageArrivedCallback(Action<ILogRecord> handler) {
+	public void RegisterMessageArrivedCallback(Func<ILogRecord, CancellationToken, ValueTask> handler) {
 		Ensure.NotNull(handler, nameof(handler));
 		_handler = handler;
 	}

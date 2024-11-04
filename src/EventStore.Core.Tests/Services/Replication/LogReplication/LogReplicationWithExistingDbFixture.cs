@@ -64,7 +64,7 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 			var logRecord = logRecords[i];
 			var logicalPos = chunk.ChunkHeader.GetLocalLogPosition(logRecord.LogPosition);
 			var actualPos = chunk.RawWriterPosition - ChunkHeader.Size;
-			var writeResult = chunk.TryAppend(logRecord);
+			var writeResult = await chunk.TryAppend(logRecord, token);
 
 			if (!writeResult.Success)
 				throw new Exception("Failed to append log record");

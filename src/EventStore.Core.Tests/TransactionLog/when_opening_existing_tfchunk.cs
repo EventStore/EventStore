@@ -46,8 +46,8 @@ public class when_opening_existing_tfchunk : SpecificationWithFilePerTestFixture
 
 	[Test]
 	public void append_throws_invalid_operation_exception() {
-		Assert.Throws<InvalidOperationException>(() =>
-			_testChunk.TryAppend(new CommitLogRecord(0, Guid.NewGuid(), 0, DateTime.UtcNow, 0)));
+		Assert.ThrowsAsync<InvalidOperationException>(async () =>
+			await _testChunk.TryAppend(new CommitLogRecord(0, Guid.NewGuid(), 0, DateTime.UtcNow, 0), CancellationToken.None));
 	}
 
 	[Test]

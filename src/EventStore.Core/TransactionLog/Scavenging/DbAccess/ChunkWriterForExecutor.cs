@@ -68,7 +68,7 @@ public class ChunkWriterForExecutor<TStreamId> : IChunkWriterForExecutor<TStream
 	public string FileName => _outputChunk.FileName;
 
 	public async ValueTask WriteRecord(RecordForExecutor<TStreamId, ILogRecord> record, CancellationToken token) {
-		var posMap = TFChunkScavenger<TStreamId>.WriteRecord(_outputChunk, record.Record);
+		var posMap = await TFChunkScavenger<TStreamId>.WriteRecord(_outputChunk, record.Record, token);
 
 		// add the posmap in memory so we can write it when we complete
 		var lastBatch = _posMapss[^1];

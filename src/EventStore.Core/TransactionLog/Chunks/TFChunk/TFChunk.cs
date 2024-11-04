@@ -792,10 +792,11 @@ public partial class TFChunk : IDisposable {
 		return _readSide.TryReadClosestBackward(logicalPosition);
 	}
 
-	public RecordWriteResult TryAppend(ILogRecord record) {
+	public async ValueTask<RecordWriteResult> TryAppend(ILogRecord record, CancellationToken token) {
 		if (IsReadOnly)
 			throw new InvalidOperationException("Cannot write to a read-only block.");
 
+		token.ThrowIfCancellationRequested();
 		var workItem = _writerWorkItem;
 		var buffer = workItem.Buffer;
 		var bufferWriter = workItem.BufferWriter;

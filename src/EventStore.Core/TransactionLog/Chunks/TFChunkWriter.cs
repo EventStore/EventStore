@@ -63,17 +63,16 @@ public class TFChunkWriter : ITransactionFileWriter {
 	public async ValueTask<(bool, long)> Write(ILogRecord record, CancellationToken token) {
 		OpenTransaction();
 
-		if (!TryWriteToTransaction(record, out var newPos)) {
+		if (await WriteToTransaction(record, token) is not { } result) {
 			await CompleteChunkInTransaction(token);
 			await AddNewChunk(token: token);
 			CommitTransaction();
 			await Flush(token);
-			newPos = _nextRecordPosition;
-			return (false, newPos);
+			return (false, _nextRecordPosition);
 		}
 
 		CommitTransaction();
-		return (true, newPos);
+		return (true, result);
 	}
 
 	public void OpenTransaction() {
@@ -83,21 +82,10 @@ public class TFChunkWriter : ITransactionFileWriter {
 		_inTransaction = true;
 	}
 
-	public void WriteToTransaction(ILogRecord record, out long newPos) {
-		if (!TryWriteToTransaction(record, out newPos))
-			throw new InvalidOperationException("The transaction does not fit in the current chunk.");
-	}
-
-	public bool TryWriteToTransaction(ILogRecord record, out long newPos) {
-		var result = _currentChunk.TryAppend(record);
-		if (!result.Success) {
-			newPos = default;
-			return false;
-		}
-
-		_nextRecordPosition = result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition;
-		newPos = _nextRecordPosition;
-		return true;
+	public async ValueTask<long?> WriteToTransaction(ILogRecord record, CancellationToken token) {
+		return await _currentChunk.TryAppend(record, token) is { Success: true } result
+			? _nextRecordPosition = result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition
+			: null;
 	}
 
 	public void CommitTransaction() {
