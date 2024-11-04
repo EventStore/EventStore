@@ -32,12 +32,11 @@ public class PersistentSubscriptionCheckpointReader : IPersistentSubscriptionChe
 		}
 
 		public void LoadStateCompleted(ClientMessage.ReadStreamEventsBackwardCompleted msg) {
-			if (msg.Events.Length > 0) {
+			if (msg.Events.Count > 0) {
 				var checkpoint = msg.Events[0].Event;
 
-				if (checkpoint.EventType == "SubscriptionCheckpoint" ||
-					checkpoint.EventType == "$SubscriptionCheckpoint") {
-			
+				if (checkpoint.EventType is "SubscriptionCheckpoint" or "$SubscriptionCheckpoint") {
+
 					var checkpointJson = checkpoint.Data.ParseJson<string>();
 					_onStateLoaded(checkpointJson);
 					return;

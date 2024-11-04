@@ -55,7 +55,7 @@ public class TFChunkScavengerLogManager : ITFChunkScavengerLogManager {
 
 		_ioDispatcher.ReadBackward(metaStreamId, -1, 1, false, SystemAccounts.System, readResult => {
 			if (readResult.Result == ReadStreamResult.Success || readResult.Result == ReadStreamResult.NoStream) {
-				if (readResult.Events.Length == 1) {
+				if (readResult.Events.Count is 1) {
 					var currentMetadata = StreamMetadata.FromJsonBytes(readResult.Events[0].Event.Data);
 					var hasProperACL = currentMetadata.Acl != null
 									&& currentMetadata.Acl.ReadRoles != null
@@ -136,7 +136,7 @@ public class TFChunkScavengerLogManager : ITFChunkScavengerLogManager {
 					}
 				}
 
-				if (readResult.IsEndOfStream || readResult.Events.Length == 0) {
+				if (readResult.IsEndOfStream || readResult.Events is []) {
 					SetOpsPermissions(recentScavenges);
 					CompleteInterruptedScavenges(incompleteScavenges);
 				} else {
@@ -232,7 +232,7 @@ public class TFChunkScavengerLogManager : ITFChunkScavengerLogManager {
 					}
 				}
 
-				if (readResult.IsEndOfStream || readResult.Events.Length == 0) {
+				if (readResult.IsEndOfStream || readResult.Events is []) {
 					CompleteScavengeWithStats(incompleteScavengeStats);
 				} else {
 					GatherIncompleteScavengeStats(readResult.NextEventNumber, incompleteScavengeStats);

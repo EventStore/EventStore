@@ -25,38 +25,38 @@ public class
 	}
 
 	[Test]
-	public void the_stream_is_deleted() {
-		Assert.IsTrue(ReadIndex.IsStreamDeleted("test"));
+	public async Task the_stream_is_deleted() {
+		Assert.IsTrue(await ReadIndex.IsStreamDeleted("test", CancellationToken.None));
 	}
 
 	[Test]
-	public void the_metastream_is_deleted() {
-		Assert.IsTrue(ReadIndex.IsStreamDeleted("$$test"));
+	public async Task the_metastream_is_deleted() {
+		Assert.IsTrue(await ReadIndex.IsStreamDeleted("$$test", CancellationToken.None));
 	}
 
 	[Test]
-	public void get_last_event_number_reports_deleted_metastream() {
-		Assert.AreEqual(EventNumber.DeletedStream, ReadIndex.GetStreamLastEventNumber("$$test"));
+	public async Task get_last_event_number_reports_deleted_metastream() {
+		Assert.AreEqual(EventNumber.DeletedStream, await ReadIndex.GetStreamLastEventNumber("$$test", CancellationToken.None));
 	}
 
 	[Test]
-	public void single_event_read_reports_deleted_metastream() {
-		Assert.AreEqual(ReadEventResult.StreamDeleted, ReadIndex.ReadEvent("$$test", 0).Result);
+	public async Task single_event_read_reports_deleted_metastream() {
+		Assert.AreEqual(ReadEventResult.StreamDeleted, (await ReadIndex.ReadEvent("$$test", 0, CancellationToken.None)).Result);
 	}
 
 	[Test]
-	public void last_event_read_reports_deleted_metastream() {
-		Assert.AreEqual(ReadEventResult.StreamDeleted, ReadIndex.ReadEvent("$$test", -1).Result);
+	public async Task last_event_read_reports_deleted_metastream() {
+		Assert.AreEqual(ReadEventResult.StreamDeleted, (await ReadIndex.ReadEvent("$$test", -1, CancellationToken.None)).Result);
 	}
 
 	[Test]
-	public void read_stream_events_forward_reports_deleted_metastream() {
-		Assert.AreEqual(ReadStreamResult.StreamDeleted, ReadIndex.ReadStreamEventsForward("$$test", 0, 100).Result);
+	public async Task read_stream_events_forward_reports_deleted_metastream() {
+		Assert.AreEqual(ReadStreamResult.StreamDeleted, (await ReadIndex.ReadStreamEventsForward("$$test", 0, 100, CancellationToken.None)).Result);
 	}
 
 	[Test]
-	public void read_stream_events_backward_reports_deleted_metastream() {
+	public async Task read_stream_events_backward_reports_deleted_metastream() {
 		Assert.AreEqual(ReadStreamResult.StreamDeleted,
-			ReadIndex.ReadStreamEventsBackward("$$test", 0, 100).Result);
+			(await ReadIndex.ReadStreamEventsBackward("$$test", 0, 100, CancellationToken.None)).Result);
 	}
 }

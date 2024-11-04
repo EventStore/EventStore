@@ -120,38 +120,38 @@ public class when_having_scavenged_tfchunk_with_all_records_removed<TLogFormat, 
 	}
 
 	[Test]
-	public void prepare1_cant_be_read_at_position() {
-		var res = _scavengedChunk.TryReadAt((int)_p1.LogPosition, couldBeScavenged: true);
+	public async Task prepare1_cant_be_read_at_position() {
+		var res = await _scavengedChunk.TryReadAt((int)_p1.LogPosition, couldBeScavenged: true, CancellationToken.None);
 		Assert.IsFalse(res.Success);
 	}
 
 	[Test]
-	public void commit1_cant_be_read_at_position() {
-		var res = _scavengedChunk.TryReadAt((int)_c1.LogPosition, couldBeScavenged: true);
+	public async Task commit1_cant_be_read_at_position() {
+		var res = await _scavengedChunk.TryReadAt((int)_c1.LogPosition, couldBeScavenged: true, CancellationToken.None);
 		Assert.IsFalse(res.Success);
 	}
 
 	[Test]
-	public void prepare2_cant_be_read_at_position() {
-		var res = _scavengedChunk.TryReadAt((int)_p2.LogPosition, couldBeScavenged: true);
+	public async Task prepare2_cant_be_read_at_position() {
+		var res = await _scavengedChunk.TryReadAt((int)_p2.LogPosition, couldBeScavenged: true, CancellationToken.None);
 		Assert.IsFalse(res.Success);
 	}
 
 	[Test]
-	public void commit2_cant_be_read_at_position() {
-		var res = _scavengedChunk.TryReadAt((int)_c2.LogPosition, couldBeScavenged: true);
+	public async Task commit2_cant_be_read_at_position() {
+		var res = await _scavengedChunk.TryReadAt((int)_c2.LogPosition, couldBeScavenged: true, CancellationToken.None);
 		Assert.IsFalse(res.Success);
 	}
 
 	[Test]
-	public void prepare3_cant_be_read_at_position() {
-		var res = _scavengedChunk.TryReadAt((int)_p3.LogPosition, couldBeScavenged: true);
+	public async Task prepare3_cant_be_read_at_position() {
+		var res = await _scavengedChunk.TryReadAt((int)_p3.LogPosition, couldBeScavenged: true, CancellationToken.None);
 		Assert.IsFalse(res.Success);
 	}
 
 	[Test]
-	public void commit3_cant_be_read_at_position() {
-		var res = _scavengedChunk.TryReadAt((int)_c3.LogPosition, couldBeScavenged: true);
+	public async Task commit3_cant_be_read_at_position() {
+		var res = await _scavengedChunk.TryReadAt((int)_c3.LogPosition, couldBeScavenged: true, CancellationToken.None);
 		Assert.IsFalse(res.Success);
 	}
 
@@ -161,7 +161,7 @@ public class when_having_scavenged_tfchunk_with_all_records_removed<TLogFormat, 
 		RecordReadResult res = await _scavengedChunk.TryReadFirst(CancellationToken.None);
 		while (res.Success) {
 			records.Add(res.LogRecord);
-			res = _scavengedChunk.TryReadClosestForward((int)res.NextPosition);
+			res = await _scavengedChunk.TryReadClosestForward((int)res.NextPosition, CancellationToken.None);
 		}
 
 		if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {

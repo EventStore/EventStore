@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
 using StreamId = System.UInt32;
@@ -38,7 +40,7 @@ public class LogV3SystemStreams : ISystemStreamLookup<StreamId> {
 
 	// virtual stream for storing system settings
 	private const StreamId SettingsStreamNumber = 8;
-	
+
 	// virtual stream so that we can index EventTypeRecords for looking up event type names
 	public const StreamId EventTypesStreamNumber = 10;
 
@@ -112,7 +114,7 @@ public class LogV3SystemStreams : ISystemStreamLookup<StreamId> {
 	// for now do the latter because (1) allocating a range of numbers will probably get fiddly
 	// and (2) i expect we will find that at the point we are trying to determine if a stream is a system stream then
 	// we will have already looked up its info in the stream index, so this call will become trivial or unnecessary.
-	public bool IsSystemStream(StreamId streamId) {
+	public async ValueTask<bool> IsSystemStream(StreamId streamId, CancellationToken token) {
 		if (IsVirtualStream(streamId) ||
 			_metastreams.IsMetaStream(streamId) ||
 			streamId == NoSystemStream)
@@ -121,7 +123,7 @@ public class LogV3SystemStreams : ISystemStreamLookup<StreamId> {
 		if (streamId == NoUserStream)
 			return false;
 
-		var streamName = _streamNames.LookupName(streamId);
+		var streamName = await _streamNames.LookupName(streamId, token);
 		return SystemStreams.IsSystemStream(streamName);
 	}
 

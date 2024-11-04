@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Bus;
 using EventStore.Core.Data.Redaction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -41,7 +42,7 @@ public class EventPositionTests<TLogFormat, TStreamId> : RedactionServiceTestFix
 
 	private async Task<RedactionMessage.GetEventPositionCompleted> GetEventPosition(long eventNumber) {
 		var e = new TcsEnvelope<RedactionMessage.GetEventPositionCompleted>();
-		RedactionService.Handle(new RedactionMessage.GetEventPosition(e, StreamId, eventNumber));
+		await RedactionService.As<IAsyncHandle<RedactionMessage.GetEventPosition>>().HandleAsync(new RedactionMessage.GetEventPosition(e, StreamId, eventNumber), CancellationToken.None);
 		return await e.Task;
 	}
 

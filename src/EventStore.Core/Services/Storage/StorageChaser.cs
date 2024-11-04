@@ -110,14 +110,15 @@ public class StorageChaser<TStreamId> : StorageChaser, IMonitoredQueue,
 			// everything else will be done by chaser as during replication
 			// with no concurrency issues with writer, as writer before jumping
 			// into leader mode and accepting writes will wait till chaser caught up.
-			_indexCommitterService.Init(_chaser.Checkpoint.Read());
+			await _indexCommitterService.Init(_chaser.Checkpoint.Read(), _stopToken);
 			_leaderBus.Publish(new SystemMessage.ServiceInitialized("StorageChaser"));
 
 			while (!_stopToken.IsCancellationRequested) {
 				if (_systemStarted)
 					await ChaserIteration(_stopToken);
 				else
-					await Task.Delay(1);
+					await Task.Delay(1, _stopToken).ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext |
+					                                               ConfigureAwaitOptions.SuppressThrowing);
 			}
 		} catch (Exception exc) {
 			Log.Fatal(exc, "Error in StorageChaser. Terminating...");
@@ -148,7 +149,7 @@ public class StorageChaser<TStreamId> : StorageChaser, IMonitoredQueue,
 
 		FlushSignal.Reset(); // Reset the flush signal just before a read to reduce pointless reads from [flush flush read] patterns.
 
-		var result = _chaser.TryReadNext();
+		var result = await _chaser.TryReadNext(token);
 
 		if (result.Success) {
 			_queueStats.ProcessingStarted(result.LogRecord.GetType(), 0);
@@ -187,7 +188,7 @@ public class StorageChaser<TStreamId> : StorageChaser, IMonitoredQueue,
 			case LogRecordType.Commit: {
 				_commitsAfterEof = !result.Eof;
 				var record = (CommitLogRecord)result.LogRecord;
-				ProcessCommitRecord(record, result.RecordPostPosition);
+				await ProcessCommitRecord(record, result.RecordPostPosition, token);
 				break;
 			}
 			case LogRecordType.System: {
@@ -241,13 +242,13 @@ public class StorageChaser<TStreamId> : StorageChaser, IMonitoredQueue,
 		}
 	}
 
-	private void ProcessCommitRecord(CommitLogRecord record, long postPosition) {
+	private async ValueTask ProcessCommitRecord(CommitLogRecord record, long postPosition, CancellationToken token) {
 		CommitPendingTransaction(_transaction, postPosition);
 
 		var firstEventNumber = record.FirstEventNumber;
-		var lastEventNumber = _indexCommitterService.GetCommitLastEventNumber(record);
+		var lastEventNumber = await _indexCommitterService.GetCommitLastEventNumber(record, token);
 		_indexCommitterService.AddPendingCommit(record, postPosition);
-		if (lastEventNumber == EventNumber.Invalid)
+		if (lastEventNumber is EventNumber.Invalid)
 			lastEventNumber = record.FirstEventNumber - 1;
 		_leaderBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, record.LogPosition,
 			record.TransactionPosition, firstEventNumber, lastEventNumber));

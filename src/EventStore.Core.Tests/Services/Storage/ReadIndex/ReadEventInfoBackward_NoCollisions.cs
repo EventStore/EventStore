@@ -44,23 +44,25 @@ public abstract class ReadEventInfoBackward_NoCollisions : ReadIndexTestScenario
 
 	public class WithNoEvents : ReadEventInfoBackward_NoCollisions {
 		[Test]
-		public void with_no_events() {
-			var result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+		public async Task with_no_events() {
+			var result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				0,
 				int.MaxValue,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			Assert.AreEqual(0, result.EventInfos.Length);
 			Assert.True(result.IsEndOfStream);
 
-			result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+			result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				-1,
 				int.MaxValue,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			Assert.AreEqual(0, result.EventInfos.Length);
 			Assert.True(result.IsEndOfStream);
@@ -75,34 +77,37 @@ public abstract class ReadEventInfoBackward_NoCollisions : ReadIndexTestScenario
 		}
 
 		[Test]
-		public void with_one_event() {
-			var result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+		public async Task with_one_event() {
+			var result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				0,
 				int.MaxValue,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			Assert.AreEqual(1, result.EventInfos.Length);
 			CheckResult(new[] { _event }, result);
 			Assert.True(result.IsEndOfStream);
 
-			result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+			result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				1,
 				int.MaxValue,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			CheckResult(new[] { _event }, result);
 			Assert.True(result.IsEndOfStream);
 
-			result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+			result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				-1,
 				int.MaxValue,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			Assert.AreEqual(1, result.EventInfos.Length);
 			CheckResult(new[] { _event }, result);
@@ -130,14 +135,15 @@ public abstract class ReadEventInfoBackward_NoCollisions : ReadIndexTestScenario
 		}
 
 		[Test]
-		public void with_multiple_events() {
+		public async Task with_multiple_events() {
 			for (int fromEventNumber = 0; fromEventNumber <= 4; fromEventNumber++) {
-				var result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+				var result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 					Hash,
 					GetStreamId,
 					fromEventNumber,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue,
+					CancellationToken.None);
 
 				CheckResult(_events.Take(fromEventNumber + 1).ToArray(), result);
 				Assert.True(result.IsEndOfStream);
@@ -145,14 +151,15 @@ public abstract class ReadEventInfoBackward_NoCollisions : ReadIndexTestScenario
 		}
 
 		[Test]
-		public void with_multiple_events_and_max_count() {
+		public async Task with_multiple_events_and_max_count() {
 			for (int fromEventNumber = 0; fromEventNumber <= 4; fromEventNumber++) {
-				var result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+				var result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 					Hash,
 					GetStreamId,
 					fromEventNumber,
 					2,
-					long.MaxValue);
+					long.MaxValue,
+					CancellationToken.None);
 
 				CheckResult(_events.Take(fromEventNumber + 1).Skip(fromEventNumber + 1 - 2).ToArray(), result);
 				if (fromEventNumber - 2 < 0)
@@ -163,24 +170,26 @@ public abstract class ReadEventInfoBackward_NoCollisions : ReadIndexTestScenario
 		}
 
 		[Test]
-		public void with_multiple_events_and_before_position() {
+		public async Task with_multiple_events_and_before_position() {
 			for (int fromEventNumber = 0; fromEventNumber + 1 < _events.Count; fromEventNumber++) {
-				var result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+				var result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 					Hash,
 					GetStreamId,
 					fromEventNumber,
 					int.MaxValue,
-					_events[fromEventNumber + 1].LogPosition);
+					_events[fromEventNumber + 1].LogPosition,
+					CancellationToken.None);
 
 				CheckResult(_events.Take(fromEventNumber + 1).ToArray(), result);
 				Assert.True(result.IsEndOfStream);
 
-				result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+				result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 					Hash,
 					GetStreamId,
 					-1,
 					int.MaxValue,
-					_events[fromEventNumber + 1].LogPosition);
+					_events[fromEventNumber + 1].LogPosition,
+					CancellationToken.None);
 
 				CheckResult(_events.Take(fromEventNumber + 1).ToArray(), result);
 				Assert.True(result.IsEndOfStream);
@@ -200,48 +209,52 @@ public abstract class ReadEventInfoBackward_NoCollisions : ReadIndexTestScenario
 		}
 
 		[Test]
-		public void can_read_events() {
-			var result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+		public async Task can_read_events() {
+			var result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				1,
 				int.MaxValue,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			CheckResult(_events.ToArray(), result);
 			Assert.True(result.IsEndOfStream);
 		}
 
 		[Test]
-		public void can_read_tombstone_event() {
-			var result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+		public async Task can_read_tombstone_event() {
+			var result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				EventNumber.DeletedStream,
 				int.MaxValue,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			Assert.AreEqual(1, result.EventInfos.Length);
 			Assert.AreEqual(EventNumber.DeletedStream, result.EventInfos[0].EventNumber);
 			Assert.AreEqual(long.MaxValue - int.MaxValue, result.NextEventNumber);
 
-			result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+			result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				-1,
 				int.MaxValue,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			Assert.AreEqual(1, result.EventInfos.Length);
 			Assert.AreEqual(EventNumber.DeletedStream, result.EventInfos[0].EventNumber);
 			Assert.AreEqual(long.MaxValue - int.MaxValue, result.NextEventNumber);
 
-			result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+			result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				EventNumber.DeletedStream - 1,
 				1,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			Assert.AreEqual(0, result.EventInfos.Length);
 			Assert.AreEqual(1, result.NextEventNumber);
@@ -268,34 +281,37 @@ public abstract class ReadEventInfoBackward_NoCollisions : ReadIndexTestScenario
 		}
 
 		[Test]
-		public void strictly_returns_up_to_max_count_consecutive_events_from_start_event_number() {
-			var result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+		public async Task strictly_returns_up_to_max_count_consecutive_events_from_start_event_number() {
+			var result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				7,
 				int.MaxValue,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			CheckResult(_events.ToArray(), result);
 			Assert.True(result.IsEndOfStream);
 
-			result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+			result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				7,
 				4,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			CheckResult(_events.Skip(1).ToArray(), result);
 			Assert.AreEqual(3, result.NextEventNumber);
 
 
-			result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+			result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				3,
 				1,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			Assert.AreEqual(0, result.EventInfos.Length);
 			Assert.AreEqual(0, result.NextEventNumber);
@@ -324,13 +340,14 @@ public abstract class ReadEventInfoBackward_NoCollisions : ReadIndexTestScenario
 		}
 
 		[Test]
-		public void result_is_deduplicated_keeping_oldest_duplicates() {
-			var result = ReadIndex.ReadEventInfoBackward_NoCollisions(
+		public async Task result_is_deduplicated_keeping_oldest_duplicates() {
+			var result = await ReadIndex.ReadEventInfoBackward_NoCollisions(
 				Hash,
 				GetStreamId,
 				3,
 				int.MaxValue,
-				long.MaxValue);
+				long.MaxValue,
+				CancellationToken.None);
 
 			CheckResult(
 				_events

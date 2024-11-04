@@ -38,17 +38,13 @@ public static class SystemStreams {
 	public const string NodeStateStream = "$mem-node-state";
 	public const string GossipStream = "$mem-gossip";
 
-	public static bool IsSystemStream(string streamId) {
-		return streamId.Length != 0 && streamId[0] == '$';
-	}
+	public static bool IsSystemStream(string streamId) => streamId is ['$', ..];
 
 	public static string MetastreamOf(string streamId) {
 		return "$$" + streamId;
 	}
 
-	public static bool IsMetastream(string streamId) {
-		return streamId.Length >= 2 && streamId[0] == '$' && streamId[1] == '$';
-	}
+	public static bool IsMetastream(string streamId) => streamId is ['$', '$', ..];
 
 	public static string OriginalStreamOf(string metastreamId) {
 		return metastreamId.Substring(2);

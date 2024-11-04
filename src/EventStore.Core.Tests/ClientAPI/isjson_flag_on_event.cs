@@ -78,7 +78,7 @@ public class isjson_flag_on_event<TLogFormat, TStreamId> : SpecificationWithDire
 					Assert.IsInstanceOf<ClientMessage.ReadStreamEventsForwardCompleted>(message);
 					var msg = (ClientMessage.ReadStreamEventsForwardCompleted)message;
 					Assert.AreEqual(Data.ReadStreamResult.Success, msg.Result);
-					Assert.AreEqual(expectedEvents, msg.Events.Length);
+					Assert.AreEqual(expectedEvents, msg.Events.Count);
 					Assert.IsTrue(msg.Events.All(x => (x.OriginalEvent.Flags & PrepareFlags.IsJson) != 0));
 
 					done.Set();

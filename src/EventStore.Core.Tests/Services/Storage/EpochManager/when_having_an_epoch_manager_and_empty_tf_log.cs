@@ -156,10 +156,10 @@ public class when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId
 		Assert.AreEqual(1 + 4 + 16, epochsWritten.Length);
 		for (int i = 0; i < epochsWritten.Length; i++) {
 			_reader.Reposition(epochsWritten[i].Epoch.EpochPosition);
-			_reader.TryReadNext(); // read epoch
+			await _reader.TryReadNext(CancellationToken.None); // read epoch
 			IPrepareLogRecord<TStreamId> epochInfo;
 			while (true) {
-				var result = _reader.TryReadNext();
+				var result = await _reader.TryReadNext(CancellationToken.None);
 				Assert.True(result.Success);
 				if (result.LogRecord is IPrepareLogRecord<TStreamId> prepare) {
 					epochInfo = prepare;

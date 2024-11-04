@@ -73,8 +73,8 @@ public class when_uncaching_a_tfchunk<TLogFormat, TStreamId> : SpecificationWith
 	}
 
 	[Test]
-	public void the_record_can_be_read() {
-		var res = _uncachedChunk.TryReadAt(0, couldBeScavenged: true);
+	public async Task the_record_can_be_read() {
+		var res = await _uncachedChunk.TryReadAt(0, couldBeScavenged: true, CancellationToken.None);
 		Assert.IsTrue(res.Success);
 		Assert.AreEqual(_record, res.LogRecord);
 		Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);

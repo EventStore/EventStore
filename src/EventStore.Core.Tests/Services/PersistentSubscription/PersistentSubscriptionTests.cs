@@ -2556,7 +2556,7 @@ class FakeStreamReader : IPersistentSubscriptionStreamReader {
 
 	public void BeginReadEvents(IPersistentSubscriptionEventSource stream, IPersistentSubscriptionStreamPosition startEventNumber,
 		int countToLoad, int batchSize, int maxWindowSize, bool resolveLinkTos, bool skipFirstEvent,
-		Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onEventsFound,
+		Action<IReadOnlyList<ResolvedEvent>, IPersistentSubscriptionStreamPosition, bool> onEventsFound,
 		Action<IPersistentSubscriptionStreamPosition, long> onEventsSkipped,
 		Action<string> onError) {
 		if (_action != null) {
