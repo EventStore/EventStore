@@ -79,7 +79,7 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 		SubscribeToMessage<ReplicationMessage.DataChunkBulk>();
 	}
 
-	public override ValueTask HandleAsync(SystemMessage.StateChangeMessage message, CancellationToken token) {
+	public override async ValueTask HandleAsync(SystemMessage.StateChangeMessage message, CancellationToken token) {
 		if (message.State is VNodeState.PreLeader) {
 			_activeChunk?.MarkForDeletion();
 			_activeChunk = null;
@@ -89,7 +89,7 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 			_ackedSubscriptionPos = -1;
 		}
 
-		return base.HandleAsync(message, token);
+		await base.HandleAsync(message, token);
 	}
 
 	async ValueTask IAsyncHandle<ReplicationMessage.ReplicaSubscribed>.HandleAsync(ReplicationMessage.ReplicaSubscribed message, CancellationToken token) {
@@ -352,7 +352,7 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 			Log.Error(exc, "Exception in writer.");
 			throw;
 		} finally {
-			await Flush();
+			await Flush(token: token);
 		}
 
 		if (message.CompleteChunk || _subscriptionPos > _ackedSubscriptionPos) {
