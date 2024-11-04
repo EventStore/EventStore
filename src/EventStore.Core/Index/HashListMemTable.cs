@@ -151,7 +151,7 @@ public class HashListMemTable : IMemTable {
 			int endIdx = await list.UpperBound(
 				key: new Entry(long.MaxValue, beforePosition - 1),
 				comparer: LogPosComparer,
-				continueSearch: async (e, token) => await isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos), token),
+				continueSearch: (e, token) => isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos), token),
 				token);
 
 			if (endIdx is -1)
