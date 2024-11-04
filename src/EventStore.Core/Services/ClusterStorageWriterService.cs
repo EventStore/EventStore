@@ -265,7 +265,7 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 			return;
 		}
 
-		if (!_activeChunk.TryAppendRawData(message.RawBytes)) {
+		if (!await _activeChunk.TryAppendRawData(message.RawBytes, token)) {
 			ReplicationFail(
 				"Could not append raw bytes to chunk {0}-{1}, raw pos: {2} (0x{3:X}), bytes length: {4} (0x{5:X}). Chunk file size: {6} (0x{7:X}).",
 				"Could not append raw bytes to chunk {chunkStartNumber}-{chunkEndNumber}, raw pos: {rawPosition} (0x{rawPosition:X}), bytes length: {rawBytesLength} (0x{rawBytesLength:X}). Chunk file size: {chunkFileSize} (0x{chunkFileSize:X}).",

@@ -827,7 +827,8 @@ public partial class TFChunk : IDisposable {
 		return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
 	}
 
-	public bool TryAppendRawData(ReadOnlyMemory<byte> buffer) {
+	public async ValueTask<bool> TryAppendRawData(ReadOnlyMemory<byte> buffer, CancellationToken token) {
+		token.ThrowIfCancellationRequested();
 		var workItem = _writerWorkItem;
 		if (workItem.WorkingStream.Position + buffer.Length > workItem.WorkingStream.Length)
 			return false;
