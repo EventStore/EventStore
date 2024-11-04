@@ -84,9 +84,9 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 		if (raw)
 			await chunk.CompleteScavenge(posMaps, token);
 		else if (complete)
-			chunk.Complete();
+			await chunk.Complete(token);
 		else
-			chunk.Flush();
+			await chunk.Flush(token);
 
 		if (complete)
 			db.Config.WriterCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);

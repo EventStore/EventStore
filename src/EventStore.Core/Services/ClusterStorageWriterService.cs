@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -78,19 +79,17 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 		SubscribeToMessage<ReplicationMessage.DataChunkBulk>();
 	}
 
-	public override void Handle(SystemMessage.StateChangeMessage message) {
-		if (message.State == VNodeState.PreLeader) {
-			if (_activeChunk != null) {
-				_activeChunk.MarkForDeletion();
-				_activeChunk = null;
-			}
+	public override async ValueTask HandleAsync(SystemMessage.StateChangeMessage message, CancellationToken token) {
+		if (message.State is VNodeState.PreLeader) {
+			_activeChunk?.MarkForDeletion();
+			_activeChunk = null;
 
 			_subscriptionId = Guid.Empty;
 			_subscriptionPos = -1;
 			_ackedSubscriptionPos = -1;
 		}
 
-		base.Handle(message);
+		await base.HandleAsync(message, token);
 	}
 
 	async ValueTask IAsyncHandle<ReplicationMessage.ReplicaSubscribed>.HandleAsync(ReplicationMessage.ReplicaSubscribed message, CancellationToken token) {
@@ -280,7 +279,7 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 			Log.Debug("Completing raw chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
 				message.ChunkEndNumber);
 			await Writer.CompleteReplicatedRawChunk(_activeChunk, token);
-			Flush();
+			await Flush(token: token);
 
 			_subscriptionPos = _activeChunk.ChunkHeader.ChunkEndPosition;
 			_framer.Reset();
@@ -339,7 +338,7 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 
 				Log.Debug("Completing data chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
 					message.ChunkEndNumber);
-				Writer.CompleteChunk();
+				await Writer.CompleteChunk(token);
 
 				if (_framer.HasData)
 					ReplicationFail(
@@ -353,7 +352,7 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 			Log.Error(exc, "Exception in writer.");
 			throw;
 		} finally {
-			Flush();
+			await Flush(token: token);
 		}
 
 		if (message.CompleteChunk || _subscriptionPos > _ackedSubscriptionPos) {
@@ -377,14 +376,17 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 		Writer.CommitTransaction();
 	}
 
+	[DoesNotReturn]
 	private void ReplicationFail(string message, string messageStructured, params object[] args) {
-		if (args.Length == 0) {
+		string msg;
+		if (args is []) {
 			Log.Fatal(messageStructured);
+			msg = message;
 		} else {
 			Log.Fatal(messageStructured, args);
+			msg = string.Format(message, args);
 		}
 
-		var msg = args.Length == 0 ? message : string.Format(message, args);
 		BlockWriter = true;
 		Application.Exit(ExitCode.Error, msg);
 		throw new Exception(msg);

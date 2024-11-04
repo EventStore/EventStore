@@ -9,6 +9,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext;
 using DotNext.Diagnostics;
 using DotNext.Runtime.CompilerServices;
 using EventStore.Common.Utils;
@@ -212,7 +213,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 
 		try {
 			await TraverseChunkBasic(oldChunk, ct,
-				result => {
+				new Action<CandidateRecord>(result => {
 					threadLocalCache.Records.Add(result);
 
 					if (result.LogRecord.RecordType == LogRecordType.Commit) {
@@ -220,7 +221,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 						if (commit.TransactionPosition >= chunkStartPos)
 							threadLocalCache.Commits.Add(commit.TransactionPosition, new CommitInfo(commit));
 					}
-				});
+				}).ToAsync());
 
 			long newSize = 0;
 			int filteredCount = 0;
@@ -275,7 +276,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 
 					var currentPage = newChunk.RawWriterPosition / 4096;
 					if (currentPage - lastFlushedPage > FlushPageInterval) {
-						newChunk.Flush();
+						await newChunk.Flush(ct);
 						lastFlushedPage = currentPage;
 					}
 				}
@@ -452,13 +453,13 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 			foreach (var oldChunk in oldChunks) {
 				var lastFlushedPage = -1;
 				await TraverseChunkBasic(oldChunk, ct,
-					result => {
+					async (result, ct) => {
 
 						positionMapping.Add(WriteRecord(newChunk, result.LogRecord));
 
 						var currentPage = newChunk.RawWriterPosition / 4096;
 						if (currentPage - lastFlushedPage > FlushPageInterval) {
-							newChunk.Flush();
+							await newChunk.Flush(ct);
 							lastFlushedPage = currentPage;
 						}
 					});
@@ -733,12 +734,10 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 	}
 
 	private static async ValueTask TraverseChunkBasic(TFChunk.TFChunk chunk, CancellationToken ct,
-		Action<CandidateRecord> process) {
+		Func<CandidateRecord, CancellationToken, ValueTask> process) {
 		var result = await chunk.TryReadFirst(ct);
 		while (result.Success) {
-			process(new CandidateRecord(result.LogRecord, result.RecordLength));
-
-			ct.ThrowIfCancellationRequested();
+			await process(new CandidateRecord(result.LogRecord, result.RecordLength), ct);
 
 			result = await chunk.TryReadClosestForward(result.NextPosition, ct);
 		}

@@ -228,11 +228,11 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 						discardedCount++;
 					} else {
 						keptCount++;
-						outputChunk.WriteRecord(prepareRecord);
+						await outputChunk.WriteRecord(prepareRecord, cancellationToken);
 					}
 				} else {
 					keptCount++;
-					outputChunk.WriteRecord(nonPrepareRecord);
+					await outputChunk.WriteRecord(nonPrepareRecord, cancellationToken);
 				}
 
 				if (++cancellationCheckCounter == _cancellationCheckPeriod) {

@@ -38,12 +38,12 @@ public class when_writing_commit_record_to_file : SpecificationWithDirectoryPerT
 			firstEventNumber: 10);
 
 		await _writer.Write(_record, CancellationToken.None);
-		_writer.Flush();
+		await _writer.Flush(CancellationToken.None);
 	}
 
 	[OneTimeTearDown]
 	public async Task Teardown() {
-		_writer.Close();
+		await _writer.DisposeAsync();
 		await _db.DisposeAsync();
 	}
 

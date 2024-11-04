@@ -49,8 +49,7 @@ public class when_reading_an_empty_chunked_transaction_log<TLogFormat, TStreamId
 		var rec = LogRecord.SingleWrite(recordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), streamId, -1, eventTypeId, new byte[] {7}, null);
 
 		Assert.IsTrue(await writer.Write(rec, CancellationToken.None) is (true, _));
-		writer.Flush();
-		writer.Close();
+		await writer.DisposeAsync();
 
 		var res = await reader.TryReadNext(CancellationToken.None);
 		Assert.IsTrue(res.Success);

@@ -49,7 +49,7 @@ public class when_reading_logical_bytes_bulk_from_a_chunk<TLogFormat, TStreamId>
 	[Test]
 	public async Task a_read_past_end_of_completed_chunk_does_not_include_footer() {
 		var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
-		chunk.Complete(); // chunk has 0 bytes of actual data
+		await chunk.Complete(CancellationToken.None); // chunk has 0 bytes of actual data
 		using (var reader = chunk.AcquireDataReader()) {
 			var buffer = new byte[1024];
 			var result = reader.ReadNextBytes(1024, buffer);
@@ -122,7 +122,7 @@ public class when_reading_logical_bytes_bulk_from_a_chunk<TLogFormat, TStreamId>
 
 		var rec = LogRecord.Commit(0, Guid.NewGuid(), 0, 0);
 		Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");
-		chunk.Complete();
+		await chunk.Complete(CancellationToken.None);
 
 		using (var reader = chunk.AcquireDataReader()) {
 			var buffer = new byte[1024];

@@ -44,7 +44,7 @@ public class when_scavenging_tfchunk_with_version0_log_records_and_deleted_recor
 		_event4 = await WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
 			3, token: token);
 
-		Writer.CompleteChunk();
+		await Writer.CompleteChunk(token);
 		await Writer.AddNewChunk(token: token);
 
 		Scavenge(completeLast: false, mergeChunks: true);

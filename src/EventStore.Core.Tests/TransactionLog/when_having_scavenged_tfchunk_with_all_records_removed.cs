@@ -78,7 +78,7 @@ public class when_having_scavenged_tfchunk_with_all_records_removed<TLogFormat, 
 		_c3 = LogRecord.Commit(_res3.NewPosition, Guid.NewGuid(), _p3.LogPosition, 2);
 		_cres3 = chunk.TryAppend(_c3);
 
-		chunk.Complete();
+		await chunk.Complete(CancellationToken.None);
 		_originalFileSize = chunk.FileSize;
 
 		_db.Config.WriterCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);

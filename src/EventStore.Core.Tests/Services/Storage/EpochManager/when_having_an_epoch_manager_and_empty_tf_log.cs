@@ -91,7 +91,7 @@ public class when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId
 	[OneTimeTearDown]
 	public override async Task TestFixtureTearDown() {
 		_logFormat?.Dispose();
-		_writer?.Dispose();
+		await (_writer?.DisposeAsync() ?? ValueTask.CompletedTask);
 		await (_db?.DisposeAsync() ?? ValueTask.CompletedTask);
 		await base.TestFixtureTearDown();
 	}

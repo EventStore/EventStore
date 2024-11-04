@@ -34,9 +34,9 @@ public abstract class StorageWriterService {
 }
 
 public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>,
-	IHandle<SystemMessage.StateChangeMessage>,
+	IAsyncHandle<SystemMessage.StateChangeMessage>,
 	IAsyncHandle<SystemMessage.WriteEpoch>,
-	IHandle<SystemMessage.WaitForChaserToCatchUp>,
+	IAsyncHandle<SystemMessage.WaitForChaserToCatchUp>,
 	IAsyncHandle<StorageMessage.WritePrepares>,
 	IAsyncHandle<StorageMessage.WriteDelete>,
 	IAsyncHandle<StorageMessage.WriteTransactionStart>,
@@ -217,7 +217,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		Bus.Publish(new SystemMessage.ServiceInitialized("StorageWriter"));
 	}
 
-	public virtual void Handle(SystemMessage.StateChangeMessage message) {
+	public virtual async ValueTask HandleAsync(SystemMessage.StateChangeMessage message, CancellationToken token) {
 		_vnodeState = message.State;
 
 		switch (message.State) {
@@ -228,7 +228,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 					break;
 				}
 			case VNodeState.ShuttingDown: {
-					Writer.Close();
+					await Writer.Flush(token);
 					break;
 				}
 		}
@@ -245,7 +245,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		PurgeNotProcessedInfo();
 	}
 
-	void IHandle<SystemMessage.WaitForChaserToCatchUp>.Handle(SystemMessage.WaitForChaserToCatchUp message) {
+	async ValueTask IAsyncHandle<SystemMessage.WaitForChaserToCatchUp>.HandleAsync(SystemMessage.WaitForChaserToCatchUp message, CancellationToken token) {
 		// if we are in states, that doesn't need to wait for chaser, ignore
 		if (_vnodeState is not VNodeState.PreLeader
 		    and not VNodeState.PreReplica
@@ -256,7 +256,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			throw new InvalidOperationException("Writer has an open transaction.");
 
 		if (Writer.FlushedPosition != Writer.Position) {
-			Writer.Flush();
+			await Writer.Flush(token);
 			Bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 		}
 
@@ -280,6 +280,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	async ValueTask IAsyncHandle<StorageMessage.WritePrepares>.HandleAsync(StorageMessage.WritePrepares msg, CancellationToken token) {
 		Interlocked.Decrement(ref FlushMessagesInQueue);
 
+		var lifetimeToken = token;
 		var cts = token.LinkTo(msg.CancellationToken);
 		try {
 			if (token.IsCancellationRequested)
@@ -374,7 +375,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			Log.Error(exc, "Exception in writer.");
 			throw;
 		} finally {
-			Flush();
+			await Flush(token: lifetimeToken);
 			cts?.Dispose();
 		}
 	}
@@ -519,7 +520,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			Log.Error(exc, "Exception in writer.");
 			throw;
 		} finally {
-			Flush();
+			await Flush(token: token);
 		}
 	}
 
@@ -543,7 +544,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			Log.Error(exc, "Exception in writer.");
 			throw;
 		} finally {
-			Flush();
+			await Flush(token: token);
 		}
 	}
 
@@ -588,7 +589,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			Log.Error(exc, "Exception in writer.");
 			throw;
 		} finally {
-			Flush();
+			await Flush(token: token);
 		}
 	}
 
@@ -612,7 +613,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			Log.Error(exc, "Exception in writer.");
 			throw;
 		} finally {
-			Flush();
+			await Flush(token: token);
 		}
 	}
 
@@ -663,7 +664,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			Log.Error(exc, "Exception in writer.");
 			throw;
 		} finally {
-			Flush();
+			await Flush(token: token);
 		}
 	}
 
@@ -720,7 +721,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		}
 
 		if (!Writer.CanWrite(prepareSizes)) {
-			Writer.CompleteChunk();
+			await Writer.CompleteChunk(token);
 			await Writer.AddNewChunk(token: token);
 			if (!Writer.CanWrite(prepareSizes)) {
 				throw new Exception($"Transaction of size {prepareSizes:N0} cannot be written even after completing a chunk");
@@ -781,7 +782,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 		if (StreamIdComparer.Equals(prepare.EventType, _scavengePointEventTypeId) &&
 			StreamIdComparer.Equals(prepare.EventStreamId, _scavengePointsStreamId)) {
-			Writer.CompleteChunk();
+			await Writer.CompleteChunk(token);
 			await Writer.AddNewChunk(token: token);
 		}
 
@@ -812,12 +813,12 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		return commit;
 	}
 
-	protected bool Flush(bool force = false) {
+	protected async ValueTask<bool> Flush(bool force = false, CancellationToken token = default) {
 		var start = _clock.Now;
 		if (force || FlushMessagesInQueue == 0 || start.ElapsedTicksSince(_lastFlushTimestamp) >= _lastFlushDelay + _minFlushDelay) {
 			var flushSize = Writer.Position - Writer.FlushedPosition;
 
-			Writer.Flush();
+			await Writer.Flush(token);
 
 			_flushSizeTracker.Record(flushSize);
 			var end = _flushDurationTracker.RecordNow(start);

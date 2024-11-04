@@ -52,12 +52,12 @@ public class when_writing_prepare_record_to_file<TLogFormat, TStreamId> : Specif
 			metadata: new byte[] {7, 17});
 
 		await _writer.Write(_record, CancellationToken.None);
-		_writer.Flush();
+		await _writer.Flush(CancellationToken.None);
 	}
 
 	[OneTimeTearDown]
 	public async Task Teardown() {
-		_writer.Close();
+		await _writer.DisposeAsync();
 		await _db.DisposeAsync();
 	}
 

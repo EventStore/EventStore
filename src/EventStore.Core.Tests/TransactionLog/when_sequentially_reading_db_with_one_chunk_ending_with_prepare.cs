@@ -71,7 +71,7 @@ public class when_sequentially_reading_db_with_one_chunk_ending_with_prepare<TLo
 			new byte[] { 5, 7 });
 		_results[_records.Length - 1] = chunk.TryAppend(_records[_records.Length - 1]);
 
-		chunk.Flush();
+		await chunk.Flush(CancellationToken.None);
 		_db.Config.WriterCheckpoint.Write(_results[RecordsCount - 1].NewPosition);
 		_db.Config.WriterCheckpoint.Flush();
 	}

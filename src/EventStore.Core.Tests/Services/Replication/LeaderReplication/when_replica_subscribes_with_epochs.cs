@@ -135,7 +135,7 @@ public class when_replica_with_additional_epochs_subscribes_to_position_past_lea
 		await Writer.Write(CreateLogRecord(5), token);
 		await Writer.Write(CreateLogRecord(6), token);
 		var (_, lastWritePosition) = await Writer.Write(CreateLogRecord(7), token);
-		Writer.Flush();
+		await Writer.Flush(token);
 
 		_replicaEpochs = new List<Epoch> {
 			new(lastWritePosition + 2000, 4, Guid.NewGuid()),

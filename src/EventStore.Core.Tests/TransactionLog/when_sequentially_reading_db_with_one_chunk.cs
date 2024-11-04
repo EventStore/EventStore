@@ -48,7 +48,7 @@ public class when_sequentially_reading_db_with_one_chunk<TLogFormat, TStreamId> 
 			_results[i] = chunk.TryAppend(_records[i]);
 		}
 
-		chunk.Flush();
+		await chunk.Flush(CancellationToken.None);
 		_db.Config.WriterCheckpoint.Write(_results[RecordsCount - 1].NewPosition);
 		_db.Config.WriterCheckpoint.Flush();
 	}

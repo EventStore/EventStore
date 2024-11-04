@@ -51,7 +51,7 @@ public class when_scavenging_tfchunk_with_transactions<TLogFormat, TStreamId> : 
 		_postCommitPos =
 			t1Commit.GetNextLogPosition(t1Commit.LogPosition, t1Commit.GetSizeWithLengthPrefixAndSuffix() - 2 * sizeof(int));
 
-		Writer.CompleteChunk();
+		await Writer.CompleteChunk(token);
 		await Writer.AddNewChunk(token: token);
 
 		// Need to have a second chunk as otherwise the checkpoints will be off

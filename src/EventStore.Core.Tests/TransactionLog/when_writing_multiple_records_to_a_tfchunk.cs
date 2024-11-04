@@ -46,7 +46,7 @@ public class when_writing_multiple_records_to_a_tfchunk<TLogFormat, TStreamId> :
 		var r2 = _chunk.TryAppend(_prepare2);
 		_written2 = r2.Success;
 		_position2 = r2.OldPosition;
-		_chunk.Flush();
+		await _chunk.Flush(CancellationToken.None);
 	}
 
 	[OneTimeTearDown]
