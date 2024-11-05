@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -61,7 +62,8 @@ public class TFChunkWriter : ITransactionFileWriter {
 	}
 
 	public async ValueTask<(bool, long)> Write(ILogRecord record, CancellationToken token) {
-		// BANANA: The transaction cannot be canceled in a middle, there is no way to rollback it on cancellation
+		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
+		// There is no way to rollback it on cancellation
 		token.ThrowIfCancellationRequested();
 		token = CancellationToken.None;
 
@@ -118,7 +120,8 @@ public class TFChunkWriter : ITransactionFileWriter {
 	}
 
 	public async ValueTask CompleteChunk(CancellationToken token) {
-		// BANANA: The transaction cannot be canceled in a middle, there is no way to rollback it on cancellation
+		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
+		// There is no way to rollback it on cancellation
 		token.ThrowIfCancellationRequested();
 		token = CancellationToken.None;
 
@@ -138,7 +141,8 @@ public class TFChunkWriter : ITransactionFileWriter {
 	}
 
 	public async ValueTask CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk, CancellationToken token) {
-		// BANANA: The transaction cannot be canceled in a middle, there is no way to rollback it on cancellation
+		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
+		// There is no way to rollback it on cancellation
 		token.ThrowIfCancellationRequested();
 		token = CancellationToken.None;
 
@@ -168,6 +172,8 @@ public class TFChunkWriter : ITransactionFileWriter {
 	public ValueTask DisposeAsync() => Flush(CancellationToken.None);
 
 	public async ValueTask Flush(CancellationToken token) {
+		Debug.Assert(HasOpenTransaction() is false);
+		
 		if (_currentChunk is null) // the last chunk allocation failed
 			return;
 

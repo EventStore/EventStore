@@ -282,7 +282,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		Interlocked.Decrement(ref FlushMessagesInQueue);
 
 		try {
-			// BANANA: The transaction cannot be canceled in a middle, there is no way to rollback it on cancellation
+			// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
+			// There is no way to rollback it on cancellation
 			if (msg.CancellationToken.IsCancellationRequested || token.IsCancellationRequested)
 				return;
 
@@ -743,7 +744,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			}
 		}
 
-		// BANANA: The transaction cannot be canceled in a middle, there is no way to rollback it on cancellation
+		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
+		// There is no way to rollback it on cancellation
 		token.ThrowIfCancellationRequested();
 		token = CancellationToken.None;
 

@@ -364,7 +364,8 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 	}
 
 	private async ValueTask OnTransactionUnframed(IEnumerable<ILogRecord> records, CancellationToken token) {
-		// BANANA: The transaction cannot be canceled in a middle, there is no way to rollback it on cancellation
+		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
+		// There is no way to rollback it on cancellation
 		token.ThrowIfCancellationRequested();
 		token = CancellationToken.None;
 
