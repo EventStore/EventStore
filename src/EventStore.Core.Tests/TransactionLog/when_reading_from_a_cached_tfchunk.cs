@@ -33,7 +33,7 @@ public class when_reading_from_a_cached_tfchunk<TLogFormat, TStreamId> : Specifi
 		_record = LogRecord.Prepare(recordFactory, 0, _corrId, _eventId, 0, 0, streamId, 1,
 			PrepareFlags.None, eventTypeId, new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 		_chunk = await TFChunkHelper.CreateNewChunk(Filename);
-		_result = _chunk.TryAppend(_record);
+		_result = await _chunk.TryAppend(_record, CancellationToken.None);
 		await _chunk.Flush(CancellationToken.None);
 		await _chunk.Complete(CancellationToken.None);
 		_cachedChunk = await TFChunk.FromCompletedFile(Filename, verifyHash: true, unbufferedRead: false,

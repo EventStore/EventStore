@@ -13,8 +13,7 @@ public interface ITransactionFileWriter : IAsyncDisposable {
 	bool CanWrite(int numBytes);
 	ValueTask<(bool, long)> Write(ILogRecord record, CancellationToken token);
 	void OpenTransaction();
-	void WriteToTransaction(ILogRecord record, out long newPos);
-	bool TryWriteToTransaction(ILogRecord record, out long newPos);
+	ValueTask<long?> WriteToTransaction(ILogRecord record, CancellationToken token);
 	void CommitTransaction();
 	bool HasOpenTransaction();
 	ValueTask Flush(CancellationToken token);

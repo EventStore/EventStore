@@ -265,14 +265,13 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 
 				var lastFlushedPage = -1;
 				for (int i = 0; i < threadLocalCache.Records.Count; i++) {
-					ct.ThrowIfCancellationRequested();
 
 					// Since we replaced the ones we don't want with `default`, the success flag will only be true on the ones we want to keep.
 					var recordReadResult = threadLocalCache.Records[i];
 
 					// Check log record, if not present then assume we can skip.
-					if (recordReadResult.LogRecord != null)
-						positionMapping.Add(WriteRecord(newChunk, recordReadResult.LogRecord));
+					if (recordReadResult.LogRecord is not null)
+						positionMapping.Add(await WriteRecord(newChunk, recordReadResult.LogRecord, ct));
 
 					var currentPage = newChunk.RawWriterPosition / 4096;
 					if (currentPage - lastFlushedPage > FlushPageInterval) {
@@ -455,7 +454,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 				await TraverseChunkBasic(oldChunk, ct,
 					async (result, ct) => {
 
-						positionMapping.Add(WriteRecord(newChunk, result.LogRecord));
+						positionMapping.Add(await WriteRecord(newChunk, result.LogRecord, ct));
 
 						var currentPage = newChunk.RawWriterPosition / 4096;
 						if (currentPage - lastFlushedPage > FlushPageInterval) {
@@ -743,8 +742,8 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 		}
 	}
 
-	public static PosMap WriteRecord(TFChunk.TFChunk newChunk, ILogRecord record) {
-		var writeResult = newChunk.TryAppend(record);
+	public static async ValueTask<PosMap> WriteRecord(TFChunk.TFChunk newChunk, ILogRecord record, CancellationToken token) {
+		var writeResult = await newChunk.TryAppend(record, token);
 		if (!writeResult.Success) {
 			throw new Exception(string.Format(
 				"Unable to append record during scavenging. Scavenge position: {0}, Record: {1}.",

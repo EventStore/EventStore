@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogV3;
 using EventStore.Core.TransactionLog;
@@ -169,9 +170,8 @@ class FakeWriter: ITransactionFileWriter {
 
 	public void OpenTransaction() => throw new NotImplementedException();
 
-	public void WriteToTransaction(ILogRecord record, out long newPos) => throw new NotImplementedException();
-
-	public bool TryWriteToTransaction(ILogRecord record, out long newPos) => throw new NotImplementedException();
+	public ValueTask<long?> WriteToTransaction(ILogRecord record, CancellationToken token)
+		=> ValueTask.FromException<long?>(new NotImplementedException());
 
 	public void CommitTransaction() => throw new NotImplementedException();
 

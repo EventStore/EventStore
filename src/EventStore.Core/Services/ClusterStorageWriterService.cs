@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -12,7 +11,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.LogAbstraction;
-using EventStore.Core.LogV3;
 using EventStore.Core.Messages;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.Replication;
@@ -327,12 +325,12 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 				return;
 			}
 
-			_framer.UnFrameData(new ArraySegment<byte>(message.DataBytes));
+			await _framer.UnFrameData(new ArraySegment<byte>(message.DataBytes), token);
 			_subscriptionPos += message.DataBytes.Length;
 
 			if (message.CompleteChunk) {
 				// for backwards compatibility with logs having incomplete transactions at the end of a chunk
-				if (_framer.UnFramePendingLogRecords(out var numRecordsUnframed))
+				if (await _framer.UnFramePendingLogRecords(token) is { } numRecordsUnframed)
 					Log.Warning("Incomplete transaction consisting of {numRecords} log records was found at the end of chunk: {chunkStartNumber}-{chunkEndNumber}.",
 						numRecordsUnframed, message.ChunkStartNumber, message.ChunkEndNumber);
 
@@ -365,10 +363,15 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 		}
 	}
 
-	private void OnTransactionUnframed(IEnumerable<ILogRecord> records) {
+	private async ValueTask OnTransactionUnframed(IEnumerable<ILogRecord> records, CancellationToken token) {
+		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
+		// There is no way to rollback it on cancellation
+		token.ThrowIfCancellationRequested();
+		token = CancellationToken.None;
+
 		Writer.OpenTransaction();
 		foreach (var record in records)
-			if (!Writer.TryWriteToTransaction(record, out _))
+			if (await Writer.WriteToTransaction(record, token) is null)
 				ReplicationFail(
 					"Failed to write replicated log record at position: {0}. Writer's position: {1}.",
 					"Failed to write replicated log record at position: {recordPos}. Writer's position: {writerPos}.",

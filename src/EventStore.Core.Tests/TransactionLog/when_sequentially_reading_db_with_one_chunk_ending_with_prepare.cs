@@ -53,7 +53,7 @@ public class when_sequentially_reading_db_with_one_chunk_ending_with_prepare<TLo
 				eventTypeId,
 				new byte[] { 0, 1, 2 },
 				new byte[] { 5, 7 });
-			_results[i] = chunk.TryAppend(_records[i]);
+			_results[i] = await chunk.TryAppend(_records[i], CancellationToken.None);
 		}
 
 		_records[_records.Length - 1] = LogRecord.Prepare(
@@ -69,7 +69,7 @@ public class when_sequentially_reading_db_with_one_chunk_ending_with_prepare<TLo
 			eventTypeId,
 			new byte[] { 0, 1, 2 },
 			new byte[] { 5, 7 });
-		_results[_records.Length - 1] = chunk.TryAppend(_records[_records.Length - 1]);
+		_results[_records.Length - 1] = await chunk.TryAppend(_records[^1], CancellationToken.None);
 
 		await chunk.Flush(CancellationToken.None);
 		_db.Config.WriterCheckpoint.Write(_results[RecordsCount - 1].NewPosition);
