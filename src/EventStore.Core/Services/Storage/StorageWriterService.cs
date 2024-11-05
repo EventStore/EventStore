@@ -27,6 +27,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ILogger = Serilog.ILogger;
+using OperationCanceledException = System.OperationCanceledException;
 
 namespace EventStore.Core.Services.Storage;
 
@@ -280,11 +281,12 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	async ValueTask IAsyncHandle<StorageMessage.WritePrepares>.HandleAsync(StorageMessage.WritePrepares msg, CancellationToken token) {
 		Interlocked.Decrement(ref FlushMessagesInQueue);
 
-		var lifetimeToken = token;
-		var cts = token.LinkTo(msg.CancellationToken);
 		try {
-			if (token.IsCancellationRequested)
+			// BANANA: The transaction cannot be canceled in a middle, there is no way to rollback it on cancellation
+			if (msg.CancellationToken.IsCancellationRequested || token.IsCancellationRequested)
 				return;
+
+			token = CancellationToken.None;
 
 			var logPosition = Writer.Position;
 			var prepares = new List<IPrepareLogRecord<TStreamId>>();
@@ -362,7 +364,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			}
 
 			bool softUndeleteMetastream = _systemStreams.IsMetaStream(streamId)
-										  && await _indexWriter.IsSoftDeleted(_systemStreams.OriginalStreamOf(streamId), token);
+			                              && await _indexWriter.IsSoftDeleted(_systemStreams.OriginalStreamOf(streamId),
+				                              token);
 
 			// note: the stream & event type records are indexed separately and must not be pre-committed to the main index
 			_indexWriter.PreCommit(CollectionsMarshal.AsSpan(prepares)[^msg.Events.Length..]);
@@ -375,8 +378,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			Log.Error(exc, "Exception in writer.");
 			throw;
 		} finally {
-			await Flush(token: lifetimeToken);
-			cts?.Dispose();
+			await Flush(token: token);
 		}
 	}
 
@@ -741,8 +743,13 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			}
 		}
 
+		// BANANA: The transaction cannot be canceled in a middle, there is no way to rollback it on cancellation
+		token.ThrowIfCancellationRequested();
+		token = CancellationToken.None;
+
 		Writer.OpenTransaction();
 		var writerPos = Writer.Position;
+
 		foreach (var prepare in prepares) {
 			long newWriterPos = await Writer.WriteToTransaction(prepare, token)
 			                    ?? throw new InvalidOperationException("The transaction does not fit in the current chunk.");

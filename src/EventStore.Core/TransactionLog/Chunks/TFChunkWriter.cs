@@ -61,6 +61,10 @@ public class TFChunkWriter : ITransactionFileWriter {
 	}
 
 	public async ValueTask<(bool, long)> Write(ILogRecord record, CancellationToken token) {
+		// BANANA: The transaction cannot be canceled in a middle, there is no way to rollback it on cancellation
+		token.ThrowIfCancellationRequested();
+		token = CancellationToken.None;
+
 		OpenTransaction();
 
 		if (await WriteToTransaction(record, token) is not { } result) {
@@ -114,6 +118,10 @@ public class TFChunkWriter : ITransactionFileWriter {
 	}
 
 	public async ValueTask CompleteChunk(CancellationToken token) {
+		// BANANA: The transaction cannot be canceled in a middle, there is no way to rollback it on cancellation
+		token.ThrowIfCancellationRequested();
+		token = CancellationToken.None;
+
 		OpenTransaction();
 		await CompleteChunkInTransaction(token);
 		CommitTransaction();
@@ -130,6 +138,10 @@ public class TFChunkWriter : ITransactionFileWriter {
 	}
 
 	public async ValueTask CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk, CancellationToken token) {
+		// BANANA: The transaction cannot be canceled in a middle, there is no way to rollback it on cancellation
+		token.ThrowIfCancellationRequested();
+		token = CancellationToken.None;
+
 		OpenTransaction();
 		await CompleteReplicatedRawChunkInTransaction(rawChunk, token);
 		CommitTransaction();
