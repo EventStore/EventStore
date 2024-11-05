@@ -500,7 +500,8 @@ You need to configure the following:
 			"ClientId": "eventstore-client",
 			"AllowedGrantTypes": [
 				"password",
-				"authorization_code"
+				"authorization_code",
+                "client_credentials"
 			],
 			"ClientSecrets": [
 				{
@@ -512,7 +513,7 @@ You need to configure the following:
 				"openid",
 				"profile",
 			],
-			"RedirectUris": ["https://localhost:2113/oauth/callback"],
+			"RedirectUris": ["https://localhost:2113/oauth/callback","https://127.0.0.1:2113/oauth/callback"],
 			"AlwaysIncludeUserClaimsInIdToken": true,
 			"RequireConsent": false,
 			"AlwaysSendClientClaims": true,
@@ -547,5 +548,13 @@ info: Microsoft.Hosting.Lifetime[14]
 info: Microsoft.Hosting.Lifetime[14]
       Now listening on: https://[::]:5001
 ```
+
+4. Add the following configuration to your EventStoreDB config file `eventstore.conf`:
+
+:::tabs
+@tab eventstore.conf
+```
+```
+:::
 
 You should now be able to log into the UI with the configured users.
