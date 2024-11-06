@@ -56,7 +56,9 @@ public class FileSystemArchiveStorage : IArchiveStorage {
 			File.Move(tempPath, destinationPath);
 
 			return true;
-		} catch (Exception ex) when (ex is not OperationCanceledException) {
+		} catch (OperationCanceledException) {
+			throw;
+		} catch (Exception ex) {
 			if (!File.Exists(chunkPath))
 				throw new ChunkDeletedException();
 
@@ -76,7 +78,9 @@ public class FileSystemArchiveStorage : IArchiveStorage {
 					File.Delete(file.FullName);
 				}
 			}
-		} catch (Exception ex) when (ex is not OperationCanceledException) {
+		} catch (OperationCanceledException) {
+			throw;
+		} catch (Exception ex) {
 			Log.Error(ex, "Error while removing chunks in range: {chunkStartNumber}-{chunkEndNumber} (except {chunk})",
 				chunkStartNumber, chunkEndNumber, exceptChunk);
 			return ValueTask.FromResult(false);

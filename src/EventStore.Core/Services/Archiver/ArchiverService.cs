@@ -166,7 +166,9 @@ public class ArchiverService :
 		} catch (ChunkDeletedException) {
 			// the chunk has been deleted, presumably during scavenge or redaction
 			Log.Information("Archiving of {chunkFile} cancelled as it was deleted.", Path.GetFileName(chunkPath));
-		} catch (Exception ex) when (ex is not OperationCanceledException) {
+		} catch (OperationCanceledException) {
+			throw;
+		} catch (Exception ex) {
 			Log.Error(ex, "Archiving of {chunkFile} failed.", chunkFile);
 			throw;
 		}
