@@ -76,6 +76,17 @@ public partial class TFChunk : IDisposable {
 		get { return _chunkFooter; }
 	}
 
+	public ChunkInfo ChunkInfo {
+		get => new() {
+			ChunkFileName = _filename,
+			ChunkStartNumber = _chunkHeader.ChunkStartNumber,
+			ChunkEndNumber = _chunkHeader.ChunkEndNumber,
+			ChunkStartPosition = _chunkHeader.ChunkStartPosition,
+			ChunkEndPosition = _chunkHeader.ChunkEndPosition,
+			IsCompleted = IsReadOnly
+		};
+	}
+
 	public ReadOnlyMemory<byte> TransformHeader {
 		get { return _transformHeader; }
 	}
@@ -1414,16 +1425,5 @@ public partial class TFChunk : IDisposable {
 
 			public ref ReaderWorkItem ValueRef => ref UnsafeGetElement(array, index);
 		}
-	}
-
-	public ChunkInfo GetChunkInfo() {
-		return new ChunkInfo {
-			ChunkFileName = _filename,
-			ChunkStartNumber = _chunkHeader.ChunkStartNumber,
-			ChunkEndNumber = _chunkHeader.ChunkEndNumber,
-			ChunkStartPosition = _chunkHeader.ChunkStartPosition,
-			ChunkEndPosition = _chunkHeader.ChunkEndPosition,
-			IsCompleted = IsReadOnly
-		};
 	}
 }

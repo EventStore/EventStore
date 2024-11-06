@@ -217,9 +217,9 @@ public class TFChunkManager : IThreadPoolWorkItem {
 
 		if (isNew) {
 			if (chunk.ChunkHeader.ChunkStartNumber > 0)
-				OnChunkCompleted?.Invoke(_chunks[chunk.ChunkHeader.ChunkStartNumber - 1].GetChunkInfo());
+				OnChunkCompleted?.Invoke(_chunks[chunk.ChunkHeader.ChunkStartNumber - 1].ChunkInfo);
 		} else {
-			OnChunkLoaded?.Invoke(chunk.GetChunkInfo());
+			OnChunkLoaded?.Invoke(chunk.ChunkInfo);
 		}
 	}
 
@@ -303,7 +303,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			_chunksLocker.Release();
 		}
 
-		OnChunkSwitched?.Invoke(newChunk.GetChunkInfo());
+		OnChunkSwitched?.Invoke(newChunk.ChunkInfo);
 
 		// trigger caching out of lock to avoid lock contention
 		if (triggerCaching)
