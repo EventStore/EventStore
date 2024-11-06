@@ -17,7 +17,7 @@ public interface IArchiveStorage {
 	/// <exception cref="OperationCanceledException">Thrown if cancellation was requested</exception>
 	/// <returns>
 	/// <see langword="true"/> if the chunk was successfully archived<br/>
-	/// <see langword="false"/> if there was a recoverable error
+	/// <see langword="false"/> if the operation failed and the caller needs to retry after some time
 	/// </returns>
 	public ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct);
 
@@ -29,7 +29,7 @@ public interface IArchiveStorage {
 	/// <exception cref="OperationCanceledException">Thrown if cancellation was requested</exception>
 	/// <returns>
 	/// <see langword="true"/> if the operation was successful<br/>
-	/// <see langword="false"/> if there was a recoverable error
+	/// <see langword="false"/> if the operation failed and the caller needs to retry after some time
 	/// </returns>
 	public ValueTask<bool> RemoveChunks(int chunkStartNumber, int chunkEndNumber, string exceptChunk, CancellationToken ct);
 
