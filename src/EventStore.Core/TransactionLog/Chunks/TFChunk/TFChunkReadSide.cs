@@ -105,11 +105,11 @@ public partial class TFChunk {
 				if (logicalPosition >= Chunk.LogicalDataSize)
 					return RawReadResult.Failure;
 
-				if (!TryReadForwardRawInternal(workItem, logicalPosition, getBuffer, out var length, out var record))
+				if (await TryReadForwardRawInternal(workItem, logicalPosition, getBuffer, token) is not {Array: not null} record)
 					return RawReadResult.Failure;
 
-				var nextLogicalPos = logicalPosition + length + 2 * sizeof(int);
-				return new(true, nextLogicalPos, record, length);
+				var nextLogicalPos = logicalPosition + record.Count + 2 * sizeof(int);
+				return new(true, nextLogicalPos, record.Array, record.Count);
 			} finally {
 				Chunk.ReturnReaderWorkItem(workItem);
 			}
@@ -373,7 +373,7 @@ public partial class TFChunk {
 				if (actualPosition is -1 || actualPosition >= Chunk.PhysicalDataSize)
 					return RawReadResult.Failure;
 
-				if (!TryReadForwardRawInternal(workItem, actualPosition, getBuffer, out var length, out var record))
+				if (await TryReadForwardRawInternal(workItem, actualPosition, getBuffer, token) is not { Array: not null } record)
 					return RawReadResult.Failure;
 
 				// We need to read the record's log position from the buffer so that we can correctly compute
@@ -384,11 +384,11 @@ public partial class TFChunk {
 					throw new NotSupportedException();
 
 				const int logPositionOffset = 2;
-				var recordLogPos = BitConverter.ToInt64(record, logPositionOffset);
+				var recordLogPos = BitConverter.ToInt64(record.Array, logPositionOffset);
 				long nextLogicalPos =
-					Chunk.ChunkHeader.GetLocalLogPosition(recordLogPos + length + 2 * sizeof(int));
+					Chunk.ChunkHeader.GetLocalLogPosition(recordLogPos + record.Count + 2 * sizeof(int));
 
-				return new(true, nextLogicalPos, record, length);
+				return new(true, nextLogicalPos, record.Array, record.Count);
 			} finally {
 				Chunk.ReturnReaderWorkItem(workItem);
 			}
@@ -584,26 +584,28 @@ public partial class TFChunk {
 			return true;
 		}
 
-		protected bool TryReadForwardRawInternal(ReaderWorkItem workItem, long actualPosition, Func<int, byte[]> getBuffer,
-			out int length, out byte[] record) {
-			length = -1;
-			record = null;
-
+		protected async ValueTask<ArraySegment<byte>> TryReadForwardRawInternal(ReaderWorkItem workItem, long actualPosition, Func<int, byte[]> getBuffer,
+			CancellationToken token) {
+			token.ThrowIfCancellationRequested();
 			workItem.BaseStream.Position = GetRawPosition(actualPosition);
 			if (!ValidateRecordPosition(actualPosition))
-				return false;
+				return default;
 
-			length = workItem.ReadInt32();
+			var length = workItem.ReadInt32();
 			ValidateRecordLength(length, actualPosition);
 
-			record = getBuffer(length);
+			var record = getBuffer(length);
 
-			workItem.Read(record, 0, length);
+			int offset = 0;
+			do {
+				var count = workItem.Read(record, offset, length - offset);
+				offset += count;
+			} while (offset < length);
 
 			int suffixLength = workItem.ReadInt32();
 			ValidatePrefixSuffixLength(length, suffixLength, actualPosition, "pre-position");
 
-			return true;
+			return new(record, 0, length);
 		}
 
 		protected bool TryReadBackwardInternal(ReaderWorkItem workItem, long actualPosition, out int length,
