@@ -35,7 +35,12 @@ public class TFChunkDb : IAsyncDisposable {
 		Config = config;
 		TransformManager = transformManager ?? DbTransformManager.Default;
 		_tracker = tracker ?? new TFChunkTracker.NoOp();
-		Manager = new TFChunkManager(Config, _tracker, TransformManager, onChunkLoaded, onChunkCompleted, onChunkSwitched);
+		Manager = new TFChunkManager(Config, _tracker, TransformManager) {
+			OnChunkLoaded = onChunkLoaded,
+			OnChunkCompleted = onChunkCompleted,
+			OnChunkSwitched = onChunkSwitched
+		};
+
 		_log = log ?? Serilog.Log.ForContext<TFChunkDb>();
 	}
 

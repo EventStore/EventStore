@@ -39,26 +39,18 @@ public class TFChunkManager : IThreadPoolWorkItem {
 	private readonly AsyncExclusiveLock _chunksLocker = new();
 	private int _backgroundPassesRemaining;
 	private int _backgroundRunning;
-	private readonly Action<ChunkInfo> _onChunkLoaded;
-	private readonly Action<ChunkInfo> _onChunkCompleted;
-	private readonly Action<ChunkInfo> _onChunkSwitched;
+	public Action<ChunkInfo> OnChunkLoaded { get; init; }
+	public Action<ChunkInfo> OnChunkCompleted { get; init; }
+	public Action<ChunkInfo> OnChunkSwitched { get; init; }
 
 	public TFChunkManager(
 		TFChunkDbConfig config,
 		ITransactionFileTracker tracker,
-		DbTransformManager transformManager,
-		Action<ChunkInfo> onChunkLoaded,
-		Action<ChunkInfo> onChunkCompleted,
-		Action<ChunkInfo> onChunkSwitched) {
+		DbTransformManager transformManager) {
 		Ensure.NotNull(config, "config");
 		_config = config;
 		_tracker = tracker;
 		_transformManager = transformManager;
-
-		Action<ChunkInfo> noOpAction = _ => { };
-		_onChunkLoaded = onChunkLoaded ?? noOpAction;
-		_onChunkCompleted = onChunkCompleted ?? noOpAction;
-		_onChunkSwitched = onChunkSwitched ?? noOpAction;
 	}
 
 	public async ValueTask EnableCaching(CancellationToken token) {
@@ -225,9 +217,9 @@ public class TFChunkManager : IThreadPoolWorkItem {
 
 		if (isNew) {
 			if (chunk.ChunkHeader.ChunkStartNumber > 0)
-				_onChunkCompleted(_chunks[chunk.ChunkHeader.ChunkStartNumber - 1].GetChunkInfo());
+				OnChunkCompleted?.Invoke(_chunks[chunk.ChunkHeader.ChunkStartNumber - 1].GetChunkInfo());
 		} else {
-			_onChunkLoaded(chunk.GetChunkInfo());
+			OnChunkLoaded?.Invoke(chunk.GetChunkInfo());
 		}
 	}
 
@@ -311,7 +303,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			_chunksLocker.Release();
 		}
 
-		_onChunkSwitched(newChunk.GetChunkInfo());
+		OnChunkSwitched?.Invoke(newChunk.GetChunkInfo());
 
 		// trigger caching out of lock to avoid lock contention
 		if (triggerCaching)
