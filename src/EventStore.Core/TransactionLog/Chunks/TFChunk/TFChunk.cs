@@ -611,13 +611,9 @@ public partial class TFChunk : IDisposable {
 	public async ValueTask<long> GetActualRawPosition(long logicalPosition, CancellationToken token) {
 		ArgumentOutOfRangeException.ThrowIfNegative(logicalPosition);
 
-		token.ThrowIfCancellationRequested();
-		var actualPosition = _readSide.GetActualPosition(logicalPosition);
+		var actualPosition = await _readSide.GetActualPosition(logicalPosition, token);
 
-		if (actualPosition < 0)
-			return -1;
-
-		return GetRawPosition(actualPosition);
+		return actualPosition < 0 ? -1 : GetRawPosition(actualPosition);
 	}
 
 	public unsafe ValueTask CacheInMemory(CancellationToken token) {
@@ -757,40 +753,27 @@ public partial class TFChunk : IDisposable {
 		}
 	}
 
-	public async ValueTask<bool> ExistsAt(long logicalPosition, CancellationToken token) {
-		token.ThrowIfCancellationRequested();
-		return _readSide.ExistsAt(logicalPosition);
-	}
+	public ValueTask<bool> ExistsAt(long logicalPosition, CancellationToken token)
+		=> _readSide.ExistsAt(logicalPosition, token);
 
-	public async ValueTask<RecordReadResult> TryReadAt(long logicalPosition, bool couldBeScavenged, CancellationToken token) {
-		token.ThrowIfCancellationRequested();
-		return _readSide.TryReadAt(logicalPosition, couldBeScavenged);
-	}
+	public ValueTask<RecordReadResult> TryReadAt(long logicalPosition, bool couldBeScavenged, CancellationToken token)
+		=> _readSide.TryReadAt(logicalPosition, couldBeScavenged, token);
 
-	public async ValueTask<RecordReadResult> TryReadFirst(CancellationToken token) {
-		token.ThrowIfCancellationRequested();
-		return _readSide.TryReadFirst();
-	}
+	public ValueTask<RecordReadResult> TryReadFirst(CancellationToken token)
+		=> _readSide.TryReadFirst(token);
 
-	public async ValueTask<RecordReadResult> TryReadClosestForward(long logicalPosition, CancellationToken token) {
-		token.ThrowIfCancellationRequested();
-		return _readSide.TryReadClosestForward(logicalPosition);
-	}
+	public ValueTask<RecordReadResult> TryReadClosestForward(long logicalPosition, CancellationToken token)
+		=> _readSide.TryReadClosestForward(logicalPosition, token);
 
-	public async ValueTask<RawReadResult> TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer, CancellationToken token) {
-		token.ThrowIfCancellationRequested();
-		return _readSide.TryReadClosestForwardRaw(logicalPosition, getBuffer);
-	}
+	public ValueTask<RawReadResult> TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer,
+		CancellationToken token)
+		=> _readSide.TryReadClosestForwardRaw(logicalPosition, getBuffer, token);
 
-	public async ValueTask<RecordReadResult> TryReadLast(CancellationToken token) {
-		token.ThrowIfCancellationRequested();
-		return _readSide.TryReadLast();
-	}
+	public ValueTask<RecordReadResult> TryReadLast(CancellationToken token)
+		=> _readSide.TryReadLast(token);
 
-	public async ValueTask<RecordReadResult> TryReadClosestBackward(long logicalPosition, CancellationToken token) {
-		token.ThrowIfCancellationRequested();
-		return _readSide.TryReadClosestBackward(logicalPosition);
-	}
+	public ValueTask<RecordReadResult> TryReadClosestBackward(long logicalPosition, CancellationToken token)
+		=> _readSide.TryReadClosestBackward(logicalPosition, token);
 
 	public async ValueTask<RecordWriteResult> TryAppend(ILogRecord record, CancellationToken token) {
 		if (IsReadOnly)
