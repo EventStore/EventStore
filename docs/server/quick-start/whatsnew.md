@@ -11,13 +11,13 @@ order: 2
     * MongoDB
     * RabbitMQ
     * HTTP
-* AutoScavenge: Schedule and execute scavenges automatically across a cluster.
-* Stream Policy: Define stream access policies based on stream prefixes, rather than using stream ACLs.
+* Auto-scavenge: Schedule and execute scavenges automatically across a cluster.
+* Stream Policy: Define stream access policies based on stream prefixes rather than using stream ACLs.
 * Encryption-at-rest: Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
 
 ### Connectors
 
-We have improved and expanded on the Connectors preview that was introduced in 24.2.0.
+We have improved and expanded on the Connectors preview introduced in 24.2.0.
 
 The Connectors feature is enabled by default.
 You can use the HTTP sink without a license, but a license is required for all other connectors.
@@ -41,7 +41,7 @@ Refer to the [documentation](../features/connectors/sinks/kafka.md) for instruct
 
 The MongoDB sink pulls messages from an EventStoreDB stream and stores the messages to a collection.
 
-It supports data transformation to allow you to modify event data or metadata, or allow you to add additional headers before sending messages to the MongoDB collection. It also supports at-least-once delivery and resilience features to handle transient errors.
+It supports data transformation for modifying event data or metadata and the inclusion of additional headers before sending messages to the MongoDB collection. It also supports at-least-once delivery and resilience features to handle transient errors.
 
 Refer to the [documentation](../features/connectors/sinks/mongo.md) for instructions on setting up a MongoDB sink.
 
@@ -64,7 +64,7 @@ APIs over HTTP or HTTPS.
 
 This connector consumes events from an EventStoreDB
 stream and converts each event's data into JSON format before sending it in the
-request body to a specified Url. Events are sent individually as they are
+request body to a specified URL. Events are sent individually as they are
 consumed from the stream, without batching. The event data is transmitted as the
 request body, and metadata can be included as HTTP headers.
 
@@ -74,23 +74,23 @@ retry logic and backoff strategies for handling request failures.
 
 Refer to the [documentation](../features/connectors/sinks/http.md) for instructions on setting up an HTTP sink.
 
-### Auto-Scavenge
+### Auto-scavenge
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
-The Autoscavenge feature automatically schedules _cluster scavenges_ which are composed of multiple _node scavenges_. Only one node scavenge can be executed at a time in the cluster. The Autoscavenge feature allows to schedule said _cluster scavenges_.
+The auto-scavenge feature automatically schedules _cluster scavenges_ which are composed of multiple _node scavenges_. Only one node scavenge can be executed at a time in the cluster. The auto-scavenge feature allows the scheduling of said _cluster scavenges_.
 
-The autoscavenge feature requires a license to use. EventStoreDB will only start auto-scavenging once an administrator has set up a schedule for running cluster scavenges.
+The auto-scavenge feature requires a license to use. EventStoreDB will only start auto-scavenging once an administrator has set up a schedule for running cluster scavenges.
 
-Refer to the [documentation](../operations/auto-scavenge.md) for instructions on how to enable and use this feature.
+Refer to the [documentation](../operations/auto-scavenge.md) for instructions on enabling and using this feature.
 
 ### Stream Policy
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
-Define stream access policies in one place based on stream prefixes, rather than using stream ACLs.
+Define stream access policies in one place based on stream prefixes rather than using stream ACLs.
 
-Stream access policies can be created to grant users or groups read, write, delete, or metadata access; and then these policies can be applied to streams based on their prefix, or to system or user streams in general.
+Stream access policies can be created to grant users or groups read, write, delete, or metadata access.  These policies can be applied to streams based on their prefix or to system or user streams.
 
 The Stream Policy feature requires a license to use. Refer to the [documentation](../configuration/security.md#stream-policy-authorization) for more information about using and configuring this feature.
 
@@ -100,10 +100,10 @@ The Stream Policy feature requires a license to use. Refer to the [documentation
 
 Encrypt EventStoreDB chunks to secure them against attackers with file access to the database.
 
-This feature aims to protect against an attacker who obtains access to the physical disk. In contrast to volume or filesystem encryption, file level encryption provides some degree of protection for attacks against the live system or remote exploits as the plaintext data is not directly readable.
+This feature aims to protect against an attacker who obtains access to the physical disk. In contrast to volume or filesystem encryption, file-level encryption provides some protection for attacks against the live system or remote exploits, as the plaintext data is not directly readable.
 
-The Encryption-at-rest feature requires a license to use, and is disabled by default.
-If Encryption-at-rest is enabled, it is not possible to roll back to an unencrypted database after a new chunk has been created, or if a chunk has been scavenged.
+The Encryption-at-rest feature requires a license to use and is disabled by default.
+If Encryption-at-rest is enabled, it is impossible to roll back to an unencrypted database after a new chunk has been created or if a chunk has been scavenged.
 
 Refer to the [documentation](../configuration/security.md#encryption-at-rest) for more information about using and configuring this feature.
 
@@ -111,25 +111,25 @@ Refer to the [documentation](../configuration/security.md#encryption-at-rest) fo
 
 Starting with the 24.10 LTS release, we are transitioning to a new licensing model: the Event Store License v2 (ESLv2).
 
-A summary of the effects on installing and using EventStoreDB are listed below. Check out [the announcement](https://www.eventstore.com/blog/introducing-event-store-license-v2-eslv2) for the full details.
+A summary of the effects of installing and using EventStoreDB is listed below. Check out [the announcement](https://www.eventstore.com/blog/introducing-event-store-license-v2-eslv2) for the full details.
 
 ### Unified binary release
 
 There is no longer a distinction between OSS and commercial binaries for EventStoreDB.
 
-Instead there is a single binary artifact which anyone can access and use, but a license key is required to use enterprise features.
+Instead, there is a single binary artifact that anyone can access and use, but a license key is required to use enterprise features.
 
 ### Enterprise features now require a license key
 
-Customers can unlock the enterprise features of EventStoreDB with a license key. This applies to the previous commercial plugins, and some of the new features in this release.
+Customers can unlock the enterprise features of EventStoreDB with a license key. This applies to the previous commercial plugins and several of the new features in this release.
 
 You will need to provide a license key if you want to enable or use the following features:
-* Auto-Scavenge
-* Kafka Connectors
+* Auto-scavenge
+* Kafka connectors
 * Stream Policies
 * Encryption-at-rest
-* Ldaps Authentication
-* OAuth Authentication
+* Ldaps authentication
+* OAuth authentication
 * Logs Endpoint
 * OTLP Endpoint
 
@@ -137,4 +137,4 @@ Refer to the [documentation](../quick-start/installation.md#license-keys) for mo
 
 ### EventStoreDB binaries have moved to Cloudsmith
 
-All EventStoreDB binaries are now available on [Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore-preview/). In addition, the RedHat binaries which were previously commercial-only can now be accessed by all users of EventStoreDB.
+All EventStoreDB binaries are now available on [Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore-preview/). In addition, the RedHat binaries, which were previously commercial-only, can now be accessed by all users of EventStoreDB.
