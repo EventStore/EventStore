@@ -656,7 +656,11 @@ public partial class TFChunk {
 
 			record = getBuffer(length);
 
-			workItem.Read(record, 0, length);
+			int offset = 0;
+			do {
+				var count = workItem.Read(record, offset, length - offset);
+				offset += count;
+			} while (offset < length);
 
 			int suffixLength = workItem.ReadInt32();
 			ValidatePrefixSuffixLength(length, suffixLength, actualPosition, "pre-position");
