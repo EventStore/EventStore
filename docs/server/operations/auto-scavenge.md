@@ -32,7 +32,7 @@ Once the feature is enabled the server should log a similar message to the one b
 ```
 
 ::: note
-Auto-scavenge cannot be enabled at the same time as `dev` mode
+Auto-scavenge cannot be enabled at the same time as `dev` mode or `mem-db`
 :::
 
 ### HTTP endpoints
@@ -143,4 +143,5 @@ Requires `$ops` or `$admin` roles.
 Check that
 - A valid license key is provided.
 - The server is not running in `dev` mode.
+- The server is not running in `mem-db` (i.e. with an in-memory database).
 - A schedule has been set via the HTTP endpoint.
