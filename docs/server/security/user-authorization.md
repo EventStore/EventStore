@@ -359,9 +359,9 @@ Stream policies and Stream Rules are configured by events written to the `$polic
 
 When the Stream Policy feature is run for the first time, it will create a default policy in the `$policies` stream.
 The default policy does the following
-- Grants public access to user streams (this excludes users in the `$ops` group).
 - Restricts system streams to the `$admins` group.
-- Grants public read and metadata read access to the default projection streams (`$ce`, `$et`, `$bc`, `$category`, `$streams`).
+- Grants users outside of the $ops group access to user streams.
+- Grants users outside of the $ops group read access to the default projection streams (`$ce`, `$et`, `$bc`, `$category`, `$streams`) and their metadata
 
 EventStoreDB will log when the default policy is created:
 
