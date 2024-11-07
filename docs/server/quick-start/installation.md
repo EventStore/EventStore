@@ -56,7 +56,7 @@ To install packages, you can quickly set up the repository automatically (recomm
 
 ```bash
 curl -1sLf \
-  'https://packages.eventstore.com/public/eventstore-preview/setup.deb.sh' \
+  'https://packages.eventstore.com/public/eventstore/setup.deb.sh' \
   | sudo -E bash
 ```
 
@@ -64,7 +64,7 @@ If you need to force a specific distribution, release/version, architecture, or 
 
 ```bash
 curl -1sLf \
-  'https://packages.eventstore.com/public/eventstore-preview/setup.deb.sh' \
+  'https://packages.eventstore.com/public/eventstore/setup.deb.sh' \
   | sudo -E distro=DISTRO codename=CODENAME arch=ARCH component=COMPONENT bash
 ```
 
@@ -75,13 +75,13 @@ apt-get install -y debian-keyring  # debian only
 apt-get install -y debian-archive-keyring  # debian only
 apt-get install -y apt-transport-https
 # For Debian Stretch, Ubuntu 16.04 and later
-keyring_location=/usr/share/keyrings/eventstore-eventstore-preview-archive-keyring.gpg
+keyring_location=/usr/share/keyrings/eventstore-eventstore-archive-keyring.gpg
 # For Debian Jessie, Ubuntu 15.10 and earlier
-keyring_location=/etc/apt/trusted.gpg.d/eventstore-eventstore-preview.gpg
-curl -1sLf 'https://packages.eventstore.com/public/eventstore-preview/gpg.EFEC87A4F8F5849D.key' |  gpg --dearmor >> ${keyring_location}
-curl -1sLf 'https://packages.eventstore.com/public/eventstore-preview/config.deb.txt?distro=ubuntu&codename=xenial&component=main' > /etc/apt/sources.list.d/eventstore-eventstore-preview.list
+keyring_location=/etc/apt/trusted.gpg.d/eventstore-eventstore.gpg
+curl -1sLf 'https://packages.eventstore.com/public/eventstore/gpg.EFEC87A4F8F5849D.key' |  gpg --dearmor >> ${keyring_location}
+curl -1sLf 'https://packages.eventstore.com/public/eventstore/config.deb.txt?distro=ubuntu&codename=xenial&component=main' > /etc/apt/sources.list.d/eventstore-eventstore.list
 sudo chmod 644 ${keyring_location}
-sudo chmod 644 /etc/apt/sources.list.d/eventstore-eventstore-preview.list
+sudo chmod 644 /etc/apt/sources.list.d/eventstore-eventstore.list
 apt-get update
 ```
 
@@ -92,7 +92,7 @@ Add the repository to your system according to the [instructions on Cloudsmith](
 Then, install the package:
 
 ```bash
-apt-get install eventstoredb-ee=24.10.0~preview1
+apt-get install eventstoredb-ee=24.10.0
 ```
 
 #### Uninstall with apt-get
@@ -117,7 +117,7 @@ To install packages, you can quickly set up the repository automatically (recomm
 
 ```bash
 curl -1sLf \
-  'https://packages.eventstore.com/public/eventstore-preview/setup.rpm.sh' \
+  'https://packages.eventstore.com/public/eventstore/setup.rpm.sh' \
   | sudo -E bash
 ```
 
@@ -125,7 +125,7 @@ If you need to force a specific distribution, release/version, or architecture, 
 
 ```bash
 curl -1sLf \
-  'https://packages.eventstore.com/public/eventstore-preview/setup.rpm.sh' \
+  'https://packages.eventstore.com/public/eventstore/setup.rpm.sh' \
   | sudo -E distro=DISTRO codename=CODENAME arch=ARCH bash
 ```
 
@@ -133,10 +133,10 @@ Alternatively, you can manually configure it yourself before installing packages
 
 ```bash
 yum install yum-utils pygpgme
-rpm --import 'https://packages.eventstore.com/public/eventstore-preview/gpg.EFEC87A4F8F5849D.key'
-curl -1sLf 'https://packages.eventstore.com/public/eventstore-preview/config.rpm.txt?distro=el&codename=7' > /tmp/eventstore-eventstore-preview.repo
-yum-config-manager --add-repo '/tmp/eventstore-eventstore-preview.repo'
-yum -q makecache -y --disablerepo='*' --enablerepo='eventstore-eventstore-preview'
+rpm --import 'https://packages.eventstore.com/public/eventstore/gpg.EFEC87A4F8F5849D.key'
+curl -1sLf 'https://packages.eventstore.com/public/eventstore/config.rpm.txt?distro=el&codename=7' > /tmp/eventstore-eventstore.repo
+yum-config-manager --add-repo '/tmp/eventstore-eventstore.repo'
+yum -q makecache -y --disablerepo='*' --enablerepo='eventstore-eventstore'
 ```
 
 ::: note
@@ -145,12 +145,12 @@ Please replace el and 7 above with your actual distribution and version and use 
 
 #### Install with yum
 
-Add the repository to your system according to the [instructions on Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore-staging-ee/setup/#formats-rpm).
+Add the repository to your system according to the [instructions on Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore/setup/#formats-rpm).
 
 Then, install the package:
 
 ```bash
-yum install eventstoredb-ee-24.10.0~preview1-1.x86_64
+yum install eventstoredb-ee-24.10.0-1.x86_64
 ```
 
 #### Uninstall with yum
@@ -189,7 +189,7 @@ EventStoreDB has NuGet packages available on Cloudsmith, which replaces the prev
 Add a new package source to your Chocolatey configuration:
 
 ```powershell
-choco source add -n eventstore-eventstore-preview -s https://nuget.eventstore.com/eventstore-preview/v2/
+choco source add -n eventstore-eventstore -s https://nuget.eventstore.com/eventstore/v2/
 ```
 
 #### Install with Chocolatey
@@ -197,7 +197,7 @@ choco source add -n eventstore-eventstore-preview -s https://nuget.eventstore.co
 You can install EventStoreDB through Chocolatey:
 
 ```powershell
-choco install eventstoredb-ee -s eventstore-eventstore-preview --version 24.10.0-preview1
+choco install eventstoredb-ee -s eventstore-eventstore --version 24.10.0
 ```
 
 EventStoreDB can then be run with `EventStore.ClusterNode.exe`:
@@ -224,19 +224,19 @@ closer to what you'd run in production.
 
 ### Run with Docker
 
-EventStoreDB Docker images are now hosted in the registry `docker.eventstore.com/eventstore-preview`.
+EventStoreDB Docker images are now hosted in the registry `docker.eventstore.com/eventstore`.
 
 Pull the container with:
 
 ```bash
-docker pull docker.eventstore.com/eventstore-preview/eventstoredb-ee:latest
+docker pull docker.eventstore.com/eventstore/eventstoredb-ee:latest
 ```
 
 The following command will start the EventStoreDB node using the default HTTP port, without security. You can then connect to it using one of the clients and the `esdb://localhost:2113?tls=false` connection string. You can also access the Admin UI by opening http://localhost:2113 in your browser.
 
 ```bash
 docker run --name esdb-node -it -p 2113:2113 \
-    docker.eventstore.com/eventstore-preview/eventstoredb-ee --insecure --run-projections=All
+    docker.eventstore.com/eventstore/eventstoredb-ee --insecure --run-projections=All
     --enable-atom-pub-over-http
 ```
 
