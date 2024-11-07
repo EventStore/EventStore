@@ -10,12 +10,13 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using DotNext.Threading;
 using EventStore.Common.Exceptions;
+using EventStore.Core.Authorization;
 using EventStore.Core.Authorization.AuthorizationPolicies;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Data;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services;
-using EventStore.Core.Tests;
 using EventStore.Core.TransactionLog.LogRecords;
 using Xunit;
 using EventRecord = EventStore.Core.Data.EventRecord;
@@ -24,301 +25,314 @@ using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 namespace EventStore.Core.XUnit.Tests.Authorization;
 
 public class StreamBasedAuthPolicyRegistryTests {
-	private readonly SynchronousScheduler _publisher = new();
-	private static AuthorizationPolicySettings WithAclDefault => new(LegacyPolicySelectorFactory.LegacyPolicySelectorName);
-	private static readonly JsonSerializerOptions SerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+	private const string AclsPolicy = LegacyPolicySelectorFactory.LegacyPolicySelectorName;
+	private const string FallbackPolicy = FallbackStreamAccessPolicySelector.FallbackPolicyName;
+
+	private List<ReadOnlyPolicy[]> _policyUpdates = new();
+	private AsyncManualResetEvent _policyUpdated = new(false);
+	private TaskCompletionSource<ClientMessage.SubscribeToStream> _subscribed = new();
+
+	private static readonly JsonSerializerOptions SerializerOptions = new()
+		{ PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 	private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(1);
 
 	private StreamBasedAuthorizationPolicyRegistry CreateSut(
-		IPolicySelectorFactory[] plugins, AuthorizationPolicySettings defaultSettings, AsyncManualResetEvent policyUpdated) {
-		var legacySelector = new LegacyPolicySelectorFactory(false, false, false).Create(_publisher);
-		var sut = new StreamBasedAuthorizationPolicyRegistry(_publisher, legacySelector, plugins, defaultSettings);
-		sut.PolicyChanged += (_, _) => {
-			policyUpdated.Set();
+		FakePolicySelectorPlugin[] plugins, AuthorizationPolicySettings defaultSettings, Action<ClientMessage.ReadStreamEventsBackward> onReadBackwards) {
+		var publisher = new AuthRegistryTestPublisher(onReadBackwards);
+		_subscribed = publisher.Subscribed;
+		_policyUpdated = new AsyncManualResetEvent(false);
+		_policyUpdates = [];
+
+		var legacySelector = new LegacyPolicySelectorFactory(false, false, false).Create(publisher);
+		// ReSharper disable once CoVariantArrayConversion
+		var sut = new StreamBasedAuthorizationPolicyRegistry(publisher, legacySelector, plugins, defaultSettings);
+		sut.PolicyChanged += (_, args) => {
+			_policyUpdates.Add(args.EffectivePolicies);
+			_policyUpdated.Set();
 		};
 		return sut;
 	}
 
+	public static TheoryData<DefaultSettingsTestCase> DefaultSettingsCases => new() {
+		new DefaultSettingsTestCase(AclsPolicy, new AuthorizationPolicySettings(AclsPolicy), [AclsPolicy], null),
+		new DefaultSettingsTestCase(FallbackPolicy, new AuthorizationPolicySettings(FallbackPolicy), [FallbackPolicy, AclsPolicy], null),
+		new DefaultSettingsTestCase("valid", new AuthorizationPolicySettings("valid"), ["valid", AclsPolicy], new FakePolicySelectorPlugin("valid", true)),
+		new DefaultSettingsTestCase("not found", new AuthorizationPolicySettings("not found"), [FallbackPolicy, AclsPolicy], new FakePolicySelectorPlugin("valid", true)),
+		new DefaultSettingsTestCase("disabled", new AuthorizationPolicySettings("disabled"), [FallbackPolicy, AclsPolicy], new FakePolicySelectorPlugin("disabled", false)),
+	};
+
 	[Theory]
-	[InlineData(LegacyPolicySelectorFactory.LegacyPolicySelectorName, new[]{LegacyPolicySelectorFactory.LegacyPolicySelectorName})]
-	[InlineData(FallbackStreamAccessPolicySelector.FallbackPolicyName, new[]{FallbackStreamAccessPolicySelector.FallbackPolicyName})]
-	[InlineData("plugin", new[]{"plugin", LegacyPolicySelectorFactory.LegacyPolicySelectorName})]
-	public async Task when_starting_with_no_existing_settings_events_the_default_is_used(string defaultPolicy, string[] expected) {
-		var subscribed = new TaskCompletionSource<ClientMessage.SubscribeToStream>();
-		var policyUpdated = new AsyncManualResetEvent(false);
-		_publisher.Subscribe(
-			new AdHocHandler<ClientMessage.ReadStreamEventsBackward>(
-				m => {
-					m.Envelope.ReplyWith(ErrorResponse(m, ReadStreamResult.NoStream));
-				}));
-		_publisher.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(m => {
-			subscribed.TrySetResult(m);
-		}));
+	[MemberData(nameof(DefaultSettingsCases))]
+	public async Task when_starting_with_no_existing_settings_events_the_default_is_used(DefaultSettingsTestCase testCase) {
 		var sut = CreateSut(
-			[new FakePolicySelectorPlugin("plugin", true)],
-			new AuthorizationPolicySettings(defaultPolicy),
-			policyUpdated);
+			testCase.CustomPlugin is null ? [] : [testCase.CustomPlugin], testCase.DefaultSettings,
+			m => {
+				m.Envelope.ReplyWith(ErrorResponse(m, ReadStreamResult.NoStream));
+			});
 
 		await sut.Start();
-		Assert.True(await policyUpdated.WaitAsync(Timeout));
+		Assert.True(await _policyUpdated.WaitAsync(Timeout));
 
-		// It uses the provided default settings
-		for (var i = 0; i < expected.Length; i++) {
-			Assert.Equal(expected[i], sut.EffectivePolicies[i].Information.Name);
-		}
+		// The expected policies are applied
+		Assert.Equal(testCase.AppliesPolicies, sut.EffectivePolicies.Select(x => x.Information.Name).ToArray());
+
 		// It should subscribe
-		var subscribeMsg = await subscribed.Task.WithTimeout();
+		var subscribeMsg = await _subscribed.Task.WaitAsync(Timeout);
 		Assert.Equal(SystemStreams.AuthorizationPolicyRegistryStream, subscribeMsg.EventStreamId);
+	}
+
+	[Fact]
+	public void when_starting_and_read_backwards_has_not_completed_yet() {
+		var sut = CreateSut([], new AuthorizationPolicySettings(AclsPolicy), _ => { });
+
+		// It uses the fallback policy for stream access, and the legacy policy for endpoint access
+		Assert.Equal(2, sut.EffectivePolicies.Length);
+		Assert.Equal(FallbackPolicy, sut.EffectivePolicies[0].Information.Name);
+		Assert.Equal(AclsPolicy, sut.EffectivePolicies[1].Information.Name);
 	}
 
 	[Theory]
 	[InlineData(ClientMessage.NotHandled.Types.NotHandledReason.NotReady)]
 	[InlineData(ClientMessage.NotHandled.Types.NotHandledReason.TooBusy)]
-	public async Task when_starting_and_read_backwards_is_not_handled(ClientMessage.NotHandled.Types.NotHandledReason notHandledReason) {
+	public async Task when_starting_and_the_read_backwards_is_not_handled(
+		ClientMessage.NotHandled.Types.NotHandledReason notHandledReason) {
 		var longerTimeout = TimeSpan.FromSeconds(20); // Retries have a delay
-		var subscribed = new TaskCompletionSource<ClientMessage.SubscribeToStream>();
-		var policyUpdated = new AsyncManualResetEvent(false);
 		var failed = false;
-		_publisher.Subscribe(
-			new AdHocHandler<ClientMessage.ReadStreamEventsBackward>(
-				m => {
-					if (!failed) {
-						failed = true;
-						m.Envelope.ReplyWith(new ClientMessage.NotHandled(m.CorrelationId, notHandledReason, ""));
-					} else
-						m.Envelope.ReplyWith(CreateReadCompleted(m, [
-							CreateResolvedEventForAuthSettings(new AuthorizationPolicySettings("plugin"), 0)]));
-				}));
-		_publisher.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(m => {
-			subscribed.TrySetResult(m);
-		}));
+
 		var sut = CreateSut(
-			[new FakePolicySelectorPlugin("plugin", true)],
-			WithAclDefault, policyUpdated);
+			[new FakePolicySelectorPlugin("plugin", true)], new AuthorizationPolicySettings(AclsPolicy),
+			m => {
+				if (!failed) {
+					failed = true;
+					m.Envelope.ReplyWith(new ClientMessage.NotHandled(m.CorrelationId, notHandledReason, ""));
+				} else
+					m.Envelope.ReplyWith(CreateReadCompleted(m, [
+						CreateResolvedEvent(new AuthorizationPolicySettings("plugin"), 0)
+					]));
+			});
+
 		await sut.Start();
 
 		// It retries and eventually updates the policy
-		Assert.True(await policyUpdated.WaitAsync(longerTimeout));
+		Assert.True(await _policyUpdated.WaitAsync(longerTimeout));
 		Assert.Equal("plugin", sut.EffectivePolicies[0].Information.Name);
-		Assert.Equal(LegacyPolicySelectorFactory.LegacyPolicySelectorName, sut.EffectivePolicies[1].Information.Name);
+		Assert.Equal(AclsPolicy, sut.EffectivePolicies[1].Information.Name);
+
 		// It should subscribe
-		var subscribeMsg = await subscribed.Task.WithTimeout(longerTimeout);
+		var subscribeMsg = await _subscribed.Task.WaitAsync(longerTimeout);
 		Assert.Equal(SystemStreams.AuthorizationPolicyRegistryStream, subscribeMsg.EventStreamId);
 	}
 
 	[Theory]
-	[InlineData(ReadStreamResult.AccessDenied, true)]
-	[InlineData(ReadStreamResult.Error, true)]
-	[InlineData(ReadStreamResult.StreamDeleted, false)]
-	[InlineData(ReadStreamResult.NoStream, false)]
-	public async Task when_starting_and_read_backwards_fails_and_cannot_be_retried(ReadStreamResult readResult, bool fatal) {
-		var subscribed = new TaskCompletionSource<ClientMessage.SubscribeToStream>();
-		var policyUpdated = new AsyncManualResetEvent(false);
+	[InlineData(ReadStreamResult.AccessDenied, true, AclsPolicy)]
+	[InlineData(ReadStreamResult.Error, true, AclsPolicy)]
+	[InlineData(ReadStreamResult.StreamDeleted, false, AclsPolicy)]
+	[InlineData(ReadStreamResult.NoStream, false, AclsPolicy)]
+	[InlineData(ReadStreamResult.StreamDeleted, false, "plugin")]
+	[InlineData(ReadStreamResult.NoStream, false, "plugin")]
+	public async Task when_starting_and_the_read_backwards_fails_and_cannot_be_retried(
+		ReadStreamResult readResult, bool fatal, string defaultPolicy) {
+		var longerTimeout = TimeSpan.FromSeconds(20);
 		Exception? actualException = null;
-		_publisher.Subscribe(
-			new AdHocHandler<ClientMessage.ReadStreamEventsBackward>(
-				m => {
-					m.Envelope.ReplyWith(ErrorResponse(m, readResult));
-				}));
-		_publisher.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(m => {
-			subscribed.TrySetResult(m);
-		}));
+
 		var sut = CreateSut(
-			[new FakePolicySelectorPlugin("plugin", true)], WithAclDefault, policyUpdated);
+			[new FakePolicySelectorPlugin("plugin", true)], new AuthorizationPolicySettings(defaultPolicy),
+			m => {
+				m.Envelope.ReplyWith(ErrorResponse(m, readResult));
+			});
+
 		try {
 			await sut.Start();
 		} catch (Exception ex) {
 			actualException = ex;
 		}
+
 		if (fatal) {
 			// It throws a fatal exception
 			Assert.NotNull(actualException);
 			Assert.IsType<ApplicationInitializationException>(actualException);
+
+			// It uses the fallback policy
+			Assert.Equal(new[]{FallbackPolicy, AclsPolicy},
+				sut.EffectivePolicies.Select(x => x.Information.Name).ToArray());
 		} else {
+			// It does not throw an exception
 			Assert.Null(actualException);
-			// It eventually updates the policy
-			Assert.True(await policyUpdated.WaitAsync(Timeout));
+
+			// It uses the default policy
+			Assert.True(await _policyUpdated.WaitAsync(Timeout));
+			Assert.Equal(defaultPolicy == AclsPolicy ? [AclsPolicy] : [defaultPolicy, AclsPolicy],
+				sut.EffectivePolicies.Select(x => x.Information.Name).ToArray());
+
 			// It subscribes
-			var subscribeMsg = await subscribed.Task.WithTimeout();
+			var subscribeMsg = await _subscribed.Task.WaitAsync(longerTimeout);
 			Assert.Equal(SystemStreams.AuthorizationPolicyRegistryStream, subscribeMsg.EventStreamId);
 		}
 	}
 
-	public static IEnumerable<object[]> InvalidAuthorizationPolicySettings =>
-		new List<object[]> {
-			new object[] { new[]{new AuthPolicyRegistryTestCase(new AuthorizationPolicySettings("not found"), 0)} },
-			new object[] { new[]{new AuthPolicyRegistryTestCase(new AuthorizationPolicySettings(""), 0)} },
-			new object[] { new[]{new AuthPolicyRegistryTestCase(SystemEventTypes.AuthorizationPolicyChanged, "invalid"u8.ToArray(), 0)} },
-			new object[] { new[]{new AuthPolicyRegistryTestCase(SystemEventTypes.AuthorizationPolicyChanged, "{}"u8.ToArray(), 0)} },
-			new object[] { new[]{new AuthPolicyRegistryTestCase(SystemEventTypes.AuthorizationPolicyChanged, "{ \"notPolicyType\": \"plugin\" }"u8.ToArray(), 0)} },
-			new object[] { new[]{new AuthPolicyRegistryTestCase("invalid", JsonSerializer.SerializeToUtf8Bytes(WithAclDefault), 0)} },
-			new object[] { new[] {
-				new AuthPolicyRegistryTestCase("invalid", JsonSerializer.SerializeToUtf8Bytes(WithAclDefault), 1),
-				new AuthPolicyRegistryTestCase("invalid", "invalid"u8.ToArray(), 0)
-			} },
+	public static TheoryData<SettingsEventTestCase> SettingsTestCases => new() {
+		new SettingsEventTestCase("disabled", shouldCallEnable: true, shouldCallDisable: false, [], new FakePolicySelectorPlugin("disabled", false)),
+		new SettingsEventTestCase("valid", shouldCallEnable: true, shouldCallDisable: true, ["valid", AclsPolicy], new FakePolicySelectorPlugin("valid", true)),
+		new SettingsEventTestCase(AclsPolicy, shouldCallEnable: false, shouldCallDisable: false, [AclsPolicy], null),
+		new SettingsEventTestCase(FallbackPolicy, shouldCallEnable: false, shouldCallDisable: false, [FallbackPolicy, AclsPolicy], null),
+		new SettingsEventTestCase("not found", shouldCallEnable: false, shouldCallDisable: false, [], new FakePolicySelectorPlugin("custom", true)),
+		new SettingsEventTestCase("invalid", "invalid", "invalid", shouldCallEnable: false, shouldCallDisable: false, [], new FakePolicySelectorPlugin("invalid", true)),
+		new SettingsEventTestCase("invalid json", SystemEventTypes.AuthorizationPolicyChanged, "invalid", shouldCallEnable: false, shouldCallDisable: false, [], new FakePolicySelectorPlugin("invalid json", true)),
+		new SettingsEventTestCase("invalid event type", "invalid", JsonSerializer.Serialize(new AuthorizationPolicySettings(AclsPolicy)), shouldCallEnable: false, shouldCallDisable: false, [], new FakePolicySelectorPlugin("invalid event type", true)),
+		new SettingsEventTestCase("empty json object", SystemEventTypes.AuthorizationPolicyChanged, "{}", shouldCallEnable: false, shouldCallDisable: false, [FallbackPolicy, AclsPolicy], new FakePolicySelectorPlugin("empty json object", true)),
+		new SettingsEventTestCase("valid json without policyType", SystemEventTypes.AuthorizationPolicyChanged, "{}", shouldCallEnable: false, shouldCallDisable: false, [FallbackPolicy, AclsPolicy], new FakePolicySelectorPlugin("valid json without policyType", true)),
+		new SettingsEventTestCase("empty policyType", SystemEventTypes.AuthorizationPolicyChanged, "{}", shouldCallEnable: false, shouldCallDisable: false, [FallbackPolicy, AclsPolicy], new FakePolicySelectorPlugin("valid json without policyType", true)),
+	};
+
+	[Theory]
+	[MemberData(nameof(SettingsTestCases))]
+	public async Task when_settings_events_exist_in_the_stream(SettingsEventTestCase testCase) {
+		var finishedEvent = CreateResolvedEvent(new AuthorizationPolicySettings("finished"), 3);
+
+		// Set up expected policies
+		var appliesPolicies = testCase.AppliesPolicies.Length > 0
+			? testCase.AppliesPolicies
+			: [FallbackPolicy, AclsPolicy];
+		var expectedPolicies = new[] {
+			appliesPolicies,
+			["finished", AclsPolicy]
 		};
 
-	[Fact]
-	public void when_starting_and_read_backwards_has_not_completed_yet() {
-		var sut = CreateSut([], WithAclDefault, new AsyncManualResetEvent(false));
-		// It uses the fallback policy for stream access, and the legacy policy for endpoint access
-		Assert.Equal(2, sut.EffectivePolicies.Length);
-		Assert.Equal(FallbackStreamAccessPolicySelector.FallbackPolicyName, sut.EffectivePolicies[0].Information.Name);
-		Assert.Equal(LegacyPolicySelectorFactory.LegacyPolicySelectorName, sut.EffectivePolicies[1].Information.Name);
-	}
-
-	[Theory]
-	[MemberData(nameof(InvalidAuthorizationPolicySettings))]
-	public async Task when_starting_and_all_existing_settings_events_are_invalid(AuthPolicyRegistryTestCase[] readResult) {
-		var policyUpdated = new AsyncManualResetEvent(false);
-		_publisher.Subscribe(
-			new AdHocHandler<ClientMessage.ReadStreamEventsBackward>(
-				m => {
-					m.Envelope.ReplyWith(CreateReadCompleted(m, readResult.Select(x => x.ResolvedEvent).ToArray()));
-				}));
-		var sut = CreateSut([], WithAclDefault, policyUpdated);
-		await sut.Start();
-		// It uses the fallback policy for stream access, and the legacy policy for endpoint access
-		Assert.True(await policyUpdated.WaitAsync(Timeout));
-		Assert.Equal(2, sut.EffectivePolicies.Length);
-		Assert.Equal(FallbackStreamAccessPolicySelector.FallbackPolicyName, sut.EffectivePolicies[0].Information.Name);
-		Assert.Equal(LegacyPolicySelectorFactory.LegacyPolicySelectorName, sut.EffectivePolicies[1].Information.Name);
-	}
-
-	// Start from event number 1 in case the test includes a default event
-	public static IEnumerable<object[]> SomeValidAuthorizationPolicySettings =>
-		new List<object[]> {
-			new object[] { new[] {
-				new AuthPolicyRegistryTestCase(new AuthorizationPolicySettings("plugin"), 1)}
-			},
-			new object[] { new[]{
-				new AuthPolicyRegistryTestCase(new AuthorizationPolicySettings("not found"), 1),
-				new AuthPolicyRegistryTestCase(new AuthorizationPolicySettings("plugin"), 2)}
-			},
-			new object[] { new[]{
-				new AuthPolicyRegistryTestCase(new AuthorizationPolicySettings("plugin"), 1),
-				new AuthPolicyRegistryTestCase(SystemEventTypes.AuthorizationPolicyChanged, "invalid"u8.ToArray(), 2)}
-			},
-			new object[] { new[]{
-				new AuthPolicyRegistryTestCase(new AuthorizationPolicySettings("plugin"), 1),
-				new AuthPolicyRegistryTestCase(new AuthorizationPolicySettings("disabled"), 2)}
-			}
+		// Set up available plugins
+		var availablePlugins = new Dictionary<string, FakePolicySelectorPlugin> {
+			{ "finished", new FakePolicySelectorPlugin("finished", true) },
 		};
-
-	[Theory]
-	[MemberData(nameof(SomeValidAuthorizationPolicySettings))]
-	public async Task when_starting_and_some_existing_settings_events_are_valid(AuthPolicyRegistryTestCase[] policyEvents) {
-		var policyUpdated = new AsyncManualResetEvent(false);
-		_publisher.Subscribe(
-			new AdHocHandler<ClientMessage.ReadStreamEventsBackward>(
-				m => {
-					// Reverse the events for backwards read
-					m.Envelope.ReplyWith(CreateReadCompleted(m, policyEvents.Reverse().Select(x => x.ResolvedEvent).ToArray()));
-				}));
-		var sut = CreateSut([
-			new FakePolicySelectorPlugin("plugin", true),
-			new FakePolicySelectorPlugin("disabled", false)
-		], WithAclDefault, policyUpdated);
-		await sut.Start();
-
-		// It uses the expected policies
-		Assert.True(await policyUpdated.WaitAsync(Timeout));
-		Assert.Equal("plugin", sut.EffectivePolicies[0].Information.Name);
-		Assert.Equal(LegacyPolicySelectorFactory.LegacyPolicySelectorName, sut.EffectivePolicies[1].Information.Name);
-	}
-
-	[Theory]
-	[MemberData(nameof(SomeValidAuthorizationPolicySettings))]
-	public async Task when_settings_events_are_written_after_startup(AuthPolicyRegistryTestCase[] testCases) {
-		var subscribed = new TaskCompletionSource<ClientMessage.SubscribeToStream>();
-		var onEnabled = new AsyncCountdownEvent(1);
-		var policyUpdated = new AsyncManualResetEvent(false);
-		_publisher.Subscribe(
-			new AdHocHandler<ClientMessage.ReadStreamEventsBackward>(
-				m => {
-					m.Envelope.ReplyWith(CreateReadCompleted(m,
-						[CreateResolvedEventForAuthSettings(WithAclDefault, 0)]));
-				}));
-		_publisher.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(
-			m => {
-				m.Envelope.ReplyWith(new ClientMessage.SubscriptionConfirmation(m.CorrelationId, 100, 0));
-				subscribed.TrySetResult(m);
-			}));
-
-		var sut = CreateSut([
-			new FakePolicySelectorPlugin("plugin", true, onEnabled),
-			new FakePolicySelectorPlugin("disabled", false)
-		], WithAclDefault, policyUpdated);
-		await sut.Start();
-
-		// It uses the default acls
-		Assert.True(await policyUpdated.WaitAsync(Timeout));
-		policyUpdated.Reset();
-		Assert.Equal(LegacyPolicySelectorFactory.LegacyPolicySelectorName, sut.EffectivePolicies[0].Information.Name);
-
-		// Send the updated settings events
-		var subscribeMsg = await subscribed.Task.WithTimeout();
-		foreach (var testCase in testCases) {
-			subscribeMsg.Envelope.ReplyWith(
-				new ClientMessage.StreamEventAppeared(subscribeMsg.CorrelationId, testCase.ResolvedEvent));
+		if (testCase.CustomPlugin is not null) {
+			availablePlugins.Add(testCase.CustomPlugin.CommandLineName, testCase.CustomPlugin);
 		}
 
-		// The valid policy is enabled
-		Assert.True(await onEnabled.WaitAsync(Timeout));
-		// The policy is updated
-		Assert.True(await policyUpdated.WaitAsync(Timeout));
-		// The correct policies are in use
-		Assert.Equal("plugin", sut.EffectivePolicies[0].Information.Name);
-		Assert.Equal(LegacyPolicySelectorFactory.LegacyPolicySelectorName, sut.EffectivePolicies[1].Information.Name);
+		var sut = CreateSut(
+			availablePlugins.Values.ToArray(), new AuthorizationPolicySettings(AclsPolicy),
+			m => {
+				m.Envelope.ReplyWith(CreateReadCompleted(m, [testCase.Event]));
+			});
+		await sut.Start();
+
+		// Wait for the policy to be updated
+		Assert.True(await _policyUpdated.WaitAsync(Timeout));
+		_policyUpdated.Reset();
+
+		if (testCase.ShouldCallEnable) {
+			// It attempted to enable the policy
+			Assert.True(await availablePlugins[testCase.PolicyName].OnEnabled.WaitAsync(Timeout));
+		}
+
+		if (testCase.AppliesPolicies.Length > 0) {
+			// The correct policies are in effect
+			for (var i = 0; i < testCase.AppliesPolicies.Length; i++) {
+				Assert.Equal(testCase.AppliesPolicies[i], sut.EffectivePolicies[i].Information.Name);
+			}
+		} else {
+			// All events are invalid or cannot be enabled
+			// The fallback policy should be used
+			Assert.Equal(FallbackPolicy, sut.EffectivePolicies[0].Information.Name);
+			Assert.Equal(AclsPolicy, sut.EffectivePolicies[1].Information.Name);
+		}
+
+		// It should subscribe
+		var subscribeMsg = await _subscribed.Task.WaitAsync(Timeout);
+
+		// Send the finished event
+		subscribeMsg.Envelope.ReplyWith(
+			new ClientMessage.StreamEventAppeared(subscribeMsg.CorrelationId, finishedEvent));
+
+		// The finished policy is applied
+		Assert.True(await _policyUpdated.WaitAsync(Timeout));
+		Assert.Equal("finished", sut.EffectivePolicies[0].Information.Name);
+
+		if (testCase.ShouldCallDisable) {
+			// The previous policy is disabled
+			Assert.True(await availablePlugins[testCase.PolicyName].OnDisabled.WaitAsync(Timeout));
+		}
+
+		// The policy updates contain the expected policies
+		for (var i = 0; i < expectedPolicies.Length; i++) {
+			Assert.Equal(expectedPolicies[i], _policyUpdates[i].Select(x => x.Information.Name));
+		}
 	}
 
-	[Fact]
-	public async Task when_a_new_plugin_is_enabled() {
-		var subscribed = new TaskCompletionSource<ClientMessage.SubscribeToStream>();
-		var onEnabled = new AsyncCountdownEvent(2);
-		var onDisabled = new AsyncCountdownEvent(1);
-		var policyUpdated = new AsyncManualResetEvent(false);
-		_publisher.Subscribe(
-			new AdHocHandler<ClientMessage.ReadStreamEventsBackward>(
-				m => {
-					m.Envelope.ReplyWith(CreateReadCompleted(m, [
-						CreateResolvedEventForAuthSettings(new AuthorizationPolicySettings("plugin1"), 0)]));
-				}));
-		_publisher.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(
+	[Theory]
+	[MemberData(nameof(SettingsTestCases))]
+	public async Task when_settings_events_are_received_by_the_subscription(SettingsEventTestCase testCase) {
+		var finishedEvent = CreateResolvedEvent(new AuthorizationPolicySettings("finished"), 3);
+
+		// Set up expected policies
+		var expectedPolicies = new List<string[]>();
+		expectedPolicies.Add(["start", AclsPolicy]);
+		if (testCase.AppliesPolicies.Length > 0) {
+			expectedPolicies.Add(testCase.AppliesPolicies);
+		}
+		expectedPolicies.Add(["finished", AclsPolicy]);
+
+		// Set up available plugins
+		var availablePlugins = new Dictionary<string, FakePolicySelectorPlugin> {
+			{ "start", new FakePolicySelectorPlugin("start", true) },
+			{ "finished", new FakePolicySelectorPlugin("finished", true) },
+		};
+		if (testCase.CustomPlugin is not null) {
+			availablePlugins.Add(testCase.CustomPlugin.CommandLineName, testCase.CustomPlugin);
+		}
+
+		var sut = CreateSut(
+			availablePlugins.Values.ToArray(), new AuthorizationPolicySettings(AclsPolicy),
 			m => {
-				m.Envelope.ReplyWith(new ClientMessage.SubscriptionConfirmation(m.CorrelationId, 100, 0));
-				subscribed.TrySetResult(m);
-			}));
-
-		var sut = CreateSut([
-			new FakePolicySelectorPlugin("plugin1", true, onEnabled, onDisabled),
-			new FakePolicySelectorPlugin("plugin2", true, onEnabled)
-		], WithAclDefault, policyUpdated);
+				m.Envelope.ReplyWith(CreateReadCompleted(m,
+					[CreateResolvedEvent(new AuthorizationPolicySettings("start"), 0)]));
+			});
 		await sut.Start();
-		Assert.True(await policyUpdated.WaitAsync(Timeout));
-		policyUpdated.Reset();
 
-		// It uses the first plugin
-		Assert.Equal("plugin1", sut.EffectivePolicies[0].Information.Name);
-		Assert.Equal(1, onEnabled.CurrentCount);
+		// Load the start policy
+		Assert.True(await _policyUpdated.WaitAsync(Timeout));
+		_policyUpdated.Reset();
+		Assert.Equal("start", sut.EffectivePolicies[0].Information.Name);
 
-		// Send the updated settings events
-		var subscribeMsg = await subscribed.Task.WithTimeout();
+		// Wait for the subscription
+		var subscribeMsg = await _subscribed.Task.WaitAsync(Timeout);
+
+		// Send the new settings
 		subscribeMsg.Envelope.ReplyWith(
-			new ClientMessage.StreamEventAppeared(subscribeMsg.CorrelationId,
-				CreateResolvedEventForAuthSettings(new AuthorizationPolicySettings("plugin2"), 1)));
+			new ClientMessage.StreamEventAppeared(subscribeMsg.CorrelationId, testCase.Event));
 
-		// The policies are enabled
-		Assert.True(await onEnabled.WaitAsync(Timeout));
-		Assert.Equal(0, onEnabled.CurrentCount);
+		if (testCase.ShouldCallEnable) {
+			// Attempt to enable the new policy
+			Assert.True(await availablePlugins[testCase.PolicyName].OnEnabled.WaitAsync(Timeout));
+		}
 
-		// The previous policy is disabled
-		Assert.True(await onDisabled.WaitAsync(Timeout));
+		if (testCase.AppliesPolicies.Length > 0) {
+			// The policy was updated
+			Assert.True(await _policyUpdated.WaitAsync(Timeout));
+			_policyUpdated.Reset();
 
-		// The correct policies are in use
-		Assert.True(await policyUpdated.WaitAsync(Timeout));
-		Assert.Equal("plugin2", sut.EffectivePolicies[0].Information.Name);
-		Assert.Equal(LegacyPolicySelectorFactory.LegacyPolicySelectorName, sut.EffectivePolicies[1].Information.Name);
+			// The start policy was disabled
+			Assert.True(await availablePlugins["start"].OnDisabled.WaitAsync(Timeout));
+
+			// The correct policies are in effect
+			Assert.Equal(testCase.AppliesPolicies, sut.EffectivePolicies.Select(x => x.Information.Name).ToArray());
+		}
+
+		// Send the finished settings event
+		subscribeMsg.Envelope.ReplyWith(
+			new ClientMessage.StreamEventAppeared(subscribeMsg.CorrelationId, finishedEvent));
+
+		// The finished policy was applied
+		Assert.True(await _policyUpdated.WaitAsync(Timeout));
+		_policyUpdated.Reset();
+		Assert.Equal("finished", sut.EffectivePolicies[0].Information.Name);
+
+		if (testCase.ShouldCallDisable) {
+			// The policy was disabled
+			Assert.True(await availablePlugins[testCase.PolicyName].OnDisabled.WaitAsync(Timeout));
+		}
+
+		// The policy updates contain the expected policies
+		for (var i = 0; i < expectedPolicies.Count; i++) {
+			Assert.Equal(expectedPolicies[i], _policyUpdates[i].Select(x => x.Information.Name));
+		}
 	}
 
 	private static ClientMessage.ReadStreamEventsBackwardCompleted
@@ -328,7 +342,7 @@ public class StreamBasedAuthPolicyRegistryTests {
 			result, [], StreamMetadata.Empty, true, "",
 			msg.FromEventNumber, msg.FromEventNumber, true, 0L);
 
-	private static ResolvedEvent CreateResolvedEventForAuthSettings(AuthorizationPolicySettings settings, long eventNumber) {
+	private static ResolvedEvent CreateResolvedEvent(AuthorizationPolicySettings settings, long eventNumber) {
 		var data = JsonSerializer.SerializeToUtf8Bytes(settings, SerializerOptions);
 		return CreateResolvedEvent(SystemEventTypes.AuthorizationPolicyChanged, data, eventNumber);
 	}
@@ -352,19 +366,78 @@ public class StreamBasedAuthPolicyRegistryTests {
 			ReadStreamResult.Success, events, StreamMetadata.Empty, true, "",
 			msg.FromEventNumber, msg.FromEventNumber, true, 1000L);
 
-	public readonly struct AuthPolicyRegistryTestCase {
-		public readonly ResolvedEvent ResolvedEvent;
-		private readonly string _description;
+	public readonly struct DefaultSettingsTestCase(
+		string policyName,
+		AuthorizationPolicySettings defaultSettings,
+		string[] appliesPolicies,
+		FakePolicySelectorPlugin? customPlugin) {
+		public readonly string PolicyName = policyName;
+		public readonly AuthorizationPolicySettings DefaultSettings = defaultSettings;
+		public readonly string[] AppliesPolicies = appliesPolicies;
+		public readonly FakePolicySelectorPlugin? CustomPlugin = customPlugin;
 
-		public AuthPolicyRegistryTestCase(AuthorizationPolicySettings settings, long eventNumber) {
-			ResolvedEvent = CreateResolvedEventForAuthSettings(settings, eventNumber);
-			_description = $"{eventNumber}:{ResolvedEvent.Event.EventType}+{settings}";
+		public override string ToString() {
+			return $"default: '{PolicyName}' applies [{string.Join(", ", AppliesPolicies)}]";
 		}
-		public AuthPolicyRegistryTestCase(string eventType, byte[] data, long eventNumber) {
-			ResolvedEvent = CreateResolvedEvent(eventType, data, eventNumber);
-			_description = $"{eventNumber}:{eventType}+{Encoding.UTF8.GetString(data)}";
+	}
+
+	public readonly struct SettingsEventTestCase {
+		public readonly ResolvedEvent Event;
+		public readonly string PolicyName;
+		public readonly bool ShouldCallEnable;
+		public readonly bool ShouldCallDisable;
+		public readonly string[] AppliesPolicies;
+		public readonly FakePolicySelectorPlugin? CustomPlugin;
+
+		public SettingsEventTestCase(string policyName, bool shouldCallEnable, bool shouldCallDisable, string[] appliesPolicies, FakePolicySelectorPlugin? customPlugin) {
+			PolicyName = policyName;
+			// EventNumber hardcoded to 2. Allows for a default and start event
+			Event = CreateResolvedEvent(new AuthorizationPolicySettings(policyName), 2);
+			ShouldCallEnable = shouldCallEnable;
+			ShouldCallDisable = shouldCallDisable;
+			AppliesPolicies = appliesPolicies;
+			CustomPlugin = customPlugin;
 		}
 
-		public override string ToString() => _description;
+		public SettingsEventTestCase(string policyName, string eventType, string data, bool shouldCallEnable, bool shouldCallDisable, string[] appliesPolicies, FakePolicySelectorPlugin? customPlugin) {
+			PolicyName = policyName;
+			// EventNumber hardcoded to 2. Allows for a default and start event
+			Event = CreateResolvedEvent(eventType, Encoding.UTF8.GetBytes(data), 2);
+			ShouldCallEnable = shouldCallEnable;
+			ShouldCallDisable = shouldCallDisable;
+			AppliesPolicies = appliesPolicies;
+			CustomPlugin = customPlugin;
+		}
+
+		public override string ToString() {
+			return AppliesPolicies.Length > 0
+				? $"'{PolicyName}' policy applies [{string.Join(", ", AppliesPolicies)}]"
+				: $"'{PolicyName}' policy does not update the policies";
+		}
+	}
+
+	private class AuthRegistryTestPublisher : IPublisher {
+		private readonly Action<ClientMessage.ReadStreamEventsBackward> _onReadBackward;
+		private readonly Action<ClientMessage.SubscribeToStream> _onSubscribed;
+		public readonly TaskCompletionSource<ClientMessage.SubscribeToStream> Subscribed = new();
+
+		public AuthRegistryTestPublisher(Action<ClientMessage.ReadStreamEventsBackward> onReadBackward) {
+			_onReadBackward = onReadBackward;
+			_onSubscribed = m => {
+				m.Envelope.ReplyWith(new ClientMessage.SubscriptionConfirmation(m.CorrelationId, 100, 0));
+				Subscribed.TrySetResult(m);
+			} ;
+		}
+		public void Publish(Message message) {
+			switch (message)
+			{
+				case ClientMessage.ReadStreamEventsBackward read:
+					_onReadBackward(read);
+					break;
+				case ClientMessage.SubscribeToStream subscribe:
+					_onSubscribed(subscribe);
+					break;
+			}
+		}
 	}
 }
