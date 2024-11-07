@@ -92,7 +92,7 @@ Define stream access policies in one place based on stream prefixes, rather than
 
 Stream access policies can be created to grant users or groups read, write, delete, or metadata access; and then these policies can be applied to streams based on their prefix, or to system or user streams in general.
 
-The Stream Policy feature requires a license to use. Refer to the [documentation](../configuration/security.md#stream-policy-authorization) for more information about using and configuring this feature.
+The Stream Policy feature requires a license to use. Refer to the [documentation](../security/user-authorization.md#stream-policy-authorization) for more information about using and configuring this feature.
 
 ### Encryption-at-rest
 
@@ -105,7 +105,7 @@ This feature aims to protect against an attacker who obtains access to the physi
 The Encryption-at-rest feature requires a license to use, and is disabled by default.
 If Encryption-at-rest is enabled, it is not possible to roll back to an unencrypted database after a new chunk has been created, or if a chunk has been scavenged.
 
-Refer to the [documentation](../configuration/security.md#encryption-at-rest) for more information about using and configuring this feature.
+Refer to the [documentation](../security/README.md#encryption-at-rest) for more information about using and configuring this feature.
 
 ## Event Store License v2
 

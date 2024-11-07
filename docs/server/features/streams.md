@@ -40,7 +40,7 @@ qualify for scavenging after either 10 seconds or the accumulation of 50,000 eve
 | **`$mw`**     | Users with write permissions to stream metadata |
 | **`$mr`**     | Users with read permissions to stream metadata  |
 
-You can find more information on ACLs in the [access control lists documentation](../configuration/security.md#access-control-lists).
+You can find more information on ACLs in the [access control lists documentation](../security/user-authorization.md#access-control-lists).
 
 ## Event metadata
 
@@ -147,7 +147,7 @@ read all events for a node by pointing the stream at _/streams/\$all_. Like any 
 
 The **`$settings`** stream hosts a special ACL serving as the default ACL. It governs the default ACL for streams lacking ACLs and controls who can create streams within the system.
 
-Learn more about the default ACL in the [access control lists](../configuration/security.md#default-acl) documentation.
+Learn more about the default ACL in the [access control lists](../security/user-authorization.md#default-acl) documentation.
 
 ### **`$stats`**
 
