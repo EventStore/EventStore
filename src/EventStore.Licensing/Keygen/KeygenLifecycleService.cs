@@ -249,7 +249,9 @@ public sealed class KeygenLifecycleService : IHostedService, IDisposable {
 }
 
 static class ErrorExtensions {
-	static readonly string[] _conclusiveErrors = [
+	static readonly string[] ConclusiveErrors = [
+		// Policy determines the scope of a Machine Fingerprint (unique per Account/Policy/License)
+		"FINGERPRINT_TAKEN",
 		"LICENSE_EXPIRED",
 		"LICENSE_INVALID",
 		"LICENSE_SUSPENDED",
@@ -258,8 +260,17 @@ static class ErrorExtensions {
 		"MACHINE_PROCESS_LIMIT_EXCEEDED",
 	];
 
-	public static LicenseInfo ToLicenseInfo(this KeygenError error) =>
-		_conclusiveErrors.Contains(error.Code)
-			? LicenseInfo.Conclusive.FromError($"{error.Title}. {error.Detail}")
-			: LicenseInfo.Inconclusive.Instance;
+	public static LicenseInfo ToLicenseInfo(this KeygenError error) {
+		// FINGERPRINT_TAKEN is special, see when_license_validation_requires_machine_activation_which_fails
+		if (error.Code == "FINGERPRINT_TAKEN" && !error.Detail.Contains("policy"))
+			return LicenseInfo.Inconclusive.Instance;
+
+		if (!ConclusiveErrors.Contains(error.Code))
+			return LicenseInfo.Inconclusive.Instance;
+
+		var errorString = error.Title;
+		if (!string.IsNullOrWhiteSpace(error.Detail))
+			errorString = $"{errorString}. {error.Detail}.";
+		return LicenseInfo.Conclusive.FromError(errorString);
+	}
 }

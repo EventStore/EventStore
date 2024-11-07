@@ -18,18 +18,22 @@ public sealed class KeygenLifecycleServiceTests : IDisposable {
 
 	public KeygenLifecycleServiceTests() {
 		_licenses = Channel.CreateUnbounded<LicenseInfo>();
-
+		var options = new KeygenClientOptions {
+			Licensing = new() {
+				LicenseKey = "the-key",
+			},
+			ReadOnlyReplica = true,
+			Archiver = true,
+		};
 		_keygen = new KeygenSimulator();
 		_sut = new KeygenLifecycleService(
 			new KeygenClient(
-				new() {
-					LicenseKey = "the-key"
-				},
+				options,
 				new RestClient(
 					new RestClientOptions($"https://mock-key-gen") {
 						ConfigureMessageHandler = _ => _keygen,
 					})),
-			new Fingerprint(),
+			new Fingerprint(port: null),
 			revalidationDelay: TimeSpan.FromMilliseconds(10));
 
 		_sut.Licenses.Subscribe(async x => await _licenses.Writer.WriteAsync(x));
@@ -108,18 +112,31 @@ public sealed class KeygenLifecycleServiceTests : IDisposable {
 		await _keygen.ShouldReceive_ValidationRequest();
 	}
 
+	// when activating a machine, FINGERPRINT_TAKEN can be returned for two reasons
+	// https://github.com/keygen-sh/keygen-api/blob/master/features/api/v1/machines/create.feature
+	// 1. "Scenario: License creates a machine for their license with a duplicate fingerprint"
+	//      this can happen for us if two nodes using the same license on the same machine try to
+	//      activate it at the same time.
+	//      this is a temporary error which should be resolved by revalidating the license.
+	// 2. "Scenario: License creates a machine with a fingerprint matching another license's machine for a
+	//      policy-scoped machine uniqueness strategy (same policy)"
+	//      this can happen for us if we try to activate a machine for a trial license while the same machine
+	//      is active for a another trial license.
+	//      this is a conclusive error that should result in no license.
 	[Theory]
-	[InlineData("MACHINE_LIMIT_EXCEEDED", true)]
-	[InlineData("MACHINE_CORE_LIMIT_EXCEEDED", true)]
-	[InlineData("something_we_didnt_anticipate", false)]
-	public async Task when_license_validation_requires_machine_activation_which_fails(string code, bool conclusive) {
+	[InlineData("FINGERPRINT_TAKEN", "has already been taken", false)]
+	[InlineData("FINGERPRINT_TAKEN", "has already been taken for this policy", true)]
+	[InlineData("MACHINE_LIMIT_EXCEEDED", "machine limit exceeded", true)]
+	[InlineData("MACHINE_CORE_LIMIT_EXCEEDED", "core limit exceeded", true)]
+	[InlineData("something_we_didnt_anticipate", "another", false)]
+	public async Task when_license_validation_requires_machine_activation_which_fails(string code, string detail, bool conclusive) {
 		await _sut.StartAsync(CancellationToken.None);
 
 		await _keygen.ShouldReceive_ValidationRequest();
 		await _keygen.ReplyWith_ValidationResponse("NO_MACHINES");
 
 		await _keygen.ShouldReceive_ActivationRequest();
-		await _keygen.ReplyWith_ActivationError(code);
+		await _keygen.ReplyWith_ActivationError(code, detail);
 
 		if (conclusive) {
 			await AssertNextLicense(new LicenseInfo.Conclusive(
@@ -128,7 +145,7 @@ public sealed class KeygenLifecycleServiceTests : IDisposable {
 				Valid: false,
 				Trial: false,
 				Warning: true,
-				Detail: $"{code.ToLower()}. ",
+				Detail: $"{code.ToLower()}. {detail}.",
 				Expiry: null,
 				Entitlements: []));
 		} else {
@@ -202,7 +219,7 @@ public sealed class KeygenLifecycleServiceTests : IDisposable {
 				Valid: false,
 				Trial: false,
 				Warning: true,
-				Detail: $"{code.ToLower()}. ",
+				Detail: code.ToLower(),
 				Expiry: null,
 				Entitlements: []));
 		} else {
