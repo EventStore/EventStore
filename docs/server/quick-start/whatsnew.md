@@ -111,7 +111,7 @@ Refer to the [documentation](../configuration/security.md#encryption-at-rest) fo
 
 Starting with the 24.10 LTS release, we are transitioning to a new licensing model: the Event Store License v2 (ESLv2).
 
-A summary of the effects of installing and using EventStoreDB is listed below. Check out [the announcement](https://www.eventstore.com/blog/introducing-event-store-license-v2-eslv2) for the full details.
+The new license model changes how EventStoreDB is packaged and how certain features are enabled. A summary of how this affects installing and running EventStoreDB is listed below. Check out [the announcement](https://www.eventstore.com/blog/introducing-event-store-license-v2-eslv2) for the full details.
 
 ### Unified binary release
 
