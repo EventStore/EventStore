@@ -32,7 +32,7 @@ public abstract class
 		var epoch = new EpochRecord(pos, epochNumber, Guid.NewGuid(), lastPos, DateTime.UtcNow, instanceId);
 		var rec = _logFormat.RecordFactory.CreateEpoch(epoch);
 		await _writer.Write(rec, token);
-		_writer.Flush();
+		await _writer.Flush(token);
 		return epoch;
 	}
 
@@ -59,8 +59,7 @@ public abstract class
 			_writer,
 			initialReaderCount: 1,
 			maxReaderCount: 5,
-			readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint,
-				optimizeReadSideCache: _db.Config.OptimizeReadSideCache),
+			readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint),
 			_logFormat.RecordFactory,
 			_logFormat.StreamNameIndex,
 			_logFormat.EventTypeIndex,
@@ -86,7 +85,7 @@ public abstract class
 	public async Task TearDown() {
 		try {
 			_logFormat?.Dispose();
-			_writer?.Dispose();
+			await (_writer?.DisposeAsync() ?? ValueTask.CompletedTask);
 		} catch {
 			//workaround for TearDown error
 		}

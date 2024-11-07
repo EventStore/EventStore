@@ -33,9 +33,9 @@ public class when_reading_from_a_cached_tfchunk<TLogFormat, TStreamId> : Specifi
 		_record = LogRecord.Prepare(recordFactory, 0, _corrId, _eventId, 0, 0, streamId, 1,
 			PrepareFlags.None, eventTypeId, new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 		_chunk = await TFChunkHelper.CreateNewChunk(Filename);
-		_result = _chunk.TryAppend(_record);
-		_chunk.Flush();
-		_chunk.Complete();
+		_result = await _chunk.TryAppend(_record, CancellationToken.None);
+		await _chunk.Flush(CancellationToken.None);
+		await _chunk.Complete(CancellationToken.None);
 		_cachedChunk = await TFChunk.FromCompletedFile(Filename, verifyHash: true, unbufferedRead: false,
 			reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
 			getTransformFactory: _ => new IdentityChunkTransformFactory());
@@ -62,8 +62,8 @@ public class when_reading_from_a_cached_tfchunk<TLogFormat, TStreamId> : Specifi
 	}
 
 	[Test]
-	public void the_record_can_be_read_at_exact_position() {
-		var res = _cachedChunk.TryReadAt(0, couldBeScavenged: true);
+	public async Task the_record_can_be_read_at_exact_position() {
+		var res = await _cachedChunk.TryReadAt(0, couldBeScavenged: true, CancellationToken.None);
 		Assert.IsTrue(res.Success);
 		Assert.AreEqual(_record, res.LogRecord);
 		Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);
@@ -79,8 +79,8 @@ public class when_reading_from_a_cached_tfchunk<TLogFormat, TStreamId> : Specifi
 	}
 
 	[Test]
-	public void the_record_can_be_read_as_closest_forward_to_zero_pos() {
-		var res = _cachedChunk.TryReadClosestForward(0);
+	public async Task the_record_can_be_read_as_closest_forward_to_zero_pos() {
+		var res = await _cachedChunk.TryReadClosestForward(0, CancellationToken.None);
 		Assert.IsTrue(res.Success);
 		Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
 		Assert.AreEqual(_record, res.LogRecord);

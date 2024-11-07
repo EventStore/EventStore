@@ -1,6 +1,6 @@
 ---
 title: "Indexing"
-order: 5
+order: 4
 ---
 
 EventStoreDB stores indexes separately from the main data files, accessing records by stream name.

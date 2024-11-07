@@ -28,11 +28,11 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 	}
 
 	private async ValueTask<TFChunk> CreateChunk(int numEvents, bool completed, bool scavenged,
-		List<long> logicalPositions, List<PosMap> posMap) {
+		List<long> logicalPositions, List<PosMap> posMap, CancellationToken token = default) {
 		if (scavenged && !completed)
 			throw new ArgumentException("scavenged chunk must be completed");
 
-		var chunk = await TFChunkHelper.CreateNewChunk(Path.Combine(PathName, $"{Guid.NewGuid()}.chunk"), 4096, scavenged);
+		var chunk = await TFChunkHelper.CreateNewChunk(Path.Combine(PathName, $"{Guid.NewGuid()}.chunk"), 4096, scavenged, token);
 
 		var actualPos = 0;
 		for (int i = 0; i < numEvents; i++) {
@@ -45,17 +45,17 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 			}
 			logicalPositions.Add(logicalPos);
 
-			var result = chunk.TryAppend(CreateRecord(chunk.ChunkHeader.GetGlobalLogPosition(logicalPos), _random.Next(10, 100)));
+			var result = await chunk.TryAppend(CreateRecord(chunk.ChunkHeader.GetGlobalLogPosition(logicalPos), _random.Next(10, 100)), CancellationToken.None);
 			Assert.True(result.Success);
 			actualPos = (int) result.NewPosition;
 		}
 
-		chunk.Flush();
+		await chunk.Flush(token);
 
 		if (scavenged)
-			await chunk.CompleteScavenge(posMap, CancellationToken.None);
+			await chunk.CompleteScavenge(posMap, token);
 		else if (completed)
-			chunk.Complete();
+			await chunk.Complete(token);
 
 		return chunk;
 	}
@@ -76,7 +76,7 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 
 		Assert.AreEqual(numEvents, logPositions.Count);
 		foreach(var logPos in logPositions)
-			Assert.AreEqual(ChunkHeader.Size + logPos, chunk.GetActualRawPosition(logPos));
+			Assert.AreEqual(ChunkHeader.Size + logPos, await chunk.GetActualRawPosition(logPos, CancellationToken.None));
 		Assert.IsEmpty(posMap);
 	}
 
@@ -96,7 +96,7 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 
 		Assert.AreEqual(numEvents, logPositions.Count);
 		foreach(var logPos in logPositions)
-			Assert.AreEqual(ChunkHeader.Size + logPos, chunk.GetActualRawPosition(logPos));
+			Assert.AreEqual(ChunkHeader.Size + logPos, await chunk.GetActualRawPosition(logPos, CancellationToken.None));
 		Assert.IsEmpty(posMap);
 	}
 
@@ -118,7 +118,7 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 		Assert.AreEqual(numEvents, posMap.Count);
 		for (int i = 0; i < numEvents; i++) {
 			Assert.AreEqual(posMap[i].LogPos, logPositions[i]);
-			Assert.AreEqual(ChunkHeader.Size + posMap[i].ActualPos, chunk.GetActualRawPosition(logPositions[i]));
+			Assert.AreEqual(ChunkHeader.Size + posMap[i].ActualPos, await chunk.GetActualRawPosition(logPositions[i], CancellationToken.None));
 		}
 	}
 
@@ -138,9 +138,9 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 		Assert.IsEmpty(posMap);
 
 		Assert.AreEqual(chunk.LogicalDataSize, chunk.PhysicalDataSize);
-		Assert.AreEqual(ChunkHeader.Size + chunk.LogicalDataSize - 1, chunk.GetActualRawPosition(chunk.LogicalDataSize - 1));
-		Assert.AreEqual(-1, chunk.GetActualRawPosition(chunk.LogicalDataSize));
-		Assert.AreEqual(-1, chunk.GetActualRawPosition(chunk.LogicalDataSize + 1));
+		Assert.AreEqual(ChunkHeader.Size + chunk.LogicalDataSize - 1, await chunk.GetActualRawPosition(chunk.LogicalDataSize - 1, CancellationToken.None));
+		Assert.AreEqual(-1, await chunk.GetActualRawPosition(chunk.LogicalDataSize, CancellationToken.None));
+		Assert.AreEqual(-1, await chunk.GetActualRawPosition(chunk.LogicalDataSize + 1, CancellationToken.None));
 	}
 
 	[Test]
@@ -158,8 +158,8 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 		Assert.AreEqual(1, logPositions.Count);
 		Assert.AreEqual(1, posMap.Count);
 
-		Assert.AreEqual(ChunkHeader.Size + posMap[0].ActualPos, chunk.GetActualRawPosition(logPositions[0]));
-		Assert.AreEqual(-1, chunk.GetActualRawPosition(logPositions[0] + 1));
+		Assert.AreEqual(ChunkHeader.Size + posMap[0].ActualPos, await chunk.GetActualRawPosition(logPositions[0], CancellationToken.None));
+		Assert.AreEqual(-1, await chunk.GetActualRawPosition(logPositions[0] + 1, CancellationToken.None));
 	}
 
 	[Test]
@@ -174,6 +174,6 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 			logPositions,
 			posMap);
 
-		Assert.Throws<ArgumentOutOfRangeException>(() => chunk.GetActualRawPosition(-1));
+		Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await chunk.GetActualRawPosition(-1, CancellationToken.None));
 	}
 }

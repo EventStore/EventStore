@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -11,7 +11,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.LogAbstraction;
-using EventStore.Core.LogV3;
 using EventStore.Core.Messages;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.Replication;
@@ -78,19 +77,17 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 		SubscribeToMessage<ReplicationMessage.DataChunkBulk>();
 	}
 
-	public override void Handle(SystemMessage.StateChangeMessage message) {
-		if (message.State == VNodeState.PreLeader) {
-			if (_activeChunk != null) {
-				_activeChunk.MarkForDeletion();
-				_activeChunk = null;
-			}
+	public override async ValueTask HandleAsync(SystemMessage.StateChangeMessage message, CancellationToken token) {
+		if (message.State is VNodeState.PreLeader) {
+			_activeChunk?.MarkForDeletion();
+			_activeChunk = null;
 
 			_subscriptionId = Guid.Empty;
 			_subscriptionPos = -1;
 			_ackedSubscriptionPos = -1;
 		}
 
-		base.Handle(message);
+		await base.HandleAsync(message, token);
 	}
 
 	async ValueTask IAsyncHandle<ReplicationMessage.ReplicaSubscribed>.HandleAsync(ReplicationMessage.ReplicaSubscribed message, CancellationToken token) {
@@ -266,7 +263,7 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 			return;
 		}
 
-		if (!_activeChunk.TryAppendRawData(message.RawBytes)) {
+		if (!await _activeChunk.TryAppendRawData(message.RawBytes, token)) {
 			ReplicationFail(
 				"Could not append raw bytes to chunk {0}-{1}, raw pos: {2} (0x{3:X}), bytes length: {4} (0x{5:X}). Chunk file size: {6} (0x{7:X}).",
 				"Could not append raw bytes to chunk {chunkStartNumber}-{chunkEndNumber}, raw pos: {rawPosition} (0x{rawPosition:X}), bytes length: {rawBytesLength} (0x{rawBytesLength:X}). Chunk file size: {chunkFileSize} (0x{chunkFileSize:X}).",
@@ -280,7 +277,7 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 			Log.Debug("Completing raw chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
 				message.ChunkEndNumber);
 			await Writer.CompleteReplicatedRawChunk(_activeChunk, token);
-			Flush();
+			await Flush(token: token);
 
 			_subscriptionPos = _activeChunk.ChunkHeader.ChunkEndPosition;
 			_framer.Reset();
@@ -328,18 +325,18 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 				return;
 			}
 
-			_framer.UnFrameData(new ArraySegment<byte>(message.DataBytes));
+			await _framer.UnFrameData(new ArraySegment<byte>(message.DataBytes), token);
 			_subscriptionPos += message.DataBytes.Length;
 
 			if (message.CompleteChunk) {
 				// for backwards compatibility with logs having incomplete transactions at the end of a chunk
-				if (_framer.UnFramePendingLogRecords(out var numRecordsUnframed))
+				if (await _framer.UnFramePendingLogRecords(token) is { } numRecordsUnframed)
 					Log.Warning("Incomplete transaction consisting of {numRecords} log records was found at the end of chunk: {chunkStartNumber}-{chunkEndNumber}.",
 						numRecordsUnframed, message.ChunkStartNumber, message.ChunkEndNumber);
 
 				Log.Debug("Completing data chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
 					message.ChunkEndNumber);
-				Writer.CompleteChunk();
+				await Writer.CompleteChunk(token);
 
 				if (_framer.HasData)
 					ReplicationFail(
@@ -353,7 +350,7 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 			Log.Error(exc, "Exception in writer.");
 			throw;
 		} finally {
-			Flush();
+			await Flush(token: token);
 		}
 
 		if (message.CompleteChunk || _subscriptionPos > _ackedSubscriptionPos) {
@@ -366,10 +363,15 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 		}
 	}
 
-	private void OnTransactionUnframed(IEnumerable<ILogRecord> records) {
+	private async ValueTask OnTransactionUnframed(IEnumerable<ILogRecord> records, CancellationToken token) {
+		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
+		// There is no way to rollback it on cancellation
+		token.ThrowIfCancellationRequested();
+		token = CancellationToken.None;
+
 		Writer.OpenTransaction();
 		foreach (var record in records)
-			if (!Writer.TryWriteToTransaction(record, out _))
+			if (await Writer.WriteToTransaction(record, token) is null)
 				ReplicationFail(
 					"Failed to write replicated log record at position: {0}. Writer's position: {1}.",
 					"Failed to write replicated log record at position: {recordPos}. Writer's position: {writerPos}.",
@@ -377,14 +379,17 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 		Writer.CommitTransaction();
 	}
 
+	[DoesNotReturn]
 	private void ReplicationFail(string message, string messageStructured, params object[] args) {
-		if (args.Length == 0) {
+		string msg;
+		if (args is []) {
 			Log.Fatal(messageStructured);
+			msg = message;
 		} else {
 			Log.Fatal(messageStructured, args);
+			msg = string.Format(message, args);
 		}
 
-		var msg = args.Length == 0 ? message : string.Format(message, args);
 		BlockWriter = true;
 		Application.Exit(ExitCode.Error, msg);
 		throw new Exception(msg);

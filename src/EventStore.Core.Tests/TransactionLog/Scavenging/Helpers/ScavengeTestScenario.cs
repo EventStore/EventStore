@@ -94,7 +94,7 @@ public abstract class ScavengeTestScenario<TLogFormat, TStreamId> : Specificatio
 			new IndexStatusTracker.NoOp(),
 			new IndexTracker.NoOp(),
 			new CacheHitsMissesTracker.NoOp());
-		readIndex.IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
+		await readIndex.IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read(), CancellationToken.None);
 		ReadIndex = readIndex;
 
 		var scavenger = new TFChunkScavenger<TStreamId>(Serilog.Log.Logger, _dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
@@ -129,7 +129,7 @@ public abstract class ScavengeTestScenario<TLogFormat, TStreamId> : Specificatio
 			RecordReadResult result = await chunk.TryReadFirst(token);
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);
-				result = chunk.TryReadClosestForward((int)result.NextPosition);
+				result = await chunk.TryReadClosestForward((int)result.NextPosition, CancellationToken.None);
 			}
 
 			Assert.AreEqual(_keptRecords[i].Length, chunkRecords.Count, "Wrong number of records in chunk #{0}", i);

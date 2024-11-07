@@ -27,7 +27,7 @@ public abstract class RedactionService {
 
 public class RedactionService<TStreamId> :
 	RedactionService,
-	IHandle<RedactionMessage.GetEventPosition>,
+	IAsyncHandle<RedactionMessage.GetEventPosition>,
 	IHandle<RedactionMessage.AcquireChunksLock>,
 	IAsyncHandle<RedactionMessage.SwitchChunk>,
 	IHandle<RedactionMessage.ReleaseChunksLock>,
@@ -56,9 +56,9 @@ public class RedactionService<TStreamId> :
 		_switchChunksLock = switchChunksLock;
 	}
 
-	public void Handle(RedactionMessage.GetEventPosition message) {
+	async ValueTask IAsyncHandle<RedactionMessage.GetEventPosition>.HandleAsync(RedactionMessage.GetEventPosition message, CancellationToken token) {
 		try {
-			GetEventPosition(message.EventStreamId, message.EventNumber, message.Envelope);
+			await GetEventPosition(message.EventStreamId, message.EventNumber, message.Envelope, token);
 		} catch (Exception ex) {
 			Log.Error(ex, "REDACTION: An error has occurred when getting position for stream: {stream}, event number: {eventNumber}.",
 				message.EventStreamId, message.EventNumber);
@@ -67,9 +67,9 @@ public class RedactionService<TStreamId> :
 		}
 	}
 
-	private void GetEventPosition(string streamName, long eventNumber, IEnvelope envelope) {
+	private async ValueTask GetEventPosition(string streamName, long eventNumber, IEnvelope envelope, CancellationToken token) {
 		var streamId = _readIndex.GetStreamId(streamName);
-		var result = _readIndex.ReadEventInfo_KeepDuplicates(streamId, eventNumber);
+		var result = await _readIndex.ReadEventInfo_KeepDuplicates(streamId, eventNumber, token);
 
 		var eventPositions = new EventPosition[result.EventInfos.Length];
 
@@ -78,7 +78,7 @@ public class RedactionService<TStreamId> :
 			var logPos = eventInfo.LogPosition;
 			var chunk = _db.Manager.GetChunkFor(logPos);
 			var localPosition = chunk.ChunkHeader.GetLocalLogPosition(logPos);
-			var chunkEventOffset = chunk.GetActualRawPosition(localPosition);
+			var chunkEventOffset = await chunk.GetActualRawPosition(localPosition, token);
 
 			// all the events returned by ReadEventInfo_KeepDuplicates() must exist in the log
 			// since the log record was read from the chunk to check for hash collisions.
@@ -250,7 +250,6 @@ public class RedactionService<TStreamId> :
 				filename: newChunkPath,
 				verifyHash: true,
 				unbufferedRead: _db.Config.Unbuffered,
-				optimizeReadSideCache: false,
 				reduceFileCachePressure: true,
 				tracker: new TFChunkTracker.NoOp(),
 				getTransformFactory: _db.TransformManager.GetFactoryForExistingChunk,

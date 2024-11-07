@@ -60,7 +60,7 @@ class when_scavenging_a_table_index : SpecificationWithDirectoryPerTestFixture {
 		_tableIndex.Add(1, "testStream-1", 5, 500);
 
 		_log = new FakeTFScavengerLog();
-		_tableIndex.Scavenge(_log, CancellationToken.None);
+		await _tableIndex.Scavenge(_log, CancellationToken.None);
 
 		// Check it's loadable.
 		_tableIndex.Close(false);

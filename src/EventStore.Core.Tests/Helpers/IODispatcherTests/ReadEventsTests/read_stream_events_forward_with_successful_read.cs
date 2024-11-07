@@ -40,7 +40,7 @@ public class async_read_stream_events_forward_with_successful_read<TLogFormat, T
 	[Test]
 	public void should_get_read_result() {
 		Assert.IsNotNull(_result);
-		Assert.AreEqual(_maxCount, _result.Events.Length, "Event count");
+		Assert.AreEqual(_maxCount, _result.Events.Count, "Event count");
 		Assert.AreEqual(_eventStreamId, _result.Events[0].OriginalStreamId, "Stream Id");
 		Assert.AreEqual(_fromEventNumber, _result.Events[0].OriginalEventNumber, "From event number");
 	}
@@ -83,7 +83,7 @@ public class read_stream_events_forward_with_successful_read<TLogFormat, TStream
 	[Test]
 	public void should_get_read_result() {
 		Assert.IsNotNull(_result);
-		Assert.AreEqual(_maxCount, _result.Events.Length, "Event count");
+		Assert.AreEqual(_maxCount, _result.Events.Count, "Event count");
 		Assert.AreEqual(_eventStreamId, _result.Events[0].OriginalStreamId, "Stream Id");
 		Assert.AreEqual(_fromEventNumber, _result.Events[0].OriginalEventNumber, "From event number");
 	}

@@ -226,6 +226,10 @@ public static partial class SystemMessage {
 	}
 
 	[DerivedMessage(CoreMessage.System)]
+	public partial class PeripheralShutdownTimeout : Message {
+	}
+
+	[DerivedMessage(CoreMessage.System)]
 	public partial class ShutdownTimeout : Message {
 	}
 

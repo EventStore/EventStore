@@ -26,7 +26,7 @@ public class scavenged_chunk : SpecificationWithFile {
 		long logPos = 0;
 		for (int i = 0, n = ChunkFooter.Size / PosMap.FullSize + 1; i < n; ++i) {
 			map.Add(new PosMap(logPos, (int)logPos));
-			var res = chunk.TryAppend(LogRecord.Commit(logPos, Guid.NewGuid(), logPos, 0));
+			var res = await chunk.TryAppend(LogRecord.Commit(logPos, Guid.NewGuid(), logPos, 0), CancellationToken.None);
 			Assert.IsTrue(res.Success);
 			logPos = res.NewPosition;
 		}

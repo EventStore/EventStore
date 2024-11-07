@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogV3;
 using EventStore.Core.TransactionLog;
@@ -169,21 +170,19 @@ class FakeWriter: ITransactionFileWriter {
 
 	public void OpenTransaction() => throw new NotImplementedException();
 
-	public void WriteToTransaction(ILogRecord record, out long newPos) => throw new NotImplementedException();
-
-	public bool TryWriteToTransaction(ILogRecord record, out long newPos) => throw new NotImplementedException();
+	public ValueTask<long?> WriteToTransaction(ILogRecord record, CancellationToken token)
+		=> ValueTask.FromException<long?>(new NotImplementedException());
 
 	public void CommitTransaction() => throw new NotImplementedException();
 
 	public bool HasOpenTransaction() => throw new NotImplementedException();
 
-	public void Flush() {
+	public ValueTask Flush(CancellationToken token) {
 		IsFlushed = true;
+		return ValueTask.CompletedTask;
 	}
 
-	public void Close() {}
-
-	public void Dispose() {}
+	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
 
 class FakeReader : ITransactionFileReader {
@@ -225,23 +224,20 @@ class FakeReader : ITransactionFileReader {
 		_resultIndex = (int) position;
 	}
 
-	public SeqReadResult TryReadNext() {
+	public ValueTask<SeqReadResult> TryReadNext(CancellationToken token) {
 		_readCount++;
 
-		if(_resultIndex < _results.Count)
-			return _results[_resultIndex++];
-
-		return SeqReadResult.Failure;
+		return new(_resultIndex < _results.Count
+			? _results[_resultIndex++]
+			: SeqReadResult.Failure);
 	}
 
 	public ValueTask<SeqReadResult> TryReadPrev(CancellationToken token)
 		=> ValueTask.FromException<SeqReadResult>(new NotImplementedException());
 
-	public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<RecordReadResult> TryReadAt(long position, bool couldBeScavenged, CancellationToken token)
+		=> ValueTask.FromException<RecordReadResult>(new NotImplementedException());
 
-	public bool ExistsAt(long position) {
-		return true;
-	}
+	public ValueTask<bool> ExistsAt(long position, CancellationToken token)
+		=> new(true);
 }

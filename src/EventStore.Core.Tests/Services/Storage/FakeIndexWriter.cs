@@ -28,15 +28,16 @@ public class FakeIndexWriter<TStreamId> : IIndexWriter<TStreamId> {
 		throw new NotSupportedException();
 	}
 
-	public CommitCheckResult<TStreamId> CheckCommitStartingAt(long transactionPosition, long commitPosition) {
-		return new CommitCheckResult<TStreamId>(CommitDecision.Ok, GetFakeStreamId(), -1, -1, -1, false);
+	public ValueTask<CommitCheckResult<TStreamId>> CheckCommitStartingAt(long transactionPosition, long commitPosition, CancellationToken token) {
+		return ValueTask.FromResult(new CommitCheckResult<TStreamId>(CommitDecision.Ok, GetFakeStreamId(), -1, -1, -1, false));
 	}
 
-	public CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool streamMightExist) {
-		return new CommitCheckResult<TStreamId>(CommitDecision.Ok, streamId, expectedVersion, -1, -1, false);
+	public ValueTask<CommitCheckResult<TStreamId>> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool streamMightExist, CancellationToken token) {
+		return ValueTask.FromResult(new CommitCheckResult<TStreamId>(CommitDecision.Ok, streamId, expectedVersion, -1, -1, false));
 	}
 
-	public void PreCommit(CommitLogRecord commit) { }
+	public ValueTask PreCommit(CommitLogRecord commit, CancellationToken token)
+		=> token.IsCancellationRequested ? ValueTask.FromCanceled(token) : ValueTask.CompletedTask;
 
 	public void PreCommit(ReadOnlySpan<IPrepareLogRecord<TStreamId>> committedPrepares) { }
 
@@ -50,15 +51,17 @@ public class FakeIndexWriter<TStreamId> : IIndexWriter<TStreamId> {
 
 	public void PurgeNotProcessedTransactions(long checkpoint) { }
 
-	public bool IsSoftDeleted(TStreamId streamId) => false;
+	public ValueTask<bool> IsSoftDeleted(TStreamId streamId, CancellationToken token) => new(false);
 
-	public long GetStreamLastEventNumber(TStreamId streamId) => -1;
+	public ValueTask<long> GetStreamLastEventNumber(TStreamId streamId, CancellationToken token) => new(-1L);
 
-	public StreamMetadata GetStreamMetadata(TStreamId streamId) => StreamMetadata.Empty;
+	public ValueTask<StreamMetadata> GetStreamMetadata(TStreamId streamId, CancellationToken token) =>
+		new(StreamMetadata.Empty);
 
-	public RawMetaInfo GetStreamRawMeta(TStreamId streamId) => new();
+	public ValueTask<RawMetaInfo> GetStreamRawMeta(TStreamId streamId, CancellationToken token)
+		=> ValueTask.FromResult(new RawMetaInfo());
 
 	public TStreamId GetStreamId(string streamName) => GetFakeStreamId();
 
-	public string GetStreamName(TStreamId streamId) => string.Empty;
+	public ValueTask<string> GetStreamName(TStreamId streamId, CancellationToken token) => new(string.Empty);
 }

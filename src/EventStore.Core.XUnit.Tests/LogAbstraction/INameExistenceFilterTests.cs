@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
 using Xunit;
@@ -27,10 +29,10 @@ public abstract class INameExistenceFilterTests : IDisposable {
 	}
 
 	[Fact]
-	public void can_initialize() {
+	public async Task can_initialize() {
 		var names = new[] { "can_initialize" };
 		var initializer = new MockExistenceFilterInitializer(names);
-		Sut.Initialize(initializer, 0);
+		await Sut.Initialize(initializer, 0, CancellationToken.None);
 
 		foreach (var name in names)
 			Assert.True(Sut.MightContain(name));

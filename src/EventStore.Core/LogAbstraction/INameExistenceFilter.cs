@@ -2,11 +2,13 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.LogAbstraction;
 
 public interface INameExistenceFilter : IExistenceFilterReader<string>, IDisposable {
-	void Initialize(INameExistenceFilterInitializer source, long truncateToPosition);
+	ValueTask Initialize(INameExistenceFilterInitializer source, long truncateToPosition, CancellationToken token);
 	void TruncateTo(long checkpoint);
 	void Verify(double corruptionThreshold);
 	void Add(string name);

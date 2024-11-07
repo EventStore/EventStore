@@ -156,11 +156,11 @@ public class StreamExistenceFilter :
 		}
 	}
 
-	public void Initialize(INameExistenceFilterInitializer source, long truncateToPosition) {
+	public async ValueTask Initialize(INameExistenceFilterInitializer source, long truncateToPosition, CancellationToken token) {
 		Log.Debug("{filterName} rebuilding started from checkpoint: {checkpoint:N0} (0x{checkpoint:X}).",
 			_filterName, CurrentCheckpoint, CurrentCheckpoint);
 		var startTime = DateTime.UtcNow;
-		source.Initialize(this, truncateToPosition);
+		await source.Initialize(this, truncateToPosition, token);
 		Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 			_filterName, _addedSinceLoad, DateTime.UtcNow - startTime);
 		Interlocked.Exchange(ref _initialized, 1);

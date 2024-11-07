@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
@@ -17,9 +18,9 @@ public class
 	private readonly long _logPosition = 2000;
 
 	[OneTimeSetUp]
-	public override void TestFixtureSetUp() {
+	public override Task TestFixtureSetUp() {
 		ReplicationCheckpoint = new InMemoryCheckpoint(100);
-		base.TestFixtureSetUp();
+		return base.TestFixtureSetUp();
 	}
 	public override void Given() { }
 	public override void When() {
@@ -28,7 +29,7 @@ public class
 		ReplicationCheckpoint.Flush();
 		Service.Handle(new ReplicationTrackingMessage.ReplicatedTo(_logPosition - 1));
 	}
-	
+
 	[Test]
 	public void commit_replicated_message_should_not_have_been_published() {
 		Assert.AreEqual(0, CommitReplicatedMgs.Count);

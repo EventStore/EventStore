@@ -9,32 +9,26 @@ namespace EventStore.Licensing.Tests;
 
 public class LicenseSummaryTests {
 	[Fact]
-	public void can_export() {
+	public void can_export_claims() {
 		var r = Random.Shared;
 		var sut = new LicenseSummary(
 			licenseId: "license123",
 			company: "company",
 			isTrial: r.Next(2) == 0,
-			isExpired: r.Next(2) == 0,
+			expiry: DateTimeOffset.Now + TimeSpan.FromHours(1),
 			isValid: r.Next(2) == 0,
-			isFloating: r.Next(2) == 0,
-			daysRemaining: r.Next(123),
-			startDate: new DateTime(2024, 4, 15),
 			notes: "some notes");
 
 		var exported = new Dictionary<string, object>();
-		sut.Export(exported);
+		sut.ExportClaims(exported);
 
-		Assert.Equal(9, exported.Keys.Count);
+		Assert.Equal(6, exported.Keys.Count);
 
 		Assert.Equal(sut.LicenseId, exported["licenseId"]);
 		Assert.Equal(sut.Company, exported["company"]);
 		Assert.Equal(sut.IsTrial, exported["isTrial"]);
-		Assert.Equal(sut.IsExpired, exported["isExpired"]);
+		Assert.Equal(sut.ExpiryUnixTimeSeconds, exported["expiryUnixTimeSeconds"]);
 		Assert.Equal(sut.IsValid, exported["isValid"]);
-		Assert.Equal(sut.IsFloating, exported["isFloating"]);
-		Assert.Equal(sut.DaysRemaining, exported["daysRemaining"]);
-		Assert.Equal(sut.StartDate, exported["startDate"]);
 		Assert.Equal(sut.Notes, exported["notes"]);
 	}
 
@@ -42,16 +36,13 @@ public class LicenseSummaryTests {
 	public void exposes_properties() {
 		var props = LicenseSummary.Properties;
 
-		Assert.Equal(9, props.Count);
+		Assert.Equal(6, props.Count);
 
 		Assert.Contains("licenseId", props);
 		Assert.Contains("company", props);
 		Assert.Contains("isTrial", props);
-		Assert.Contains("isExpired", props);
+		Assert.Contains("expiryUnixTimeSeconds", props);
 		Assert.Contains("isValid", props);
-		Assert.Contains("isFloating", props);
-		Assert.Contains("daysRemaining", props);
-		Assert.Contains("startDate", props);
 		Assert.Contains("notes", props);
 	}
 }

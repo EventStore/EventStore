@@ -3,6 +3,9 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext;
 using EventStore.Core.LogAbstraction;
 using StreamId = System.UInt32;
 
@@ -15,12 +18,15 @@ class MockNameLookup : INameLookup<StreamId> {
 		_dict = dict;
 	}
 
-	public bool TryGetLastValue(out StreamId last) {
-		last = _dict.Count != 0 ? _dict.Keys.Max() : 0;
-		return _dict.Count != 0;
+	public ValueTask<Optional<StreamId>> TryGetLastValue(CancellationToken token) {
+		return new(_dict.Count > 0
+			? _dict.Keys.Max()
+			: Optional.None<StreamId>());
 	}
 
-	public bool TryGetName(StreamId key, out string name) {
-		return _dict.TryGetValue(key, out name);
+	public ValueTask<string> LookupName(StreamId key, CancellationToken token) {
+		return new(_dict.TryGetValue(key, out var name)
+			? name
+			: null);
 	}
 }

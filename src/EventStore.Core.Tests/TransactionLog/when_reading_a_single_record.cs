@@ -41,19 +41,19 @@ public class when_reading_a_single_record<TLogFormat, TStreamId> : Specification
 		for (int i = 0; i < RecordsCount; ++i) {
 			if (i > 0 && i % 3 == 0) {
 				pos = i / 3 * _db.Config.ChunkSize;
-				chunk.Complete();
+				await chunk.Complete(CancellationToken.None);
 				chunk = await _db.Manager.AddNewChunk(CancellationToken.None);
 			}
 
 			_records[i] = LogRecord.SingleWrite(recordFactory, pos,
 				Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, eventTypeId,
 				new byte[1200], new byte[] { 5, 7 });
-			_results[i] = chunk.TryAppend(_records[i]);
+			_results[i] = await chunk.TryAppend(_records[i], CancellationToken.None);
 
 			pos += _records[i].GetSizeWithLengthPrefixAndSuffix();
 		}
 
-		chunk.Flush();
+		await chunk.Flush(CancellationToken.None);
 		_db.Config.WriterCheckpoint.Write((RecordsCount / 3) * _db.Config.ChunkSize +
 										  _results[RecordsCount - 1].NewPosition);
 		_db.Config.WriterCheckpoint.Flush();
@@ -85,13 +85,13 @@ public class when_reading_a_single_record<TLogFormat, TStreamId> : Specification
 	}
 
 	[Test]
-	public void all_records_can_be_read() {
+	public async Task all_records_can_be_read() {
 		var reader = GetTFChunkReader(0);
 
 		RecordReadResult res;
 		for (var i = 0; i < RecordsCount; i++) {
 			var rec = _records[i];
-			res = reader.TryReadAt(rec.LogPosition, couldBeScavenged: true);
+			res = await reader.TryReadAt(rec.LogPosition, couldBeScavenged: true, CancellationToken.None);
 
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(rec, res.LogRecord);

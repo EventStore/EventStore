@@ -1,6 +1,6 @@
 ---
 title: Clustering
-order: 4
+order: 3
 ---
 
 # Highly-available cluster
@@ -8,7 +8,7 @@ order: 4
 EventStoreDB allows you to run more than one node in a cluster for high availability.
 
 ::: info Cluster member authentication
-EventStoreDB starts in secure mode by default, which requires configuration [settings for certificates](security.md#certificates-configuration).
+EventStoreDB starts in secure mode by default, which requires configuration [settings for certificates](../security/protocol-security.md#certificates-configuration).
 Cluster members authenticate each other using the certificate Common Name. All the cluster nodes must have the same common name in their certificates.
 :::
 
@@ -90,7 +90,7 @@ You also need to have the `DiscoverViaDns` option to be set to `true` but it is 
 
 It will be used only if the cluster has more than one node. You must set the `ClusterDns` setting to a proper DNS name.
 
-When using DNS for cluster gossip, you might need to set the `GossipPort` setting to the HTTP port if the external HTTP port setting is not set to `2113` default port. Refer to [gossip port](#gossip-port) option documentation to learn more.
+When using DNS for cluster gossip, you might need to set the `GossipPort` setting to the HTTP port if the external node port setting is not set to `2113` default port. Refer to [gossip port](#gossip-port) option documentation to learn more.
 
 ### Cluster with gossip seeds
 
@@ -108,7 +108,7 @@ The setting accepts a comma-separated list of IP addresses or host names with th
 
 EventStoreDB uses a quorum-based replication model. When working normally, a cluster has one node known as a leader, and the remaining nodes are followers. The leader node is responsible for coordinating writes while it is the leader. Cluster nodes use a consensus algorithm to determine which node should be the leader and which should be followers. EventStoreDB bases the decision as to which node should be the leader on a number of factors.
 
-For a cluster node to have this information available to them, the nodes gossip with other nodes in the cluster. Gossip runs over HTTP interfaces of cluster nodes.
+For a cluster node to have this information available to them, the nodes gossip with other nodes in the cluster. Gossip runs over the HTTP interface of the cluster nodes.
 
 The gossip protocol configuration can be changed using the settings listed below. Pay attention to the settings related to time, like intervals and timeouts, when running in a cloud environment.
 
@@ -117,7 +117,7 @@ The gossip protocol configuration can be changed using the settings listed below
 The gossip port is used for constructing the URL for making a gossip request to other nodes that are discovered via DNS. It is not used when using gossip seeds, because in that case the list contains IP addresses and the port.
 
 ::: warning
-Normally, the cluster gossip port is the same as the HTTP port, so you don't need to change this setting.
+Normally, the cluster gossip port is the same as the node port, so you don't need to change this setting.
 :::
 
 | Format               | Syntax                           |
@@ -126,7 +126,7 @@ Normally, the cluster gossip port is the same as the HTTP port, so you don't nee
 | YAML                 | `ClusterGossipPort`              |
 | Environment variable | `EVENTSTORE_CLUSTER_GOSSIP_PORT` |
 
-**Default**: HTTP port
+**Default**: Node port
 
 ### Gossip interval
 
@@ -169,22 +169,6 @@ If your cluster network is congested, you might increase the gossip timeout usin
 | Environment variable | `EVENTSTORE_GOSSIP_TIMEOUT_MS` |
 
 **Default**: `2500` (in milliseconds).
-
-### Gossip on single node
-
-You can connect using gossip seeds regardless of whether you have a cluster or not. In the previous versions of EventStoreDB gossip on a single node was disabled. Starting from 21.2 it is enabled by default.
-
-::: warning
-Please note that the `GossipOnSingleNode` option is deprecated and will be removed in a future version. The gossip endpoint is now unconditionally available for any deployment topology.
-:::
-
-| Format               | Syntax                             |
-|:---------------------|:-----------------------------------|
-| Command line         | `--gossip-on-single-node`          |
-| YAML                 | `GossipOnSingleNode`               |
-| Environment variable | `EVENTSTORE_GOSSIP_ON_SINGLE_NODE` |
-
-**Default**: `true`
 
 ### Leader election timeout
 

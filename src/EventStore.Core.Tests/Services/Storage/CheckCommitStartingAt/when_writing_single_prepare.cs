@@ -19,9 +19,9 @@ public class when_writing_single_prepare<TLogFormat, TStreamId> : ReadIndexTestS
 	}
 
 	[Test]
-	public void check_commmit_should_return_ok_decision() {
-		var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare.LogPosition,
-			WriterCheckpoint.ReadNonFlushed());
+	public async Task check_commmit_should_return_ok_decision() {
+		var res = await ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare.LogPosition,
+			WriterCheckpoint.ReadNonFlushed(), CancellationToken.None);
 
 		var streamId = _logFormat.StreamIds.LookupValue("ES");
 

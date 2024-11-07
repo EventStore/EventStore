@@ -1,22 +1,20 @@
 ---
 title: Networking
-order: 3
+order: 2
 ---
 
 EventStoreDB provides two interfaces: 
-- HTTP(S) for gRPC communication and REST APIs
-- TCP for cluster replication (internal)
+- HTTP(S) for gRPC communication and REST APIs (node)
+- TCP for cluster replication (replication)
 
 Nodes in the cluster replicate with each other using the TCP protocol, but use gRPC for [discovering other cluster nodes](cluster.md#discovering-cluster-members).
-
-Server nodes separate internal and external TCP communication explicitly, but use a single HTTP binding. Replication between the cluster nodes is considered internal, and all the TCP clients that connect to the database are external. EventStoreDB allows you to separate network configurations for internal and external communication. For example, you can use different network interfaces on the node. All the internal communication can go over the isolated private network, but access for external clients can be configured on another interface, which is connected to a more open network. You can set restrictions on those external interfaces to make your deployment more secure.
 
 For gRPC and HTTP, there's no internal vs external separation of traffic.
 
 ## HTTP configuration
 
 HTTP is the primary protocol for EventStoreDB. It is used in gRPC communication and HTTP APIs (management, gossip and diagnostics).
-The HTTP endpoint always binds to the IP address configured in the `NodeIp` setting (previously referred to as `ExtIp`).
+The HTTP endpoint always binds to the IP address configured in the `NodeIp` setting (previously `ExtIp` setting).
 
 | Format               | Syntax               |
 |:---------------------|:---------------------|
@@ -27,10 +25,10 @@ The HTTP endpoint always binds to the IP address configured in the `NodeIp` sett
 When the `NodeIp` setting is not provided, EventStoreDB will use the first available non-loopback address. You can also bind HTTP to all available interfaces using `0.0.0.0` as the setting value. If you do that, you'd need to configure the `NodeHostAdvertiseAs` (previously `ExtHostAdvertiseAs`) setting (read more [here](#network-address-translation)), since `0.0.0.0` is not a valid IP address to connect from the outside world.
 
 ::: warning
-Please note that the `ExtIp` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `NodeIp` parameter instead.
+Please note that the `ExtIp` setting has been removed as of version 25.2.0, use the `NodeIp` setting instead.
 :::
 
-The default HTTP port is `2113`. Depending on the [security settings](security.md) of the node, it either responds over plain HTTP or via HTTPS. There is no HSTS redirect, so if you try reaching a secure node via HTTP, you can get an empty response.
+The default HTTP port is `2113`. Depending on the [security settings](../security/README.md) of the node, it either responds over plain HTTP or via HTTPS. There is no HSTS redirect, so if you try reaching a secure node via HTTP, you can get an empty response.
 
 You can change the HTTP port using the `NodePort` setting (previously `HttpPort` setting) :
 
@@ -43,7 +41,7 @@ You can change the HTTP port using the `NodePort` setting (previously `HttpPort`
 **Default**: `2113`
 
 ::: warning
-Please note that the `HttpPort` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `NodePort` parameter instead.
+Please note that the `HttpPort` setting has been removed as of version 25.2.0, use the `NodePort` setting instead.
 :::
 
 If your network setup requires any kind of IP address, DNS name and port translation for internal or external communication, you can use available [address translation](#network-address-translation) settings.
@@ -181,7 +179,7 @@ By default, EventStoreDB binds its internal networking on the loopback interface
 If you keep this setting to its default value, cluster nodes won't be able to talk to each other.
 
 ::: warning
-Please note that the `IntIp` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `ReplicationIp` parameter instead.
+Please note that the `IntIp` setting has been removed as of version 25.2.0, use the `ReplicationIp` setting instead.
 :::
 
 By default, EventStoreDB uses port `1112` for internal TCP. You can change this by specifying the `ReplicationPort` setting (previously `IntTcpPort` setting).
@@ -195,20 +193,8 @@ By default, EventStoreDB uses port `1112` for internal TCP. You can change this 
 **Default**: `1112`
 
 ::: warning
-Please note that the `IntTcpPort` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `ReplicationPort` parameter instead.
+Please note that the `IntTcpPort` setting has been removed as of version 25.2.0, use the `ReplicationPort` setting instead.
 :::
-
-### Security
-
-When the node is secured (by default), all the TCP traffic will use TLS. You can disable TLS for TCP internally and externally using the settings described below.
-
-| Format               | Syntax                                |
-|:---------------------|:--------------------------------------|
-| Command line         | `--disable-internal-tcp-tls`          |
-| YAML                 | `DisableInternalTcpTls`               |
-| Environment variable | `EVENTSTORE_DISABLE_INTERNAL_TCP_TLS` |
-
-**Default**: `false`
 
 If your network setup requires any kind of IP address, DNS name and port translation for internal communication, you can use available [address translation](#network-address-translation) settings.
 
@@ -235,7 +221,7 @@ By default, a cluster node will advertise itself using `NodeIp` and `NodePort`. 
 | Environment variable | `EVENTSTORE_NODE_PORT_ADVERTISE_AS` | 
 
 ::: warning
-Please note that the `HttpPortAdvertiseAs` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `NodePortAdvertiseAs` parameter instead.
+Please note that the `HttpPortAdvertiseAs` setting has been removed as of version 25.2.0, use the `NodePortAdvertiseAs` setting instead.
 :::
 
 If you want the node to advertise itself using the hostname rather than its IP address, use the `NodeHostAdvertiseAs` setting (previously `ExtHostAdvertiseAs` setting).
@@ -247,7 +233,7 @@ If you want the node to advertise itself using the hostname rather than its IP a
 | Environment variable | `EVENTSTORE_NODE_HOST_ADVERTISE_AS` | 
 
 ::: warning
-Please note that the `ExtHostAdvertiseAs` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `NodeHostAdvertiseAs` parameter instead.
+Please note that the `ExtHostAdvertiseAs` setting has been removed as of version 25.2.0, use the `NodeHostAdvertiseAs` setting instead.
 :::
 
 ### TCP translations
@@ -261,7 +247,7 @@ TCP ports used for replication can be advertised using custom values:
 | Environment variable | `EVENTSTORE_REPLICATION_TCP_PORT_ADVERTISE_AS` | 
 
 ::: warning
-Please note that the `IntTcpPortAdvertiseAs` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `ReplicationTcpPortAdvertiseAs` and `NodeTcpPortAdvertiseAs` parameters instead, respectively.
+Please note that the `IntTcpPortAdvertiseAs` setting has been removed as of version 25.2.0, use the `ReplicationTcpPortAdvertiseAs` and `NodeTcpPortAdvertiseAs` setting instead, respectively.
 :::
 
 If you want to change how the node TCP address is advertised internally, use the `ReplicationHostAdvertiseAs` setting (previously `IntHostAdvertiseAs` setting). You can use an IP address or a hostname.
@@ -273,7 +259,7 @@ If you want to change how the node TCP address is advertised internally, use the
 | Environment variable | `EVENTSTORE_REPLICATION_HOST_ADVERTISE_AS` | 
 
 ::: warning
-Please note that the `IntHostAdvertiseAs` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `ReplicationHostAdvertiseAs` parameter instead.
+Please note that the `IntHostAdvertiseAs` setting has been removed as of version 25.2.0, use the `ReplicationHostAdvertiseAs` setting instead.
 :::
 
 ### Advertise to clients
@@ -299,7 +285,7 @@ Specify the advertised HTTP(S) port (previously `AdvertiseHttpPortToClientAs` se
 | Environment variable | `EVENTSTORE_ADVERTISE_NODE_PORT_TO_CLIENT_AS` |
 
 ::: warning
-Please note that the `AdvertiseHttpPortToClientAs` parameter has been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `AdvertiseNodePortToClientAs` parameter instead.
+Please note that the `AdvertiseHttpPortToClientAs` setting has been removed as of version 25.2.0, use the `AdvertiseNodePortToClientAs` setting instead.
 :::
 
 ## Heartbeat timeouts
@@ -338,7 +324,7 @@ Replication/Internal TCP heartbeat (between cluster nodes):
 **Default**: `700` (ms)
 
 ::: warning
-Please note that the `IntTcpHeartbeatInterval` and `IntTcpHeartbeatTimeout` parameters have been deprecated as of version 23.10.0 and will be removed in future versions. It is recommended to use the `ReplicationHeartbeatInterval` and `ReplicationHeartbeatTimeout` parameters instead, respectively.
+Please note that the `IntTcpHeartbeatInterval` and `IntTcpHeartbeatTimeout` setting have been removed as of version 25.2.0, use the `ReplicationHeartbeatInterval` and `ReplicationHeartbeatTimeout` setting instead, respectively.
 :::
 
 ### gRPC heartbeats
@@ -404,7 +390,7 @@ Once enabled, the server will log a message similar to the one below:
 [11212, 1,18:44:34.070,INF] "TcpApi" "24.6.0.0" plugin enabled.
 ```
 
-#### Other parameters
+#### Other setting
 
 The following options can be set in the json configuration:
 

@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -20,9 +21,9 @@ public class TFChunkWriter : ITransactionFileWriter {
 		get { return _currentChunk; }
 	}
 
-	public bool NeedsNewChunk =>
-		CurrentChunk == null || // new database
-		CurrentChunk.IsReadOnly; // database is at a chunk boundary
+	public bool NeedsNewChunk => CurrentChunk is
+		null or					// new database
+		{ IsReadOnly: true };	// database is at a chunk boundary
 
 	private readonly TFChunkDb _db;
 	private readonly ICheckpoint _writerCheckpoint;
@@ -61,19 +62,23 @@ public class TFChunkWriter : ITransactionFileWriter {
 	}
 
 	public async ValueTask<(bool, long)> Write(ILogRecord record, CancellationToken token) {
+		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
+		// There is no way to rollback it on cancellation
+		token.ThrowIfCancellationRequested();
+		token = CancellationToken.None;
+
 		OpenTransaction();
 
-		if (!TryWriteToTransaction(record, out var newPos)) {
-			CompleteChunkInTransaction();
+		if (await WriteToTransaction(record, token) is not { } result) {
+			await CompleteChunkInTransaction(token);
 			await AddNewChunk(token: token);
 			CommitTransaction();
-			Flush();
-			newPos = _nextRecordPosition;
-			return (false, newPos);
+			await Flush(token);
+			return (false, _nextRecordPosition);
 		}
 
 		CommitTransaction();
-		return (true, newPos);
+		return (true, result);
 	}
 
 	public void OpenTransaction() {
@@ -83,21 +88,10 @@ public class TFChunkWriter : ITransactionFileWriter {
 		_inTransaction = true;
 	}
 
-	public void WriteToTransaction(ILogRecord record, out long newPos) {
-		if (!TryWriteToTransaction(record, out newPos))
-			throw new InvalidOperationException("The transaction does not fit in the current chunk.");
-	}
-
-	public bool TryWriteToTransaction(ILogRecord record, out long newPos) {
-		var result = _currentChunk.TryAppend(record);
-		if (!result.Success) {
-			newPos = default;
-			return false;
-		}
-
-		_nextRecordPosition = result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition;
-		newPos = _nextRecordPosition;
-		return true;
+	public async ValueTask<long?> WriteToTransaction(ILogRecord record, CancellationToken token) {
+		return await _currentChunk.TryAppend(record, token) is { Success: true } result
+			? _nextRecordPosition = result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition
+			: null;
 	}
 
 	public void CommitTransaction() {
@@ -120,16 +114,21 @@ public class TFChunkWriter : ITransactionFileWriter {
 			: _db.Manager.AddNewChunk(chunkHeader, transformHeader, chunkSize!.Value, token));
 	}
 
-	private void CompleteChunkInTransaction() {
-		_currentChunk.Complete();
+	private async ValueTask CompleteChunkInTransaction(CancellationToken token) {
+		await _currentChunk.Complete(token);
 		_nextRecordPosition = _currentChunk.ChunkHeader.ChunkEndPosition;
 	}
 
-	public void CompleteChunk() {
+	public async ValueTask CompleteChunk(CancellationToken token) {
+		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
+		// There is no way to rollback it on cancellation
+		token.ThrowIfCancellationRequested();
+		token = CancellationToken.None;
+
 		OpenTransaction();
-		CompleteChunkInTransaction();
+		await CompleteChunkInTransaction(token);
 		CommitTransaction();
-		Flush();
+		await Flush(token);
 	}
 
 	private async ValueTask CompleteReplicatedRawChunkInTransaction(TFChunk.TFChunk rawChunk,
@@ -142,10 +141,15 @@ public class TFChunkWriter : ITransactionFileWriter {
 	}
 
 	public async ValueTask CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk, CancellationToken token) {
+		// Workaround: The transaction cannot be canceled in a middle, it should be atomic.
+		// There is no way to rollback it on cancellation
+		token.ThrowIfCancellationRequested();
+		token = CancellationToken.None;
+
 		OpenTransaction();
 		await CompleteReplicatedRawChunkInTransaction(rawChunk, token);
 		CommitTransaction();
-		Flush();
+		await Flush(token);
 	}
 
 	private static void VerifyChunkNumberLimits(int chunkNumber) {
@@ -165,18 +169,15 @@ public class TFChunkWriter : ITransactionFileWriter {
 		}
 	}
 
-	public void Dispose() {
-		Close();
-	}
+	public ValueTask DisposeAsync() => Flush(CancellationToken.None);
 
-	public void Close() {
-		Flush();
-	}
-
-	public void Flush() {
-		if (_currentChunk == null) // the last chunk allocation failed
+	public async ValueTask Flush(CancellationToken token) {
+		Debug.Assert(HasOpenTransaction() is false);
+		
+		if (_currentChunk is null) // the last chunk allocation failed
 			return;
-		_currentChunk.Flush();
+
+		await _currentChunk.Flush(token);
 		_writerCheckpoint.Flush();
 	}
 }

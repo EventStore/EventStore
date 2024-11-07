@@ -8,6 +8,8 @@ order: 2
 
 * Connectors:
     * Kafka
+    * MongoDB
+    * RabbitMQ
     * HTTP
 * AutoScavenge: Schedule and execute scavenges automatically across a cluster.
 * Stream Policy: Define stream access policies based on stream prefixes, rather than using stream ACLs.
@@ -22,7 +24,7 @@ You can use the HTTP sink without a license, but a license is required for all o
 
 Refer to the [documentation](../features/connectors/quickstart.md) for instructions on setting up and configuring connectors and sinks.
 
-#### Kafka Sink
+#### Kafka sink
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
@@ -33,7 +35,29 @@ features to handle transient errors.
 
 Refer to the [documentation](../features/connectors/sinks/kafka.md) for instructions on setting up a Kafka sink.
 
-#### HTTP Sink
+#### MongoDB sink
+
+<Badge type="info" vertical="middle" text="License Required"/>
+
+The MongoDB sink pulls messages from an EventStoreDB stream and stores the messages to a collection.
+
+It supports data transformation to allow you to modify event data or metadata, or allow you to add additional headers before sending messages to the MongoDB collection. It also supports at-least-once delivery and resilience features to handle transient errors.
+
+Refer to the [documentation](../features/connectors/sinks/mongo.md) for instructions on setting up a MongoDB sink.
+
+#### RabbitMQ sink
+
+<Badge type="info" vertical="middle" text="License Required"/>
+
+The RabbitMQ sink pulls messages from EventStoreDB and sends the messages to a RabbitMQ exchange using a specified routing key.
+
+It efficiently handles message delivery by abstracting the complexities of RabbitMQ's exchange and queue management, ensuring that messages are routed to the appropriate destinations based on the provided routing key.
+
+This sink is designed for high reliability and supports graceful error handling and recovery mechanisms to ensure consistent message delivery in a production environment.
+
+Refer to the [documentation](../features/connectors/sinks/rabbitmq.md) for instructions on setting up a RabbitMQ sink.
+
+#### HTTP sink
 
 The HTTP sink allows for integration between EventStoreDB and external
 APIs over HTTP or HTTPS.
@@ -56,7 +80,7 @@ Refer to the [documentation](../features/connectors/sinks/http.md) for instructi
 
 The Autoscavenge feature automatically schedules _cluster scavenges_ which are composed of multiple _node scavenges_. Only one node scavenge can be executed at a time in the cluster. The Autoscavenge feature allows to schedule said _cluster scavenges_.
 
-This feature is disabled by default.
+The autoscavenge feature requires a license to use. EventStoreDB will only start auto-scavenging once an administrator has set up a schedule for running cluster scavenges.
 
 Refer to the [documentation](../operations/auto-scavenge.md) for instructions on how to enable and use this feature.
 
@@ -68,9 +92,7 @@ Define stream access policies in one place based on stream prefixes, rather than
 
 Stream access policies can be created to grant users or groups read, write, delete, or metadata access; and then these policies can be applied to streams based on their prefix, or to system or user streams in general.
 
-The Stream Policy feature requires a license to use, and is disabled by default.
-
-Refer to the [documentation](../configuration/security.md#stream-policy-authorization) for more information about using and configuring this feature.
+The Stream Policy feature requires a license to use. Refer to the [documentation](../security/user-authorization.md#stream-policy-authorization) for more information about using and configuring this feature.
 
 ### Encryption-at-rest
 
@@ -83,7 +105,7 @@ This feature aims to protect against an attacker who obtains access to the physi
 The Encryption-at-rest feature requires a license to use, and is disabled by default.
 If Encryption-at-rest is enabled, it is not possible to roll back to an unencrypted database after a new chunk has been created, or if a chunk has been scavenged.
 
-Refer to the [documentation](../configuration/security.md#encryption-at-rest) for more information about using and configuring this feature.
+Refer to the [documentation](../security/README.md#encryption-at-rest) for more information about using and configuring this feature.
 
 ## Event Store License v2
 
@@ -115,4 +137,4 @@ Refer to the [documentation](../quick-start/installation.md#license-keys) for mo
 
 ### EventStoreDB binaries have moved to Cloudsmith
 
-All EventStoreDB binaries are now available on [Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore-preview/). In addition, the RedHat binaries which were previously commercial-only can now be accessed by all users of EventStoreDB.
+All EventStoreDB binaries are now available on [Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore/). In addition, the RedHat binaries which were previously commercial-only can now be accessed by all users of EventStoreDB.

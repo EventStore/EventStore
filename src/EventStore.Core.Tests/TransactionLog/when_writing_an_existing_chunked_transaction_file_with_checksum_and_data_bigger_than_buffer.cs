@@ -65,7 +65,7 @@ public class
 			metadata: new byte[] {0x07, 0x17});
 
 		Assert.IsTrue(await writer.Write(record, CancellationToken.None) is (true, _));
-		writer.Close();
+		await writer.DisposeAsync();
 		await db.DisposeAsync();
 
 		Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix() + 137, _checkpoint.Read());

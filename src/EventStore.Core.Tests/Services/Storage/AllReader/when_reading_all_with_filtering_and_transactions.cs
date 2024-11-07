@@ -43,11 +43,12 @@ public class when_reading_all_with_filtering_and_transactions<TLogFormat, TStrea
 			.. ExplicitTransaction(i++, "includedStream9"),
 		]);
 
-		var read = ReadIndex.ReadAllEventsForwardFiltered(
+		var read = await ReadIndex.ReadAllEventsForwardFiltered(
 			pos: new Data.TFPos(0, 0),
 			maxCount: 10,
 			maxSearchWindow: int.MaxValue,
-			eventFilter: EventFilter.StreamName.Prefixes(false, "included"));
+			eventFilter: EventFilter.StreamName.Prefixes(false, "included"),
+			CancellationToken.None);
 
 		Assert.AreEqual(10, read.Records.Count);
 		for (int j = 0; j < 10; j++)

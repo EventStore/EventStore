@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -22,66 +24,56 @@ public class IndexReaderForCalculator<TStreamId> : IIndexReaderForCalculator<TSt
 		_lookupUniqueHashUser = lookupUniqueHashUser;
 	}
 
-	public long GetLastEventNumber(
+	public ValueTask<long> GetLastEventNumber(
 		StreamHandle<TStreamId> handle,
-		ScavengePoint scavengePoint) {
+		ScavengePoint scavengePoint,
+		CancellationToken token) {
 
-		switch (handle.Kind) {
-			case StreamHandle.Kind.Hash:
+		return handle.Kind switch {
+			StreamHandle.Kind.Hash =>
 				// tries as far as possible to use the index without consulting the log to fetch the last event number
-				return _readIndex.GetStreamLastEventNumber_NoCollisions(
-					handle.StreamHash,
-					_lookupUniqueHashUser,
-					scavengePoint.Position);
-			case StreamHandle.Kind.Id:
+				_readIndex.GetStreamLastEventNumber_NoCollisions(handle.StreamHash, _lookupUniqueHashUser,
+					scavengePoint.Position, token),
+			StreamHandle.Kind.Id =>
 				// uses the index and the log to fetch the last event number
-				return _readIndex.GetStreamLastEventNumber_KnownCollisions(
-					handle.StreamId,
-					scavengePoint.Position);
-			default:
-				throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
-		}
+				_readIndex.GetStreamLastEventNumber_KnownCollisions(handle.StreamId, scavengePoint.Position, token),
+			_ => ValueTask.FromException<long>(new ArgumentOutOfRangeException(nameof(handle), handle, null))
+		};
 	}
 
-	public IndexReadEventInfoResult ReadEventInfoForward(
+	public ValueTask<IndexReadEventInfoResult> ReadEventInfoForward(
 		StreamHandle<TStreamId> handle,
 		long fromEventNumber,
 		int maxCount,
-		ScavengePoint scavengePoint) {
+		ScavengePoint scavengePoint,
+		CancellationToken token) {
 
-		switch (handle.Kind) {
-			case StreamHandle.Kind.Hash:
+		return handle.Kind switch {
+			StreamHandle.Kind.Hash =>
 				// uses the index only
-				return _readIndex.ReadEventInfoForward_NoCollisions(
-					handle.StreamHash,
-					fromEventNumber,
-					maxCount,
-					scavengePoint.Position);
-			case StreamHandle.Kind.Id:
+				_readIndex.ReadEventInfoForward_NoCollisions(handle.StreamHash, fromEventNumber, maxCount,
+					scavengePoint.Position, token),
+			StreamHandle.Kind.Id =>
 				// uses log to check for hash collisions
-				return _readIndex.ReadEventInfoForward_KnownCollisions(
-					handle.StreamId,
-					fromEventNumber,
-					maxCount,
-					scavengePoint.Position);
-			default:
-				throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
-		}
+				_readIndex.ReadEventInfoForward_KnownCollisions(handle.StreamId, fromEventNumber, maxCount,
+					scavengePoint.Position, token),
+			_ => ValueTask.FromException<IndexReadEventInfoResult>(
+				new ArgumentOutOfRangeException(nameof(handle), handle, null))
+		};
 	}
 
-	public bool IsTombstone(long logPosition) {
-		using (var reader = _tfReaderFactory()) {
-			var result = reader.TryReadAt(logPosition, couldBeScavenged: true);
+	public async ValueTask<bool> IsTombstone(long logPosition, CancellationToken token) {
+		using var reader = _tfReaderFactory();
+		var result = await reader.TryReadAt(logPosition, couldBeScavenged: true, token);
 
-			if (!result.Success)
-				return false;
+		if (!result.Success)
+			return false;
 
-			if (result.LogRecord is not IPrepareLogRecord prepare)
-				throw new Exception(
-					$"Incorrect type of log record {result.LogRecord.RecordType}, " +
-					$"expected Prepare record.");
+		if (result.LogRecord is not IPrepareLogRecord prepare)
+			throw new Exception(
+				$"Incorrect type of log record {result.LogRecord.RecordType}, " +
+				$"expected Prepare record.");
 
-			return prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete);
-		}
+		return prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete);
 	}
 }

@@ -94,7 +94,7 @@ public abstract class SimpleDbTestScenario<TLogFormat, TStreamId> : Specificatio
 			indexTracker: new IndexTracker.NoOp(),
 			cacheTracker: new CacheHitsMissesTracker.NoOp());
 
-		readIndex.IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
+		await readIndex.IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read(), CancellationToken.None);
 		ReadIndex = readIndex;
 	}
 

@@ -58,7 +58,7 @@ public class ChunkReaderForExecutor<TStreamId> : IChunkReaderForExecutor<TStream
 				yield return true;
 			}
 
-			result = _chunk.TryReadClosestForward(result.NextPosition);
+			result = await _chunk.TryReadClosestForward(result.NextPosition, token);
 		}
 	}
 }

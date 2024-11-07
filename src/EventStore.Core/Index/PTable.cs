@@ -15,6 +15,7 @@ using Range = EventStore.Core.Data.Range;
 using EventStore.Core.DataStructures.ProbabilisticFilter;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 using MD5 = EventStore.Core.Hashing.MD5;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 
@@ -551,56 +552,50 @@ public partial class PTable : ISearchTable, IDisposable {
 		return true;
 	}
 
-	public bool TryGetLatestEntry(
+	public async ValueTask<IndexEntry?> TryGetLatestEntry(
 		ulong stream,
 		long beforePosition,
-		Func<IndexEntry, bool> isForThisStream,
-		out IndexEntry entry) {
+		Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream,
+		CancellationToken token) {
 
 		Ensure.Nonnegative(beforePosition, nameof(beforePosition));
 		var streamHash = GetHash(stream);
-
-		entry = TableIndex.InvalidIndexEntry;
 
 		var startKey = BuildKey(streamHash, 0);
 		var endKey = BuildKey(streamHash, long.MaxValue);
 
 		if (startKey.GreaterThan(_maxEntry) || endKey.SmallerThan(_minEntry))
-			return false;
+			return null;
 
 		if (!MightContainStream(streamHash))
-			return false;
+			return null;
 
 		var workItem = GetWorkItem();
 		try {
 			var recordRange = LocateRecordRange(endKey, startKey, out var lowBoundsCheck, out var highBoundsCheck);
 
 			try {
-				if (!TryGetLatestEntryFast(
-						streamHash,
-						beforePosition,
-						isForThisStream,
-						recordRange,
-						lowBoundsCheck,
-						highBoundsCheck,
-						workItem,
-						out entry))
-					return false;
+				return await TryGetLatestEntryFast(
+					streamHash,
+					beforePosition,
+					isForThisStream,
+					recordRange,
+					lowBoundsCheck,
+					highBoundsCheck,
+					workItem,
+					token);
 			} catch (HashCollisionException) {
 				// fall back to linear search if there's a hash collision
-				if (!TryGetLatestEntrySlow(
-						streamHash,
-						beforePosition,
-						isForThisStream,
-						recordRange,
-						lowBoundsCheck,
-						highBoundsCheck,
-						workItem,
-						out entry))
-					return false;
+				return await TryGetLatestEntrySlow(
+					streamHash,
+					beforePosition,
+					isForThisStream,
+					recordRange,
+					lowBoundsCheck,
+					highBoundsCheck,
+					workItem,
+					token);
 			}
-
-			return true;
 		} finally {
 			ReturnWorkItem(workItem);
 		}
@@ -608,15 +603,15 @@ public partial class PTable : ISearchTable, IDisposable {
 
 	// linearly search the whole range for the entry with the greatest position that
 	// is for this stream and before the beforePosition.
-	private bool TryGetLatestEntrySlow(
+	private async ValueTask<IndexEntry?> TryGetLatestEntrySlow(
 		StreamHash stream,
 		long beforePosition,
-		Func<IndexEntry, bool> isForThisStream,
+		Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream,
 		Range recordRange,
 		IndexEntryKey lowBoundsCheck,
 		IndexEntryKey highBoundsCheck,
 		WorkItem workItem,
-		out IndexEntry entry) {
+		CancellationToken token) {
 
 		long maxBeforePosition = long.MinValue;
 		IndexEntry maxEntry = default;
@@ -640,31 +635,25 @@ public partial class PTable : ISearchTable, IDisposable {
 			if (candidateEntry.Stream == stream.Hash &&
 				candidateEntry.Position < beforePosition &&
 				candidateEntry.Position > maxBeforePosition &&
-				isForThisStream(candidateEntry)) {
+				await isForThisStream(candidateEntry, token)) {
 
 				maxBeforePosition = candidateEntry.Position;
 				maxEntry = candidateEntry;
 			}
 		}
 
-		if (maxBeforePosition != long.MinValue) {
-			entry = maxEntry;
-			return true;
-		}
-
-		entry = TableIndex.InvalidIndexEntry;
-		return false;
+		return maxBeforePosition is not long.MinValue ? maxEntry : null;
 	}
 
-	private bool TryGetLatestEntryFast(
+	private async ValueTask<IndexEntry?> TryGetLatestEntryFast(
 		StreamHash stream,
 		long beforePosition,
-		Func<IndexEntry,bool> isForThisStream,
+		Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream,
 		Range recordRange,
 		IndexEntryKey lowBoundsCheck,
 		IndexEntryKey highBoundsCheck,
 		WorkItem workItem,
-		out IndexEntry entry) {
+		CancellationToken token) {
 
 		var startKey = BuildKey(stream, 0);
 		var endKey = BuildKey(stream, long.MaxValue);
@@ -704,7 +693,7 @@ public partial class PTable : ISearchTable, IDisposable {
 				continue;
 			}
 
-			if (!isForThisStream(midpoint))
+			if (!await isForThisStream(midpoint, token))
 				throw new HashCollisionException();
 
 			if (midpoint.Position >= beforePosition) {
@@ -719,24 +708,20 @@ public partial class PTable : ISearchTable, IDisposable {
 		var candidateEntry = ReadEntry(_indexEntrySize, high, workItem, _version);
 
 		// index entry is for a different hash
-		if (candidateEntry.Stream != stream.Hash) {
-			entry = TableIndex.InvalidIndexEntry;
-			return false;
-		}
+		if (candidateEntry.Stream != stream.Hash)
+			return null;
 
 		// index entry is for the correct hash but for a colliding stream
-		if (!isForThisStream(candidateEntry))
+		if (!await isForThisStream(candidateEntry, token))
 			throw new HashCollisionException();
 
 		// index entry is for the correct stream but does not respect the position limit
 		if (candidateEntry.Position >= beforePosition) {
-			entry = TableIndex.InvalidIndexEntry;
-			return false;
+			return null;
 		}
 
 		// index entry is for the correct stream and respects the position limit
-		entry = candidateEntry;
-		return true;
+		return candidateEntry;
 	}
 
 	private bool TryGetLatestEntryNoCache(StreamHash stream, long startNumber, long endNumber, out IndexEntry entry) {
@@ -867,11 +852,11 @@ public partial class PTable : ISearchTable, IDisposable {
 		}
 	}
 
-	public IList<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null) {
+	public IReadOnlyList<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null) {
 		Ensure.Nonnegative(startNumber, "startNumber");
 		Ensure.Nonnegative(endNumber, "endNumber");
 
-		return _lruCache == null
+		return _lruCache is null
 			? GetRangeNoCache(GetHash(stream), startNumber, endNumber, limit)
 			: GetRangeWithCache(GetHash(stream), startNumber, endNumber, limit);
 	}

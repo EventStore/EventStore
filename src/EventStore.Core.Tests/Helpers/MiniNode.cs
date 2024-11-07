@@ -155,9 +155,9 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 					.Build()),
 			}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 				ssl_connections.GetServerCertificate())
-			.WithInternalSecureTcpOn(IntTcpEndPoint)
-			.WithExternalSecureTcpOn(TcpEndPoint)
-			.WithHttpOn(HttpEndPoint);
+			.WithReplicationEndpointOn(IntTcpEndPoint)
+			.WithExternalTcpOn(TcpEndPoint)
+			.WithNodeEndpointOn(HttpEndPoint);
 
 		var inMemConf = new ConfigurationBuilder()
 			.AddInMemoryCollection(new KeyValuePair<string, string>[] {
@@ -170,7 +170,7 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 			}).Build();
 
 		if (advertisedExtHostAddress != null)
-			options = options.AdvertiseHttpHostAs(new DnsEndPoint(advertisedExtHostAddress, advertisedHttpPort));
+			options = options.AdvertiseNodeAs(new DnsEndPoint(advertisedExtHostAddress, advertisedHttpPort));
 
 		options = inMemDb
 			? options.RunInMemory()

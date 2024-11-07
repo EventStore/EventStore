@@ -87,52 +87,52 @@ public class
 	}
 
 	[Test]
-	public void read_one_by_one_returns_survived_records() {
-		var res = ReadIndex.ReadEvent("ES2", 0);
+	public async Task read_one_by_one_returns_survived_records() {
+		var res = await ReadIndex.ReadEvent("ES2", 0, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, res.Result);
 		Assert.AreEqual(_event2, res.Record);
 	}
 
 	[Test]
-	public void there_is_no_previously_scavenged_stream_which_delete_record_was_truncated() {
-		var res = ReadIndex.ReadEvent("ES1", 0);
+	public async Task there_is_no_previously_scavenged_stream_which_delete_record_was_truncated() {
+		var res = await ReadIndex.ReadEvent("ES1", 0, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NoStream, res.Result);
 		Assert.IsNull(res.Record);
 	}
 
 	[Test]
-	public void read_stream_forward_doesnt_return_untouched_records() {
-		var res = ReadIndex.ReadStreamEventsForward("ES2", 0, 100);
+	public async Task read_stream_forward_doesnt_return_untouched_records() {
+		var res = await ReadIndex.ReadStreamEventsForward("ES2", 0, 100, CancellationToken.None);
 		var records = res.Records;
 		Assert.AreEqual(1, records.Length);
 		Assert.AreEqual(_event2, records[0]);
 	}
 
 	[Test]
-	public void read_stream_forward_doesnt_return_truncated_or_scavenged_records_but_returns_stream_created() {
-		var res = ReadIndex.ReadStreamEventsForward("ES1", 0, 100);
+	public async Task read_stream_forward_doesnt_return_truncated_or_scavenged_records_but_returns_stream_created() {
+		var res = await ReadIndex.ReadStreamEventsForward("ES1", 0, 100, CancellationToken.None);
 		var records = res.Records;
 		Assert.AreEqual(0, records.Length);
 	}
 
 	[Test]
-	public void read_stream_backward_doesnt_return_untoucned_records() {
-		var res = ReadIndex.ReadStreamEventsBackward("ES2", -1, 100);
+	public async Task read_stream_backward_doesnt_return_untoucned_records() {
+		var res = await ReadIndex.ReadStreamEventsBackward("ES2", -1, 100, CancellationToken.None);
 		var records = res.Records;
 		Assert.AreEqual(1, records.Length);
 		Assert.AreEqual(_event2, records[0]);
 	}
 
 	[Test]
-	public void read_stream_backward_doesnt_return_truncated_records() {
-		var res = ReadIndex.ReadStreamEventsBackward("ES1", -1, 100);
+	public async Task read_stream_backward_doesnt_return_truncated_records() {
+		var res = await ReadIndex.ReadStreamEventsBackward("ES1", -1, 100, CancellationToken.None);
 		var records = res.Records;
 		Assert.AreEqual(0, records.Length);
 	}
 
 	[Test]
-	public void read_all_forward_returns_only_survived_events() {
-		var res = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100);
+	public async Task read_all_forward_returns_only_survived_events() {
+		var res = await ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, CancellationToken.None);
 		var records = res.EventRecords()
 			.Select(r => r.Event)
 			.ToArray();

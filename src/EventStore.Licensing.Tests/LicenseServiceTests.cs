@@ -2,7 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Plugins.Licensing;
@@ -12,26 +11,23 @@ using Xunit;
 namespace EventStore.Licensing.Tests;
 
 public class LicenseServiceTests {
-	readonly string _publicKey;
-	readonly string _privateKey;
-
-	public LicenseServiceTests() {
-		using var rsa = RSA.Create(512);
-		_publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
-		_privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
-	}
-
 	[Fact]
 	public async Task self_license_is_valid() {
-		var sut = new LicenseService(_publicKey, _privateKey, new FakeLifetime(), new AdHocLicenseProvider(new Exception()));
-		Assert.True(await sut.SelfLicense.ValidateAsync(_publicKey));
+		var sut = new LicenseService(
+			new FakeLifetime(),
+			ex => { },
+			new AdHocLicenseProvider(new Exception()));
+		Assert.True(await sut.SelfLicense.ValidateAsync());
 	}
 
 	[Fact]
 	public async Task current_license_respects_provider() {
-		var licenseProvider = new AdHocLicenseProvider(License.Create(_publicKey, _privateKey));
-		var sut = new LicenseService(_publicKey, _privateKey, new FakeLifetime(), licenseProvider);
-		Assert.True(await sut.CurrentLicense!.ValidateAsync(_publicKey));
+		var licenseProvider = new AdHocLicenseProvider(License.Create([]));
+		var sut = new LicenseService(
+			new FakeLifetime(),
+			ex => { },
+			licenseProvider);
+		Assert.True(await sut.CurrentLicense!.ValidateAsync());
 
 		licenseProvider.LicenseSubject.OnError(new Exception("an error"));
 		Assert.Null(sut.CurrentLicense);
@@ -40,29 +36,33 @@ public class LicenseServiceTests {
 	[Fact]
 	public void can_reject() {
 		var lifetime = new FakeLifetime();
-		var licenseProvider = new AdHocLicenseProvider(License.Create(_publicKey, _privateKey));
-		var sut = new LicenseService(_publicKey, _privateKey, lifetime, licenseProvider);
-		var stopped = false;
-		lifetime.ApplicationStopped.Register(() => stopped = true);
+		var licenseProvider = new AdHocLicenseProvider(License.Create([]));
+		var shutdownRequested = false;
+		var sut = new LicenseService(
+			lifetime,
+			requestShutdown: ex => { shutdownRequested = true; },
+			licenseProvider);
 
 		sut.RejectLicense(new Exception("an error"));
 		lifetime.StartApplication();
 
-		Assert.True(stopped);
+		Assert.True(shutdownRequested);
 	}
 
 	[Fact]
 	public void can_reject_after_startup() {
 		var lifetime = new FakeLifetime();
-		var licenseProvider = new AdHocLicenseProvider(License.Create(_publicKey, _privateKey));
-		var sut = new LicenseService(_publicKey, _privateKey, lifetime, licenseProvider);
-		var stopped = false;
-		lifetime.ApplicationStopped.Register(() => stopped = true);
+		var licenseProvider = new AdHocLicenseProvider(License.Create([]));
+		var shutdownRequested = false;
+		var sut = new LicenseService(
+			lifetime,
+			requestShutdown: ex => { shutdownRequested = true; },
+			licenseProvider);
 
 		lifetime.StartApplication();
 		sut.RejectLicense(new Exception("an error"));
 
-		Assert.True(stopped);
+		Assert.True(shutdownRequested);
 	}
 
 	class FakeLifetime : IHostApplicationLifetime {

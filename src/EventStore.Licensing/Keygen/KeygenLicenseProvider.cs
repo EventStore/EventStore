@@ -15,16 +15,8 @@ namespace EventStore.Licensing.Keygen;
 public class KeygenLicenseProvider : ILicenseProvider {
 	private static readonly ILogger Log = Serilog.Log.ForContext<KeygenLicenseProvider>();
 
-	private readonly string _esdbPublicKey;
-	private readonly string _esdbPrivateKey;
-
 	public KeygenLicenseProvider(
-		string esdbPublicKey,
-		string esdbPrivateKey,
 		IObservable<LicenseInfo> keygenLicenses) {
-
-		_esdbPublicKey = esdbPublicKey;
-		_esdbPrivateKey = esdbPrivateKey;
 
 		// not sure that another subject is the right answer here
 		var licenses = keygenLicenses
@@ -50,24 +42,21 @@ public class KeygenLicenseProvider : ILicenseProvider {
 	// we play it safe and grant a license that allows access to all features, to avoid
 	// technical problems taking down production deployments.
 	// The primary means of protection against license tampering is the license agreement
-	License CreateLicense(LicenseInfo.Inconclusive licenseInfo) {
+	static License CreateLicense(LicenseInfo.Inconclusive licenseInfo) {
 		Log.Warning("License could not be validated. Please contact EventStore support.");
 
 		var summary = new LicenseSummary(
-			LicenseId: "Fallback",
+			LicenseId: "Temporary License",
 			Company: "EventStore Ltd",
 			IsTrial: false,
-			IsExpired: false,
+			ExpiryUnixTimeSeconds: DateTimeOffset.MaxValue.ToUnixTimeSeconds(),
 			IsValid: false,
-			IsFloating: false,
-			StartDate: 0,
-			DaysRemaining: 0,
 			Notes: "License could not be validated. Please contact EventStore support.");
 
 		return CreateLicense(summary, ["ALL"]);
 	}
 
-	License CreateLicense(LicenseInfo.Conclusive licenseInfo) {
+	static License CreateLicense(LicenseInfo.Conclusive licenseInfo) {
 		Log.Write(
 			licenseInfo.Warning
 				? LogEventLevel.Warning
@@ -77,44 +66,34 @@ public class KeygenLicenseProvider : ILicenseProvider {
 			licenseInfo.Name,
 			licenseInfo.Valid, licenseInfo.Trial, licenseInfo.Expiry);
 
-		if (licenseInfo.Expired)
+		if (licenseInfo.Expiry < DateTimeOffset.UtcNow)
 			Log.Warning($"The license expired at {licenseInfo.Expiry}");
 
 		// whether an expired license is valid or not is up to the policy in keygen
 		// so we don't need any logic for it here
 		if (!licenseInfo.Valid) {
 			Log.Warning("License {Name} is not valid", licenseInfo.Name);
-			throw new Exception($"Invalid license: {licenseInfo.Name}");
+			throw new Exception($"Invalid license: {licenseInfo.Name}. {licenseInfo.Detail}");
 		}
-
-		var daysRemaining = int.MaxValue;
-		if (licenseInfo.Expiry.HasValue)
-			daysRemaining = (int)(licenseInfo.Expiry.Value - DateTimeOffset.UtcNow).TotalDays;
 
 		var summary = new LicenseSummary(
 			LicenseId: licenseInfo.LicenseId,
 			Company: licenseInfo.Name, // todo: name may not necessarily be the company name, depends what we do in the keygen dashboard
 			IsTrial: licenseInfo.Trial,
-			IsExpired: licenseInfo.Expired,
+			ExpiryUnixTimeSeconds: (licenseInfo.Expiry ?? DateTimeOffset.MaxValue).ToUnixTimeSeconds(),
 			IsValid: licenseInfo.Valid,
-			IsFloating: true, // todo: consider if we need this
-			DaysRemaining: daysRemaining,
-			StartDate: 0,
 			Notes: licenseInfo.Detail);
 
 		return CreateLicense(summary, licenseInfo.Entitlements);
 	}
 
-	License CreateLicense(LicenseSummary summary, string[] entitlements) {
+	static License CreateLicense(LicenseSummary summary, string[] entitlements) {
 		var claims = entitlements.ToDictionary(
 			x => x,
 			x => (object)"true");
 
-		summary?.Export(claims);
+		summary?.ExportClaims(claims);
 
-		return License.Create(
-			publicKey: _esdbPublicKey,
-			privateKey: _esdbPrivateKey,
-			claims: claims);
+		return License.Create(claims: claims);
 	}
 }
