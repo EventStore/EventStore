@@ -137,4 +137,4 @@ Refer to the [documentation](../quick-start/installation.md#license-keys) for mo
 
 ### EventStoreDB binaries have moved to Cloudsmith
 
-All EventStoreDB binaries are now available on [Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore/). In addition, the RedHat binaries, which were previously commercial-only, can now be accessed by all users of EventStoreDB.
+All EventStoreDB binaries are now available on [Cloudsmith](https://cloudsmith.io/~eventstore/repos/eventstore/). In addition, the RedHat binaries which were previously commercial-only can now be accessed by all users of EventStoreDB.
