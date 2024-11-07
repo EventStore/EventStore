@@ -38,13 +38,13 @@ public static class ConfigurationRootExtensions {
 				from key in provider.GetChildKeys()
 				from property in environmentOptionsOnly
 				where string.Equals(property.Name, key, StringComparison.CurrentCultureIgnoreCase)
-				select property.GetCustomAttribute<EnvironmentOnlyAttribute>()?.Message;
+				select (key, property.GetCustomAttribute<EnvironmentOnlyAttribute>()?.Message);
 
 			errorBuilder.Append(
 				errorDescriptions
 					.Aggregate(
 						new StringBuilder(),
-						(sb, err) => sb.AppendLine($"Provided by: {ClusterVNodeOptions.GetSourceDisplayName(provider.GetType())}. {err}")
+						(sb, pair) => sb.AppendLine($"\"{pair.key}\" Provided by: {ClusterVNodeOptions.GetSourceDisplayName(EventStoreConfigurationKeys.Prefix + ":" + pair.key, provider)}. {pair.Message}")
 					)
 			);
 		}

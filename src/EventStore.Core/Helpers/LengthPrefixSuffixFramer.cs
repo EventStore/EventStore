@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Transport.Tcp.Framing;
@@ -11,7 +13,7 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Helpers;
 
-public class LengthPrefixSuffixFramer : IMessageFramer<BinaryReader> {
+public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<BinaryReader> {
 	private static readonly ILogger Log = Serilog.Log.ForContext<LengthPrefixSuffixFramer>();
 
 	private const int PrefixLength = sizeof(int);
@@ -21,7 +23,7 @@ public class LengthPrefixSuffixFramer : IMessageFramer<BinaryReader> {
 	}
 
 	private readonly int _maxPackageSize;
-	private Action<BinaryReader> _packageHandler = _ => { };
+	private Func<BinaryReader, CancellationToken, ValueTask> _packageHandler = static (_, _) => ValueTask.CompletedTask;
 
 	private readonly MemoryStream _memStream;
 	private readonly BinaryReader _binaryReader;
@@ -43,28 +45,23 @@ public class LengthPrefixSuffixFramer : IMessageFramer<BinaryReader> {
 		_packageLength = 0;
 	}
 
-	public void UnFrameData(IEnumerable<ArraySegment<byte>> data) {
+	public async ValueTask UnFrameData(IEnumerable<ArraySegment<byte>> data, CancellationToken token) {
 		Ensure.NotNull(data, nameof(data));
 
 		foreach (ArraySegment<byte> buffer in data) {
-			Parse(buffer);
+			await Parse(buffer, token);
 		}
 	}
 
-	public void RegisterMessageArrivedCallback(Action<BinaryReader> packageHandler) {
+	public void RegisterMessageArrivedCallback(Func<BinaryReader, CancellationToken, ValueTask> packageHandler) {
 		Ensure.NotNull(packageHandler, nameof(packageHandler));
 		_packageHandler = packageHandler;
 	}
 
-	public void UnFrameData(ArraySegment<byte> data) {
-		Parse(data);
-	}
+	public ValueTask UnFrameData(ArraySegment<byte> data, CancellationToken token) => Parse(data, token);
 
-	/// <summary>
-	/// Parses a stream chunking based on length-prefixed-suffixed framing. Calls are re-entrant and hold state internally.
-	/// </summary>
-	/// <param name="bytes">A byte array of data to append.</param>
-	private void Parse(ArraySegment<byte> bytes) {
+	// Parses a stream chunking based on length-prefixed-suffixed framing. Calls are re-entrant and hold state internally.
+	private async ValueTask Parse(ArraySegment<byte> bytes, CancellationToken token) {
 		byte[] data = bytes.Array;
 		for (int i = bytes.Offset; i < bytes.Offset + bytes.Count;) {
 			if (_prefixBytes < PrefixLength) {
@@ -101,7 +98,7 @@ public class LengthPrefixSuffixFramer : IMessageFramer<BinaryReader> {
 					_memStream.SetLength(_packageLength - PrefixLength); // remove suffix length
 					_memStream.Position = 0;
 
-					_packageHandler(_binaryReader);
+					await _packageHandler(_binaryReader, token);
 
 					_memStream.SetLength(0);
 					_prefixBytes = 0;

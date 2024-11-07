@@ -62,7 +62,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 
 	public async Task DisposeAsync() {
 		_plugin.Dispose();
-		_sut.Dispose();
+		await _sut.DisposeAsync();
 		await _db.DisposeAsync();
 		await _fixture.DisposeAsync();
 	}

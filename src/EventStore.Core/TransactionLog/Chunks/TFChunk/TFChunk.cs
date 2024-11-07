@@ -182,11 +182,11 @@ public partial class TFChunk : IDisposable {
 
 	public static async ValueTask<TFChunk> FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead,
 		ITransactionFileTracker tracker, Func<TransformType, IChunkTransformFactory> getTransformFactory,
-		bool optimizeReadSideCache = false, bool reduceFileCachePressure = false, CancellationToken token = default) {
+		bool reduceFileCachePressure = false, CancellationToken token = default) {
 		var chunk = new TFChunk(filename,
 			TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure);
 		try {
-			await chunk.InitCompleted(verifyHash, optimizeReadSideCache, tracker, getTransformFactory, token);
+			await chunk.InitCompleted(verifyHash, tracker, getTransformFactory, token);
 		} catch {
 			chunk.Dispose();
 			throw;
@@ -267,7 +267,7 @@ public partial class TFChunk : IDisposable {
 		return chunk;
 	}
 
-	private async ValueTask InitCompleted(bool verifyHash, bool optimizeReadSideCache, ITransactionFileTracker tracker,
+	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
 		var fileInfo = new FileInfo(_filename);
 		if (!fileInfo.Exists)
@@ -310,7 +310,7 @@ public partial class TFChunk : IDisposable {
 		CreateReaderStreams();
 
 		_readSide = _chunkHeader.IsScavenged
-			? new TFChunkReadSideScavenged(this, optimizeReadSideCache, tracker)
+			? new TFChunkReadSideScavenged(this, tracker)
 			: new TFChunkReadSideUnscavenged(this, tracker);
 
 		// do not actually cache now because it is too slow when opening the database
@@ -337,12 +337,12 @@ public partial class TFChunk : IDisposable {
 		if (_inMem)
 			CreateInMemChunk(chunkHeader, fileSize, transformHeader);
 		else {
-			CreateWriterWorkItemForNewChunk(chunkHeader, fileSize, transformHeader);
+			await CreateWriterWorkItemForNewChunk(chunkHeader, fileSize, transformHeader, token);
 			SetAttributes(_filename, false);
 		}
 
 		_readSide = chunkHeader.IsScavenged
-			? new TFChunkReadSideScavenged(this, false, tracker)
+			? new TFChunkReadSideScavenged(this, tracker)
 			: new TFChunkReadSideUnscavenged(this, tracker);
 
 		// Always cache the active chunk
@@ -438,7 +438,7 @@ public partial class TFChunk : IDisposable {
 		}
 	}
 
-	private void CreateWriterWorkItemForNewChunk(ChunkHeader chunkHeader, int fileSize, ReadOnlyMemory<byte> transformHeader) {
+	private ValueTask CreateWriterWorkItemForNewChunk(ChunkHeader chunkHeader, int fileSize, ReadOnlyMemory<byte> transformHeader, CancellationToken token) {
 		var md5 = MD5.Create();
 
 		// create temp file first and set desired length
@@ -468,7 +468,7 @@ public partial class TFChunk : IDisposable {
 
 		_handle = File.OpenHandle(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read, WritableHandleOptions);
 		_writerWorkItem = new(_handle, md5, _unbuffered, _transform.Write, ChunkHeader.Size + transformHeader.Length);
-		Flush(); // persist file move result
+		return Flush(token); // persist file move result
 	}
 
 	private void CreateWriterWorkItemForExistingChunk(int writePosition,
@@ -608,9 +608,10 @@ public partial class TFChunk : IDisposable {
 	// (d) raw (byte offset in file, which is actual - header size)
 	//
 	// this method takes (b) and returns (d)
-	public long GetActualRawPosition(long logicalPosition) {
+	public async ValueTask<long> GetActualRawPosition(long logicalPosition, CancellationToken token) {
 		ArgumentOutOfRangeException.ThrowIfNegative(logicalPosition);
 
+		token.ThrowIfCancellationRequested();
 		var actualPosition = _readSide.GetActualPosition(logicalPosition);
 
 		if (actualPosition < 0)
@@ -756,21 +757,13 @@ public partial class TFChunk : IDisposable {
 		}
 	}
 
-	public bool ExistsAt(long logicalPosition) {
+	public async ValueTask<bool> ExistsAt(long logicalPosition, CancellationToken token) {
+		token.ThrowIfCancellationRequested();
 		return _readSide.ExistsAt(logicalPosition);
 	}
 
-	public void OptimizeExistsAt() {
-		if (!ChunkHeader.IsScavenged) return;
-		((TFChunkReadSideScavenged)_readSide).OptimizeExistsAt();
-	}
-
-	public void DeOptimizeExistsAt() {
-		if (!ChunkHeader.IsScavenged) return;
-		((TFChunkReadSideScavenged)_readSide).DeOptimizeExistsAt();
-	}
-
-	public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged) {
+	public async ValueTask<RecordReadResult> TryReadAt(long logicalPosition, bool couldBeScavenged, CancellationToken token) {
+		token.ThrowIfCancellationRequested();
 		return _readSide.TryReadAt(logicalPosition, couldBeScavenged);
 	}
 
@@ -779,7 +772,8 @@ public partial class TFChunk : IDisposable {
 		return _readSide.TryReadFirst();
 	}
 
-	public RecordReadResult TryReadClosestForward(long logicalPosition) {
+	public async ValueTask<RecordReadResult> TryReadClosestForward(long logicalPosition, CancellationToken token) {
+		token.ThrowIfCancellationRequested();
 		return _readSide.TryReadClosestForward(logicalPosition);
 	}
 
@@ -798,10 +792,11 @@ public partial class TFChunk : IDisposable {
 		return _readSide.TryReadClosestBackward(logicalPosition);
 	}
 
-	public RecordWriteResult TryAppend(ILogRecord record) {
+	public async ValueTask<RecordWriteResult> TryAppend(ILogRecord record, CancellationToken token) {
 		if (IsReadOnly)
 			throw new InvalidOperationException("Cannot write to a read-only block.");
 
+		token.ThrowIfCancellationRequested();
 		var workItem = _writerWorkItem;
 		var buffer = workItem.Buffer;
 		var bufferWriter = workItem.BufferWriter;
@@ -833,7 +828,8 @@ public partial class TFChunk : IDisposable {
 		return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
 	}
 
-	public bool TryAppendRawData(ReadOnlyMemory<byte> buffer) {
+	public async ValueTask<bool> TryAppendRawData(ReadOnlyMemory<byte> buffer, CancellationToken token) {
+		token.ThrowIfCancellationRequested();
 		var workItem = _writerWorkItem;
 		if (workItem.WorkingStream.Position + buffer.Length > workItem.WorkingStream.Length)
 			return false;
@@ -854,32 +850,41 @@ public partial class TFChunk : IDisposable {
 		return curPos;
 	}
 
-	public void Flush() {
-		if (IsReadOnly)
-			return;
-		_writerWorkItem.FlushToDisk();
+	public ValueTask Flush(CancellationToken token) {
+		var task = ValueTask.CompletedTask;
+
+		if (token.IsCancellationRequested) {
+			task = ValueTask.FromCanceled(token);
+		} else if (!IsReadOnly) {
+			try {
+				_writerWorkItem.FlushToDisk();
+			} catch (Exception e) {
+				task = ValueTask.FromException(e);
+			}
+		}
+
+		return task;
 	}
 
-	public void Complete() {
-		if (ChunkHeader.IsScavenged)
-			throw new InvalidOperationException("CompleteScavenged should be used for scavenged chunks.");
-		CompleteNonRaw(null);
+	public ValueTask Complete(CancellationToken token) {
+		return ChunkHeader.IsScavenged
+			? ValueTask.FromException(
+				new InvalidOperationException("CompleteScavenged should be used for scavenged chunks."))
+			: CompleteNonRaw(null, token);
 	}
 
-	public async ValueTask CompleteScavenge(ICollection<PosMap> mapping, CancellationToken token) {
-		if (!ChunkHeader.IsScavenged)
-			throw new InvalidOperationException("CompleteScavenged should not be used for non-scavenged chunks.");
-
-		token.ThrowIfCancellationRequested();
-		CompleteNonRaw(mapping);
+	public ValueTask CompleteScavenge(IReadOnlyCollection<PosMap> mapping, CancellationToken token) {
+		return ChunkHeader.IsScavenged
+			? CompleteNonRaw(mapping, token)
+			: ValueTask.FromException(
+				new InvalidOperationException("CompleteScavenged should not be used for non-scavenged chunks."));
 	}
 
-	private void CompleteNonRaw(ICollection<PosMap> mapping) {
+	private async ValueTask CompleteNonRaw(IReadOnlyCollection<PosMap> mapping, CancellationToken token) {
 		if (IsReadOnly)
 			throw new InvalidOperationException("Cannot complete a read-only TFChunk.");
 
-		_chunkFooter = WriteFooter(mapping);
-		Flush();
+		_chunkFooter = await WriteFooter(mapping, token); // WriteFooter always calls Flush
 
 		if (!_inMem)
 			CreateReaderStreams();
@@ -898,8 +903,7 @@ public partial class TFChunk : IDisposable {
 		if (_writerWorkItem.WorkingStream.Position != _writerWorkItem.WorkingStream.Length)
 			throw new InvalidOperationException("The raw chunk is not completely written.");
 
-		token.ThrowIfCancellationRequested();
-		Flush();
+		await Flush(token);
 
 		if (!_inMem)
 			CreateReaderStreams();
@@ -919,12 +923,12 @@ public partial class TFChunk : IDisposable {
 		}
 	}
 
-	private ChunkFooter WriteFooter(ICollection<PosMap> mapping) {
+	private async ValueTask<ChunkFooter> WriteFooter(IReadOnlyCollection<PosMap> mapping, CancellationToken token) {
 		var workItem = _writerWorkItem;
 		workItem.ResizeStream((int)workItem.WorkingStream.Position);
 
 		int mapSize = 0;
-		if (mapping != null) {
+		if (mapping is not null) {
 			if (_inMem)
 				throw new InvalidOperationException(
 					"Cannot write an in-memory chunk with a PosMap. " +
@@ -952,7 +956,7 @@ public partial class TFChunk : IDisposable {
 			footerSize: ChunkFooter.Size,
 			alignmentSize: _chunkHeader.Version >= (byte)ChunkVersions.Aligned ? AlignmentSize : 1);
 
-		Flush();
+		await Flush(token);
 
 		var footerNoHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize,
 			new byte[ChunkFooter.ChecksumSize]);
@@ -964,7 +968,7 @@ public partial class TFChunk : IDisposable {
 			new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5.Hash);
 		_transform.Write.WriteFooter(footerWithHash.AsByteArray(), out var fileSize);
 
-		Flush();
+		await Flush(token);
 
 		_fileSize = fileSize;
 		return footerWithHash;

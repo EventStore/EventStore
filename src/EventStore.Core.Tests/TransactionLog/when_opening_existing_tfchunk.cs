@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -20,7 +21,7 @@ public class when_opening_existing_tfchunk : SpecificationWithFilePerTestFixture
 	public override async Task TestFixtureSetUp() {
 		await base.TestFixtureSetUp();
 		_chunk = await TFChunkHelper.CreateNewChunk(Filename);
-		_chunk.Complete();
+		await _chunk.Complete(CancellationToken.None);
 		_testChunk = await TFChunk.FromCompletedFile(Filename, true, false,
 			reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
 			getTransformFactory: _ => new IdentityChunkTransformFactory());
@@ -45,12 +46,12 @@ public class when_opening_existing_tfchunk : SpecificationWithFilePerTestFixture
 
 	[Test]
 	public void append_throws_invalid_operation_exception() {
-		Assert.Throws<InvalidOperationException>(() =>
-			_testChunk.TryAppend(new CommitLogRecord(0, Guid.NewGuid(), 0, DateTime.UtcNow, 0)));
+		Assert.ThrowsAsync<InvalidOperationException>(async () =>
+			await _testChunk.TryAppend(new CommitLogRecord(0, Guid.NewGuid(), 0, DateTime.UtcNow, 0), CancellationToken.None));
 	}
 
 	[Test]
 	public void flush_does_not_throw_any_exception() {
-		Assert.DoesNotThrow(() => _testChunk.Flush());
+		Assert.DoesNotThrowAsync(async () => await _testChunk.Flush(CancellationToken.None));
 	}
 }

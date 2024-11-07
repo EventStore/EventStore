@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogV3;
@@ -20,7 +22,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction;
 
 // check that lookups of the various combinations of virtual/normal/meta
 // work in both directions and in the stream index.
-public class LogFormatAbstractorV3Tests : IDisposable {
+public class LogFormatAbstractorV3Tests : IAsyncLifetime {
 	readonly static string _outputDir = $"testoutput/{nameof(LogFormatAbstractorV3Tests)}";
 	readonly LogFormatAbstractor<StreamId> _sut = new LogV3FormatAbstractorFactory().Create(new() {
 		IndexDirectory = _outputDir,
@@ -31,29 +33,36 @@ public class LogFormatAbstractorV3Tests : IDisposable {
 
 	readonly string _stream = "account-abc";
 	readonly string _systemStream = "$something-parked";
-	readonly StreamId _streamId;
-	readonly StreamId _systemStreamId;
+	StreamId _streamId;
+	StreamId _systemStreamId;
 	readonly string _eventType = "some-event";
-	readonly EventTypeId _eventTypeId;
+	EventTypeId _eventTypeId;
 	readonly MockIndexReader _mockIndexReader = new();
-	readonly int _numStreams;
-	readonly int _numEventTypes;
+	int _numStreams;
+	int _numEventTypes;
 
-	public LogFormatAbstractorV3Tests() {
+	async Task IAsyncLifetime.InitializeAsync() {
 		TryDeleteDirectory();
 		_sut.StreamNamesProvider.SetReader(_mockIndexReader);
-		_sut.StreamExistenceFilter.Initialize(_sut.StreamExistenceFilterInitializer, 0);
+		await _sut.StreamExistenceFilter.Initialize(_sut.StreamExistenceFilterInitializer, 0, CancellationToken.None);
 		Assert.False(GetOrReserve(_stream, out _streamId, out _, out _));
 		Assert.False(GetOrReserve(_systemStream, out _systemStreamId, out _, out _));
 		Assert.False(GetOrReserveEventType(_eventType, out _eventTypeId, out _, out _));
-		
+
 		_numStreams = 2;
 		_numEventTypes = 1;
 	}
 
-	public void Dispose() {
-		_sut.Dispose();
-		TryDeleteDirectory();
+	Task IAsyncLifetime.DisposeAsync() {
+		var task = Task.CompletedTask;
+		try {
+			_sut.Dispose();
+			TryDeleteDirectory();
+		} catch (Exception e) {
+			task = Task.FromException(e);
+		}
+
+		return task;
 	}
 
 	void TryDeleteDirectory() {
@@ -71,7 +80,7 @@ public class LogFormatAbstractorV3Tests : IDisposable {
 			logPosition: 123,
 			streamId: out streamId,
 			streamRecord: out var record);
-		
+
 		if (record is LogV3StreamRecord streamRecord) {
 			createdId = streamRecord.Record.SubHeader.ReferenceNumber;
 			createdName = streamRecord.StreamName;
@@ -123,40 +132,42 @@ public class LogFormatAbstractorV3Tests : IDisposable {
 		Assert.Equal("new-event-type-2", createdName2);
 		Assert.Equal(_numEventTypes + 2, _mockIndexReader.EventTypeCount);
 	}
-	
+
 	[Fact]
-	public void can_find_existing_event_type() {
+	public async Task can_find_existing_event_type() {
 		Assert.True(GetOrReserveEventType(_eventType, out var eventTypeId, out _, out _));
 		Assert.Equal(_numEventTypes, _mockIndexReader.EventTypeCount);
 		Assert.Equal(_eventTypeId, eventTypeId);
-		_sut.EventTypes.LookupName(_eventTypeId);
-		Assert.Equal(_eventType, _sut.EventTypes.LookupName(_eventTypeId));
+		await _sut.EventTypes.LookupName(_eventTypeId, CancellationToken.None);
+		Assert.Equal(_eventType, await _sut.EventTypes.LookupName(_eventTypeId, CancellationToken.None));
 	}
-	
+
 	[Theory]
 	[InlineData(0, ""/* empty event type */)]
 	[InlineData(1, "$event-type")]
 	[InlineData(2, "$stream")]
-	[InlineData(3, "$metadata")] 
+	[InlineData(3, "$metadata")]
 	[InlineData(4, "$streamDeleted")]
-	public void can_find_virtual_event_type(EventTypeId expectedId, string name) {
+	public async Task can_find_virtual_event_type(EventTypeId expectedId, string name) {
 		Assert.True(GetOrReserveEventType(name, out var eventTypeId, out _, out _));
 		Assert.Equal(_numEventTypes, _mockIndexReader.EventTypeCount);
 		Assert.Equal(expectedId, eventTypeId);
-		Assert.Equal(name, _sut.EventTypes.LookupName(expectedId));
+		Assert.Equal(name, await _sut.EventTypes.LookupName(expectedId, CancellationToken.None));
 	}
 
 	[Fact]
-	public void uses_correct_event_type_interval() {
+	public async Task uses_correct_event_type_interval() {
 		var expectedEventTypeNumber1 = LogV3SystemEventTypes.FirstRealEventTypeNumber + _numEventTypes;
 		Assert.False(GetOrReserveEventType("new-event-type-1", out var newEventTypeId1, out var createdId1, out var createdName1));
 		Assert.False(GetOrReserveEventType("new-event-type-2", out var newEventTypeId2, out var createdId2, out var createdName2));
 		Assert.Equal(expectedEventTypeNumber1, newEventTypeId1);
 		Assert.Equal(expectedEventTypeNumber1 + 1, newEventTypeId2);
-		Assert.True(_sut.EventTypes.TryGetName((uint)expectedEventTypeNumber1, out var eventType1));
-		Assert.True(_sut.EventTypes.TryGetName((uint)expectedEventTypeNumber1 + 1, out var eventType2));
+		Assert.True(await _sut.EventTypes.LookupName((uint)expectedEventTypeNumber1, CancellationToken.None) is
+			{ Length: > 0 });
+		Assert.True(await _sut.EventTypes.LookupName((uint)expectedEventTypeNumber1 + 1, CancellationToken.None) is
+			{ Length: > 0 });
 	}
-	
+
 	[Fact]
 	public void can_add_another_stream() {
 		Assert.False(GetOrReserve("new-stream-1", out var newStreamId1, out var createdId1, out var createdName1));
@@ -218,77 +229,77 @@ public class LogFormatAbstractorV3Tests : IDisposable {
 	}
 
 	[Fact]
-	public void can_find_existing_stream() {
+	public async Task can_find_existing_stream() {
 		Assert.True(GetOrReserve(_stream, out var streamId, out _, out _));
 		Assert.Equal(_numStreams, _mockIndexReader.StreamCount);
 		Assert.Equal(_streamId, streamId);
 		Assert.Equal(_streamId, _sut.StreamIds.LookupValue(_stream));
-		Assert.Equal(_stream, _sut.StreamNames.LookupName(_streamId));
+		Assert.Equal(_stream, await _sut.StreamNames.LookupName(_streamId, CancellationToken.None));
 		Assert.False(_sut.SystemStreams.IsMetaStream(streamId));
-		Assert.False(_sut.SystemStreams.IsSystemStream(streamId));
+		Assert.False(await _sut.SystemStreams.IsSystemStream(streamId, CancellationToken.None));
 		Assert.True(_sut.StreamExistenceFilter.MightContain(_stream));
 	}
 
 	[Fact]
-	public void can_find_existing_meta_stream() {
+	public async Task can_find_existing_meta_stream() {
 		var metaStreamName = "$$" + _stream;
 		var expectedMetaStreamId = _streamId + 1;
 		Assert.True(GetOrReserve(metaStreamName, out var streamId, out _, out _));
 		Assert.Equal(_numStreams, _mockIndexReader.StreamCount);
 		Assert.Equal(expectedMetaStreamId, streamId);
 		Assert.Equal(expectedMetaStreamId, _sut.StreamIds.LookupValue(metaStreamName));
-		Assert.Equal(metaStreamName, _sut.StreamNames.LookupName(expectedMetaStreamId));
+		Assert.Equal(metaStreamName, await _sut.StreamNames.LookupName(expectedMetaStreamId, CancellationToken.None));
 		Assert.True(_sut.SystemStreams.IsMetaStream(streamId));
-		Assert.True(_sut.SystemStreams.IsSystemStream(streamId));
+		Assert.True(await _sut.SystemStreams.IsSystemStream(streamId, CancellationToken.None));
 	}
 
 	[Fact]
-	public void can_find_existing_system_stream() {
+	public async Task can_find_existing_system_stream() {
 		Assert.True(GetOrReserve(_systemStream, out var streamId, out _, out _));
 		Assert.Equal(_numStreams, _mockIndexReader.StreamCount);
 		Assert.Equal(_systemStreamId, streamId);
 		Assert.Equal(_systemStreamId, _sut.StreamIds.LookupValue(_systemStream));
-		Assert.Equal(_systemStream, _sut.StreamNames.LookupName(_systemStreamId));
+		Assert.Equal(_systemStream, await _sut.StreamNames.LookupName(_systemStreamId, CancellationToken.None));
 		Assert.False(_sut.SystemStreams.IsMetaStream(streamId));
-		Assert.True(_sut.SystemStreams.IsSystemStream(streamId));
+		Assert.True(await _sut.SystemStreams.IsSystemStream(streamId, CancellationToken.None));
 	}
 
 	[Fact]
-	public void can_find_existing_system_meta_stream() {
+	public async Task can_find_existing_system_meta_stream() {
 		var metaStreamName = "$$" + _systemStream;
 		var expectedMetaStreamId = _systemStreamId + 1;
 		Assert.True(GetOrReserve(metaStreamName, out var streamId, out _, out _));
 		Assert.Equal(_numStreams, _mockIndexReader.StreamCount);
 		Assert.Equal(expectedMetaStreamId, streamId);
 		Assert.Equal(expectedMetaStreamId, _sut.StreamIds.LookupValue(metaStreamName));
-		Assert.Equal(metaStreamName, _sut.StreamNames.LookupName(expectedMetaStreamId));
+		Assert.Equal(metaStreamName, await _sut.StreamNames.LookupName(expectedMetaStreamId, CancellationToken.None));
 		Assert.True(_sut.SystemStreams.IsMetaStream(streamId));
-		Assert.True(_sut.SystemStreams.IsSystemStream(streamId));
+		Assert.True(await _sut.SystemStreams.IsSystemStream(streamId, CancellationToken.None));
 	}
 
 	[Theory]
 	[InlineData(4, "$all")]
 	[InlineData(6, "$streams-created")]
 	[InlineData(8, "$settings")]
-	public void can_find_virtual_stream(StreamId expectedId, string name) {
+	public async Task can_find_virtual_stream(StreamId expectedId, string name) {
 		Assert.True(GetOrReserve(name, out var streamId, out _, out _));
 		Assert.Equal(_numStreams, _mockIndexReader.StreamCount);
 		Assert.Equal(expectedId, streamId);
 		Assert.Equal(expectedId, _sut.StreamIds.LookupValue(name));
-		Assert.Equal(name, _sut.StreamNames.LookupName(expectedId));
+		Assert.Equal(name, await _sut.StreamNames.LookupName(expectedId, CancellationToken.None));
 		Assert.False(_sut.SystemStreams.IsMetaStream(streamId));
-		Assert.True(_sut.SystemStreams.IsSystemStream(streamId));
+		Assert.True(await _sut.SystemStreams.IsSystemStream(streamId, CancellationToken.None));
 	}
 
 	[Fact]
-	public void can_find_virtual_meta_stream() {
+	public async Task can_find_virtual_meta_stream() {
 		Assert.True(GetOrReserve("$$$all", out var streamId, out _, out _));
 		Assert.Equal(_numStreams, _mockIndexReader.StreamCount);
 		Assert.Equal(5U, streamId);
 		Assert.Equal(5U, _sut.StreamIds.LookupValue("$$$all"));
-		Assert.Equal("$$$all", _sut.StreamNames.LookupName(5));
+		Assert.Equal("$$$all", await _sut.StreamNames.LookupName(5, CancellationToken.None));
 		Assert.True(_sut.SystemStreams.IsMetaStream(streamId));
-		Assert.True(_sut.SystemStreams.IsSystemStream(streamId));
+		Assert.True(await _sut.SystemStreams.IsSystemStream(streamId, CancellationToken.None));
 	}
 
 	[Theory]
@@ -296,10 +307,10 @@ public class LogFormatAbstractorV3Tests : IDisposable {
 	[InlineData(LogV3SystemStreams.NoUserMetastream, true, true, "$$new-user-stream")]
 	[InlineData(LogV3SystemStreams.NoSystemStream, false, true, "$new-system-stream")]
 	[InlineData(LogV3SystemStreams.NoSystemMetastream, true, true, "$$$new-system-stream")]
-	public void can_attempt_to_lookup_non_existent_streams(StreamId expectedId, bool expectedIsMeta, bool expectedIsSystem, string name) {
+	public async Task can_attempt_to_lookup_non_existent_streams(StreamId expectedId, bool expectedIsMeta, bool expectedIsSystem, string name) {
 		Assert.Equal(expectedId, _sut.StreamIds.LookupValue(name));
 		Assert.Equal(expectedIsMeta, _sut.SystemStreams.IsMetaStream(expectedId));
-		Assert.Equal(expectedIsSystem, _sut.SystemStreams.IsSystemStream(expectedId));
+		Assert.Equal(expectedIsSystem, await _sut.SystemStreams.IsSystemStream(expectedId, CancellationToken.None));
 	}
 
 	[Theory]
@@ -313,17 +324,17 @@ public class LogFormatAbstractorV3Tests : IDisposable {
 	class MockIndexReader : IIndexReader<StreamId> {
 		private Dictionary<StreamId, Dictionary<long, IPrepareLogRecord<StreamId>>> _index = new() {
 			{LogV3SystemStreams.StreamsCreatedStreamNumber, new()},
-			{LogV3SystemStreams.EventTypesStreamNumber, new()} 
+			{LogV3SystemStreams.EventTypesStreamNumber, new()}
 		};
-		
+
 		public void Add(long eventNumber, IPrepareLogRecord<StreamId> record) => _index[record.EventStreamId].Add(eventNumber, record);
-		
+
 		public int StreamCount => _index[LogV3SystemStreams.StreamsCreatedStreamNumber].Count;
 		public int EventTypeCount => _index[LogV3SystemStreams.EventTypesStreamNumber].Count;
 
-		public IPrepareLogRecord<StreamId> ReadPrepare(StreamId streamId, long eventNumber) {
+		public ValueTask<IPrepareLogRecord<StreamId>> ReadPrepare(StreamId streamId, long eventNumber, CancellationToken token) {
 			// simulates what would be in the index.
-			return _index[streamId][eventNumber];
+			return new(_index[streamId][eventNumber]);
 		}
 
 		public long CachedStreamInfo => throw new NotImplementedException();
@@ -332,51 +343,60 @@ public class LogFormatAbstractorV3Tests : IDisposable {
 
 		public long HashCollisions => throw new NotImplementedException();
 
-		public StorageMessage.EffectiveAcl GetEffectiveAcl(StreamId streamId) =>
-			throw new NotImplementedException();
+		public ValueTask<StorageMessage.EffectiveAcl> GetEffectiveAcl(StreamId streamId, CancellationToken token) =>
+			ValueTask.FromException<StorageMessage.EffectiveAcl>(new NotImplementedException());
 
-		public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(uint streamId, long eventNumber) {
-			throw new NotImplementedException();
+		public ValueTask<IndexReadEventInfoResult> ReadEventInfo_KeepDuplicates(uint streamId, long eventNumber,
+			CancellationToken token)
+			=> ValueTask.FromException<IndexReadEventInfoResult>(new NotImplementedException());
+
+		public ValueTask<StreamId> GetEventStreamIdByTransactionId(long transactionId, CancellationToken token) =>
+			ValueTask.FromException<StreamId>(new NotImplementedException());
+
+		public ValueTask<long> GetStreamLastEventNumber(StreamId streamId, CancellationToken token) {
+			return streamId is LogV3SystemStreams.StreamsCreatedStreamNumber
+				? ValueTask.FromResult(_index[streamId].Count - 1L)
+				: ValueTask.FromException<long>(new NotImplementedException());
 		}
 
-		public StreamId GetEventStreamIdByTransactionId(long transactionId) =>
-			throw new NotImplementedException();
+		public ValueTask<StreamMetadata> GetStreamMetadata(StreamId streamId, CancellationToken token) =>
+			ValueTask.FromException<StreamMetadata>(new NotImplementedException());
 
-		public long GetStreamLastEventNumber(StreamId streamId) {
-			if (streamId == LogV3SystemStreams.StreamsCreatedStreamNumber)
-				return _index[streamId].Count - 1;
-			throw new NotImplementedException();
-		}
+		public ValueTask<IndexReadEventResult> ReadEvent(string streamName, StreamId streamId, long eventNumber, CancellationToken token) =>
+			ValueTask.FromException<IndexReadEventResult>(new NotImplementedException());
 
-		public StreamMetadata GetStreamMetadata(StreamId streamId) =>
-			throw new NotImplementedException();
+		public ValueTask<IndexReadStreamResult> ReadStreamEventsBackward(string streamName, StreamId streamId,
+			long fromEventNumber, int maxCount, CancellationToken token) =>
+			ValueTask.FromException<IndexReadStreamResult>(new NotImplementedException());
 
-		public IndexReadEventResult ReadEvent(string streamName, StreamId streamId, long eventNumber) =>
-			throw new NotImplementedException();
+		public ValueTask<IndexReadStreamResult> ReadStreamEventsForward(string streamName, StreamId streamId,
+			long fromEventNumber, int maxCount, CancellationToken token) =>
+			ValueTask.FromException<IndexReadStreamResult>(new NotImplementedException());
 
-		public IndexReadStreamResult ReadStreamEventsBackward(string streamName, StreamId streamId, long fromEventNumber, int maxCount) =>
-			throw new NotImplementedException();
+		public ValueTask<IndexReadEventInfoResult> ReadEventInfoForward_KnownCollisions(uint streamId,
+			long fromEventNumber, int maxCount, long beforePosition, CancellationToken token) =>
+			ValueTask.FromException<IndexReadEventInfoResult>(new NotImplementedException());
 
-		public IndexReadStreamResult ReadStreamEventsForward(string streamName, StreamId streamId, long fromEventNumber, int maxCount) =>
-			throw new NotImplementedException();
+		public ValueTask<IndexReadEventInfoResult> ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber,
+			int maxCount, long beforePosition, CancellationToken token) =>
+			ValueTask.FromException<IndexReadEventInfoResult>(new NotImplementedException());
 
-		public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(uint streamId, long fromEventNumber, int maxCount, long beforePosition) =>
-			throw new NotImplementedException();
+		public ValueTask<IndexReadEventInfoResult> ReadEventInfoBackward_KnownCollisions(uint streamId,
+			long fromEventNumber, int maxCount, long beforePosition, CancellationToken token) =>
+			ValueTask.FromException<IndexReadEventInfoResult>(new NotImplementedException());
 
-		public IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition) =>
-			throw new NotImplementedException();
+		public ValueTask<IndexReadEventInfoResult> ReadEventInfoBackward_NoCollisions(ulong stream,
+			Func<ulong, uint> getStreamId, long fromEventNumber, int maxCount, long beforePosition,
+			CancellationToken token) =>
+			ValueTask.FromException<IndexReadEventInfoResult>(new NotImplementedException());
 
-		public IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(uint streamId, long fromEventNumber, int maxCount, long beforePosition) =>
-			throw new NotImplementedException();
+		public ValueTask<long> GetStreamLastEventNumber_KnownCollisions(uint streamId, long beforePosition,
+			CancellationToken token) =>
+			ValueTask.FromException<long>(new NotImplementedException());
 
-		public IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, uint> getStreamId, long fromEventNumber, int maxCount, long beforePosition) =>
-			throw new NotImplementedException();
-
-		public long GetStreamLastEventNumber_KnownCollisions(uint streamId, long beforePosition) =>
-			throw new NotImplementedException();
-
-		public long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, uint> getStreamId, long beforePosition) =>
-			throw new NotImplementedException();
+		public ValueTask<long> GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, uint> getStreamId,
+			long beforePosition, CancellationToken token) =>
+			ValueTask.FromException<long>(new NotImplementedException());
 	}
 }
 

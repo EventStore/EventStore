@@ -44,15 +44,18 @@ public class when_scavenging_tfchunk_with_version0_log_records_and_deleted_recor
 		_event4 = await WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
 			3, token: token);
 
-		Writer.CompleteChunk();
+		await Writer.CompleteChunk(token);
 		await Writer.AddNewChunk(token: token);
 
 		Scavenge(completeLast: false, mergeChunks: true);
 	}
 
 	[Test]
-	public void should_be_able_to_read_the_all_stream() {
-		var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
+	public async Task should_be_able_to_read_the_all_stream() {
+		var events = (await ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, CancellationToken.None))
+			.Records
+			.Select(r => r.Event)
+			.ToArray();
 		Assert.AreEqual(5, events.Count());
 		Assert.AreEqual(_event1.EventId, events[0].EventId);
 		Assert.AreEqual(_event2.EventId, events[1].EventId);
@@ -68,7 +71,7 @@ public class when_scavenging_tfchunk_with_version0_log_records_and_deleted_recor
 		RecordReadResult result = await chunk.TryReadFirst(CancellationToken.None);
 		while (result.Success) {
 			chunkRecords.Add(result.LogRecord);
-			result = chunk.TryReadClosestForward(result.NextPosition);
+			result = await chunk.TryReadClosestForward(result.NextPosition, CancellationToken.None);
 		}
 
 		var deletedRecord = (PrepareLogRecord)chunkRecords.First(x => x.RecordType == LogRecordType.Prepare
@@ -86,7 +89,7 @@ public class when_scavenging_tfchunk_with_version0_log_records_and_deleted_recor
 		RecordReadResult result = await chunk.TryReadFirst(CancellationToken.None);
 		while (result.Success) {
 			chunkRecords.Add(result.LogRecord);
-			result = chunk.TryReadClosestForward(result.NextPosition);
+			result = await chunk.TryReadClosestForward(result.NextPosition, CancellationToken.None);
 		}
 
 		Assert.IsTrue(chunkRecords.All(x => x.Version == LogRecordVersion.LogRecordV0));
@@ -94,8 +97,8 @@ public class when_scavenging_tfchunk_with_version0_log_records_and_deleted_recor
 	}
 
 	[Test]
-	public void should_be_able_to_read_the_stream() {
-		var events = ReadIndex.ReadStreamEventsForward(_eventStreamId, 0, 10);
+	public async Task should_be_able_to_read_the_stream() {
+		var events = await ReadIndex.ReadStreamEventsForward(_eventStreamId, 0, 10, CancellationToken.None);
 		Assert.AreEqual(4, events.Records.Length);
 		Assert.AreEqual(_event1.EventId, events.Records[0].EventId);
 		Assert.AreEqual(_event2.EventId, events.Records[1].EventId);
@@ -104,8 +107,8 @@ public class when_scavenging_tfchunk_with_version0_log_records_and_deleted_recor
 	}
 
 	[Test]
-	public void the_deleted_stream_should_be_deleted() {
-		var lastNumber = ReadIndex.GetStreamLastEventNumber(_deletedEventStreamId);
+	public async Task the_deleted_stream_should_be_deleted() {
+		var lastNumber = await ReadIndex.GetStreamLastEventNumber(_deletedEventStreamId, CancellationToken.None);
 		Assert.AreEqual(EventNumber.DeletedStream, lastNumber);
 	}
 }

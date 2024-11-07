@@ -7,7 +7,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.Plugins;
@@ -25,15 +24,16 @@ public class LicensingPluginTests : IAsyncLifetime {
 	public Task InitializeAsync() => Task.CompletedTask;
 
 	private static LicensingPlugin CreateUnLicensedSutAsync() {
-		return new LicensingPlugin(new AdHocLicenseProvider(new Exception("license is expired, say")));
+		return new LicensingPlugin(
+			ex => { },
+			new AdHocLicenseProvider(new Exception("license is expired, say")));
 	}
 
 	private static async Task<LicensingPlugin> CreateLicensedSutAsync(Dictionary<string, object> claims) {
-		using var rsa = RSA.Create(512);
-		var publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
-		var privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
-		var license = await License.CreateAsync(publicKey, privateKey, claims);
-		return new LicensingPlugin(new AdHocLicenseProvider(license));
+		var license = await License.CreateAsync(claims);
+		return new LicensingPlugin(
+			ex => { },
+			new AdHocLicenseProvider(license));
 	}
 
 	private static async Task<TestServer> InitializeServerAsync(LicensingPlugin sut) {
@@ -49,20 +49,20 @@ public class LicensingPluginTests : IAsyncLifetime {
 	}
 
 	[Fact]
-	public void has_parameterless_constructor() {
-		// needed for all plugins
-		Activator.CreateInstance<LicensingPlugin>();
-	}
-
-	[Fact]
 	public async Task given_licensed_then_endpoint_exposes_the_correct_claims() {
 		// given
 		var claims = new Dictionary<string, object> {
 			{"another_claim", "another_value" } // excluded from endpoint
 		};
 
-		new LicenseSummary("license123", "the_company", true, true, true, true, 4, new DateTime(2024, 4, 15), "somenotes")
-			.Export(claims);
+		new LicenseSummary(
+			licenseId: "license123",
+			company: "the_company",
+			isTrial: true,
+			expiry: new DateTimeOffset(1970, 1, 1, 0, 0, 55, default),
+			isValid: true,
+			notes: "somenotes")
+			.ExportClaims(claims);
 
 		var sut = await CreateLicensedSutAsync(claims);
 		_server = await InitializeServerAsync(sut);
@@ -77,15 +77,15 @@ public class LicensingPluginTests : IAsyncLifetime {
 		Assert.DoesNotContain("another", responseString);
 		Assert.Equal("""
 			{
+			  "isExpired": "true",
 			  "licenseId": "license123",
 			  "company": "the_company",
 			  "isTrial": "true",
-			  "isExpired": "true",
+			  "daysRemaining": "0.00",
 			  "isValid": "true",
+			  "notes": "somenotes",
 			  "isFloating": "true",
-			  "daysRemaining": "4",
-			  "startDate": "1713139200",
-			  "notes": "somenotes"
+			  "startDate": "0"
 			}
 			""".Replace(" ", "").Replace(Environment.NewLine, ""),
 			responseString);
@@ -103,7 +103,7 @@ public class LicensingPluginTests : IAsyncLifetime {
 		// then
 		Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
 		var responseString = await result.Content.ReadAsStringAsync();
-		Assert.Equal("", responseString);
+		Assert.Equal("\"license is expired, say\"", responseString);
 	}
 
 	[Fact]

@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging;
@@ -40,7 +41,7 @@ public class Calculator<TStreamId> : ICalculator<TStreamId> {
 		_throttle = throttle;
 	}
 
-	public void Calculate(
+	public async ValueTask Calculate(
 		ScavengePoint scavengePoint,
 		IScavengeStateForCalculator<TStreamId> state,
 		CancellationToken cancellationToken) {
@@ -52,10 +53,10 @@ public class Calculator<TStreamId> : ICalculator<TStreamId> {
 			scavengePoint: scavengePoint,
 			doneStreamHandle: default);
 		state.SetCheckpoint(checkpoint);
-		Calculate(checkpoint, state, cancellationToken);
+		await Calculate(checkpoint, state, cancellationToken);
 	}
 
-	public void Calculate(
+	public async ValueTask Calculate(
 		ScavengeCheckpoint.Calculating<TStreamId> checkpoint,
 		IScavengeStateForCalculator<TStreamId> state,
 		CancellationToken cancellationToken) {
@@ -114,17 +115,16 @@ public class Calculator<TStreamId> : ICalculator<TStreamId> {
 							$"Attempted to calculate a {originalStreamData.Status} record: {originalStreamData}");
 
 					streamCalc.SetStream(originalStreamHandle, originalStreamData);
-					var newStatus = streamCalc.CalculateStatus();
+					var newStatus = await streamCalc.CalculateStatus(cancellationToken);
 
-					CalculateDiscardPointsForOriginalStream(
-						eventCalc,
-						weights,
-						originalStreamHandle,
-						scavengePoint,
-						cancellationToken,
-						ref cancellationCheckCounter,
-						out var newDiscardPoint,
-						out var newMaybeDiscardPoint);
+					(var newDiscardPoint, var newMaybeDiscardPoint, cancellationCheckCounter) =
+						await CalculateDiscardPointsForOriginalStream(
+							eventCalc,
+							weights,
+							originalStreamHandle,
+							scavengePoint,
+							cancellationCheckCounter,
+							cancellationToken);
 
 					// don't allow the discard point to move backwards
 					if (newDiscardPoint < originalStreamData.DiscardPoint) {
@@ -194,20 +194,18 @@ public class Calculator<TStreamId> : ICalculator<TStreamId> {
 	//
 	// We want to calculate the discard points from scratch, without considering what values they
 	// came out as last time.
-	private void CalculateDiscardPointsForOriginalStream(
+	private async ValueTask<(DiscardPoint DiscardPt, DiscardPoint MaybeDiscardPt, int CancellationCheckCounter)> CalculateDiscardPointsForOriginalStream(
 		EventCalculator<TStreamId> eventCalc,
 		WeightAccumulator weights,
 		StreamHandle<TStreamId> originalStreamHandle,
 		ScavengePoint scavengePoint,
-		CancellationToken cancellationToken,
-		ref int cancellationCheckCounter,
-		out DiscardPoint discardPoint,
-		out DiscardPoint maybeDiscardPoint) {
+		int cancellationCheckCounter,
+		CancellationToken cancellationToken) {
 
 		var fromEventNumber = 0L;
 
-		discardPoint = DiscardPoint.KeepAll;
-		maybeDiscardPoint = DiscardPoint.KeepAll;
+		var discardPoint = DiscardPoint.KeepAll;
+		var maybeDiscardPoint = DiscardPoint.KeepAll;
 
 		const int maxCount = 8192;
 
@@ -218,11 +216,12 @@ public class Calculator<TStreamId> : ICalculator<TStreamId> {
 			// read in slices because the stream might be huge.
 			// note: when the handle is a hash the ReadEventInfoForward call is index-only
 			// note: the event infos are not necessarily contiguous
-			var result = _index.ReadEventInfoForward(
+			var result = await _index.ReadEventInfoForward(
 				originalStreamHandle,
 				fromEventNumber,
 				maxCount,
-				scavengePoint);
+				scavengePoint,
+				cancellationToken);
 
 			var slice = result.EventInfos;
 
@@ -247,7 +246,7 @@ public class Calculator<TStreamId> : ICalculator<TStreamId> {
 					first = false;
 				}
 
-				switch (eventCalc.DecideEvent()) {
+				switch (await eventCalc.DecideEvent(cancellationToken)) {
 					case DiscardDecision.Discard:
 						weights.OnDiscard(eventCalc.LogicalChunkNumber);
 						discardPoint = DiscardPoint.DiscardIncluding(eventInfo.EventNumber);
@@ -282,7 +281,7 @@ public class Calculator<TStreamId> : ICalculator<TStreamId> {
 						// found the first one to keep. we are done discarding. to help keep things
 						// simple, move the maybe up to the discardpoint if it is behind.
 						maybeDiscardPoint = maybeDiscardPoint.Or(discardPoint);
-						return;
+						return (discardPoint, maybeDiscardPoint, cancellationCheckCounter);
 
 					default:
 						throw new Exception(
@@ -302,9 +301,7 @@ public class Calculator<TStreamId> : ICalculator<TStreamId> {
 					// - the stream might have events after the scavenge point and old scavenge
 					//   has removed the ones before
 					// we didn't find anything to discard, so keep everything.
-					discardPoint = DiscardPoint.KeepAll;
-					maybeDiscardPoint = DiscardPoint.KeepAll;
-					return;
+					return (DiscardPoint.KeepAll, DiscardPoint.KeepAll, cancellationCheckCounter);
 				} else {
 					// we found some and discarded them all, oops.
 					throw new Exception(

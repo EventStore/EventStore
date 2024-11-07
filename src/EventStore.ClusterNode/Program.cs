@@ -194,9 +194,11 @@ internal static class Program {
 							.Configure<KestrelServerOptions>(configuration.GetSection("Kestrel"))
 							.Configure<HostOptions>(x => {
 								x.ShutdownTimeout = TimeSpan.FromSeconds(5);
-								#if DEBUG
+#if DEBUG
 								x.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
-								#endif
+#else
+								x.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+#endif
 							})
 						)
 						.ConfigureWebHostDefaults(builder => builder
@@ -222,7 +224,7 @@ internal static class Program {
 
 					exitCodeSource.TrySetResult(0);
 				} catch (Exception ex) {
-					Log.Fatal("Error occurred during setup: {e}", ex);
+					Log.Fatal(ex, "Exiting");
 					exitCodeSource.TrySetResult(1);
 				} finally {
 					signal.Set();

@@ -4,12 +4,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using DotNext;
 using DotNext.Collections.Generic;
+using DotNext.Runtime.CompilerServices;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -31,7 +34,7 @@ public sealed class TelemetryService :
 	IHandle<ElectionMessage.ElectionsDone>,
 	IHandle<SystemMessage.ReplicaStateMessage>,
 	IHandle<LeaderDiscoveryMessage.LeaderFound>,
-	IDisposable
+	IAsyncDisposable
 {
 	private static readonly ILogger Logger = Log.ForContext<TelemetryService>();
 
@@ -40,8 +43,8 @@ public sealed class TelemetryService :
 	private static readonly TimeSpan FlushDelay = TimeSpan.FromSeconds(10);
 
 	private readonly ClusterVNodeOptions _nodeOptions;
+	private readonly Task _task;
 	private readonly IConfiguration _configuration;
-	private readonly CancellationTokenSource _cts = new();
 	private readonly IPublisher _publisher;
 	private readonly IReadOnlyCheckpoint _writerCheckpoint;
 	private readonly long _startTime = TimeProvider.System.GetTimestamp();
@@ -49,6 +52,7 @@ public sealed class TelemetryService :
 	private readonly TFChunkManager _manager;
 	private readonly PluginDiagnosticsDataCollector _pluginDiagnosticsDataCollector;
 
+	private CancellationTokenSource _cts;
 	private VNodeState _nodeState;
 	private int _epochNumber;
 	private Guid _leaderId = Guid.Empty;
@@ -74,23 +78,34 @@ public sealed class TelemetryService :
 			_nodeOptions.PlugableComponents.Select(x => x.DiagnosticsName).ToArray()
 		);
 
-		_ = Task.Run(async () => {
-			try {
-				await ProcessAsync(publisher, sink);
-			} catch (Exception ex) when (ex is not OperationCanceledException) {
-				Logger.Error(ex, "Telemetry loop stopped");
-			}
-		});
+		_cts = new();
+		_task = ProcessAsync(sink, _cts.Token);
 	}
 
-	public void Dispose() {
-		_cts.Cancel();
-		_cts.Dispose();
+	[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))]
+	private async Task ProcessAsync(ITelemetrySink sink, CancellationToken token) {
+		try {
+			await ProcessAsync(_publisher, sink, token);
+		} catch (Exception ex) when (ex is not OperationCanceledException) {
+			Logger.Error(ex, "Telemetry loop stopped");
+		}
+	}
+
+	public async ValueTask DisposeAsync() {
+		if (Interlocked.Exchange(ref _cts, null) is { } cts) {
+			using (cts) {
+				cts.Cancel();
+			}
+		}
+
+		await _task.ConfigureAwait(
+			ConfigureAwaitOptions.SuppressThrowing |
+			ConfigureAwaitOptions.ContinueOnCapturedContext);
 	}
 
 	// we send messages on the publisher, and receive responses directly to the channel
 	// using the channel reduces chatter on the main queue.
-	private async Task ProcessAsync(IPublisher publisher, ITelemetrySink sink) {
+	private async Task ProcessAsync(IPublisher publisher, ITelemetrySink sink, CancellationToken token) {
 		var channel = Channel.CreateBounded<Message>(new BoundedChannelOptions(500) {
 			SingleReader = true,
 			FullMode = BoundedChannelFullMode.DropOldest,
@@ -105,10 +120,10 @@ public sealed class TelemetryService :
 		publisher.Publish(scheduleInitialCollect);
 
 		var data = new JsonObject();
-		await foreach (var message in channel.Reader.ReadAllAsync(_cts.Token)) {
+		await foreach (var message in channel.Reader.ReadAllAsync(token)) {
 			switch (message) {
 				case TelemetryMessage.Collect:
-					Handle(usageRequest);
+					await Handle(usageRequest, token);
 					publisher.Publish(usageRequest);
 					publisher.Publish(scheduleFlush);
 					break;
@@ -132,7 +147,7 @@ public sealed class TelemetryService :
 					break;
 
 				case TelemetryMessage.Flush:
-					await sink.Flush(data, _cts.Token);
+					await sink.Flush(data, token);
 					data.Clear();
 					publisher.Publish(scheduleCollect);
 					break;
@@ -157,9 +172,9 @@ public sealed class TelemetryService :
 		_leaderId = message.Leader.InstanceId;
 	}
 
-	private void Handle(TelemetryMessage.Request message) {
+	private async ValueTask Handle(TelemetryMessage.Request message, CancellationToken token) {
 		if (_firstEpochId == Guid.Empty)
-			ReadFirstEpoch();
+			await ReadFirstEpoch(token);
 
 		message.Envelope.ReplyWith(new TelemetryMessage.Response(
 			"version", JsonValue.Create(VersionInfo.Version)));
@@ -251,10 +266,10 @@ public sealed class TelemetryService :
 		envelope.ReplyWith(new TelemetryMessage.Response("gossip", seeds));
 	}
 
-	private void ReadFirstEpoch() {
+	private async ValueTask ReadFirstEpoch(CancellationToken token) {
 		try {
 			var chunk = _manager.GetChunkFor(0);
-			var result = chunk.TryReadAt(0, false);
+			var result = await chunk.TryReadAt(0, false, token);
 
 			if (!result.Success)
 				return;

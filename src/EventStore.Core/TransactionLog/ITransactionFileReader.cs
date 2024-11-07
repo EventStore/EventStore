@@ -11,11 +11,11 @@ namespace EventStore.Core.TransactionLog;
 public interface ITransactionFileReader {
 	void Reposition(long position);
 
-	SeqReadResult TryReadNext();
+	ValueTask<SeqReadResult> TryReadNext(CancellationToken token);
 	ValueTask<SeqReadResult> TryReadPrev(CancellationToken token);
 
-	RecordReadResult TryReadAt(long position, bool couldBeScavenged);
-	bool ExistsAt(long position);
+	ValueTask<RecordReadResult> TryReadAt(long position, bool couldBeScavenged, CancellationToken token);
+	ValueTask<bool> ExistsAt(long position, CancellationToken token);
 }
 
 public struct TFReaderLease : IDisposable {
@@ -41,19 +41,17 @@ public struct TFReaderLease : IDisposable {
 		Reader.Reposition(position);
 	}
 
-	public SeqReadResult TryReadNext() {
-		return Reader.TryReadNext();
-	}
+	public ValueTask<SeqReadResult> TryReadNext(CancellationToken token)
+		=> Reader.TryReadNext(token);
 
 	public ValueTask<SeqReadResult> TryReadPrev(CancellationToken token) {
 		return Reader.TryReadPrev(token);
 	}
 
-	public bool ExistsAt(long position) {
-		return Reader.ExistsAt(position);
+	public ValueTask<bool> ExistsAt(long position, CancellationToken token) {
+		return Reader.ExistsAt(position, token);
 	}
 
-	public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
-		return Reader.TryReadAt(position, couldBeScavenged);
-	}
+	public ValueTask<RecordReadResult> TryReadAt(long position, bool couldBeScavenged, CancellationToken token)
+		=> Reader.TryReadAt(position, couldBeScavenged, token);
 }

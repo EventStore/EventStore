@@ -86,7 +86,7 @@ public abstract class MiniNodeWithExistingRecords<TLogFormat, TStreamId> : Speci
 
 		await WriteTestScenario(CancellationToken.None);
 
-		Writer.Close();
+		await Writer.DisposeAsync();
 		Writer = null;
 		WriterCheckpoint.Flush();
 		ChaserCheckpoint.Write(WriterCheckpoint.Read());

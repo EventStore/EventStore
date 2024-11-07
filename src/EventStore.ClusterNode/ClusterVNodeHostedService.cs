@@ -136,18 +136,18 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			}
 
 			var modifiedOptions = _options;
-			var registryFactory = new AuthorizationPolicyRegistryFactory(_options, configuration, pluginLoader);
-			foreach (var authSubsystem in registryFactory.GetSubsystems()) {
-				modifiedOptions = modifiedOptions.WithPlugableComponent(authSubsystem);
+			if (_options.Auth.AuthorizationType.Equals("internal", StringComparison.InvariantCultureIgnoreCase)) {
+				var registryFactory = new AuthorizationPolicyRegistryFactory(_options, configuration, pluginLoader);
+				foreach (var authSubsystem in registryFactory.GetSubsystems()) {
+					modifiedOptions = modifiedOptions.WithPlugableComponent(authSubsystem);
+				}
+
+				var internalFactory = new AuthorizationProviderFactory(components =>
+					new InternalAuthorizationProviderFactory(registryFactory.Create(components.MainQueue)));
+				return (modifiedOptions, internalFactory);
 			}
 
-			var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
-				{
-					"internal", new AuthorizationProviderFactory(components =>
-						new InternalAuthorizationProviderFactory(registryFactory.Create(components.MainQueue))
-					)
-				}
-			};
+			var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> { };
 
 			foreach (var potentialPlugin in pluginLoader.Load<IAuthorizationPlugin>()) {
 				try {
@@ -156,8 +156,9 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 						"Loaded authorization plugin: {plugin} version {version} (Command Line: {commandLine})",
 						potentialPlugin.Name, potentialPlugin.Version, commandLine);
 					authorizationTypeToPlugin.Add(commandLine,
-						new AuthorizationProviderFactory(_ =>
-							potentialPlugin.GetAuthorizationProviderFactory(authorizationConfig)));
+						new AuthorizationProviderFactory(
+							_ => potentialPlugin.GetAuthorizationProviderFactory(authorizationConfig)
+						));
 				} catch (CompositionException ex) {
 					Log.Error(ex, "Error loading authentication plugin.");
 				}
@@ -268,9 +269,20 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 		}
 
 		IPlugableComponent ConfigureMD5() {
-			var md5Provider = GetMD5ProviderFactories().FirstOrDefault()?.Build() ?? new NetMD5Provider();
-			MD5.UseProvider(md5Provider);
-			return md5Provider;
+			IMD5Provider provider;
+			try {
+				// use the default net md5 provider if we can - i.e. in non fips environments.
+				provider = new NetMD5Provider();
+				MD5.UseProvider(provider);
+			} catch {
+				// didn't work, we are probably in a fips environment, try to load a plugin
+				provider = GetMD5ProviderFactories().FirstOrDefault()?.Build() ??
+					throw new ApplicationInitializationException("Could not find an enabled FileHashProviderFactory");
+				MD5.UseProvider(provider);
+			}
+
+			Log.Information("Using {Name} FileHashProvider.", provider.Name);
+			return provider;
 		}
 
 		IEnumerable<IMD5ProviderFactory> GetMD5ProviderFactories() {

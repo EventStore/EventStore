@@ -554,20 +554,6 @@ Import-Certificate -FilePath .\ca.crt -CertStoreLocation Cert:\LocalMachine\CA
 ```
 :::
 
-### TCP protocol security
-
-Although TCP is disabled by default for external connections (clients), cluster nodes still use TCP for replication. If you aren't running EventStoreDB in insecure mode, all TCP communication will use TLS using the same certificates as SSL.
-
-You can, however, disable TLS for both internal and external TCP.
-
-| Format               | Syntax                                |
-|:---------------------|:--------------------------------------|
-| Command line         | `--disable-internal-tcp-tls`          |
-| YAML                 | `DisableInternalTcpTls`               |
-| Environment variable | `EVENTSTORE_DISABLE_INTERNAL_TCP_TLS` |
-
-**Default**: `false`
-
 ## Authentication
 
 EventStoreDB supports authentication based on usernames and passwords out of the box. The Enterprise version
@@ -722,31 +708,174 @@ programmatically.
 
 This allows administrators to define stream access policies for EventStoreDB based on stream prefix.
 
-### Configuration
+### Enabling
 
 You require a [license key](../quick-start/installation.md#license-keys) to use this feature.
 
-Refer to the [configuration guide](../configuration/README.md) for configuration mechanisms other than YAML.
+The stream access policy is configured by the last event in the `$authorization-policy-settings` stream.
 
-The feature can be enabled by setting the `Authorization:PolicyType` option to `streampolicy`.
+Enable stream policies by appending an event of type `$authorization-policy-changed` to the `$authorization-policy-settings` stream:
 
-You can do this by adding the following to the server configuration file:
+::: tabs
+@tab HTTP
+```http
+POST https://localhost:2113/streams/$authorization-policy-settings
+Authorization: Basic admin changeit
+Content-Type: application/json
+ES-EventId: 11887e82-9fb4-4112-b937-aea895b32a4a
+ES-EventType: $authorization-policy-changed
 
-```yaml
-Authorization:
-  PolicyType: streampolicy
+{
+    "streamAccessPolicyType": "streampolicy"
+}
 ```
+
+@tab Powershell
+```powershell
+$JSON = @"
+{
+    "streamAccessPolicyType": "streampolicy"
+}
+"@ `
+
+curl.exe -X POST `
+  -H "Content-Type: application/json" `
+  -H "ES-EventId: 11887e82-9fb4-4112-b937-aea895b32a4b" `
+  -H "ES-EventType: `$authorization-policy-changed" `
+  -u "admin:changeit" `
+  -d $JSON `
+  https://localhost:2113/streams/%24authorization-policy-settings
+```
+
+@tab Bash
+```bash
+JSON='{
+    "streamAccessPolicyType": "streampolicy"
+}'
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "ES-EventId: 814f6d67-515c-4bd6-a6d6-8a0235ec719a" \
+  -H "ES-EventType: \$authorization-policy-changed" \
+  -u "admin:changeit" \
+  -d "$JSON" \
+  https://localhost:2113/streams/%24authorization-policy-settings
+```
+:::
+
+And disable stream policies by setting the stream access policy type back to `acl`:
+
+::: tabs
+@tab HTTP
+
+```http
+### Configure cluster to use acls
+POST https://localhost:2113/streams/$authorization-policy-settings
+Authorization: Basic admin changeit
+Content-Type: application/json
+ES-EventId: d07a6637-d9d0-43b7-8f48-6a9a8800af12
+ES-EventType: $authorization-policy-changed
+
+{
+    "streamAccessPolicyType": "acl"
+}
+```
+
+@tab Powershell
+```Powershell
+$JSON = @"
+{
+    "streamAccessPolicyType": "acl"
+}
+"@ `
+
+curl.exe -X POST `
+  -H "Content-Type: application/json" `
+  -H "ES-EventId: 3762c89e-d12e-4a01-83bb-781459c93ebc" `
+  -H "ES-EventType: `$authorization-policy-changed" `
+  -u "admin:changeit" `
+  -d $JSON `
+  https://localhost:2113/streams/%24authorization-policy-settings
+```
+@tab Bash
+```bash
+JSON='{
+    "streamAccessPolicyType": "acl"
+}'
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "ES-EventId: d6b3a316-2493-4bcd-9019-e02b5ae4eec3" \
+  -H "ES-EventType: \$authorization-policy-changed" \
+  -u "admin:changeit" \
+  -d "$JSON" \
+  https://localhost:2113/streams/%24authorization-policy-settings
+```
+
+:::
+
+When stream policies are enabled, you should see the following logs:
 
 You can check that the feature is enabled by searching for the following log at startup:
 
 ```
-[20056, 1,11:14:40.088,INF] ClusterVNodeHostedService Loaded authorization policy plugin: StreamPolicyPlugin version 24.10.0.0 (Command Line: streampolicy)
-[20056, 1,11:14:40.088,INF] ClusterVNodeHostedService Using authorization policy plugin: StreamPolicyPlugin version 24.10.0.0
+[22860,28,17:30:42.247,INF] StreamBasedAuthorizationPolicyRegistry New Authorization Policy Settings event received
+[22860,28,17:30:42.249,INF] StreamBasedAuthorizationPolicyRegistry Starting factory streampolicy
+...
+[22860,28,17:30:42.264,INF] StreamBasedPolicySelector      Existing policy found in $policies stream (0)
+[22860,28,17:30:42.269,INF] StreamBasedPolicySelector      Successfully applied policy
+[22860,28,17:30:42.271,INF] StreamBasedPolicySelector      Subscribing to $policies at 0
+```
+
+If you do not have a valid license, stream policies will log the following error and will not start. EventStoreDB will continue to run with the current policy type:
+
+```
+[22928, 1,17:31:56.879,INF] StreamPolicySelector           Stream Policies plugin is not licensed, stream policy authorization may not be enabled.
+...
+[22928,28,17:31:57.030,ERR] StreamPolicySelector           Stream Policies plugin is not licensed, cannot enable Stream policies
+[22928,28,17:31:57.030,ERR] StreamBasedAuthorizationPolicyRegistry Failed to enable policy selector plugin streampolicy. Authorization settings will not be applied
 ```
 
 ::: note
 If you enable the Stream Policy feature, EventStoreDB will not enforce [stream ACLs](#access-control-lists).
 :::
+
+### Overriding the default
+
+If the `$authorization-policy-settings` stream is empty and there is no configuration, EventStoreDB will default to using ACLs.
+
+If you would rather default to stream policies, you can do this by setting the `Authorization:DefaultPolicyType` option to `streampolicy`.
+
+::: note
+Any events in the `$authorization-policy-settings` stream take precedence over the `Authorization:DefaultPolicyType` setting.
+:::
+
+You can do this by adding the following to the server configuration file:
+
+```yaml
+Authorization:
+  DefaultPolicyType: streampolicy
+```
+
+Refer to the [configuration guide](../configuration/README.md) for configuration mechanisms other than YAML.
+
+::: warning
+If the policy type configured in `Authorization:DefaultPolicyType` is not present at startup, EventStoreDB will not start.
+:::
+
+### Fallback stream access policy
+
+If none of the events in the `$authorization-policy-settings` stream are valid, or if the stream policy plugin could not be started (for example, due to it being unlicensed), EventStoreDB will fall back to restricted access.
+
+This locks down all stream access to admins only to prevent EventStoreDB from falling back to a more permissive policy such as ACLs.
+
+To recover from this, either fix the issue preventing the plugin from loading, or set the stream access policy type to a different policy such as ACL:
+
+```json
+{
+    "streamAccessPolicyType": "acl"
+}
+```
 
 ### Stream Policies and Rules
 
@@ -766,7 +895,7 @@ EventStoreDB will log when the default policy is created:
 [31124,16,11:18:15.099,DBG] StreamBasedPolicySelector Successfully wrote default policy to stream $policies.
 ```
 
-The default policy looks like this:
+::: details Click here to see the default policy
 
 ```
 {
@@ -822,8 +951,10 @@ The default policy looks like this:
 }
 ```
 
+:::
+
 ::: note
-Operations users in the `$ops` group are excluded from the `$all` group and does not have access to user streams by default.
+Operations users in the `$ops` group are excluded from the `$all` group and do not have access to user streams by default.
 :::
 
 #### Custom Stream Policies
@@ -857,11 +988,20 @@ And then add an entry to `streamRules` to specify the stream prefixes which shou
 }]
 ```
 
-You still need to specify default stream rules when you update the `$policies` stream. So the above example would look like this in full:
+You still need to specify default stream rules when you update the `$policies` stream.
+
+::: details Click here to see the above example in full
 
 ```
 {
   "streamPolicies": {
+    "customPolicy": {
+        "$r": ["ouro", "readers"],
+        "$w": ["ouro"],
+        "$d": ["ouro"],
+        "$mr": ["ouro"],
+        "$mw": ["ouro"]
+    },
     "publicDefault": {
       "$r": ["$all"],
       "$w": ["$all"],
@@ -876,20 +1016,12 @@ You still need to specify default stream rules when you update the `$policies` s
       "$mr": ["$admins"],
       "$mw": ["$admins"]
     },
-    {
     "projectionsDefault": {
       "$r": ["$all"],
       "$w": ["$admins"],
       "$d": ["$admins"],
       "$mr": ["$all"],
       "$mw": ["$admins"]
-    },
-    "customPolicy": {
-      "$r": ["$all"],
-      "$w": ["$all"],
-      "$d": ["$all"],
-      "$mr": ["$all"],
-      "$mw": ["$all"]
     }
   },
   "streamRules": [
@@ -928,6 +1060,8 @@ You still need to specify default stream rules when you update the `$policies` s
   }
 }
 ```
+
+:::
 
 ::: note
 If a policy update is invalid, it will not be applied and an error will be logged. EventStoreDB will continue running with the previous valid policy in place.

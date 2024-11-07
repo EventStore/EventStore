@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.DataStructures.ProbabilisticFilter;
@@ -17,7 +18,7 @@ using MD5 = EventStore.Core.Hashing.MD5;
 
 namespace EventStore.Core.Index;
 
-public unsafe partial class PTable {
+public partial class PTable {
 	public static PTable FromFile(string filename, int initialReaders, int maxReaders,
 		int cacheDepth, bool skipIndexVerify,
 		bool useBloomFilter = true,
@@ -423,12 +424,11 @@ public unsafe partial class PTable {
 		}
 	}
 
-	public static PTable Scavenged(
+	public static async ValueTask<(PTable, long SpaceSaved)> Scavenged(
 		PTable table,
 		string outputFile,
 		byte version,
-		Func<IndexEntry, bool> shouldKeep,
-		out long spaceSaved,
+		Func<IndexEntry, CancellationToken, ValueTask<bool>> shouldKeep,
 		int initialReaders,
 		int maxReaders,
 		int cacheDepth = 16,
@@ -471,8 +471,7 @@ public unsafe partial class PTable {
 
 						ulong? previousHash = null;
 						while (enumerator.MoveNext()) {
-							ct.ThrowIfCancellationRequested();
-							if (shouldKeep(enumerator.Current)) {
+							if (await shouldKeep(enumerator.Current, ct)) {
 								var current = enumerator.Current;
 								AppendRecordTo(bs, buffer, version, enumerator.Current, indexEntrySize);
 								// WRITE BLOOM FILTER ENTRY
@@ -511,8 +510,7 @@ public unsafe partial class PTable {
 								bloomFilterFile);
 						}
 
-						spaceSaved = 0;
-						return null;
+						return (null, 0);
 					}
 
 					if (droppedCount == 0 && forceKeep) {
@@ -550,8 +548,7 @@ public unsafe partial class PTable {
 				watch.Elapsed,
 				droppedCount, keptCount);
 			var scavengedTable = new PTable(outputFile, Guid.NewGuid(), initialReaders, maxReaders, cacheDepth, skipIndexVerify, useBloomFilter, lruCacheSize);
-			spaceSaved = table._size - scavengedTable._size;
-			return scavengedTable;
+			return (scavengedTable, table._size - scavengedTable._size);
 		} catch (Exception) {
 			try {
 				File.Delete(outputFile);
@@ -583,7 +580,7 @@ public unsafe partial class PTable {
 		return idx;
 	}
 
-	private static void AppendRecordTo(Stream stream, byte[] buffer, byte version, IndexEntry entry,
+	private static unsafe void AppendRecordTo(Stream stream, byte[] buffer, byte version, IndexEntry entry,
 		int indexEntrySize) {
 		var bytes = entry.Bytes;
 		if (version == PTableVersions.IndexV1) {

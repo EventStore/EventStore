@@ -25,9 +25,8 @@ public class TracingChunkWriterForExecutor<TStreamId, TRecord> :
 
 	public string FileName => _wrapped.FileName;
 
-	public void WriteRecord(RecordForExecutor<TStreamId, TRecord> record) {
-		_wrapped.WriteRecord(record);
-	}
+	public ValueTask WriteRecord(RecordForExecutor<TStreamId, TRecord> record, CancellationToken token)
+		=> _wrapped.WriteRecord(record, token);
 
 	public async ValueTask<(string, long)> Complete(CancellationToken token) {
 		var result = await _wrapped.Complete(token);

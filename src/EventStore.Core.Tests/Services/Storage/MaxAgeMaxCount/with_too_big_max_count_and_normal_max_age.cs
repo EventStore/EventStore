@@ -38,31 +38,31 @@ public class with_too_big_max_count_and_normal_max_age<TLogFormat, TStreamId> : 
 	}
 
 	[Test]
-	public void on_single_event_read_all_metadata_is_ignored() {
-		var result = ReadIndex.ReadEvent("ES", 0);
+	public async Task on_single_event_read_all_metadata_is_ignored() {
+		var result = await ReadIndex.ReadEvent("ES", 0, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_r2, result.Record);
 
-		result = ReadIndex.ReadEvent("ES", 1);
+		result = await ReadIndex.ReadEvent("ES", 1, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_r3, result.Record);
 
-		result = ReadIndex.ReadEvent("ES", 2);
+		result = await ReadIndex.ReadEvent("ES", 2, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_r4, result.Record);
 
-		result = ReadIndex.ReadEvent("ES", 3);
+		result = await ReadIndex.ReadEvent("ES", 3, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_r5, result.Record);
 
-		result = ReadIndex.ReadEvent("ES", 4);
+		result = await ReadIndex.ReadEvent("ES", 4, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_r6, result.Record);
 	}
 
 	[Test]
-	public void on_forward_range_read_all_metadata_is_ignored() {
-		var result = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
+	public async Task on_forward_range_read_all_metadata_is_ignored() {
+		var result = await ReadIndex.ReadStreamEventsForward("ES", 0, 100, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(5, result.Records.Length);
 		Assert.AreEqual(_r2, result.Records[0]);
@@ -73,8 +73,8 @@ public class with_too_big_max_count_and_normal_max_age<TLogFormat, TStreamId> : 
 	}
 
 	[Test]
-	public void on_backward_range_read_all_metadata_is_ignored() {
-		var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
+	public async Task on_backward_range_read_all_metadata_is_ignored() {
+		var result = await ReadIndex.ReadStreamEventsBackward("ES", -1, 100, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(5, result.Records.Length);
 		Assert.AreEqual(_r2, result.Records[4]);
@@ -85,8 +85,9 @@ public class with_too_big_max_count_and_normal_max_age<TLogFormat, TStreamId> : 
 	}
 
 	[Test]
-	public void on_read_all_forward_all_metadata_is_ignored() {
-		var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords();
+	public async Task on_read_all_forward_all_metadata_is_ignored() {
+		var records = (await ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, CancellationToken.None))
+			.EventRecords();
 		Assert.AreEqual(6, records.Count);
 		Assert.AreEqual(_r1, records[0].Event);
 		Assert.AreEqual(_r2, records[1].Event);

@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
@@ -175,9 +176,9 @@ public class ClientTcpDispatcher : ClientWriteTcpDispatcher {
 	}
 
 	private static ResolvedIndexedEvent[]
-		ConvertToResolvedIndexedEvents(ResolvedEvent[] events) {
-		var result = new ResolvedIndexedEvent[events.Length];
-		for (int i = 0; i < events.Length; ++i) {
+		ConvertToResolvedIndexedEvents(IReadOnlyList<ResolvedEvent> events) {
+		var result = new ResolvedIndexedEvent[events.Count];
+		for (int i = 0; i < events.Count; ++i) {
 			result[i] = new ResolvedIndexedEvent(events[i].Event, events[i].Link);
 		}
 
@@ -250,9 +251,9 @@ public class ClientTcpDispatcher : ClientWriteTcpDispatcher {
 		return new TcpPackage(TcpCommand.FilteredReadAllEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
 	}
 
-	private static Client.Messages.ResolvedEvent[] ConvertToResolvedEvents(ResolvedEvent[] events) {
-		var result = new Client.Messages.ResolvedEvent[events.Length];
-		for (int i = 0; i < events.Length; ++i) {
+	private static Client.Messages.ResolvedEvent[] ConvertToResolvedEvents(IReadOnlyList<ResolvedEvent> events) {
+		var result = new Client.Messages.ResolvedEvent[events.Count];
+		for (int i = 0; i < events.Count; ++i) {
 			result[i] = new Client.Messages.ResolvedEvent(events[i]);
 		}
 
@@ -456,12 +457,12 @@ public class ClientTcpDispatcher : ClientWriteTcpDispatcher {
 		ClaimsPrincipal user) {
 		return new ClientMessage.ScavengeDatabase(envelope, package.CorrelationId, user, 0, 1, null, null, false);
 	}
-	
+
 	private TcpPackage WrapScavengeDatabaseResponse(Message msg) {
 		ScavengeDatabaseResponse.Types.ScavengeResult result;
 		string scavengeId;
 		Guid correlationId;
-		
+
 		switch (msg) {
 			case ClientMessage.ScavengeDatabaseStartedResponse startedResponse:
 				result = ScavengeDatabaseResponse.Types.ScavengeResult.Started;

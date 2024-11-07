@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Diagnostics;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
@@ -415,11 +416,11 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		}
 	}
 
-	public void Scavenge(IIndexScavengerLog log, CancellationToken ct) =>
+	public ValueTask Scavenge(IIndexScavengerLog log, CancellationToken ct) =>
 		Scavenge(shouldKeep: null, log: log, ct: ct);
 
-	public void Scavenge(
-		Func<IndexEntry, bool> shouldKeep,
+	public async ValueTask Scavenge(
+		Func<IndexEntry, CancellationToken, ValueTask<bool>> shouldKeep,
 		IIndexScavengerLog log,
 		CancellationToken ct) {
 
@@ -429,11 +430,8 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		try {
 			using var _ = _statusTracker.StartScavenging();
 			Log.Information("Starting scavenge of TableIndex.");
-			ScavengeInternal(shouldKeep, log, ct);
+			await ScavengeInternal(shouldKeep, log, ct);
 		} finally {
-			// Since scavenging indexes is the only place the ExistsAt optimization makes sense (and takes up a lot of memory), we can clear it after an index scavenge has completed. 
-			TFChunkReaderExistsAtOptimizer.Instance.DeOptimizeAll();
-
 			lock (_awaitingTablesLock) {
 				_backgroundRunning = false;
 				_backgroundRunningEvent.Set();
@@ -445,24 +443,24 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		}
 	}
 
-	private void ScavengeInternal(
-		Func<IndexEntry, bool> shouldKeep,
+	private async ValueTask ScavengeInternal(
+		Func<IndexEntry, CancellationToken, ValueTask<bool>> shouldKeep,
 		IIndexScavengerLog log,
 		CancellationToken ct) {
 
 		var toScavenge = _indexMap.InOrder().ToList();
 
 		foreach (var pTable in toScavenge) {
-			var startNew = Stopwatch.StartNew();
+			var startNew = new Timestamp();
 
 			try {
-				ct.ThrowIfCancellationRequested();
-
 				using (var reader = _tfReaderFactory()) {
 					var indexmapFile = Path.Combine(_directory, IndexMapFilename);
 
-					Func<IndexEntry, bool> existsAt = entry => reader.ExistsAt(entry.Position);
-					var scavengeResult = _indexMap.Scavenge(
+					Func<IndexEntry, CancellationToken, ValueTask<bool>> existsAt =
+						(entry, token) => reader.ExistsAt(entry.Position, token);
+
+					var scavengeResult = await _indexMap.Scavenge(
 						pTable.Id,
 						ct,
 						shouldKeep ?? existsAt,
@@ -646,12 +644,12 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		return false;
 	}
 
-	public bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+	public async ValueTask<IndexEntry?> TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream, CancellationToken token) {
 		var counter = 0;
 		while (counter < 5) {
 			counter++;
 			try {
-				return TryGetLatestEntryInternal(stream, beforePosition, isForThisStream, out entry);
+				return await TryGetLatestEntryInternal(stream, beforePosition, isForThisStream, token);
 			} catch (FileBeingDeletedException) {
 				Log.Debug("File being deleted.");
 			} catch (MaybeCorruptIndexException) {
@@ -663,27 +661,26 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		throw new InvalidOperationException("Files are locked.");
 	}
 
-	public bool TryGetLatestEntry(TStreamId streamId, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+	public ValueTask<IndexEntry?> TryGetLatestEntry(TStreamId streamId, long beforePosition, Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream, CancellationToken token) {
 		ulong stream = CreateHash(streamId);
-		return TryGetLatestEntry(stream, beforePosition, isForThisStream, out entry);
+		return TryGetLatestEntry(stream, beforePosition, isForThisStream, token);
 	}
 
-	private bool TryGetLatestEntryInternal(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+	private async ValueTask<IndexEntry?> TryGetLatestEntryInternal(ulong stream, long beforePosition, Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream, CancellationToken token) {
 		var awaiting = _awaitingMemTables;
 
 		foreach (var t in awaiting) {
-			if (t.Table.TryGetLatestEntry(stream, beforePosition, isForThisStream, out entry))
-				return true;
+			if (await t.Table.TryGetLatestEntry(stream, beforePosition, isForThisStream, token) is { } entry)
+				return entry;
 		}
 
 		var map = _indexMap;
 		foreach (var table in map.InOrder()) {
-			if (table.TryGetLatestEntry(stream, beforePosition, isForThisStream, out entry))
-				return true;
+			if (await table.TryGetLatestEntry(stream, beforePosition, isForThisStream, token) is { } entry)
+				return entry;
 		}
 
-		entry = InvalidIndexEntry;
-		return false;
+		return null;
 	}
 
 	public bool TryGetOldestEntry(TStreamId streamId, out IndexEntry entry) {
@@ -829,7 +826,7 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 
 		// 1. assemble results per table for memtables and ptables
 		// discard any results with 0 entries.
-		var resultsPerTable = new List<IList<IndexEntry>>(16);
+		var resultsPerTable = new List<IReadOnlyList<IndexEntry>>(16);
 
 		var awaiting = _awaitingMemTables;
 		for (int index = 0; index < awaiting.Count; index++) {

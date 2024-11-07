@@ -1,4 +1,12 @@
 services:
+  volumes-provisioner:
+    image: hasnat/volumes-provisioner
+    environment:
+      PROVISION_DIRECTORIES: "1000:1000:0755:/tmp/certs"
+    volumes:
+      - certs:/tmp/certs
+    network_mode: none
+
   setup:
     image: eventstore/es-gencert-cli:1.0.2
     entrypoint: bash
@@ -12,7 +20,9 @@ services:
       && find . -type f -print0 | xargs -0 chmod 666"
     container_name: setup
     volumes:
-      - ./certs:/certs
+      - certs:/certs
+    depends_on:
+      - volumes-provisioner
 
   node1.eventstore: &template
     image: docker.eventstore.com/eventstore-preview/eventstoredb-ee:24.10.0-preview1-x64-8.0-bookworm-slim
@@ -20,8 +30,8 @@ services:
     env_file:
       - vars.env
     environment:
-      - EVENTSTORE_INT_IP=172.30.240.11
-      - EVENTSTORE_ADVERTISE_HTTP_PORT_TO_CLIENT_AS=2111
+      - EVENTSTORE_REPLICATION_IP=172.30.240.11
+      - EVENTSTORE_ADVERTISE_NODE_PORT_TO_CLIENT_AS=2111
       - EVENTSTORE_GOSSIP_SEED=172.30.240.12:2113,172.30.240.13:2113
       - EVENTSTORE_TRUSTED_ROOT_CERTIFICATES_PATH=/certs/ca
       - EVENTSTORE_CERTIFICATE_FILE=/certs/node1/node.crt
@@ -38,7 +48,7 @@ services:
     ports:
       - 2111:2113
     volumes:
-      - ./certs:/certs
+      - certs:/certs
     depends_on:
       - setup
     restart: always
@@ -52,8 +62,8 @@ services:
     env_file:
       - vars.env
     environment:
-      - EVENTSTORE_INT_IP=172.30.240.12
-      - EVENTSTORE_ADVERTISE_HTTP_PORT_TO_CLIENT_AS=2112
+      - EVENTSTORE_REPLICATION_IP=172.30.240.12
+      - EVENTSTORE_ADVERTISE_NODE_PORT_TO_CLIENT_AS=2112
       - EVENTSTORE_GOSSIP_SEED=172.30.240.11:2113,172.30.240.13:2113
       - EVENTSTORE_TRUSTED_ROOT_CERTIFICATES_PATH=/certs/ca
       - EVENTSTORE_CERTIFICATE_FILE=/certs/node2/node.crt
@@ -77,8 +87,8 @@ services:
     <<: *template
     container_name: node3.eventstore
     environment:
-      - EVENTSTORE_INT_IP=172.30.240.13
-      - EVENTSTORE_ADVERTISE_HTTP_PORT_TO_CLIENT_AS=2113
+      - EVENTSTORE_REPLICATION_IP=172.30.240.13
+      - EVENTSTORE_ADVERTISE_NODE_PORT_TO_CLIENT_AS=2113
       - EVENTSTORE_GOSSIP_SEED=172.30.240.11:2113,172.30.240.12:2113
       - EVENTSTORE_TRUSTED_ROOT_CERTIFICATES_PATH=/certs/ca
       - EVENTSTORE_CERTIFICATE_FILE=/certs/node3/node.crt
@@ -106,3 +116,6 @@ networks:
       driver: default
       config:
         - subnet: 172.30.240.0/24
+
+volumes:
+  certs:

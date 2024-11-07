@@ -34,29 +34,30 @@ public class when_building_an_index_off_tfile_with_prepares_but_no_commits<TLogF
 	}
 
 	[Test]
-	public void the_first_stream_is_not_in_index_yet() {
-		var result = ReadIndex.ReadEvent("test1", 0);
+	public async Task the_first_stream_is_not_in_index_yet() {
+		var result = await ReadIndex.ReadEvent("test1", 0, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NoStream, result.Result);
 		Assert.IsNull(result.Record);
 	}
 
 	[Test]
-	public void the_second_stream_is_not_in_index_yet() {
-		var result = ReadIndex.ReadEvent("test2", 0);
+	public async Task the_second_stream_is_not_in_index_yet() {
+		var result = await ReadIndex.ReadEvent("test2", 0, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NoStream, result.Result);
 		Assert.IsNull(result.Record);
 	}
 
 	[Test]
-	public void the_last_event_is_not_returned_for_stream() {
-		var result = ReadIndex.ReadEvent("test2", -1);
+	public async Task the_last_event_is_not_returned_for_stream() {
+		var result = await ReadIndex.ReadEvent("test2", -1, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NoStream, result.Result);
 		Assert.IsNull(result.Record);
 	}
 
 	[Test]
-	public void read_all_events_forward_returns_no_events() {
-		var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).EventRecords();
+	public async Task read_all_events_forward_returns_no_events() {
+		var records = (await ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10, CancellationToken.None))
+			.EventRecords();
 		Assert.AreEqual(0, records.Count);
 	}
 

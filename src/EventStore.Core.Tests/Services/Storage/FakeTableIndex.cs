@@ -45,13 +45,13 @@ public class FakeTableIndex<TStreamId> : ITableIndex<TStreamId> {
 		return false;
 	}
 
-	public bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IndexEntry?> TryGetLatestEntry(ulong stream, long beforePosition,
+		Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream, CancellationToken token)
+		=> ValueTask.FromException<IndexEntry?>(new NotImplementedException());
 
-	public bool TryGetLatestEntry(TStreamId streamId, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<IndexEntry?> TryGetLatestEntry(TStreamId streamId, long beforePosition,
+		Func<IndexEntry, CancellationToken, ValueTask<bool>> isForThisStream, CancellationToken token)
+		=> ValueTask.FromException<IndexEntry?>(new NotImplementedException());
 
 	public bool TryGetOldestEntry(TStreamId streamId, out IndexEntry entry) {
 		entry = InvalidIndexEntry;
@@ -85,16 +85,17 @@ public class FakeTableIndex<TStreamId> : ITableIndex<TStreamId> {
 		throw new NotImplementedException();
 	}
 
-	public void Scavenge(IIndexScavengerLog log, CancellationToken ct) {
+	public ValueTask Scavenge(IIndexScavengerLog log, CancellationToken ct) {
 		ScavengeCount++;
+		return ValueTask.CompletedTask;
 	}
 
-	public void Scavenge(
-		Func<IndexEntry, bool> shouldKeep,
+	public ValueTask Scavenge(
+		Func<IndexEntry, CancellationToken, ValueTask<bool>> shouldKeep,
 		IIndexScavengerLog log,
 		CancellationToken ct) {
 
-		Scavenge(log, ct);
+		return Scavenge(log, ct);
 	}
 
 	public Task MergeIndexes() {

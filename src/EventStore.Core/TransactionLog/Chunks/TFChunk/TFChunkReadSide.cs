@@ -139,16 +139,9 @@ public partial class TFChunk {
 		private readonly object _lock = new();
 		private bool _wantMidpoints;
 		private Midpoint[] _midpoints;
-		private bool _optimizeCache;
-		private InMemoryBloomFilter _logPositionsBloomFilter;
 
-		private bool CacheIsOptimized {
-			get { return _optimizeCache && _logPositionsBloomFilter != null; }
-		}
-
-		public TFChunkReadSideScavenged(TFChunk chunk, bool optimizeCache, ITransactionFileTracker tracker)
+		public TFChunkReadSideScavenged(TFChunk chunk, ITransactionFileTracker tracker)
 			: base(chunk, tracker) {
-			_optimizeCache = optimizeCache;
 			if (!chunk.ChunkHeader.IsScavenged)
 				throw new ArgumentException(string.Format("Chunk provided is not scavenged: {0}", chunk));
 		}
@@ -192,60 +185,6 @@ public partial class TFChunk {
 				// want midpoints but don't have them, get them. synchronization is ok here because rare
 				_midpoints = PopulateMidpoints(Chunk._midpointsDepth, workItem);
 				return _midpoints;
-			}
-		}
-
-		public void OptimizeExistsAt() {
-			if (_optimizeCache && _logPositionsBloomFilter == null)
-				_logPositionsBloomFilter = PopulateBloomFilter();
-		}
-
-		public void DeOptimizeExistsAt() {
-			if (_logPositionsBloomFilter != null)
-				_logPositionsBloomFilter = null;
-		}
-
-		private InMemoryBloomFilter PopulateBloomFilter() {
-			var mapCount = Chunk.ChunkFooter.MapCount;
-			if (mapCount <= 0)
-				return null;
-
-			InMemoryBloomFilter bf = null;
-			double p = 1e-4; //false positive probability
-
-			while (p < 1.0) {
-				try {
-					bf = new InMemoryBloomFilter(mapCount, p);
-					//Log.Debug("Created bloom filter with {numBits} bits and {numHashFunctions} hash functions for chunk {chunk} with map count: {mapCount}", bf.NumBits, bf.NumHashFunctions, Chunk.FileName, mapCount);
-					break;
-				} catch (ArgumentOutOfRangeException) {
-					p *= 10.0;
-				}
-			}
-
-			if (bf == null) {
-				Log.Warning("Could not create bloom filter for chunk: {chunk}, map count: {mapCount}", Chunk.FileName,
-					mapCount);
-				return null;
-			}
-
-			ReaderWorkItem workItem = null;
-			try {
-				workItem = Chunk.GetReaderWorkItem();
-
-				foreach (var posMap in ReadPosMap(workItem, 0, mapCount)) {
-					bf.Add(posMap.LogPos);
-				}
-
-				//Log.Debug("{mapCount} items added to bloom filter for chunk {chunk}", mapCount, Chunk.FileName);
-				return bf;
-			} catch (FileBeingDeletedException) {
-				return null;
-			} catch (OutOfMemoryException) {
-				return null;
-			} finally {
-				if (workItem != null)
-					Chunk.ReturnReaderWorkItem(workItem);
 			}
 		}
 
@@ -310,9 +249,6 @@ public partial class TFChunk {
 		}
 
 		public bool ExistsAt(long logicalPosition) {
-			if (CacheIsOptimized)
-				return MayExistAt(logicalPosition);
-
 			var workItem = Chunk.GetReaderWorkItem();
 			try {
 				var actualPosition = TranslateExactPosition(workItem, logicalPosition);
@@ -320,11 +256,6 @@ public partial class TFChunk {
 			} finally {
 				Chunk.ReturnReaderWorkItem(workItem);
 			}
-		}
-
-		public bool MayExistAt(long logicalPosition) {
-			/* This function is much faster than ExistsAt. However, it may return false positives (with a very low probability) but never false negatives */
-			return _logPositionsBloomFilter.MightContain(logicalPosition);
 		}
 
 		public long GetActualPosition(long logicalPosition) {

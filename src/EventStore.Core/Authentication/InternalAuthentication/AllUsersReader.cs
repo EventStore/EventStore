@@ -87,8 +87,8 @@ public class AllUsersReader {
 		switch (result.Result) {
 			case ReadStreamResult.Success:
 				if (_results.Any(x => x.LoginName == loginName)) break;
-				if (result.Events.Length != 1) {
-					AddLoadedUserDetails(loginName, "", new string[] { }, true, null);
+				if (result.Events.Count is not 1) {
+					AddLoadedUserDetails(loginName, "", [], true, null);
 				} else {
 					try {
 						var eventRecord = result.Events[0].Event;

@@ -89,14 +89,12 @@ public partial record ClusterVNodeOptions {
 		// because we always start with defaults, we can just add them all first.
 		// then we can override them with the actual values.
 		foreach (var provider in configurationRoot.Providers) {
-			var providerType = provider.GetType();
-
 			foreach (var option in Metadata.SelectMany(x => x.Options)) {
 				if (!provider.TryGet(option.Value.Key, out var value)) continue;
 
 				var title = GetTitle(option);
-				var sourceDisplayName = GetSourceDisplayName(providerType);
-				var isDefault = providerType == typeof(EventStoreDefaultValuesConfigurationProvider);
+				var sourceDisplayName = GetSourceDisplayName(option.Value.Key, provider);
+				var isDefault = provider.GetType() == typeof(EventStoreDefaultValuesConfigurationProvider);
 
 				loadedOptions[option.Value.Key] = new(
 					metadata: option.Value,
@@ -114,16 +112,20 @@ public partial record ClusterVNodeOptions {
 			CombineByPascalCase(EventStoreConfigurationKeys.StripConfigurationPrefix(option.Value.Key)).ToUpper();
 	}
 
-	public static string GetSourceDisplayName(Type source) {
-		var name = source == typeof(EventStoreDefaultValuesConfigurationProvider)
-			? "<DEFAULT>"
-			: CombineByPascalCase(
-				source.Name
+	public static string GetSourceDisplayName(string key, IConfigurationProvider provider) {
+		if (provider is EventStoreDefaultValuesConfigurationProvider) {
+			return "<DEFAULT>";
+		} else if (provider is SectionProvider sectionProvider) {
+			return sectionProvider.TryGetProviderFor(key, out var innerProvider)
+				? GetSourceDisplayName(key, innerProvider)
+				: "<UNKNOWN>";
+		} else {
+			return CombineByPascalCase(
+				provider.GetType().Name
 					.Replace("EventStore", "")
 					.Replace("ConfigurationProvider", "")
 			);
-
-		return name;
+		}
 	}
 
 	private static string GetHelpText() {

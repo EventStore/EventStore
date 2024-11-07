@@ -9,6 +9,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext;
 using DotNext.Diagnostics;
 using DotNext.Runtime.CompilerServices;
 using EventStore.Common.Utils;
@@ -106,7 +107,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 			await ScavengeInternal(alwaysKeepScavenged, mergeChunks, startFromChunk, ct);
 
 			if (scavengeIndex) {
-				_tableIndex.Scavenge(_scavengerLog, ct);
+				await _tableIndex.Scavenge(_scavengerLog, ct);
 			}
 		} catch (OperationCanceledException) {
 			_logger.Information("SCAVENGING: Scavenge cancelled.");
@@ -173,7 +174,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 
 	private async ValueTask ScavengeChunk(bool alwaysKeepScavenged, TFChunk.TFChunk oldChunk,
 		ThreadLocalScavengeCache threadLocalCache, CancellationToken ct) {
-		if (oldChunk == null) throw new ArgumentNullException("oldChunk");
+		ArgumentNullException.ThrowIfNull(oldChunk);
 
 		var sw = new Timestamp();
 
@@ -212,7 +213,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 
 		try {
 			await TraverseChunkBasic(oldChunk, ct,
-				result => {
+				new Action<CandidateRecord>(result => {
 					threadLocalCache.Records.Add(result);
 
 					if (result.LogRecord.RecordType == LogRecordType.Commit) {
@@ -220,7 +221,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 						if (commit.TransactionPosition >= chunkStartPos)
 							threadLocalCache.Commits.Add(commit.TransactionPosition, new CommitInfo(commit));
 					}
-				});
+				}).ToAsync());
 
 			long newSize = 0;
 			int filteredCount = 0;
@@ -229,7 +230,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 				ct.ThrowIfCancellationRequested();
 
 				var recordReadResult = threadLocalCache.Records[i];
-				if (ShouldKeep(recordReadResult, threadLocalCache.Commits, chunkStartPos, chunkEndPos)) {
+				if (await ShouldKeep(recordReadResult, threadLocalCache.Commits, chunkStartPos, chunkEndPos, ct)) {
 					newSize += recordReadResult.RecordLength + 2 * sizeof(int);
 					filteredCount++;
 				} else {
@@ -264,18 +265,17 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 
 				var lastFlushedPage = -1;
 				for (int i = 0; i < threadLocalCache.Records.Count; i++) {
-					ct.ThrowIfCancellationRequested();
 
 					// Since we replaced the ones we don't want with `default`, the success flag will only be true on the ones we want to keep.
 					var recordReadResult = threadLocalCache.Records[i];
 
 					// Check log record, if not present then assume we can skip.
-					if (recordReadResult.LogRecord != null)
-						positionMapping.Add(WriteRecord(newChunk, recordReadResult.LogRecord));
+					if (recordReadResult.LogRecord is not null)
+						positionMapping.Add(await WriteRecord(newChunk, recordReadResult.LogRecord, ct));
 
 					var currentPage = newChunk.RawWriterPosition / 4096;
 					if (currentPage - lastFlushedPage > FlushPageInterval) {
-						newChunk.Flush();
+						await newChunk.Flush(ct);
 						lastFlushedPage = currentPage;
 					}
 				}
@@ -452,13 +452,13 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 			foreach (var oldChunk in oldChunks) {
 				var lastFlushedPage = -1;
 				await TraverseChunkBasic(oldChunk, ct,
-					result => {
+					async (result, ct) => {
 
-						positionMapping.Add(WriteRecord(newChunk, result.LogRecord));
+						positionMapping.Add(await WriteRecord(newChunk, result.LogRecord, ct));
 
 						var currentPage = newChunk.RawWriterPosition / 4096;
 						if (currentPage - lastFlushedPage > FlushPageInterval) {
-							newChunk.Flush();
+							await newChunk.Flush(ct);
 							lastFlushedPage = currentPage;
 						}
 					});
@@ -546,12 +546,12 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 		}
 	}
 
-	private bool ShouldKeep(CandidateRecord result, Dictionary<long, CommitInfo> commits, long chunkStartPos,
-		long chunkEndPos) {
+	private async ValueTask<bool> ShouldKeep(CandidateRecord result, Dictionary<long, CommitInfo> commits, long chunkStartPos,
+		long chunkEndPos, CancellationToken token) {
 		switch (result.LogRecord.RecordType) {
 			case LogRecordType.Prepare:
 				var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
-				if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
+				if (await ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos, token))
 					return true;
 				break;
 			case LogRecordType.Commit:
@@ -586,11 +586,12 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 		return commitInfo.KeepCommit != false;
 	}
 
-	private bool ShouldKeepPrepare(
+	private async ValueTask<bool> ShouldKeepPrepare(
 		IPrepareLogRecord<TStreamId> prepare,
 		Dictionary<long, CommitInfo> commits,
 		long chunkStart,
-		long chunkEnd) {
+		long chunkEnd,
+		CancellationToken token) {
 
 		CommitInfo commitInfo;
 		bool hasSeenCommit = commits.TryGetValue(prepare.TransactionPosition, out commitInfo);
@@ -621,8 +622,8 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 			return true;
 		}
 
-		var lastEventNumber = _readIndex.GetStreamLastEventNumber(prepare.EventStreamId);
-		if (lastEventNumber == EventNumber.DeletedStream) {
+		var lastEventNumber = await _readIndex.GetStreamLastEventNumber(prepare.EventStreamId, token);
+		if (lastEventNumber is EventNumber.DeletedStream) {
 			// The stream is hard deleted but this is not the tombstone.
 			// When all prepares and commit of transaction belong to single chunk and the stream is deleted,
 			// we can safely delete both prepares and commit.
@@ -654,7 +655,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 			return false;
 		}
 
-		if (IsSoftDeletedTempStreamWithinSameChunk(prepare.EventStreamId, chunkStart, chunkEnd)) {
+		if (await IsSoftDeletedTempStreamWithinSameChunk(prepare.EventStreamId, chunkStart, chunkEnd, token)) {
 			commitInfo.TryNotToKeep();
 			return false;
 		}
@@ -664,7 +665,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 			// we always have commitInfo.EventNumber here because we early returned if isCommitted is false
 			: commitInfo.EventNumber + prepare.TransactionOffset;
 
-		if (DiscardBecauseDuplicate(prepare, eventNumber)) {
+		if (await DiscardBecauseDuplicate(prepare, eventNumber, token)) {
 			commitInfo.TryNotToKeep();
 			return false;
 		}
@@ -679,7 +680,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 			return true;
 		}
 
-		var meta = _readIndex.GetStreamMetadata(prepare.EventStreamId);
+		var meta = await _readIndex.GetStreamMetadata(prepare.EventStreamId, token);
 		bool canRemove = (meta.MaxCount.HasValue && eventNumber < lastEventNumber - meta.MaxCount.Value + 1)
 		                 || (meta.TruncateBefore.HasValue && eventNumber < meta.TruncateBefore.Value)
 		                 || (meta.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - meta.MaxAge.Value);
@@ -693,29 +694,26 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 		}
 	}
 
-	private bool DiscardBecauseDuplicate(IPrepareLogRecord<TStreamId> prepare, long eventNumber) {
-		var result = _readIndex.ReadEvent(IndexReader.UnspecifiedStreamName, prepare.EventStreamId, eventNumber);
-		if (result.Result == ReadEventResult.Success && result.Record.LogPosition != prepare.LogPosition) {
-			// prepare isn't the record we get for an index read at its own stream/version.
-			// therefore it is a duplicate that cannot be read from the index, discard it.
-			return true;
-		}
+	private async ValueTask<bool> DiscardBecauseDuplicate(IPrepareLogRecord<TStreamId> prepare, long eventNumber, CancellationToken token) {
+		var result = await _readIndex.ReadEvent(IndexReader.UnspecifiedStreamName, prepare.EventStreamId, eventNumber, token);
 
-		return false;
+		// prepare isn't the record we get for an index read at its own stream/version.
+		// therefore it is a duplicate that cannot be read from the index, discard it.
+		return result.Result is ReadEventResult.Success && result.Record.LogPosition != prepare.LogPosition;
 	}
 
-	private bool IsSoftDeletedTempStreamWithinSameChunk(TStreamId eventStreamId, long chunkStart, long chunkEnd) {
+	private async ValueTask<bool> IsSoftDeletedTempStreamWithinSameChunk(TStreamId eventStreamId, long chunkStart, long chunkEnd, CancellationToken token) {
 		TStreamId sh;
 		TStreamId msh;
 		if (_metastreams.IsMetaStream(eventStreamId)) {
 			var originalStreamId = _metastreams.OriginalStreamOf(eventStreamId);
-			var meta = _readIndex.GetStreamMetadata(originalStreamId);
+			var meta = await _readIndex.GetStreamMetadata(originalStreamId, token);
 			if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
 				return false;
 			sh = originalStreamId;
 			msh = eventStreamId;
 		} else {
-			var meta = _readIndex.GetStreamMetadata(eventStreamId);
+			var meta = await _readIndex.GetStreamMetadata(eventStreamId, token);
 			if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
 				return false;
 			sh = eventStreamId;
@@ -735,19 +733,17 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 	}
 
 	private static async ValueTask TraverseChunkBasic(TFChunk.TFChunk chunk, CancellationToken ct,
-		Action<CandidateRecord> process) {
+		Func<CandidateRecord, CancellationToken, ValueTask> process) {
 		var result = await chunk.TryReadFirst(ct);
 		while (result.Success) {
-			process(new CandidateRecord(result.LogRecord, result.RecordLength));
+			await process(new CandidateRecord(result.LogRecord, result.RecordLength), ct);
 
-			ct.ThrowIfCancellationRequested();
-
-			result = chunk.TryReadClosestForward(result.NextPosition);
+			result = await chunk.TryReadClosestForward(result.NextPosition, ct);
 		}
 	}
 
-	public static PosMap WriteRecord(TFChunk.TFChunk newChunk, ILogRecord record) {
-		var writeResult = newChunk.TryAppend(record);
+	public static async ValueTask<PosMap> WriteRecord(TFChunk.TFChunk newChunk, ILogRecord record, CancellationToken token) {
+		var writeResult = await newChunk.TryAppend(record, token);
 		if (!writeResult.Success) {
 			throw new Exception(string.Format(
 				"Unable to append record during scavenging. Scavenge position: {0}, Record: {1}.",

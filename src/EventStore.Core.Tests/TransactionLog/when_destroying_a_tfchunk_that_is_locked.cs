@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -18,7 +19,7 @@ public class when_destroying_a_tfchunk_that_is_locked : SpecificationWithFile {
 	public override async Task SetUp() {
 		await base.SetUp();
 		_chunk = await TFChunkHelper.CreateNewChunk(Filename, 1000);
-		_chunk.Complete();
+		await _chunk.Complete(CancellationToken.None);
 		_chunk.UnCacheFromMemory();
 		_reader = _chunk.AcquireRawReader();
 		_chunk.MarkForDeletion();

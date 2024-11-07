@@ -1,6 +1,9 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
 using StreamId = System.UInt32;
@@ -20,22 +23,20 @@ public class StreamNameLookupMetastreamDecorator : INameLookup<StreamId> {
 		_metastreams = metastreams;
 	}
 
-	public bool TryGetName(StreamId streamId, out string name) {
+	public async ValueTask<string> LookupName(StreamId streamId, CancellationToken token) {
 		if (_metastreams.IsMetaStream(streamId)) {
 			streamId = _metastreams.OriginalStreamOf(streamId);
-			if (!TryGetName(streamId, out name))
-				return false;
-			name = SystemStreams.MetastreamOf(name);
-			return true;
+			return await LookupName(streamId, token) is { } name
+				? SystemStreams.MetastreamOf(name)
+				: null;
+		} else {
+			return LogV3SystemStreams.TryGetVirtualStreamName(streamId, out var name)
+				? name
+				: await _wrapped.LookupName(streamId, token);
 		}
-
-		if (LogV3SystemStreams.TryGetVirtualStreamName(streamId, out name))
-			return true;
-
-		return _wrapped.TryGetName(streamId, out name);
 	}
 
-	public bool TryGetLastValue(out StreamId last) {
-		return _wrapped.TryGetLastValue(out last);
+	public ValueTask<Optional<StreamId>> TryGetLastValue(CancellationToken token) {
+		return _wrapped.TryGetLastValue(token);
 	}
 }

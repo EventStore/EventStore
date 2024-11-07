@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
@@ -31,7 +32,7 @@ public class PersistentSubscriptionStreamReader : IPersistentSubscriptionStreamR
 	public void BeginReadEvents(IPersistentSubscriptionEventSource eventSource,
 		IPersistentSubscriptionStreamPosition startPosition, int countToLoad, int batchSize,
 		int maxWindowSize, bool resolveLinkTos, bool skipFirstEvent,
-		Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onEventsFound,
+		Action<IReadOnlyList<ResolvedEvent>, IPersistentSubscriptionStreamPosition, bool> onEventsFound,
 		Action<IPersistentSubscriptionStreamPosition, long> onEventsSkipped,
 		Action<string> onError) {
 		BeginReadEventsInternal(eventSource, startPosition, countToLoad, batchSize, maxWindowSize, resolveLinkTos,
@@ -45,7 +46,7 @@ public class PersistentSubscriptionStreamReader : IPersistentSubscriptionStreamR
 
 	private void BeginReadEventsInternal(IPersistentSubscriptionEventSource eventSource,
 		IPersistentSubscriptionStreamPosition startPosition, int countToLoad, int batchSize, int maxWindowSize, bool resolveLinkTos, bool skipFirstEvent,
-		Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onEventsFound,
+		Action<IReadOnlyList<ResolvedEvent>, IPersistentSubscriptionStreamPosition, bool> onEventsFound,
 		Action<IPersistentSubscriptionStreamPosition, long> onEventsSkipped,
 		Action<string> onError, int retryCount) {
 		var actualBatchSize = GetBatchSize(batchSize);
@@ -107,12 +108,12 @@ public class PersistentSubscriptionStreamReader : IPersistentSubscriptionStreamR
 	}
 
 	private class ResponseHandler {
-		private readonly Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> _onFetchCompleted;
+		private readonly Action<IReadOnlyList<ResolvedEvent>, IPersistentSubscriptionStreamPosition, bool> _onFetchCompleted;
 		private readonly Action<IPersistentSubscriptionStreamPosition, long> _onEventsSkipped;
 		private readonly Action<string> _onError;
 		private readonly bool _skipFirstEvent;
 
-		public ResponseHandler(Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onFetchCompleted,
+		public ResponseHandler(Action<IReadOnlyList<ResolvedEvent>, IPersistentSubscriptionStreamPosition, bool> onFetchCompleted,
 			Action<IPersistentSubscriptionStreamPosition, long> onEventsSkipped, Action<string> onError, bool skipFirstEvent) {
 			_onFetchCompleted = onFetchCompleted;
 			_onEventsSkipped = onEventsSkipped;
@@ -158,7 +159,7 @@ public class PersistentSubscriptionStreamReader : IPersistentSubscriptionStreamR
 		public void FetchAllFilteredCompleted(ClientMessage.FilteredReadAllEventsForwardCompleted msg) {
 			switch (msg.Result) {
 				case FilteredReadAllResult.Success:
-					if (msg.Events.Length == 0 && msg.ConsideredEventsCount > 0) {
+					if (msg.Events is [] && msg.ConsideredEventsCount > 0) {
 						// Checkpoint on the position we read from rather than the next position
 						// to prevent skipping the next event when loading from the checkpoint
 						_onEventsSkipped(

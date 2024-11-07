@@ -29,30 +29,39 @@ public class FakeInMemoryTfReader : ITransactionFileReader {
 		_curPosition = position;
 	}
 
-	public SeqReadResult TryReadNext() {
+	public ValueTask<SeqReadResult> TryReadNext(CancellationToken token) {
 		NumReads++;
+
+		SeqReadResult result;
 		if (_records.ContainsKey(_curPosition)){
 			var pos = _curPosition;
 			_curPosition += _recordOffset;
-			return new SeqReadResult(true, false, _records[pos], _recordOffset, pos, pos + _recordOffset);
+			result = new(true, false, _records[pos], _recordOffset, pos, pos + _recordOffset);
 		} else{
-			return new SeqReadResult(false, false, null, 0, 0, 0);
+			result = new(false, false, null, 0, 0, 0);
 		}
+
+		return new(result);
 	}
 
 	public ValueTask<SeqReadResult> TryReadPrev(CancellationToken token)
 		=> ValueTask.FromException<SeqReadResult>(new NotImplementedException());
 
-	public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+	public ValueTask<RecordReadResult> TryReadAt(long position, bool couldBeScavenged, CancellationToken token) {
 		NumReads++;
+
+		RecordReadResult result;
 		if (_records.ContainsKey(position)){
-			return new RecordReadResult(true, 0, _records[position], 0);
+			result = new RecordReadResult(true, 0, _records[position], 0);
 		} else{
-			return new RecordReadResult(false, 0, _records[position], 0);
+			result = new RecordReadResult(false, 0, _records[position], 0);
 		}
+
+		return new(result);
 	}
 
-	public bool ExistsAt(long position) {
-		return _records.ContainsKey(position);
-	}
+	public ValueTask<bool> ExistsAt(long position, CancellationToken token)
+		=> token.IsCancellationRequested
+			? ValueTask.FromCanceled<bool>(token)
+			: ValueTask.FromResult(_records.ContainsKey(position));
 }

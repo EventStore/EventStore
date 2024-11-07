@@ -44,12 +44,12 @@ public class when_creating_tfchunk_from_empty_file : SpecificationWithFile {
 
 	[Test]
 	public void append_does_not_throw_exception() {
-		Assert.DoesNotThrow(() => _chunk.TryAppend(new CommitLogRecord(0, Guid.NewGuid(), 0, DateTime.UtcNow, 0)));
+		Assert.DoesNotThrowAsync(async () => await _chunk.TryAppend(new CommitLogRecord(0, Guid.NewGuid(), 0, DateTime.UtcNow, 0), CancellationToken.None));
 	}
 
 	[Test]
-	public void there_is_no_record_at_pos_zero() {
-		var res = _chunk.TryReadAt(0, couldBeScavenged: true);
+	public async Task there_is_no_record_at_pos_zero() {
+		var res = await _chunk.TryReadAt(0, couldBeScavenged: true, CancellationToken.None);
 		Assert.IsFalse(res.Success);
 	}
 
@@ -60,14 +60,14 @@ public class when_creating_tfchunk_from_empty_file : SpecificationWithFile {
 	}
 
 	[Test]
-	public void there_is_no_closest_forward_record_to_pos_zero() {
-		var res = _chunk.TryReadClosestForward(0);
+	public async Task there_is_no_closest_forward_record_to_pos_zero() {
+		var res = await _chunk.TryReadClosestForward(0, CancellationToken.None);
 		Assert.IsFalse(res.Success);
 	}
 
 	[Test]
-	public void there_is_no_closest_backward_record_from_end() {
-		var res = _chunk.TryReadClosestForward(0);
+	public async Task there_is_no_closest_backward_record_from_end() {
+		var res = await _chunk.TryReadClosestForward(0, CancellationToken.None);
 		Assert.IsFalse(res.Success);
 	}
 

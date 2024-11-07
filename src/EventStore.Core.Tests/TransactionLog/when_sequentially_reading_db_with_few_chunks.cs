@@ -45,19 +45,19 @@ public class when_sequentially_reading_db_with_few_chunks<TLogFormat, TStreamId>
 		for (int i = 0; i < RecordsCount; ++i) {
 			if (i > 0 && i % 3 == 0) {
 				pos = i / 3 * _db.Config.ChunkSize;
-				chunk.Complete();
+				await chunk.Complete(CancellationToken.None);
 				chunk = await _db.Manager.AddNewChunk(CancellationToken.None);
 			}
 
 			_records[i] = LogRecord.SingleWrite(recordFactory, pos,
 				Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, eventTypeId,
 				new byte[1200], new byte[] { 5, 7 });
-			_results[i] = chunk.TryAppend(_records[i]);
+			_results[i] = await chunk.TryAppend(_records[i], CancellationToken.None);
 
 			pos += _records[i].GetSizeWithLengthPrefixAndSuffix();
 		}
 
-		chunk.Flush();
+		await chunk.Flush(CancellationToken.None);
 		_db.Config.WriterCheckpoint.Write((RecordsCount / 3) * _db.Config.ChunkSize +
 										  _results[RecordsCount - 1].NewPosition);
 		_db.Config.WriterCheckpoint.Flush();
@@ -85,12 +85,11 @@ public class when_sequentially_reading_db_with_few_chunks<TLogFormat, TStreamId>
 	}
 
 	[Test]
-	public void all_records_could_be_read_with_forward_pass() {
+	public async Task all_records_could_be_read_with_forward_pass() {
 		var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, 0);
 
-		SeqReadResult res;
 		int count = 0;
-		while ((res = seqReader.TryReadNext()).Success) {
+		while (await seqReader.TryReadNext(CancellationToken.None) is { Success: true } res) {
 			var rec = _records[count];
 			Assert.AreEqual(rec, res.LogRecord);
 			Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);
@@ -124,9 +123,8 @@ public class when_sequentially_reading_db_with_few_chunks<TLogFormat, TStreamId>
 	public async Task all_records_could_be_read_doing_forward_backward_pass() {
 		var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, 0);
 
-		SeqReadResult res;
 		int count1 = 0;
-		while ((res = seqReader.TryReadNext()).Success) {
+		while (await seqReader.TryReadNext(CancellationToken.None) is { Success: true } res) {
 			var rec = _records[count1];
 			Assert.AreEqual(rec, res.LogRecord);
 			Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);
@@ -138,7 +136,7 @@ public class when_sequentially_reading_db_with_few_chunks<TLogFormat, TStreamId>
 		Assert.AreEqual(RecordsCount, count1);
 
 		int count2 = 0;
-		while ((res = await seqReader.TryReadPrev(CancellationToken.None)).Success) {
+		while (await seqReader.TryReadPrev(CancellationToken.None) is { Success: true } res) {
 			var rec = _records[RecordsCount - count2 - 1];
 			Assert.AreEqual(rec, res.LogRecord);
 			Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);
@@ -151,13 +149,12 @@ public class when_sequentially_reading_db_with_few_chunks<TLogFormat, TStreamId>
 	}
 
 	[Test]
-	public void records_can_be_read_forward_starting_from_any_position() {
+	public async Task records_can_be_read_forward_starting_from_any_position() {
 		for (int i = 0; i < RecordsCount; ++i) {
 			var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, _records[i].LogPosition);
 
-			SeqReadResult res;
 			int count = 0;
-			while ((res = seqReader.TryReadNext()).Success) {
+			while (await seqReader.TryReadNext(CancellationToken.None) is { Success: true } res) {
 				var rec = _records[i + count];
 				Assert.AreEqual(rec, res.LogRecord);
 				Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);

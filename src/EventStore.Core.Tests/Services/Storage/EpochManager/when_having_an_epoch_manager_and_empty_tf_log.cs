@@ -51,8 +51,7 @@ public class when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId
 			_writer,
 			initialReaderCount: 1,
 			maxReaderCount: 5,
-			readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint,
-				optimizeReadSideCache: _db.Config.OptimizeReadSideCache),
+			readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint),
 			_logFormat.RecordFactory,
 			_logFormat.StreamNameIndex,
 			_logFormat.EventTypeIndex,
@@ -92,7 +91,7 @@ public class when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId
 	[OneTimeTearDown]
 	public override async Task TestFixtureTearDown() {
 		_logFormat?.Dispose();
-		_writer?.Dispose();
+		await (_writer?.DisposeAsync() ?? ValueTask.CompletedTask);
 		await (_db?.DisposeAsync() ?? ValueTask.CompletedTask);
 		await base.TestFixtureTearDown();
 	}
@@ -156,10 +155,10 @@ public class when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId
 		Assert.AreEqual(1 + 4 + 16, epochsWritten.Length);
 		for (int i = 0; i < epochsWritten.Length; i++) {
 			_reader.Reposition(epochsWritten[i].Epoch.EpochPosition);
-			_reader.TryReadNext(); // read epoch
+			await _reader.TryReadNext(CancellationToken.None); // read epoch
 			IPrepareLogRecord<TStreamId> epochInfo;
 			while (true) {
-				var result = _reader.TryReadNext();
+				var result = await _reader.TryReadNext(CancellationToken.None);
 				Assert.True(result.Success);
 				if (result.LogRecord is IPrepareLogRecord<TStreamId> prepare) {
 					epochInfo = prepare;

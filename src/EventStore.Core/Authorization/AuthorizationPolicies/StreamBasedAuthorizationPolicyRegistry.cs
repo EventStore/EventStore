@@ -25,10 +25,11 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	private readonly ILogger _logger = Log.ForContext<StreamBasedAuthorizationPolicyRegistry>();
 	private readonly IPublisher _publisher;
 
-	private readonly FallbackPolicySelector _fallbackPolicySelector = new ();
+	private readonly FallbackStreamAccessPolicySelector _fallbackStreamAccessPolicySelector = new ();
 	private readonly IPolicySelector _legacyPolicySelector;
 	private readonly IPolicySelectorFactory[] _pluginSelectorFactories;
 	private readonly AuthorizationPolicySettings _defaultSettings;
+	public event EventHandler? PolicyChanged;
 
 	private CancellationTokenSource? _cts;
 	private IPolicySelector[] _effectivePolicySelectors = [];
@@ -48,7 +49,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 		get {
 			return _effectivePolicySelectors.Length != 0
 				? _effectivePolicySelectors.Select(x => x.Select()).ToArray()
-				: [_fallbackPolicySelector.Select()];
+				: [_fallbackStreamAccessPolicySelector.Select(), _legacyPolicySelector.Select()];
 		}
 	}
 
@@ -114,17 +115,21 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	}
 
 	private async ValueTask ApplyFallbackPolicySelector() {
+		_logger.Debug("Applying fallback stream access policy.");
 		_effectivePolicySelectors = [];
 		foreach (var factory in _pluginSelectorFactories) {
 			await factory.Disable();
 		}
+		PolicyChanged?.Invoke(this, EventArgs.Empty);
 	}
 
 	private async ValueTask ApplyLegacyPolicySelector() {
+		_logger.Debug("Applying ACL stream access policy.");
 		_effectivePolicySelectors = [_legacyPolicySelector];
 		foreach (var factory in _pluginSelectorFactories) {
 			await factory.Disable();
 		}
+		PolicyChanged?.Invoke(this, EventArgs.Empty);
 	}
 
 	private (bool success, AuthorizationPolicySettings settings) TryParseAuthorizationPolicySettings(ResolvedEvent evnt) {
@@ -146,7 +151,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	}
 
 	private async ValueTask<bool> TryApplyPluginPolicySelector(IPolicySelectorFactory pluginFactory) {
-		_logger.Information("Starting factory {factory}", pluginFactory.CommandLineName);
+		_logger.Information("Starting authorization policy factory {factory}", pluginFactory.CommandLineName);
 		if (!await pluginFactory.Enable()) {
 			_logger.Error("Failed to enable policy selector plugin {pluginName}. " +
 			              "Authorization settings will not be applied", pluginFactory.CommandLineName);
@@ -165,12 +170,13 @@ public class StreamBasedAuthorizationPolicyRegistry :
 			}
 		}
 
+		PolicyChanged?.Invoke(this, EventArgs.Empty);
 		return true;
 	}
 
 	private async ValueTask<bool> TryApplyAuthorizationPolicySettings(AuthorizationPolicySettings settings) {
 		switch (settings.StreamAccessPolicyType) {
-			case FallbackPolicySelector.FallbackPolicyName:
+			case FallbackStreamAccessPolicySelector.FallbackPolicyName:
 				await ApplyFallbackPolicySelector();
 				return true;
 			case LegacyPolicySelectorFactory.LegacyPolicySelectorName:
@@ -192,7 +198,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 	private async ValueTask<ulong?> LoadSettings(CancellationToken ct) {
 		ulong? checkpoint = null;
 		try {
-			var read = new Enumerator.ReadStreamBackwards(_publisher, _stream,
+			await using var read = new Enumerator.ReadStreamBackwards(_publisher, _stream,
 				StreamRevision.End, ulong.MaxValue, false, SystemAccounts.System, false, DateTime.MaxValue, 1, ct);
 			while (await read.MoveNextAsync()) {
 				var readResponse = read.Current;
@@ -227,7 +233,7 @@ public class StreamBasedAuthorizationPolicyRegistry :
 			// Use the default.
 			Log.Information("No existing authorization policy settings were found in {stream}. Using the default", _stream);
 			if (await TryApplyAuthorizationPolicySettings(_defaultSettings)) {
-				_logger.Information("Successfully applied default settings");
+				_logger.Verbose("Successfully applied default settings");
 				return checkpoint;
 			}
 		}

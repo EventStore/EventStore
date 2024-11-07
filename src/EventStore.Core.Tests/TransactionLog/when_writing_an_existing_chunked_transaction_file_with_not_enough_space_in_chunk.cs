@@ -98,7 +98,7 @@ public class
 
 		(written, _) = await tf.Write(record3, CancellationToken.None);
 		Assert.IsTrue(written);
-		tf.Close();
+		await tf.DisposeAsync();
 		await db.DisposeAsync();
 
 		Assert.AreEqual(record3.GetSizeWithLengthPrefixAndSuffix() + 10000, _checkpoint.Read());

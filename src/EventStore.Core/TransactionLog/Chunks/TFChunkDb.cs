@@ -83,7 +83,6 @@ public class TFChunkDb : IAsyncDisposable {
 							chunk = await TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 								unbufferedRead: Config.Unbuffered,
 								tracker: _tracker,
-								optimizeReadSideCache: Config.OptimizeReadSideCache,
 								reduceFileCachePressure: Config.ReduceFileCachePressure,
 								getTransformFactory: TransformManager.GetFactoryForExistingChunk,
 								token: token);
@@ -97,12 +96,11 @@ public class TFChunkDb : IAsyncDisposable {
 								token);
 							// chunk is full with data, we should complete it right here
 							if (!readOnly)
-								chunk.Complete();
+								await chunk.Complete(token);
 						}
 					} else {
 						chunk = await TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 							unbufferedRead: Config.Unbuffered,
-							optimizeReadSideCache: Config.OptimizeReadSideCache,
 							reduceFileCachePressure: Config.ReduceFileCachePressure,
 							tracker: _tracker,
 							getTransformFactory: TransformManager.GetFactoryForExistingChunk,
@@ -148,7 +146,6 @@ public class TFChunkDb : IAsyncDisposable {
 
 				var lastChunk = await TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false,
 					unbufferedRead: Config.Unbuffered,
-					optimizeReadSideCache: Config.OptimizeReadSideCache,
 					reduceFileCachePressure: Config.ReduceFileCachePressure,
 					tracker: _tracker,
 					getTransformFactory: TransformManager.GetFactoryForExistingChunk,

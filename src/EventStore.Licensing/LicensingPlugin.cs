@@ -16,33 +16,51 @@ using Serilog;
 
 namespace EventStore.Licensing;
 
+// circumventing the license mechanism is against the ESLv2 license.
 public class LicensingPlugin : Plugin {
 	private static readonly ILogger Log = Serilog.Log.ForContext<LicensingPlugin>();
 
 	private readonly ILicenseProvider? _licenseProvider;
+	private readonly Action<Exception> _requestShutdown;
 
-	public LicensingPlugin() : this(null) {
+	public LicensingPlugin(Action<Exception> requestShutdown) : this(requestShutdown, null) {
 	}
 
-	public LicensingPlugin(ILicenseProvider? licenseProvider) : base() {
+	public LicensingPlugin(Action<Exception> requestShutdown, ILicenseProvider? licenseProvider) : base() {
 		_licenseProvider = licenseProvider;
+		_requestShutdown = requestShutdown;
 	}
 
-	public override void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) =>
+
+	public override void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {
+		var licenseService = builder.ApplicationServices.GetRequiredService<ILicenseService>();
+
+		License? currentLicense = null;
+		Exception? licenseError = null;
+		licenseService.Licenses.Subscribe(
+			license => {
+				currentLicense = license;
+				licenseError = null;
+			},
+			ex => {
+				currentLicense = null;
+				licenseError = ex;
+			});
+
 		builder.UseEndpoints(endpoints => endpoints
-			.MapGet("/license", (HttpContext context, ILicenseService licenseService) => {
-				var license = licenseService.CurrentLicense;
-				return license is null
-					? Results.NotFound()
-					: Results.Json(LicenseSummary.SelectForEndpoint(license));
+			.MapGet("/license", (HttpContext context) => {
+				if (currentLicense is { } license )
+					return Results.Json(LicenseSummary.SelectForEndpoint(license));
+
+				if (licenseError is NoLicenseKeyException)
+					return Results.NotFound();
+
+				return Results.NotFound(licenseError?.Message ?? "Unknown eror");
 			})
 			.RequireAuthorization());
+	}
 
 	public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
-		// esdbPrivateKey is not truly private (obviously, here it is in the source). circumventing the license mechanism is against the license agreement.
-		var esdbPrivateKey = "MIIBPAIBAAJBAMa1FchaZ4mqR2lCvIl0oEVW8tow0cWQNxVdKhoPODVqGu0KsCDBikBEC8bIWzRtzBgllplK31o3CmCQA849AzkCAwEAAQJBALFULYpNU5UBhxUi34pzsAvxWmzpoGsFFoNUTxxOdMUExvprTltFKQ/hDAyNsc8oUg0AdBzt/jDzTce/W0WerHkCIQDq6SIeuUjWqGOG/+thcLJSj0jnNJ7NFJTPZDqaiocQDwIhANiL53qkAlWIg0uPlxARDtGI/bx5irIBn9Hed81WrnA3AiEApL4U4KkebPQwwHdwEqjfVkkIXqUnjTmW1w86jjECYX8CIQCa/Hcupdgt08j0+c6K50qN2diRXwRPpy32DZ39T38GPQIgSBL+EU/YRy6nwsqLLB+6+qtMd0s1T5kpI3l9VyNM3Uc=";
-		var esdbPublicKey = "MEgCQQDGtRXIWmeJqkdpQryJdKBFVvLaMNHFkDcVXSoaDzg1ahrtCrAgwYpARAvGyFs0bcwYJZaZSt9aNwpgkAPOPQM5AgMBAAE=";
-
 		var baseUrl = $"https://licensing.eventstore.com/v1/";
 		var clientOptions = configuration.GetSection("EventStore:Licensing").Get<KeygenClientOptions>() ?? new();
 		if (clientOptions.BaseUrl is not null) {
@@ -54,7 +72,7 @@ public class LicensingPlugin : Plugin {
 
 		if (string.IsNullOrWhiteSpace(clientOptions.LicenseKey)) {
 			var sub = new Subject<LicenseInfo>();
-			sub.OnError(new Exception("No license key specified"));
+			sub.OnError(new NoLicenseKeyException());
 			licenses = sub;
 		} else {
 			var lifecycleService = new KeygenLifecycleService(
@@ -77,19 +95,18 @@ public class LicensingPlugin : Plugin {
 			.AddSingleton<ILicenseService>(sp => {
 				var licenseProvider =
 					_licenseProvider ??
-					new KeygenLicenseProvider(
-						esdbPublicKey,
-						esdbPrivateKey,
-						licenses);
+					new KeygenLicenseProvider(licenses);
 
 				return new LicenseService(
-					esdbPublicKey,
-					esdbPrivateKey,
 					sp.GetRequiredService<IHostApplicationLifetime>(),
+					_requestShutdown,
 					licenseProvider);
 			})
 			.AddHostedService(sp => new LicenseTelemetryService(
 				sp.GetRequiredService<ILicenseService>(),
 				telemetry => PublishDiagnosticsData(telemetry, Plugins.Diagnostics.PluginDiagnosticsDataCollectionMode.Snapshot)));
+	}
+
+	class NoLicenseKeyException : Exception {
 	}
 }

@@ -46,67 +46,68 @@ public class
 	}
 
 	[Test]
-	public void the_first_event_can_be_read() {
-		var result = ReadIndex.ReadEvent("test1", firstEventNumber);
+	public async Task the_first_event_can_be_read() {
+		var result = await ReadIndex.ReadEvent("test1", firstEventNumber, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_id1, result.Record.EventId);
 	}
 
 	[Test]
-	public void the_nonexisting_event_can_not_be_read() {
-		var result = ReadIndex.ReadEvent("test1", firstEventNumber + 1);
+	public async Task the_nonexisting_event_can_not_be_read() {
+		var result = await ReadIndex.ReadEvent("test1", firstEventNumber + 1, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.NotFound, result.Result);
 		Assert.IsNull(result.Record);
 	}
 
 	[Test]
-	public void the_second_event_can_be_read() {
-		var result = ReadIndex.ReadEvent("test2", secondEventNumber);
+	public async Task the_second_event_can_be_read() {
+		var result = await ReadIndex.ReadEvent("test2", secondEventNumber, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_id2, result.Record.EventId);
 	}
 
 	[Test]
-	public void the_last_event_of_first_stream_can_be_read() {
-		var result = ReadIndex.ReadEvent("test1", -1);
+	public async Task the_last_event_of_first_stream_can_be_read() {
+		var result = await ReadIndex.ReadEvent("test1", -1, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_id1, result.Record.EventId);
 	}
 
 	[Test]
-	public void the_last_event_of_second_stream_can_be_read() {
-		var result = ReadIndex.ReadEvent("test2", -1);
+	public async Task the_last_event_of_second_stream_can_be_read() {
+		var result = await ReadIndex.ReadEvent("test2", -1, CancellationToken.None);
 		Assert.AreEqual(ReadEventResult.Success, result.Result);
 		Assert.AreEqual(_id3, result.Record.EventId);
 	}
 
 	[Test]
-	public void the_stream_can_be_read_for_first_stream() {
-		var result = ReadIndex.ReadStreamEventsBackward("test1", firstEventNumber, 1);
+	public async Task the_stream_can_be_read_for_first_stream() {
+		var result = await ReadIndex.ReadStreamEventsBackward("test1", firstEventNumber, 1, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(1, result.Records.Length);
 		Assert.AreEqual(_id1, result.Records[0].EventId);
 	}
 
 	[Test]
-	public void the_stream_can_be_read_for_second_stream_from_end() {
-		var result = ReadIndex.ReadStreamEventsBackward("test2", -1, 1);
+	public async Task the_stream_can_be_read_for_second_stream_from_end() {
+		var result = await ReadIndex.ReadStreamEventsBackward("test2", -1, 1, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(1, result.Records.Length);
 		Assert.AreEqual(_id3, result.Records[0].EventId);
 	}
 
 	[Test]
-	public void the_stream_can_be_read_for_second_stream_from_event_number() {
-		var result = ReadIndex.ReadStreamEventsBackward("test2", thirdEventNumber, 1);
+	public async Task the_stream_can_be_read_for_second_stream_from_event_number() {
+		var result = await ReadIndex.ReadStreamEventsBackward("test2", thirdEventNumber, 1, CancellationToken.None);
 		Assert.AreEqual(ReadStreamResult.Success, result.Result);
 		Assert.AreEqual(1, result.Records.Length);
 		Assert.AreEqual(_id3, result.Records[0].EventId);
 	}
 
 	[Test]
-	public void read_all_events_forward_returns_all_events_in_correct_order() {
-		var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).EventRecords();
+	public async Task read_all_events_forward_returns_all_events_in_correct_order() {
+		var records = (await ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10, CancellationToken.None))
+			.EventRecords();
 
 		Assert.AreEqual(3, records.Count);
 		Assert.AreEqual(_id1, records[0].Event.EventId);

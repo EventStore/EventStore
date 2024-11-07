@@ -51,8 +51,7 @@ public sealed class when_starting_having_TFLog_with_existing_epochs<TLogFormat, 
 			_writer,
 			initialReaderCount: 1,
 			maxReaderCount: 5,
-			readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint,
-				optimizeReadSideCache: _db.Config.OptimizeReadSideCache),
+			readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint),
 			_logFormat.RecordFactory,
 			_logFormat.StreamNameIndex,
 			_logFormat.EventTypeIndex,
@@ -71,7 +70,7 @@ public sealed class when_starting_having_TFLog_with_existing_epochs<TLogFormat, 
 		var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
 			SystemRecordSerialization.Json, epoch.AsSerialized());
 		await _writer.Write(rec, token);
-		_writer.Flush();
+		await _writer.Flush(token);
 		return epoch;
 	}
 	[OneTimeSetUp]
@@ -127,8 +126,7 @@ public sealed class when_starting_having_TFLog_with_existing_epochs<TLogFormat, 
 			_writer,
 			initialReaderCount: 1,
 			maxReaderCount: 5,
-			readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint,
-				optimizeReadSideCache: _db.Config.OptimizeReadSideCache),
+			readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint),
 			_logFormat.RecordFactory,
 			_logFormat.StreamNameIndex,
 			_logFormat.EventTypeIndex,
@@ -150,12 +148,14 @@ public sealed class when_starting_having_TFLog_with_existing_epochs<TLogFormat, 
 		//reader?.Dispose();
 		try {
 			_logFormat?.Dispose();
-			_writer?.Dispose();
+			using var task = _writer?.DisposeAsync().AsTask() ?? Task.CompletedTask;
+			task.Wait();
 		} catch {
 			//workaround for TearDown error
 		}
 
-		using var task = _db?.DisposeAsync().AsTask() ?? Task.CompletedTask;
-		task.Wait();
+		using (var task = _db?.DisposeAsync().AsTask() ?? Task.CompletedTask) {
+			task.Wait();
+		}
 	}
 }

@@ -4,11 +4,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
 using NUnit.Framework;
@@ -54,22 +52,25 @@ public class when_writing_prepare_record_to_file<TLogFormat, TStreamId> : Specif
 			metadata: new byte[] {7, 17});
 
 		await _writer.Write(_record, CancellationToken.None);
-		_writer.Flush();
+		await _writer.Flush(CancellationToken.None);
 	}
 
 	[OneTimeTearDown]
 	public async Task Teardown() {
-		_writer.Close();
+		await _writer.DisposeAsync();
 		await _db.DisposeAsync();
 	}
 
 	[Test]
-	public void the_data_is_written() {
+	public async Task the_data_is_written() {
 		//TODO MAKE THIS ACTUALLY ASSERT OFF THE FILE AND READER FROM KNOWN FILE
-		using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint, false)) {
+		using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint)) {
 			reader.Open();
-			ILogRecord r;
-			Assert.IsTrue(reader.TryReadNext(out r));
+			ILogRecord r = await reader.TryReadNext(CancellationToken.None) is { Success: true } res
+				? res.LogRecord
+				: null;
+
+			Assert.NotNull(r);
 
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
@@ -98,8 +99,8 @@ public class when_writing_prepare_record_to_file<TLogFormat, TStreamId> : Specif
 	}
 
 	[Test]
-	public void trying_to_read_past_writer_checksum_returns_false() {
+	public async Task trying_to_read_past_writer_checksum_returns_false() {
 		var reader = new TFChunkReader(_db, _writerCheckpoint);
-		Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read(), couldBeScavenged: true).Success);
+		Assert.IsFalse((await reader.TryReadAt(_writerCheckpoint.Read(), couldBeScavenged: true, CancellationToken.None)).Success);
 	}
 }
