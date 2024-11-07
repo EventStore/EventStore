@@ -14,27 +14,27 @@ namespace EventStore.Core.XUnit.Tests.Authorization;
 public class FakePolicySelectorPlugin : IPolicySelectorFactory {
 	private readonly string _name;
 	private readonly bool _canBeEnabled;
-	private readonly AsyncCountdownEvent? _onEnabled;
-	private readonly AsyncCountdownEvent? _onDisabled;
+	public readonly AsyncManualResetEvent OnEnabled;
+	public readonly AsyncManualResetEvent OnDisabled;
 	public string CommandLineName => _name;
 
-	public FakePolicySelectorPlugin(string name, bool canBeEnabled, AsyncCountdownEvent? onEnabled = null, AsyncCountdownEvent? onDisabled = null) {
+	public FakePolicySelectorPlugin(string name, bool canBeEnabled) {
 		_name = name;
 		_canBeEnabled = canBeEnabled;
-		_onEnabled = onEnabled;
-		_onDisabled = onDisabled;
+		OnEnabled = new AsyncManualResetEvent(false);
+		OnDisabled = new AsyncManualResetEvent(false);
 	}
 	public IPolicySelector Create(IPublisher publisher) {
 		return new FakePolicySelector(_name);
 	}
 
 	public Task<bool> Enable() {
-		_onEnabled?.Signal();
+		OnEnabled.Set();
 		return Task.FromResult(_canBeEnabled);
 	}
 
 	public Task Disable() {
-		_onDisabled?.Signal();
+		OnDisabled.Set();
 		return Task.CompletedTask;
 	}
 }
