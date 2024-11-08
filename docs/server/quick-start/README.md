@@ -31,27 +31,27 @@ Check the [getting started guide](/getting-started/) for an introduction to Even
 
 ### EventStoreDB community
 
-Users of EventStoreDB can use the [community forum](https://www.eventstore.com/community) for questions, discussions and getting help from community members.
+Users of EventStoreDB can use the [community forum](https://www.eventstore.com/community) for questions, discussions, and getting help from community members.
 
 ### Enterprise customers
 
-Customers with a paid subscription can open tickets using the [support portal](https://eventstore.freshdesk.com).
+Customers with a paid subscription can open tickets using the [support portal](https://eventstore.freshdesk.com).  For additional information on supported versions, users can access Event Store's [release and support schedule](https://www.eventstore.com/eventstoredb-long-term-support-and-release-schedule).    
 
 ### Issues
 
-We openly track most of the issues in the EventStoreDB [repository on GitHub](https://github.com/EventStore/EventStore). Before opening an issue, please ensure that a similar issue hasn't been opened already. Also, try searching closed issues that might contain a solution or workaround for your problem.
+We openly track most issues in the EventStoreDB [repository on GitHub](https://github.com/EventStore/EventStore). Before opening an issue, please ensure that a similar issue hasn't been opened already. Also, try searching closed issues that might contain a solution or workaround for your problem.
 
-When opening an issue, follow our [guidelines](https://github.com/EventStore/EventStore/blob/master/CONTRIBUTING.md) for bug reports and feature requests. By doing so, you will greatly help us to solve your concerns most efficiently.
+When opening an issue, follow our [guidelines](https://github.com/EventStore/EventStore/blob/master/CONTRIBUTING.md) for bug reports and feature requests. By doing so, you will significantly help us to solve your concerns most efficiently.
 
 ## Protocols, clients, and SDKs
 
 EventStoreDB supports one client protocol, which is described below. The older TCP client API has been deprecated in version 20.2 and removed in version 24.2. The final version with TCP API support is 23.10. More information can be found in our [blog post](https://www.eventstore.com/blog/sunsetting-eventstoredb-tcp-based-client-protocol).
 
-Since version 24.6, the legacy protocol is available as a [licensed plugin](../configuration/networking.md#external-tcp) available for Event Store customers.
+Starting with version 24.6, the legacy protocol is available for Event Store customers as a [licensed plugin](../configuration/networking.md#external-tcp).
 
 ### Client protocol
 
-The client protocol is based on [open standards](https://grpc.io/) and is widely supported by many programming languages. EventStoreDB uses gRPC to communicate between the cluster nodes as well as for client-server communication.
+The client protocol is based on [open standards](https://grpc.io/) and is widely supported by many programming languages. EventStoreDB uses gRPC to communicate between the cluster nodes and for client-server communication.
 
 When developing software that uses EventStoreDB, we recommend using one of the official SDKs.
 
@@ -66,16 +66,16 @@ When developing software that uses EventStoreDB, we recommend using one of the o
 
 Read more in the [gRPC clients documentation](@clients/grpc/README.md).
 
-#### Community developed clients
+#### Community-developed clients
 
 - [Ruby (yousty/event_store_client)](https://github.com/yousty/event_store_client)
 - [Elixir (NFIBrokerage/spear)](https://github.com/NFIBrokerage/spear)
 
 ### HTTP
 
-EventStoreDB also offers an HTTP-based interface. It consists of the REST-oriented API, and a realtime subscription feature based on the [AtomPub protocol](https://datatracker.ietf.org/doc/html/rfc5023). As it operates over HTTP, this is less efficient, but nearly every environment supports it.
+EventStoreDB also offers an HTTP-based interface that consists of the REST-oriented API and a real-time subscription feature based on the [AtomPub protocol](https://datatracker.ietf.org/doc/html/rfc5023). As it operates over HTTP, this is less efficient, but nearly every environment supports it.
 
-Find out more about configuring the HTTP protocol on the [HTTP configuration](../configuration/networking.md#http-configuration) page.
+Learn more about configuring the HTTP protocol on the [HTTP configuration](../configuration/networking.md#http-configuration) page.
 
 ::: warning Deprecation Note
 The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](../configuration/networking.md#atompub) to the server configuration. Although we plan to remove AtomPub support from future server versions, the server management HTTP API will remain available.
@@ -84,7 +84,7 @@ You need to enable the AtomPub protocol to have a fully functioning database use
 
 Learn more about the EventStoreDB HTTP interface in the [HTTP documentation](@clients/http-api/README.md). 
 
-#### Community developed clients
+#### Community-developed clients
 
 - [PHP (prooph/event-store-http-client)](https://github.com/prooph/event-store-http-client/)
 - [Ruby (yousty/event_store_client)](https://github.com/yousty/event_store_client)
