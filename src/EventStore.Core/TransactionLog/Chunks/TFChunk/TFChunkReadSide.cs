@@ -208,6 +208,7 @@ public partial class TFChunk {
 			if (Chunk.ChunkFooter.MapCount is 0) // empty chunk
 				return null;
 
+			token.ThrowIfCancellationRequested();
 			try {
 				int midPointsCnt = 1 << depth;
 				int segmentSize;
@@ -221,12 +222,12 @@ public partial class TFChunk {
 					midpoints = new Midpoint[1 + (mapCount + segmentSize - 1) / segmentSize];
 				}
 
-				for (int x = 0, i = 0, xN = mapCount - 1; x < xN; x += segmentSize, i++, token.ThrowIfCancellationRequested()) {
+				for (int x = 0, i = 0, xN = mapCount - 1; x < xN; x += segmentSize, i++) {
 					midpoints[i] = new Midpoint(x, ReadPosMap(workItem, x));
 				}
 
 				// add the very last item as the last midpoint (possibly it is done twice)
-				midpoints[midpoints.Length - 1] = new Midpoint(mapCount - 1, ReadPosMap(workItem, mapCount - 1));
+				midpoints[^1] = new Midpoint(mapCount - 1, ReadPosMap(workItem, mapCount - 1));
 				return midpoints;
 			} catch (FileBeingDeletedException) {
 				return null;
@@ -313,10 +314,10 @@ public partial class TFChunk {
 
 		private async ValueTask<int> TranslateExactWithoutMidpoints(ReaderWorkItem workItem, long pos, long startIndex,
 			long endIndex, CancellationToken token) {
+			token.ThrowIfCancellationRequested();
 			long low = startIndex;
 			long high = endIndex;
 			while (low <= high) {
-				token.ThrowIfCancellationRequested();
 				var mid = low + (high - low) / 2;
 				var v = ReadPosMap(workItem, mid);
 
@@ -438,6 +439,7 @@ public partial class TFChunk {
 
 		private async ValueTask<int> TranslateClosestForwardWithoutMidpoints(ReaderWorkItem workItem, long pos, long startIndex,
 			long endIndex, CancellationToken token) {
+			token.ThrowIfCancellationRequested();
 			PosMap res = ReadPosMap(workItem, endIndex);
 
 			// to allow backward reading of the last record, forward read will decline anyway
@@ -447,7 +449,6 @@ public partial class TFChunk {
 			long low = startIndex;
 			long high = endIndex;
 			while (low < high) {
-				token.ThrowIfCancellationRequested();
 				var mid = low + (high - low) / 2;
 				var v = ReadPosMap(workItem, mid);
 
