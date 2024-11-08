@@ -162,7 +162,7 @@ Master keys are loaded from the source only once at process startup. They are th
 
 The feature is designed to support different master key sources. Currently, the following master key sources are implemented:
 - `File` - loads master keys from a directory
-  - The master key can be generated using [es-genkey-cli](https://github.com/EventStore/es-genkey-cli)
+  - The master key can be generated using [es-cli](https://cloudsmith.io/~eventstore/repos/eventstore/packages/?q=es-cli) with the command: `es-cli encryption generate-master-key`
   - For proper security, the master key files must be located on a drive other than where the database files are.
   - This master key source is not recommended to be used in production as it provides minimal protection.
 
