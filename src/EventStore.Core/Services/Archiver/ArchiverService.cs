@@ -65,11 +65,7 @@ public class ArchiverService :
 	}
 
 	private void Start() {
-		Task.Factory.StartNew(
-			() => ArchiveChunks(_cts.Token),
-			_cts.Token,
-			TaskCreationOptions.LongRunning,
-			TaskScheduler.Current);
+		Task.Run(() => ArchiveChunks(_cts.Token), _cts.Token);
 	}
 
 	public void Handle(SystemMessage.ChunkLoaded message) {
@@ -99,7 +95,7 @@ public class ArchiverService :
 	}
 
 	public void Handle(SystemMessage.SystemStart message) {
-		Task.Factory.StartNew(() => ScheduleExistingChunksForArchiving(_cts.Token), _cts.Token);
+		Task.Run(() => ScheduleExistingChunksForArchiving(_cts.Token), _cts.Token);
 	}
 
 	public void Handle(SystemMessage.BecomeShuttingDown message) {
