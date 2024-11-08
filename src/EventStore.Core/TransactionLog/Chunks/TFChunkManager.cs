@@ -288,7 +288,8 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			if (!ReplaceChunksWith(newChunk, "Old")) {
 				Log.Information("Chunk {chunk} will be not switched, marking for remove...", newChunk);
 				newChunk.MarkForDeletion();
-			}
+			} else
+				OnChunkSwitched?.Invoke(newChunk.ChunkInfo);
 
 			if (removeChunksWithGreaterNumbers) {
 				var oldChunksCount = _chunksCount;
@@ -302,8 +303,6 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		} finally {
 			_chunksLocker.Release();
 		}
-
-		OnChunkSwitched?.Invoke(newChunk.ChunkInfo);
 
 		// trigger caching out of lock to avoid lock contention
 		if (triggerCaching)
