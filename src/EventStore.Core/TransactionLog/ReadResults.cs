@@ -1,14 +1,13 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-using System;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog;
 
-public struct RecordReadResult {
-	public static readonly RecordReadResult Failure = new RecordReadResult(false, -1, null, 0);
+public readonly struct RecordReadResult {
+	public static readonly RecordReadResult Failure = new(false, -1, null, 0);
 
 	public readonly bool Success;
 	public readonly long NextPosition;
@@ -31,7 +30,7 @@ public struct RecordReadResult {
 	}
 }
 
-public struct RawReadResult {
+public readonly struct RawReadResult {
 	public static readonly RawReadResult Failure = new RawReadResult(false, -1, null, 0);
 
 	public readonly bool Success;
@@ -53,7 +52,7 @@ public struct RawReadResult {
 	}
 }
 
-public struct SeqReadResult {
+public readonly struct SeqReadResult {
 	public static readonly SeqReadResult Failure = new SeqReadResult(false, true, null, 0, -1, -1);
 
 	public readonly bool Success;
