@@ -46,10 +46,10 @@ public class ArchiverService :
 		_cts = new();
 		_archiveChunkCommands = Channel.CreateUnboundedPrioritized(
 			new UnboundedPrioritizedChannelOptions<Commands.ArchiveChunk> {
-			SingleWriter = true,
-			SingleReader = true,
-			Comparer = new ChunkPrioritizer()
-		});
+				SingleWriter = true,
+				SingleReader = true,
+				Comparer = new ChunkPrioritizer()
+			});
 
 		Subscribe();
 		Start();
