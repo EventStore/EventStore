@@ -11,7 +11,7 @@ dir:
 
 Welcome to the EventStoreDB documentation.
 
-EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration, and operational concerns.
+EventStoreDB is a modern data platform that bridges technology and business processes, giving software teams unprecedented insights into the events that drive their organization forward. This documentation provides an in-depth overview of EventStoreDB’s key features and concepts, along with comprehensive instructions for installation, configuration, and operational management.
 
 EventStoreDB is licensed under [Event Store License v2 (ESLv2)](https://github.com/EventStore/EventStore/blob/4cab8ca81a63f0a8f708d5564ea459fe5a7131de/LICENSE.md), meaning that anyone can access and use it, but enterprise features are only enabled with a valid [license key](./installation.md#license-keys).
 
@@ -25,21 +25,21 @@ Find out [what's new](whatsnew.md) in this release to get details on new feature
 
 ## Getting started
 
-Check the [getting started guide](/getting-started.md) for resources on the principles of EventStoreDB, Event Sourcing, database installation guidelines and choosing a client SDK.
+Check the [getting started guide](/getting-started.md) for an introduction to EventStoreDB and its features, along with detailed instructions to quickly get started.
 
 ## Support
 
 ### EventStoreDB community
 
-Users of EventStoreDB can use the [community forum](https://discuss.eventstore.com) for questions, discussions and getting help from community members.
+Users of EventStoreDB can use the [community forum](https://www.eventstore.com/community) for questions, discussions and getting help from community members.
 
 ### Enterprise customers
 
-Customers with the paid [support plan](https://eventstore.com/support/) can open tickets using the [support portal](https://eventstore.freshdesk.com).
+Customers with a paid subscription can open tickets using the [support portal](https://eventstore.freshdesk.com).
 
 ### Issues
 
-We track most of the issues openly in the EventStoreDB [repository on GitHub](https://github.com/EventStore/EventStore). Before opening an issue, please ensure that a similar issue hasn't been opened already. Also, try searching closed issues that might contain a solution or workaround for your problem.
+We openly track most of the issues in the EventStoreDB [repository on GitHub](https://github.com/EventStore/EventStore). Before opening an issue, please ensure that a similar issue hasn't been opened already. Also, try searching closed issues that might contain a solution or workaround for your problem.
 
 When opening an issue, follow our [guidelines](https://github.com/EventStore/EventStore/blob/master/CONTRIBUTING.md) for bug reports and feature requests. By doing so, you will greatly help us to solve your concerns most efficiently.
 
