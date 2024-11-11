@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Channels;
@@ -119,11 +120,13 @@ public class ArchiverService :
 	}
 
 	private void ScheduleChunkForArchiving(ChunkInfo chunkInfo, string chunkType) {
-		_archiveChunkCommands.Writer.TryWrite(new Commands.ArchiveChunk {
+		var writeResult = _archiveChunkCommands.Writer.TryWrite(new Commands.ArchiveChunk {
 			ChunkPath = chunkInfo.ChunkFileName,
 			ChunkStartNumber = chunkInfo.ChunkStartNumber,
 			ChunkEndNumber = chunkInfo.ChunkEndNumber
 		});
+
+		Debug.Assert(writeResult); // writes should never fail as the channel's length is unbounded
 
 		Log.Information("Scheduled archiving of {chunkFile} ({chunkType})",
 			Path.GetFileName(chunkInfo.ChunkFileName), chunkType);
