@@ -15,6 +15,8 @@ public class VersionedPatternFileNamingStrategy : IVersionedFileNamingStrategy {
 	private readonly string _prefix;
 	private readonly Regex _pattern;
 
+	public string Prefix => _prefix;
+
 	public VersionedPatternFileNamingStrategy(string path, string prefix) {
 		Ensure.NotNull(path, "path");
 		Ensure.NotNull(prefix, "prefix");

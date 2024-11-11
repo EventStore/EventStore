@@ -12,9 +12,11 @@ namespace EventStore.Core.Services.Archiver.Storage;
 public class S3ArchiveStorage : IArchiveStorage {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<S3ArchiveStorage>();
 	private readonly string _bucket;
+	private readonly string _chunkPrefix;
 
-	public S3ArchiveStorage(S3Options options) {
+	public S3ArchiveStorage(S3Options options, string chunkPrefix) {
 		_bucket = options.Bucket;
+		_chunkPrefix = chunkPrefix;
 	}
 	public ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
 		throw new NotImplementedException();

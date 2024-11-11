@@ -44,16 +44,8 @@ public class ArchiverPlugableComponent : IPlugableComponent {
 		if (options is null || options.StorageType is StorageType.None)
 			return;
 
-		var storage = CreateStorage(options);
-		services.AddSingleton(storage);
+		services.AddSingleton(options);
+		services.AddScoped<ArchiveStorageFactory>();
 		services.AddSingleton<ArchiverService>();
-	}
-
-	static IArchiveStorage CreateStorage(ArchiverOptions options) {
-		return options.StorageType switch {
-			StorageType.FileSystem => new FileSystemArchiveStorage(options.FileSystem),
-			StorageType.S3 => new S3ArchiveStorage(options.S3),
-			_ => throw new ArgumentOutOfRangeException(nameof(options.StorageType))
-		};
 	}
 }

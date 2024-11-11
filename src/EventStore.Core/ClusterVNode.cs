@@ -170,6 +170,7 @@ public class ClusterVNode<TStreamId> :
 	private readonly ISubscriber _mainBus;
 
 	private readonly ClusterVNodeController<TStreamId> _controller;
+	private IVersionedFileNamingStrategy _fileNamingStrategy;
 	private readonly TimerService _timerService;
 	private readonly KestrelHttpService _httpService;
 	private readonly ITimeProvider _timeProvider;
@@ -425,8 +426,9 @@ public class ClusterVNode<TStreamId> :
 				ThreadCountCalculator.CalculateWorkerThreadCount(options.Application.WorkerThreads,
 					readerThreadsCount, isRunningInContainer);
 
+			_fileNamingStrategy = new VersionedPatternFileNamingStrategy(dbPath, "chunk-");
 			return new TFChunkDbConfig(dbPath,
-				new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
+				_fileNamingStrategy,
 				options.Database.ChunkSize,
 				cache,
 				writerChk,
@@ -1547,7 +1549,8 @@ public class ClusterVNode<TStreamId> :
 				.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates,
 						X509Certificate2Collection Roots)>>
 					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()))
-				.AddSingleton(_nodeHttpClientFactory);
+				.AddSingleton(_nodeHttpClientFactory)
+				.AddSingleton(_fileNamingStrategy);
 
 			configureAdditionalNodeServices?.Invoke(services);
 			return services;

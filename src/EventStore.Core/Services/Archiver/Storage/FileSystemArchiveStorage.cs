@@ -16,9 +16,11 @@ public class FileSystemArchiveStorage : IArchiveStorage {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<FileSystemArchiveStorage>();
 
 	private readonly string _archivePath;
+	private readonly string _chunkPrefix;
 
-	public FileSystemArchiveStorage(FileSystemOptions options) {
+	public FileSystemArchiveStorage(FileSystemOptions options, string chunkPrefix) {
 		_archivePath = options.Path;
+		_chunkPrefix = chunkPrefix;
 	}
 
 	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
@@ -91,7 +93,7 @@ public class FileSystemArchiveStorage : IArchiveStorage {
 
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
 		return new DirectoryInfo(_archivePath)
-			.EnumerateFiles("chunk-*")
+			.EnumerateFiles($"{_chunkPrefix}*")
 			.Select(chunk => chunk.Name)
 			.ToAsyncEnumerable();
 	}
