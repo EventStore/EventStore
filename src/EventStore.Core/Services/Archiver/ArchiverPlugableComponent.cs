@@ -1,7 +1,6 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-using System;
 using System.Collections.Generic;
 using EventStore.Core.Services.Archiver.Storage;
 using EventStore.Plugins;
@@ -22,11 +21,14 @@ public class ArchiverPlugableComponent : IPlugableComponent {
 
 	public string Version => "0.0.1";
 
-	public bool Enabled => true;
+	public bool Enabled { get; private set; }
 
 	public string LicensePublicKey => LicenseConstants.LicensePublicKey;
 
 	public void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {
+		if (!Enabled)
+			return;
+
 		_ = builder.ApplicationServices.GetService<ArchiverService>();
 
 		var licenseService = builder.ApplicationServices.GetRequiredService<ILicenseService>();
@@ -41,7 +43,9 @@ public class ArchiverPlugableComponent : IPlugableComponent {
 
 	public void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
 		var options = configuration.GetSection("EventStore:Archive").Get<ArchiverOptions>();
-		if (options is null || options.StorageType is StorageType.None)
+		Enabled = options?.Enabled ?? true; // enabled by default
+
+		if (options is null || !Enabled || options.StorageType is StorageType.None)
 			return;
 
 		services.AddSingleton(options);
