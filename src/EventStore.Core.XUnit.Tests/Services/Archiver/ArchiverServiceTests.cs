@@ -189,7 +189,8 @@ internal class FakeSubscriber : ISubscriber {
 	public void Unsubscribe<T>(IAsyncHandle<T> handler) where T : Message { }
 }
 
-internal class FakeArchiveStorage : IArchiveStorage {
+
+internal class FakeArchiveStorage : IArchiveStorage, IArchiveStorageFactory {
 	public List<string> Chunks;
 	public int Stores => Interlocked.CompareExchange(ref _stores, 0, 0);
 	private int _stores;
@@ -202,6 +203,8 @@ internal class FakeArchiveStorage : IArchiveStorage {
 		_existingChunks = existingChunks;
 		Chunks = new List<string>(existingChunks);
 	}
+
+	public IArchiveStorage Create() => this;
 
 	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
 		await Task.Delay(_chunkStorageDelay, ct);
