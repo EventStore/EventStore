@@ -34,26 +34,28 @@ public class FileSystemArchiveStorage : IArchiveStorage {
 			if (File.Exists(tempPath))
 				File.Delete(tempPath);
 
-			await using var source = File.Open(
-				path: chunkPath,
-				options: new FileStreamOptions {
-					Mode = FileMode.Open,
-					Access = FileAccess.Read,
-					Share = FileShare.Read,
-					Options = FileOptions.SequentialScan | FileOptions.Asynchronous
-				});
+			{
+				await using var source = File.Open(
+					path: chunkPath,
+					options: new FileStreamOptions {
+						Mode = FileMode.Open,
+						Access = FileAccess.Read,
+						Share = FileShare.Read,
+						Options = FileOptions.SequentialScan | FileOptions.Asynchronous
+					});
 
-			await using var destination = File.Open(
-				path: tempPath,
-				options: new FileStreamOptions {
-					Mode = FileMode.CreateNew,
-					Access = FileAccess.ReadWrite,
-					Share = FileShare.None,
-					Options = FileOptions.Asynchronous,
-					PreallocationSize = new FileInfo(chunkPath).Length
-				});
+				await using var destination = File.Open(
+					path: tempPath,
+					options: new FileStreamOptions {
+						Mode = FileMode.CreateNew,
+						Access = FileAccess.ReadWrite,
+						Share = FileShare.None,
+						Options = FileOptions.Asynchronous,
+						PreallocationSize = new FileInfo(chunkPath).Length
+					});
 
-			await source.CopyToAsync(destination, ct);
+				await source.CopyToAsync(destination, ct);
+			}
 
 			File.Move(tempPath, destinationPath);
 
