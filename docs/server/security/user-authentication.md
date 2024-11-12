@@ -345,13 +345,10 @@ For example:
 ```yaml
 AuthenticationType: oauth
 OAuth:
-  Audience: eventstore-client
-  Issuer: https://localhost:5001/
-  ClientId: eventstore-client
+  Audience: {audience}
+  Issuer: {identity_server_endpoint}
+  ClientId: {client_id}
   ClientSecret: {client_secret}
-  # For testing
-  DisableIssuerValidation: true
-  Insecure: true
 ```
 :::
 
@@ -367,30 +364,29 @@ AuthenticationConfig: ./es-oauth.conf
 @tab es-oauth.conf
 ```yaml
 OAuth:
-  Audience: eventstore-client
-  Issuer: https://localhost:5001/
-  ClientId: eventstore-client
+  Audience: {audience}
+  Issuer: {identity_server_endpoint}
+  ClientId: {client_id}
   ClientSecret: {client_secret}
-  # For testing
-  DisableIssuerValidation: true
-  Insecure: true
 ```
 :::
 
 The configuration options are:
 
-| Name 			 | Type	| Required?	| Default 	|Description |
-|------------------------|----------|-----------|-----------|------------|
-| Audience 			 | string 	| Y 		| - 		| The audience used in your identity provider. |
-| Issuer 			 | string 	| Y 		| - 		| The issuer endpoint for your identity provider. |
-| ClientId			 | string 	| N 		| "" 		| The id of the client configured in the identity provider. |
-| ClientSecret 		 | string 	| N 		| "" 		| The client secret configured in the identity provider. |
-| DisableIssuerValidation| bool 	| N 		| false 	| Disable issuer validation for testing purposes. |
-| Insecure 			 | bool 	| N 		| false 	| Whether to validate the certificates for the identity provider. This is not related to `Insecure` in the EventStoreDB configuration. |
+| Name 			              | Type	  | Required?	| Default 	|Description |
+|-------------------------|---------|-----------|-----------|------------|
+| Audience 			          | string 	| Y 		| - 		| The audience used in your identity provider. |
+| Issuer 			            | string 	| Y 		| - 		| The issuer endpoint for your identity provider. |
+| ClientId			          | string 	| N 		| "" 		| The id of the client configured in the identity provider. |
+| ClientSecret 		        | string 	| N 	  | "" 		| The client secret configured in the identity provider. |
+| DisableIssuerValidation | bool 	  | N 		| false 	| Disable issuer validation for testing purposes. |
+| Insecure 			          | bool 	  | N 		| false 	| Whether to validate the certificates for the identity provider. This is not related to `Insecure` in the EventStoreDB configuration. |
 
 ### Testing with a local identity server
 
 You can try out the OAuth feature locally with this [Identity Server 4 docker container](https://github.com/EventStore/idsrv4). This container is not intended to be used in production.
+
+You will first configure and run the identity server, and then configure and run EventStoreDB.
 
 1. Create a `users.conf.json` file to configure the users for your test.
 
@@ -526,6 +522,10 @@ You need to configure the following:
 ```
 :::
 
+::: tip
+In this example we set the `RedirectUris` to both `https://localhost:2113` and `https://127.0.0.1:2113` so that you can log into the UI from either address.
+:::
+
 3. Pull and run the `eventstore/idsrv4` docker container:
 
 ```bash
@@ -553,8 +553,32 @@ info: Microsoft.Hosting.Lifetime[14]
 
 :::tabs
 @tab eventstore.conf
-```
+```yaml
+IntIp: 127.0.0.1
+ExtIp: 127.0.0.1
+
+# Licensing and certificates configuration omitted
+
+AuthenticationType: oauth
+OAuth:
+  Audience: eventstore-client
+  Issuer: https://localhost:5001/
+  ClientId: eventstore-client
+  ClientSecret: {client_secret}
+  # For testing
+  DisableIssuerValidation: true
+  Insecure: true
 ```
 :::
 
-You should now be able to log into the UI with the configured users.
+5. Start EventStoreDB. You should see the following logs indicating that OAuth is in use:
+
+```
+[INF] OAuthAuthenticationProvider    OAuthAuthentication 24.10.0.1338 plugin enabled.
+...
+[INF] OAuthAuthenticationPlugin      Obtaining auth token signing key from https://localhost:5001/
+...
+[INF] OAuthAuthenticationPlugin      Issuer signing keys have been retrieved. Key IDs: ["{key_id}"]
+```
+
+You should now be able to log into the UI with the configured user names and passwords.
