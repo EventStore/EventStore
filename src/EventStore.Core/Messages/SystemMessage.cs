@@ -315,4 +315,34 @@ public static partial class SystemMessage {
 			Epoch = epoch;
 		}
 	}
+
+	[DerivedMessage(CoreMessage.System)]
+	public partial class ChunkLoaded : Message {
+		public readonly ChunkInfo ChunkInfo;
+
+		public ChunkLoaded(ChunkInfo chunkInfo) {
+			Ensure.NotNull(chunkInfo, nameof(chunkInfo));
+			ChunkInfo = chunkInfo;
+		}
+	}
+
+	[DerivedMessage(CoreMessage.System)]
+	public partial class ChunkCompleted : Message {
+		public readonly ChunkInfo ChunkInfo;
+
+		public ChunkCompleted(ChunkInfo chunkInfo) {
+			Ensure.NotNull(chunkInfo, nameof(chunkInfo));
+			ChunkInfo = chunkInfo;
+		}
+	}
+
+	[DerivedMessage(CoreMessage.System)]
+	public partial class ChunkSwitched : Message {
+		public readonly ChunkInfo ChunkInfo;
+
+		public ChunkSwitched(ChunkInfo chunkInfo) {
+			Ensure.NotNull(chunkInfo, nameof(chunkInfo));
+			ChunkInfo = chunkInfo;
+		}
+	}
 }

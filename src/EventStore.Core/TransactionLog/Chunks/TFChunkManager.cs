@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using DotNext.Threading;
 using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
+using ChunkInfo = EventStore.Core.Data.ChunkInfo;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks;
@@ -38,8 +39,14 @@ public class TFChunkManager : IThreadPoolWorkItem {
 	private readonly AsyncExclusiveLock _chunksLocker = new();
 	private int _backgroundPassesRemaining;
 	private int _backgroundRunning;
+	public Action<ChunkInfo> OnChunkLoaded { get; init; }
+	public Action<ChunkInfo> OnChunkCompleted { get; init; }
+	public Action<ChunkInfo> OnChunkSwitched { get; init; }
 
-	public TFChunkManager(TFChunkDbConfig config, ITransactionFileTracker tracker, DbTransformManager transformManager) {
+	public TFChunkManager(
+		TFChunkDbConfig config,
+		ITransactionFileTracker tracker,
+		DbTransformManager transformManager) {
 		Ensure.NotNull(config, "config");
 		_config = config;
 		_tracker = tracker;
@@ -149,7 +156,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 				tracker: _tracker,
 				transformFactory: _transformManager.GetFactoryForNewChunk(),
 				token);
-			AddChunk(chunk);
+			AddChunk(chunk, isNew: true);
 			triggerCaching = _cachingEnabled;
 		} finally {
 			_chunksLocker.Release();
@@ -186,7 +193,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 				transformFactory: _transformManager.GetFactoryForExistingChunk(chunkHeader.TransformType),
 				transformHeader: transformHeader,
 				token);
-			AddChunk(chunk);
+			AddChunk(chunk, isNew: true);
 			triggerCaching = _cachingEnabled;
 		} finally {
 			_chunksLocker.Release();
@@ -198,7 +205,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		return chunk;
 	}
 
-	private void AddChunk(TFChunk.TFChunk chunk) {
+	private void AddChunk(TFChunk.TFChunk chunk, bool isNew) {
 		Debug.Assert(chunk is not null);
 		Debug.Assert(_chunksLocker.IsLockHeld);
 
@@ -207,6 +214,13 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		}
 
 		_chunksCount = Math.Max(chunk.ChunkHeader.ChunkEndNumber + 1, _chunksCount);
+
+		if (isNew) {
+			if (chunk.ChunkHeader.ChunkStartNumber > 0)
+				OnChunkCompleted?.Invoke(_chunks[chunk.ChunkHeader.ChunkStartNumber - 1].ChunkInfo);
+		} else {
+			OnChunkLoaded?.Invoke(chunk.ChunkInfo);
+		}
 	}
 
 	public async ValueTask AddChunk(TFChunk.TFChunk chunk, CancellationToken token) {
@@ -215,7 +229,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		bool triggerCaching;
 		await _chunksLocker.AcquireAsync(token);
 		try {
-			AddChunk(chunk);
+			AddChunk(chunk, isNew: false);
 			triggerCaching = _cachingEnabled;
 		} finally {
 			_chunksLocker.Release();
@@ -274,7 +288,8 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			if (!ReplaceChunksWith(newChunk, "Old")) {
 				Log.Information("Chunk {chunk} will be not switched, marking for remove...", newChunk);
 				newChunk.MarkForDeletion();
-			}
+			} else
+				OnChunkSwitched?.Invoke(newChunk.ChunkInfo);
 
 			if (removeChunksWithGreaterNumbers) {
 				var oldChunksCount = _chunksCount;

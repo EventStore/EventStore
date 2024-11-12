@@ -22,13 +22,25 @@ public class TFChunkDb : IAsyncDisposable {
 	private readonly ITransactionFileTracker _tracker;
 	private int _closed;
 
-	public TFChunkDb(TFChunkDbConfig config, ITransactionFileTracker tracker = null, ILogger log = null, DbTransformManager transformManager = null) {
+	public TFChunkDb(
+		TFChunkDbConfig config,
+		ITransactionFileTracker tracker = null,
+		ILogger log = null,
+		DbTransformManager transformManager = null,
+		Action<EventStore.Core.Data.ChunkInfo> onChunkLoaded = null,
+		Action<EventStore.Core.Data.ChunkInfo> onChunkCompleted = null,
+		Action<EventStore.Core.Data.ChunkInfo> onChunkSwitched = null) {
 		Ensure.NotNull(config, "config");
 
 		Config = config;
 		TransformManager = transformManager ?? DbTransformManager.Default;
 		_tracker = tracker ?? new TFChunkTracker.NoOp();
-		Manager = new TFChunkManager(Config, _tracker, TransformManager);
+		Manager = new TFChunkManager(Config, _tracker, TransformManager) {
+			OnChunkLoaded = onChunkLoaded,
+			OnChunkCompleted = onChunkCompleted,
+			OnChunkSwitched = onChunkSwitched
+		};
+
 		_log = log ?? Serilog.Log.ForContext<TFChunkDb>();
 	}
 

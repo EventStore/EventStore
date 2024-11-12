@@ -16,6 +16,7 @@ using DotNext.Diagnostics;
 using DotNext.IO;
 using DotNext.Threading;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Transforms.Identity;
@@ -73,6 +74,17 @@ public partial class TFChunk : IDisposable {
 
 	public ChunkFooter ChunkFooter {
 		get { return _chunkFooter; }
+	}
+
+	public ChunkInfo ChunkInfo {
+		get => new() {
+			ChunkFileName = _filename,
+			ChunkStartNumber = _chunkHeader.ChunkStartNumber,
+			ChunkEndNumber = _chunkHeader.ChunkEndNumber,
+			ChunkStartPosition = _chunkHeader.ChunkStartPosition,
+			ChunkEndPosition = _chunkHeader.ChunkEndPosition,
+			IsCompleted = IsReadOnly
+		};
 	}
 
 	public ReadOnlyMemory<byte> TransformHeader {
