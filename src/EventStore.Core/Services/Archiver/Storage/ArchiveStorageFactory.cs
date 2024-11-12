@@ -16,8 +16,8 @@ public class ArchiveStorageFactory(
 
 	public IArchiveStorage Create() {
 		return options.StorageType switch {
-			StorageType.FileSystem => new FileSystemArchiveStorage(options.FileSystem, fileNamingStrategy.Prefix),
-			StorageType.S3 => new S3ArchiveStorage(options.S3, fileNamingStrategy.Prefix),
+			StorageType.FileSystem => new FileSystemArchiveStorage(options.FileSystem, fileNamingStrategy.GetPrefixFor),
+			StorageType.S3 => new S3ArchiveStorage(options.S3, fileNamingStrategy.GetPrefixFor),
 			_ => throw new ArgumentOutOfRangeException(nameof(options.StorageType))
 		};
 	}

@@ -12,5 +12,5 @@ public interface IVersionedFileNamingStrategy {
 	string[] GetAllTempFiles();
 	int GetIndexFor(string fileName);
 	int GetVersionFor(string fileName);
-	string Prefix { get; }
+	string GetPrefixFor(int? index, int? version);
 }

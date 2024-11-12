@@ -92,4 +92,14 @@ public class VersionedPatternFileNamingStrategy : IVersionedFileNamingStrategy {
 	public string[] GetAllTempFiles() {
 		return Directory.GetFiles(_path, "*.tmp");
 	}
+
+	public string GetPrefixFor(int? index, int? version) {
+		if (index is null)
+			return _prefix;
+
+		if (version is null)
+			return $"{_prefix}{index:000000}.";
+
+		return $"{_prefix}{index:000000}.{version:000000}";
+	}
 }

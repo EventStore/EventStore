@@ -26,10 +26,11 @@ public class FileSystemArchiveStorageTests : DirectoryPerTest<FileSystemArchiveS
 	}
 
 	private FileSystemArchiveStorage CreateSut() {
+		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
 		var storage = new FileSystemArchiveStorage(
 			new FileSystemOptions {
 				Path = ArchivePath
-			}, ChunkPrefix);
+			}, namingStrategy.GetPrefixFor);
 		return storage;
 	}
 

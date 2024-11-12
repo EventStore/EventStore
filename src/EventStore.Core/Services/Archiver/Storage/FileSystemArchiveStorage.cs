@@ -16,11 +16,11 @@ public class FileSystemArchiveStorage : IArchiveStorage {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<FileSystemArchiveStorage>();
 
 	private readonly string _archivePath;
-	private readonly string _chunkPrefix;
+	private readonly Func<int?, int?, string> _getChunkPrefix;
 
-	public FileSystemArchiveStorage(FileSystemOptions options, string chunkPrefix) {
+	public FileSystemArchiveStorage(FileSystemOptions options, Func<int?, int?, string> getChunkPrefix) {
 		_archivePath = options.Path;
-		_chunkPrefix = chunkPrefix;
+		_getChunkPrefix = getChunkPrefix;
 	}
 
 	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
@@ -73,7 +73,8 @@ public class FileSystemArchiveStorage : IArchiveStorage {
 		try {
 			var directoryInfo = new DirectoryInfo(_archivePath);
 			for (var chunkNumber = chunkStartNumber; chunkNumber <= chunkEndNumber; chunkNumber++) {
-				foreach (var file in directoryInfo.EnumerateFiles($"chunk-{chunkNumber:000000}.*")) {
+				var chunkPrefix = _getChunkPrefix(chunkNumber, null);
+				foreach (var file in directoryInfo.EnumerateFiles($"{chunkPrefix}*")) {
 					if (file.Name == exceptChunk)
 						continue;
 
@@ -93,7 +94,7 @@ public class FileSystemArchiveStorage : IArchiveStorage {
 
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
 		return new DirectoryInfo(_archivePath)
-			.EnumerateFiles($"{_chunkPrefix}*")
+			.EnumerateFiles($"{_getChunkPrefix(null, null)}*")
 			.Select(chunk => chunk.Name)
 			.Order()
 			.ToAsyncEnumerable();
