@@ -38,9 +38,9 @@ public class ArchiverService :
 	private readonly TimeSpan RetryInterval = TimeSpan.FromMinutes(1);
 	private long _replicationPosition;
 
-	public ArchiverService(ISubscriber mainBus, IArchiveStorage archiveStorage) {
+	public ArchiverService(ISubscriber mainBus, IArchiveStorageFactory archiveStorageFactory) {
 		_mainBus = mainBus;
-		_archiveStorage = archiveStorage;
+		_archiveStorage = archiveStorageFactory.Create();
 
 		_uncommittedChunks = new();
 		_existingChunks = new();

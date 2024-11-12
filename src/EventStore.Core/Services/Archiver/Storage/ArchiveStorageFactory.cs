@@ -6,10 +6,6 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.Services.Archiver.Storage;
 
-internal interface IArchiveStorageFactory {
-	IArchiveStorage Create();
-}
-
 public class ArchiveStorageFactory(
 	ArchiverOptions options,
 	IVersionedFileNamingStrategy fileNamingStrategy) : IArchiveStorageFactory {

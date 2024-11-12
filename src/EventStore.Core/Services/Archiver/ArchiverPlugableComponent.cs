@@ -49,7 +49,7 @@ public class ArchiverPlugableComponent : IPlugableComponent {
 			return;
 
 		services.AddSingleton(options);
-		services.AddScoped<ArchiveStorageFactory>();
+		services.AddScoped<IArchiveStorageFactory, ArchiveStorageFactory>();
 		services.AddSingleton<ArchiverService>();
 	}
 }
