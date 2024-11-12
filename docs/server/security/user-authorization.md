@@ -371,7 +371,7 @@ EventStoreDB will log when the default policy is created:
 
 ::: details Click here to see the default policy
 
-```
+```json
 {
   "streamPolicies": {
     "publicDefault": {
@@ -437,7 +437,7 @@ You can create a custom stream policy by writing an event with event type `$poli
 
 Define your custom policy in the `streamPolicies`, e.g:
 
-```
+```json
 "streamPolicies": {
     "customPolicy": {
         "$r": ["ouro", "readers"],
@@ -446,35 +446,80 @@ Define your custom policy in the `streamPolicies`, e.g:
         "$mr": ["ouro"],
         "$mw": ["ouro"]
     },
-    // Default policies truncated (full version defined below)
+    // Default policies truncated (full version shown below)
 }
 ```
 
 And then add an entry to `streamRules` to specify the stream prefixes which should use the custom policy. You can apply the same policy to multiple streams by defining multiple stream rules. e.g:
 
-```
+```json
 "streamRules": [{
     "startsWith": "account",
     "policy": "customPolicy"
 }, {
     "startsWith": "customer",
     "policy": "customPolicy"
-}]
+}
+// Default stream rules truncated (full version shown below)
+]
 ```
 
 You still need to specify default stream rules when you update the `$policies` stream.
 
-::: details Click here to see the above example in full
+```json
+"defaultStreamRules": {
+  "userStreams": "publicDefault",
+  "systemStreams": "adminsDefault"
+}
+```
+
+Append an event with your custom policy to the `$policies` stream with the `$policy-updated` event type:
+
+::: tabs
+@tab HTTP
+```http
+POST https://localhost:2113/streams/$policies
+Authorization: Basic admin changeit
+Content-Type: application/json
+ES-EventId: b04a64bf-4ac2-4f36-a856-6da9b63e64b7
+ES-EventType: $policy-updated
+
+< ./customPolicy.json
+```
+
+@tab Powershell
+```powershell
+curl.exe -X POST `
+  -H "Content-Type: application/json" `
+  -H "ES-EventId: 8bc7c581-0f07-4987-bfcb-ab8f9404ca34" `
+  -H "ES-EventType: `$policy-updated" `
+  -u "admin:changeit" `
+  -d @customPolicy.json `
+  https://localhost:2113/streams/%24policies
+```
+
+@tab Bash
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "ES-EventId: cb6a722d-c775-4831-929b-86870560c68e" \
+  -H "ES-EventType: \$policy-updated" \
+  -u "admin:changeit" \
+  -d @customPolicy.json \
+  https://localhost:2113/streams/%24policies
 
 ```
+
+@tab customPolicy.json
+```json
 {
   "streamPolicies": {
     "customPolicy": {
-        "$r": ["ouro", "readers"],
-        "$w": ["ouro"],
-        "$d": ["ouro"],
-        "$mr": ["ouro"],
-        "$mw": ["ouro"]
+      "$r": ["ouro", "readers"],
+      "$w": ["ouro"],
+      "$d": ["ouro"],
+      "$mr": ["ouro"],
+      "$mw": ["ouro"]
     },
     "publicDefault": {
       "$r": ["$all"],
