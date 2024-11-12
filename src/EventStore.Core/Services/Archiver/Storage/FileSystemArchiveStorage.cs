@@ -95,6 +95,7 @@ public class FileSystemArchiveStorage : IArchiveStorage {
 		return new DirectoryInfo(_archivePath)
 			.EnumerateFiles($"{_chunkPrefix}*")
 			.Select(chunk => chunk.Name)
+			.Order()
 			.ToAsyncEnumerable();
 	}
 }
