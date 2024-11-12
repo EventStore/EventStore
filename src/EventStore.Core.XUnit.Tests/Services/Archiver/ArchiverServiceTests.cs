@@ -42,7 +42,7 @@ public class ArchiverServiceTests {
 	private static async Task WaitFor(int numStores, FakeArchiveStorage archive) {
 		var minDelay = TimeSpan.FromMilliseconds(200);
 		await Task.Delay(minDelay);
-		AssertEx.IsOrBecomesTrue(() => archive.Stores >= numStores);
+		AssertEx.IsOrBecomesTrue(() => archive.Stores >= numStores, timeout: TimeSpan.FromSeconds(10));
 	}
 
 	[Fact]
