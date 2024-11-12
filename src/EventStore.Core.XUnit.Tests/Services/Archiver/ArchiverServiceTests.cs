@@ -39,9 +39,10 @@ public class ArchiverServiceTests {
 		};
 	}
 
-	private static Task Wait(TimeSpan? delay = null) {
-		var minDelay = TimeSpan.FromMilliseconds(50);
-		return Task.Delay(minDelay + (delay ?? TimeSpan.Zero));
+	private static async Task WaitFor(int numStores, FakeArchiveStorage archive) {
+		var minDelay = TimeSpan.FromMilliseconds(200);
+		await Task.Delay(minDelay);
+		AssertEx.IsOrBecomesTrue(() => archive.Stores >= numStores);
 	}
 
 	[Fact]
@@ -52,7 +53,7 @@ public class ArchiverServiceTests {
 		sut.Handle(new SystemMessage.ChunkCompleted(chunkInfo));
 		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(chunkInfo.ChunkEndPosition));
 
-		await Wait();
+		await WaitFor(numStores: 1, archive);
 
 		Assert.Equal(["0-0"], archive.Chunks);
 	}
@@ -68,7 +69,7 @@ public class ArchiverServiceTests {
 		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(chunkInfo.ChunkEndPosition - 2));
 		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(chunkInfo.ChunkEndPosition - 1));
 
-		await Wait();
+		await WaitFor(numStores: 0, archive);
 
 		Assert.Equal([], archive.Chunks);
 	}
@@ -81,7 +82,7 @@ public class ArchiverServiceTests {
 		sut.Handle(new SystemMessage.ChunkLoaded(chunkInfo));
 		sut.Handle(new SystemMessage.SystemStart());
 
-		await Wait();
+		await WaitFor(numStores: 1, archive);
 
 		Assert.Equal(["0-0"], archive.Chunks);
 	}
@@ -94,7 +95,7 @@ public class ArchiverServiceTests {
 		sut.Handle(new SystemMessage.ChunkLoaded(chunkInfo));
 		sut.Handle(new SystemMessage.SystemStart());
 
-		await Wait();
+		await WaitFor(numStores: 0, archive);
 
 		Assert.Equal([], archive.Chunks);
 	}
@@ -106,7 +107,7 @@ public class ArchiverServiceTests {
 		var chunkInfo = GetChunkInfo(0, 0, complete: true);
 		sut.Handle(new SystemMessage.ChunkLoaded(chunkInfo));
 
-		await Wait();
+		await WaitFor(numStores: 0, archive);
 
 		Assert.Equal([], archive.Chunks);
 	}
@@ -118,7 +119,7 @@ public class ArchiverServiceTests {
 		var chunkInfo = GetChunkInfo(0, 0, complete: true);
 		sut.Handle(new SystemMessage.ChunkSwitched(chunkInfo));
 
-		await Wait();
+		await WaitFor(numStores: 1, archive);
 
 		Assert.Equal(["0-0"], archive.Chunks);
 	}
@@ -137,7 +138,7 @@ public class ArchiverServiceTests {
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(0, 0, complete: true)));
 		sut.Handle(new SystemMessage.SystemStart());
 
-		await Wait(TimeSpan.FromMilliseconds(100 * 5));
+		await WaitFor(numStores: 5, archive);
 
 		Assert.Equal(["3-3", "0-0", "1-1", "2-2", "4-4"], archive.Chunks);
 	}
@@ -152,7 +153,7 @@ public class ArchiverServiceTests {
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(3, 3, complete: true)));
 		sut.Handle(new SystemMessage.SystemStart());
 
-		await Wait();
+		await WaitFor(numStores: 2, archive);
 
 		Assert.Equal([ "0-0", "1-1", "2-2", "3-3" ], archive.Chunks);
 	}
@@ -163,7 +164,7 @@ public class ArchiverServiceTests {
 
 		sut.Handle(new SystemMessage.ChunkSwitched(GetChunkInfo(0, 1, complete: true)));
 
-		await Wait();
+		await WaitFor(numStores: 1, archive);
 
 		Assert.Equal([ "0-1" ], archive.Chunks);
 	}
@@ -177,7 +178,7 @@ public class ArchiverServiceTests {
 		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(chunkInfo.ChunkEndPosition));
 		sut.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), exitProcess: true, shutdownHttp: true));
 
-		await Wait(delay: TimeSpan.FromMilliseconds(100));
+		await WaitFor(numStores: 0, archive);
 
 		Assert.Equal([ ], archive.Chunks);
 	}
@@ -190,6 +191,8 @@ internal class FakeSubscriber : ISubscriber {
 
 internal class FakeArchiveStorage : IArchiveStorage {
 	public List<string> Chunks;
+	public int Stores => Interlocked.CompareExchange(ref _stores, 0, 0);
+	private int _stores;
 
 	private readonly TimeSpan _chunkStorageDelay;
 	private readonly string[] _existingChunks;
@@ -203,6 +206,7 @@ internal class FakeArchiveStorage : IArchiveStorage {
 	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
 		await Task.Delay(_chunkStorageDelay, ct);
 		Chunks.Add(chunkPath);
+		Interlocked.Increment(ref _stores);
 		return true;
 	}
 
