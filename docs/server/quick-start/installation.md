@@ -78,8 +78,8 @@ apt-get install -y apt-transport-https
 keyring_location=/usr/share/keyrings/eventstore-eventstore-archive-keyring.gpg
 # For Debian Jessie, Ubuntu 15.10 and earlier
 keyring_location=/etc/apt/trusted.gpg.d/eventstore-eventstore.gpg
-curl -1sLf 'https://packages.eventstore.com/public/eventstore/gpg.EFEC87A4F8F5849D.key' |  gpg --dearmor >> ${keyring_location}
-curl -1sLf 'https://packages.eventstore.com/public/eventstore/config.deb.txt?distro=ubuntu&codename=xenial&component=main' > /etc/apt/sources.list.d/eventstore-eventstore.list
+curl -1sLf 'https://packages.eventstore.com/public/eventstore/gpg.D008FDA5E151E345.key' |  gpg --dearmor >> ${keyring_location}
+curl -1sLf 'https://packages.eventstore.com/public/eventstore/config.deb.txt?distro=ubuntu&codename=zorin&component=main' > /etc/apt/sources.list.d/eventstore-eventstore.list
 sudo chmod 644 ${keyring_location}
 sudo chmod 644 /etc/apt/sources.list.d/eventstore-eventstore.list
 apt-get update
@@ -133,8 +133,8 @@ Alternatively, you can manually configure it yourself before installing packages
 
 ```bash
 yum install yum-utils pygpgme
-rpm --import 'https://packages.eventstore.com/public/eventstore/gpg.EFEC87A4F8F5849D.key'
-curl -1sLf 'https://packages.eventstore.com/public/eventstore/config.rpm.txt?distro=el&codename=7' > /tmp/eventstore-eventstore.repo
+rpm --import 'https://packages.eventstore.com/public/eventstore/gpg.D008FDA5E151E345.key'
+curl -1sLf 'https://packages.eventstore.com/public/eventstore/config.rpm.txt?distro=el&codename=9' > /tmp/eventstore-eventstore.repo
 yum-config-manager --add-repo '/tmp/eventstore-eventstore.repo'
 yum -q makecache -y --disablerepo='*' --enablerepo='eventstore-eventstore'
 ```
