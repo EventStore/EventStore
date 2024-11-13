@@ -176,7 +176,7 @@ access to `$settings` unless you specifically override it.
 Refer to the documentation of the HTTP API or SDK of your choice for more information about changing ACLs
 programmatically.
 
-### Stream Policy Authorization
+### Stream policy authorization
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
@@ -351,11 +351,11 @@ To recover from this, either fix the issue preventing the plugin from loading, o
 }
 ```
 
-#### Stream Policies and Rules
+#### Stream policies and rules
 
 Stream policies and Stream Rules are configured by events written to the `$policies` stream.
 
-##### Default Stream Policy
+##### Default stream policy
 
 EventStoreDB creates default stream policies by adding a default policy event in the `$policies` stream when the feature is enabled for the first time. The default policies specified in that event include:
 
@@ -431,7 +431,7 @@ EventStoreDB will log when the default policy is created:
 Operations users in the `$ops` group are excluded from the `$all` group and do not have access to user streams by default.
 :::
 
-##### Custom Stream Policies
+##### Custom stream policies
 
 You can create a custom stream policy by writing an event with event type `$policy-updated` to the `$policies` stream.
 
@@ -631,7 +631,7 @@ curl -X POST \
 If a policy update is invalid, it will not be applied and an error will be logged. EventStoreDB will continue running with the previous valid policy in place.
 :::
 
-##### Stream Policy Schema
+##### Stream policy schema
 
 ###### Policy
 
