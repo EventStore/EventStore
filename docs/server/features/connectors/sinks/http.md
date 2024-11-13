@@ -117,7 +117,6 @@ The following template parameters are available for use in the URL:
 | `{schema-subject}` | The event's schema subject, converted to lowercase with hyphens |
 | `{event-type}`     | Alias for `{schema-subject}`                                    |
 | `{stream}`         | The EventStoreDB stream ID                                      |
-| `{partition-key}`  | The event's partition key                                       |
 
 **Usage**
 
@@ -127,11 +126,11 @@ replaced with their corresponding values for each event.
 Example:
 
 ```
-https://api.example.com/{schema-subject}/{partition-key}
+https://api.example.com/{schema-subject}
 ```
 
-For an event with schema subject "TestEvent" and partition key "123", this would result in the URL:
+For an event with schema subject "TestEvent", this would result in the URL:
 
 ```
-https://api.example.com/TestEvent/123
+https://api.example.com/TestEvent
 ```
