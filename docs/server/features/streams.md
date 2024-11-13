@@ -124,6 +124,16 @@ If you plan to use projections and delete streams, there are some considerations
 
 ## System events and streams
 
+System streams and events begin with the `$` symbol. These streams and events are used for internal data, or for configuring specific parts of EventStoreDB.
+
+Metadata streams for system streams follow the same convention of prefixing the stream name with `$$`. Therefore metadata streams for system streams start with `$$$`.
+
+By default, access to system streams is limited to members of the `$admins` group.
+
+::: tip
+Metadata streams (streams beginning with `$$` or `$$$`) are considered system streams.
+:::
+
 ### **`$persistentSubscriptionConfig`**
 
 **`$persistentSubscriptionConfig`** is a specialized paged stream that stores all configuration events for all
