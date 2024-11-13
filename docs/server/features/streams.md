@@ -172,3 +172,90 @@ types:
   - **`error`**: Error details
   - **`timeTaken`**: Duration of the scavenging process in milliseconds
   - **`spaceSaved`**: Space saved by scavenge process in bytes.
+
+## Projections events and streams
+
+These are the streams and event types that are specific to projections. Most projections streams are considered system streams as they start with a `$`.
+
+User projections are able to interact with non-system streams depending on their code and configuration. You should avoid appending events directly to streams created by projections, as this may cause the projection to fault.
+
+The system streams created by the projections subsystem are listed below.
+
+### Streams created by system projections
+
+The system projections create the following system streams:
+
+- **`$streams`**: Output of the [`$streams` projection](./projections/system.md#streams-projection).
+- **`$ce-`**: Output of the [`$by_category` projection](./projections/system.md#by-category).
+- **`$et-`**: Output of the [`$by_event_type` projection](./projections/system.md#by-event-type).
+- **`$et`**: Checkpoint stream for the [`$by_event_type` projection](./projections/system.md#by-event-type).
+- **`$bc-`**: Output of the [`$by_correlation_id` projection](./projections/system.md#by-correlation-id).
+- **`$category-`**: Output of the [`$stream_by_category` projection](./projections/system.md#stream-by-category).
+
+### **`$projections-$all`**
+
+This is the registry of all of the projections in EventStoreDB. It contains a number of `$ProjectionCreated` and `$ProjectionDeleted` events, which form the list of available projections when replayed.
+
+This stream contains the following event types:
+
+- **`$ProjectionsInitialized`**: The first event written to the `$projections-$all` stream, which indicates that the projections system is ready to create new projections.
+- **`$ProjectionCreated`**: A projection was created. The body contains the projection name, and the event number for this event becomes the projection's id.
+- **`$ProjectionDeleted`**: A projection was deleted. The body contains the projection name.
+
+### **`$projections-{projection_name}`**
+
+The stream containing the definition for the `{projection_name}` projection. This stream contains the projection's configuration and code.
+
+These streams contain the following event type:
+
+- **`$ProjectionUpdated`**: The projection definition was updated.
+
+### **`$projections-{projection_name}-checkpoint`** and **`$projections-{projection_name}-{partition}-checkpoint`**
+
+The stream containing the checkpoints for the `{projection_name}` projection, specifically for the `{partition}` partition if it is included in the stream name.
+
+The checkpoints differ depending on the selector used for the projection. For example, a projection using `fromAll` has a checkpoint containing an `$all` position, whereas a projection using `fromStream` has a checkpoint containing the stream position.
+
+These streams contain the following event type:
+
+- **`$ProjectionCheckpoint`**: The checkpoint for the projection. This includes the checkpoint position, the state at the time of the checkpoint, and the result at the time of the checkpoint.
+
+### **`$projections-{projection_name}-result`** and **`$projections-{projection_name}-{partition}-result`**
+
+The default stream containing the result of the `{projection_name}` projection, specifically for the `{partition}` partition if it is included in the stream name.
+
+These streams are only created if the projection produces an [output state](./projections/custom.md#filters-and-transformations).
+
+These streams contain the following event type:
+
+- **`Result`**: The result of the projection.
+
+### **`$projections-{projection_name}-emittedstreams`**
+
+This stream typically contains the first event of each stream created by the `{projection_name}` projection. This stream is only created if [track emitted streams]() is enabled.
+
+These streams contain the following event type:
+
+- **`$StreamTracked`**: The name of the stream created by the projection.
+
+### **`$projections-{projection_name}-emittedstreams-checkpoint`**
+
+If tracked emitted streams for the `{projection_name}` projection have been deleted, this stream will contain a checkpoint for where the emitted streams were deleted up to.
+
+These streams contain the following event type:
+
+- **`$ProjectionCheckpoint`**: The checkpoint for where the emitted streams have been deleted up to.
+
+### **`$projections-{projection_name}-order`**
+
+This stream contains the ordering for the `{projection_name}` projection. Some projections, such as ones using `fromStreams` or `fromCategories`, need to be ordered before they can be processed so that the projection can guarantee that it will process the events in the same order after restarts.
+
+This stream contains LinkTo events, pointing to the original events.
+
+### **`$projections-{projection_name}-partitions`**
+
+This stream contains a list of the partitions for the `{projection_name}` projection. This stream will only exist if the projection has [multiple partitions](./projections/custom.md#filters-and-transformations).
+
+These streams contain the following event type:
+
+- **`$partition`**: The name of the partition.
