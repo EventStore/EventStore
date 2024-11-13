@@ -65,6 +65,7 @@ public partial record ClusterVNodeOptions {
 		// required because of a bug in the configuration system that
 		// is not reading the attribute from the property itself
 		TypeDescriptor.AddAttributes(typeof(EndPoint[]), new TypeConverterAttribute(typeof(GossipSeedConverter)));
+		TypeDescriptor.AddAttributes(typeof(EndPoint), new TypeConverterAttribute(typeof(GossipEndPointConverter)));
 		TypeDescriptor.AddAttributes(typeof(IPAddress), new TypeConverterAttribute(typeof(IPAddressConverter)));
 
 		// with full keys we would not even need to do all these binds, just a single one
