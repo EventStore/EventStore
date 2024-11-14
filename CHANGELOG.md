@@ -33,7 +33,7 @@ All notable changes to this project will be documented in this file.
 - Removed `OptimizeReadSideCache` configuration property and `OptimizeExistsAt`/`DeOptimizeExistsAt` methods. [EventStore#4579](https://github.com/EventStore/EventStore/pull/4579)
 - Deprecated options which had no effect - `AlwaysKeepScavenged`, `GossipOnSingleNode`, `DisableInternalTcpTls`, `OptimizeIndexMerge`. [EventStore#4533](https://github.com/EventStore/EventStore/pull/4533)
 
-## [24.10.0] - 2024-11-08
+## [24.10.0] - 2024-11-13
 
 ### Fixed
 - Fixed potential partial read in TFChunk. [EventStore#4608](https://github.com/EventStore/EventStore/pull/4608)
