@@ -159,6 +159,23 @@ public class ClusterVNodeOptionsTests {
 		options.Cluster.GossipSeed.Should().BeEquivalentTo(endpoints);
 	}
 
+	[Fact]
+	public void can_set_gossip_seed_values_via_array() {
+		var config = new ConfigurationBuilder()
+			.AddInMemoryCollection([
+				new("EventStore:GossipSeed:0", "127.0.0.1:1113"),
+				new("EventStore:GossipSeed:1", "some-host:1114"),
+			])
+			.Build();
+
+		var options = ClusterVNodeOptions.FromConfiguration(config);
+
+		options.Cluster.GossipSeed.Should().BeEquivalentTo(new EndPoint[] {
+			new IPEndPoint(IPAddress.Loopback, 1113),
+			new DnsEndPoint("some-host", 1114),
+		});
+	}
+
 	[Theory]
 	[InlineData("127.0.0.1", "You must specify the ports in the gossip seed.")]
 	[InlineData("127.0.0.1:3.1415", "Invalid format for gossip seed port: 3.1415.")]
@@ -190,6 +207,17 @@ public class ClusterVNodeOptionsTests {
 		Assert.Equal(
 			"Failed to convert configuration value at 'EventStore:NodeIp' to type 'System.Net.IPAddress'. " + expectedError,
 			ex.Message);
+	}
+
+	[Fact]
+	public void can_set_node_ip() {
+		var config = new ConfigurationBuilder()
+			.AddEventStoreEnvironmentVariables(("EVENTSTORE_NODE_IP", "192.168.0.1"))
+			.Build();
+
+		var options = ClusterVNodeOptions.FromConfiguration(config);
+
+		options.Interface.NodeIp.Should().Be(IPAddress.Parse("192.168.0.1"));
 	}
 
 	[Fact]
