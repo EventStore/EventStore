@@ -128,7 +128,7 @@ The option can be set as follows:
 
 It's generally not expected that you'll need to update the Kestrel configuration that EventStoreDB has set by default, but it's good to know that you can update the following settings if needed.
 
-Kestrel uses the `kestrelsettings.json` configuration file. This file should be located in the [default configuration directory](../configuration/README.md#configuration-file).
+Kestrel uses the `kestrelsettings.json` configuration file. This file should be located in the [default configuration directory](../configuration/README.md#configuration-files).
 
 #### MaxConcurrentConnections
 

@@ -79,8 +79,7 @@ Use the following option to enable this feature:
 
 It is possible to disable authentication on all protected HTTP endpoints by setting
 the `DisableFirstLevelHttpAuthorization` setting to `true`. The setting is set to `false` by default. When
-enabled, the setting will force EventStoreDB to use the supplied credentials only to check the stream access
-using [ACLs](#access-control-lists).
+`true`, the setting will force EventStoreDB to use the supplied credentials only to check [stream access](./user-authorization.md#stream-access).
 
 ## User X.509 Certificates 
 
