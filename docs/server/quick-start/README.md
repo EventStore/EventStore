@@ -25,7 +25,7 @@ Find out [what's new](whatsnew.md) in this release to get details on new feature
 
 ## Getting started
 
-Check the [getting started guide](/getting-started.md) for resources on the principles of EventStoreDB, Event Sourcing, database installation guidelines and choosing a client SDK.
+Check the [getting started guide](/getting-started/) for resources on the principles of EventStoreDB, Event Sourcing, database installation guidelines and choosing a client SDK.
 
 ## Support
 

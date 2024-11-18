@@ -22,7 +22,7 @@ We have improved and expanded on the Connectors preview introduced in 24.2.0.
 The Connectors feature is enabled by default.
 You can use the HTTP sink without a license, but a license is required for all other connectors.
 
-Refer to the [documentation](../features/connectors/quickstart.md) for instructions on setting up and configuring connectors and sinks.
+Refer to the [documentation](../features/connectors/README.md) for instructions on setting up and configuring connectors and sinks.
 
 #### Kafka sink
 
