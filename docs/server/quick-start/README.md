@@ -25,7 +25,7 @@ Find out [what's new](whatsnew.md) in this release to get details on new feature
 
 ## Getting started
 
-Check the [getting started guide](/getting-started.md) for an introduction to EventStoreDB and its features, along with detailed instructions to quickly get started.
+Check the [getting started guide](/getting-started) for an introduction to EventStoreDB and its features, along with detailed instructions to quickly get started.
 
 ## Support
 

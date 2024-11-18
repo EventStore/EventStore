@@ -200,7 +200,7 @@ Refer to [stream policy authorization](../security/user-authorization.md#stream-
 
 <!--TODO: Connectors changes?-->
 
-#### Encrytpion-at-rest
+#### Encryption-at-rest
 
 Only the configuration for encryption-at-rest has changed since 24.10.0-preview1.
 
