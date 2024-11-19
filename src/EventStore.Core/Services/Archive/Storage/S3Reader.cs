@@ -4,26 +4,18 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
-public class S3ArchiveStorage : IArchiveStorage {
-	protected static readonly ILogger Log = Serilog.Log.ForContext<S3ArchiveStorage>();
+public class S3Reader : IArchiveStorageReader {
+	protected static readonly ILogger Log = Serilog.Log.ForContext<S3Reader>();
 	private readonly string _bucket;
 	private readonly Func<int?, int?, string> _getChunkPrefix;
 
-	public S3ArchiveStorage(S3Options options, Func<int?, int?, string> getChunkPrefix) {
+	public S3Reader(S3Options options, Func<int?, int?, string> getChunkPrefix) {
 		_bucket = options.Bucket;
 		_getChunkPrefix = getChunkPrefix;
-	}
-	public ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
-		throw new NotImplementedException();
-	}
-
-	public ValueTask<bool> RemoveChunks(int chunkStartNumber, int chunkEndNumber, string exceptChunk, CancellationToken ct) {
-		throw new NotImplementedException();
 	}
 
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {

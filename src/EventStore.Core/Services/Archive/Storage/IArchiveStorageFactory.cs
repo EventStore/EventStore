@@ -4,5 +4,6 @@
 namespace EventStore.Core.Services.Archive.Storage;
 
 public interface IArchiveStorageFactory {
-	IArchiveStorage Create();
+	IArchiveStorageReader CreateReader();
+	IArchiveStorageWriter CreateWriter();
 }

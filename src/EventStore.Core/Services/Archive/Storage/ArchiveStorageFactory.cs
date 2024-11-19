@@ -10,10 +10,18 @@ public class ArchiveStorageFactory(
 	ArchiveOptions options,
 	IVersionedFileNamingStrategy fileNamingStrategy) : IArchiveStorageFactory {
 
-	public IArchiveStorage Create() {
+	public IArchiveStorageReader CreateReader() {
 		return options.StorageType switch {
-			StorageType.FileSystem => new FileSystemArchiveStorage(options.FileSystem, fileNamingStrategy.GetPrefixFor),
-			StorageType.S3 => new S3ArchiveStorage(options.S3, fileNamingStrategy.GetPrefixFor),
+			StorageType.FileSystem => new FileSystemReader(options.FileSystem, fileNamingStrategy.GetPrefixFor),
+			StorageType.S3 => new S3Reader(options.S3, fileNamingStrategy.GetPrefixFor),
+			_ => throw new ArgumentOutOfRangeException(nameof(options.StorageType))
+		};
+	}
+
+	public IArchiveStorageWriter CreateWriter() {
+		return options.StorageType switch {
+			StorageType.FileSystem => new FileSystemWriter(options.FileSystem, fileNamingStrategy.GetPrefixFor),
+			StorageType.S3 => new S3Writer(options.S3, fileNamingStrategy.GetPrefixFor),
 			_ => throw new ArgumentOutOfRangeException(nameof(options.StorageType))
 		};
 	}

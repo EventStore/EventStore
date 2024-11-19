@@ -190,7 +190,7 @@ internal class FakeSubscriber : ISubscriber {
 }
 
 
-internal class FakeArchiveStorage : IArchiveStorage, IArchiveStorageFactory {
+internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader, IArchiveStorageFactory {
 	public List<string> Chunks;
 	public int Stores => Interlocked.CompareExchange(ref _stores, 0, 0);
 	private int _stores;
@@ -204,7 +204,8 @@ internal class FakeArchiveStorage : IArchiveStorage, IArchiveStorageFactory {
 		Chunks = new List<string>(existingChunks);
 	}
 
-	public IArchiveStorage Create() => this;
+	public IArchiveStorageReader CreateReader() => this;
+	public IArchiveStorageWriter CreateWriter() => this;
 
 	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
 		await Task.Delay(_chunkStorageDelay, ct);
