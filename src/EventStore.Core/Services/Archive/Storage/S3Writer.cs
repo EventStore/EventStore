@@ -2,19 +2,18 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Serilog;
 
-namespace EventStore.Core.Services.Archiver.Storage;
+namespace EventStore.Core.Services.Archive.Storage;
 
-public class S3ArchiveStorage : IArchiveStorage {
-	protected static readonly ILogger Log = Serilog.Log.ForContext<S3ArchiveStorage>();
+public class S3Writer : IArchiveStorageWriter {
+	protected static readonly ILogger Log = Serilog.Log.ForContext<S3Writer>();
 	private readonly string _bucket;
 	private readonly Func<int?, int?, string> _getChunkPrefix;
 
-	public S3ArchiveStorage(S3Options options, Func<int?, int?, string> getChunkPrefix) {
+	public S3Writer(S3Options options, Func<int?, int?, string> getChunkPrefix) {
 		_bucket = options.Bucket;
 		_getChunkPrefix = getChunkPrefix;
 	}
@@ -23,10 +22,6 @@ public class S3ArchiveStorage : IArchiveStorage {
 	}
 
 	public ValueTask<bool> RemoveChunks(int chunkStartNumber, int chunkEndNumber, string exceptChunk, CancellationToken ct) {
-		throw new NotImplementedException();
-	}
-
-	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
 		throw new NotImplementedException();
 	}
 }

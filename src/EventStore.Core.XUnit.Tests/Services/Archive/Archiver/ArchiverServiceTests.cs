@@ -10,12 +10,12 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Archiver;
-using EventStore.Core.Services.Archiver.Storage;
+using EventStore.Core.Services.Archive.Archiver;
+using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.Services.Archiver;
+namespace EventStore.Core.XUnit.Tests.Services.Archive.Archiver;
 
 public class ArchiverServiceTests {
 	private static (ArchiverService, FakeArchiveStorage) CreateSut(
@@ -190,7 +190,7 @@ internal class FakeSubscriber : ISubscriber {
 }
 
 
-internal class FakeArchiveStorage : IArchiveStorage, IArchiveStorageFactory {
+internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader, IArchiveStorageFactory {
 	public List<string> Chunks;
 	public int Stores => Interlocked.CompareExchange(ref _stores, 0, 0);
 	private int _stores;
@@ -204,7 +204,8 @@ internal class FakeArchiveStorage : IArchiveStorage, IArchiveStorageFactory {
 		Chunks = new List<string>(existingChunks);
 	}
 
-	public IArchiveStorage Create() => this;
+	public IArchiveStorageReader CreateReader() => this;
+	public IArchiveStorageWriter CreateWriter() => this;
 
 	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
 		await Task.Delay(_chunkStorageDelay, ct);

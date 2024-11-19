@@ -12,11 +12,11 @@ using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Archiver.Storage;
-using EventStore.Core.Services.Archiver.Storage.Exceptions;
+using EventStore.Core.Services.Archive.Storage;
+using EventStore.Core.Services.Archive.Storage.Exceptions;
 using Serilog;
 
-namespace EventStore.Core.Services.Archiver;
+namespace EventStore.Core.Services.Archive.Archiver;
 
 public class ArchiverService :
 	IHandle<SystemMessage.ChunkLoaded>,
@@ -29,7 +29,8 @@ public class ArchiverService :
 	private static readonly ILogger Log = Serilog.Log.ForContext<ArchiverService>();
 
 	private readonly ISubscriber _mainBus;
-	private readonly IArchiveStorage _archiveStorage;
+	private readonly IArchiveStorageWriter _archiveWriter;
+	private readonly IArchiveStorageReader _archiveReader;
 	private readonly Queue<ChunkInfo> _uncommittedChunks;
 	private readonly ConcurrentDictionary<string, ChunkInfo> _existingChunks;
 	private readonly CancellationTokenSource _cts;
@@ -40,7 +41,8 @@ public class ArchiverService :
 
 	public ArchiverService(ISubscriber mainBus, IArchiveStorageFactory archiveStorageFactory) {
 		_mainBus = mainBus;
-		_archiveStorage = archiveStorageFactory.Create();
+		_archiveWriter = archiveStorageFactory.CreateWriter();
+		_archiveReader = archiveStorageFactory.CreateReader();
 
 		_uncommittedChunks = new();
 		_existingChunks = new();
@@ -149,12 +151,12 @@ public class ArchiverService :
 		try {
 			Log.Information("Archiving {chunkFile}", chunkFile);
 
-			while (!await _archiveStorage.StoreChunk(chunkPath, ct)) {
+			while (!await _archiveWriter.StoreChunk(chunkPath, ct)) {
 				Log.Warning("Archiving of {chunkFile} failed. Retrying in: {retryInterval}.", chunkFile, RetryInterval);
 				await Task.Delay(RetryInterval, ct);
 			}
 
-			while (!await _archiveStorage.RemoveChunks(chunkStartNumber, chunkEndNumber, chunkFile, ct)) {
+			while (!await _archiveWriter.RemoveChunks(chunkStartNumber, chunkEndNumber, chunkFile, ct)) {
 				Log.Warning(
 					"Clean up of old chunks: {chunkStartNumber}-{chunkEndNumber} failed. Retrying in: {retryInterval}.",
 					chunkStartNumber, chunkEndNumber, RetryInterval);
@@ -175,7 +177,7 @@ public class ArchiverService :
 
 	private async Task ScheduleExistingChunksForArchiving(CancellationToken ct) {
 		try {
-			await foreach (var archivedChunk in _archiveStorage.ListChunks(ct))
+			await foreach (var archivedChunk in _archiveReader.ListChunks(ct))
 				_existingChunks.Remove(archivedChunk, out _);
 
 			Log.Information("Scheduling archiving of {numChunks} existing chunks.", _existingChunks.Count);

@@ -5,7 +5,7 @@
 
 using System.Collections.Generic;
 
-namespace EventStore.Core.Services.Archiver;
+namespace EventStore.Core.Services.Archive.Archiver;
 
 // prioritizes earlier chunks
 public class ChunkPrioritizer : IComparer<Commands.ArchiveChunk> {

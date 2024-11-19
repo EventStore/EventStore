@@ -1,11 +1,10 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-using System;
-using EventStore.Core.Services.Archiver;
+using EventStore.Core.Services.Archive.Archiver;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.Services.Archiver;
+namespace EventStore.Core.XUnit.Tests.Services.Archive.Archiver;
 public class ChunkPrioritizerTests {
 	[Theory]
 	// start takes priority

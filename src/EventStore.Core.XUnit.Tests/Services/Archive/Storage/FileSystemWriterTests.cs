@@ -7,31 +7,31 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Archiver;
-using EventStore.Core.Services.Archiver.Storage;
-using EventStore.Core.Services.Archiver.Storage.Exceptions;
+using EventStore.Core.Services.Archive;
+using EventStore.Core.Services.Archive.Storage;
+using EventStore.Core.Services.Archive.Storage.Exceptions;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.Services.Archiver.Storage;
+namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
-public class FileSystemArchiveStorageTests : DirectoryPerTest<FileSystemArchiveStorageTests> {
+public class FileSystemWriterTests : DirectoryPerTest<FileSystemWriterTests> {
 	private const string ChunkPrefix = "chunk-";
 	private string ArchivePath => Path.Combine(Fixture.Directory, "archive");
 	private string DbPath => Path.Combine(Fixture.Directory, "db");
 
-	public FileSystemArchiveStorageTests() {
+	public FileSystemWriterTests() {
 		Directory.CreateDirectory(ArchivePath);
 		Directory.CreateDirectory(DbPath);
 	}
 
-	private FileSystemArchiveStorage CreateSut() {
+	private FileSystemWriter CreateSut() {
 		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
-		var storage = new FileSystemArchiveStorage(
+		var writer = new FileSystemWriter(
 			new FileSystemOptions {
 				Path = ArchivePath
 			}, namingStrategy.GetPrefixFor);
-		return storage;
+		return writer;
 	}
 
 	private static string CreateChunk(string path, int chunkStartNumber, int chunkVersion) {
@@ -68,20 +68,6 @@ public class FileSystemArchiveStorageTests : DirectoryPerTest<FileSystemArchiveS
 		var localChunk = CreateLocalChunk(0, 0);
 		File.Delete(localChunk);
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => await sut.StoreChunk(localChunk, CancellationToken.None));
-	}
-
-	[Fact]
-	public async Task can_list_chunks() {
-		var sut = CreateSut();
-
-		Assert.Equal(0, await sut.ListChunks(CancellationToken.None).CountAsync());
-
-		var chunk0 = Path.GetFileName(CreateArchiveChunk(0, 0));
-		var chunk1 = Path.GetFileName(CreateArchiveChunk(1, 0));
-		var chunk2 = Path.GetFileName(CreateArchiveChunk(2, 0));
-
-		var archivedChunks = sut.ListChunks(CancellationToken.None).ToEnumerable();
-		Assert.Equal([chunk0, chunk1, chunk2], archivedChunks);
 	}
 
 	[Fact]

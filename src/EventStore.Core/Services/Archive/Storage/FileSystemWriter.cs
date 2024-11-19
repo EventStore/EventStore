@@ -2,23 +2,21 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Archiver.Storage.Exceptions;
+using EventStore.Core.Services.Archive.Storage.Exceptions;
 using Serilog;
 
-namespace EventStore.Core.Services.Archiver.Storage;
+namespace EventStore.Core.Services.Archive.Storage;
 
-public class FileSystemArchiveStorage : IArchiveStorage {
-	protected static readonly ILogger Log = Serilog.Log.ForContext<FileSystemArchiveStorage>();
+public class FileSystemWriter : IArchiveStorageWriter {
+	protected static readonly ILogger Log = Serilog.Log.ForContext<FileSystemWriter>();
 
 	private readonly string _archivePath;
 	private readonly Func<int?, int?, string> _getChunkPrefix;
 
-	public FileSystemArchiveStorage(FileSystemOptions options, Func<int?, int?, string> getChunkPrefix) {
+	public FileSystemWriter(FileSystemOptions options, Func<int?, int?, string> getChunkPrefix) {
 		_archivePath = options.Path;
 		_getChunkPrefix = getChunkPrefix;
 	}
@@ -92,13 +90,5 @@ public class FileSystemArchiveStorage : IArchiveStorage {
 		}
 
 		return ValueTask.FromResult(true);
-	}
-
-	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
-		return new DirectoryInfo(_archivePath)
-			.EnumerateFiles($"{_getChunkPrefix(null, null)}*")
-			.Select(chunk => chunk.Name)
-			.Order()
-			.ToAsyncEnumerable();
 	}
 }
