@@ -4,10 +4,10 @@
 using System;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
-namespace EventStore.Core.Services.Archiver.Storage;
+namespace EventStore.Core.Services.Archive.Storage;
 
 public class ArchiveStorageFactory(
-	ArchiverOptions options,
+	ArchiveOptions options,
 	IVersionedFileNamingStrategy fileNamingStrategy) : IArchiveStorageFactory {
 
 	public IArchiveStorage Create() {

@@ -2,14 +2,13 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 #nullable enable
-using System.Collections.Generic;
-using Microsoft.IdentityModel.JsonWebTokens;
-
-namespace EventStore.Core.XUnit.Tests.Services.Archiver;
-
 using System;
+using System.Collections.Generic;
 using System.Reactive.Subjects;
 using EventStore.Plugins.Licensing;
+using Microsoft.IdentityModel.JsonWebTokens;
+
+namespace EventStore.Core.XUnit.Tests.Services.Archive;
 
 public class FakeLicenseService : ILicenseService {
 	static readonly Dictionary<string, string> _hardCodedTokens = new() {

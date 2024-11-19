@@ -56,6 +56,8 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Caching;
 using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
+using EventStore.Core.Services.Archive;
+using EventStore.Core.Services.Archive.Archiver;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.PeriodicLogs;
 using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
@@ -78,7 +80,6 @@ using Microsoft.Extensions.DependencyInjection;
 using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
-using EventStore.Core.Services.Archiver;
 using EventStore.Licensing;
 
 namespace EventStore.Core;
@@ -934,7 +935,8 @@ public class ClusterVNode<TStreamId> :
 
 		var modifiedOptions = options
 			.WithPlugableComponent(_authorizationProvider)
-			.WithPlugableComponent(_authenticationProvider);
+			.WithPlugableComponent(_authenticationProvider)
+			.WithPlugableComponent(new ArchivePlugableComponent(options.Cluster.Archiver));
 
 		modifiedOptions = modifiedOptions.WithPlugableComponent(new LicensingPlugin(ex => {
 			Log.Warning("Shutting down due to licensing error: {Message}", ex.Message);
@@ -1017,10 +1019,6 @@ public class ClusterVNode<TStreamId> :
 
 		//default authentication provider
 		httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
-
-		if (options.Cluster.Archiver) {
-			modifiedOptions = modifiedOptions.WithPlugableComponent(new ArchiverPlugableComponent());
-		}
 
 		var adminController = new AdminController(_mainQueue, _workersHandler);
 		var pingController = new PingController();

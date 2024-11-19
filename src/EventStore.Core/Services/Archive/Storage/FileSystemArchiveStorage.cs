@@ -7,10 +7,10 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Archiver.Storage.Exceptions;
+using EventStore.Core.Services.Archive.Storage.Exceptions;
 using Serilog;
 
-namespace EventStore.Core.Services.Archiver.Storage;
+namespace EventStore.Core.Services.Archive.Storage;
 
 public class FileSystemArchiveStorage : IArchiveStorage {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<FileSystemArchiveStorage>();

@@ -1,13 +1,12 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Archiver.Storage.Exceptions;
+using EventStore.Core.Services.Archive.Storage.Exceptions;
 
-namespace EventStore.Core.Services.Archiver.Storage;
+namespace EventStore.Core.Services.Archive.Storage;
 
 public interface IArchiveStorage {
 	/// <summary>Stores a chunk in the archive</summary>

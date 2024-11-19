@@ -2,18 +2,17 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Collections.Generic;
-using EventStore.Core.Services.Archiver;
+using EventStore.Core.Services.Archive;
 using EventStore.Plugins;
 using EventStore.Plugins.Licensing;
-using EventStore.Plugins.Transforms;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.Services.Archiver;
+namespace EventStore.Core.XUnit.Tests.Services.Archive;
 
-public class ArchiverPlugableComponentTests {
+public class ArchivePlugableComponentTests {
 	[Theory]
 	[InlineData(true, true, "ARCHIVE", false)]
 	[InlineData(true, false, "ARCHIVE", true)]
@@ -25,7 +24,7 @@ public class ArchiverPlugableComponentTests {
 	[InlineData(false, false, "NONE", false)]
 	public void respects_license(bool enabled, bool licensePresent, string entitlement, bool expectedException) {
 		// given
-		var sut = new ArchiverPlugableComponent();
+		var sut = new ArchivePlugableComponent(isArchiver: false);
 
 		IConfigurationBuilder configBuilder = new ConfigurationBuilder();
 

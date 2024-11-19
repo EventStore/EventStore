@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Serilog;
 
-namespace EventStore.Core.Services.Archiver.Storage;
+namespace EventStore.Core.Services.Archive.Storage;
 
 public class S3ArchiveStorage : IArchiveStorage {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<S3ArchiveStorage>();

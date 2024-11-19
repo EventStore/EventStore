@@ -7,13 +7,13 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Archiver;
-using EventStore.Core.Services.Archiver.Storage;
-using EventStore.Core.Services.Archiver.Storage.Exceptions;
+using EventStore.Core.Services.Archive;
+using EventStore.Core.Services.Archive.Storage;
+using EventStore.Core.Services.Archive.Storage.Exceptions;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.Services.Archiver.Storage;
+namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
 public class FileSystemArchiveStorageTests : DirectoryPerTest<FileSystemArchiveStorageTests> {
 	private const string ChunkPrefix = "chunk-";

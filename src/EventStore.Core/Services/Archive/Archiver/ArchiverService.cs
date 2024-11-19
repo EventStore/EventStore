@@ -12,11 +12,11 @@ using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Archiver.Storage;
-using EventStore.Core.Services.Archiver.Storage.Exceptions;
+using EventStore.Core.Services.Archive.Storage;
+using EventStore.Core.Services.Archive.Storage.Exceptions;
 using Serilog;
 
-namespace EventStore.Core.Services.Archiver;
+namespace EventStore.Core.Services.Archive.Archiver;
 
 public class ArchiverService :
 	IHandle<SystemMessage.ChunkLoaded>,

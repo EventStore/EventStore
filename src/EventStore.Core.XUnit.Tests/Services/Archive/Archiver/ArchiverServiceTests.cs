@@ -10,12 +10,12 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Archiver;
-using EventStore.Core.Services.Archiver.Storage;
+using EventStore.Core.Services.Archive.Archiver;
+using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.Services.Archiver;
+namespace EventStore.Core.XUnit.Tests.Services.Archive.Archiver;
 
 public class ArchiverServiceTests {
 	private static (ArchiverService, FakeArchiveStorage) CreateSut(

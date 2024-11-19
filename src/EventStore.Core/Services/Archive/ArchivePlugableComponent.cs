@@ -2,7 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Collections.Generic;
-using EventStore.Core.Services.Archiver.Storage;
+using EventStore.Core.Services.Archive.Archiver;
+using EventStore.Core.Services.Archive.Storage;
 using EventStore.Plugins;
 using EventStore.Plugins.Licensing;
 using Microsoft.AspNetCore.Builder;
@@ -10,9 +11,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace EventStore.Core.Services.Archiver;
+namespace EventStore.Core.Services.Archive;
 
-public class ArchiverPlugableComponent : IPlugableComponent {
+public class ArchivePlugableComponent : IPlugableComponent {
 	public string Name => "Archiver";
 
 	public string DiagnosticsName => Name;
@@ -24,6 +25,12 @@ public class ArchiverPlugableComponent : IPlugableComponent {
 	public bool Enabled { get; private set; }
 
 	public string LicensePublicKey => LicenseConstants.LicensePublicKey;
+
+	private readonly bool _isArchiver;
+
+	public ArchivePlugableComponent(bool isArchiver) {
+		_isArchiver = isArchiver;
+	}
 
 	public void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {
 		if (!Enabled)
@@ -42,7 +49,7 @@ public class ArchiverPlugableComponent : IPlugableComponent {
 	}
 
 	public void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
-		var options = configuration.GetSection("EventStore:Archive").Get<ArchiverOptions>();
+		var options = configuration.GetSection("EventStore:Archive").Get<ArchiveOptions>();
 		Enabled = options?.Enabled ?? true; // enabled by default
 
 		if (options is null || !Enabled || options.StorageType is StorageType.None)
@@ -50,6 +57,8 @@ public class ArchiverPlugableComponent : IPlugableComponent {
 
 		services.AddSingleton(options);
 		services.AddScoped<IArchiveStorageFactory, ArchiveStorageFactory>();
-		services.AddSingleton<ArchiverService>();
+
+		if (_isArchiver)
+			services.AddSingleton<ArchiverService>();
 	}
 }
