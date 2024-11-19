@@ -28,9 +28,9 @@ public class ArchivePlugableComponentTests {
 
 		IConfigurationBuilder configBuilder = new ConfigurationBuilder();
 
-		if (!enabled)
+		if (enabled)
 			configBuilder = configBuilder.AddInMemoryCollection(new Dictionary<string, string> {
-				{"EventStore:Archive:Enabled", "false"},
+				{"EventStore:Archive:Enabled", "true"},
 			});
 
 		var config = configBuilder.Build();
