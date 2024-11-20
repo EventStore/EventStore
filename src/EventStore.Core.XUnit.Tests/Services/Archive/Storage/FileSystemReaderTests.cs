@@ -3,50 +3,16 @@
 
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Archive;
-using EventStore.Core.Services.Archive.Storage;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
-public class FileSystemReaderTests : DirectoryPerTest<FileSystemReaderTests> {
-	private const string ChunkPrefix = "chunk-";
-	private string ArchivePath => Path.Combine(Fixture.Directory, "archive");
-	private string DbPath => Path.Combine(Fixture.Directory, "db");
-
-	public FileSystemReaderTests() {
-		Directory.CreateDirectory(ArchivePath);
-		Directory.CreateDirectory(DbPath);
-	}
-
-	private FileSystemReader CreateSut() {
-		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
-		var reader = new FileSystemReader(
-			new FileSystemOptions {
-				Path = ArchivePath
-			}, namingStrategy.GetPrefixFor);
-		return reader;
-	}
-
-	private static string CreateChunk(string path, int chunkStartNumber, int chunkVersion) {
-		var namingStrategy = new VersionedPatternFileNamingStrategy(path, ChunkPrefix);
-
-		var chunk = Path.Combine(path, namingStrategy.GetFilenameFor(chunkStartNumber, chunkVersion));
-		var content = new byte[1000];
-		RandomNumberGenerator.Fill(content);
-		File.WriteAllBytes(chunk, content);
-		return chunk;
-	}
-
-	private string CreateArchiveChunk(int chunkStartNumber, int chunkVersion) => CreateChunk(ArchivePath, chunkStartNumber, chunkVersion);
-
+public class FileSystemReaderTests : ArchiveStorageTestsBase<FileSystemReaderTests> {
 	[Fact]
 	public async Task can_list_chunks() {
-		var sut = CreateSut();
+		var sut = CreateReaderSut();
 
 		Assert.Equal(0, await sut.ListChunks(CancellationToken.None).CountAsync());
 

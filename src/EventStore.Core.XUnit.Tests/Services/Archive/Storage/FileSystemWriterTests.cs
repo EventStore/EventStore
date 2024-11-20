@@ -4,52 +4,17 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Archive;
-using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
-public class FileSystemWriterTests : DirectoryPerTest<FileSystemWriterTests> {
-	private const string ChunkPrefix = "chunk-";
-	private string ArchivePath => Path.Combine(Fixture.Directory, "archive");
-	private string DbPath => Path.Combine(Fixture.Directory, "db");
-
-	public FileSystemWriterTests() {
-		Directory.CreateDirectory(ArchivePath);
-		Directory.CreateDirectory(DbPath);
-	}
-
-	private FileSystemWriter CreateSut() {
-		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
-		var writer = new FileSystemWriter(
-			new FileSystemOptions {
-				Path = ArchivePath
-			}, namingStrategy.GetPrefixFor);
-		return writer;
-	}
-
-	private static string CreateChunk(string path, int chunkStartNumber, int chunkVersion) {
-		var namingStrategy = new VersionedPatternFileNamingStrategy(path, ChunkPrefix);
-
-		var chunk = Path.Combine(path, namingStrategy.GetFilenameFor(chunkStartNumber, chunkVersion));
-		var content = new byte[1000];
-		RandomNumberGenerator.Fill(content);
-		File.WriteAllBytes(chunk, content);
-		return chunk;
-	}
-
-	private string CreateArchiveChunk(int chunkStartNumber, int chunkVersion) => CreateChunk(ArchivePath, chunkStartNumber, chunkVersion);
-	private string CreateLocalChunk(int chunkStartNumber, int chunkVersion) => CreateChunk(DbPath, chunkStartNumber, chunkVersion);
-
+public class FileSystemWriterTests : ArchiveStorageTestsBase<FileSystemWriterTests> {
 	[Fact]
 	public async Task can_store_a_chunk() {
-		var sut = CreateSut();
+		var sut = CreateWriterSut();
 		var localChunk = CreateLocalChunk(0, 0);
 		Assert.True(await sut.StoreChunk(localChunk, CancellationToken.None));
 
@@ -64,7 +29,7 @@ public class FileSystemWriterTests : DirectoryPerTest<FileSystemWriterTests> {
 
 	[Fact]
 	public async Task throws_chunk_deleted_exception_if_local_chunk_doesnt_exist() {
-		var sut = CreateSut();
+		var sut = CreateWriterSut();
 		var localChunk = CreateLocalChunk(0, 0);
 		File.Delete(localChunk);
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => await sut.StoreChunk(localChunk, CancellationToken.None));
@@ -72,7 +37,7 @@ public class FileSystemWriterTests : DirectoryPerTest<FileSystemWriterTests> {
 
 	[Fact]
 	public async Task can_remove_chunks() {
-		var sut = CreateSut();
+		var sut = CreateWriterSut();
 
 		CreateArchiveChunk(0, 0);
 		CreateArchiveChunk(1, 0);
