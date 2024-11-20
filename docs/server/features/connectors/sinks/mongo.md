@@ -7,7 +7,10 @@ order: 2
 
 ## Overview
 
-The MongoDB sink pulls messages from an EventStoreDB stream and stores the messages to a collection.
+The MongoDB sink pulls messages from an EventStoreDB stream and stores them in a
+collection. The records will be serialized into
+[BSON](https://www.mongodb.com/docs/manual/reference/glossary/#std-term-BSON)
+documents, so the data must be valid for BSON format. 
 
 ## Quickstart
 
@@ -25,6 +28,7 @@ $JSON = @"
     "database": "sampleDB",
     "collection": "sampleCollection",
     "subscription:filter:scope": "stream",
+    "subscription:filter:filterType": "streamId",
     "subscription:filter:expression": "example-stream"
   }
 }
@@ -46,6 +50,7 @@ JSON='{
     "database": "sampleDB",
     "collection": "sampleCollection",
     "subscription:filter:scope": "stream",
+    "subscription:filter:filterType": "streamId",
     "subscription:filter:expression": "example-stream"
   }
 }'
@@ -96,8 +101,7 @@ To use SCRAM for authentication, include the username and password in the
 connection string and set the `authMechanism` parameter in the connection string
 to either `SCRAM-SHA-1` or `SCRAM-SHA-256` to select the desired MongoDB
 authentication mechanism. For more explanations on the connection string URI
-refer to the official MongoDB documentation on [Authentication
-Mechanism](https://www.mongodb.com/docs/v4.4/core/authentication-mechanisms/#:~:text=To%20specify%20the%20authentication%20mechanism,mechanism%20from%20the%20command%20line.).
+refer to the official MongoDB documentation on [Authentication Mechanism](https://www.mongodb.com/docs/v4.4/core/authentication-mechanisms/#:~:text=To%20specify%20the%20authentication%20mechanism,mechanism%20from%20the%20command%20line.).
 
 ::: note
 MongoDB version 4.0 and later uses SCRAM-SHA-256 as the default authentication mechanism if the MongoDB server version supports it.

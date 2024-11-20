@@ -78,6 +78,12 @@ With connectors, the subscription service is provided natively by EventStoreDB a
 graph TD
     A[EventStoreDB] -->|events| B[Lambda function]
     B -->|SQL updates| C[RDS]
-    C --> D[Data tables]
-    C --> E[Data tables]
+    
+    subgraph Data Tables
+        D[Data Table 1]
+        E[Data Table 2]
+    end
+
+    C --> D
+    C --> E
 ```

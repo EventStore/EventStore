@@ -60,19 +60,20 @@ Refer to the [documentation](../features/connectors/sinks/rabbitmq.md) for instr
 #### HTTP sink
 
 The HTTP sink allows for integration between EventStoreDB and external
-APIs over HTTP or HTTPS.
-
-This connector consumes events from an EventStoreDB
+APIs over HTTP or HTTPS. This connector consumes events from an EventStoreDB
 stream and converts each event's data into JSON format before sending it in the
 request body to a specified URL. Events are sent individually as they are
 consumed from the stream, without batching. The event data is transmitted as the
-request body, and metadata can be included as HTTP headers.
-
-The connector supports Basic Authentication and Bearer Token Authentication.
-Additionally, the connector offers resilience features, such as configurable
-retry logic and backoff strategies for handling request failures.
+request body, and metadata can be included as HTTP headers. The connector also
+supports Basic Authentication and Bearer Token Authentication.
 
 Refer to the [documentation](../features/connectors/sinks/http.md) for instructions on setting up an HTTP sink.
+
+#### Serilog sink
+
+The Serilog sink logs detailed messages about the connector and record details.
+
+Refer to the [documentation](../features/connectors/sinks/serilog.md) for instructions on setting up a Serilog sink.
 
 ### Auto-scavenge
 
