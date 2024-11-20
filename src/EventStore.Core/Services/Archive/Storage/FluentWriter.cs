@@ -1,4 +1,4 @@
-﻿// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
@@ -11,19 +11,15 @@ using FluentStorage.Blobs;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
-public class FluentWriter : IArchiveStorageWriter {
-	protected static readonly ILogger Log = Serilog.Log.ForContext<FluentWriter>();
-	readonly IBlobStorage _blobStorage;
-
-	public FluentWriter(IBlobStorage blobStorage) {
-		_blobStorage = blobStorage;
-	}
+public abstract class FluentWriter {
+	protected abstract ILogger Log { get; }
+	protected abstract IBlobStorage BlobStorage { get; }
 
 	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
 		var fileName = "unknown";
 		try {
 			fileName = Path.GetFileName(chunkPath);
-			await _blobStorage.WriteFileAsync(fileName, filePath: chunkPath, ct);
+			await BlobStorage.WriteFileAsync(fileName, filePath: chunkPath, ct);
 			return true;
 		} catch (FileNotFoundException) {
 			throw new ChunkDeletedException();

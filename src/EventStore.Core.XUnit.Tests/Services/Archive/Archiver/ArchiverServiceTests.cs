@@ -234,6 +234,10 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 		throw new NotImplementedException();
 	}
 
+	public ValueTask<Stream> GetChunk(string chunkPath, long start, long end, CancellationToken ct) {
+		throw new NotImplementedException();
+	}
+
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
 		return _existingChunks.ToAsyncEnumerable();
 	}
