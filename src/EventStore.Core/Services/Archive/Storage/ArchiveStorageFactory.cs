@@ -19,6 +19,8 @@ public class ArchiveStorageFactory(
 	}
 
 	public IArchiveStorageWriter CreateWriter() {
+		// NB: StorageFactory.Blobs.DirectoryFiles does not appear to offer atomic file 'upload' so
+		// we use our own implementation instead (todo: consider if it could be an IBlobStorage)
 		return options.StorageType switch {
 			StorageType.FileSystem => new FileSystemWriter(options.FileSystem, fileNamingStrategy.GetPrefixFor),
 			StorageType.S3 => new S3Writer(options.S3, fileNamingStrategy.GetPrefixFor),

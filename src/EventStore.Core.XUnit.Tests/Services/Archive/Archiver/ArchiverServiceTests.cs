@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -227,6 +228,10 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 		}
 
 		return ValueTask.FromResult(true);
+	}
+
+	public ValueTask<Stream> GetChunk(string chunkPath, CancellationToken ct) {
+		throw new NotImplementedException();
 	}
 
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {

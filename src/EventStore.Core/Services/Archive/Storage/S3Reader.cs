@@ -2,23 +2,15 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
-using Serilog;
+using FluentStorage;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
-public class S3Reader : IArchiveStorageReader {
-	protected static readonly ILogger Log = Serilog.Log.ForContext<S3Reader>();
-	private readonly string _bucket;
-	private readonly Func<int?, int?, string> _getChunkPrefix;
-
-	public S3Reader(S3Options options, Func<int?, int?, string> getChunkPrefix) {
-		_bucket = options.Bucket;
-		_getChunkPrefix = getChunkPrefix;
-	}
-
-	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
-		throw new NotImplementedException();
+public class S3Reader : FluentReader {
+	public S3Reader(S3Options options, Func<int?, int?, string> getChunkPrefix)
+		: base(StorageFactory.Blobs.AwsS3(
+			awsCliProfileName: options.AwsCliProfileName,
+			bucketName: options.Bucket,
+			region: options.Region)) {
 	}
 }

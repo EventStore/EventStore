@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+//#define RUN_S3_TESTS // uncomment to run S3 tests, requires AWS CLI to be installed and configured
+
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -10,6 +12,12 @@ using System.Security.Cryptography;
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
 public class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
+#if RUN_S3_TESTS
+	protected const string SkipS3 = null;
+#else
+	protected const string SkipS3 = "run manually";
+#endif
+
 	protected const string ChunkPrefix = "chunk-";
 	protected string ArchivePath => Path.Combine(Fixture.Directory, "archive");
 	protected string DbPath => Path.Combine(Fixture.Directory, "db");
@@ -19,23 +27,29 @@ public class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 		Directory.CreateDirectory(DbPath);
 	}
 
-	protected FileSystemWriter CreateWriterSut() {
+	protected IArchiveStorageFactory CreateSutFactory(StorageType storageType) {
 		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
-		var sut = new FileSystemWriter(
-			new FileSystemOptions {
-				Path = ArchivePath
-			}, namingStrategy.GetPrefixFor);
-		return sut;
+		var factory = new ArchiveStorageFactory(
+				new() {
+					StorageType = storageType,
+					FileSystem = new() {
+						Path = ArchivePath
+					},
+					S3 = new() {
+						AwsCliProfileName = "default",
+						Bucket = "archiver-unit-tests",
+						Region = "eu-west-1",
+					}
+				},
+				namingStrategy);
+		return factory;
 	}
 
-	protected FileSystemReader CreateReaderSut() {
-		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
-		var sut = new FileSystemReader(
-			new FileSystemOptions {
-				Path = ArchivePath
-			}, namingStrategy.GetPrefixFor);
-		return sut;
-	}
+	protected IArchiveStorageWriter CreateWriterSut(StorageType storageType) =>
+		CreateSutFactory(storageType).CreateWriter();
+
+	protected IArchiveStorageReader CreateReaderSut(StorageType storageType) =>
+		CreateSutFactory(storageType).CreateReader();
 
 	protected static string CreateChunk(string path, int chunkStartNumber, int chunkVersion) {
 		var namingStrategy = new VersionedPatternFileNamingStrategy(path, ChunkPrefix);

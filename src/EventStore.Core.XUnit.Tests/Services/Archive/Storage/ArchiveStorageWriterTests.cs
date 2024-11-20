@@ -6,38 +6,41 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Archive;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
+using FluentStorage.Utils.Extensions;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
-public class FileSystemWriterTests : ArchiveStorageTestsBase<FileSystemWriterTests> {
-	[Fact]
-	public async Task can_store_a_chunk() {
-		var sut = CreateWriterSut();
+public class ArchiveStorageWriterTests : ArchiveStorageTestsBase<ArchiveStorageWriterTests> {
+	[Theory]
+	[InlineData(StorageType.FileSystem)]
+	[InlineData(StorageType.S3, Skip = SkipS3)]
+	public async Task can_store_a_chunk(StorageType storageType) {
+		var sut = CreateWriterSut(storageType);
 		var localChunk = CreateLocalChunk(0, 0);
 		Assert.True(await sut.StoreChunk(localChunk, CancellationToken.None));
 
-		var archivedChunk = Path.Combine(ArchivePath, Path.GetFileName(localChunk));
-
-		Assert.True(File.Exists(archivedChunk));
-
 		var localChunkContent = await File.ReadAllBytesAsync(localChunk);
-		var archivedChunkContent = await File.ReadAllBytesAsync(archivedChunk);
-		Assert.True(localChunkContent.AsSpan().SequenceEqual(archivedChunkContent));
+		using var archivedChunkContent = await CreateReaderSut(storageType).GetChunk(localChunk, CancellationToken.None);
+		Assert.Equal(localChunkContent, archivedChunkContent.ToByteArray());
 	}
 
-	[Fact]
-	public async Task throws_chunk_deleted_exception_if_local_chunk_doesnt_exist() {
-		var sut = CreateWriterSut();
+	[Theory]
+	[InlineData(StorageType.FileSystem)]
+	[InlineData(StorageType.S3, Skip = SkipS3)]
+	public async Task throws_chunk_deleted_exception_if_local_chunk_doesnt_exist(StorageType storageType) {
+		var sut = CreateWriterSut(storageType);
 		var localChunk = CreateLocalChunk(0, 0);
 		File.Delete(localChunk);
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => await sut.StoreChunk(localChunk, CancellationToken.None));
 	}
 
-	[Fact]
-	public async Task can_remove_chunks() {
-		var sut = CreateWriterSut();
+	[Theory]
+	[InlineData(StorageType.FileSystem)]
+	public async Task can_remove_chunks(StorageType storageType) {
+		var sut = CreateWriterSut(storageType);
 
 		CreateArchiveChunk(0, 0);
 		CreateArchiveChunk(1, 0);

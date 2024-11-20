@@ -5,14 +5,16 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Archive;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
-public class FileSystemReaderTests : ArchiveStorageTestsBase<FileSystemReaderTests> {
-	[Fact]
-	public async Task can_list_chunks() {
-		var sut = CreateReaderSut();
+public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageReaderTests> {
+	[Theory]
+	[InlineData(StorageType.FileSystem)]
+	public async Task can_list_chunks(StorageType storageType) {
+		var sut = CreateReaderSut(storageType);
 
 		Assert.Equal(0, await sut.ListChunks(CancellationToken.None).CountAsync());
 
