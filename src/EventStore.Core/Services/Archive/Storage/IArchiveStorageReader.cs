@@ -2,11 +2,16 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
 public interface IArchiveStorageReader {
+	/// <returns>A stream of the chunk's contents. Dispose this after use.</returns>
+	public ValueTask<Stream> GetChunk(string chunkPath, CancellationToken ct);
+
 	/// <summary>List all chunk files present in the archive</summary>
 	/// <returns>The file names of all chunks present in the archive</returns>
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct);

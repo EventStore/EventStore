@@ -4,38 +4,32 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
+using FluentStorage.Blobs;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
-public class FileSystemReader : IArchiveStorageReader {
-	protected static readonly ILogger Log = Serilog.Log.ForContext<FileSystemReader>();
+public class FluentReader : IArchiveStorageReader {
+	protected static readonly ILogger Log = Serilog.Log.ForContext<FluentReader>();
+	readonly IBlobStorage _blobStorage;
 
-	private readonly string _archivePath;
-	private readonly Func<int?, int?, string> _getChunkPrefix;
-
-	public FileSystemReader(FileSystemOptions options, Func<int?, int?, string> getChunkPrefix) {
-		_archivePath = options.Path;
-		_getChunkPrefix = getChunkPrefix;
+	public FluentReader(IBlobStorage blobStorage) {
+		_blobStorage = blobStorage;
 	}
 
 	public async ValueTask<Stream> GetChunk(string chunkPath, CancellationToken ct) {
 		try {
-			return File.OpenRead(chunkPath);
+			var fileName = Path.GetFileName(chunkPath);
+			return await _blobStorage.OpenReadAsync(fileName, ct);
 		} catch (FileNotFoundException) {
 			throw new ChunkDeletedException();
 		}
 	}
 
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
-		return new DirectoryInfo(_archivePath)
-			.EnumerateFiles($"{_getChunkPrefix(null, null)}*")
-			.Select(chunk => chunk.Name)
-			.Order()
-			.ToAsyncEnumerable();
+		throw new NotImplementedException();
 	}
 }

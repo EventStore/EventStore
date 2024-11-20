@@ -2,26 +2,15 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Serilog;
+using FluentStorage;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
-public class S3Writer : IArchiveStorageWriter {
-	protected static readonly ILogger Log = Serilog.Log.ForContext<S3Writer>();
-	private readonly string _bucket;
-	private readonly Func<int?, int?, string> _getChunkPrefix;
-
-	public S3Writer(S3Options options, Func<int?, int?, string> getChunkPrefix) {
-		_bucket = options.Bucket;
-		_getChunkPrefix = getChunkPrefix;
-	}
-	public ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
-		throw new NotImplementedException();
-	}
-
-	public ValueTask<bool> RemoveChunks(int chunkStartNumber, int chunkEndNumber, string exceptChunk, CancellationToken ct) {
-		throw new NotImplementedException();
+public class S3Writer : FluentWriter {
+	public S3Writer(S3Options options, Func<int?, int?, string> getChunkPrefix)
+		: base(StorageFactory.Blobs.AwsS3(
+			awsCliProfileName: options.AwsCliProfileName,
+			bucketName: options.Bucket,
+			region: options.Region)) {
 	}
 }
