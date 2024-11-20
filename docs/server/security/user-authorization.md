@@ -176,7 +176,7 @@ access to `$settings` unless you specifically override it.
 Refer to the documentation of the HTTP API or SDK of your choice for more information about changing ACLs
 programmatically.
 
-### Stream Policy Authorization
+### Stream policy authorization
 
 <Badge type="info" vertical="middle" text="License Required"/>
 
@@ -351,17 +351,17 @@ To recover from this, either fix the issue preventing the plugin from loading, o
 }
 ```
 
-#### Stream Policies and Rules
+#### Stream policies and rules
 
 Stream policies and Stream Rules are configured by events written to the `$policies` stream.
 
-##### Default Stream Policy
+##### Default stream policy
 
-When the Stream Policy feature is run for the first time, it will create a default policy in the `$policies` stream.
-The default policy does the following
-- Restricts system streams to the `$admins` group.
-- Grants users outside of the $ops group access to user streams.
-- Grants users outside of the $ops group read access to the default projection streams (`$ce`, `$et`, `$bc`, `$category`, `$streams`) and their metadata
+EventStoreDB creates default stream policies by adding a default policy event in the `$policies` stream when the feature is enabled for the first time. The default policies specified in that event include:
+
+- Restricts [system streams](../features/streams.md#system-events-and-streams) to the `$admins` group.
+- Grants users outside of the `$ops` group access to user streams.
+- Grants users outside of the `$ops` group read access to the [default projection streams](../features/streams.md#projections-events-and-streams) (`$ce`, `$et`, `$bc`, `$category`, `$streams`) and their metadata.
 
 EventStoreDB will log when the default policy is created:
 
@@ -431,11 +431,28 @@ EventStoreDB will log when the default policy is created:
 Operations users in the `$ops` group are excluded from the `$all` group and do not have access to user streams by default.
 :::
 
-##### Custom Stream Policies
+##### Custom stream policies
 
 You can create a custom stream policy by writing an event with event type `$policy-updated` to the `$policies` stream.
 
-Define your custom policy in the `streamPolicies`, e.g:
+We recommend that you start with the default policy shown above, and add your own policies and stream rules to it.
+
+Define policies by adding one or more entries to the `streamPolicies` json object, with the key being your policy name, and the value being an [access policy](#accesspolicy):
+
+```json
+"streamPolicies": {
+  "{your_policy_name}": {
+    "$r": ["{roles_with_read_access}"],
+    "$w": ["{roles_with_write_access}"],
+    "$d": ["{roles_with_delete_access}"],
+    "$mr": ["{roles_with_metadata_read_access}"],
+    "$mw": ["{roles_with_metadata_write_access}"],
+  },
+  // Default policies truncated
+}
+```
+
+For example, this policy, named `customPolicy`, grants read, write, delete, metadata read, and metadata write access to users with the `ouro` role, and only grants read access to users in the `readers` role:
 
 ```json
 "streamPolicies": {
@@ -450,7 +467,18 @@ Define your custom policy in the `streamPolicies`, e.g:
 }
 ```
 
-And then add an entry to `streamRules` to specify the stream prefixes which should use the custom policy. You can apply the same policy to multiple streams by defining multiple stream rules. e.g:
+Define which policies apply to which stream prefix by adding a [stream rule](#streamrule) entry to the `streamRules` object:
+
+```json
+"streamRules": [{
+  "startsWith": "{stream_prefix}",
+  "policy": "{your_policy_name}"
+},
+// Default stream rules truncated
+]
+```
+
+For example, these stream rules apply the `customPolicy` defined above to streams starting with `account` and `customer`:
 
 ```json
 "streamRules": [{
@@ -464,7 +492,20 @@ And then add an entry to `streamRules` to specify the stream prefixes which shou
 ]
 ```
 
-You still need to specify default stream rules when you update the `$policies` stream.
+::: tip
+You can apply the same policy to multiple streams by defining multiple stream rules.
+:::
+
+Define which policies apply to user and system streams by default by updating the `defaultStreamRules` object:
+
+```json
+"defaultStreamRules": {
+  "userStreams": "{default_users_policy_name}",
+  "systemStreams": "{default_system_policy_name}"
+}
+```
+
+For example, to keep using the system defaults:
 
 ```json
 "defaultStreamRules": {
@@ -473,7 +514,11 @@ You still need to specify default stream rules when you update the `$policies` s
 }
 ```
 
-Append an event with your custom policy to the `$policies` stream with the `$policy-updated` event type:
+::: tip
+Make sure that the default policies are included in the `streamPolicies` object.
+:::
+
+To update the policies, append an event containing the json created in the above steps to the `$policies` stream with the `$policy-updated` event type:
 
 ::: tabs
 @tab HTTP
@@ -586,7 +631,7 @@ curl -X POST \
 If a policy update is invalid, it will not be applied and an error will be logged. EventStoreDB will continue running with the previous valid policy in place.
 :::
 
-##### Stream Policy Schema
+##### Stream policy schema
 
 ###### Policy
 
@@ -623,3 +668,99 @@ Having metadata read or metadata write access to a stream does not grant read or
 |---------------|----------|---------------|----------|
 | `startsWith`  | `string` | The stream prefix to apply the rule to. | Yes |
 | `policy`      | `string` | The name of the policy to enforce for streams that match this prefix. | Yes |
+
+#### Troubleshooting
+
+##### License is invalid or not found
+
+This feature requires a license to use. If a license is not found, or the provided license is invalid, you will see the following log:
+
+```
+[INF] StreamPolicySelector           Stream Policies plugin is not licensed, stream policy authorization cannot be enabled.
+```
+
+Trying to enable the feature will give you the following errors, and the previous or default policy authorization settings will be used:
+
+```
+[ERR] StreamPolicySelector           Stream Policies plugin is not licensed, cannot enable Stream policies
+[ERR] StreamBasedAuthorizationPolicyRegistry Failed to enable policy selector plugin streampolicy. Authorization settings will not be applied
+```
+
+If the `DefaultPolicyType` is set to `streampolicy`, the [fallback policy](#fallback-stream-access-policy) will be used and stream access will be restricted to admins only:
+
+```
+[WRN] StreamBasedAuthorizationPolicyRegistry Could not load authorization policy settings. Restricting access to admins only.
+```
+
+#### The `$authorization-policy-settings` stream has been deleted
+
+If the `$authorization-policy-settings` stream has been deleted (including hard deleted), the default policy type will be used, and EventStoreDB will log the following:
+
+```
+[WRN] StreamBasedAuthorizationPolicyRegistry Authorization policy settings stream $authorization-policy-settings has been deleted.
+[INF] EventStore                     No existing authorization policy settings were found in $authorization-policy-settings. Using the default
+```
+
+#### New authorization settings could not be applied
+
+If an invalid update is made to the `$authorization-policy-changed` stream, you will see the following log and the settings will not be updated.
+
+```
+[WRN] StreamBasedAuthorizationPolicyRegistry New authorization settings could not be applied. Settings were not updated.
+```
+
+This can happen because:
+
+1. The event type is not `$authorization-policy-changed`:
+
+```
+[ERR] StreamBasedAuthorizationPolicyRegistry Invalid authorization policy settings event. Expected event type $authorization-policy-changed but got {invalid_event_type}
+```
+
+2. The event is not valid json:
+
+```
+[ERR] StreamBasedAuthorizationPolicyRegistry Could not parse authorization policy settings
+```
+
+3. The stream access policy type was not found. Ensure that the policy type is set to `acl` or `streampolicy`:
+
+```
+[ERR] StreamBasedAuthorizationPolicyRegistry Could not find policy not-found in registered authorization policy plugins.
+```
+
+#### Could not parse policy
+
+If an invalid update is made to the `$policies` stream, you will see the following log and the policies will not be updated.
+
+```
+[ERR] StreamBasedPolicySelector      Could not parse policy
+```
+
+This can happen because:
+
+1. A stream rule references a policy that does not exist. Ensure that the policy is defined in the [streamPolicies](#custom-stream-policies) json object:
+
+```
+[ERR] StreamPolicySelector           Stream rule for prefix: {stream_prefix} refers to an undefined policy: {not_found_policy}
+```
+
+2. An [access policy](#accesspolicy) is missing a key. Ensure that each access key (`$r`, `$w`, `$d`, `$mr`, `$md`) is defined:
+
+```
+[ERR] StreamPolicySelector           Error while deserializing new policy
+System.ArgumentNullException: Value cannot be null. (Parameter 'Deleters cannot be null')
+```
+
+3. A [stream rule](#streamrule) has an empty prefix:
+
+```
+[ERR] StreamPolicySelector           Error while deserializing new policy
+System.ArgumentNullException: Value cannot be null. (Parameter 'StartsWith cannot be null or empty')
+```
+
+4. The event type is not `$policy-updated`:
+
+```
+[ERR] StreamPolicySelector           Expected event type: $policy-updated but was {invalid_event_type}
+```
