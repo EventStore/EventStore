@@ -90,7 +90,7 @@ The MongoDB sink can be configured with the following options:
 
 This MongoDB sink connector currently only supports [SCRAM](./mongo.md#scram) and [X.509 certificate authentication](./mongo.md#x509-certificate-authentication).
 
-**SCRAM**
+### SCRAM
 
 To use SCRAM for authentication, include the username and password in the
 connection string and set the `authMechanism` parameter in the connection string
@@ -103,7 +103,7 @@ Mechanism](https://www.mongodb.com/docs/v4.4/core/authentication-mechanisms/#:~:
 MongoDB version 4.0 and later uses SCRAM-SHA-256 as the default authentication mechanism if the MongoDB server version supports it.
 :::
 
-**X.509 certificate authentication**
+### X.509 certificate authentication
 
 To use X.509 certificate authentication, include the base64 encoded x509
 certificate and the password in the settings. You can use an online tool like
