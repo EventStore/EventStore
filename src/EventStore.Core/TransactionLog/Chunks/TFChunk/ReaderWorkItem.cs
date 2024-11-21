@@ -16,5 +16,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public ITransactionFileTracker Tracker { get; private set; } = ITransactionFileTracker.NoOp;
+
+		public void OnCheckedOut(ITransactionFileTracker tracker) {
+			Tracker = tracker;
+		}
+
+		public void OnReturned() {
+			Tracker = ITransactionFileTracker.NoOp;
+		}
 	}
 }

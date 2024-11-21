@@ -1081,7 +1081,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				throw new TimeoutException();
 		}
 
-		private ReaderWorkItem GetReaderWorkItem() {
+		//qq todo always provide a tracker
+		private ReaderWorkItem GetReaderWorkItem(ITransactionFileTracker tracker = null) {
+			var item = GetReaderWorkItemImpl();
+			item.OnCheckedOut(tracker ?? ITransactionFileTracker.NoOp);
+			return item;
+		}
+
+		private ReaderWorkItem GetReaderWorkItemImpl() {
 			if (_selfdestructin54321)
 				throw new FileBeingDeletedException();
 
@@ -1138,6 +1145,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		private void ReturnReaderWorkItem(ReaderWorkItem item) {
+			item.OnReturned();
 			if (item.IsMemory) {
 				// we avoid taking the _cachedDataLock here every time because we would be
 				// contending with other reader threads also returning readerworkitems.
