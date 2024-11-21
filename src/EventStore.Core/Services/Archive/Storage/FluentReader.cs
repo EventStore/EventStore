@@ -12,21 +12,14 @@ using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
-public class FluentReader : IArchiveStorageReader {
-	protected static readonly ILogger Log = Serilog.Log.ForContext<FluentReader>();
-	readonly IBlobStorage _blobStorage;
-
-	public FluentReader(IBlobStorage blobStorage) {
-		_blobStorage = blobStorage;
-	}
+public abstract class FluentReader {
+	protected abstract ILogger Log { get; }
+	protected abstract IBlobStorage BlobStorage { get; }
 
 	public async ValueTask<Stream> GetChunk(string chunkPath, CancellationToken ct) {
-		try {
-			var fileName = Path.GetFileName(chunkPath);
-			return await _blobStorage.OpenReadAsync(fileName, ct);
-		} catch (FileNotFoundException) {
-			throw new ChunkDeletedException();
-		}
+		var fileName = Path.GetFileName(chunkPath);
+		var stream = await BlobStorage.OpenReadAsync(fileName, ct);
+		return stream ?? throw new ChunkDeletedException();
 	}
 
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
