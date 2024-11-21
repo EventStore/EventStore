@@ -109,7 +109,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Ensure.Valid(streamId, _validator);
 			if (eventNumber < -1)
 				throw new ArgumentOutOfRangeException("eventNumber");
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				return ReadEventInternal(reader, streamName, streamId, eventNumber);
 			}
 		}
@@ -155,7 +155,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		IPrepareLogRecord<TStreamId> IIndexReader<TStreamId>.ReadPrepare(TStreamId streamId, long eventNumber) {
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				return ReadPrepareInternal(reader, streamId, eventNumber);
 			}
 		}
@@ -226,7 +226,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Ensure.Nonnegative(fromEventNumber, "fromEventNumber");
 			Ensure.Positive(maxCount, "maxCount");
 
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				var lastEventNumber = GetStreamLastEventNumberCached(reader, streamId);
 				var metadata = GetStreamMetadataCached(reader, streamId);
 				if (lastEventNumber == EventNumber.DeletedStream)
@@ -503,7 +503,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				indexReader._tableIndex.GetRange(streamHandle, startEventNumber, endEventNumber);
 
 		public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber) {
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				var result = ReadEventInfoForwardInternal(
 					streamId,
 					reader,
@@ -522,7 +522,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		// note for simplicity skipIndexScanOnRead is always treated as false. see ReadEventInfoInternal
 		public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition) {
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				return ReadEventInfoForwardInternal(
 					streamId,
 					reader,
@@ -602,7 +602,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Ensure.Valid(streamId, _validator);
 			Ensure.Positive(maxCount, "maxCount");
 
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				var lastEventNumber = GetStreamLastEventNumberCached(reader, streamId);
 				var metadata = GetStreamMetadataCached(reader, streamId);
 				if (lastEventNumber == EventNumber.DeletedStream)
@@ -668,7 +668,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (fromEventNumber == ExpectedVersion.NoStream)
 				return new IndexReadEventInfoResult(new EventInfo[] { }, -1);
 
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				return ReadEventInfoBackwardInternal(
 					streamId,
 					reader,
@@ -802,14 +802,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		public TStreamId GetEventStreamIdByTransactionId(long transactionId) {
 			Ensure.Nonnegative(transactionId, "transactionId");
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				var res = ReadPrepareInternal(reader, transactionId);
 				return res == null ? default : res.EventStreamId;
 			}
 		}
 
 		public StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId) {
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				var sysSettings = _backend.GetSystemSettings() ?? SystemSettings.Default;
 				StreamAcl acl;
 				StreamAcl sysAcl;
@@ -830,14 +830,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		long IIndexReader<TStreamId>.GetStreamLastEventNumber(TStreamId streamId) {
 			Ensure.Valid(streamId, _validator);
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				return GetStreamLastEventNumberCached(reader, streamId);
 			}
 		}
 
 		public long GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition) {
 			Ensure.Valid(streamId, _validator);
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				return GetStreamLastEventNumber_KnownCollisions(streamId, beforePosition, reader);
 			}
 		}
@@ -859,7 +859,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		// gets the last event number before beforePosition for the given stream hash. can assume that
 		// the hash does not collide with anything before beforePosition.
 		public long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition) {
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				return GetStreamLastEventNumber_NoCollisions(stream, getStreamId, beforePosition, reader);
 			}
 		}
@@ -894,7 +894,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		StreamMetadata IIndexReader<TStreamId>.GetStreamMetadata(TStreamId streamId) {
 			Ensure.Valid(streamId, _validator);
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				return GetStreamMetadataCached(reader, streamId);
 			}
 		}

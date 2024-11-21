@@ -253,7 +253,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			SetAttributes(_filename, true);
 			CreateReaderStreams();
 
-			var reader = GetReaderWorkItem();
+			//qq come back to whether we want to track this (just reading the header and footer)
+			var reader = GetReaderWorkItem(ITransactionFileTracker.NoOp);
 			try {
 				_chunkHeader = ReadHeader(reader.Stream);
 				Log.Debug("Opened completed {chunk} as version {version}", _filename, _chunkHeader.Version);
@@ -765,12 +766,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return _readSide.TryReadAt(logicalPosition, couldBeScavenged);
 		}
 
-		public RecordReadResult TryReadFirst() {
-			return _readSide.TryReadFirst();
+		public RecordReadResult TryReadFirst(ITransactionFileTracker tracker) {
+			return _readSide.TryReadFirst(tracker);
 		}
 
-		public RecordReadResult TryReadClosestForward(long logicalPosition) {
-			return _readSide.TryReadClosestForward(logicalPosition);
+		public RecordReadResult TryReadClosestForward(long logicalPosition, ITransactionFileTracker tracker) {
+			return _readSide.TryReadClosestForward(logicalPosition, tracker);
 		}
 
 		public RawReadResult TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer) {
@@ -1081,10 +1082,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				throw new TimeoutException();
 		}
 
-		//qq todo always provide a tracker
-		private ReaderWorkItem GetReaderWorkItem(ITransactionFileTracker tracker = null) {
+		private ReaderWorkItem GetReaderWorkItem(ITransactionFileTracker tracker) {
 			var item = GetReaderWorkItemImpl();
-			item.OnCheckedOut(tracker ?? ITransactionFileTracker.NoOp);
+			item.OnCheckedOut(tracker);
 			return item;
 		}
 

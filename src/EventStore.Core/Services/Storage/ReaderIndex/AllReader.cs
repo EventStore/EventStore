@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var consideredEventsCount = 0L;
 			var firstCommit = true;
 			var reachedEndOfStream = false;
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qqqqqqqqqqqqqqqqq push here
 				long nextCommitPos = pos.CommitPosition;
 				while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
 					if (nextCommitPos > _indexCommitter.LastIndexedPosition) {
@@ -201,7 +201,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var consideredEventsCount = 0L;
 			bool firstCommit = true;
 			var reachedEndOfStream = false;
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				long nextCommitPostPos = pos.CommitPosition;
 				while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
 					reader.Reposition(nextCommitPostPos);

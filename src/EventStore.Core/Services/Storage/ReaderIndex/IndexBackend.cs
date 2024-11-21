@@ -12,7 +12,7 @@ using Serilog.Events;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IIndexBackend {
-		TFReaderLease BorrowReader();
+		TFReaderLease BorrowReader(ITransactionFileTracker tracker);
 		void SetSystemSettings(SystemSettings systemSettings);
 		SystemSettings GetSystemSettings();
 	}
@@ -48,8 +48,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_streamMetadataCache = streamMetadataCache;
 		}
 
-		public TFReaderLease BorrowReader() {
-			return new TFReaderLease(_readers);
+		public TFReaderLease BorrowReader(ITransactionFileTracker tracker) {
+			return new TFReaderLease(_readers, tracker);
 		}
 
 		public EventNumberCached TryGetStreamLastEventNumber(TStreamId streamId) {

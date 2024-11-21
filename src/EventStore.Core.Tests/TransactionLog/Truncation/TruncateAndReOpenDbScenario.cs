@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			var emptyStreamId = _logFormat.EmptyStreamId;
 			TableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV3, MaxEntriesInMemTable * 2),
-				() => new TFReaderLease(readers),
+				tracker => new TFReaderLease(readers, tracker),
 				PTableVersions.IndexV3,
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,

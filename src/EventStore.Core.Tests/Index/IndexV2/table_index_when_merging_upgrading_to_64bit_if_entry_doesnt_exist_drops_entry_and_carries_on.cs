@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 			var fakeReader = new TFReaderLease(new FakeIndexReader2());
 			_tableIndex = new TableIndex<TStreamId>(_indexDir, _lowHasher, _highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: 3),
-				() => fakeReader,
+				_ => fakeReader,
 				PTableVersions.IndexV1,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 3,
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 
 			_tableIndex = new TableIndex<TStreamId>(_indexDir, _lowHasher, _highHasher, emptyStreamId,
 				() => new HashListMemTable(_ptableVersion, maxSize: 3),
-				() => fakeReader,
+				_ => fakeReader,
 				_ptableVersion,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 3,
@@ -135,6 +135,14 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 		}
 
 		private class FakeIndexReader2 : ITransactionFileReader {
+			public void OnCheckedOut(ITransactionFileTracker tracker) {
+				throw new NotImplementedException();
+			}
+
+			public void OnReturned() {
+				throw new NotImplementedException();
+			}
+
 			public void Reposition(long position) {
 				throw new NotImplementedException();
 			}

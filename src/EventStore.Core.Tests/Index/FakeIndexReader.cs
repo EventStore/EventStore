@@ -10,6 +10,14 @@ namespace EventStore.Core.Tests.Fakes {
 			_existsAt = existsAt ?? (l => true);
 		}
 
+		public void OnCheckedOut(ITransactionFileTracker tracker) {
+			throw new NotImplementedException();
+		}
+
+		public void OnReturned() {
+			throw new NotImplementedException();
+		}
+
 		public void Reposition(long position) {
 			throw new NotImplementedException();
 		}

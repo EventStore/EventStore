@@ -5,12 +5,12 @@ using EventStore.Core.TransactionLog.LogRecords;
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class IndexReaderForCalculator<TStreamId> : IIndexReaderForCalculator<TStreamId> {
 		private readonly IReadIndex<TStreamId> _readIndex;
-		private readonly Func<TFReaderLease> _tfReaderFactory;
+		private readonly Func<ITransactionFileTracker, TFReaderLease> _tfReaderFactory;
 		private readonly Func<ulong, TStreamId> _lookupUniqueHashUser;
 
 		public IndexReaderForCalculator(
 			IReadIndex<TStreamId> readIndex,
-			Func<TFReaderLease> tfReaderFactory,
+			Func<ITransactionFileTracker, TFReaderLease> tfReaderFactory,
 			Func<ulong, TStreamId> lookupUniqueHashUser) {
 
 			_readIndex = readIndex;
@@ -66,7 +66,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		}
 
 		public bool IsTombstone(long logPosition) {
-			using (var reader = _tfReaderFactory()) {
+			using (var reader = _tfReaderFactory(ITransactionFileTracker.NoOp)) { //qq
 				var result = reader.TryReadAt(logPosition, couldBeScavenged: true);
 
 				if (!result.Success)

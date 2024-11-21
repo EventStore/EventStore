@@ -1,4 +1,5 @@
 using System;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -82,7 +83,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_first_record_can_be_read() {
-			var res = _chunk.TryReadFirst();
+			var res = _chunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_prepare1.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
 			Assert.IsTrue(res.LogRecord is IPrepareLogRecord<TStreamId>);
@@ -91,7 +92,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_second_record_can_be_read_as_closest_forward_after_first() {
-			var res = _chunk.TryReadClosestForward(_prepare1.GetSizeWithLengthPrefixAndSuffix());
+			var res = _chunk.TryReadClosestForward(_prepare1.GetSizeWithLengthPrefixAndSuffix(), ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_prepare1.GetSizeWithLengthPrefixAndSuffix()
 			                + _prepare2.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
@@ -102,7 +103,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void cannot_read_past_second_record_with_closest_forward_method() {
 			var res = _chunk.TryReadClosestForward(_prepare1.GetSizeWithLengthPrefixAndSuffix()
-			                                       + _prepare2.GetSizeWithLengthPrefixAndSuffix());
+			                                       + _prepare2.GetSizeWithLengthPrefixAndSuffix(), ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 

@@ -105,10 +105,10 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			var chunk = Db.Manager.GetChunk(0);
 
 			var chunkRecords = new List<ILogRecord>();
-			RecordReadResult result = chunk.TryReadFirst();
+			RecordReadResult result = chunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);
-				result = chunk.TryReadClosestForward(result.NextPosition);
+				result = chunk.TryReadClosestForward(result.NextPosition, ITransactionFileTracker.NoOp);
 			}
 
 			Assert.IsTrue(chunkRecords.All(x => x.Version == LogRecordVersion.LogRecordV0));
@@ -120,10 +120,10 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			var chunk = Db.Manager.GetChunk(1);
 
 			var chunkRecords = new List<ILogRecord>();
-			RecordReadResult result = chunk.TryReadFirst();
+			RecordReadResult result = chunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);
-				result = chunk.TryReadClosestForward(result.NextPosition);
+				result = chunk.TryReadClosestForward(result.NextPosition, ITransactionFileTracker.NoOp);
 			}
 
 			Assert.IsTrue(chunkRecords.All(x => x.Version == LogRecordVersion.LogRecordV0));

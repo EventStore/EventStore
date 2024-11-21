@@ -111,7 +111,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			var emptyStreamId = _logFormat.EmptyStreamId;
 			TableIndex = TransformTableIndex(new TableIndex<TStreamId>(indexDirectory, LowHasher, HighHasher, emptyStreamId,
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
-				() => new TFReaderLease(readers),
+				tracker => new TFReaderLease(readers, tracker),
 				IndexBitnessVersion,
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,

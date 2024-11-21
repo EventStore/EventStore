@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -49,19 +50,19 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void there_is_no_first_record() {
-			var res = _chunk.TryReadFirst();
+			var res = _chunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void there_is_no_closest_forward_record_to_pos_zero() {
-			var res = _chunk.TryReadClosestForward(0);
+			var res = _chunk.TryReadClosestForward(0, ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void there_is_no_closest_backward_record_from_end() {
-			var res = _chunk.TryReadClosestForward(0);
+			var res = _chunk.TryReadClosestForward(0, ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 

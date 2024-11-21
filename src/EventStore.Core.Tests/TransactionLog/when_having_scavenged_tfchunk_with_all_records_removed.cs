@@ -153,10 +153,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void sequencial_read_returns_no_records() {
 			var records = new List<ILogRecord>();
-			RecordReadResult res = _scavengedChunk.TryReadFirst();
+			RecordReadResult res = _scavengedChunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			while (res.Success) {
 				records.Add(res.LogRecord);
-				res = _scavengedChunk.TryReadClosestForward((int)res.NextPosition);
+				res = _scavengedChunk.TryReadClosestForward((int)res.NextPosition, ITransactionFileTracker.NoOp);
 			}
 
 			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {

@@ -59,10 +59,10 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		public void should_have_updated_deleted_stream_event_number() {
 			var chunk = Db.Manager.GetChunk(0);
 			var chunkRecords = new List<ILogRecord>();
-			RecordReadResult result = chunk.TryReadFirst();
+			RecordReadResult result = chunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);
-				result = chunk.TryReadClosestForward(result.NextPosition);
+				result = chunk.TryReadClosestForward(result.NextPosition, ITransactionFileTracker.NoOp);
 			}
 
 			var deletedRecord = (PrepareLogRecord)chunkRecords.First(x => x.RecordType == LogRecordType.Prepare
@@ -77,10 +77,10 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		public void the_log_records_are_still_version_0() {
 			var chunk = Db.Manager.GetChunk(0);
 			var chunkRecords = new List<ILogRecord>();
-			RecordReadResult result = chunk.TryReadFirst();
+			RecordReadResult result = chunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);
-				result = chunk.TryReadClosestForward(result.NextPosition);
+				result = chunk.TryReadClosestForward(result.NextPosition, ITransactionFileTracker.NoOp);
 			}
 
 			Assert.IsTrue(chunkRecords.All(x => x.Version == LogRecordVersion.LogRecordV0));

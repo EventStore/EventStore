@@ -16,6 +16,7 @@ using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
 using EventStore.LogCommon;
+using OpenTelemetry.Trace;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
@@ -727,13 +728,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		private static void TraverseChunkBasic(TFChunk.TFChunk chunk, CancellationToken ct,
 			Action<CandidateRecord> process) {
-			var result = chunk.TryReadFirst();
+			var result = chunk.TryReadFirst(ITransactionFileTracker.NoOp); //qq
 			while (result.Success) {
 				process(new CandidateRecord(result.LogRecord, result.RecordLength));
 
 				ct.ThrowIfCancellationRequested();
 
-				result = chunk.TryReadClosestForward(result.NextPosition);
+				result = chunk.TryReadClosestForward(result.NextPosition, ITransactionFileTracker.NoOp); //qq
 			}
 		}
 

@@ -15,6 +15,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_recordOffset = recordOffset;
 		}
 
+		public void OnCheckedOut(ITransactionFileTracker tracker) {
+			throw new NotImplementedException();
+		}
+
+		public void OnReturned() {
+			throw new NotImplementedException();
+		}
+
 		public void AddRecord(ILogRecord record, long position){
 			_records.Add(position, record);
 		}

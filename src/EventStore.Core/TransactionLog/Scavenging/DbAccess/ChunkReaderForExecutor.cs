@@ -30,7 +30,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			RecordForExecutor<TStreamId, ILogRecord>.NonPrepare nonPrepare,
 			RecordForExecutor<TStreamId, ILogRecord>.Prepare prepare) {
 
-			var result = _chunk.TryReadFirst();
+			var result = _chunk.TryReadFirst(ITransactionFileTracker.NoOp); //qq
 			while (result.Success) {
 				var record = result.LogRecord;
 				if (record.RecordType != LogRecordType.Prepare) {
@@ -51,7 +51,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					yield return true;
 				}
 
-				result = _chunk.TryReadClosestForward(result.NextPosition);
+				result = _chunk.TryReadClosestForward(result.NextPosition, ITransactionFileTracker.NoOp); //qq
 			}
 		}
 	}

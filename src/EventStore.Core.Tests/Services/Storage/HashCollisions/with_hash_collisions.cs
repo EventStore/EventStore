@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_highHasher = _logFormat.HighHasher;
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, _logFormat.EmptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: _maxMemTableSize),
-				() => _fakeReader,
+				_ => _fakeReader,
 				PTableVersions.IndexV1,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: _maxMemTableSize,
@@ -311,7 +311,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_tableIndex.Close(false);
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV2, maxSize: _maxMemTableSize),
-				() => _fakeReader,
+				_ => _fakeReader,
 				PTableVersions.IndexV2,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: _maxMemTableSize,
@@ -419,7 +419,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_readerLease = readerLease;
 		}
 
-		public TFReaderLease BorrowReader() {
+		public TFReaderLease BorrowReader(ITransactionFileTracker tracker) {
 			return _readerLease;
 		}
 
@@ -462,6 +462,14 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	}
 
 	public class FakeReader : ITransactionFileReader {
+		public void OnCheckedOut(ITransactionFileTracker tracker) {
+			throw new NotImplementedException();
+		}
+
+		public void OnReturned() {
+			throw new NotImplementedException();
+		}
+
 		public void Reposition(long position) {
 			throw new NotImplementedException();
 		}

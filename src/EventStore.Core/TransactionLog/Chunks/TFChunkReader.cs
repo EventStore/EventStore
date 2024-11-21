@@ -23,6 +23,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly TFChunkReaderExistsAtOptimizer _existsAtOptimizer;
 		private readonly ILogger _log = Log.ForContext<TFChunkReader>();
 
+		private ITransactionFileTracker _tracker = ITransactionFileTracker.NoOp;
+
 		public TFChunkReader(TFChunkDb db, IReadOnlyCheckpoint writerCheckpoint, long initialPosition = 0,
 			bool optimizeReadSideCache = false) {
 			Ensure.NotNull(db, "dbConfig");
@@ -36,6 +38,16 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_optimizeReadSideCache = optimizeReadSideCache;
 			if (_optimizeReadSideCache)
 				_existsAtOptimizer = TFChunkReaderExistsAtOptimizer.Instance;
+		}
+
+		//qq are these always called?
+		//qqqqqq we actually probably dont want to put the tracker in here
+		public void OnCheckedOut(ITransactionFileTracker tracker) {
+			_tracker = tracker;
+		}
+
+		public void OnReturned() { //qq rename, this needs to be called before being returned. same for readerworkitem
+			_tracker = ITransactionFileTracker.NoOp;
 		}
 
 		public void Reposition(long position) {
@@ -56,7 +68,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				var chunk = _db.Manager.GetChunkFor(pos);
 				RecordReadResult result;
 				try {
-					result = chunk.TryReadClosestForward(chunk.ChunkHeader.GetLocalLogPosition(pos));
+					result = chunk.TryReadClosestForward(chunk.ChunkHeader.GetLocalLogPosition(pos), _tracker);
 					CountRead(chunk.IsCached);
 				} catch (FileBeingDeletedException) {
 					if (retries > MaxRetries)

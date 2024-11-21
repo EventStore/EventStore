@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.Index.IndexV3 {
 			_highHasher = new Murmur3AUnsafe();
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV2, maxSize: 5),
-				() => fakeReader,
+				_ => fakeReader,
 				PTableVersions.IndexV2,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 5,
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Index.IndexV3 {
 
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(_ptableVersion, maxSize: 5),
-				() => fakeReader,
+				_ => fakeReader,
 				_ptableVersion,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 5,
@@ -127,6 +127,14 @@ namespace EventStore.Core.Tests.Index.IndexV3 {
 	}
 
 	public class FakeIndexReader : ITransactionFileReader {
+		public void OnCheckedOut(ITransactionFileTracker tracker) {
+			throw new NotImplementedException();
+		}
+
+		public void OnReturned() {
+			throw new NotImplementedException();
+		}
+
 		public void Reposition(long position) {
 			throw new NotImplementedException();
 		}

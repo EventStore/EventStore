@@ -254,7 +254,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				highHasher: highHasher,
 				emptyStreamId: logFormat.EmptyStreamId,
 				memTableFactory: () => new HashListMemTable(PTableVersions.IndexV4, maxSize: 200),
-				tfReaderFactory: () => new TFReaderLease(readerPool),
+				tfReaderFactory: tracker => new TFReaderLease(readerPool, tracker),
 				ptableVersion: PTableVersions.IndexV4,
 				maxAutoMergeIndexLevel: int.MaxValue,
 				pTableMaxReaderCount: ESConsts.PTableInitialReaderCount,
@@ -331,7 +331,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				var calculatorIndexReader = new AdHocIndexReaderInterceptor<TStreamId>(
 					new IndexReaderForCalculator<TStreamId>(
 						readIndex,
-						() => new TFReaderLease(readerPool),
+						tracker => new TFReaderLease(readerPool, tracker),
 						scavengeState.LookupUniqueHashUser),
 					(f, handle, from, maxCount, x) => {
 						if (_calculatingCancellationTrigger != null)
@@ -419,7 +419,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				IIndexExecutor<TStreamId> indexExecutor = new IndexExecutor<TStreamId>(
 					logger: logger,
 					indexScavenger: cancellationWrappedIndexScavenger,
-					streamLookup: new ChunkReaderForIndexExecutor<TStreamId>(() => new TFReaderLease(readerPool)),
+					streamLookup: new ChunkReaderForIndexExecutor<TStreamId>(tracker => new TFReaderLease(readerPool, tracker)),
 					unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes,
 					restPeriod: restPeriod,
 					throttle: throttle);
@@ -574,10 +574,10 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				var chunk = actual.Db.Manager.GetChunk(i);
 
 				var chunkRecords = new List<ILogRecord>();
-				var result = chunk.TryReadFirst();
+				var result = chunk.TryReadFirst(ITransactionFileTracker.NoOp);
 				while (result.Success) {
 					chunkRecords.Add(result.LogRecord);
-					result = chunk.TryReadClosestForward((int)result.NextPosition);
+					result = chunk.TryReadClosestForward((int)result.NextPosition, ITransactionFileTracker.NoOp);
 				}
 
 				Assert.True(

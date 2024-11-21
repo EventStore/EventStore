@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_as_first_record() {
-			var res = _cachedChunk.TryReadFirst();
+			var res = _cachedChunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
 			Assert.AreEqual(_record, res.LogRecord);
@@ -72,7 +72,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_as_closest_forward_to_zero_pos() {
-			var res = _cachedChunk.TryReadClosestForward(0);
+			var res = _cachedChunk.TryReadClosestForward(0, ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
 			Assert.AreEqual(_record, res.LogRecord);

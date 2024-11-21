@@ -123,7 +123,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public CommitCheckResult<TStreamId> CheckCommitStartingAt(long transactionPosition, long commitPosition) {
 			TStreamId streamId;
 			long expectedVersion;
-			using (var reader = _indexBackend.BorrowReader()) {
+			using (var reader = _indexBackend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				try {
 					var prepare = GetPrepare(reader, transactionPosition);
 					if (prepare == null) {
@@ -362,7 +362,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private bool GetTransactionInfoUncached(long writerCheckpoint, long transactionId,
 			out TransactionInfo<TStreamId> transactionInfo) {
-			using (var reader = _indexBackend.BorrowReader()) {
+			using (var reader = _indexBackend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				reader.Reposition(writerCheckpoint);
 				SeqReadResult result;
 				while ((result = reader.TryReadPrev()).Success) {
@@ -424,7 +424,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private IEnumerable<IPrepareLogRecord<TStreamId>> GetTransactionPrepares(long transactionPos, long commitPos) {
-			using (var reader = _indexBackend.BorrowReader()) {
+			using (var reader = _indexBackend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				reader.Reposition(transactionPos);
 
 				// in case all prepares were scavenged, we should not read past Commit LogPosition

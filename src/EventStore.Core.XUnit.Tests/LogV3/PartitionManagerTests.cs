@@ -213,7 +213,15 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
     			_results.Add(new SeqReadResult(true, false, rootPartition, 0, 0, 0));			
 			}
 		}
-		
+
+		public void OnCheckedOut(ITransactionFileTracker tracker) {
+			throw new NotImplementedException();
+		}
+
+		public void OnReturned() {
+			throw new NotImplementedException();
+		}
+
 		public void Reposition(long position) {
 			_resultIndex = (int) position;
 		}

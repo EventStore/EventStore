@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			var emptyStreamId = _logFormat.EmptyStreamId;
 			var tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV3, maxSize: 200),
-				() => new TFReaderLease(readerPool),
+				tracker => new TFReaderLease(readerPool, tracker),
 				PTableVersions.IndexV3,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 100,
@@ -121,10 +121,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				var chunk = _dbResult.Db.Manager.GetChunk(i);
 
 				var chunkRecords = new List<ILogRecord>();
-				RecordReadResult result = chunk.TryReadFirst();
+				RecordReadResult result = chunk.TryReadFirst(ITransactionFileTracker.NoOp);
 				while (result.Success) {
 					chunkRecords.Add(result.LogRecord);
-					result = chunk.TryReadClosestForward((int)result.NextPosition);
+					result = chunk.TryReadClosestForward((int)result.NextPosition, ITransactionFileTracker.NoOp);
 				}
 
 				Assert.AreEqual(_keptRecords[i].Length, chunkRecords.Count, "Wrong number of records in chunk #{0}", i);

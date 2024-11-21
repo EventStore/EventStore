@@ -131,7 +131,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			_indexRebuild = true;
 			using (_statusTracker.StartRebuilding())
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				var startPosition = Math.Max(0, _persistedCommitPos);
 				var fullRebuild = startPosition == 0;
 				reader.Reposition(startPosition);
@@ -450,7 +450,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private IEnumerable<IPrepareLogRecord<TStreamId>> GetTransactionPrepares(long transactionPos, long commitPos) {
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				reader.Reposition(transactionPos);
 
 				// in case all prepares were scavenged, we should not read past Commit LogPosition
@@ -487,7 +487,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private void CheckDuplicateEvents(TStreamId streamId, CommitLogRecord commit, IList<IndexKey<TStreamId>> indexEntries,
 			IList<IPrepareLogRecord<TStreamId>> prepares) {
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
 				var entries = _tableIndex.GetRange(streamId, indexEntries[0].Version,
 					indexEntries[indexEntries.Count - 1].Version);
 				foreach (var indexEntry in entries) {

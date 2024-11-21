@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			_highHasher = new Murmur3AUnsafe();
 			_tableIndex = new TableIndex<string>(PathName, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(version: _ptableVersion, maxSize: 40),
-				() => { throw new InvalidOperationException(); },
+				_ => { throw new InvalidOperationException(); },
 				_ptableVersion,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 5,

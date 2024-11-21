@@ -3,6 +3,14 @@ using EventStore.Core.TransactionLog;
 
 namespace EventStore.Core.Tests.Fakes {
 	public class FakeTfReader : ITransactionFileReader {
+		public void OnCheckedOut(ITransactionFileTracker tracker) {
+			throw new NotImplementedException();
+		}
+
+		public void OnReturned() {
+			throw new NotImplementedException();
+		}
+
 		public void Reposition(long position) {
 			throw new NotImplementedException();
 		}

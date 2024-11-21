@@ -377,7 +377,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 	}
 
 	public class MockIndexBackend<TStreamId> : IIndexBackend<TStreamId> {
-		public TFReaderLease BorrowReader() {
+		public TFReaderLease BorrowReader(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 

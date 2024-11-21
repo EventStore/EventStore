@@ -596,7 +596,7 @@ namespace EventStore.Core {
 				MaxReaderCount = pTableMaxReaderCount,
 				StreamExistenceFilterSize = options.Database.StreamExistenceFilterSize,
 				StreamExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint,
-				TFReaderLeaseFactory = () => new TFReaderLease(readerPool)
+				TFReaderLeaseFactory = tracker => new TFReaderLease(readerPool, tracker)
 			});
 
 			ICacheResizer streamInfoCacheResizer;
@@ -642,7 +642,7 @@ namespace EventStore.Core {
 				logFormat.EmptyStreamId,
 				() => new HashListMemTable(options.IndexBitnessVersion,
 					maxSize: options.Database.MaxMemTableSize * 2),
-				() => new TFReaderLease(readerPool),
+				tracker => new TFReaderLease(readerPool, tracker),
 				options.IndexBitnessVersion,
 				maxSizeForMemory: options.Database.MaxMemTableSize,
 				maxTablesPerLevel: 2,
@@ -1294,7 +1294,7 @@ namespace EventStore.Core {
 						logger: logger,
 						new IndexReaderForCalculator<TStreamId>(
 							readIndex,
-							() => new TFReaderLease(readerPool),
+							tracker => new TFReaderLease(readerPool, tracker),
 							state.LookupUniqueHashUser),
 						chunkSize: TFConsts.ChunkSize,
 						cancellationCheckPeriod: cancellationCheckPeriod,
@@ -1320,7 +1320,7 @@ namespace EventStore.Core {
 					var indexExecutor = new IndexExecutor<TStreamId>(
 						logger,
 						new IndexScavenger(tableIndex),
-						new ChunkReaderForIndexExecutor<TStreamId>(() => new TFReaderLease(readerPool)),
+						new ChunkReaderForIndexExecutor<TStreamId>(tracker => new TFReaderLease(readerPool, tracker)),
 						unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
 						restPeriod: 32_768,
 						throttle: throttle);

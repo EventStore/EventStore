@@ -49,7 +49,7 @@ namespace EventStore.Core.Index {
 		private readonly byte _ptableVersion;
 		private readonly string _directory;
 		private readonly Func<IMemTable> _memTableFactory;
-		private readonly Func<TFReaderLease> _tfReaderFactory;
+		private readonly Func<ITransactionFileTracker, TFReaderLease> _tfReaderFactory;
 		private readonly IIndexFilenameProvider _fileNameProvider;
 		private readonly IIndexStatusTracker _statusTracker;
 
@@ -79,7 +79,7 @@ namespace EventStore.Core.Index {
 			IHasher<TStreamId> highHasher,
 			TStreamId emptyStreamId,
 			Func<IMemTable> memTableFactory,
-			Func<TFReaderLease> tfReaderFactory,
+			Func<ITransactionFileTracker, TFReaderLease> tfReaderFactory,
 			byte ptableVersion,
 			int maxAutoMergeIndexLevel,
 			int pTableMaxReaderCount,
@@ -310,7 +310,7 @@ namespace EventStore.Core.Index {
 						Log.Debug("Performing manual index merge.");
 
 						_isManualMergePending = false;
-						using (var reader = _tfReaderFactory()) {
+						using (var reader = _tfReaderFactory(ITransactionFileTracker.NoOp)) { //qq
 							var manualMergeResult = _indexMap.TryManualMerge(
 								(streamId, currentHash) => UpgradeHash(streamId, currentHash),
 								entry => reader.ExistsAt(entry.Position),
@@ -361,7 +361,7 @@ namespace EventStore.Core.Index {
 					_indexMap.SaveToFile(indexmapFile);
 
 					if (addResult.CanMergeAny) {
-						using (var reader = _tfReaderFactory()) {
+						using (var reader = _tfReaderFactory(ITransactionFileTracker.NoOp)) { //qq
 							MergeResult mergeResult;
 							do {
 								mergeResult = _indexMap.TryMergeOneLevel(
@@ -464,7 +464,7 @@ namespace EventStore.Core.Index {
 				try {
 					ct.ThrowIfCancellationRequested();
 
-					using (var reader = _tfReaderFactory()) {
+					using (var reader = _tfReaderFactory(ITransactionFileTracker.NoOp)) { //qq
 						var indexmapFile = Path.Combine(_directory, IndexMapFilename);
 
 						Func<IndexEntry, bool> existsAt = entry => reader.ExistsAt(entry.Position);
