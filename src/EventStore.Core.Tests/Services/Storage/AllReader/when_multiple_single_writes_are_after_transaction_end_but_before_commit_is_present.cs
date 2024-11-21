@@ -1,4 +1,5 @@
 ﻿using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -22,7 +23,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				Rec.Prepare(2, "single_write_stream_id_2", prepareFlags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted),
 				Rec.Prepare(3, "single_write_stream_id_3", prepareFlags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted));
 
-			var firstRead = ReadIndex.ReadAllEventsForward(new Data.TFPos(0, 0), 10);
+			var firstRead = ReadIndex.ReadAllEventsForward(new Data.TFPos(0, 0), 10, ITransactionFileTracker.NoOp);
 
 			Assert.AreEqual(3, firstRead.Records.Count);
 			Assert.AreEqual("single_write_stream_id_1", firstRead.Records[0].Event.EventStreamId);
@@ -38,7 +39,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				Rec.Prepare(3, "single_write_stream_id_3", prepareFlags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted),
 				Rec.Commit(0, "transaction_stream_id"));
 
-			var transactionRead = ReadIndex.ReadAllEventsForward(firstRead.NextPos, 10);
+			var transactionRead = ReadIndex.ReadAllEventsForward(firstRead.NextPos, 10, ITransactionFileTracker.NoOp);
 
 			Assert.AreEqual(1, transactionRead.Records.Count);
 			Assert.AreEqual("transaction_stream_id", transactionRead.Records[0].Event.EventStreamId);

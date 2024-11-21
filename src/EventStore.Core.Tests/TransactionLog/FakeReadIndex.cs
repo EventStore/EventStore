@@ -6,6 +6,7 @@ using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Tests.TransactionLog {
@@ -82,7 +83,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			throw new NotImplementedException();
 		}
 
-		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount) {
+		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
@@ -91,7 +92,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		public IndexReadAllResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
-			IEventFilter eventFilter) {
+			IEventFilter eventFilter,
+			ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 

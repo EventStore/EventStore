@@ -2,6 +2,7 @@ using System;
 using System.Security.Claims;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
@@ -14,7 +15,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Returns event records in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
-		IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
+		IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ITransactionFileTracker tracker = null); //qqqqq make not optional
 
 		/// <summary>
 		/// Returns event records in the reverse sequence they were committed into TF.
@@ -27,7 +28,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
 		IndexReadAllResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
-			IEventFilter eventFilter);
+			IEventFilter eventFilter,
+			ITransactionFileTracker tracker = null); //qqqqq make not optional
 
 		/// <summary>
 		/// Returns event records whose eventType matches the given EventFilter in the sequence they were committed into TF.

@@ -13,6 +13,7 @@ using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Messaging;
 using ILogger = Serilog.ILogger;
+using EventStore.Core.TransactionLog;
 
 namespace EventStore.Core.Services.Storage {
 	public abstract class StorageReaderWorker {
@@ -435,7 +436,7 @@ namespace EventStore.Core.Services.Storage {
 					if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
 						return NoData(msg, ReadAllResult.NotModified, pos, lastIndexedPosition);
 
-					var res = _readIndex.ReadAllEventsForward(pos, msg.MaxCount);
+					var res = _readIndex.ReadAllEventsForward(pos, msg.MaxCount, ITransactionFileTracker.NoOp); //qq
 					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
 					if (resolved == null)
 						return NoData(msg, ReadAllResult.AccessDenied, pos, lastIndexedPosition);
@@ -510,7 +511,8 @@ namespace EventStore.Core.Services.Storage {
 							lastIndexedPosition);
 
 					var res = _readIndex.ReadAllEventsForwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
-						msg.EventFilter);
+						msg.EventFilter,
+						ITransactionFileTracker.NoOp); //qqqqqqqqqqqqqqq push here
 					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
 					if (resolved == null)
 						return NoDataForFilteredCommand(msg, FilteredReadAllResult.AccessDenied, pos,

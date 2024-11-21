@@ -164,13 +164,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return _indexReader.GetEventStreamIdByTransactionId(transactionId);
 		}
 
-		IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount) {
-			return _allReader.ReadAllEventsForward(pos, maxCount);
+		IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount, ITransactionFileTracker tracker) {
+			return _allReader.ReadAllEventsForward(pos, maxCount, tracker);
 		}
 
 		IndexReadAllResult IReadIndex.ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
-			IEventFilter eventFilter) {
-			return _allReader.FilteredReadAllEventsForward(pos, maxCount, maxSearchWindow, eventFilter);
+			IEventFilter eventFilter,
+			ITransactionFileTracker tracker) {
+			return _allReader.FilteredReadAllEventsForward(pos, maxCount, maxSearchWindow, eventFilter, tracker);
 		}
 
 		IndexReadAllResult IReadIndex.ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,

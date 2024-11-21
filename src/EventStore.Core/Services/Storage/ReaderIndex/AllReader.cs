@@ -13,14 +13,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Returns event records in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
-		IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
+		IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount,
+			ITransactionFileTracker tracker);
 
 		/// <summary>
 		/// Returns event records whose eventType matches the given <see cref="EventFilter"/> in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
 		IndexReadAllResult FilteredReadAllEventsForward(TFPos pos, int maxCount, int maxSearchWindow,
-			IEventFilter eventFilter);
+			IEventFilter eventFilter,
+			ITransactionFileTracker tracker);
 
 		/// <summary>
 		/// Returns event records in the reverse sequence they were committed into TF.
@@ -53,18 +55,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_eventTypes = eventTypes;
 		}
 
-		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount) {
-			return ReadAllEventsForwardInternal(pos, maxCount, int.MaxValue, EventFilter.DefaultAllFilter);
+		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ITransactionFileTracker tracker) {
+			return ReadAllEventsForwardInternal(pos, maxCount, int.MaxValue, EventFilter.DefaultAllFilter, tracker);
 		}
 
 		public IndexReadAllResult FilteredReadAllEventsForward(TFPos pos, int maxCount, int maxSearchWindow,
-			IEventFilter eventFilter) {
-			return ReadAllEventsForwardInternal(pos, maxCount, maxSearchWindow, eventFilter);
+			IEventFilter eventFilter,
+			ITransactionFileTracker tracker) {
+			return ReadAllEventsForwardInternal(pos, maxCount, maxSearchWindow, eventFilter, tracker);
 		}
 
 
 		private IndexReadAllResult ReadAllEventsForwardInternal(TFPos pos, int maxCount, int maxSearchWindow,
-			IEventFilter eventFilter) {
+			IEventFilter eventFilter,
+			ITransactionFileTracker tracker) {
 			var records = new List<CommitEventRecord>();
 			var nextPos = pos;
 			// in case we are at position after which there is no commit at all, in that case we have to force 
@@ -74,7 +78,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var consideredEventsCount = 0L;
 			var firstCommit = true;
 			var reachedEndOfStream = false;
-			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qqqqqqqqqqqqqqqqq push here
+			using (var reader = _backend.BorrowReader(tracker)) {
 				long nextCommitPos = pos.CommitPosition;
 				while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
 					if (nextCommitPos > _indexCommitter.LastIndexedPosition) {

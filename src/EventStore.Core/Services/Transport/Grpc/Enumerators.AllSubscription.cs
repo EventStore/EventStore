@@ -10,6 +10,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog;
 using Serilog;
 
 namespace EventStore.Core.Services.Transport.Grpc {
@@ -128,7 +129,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					var (commitPosition, preparePosition) = startPosition.Value.ToInt64();
 					try {
 						var indexResult =
-							_readIndex.ReadAllEventsForward(new TFPos(commitPosition, preparePosition), 1);
+							_readIndex.ReadAllEventsForward(new TFPos(commitPosition, preparePosition), 1, ITransactionFileTracker.NoOp);
 						CatchUp(Position.FromInt64(indexResult.NextPos.CommitPosition,
 							indexResult.NextPos.PreparePosition));
 					} catch (Exception ex) {
