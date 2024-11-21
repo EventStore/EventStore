@@ -72,7 +72,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public static TFChunk CreateNewChunk(string fileName, int chunkSize = 4096, bool isScavenged = false) {
 			return TFChunk.CreateNew(fileName, chunkSize, 0, 0,
 				isScavenged: isScavenged, inMem: false, unbuffered: false,
-				writethrough: false, initialReaderCount: Constants.TFChunkInitialReaderCountDefault, maxReaderCount: Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp());
+				writethrough: false, initialReaderCount: Constants.TFChunkInitialReaderCountDefault, maxReaderCount: Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false);
 		}
 	}
 }

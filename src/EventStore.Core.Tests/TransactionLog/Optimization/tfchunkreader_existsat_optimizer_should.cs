@@ -91,8 +91,7 @@ namespace EventStore.Core.Tests.TransactionLog.Optimization {
 				chunkNumber, chunkNumber, scavenged, false, false, false,
 				Constants.TFChunkInitialReaderCountDefault,
 				Constants.TFChunkMaxReaderCountDefault,
-				false,
-				new TFChunkTracker.NoOp());
+				false);
 			long offset = chunkNumber * 1024 * 1024;
 			long logPos = 0 + offset;
 			for (int i = 0, n = ChunkFooter.Size / PosMap.FullSize + 1; i < n; ++i) {

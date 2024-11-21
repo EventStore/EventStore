@@ -44,8 +44,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				writethrough: dbConfig.WriteThrough,
 				initialReaderCount: dbConfig.InitialReaderCount,
 				maxReaderCount: dbConfig.MaxReaderCount,
-				reduceFileCachePressure: dbConfig.ReduceFileCachePressure,
-				tracker: new TFChunkTracker.NoOp());
+				reduceFileCachePressure: dbConfig.ReduceFileCachePressure);
 		}
 
 		public string FileName { get; }

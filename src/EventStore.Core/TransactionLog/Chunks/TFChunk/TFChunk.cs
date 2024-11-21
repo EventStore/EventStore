@@ -165,11 +165,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public static TFChunk FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead,
-			int initialReaderCount, int maxReaderCount, ITransactionFileTracker tracker, bool optimizeReadSideCache = false, bool reduceFileCachePressure = false) {
+			int initialReaderCount, int maxReaderCount, bool optimizeReadSideCache = false, bool reduceFileCachePressure = false) {
 			var chunk = new TFChunk(filename, initialReaderCount, maxReaderCount,
 				TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure);
 			try {
-				chunk.InitCompleted(verifyHash, optimizeReadSideCache, tracker);
+				chunk.InitCompleted(verifyHash, optimizeReadSideCache);
 			} catch {
 				chunk.Dispose();
 				throw;
@@ -179,7 +179,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public static TFChunk FromOngoingFile(string filename, int writePosition, bool checkSize, bool unbuffered,
-			bool writethrough, int initialReaderCount, int maxReaderCount, bool reduceFileCachePressure, ITransactionFileTracker tracker) {
+			bool writethrough, int initialReaderCount, int maxReaderCount, bool reduceFileCachePressure) {
 			var chunk = new TFChunk(filename,
 				initialReaderCount,
 				maxReaderCount,
@@ -188,7 +188,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				unbuffered,
 				writethrough, reduceFileCachePressure);
 			try {
-				chunk.InitOngoing(writePosition, checkSize, tracker);
+				chunk.InitOngoing(writePosition, checkSize);
 			} catch {
 				chunk.Dispose();
 				throw;
@@ -207,13 +207,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			bool writethrough,
 			int initialReaderCount,
 			int maxReaderCount,
-			bool reduceFileCachePressure,
-			ITransactionFileTracker tracker) {
+			bool reduceFileCachePressure) {
+
 			var size = GetAlignedSize(chunkSize + ChunkHeader.Size + ChunkFooter.Size);
 			var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkSize, chunkStartNumber, chunkEndNumber,
 				isScavenged, Guid.NewGuid());
 			return CreateWithHeader(filename, chunkHeader, size, inMem, unbuffered, writethrough, initialReaderCount, maxReaderCount,
-				reduceFileCachePressure, tracker);
+				reduceFileCachePressure);
 		}
 
 		public static TFChunk CreateWithHeader(string filename,
@@ -224,8 +224,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			bool writethrough,
 			int initialReaderCount,
 			int maxReaderCount,
-			bool reduceFileCachePressure,
-			ITransactionFileTracker tracker) {
+			bool reduceFileCachePressure) {
 			var chunk = new TFChunk(filename,
 				initialReaderCount,
 				maxReaderCount,
@@ -235,7 +234,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				writethrough,
 				reduceFileCachePressure);
 			try {
-				chunk.InitNew(header, fileSize, tracker);
+				chunk.InitNew(header, fileSize);
 			} catch {
 				chunk.Dispose();
 				throw;
@@ -244,7 +243,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return chunk;
 		}
 
-		private void InitCompleted(bool verifyHash, bool optimizeReadSideCache, ITransactionFileTracker tracker) {
+		private void InitCompleted(bool verifyHash, bool optimizeReadSideCache) {
 			var fileInfo = new FileInfo(_filename);
 			if (!fileInfo.Exists)
 				throw new CorruptDatabaseException(new ChunkNotFoundException(_filename));
@@ -291,8 +290,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 
 			_readSide = _chunkHeader.IsScavenged
-				? (IChunkReadSide)new TFChunkReadSideScavenged(this, optimizeReadSideCache, tracker)
-				: new TFChunkReadSideUnscavenged(this, tracker);
+				? (IChunkReadSide)new TFChunkReadSideScavenged(this, optimizeReadSideCache)
+				: new TFChunkReadSideUnscavenged(this);
 
 			// do not actually cache now because it is too slow when opening the database
 			_readSide.RequestCaching();
@@ -301,7 +300,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				VerifyFileHash();
 		}
 
-		private void InitNew(ChunkHeader chunkHeader, int fileSize, ITransactionFileTracker tracker) {
+		private void InitNew(ChunkHeader chunkHeader, int fileSize) {
 			Ensure.NotNull(chunkHeader, "chunkHeader");
 			Ensure.Positive(fileSize, "fileSize");
 
@@ -319,8 +318,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 
 			_readSide = chunkHeader.IsScavenged
-				? (IChunkReadSide)new TFChunkReadSideScavenged(this, false, tracker)
-				: new TFChunkReadSideUnscavenged(this, tracker);
+				? (IChunkReadSide)new TFChunkReadSideScavenged(this, false)
+				: new TFChunkReadSideUnscavenged(this);
 
 			// Always cache the active chunk
 			// If the chunk is scavenged we will definitely mark it readonly before we are done writing to it.
@@ -329,7 +328,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 		}
 
-		private void InitOngoing(int writePosition, bool checkSize, ITransactionFileTracker tracker) {
+		private void InitOngoing(int writePosition, bool checkSize) {
 			Ensure.Nonnegative(writePosition, "writePosition");
 			var fileInfo = new FileInfo(_filename);
 			if (!fileInfo.Exists)
@@ -360,7 +359,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 			}
 
-			_readSide = new TFChunkReadSideUnscavenged(this, tracker);
+			_readSide = new TFChunkReadSideUnscavenged(this);
 
 			// Always cache the active chunk
 			CacheInMemory();

@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_testChunk = TFChunk.FromCompletedFile(Filename, true, false,
 				Constants.TFChunkInitialReaderCountDefault,
 				Constants.TFChunkMaxReaderCountDefault,
-				reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp());
+				reduceFileCachePressure: false);
 		}
 
 		[TearDown]

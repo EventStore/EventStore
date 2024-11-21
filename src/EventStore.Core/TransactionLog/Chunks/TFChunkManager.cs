@@ -20,7 +20,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		private readonly TFChunkDbConfig _config;
 		private readonly TFChunk.TFChunk[] _chunks = new TFChunk.TFChunk[MaxChunksCount];
-		private readonly ITransactionFileTracker _tracker;
 		private volatile int _chunksCount;
 		private volatile bool _cachingEnabled;
 
@@ -28,10 +27,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private int _backgroundPassesRemaining;
 		private int _backgroundRunning;
 
-		public TFChunkManager(TFChunkDbConfig config, ITransactionFileTracker tracker) {
+		public TFChunkManager(TFChunkDbConfig config) {
 			Ensure.NotNull(config, "config");
 			_config = config;
-			_tracker = tracker;
 		}
 
 		public void EnableCaching() {
@@ -103,8 +101,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				_config.WriteThrough,
 				_config.InitialReaderCount,
 				_config.MaxReaderCount,
-				_config.ReduceFileCachePressure,
-				_tracker);
+				_config.ReduceFileCachePressure);
 		}
 
 		public TFChunk.TFChunk AddNewChunk() {
@@ -121,8 +118,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					writethrough: _config.WriteThrough,
 					initialReaderCount: _config.InitialReaderCount,
 					maxReaderCount: _config.MaxReaderCount,
-					reduceFileCachePressure: _config.ReduceFileCachePressure,
-					tracker: _tracker);
+					reduceFileCachePressure: _config.ReduceFileCachePressure);
 				AddChunk(chunk);
 				return chunk;
 			}
@@ -147,8 +143,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					writethrough: _config.WriteThrough,
 					initialReaderCount: _config.InitialReaderCount,
 					maxReaderCount: _config.MaxReaderCount,
-					reduceFileCachePressure: _config.ReduceFileCachePressure,
-					tracker: _tracker);
+					reduceFileCachePressure: _config.ReduceFileCachePressure);
 				AddChunk(chunk);
 				return chunk;
 			}
@@ -205,7 +200,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				}
 
 				newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash, _config.Unbuffered,
-					_config.InitialReaderCount, _config.MaxReaderCount, _tracker, _config.OptimizeReadSideCache, _config.ReduceFileCachePressure );
+					_config.InitialReaderCount, _config.MaxReaderCount, _config.OptimizeReadSideCache, _config.ReduceFileCachePressure );
 			}
 
 			lock (_chunksLocker) {

@@ -250,8 +250,7 @@ namespace EventStore.Core.Services {
 					initialReaderCount: 1,
 					maxReaderCount: 1,
 					optimizeReadSideCache: false,
-					reduceFileCachePressure: true,
-					tracker: new TFChunkTracker.NoOp());
+					reduceFileCachePressure: true);
 			} catch (HashValidationException) {
 				failReason = SwitchChunkResult.NewChunkHashInvalid;
 				return false;

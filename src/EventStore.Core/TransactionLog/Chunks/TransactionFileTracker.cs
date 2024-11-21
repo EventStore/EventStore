@@ -23,9 +23,4 @@ public class TFChunkTracker : ITransactionFileTracker {
 		_readBytes.Add(prepare.Data.Length + prepare.Metadata.Length);
 		_readEvents.Add(1);
 	}
-
-	public class NoOp : ITransactionFileTracker {
-		public void OnRead(ILogRecord record) {
-		}
-	}
 }

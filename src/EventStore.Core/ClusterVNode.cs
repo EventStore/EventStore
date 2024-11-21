@@ -306,7 +306,7 @@ namespace EventStore.Core {
 			metricsConfiguration ??= new();
 			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
-			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker);
+			Db = new TFChunkDb(dbConfig);
 
 			TFChunkDbConfig CreateDbConfig(
 				out SystemStatsHelper statsHelper,

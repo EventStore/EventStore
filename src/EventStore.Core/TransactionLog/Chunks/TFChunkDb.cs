@@ -13,15 +13,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public readonly TFChunkManager Manager;
 
 		private readonly ILogger _log;
-		private readonly ITransactionFileTracker _tracker;
 		private int _closed;
 
-		public TFChunkDb(TFChunkDbConfig config, ITransactionFileTracker tracker = null, ILogger log = null) {
+		public TFChunkDb(TFChunkDbConfig config, ILogger log = null) {
 			Ensure.NotNull(config, "config");
 
 			Config = config;
-			_tracker = tracker ?? new TFChunkTracker.NoOp();
-			Manager = new TFChunkManager(Config, _tracker);
+			Manager = new TFChunkManager(Config);
 			_log = log ?? Serilog.Log.ForContext<TFChunkDb>();
 		}
 
@@ -76,7 +74,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 									unbufferedRead: Config.Unbuffered,
 									initialReaderCount: Config.InitialReaderCount,
 									maxReaderCount: Config.MaxReaderCount,
-									tracker: _tracker,
 									optimizeReadSideCache: Config.OptimizeReadSideCache,
 									reduceFileCachePressure: Config.ReduceFileCachePressure);
 							else {
@@ -85,8 +82,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 									unbuffered: Config.Unbuffered,
 									writethrough: Config.WriteThrough, initialReaderCount: Config.InitialReaderCount,
 									maxReaderCount: Config.MaxReaderCount,
-									reduceFileCachePressure: Config.ReduceFileCachePressure,
-									tracker: _tracker);
+									reduceFileCachePressure: Config.ReduceFileCachePressure);
 								// chunk is full with data, we should complete it right here
 								if (!readOnly)
 									chunk.Complete();
@@ -97,8 +93,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 								initialReaderCount: Config.InitialReaderCount,
 								maxReaderCount: Config.MaxReaderCount,
 								optimizeReadSideCache: Config.OptimizeReadSideCache,
-								reduceFileCachePressure: Config.ReduceFileCachePressure,
-								tracker: _tracker);
+								reduceFileCachePressure: Config.ReduceFileCachePressure);
 						}
 
 						// This call is theadsafe.
@@ -126,8 +121,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						initialReaderCount: Config.InitialReaderCount,
 						maxReaderCount: Config.MaxReaderCount,
 						optimizeReadSideCache: Config.OptimizeReadSideCache,
-						reduceFileCachePressure: Config.ReduceFileCachePressure,
-						tracker: _tracker);
+						reduceFileCachePressure: Config.ReduceFileCachePressure);
 					if (lastChunk.ChunkFooter.LogicalDataSize != chunkLocalPos) {
 						lastChunk.Dispose();
 						throw new CorruptDatabaseException(new BadChunkInDatabaseException(
@@ -152,8 +146,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						unbuffered: Config.Unbuffered,
 						writethrough: Config.WriteThrough, initialReaderCount: Config.InitialReaderCount,
 						maxReaderCount: Config.MaxReaderCount,
-						reduceFileCachePressure: Config.ReduceFileCachePressure,
-						tracker: _tracker);
+						reduceFileCachePressure: Config.ReduceFileCachePressure);
 					Manager.AddChunk(lastChunk);
 				}
 			}

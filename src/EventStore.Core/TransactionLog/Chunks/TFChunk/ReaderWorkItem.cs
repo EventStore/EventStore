@@ -1,6 +1,9 @@
+#nullable enable
+
 using System.IO;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
+	// ReaderWorkItems are checked out of a pool and used by one thread at a time
 	internal class ReaderWorkItem {
 		public readonly Stream Stream;
 		public readonly BinaryReader Reader;
@@ -11,5 +14,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			Reader = reader;
 			IsMemory = isMemory;
 		}
+
+		public ITransactionFileTracker Tracker { get; private set; } = ITransactionFileTracker.NoOp;
 	}
 }

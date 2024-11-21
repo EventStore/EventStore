@@ -25,7 +25,7 @@ public class Trackers {
 	public GrpcTrackers GrpcTrackers { get; } = new();
 	public QueueTrackers QueueTrackers { get; set; } = new();
 	public GossipTrackers GossipTrackers { get; set; } = new ();
-	public ITransactionFileTracker TransactionFileTracker { get; set; } = new TFChunkTracker.NoOp();
+	public ITransactionFileTracker TransactionFileTracker { get; set; } = ITransactionFileTracker.NoOp; //qq see where this is needed now
 	public IIndexTracker IndexTracker { get; set; } = new IndexTracker.NoOp();
 	public IMaxTracker<long> WriterFlushSizeTracker { get; set; } = new MaxTracker<long>.NoOp();
 	public IDurationMaxTracker WriterFlushDurationTracker { get; set; } = new DurationMaxTracker.NoOp();

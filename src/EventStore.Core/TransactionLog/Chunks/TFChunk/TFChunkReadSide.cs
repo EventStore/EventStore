@@ -25,7 +25,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		private class TFChunkReadSideUnscavenged : TFChunkReadSide, IChunkReadSide {
-			public TFChunkReadSideUnscavenged(TFChunk chunk, ITransactionFileTracker tracker) : base(chunk, tracker) {
+			public TFChunkReadSideUnscavenged(TFChunk chunk) : base(chunk) {
 				if (chunk.ChunkHeader.IsScavenged)
 					throw new ArgumentException("Scavenged TFChunk passed into unscavenged chunk read side.");
 			}
@@ -142,8 +142,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				get { return _optimizeCache && _logPositionsBloomFilter != null; }
 			}
 
-			public TFChunkReadSideScavenged(TFChunk chunk, bool optimizeCache, ITransactionFileTracker tracker)
-				: base(chunk, tracker) {
+			public TFChunkReadSideScavenged(TFChunk chunk, bool optimizeCache)
+				: base(chunk) {
 				_optimizeCache = optimizeCache;
 				if (!chunk.ChunkHeader.IsScavenged)
 					throw new ArgumentException(string.Format("Chunk provided is not scavenged: {0}", chunk));
@@ -562,12 +562,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		private abstract class TFChunkReadSide {
 			protected readonly TFChunk Chunk;
 			protected readonly ILogger _log = Log.ForContext<TFChunkReader>();
-			protected readonly ITransactionFileTracker _tracker;
 
-			protected TFChunkReadSide(TFChunk chunk, ITransactionFileTracker tracker) {
+			protected TFChunkReadSide(TFChunk chunk) {
 				Ensure.NotNull(chunk, "chunk");
 				Chunk = chunk;
-				_tracker = tracker;
 			}
 
 			private bool ValidateRecordPosition(long actualPosition) {
@@ -625,7 +623,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				ValidateRecordLength(length, actualPosition);
 
 				record = LogRecord.ReadFrom(workItem.Reader, length);
-				_tracker.OnRead(record);
+				workItem.Tracker.OnRead(record);
 
 				int suffixLength = workItem.Reader.ReadInt32();
 				ValidateSuffixLength(length, suffixLength, actualPosition);
@@ -706,7 +704,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 
 				record = LogRecord.ReadFrom(workItem.Reader, length);
-				_tracker.OnRead(record);
+				workItem.Tracker.OnRead(record);
 
 				return true;
 			}

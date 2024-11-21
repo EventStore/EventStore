@@ -46,8 +46,7 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 			writethrough: db.Config.WriteThrough,
 			initialReaderCount: db.Config.InitialReaderCount,
 			maxReaderCount: db.Config.MaxReaderCount,
-			reduceFileCachePressure: db.Config.ReduceFileCachePressure,
-			tracker: new TFChunkTracker.NoOp());
+			reduceFileCachePressure: db.Config.ReduceFileCachePressure);
 
 		var posMaps = new List<PosMap>();
 

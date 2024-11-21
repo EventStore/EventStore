@@ -713,8 +713,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					writethrough: false,
 					initialReaderCount: 1,
 					maxReaderCount: 1,
-					reduceFileCachePressure: false,
-					new TFChunkTracker.NoOp());
+					reduceFileCachePressure: false);
 
 				newChunk.CompleteScavenge(null);
 
