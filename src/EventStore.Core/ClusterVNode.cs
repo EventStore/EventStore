@@ -734,7 +734,9 @@ namespace EventStore.Core {
 
 			var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
 				logFormat.SystemStreams,
-				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), inMemReader, _queueStatsManager,
+				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), inMemReader,
+				trackers.TransactionFileTrackers,
+				_queueStatsManager,
 				trackers.QueueTrackers);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);

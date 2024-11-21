@@ -14,6 +14,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Messaging;
 using ILogger = Serilog.ILogger;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.Storage {
 	public abstract class StorageReaderWorker {
@@ -39,6 +40,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly IReadOnlyCheckpoint _writerCheckpoint;
 		private readonly IInMemoryStreamReader _inMemReader;
+		private readonly ITransactionFileTrackerFactory _trackers;
 		private readonly int _queueId;
 		private static readonly char[] LinkToSeparator = { '@' };
 		private const int MaxPageSize = 4096;
@@ -55,6 +57,7 @@ namespace EventStore.Core.Services.Storage {
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IReadOnlyCheckpoint writerCheckpoint,
 			IInMemoryStreamReader inMemReader,
+			ITransactionFileTrackerFactory trackers,
 			int queueId) {
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotNull(readIndex, "readIndex");
@@ -67,6 +70,7 @@ namespace EventStore.Core.Services.Storage {
 			_writerCheckpoint = writerCheckpoint;
 			_queueId = queueId;
 			_inMemReader = inMemReader;
+			_trackers = trackers;
 		}
 
 		void IHandle<ClientMessage.ReadEvent>.Handle(ClientMessage.ReadEvent msg) {
@@ -510,9 +514,12 @@ namespace EventStore.Core.Services.Storage {
 						return NoDataForFilteredCommand(msg, FilteredReadAllResult.NotModified, pos,
 							lastIndexedPosition);
 
+					//qq is all this info necessarily here? do all messages have a non null user, do all users (cps) have names
+					var tracker = _trackers.GetOrAdd(msg.User.Identity.Name);
+
 					var res = _readIndex.ReadAllEventsForwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
 						msg.EventFilter,
-						ITransactionFileTracker.NoOp); //qqqqqqqqqqqqqqq push here
+						tracker);
 					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
 					if (resolved == null)
 						return NoDataForFilteredCommand(msg, FilteredReadAllResult.AccessDenied, pos,
