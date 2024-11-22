@@ -13,5 +13,6 @@ namespace EventStore.Core.Services.UserManagement {
 
 		public static readonly string SystemIndexMergeName = "system-index-merge";
 		public static readonly string SystemIndexScavengeName = "system-index-scavenge";
+		public static readonly string SystemRedactionName = "system-redaction";
 	}
 }

@@ -1408,7 +1408,8 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(redactionQueue.WidenFrom<RedactionMessage.ReleaseChunksLock, Message>());
 			_mainBus.Subscribe(redactionQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
 
-			var redactionService = new RedactionService<TStreamId>(redactionQueue, Db, _readIndex, _switchChunksLock);
+			var redactionService = new RedactionService<TStreamId>(redactionQueue, Db, _readIndex, _switchChunksLock,
+				trackers.TransactionFileTrackers);
 			redactionBus.Subscribe<RedactionMessage.GetEventPosition>(redactionService);
 			redactionBus.Subscribe<RedactionMessage.AcquireChunksLock>(redactionService);
 			redactionBus.Subscribe<RedactionMessage.SwitchChunk>(redactionService);

@@ -7,6 +7,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
@@ -30,6 +31,7 @@ namespace EventStore.Core.Services {
 		private readonly TFChunkDb _db;
 		private readonly IReadIndex<TStreamId> _readIndex;
 		private readonly SemaphoreSlimLock _switchChunksLock;
+		private readonly ITransactionFileTracker _tracker;
 
 		private const string NewChunkFileExtension = ".tmp";
 
@@ -37,7 +39,8 @@ namespace EventStore.Core.Services {
 			IQueuedHandler queuedHandler,
 			TFChunkDb db,
 			IReadIndex<TStreamId> readIndex,
-			SemaphoreSlimLock switchChunksLock) {
+			SemaphoreSlimLock switchChunksLock,
+			ITransactionFileTrackerFactory trackers) {
 			Ensure.NotNull(queuedHandler, nameof(queuedHandler));
 			Ensure.NotNull(db, nameof(db));
 			Ensure.NotNull(readIndex, nameof(readIndex));
@@ -47,6 +50,7 @@ namespace EventStore.Core.Services {
 			_db = db;
 			_readIndex = readIndex;
 			_switchChunksLock = switchChunksLock;
+			_tracker = trackers.GetOrAdd(SystemAccounts.SystemRedactionName);
 		}
 
 		public void Handle(RedactionMessage.GetEventPosition message) {
@@ -71,7 +75,7 @@ namespace EventStore.Core.Services {
 				var logPos = eventInfo.LogPosition;
 				var chunk = _db.Manager.GetChunkFor(logPos);
 				var localPosition = chunk.ChunkHeader.GetLocalLogPosition(logPos);
-				var chunkEventOffset = chunk.GetActualRawPosition(localPosition, ITransactionFileTracker.NoOp);
+				var chunkEventOffset = chunk.GetActualRawPosition(localPosition, _tracker);
 
 				// all the events returned by ReadEventInfo_KeepDuplicates() must exist in the log
 				// since the log record was read from the chunk to check for hash collisions.
