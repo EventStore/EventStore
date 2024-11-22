@@ -71,6 +71,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 				indexCheckpoint: Db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
 				indexTracker: new IndexTracker.NoOp(),
+				tfTrackers: ITransactionFileTrackerFactory.NoOp,
 				cacheTracker: new CacheHitsMissesTracker.NoOp());
 			readIndex.IndexCommitter.Init(ChaserCheckpoint.Read());
 			ReadIndex = readIndex;

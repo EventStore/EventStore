@@ -59,6 +59,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			ICheckpoint indexCheckpoint,
 			IIndexStatusTracker indexStatusTracker,
 			IIndexTracker indexTracker,
+			ITransactionFileTrackerFactory tfTrackers,
 			ICacheHitsMissesTracker cacheTracker) {
 
 			Ensure.NotNull(bus, "bus");
@@ -92,7 +93,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
 			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex,
 				_streamNames, eventTypeIndex, eventTypeNames, systemStreams, streamExistenceFilter,
-				streamExistenceFilterInitializer, indexCheckpoint, indexStatusTracker, indexTracker, additionalCommitChecks);
+				streamExistenceFilterInitializer, indexCheckpoint, indexStatusTracker, indexTracker, tfTrackers, additionalCommitChecks);
 			_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames, eventTypeNames);
 
 			RegisterHitsMisses(cacheTracker);

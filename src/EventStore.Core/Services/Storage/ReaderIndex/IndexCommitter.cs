@@ -13,6 +13,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using ILogger = Serilog.ILogger;
 using EventStore.LogCommon;
+using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IIndexCommitter {
@@ -48,6 +49,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly INameExistenceFilter _streamExistenceFilter;
 		private readonly IIndexStatusTracker _statusTracker;
 		private readonly IIndexTracker _tracker;
+		private readonly ITransactionFileTracker _tfTracker;
 		private INameExistenceFilterInitializer _streamExistenceFilterInitializer;
 		private readonly bool _additionalCommitChecks;
 		private long _persistedPreparePos = -1;
@@ -70,6 +72,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			ICheckpoint indexChk,
 			IIndexStatusTracker statusTracker,
 			IIndexTracker tracker,
+			ITransactionFileTrackerFactory tfTrackers,
 			bool additionalCommitChecks) {
 			_bus = bus;
 			_backend = backend;
@@ -86,6 +89,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_additionalCommitChecks = additionalCommitChecks;
 			_statusTracker = statusTracker;
 			_tracker = tracker;
+			_tfTracker = tfTrackers.GetOrAdd(SystemAccounts.SystemIndexCommitterName);
 		}
 
 		public void Init(long buildToPosition) {
@@ -131,7 +135,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			_indexRebuild = true;
 			using (_statusTracker.StartRebuilding())
-			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
+			using (var reader = _backend.BorrowReader(_tfTracker)) {
 				var startPosition = Math.Max(0, _persistedCommitPos);
 				var fullRebuild = startPosition == 0;
 				reader.Reposition(startPosition);
@@ -450,7 +454,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private IEnumerable<IPrepareLogRecord<TStreamId>> GetTransactionPrepares(long transactionPos, long commitPos) {
-			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
+			using (var reader = _backend.BorrowReader(_tfTracker)) {
 				reader.Reposition(transactionPos);
 
 				// in case all prepares were scavenged, we should not read past Commit LogPosition
@@ -487,7 +491,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private void CheckDuplicateEvents(TStreamId streamId, CommitLogRecord commit, IList<IndexKey<TStreamId>> indexEntries,
 			IList<IPrepareLogRecord<TStreamId>> prepares) {
-			using (var reader = _backend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
+			using (var reader = _backend.BorrowReader(_tfTracker)) {
 				var entries = _tableIndex.GetRange(streamId, indexEntries[0].Version,
 					indexEntries[indexEntries.Count - 1].Version);
 				foreach (var indexEntry in entries) {

@@ -683,6 +683,7 @@ namespace EventStore.Core {
 				Db.Config.IndexCheckpoint,
 				trackers.IndexStatusTracker,
 				trackers.IndexTracker,
+				trackers.TransactionFileTrackers,
 				trackers.CacheHitsMissesTracker);
 			_readIndex = readIndex;
 			var writer = new TFChunkWriter(Db);

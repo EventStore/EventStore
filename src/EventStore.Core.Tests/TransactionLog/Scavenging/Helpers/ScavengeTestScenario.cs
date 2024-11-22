@@ -88,6 +88,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint,
 				new IndexStatusTracker.NoOp(),
 				new IndexTracker.NoOp(),
+				ITransactionFileTrackerFactory.NoOp,
 				new CacheHitsMissesTracker.NoOp());
 			readIndex.IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 			ReadIndex = readIndex;

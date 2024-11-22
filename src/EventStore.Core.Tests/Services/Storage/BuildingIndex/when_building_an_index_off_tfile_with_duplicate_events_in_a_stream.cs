@@ -172,6 +172,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				indexCheckpoint: _db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
 				indexTracker: new IndexTracker.NoOp(),
+				tfTrackers: ITransactionFileTrackerFactory.NoOp,
 				cacheTracker: new CacheHitsMissesTracker.NoOp());
 
 
@@ -220,6 +221,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				indexCheckpoint: _db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
 				indexTracker: new IndexTracker.NoOp(),
+				tfTrackers: ITransactionFileTrackerFactory.NoOp,
 				cacheTracker: new CacheHitsMissesTracker.NoOp());
 
 			readIndex.IndexCommitter.Init(chaserCheckpoint.Read());
