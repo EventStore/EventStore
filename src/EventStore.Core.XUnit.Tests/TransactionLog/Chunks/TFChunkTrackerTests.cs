@@ -37,7 +37,7 @@ public class TFChunkTrackerTests : IDisposable {
 			data: new byte[5],
 			meta: new byte[5]);
 
-		_sut.OnRead(prepare, cached: false); //qqqq update these tests
+		_sut.OnRead(prepare, source: ITransactionFileTracker.Source.Unknown); //qqqq update these tests
 		_listener.Observe();
 
 		AssertEventsRead(1);
@@ -47,7 +47,7 @@ public class TFChunkTrackerTests : IDisposable {
 	[Fact]
 	public void disregard_system_log() {
 		var system = CreateSystemRecord();
-		_sut.OnRead(system, cached: false);
+		_sut.OnRead(system, source: ITransactionFileTracker.Source.Unknown);
 		_listener.Observe();
 
 		AssertEventsRead(0);
@@ -57,7 +57,7 @@ public class TFChunkTrackerTests : IDisposable {
 	[Fact]
 	public void disregard_commit_log() {
 		var system = CreateCommit();
-		_sut.OnRead(system, cached: false);
+		_sut.OnRead(system, source: ITransactionFileTracker.Source.Unknown);
 		_listener.Observe();
 
 		AssertEventsRead(0);

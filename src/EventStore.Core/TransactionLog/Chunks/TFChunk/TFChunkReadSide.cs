@@ -623,7 +623,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				ValidateRecordLength(length, actualPosition);
 
 				record = LogRecord.ReadFrom(workItem.Reader, length);
-				workItem.Tracker.OnRead(record, Chunk.IsCached);
+				workItem.Tracker.OnRead(record, Chunk.IsCached ?
+					ITransactionFileTracker.Source.ChunkCache :
+					ITransactionFileTracker.Source.Disk);
 
 				int suffixLength = workItem.Reader.ReadInt32();
 				ValidateSuffixLength(length, suffixLength, actualPosition);
@@ -704,7 +706,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 
 				record = LogRecord.ReadFrom(workItem.Reader, length);
-				workItem.Tracker.OnRead(record, Chunk.IsCached);
+				workItem.Tracker.OnRead(record, Chunk.IsCached ?
+					ITransactionFileTracker.Source.ChunkCache :
+					ITransactionFileTracker.Source.Disk);
 
 				return true;
 			}
