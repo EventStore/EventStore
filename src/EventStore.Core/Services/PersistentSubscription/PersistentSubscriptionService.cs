@@ -58,6 +58,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private readonly IODispatcher _ioDispatcher;
 		private readonly IPublisher _bus;
 		private readonly PersistentSubscriptionConsumerStrategyRegistry _consumerStrategyRegistry;
+		private readonly ITransactionFileTracker _tfTracker;
 		private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
 		private readonly IPersistentSubscriptionStreamReader _streamReader;
 		private PersistentSubscriptionConfig _config = new PersistentSubscriptionConfig();
@@ -68,7 +69,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex<TStreamId> readIndex,
 			IODispatcher ioDispatcher, IPublisher bus,
-			PersistentSubscriptionConsumerStrategyRegistry consumerStrategyRegistry) {
+			PersistentSubscriptionConsumerStrategyRegistry consumerStrategyRegistry,
+			ITransactionFileTrackerFactory tfTrackers) {
 			Ensure.NotNull(queuedHandler, "queuedHandler");
 			Ensure.NotNull(readIndex, "readIndex");
 			Ensure.NotNull(ioDispatcher, "ioDispatcher");
@@ -78,6 +80,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_ioDispatcher = ioDispatcher;
 			_bus = bus;
 			_consumerStrategyRegistry = consumerStrategyRegistry;
+			_tfTracker = tfTrackers.GetOrAdd(SystemAccounts.SystemPersistentSubscriptionsName);
 			_checkpointReader = new PersistentSubscriptionCheckpointReader(_ioDispatcher);
 			_streamReader = new PersistentSubscriptionStreamReader(_ioDispatcher, 100);
 			_timerTickCorrelationId = Guid.NewGuid();
@@ -937,13 +940,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			long? lastEventNumber = null;
 			if (eventSource.FromStream) {
 				var streamId = _readIndex.GetStreamId(eventSource.EventStreamId);
-				lastEventNumber = _readIndex.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp);
+				lastEventNumber = _readIndex.GetStreamLastEventNumber(streamId, _tfTracker);
 			}
 			var lastCommitPos = _readIndex.LastIndexedPosition;
 			var subscribedMessage =
 				new ClientMessage.PersistentSubscriptionConfirmation(key, correlationId, lastCommitPos, lastEventNumber);
-			envelope.ReplyWith(subscribedMessage);
 			var name = user ?? "anonymous";
+			envelope.ReplyWith(subscribedMessage);
 			subscription.AddClient(correlationId, connectionId, connectionName, envelope,
 				allowedInFlightMessages, name, from);
 
@@ -1012,7 +1015,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					long eventNumber = long.Parse(parts[0]);
 					string streamName = parts[1];
 					var streamId = _readIndex.GetStreamId(streamName);
-					var res = _readIndex.ReadEvent(streamName, streamId, eventNumber, ITransactionFileTracker.NoOp);
+					var res = _readIndex.ReadEvent(streamName, streamId, eventNumber, _tfTracker);
 					if (res.Result == ReadEventResult.Success)
 						return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);
 

@@ -1191,7 +1191,7 @@ namespace EventStore.Core {
 			var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus,
 				additionalPersistentSubscriptionConsumerStrategyFactories);
 			var persistentSubscription = new PersistentSubscriptionService<TStreamId>(perSubscrQueue, readIndex, psubDispatcher,
-				_mainQueue, consumerStrategyRegistry);
+				_mainQueue, consumerStrategyRegistry, trackers.TransactionFileTrackers);
 			perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
 			perSubscrBus.Subscribe<SystemMessage.BecomeLeader>(persistentSubscription);
 			perSubscrBus.Subscribe<SystemMessage.StateChangeMessage>(persistentSubscription);
