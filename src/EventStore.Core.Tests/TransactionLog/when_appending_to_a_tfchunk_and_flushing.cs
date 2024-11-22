@@ -84,7 +84,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_as_closest_backward_from_end() {
-			var res = _chunk.TryReadClosestBackward(_record.GetSizeWithLengthPrefixAndSuffix());
+			var res = _chunk.TryReadClosestBackward(_record.GetSizeWithLengthPrefixAndSuffix(), ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record, res.LogRecord);
 			Assert.AreEqual(0, res.NextPosition);
@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_as_last_one() {
-			var res = _chunk.TryReadLast();
+			var res = _chunk.TryReadLast(ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record, res.LogRecord);
 			Assert.AreEqual(0, res.NextPosition);

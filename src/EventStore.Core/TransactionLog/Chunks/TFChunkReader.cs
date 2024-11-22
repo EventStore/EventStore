@@ -121,8 +121,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				RecordReadResult result;
 				try {
 					result = readLast
-						? chunk.TryReadLast()
-						: chunk.TryReadClosestBackward(chunk.ChunkHeader.GetLocalLogPosition(pos));
+						? chunk.TryReadLast(_tracker)
+						: chunk.TryReadClosestBackward(chunk.ChunkHeader.GetLocalLogPosition(pos), _tracker);
 					CountRead(chunk.IsCached);
 				} catch (FileBeingDeletedException) {
 					if (retries > MaxRetries)

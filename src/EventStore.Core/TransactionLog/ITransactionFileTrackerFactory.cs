@@ -1,10 +1,5 @@
 ﻿#nullable enable
 
-using EventStore.Core.Metrics;
-using EventStore.Core.TransactionLog.Chunks;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-
 namespace EventStore.Core.TransactionLog;
 
 public interface ITransactionFileTrackerFactory {

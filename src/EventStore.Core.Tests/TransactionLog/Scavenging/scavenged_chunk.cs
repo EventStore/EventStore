@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -29,7 +30,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 
 			Assert.IsTrue(chunk.IsCached);
 
-			var last = chunk.TryReadLast();
+			var last = chunk.TryReadLast(ITransactionFileTracker.NoOp);
 			Assert.IsTrue(last.Success);
 			Assert.AreEqual(map[map.Count - 1].ActualPos, last.LogRecord.LogPosition);
 

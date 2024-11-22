@@ -476,7 +476,8 @@ namespace EventStore.Core.Services.Storage {
 					if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
 						return NoData(msg, ReadAllResult.NotModified, pos, lastIndexedPosition);
 
-					var res = _readIndex.ReadAllEventsBackward(pos, msg.MaxCount);
+					var tracker = _trackers.GetOrAdd(msg.User.Identity.Name);
+					var res = _readIndex.ReadAllEventsBackward(pos, msg.MaxCount, tracker);
 					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
 					if (resolved == null)
 						return NoData(msg, ReadAllResult.AccessDenied, pos, lastIndexedPosition);

@@ -164,7 +164,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return _indexReader.GetEventStreamIdByTransactionId(transactionId);
 		}
 
-		IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount, ITransactionFileTracker tracker) {
+		IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount,
+			ITransactionFileTracker tracker) {
 			return _allReader.ReadAllEventsForward(pos, maxCount, tracker);
 		}
 
@@ -175,12 +176,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		IndexReadAllResult IReadIndex.ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
-			IEventFilter eventFilter) {
-			return _allReader.FilteredReadAllEventsBackward(pos, maxCount, maxSearchWindow, eventFilter);
+			IEventFilter eventFilter,
+			ITransactionFileTracker tracker) {
+			return _allReader.FilteredReadAllEventsBackward(pos, maxCount, maxSearchWindow, eventFilter, tracker);
 		}
 
-		IndexReadAllResult IReadIndex.ReadAllEventsBackward(TFPos pos, int maxCount) {
-			return _allReader.ReadAllEventsBackward(pos, maxCount);
+		IndexReadAllResult IReadIndex.ReadAllEventsBackward(TFPos pos, int maxCount,
+			ITransactionFileTracker tracker) {
+			return _allReader.ReadAllEventsBackward(pos, maxCount, tracker);
 		}
 
 		public StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId) {

@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Returns event records in the reverse sequence they were committed into TF.
 		/// Positions is specified as post-positions (pointer after the end of record).
 		/// </summary>
-		IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
+		IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount, ITransactionFileTracker tracker = null); //qq make not optional
 
 		/// <summary>
 		/// Returns event records whose eventType matches the given EventFilter in the sequence they were committed into TF.
@@ -36,7 +36,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
 		IndexReadAllResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
-			IEventFilter eventFilter);
+			IEventFilter eventFilter,
+			ITransactionFileTracker tracker = null); //qqqqq make not optional
 
 		void Close();
 		void Dispose();

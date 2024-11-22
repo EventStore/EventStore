@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void there_is_no_last_record() {
-			var res = _chunk.TryReadLast();
+			var res = _chunk.TryReadLast(ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 	}

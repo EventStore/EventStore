@@ -37,12 +37,12 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void no_record_can_be_read_as_closest_backward_record() {
-			Assert.IsFalse(_chunk.TryReadClosestBackward(0).Success);
+			Assert.IsFalse(_chunk.TryReadClosestBackward(0, ITransactionFileTracker.NoOp).Success);
 		}
 
 		[Test]
 		public void no_record_can_be_read_as_last_record() {
-			Assert.IsFalse(_chunk.TryReadLast().Success);
+			Assert.IsFalse(_chunk.TryReadLast(ITransactionFileTracker.NoOp).Success);
 		}
 	}
 }

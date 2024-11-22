@@ -83,11 +83,13 @@ namespace EventStore.Core.Tests.TransactionLog {
 			throw new NotImplementedException();
 		}
 
-		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ITransactionFileTracker tracker) {
+		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount,
+			ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount) {
+		public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount,
+			ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
@@ -98,7 +100,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		public IndexReadAllResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
-			IEventFilter eventFilter) {
+			IEventFilter eventFilter,
+			ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 

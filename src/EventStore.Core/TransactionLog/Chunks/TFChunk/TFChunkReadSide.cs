@@ -20,8 +20,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			RecordReadResult TryReadFirst(ITransactionFileTracker tracker);
 			RecordReadResult TryReadClosestForward(long logicalPosition, ITransactionFileTracker tracker);
 			RawReadResult TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer);
-			RecordReadResult TryReadLast();
-			RecordReadResult TryReadClosestBackward(long logicalPosition);
+			RecordReadResult TryReadLast(ITransactionFileTracker tracker);
+			RecordReadResult TryReadClosestBackward(long logicalPosition, ITransactionFileTracker tracker);
 		}
 
 		private class TFChunkReadSideUnscavenged : TFChunkReadSide, IChunkReadSide {
@@ -106,12 +106,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 			}
 
-			public RecordReadResult TryReadLast() {
-				return TryReadClosestBackward(Chunk.LogicalDataSize);
+			public RecordReadResult TryReadLast(ITransactionFileTracker tracker) {
+				return TryReadClosestBackward(Chunk.LogicalDataSize, tracker);
 			}
 
-			public RecordReadResult TryReadClosestBackward(long logicalPosition) {
-				var workItem = Chunk.GetReaderWorkItem(ITransactionFileTracker.NoOp);
+			public RecordReadResult TryReadClosestBackward(long logicalPosition, ITransactionFileTracker tracker) {
+				var workItem = Chunk.GetReaderWorkItem(tracker);
 				try {
 					// here we allow actualPosition == _logicalDataSize as we can read backward the very last record that way
 					if (logicalPosition > Chunk.LogicalDataSize)
@@ -447,15 +447,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 			}
 
-			public RecordReadResult TryReadLast() {
-				return TryReadClosestBackward(Chunk.LogicalDataSize);
+			public RecordReadResult TryReadLast(ITransactionFileTracker tracker) {
+				return TryReadClosestBackward(Chunk.LogicalDataSize, tracker);
 			}
 
-			public RecordReadResult TryReadClosestBackward(long logicalPosition) {
+			public RecordReadResult TryReadClosestBackward(long logicalPosition, ITransactionFileTracker tracker) {
 				if (Chunk.ChunkFooter.MapCount == 0)
 					return RecordReadResult.Failure;
 
-				var workItem = Chunk.GetReaderWorkItem(ITransactionFileTracker.NoOp); //qq
+				var workItem = Chunk.GetReaderWorkItem(tracker);
 				try {
 					var actualPosition = TranslateClosestForwardPosition(workItem, logicalPosition);
 					// here we allow actualPosition == _physicalDataSize as we can read backward the very last record that way

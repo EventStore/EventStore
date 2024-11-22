@@ -778,12 +778,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return _readSide.TryReadClosestForwardRaw(logicalPosition, getBuffer);
 		}
 
-		public RecordReadResult TryReadLast() {
-			return _readSide.TryReadLast();
+		public RecordReadResult TryReadLast(ITransactionFileTracker tracker) {
+			return _readSide.TryReadLast(tracker);
 		}
 
-		public RecordReadResult TryReadClosestBackward(long logicalPosition) {
-			return _readSide.TryReadClosestBackward(logicalPosition);
+		public RecordReadResult TryReadClosestBackward(long logicalPosition, ITransactionFileTracker tracker) {
+			return _readSide.TryReadClosestBackward(logicalPosition, tracker);
 		}
 
 		public RecordWriteResult TryAppend(ILogRecord record) {
