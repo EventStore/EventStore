@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 
 		[Test]
 		public void read_all_backward_should_return_all_stream_records_except_uncommited() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, ITransactionFileTracker.NoOp).EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(1, events.Length);

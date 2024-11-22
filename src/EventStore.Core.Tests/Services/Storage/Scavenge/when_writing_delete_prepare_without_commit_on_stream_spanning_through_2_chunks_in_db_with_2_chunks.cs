@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_backward_returns_all_events() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, ITransactionFileTracker.NoOp).EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(2, events.Length);

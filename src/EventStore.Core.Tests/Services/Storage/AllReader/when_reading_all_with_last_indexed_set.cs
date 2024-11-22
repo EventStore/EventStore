@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		public void should_be_able_to_read_all_backwards() {
 			var checkpoint = WriterCheckpoint.Read();
 			var pos = new TFPos(checkpoint, checkpoint);
-			var result = ReadIndex.ReadAllEventsBackward(pos, 10).EventRecords();
+			var result = ReadIndex.ReadAllEventsBackward(pos, 10, ITransactionFileTracker.NoOp).EventRecords();
 			Assert.AreEqual(3, result.Count);
 		}
 

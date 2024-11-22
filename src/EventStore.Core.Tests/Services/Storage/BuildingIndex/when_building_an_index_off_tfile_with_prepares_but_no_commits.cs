@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 		[Test]
 		public void read_all_events_backward_returns_no_events() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).EventRecords();
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10, ITransactionFileTracker.NoOp).EventRecords();
 			Assert.AreEqual(0, records.Count);
 		}
 	}

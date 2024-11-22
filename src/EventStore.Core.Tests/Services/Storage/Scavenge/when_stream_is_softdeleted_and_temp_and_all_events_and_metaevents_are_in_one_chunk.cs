@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			var headOfTf = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
 			Assert.IsEmpty(ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 1000, ITransactionFileTracker.NoOp).Records
 				.Where(x => x.Event.EventStreamId == "test"));
-			Assert.IsEmpty(ReadIndex.ReadAllEventsBackward(headOfTf, 1000).Records
+			Assert.IsEmpty(ReadIndex.ReadAllEventsBackward(headOfTf, 1000, ITransactionFileTracker.NoOp).Records
 				.Where(x => x.Event.EventStreamId == "test"));
 		}
 
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			var headOfTf = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
 			Assert.IsEmpty(ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 1000, ITransactionFileTracker.NoOp).Records
 				.Where(x => x.Event.EventStreamId == "$$test"));
-			Assert.IsEmpty(ReadIndex.ReadAllEventsBackward(headOfTf, 1000).Records
+			Assert.IsEmpty(ReadIndex.ReadAllEventsBackward(headOfTf, 1000, ITransactionFileTracker.NoOp).Records
 				.Where(x => x.Event.EventStreamId == "$$test"));
 		}
 	}

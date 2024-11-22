@@ -103,7 +103,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 
 		[Test]
 		public void on_read_all_backward_metadata_is_ignored() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, ITransactionFileTracker.NoOp).Records;
 
 			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
 				Assert.AreEqual(6, records.Count);

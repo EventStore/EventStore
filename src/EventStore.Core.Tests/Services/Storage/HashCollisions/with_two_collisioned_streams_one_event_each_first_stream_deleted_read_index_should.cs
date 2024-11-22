@@ -120,7 +120,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void return_all_events_on_read_all_backward() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, ITransactionFileTracker.NoOp).EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(3, events.Length);

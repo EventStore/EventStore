@@ -135,7 +135,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 
 		[Test]
 		public void read_all_backward_doesnt_return_truncated_records() {
-			var res = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100);
+			var res = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, ITransactionFileTracker.NoOp);
 			var records = res.EventRecords()
 				.Select(r => r.Event)
 				.ToArray();

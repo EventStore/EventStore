@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		[Test]
 		public void
 			read_all_backward_does_not_return_scavenged_deleted_stream_events_and_return_remaining_plus_delete_record() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, ITransactionFileTracker.NoOp).EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(2, events.Length);
@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		[Test]
 		public void read_all_backward_from_beginning_of_second_chunk_returns_no_records() {
 			var pos = new TFPos(10000, 10000);
-			var events = ReadIndex.ReadAllEventsBackward(pos, 100).EventRecords()
+			var events = ReadIndex.ReadAllEventsBackward(pos, 100, ITransactionFileTracker.NoOp).EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(0, events.Length);

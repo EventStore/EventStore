@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_filter_out_disallowed_streams_when_reading_events_backward() {
-			var records = ReadIndex.ReadAllEventsBackward(_backwardReadPos, 10).EventRecords();
+			var records = ReadIndex.ReadAllEventsBackward(_backwardReadPos, 10, ITransactionFileTracker.NoOp).EventRecords();
 			Assert.AreEqual(2, records.Count);
 			Assert.True(records.All(x => x.Event.EventStreamId != _disallowedStream));
 			Assert.True(records.Any(x => x.Event.EventStreamId == _allowedStream1));

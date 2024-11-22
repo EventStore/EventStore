@@ -109,7 +109,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 		[Test]
 		public void read_all_events_backward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).Records;
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10, ITransactionFileTracker.NoOp).Records;
 
 			Assert.AreEqual(3, records.Count);
 			Assert.AreEqual(_id1, records[2].Event.EventId);

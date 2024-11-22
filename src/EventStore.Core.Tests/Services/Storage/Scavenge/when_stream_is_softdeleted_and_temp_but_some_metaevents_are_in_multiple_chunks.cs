@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 1000, ITransactionFileTracker.NoOp).Records
 					.Count(x => x.Event.EventStreamId == "test"));
 			Assert.AreEqual(1,
-				ReadIndex.ReadAllEventsBackward(headOfTf, 1000).Records.Count(x => x.Event.EventStreamId == "test"));
+				ReadIndex.ReadAllEventsBackward(headOfTf, 1000, ITransactionFileTracker.NoOp).Records.Count(x => x.Event.EventStreamId == "test"));
 		}
 
 		[Test]
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 1000, ITransactionFileTracker.NoOp).Records
 					.Count(x => x.Event.EventStreamId == "$$test"));
 			Assert.AreEqual(1,
-				ReadIndex.ReadAllEventsBackward(headOfTf, 1000).Records.Count(x => x.Event.EventStreamId == "$$test"));
+				ReadIndex.ReadAllEventsBackward(headOfTf, 1000, ITransactionFileTracker.NoOp).Records.Count(x => x.Event.EventStreamId == "$$test"));
 		}
 	}
 }

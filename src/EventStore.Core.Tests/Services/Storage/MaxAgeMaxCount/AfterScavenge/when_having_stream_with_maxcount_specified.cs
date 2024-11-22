@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge {
 
 		[Test]
 		public void read_all_backward_doesnt_return_expired_records() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords();
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, ITransactionFileTracker.NoOp).EventRecords();
 			Assert.AreEqual(5, records.Count);
 			Assert.AreEqual(_r6, records[0].Event);
 			Assert.AreEqual(_r5, records[1].Event);

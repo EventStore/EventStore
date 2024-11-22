@@ -260,7 +260,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		[Test]
 		public void read_all_events_backward_returns_all_events_in_correct_order() {
 			var pos = GetBackwardReadPos();
-			var records = ReadIndex.ReadAllEventsBackward(pos, 10).Records;
+			var records = ReadIndex.ReadAllEventsBackward(pos, 10, ITransactionFileTracker.NoOp).Records;
 
 			Assert.AreEqual(6, records.Count);
 			Assert.AreEqual(_random1.EventId, records[0].Event.EventId);
@@ -282,7 +282,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		[Test]
 		public void
 			read_all_events_backwards_returns_nothing_when_prepare_position_is_smaller_than_first_prepare_in_commit() {
-			var records = ReadIndex.ReadAllEventsBackward(new TFPos(_t2CommitPos, 0), 10).Records;
+			var records = ReadIndex.ReadAllEventsBackward(new TFPos(_t2CommitPos, 0), 10, ITransactionFileTracker.NoOp).Records;
 			Assert.AreEqual(0, records.Count);
 		}
 
@@ -297,7 +297,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			Assert.AreEqual(_p5.EventId, res1.Records[3].Event.EventId);
 			Assert.AreEqual(_random1.EventId, res1.Records[4].Event.EventId);
 
-			var res2 = ReadIndex.ReadAllEventsBackward(res1.PrevPos, 10);
+			var res2 = ReadIndex.ReadAllEventsBackward(res1.PrevPos, 10, ITransactionFileTracker.NoOp);
 			Assert.AreEqual(1, res2.Records.Count);
 			Assert.AreEqual(_p2.EventId, res2.Records[0].Event.EventId);
 		}
@@ -305,7 +305,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		[Test]
 		public void read_all_events_backward_returns_correct_events_starting_in_the_middle_of_tf() {
 			var pos = new TFPos(_postCommitPos, _p4.LogPosition); // p3 post position
-			var res1 = ReadIndex.ReadAllEventsBackward(pos, 10);
+			var res1 = ReadIndex.ReadAllEventsBackward(pos, 10, ITransactionFileTracker.NoOp);
 
 			Assert.AreEqual(4, res1.Records.Count);
 			Assert.AreEqual(_p3.EventId, res1.Records[0].Event.EventId);
@@ -342,7 +342,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			int count = 0;
 			var pos = GetBackwardReadPos();
 			IndexReadAllResult result;
-			while ((result = ReadIndex.ReadAllEventsBackward(pos, 1)).Records.Count != 0) {
+			while ((result = ReadIndex.ReadAllEventsBackward(pos, 1, ITransactionFileTracker.NoOp)).Records.Count != 0) {
 				Assert.AreEqual(1, result.Records.Count);
 				Assert.AreEqual(recs[count].EventId, result.Records[0].Event.EventId);
 				pos = result.NextPos;
@@ -366,7 +366,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				var localPos = result.PrevPos;
 				int localCount = 0;
 				IndexReadAllResult localResult;
-				while ((localResult = ReadIndex.ReadAllEventsBackward(localPos, 1)).Records.Count != 0) {
+				while ((localResult = ReadIndex.ReadAllEventsBackward(localPos, 1, ITransactionFileTracker.NoOp)).Records.Count != 0) {
 					Assert.AreEqual(1, localResult.Records.Count);
 					Assert.AreEqual(recs[count - 1 - localCount].EventId, localResult.Records[0].Event.EventId);
 					localPos = localResult.NextPos;
@@ -387,7 +387,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			int count = 0;
 			var pos = GetBackwardReadPos();
 			IndexReadAllResult result;
-			while ((result = ReadIndex.ReadAllEventsBackward(pos, 1)).Records.Count != 0) {
+			while ((result = ReadIndex.ReadAllEventsBackward(pos, 1, ITransactionFileTracker.NoOp)).Records.Count != 0) {
 				Assert.AreEqual(1, result.Records.Count);
 				Assert.AreEqual(recs[count].EventId, result.Records[0].Event.EventId);
 
