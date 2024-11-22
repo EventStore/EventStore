@@ -114,7 +114,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				Filter.Types.FilterType.Prefix, new[] {"event-type"});
 			var eventFilter = EventFilter.Get(true, filter);
 
-			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
+			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter, ITransactionFileTracker.NoOp);
 			Assert.AreEqual(2, result.Records.Count);
 			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
 			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream1));
@@ -128,7 +128,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				Filter.Types.FilterType.Regex, new[] {@"^.*event-type-.*$"});
 			var eventFilter = EventFilter.Get(true, filter);
 
-			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
+			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter, ITransactionFileTracker.NoOp);
 			Assert.AreEqual(2, result.Records.Count);
 			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
 			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream1));
@@ -142,7 +142,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				Filter.Types.FilterType.Prefix, new[] {"$persistentsubscripti"});
 			var eventFilter = EventFilter.Get(true, filter);
 
-			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
+			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter, ITransactionFileTracker.NoOp);
 			Assert.AreEqual(1, result.Records.Count);
 			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
 			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
@@ -155,7 +155,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				Filter.Types.FilterType.Regex, new[] {@"^.*istentsubsc.*$"});
 			var eventFilter = EventFilter.Get(true, filter);
 
-			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
+			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter, ITransactionFileTracker.NoOp);
 			Assert.AreEqual(1, result.Records.Count);
 			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
 			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));

@@ -85,7 +85,8 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				pos: new TFPos(writerCp, writerCp),
 				maxCount: 10,
 				maxSearchWindow: int.MaxValue,
-				eventFilter: EventFilter.StreamName.Prefixes(false, "included"));
+				eventFilter: EventFilter.StreamName.Prefixes(false, "included"),
+				tracker: ITransactionFileTracker.NoOp);
 
 			Assert.AreEqual(10, read.Records.Count);
 			for (int j = 9; j <= 0; j--)

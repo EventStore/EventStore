@@ -563,7 +563,7 @@ namespace EventStore.Core.Services.Storage {
 							lastIndexedPosition);
 
 					var res = _readIndex.ReadAllEventsBackwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
-						msg.EventFilter);
+						msg.EventFilter, ITransactionFileTracker.NoOp); //qq
 					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
 					if (resolved == null)
 						return NoDataForFilteredCommand(msg, FilteredReadAllResult.AccessDenied, pos,

@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				Filter.Types.FilterType.Prefix, new[] {"event-type"});
 			var eventFilter = EventFilter.Get(true, filter);
 
-			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
+			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter, ITransactionFileTracker.NoOp);
 			Assert.AreEqual(2, result.Records.Count);
 		}
 
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				Filter.Types.FilterType.Regex, new[] {@"^.*other-event.*$"});
 			var eventFilter = EventFilter.Get(true, filter);
 
-			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
+			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter, ITransactionFileTracker.NoOp);
 			Assert.AreEqual(2, result.Records.Count);
 		}
 
@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				Filter.Types.FilterType.Prefix, new[] {"ES2"});
 			var eventFilter = EventFilter.Get(true, filter);
 
-			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
+			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter, ITransactionFileTracker.NoOp);
 			Assert.AreEqual(1, result.Records.Count);
 		}
 
@@ -112,7 +112,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				Filter.Types.FilterType.Regex, new[] {@"^.*ES2.*$"});
 			var eventFilter = EventFilter.Get(true, filter);
 
-			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
+			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter, ITransactionFileTracker.NoOp);
 			Assert.AreEqual(1, result.Records.Count);
 		}
 	}
