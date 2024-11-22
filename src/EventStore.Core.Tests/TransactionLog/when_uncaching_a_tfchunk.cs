@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read() {
-			var res = _uncachedChunk.TryReadAt(0, couldBeScavenged: true);
+			var res = _uncachedChunk.TryReadAt(0, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record, res.LogRecord);
 			Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);

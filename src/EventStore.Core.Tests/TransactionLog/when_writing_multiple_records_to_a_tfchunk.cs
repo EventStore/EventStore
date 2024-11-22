@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_first_record_can_be_read_at_position() {
-			var res = _chunk.TryReadAt((int)_position1, couldBeScavenged: true);
+			var res = _chunk.TryReadAt((int)_position1, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.IsTrue(res.LogRecord is IPrepareLogRecord<TStreamId>);
 			Assert.AreEqual(_prepare1, res.LogRecord);
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_second_record_can_be_read_at_position() {
-			var res = _chunk.TryReadAt((int)_position2, couldBeScavenged: true);
+			var res = _chunk.TryReadAt((int)_position2, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.IsTrue(res.LogRecord is IPrepareLogRecord<TStreamId>);
 			Assert.AreEqual(_prepare2, res.LogRecord);

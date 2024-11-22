@@ -9,6 +9,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -178,7 +179,7 @@ public sealed class TelemetryService : IDisposable,
 	private void ReadFirstEpoch() {
 		try {
 			var chunk = _manager.GetChunkFor(0);
-			var result = chunk.TryReadAt(0, false);
+			var result = chunk.TryReadAt(0, false, ITransactionFileTracker.NoOp);
 
 			if (!result.Success)
 				return;

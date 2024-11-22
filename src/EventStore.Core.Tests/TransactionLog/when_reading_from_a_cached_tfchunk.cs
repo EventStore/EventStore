@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_at_exact_position() {
-			var res = _cachedChunk.TryReadAt(0, couldBeScavenged: true);
+			var res = _cachedChunk.TryReadAt(0, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record, res.LogRecord);
 			Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);

@@ -94,7 +94,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 			var chunk = Db.Manager.GetChunk(1);
 			var chunkPos = (int)(_event7.LogPosition % Db.Config.ChunkSize);
-			var res = chunk.TryReadAt(chunkPos, couldBeScavenged: false);
+			var res = chunk.TryReadAt(chunkPos, couldBeScavenged: false, tracker: ITransactionFileTracker.NoOp);
 
 			Assert.IsTrue(res.Success);
 		}

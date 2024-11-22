@@ -8,6 +8,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Synchronization;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Serilog;
@@ -70,7 +71,7 @@ namespace EventStore.Core.Services {
 				var logPos = eventInfo.LogPosition;
 				var chunk = _db.Manager.GetChunkFor(logPos);
 				var localPosition = chunk.ChunkHeader.GetLocalLogPosition(logPos);
-				var chunkEventOffset = chunk.GetActualRawPosition(localPosition);
+				var chunkEventOffset = chunk.GetActualRawPosition(localPosition, ITransactionFileTracker.NoOp);
 
 				// all the events returned by ReadEventInfo_KeepDuplicates() must exist in the log
 				// since the log record was read from the chunk to check for hash collisions.

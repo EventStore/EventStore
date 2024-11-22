@@ -253,7 +253,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			SetAttributes(_filename, true);
 			CreateReaderStreams();
 
-			//qq come back to whether we want to track this (just reading the header and footer)
+			// no need to track reading the header/footer (currently we only track Prepares read anyway)
 			var reader = GetReaderWorkItem(ITransactionFileTracker.NoOp);
 			try {
 				_chunkHeader = ReadHeader(reader.Stream);
@@ -615,11 +615,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		// (d) raw (byte offset in file, which is actual - header size)
 		//
 		// this method takes (b) and returns (d)
-		public long GetActualRawPosition(long logicalPosition) {
+		public long GetActualRawPosition(long logicalPosition, ITransactionFileTracker tracker) {
 			if (logicalPosition < 0)
 				throw new ArgumentOutOfRangeException(nameof(logicalPosition));
 
-			var actualPosition = _readSide.GetActualPosition(logicalPosition, ITransactionFileTracker.NoOp);
+			var actualPosition = _readSide.GetActualPosition(logicalPosition, tracker);
 
 			if (actualPosition < 0)
 				return -1;
@@ -748,13 +748,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 		}
 
-		public bool ExistsAt(long logicalPosition) {
-			return _readSide.ExistsAt(logicalPosition, ITransactionFileTracker.NoOp);
+		public bool ExistsAt(long logicalPosition, ITransactionFileTracker tracker) {
+			return _readSide.ExistsAt(logicalPosition, tracker);
 		}
 
-		public void OptimizeExistsAt() {
+		public void OptimizeExistsAt(ITransactionFileTracker tracker) {
 			if (!ChunkHeader.IsScavenged) return;
-			((TFChunkReadSideScavenged)_readSide).OptimizeExistsAt(ITransactionFileTracker.NoOp);
+			((TFChunkReadSideScavenged)_readSide).OptimizeExistsAt(tracker);
 		}
 
 		public void DeOptimizeExistsAt() {
@@ -762,8 +762,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			((TFChunkReadSideScavenged)_readSide).DeOptimizeExistsAt();
 		}
 
-		public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged) {
-			return _readSide.TryReadAt(logicalPosition, couldBeScavenged, ITransactionFileTracker.NoOp);
+		public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged, ITransactionFileTracker tracker) {
+			return _readSide.TryReadAt(logicalPosition, couldBeScavenged, tracker);
 		}
 
 		public RecordReadResult TryReadFirst(ITransactionFileTracker tracker) {

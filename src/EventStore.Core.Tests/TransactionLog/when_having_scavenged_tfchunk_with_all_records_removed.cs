@@ -116,37 +116,37 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void prepare1_cant_be_read_at_position() {
-			var res = _scavengedChunk.TryReadAt((int)_p1.LogPosition, couldBeScavenged: true);
+			var res = _scavengedChunk.TryReadAt((int)_p1.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void commit1_cant_be_read_at_position() {
-			var res = _scavengedChunk.TryReadAt((int)_c1.LogPosition, couldBeScavenged: true);
+			var res = _scavengedChunk.TryReadAt((int)_c1.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void prepare2_cant_be_read_at_position() {
-			var res = _scavengedChunk.TryReadAt((int)_p2.LogPosition, couldBeScavenged: true);
+			var res = _scavengedChunk.TryReadAt((int)_p2.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void commit2_cant_be_read_at_position() {
-			var res = _scavengedChunk.TryReadAt((int)_c2.LogPosition, couldBeScavenged: true);
+			var res = _scavengedChunk.TryReadAt((int)_c2.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void prepare3_cant_be_read_at_position() {
-			var res = _scavengedChunk.TryReadAt((int)_p3.LogPosition, couldBeScavenged: true);
+			var res = _scavengedChunk.TryReadAt((int)_p3.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void commit3_cant_be_read_at_position() {
-			var res = _scavengedChunk.TryReadAt((int)_c3.LogPosition, couldBeScavenged: true);
+			var res = _scavengedChunk.TryReadAt((int)_c3.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -66,14 +67,14 @@ namespace EventStore.Core.Tests.TransactionLog.Optimization {
 			//before optimization
 			Assert.AreEqual(false, _existsAtOptimizer.IsOptimized(chunk));
 			foreach (var p in posmap) {
-				Assert.AreEqual(true, chunk.ExistsAt(p.LogPos));
+				Assert.AreEqual(true, chunk.ExistsAt(p.LogPos, ITransactionFileTracker.NoOp));
 			}
 
 			//after optimization
 			_existsAtOptimizer.Optimize(chunk);
 			Assert.AreEqual(true, _existsAtOptimizer.IsOptimized(chunk));
 			foreach (var p in posmap) {
-				Assert.AreEqual(true, chunk.ExistsAt(p.LogPos));
+				Assert.AreEqual(true, chunk.ExistsAt(p.LogPos, ITransactionFileTracker.NoOp));
 			}
 
 			chunk.MarkForDeletion();

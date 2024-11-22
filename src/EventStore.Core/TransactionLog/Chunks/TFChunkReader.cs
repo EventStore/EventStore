@@ -165,7 +165,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			var chunk = _db.Manager.GetChunkFor(position);
 			try {
 				CountRead(chunk.IsCached);
-				return chunk.TryReadAt(chunk.ChunkHeader.GetLocalLogPosition(position), couldBeScavenged);
+				return chunk.TryReadAt(chunk.ChunkHeader.GetLocalLogPosition(position), couldBeScavenged, ITransactionFileTracker.NoOp);
 			} catch (FileBeingDeletedException) {
 				if (retries > MaxRetries)
 					throw new FileBeingDeletedException(
@@ -188,7 +188,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				CountRead(chunk.IsCached);
 				if (_optimizeReadSideCache)
 					_existsAtOptimizer.Optimize(chunk);
-				return chunk.ExistsAt(chunk.ChunkHeader.GetLocalLogPosition(position));
+				return chunk.ExistsAt(chunk.ChunkHeader.GetLocalLogPosition(position), ITransactionFileTracker.NoOp);
 			} catch (FileBeingDeletedException) {
 				if (retries > MaxRetries)
 					throw new FileBeingDeletedException(

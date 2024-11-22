@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void no_record_at_exact_position_can_be_read() {
-			Assert.IsFalse(_chunk.TryReadAt(0, couldBeScavenged: true).Success);
+			Assert.IsFalse(_chunk.TryReadAt(0, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp).Success);
 		}
 
 		[Test]
