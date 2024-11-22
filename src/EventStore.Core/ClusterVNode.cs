@@ -596,7 +596,10 @@ namespace EventStore.Core {
 				MaxReaderCount = pTableMaxReaderCount,
 				StreamExistenceFilterSize = options.Database.StreamExistenceFilterSize,
 				StreamExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint,
-				TFReaderLeaseFactory = tracker => new TFReaderLease(readerPool, tracker)
+				TFReaderLeaseFactory = username => {
+					var tracker = trackers.TransactionFileTrackers.GetOrAdd(username);
+					return new TFReaderLease(readerPool, tracker);
+				}
 			});
 
 			ICacheResizer streamInfoCacheResizer;
