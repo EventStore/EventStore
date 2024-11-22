@@ -62,7 +62,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 				var localPos = chunk.ChunkHeader.GetLocalLogPosition(nextPos);
 
-				var result = chunk.TryReadClosestForwardRaw(localPos, _getBuffer);
+				var result = chunk.TryReadClosestForwardRaw(localPos, _getBuffer, ITransactionFileTracker.NoOp); //qq plumb through all occurrences of noop
 
 				if (!result.Success) {
 					// there is no need to release the reusable buffer here since result.Success is false

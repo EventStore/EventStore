@@ -14,12 +14,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			void RequestCaching();
 			void Uncache();
 
-			bool ExistsAt(long logicalPosition);
-			long GetActualPosition(long logicalPosition);
-			RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged);
+			bool ExistsAt(long logicalPosition, ITransactionFileTracker tracker);
+			long GetActualPosition(long logicalPosition, ITransactionFileTracker tracker);
+			RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged, ITransactionFileTracker tracker);
 			RecordReadResult TryReadFirst(ITransactionFileTracker tracker);
 			RecordReadResult TryReadClosestForward(long logicalPosition, ITransactionFileTracker tracker);
-			RawReadResult TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer);
+			RawReadResult TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer, ITransactionFileTracker tracker);
 			RecordReadResult TryReadLast(ITransactionFileTracker tracker);
 			RecordReadResult TryReadClosestBackward(long logicalPosition, ITransactionFileTracker tracker);
 		}
@@ -38,11 +38,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				// do nothing
 			}
 
-			public bool ExistsAt(long logicalPosition) {
+			public bool ExistsAt(long logicalPosition, ITransactionFileTracker tracker) {
 				return logicalPosition >= 0 && logicalPosition < Chunk.LogicalDataSize;
 			}
 
-			public long GetActualPosition(long logicalPosition) {
+			public long GetActualPosition(long logicalPosition, ITransactionFileTracker tracker) {
 				Ensure.Nonnegative(logicalPosition, nameof(logicalPosition));
 
 				if (logicalPosition >= Chunk.LogicalDataSize)
@@ -51,8 +51,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				return logicalPosition;
 			}
 
-			public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged) {
-				var workItem = Chunk.GetReaderWorkItem(ITransactionFileTracker.NoOp); //qq
+			public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged, ITransactionFileTracker tracker) {
+				var workItem = Chunk.GetReaderWorkItem(tracker);
 				try {
 					if (logicalPosition >= Chunk.LogicalDataSize) {
 						_log.Warning(
@@ -75,7 +75,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 
 			public RecordReadResult TryReadClosestForward(long logicalPosition, ITransactionFileTracker tracker) {
-				var workItem = Chunk.GetReaderWorkItem(tracker); //qq
+				var workItem = Chunk.GetReaderWorkItem(tracker);
 				try {
 					if (logicalPosition >= Chunk.LogicalDataSize)
 						return RecordReadResult.Failure;
@@ -90,8 +90,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 			}
 
-			public RawReadResult TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer) {
-				var workItem = Chunk.GetReaderWorkItem(ITransactionFileTracker.NoOp); //qq
+			public RawReadResult TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer, ITransactionFileTracker tracker) {
+				var workItem = Chunk.GetReaderWorkItem(tracker);
 				try {
 					if (logicalPosition >= Chunk.LogicalDataSize)
 						return RawReadResult.Failure;
@@ -191,9 +191,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 			}
 
-			public void OptimizeExistsAt() {
+			public void OptimizeExistsAt(ITransactionFileTracker tracker) {
 				if (_optimizeCache && _logPositionsBloomFilter == null)
-					_logPositionsBloomFilter = PopulateBloomFilter();
+					_logPositionsBloomFilter = PopulateBloomFilter(tracker);
 			}
 
 			public void DeOptimizeExistsAt() {
@@ -201,7 +201,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					_logPositionsBloomFilter = null;
 			}
 
-			private InMemoryBloomFilter PopulateBloomFilter() {
+			private InMemoryBloomFilter PopulateBloomFilter(ITransactionFileTracker tracker) {
 				var mapCount = Chunk.ChunkFooter.MapCount;
 				if (mapCount <= 0)
 					return null;
@@ -227,7 +227,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				ReaderWorkItem workItem = null;
 				try {
-					workItem = Chunk.GetReaderWorkItem(ITransactionFileTracker.NoOp); //qq
+					workItem = Chunk.GetReaderWorkItem(tracker);
 
 					foreach (var posMap in ReadPosMap(workItem, 0, mapCount)) {
 						bf.Add(posMap.LogPos);
@@ -305,11 +305,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 			}
 
-			public bool ExistsAt(long logicalPosition) {
+			public bool ExistsAt(long logicalPosition, ITransactionFileTracker tracker) {
 				if (CacheIsOptimized)
 					return MayExistAt(logicalPosition);
 
-				var workItem = Chunk.GetReaderWorkItem(ITransactionFileTracker.NoOp); //qq
+				var workItem = Chunk.GetReaderWorkItem(tracker);
 				try {
 					var actualPosition = TranslateExactPosition(workItem, logicalPosition);
 					return actualPosition >= 0 && actualPosition < Chunk.PhysicalDataSize;
@@ -323,10 +323,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				return _logPositionsBloomFilter.MightContain(logicalPosition);
 			}
 
-			public long GetActualPosition(long logicalPosition) {
+			public long GetActualPosition(long logicalPosition, ITransactionFileTracker tracker) {
 				Ensure.Nonnegative(logicalPosition, nameof(logicalPosition));
 
-				var workItem = Chunk.GetReaderWorkItem(ITransactionFileTracker.NoOp); //qq
+				var workItem = Chunk.GetReaderWorkItem(tracker);
 				try {
 					return TranslateExactPosition(workItem, logicalPosition);
 				} finally {
@@ -334,8 +334,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 			}
 
-			public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged) {
-				var workItem = Chunk.GetReaderWorkItem(ITransactionFileTracker.NoOp); //qq
+			public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged, ITransactionFileTracker tracker) {
+				var workItem = Chunk.GetReaderWorkItem(tracker);
 				try {
 					var actualPosition = TranslateExactPosition(workItem, logicalPosition);
 					if (actualPosition == -1 || actualPosition >= Chunk.PhysicalDataSize) {
@@ -416,11 +416,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 			}
 
-			public RawReadResult TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer) {
+			public RawReadResult TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer, ITransactionFileTracker tracker) {
 				if (Chunk.ChunkFooter.MapCount == 0)
 					return RawReadResult.Failure;
 
-				var workItem = Chunk.GetReaderWorkItem(ITransactionFileTracker.NoOp); //qq
+				var workItem = Chunk.GetReaderWorkItem(tracker);
 				try {
 					var actualPosition = TranslateClosestForwardPosition(workItem, logicalPosition);
 					if (actualPosition == -1 || actualPosition >= Chunk.PhysicalDataSize)
