@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			var emptyStreamId = _logFormat.EmptyStreamId;
 			var tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV3, maxSize: 200),
-				tracker => new TFReaderLease(readerPool, tracker),
+				_ => new TFReaderLease(readerPool, ITransactionFileTracker.NoOp),
 				PTableVersions.IndexV3,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 100,

@@ -642,7 +642,10 @@ namespace EventStore.Core {
 				logFormat.EmptyStreamId,
 				() => new HashListMemTable(options.IndexBitnessVersion,
 					maxSize: options.Database.MaxMemTableSize * 2),
-				tracker => new TFReaderLease(readerPool, tracker),
+				username => {
+					var tracker = trackers.TransactionFileTrackers.GetOrAdd(username);
+					return new TFReaderLease(readerPool, tracker);
+				},
 				options.IndexBitnessVersion,
 				maxSizeForMemory: options.Database.MaxMemTableSize,
 				maxTablesPerLevel: 2,

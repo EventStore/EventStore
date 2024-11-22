@@ -10,5 +10,8 @@ namespace EventStore.Core.Services.UserManagement {
 		};
 		public static readonly ClaimsPrincipal System = new ClaimsPrincipal(new ClaimsIdentity(Claims, "system"));
 		public static readonly ClaimsPrincipal Anonymous = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]{new Claim(ClaimTypes.Anonymous, ""), }));
+
+		public static readonly string SystemIndexMergeName = "system-index-merge";
+		public static readonly string SystemIndexScavengeName = "system-index-scavenge";
 	}
 }

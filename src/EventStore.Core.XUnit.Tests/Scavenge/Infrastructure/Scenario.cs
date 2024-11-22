@@ -254,7 +254,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				highHasher: highHasher,
 				emptyStreamId: logFormat.EmptyStreamId,
 				memTableFactory: () => new HashListMemTable(PTableVersions.IndexV4, maxSize: 200),
-				tfReaderFactory: tracker => new TFReaderLease(readerPool, tracker),
+				tfReaderFactory: _ => new TFReaderLease(readerPool, ITransactionFileTracker.NoOp),
 				ptableVersion: PTableVersions.IndexV4,
 				maxAutoMergeIndexLevel: int.MaxValue,
 				pTableMaxReaderCount: ESConsts.PTableInitialReaderCount,

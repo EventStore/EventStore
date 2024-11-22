@@ -143,7 +143,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			var emptyStreamId = _logFormat.EmptyStreamId;
 			_tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
-				tracker => new TFReaderLease(readers, tracker),
+				_ => new TFReaderLease(readers, ITransactionFileTracker.NoOp),
 				IndexBitnessVersion,
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,
@@ -192,7 +192,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 			_tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
-				tracker => new TFReaderLease(readers, tracker),
+				_ => new TFReaderLease(readers, ITransactionFileTracker.NoOp),
 				IndexBitnessVersion,
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,

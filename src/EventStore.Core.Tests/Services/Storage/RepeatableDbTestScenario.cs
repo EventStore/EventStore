@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			var emptyStreamId = _logFormat.EmptyStreamId;
 			TableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV3, MaxEntriesInMemTable * 2),
-				tracker => new TFReaderLease(readers, tracker),
+				_ => new TFReaderLease(readers, ITransactionFileTracker.NoOp),
 				PTableVersions.IndexV3,
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,
