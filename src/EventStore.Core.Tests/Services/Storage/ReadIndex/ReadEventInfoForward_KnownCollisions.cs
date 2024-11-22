@@ -3,6 +3,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Index.Hashers;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
@@ -47,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					0,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				Assert.AreEqual(0, result.EventInfos.Length);
 				Assert.True(result.IsEndOfStream);
@@ -68,7 +69,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					0,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				Assert.AreEqual(1, result.EventInfos.Length);
 				CheckResult(new[] { _event }, result);
@@ -78,7 +79,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					1,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				CheckResult(new EventRecord[] { }, result);
 				Assert.True(result.IsEndOfStream);
@@ -87,7 +88,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					CollidingStream,
 					0,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				Assert.AreEqual(1, result.EventInfos.Length);
 				CheckResult(new[] { _collidingEvent }, result);
@@ -97,7 +98,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					CollidingStream,
 					1,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				CheckResult(new EventRecord[] { }, result);
 				Assert.True(result.IsEndOfStream);
@@ -130,7 +131,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 						Stream,
 						fromEventNumber,
 						int.MaxValue,
-						long.MaxValue);
+						long.MaxValue, ITransactionFileTracker.NoOp);
 
 					CheckResult(_events.Skip(fromEventNumber).ToArray(), result);
 					if (fromEventNumber > 3)
@@ -147,7 +148,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 						Stream,
 						fromEventNumber,
 						2,
-						long.MaxValue);
+						long.MaxValue, ITransactionFileTracker.NoOp);
 
 					CheckResult(_events.Skip(fromEventNumber).Take(2).ToArray(), result);
 					if (fromEventNumber > 3)
@@ -164,7 +165,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 						Stream,
 						fromEventNumber,
 						int.MaxValue,
-						_events[fromEventNumber + 1].LogPosition);
+						_events[fromEventNumber + 1].LogPosition, ITransactionFileTracker.NoOp);
 
 					CheckResult(_events.Skip(fromEventNumber).Take(1).ToArray(), result);
 					Assert.AreEqual((long) fromEventNumber + int.MaxValue, result.NextEventNumber);
@@ -190,7 +191,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					0,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				CheckResult(_events.ToArray(), result);
 				Assert.AreEqual(int.MaxValue, result.NextEventNumber);
@@ -202,7 +203,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					2,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				Assert.AreEqual(0, result.EventInfos.Length);
 				Assert.AreEqual(EventNumber.DeletedStream, result.NextEventNumber);
@@ -214,7 +215,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					EventNumber.DeletedStream,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				Assert.AreEqual(1, result.EventInfos.Length);
 				Assert.AreEqual(EventNumber.DeletedStream, result.EventInfos[0].EventNumber);
@@ -248,7 +249,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					0,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				CheckResult(_events.ToArray(), result);
 				Assert.AreEqual(int.MaxValue, result.NextEventNumber);
@@ -257,7 +258,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					0,
 					3,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				CheckResult(_events.Take(1).ToArray(), result);
 				Assert.AreEqual(3, result.NextEventNumber);
@@ -266,7 +267,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					3,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				CheckResult(_events.Skip(1).ToArray(), result);
 				Assert.AreEqual((long ) 3 + int.MaxValue, result.NextEventNumber);
@@ -275,7 +276,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					4,
 					3,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				CheckResult(_events.Skip(1).Take(2).ToArray(), result);
 				Assert.AreEqual(7, result.NextEventNumber);
@@ -284,7 +285,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					7,
 					3,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				Assert.AreEqual(0, result.EventInfos.Length);
 				Assert.AreEqual(11, result.NextEventNumber);
@@ -293,7 +294,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					12,
 					1,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				Assert.AreEqual(0, result.EventInfos.Length);
 				Assert.AreEqual(15, result.NextEventNumber); // from colliding stream, but doesn't matter much
@@ -302,7 +303,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					12,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				Assert.AreEqual(0, result.EventInfos.Length);
 				Assert.True(result.IsEndOfStream);
@@ -336,7 +337,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 					Stream,
 					0,
 					int.MaxValue,
-					long.MaxValue);
+					long.MaxValue, ITransactionFileTracker.NoOp);
 
 				CheckResult(
 					_events

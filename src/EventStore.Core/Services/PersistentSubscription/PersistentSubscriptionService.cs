@@ -13,6 +13,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Telemetry;
+using EventStore.Core.TransactionLog;
 using ILogger = Serilog.ILogger;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
@@ -936,7 +937,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			long? lastEventNumber = null;
 			if (eventSource.FromStream) {
 				var streamId = _readIndex.GetStreamId(eventSource.EventStreamId);
-				lastEventNumber = _readIndex.GetStreamLastEventNumber(streamId);
+				lastEventNumber = _readIndex.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp);
 			}
 			var lastCommitPos = _readIndex.LastIndexedPosition;
 			var subscribedMessage =
@@ -1011,7 +1012,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					long eventNumber = long.Parse(parts[0]);
 					string streamName = parts[1];
 					var streamId = _readIndex.GetStreamId(streamName);
-					var res = _readIndex.ReadEvent(streamName, streamId, eventNumber);
+					var res = _readIndex.ReadEvent(streamName, streamId, eventNumber, ITransactionFileTracker.NoOp);
 					if (res.Result == ReadEventResult.Success)
 						return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);
 

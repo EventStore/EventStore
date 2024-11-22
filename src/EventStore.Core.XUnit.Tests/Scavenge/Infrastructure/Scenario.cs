@@ -641,7 +641,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 							streamId: streamId,
 							fromEventNumber: eventNumber,
 							maxCount: 1,
-							beforePosition: long.MaxValue)
+							beforePosition: long.MaxValue, tracker: ITransactionFileTracker.NoOp)
 						: actual.ReadEventInfoForward_NoCollisions(
 							stream: hasher.Hash(streamId),
 							fromEventNumber: eventNumber,
@@ -650,7 +650,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 					if (result.EventInfos.Length != 1) {
 						// remember this applies metadata, so is of limited use
-						var wholeStream = actual.ReadStreamEventsForward($"{streamId}", streamId, fromEventNumber: 0, maxCount: 100);
+						var wholeStream = actual.ReadStreamEventsForward($"{streamId}", streamId, fromEventNumber: 0, maxCount: 100, tracker: ITransactionFileTracker.NoOp);
 						Assert.True(result.EventInfos.Length == 1, $"Couldn't find {streamId}:{eventNumber} in index.");
 					}
 
@@ -675,7 +675,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 						streamId: streamId,
 						fromEventNumber: 0,
 						maxCount: 1000,
-						beforePosition: long.MaxValue)
+						beforePosition: long.MaxValue, tracker: ITransactionFileTracker.NoOp)
 					: actual.ReadEventInfoForward_NoCollisions(
 						stream: hasher.Hash(streamId),
 						fromEventNumber: 0,

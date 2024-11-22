@@ -3,6 +3,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog;
 
 namespace EventStore.Core.Tests {
 	// Extensions to perform streamlookups inline
@@ -10,32 +11,32 @@ namespace EventStore.Core.Tests {
 	public static class IReadIndexExtensions {
 		public static bool IsStreamDeleted<TStreamId>(this IReadIndex<TStreamId> self, string streamName) {
 			var streamId = self.GetStreamId(streamName);
-			return self.IsStreamDeleted(streamId);
+			return self.IsStreamDeleted(streamId, ITransactionFileTracker.NoOp);
 		}
 
 		public static long GetStreamLastEventNumber<TStreamId>(this IReadIndex<TStreamId> self, string streamName) {
 			var streamId = self.GetStreamId(streamName);
-			return self.GetStreamLastEventNumber(streamId);
+			return self.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp);
 		}
 
 		public static IndexReadEventResult ReadEvent<TStreamId>(this IReadIndex<TStreamId> self, string streamName, long eventNumber) {
 			var streamId = self.GetStreamId(streamName);
-			return self.ReadEvent(streamName, streamId, eventNumber);
+			return self.ReadEvent(streamName, streamId, eventNumber, ITransactionFileTracker.NoOp);
 		}
 
 		public static IndexReadStreamResult ReadStreamEventsForward<TStreamId>(this IReadIndex<TStreamId> self, string streamName, long fromEventNumber, int maxCount) {
 			var streamId = self.GetStreamId(streamName);
-			return self.ReadStreamEventsForward(streamName, streamId, fromEventNumber, maxCount);
+			return self.ReadStreamEventsForward(streamName, streamId, fromEventNumber, maxCount, ITransactionFileTracker.NoOp);
 		}
 
 		public static IndexReadStreamResult ReadStreamEventsBackward<TStreamId>(this IReadIndex<TStreamId> self, string streamName, long fromEventNumber, int maxCount) {
 			var streamId = self.GetStreamId(streamName);
-			return self.ReadStreamEventsBackward(streamName, streamId, fromEventNumber, maxCount);
+			return self.ReadStreamEventsBackward(streamName, streamId, fromEventNumber, maxCount, ITransactionFileTracker.NoOp);
 		}
 
 		public static StreamMetadata GetStreamMetadata<TStreamId>(this IReadIndex<TStreamId> self, string streamName) {
 			var streamId = self.GetStreamId(streamName);
-			return self.GetStreamMetadata(streamId);
+			return self.GetStreamMetadata(streamId, ITransactionFileTracker.NoOp);
 		}
 
 		public static List<CommitEventRecord> EventRecords(this IndexReadAllResult result) {

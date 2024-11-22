@@ -4,6 +4,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Index.Hashers;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
@@ -54,7 +55,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 			var curEvents = new List<EventRecord>();
 			foreach (var @event in _events) {
 				var result =
-					ReadIndex.ReadEventInfoForward_KnownCollisions(Stream, 0, int.MaxValue, @event.LogPosition);
+					ReadIndex.ReadEventInfoForward_KnownCollisions(Stream, 0, int.MaxValue, @event.LogPosition, ITransactionFileTracker.NoOp);
 				CheckResult(curEvents.ToArray(), result);
 				if (curEvents.Count == 0)
 					Assert.True(result.IsEndOfStream);
@@ -81,7 +82,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 				Assert.GreaterOrEqual(fromEventNumber, 0);
 
 				var result = ReadIndex.ReadEventInfoForward_KnownCollisions(
-					Stream, fromEventNumber, maxCount, long.MaxValue);
+					Stream, fromEventNumber, maxCount, long.MaxValue, ITransactionFileTracker.NoOp);
 				CheckResult(curEvents.Skip(curEvents.Count - maxCount).ToArray(), result);
 				Assert.AreEqual(@event.EventNumber + 1, result.NextEventNumber);
 			}

@@ -319,7 +319,7 @@ namespace EventStore.Core.Services.Storage {
 				msg.Envelope.ReplyWith(new StorageMessage.OperationCancelledMessage(msg.CancellationToken));
 				return;
 			}
-			var acl = _readIndex.GetEffectiveAcl(_readIndex.GetStreamId(msg.StreamId));
+			var acl = _readIndex.GetEffectiveAcl(_readIndex.GetStreamId(msg.StreamId), ITransactionFileTracker.NoOp);
 			msg.Envelope.ReplyWith(new StorageMessage.EffectiveStreamAclResponse(acl));
 		}
 
@@ -328,7 +328,7 @@ namespace EventStore.Core.Services.Storage {
 				try {
 					var streamName = msg.EventStreamId;
 					var streamId = _readIndex.GetStreamId(streamName);
-					var result = _readIndex.ReadEvent(streamName, streamId, msg.EventNumber);
+					var result = _readIndex.ReadEvent(streamName, streamId, msg.EventNumber, ITransactionFileTracker.NoOp);
 					var record = result.Result == ReadEventResult.Success && msg.ResolveLinkTos
 						? ResolveLinkToEvent(result.Record, msg.User, null)
 						: ResolvedEvent.ForUnresolvedEvent(result.Record);
@@ -363,12 +363,12 @@ namespace EventStore.Core.Services.Storage {
 					var streamName = msg.EventStreamId;
 					var streamId = _readIndex.GetStreamId(msg.EventStreamId);
 					if (msg.ValidationStreamVersion.HasValue &&
-						_readIndex.GetStreamLastEventNumber(streamId) == msg.ValidationStreamVersion)
+						_readIndex.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp) == msg.ValidationStreamVersion)
 						return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition,
 							msg.ValidationStreamVersion.Value);
 
 					var result =
-						_readIndex.ReadStreamEventsForward(streamName, streamId, msg.FromEventNumber, msg.MaxCount);
+						_readIndex.ReadStreamEventsForward(streamName, streamId, msg.FromEventNumber, msg.MaxCount, ITransactionFileTracker.NoOp);
 					CheckEventsOrder(msg, result);
 					var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User);
 					if (resolvedPairs == null)
@@ -397,13 +397,13 @@ namespace EventStore.Core.Services.Storage {
 					var streamName = msg.EventStreamId;
 					var streamId = _readIndex.GetStreamId(msg.EventStreamId);
 					if (msg.ValidationStreamVersion.HasValue &&
-						_readIndex.GetStreamLastEventNumber(streamId) == msg.ValidationStreamVersion)
+						_readIndex.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp) == msg.ValidationStreamVersion)
 						return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition,
 							msg.ValidationStreamVersion.Value);
 
 
 					var result = _readIndex.ReadStreamEventsBackward(streamName, streamId, msg.FromEventNumber,
-						msg.MaxCount);
+						msg.MaxCount, ITransactionFileTracker.NoOp);
 					CheckEventsOrder(msg, result);
 					var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User);
 					if (resolvedPairs == null)
@@ -445,7 +445,7 @@ namespace EventStore.Core.Services.Storage {
 					if (resolved == null)
 						return NoData(msg, ReadAllResult.AccessDenied, pos, lastIndexedPosition);
 
-					var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream);
+					var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream, ITransactionFileTracker.NoOp);
 					return new ClientMessage.ReadAllEventsForwardCompleted(
 						msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, false, msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition);
@@ -482,7 +482,7 @@ namespace EventStore.Core.Services.Storage {
 					if (resolved == null)
 						return NoData(msg, ReadAllResult.AccessDenied, pos, lastIndexedPosition);
 
-					var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream);
+					var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream, ITransactionFileTracker.NoOp);
 					return new ClientMessage.ReadAllEventsBackwardCompleted(
 						msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, false, msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition);
@@ -526,7 +526,7 @@ namespace EventStore.Core.Services.Storage {
 						return NoDataForFilteredCommand(msg, FilteredReadAllResult.AccessDenied, pos,
 							lastIndexedPosition);
 
-					var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream);
+					var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream, ITransactionFileTracker.NoOp);
 					return new ClientMessage.FilteredReadAllEventsForwardCompleted(
 						msg.CorrelationId, FilteredReadAllResult.Success, null, resolved, metadata, false,
 						msg.MaxCount,
@@ -569,7 +569,7 @@ namespace EventStore.Core.Services.Storage {
 						return NoDataForFilteredCommand(msg, FilteredReadAllResult.AccessDenied, pos,
 							lastIndexedPosition);
 
-					var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream);
+					var metadata = _readIndex.GetStreamMetadata(_systemStreams.AllStream, ITransactionFileTracker.NoOp);
 					return new ClientMessage.FilteredReadAllEventsBackwardCompleted(
 						msg.CorrelationId, FilteredReadAllResult.Success, null, resolved, metadata, false,
 						msg.MaxCount,
@@ -679,7 +679,7 @@ namespace EventStore.Core.Services.Storage {
 					if (long.TryParse(parts[0], out long eventNumber)) {
 						var streamName = parts[1];
 						var streamId = _readIndex.GetStreamId(streamName);
-						var res = _readIndex.ReadEvent(streamName, streamId, eventNumber);
+						var res = _readIndex.ReadEvent(streamName, streamId, eventNumber, ITransactionFileTracker.NoOp);
 						if (res.Result == ReadEventResult.Success)
 							return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);
 
@@ -780,7 +780,7 @@ namespace EventStore.Core.Services.Storage {
 			if (message.CancellationToken.IsCancellationRequested) {
 				message.Envelope.ReplyWith(new StorageMessage.OperationCancelledMessage(message.CancellationToken));
 			}
-			var streamId = _readIndex.GetEventStreamIdByTransactionId(message.TransactionId);
+			var streamId = _readIndex.GetEventStreamIdByTransactionId(message.TransactionId, ITransactionFileTracker.NoOp);
 			var streamName = _readIndex.GetStreamName(streamId);
 			message.Envelope.ReplyWith(new StorageMessage.StreamIdFromTransactionIdResponse(streamName));
 		}

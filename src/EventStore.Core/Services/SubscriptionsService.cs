@@ -10,6 +10,7 @@ using EventStore.Core.Services.TimerService;
 using System.Linq;
 using EventStore.Core.Util;
 using ILogger = Serilog.ILogger;
+using EventStore.Core.TransactionLog;
 
 namespace EventStore.Core.Services {
 	public enum SubscriptionDropReason {
@@ -120,7 +121,7 @@ namespace EventStore.Core.Services {
 			if (isInMemoryStream) {
 				lastEventNumber = -1;
 			} else if (!msg.EventStreamId.IsEmptyString()) {
-				lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
+				lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId), ITransactionFileTracker.NoOp);
 			}
 
 			var lastIndexedPos = isInMemoryStream ? -1 : _readIndex.LastIndexedPosition;
@@ -140,7 +141,7 @@ namespace EventStore.Core.Services {
 			if (isInMemoryStream) {
 				lastEventNumber = -1;
 			} else if (!msg.EventStreamId.IsEmptyString()) {
-				lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
+				lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId), ITransactionFileTracker.NoOp);
 			}
 
 			var lastIndexedPos = isInMemoryStream ? -1 : _readIndex.LastIndexedPosition;
@@ -342,7 +343,7 @@ namespace EventStore.Core.Services {
 					long eventNumber = long.Parse(parts[0]);
 					string streamName = parts[1];
 					var streamId = _readIndex.GetStreamId(streamName);
-					var res = _readIndex.ReadEvent(streamName, streamId, eventNumber);
+					var res = _readIndex.ReadEvent(streamName, streamId, eventNumber, ITransactionFileTracker.NoOp);
 
 					if (res.Result == ReadEventResult.Success)
 						return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);

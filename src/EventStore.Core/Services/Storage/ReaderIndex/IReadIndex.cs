@@ -51,32 +51,32 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		// - duplicates are removed, keeping only the earliest event in the log
 		// - streamId drives the read, streamName is only for populating on the result.
 		//   this was less messy than safely adding the streamName to the EventRecord at some point after construction.
-		IndexReadEventResult ReadEvent(string streamName, TStreamId streamId, long eventNumber);
-		IndexReadStreamResult ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
-		IndexReadStreamResult ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
+		IndexReadEventResult ReadEvent(string streamName, TStreamId streamId, long eventNumber, ITransactionFileTracker tracker);
+		IndexReadStreamResult ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount, ITransactionFileTracker tracker);
+		IndexReadStreamResult ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount, ITransactionFileTracker tracker);
 
 		// ReadEventInfo_KeepDuplicates() :
 		// - deleted events are not filtered out
 		// - duplicates are kept, in ascending order of log position
 		// - next event number is always -1
-		IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber);
+		IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber, ITransactionFileTracker tracker);
 
 		// ReadEventInfo*Collisions() :
 		// - deleted events are not filtered out
 		// - duplicates are removed, keeping only the earliest event in the log
 		// - only events that are before "beforePosition" in the transaction log are returned
-		IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition);
+		IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition, ITransactionFileTracker tracker);
 		IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition);
-		IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition);
-		IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long fromEventNumber, int maxCount, long beforePosition);
+		IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition, ITransactionFileTracker tracker);
+		IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long fromEventNumber, int maxCount, long beforePosition, ITransactionFileTracker tracker);
 
-		bool IsStreamDeleted(TStreamId streamId);
-		long GetStreamLastEventNumber(TStreamId streamId);
-		long GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition);
-		long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition);
-		StreamMetadata GetStreamMetadata(TStreamId streamId);
-		StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId);
-		TStreamId GetEventStreamIdByTransactionId(long transactionId);
+		bool IsStreamDeleted(TStreamId streamId, ITransactionFileTracker tracker);
+		long GetStreamLastEventNumber(TStreamId streamId, ITransactionFileTracker tracker);
+		long GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition, ITransactionFileTracker tracker);
+		long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition, ITransactionFileTracker tracker);
+		StreamMetadata GetStreamMetadata(TStreamId streamId, ITransactionFileTracker tracker);
+		StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId, ITransactionFileTracker tracker);
+		TStreamId GetEventStreamIdByTransactionId(long transactionId, ITransactionFileTracker tracker);
 
 		TStreamId GetStreamId(string streamName);
 		string GetStreamName(TStreamId streamId);

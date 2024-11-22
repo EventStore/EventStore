@@ -28,12 +28,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					return _readIndex.GetStreamLastEventNumber_NoCollisions(
 						handle.StreamHash,
 						_lookupUniqueHashUser,
-						scavengePoint.Position);
+						scavengePoint.Position, ITransactionFileTracker.NoOp);
 				case StreamHandle.Kind.Id:
 					// uses the index and the log to fetch the last event number
 					return _readIndex.GetStreamLastEventNumber_KnownCollisions(
 						handle.StreamId,
-						scavengePoint.Position);
+						scavengePoint.Position, ITransactionFileTracker.NoOp);
 				default:
 					throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
 			}
@@ -59,7 +59,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 						handle.StreamId,
 						fromEventNumber,
 						maxCount,
-						scavengePoint.Position);
+						scavengePoint.Position, ITransactionFileTracker.NoOp);
 				default:
 					throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
 			}

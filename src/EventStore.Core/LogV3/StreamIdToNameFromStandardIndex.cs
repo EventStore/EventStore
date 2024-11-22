@@ -22,7 +22,7 @@ namespace EventStore.Core.LogV3 {
 			// explicitly create metastreams.
 			var record = _indexReader.ReadPrepare(
 				streamId: LogV3SystemStreams.StreamsCreatedStreamNumber,
-				eventNumber: StreamIdConverter.ToEventNumber(streamId), tracker: ITransactionFileTracker.NoOp);
+				eventNumber: StreamIdConverter.ToEventNumber(streamId), tracker: ITransactionFileTracker.NoOp); // noop ok: LogV3
 
 			if (record is null) {
 				name = null;
@@ -37,7 +37,7 @@ namespace EventStore.Core.LogV3 {
 		}
 
 		public bool TryGetLastValue(out StreamId lastValue) {
-			var lastEventNumber = _indexReader.GetStreamLastEventNumber(LogV3SystemStreams.StreamsCreatedStreamNumber, ITransactionFileTracker.NoOp);
+			var lastEventNumber = _indexReader.GetStreamLastEventNumber(LogV3SystemStreams.StreamsCreatedStreamNumber, ITransactionFileTracker.NoOp); // noop ok: LogV3
 			var success = ExpectedVersion.NoStream < lastEventNumber && lastEventNumber != EventNumber.DeletedStream;
 			lastValue = StreamIdConverter.ToStreamId(lastEventNumber);
 			return success;

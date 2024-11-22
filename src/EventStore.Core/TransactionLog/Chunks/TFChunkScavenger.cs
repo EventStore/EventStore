@@ -613,7 +613,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				return true;
 			}
 
-			var lastEventNumber = _readIndex.GetStreamLastEventNumber(prepare.EventStreamId);
+			var lastEventNumber = _readIndex.GetStreamLastEventNumber(prepare.EventStreamId, ITransactionFileTracker.NoOp);
 			if (lastEventNumber == EventNumber.DeletedStream) {
 				// The stream is hard deleted but this is not the tombstone.
 				// When all prepares and commit of transaction belong to single chunk and the stream is deleted,
@@ -671,7 +671,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				return true;
 			}
 
-			var meta = _readIndex.GetStreamMetadata(prepare.EventStreamId);
+			var meta = _readIndex.GetStreamMetadata(prepare.EventStreamId, ITransactionFileTracker.NoOp);
 			bool canRemove = (meta.MaxCount.HasValue && eventNumber < lastEventNumber - meta.MaxCount.Value + 1)
 			                 || (meta.TruncateBefore.HasValue && eventNumber < meta.TruncateBefore.Value)
 			                 || (meta.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - meta.MaxAge.Value);
@@ -686,7 +686,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private bool DiscardBecauseDuplicate(IPrepareLogRecord<TStreamId> prepare, long eventNumber) {
-			var result = _readIndex.ReadEvent(IndexReader.UnspecifiedStreamName, prepare.EventStreamId, eventNumber);
+			var result = _readIndex.ReadEvent(IndexReader.UnspecifiedStreamName, prepare.EventStreamId, eventNumber, ITransactionFileTracker.NoOp);
 			if (result.Result == ReadEventResult.Success && result.Record.LogPosition != prepare.LogPosition) {
 				// prepare isn't the record we get for an index read at its own stream/version.
 				// therefore it is a duplicate that cannot be read from the index, discard it.
@@ -701,13 +701,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			TStreamId msh;
 			if (_metastreams.IsMetaStream(eventStreamId)) {
 				var originalStreamId = _metastreams.OriginalStreamOf(eventStreamId);
-				var meta = _readIndex.GetStreamMetadata(originalStreamId);
+				var meta = _readIndex.GetStreamMetadata(originalStreamId, ITransactionFileTracker.NoOp);
 				if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
 					return false;
 				sh = originalStreamId;
 				msh = eventStreamId;
 			} else {
-				var meta = _readIndex.GetStreamMetadata(eventStreamId);
+				var meta = _readIndex.GetStreamMetadata(eventStreamId, ITransactionFileTracker.NoOp);
 				if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
 					return false;
 				sh = eventStreamId;

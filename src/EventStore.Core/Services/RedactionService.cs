@@ -66,7 +66,7 @@ namespace EventStore.Core.Services {
 
 		private void GetEventPosition(string streamName, long eventNumber, IEnvelope envelope) {
 			var streamId = _readIndex.GetStreamId(streamName);
-			var result = _readIndex.ReadEventInfo_KeepDuplicates(streamId, eventNumber);
+			var result = _readIndex.ReadEventInfo_KeepDuplicates(streamId, eventNumber, _tracker);
 
 			var eventPositions = new EventPosition[result.EventInfos.Length];
 
