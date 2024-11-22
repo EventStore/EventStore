@@ -292,7 +292,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			if (indexEntries.Count > 0) {
 				if (_additionalCommitChecks && cacheLastEventNumber) {
-					CheckStreamVersion(streamId, indexEntries[0].Version, commit);
+					CheckStreamVersion(streamId, indexEntries[0].Version, commit, _tfTracker);
 					CheckDuplicateEvents(streamId, commit, indexEntries, prepares);
 				}
 
@@ -402,7 +402,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			if (indexEntries.Count > 0) {
 				if (_additionalCommitChecks && cacheLastEventNumber) {
-					CheckStreamVersion(streamId, indexEntries[0].Version, null); // TODO AN: bad passing null commit
+					CheckStreamVersion(streamId, indexEntries[0].Version, null, _tfTracker); // TODO AN: bad passing null commit
 					CheckDuplicateEvents(streamId, null, indexEntries, prepares); // TODO AN: bad passing null commit
 				}
 
@@ -473,11 +473,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 		}
 
-		private void CheckStreamVersion(TStreamId streamId, long newEventNumber, CommitLogRecord commit) {
+		private void CheckStreamVersion(TStreamId streamId, long newEventNumber, CommitLogRecord commit,
+			ITransactionFileTracker tracker) {
 			if (newEventNumber == EventNumber.DeletedStream)
 				return;
 
-			long lastEventNumber = _indexReader.GetStreamLastEventNumber(streamId);
+			long lastEventNumber = _indexReader.GetStreamLastEventNumber(streamId, tracker);
 			if (newEventNumber != lastEventNumber + 1) {
 				if (Debugger.IsAttached)
 					Debugger.Break();
@@ -512,7 +513,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private SystemSettings GetSystemSettings() {
-			var res = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, _systemStreams.SettingsStream, -1);
+			var res = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, _systemStreams.SettingsStream, -1, _tfTracker);
 			return res.Result == ReadEventResult.Success ? DeserializeSystemSettings(res.Record.Data) : null;
 		}
 

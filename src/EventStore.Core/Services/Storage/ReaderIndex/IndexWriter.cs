@@ -213,11 +213,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if(first) /*no data in transaction*/
 					return new CommitCheckResult<TStreamId>(CommitDecision.Ok, streamId, curVersion, -1, -1, IsSoftDeleted(streamId));
 				else{
-					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId) >= endEventNumber;
+					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp) >= endEventNumber;
 					//TODO(clc): the new index should hold the log positions removing this read
 					//n.b. the index will never have the event in the case of NotReady as it only committed records are indexed
 					//in that case the position will need to come from the pre-index
-					var idempotentEvent = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, endEventNumber);
+					var idempotentEvent = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, endEventNumber, ITransactionFileTracker.NoOp);
 					var logPos = idempotentEvent.Result == ReadEventResult.Success
 						? idempotentEvent.Record.LogPosition : -1; 					
 					if(isReplicated)
@@ -238,7 +238,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					    && prepInfo.EventNumber == eventNumber)
 						continue;
 
-					var res = _indexReader.ReadPrepare(streamId, eventNumber);
+					var res = _indexReader.ReadPrepare(streamId, eventNumber, ITransactionFileTracker.NoOp);
 					if (res != null && res.EventId == eventId)
 						continue;
 
@@ -257,11 +257,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if(eventNumber == expectedVersion) /* no data in transaction */
 					return new CommitCheckResult<TStreamId>(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
 				else{
-					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId) >= eventNumber;
+					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp) >= eventNumber;
 					//TODO(clc): the new index should hold the log positions removing this read
 					//n.b. the index will never have the event in the case of NotReady as it only committed records are indexed
 					//in that case the position will need to come from the pre-index
-					var idempotentEvent = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, eventNumber);
+					var idempotentEvent = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, eventNumber, ITransactionFileTracker.NoOp);
 					var logPos = idempotentEvent.Result == ReadEventResult.Success
 						? idempotentEvent.Record.LogPosition : -1; 
 					if(isReplicated)
@@ -459,7 +459,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			long lastEventNumber;
 			if (_streamVersions.TryGet(streamId, out lastEventNumber))
 				return lastEventNumber;
-			return _indexReader.GetStreamLastEventNumber(streamId);
+			return _indexReader.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp);
 		}
 
 		public StreamMetadata GetStreamMetadata(TStreamId streamId) {
@@ -472,7 +472,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return m;
 			}
 
-			return _indexReader.GetStreamMetadata(streamId);
+			return _indexReader.GetStreamMetadata(streamId, ITransactionFileTracker.NoOp);
 		}
 
 		public RawMetaInfo GetStreamRawMeta(TStreamId streamId) {
@@ -481,7 +481,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			StreamMeta meta;
 			if (!_streamRawMetas.TryGet(streamId, out meta))
-				meta = new StreamMeta(_indexReader.ReadPrepare(metastreamId, metaLastEventNumber).Data, null);
+				meta = new StreamMeta(_indexReader.ReadPrepare(metastreamId, metaLastEventNumber, ITransactionFileTracker.NoOp).Data, null);
 
 			return new RawMetaInfo(metaLastEventNumber, meta.RawMeta);
 		}

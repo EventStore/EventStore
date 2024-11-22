@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void should_return_no_stream() {
-			Assert.AreEqual(ExpectedVersion.NoStream, _indexReader.GetStreamLastEventNumber("account--696193173"));
+			Assert.AreEqual(ExpectedVersion.NoStream, _indexReader.GetStreamLastEventNumber("account--696193173", ITransactionFileTracker.NoOp));
 		}
 	}
 
@@ -138,7 +138,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		[Test]
 		public void should_return_invalid_event_number() {
 			Assert.AreEqual(EventStore.Core.Data.EventNumber.Invalid,
-				_indexReader.GetStreamLastEventNumber(stream1Id));
+				_indexReader.GetStreamLastEventNumber(stream1Id, ITransactionFileTracker.NoOp));
 		}
 	}
 
@@ -174,7 +174,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void should_return_last_event_number() {
-			Assert.AreEqual(0, _indexReader.GetStreamLastEventNumber(stream1Id));
+			Assert.AreEqual(0, _indexReader.GetStreamLastEventNumber(stream1Id, ITransactionFileTracker.NoOp));
 		}
 	}
 
@@ -209,7 +209,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		[Test]
 		public void should_return_invalid_event_number() {
 			Assert.AreEqual(EventStore.Core.Data.EventNumber.Invalid,
-				_indexReader.GetStreamLastEventNumber("account--696193173"));
+				_indexReader.GetStreamLastEventNumber("account--696193173", ITransactionFileTracker.NoOp));
 		}
 	}
 
@@ -330,7 +330,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void should_return_the_correct_last_event_number() {
-			var result = _indexReader.GetStreamLastEventNumber(streamId);
+			var result = _indexReader.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp);
 			Assert.AreEqual(2, result);
 		}
 
