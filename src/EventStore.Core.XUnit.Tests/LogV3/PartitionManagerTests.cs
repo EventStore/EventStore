@@ -215,11 +215,9 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 		}
 
 		public void OnCheckedOut(ITransactionFileTracker tracker) {
-			throw new NotImplementedException();
 		}
 
 		public void OnReturned() {
-			throw new NotImplementedException();
 		}
 
 		public void Reposition(long position) {

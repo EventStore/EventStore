@@ -16,11 +16,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 
 		public void OnCheckedOut(ITransactionFileTracker tracker) {
-			throw new NotImplementedException();
 		}
 
 		public void OnReturned() {
-			throw new NotImplementedException();
 		}
 
 		public void AddRecord(ILogRecord record, long position){
