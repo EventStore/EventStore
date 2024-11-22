@@ -198,7 +198,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_events_forward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).Records;
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10, ITransactionFileTracker.NoOp).Records;
 			Assert.AreEqual(6, records.Count);
 			Assert.AreEqual(_p2.EventId, records[0].Event.EventId);
 			Assert.AreEqual(_p4.EventId, records[1].Event.EventId);
@@ -225,7 +225,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		[Test]
 		public void
 			read_all_events_forward_returns_no_transaction_records_when_prepare_position_is_greater_than_last_prepare_in_commit() {
-			var records = ReadIndex.ReadAllEventsForward(new TFPos(_t1CommitPos, _t1CommitPos), 10).Records;
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(_t1CommitPos, _t1CommitPos), 10, ITransactionFileTracker.NoOp).Records;
 			Assert.AreEqual(1, records.Count);
 			Assert.AreEqual(_random1.EventId, records[0].Event.EventId);
 		}
@@ -240,7 +240,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		[Test]
 		public void read_all_events_forward_returns_correct_events_starting_in_the_middle_of_tf() {
 			var res1 = ReadIndex.ReadAllEventsForward(new TFPos(_t2CommitPos, _p4.LogPosition),
-				10); // end of first commit
+				10, ITransactionFileTracker.NoOp); // end of first commit
 			Assert.AreEqual(5, res1.Records.Count);
 			Assert.AreEqual(_p4.EventId, res1.Records[0].Event.EventId);
 			Assert.AreEqual(_p1.EventId, res1.Records[1].Event.EventId);
@@ -264,7 +264,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			Assert.AreEqual(_p4.EventId, res1.Records[2].Event.EventId);
 			Assert.AreEqual(_p2.EventId, res1.Records[3].Event.EventId);
 
-			var res2 = ReadIndex.ReadAllEventsForward(res1.PrevPos, 10);
+			var res2 = ReadIndex.ReadAllEventsForward(res1.PrevPos, 10, ITransactionFileTracker.NoOp);
 			Assert.AreEqual(2, res2.Records.Count);
 			Assert.AreEqual(_p5.EventId, res2.Records[0].Event.EventId);
 		}
@@ -276,7 +276,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			int count = 0;
 			var pos = new TFPos(0, 0);
 			IndexReadAllResult result;
-			while ((result = ReadIndex.ReadAllEventsForward(pos, 1)).Records.Count != 0) {
+			while ((result = ReadIndex.ReadAllEventsForward(pos, 1, ITransactionFileTracker.NoOp)).Records.Count != 0) {
 				Assert.AreEqual(1, result.Records.Count);
 				Assert.AreEqual(recs[count].EventId, result.Records[0].Event.EventId);
 				pos = result.NextPos;
@@ -310,7 +310,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			int count = 0;
 			var pos = new TFPos(0, 0);
 			IndexReadAllResult result;
-			while ((result = ReadIndex.ReadAllEventsForward(pos, 1)).Records.Count != 0) {
+			while ((result = ReadIndex.ReadAllEventsForward(pos, 1, ITransactionFileTracker.NoOp)).Records.Count != 0) {
 				Assert.AreEqual(1, result.Records.Count);
 				Assert.AreEqual(recs[count].EventId, result.Records[0].Event.EventId);
 
@@ -345,7 +345,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				var localPos = result.PrevPos;
 				int localCount = 0;
 				IndexReadAllResult localResult;
-				while ((localResult = ReadIndex.ReadAllEventsForward(localPos, 1)).Records.Count != 0) {
+				while ((localResult = ReadIndex.ReadAllEventsForward(localPos, 1, ITransactionFileTracker.NoOp)).Records.Count != 0) {
 					Assert.AreEqual(1, localResult.Records.Count);
 					Assert.AreEqual(recs[count - 1 - localCount].EventId, localResult.Records[0].Event.EventId);
 					localPos = localResult.NextPos;

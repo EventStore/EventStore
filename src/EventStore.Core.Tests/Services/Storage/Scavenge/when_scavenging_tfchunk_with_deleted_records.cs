@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void should_be_able_to_read_the_all_stream() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, ITransactionFileTracker.NoOp).EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(5, events.Count());

@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
@@ -26,7 +27,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		[Test]
 		public void
 			read_all_forward_does_not_return_scavenged_deleted_stream_events_and_return_remaining_plus_delete_record() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, ITransactionFileTracker.NoOp).EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(2, events.Length);
@@ -56,7 +57,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_forward_from_beginning_of_2nd_chunk_with_max_1_record_returns_1st_record_from_3rd_chunk() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(10000, 10000), 100).EventRecords()
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(10000, 10000), 100, ITransactionFileTracker.NoOp).EventRecords()
 				.Take(1)
 				.Select(r => r.Event)
 				.ToArray();
@@ -66,7 +67,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_forward_with_max_5_records_returns_2_records_from_2nd_chunk_plus_delete_record() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 5).EventRecords()
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 5, ITransactionFileTracker.NoOp).EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(2, events.Length);

@@ -1,5 +1,6 @@
 using System.Linq;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
@@ -52,7 +53,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_events_forward_does_not_return_duplicate() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, ITransactionFileTracker.NoOp).EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(11, events.Length);

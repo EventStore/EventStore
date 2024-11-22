@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Returns event records in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
-		IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ITransactionFileTracker tracker = null); //qqqqq make not optional
+		IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ITransactionFileTracker tracker);
 
 		/// <summary>
 		/// Returns event records in the reverse sequence they were committed into TF.
