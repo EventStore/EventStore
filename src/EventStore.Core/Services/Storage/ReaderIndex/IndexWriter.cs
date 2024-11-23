@@ -7,6 +7,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -68,6 +69,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly INameLookup<TStreamId> _streamNames;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly TStreamId _emptyStreamId;
+		private readonly ITransactionFileTracker _tracker;
 		private readonly IStickyLRUCache<long, TransactionInfo<TStreamId>> _transactionInfoCache =
 			new StickyLRUCache<long, TransactionInfo<TStreamId>>(ESConsts.TransactionMetadataCacheCapacity);
 
@@ -94,6 +96,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameLookup<TStreamId> streamNames,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			TStreamId emptyStreamId,
+			ITransactionFileTrackerFactory trackers,
 			ISizer<TStreamId> inMemorySizer) {
 			Ensure.NotNull(indexBackend, "indexBackend");
 			Ensure.NotNull(indexReader, "indexReader");
@@ -110,6 +113,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_streamNames = streamNames;
 			_systemStreams = systemStreams;
 			_emptyStreamId = emptyStreamId;
+			_tracker = trackers.GetOrAdd(SystemAccounts.SystemWriterName);
 		}
 
 		public void Reset() {
@@ -123,7 +127,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public CommitCheckResult<TStreamId> CheckCommitStartingAt(long transactionPosition, long commitPosition) {
 			TStreamId streamId;
 			long expectedVersion;
-			using (var reader = _indexBackend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
+			using (var reader = _indexBackend.BorrowReader(_tracker)) {
 				try {
 					var prepare = GetPrepare(reader, transactionPosition);
 					if (prepare == null) {
@@ -213,11 +217,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if(first) /*no data in transaction*/
 					return new CommitCheckResult<TStreamId>(CommitDecision.Ok, streamId, curVersion, -1, -1, IsSoftDeleted(streamId));
 				else{
-					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp) >= endEventNumber;
+					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId, _tracker) >= endEventNumber;
 					//TODO(clc): the new index should hold the log positions removing this read
 					//n.b. the index will never have the event in the case of NotReady as it only committed records are indexed
 					//in that case the position will need to come from the pre-index
-					var idempotentEvent = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, endEventNumber, ITransactionFileTracker.NoOp);
+					var idempotentEvent = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, endEventNumber, _tracker);
 					var logPos = idempotentEvent.Result == ReadEventResult.Success
 						? idempotentEvent.Record.LogPosition : -1; 					
 					if(isReplicated)
@@ -238,7 +242,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					    && prepInfo.EventNumber == eventNumber)
 						continue;
 
-					var res = _indexReader.ReadPrepare(streamId, eventNumber, ITransactionFileTracker.NoOp);
+					var res = _indexReader.ReadPrepare(streamId, eventNumber, _tracker);
 					if (res != null && res.EventId == eventId)
 						continue;
 
@@ -257,11 +261,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if(eventNumber == expectedVersion) /* no data in transaction */
 					return new CommitCheckResult<TStreamId>(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
 				else{
-					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp) >= eventNumber;
+					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId, _tracker) >= eventNumber;
 					//TODO(clc): the new index should hold the log positions removing this read
 					//n.b. the index will never have the event in the case of NotReady as it only committed records are indexed
 					//in that case the position will need to come from the pre-index
-					var idempotentEvent = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, eventNumber, ITransactionFileTracker.NoOp);
+					var idempotentEvent = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, eventNumber, _tracker);
 					var logPos = idempotentEvent.Result == ReadEventResult.Success
 						? idempotentEvent.Record.LogPosition : -1; 
 					if(isReplicated)
@@ -362,7 +366,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private bool GetTransactionInfoUncached(long writerCheckpoint, long transactionId,
 			out TransactionInfo<TStreamId> transactionInfo) {
-			using (var reader = _indexBackend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
+			using (var reader = _indexBackend.BorrowReader(_tracker)) {
 				reader.Reposition(writerCheckpoint);
 				SeqReadResult result;
 				while ((result = reader.TryReadPrev()).Success) {
@@ -424,7 +428,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private IEnumerable<IPrepareLogRecord<TStreamId>> GetTransactionPrepares(long transactionPos, long commitPos) {
-			using (var reader = _indexBackend.BorrowReader(ITransactionFileTracker.NoOp)) { //qq
+			using (var reader = _indexBackend.BorrowReader(_tracker)) {
 				reader.Reposition(transactionPos);
 
 				// in case all prepares were scavenged, we should not read past Commit LogPosition
@@ -459,7 +463,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			long lastEventNumber;
 			if (_streamVersions.TryGet(streamId, out lastEventNumber))
 				return lastEventNumber;
-			return _indexReader.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp);
+			return _indexReader.GetStreamLastEventNumber(streamId, _tracker);
 		}
 
 		public StreamMetadata GetStreamMetadata(TStreamId streamId) {
@@ -472,7 +476,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return m;
 			}
 
-			return _indexReader.GetStreamMetadata(streamId, ITransactionFileTracker.NoOp);
+			return _indexReader.GetStreamMetadata(streamId, _tracker);
 		}
 
 		public RawMetaInfo GetStreamRawMeta(TStreamId streamId) {
@@ -481,7 +485,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			StreamMeta meta;
 			if (!_streamRawMetas.TryGet(streamId, out meta))
-				meta = new StreamMeta(_indexReader.ReadPrepare(metastreamId, metaLastEventNumber, ITransactionFileTracker.NoOp).Data, null);
+				meta = new StreamMeta(_indexReader.ReadPrepare(metastreamId, metaLastEventNumber, _tracker).Data, null);
 
 			return new RawMetaInfo(metaLastEventNumber, meta.RawMeta);
 		}

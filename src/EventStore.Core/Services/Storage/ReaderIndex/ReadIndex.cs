@@ -90,7 +90,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var eventTypeNames = streamNamesProvider.EventTypes;
 			var streamExistenceFilterInitializer = streamNamesProvider.StreamExistenceFilterInitializer;
 
-			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
+			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, tfTrackers, sizer);
 			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex,
 				_streamNames, eventTypeIndex, eventTypeNames, systemStreams, streamExistenceFilter,
 				streamExistenceFilterInitializer, indexCheckpoint, indexStatusTracker, indexTracker, tfTrackers, additionalCommitChecks);

@@ -1264,7 +1264,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				Interlocked.Increment(ref _memStreamCount);
 				var stream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength);
-				reader = new TFChunkBulkReader(this, stream, isMemory: true);
+				reader = new TFChunkBulkReader(this, stream, isMemory: true); //qq tracking the bytes here would be nice, under a 'system-replication'
 				return true;
 			}
 		}

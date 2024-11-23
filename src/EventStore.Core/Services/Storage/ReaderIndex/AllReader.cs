@@ -209,7 +209,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var consideredEventsCount = 0L;
 			bool firstCommit = true;
 			var reachedEndOfStream = false;
-			using (var reader = _backend.BorrowReader(tracker)) { //qq
+			using (var reader = _backend.BorrowReader(tracker)) {
 				long nextCommitPostPos = pos.CommitPosition;
 				while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
 					reader.Reposition(nextCommitPostPos);
