@@ -153,7 +153,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			if (_scavenge) {
 				if (_completeLastChunkOnScavenge)
 					Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
-				_scavenger = new TFChunkScavenger<TStreamId>(Serilog.Log.Logger, Db, new FakeTFScavengerLog(), TableIndex, ReadIndex, _logFormat.Metastreams);
+				_scavenger = new TFChunkScavenger<TStreamId>(Serilog.Log.Logger, Db, new FakeTFScavengerLog(), TableIndex, ReadIndex, _logFormat.Metastreams,
+					ITransactionFileTrackerFactory.NoOp);
 				await _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks,
 					scavengeIndex: _scavengeIndex);
 			}

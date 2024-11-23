@@ -29,6 +29,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				maxChunkDataSize: _db.Config.ChunkSize,
 				scavengerLog: scavengerLogger,
 				throttle: throttle,
+				tracker: ITransactionFileTracker.NoOp,
 				ct: cancellationToken);
 		}
 	}

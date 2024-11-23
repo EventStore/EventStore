@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			var scavenger = new TFChunkScavenger<TStreamId>(Serilog.Log.Logger, _db, new FakeTFScavengerLog(), new FakeTableIndex<TStreamId>(),
 				new FakeReadIndex<TLogFormat, TStreamId>(x => EqualityComparer<TStreamId>.Default.Equals(x, streamId), _logFormat.Metastreams),
-				_logFormat.Metastreams);
+				_logFormat.Metastreams, ITransactionFileTrackerFactory.NoOp);
 			await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 
 			_scavengedChunk = _db.Manager.GetChunk(0);

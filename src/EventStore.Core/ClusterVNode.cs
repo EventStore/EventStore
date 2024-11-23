@@ -1380,6 +1380,7 @@ namespace EventStore.Core {
 							tableIndex: tableIndex,
 							readIndex: readIndex,
 							metastreams: logFormat.SystemStreams,
+							tfTrackers: trackers.TransactionFileTrackers,
 							unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
 							threads: message.Threads)));
 			}

@@ -18,5 +18,6 @@ namespace EventStore.Core.Services.UserManagement {
 		public static readonly string SystemRedactionName = "system-redaction";
 		public static readonly string SystemIndexCommitterName = "system-index-committer";
 		public static readonly string SystemPersistentSubscriptionsName = "system-persistent-subscriptions";
+		public static readonly string SystemScavengeName = "system-scavenge";
 	}
 }
