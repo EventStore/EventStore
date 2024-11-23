@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			SeqReadResult res;
 			int count = 0;
-			while ((res = seqReader.TryReadNext()).Success) {
+			while ((res = seqReader.TryReadNext(ITransactionFileTracker.NoOp)).Success) {
 				var rec = _records[count];
 				Assert.AreEqual(rec, res.LogRecord);
 				Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);
@@ -103,7 +103,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			SeqReadResult res;
 			int count = 0;
-			while ((res = seqReader.TryReadPrev()).Success) {
+			while ((res = seqReader.TryReadPrev(ITransactionFileTracker.NoOp)).Success) {
 				var rec = _records[RecordsCount - count - 1];
 				Assert.AreEqual(rec, res.LogRecord);
 				Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);
@@ -121,7 +121,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			SeqReadResult res;
 			int count1 = 0;
-			while ((res = seqReader.TryReadNext()).Success) {
+			while ((res = seqReader.TryReadNext(ITransactionFileTracker.NoOp)).Success) {
 				var rec = _records[count1];
 				Assert.AreEqual(rec, res.LogRecord);
 				Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);
@@ -133,7 +133,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.AreEqual(RecordsCount, count1);
 
 			int count2 = 0;
-			while ((res = seqReader.TryReadPrev()).Success) {
+			while ((res = seqReader.TryReadPrev(ITransactionFileTracker.NoOp)).Success) {
 				var rec = _records[RecordsCount - count2 - 1];
 				Assert.AreEqual(rec, res.LogRecord);
 				Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);
@@ -152,7 +152,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 				SeqReadResult res;
 				int count = 0;
-				while ((res = seqReader.TryReadNext()).Success) {
+				while ((res = seqReader.TryReadNext(ITransactionFileTracker.NoOp)).Success) {
 					var rec = _records[i + count];
 					Assert.AreEqual(rec, res.LogRecord);
 					Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);
@@ -172,7 +172,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 				SeqReadResult res;
 				int count = 0;
-				while ((res = seqReader.TryReadPrev()).Success) {
+				while ((res = seqReader.TryReadPrev(ITransactionFileTracker.NoOp)).Success) {
 					var rec = _records[i - count - 1];
 					Assert.AreEqual(rec, res.LogRecord);
 					Assert.AreEqual(rec.LogPosition, res.RecordPrePosition);

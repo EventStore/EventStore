@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Index.IndexV3 {
 			await base.TestFixtureSetUp();
 
 			_indexDir = PathName;
-			var fakeReader = new TFReaderLease(new FakeIndexReader());
+			var fakeReader = new TFReaderLease(new FakeIndexReader(), ITransactionFileTracker.NoOp);
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
@@ -127,34 +127,26 @@ namespace EventStore.Core.Tests.Index.IndexV3 {
 	}
 
 	public class FakeIndexReader : ITransactionFileReader {
-		public void OnCheckedOut(ITransactionFileTracker tracker) {
-			throw new NotImplementedException();
-		}
-
-		public void OnReturned() {
-			throw new NotImplementedException();
-		}
-
 		public void Reposition(long position) {
 			throw new NotImplementedException();
 		}
 
-		public SeqReadResult TryReadNext() {
+		public SeqReadResult TryReadNext(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public SeqReadResult TryReadPrev() {
+		public SeqReadResult TryReadPrev(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged, ITransactionFileTracker tracker) {
 			var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				position % 2 == 0 ? "testStream-2" : "testStream-1", null, -1, DateTime.UtcNow, PrepareFlags.None, "type",
 				null, new byte[0], null);
 			return new RecordReadResult(true, position + 1, record, 1);
 		}
 
-		public bool ExistsAt(long position) {
+		public bool ExistsAt(long position, ITransactionFileTracker tracker) {
 			return true;
 		}
 	}

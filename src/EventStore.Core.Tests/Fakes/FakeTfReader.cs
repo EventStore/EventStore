@@ -3,31 +3,23 @@ using EventStore.Core.TransactionLog;
 
 namespace EventStore.Core.Tests.Fakes {
 	public class FakeTfReader : ITransactionFileReader {
-		public void OnCheckedOut(ITransactionFileTracker tracker) {
-			throw new NotImplementedException();
-		}
-
-		public void OnReturned() {
-			throw new NotImplementedException();
-		}
-
 		public void Reposition(long position) {
 			throw new NotImplementedException();
 		}
 
-		public SeqReadResult TryReadNext() {
+		public SeqReadResult TryReadNext(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public SeqReadResult TryReadPrev() {
+		public SeqReadResult TryReadPrev(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged, ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public bool ExistsAt(long position) {
+		public bool ExistsAt(long position, ITransactionFileTracker tracker) {
 			return true;
 		}
 	}

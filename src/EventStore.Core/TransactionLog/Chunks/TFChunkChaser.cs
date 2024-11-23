@@ -32,7 +32,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public SeqReadResult TryReadNext() {
-			var res = _reader.TryReadNext();
+			var res = _reader.TryReadNext(ITransactionFileTracker.NoOp);
 			if (res.Success)
 				_chaserCheckpoint.Write(res.RecordPostPosition);
 			else

@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		public void Setup() {
 			given();
 			_indexDir = PathName;
-			_fakeReader = new TFReaderLease(new FakeReader());
+			_fakeReader = new TFReaderLease(new FakeReader(), ITransactionFileTracker.NoOp);
 			_indexBackend = new FakeIndexBackend<string>(_fakeReader);
 
 			_logFormat = LogFormatHelper<LogFormat.V2, string>.LogFormatFactory.Create(new() {
@@ -462,34 +462,26 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	}
 
 	public class FakeReader : ITransactionFileReader {
-		public void OnCheckedOut(ITransactionFileTracker tracker) {
-			throw new NotImplementedException();
-		}
-
-		public void OnReturned() {
-			throw new NotImplementedException();
-		}
-
 		public void Reposition(long position) {
 			throw new NotImplementedException();
 		}
 
-		public SeqReadResult TryReadNext() {
+		public SeqReadResult TryReadNext(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public SeqReadResult TryReadPrev() {
+		public SeqReadResult TryReadPrev(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged, ITransactionFileTracker tracker) {
 			var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				position % 2 == 0 ? "account--696193173" : "LPN-FC002_LPK51001", null, -1, DateTime.UtcNow, PrepareFlags.None,
 				"type", null, new byte[0], null);
 			return new RecordReadResult(true, position + 1, record, 1);
 		}
 
-		public bool ExistsAt(long position) {
+		public bool ExistsAt(long position, ITransactionFileTracker tracker) {
 			return true;
 		}
 	}

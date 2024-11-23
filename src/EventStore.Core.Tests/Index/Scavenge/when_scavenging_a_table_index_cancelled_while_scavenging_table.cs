@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			var fakeReader = new TFReaderLease(new FakeIndexReader(l => {
 				cancellationTokenSource.Cancel();
 				return true;
-			}));
+			}), ITransactionFileTracker.NoOp);
 
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();

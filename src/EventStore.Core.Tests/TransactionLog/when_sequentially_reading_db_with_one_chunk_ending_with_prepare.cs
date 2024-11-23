@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			SeqReadResult res;
 			int count = 0;
-			while ((res = seqReader.TryReadNext()).Success) {
+			while ((res = seqReader.TryReadNext(ITransactionFileTracker.NoOp)).Success) {
 				++count;
 				Assert.AreEqual(count == RecordsCount, res.Eof);
 			}

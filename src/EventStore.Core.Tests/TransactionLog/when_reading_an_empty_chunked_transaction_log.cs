@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			db.Open();
 
 			var reader = new TFChunkReader(db, writerchk, 0);
-			Assert.IsFalse(reader.TryReadNext().Success);
+			Assert.IsFalse(reader.TryReadNext(ITransactionFileTracker.NoOp).Success);
 
 			db.Close();
 		}
@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			var reader = new TFChunkReader(db, writerchk, 0);
 
-			Assert.IsFalse(reader.TryReadNext().Success);
+			Assert.IsFalse(reader.TryReadNext(ITransactionFileTracker.NoOp).Success);
 
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			writer.Flush();
 			writer.Close();
 
-			var res = reader.TryReadNext();
+			var res = reader.TryReadNext(ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(rec, res.LogRecord);
 

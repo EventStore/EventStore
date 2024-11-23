@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void trying_to_read_past_writer_checksum_returns_false() {
 			var reader = new TFChunkReader(_db, _writerCheckpoint);
-			Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read(), couldBeScavenged: true).Success);
+			Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read(), couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp).Success);
 		}
 	}
 }

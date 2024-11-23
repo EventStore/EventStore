@@ -3,36 +3,35 @@ using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.TransactionLog {
 	public interface ITransactionFileReader {
-		void OnCheckedOut(ITransactionFileTracker tracker);
-		void OnReturned();
 		void Reposition(long position);
 
-		SeqReadResult TryReadNext();
-		SeqReadResult TryReadPrev();
+		SeqReadResult TryReadNext(ITransactionFileTracker tracker);
+		SeqReadResult TryReadPrev(ITransactionFileTracker tracker);
 
-		RecordReadResult TryReadAt(long position, bool couldBeScavenged);
-		bool ExistsAt(long position);
+		RecordReadResult TryReadAt(long position, bool couldBeScavenged, ITransactionFileTracker tracker);
+		bool ExistsAt(long position, ITransactionFileTracker tracker);
 	}
 
 	public readonly struct TFReaderLease : IDisposable {
 		public readonly ITransactionFileReader Reader;
+		private readonly ITransactionFileTracker _tracker;
 		private readonly ObjectPool<ITransactionFileReader> _pool;
 
 		public TFReaderLease(ObjectPool<ITransactionFileReader> pool, ITransactionFileTracker tracker) {
 			_pool = pool;
+			_tracker = tracker;
 			Reader = pool.Get();
-			Reader.OnCheckedOut(tracker);
 		}
 
-		public TFReaderLease(ITransactionFileReader reader) {
+		// tests only
+		public TFReaderLease(ITransactionFileReader reader, ITransactionFileTracker tracker) {
 			_pool = null;
+			_tracker = tracker;
 			Reader = reader;
-			//qq what do we want to do about providing/clearing a tracker here?
 		}
 
 		void IDisposable.Dispose() {
 			if (_pool != null) {
-				Reader.OnReturned();
 				_pool.Return(Reader);
 			}
 		}
@@ -42,19 +41,19 @@ namespace EventStore.Core.TransactionLog {
 		}
 
 		public SeqReadResult TryReadNext() {
-			return Reader.TryReadNext();
+			return Reader.TryReadNext(_tracker);
 		}
 
 		public SeqReadResult TryReadPrev() {
-			return Reader.TryReadPrev();
+			return Reader.TryReadPrev(_tracker);
 		}
 
 		public bool ExistsAt(long position) {
-			return Reader.ExistsAt(position);
+			return Reader.ExistsAt(position, _tracker);
 		}
 
 		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
-			return Reader.TryReadAt(position, couldBeScavenged);
+			return Reader.TryReadAt(position, couldBeScavenged, _tracker);
 		}
 	}
 }

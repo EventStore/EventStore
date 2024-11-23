@@ -15,12 +15,6 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_recordOffset = recordOffset;
 		}
 
-		public void OnCheckedOut(ITransactionFileTracker tracker) {
-		}
-
-		public void OnReturned() {
-		}
-
 		public void AddRecord(ILogRecord record, long position){
 			_records.Add(position, record);
 		}
@@ -29,7 +23,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_curPosition = position;
 		}
 
-		public SeqReadResult TryReadNext() {
+		public SeqReadResult TryReadNext(ITransactionFileTracker tracker) {
 			NumReads++;
 			if (_records.ContainsKey(_curPosition)){
 				var pos = _curPosition;
@@ -40,11 +34,11 @@ namespace EventStore.Core.Tests.Services.Storage {
 			}
 		}
 
-		public SeqReadResult TryReadPrev() {
+		public SeqReadResult TryReadPrev(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged, ITransactionFileTracker tracker) {
 			NumReads++;
 			if (_records.ContainsKey(position)){
 				return new RecordReadResult(true, 0, _records[position], 0);
@@ -53,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			}
 		}
 
-		public bool ExistsAt(long position) {
+		public bool ExistsAt(long position, ITransactionFileTracker tracker) {
 			return _records.ContainsKey(position);
 		}
 	}

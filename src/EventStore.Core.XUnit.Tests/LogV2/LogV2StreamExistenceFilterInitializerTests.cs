@@ -27,14 +27,14 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 					version: PTableVersions.IndexV4,
 					maxSize: 1_000_000 * 2),
 				maxSizeForMemory: 100_000,
-				tfReaderFactory: tracker => new TFReaderLease(_log),
+				tfReaderFactory: tracker => new TFReaderLease(_log, ITransactionFileTracker.NoOp),
 				ptableVersion: PTableVersions.IndexV4,
 				maxAutoMergeIndexLevel: int.MaxValue,
 				pTableMaxReaderCount: 5);
 			_tableIndex.Initialize(0);
 
 			_sut = new LogV2StreamExistenceFilterInitializer(
-				tfReaderFactory: tracker => new TFReaderLease(_log),
+				tfReaderFactory: tracker => new TFReaderLease(_log, ITransactionFileTracker.NoOp),
 				tableIndex: _tableIndex);
 			var hasher = new CompositeHasher<string>(new XXHashUnsafe(), new Murmur3AUnsafe());
 			_filter = new MockExistenceFilter(hasher);

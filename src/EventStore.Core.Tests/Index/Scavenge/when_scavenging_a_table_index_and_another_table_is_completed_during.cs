@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 				if (!scavengeBlocker.Wait(5000))
 					throw new Exception("Failed to continue.");
 				return false;
-			}));
+			}), ITransactionFileTracker.NoOp);
 
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();

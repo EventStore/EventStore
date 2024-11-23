@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 			_indexDir = PathName;
 
-			var fakeReader = new TFReaderLease(new FakeIndexReader());
+			var fakeReader = new TFReaderLease(new FakeIndexReader(), ITransactionFileTracker.NoOp);
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",

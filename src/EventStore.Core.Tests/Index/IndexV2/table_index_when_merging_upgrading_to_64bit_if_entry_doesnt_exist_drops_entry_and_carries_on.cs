@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 
 			var emptyStreamId = LogFormatHelper<TLogFormat, TStreamId>.EmptyStreamId;
 			_indexDir = PathName;
-			var fakeReader = new TFReaderLease(new FakeIndexReader2());
+			var fakeReader = new TFReaderLease(new FakeIndexReader2(), ITransactionFileTracker.NoOp);
 			_tableIndex = new TableIndex<TStreamId>(_indexDir, _lowHasher, _highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: 3),
 				_ => fakeReader,
@@ -135,27 +135,19 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 		}
 
 		private class FakeIndexReader2 : ITransactionFileReader {
-			public void OnCheckedOut(ITransactionFileTracker tracker) {
-				throw new NotImplementedException();
-			}
-
-			public void OnReturned() {
-				throw new NotImplementedException();
-			}
-
 			public void Reposition(long position) {
 				throw new NotImplementedException();
 			}
 
-			public SeqReadResult TryReadNext() {
+			public SeqReadResult TryReadNext(ITransactionFileTracker tracker) {
 				throw new NotImplementedException();
 			}
 
-			public SeqReadResult TryReadPrev() {
+			public SeqReadResult TryReadPrev(ITransactionFileTracker tracker) {
 				throw new NotImplementedException();
 			}
 
-			public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+			public RecordReadResult TryReadAt(long position, bool couldBeScavenged, ITransactionFileTracker tracker) {
 				TStreamId streamId;
 				switch (position) {
 					case 1:
@@ -178,7 +170,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 				return new RecordReadResult(true, position + 1, record, 1);
 			}
 
-			public bool ExistsAt(long position) {
+			public bool ExistsAt(long position, ITransactionFileTracker tracker) {
 				return position != 2 && position != 1;
 			}
 		}

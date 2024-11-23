@@ -117,7 +117,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 						reader.Reposition(_writer.FlushedPosition);
 
 						SeqReadResult result;
-						while ((result = reader.TryReadPrev()).Success) {
+						while ((result = reader.TryReadPrev(ITransactionFileTracker.NoOp)).Success) {
 							var rec = result.LogRecord;
 							if (rec.RecordType != LogRecordType.System ||
 								((ISystemLogRecord)rec).SystemRecordType != SystemRecordType.Epoch)
@@ -147,7 +147,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			}
 		}
 		private EpochRecord ReadEpochAt(ITransactionFileReader reader, long epochPos) {
-			var result = reader.TryReadAt(epochPos, couldBeScavenged: false);
+			var result = reader.TryReadAt(epochPos, couldBeScavenged: false, tracker: ITransactionFileTracker.NoOp);
 			if (!result.Success)
 				throw new Exception($"Could not find Epoch record at LogPosition {epochPos}.");
 			if (result.LogRecord.RecordType != LogRecordType.System)
@@ -201,7 +201,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				try {
 					epoch = firstEpoch;
 					do {
-						var result = reader.TryReadAt(epoch.PrevEpochPosition, couldBeScavenged: false);
+						var result = reader.TryReadAt(epoch.PrevEpochPosition, couldBeScavenged: false, tracker: ITransactionFileTracker.NoOp);
 						if (!result.Success)
 							throw new Exception(
 								$"Could not find Epoch record at LogPosition {epoch.PrevEpochPosition}.");
@@ -255,7 +255,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			// epochNumber < _minCachedEpochNumber
 			var reader = _readers.Get();
 			try {
-				var res = reader.TryReadAt(epochPosition, couldBeScavenged: false);
+				var res = reader.TryReadAt(epochPosition, couldBeScavenged: false, tracker: ITransactionFileTracker.NoOp);
 				if (!res.Success || res.LogRecord.RecordType != LogRecordType.System)
 					return false;
 				var sysRec = (ISystemLogRecord)res.LogRecord;
@@ -381,13 +381,13 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				reader.Reposition(epoch.PrevEpochPosition);
 
 				// read the epoch
-				var result = reader.TryReadNext();
+				var result = reader.TryReadNext(ITransactionFileTracker.NoOp);
 				if (!result.Success)
 					return false;
 
 				// read the epoch-information (if there is one)
 				while (true) {
-					result = reader.TryReadNext();
+					result = reader.TryReadNext(ITransactionFileTracker.NoOp);
 					if (!result.Success)
 						return false;
 

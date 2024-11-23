@@ -17,10 +17,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		public ITransactionFileTracker Tracker { get; private set; } = ITransactionFileTracker.NoOp;
 
+		//qq is this always called?
 		public void OnCheckedOut(ITransactionFileTracker tracker) {
 			Tracker = tracker;
 		}
 
+		//qq rename, this needs to be called before being returned
 		public void OnReturned() {
 			Tracker = ITransactionFileTracker.NoOp;
 		}

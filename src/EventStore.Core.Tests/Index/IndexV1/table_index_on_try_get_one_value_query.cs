@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			await base.TestFixtureSetUp();
 
 			_indexDir = PathName;
-			var fakeReader = new TFReaderLease(new FakeTfReader());
+			var fakeReader = new TFReaderLease(new FakeTfReader(), ITransactionFileTracker.NoOp);
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
