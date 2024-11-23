@@ -3,14 +3,14 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class ChunkReaderForIndexExecutor<TStreamId> : IChunkReaderForIndexExecutor<TStreamId> {
-		private readonly Func<ITransactionFileTracker, TFReaderLease> _tfReaderFactory;
+		private readonly Func<TFReaderLease> _tfReaderFactory;
 
-		public ChunkReaderForIndexExecutor(Func<ITransactionFileTracker, TFReaderLease> tfReaderFactory) {
+		public ChunkReaderForIndexExecutor(Func<TFReaderLease> tfReaderFactory) {
 			_tfReaderFactory = tfReaderFactory;
 		}
 
 		public bool TryGetStreamId(long position, out TStreamId streamId) {
-			using (var reader = _tfReaderFactory(ITransactionFileTracker.NoOp)) { //qq
+			using (var reader = _tfReaderFactory()) {
 				var result = reader.TryReadAt(position, couldBeScavenged: true);
 				if (!result.Success) {
 					streamId = default;

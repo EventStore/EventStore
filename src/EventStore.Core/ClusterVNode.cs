@@ -66,6 +66,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Mono.Unix.Native;
 using ILogger = Serilog.ILogger;
+using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
@@ -1278,6 +1279,8 @@ namespace EventStore.Core {
 						},
 						dispose: backend => backend.Dispose());
 
+					var tracker = trackers.TransactionFileTrackers.GetOrAdd(SystemAccounts.SystemScavengeName);
+
 					var state = new ScavengeState<TStreamId>(
 						logger,
 						longHasher,
@@ -1294,8 +1297,9 @@ namespace EventStore.Core {
 							logFormat.Metastreams,
 							logFormat.StreamIdConverter,
 							Db.Config.ReplicationCheckpoint,
+							tracker,
 							TFConsts.ChunkSize),
-						index: new IndexReaderForAccumulator<TStreamId>(readIndex),
+						index: new IndexReaderForAccumulator<TStreamId>(readIndex, tracker),
 						cancellationCheckPeriod: cancellationCheckPeriod,
 						throttle: throttle);
 
@@ -1303,8 +1307,9 @@ namespace EventStore.Core {
 						logger: logger,
 						new IndexReaderForCalculator<TStreamId>(
 							readIndex,
-							tracker => new TFReaderLease(readerPool, tracker),
-							state.LookupUniqueHashUser),
+							() => new TFReaderLease(readerPool, tracker),
+							state.LookupUniqueHashUser,
+							tracker),
 						chunkSize: TFConsts.ChunkSize,
 						cancellationCheckPeriod: cancellationCheckPeriod,
 						buffer: calculatorBuffer,
@@ -1313,7 +1318,7 @@ namespace EventStore.Core {
 					var chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
 						logger,
 						logFormat.Metastreams,
-						new ChunkManagerForExecutor<TStreamId>(logger, Db.Manager, Db.Config),
+						new ChunkManagerForExecutor<TStreamId>(logger, Db.Manager, Db.Config, tracker),
 						chunkSize: Db.Config.ChunkSize,
 						unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
 						cancellationCheckPeriod: cancellationCheckPeriod,
@@ -1323,13 +1328,13 @@ namespace EventStore.Core {
 					var chunkMerger = new ChunkMerger(
 						logger: logger,
 						mergeChunks: !options.Database.DisableScavengeMerging,
-						backend: new OldScavengeChunkMergerBackend(logger, db: Db),
+						backend: new OldScavengeChunkMergerBackend(logger, db: Db, tracker: tracker),
 						throttle: throttle);
 
 					var indexExecutor = new IndexExecutor<TStreamId>(
 						logger,
 						new IndexScavenger(tableIndex),
-						new ChunkReaderForIndexExecutor<TStreamId>(tracker => new TFReaderLease(readerPool, tracker)),
+						new ChunkReaderForIndexExecutor<TStreamId>(() => new TFReaderLease(readerPool, tracker)),
 						unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
 						restPeriod: 32_768,
 						throttle: throttle);

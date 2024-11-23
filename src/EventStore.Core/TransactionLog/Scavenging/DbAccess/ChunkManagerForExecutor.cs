@@ -9,11 +9,14 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private readonly ILogger _logger;
 		private readonly TFChunkManager _manager;
 		private readonly TFChunkDbConfig _dbConfig;
+		private readonly ITransactionFileTracker _tracker;
 
-		public ChunkManagerForExecutor(ILogger logger, TFChunkManager manager, TFChunkDbConfig dbConfig) {
+		public ChunkManagerForExecutor(ILogger logger, TFChunkManager manager, TFChunkDbConfig dbConfig,
+			ITransactionFileTracker tracker) {
 			_logger = logger;
 			_manager = manager;
 			_dbConfig = dbConfig;
+			_tracker = tracker;
 		}
 
 		public IChunkWriterForExecutor<TStreamId, ILogRecord> CreateChunkWriter(
@@ -24,7 +27,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 		public IChunkReaderForExecutor<TStreamId, ILogRecord> GetChunkReaderFor(long position) {
 			var tfChunk = _manager.GetChunkFor(position);
-			return new ChunkReaderForExecutor<TStreamId>(tfChunk);
+			return new ChunkReaderForExecutor<TStreamId>(tfChunk, _tracker);
 		}
 
 		public void SwitchChunk(

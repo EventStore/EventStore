@@ -5,17 +5,20 @@ using EventStore.Core.TransactionLog.LogRecords;
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class IndexReaderForCalculator<TStreamId> : IIndexReaderForCalculator<TStreamId> {
 		private readonly IReadIndex<TStreamId> _readIndex;
-		private readonly Func<ITransactionFileTracker, TFReaderLease> _tfReaderFactory;
+		private readonly Func<TFReaderLease> _tfReaderFactory;
 		private readonly Func<ulong, TStreamId> _lookupUniqueHashUser;
+		private readonly ITransactionFileTracker _tracker;
 
 		public IndexReaderForCalculator(
 			IReadIndex<TStreamId> readIndex,
-			Func<ITransactionFileTracker, TFReaderLease> tfReaderFactory,
-			Func<ulong, TStreamId> lookupUniqueHashUser) {
+			Func<TFReaderLease> tfReaderFactory,
+			Func<ulong, TStreamId> lookupUniqueHashUser,
+			ITransactionFileTracker tracker) {
 
 			_readIndex = readIndex;
 			_tfReaderFactory = tfReaderFactory;
 			_lookupUniqueHashUser = lookupUniqueHashUser;
+			_tracker = tracker;
 		}
 
 		public long GetLastEventNumber(
@@ -28,12 +31,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					return _readIndex.GetStreamLastEventNumber_NoCollisions(
 						handle.StreamHash,
 						_lookupUniqueHashUser,
-						scavengePoint.Position, ITransactionFileTracker.NoOp);
+						scavengePoint.Position, _tracker);
 				case StreamHandle.Kind.Id:
 					// uses the index and the log to fetch the last event number
 					return _readIndex.GetStreamLastEventNumber_KnownCollisions(
 						handle.StreamId,
-						scavengePoint.Position, ITransactionFileTracker.NoOp);
+						scavengePoint.Position, _tracker);
 				default:
 					throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
 			}
@@ -59,14 +62,14 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 						handle.StreamId,
 						fromEventNumber,
 						maxCount,
-						scavengePoint.Position, ITransactionFileTracker.NoOp);
+						scavengePoint.Position, _tracker);
 				default:
 					throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
 			}
 		}
 
 		public bool IsTombstone(long logPosition) {
-			using (var reader = _tfReaderFactory(ITransactionFileTracker.NoOp)) { //qq
+			using (var reader = _tfReaderFactory()) {
 				var result = reader.TryReadAt(logPosition, couldBeScavenged: true);
 
 				if (!result.Success)
