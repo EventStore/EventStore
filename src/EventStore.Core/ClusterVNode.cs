@@ -1133,7 +1133,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.InMemoryEventCommitted, Message>());
 
-			var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, readIndex);
+			var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, readIndex, trackers.TransactionFileTrackers);
 			subscrBus.Subscribe<SystemMessage.SystemStart>(subscription);
 			subscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(subscription);
 			subscrBus.Subscribe<TcpMessage.ConnectionClosed>(subscription);

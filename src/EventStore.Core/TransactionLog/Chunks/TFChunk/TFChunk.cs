@@ -254,7 +254,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			CreateReaderStreams();
 
 			// no need to track reading the header/footer (currently we only track Prepares read anyway)
-			var reader = GetReaderWorkItem(ITransactionFileTracker.NoOp);
+			var reader = GetReaderWorkItem(ITransactionFileTracker.NoOp); // noop ok, not reading records
 			try {
 				_chunkHeader = ReadHeader(reader.Stream);
 				Log.Debug("Opened completed {chunk} as version {version}", _filename, _chunkHeader.Version);

@@ -179,7 +179,7 @@ public sealed class TelemetryService : IDisposable,
 	private void ReadFirstEpoch() {
 		try {
 			var chunk = _manager.GetChunkFor(0);
-			var result = chunk.TryReadAt(0, false, ITransactionFileTracker.NoOp);
+			var result = chunk.TryReadAt(0, false, ITransactionFileTracker.NoOp); // noop ok, immaterial
 
 			if (!result.Success)
 				return;
