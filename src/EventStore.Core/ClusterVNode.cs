@@ -798,7 +798,8 @@ namespace EventStore.Core {
 				Db,
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				Db.Config.ChaserCheckpoint,
-				Db.Config.OptimizeReadSideCache);
+				Db.Config.OptimizeReadSideCache,
+				trackers.TransactionFileTrackers.For(SystemAccounts.SystemChaserName));
 
 			var storageChaser = new StorageChaser<TStreamId>(
 				_mainQueue,

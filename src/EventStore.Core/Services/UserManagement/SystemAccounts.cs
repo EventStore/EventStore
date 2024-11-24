@@ -13,6 +13,7 @@ namespace EventStore.Core.Services.UserManagement {
 
 		//qq risk if we create a claims principle for projections?
 		//qq consider granularity
+		public static readonly string SystemChaserName = "system-chaser";
 		public static readonly string SystemEpochManagerName = "system-epoch-manager";
 		public static readonly string SystemName = "system";
 		public static readonly string SystemIndexMergeName = "system-index-merge";

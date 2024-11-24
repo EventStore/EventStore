@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_data_is_written() {
-			using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint, false)) {
+			using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint, false, ITransactionFileTracker.NoOp)) {
 				reader.Open();
 				ILogRecord r;
 				Assert.IsTrue(reader.TryReadNext(out r));

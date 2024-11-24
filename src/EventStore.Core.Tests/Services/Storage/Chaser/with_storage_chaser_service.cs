@@ -7,6 +7,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Tests.Services.ElectionsService;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -39,7 +40,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 			await base.TestFixtureSetUp();
 			Db = new TFChunkDb(CreateDbConfig());
 			Db.Open();
-			Chaser = new TFChunkChaser(Db, _writerChk, _chaserChk, false);
+			Chaser = new TFChunkChaser(Db, _writerChk, _chaserChk, false, ITransactionFileTracker.NoOp);
 			Chaser.Open();
 			Writer = new TFChunkWriter(Db);
 			Writer.Open();
