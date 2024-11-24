@@ -34,7 +34,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 			new EnvelopePublisher(new ChannelEnvelope(channel)),
 			_sink,
 			new InMemoryCheckpoint(0),
-			ITransactionFileTrackerFactory.NoOp,
+			ITransactionFileTracker.NoOp,
 			Guid.NewGuid());
 	}
 

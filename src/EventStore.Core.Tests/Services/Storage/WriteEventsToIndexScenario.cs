@@ -148,11 +148,11 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_streamNames = _logFormat.StreamNames;
 			_systemStreams = _logFormat.SystemStreams;
 			_indexWriter = new IndexWriter<TStreamId>(_indexBackend, _indexReader, _streamIds, _streamNames,
-				_systemStreams, emptyStreamId, ITransactionFileTrackerFactory.NoOp, _sizer);
+				_systemStreams, emptyStreamId, ITransactionFileTracker.NoOp, _sizer);
 			_indexCommitter = new IndexCommitter<TStreamId>(_publisher, _indexBackend, _indexReader, _tableIndex,
 				_logFormat.StreamNameIndexConfirmer, _streamNames, _logFormat.EventTypeIndexConfirmer, _logFormat.EventTypes,
 				_systemStreams, _logFormat.StreamExistenceFilter, _logFormat.StreamExistenceFilterInitializer, new InMemoryCheckpoint(-1), new IndexStatusTracker.NoOp(), new IndexTracker.NoOp(),
-				ITransactionFileTrackerFactory.NoOp, false);
+				ITransactionFileTracker.NoOp, false);
 
 			WriteEvents();
 		}

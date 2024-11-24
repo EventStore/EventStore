@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 		public virtual Task SetUp() {
 			_switchChunksLock = new SemaphoreSlimLock();
 			RedactionService = new RedactionService<TStreamId>(new FakeQueuedHandler(), Db, ReadIndex, _switchChunksLock,
-				ITransactionFileTrackerFactory.NoOp);
+				ITransactionFileTracker.NoOp);
 			return Task.CompletedTask;
 		}
 

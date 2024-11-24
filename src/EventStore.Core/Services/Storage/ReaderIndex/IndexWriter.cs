@@ -7,7 +7,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.LogAbstraction;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -96,7 +95,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameLookup<TStreamId> streamNames,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			TStreamId emptyStreamId,
-			ITransactionFileTrackerFactory trackers,
+			ITransactionFileTracker tfTracker,
 			ISizer<TStreamId> inMemorySizer) {
 			Ensure.NotNull(indexBackend, "indexBackend");
 			Ensure.NotNull(indexReader, "indexReader");
@@ -113,7 +112,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_streamNames = streamNames;
 			_systemStreams = systemStreams;
 			_emptyStreamId = emptyStreamId;
-			_tracker = trackers.GetOrAdd(SystemAccounts.SystemWriterName);
+			_tracker = tfTracker;
 		}
 
 		public void Reset() {

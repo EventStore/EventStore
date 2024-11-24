@@ -13,7 +13,6 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using ILogger = Serilog.ILogger;
 using EventStore.LogCommon;
-using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IIndexCommitter {
@@ -72,7 +71,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			ICheckpoint indexChk,
 			IIndexStatusTracker statusTracker,
 			IIndexTracker tracker,
-			ITransactionFileTrackerFactory tfTrackers,
+			ITransactionFileTracker tfTracker,
 			bool additionalCommitChecks) {
 			_bus = bus;
 			_backend = backend;
@@ -89,7 +88,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_additionalCommitChecks = additionalCommitChecks;
 			_statusTracker = statusTracker;
 			_tracker = tracker;
-			_tfTracker = tfTrackers.GetOrAdd(SystemAccounts.SystemIndexCommitterName);
+			_tfTracker = tfTracker;
 		}
 
 		public void Init(long buildToPosition) {

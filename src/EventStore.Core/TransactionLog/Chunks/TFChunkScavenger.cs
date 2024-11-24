@@ -12,7 +12,6 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
@@ -41,7 +40,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public TFChunkScavenger(ILogger logger, TFChunkDb db, ITFChunkScavengerLog scavengerLog, ITableIndex<TStreamId> tableIndex,
 			IReadIndex<TStreamId> readIndex, IMetastreamLookup<TStreamId> metastreams,
-			ITransactionFileTrackerFactory tfTrackers,
+			ITransactionFileTracker tfTracker,
 			long? maxChunkDataSize = null,
 			bool unsafeIgnoreHardDeletes = false, int threads = 1) {
 			Ensure.NotNull(logger, nameof(logger));
@@ -66,7 +65,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_tableIndex = tableIndex;
 			_readIndex = readIndex;
 			_metastreams = metastreams;
-			_tfTracker = tfTrackers.GetOrAdd(SystemAccounts.SystemScavengeName);
+			_tfTracker = tfTracker;
 			_maxChunkDataSize = maxChunkDataSize ?? db.Config.ChunkSize;
 			_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
 			_threads = threads;

@@ -10,6 +10,7 @@ using EventStore.Core.Index;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Metrics;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -90,10 +91,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var eventTypeNames = streamNamesProvider.EventTypes;
 			var streamExistenceFilterInitializer = streamNamesProvider.StreamExistenceFilterInitializer;
 
-			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, tfTrackers, sizer);
+			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, tfTrackers.For(SystemAccounts.SystemWriterName), sizer);
 			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex,
 				_streamNames, eventTypeIndex, eventTypeNames, systemStreams, streamExistenceFilter,
-				streamExistenceFilterInitializer, indexCheckpoint, indexStatusTracker, indexTracker, tfTrackers, additionalCommitChecks);
+				streamExistenceFilterInitializer, indexCheckpoint, indexStatusTracker, indexTracker, tfTrackers.For(SystemAccounts.SystemIndexCommitterName), additionalCommitChecks);
 			_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames, eventTypeNames);
 
 			RegisterHitsMisses(cacheTracker);

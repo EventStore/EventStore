@@ -95,7 +95,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 			var scavenger = new TFChunkScavenger<TStreamId>(Serilog.Log.Logger, _dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
 				_logFormat.Metastreams,
-				ITransactionFileTrackerFactory.NoOp,
+				ITransactionFileTracker.NoOp,
 				unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
 			await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 		}

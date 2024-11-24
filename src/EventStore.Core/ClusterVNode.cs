@@ -598,7 +598,7 @@ namespace EventStore.Core {
 				StreamExistenceFilterSize = options.Database.StreamExistenceFilterSize,
 				StreamExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint,
 				TFReaderLeaseFactory = username => {
-					var tracker = trackers.TransactionFileTrackers.GetOrAdd(username);
+					var tracker = trackers.TransactionFileTrackers.For(username);
 					return new TFReaderLease(readerPool, tracker);
 				}
 			});
@@ -647,7 +647,7 @@ namespace EventStore.Core {
 				() => new HashListMemTable(options.IndexBitnessVersion,
 					maxSize: options.Database.MaxMemTableSize * 2),
 				username => {
-					var tracker = trackers.TransactionFileTrackers.GetOrAdd(username);
+					var tracker = trackers.TransactionFileTrackers.For(username);
 					return new TFReaderLease(readerPool, tracker);
 				},
 				options.IndexBitnessVersion,
@@ -1281,7 +1281,7 @@ namespace EventStore.Core {
 						},
 						dispose: backend => backend.Dispose());
 
-					var tracker = trackers.TransactionFileTrackers.GetOrAdd(SystemAccounts.SystemScavengeName);
+					var tracker = trackers.TransactionFileTrackers.For(SystemAccounts.SystemScavengeName);
 
 					var state = new ScavengeState<TStreamId>(
 						logger,
@@ -1387,7 +1387,7 @@ namespace EventStore.Core {
 							tableIndex: tableIndex,
 							readIndex: readIndex,
 							metastreams: logFormat.SystemStreams,
-							tfTrackers: trackers.TransactionFileTrackers,
+							tfTracker: trackers.TransactionFileTrackers.For(SystemAccounts.SystemScavengeName),
 							unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
 							threads: message.Threads)));
 			}
@@ -1421,7 +1421,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(redactionQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
 
 			var redactionService = new RedactionService<TStreamId>(redactionQueue, Db, _readIndex, _switchChunksLock,
-				trackers.TransactionFileTrackers);
+				trackers.TransactionFileTrackers.For(SystemAccounts.SystemRedactionName));
 			redactionBus.Subscribe<RedactionMessage.GetEventPosition>(redactionService);
 			redactionBus.Subscribe<RedactionMessage.AcquireChunksLock>(redactionService);
 			redactionBus.Subscribe<RedactionMessage.SwitchChunk>(redactionService);
@@ -1454,7 +1454,7 @@ namespace EventStore.Core {
 				_mainQueue,
 				new TelemetrySink(options.Application.TelemetryOptout),
 				Db.Config.WriterCheckpoint.AsReadOnly(),
-				trackers.TransactionFileTrackers,
+				trackers.TransactionFileTrackers.For(SystemAccounts.SystemTelemetryName),
 				memberInfo.InstanceId);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(telemetryService);
 			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(telemetryService);

@@ -9,7 +9,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -47,14 +46,14 @@ public sealed class TelemetryService : IDisposable,
 		IPublisher publisher,
 		ITelemetrySink sink,
 		IReadOnlyCheckpoint writerCheckpoint,
-		ITransactionFileTrackerFactory tfTrackers,
+		ITransactionFileTracker tfTracker,
 		Guid nodeId) {
 
 		_manager = manager;
 		_nodeOptions = nodeOptions;
 		_publisher = publisher;
 		_writerCheckpoint = writerCheckpoint;
-		_tfTracker = tfTrackers.GetOrAdd(SystemAccounts.SystemTelemetryName);
+		_tfTracker = tfTracker;
 		_nodeId = nodeId;
 		Task.Run(async () => {
 			try {
