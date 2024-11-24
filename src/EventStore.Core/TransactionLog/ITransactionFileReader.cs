@@ -23,7 +23,6 @@ namespace EventStore.Core.TransactionLog {
 			Reader = pool.Get();
 		}
 
-		// tests only
 		public TFReaderLease(ITransactionFileReader reader, ITransactionFileTracker tracker) {
 			_pool = null;
 			_tracker = tracker;

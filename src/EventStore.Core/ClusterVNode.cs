@@ -712,6 +712,7 @@ namespace EventStore.Core {
 				logFormat.StreamNameIndex,
 				logFormat.EventTypeIndex,
 				partitionManager,
+				ITransactionFileTrackerFactory.NoOp,
 				NodeInfo.InstanceId);
 			epochManager.Init();
 
@@ -1452,6 +1453,7 @@ namespace EventStore.Core {
 				_mainQueue,
 				new TelemetrySink(options.Application.TelemetryOptout),
 				Db.Config.WriterCheckpoint.AsReadOnly(),
+				trackers.TransactionFileTrackers,
 				memberInfo.InstanceId);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(telemetryService);
 			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(telemetryService);

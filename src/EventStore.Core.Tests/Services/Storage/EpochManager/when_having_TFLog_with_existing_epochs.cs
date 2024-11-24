@@ -57,6 +57,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				_logFormat.CreatePartitionManager(
 					reader: new TFChunkReader(_db, _db.Config.WriterCheckpoint),
 					writer: _writer),
+				ITransactionFileTrackerFactory.NoOp,
 				_instanceId);
 		}
 		private LinkedList<EpochRecord> GetCache(EpochManager<TStreamId> manager) {

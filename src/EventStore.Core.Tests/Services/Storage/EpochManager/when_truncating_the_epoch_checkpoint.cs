@@ -8,6 +8,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLog;
 
 namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 	public abstract class
@@ -61,6 +62,7 @@ namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 				_logFormat.CreatePartitionManager(
 					reader: new TFChunkReader(_db, _db.Config.WriterCheckpoint),
 					writer: _writer),
+				ITransactionFileTrackerFactory.NoOp,
 				_instanceId);
 
 			_epochManager.Init();
