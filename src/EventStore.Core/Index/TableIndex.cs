@@ -465,7 +465,7 @@ namespace EventStore.Core.Index {
 				try {
 					ct.ThrowIfCancellationRequested();
 
-					using (var reader = _tfReaderFactory(SystemAccounts.SystemIndexScavengeName)) {
+					using (var reader = _tfReaderFactory(SystemAccounts.SystemScavengeName)) {
 						var indexmapFile = Path.Combine(_directory, IndexMapFilename);
 
 						Func<IndexEntry, bool> existsAt = entry => reader.ExistsAt(entry.Position);
