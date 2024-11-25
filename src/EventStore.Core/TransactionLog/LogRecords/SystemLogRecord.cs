@@ -3,7 +3,11 @@
 
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext.IO;
 using EventStore.Common.Utils;
+using EventStore.Core.Util;
 using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords;
@@ -23,11 +27,11 @@ public enum SystemRecordSerialization : byte {
 public class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, ISystemLogRecord {
 	public const byte SystemRecordVersion = 0;
 
-	public readonly DateTime TimeStamp;
-	public SystemRecordType SystemRecordType { get; }
-	public readonly SystemRecordSerialization SystemRecordSerialization;
-	public readonly long Reserved;
-	public readonly ReadOnlyMemory<byte> Data;
+	public DateTime TimeStamp { get; private init; }
+	public SystemRecordType SystemRecordType { get; private init; }
+	public SystemRecordSerialization SystemRecordSerialization { get; private init; }
+	public long Reserved { get; private init; }
+	public ReadOnlyMemory<byte> Data { get; private init; }
 
 	public SystemLogRecord(long logPosition,
 		DateTime timeStamp,
@@ -42,25 +46,34 @@ public class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, ISystemLo
 		Data = data ?? NoData;
 	}
 
-	internal SystemLogRecord(BinaryReader reader, byte version, long logPosition) : base(LogRecordType.System,
-		version, logPosition) {
-		if (version != SystemRecordVersion)
+	private SystemLogRecord(byte version, long logPosition)
+		: base(LogRecordType.System, version, logPosition) {
+
+		if (version is not SystemRecordVersion)
 			throw new ArgumentException(string.Format(
 				"SystemRecord version {0} is incorrect. Supported version: {1}.", version, SystemRecordVersion));
+	}
 
-		TimeStamp = new DateTime(reader.ReadInt64());
-		SystemRecordType = (SystemRecordType)reader.ReadByte();
-		if (SystemRecordType == SystemRecordType.Invalid)
-			throw new ArgumentException(string.Format("Invalid SystemRecordType {0} at LogPosition {1}.",
-				SystemRecordType, LogPosition));
-		SystemRecordSerialization = (SystemRecordSerialization)reader.ReadByte();
-		if (SystemRecordSerialization == SystemRecordSerialization.Invalid)
-			throw new ArgumentException(string.Format("Invalid SystemRecordSerialization {0} at LogPosition {1}.",
-				SystemRecordSerialization, LogPosition));
-		Reserved = reader.ReadInt64();
-
-		var dataCount = reader.ReadInt32();
-		Data = dataCount == 0 ? NoData : reader.ReadBytes(dataCount);
+	internal static async ValueTask<SystemLogRecord> ParseAsync(IAsyncBinaryReader reader, byte version, long logPosition, CancellationToken token) {
+		return new SystemLogRecord(version, logPosition) {
+			TimeStamp = new(await reader.ReadLittleEndianAsync<long>(token)),
+			SystemRecordType =
+				(SystemRecordType)(await reader.ReadLittleEndianAsync<byte>(token)) is var recordType
+				&& recordType is not SystemRecordType.Invalid
+					? recordType
+					: throw new ArgumentException(
+						$"Invalid SystemRecordType {recordType} at LogPosition {logPosition}."),
+			SystemRecordSerialization =
+				(SystemRecordSerialization)(await reader.ReadLittleEndianAsync<byte>(token)) is var recordSer
+				&& recordSer is not SystemRecordSerialization.Invalid
+					? recordSer
+					: throw new ArgumentException(
+						$"Invalid SystemRecordSerialization {recordSer} at LogPosition {logPosition}."),
+			Reserved = await reader.ReadLittleEndianAsync<long>(token),
+			Data = await reader.ReadLittleEndianAsync<int>(token) is var dataCount && dataCount > 0
+				? await reader.ReadBytesAsync(dataCount, token)
+				: NoData,
+		};
 	}
 
 	public EpochRecord GetEpochRecord() {
