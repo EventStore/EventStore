@@ -307,7 +307,7 @@ namespace EventStore.Core {
 			metricsConfiguration ??= new();
 			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
-			Db = new TFChunkDb(dbConfig);
+			Db = new TFChunkDb(dbConfig, trackers.TransactionFileTrackers.For(SystemAccounts.System));
 
 			TFChunkDbConfig CreateDbConfig(
 				out SystemStatsHelper statsHelper,
@@ -1465,6 +1465,7 @@ namespace EventStore.Core {
 					_workersHandler,
 					epochManager, options.Cluster.ClusterSize,
 					options.Cluster.UnsafeAllowSurplusNodes,
+					trackers.TransactionFileTrackers.For(SystemAccounts.SystemReplicationName),
 					_queueStatsManager);
 				AddTask(leaderReplicationService.Task);
 				_mainBus.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);

@@ -20,6 +20,7 @@ using EventStore.Core.Tests.Services.ElectionsService;
 using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.Tests.Services.Storage.ReadIndex;
 using EventStore.Core.Time;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -149,6 +150,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			epochManager: epochManager,
 			clusterSize: ClusterSize,
 			unsafeAllowSurplusNodes: false,
+			tfTracker: ITransactionFileTracker.NoOp,
 			queueStatsManager: new QueueStatsManager());
 
 		var tcpSendService = new TcpSendService();

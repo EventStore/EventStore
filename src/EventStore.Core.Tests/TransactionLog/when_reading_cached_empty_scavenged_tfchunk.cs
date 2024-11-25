@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			base.TestFixtureSetUp();
 			_chunk = TFChunkHelper.CreateNewChunk(Filename, isScavenged: true);
 			_chunk.CompleteScavenge(new PosMap[0]);
-			_chunk.CacheInMemory();
+			_chunk.CacheInMemory(ITransactionFileTracker.NoOp);
 		}
 
 		[OneTimeTearDown]

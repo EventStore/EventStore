@@ -15,7 +15,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 			var chunk = TFChunk.CreateNew(Filename, 1024 * 1024, 0, 0, true, false, false, false,
 				Constants.TFChunkInitialReaderCountDefault,
 				Constants.TFChunkMaxReaderCountDefault,
-				false);
+				false,
+				ITransactionFileTracker.NoOp);
 			long logPos = 0;
 			for (int i = 0, n = ChunkFooter.Size / PosMap.FullSize + 1; i < n; ++i) {
 				map.Add(new PosMap(logPos, (int)logPos));
@@ -26,7 +27,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 
 			chunk.CompleteScavenge(map);
 
-			chunk.CacheInMemory();
+			chunk.CacheInMemory(ITransactionFileTracker.NoOp);
 
 			Assert.IsTrue(chunk.IsCached);
 

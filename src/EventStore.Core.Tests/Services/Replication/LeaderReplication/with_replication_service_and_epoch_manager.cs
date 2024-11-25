@@ -85,6 +85,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				EpochManager,
 				ClusterSize,
 				false,
+				ITransactionFileTracker.NoOp,
 				new QueueStatsManager());
 
 			Service.Handle(new SystemMessage.SystemStart());

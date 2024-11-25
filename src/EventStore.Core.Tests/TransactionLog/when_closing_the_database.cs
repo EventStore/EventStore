@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -67,7 +68,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void checkpoints_should_be_flushed_only_when_chunks_are_properly_closed(bool chunksClosed) {
 			if (!chunksClosed) {
 				// acquire a reader to prevent the chunk from being properly closed
-				_db.Manager.GetChunk(0).AcquireReader();
+				_db.Manager.GetChunk(0).AcquireReader(ITransactionFileTracker.NoOp);
 			}
 
 			var writer = new TFChunkWriter(_db);

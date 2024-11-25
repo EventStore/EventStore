@@ -22,7 +22,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		public IChunkWriterForExecutor<TStreamId, ILogRecord> CreateChunkWriter(
 			IChunkReaderForExecutor<TStreamId, ILogRecord> sourceChunk) {
 
-			return new ChunkWriterForExecutor<TStreamId>(_logger, this, _dbConfig, sourceChunk);
+			return new ChunkWriterForExecutor<TStreamId>(_logger, this, _dbConfig, sourceChunk, _tracker);
 		}
 
 		public IChunkReaderForExecutor<TStreamId, ILogRecord> GetChunkReaderFor(long position) {

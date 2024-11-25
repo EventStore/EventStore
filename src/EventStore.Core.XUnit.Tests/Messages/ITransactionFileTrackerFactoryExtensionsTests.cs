@@ -55,6 +55,9 @@ public class ITransactionFileTrackerFactoryExtensionsTests {
 	record FakeTracker(string Username) : ITransactionFileTracker {
 		public void OnRead(ILogRecord record, ITransactionFileTracker.Source source) {
 		}
+
+		public void OnRead(int bytesRead, ITransactionFileTracker.Source source) {
+		}
 	}
 
 	class FakeReadRequest : ClientMessage.ReadRequestMessage {

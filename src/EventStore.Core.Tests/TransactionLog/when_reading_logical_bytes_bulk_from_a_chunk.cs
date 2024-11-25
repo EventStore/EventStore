@@ -1,6 +1,7 @@
 using System;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogV2;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -15,7 +16,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void the_file_will_not_be_deleted_until_reader_released() {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
-			using (var reader = chunk.AcquireReader()) {
+			using (var reader = chunk.AcquireReader(ITransactionFileTracker.NoOp)) {
 				chunk.MarkForDeletion();
 				var buffer = new byte[1024];
 				var result = reader.ReadNextDataBytes(1024, buffer);
@@ -29,7 +30,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void a_read_on_new_file_can_be_performed_but_returns_nothing() {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
-			using (var reader = chunk.AcquireReader()) {
+			using (var reader = chunk.AcquireReader(ITransactionFileTracker.NoOp)) {
 				var buffer = new byte[1024];
 				var result = reader.ReadNextDataBytes(1024, buffer);
 				Assert.IsFalse(result.IsEOF);
@@ -44,7 +45,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void a_read_past_end_of_completed_chunk_does_not_include_footer() {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
 			chunk.Complete(); // chunk has 0 bytes of actual data
-			using (var reader = chunk.AcquireReader()) {
+			using (var reader = chunk.AcquireReader(ITransactionFileTracker.NoOp)) {
 				var buffer = new byte[1024];
 				var result = reader.ReadNextDataBytes(1024, buffer);
 				Assert.IsTrue(result.IsEOF);
@@ -60,7 +61,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void a_read_on_scavenged_chunk_does_not_include_map() {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("afile"), 200, isScavenged: true);
 			chunk.CompleteScavenge(new[] {new PosMap(0, 0), new PosMap(1, 1)});
-			using (var reader = chunk.AcquireReader()) {
+			using (var reader = chunk.AcquireReader(ITransactionFileTracker.NoOp)) {
 				var buffer = new byte[1024];
 				var result = reader.ReadNextDataBytes(1024, buffer);
 				Assert.IsTrue(result.IsEOF);
@@ -82,7 +83,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				new byte[2000], null);
 			Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");
 
-			using (var reader = chunk.AcquireReader()) {
+			using (var reader = chunk.AcquireReader(ITransactionFileTracker.NoOp)) {
 				var buffer = new byte[1024];
 				var result = reader.ReadNextDataBytes(3000, buffer);
 				Assert.IsFalse(result.IsEOF);
@@ -98,7 +99,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
 			var rec = LogRecord.Commit(0, Guid.NewGuid(), 0, 0);
 			Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");
-			using (var reader = chunk.AcquireReader()) {
+			using (var reader = chunk.AcquireReader(ITransactionFileTracker.NoOp)) {
 				var buffer = new byte[1024];
 				var result = reader.ReadNextDataBytes(1024, buffer);
 				Assert.IsFalse(result.IsEOF, "EOF was returned.");
@@ -119,7 +120,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");
 			chunk.Complete();
 
-			using (var reader = chunk.AcquireReader()) {
+			using (var reader = chunk.AcquireReader(ITransactionFileTracker.NoOp)) {
 				var buffer = new byte[1024];
 				var result = reader.ReadNextDataBytes(1024, buffer);
 				Assert.IsTrue(result.IsEOF, "EOF was not returned.");

@@ -31,7 +31,12 @@ public class TFChunkTracker : ITransactionFileTracker {
 			return;
 
 		var (bytes, events) = _subMetrics[(int)source];
-		bytes.Add(prepare.Data.Length + prepare.Metadata.Length);
+		bytes.Add(prepare.Data.Length + prepare.Metadata.Length); // approximate
 		events.Add(1);
+	}
+
+	public void OnRead(int bytesRead, ITransactionFileTracker.Source source) {
+		var (bytes, _) = _subMetrics[(int)source];
+		bytes.Add(bytesRead);
 	}
 }

@@ -10,16 +10,18 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkDb : IDisposable {
 		public readonly TFChunkDbConfig Config;
+		private readonly ITransactionFileTracker _tracker;
 		public readonly TFChunkManager Manager;
 
 		private readonly ILogger _log;
 		private int _closed;
 
-		public TFChunkDb(TFChunkDbConfig config, ILogger log = null) {
+		public TFChunkDb(TFChunkDbConfig config, ITransactionFileTracker tracker = null, ILogger log = null) {
 			Ensure.NotNull(config, "config");
 
 			Config = config;
-			Manager = new TFChunkManager(Config);
+			_tracker = tracker ?? ITransactionFileTracker.NoOp;
+			Manager = new TFChunkManager(Config, _tracker);
 			_log = log ?? Serilog.Log.ForContext<TFChunkDb>();
 		}
 
@@ -75,14 +77,16 @@ namespace EventStore.Core.TransactionLog.Chunks {
 									initialReaderCount: Config.InitialReaderCount,
 									maxReaderCount: Config.MaxReaderCount,
 									optimizeReadSideCache: Config.OptimizeReadSideCache,
-									reduceFileCachePressure: Config.ReduceFileCachePressure);
+									reduceFileCachePressure: Config.ReduceFileCachePressure,
+									tracker: _tracker);
 							else {
 								chunk = TFChunk.TFChunk.FromOngoingFile(chunkInfo.ChunkFileName, Config.ChunkSize,
 									checkSize: false,
 									unbuffered: Config.Unbuffered,
 									writethrough: Config.WriteThrough, initialReaderCount: Config.InitialReaderCount,
 									maxReaderCount: Config.MaxReaderCount,
-									reduceFileCachePressure: Config.ReduceFileCachePressure);
+									reduceFileCachePressure: Config.ReduceFileCachePressure,
+									tracker: _tracker);
 								// chunk is full with data, we should complete it right here
 								if (!readOnly)
 									chunk.Complete();
@@ -93,7 +97,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 								initialReaderCount: Config.InitialReaderCount,
 								maxReaderCount: Config.MaxReaderCount,
 								optimizeReadSideCache: Config.OptimizeReadSideCache,
-								reduceFileCachePressure: Config.ReduceFileCachePressure);
+								reduceFileCachePressure: Config.ReduceFileCachePressure,
+								tracker: _tracker);
 						}
 
 						// This call is theadsafe.
@@ -121,7 +126,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						initialReaderCount: Config.InitialReaderCount,
 						maxReaderCount: Config.MaxReaderCount,
 						optimizeReadSideCache: Config.OptimizeReadSideCache,
-						reduceFileCachePressure: Config.ReduceFileCachePressure);
+						reduceFileCachePressure: Config.ReduceFileCachePressure,
+						tracker: _tracker);
 					if (lastChunk.ChunkFooter.LogicalDataSize != chunkLocalPos) {
 						lastChunk.Dispose();
 						throw new CorruptDatabaseException(new BadChunkInDatabaseException(
@@ -146,7 +152,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						unbuffered: Config.Unbuffered,
 						writethrough: Config.WriteThrough, initialReaderCount: Config.InitialReaderCount,
 						maxReaderCount: Config.MaxReaderCount,
-						reduceFileCachePressure: Config.ReduceFileCachePressure);
+						reduceFileCachePressure: Config.ReduceFileCachePressure,
+						tracker: _tracker);
 					Manager.AddChunk(lastChunk);
 				}
 			}
@@ -172,7 +179,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					for (int chunkNum = lastBgChunkNum; chunkNum >= 0;) {
 						var chunk = Manager.GetChunk(chunkNum);
 						try {
-							chunk.VerifyFileHash();
+							chunk.VerifyFileHash(_tracker);
 						} catch (FileBeingDeletedException exc) {
 							_log.Debug(
 								"{exceptionType} exception was thrown while doing background validation of chunk {chunk}.",
