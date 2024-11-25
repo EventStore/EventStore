@@ -11,7 +11,7 @@ dir:
 
 Welcome to the EventStoreDB documentation.
 
-EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration, and operational concerns.
+EventStoreDB is a modern data platform that bridges technology and business processes, giving software teams unprecedented insights into the events that drive their organization forward. This documentation provides an in-depth overview of EventStoreDB’s key features and concepts, along with comprehensive instructions for installation, configuration, and operational management.
 
 EventStoreDB is licensed under [Event Store License v2 (ESLv2)](https://github.com/EventStore/EventStore/blob/4cab8ca81a63f0a8f708d5564ea459fe5a7131de/LICENSE.md), meaning that anyone can access and use it, but enterprise features are only enabled with a valid [license key](./installation.md#license-keys).
 
@@ -25,7 +25,7 @@ Find out [what's new](whatsnew.md) in this release to get details on new feature
 
 ## Getting started
 
-Check the [getting started guide](/getting-started/) for resources on the principles of EventStoreDB, Event Sourcing, database installation guidelines and choosing a client SDK.
+Check the [getting started guide](/getting-started/) for an introduction to EventStoreDB and its features, along with detailed instructions to quickly get started.
 
 ## Support
 
