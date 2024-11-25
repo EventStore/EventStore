@@ -31,20 +31,21 @@ public class ArchiverService :
 	private readonly ISubscriber _mainBus;
 	private readonly IArchiveStorageWriter _archiveWriter;
 	private readonly IArchiveStorageReader _archiveReader;
-	private readonly Queue<ChunkInfo> _uncommittedChunks;
+	private readonly Queue<ChunkInfo> _newChunks;
 	private readonly ConcurrentDictionary<string, ChunkInfo> _existingChunks;
 	private readonly CancellationTokenSource _cts;
 	private readonly Channel<Commands.ArchiveChunk> _archiveChunkCommands;
 
 	private readonly TimeSpan RetryInterval = TimeSpan.FromMinutes(1);
 	private long _replicationPosition;
+	private volatile bool _canArchiveNewChunks;
 
 	public ArchiverService(ISubscriber mainBus, IArchiveStorageFactory archiveStorageFactory) {
 		_mainBus = mainBus;
 		_archiveWriter = archiveStorageFactory.CreateWriter();
 		_archiveReader = archiveStorageFactory.CreateReader();
 
-		_uncommittedChunks = new();
+		_newChunks = new();
 		_existingChunks = new();
 		_cts = new();
 		_archiveChunkCommands = Channel.CreateUnboundedPrioritized(
@@ -80,21 +81,29 @@ public class ArchiverService :
 
 	public void Handle(SystemMessage.ChunkCompleted message) {
 		var chunkInfo = message.ChunkInfo;
-		if (chunkInfo.ChunkEndPosition > _replicationPosition) {
-			_uncommittedChunks.Enqueue(chunkInfo);
+		var isCommittedChunk = chunkInfo.ChunkEndPosition <= _replicationPosition;
+		if (!_canArchiveNewChunks || !isCommittedChunk) {
+			_newChunks.Enqueue(chunkInfo);
 			return;
 		}
 
-		ScheduleChunkForArchiving(chunkInfo, "new");
+		ScheduleChunkForArchiving(chunkInfo);
 	}
 
 	public void Handle(SystemMessage.ChunkSwitched message) {
-		ScheduleChunkForArchiving(message.ChunkInfo, "changed");
+		if (!_canArchiveNewChunks) {
+			_newChunks.Enqueue(message.ChunkInfo);
+			return;
+		}
+
+		ScheduleChunkForArchiving(message.ChunkInfo);
 	}
 
 	public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
 		_replicationPosition = Math.Max(_replicationPosition, message.LogPosition);
-		ProcessUncommittedChunks();
+
+		if (_canArchiveNewChunks)
+			ProcessNewChunks();
 	}
 
 	public void Handle(SystemMessage.SystemStart message) {
@@ -111,17 +120,17 @@ public class ArchiverService :
 		}
 	}
 
-	private void ProcessUncommittedChunks() {
-		while (_uncommittedChunks.TryPeek(out var chunkInfo)) {
+	private void ProcessNewChunks() {
+		while (_newChunks.TryPeek(out var chunkInfo)) {
 			if (chunkInfo.ChunkEndPosition > _replicationPosition)
 				break;
 
-			_uncommittedChunks.Dequeue();
-			ScheduleChunkForArchiving(chunkInfo, "new");
+			_newChunks.Dequeue();
+			ScheduleChunkForArchiving(chunkInfo);
 		}
 	}
 
-	private void ScheduleChunkForArchiving(ChunkInfo chunkInfo, string chunkType) {
+	private void ScheduleChunkForArchiving(ChunkInfo chunkInfo) {
 		var writeResult = _archiveChunkCommands.Writer.TryWrite(new Commands.ArchiveChunk {
 			ChunkPath = chunkInfo.ChunkFileName,
 			ChunkStartNumber = chunkInfo.ChunkStartNumber,
@@ -130,8 +139,8 @@ public class ArchiverService :
 
 		Debug.Assert(writeResult); // writes should never fail as the channel's length is unbounded
 
-		Log.Information("Scheduled archiving of {chunkFile} ({chunkType})",
-			Path.GetFileName(chunkInfo.ChunkFileName), chunkType);
+		Log.Information("Scheduled archiving of {chunkFile}",
+			Path.GetFileName(chunkInfo.ChunkFileName));
 	}
 
 	private async Task ArchiveChunks(CancellationToken ct) {
@@ -182,9 +191,11 @@ public class ArchiverService :
 
 			Log.Information("Scheduling archiving of {numChunks} existing chunks.", _existingChunks.Count);
 			foreach (var chunkInfo in _existingChunks.Values)
-				ScheduleChunkForArchiving(chunkInfo, "old");
+				ScheduleChunkForArchiving(chunkInfo);
 
 			_existingChunks.Clear();
+			ProcessNewChunks(); // consider the new chunks in the queue as existing chunks
+			_canArchiveNewChunks = true;
 		} catch (OperationCanceledException) {
 			// ignore
 		} catch (Exception ex) {
