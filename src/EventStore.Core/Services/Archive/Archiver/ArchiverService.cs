@@ -23,7 +23,6 @@ public class ArchiverService :
 	IHandle<SystemMessage.ChunkCompleted>,
 	IHandle<SystemMessage.ChunkSwitched>,
 	IHandle<ReplicationTrackingMessage.ReplicatedTo>,
-	IHandle<SystemMessage.SystemStart>,
 	IHandle<SystemMessage.BecomeShuttingDown>
 {
 	private static readonly ILogger Log = Serilog.Log.ForContext<ArchiverService>();
@@ -39,6 +38,7 @@ public class ArchiverService :
 	private readonly TimeSpan RetryInterval = TimeSpan.FromMinutes(1);
 	private long _replicationPosition;
 	private volatile bool _canArchiveNewChunks;
+	private volatile bool _joinedCluster;
 
 	public ArchiverService(ISubscriber mainBus, IArchiveStorageFactory archiveStorageFactory) {
 		_mainBus = mainBus;
@@ -64,7 +64,6 @@ public class ArchiverService :
 		_mainBus.Subscribe<SystemMessage.ChunkSwitched>(this);
 		_mainBus.Subscribe<SystemMessage.ChunkCompleted>(this);
 		_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(this);
-		_mainBus.Subscribe<SystemMessage.SystemStart>(this);
 		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
 	}
 
@@ -102,12 +101,14 @@ public class ArchiverService :
 	public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
 		_replicationPosition = Math.Max(_replicationPosition, message.LogPosition);
 
+		if (!_joinedCluster) {
+			_joinedCluster = true;
+			Task.Run(() => ScheduleExistingChunksForArchiving(_cts.Token), _cts.Token);
+			return;
+		}
+
 		if (_canArchiveNewChunks)
 			ProcessNewChunks();
-	}
-
-	public void Handle(SystemMessage.SystemStart message) {
-		Task.Run(() => ScheduleExistingChunksForArchiving(_cts.Token), _cts.Token);
 	}
 
 	public void Handle(SystemMessage.BecomeShuttingDown message) {
