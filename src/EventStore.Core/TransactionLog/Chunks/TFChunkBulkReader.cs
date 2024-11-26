@@ -3,6 +3,8 @@
 
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
@@ -20,7 +22,7 @@ public abstract class TFChunkBulkReader : IDisposable {
 	private readonly TFChunk.TFChunk _chunk;
 	private readonly Stream _stream;
 	private bool _disposed;
-	public bool IsMemory { get; init; }
+	public bool IsMemory { get; }
 
 	internal TFChunkBulkReader(TFChunk.TFChunk chunk, Stream streamToUse, bool isMemory) {
 		Ensure.NotNull(chunk, "chunk");
@@ -31,7 +33,7 @@ public abstract class TFChunkBulkReader : IDisposable {
 	}
 
 	public abstract void SetPosition(long position);
-	public abstract BulkReadResult ReadNextBytes(int count, byte[] buffer);
+	public abstract ValueTask<BulkReadResult> ReadNextBytes(Memory<byte> buffer, CancellationToken token);
 
 	~TFChunkBulkReader() {
 		Dispose();

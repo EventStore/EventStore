@@ -7,8 +7,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Runtime.CompilerServices;
+using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -22,6 +25,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Transport.Tcp;
+using Epoch = EventStore.Core.Data.Epoch;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Replication;
@@ -72,12 +76,11 @@ public class LeaderReplicationService : IMonitoredQueue,
 	private readonly int _clusterSize;
 	private readonly bool _unsafeAllowSurplusNodes;
 
-	private readonly Thread _mainLoopThread;
-	private volatile bool _stop;
+	private CancellationTokenSource _stopCts;
+	private readonly CancellationToken _stopToken;
 	private readonly QueueStatsCollector _queueStats;
 
-	private readonly ConcurrentDictionary<Guid, ReplicaSubscription> _subscriptions =
-		new ConcurrentDictionary<Guid, ReplicaSubscription>();
+	private readonly ConcurrentDictionary<Guid, ReplicaSubscription> _subscriptions = new();
 
 	private volatile VNodeState _state = VNodeState.Initializing;
 
@@ -87,12 +90,10 @@ public class LeaderReplicationService : IMonitoredQueue,
 	private TimeSpan _noQuorumTimestamp = TimeSpan.Zero;
 	private bool _noQuorumNotified;
 	private bool _preLeaderReplicationEnabled;
-	private ManualResetEventSlim _flushSignal = new ManualResetEventSlim(false, 1);
-	private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+	private readonly AsyncManualResetEvent _flushSignal = new(false);
+	private TaskCompletionSource _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-	public Task Task {
-		get { return _tcs.Task; }
-	}
+	public Task Task => _tcs.Task;
 
 	public LeaderReplicationService(
 		IPublisher publisher,
@@ -120,26 +121,35 @@ public class LeaderReplicationService : IMonitoredQueue,
 		_queueStats = queueStatsManager.CreateQueueStatsCollector("Leader Replication Service");
 
 		_lastRolesAssignmentTimestamp = _stopwatch.Elapsed;
-		_mainLoopThread = new Thread(MainLoop) {Name = _queueStats.Name, IsBackground = true};
+		_stopCts = new();
+		_stopToken = _stopCts.Token;
 	}
 
 	public void Handle(SystemMessage.SystemStart message) {
-		_mainLoopThread.Start();
+		ThreadPool.UnsafeQueueUserWorkItem(static svc => svc.MainLoop(), this, preferLocal: false);
+	}
+
+	private void CancelMainLoop() {
+		if (Interlocked.Exchange(ref _stopCts, null) is { } cts) {
+			using (cts) {
+				cts.Cancel();
+			}
+		}
 	}
 
 	public void Handle(SystemMessage.StateChangeMessage message) {
-		_state = message.State;
-
-		if (message.State == VNodeState.PreLeader) {
-			_preLeaderReplicationEnabled = false;
-			_noQuorumTimestamp = TimeSpan.Zero;
+		switch (_state = message.State) {
+			case VNodeState.PreLeader:
+				_preLeaderReplicationEnabled = false;
+				_noQuorumTimestamp = TimeSpan.Zero;
+				break;
+			case VNodeState.Leader:
+				_noQuorumTimestamp = TimeSpan.Zero;
+				break;
+			case VNodeState.ShuttingDown:
+				CancelMainLoop();
+				break;
 		}
-
-		if (message.State == VNodeState.Leader)
-			_noQuorumTimestamp = TimeSpan.Zero;
-
-		if (message.State == VNodeState.ShuttingDown)
-			_stop = true;
 	}
 
 	public void Handle(SystemMessage.EnablePreLeaderReplication message) {
@@ -429,14 +439,14 @@ public class LeaderReplicationService : IMonitoredQueue,
 		}
 	}
 
-	private void MainLoop() {
+	private async void MainLoop() {
 		try {
 			_queueStats.Start();
 			QueueMonitor.Default.Register(this);
 
 			_db.Config.WriterCheckpoint.Flushed += OnWriterFlushed;
 
-			while (!_stop) {
+			while (!_stopToken.IsCancellationRequested) {
 				try {
 					_queueStats.EnterBusy();
 
@@ -445,7 +455,7 @@ public class LeaderReplicationService : IMonitoredQueue,
 					_flushSignal
 						.Reset(); // Reset the flush signal as we're about to read anyway. This could be closer to the actual read but no harm from too many checks.
 
-					var dataFound = ManageSubscriptions();
+					var dataFound = await ManageSubscriptions(_stopToken);
 					ManageNoQuorumDetection();
 					var newSubscriptions = _newSubscriptions;
 					_newSubscriptions = false;
@@ -456,8 +466,11 @@ public class LeaderReplicationService : IMonitoredQueue,
 					if (!dataFound) {
 						_queueStats.EnterIdle();
 
-						_flushSignal.Wait(TimeSpan.FromMilliseconds(500));
+						await _flushSignal.WaitAsync(TimeSpan.FromMilliseconds(500), _stopToken);
 					}
+				} catch (OperationCanceledException e) when (e.CancellationToken == _stopToken) {
+					// just leave the loop on cancellation
+					break;
 				} catch (Exception exc) {
 					Log.Information(exc, "Error during leader replication iteration.");
 #if DEBUG
@@ -473,9 +486,9 @@ public class LeaderReplicationService : IMonitoredQueue,
 			_db.Config.WriterCheckpoint.Flushed -= OnWriterFlushed;
 
 			_publisher.Publish(new SystemMessage.ServiceShutdown(Name));
-		} catch (Exception ex) {
-			_tcs.TrySetException(ex);
-			throw;
+			_tcs.TrySetResult();
+		} catch (Exception e) {
+			_tcs.TrySetException(e);
 		} finally {
 			_queueStats.Stop();
 			QueueMonitor.Default.Unregister(this);
@@ -486,7 +499,7 @@ public class LeaderReplicationService : IMonitoredQueue,
 		_flushSignal.Set();
 	}
 
-	private bool ManageSubscriptions() {
+	private async ValueTask<bool> ManageSubscriptions(CancellationToken token) {
 		var dataFound = false;
 		foreach (var subscription in _subscriptions.Values) {
 			bool lost = false;
@@ -516,7 +529,7 @@ public class LeaderReplicationService : IMonitoredQueue,
 			try {
 				var leaderCheckpoint = _db.Config.WriterCheckpoint.Read();
 
-				if (TrySendLogBulk(subscription, leaderCheckpoint))
+				if (await TrySendLogBulk(subscription, leaderCheckpoint, token))
 					dataFound = true;
 
 				if (subscription.State == ReplicaState.CatchingUp &&
@@ -533,7 +546,7 @@ public class LeaderReplicationService : IMonitoredQueue,
 		return dataFound;
 	}
 
-	private bool TrySendLogBulk(ReplicaSubscription subscription, long leaderCheckpoint) {
+	private async ValueTask<bool> TrySendLogBulk(ReplicaSubscription subscription, long leaderCheckpoint, CancellationToken token) {
 		/*
 		if (subscription == null) throw new Exception("subscription == null");
 		if (subscription.BulkReader == null) throw new Exception("subscription.BulkReader == null");
@@ -546,11 +559,11 @@ public class LeaderReplicationService : IMonitoredQueue,
 
 		BulkReadResult bulkResult;
 		if (subscription.RawSend) {
-			bulkResult = bulkReader.ReadNextBytes(subscription.DataBuffer.Length, subscription.DataBuffer);
+			bulkResult = await bulkReader.ReadNextBytes(subscription.DataBuffer, token);
 		} else {
 			var bytesToRead = (int)Math.Min(subscription.DataBuffer.Length,
 				leaderCheckpoint - subscription.LogPosition);
-			bulkResult = bulkReader.ReadNextBytes(bytesToRead, subscription.DataBuffer);
+			bulkResult = await bulkReader.ReadNextBytes(subscription.DataBuffer.AsMemory(0, bytesToRead), token);
 		}
 
 		bool dataFound = false;
