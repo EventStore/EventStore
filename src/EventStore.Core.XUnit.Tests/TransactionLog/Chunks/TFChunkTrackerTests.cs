@@ -37,7 +37,7 @@ public class TFChunkTrackerTests : IDisposable {
 			data: new byte[5],
 			meta: new byte[5]);
 
-		_sut.OnRead(prepare, source: ITransactionFileTracker.Source.Disk);
+		_sut.OnRead(prepare, source: ITransactionFileTracker.Source.File);
 		_listener.Observe();
 
 		AssertEventsRead(1);
@@ -47,7 +47,7 @@ public class TFChunkTrackerTests : IDisposable {
 	[Fact]
 	public void disregard_system_log() {
 		var system = CreateSystemRecord();
-		_sut.OnRead(system, source: ITransactionFileTracker.Source.Disk);
+		_sut.OnRead(system, source: ITransactionFileTracker.Source.File);
 		_listener.Observe();
 
 		AssertEventsRead(0);
@@ -57,7 +57,7 @@ public class TFChunkTrackerTests : IDisposable {
 	[Fact]
 	public void disregard_commit_log() {
 		var system = CreateCommit();
-		_sut.OnRead(system, source: ITransactionFileTracker.Source.Disk);
+		_sut.OnRead(system, source: ITransactionFileTracker.Source.File);
 		_listener.Observe();
 
 		AssertEventsRead(0);
@@ -91,7 +91,7 @@ public class TFChunkTrackerTests : IDisposable {
 					Assert.Equal(0, m.Value);
 				},
 				m => {
-					AssertTags(m.Tags, "disk");
+					AssertTags(m.Tags, "file");
 					Assert.Equal(expectedValue, m.Value);
 				});
 		}

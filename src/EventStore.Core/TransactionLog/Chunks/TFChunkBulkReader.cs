@@ -68,7 +68,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			_tfTracker.OnRead(bytesRead, Chunk.IsCached
 				? ITransactionFileTracker.Source.ChunkCache
-				: ITransactionFileTracker.Source.Disk);
+				: ITransactionFileTracker.Source.File);
 
 			return new BulkReadResult(oldPos, bytesRead, isEof: _stream.Length == _stream.Position);
 		}
@@ -91,7 +91,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			_tfTracker.OnRead(bytesRead, Chunk.IsCached
 				? ITransactionFileTracker.Source.ChunkCache
-				: ITransactionFileTracker.Source.Disk);
+				: ITransactionFileTracker.Source.File);
 
 			return new BulkReadResult(oldPos,
 				bytesRead,

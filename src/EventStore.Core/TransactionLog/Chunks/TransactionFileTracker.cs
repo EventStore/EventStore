@@ -22,7 +22,7 @@ public class TFChunkTracker : ITransactionFileTracker {
 	static string NameOf(ITransactionFileTracker.Source source) => source switch {
 		ITransactionFileTracker.Source.Archive => "archive",
 		ITransactionFileTracker.Source.ChunkCache => "chunk-cache",
-		ITransactionFileTracker.Source.Disk => "disk",
+		ITransactionFileTracker.Source.File => "file",
 		_ => "unknown",
 	};
 

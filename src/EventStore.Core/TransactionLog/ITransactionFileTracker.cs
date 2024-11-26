@@ -12,7 +12,7 @@ public interface ITransactionFileTracker {
 		Unknown,
 		Archive,
 		ChunkCache,
-		Disk,
+		File,
 		EnumLength,
 	};
 
