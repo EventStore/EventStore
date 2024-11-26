@@ -51,7 +51,7 @@ public class ArchiverServiceTests {
 		var (sut, archive) = CreateSut();
 
 		var chunkInfo = GetChunkInfo(0, 0);
-		sut.Handle(new SystemMessage.SystemStart());
+		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(0));
 		sut.Handle(new SystemMessage.ChunkCompleted(chunkInfo));
 		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(chunkInfo.ChunkEndPosition));
 
@@ -77,12 +77,12 @@ public class ArchiverServiceTests {
 	}
 
 	[Fact]
-	public async Task archives_a_loaded_chunk_on_startup_if_its_complete() {
+	public async Task archives_an_existing_chunk_if_its_complete() {
 		var (sut, archive) = CreateSut();
 
 		var chunkInfo = GetChunkInfo(0, 0, complete: true);
 		sut.Handle(new SystemMessage.ChunkLoaded(chunkInfo));
-		sut.Handle(new SystemMessage.SystemStart());
+		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(0));
 
 		await WaitFor(numStores: 1, archive);
 
@@ -90,12 +90,12 @@ public class ArchiverServiceTests {
 	}
 
 	[Fact]
-	public async Task doesnt_archive_a_loaded_chunk_on_startup_if_its_not_complete() {
+	public async Task doesnt_archive_an_existing_chunk_if_its_not_complete() {
 		var (sut, archive) = CreateSut();
 
 		var chunkInfo = GetChunkInfo(0, 0, complete: false);
 		sut.Handle(new SystemMessage.ChunkLoaded(chunkInfo));
-		sut.Handle(new SystemMessage.SystemStart());
+		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(0));
 
 		await WaitFor(numStores: 0, archive);
 
@@ -103,7 +103,7 @@ public class ArchiverServiceTests {
 	}
 
 	[Fact]
-	public async Task doesnt_archive_a_loaded_chunk_if_system_hasnt_started_up_yet() {
+	public async Task doesnt_archive_an_existing_chunk_if_the_node_hasnt_joined_the_cluster_yet() {
 		var (sut, archive) = CreateSut();
 
 		var chunkInfo = GetChunkInfo(0, 0, complete: true);
@@ -119,7 +119,7 @@ public class ArchiverServiceTests {
 		var (sut, archive) = CreateSut();
 
 		var chunkInfo = GetChunkInfo(0, 0, complete: true);
-		sut.Handle(new SystemMessage.SystemStart());
+		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(0));
 		sut.Handle(new SystemMessage.ChunkSwitched(chunkInfo));
 
 		await WaitFor(numStores: 1, archive);
@@ -133,13 +133,13 @@ public class ArchiverServiceTests {
 
 		sut.Handle(new SystemMessage.ChunkCompleted(GetChunkInfo(3, 3, complete: true)));
 		sut.Handle(new SystemMessage.ChunkCompleted(GetChunkInfo(4, 4, complete: true)));
-		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(GetChunkInfo(4, 4, complete: true).ChunkEndPosition));
 
 		// chunks can be loaded out of order, since they are opened in parallel
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(2, 2, complete: true)));
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(1, 1, complete: true)));
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(0, 0, complete: true)));
-		sut.Handle(new SystemMessage.SystemStart());
+
+		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(GetChunkInfo(4, 4, complete: true).ChunkEndPosition));
 
 		await WaitFor(numStores: 5, archive);
 
@@ -150,7 +150,7 @@ public class ArchiverServiceTests {
 	public async Task prioritizes_archiving_of_scavenged_chunks_over_new_chunks() {
 		var (sut, archive) = CreateSut(chunkStorageDelay: TimeSpan.FromMilliseconds(100));
 
-		sut.Handle(new SystemMessage.SystemStart());
+		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(0));
 
 		sut.Handle(new SystemMessage.ChunkCompleted(GetChunkInfo(3, 3, complete: true)));
 		sut.Handle(new SystemMessage.ChunkCompleted(GetChunkInfo(4, 4, complete: true)));
@@ -169,14 +169,14 @@ public class ArchiverServiceTests {
 	}
 
 	[Fact]
-	public async Task doesnt_archive_chunks_that_were_already_archived_at_startup() {
+	public async Task doesnt_archive_existing_chunks_that_were_already_archived() {
 		var (sut, archive) = CreateSut(existingChunks:	[ "0-0", "1-1" ]);
 
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(0, 0, complete: true)));
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(1, 1, complete: true)));
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(2, 2, complete: true)));
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(3, 3, complete: true)));
-		sut.Handle(new SystemMessage.SystemStart());
+		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(GetChunkInfo(3, 3, complete: true).ChunkEndPosition));
 
 		await WaitFor(numStores: 2, archive);
 
@@ -187,7 +187,7 @@ public class ArchiverServiceTests {
 	public async Task removes_previous_chunks_with_same_chunk_numbers_from_the_archive() {
 		var (sut, archive) = CreateSut(existingChunks:	[ "0-0", "1-1" ]);
 
-		sut.Handle(new SystemMessage.SystemStart());
+		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(0));
 		sut.Handle(new SystemMessage.ChunkSwitched(GetChunkInfo(0, 1, complete: true)));
 
 		await WaitFor(numStores: 1, archive);
