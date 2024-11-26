@@ -22,6 +22,7 @@ using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
 using EventStore.Plugins.Transforms;
 using Microsoft.Win32.SafeHandles;
+using static System.Threading.Timeout;
 using ILogger = Serilog.ILogger;
 using MD5 = EventStore.Core.Hashing.MD5;
 
@@ -119,7 +120,7 @@ public partial class TFChunk : IDisposable {
 	// and so is the creation and removal of the mem readers.
 	// previously TryDestructMemStreams could run concurrently with CacheInMemory,
 	// potentially causing problems.
-	private readonly object _cachedDataLock = new();
+	private readonly AsyncExclusiveLock _cachedDataLock = new();
 	private volatile nint _cachedData;
 	// When the chunk is Cached/Uncaching, _cachedDataTransformed indicates whether _cachedData has had the transformation applied
 	private bool _cachedDataTransformed;
@@ -444,7 +445,7 @@ public partial class TFChunk : IDisposable {
 		// create temp file first and set desired length
 		// if there is not enough disk space or something else prevents file to be resized as desired
 		// we'll end up with empty temp file, which won't trigger false error on next DB verification
-		var tempFilename = string.Format("{0}.{1}.tmp", _filename, Guid.NewGuid());
+		var tempFilename = $"{_filename}.{Guid.NewGuid()}.tmp";
 		var options = new FileStreamOptions {
 			Mode = FileMode.CreateNew,
 			Access = FileAccess.ReadWrite,
@@ -541,8 +542,6 @@ public partial class TFChunk : IDisposable {
 		if (!IsReadOnly)
 			throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
 
-		token.ThrowIfCancellationRequested();
-
 		Log.Debug("Verifying hash for TFChunk '{chunk}'...", _filename);
 		using (var reader = AcquireRawReader()) {
 			reader.Stream.Seek(0, SeekOrigin.Begin);
@@ -552,7 +551,7 @@ public partial class TFChunk : IDisposable {
 			byte[] hash;
 			using (var md5 = MD5.Create()) {
 				// hash whole chunk except MD5 hash sum which should always be last
-				MD5Hash.ContinuousHashFor(md5, stream, 0, _fileSize - ChunkFooter.ChecksumSize);
+				await MD5Hash.ContinuousHashFor(md5, stream, 0, _fileSize - ChunkFooter.ChecksumSize, token);
 				md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
 				hash = md5.Hash;
 			}
@@ -616,23 +615,18 @@ public partial class TFChunk : IDisposable {
 		return actualPosition < 0 ? -1 : GetRawPosition(actualPosition);
 	}
 
-	public unsafe ValueTask CacheInMemory(CancellationToken token) {
-		var task = ValueTask.CompletedTask;
-
+	public async ValueTask CacheInMemory(CancellationToken token) {
 		if (_inMem)
-			return task;
+			return;
 
-		var lockTaken = false;
+		await _cachedDataLock.AcquireAsync(token);
 		try {
-			token.ThrowIfCancellationRequested();
-			Monitor.Enter(_cachedDataLock, ref lockTaken);
-
 			if (_cacheStatus is not CacheStatus.Uncached) {
 				// expected to be very rare
 				if (_cacheStatus is CacheStatus.Uncaching)
 					Log.Debug("CACHING TFChunk {chunk} SKIPPED because it is uncaching.", this);
 
-				return task;
+				return;
 			}
 
 			// we won the right to cache
@@ -661,12 +655,12 @@ public partial class TFChunk : IDisposable {
 						transformed: true);
 			} catch (OutOfMemoryException) {
 				Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk {chunk}.", this);
-				return task;
+				return;
 			} catch (FileBeingDeletedException) {
 				Log.Debug(
 					"CACHING FAILED due to FileBeingDeleted exception (TFChunk is being disposed) in TFChunk {chunk}.",
 					this);
-				return task;
+				return;
 			}
 
 			_sharedMemStream = CreateSharedMemoryStream();
@@ -677,14 +671,18 @@ public partial class TFChunk : IDisposable {
 				if (Interlocked.Add(ref _memStreamCount, -IndexPool.Capacity) == 0)
 					FreeCachedData();
 				Log.Debug("CACHING ABORTED for TFChunk {chunk} as TFChunk was probably marked for deletion.", this);
-				return task;
+				return;
 			}
 
 			if (_writerWorkItem is { } writerWorkItem) {
-				UnmanagedMemoryStream memStream =
-					new((byte*)_cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite) {
-						Position = writerWorkItem.WorkingStream.Position,
-					};
+				UnmanagedMemoryStream memStream;
+				unsafe {
+					memStream =
+						new((byte*)_cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite) {
+							Position = writerWorkItem.WorkingStream.Position,
+						};
+				}
+
 				writerWorkItem.SetMemStream(memStream);
 			}
 
@@ -696,14 +694,9 @@ public partial class TFChunk : IDisposable {
 				TryDestructMemStreams();
 
 			_cacheStatus = CacheStatus.Cached;
-		} catch (Exception e) {
-			task = ValueTask.FromException(e);
 		} finally {
-			if (lockTaken)
-				Monitor.Exit(_cachedDataLock);
+			_cachedDataLock.Release();
 		}
-
-		return task;
 	}
 
 	private unsafe void BuildCacheArray(int size, TFChunkBulkReader reader, int offset, int count, bool transformed) {
@@ -717,7 +710,7 @@ public partial class TFChunk : IDisposable {
 			GC.AddMemoryPressure(_cachedLength);
 
 			try {
-				Span<byte> memoryView = new(IntPtr.Add(cachedData, offset).ToPointer(), count);
+				Span<byte> memoryView = new((cachedData + offset).ToPointer(), count);
 				reader.Stream.Seek(offset, SeekOrigin.Begin);
 				reader.Stream.ReadExactly(memoryView);
 			} catch {
@@ -734,10 +727,11 @@ public partial class TFChunk : IDisposable {
 	}
 
 	public void UnCacheFromMemory() {
-		lock (_cachedDataLock) {
+		_cachedDataLock.TryAcquire(InfiniteTimeSpan);
+		try {
 			if (_inMem)
 				return;
-			if (_cacheStatus == CacheStatus.Cached) {
+			if (_cacheStatus is CacheStatus.Cached) {
 				// we won the right to un-cache and chunk was cached
 				// possibly we could use a mem reader work item and do the actual midpoint caching now
 				_readSide.RequestCaching();
@@ -750,6 +744,8 @@ public partial class TFChunk : IDisposable {
 				Thread.MemoryBarrier();
 				TryDestructMemStreams();
 			}
+		} finally {
+			_cachedDataLock.Release();
 		}
 	}
 
@@ -917,7 +913,7 @@ public partial class TFChunk : IDisposable {
 					"Cannot write an in-memory chunk with a PosMap. " +
 					"Scavenge is not supported on in-memory databases");
 
-			if (_cacheStatus != CacheStatus.Uncached) {
+			if (_cacheStatus is not CacheStatus.Uncached) {
 				throw new InvalidOperationException("Trying to write mapping while chunk is cached. "
 				                                    + "You probably are writing scavenged chunk as cached. "
 				                                    + "Do not do this.");
@@ -1001,7 +997,7 @@ public partial class TFChunk : IDisposable {
 	//  2. this mechanism will work if we decide not to create any pooled filestreams at all
 	//        (previously if we didnt create any filestreams then no one would call this method)
 	private void CleanUpFileStreamDestruction() {
-		if (Interlocked.CompareExchange(ref _cleanedUpFileStreams, 1, 0) != 0)
+		if (Interlocked.CompareExchange(ref _cleanedUpFileStreams, 1, 0) is not 0)
 			return;
 
 		if (_writerWorkItem is not null) {
@@ -1029,8 +1025,9 @@ public partial class TFChunk : IDisposable {
 	}
 
 	private bool TryDestructMemStreams() {
-		lock (_cachedDataLock) {
-			if (_cacheStatus != CacheStatus.Uncaching && !_selfdestructin54321)
+		_cachedDataLock.TryAcquire(InfiniteTimeSpan);
+		try {
+			if (_cacheStatus is not CacheStatus.Uncaching && !_selfdestructin54321)
 				return false;
 
 			_writerWorkItem?.DisposeMemStream();
@@ -1045,11 +1042,14 @@ public partial class TFChunk : IDisposable {
 				default:
 					return false;
 			}
+		} finally {
+			_cachedDataLock.Release();
 		}
 	}
 
 	private void FreeCachedData() {
-		lock (_cachedDataLock) {
+		_cachedDataLock.TryAcquire(InfiniteTimeSpan);
+		try {
 			var cachedData = _cachedData;
 			if (cachedData is not 0) {
 				Marshal.FreeHGlobal(cachedData);
@@ -1060,6 +1060,8 @@ public partial class TFChunk : IDisposable {
 				Interlocked.Exchange(ref _sharedMemStream, null)?.Dispose();
 				Log.Debug("UNCACHED TFChunk {chunk}.", this);
 			}
+		} finally {
+			_cachedDataLock.Release();
 		}
 	}
 
@@ -1237,13 +1239,13 @@ public partial class TFChunk : IDisposable {
 			// chunk is definitely readonly and will remain so, so a filestream would be acceptable.
 			// we might be able to get a memstream but we don't want to wait for the lock in case we
 			// are currently performing a slow operation with it such as caching.
-			if (!Monitor.TryEnter(_cachedDataLock))
+			if (!_cachedDataLock.TryAcquire())
 				return false;
 
 			try {
 				return TryCreateBulkMemReader(raw, out reader);
 			} finally {
-				Monitor.Exit(_cachedDataLock);
+				_cachedDataLock.Release();
 			}
 		}
 
@@ -1265,13 +1267,14 @@ public partial class TFChunk : IDisposable {
 
 	// creates a bulk reader over a memstream as long as we are cached
 	private unsafe bool TryCreateBulkMemReader(bool raw, out TFChunkBulkReader reader) {
-		lock (_cachedDataLock) {
-			if (_cacheStatus != CacheStatus.Cached) {
+		_cachedDataLock.TryAcquire(InfiniteTimeSpan);
+		try {
+			if (_cacheStatus is not CacheStatus.Cached) {
 				reader = null;
 				return false;
 			}
 
-			if (_cachedData == IntPtr.Zero)
+			if (_cachedData is 0)
 				throw new Exception("Unexpected error: a cached chunk had no cached data");
 
 			Interlocked.Increment(ref _memStreamCount);
@@ -1290,24 +1293,31 @@ public partial class TFChunk : IDisposable {
 			reader = new TFChunkBulkDataReader(chunk: this, streamToUse: streamToUse, isMemory: true);
 
 			return true;
+		} finally {
+			_cachedDataLock.Release();
 		}
 	}
 
 	public void ReleaseReader(TFChunkBulkReader reader) {
 		if (reader.IsMemory) {
-			var memStreamCount = Interlocked.Decrement(ref _memStreamCount);
-			if (memStreamCount < 0)
-				throw new Exception("Count of mem streams reduced below zero.");
-			if (memStreamCount == 0)
-				TryDestructMemStreams();
+			switch (Interlocked.Decrement(ref _memStreamCount)) {
+				case < 0:
+					throw new Exception("Count of mem streams reduced below zero.");
+				case 0:
+					TryDestructMemStreams();
+					break;
+			}
+
 			return;
 		}
 
-		var fileStreamCount = Interlocked.Decrement(ref _fileStreamCount);
-		if (fileStreamCount < 0)
-			throw new Exception("Count of file streams reduced below zero.");
-		if (_selfdestructin54321 && fileStreamCount == 0)
-			CleanUpFileStreamDestruction();
+		switch (Interlocked.Decrement(ref _fileStreamCount)) {
+			case < 0:
+				throw new Exception("Count of file streams reduced below zero.");
+			case 0 when _selfdestructin54321:
+				CleanUpFileStreamDestruction();
+				break;
+		}
 	}
 
 	public override string ToString() {
