@@ -66,7 +66,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			var oldPos = (int)_stream.Position;
 			int bytesRead = _stream.Read(buffer, 0, count);
 
-			_tfTracker.OnRead(bytesRead, Chunk.IsCached
+			_tfTracker.OnRead(bytesRead, IsMemory
 				? ITransactionFileTracker.Source.ChunkCache
 				: ITransactionFileTracker.Source.File);
 
@@ -89,7 +89,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_stream.Position = _stream.Position; // flush read buffer
 			int bytesRead = _stream.Read(buffer, 0, toRead);
 
-			_tfTracker.OnRead(bytesRead, Chunk.IsCached
+			_tfTracker.OnRead(bytesRead, IsMemory
 				? ITransactionFileTracker.Source.ChunkCache
 				: ITransactionFileTracker.Source.File);
 
