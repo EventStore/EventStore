@@ -16,11 +16,11 @@ public class TransactionFileTrackerFactory : ITransactionFileTrackerFactory {
 	}
 
 	public ITransactionFileTracker GetOrAdd(string user) {
-		return _trackersByUser.GetOrAdd(user, Create);
+		return _trackersByUser.GetOrAdd(user, Create, (_eventMetric, _byteMetric));
 	}
 
-	private ITransactionFileTracker Create(string user) {
-		var tracker = new TFChunkTracker(_eventMetric, _byteMetric, user);
+	private static ITransactionFileTracker Create(string user, (CounterMetric EventMetric, CounterMetric ByteMetric) metrics) {
+		var tracker = new TFChunkTracker(metrics.EventMetric, metrics.ByteMetric, user);
 		return tracker;
 	}
 

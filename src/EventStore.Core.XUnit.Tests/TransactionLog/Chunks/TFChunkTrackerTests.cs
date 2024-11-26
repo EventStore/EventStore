@@ -37,7 +37,7 @@ public class TFChunkTrackerTests : IDisposable {
 			data: new byte[5],
 			meta: new byte[5]);
 
-		_sut.OnRead(prepare, source: ITransactionFileTracker.Source.Unknown); //qqqq update these tests
+		_sut.OnRead(prepare, source: ITransactionFileTracker.Source.Disk);
 		_listener.Observe();
 
 		AssertEventsRead(1);
@@ -47,7 +47,7 @@ public class TFChunkTrackerTests : IDisposable {
 	[Fact]
 	public void disregard_system_log() {
 		var system = CreateSystemRecord();
-		_sut.OnRead(system, source: ITransactionFileTracker.Source.Unknown);
+		_sut.OnRead(system, source: ITransactionFileTracker.Source.Disk);
 		_listener.Observe();
 
 		AssertEventsRead(0);
@@ -57,7 +57,7 @@ public class TFChunkTrackerTests : IDisposable {
 	[Fact]
 	public void disregard_commit_log() {
 		var system = CreateCommit();
-		_sut.OnRead(system, source: ITransactionFileTracker.Source.Unknown);
+		_sut.OnRead(system, source: ITransactionFileTracker.Source.Disk);
 		_listener.Observe();
 
 		AssertEventsRead(0);
@@ -79,15 +79,41 @@ public class TFChunkTrackerTests : IDisposable {
 			Assert.Collection(
 				actual,
 				m => {
+					AssertTags(m.Tags, "unknown");
+					Assert.Equal(0, m.Value);
+				},
+				m => {
+					AssertTags(m.Tags, "archive");
+					Assert.Equal(0, m.Value);
+				},
+				m => {
+					AssertTags(m.Tags, "chunk-cache");
+					Assert.Equal(0, m.Value);
+				},
+				m => {
+					AssertTags(m.Tags, "disk");
 					Assert.Equal(expectedValue, m.Value);
-					Assert.Collection(m.Tags.ToArray(), t => {
-						Assert.Equal("activity", t.Key);
-						Assert.Equal("read", t.Value);
-					});
 				});
 		}
 	}
 
+	private void AssertTags(KeyValuePair<string, object>[] tags, string source) {
+		Assert.Collection(
+			tags.ToArray(),
+			t => {
+				Assert.Equal("activity", t.Key);
+				Assert.Equal("read", t.Value);
+			},
+			t => {
+				Assert.Equal("source", t.Key);
+				Assert.Equal(source, t.Value);
+			},
+			t => {
+				Assert.Equal("user", t.Key);
+				Assert.Equal("alice", t.Value);
+			});
+
+	}
 	private static PrepareLogRecord CreatePrepare(byte[] data, byte[] meta) {
 		return new PrepareLogRecord(42, Guid.NewGuid(), Guid.NewGuid(), 42, 42, "tests", null, 42, DateTime.Now,
 			PrepareFlags.Data, "type-test", null, data, meta);

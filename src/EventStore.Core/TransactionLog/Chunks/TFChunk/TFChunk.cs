@@ -1146,7 +1146,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		private void ReturnReaderWorkItem(ReaderWorkItem item) {
-			item.OnReturned();
+			item.OnReturning();
 			if (item.IsMemory) {
 				// we avoid taking the _cachedDataLock here every time because we would be
 				// contending with other reader threads also returning readerworkitems.
