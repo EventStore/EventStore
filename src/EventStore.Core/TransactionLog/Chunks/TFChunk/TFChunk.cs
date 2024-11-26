@@ -425,7 +425,7 @@ public partial class TFChunk : IDisposable {
 		Debug.Assert(_cachedLength > 0);
 
 		ReadOnlyMemory<byte> memoryView = UnmanagedMemory.AsMemory((byte*)_cachedData, _cachedLength);
-		return StreamSource.AsSharedStream(new(memoryView), compatWithAsync: false);
+		return StreamSource.AsSharedStream(new(memoryView), compatWithAsync: true);
 	}
 
 	private FileOptions WritableHandleOptions {
