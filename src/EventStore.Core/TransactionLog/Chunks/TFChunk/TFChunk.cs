@@ -669,7 +669,7 @@ public partial class TFChunk : IDisposable {
 
 			if (_selfdestructin54321) {
 				if (Interlocked.Add(ref _memStreamCount, -IndexPool.Capacity) == 0)
-					FreeCachedData();
+					FreeCachedDataUnsafe();
 				Log.Debug("CACHING ABORTED for TFChunk {chunk} as TFChunk was probably marked for deletion.", this);
 				return;
 			}
@@ -691,7 +691,7 @@ public partial class TFChunk : IDisposable {
 			Log.Debug("CACHED TFChunk {chunk} in {elapsed}.", this, sw.Elapsed);
 
 			if (_selfdestructin54321)
-				TryDestructMemStreams();
+				TryDestructMemStreamsUnsafe();
 
 			_cacheStatus = CacheStatus.Cached;
 		} finally {
@@ -742,7 +742,7 @@ public partial class TFChunk : IDisposable {
 				_cacheStatus = CacheStatus.Uncaching;
 				// this memory barrier corresponds to the barrier in ReturnReaderWorkItem
 				Thread.MemoryBarrier();
-				TryDestructMemStreams();
+				TryDestructMemStreamsUnsafe();
 			}
 		} finally {
 			_cachedDataLock.Release();
@@ -1024,42 +1024,56 @@ public partial class TFChunk : IDisposable {
 		return (size / AlignmentSize + 1) * AlignmentSize;
 	}
 
+	// the caller must be responsible to obtain the lock to call this method
+	private bool TryDestructMemStreamsUnsafe() {
+		Debug.Assert(_cachedDataLock.IsLockHeld);
+
+		if (_cacheStatus is not CacheStatus.Uncaching && !_selfdestructin54321)
+			return false;
+
+		_writerWorkItem?.DisposeMemStream();
+
+		switch (_memStreams.Drain(ref _memStreamCount)) {
+			case < 0:
+				throw new Exception("Count of memory streams reduced below zero.");
+			case 0:
+				// make sure "the light is off" for memory streams
+				FreeCachedDataUnsafe();
+				return true;
+			default:
+				return false;
+		}
+	}
+
 	private bool TryDestructMemStreams() {
 		_cachedDataLock.TryAcquire(InfiniteTimeSpan);
 		try {
-			if (_cacheStatus is not CacheStatus.Uncaching && !_selfdestructin54321)
-				return false;
-
-			_writerWorkItem?.DisposeMemStream();
-
-			switch (_memStreams.Drain(ref _memStreamCount)) {
-				case < 0:
-					throw new Exception("Count of memory streams reduced below zero.");
-				case 0:
-					// make sure "the light is off" for memory streams
-					FreeCachedData();
-					return true;
-				default:
-					return false;
-			}
+			return TryDestructMemStreamsUnsafe();
 		} finally {
 			_cachedDataLock.Release();
+		}
+	}
+
+	// the caller must be responsible to obtain the lock to call this method
+	private void FreeCachedDataUnsafe() {
+		Debug.Assert(_cachedDataLock.IsLockHeld);
+
+		var cachedData = _cachedData;
+		if (cachedData is not 0) {
+			Marshal.FreeHGlobal(cachedData);
+			GC.RemoveMemoryPressure(_cachedLength);
+			_cachedData = 0;
+			_cachedLength = 0;
+			_cacheStatus = CacheStatus.Uncached;
+			Interlocked.Exchange(ref _sharedMemStream, null)?.Dispose();
+			Log.Debug("UNCACHED TFChunk {chunk}.", this);
 		}
 	}
 
 	private void FreeCachedData() {
 		_cachedDataLock.TryAcquire(InfiniteTimeSpan);
 		try {
-			var cachedData = _cachedData;
-			if (cachedData is not 0) {
-				Marshal.FreeHGlobal(cachedData);
-				GC.RemoveMemoryPressure(_cachedLength);
-				_cachedData = 0;
-				_cachedLength = 0;
-				_cacheStatus = CacheStatus.Uncached;
-				Interlocked.Exchange(ref _sharedMemStream, null)?.Dispose();
-				Log.Debug("UNCACHED TFChunk {chunk}.", this);
-			}
+			FreeCachedDataUnsafe();
 		} finally {
 			_cachedDataLock.Release();
 		}
@@ -1173,7 +1187,7 @@ public partial class TFChunk : IDisposable {
 			}
 
 			Thread.MemoryBarrier();
-			if (_cacheStatus == CacheStatus.Uncaching || _selfdestructin54321)
+			if (_cacheStatus is CacheStatus.Uncaching || _selfdestructin54321)
 				TryDestructMemStreams();
 		} else {
 			if (!_fileStreams.Return(item)) {
@@ -1243,7 +1257,7 @@ public partial class TFChunk : IDisposable {
 				return false;
 
 			try {
-				return TryCreateBulkMemReader(raw, out reader);
+				return TryCreateBulkMemReaderUnsafe(raw, out reader);
 			} finally {
 				_cachedDataLock.Release();
 			}
@@ -1265,34 +1279,40 @@ public partial class TFChunk : IDisposable {
 		}
 	}
 
+	private unsafe bool TryCreateBulkMemReaderUnsafe(bool raw, out TFChunkBulkReader reader) {
+		Debug.Assert(_cachedDataLock.IsLockHeld);
+
+		if (_cacheStatus is not CacheStatus.Cached) {
+			reader = null;
+			return false;
+		}
+
+		if (_cachedData is 0)
+			throw new Exception("Unexpected error: a cached chunk had no cached data");
+
+		Interlocked.Increment(ref _memStreamCount);
+		var stream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength);
+
+		if (raw) {
+			reader = new TFChunkBulkRawReader(chunk: this, streamToUse: stream, isMemory: true);
+			return true;
+		}
+
+		var streamToUse = new ChunkDataReadStream(stream);
+		streamToUse = (_cachedDataTransformed
+			? _transform.Read
+			: IdentityChunkReadTransform.Instance).TransformData(streamToUse);
+
+		reader = new TFChunkBulkDataReader(chunk: this, streamToUse: streamToUse, isMemory: true);
+
+		return true;
+	}
+
 	// creates a bulk reader over a memstream as long as we are cached
-	private unsafe bool TryCreateBulkMemReader(bool raw, out TFChunkBulkReader reader) {
+	private bool TryCreateBulkMemReader(bool raw, out TFChunkBulkReader reader) {
 		_cachedDataLock.TryAcquire(InfiniteTimeSpan);
 		try {
-			if (_cacheStatus is not CacheStatus.Cached) {
-				reader = null;
-				return false;
-			}
-
-			if (_cachedData is 0)
-				throw new Exception("Unexpected error: a cached chunk had no cached data");
-
-			Interlocked.Increment(ref _memStreamCount);
-			var stream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength);
-
-			if (raw) {
-				reader = new TFChunkBulkRawReader(chunk: this, streamToUse: stream, isMemory: true);
-				return true;
-			}
-
-			var streamToUse = new ChunkDataReadStream(stream);
-			streamToUse = (_cachedDataTransformed
-				? _transform.Read
-				: IdentityChunkReadTransform.Instance).TransformData(streamToUse);
-
-			reader = new TFChunkBulkDataReader(chunk: this, streamToUse: streamToUse, isMemory: true);
-
-			return true;
+			return TryCreateBulkMemReaderUnsafe(raw, out reader);
 		} finally {
 			_cachedDataLock.Release();
 		}
