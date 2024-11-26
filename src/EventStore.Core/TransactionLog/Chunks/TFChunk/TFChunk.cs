@@ -175,6 +175,11 @@ public partial class TFChunk : IDisposable {
 		_reduceFileCachePressure = reduceFileCachePressure;
 		_memStreams = new();
 		_fileStreams = new();
+
+		// Workaround: the lock is used by the finalizer. When the finalizer is called by .NET,
+		// the lock is already finalized (and Dispose is called) and cannot be used. To avoid that situation,
+		// we suppress the finalizer for the lock. Anyway, the lock doesn't hold any unmanaged resources.
+		GC.SuppressFinalize(_cachedDataLock);
 	}
 
 	~TFChunk() {
