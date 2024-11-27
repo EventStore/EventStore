@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers;
+using System.Buffers.Binary;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,11 +16,30 @@ public class FileSystemWriter : IArchiveStorageWriter {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<FileSystemWriter>();
 
 	private readonly string _archivePath;
+	private readonly string _archiveCheckpointFile;
 	private readonly Func<int?, int?, string> _getChunkPrefix;
 
-	public FileSystemWriter(FileSystemOptions options, Func<int?, int?, string> getChunkPrefix) {
+	public FileSystemWriter(FileSystemOptions options, Func<int?, int?, string> getChunkPrefix, string archiveCheckpointFile) {
 		_archivePath = options.Path;
 		_getChunkPrefix = getChunkPrefix;
+		_archiveCheckpointFile = archiveCheckpointFile;
+	}
+
+	public ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) {
+		try {
+			var buffer = ArrayPool<byte>.Shared.Rent(8).AsSpan(0, 8);
+			BinaryPrimitives.WriteInt64LittleEndian(buffer, checkpoint);
+
+			var checkpointPath = Path.Combine(_archivePath, _archiveCheckpointFile);
+			using var fs = File.OpenWrite(checkpointPath);
+			fs.Write(buffer);
+			fs.Flush(flushToDisk: true);
+
+			return ValueTask.FromResult(true);
+		} catch (Exception ex) {
+			Log.Error(ex, "Error while setting checkpoint to: 0x{checkpoint:X}", checkpoint);
+			return ValueTask.FromResult(false);
+		}
 	}
 
 	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {

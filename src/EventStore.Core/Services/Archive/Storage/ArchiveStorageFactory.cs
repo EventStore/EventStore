@@ -9,11 +9,12 @@ namespace EventStore.Core.Services.Archive.Storage;
 public class ArchiveStorageFactory(
 	ArchiveOptions options,
 	IVersionedFileNamingStrategy fileNamingStrategy) : IArchiveStorageFactory {
+	private const string ArchiveCheckpointFile = "archive.chk";
 
 	public IArchiveStorageReader CreateReader() {
 		return options.StorageType switch {
-			StorageType.FileSystem => new FileSystemReader(options.FileSystem, fileNamingStrategy.GetPrefixFor),
-			StorageType.S3 => new S3Reader(options.S3, fileNamingStrategy.GetPrefixFor),
+			StorageType.FileSystem => new FileSystemReader(options.FileSystem, fileNamingStrategy.GetPrefixFor, ArchiveCheckpointFile),
+			StorageType.S3 => new S3Reader(options.S3, fileNamingStrategy.GetPrefixFor, ArchiveCheckpointFile),
 			_ => throw new ArgumentOutOfRangeException(nameof(options.StorageType))
 		};
 	}
@@ -22,8 +23,8 @@ public class ArchiveStorageFactory(
 		// NB: StorageFactory.Blobs.DirectoryFiles does not appear to offer atomic file 'upload' so
 		// we use our own implementation instead (todo: consider if it could be an IBlobStorage)
 		return options.StorageType switch {
-			StorageType.FileSystem => new FileSystemWriter(options.FileSystem, fileNamingStrategy.GetPrefixFor),
-			StorageType.S3 => new S3Writer(options.S3, fileNamingStrategy.GetPrefixFor),
+			StorageType.FileSystem => new FileSystemWriter(options.FileSystem, fileNamingStrategy.GetPrefixFor, ArchiveCheckpointFile),
+			StorageType.S3 => new S3Writer(options.S3, fileNamingStrategy.GetPrefixFor, ArchiveCheckpointFile),
 			_ => throw new ArgumentOutOfRangeException(nameof(options.StorageType))
 		};
 	}
