@@ -2,6 +2,8 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,10 +21,27 @@ public class FileSystemReader : IArchiveStorageReader {
 
 	private readonly string _archivePath;
 	private readonly Func<int?, int?, string> _getChunkPrefix;
+	private readonly string _archiveCheckpointFile;
 
-	public FileSystemReader(FileSystemOptions options, Func<int?, int?, string> getChunkPrefix) {
+	public FileSystemReader(FileSystemOptions options, Func<int?, int?, string> getChunkPrefix, string archiveCheckpointFile) {
 		_archivePath = options.Path;
 		_getChunkPrefix = getChunkPrefix;
+		_archiveCheckpointFile = archiveCheckpointFile;
+	}
+
+	public ValueTask<long> GetCheckpoint(CancellationToken ct) {
+		try {
+			var buffer = ArrayPool<byte>.Shared.Rent(8).AsSpan(0, 8);
+
+			var checkpointPath = Path.Combine(_archivePath, _archiveCheckpointFile);
+			using var fs = File.OpenRead(checkpointPath);
+			fs.ReadExactly(buffer);
+
+			var checkpoint = BinaryPrimitives.ReadInt64LittleEndian(buffer);
+			return ValueTask.FromResult(checkpoint);
+		} catch (FileNotFoundException) {
+			return ValueTask.FromResult(0L);
+		}
 	}
 
 	public async ValueTask<Stream> GetChunk(string chunkPath, CancellationToken ct) {

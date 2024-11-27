@@ -8,5 +8,6 @@ public static class Commands {
 		public string ChunkPath;
 		public int ChunkStartNumber;
 		public int ChunkEndNumber;
+		public long ChunkEndPosition;
 	}
 }
