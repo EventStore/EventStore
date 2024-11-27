@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Validation;
@@ -40,7 +41,7 @@ public class when_truncating_into_the_middle_of_completed_chunk : SpecificationW
 		DbUtil.CreateSingleChunk(_config, 3, GetFilePathFor("chunk-000003.000000"));
 
 		var truncator = new TFChunkDbTruncator(_config, _ => new IdentityChunkTransformFactory());
-		truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed());
+		await truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed(), CancellationToken.None);
 	}
 
 	[OneTimeTearDown]

@@ -7,8 +7,11 @@ using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using DotNext.Buffers;
 using DotNext.Buffers.Binary;
+using DotNext.IO;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.TransactionLog.Chunks;
 
@@ -116,10 +119,8 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 		return array;
 	}
 
-	[SkipLocalsInit]
-	public static ChunkFooter FromStream(Stream stream) {
-		Span<byte> buffer = stackalloc byte[Size];
-		stream.ReadExactly(buffer);
-		return new(buffer);
+	public static async ValueTask<ChunkFooter> FromStream(Stream stream, CancellationToken token) {
+		using var buffer = Memory.AllocateExactly<byte>(Size);
+		return await stream.ReadAsync<ChunkFooter>(buffer.Memory, token);
 	}
 }

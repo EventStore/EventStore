@@ -4,6 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
@@ -20,11 +23,12 @@ public class TFChunkEnumerator {
 		_nextChunkNumber = new Dictionary<string, int>();
 	}
 
-	public IEnumerable<TFChunkInfo> EnumerateChunks(int lastChunkNumber,
-		Func<(string fileName, int fileStartNumber, int fileVersion), int> getNextChunkNumber = null) {
+	public async IAsyncEnumerable<TFChunkInfo> EnumerateChunks(int lastChunkNumber,
+		Func<string, int, int, CancellationToken, ValueTask<int>> getNextChunkNumber = null,
+		[EnumeratorCancellation] CancellationToken token = default) {
 		getNextChunkNumber ??= GetNextChunkNumber;
 
-		if (_allFiles == null) {
+		if (_allFiles is null) {
 			var allFiles = _chunkFileNamingStrategy.GetAllPresentFiles();
 			Array.Sort(allFiles, StringComparer.CurrentCultureIgnoreCase);
 			_allFiles = allFiles;
@@ -54,7 +58,7 @@ public class TFChunkEnumerator {
 			if (chunkNumber == nextChunkNumber) { // there is a newer version of this chunk
 				yield return new OldVersion(chunkFileName, chunkNumber);
 			} else { // latest version of chunk with the expected chunk number
-				expectedChunkNumber = getNextChunkNumber((chunkFileName, chunkNumber, _chunkFileNamingStrategy.GetVersionFor(Path.GetFileName(chunkFileName))));
+				expectedChunkNumber = await getNextChunkNumber(chunkFileName, chunkNumber, _chunkFileNamingStrategy.GetVersionFor(Path.GetFileName(chunkFileName)), token);
 				yield return new LatestVersion(chunkFileName, chunkNumber, expectedChunkNumber - 1);
 			}
 		}
@@ -64,29 +68,16 @@ public class TFChunkEnumerator {
 		}
 	}
 
-	private int GetNextChunkNumber((string chunkFileName, int chunkNumber, int chunkVersion) t) {
-		if (t.chunkVersion == 0)
-			return t.chunkNumber + 1;
+	private async ValueTask<int> GetNextChunkNumber(string chunkFileName, int chunkNumber, int chunkVersion, CancellationToken token) {
+		if (chunkVersion is 0)
+			return chunkNumber + 1;
 
 		// we only cache next chunk numbers for chunks having a non-zero version
-		if (_nextChunkNumber.TryGetValue(t.chunkFileName, out var nextChunkNumber))
+		if (_nextChunkNumber.TryGetValue(chunkFileName, out var nextChunkNumber))
 			return nextChunkNumber;
 
-		var header = ReadChunkHeader(t.chunkFileName);
-		_nextChunkNumber[t.chunkFileName] = header.ChunkEndNumber + 1;
+		var header = await TFChunkDb.ReadChunkHeader(chunkFileName, token);
+		_nextChunkNumber[chunkFileName] = header.ChunkEndNumber + 1;
 		return header.ChunkEndNumber + 1;
-	}
-
-	private static ChunkHeader ReadChunkHeader(string chunkFileName) {
-		ChunkHeader chunkHeader;
-		using (var fs = new FileStream(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-			if (fs.Length < ChunkFooter.Size + ChunkHeader.Size) {
-				throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-					$"Chunk file '{chunkFileName}' is bad. It does not have enough size for header and footer. File size is {fs.Length} bytes."));
-			}
-			chunkHeader = ChunkHeader.FromStream(fs);
-		}
-
-		return chunkHeader;
 	}
 }

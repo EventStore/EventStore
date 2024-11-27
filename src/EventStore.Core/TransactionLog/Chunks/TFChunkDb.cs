@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Transforms;
@@ -37,8 +39,8 @@ public class TFChunkDb : IAsyncDisposable {
 		public string ChunkFileName;
 	}
 
-	IEnumerable<ChunkInfo> GetAllLatestChunksExceptLast(TFChunkEnumerator chunkEnumerator, int lastChunkNum) {
-		foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum)) {
+	private async IAsyncEnumerable<ChunkInfo> GetAllLatestChunksExceptLast(TFChunkEnumerator chunkEnumerator, int lastChunkNum, [EnumeratorCancellation] CancellationToken token) {
+		await foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum, token: token)) {
 			switch (chunkInfo) {
 				case LatestVersion(var fileName, var start, _):
 					if (start <= lastChunkNum - 1)
@@ -69,7 +71,7 @@ public class TFChunkDb : IAsyncDisposable {
 		var chunkEnumerator = new TFChunkEnumerator(Config.FileNamingStrategy);
 
 		try {
-			await Parallel.ForEachAsync(GetAllLatestChunksExceptLast(chunkEnumerator, lastChunkNum), // the last chunk is dealt with separately
+			await Parallel.ForEachAsync(GetAllLatestChunksExceptLast(chunkEnumerator, lastChunkNum, token), // the last chunk is dealt with separately
 				new ParallelOptions {MaxDegreeOfParallelism = threads, CancellationToken = token},
 				async (chunkInfo, token) => {
 					TFChunk.TFChunk chunk;
@@ -78,7 +80,7 @@ public class TFChunkDb : IAsyncDisposable {
 						// The situation where the logical data size is exactly divisible by ChunkSize,
 						// so it might happen that we have checkpoint indicating one more chunk should exist,
 						// but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
-						var footer = ReadChunkFooter(chunkInfo.ChunkFileName);
+						var footer = await ReadChunkFooter(chunkInfo.ChunkFileName, token);
 						if (footer.IsCompleted)
 							chunk = await TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 								unbufferedRead: Config.Unbuffered,
@@ -125,7 +127,7 @@ public class TFChunkDb : IAsyncDisposable {
 				await Manager.AddNewChunk(token);
 		} else {
 			var chunkFileName = lastChunkVersions[0];
-			var chunkHeader = ReadChunkHeader(chunkFileName);
+			var chunkHeader = await ReadChunkHeader(chunkFileName, token);
 			var chunkLocalPos = chunkHeader.GetLocalLogPosition(checkpoint);
 			if (chunkHeader.IsScavenged) {
 				// scavenged chunks are first replicated to a temporary file before being atomically switched in.
@@ -183,12 +185,12 @@ public class TFChunkDb : IAsyncDisposable {
 		}
 
 		_log.Information("Ensuring no excessive chunks...");
-		EnsureNoExcessiveChunks(chunkEnumerator, lastChunkNum);
+		await EnsureNoExcessiveChunks(chunkEnumerator, lastChunkNum, token);
 		_log.Information("Done ensuring no excessive chunks.");
 
 		if (!readOnly) {
 			_log.Information("Removing old chunk versions...");
-			RemoveOldChunksVersions(chunkEnumerator, lastChunkNum);
+			await RemoveOldChunksVersions(chunkEnumerator, lastChunkNum, token);
 			_log.Information("Done removing old chunk versions.");
 
 			_log.Information("Cleaning up temp files...");
@@ -235,43 +237,40 @@ public class TFChunkDb : IAsyncDisposable {
 		}
 	}
 
-	private static ChunkHeader ReadChunkHeader(string chunkFileName) {
-		ChunkHeader chunkHeader;
-		using (var fs = new FileStream(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-			if (fs.Length < ChunkFooter.Size + ChunkHeader.Size) {
-				throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-					string.Format(
-						"Chunk file '{0}' is bad. It does not have enough size for header and footer. File size is {1} bytes.",
-						chunkFileName, fs.Length)));
-			}
+	internal static async ValueTask<ChunkHeader> ReadChunkHeader(string chunkFileName, CancellationToken token) {
+		using var handle = File.OpenHandle(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
+			FileOptions.Asynchronous);
 
-			chunkHeader = ChunkHeader.FromStream(fs);
+		var length = RandomAccess.GetLength(handle);
+		if (length < ChunkFooter.Size + ChunkHeader.Size) {
+			throw new CorruptDatabaseException(new BadChunkInDatabaseException(
+				$"Chunk file '{chunkFileName}' is bad. It does not have enough size for header and footer. File size is {length} bytes."));
 		}
 
-		return chunkHeader;
+		using var buffer = Memory.AllocateExactly<byte>(ChunkHeader.Size);
+		await RandomAccess.ReadAsync(handle, buffer.Memory, 0L, token);
+		return new(buffer.Span);
 	}
 
-	private static ChunkFooter ReadChunkFooter(string chunkFileName) {
-		ChunkFooter chunkFooter;
-		using (var fs = new FileStream(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-			if (fs.Length < ChunkFooter.Size + ChunkHeader.Size) {
-				throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-					string.Format(
-						"Chunk file '{0}' is bad. It does not have enough size for header and footer. File size is {1} bytes.",
-						chunkFileName, fs.Length)));
-			}
+	private static async ValueTask<ChunkFooter> ReadChunkFooter(string chunkFileName, CancellationToken token) {
+		using var handle = File.OpenHandle(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
+			FileOptions.Asynchronous);
 
-			fs.Seek(-ChunkFooter.Size, SeekOrigin.End);
-			chunkFooter = ChunkFooter.FromStream(fs);
+		var length = RandomAccess.GetLength(handle);
+		if (length < ChunkFooter.Size + ChunkHeader.Size) {
+			throw new CorruptDatabaseException(new BadChunkInDatabaseException(
+				$"Chunk file '{chunkFileName}' is bad. It does not have enough size for header and footer. File size is {length} bytes."));
 		}
 
-		return chunkFooter;
+		using var buffer = Memory.AllocateExactly<byte>(ChunkFooter.Size);
+		await RandomAccess.ReadAsync(handle, buffer.Memory, length - ChunkFooter.Size, token);
+		return new(buffer.Span);
 	}
 
-	private void EnsureNoExcessiveChunks(TFChunkEnumerator chunkEnumerator, int lastChunkNum) {
+	private async ValueTask EnsureNoExcessiveChunks(TFChunkEnumerator chunkEnumerator, int lastChunkNum, CancellationToken token) {
 		var extraneousFiles = new List<string>();
 
-		foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum)) {
+		await foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum, token: token)) {
 			switch (chunkInfo) {
 				case LatestVersion(var fileName, var start, var end):
 					// there can be at most one excessive chunk at startup:
@@ -296,8 +295,8 @@ public class TFChunkDb : IAsyncDisposable {
 		}
 	}
 
-	private void RemoveOldChunksVersions(TFChunkEnumerator chunkEnumerator, int lastChunkNum) {
-		foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum)) {
+	private async ValueTask RemoveOldChunksVersions(TFChunkEnumerator chunkEnumerator, int lastChunkNum, CancellationToken token) {
+		await foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum, token: token)) {
 			switch (chunkInfo) {
 				case OldVersion(var fileName, var start):
 					if (start <= lastChunkNum)

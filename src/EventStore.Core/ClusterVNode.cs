@@ -1557,18 +1557,21 @@ public class ClusterVNode<TStreamId> :
 					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
 					epochCheckpoint, epochCheckpoint);
 				var truncator = new TFChunkDbTruncator(Db.Config, type => Db.TransformManager.GetFactoryForExistingChunk(type));
-				truncator.TruncateDb(truncPos);
+				using (var task = truncator.TruncateDb(truncPos, CancellationToken.None).AsTask()) {
+					task.Wait(DefaultShutdownTimeout);
+				}
 
 				// The truncator has moved the checkpoints but it is possible that other components in the startup have
 				// already read the old values. If we ensure all checkpoint reads are performed after the truncation
 				// then we can remove this extra restart
 				Log.Information("Truncation successful. Shutting down.");
 				var shutdownGuid = Guid.NewGuid();
-				using var task = HandleAsync(
-						new SystemMessage.BecomeShuttingDown(shutdownGuid, exitProcess: true, shutdownHttp: true),
-						CancellationToken.None).AsTask();
+				using (var task = HandleAsync(
+					       new SystemMessage.BecomeShuttingDown(shutdownGuid, exitProcess: true, shutdownHttp: true),
+					       CancellationToken.None).AsTask()) {
+					task.Wait(DefaultShutdownTimeout);
+				}
 
-				task.Wait(DefaultShutdownTimeout);
 				Handle(new SystemMessage.BecomeShutdown(shutdownGuid));
 				Application.Exit(0, "Shutting down after successful truncation.");
 				return;

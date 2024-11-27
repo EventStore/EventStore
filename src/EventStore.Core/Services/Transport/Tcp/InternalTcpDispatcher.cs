@@ -2,9 +2,11 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using EventStore.Cluster;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
@@ -103,12 +105,9 @@ public class InternalTcpDispatcher : ClientWriteTcpDispatcher {
 
 	private ReplicationMessage.CreateChunk UnwrapCreateChunk(TcpPackage package, IEnvelope envelope) {
 		var dto = package.Data.Deserialize<CreateChunk>();
-		ChunkHeader chunkHeader;
-		using (var memStream = new MemoryStream(dto.ChunkHeaderBytes.ToByteArray())) {
-			chunkHeader = ChunkHeader.FromStream(memStream);
-		}
+		ChunkHeader chunkHeader = new(dto.ChunkHeaderBytes.Span);
 
-		return new ReplicationMessage.CreateChunk(new Guid(dto.LeaderId.Span), new Guid(dto.SubscriptionId.Span), chunkHeader,
+		return new(new Guid(dto.LeaderId.Span), new Guid(dto.SubscriptionId.Span), chunkHeader,
 			dto.FileSize, dto.IsScavengedChunk, dto.TransformHeaderBytes.Memory);
 	}
 

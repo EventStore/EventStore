@@ -291,8 +291,8 @@ public partial class TFChunk : IDisposable {
 		IsReadOnly = true;
 		SetAttributes(_filename, true);
 
-		using (var stream = _handle.AsUnbufferedStream(FileAccess.Read)) {
-			_chunkHeader = ReadHeader(stream);
+		await using (var stream = _handle.AsUnbufferedStream(FileAccess.Read)) {
+			_chunkHeader = await ReadHeader(stream, token);
 			Log.Debug("Opened completed {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", _filename, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
 
 			if (_chunkHeader.MinCompatibleVersion > CurrentChunkVersion)
@@ -303,10 +303,10 @@ public partial class TFChunk : IDisposable {
 			_transformHeader = transformFactory.ReadTransformHeader(stream);
 			_transform = transformFactory.CreateTransform(_transformHeader);
 
-			_chunkFooter = ReadFooter(stream);
+			_chunkFooter = await ReadFooter(stream, token);
 			if (!_chunkFooter.IsCompleted) {
 				throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-					string.Format("Chunk file '{0}' should be completed, but is not.", _filename)));
+					$"Chunk file '{_filename}' should be completed, but is not."));
 			}
 
 			_logicalDataSize = _chunkFooter.LogicalDataSize;
@@ -372,7 +372,7 @@ public partial class TFChunk : IDisposable {
 		_logicalDataSize = writePosition;
 
 		SetAttributes(_filename, false);
-		CreateWriterWorkItemForExistingChunk(writePosition, getTransformFactory, out _chunkHeader);
+		_chunkHeader = await CreateWriterWorkItemForExistingChunk(writePosition, getTransformFactory, token);
 		Log.Debug("Opened ongoing {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", _filename, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
 
 		if (_chunkHeader.MinCompatibleVersion > CurrentChunkVersion)
@@ -477,14 +477,16 @@ public partial class TFChunk : IDisposable {
 		return Flush(token); // persist file move result
 	}
 
-	private void CreateWriterWorkItemForExistingChunk(int writePosition,
-		Func<TransformType, IChunkTransformFactory> getTransformFactory, out ChunkHeader chunkHeader) {
+	private async ValueTask<ChunkHeader> CreateWriterWorkItemForExistingChunk(int writePosition,
+		Func<TransformType, IChunkTransformFactory> getTransformFactory,
+		CancellationToken token) {
 		_handle = File.OpenHandle(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read, WritableHandleOptions);
 
+		var stream = _handle.AsUnbufferedStream(FileAccess.ReadWrite);
+		ChunkHeader chunkHeader;
 		try {
-			using var stream = _handle.AsUnbufferedStream(FileAccess.ReadWrite);
-			chunkHeader = ReadHeader(stream);
-			if (chunkHeader.Version == (byte)ChunkVersions.Unaligned) {
+			chunkHeader = await ReadHeader(stream, token);
+			if (chunkHeader.Version is (byte)ChunkVersions.Unaligned) {
 				Log.Debug("Upgrading ongoing file {chunk} to version 3", _filename);
 				var newHeader = new ChunkHeader((byte)ChunkVersions.Aligned,
 					(byte)ChunkVersions.Aligned,
@@ -497,16 +499,18 @@ public partial class TFChunk : IDisposable {
 				stream.Seek(0, SeekOrigin.Begin);
 				chunkHeader = newHeader;
 				var head = newHeader.AsByteArray();
-				stream.Write(head, 0, head.Length);
-				stream.Flush();
+				await stream.WriteAsync(head.AsMemory(0, head.Length), token);
+				await stream.FlushAsync(token);
 			}
 
 			var transformFactory = getTransformFactory(chunkHeader.TransformType);
-			_transformHeader = transformFactory.ReadTransformHeader(stream);
+			_transformHeader = transformFactory.ReadTransformHeader(stream); // TODO: Move to async
 			_transform = transformFactory.CreateTransform(_transformHeader);
 		} catch {
 			_handle.Dispose();
 			throw;
+		} finally {
+			await stream.DisposeAsync();
 		}
 
 		var workItem = new WriterWorkItem(_handle, MD5.Create(), _unbuffered, _transform.Write, 0);
@@ -514,6 +518,8 @@ public partial class TFChunk : IDisposable {
 		// the writer work item's stream is responsible for computing the current checksum when the position is set
 		workItem.WorkingStream.Position = realPosition;
 		_writerWorkItem = workItem;
+
+		return chunkHeader;
 	}
 
 	private void WriteHeader(HashAlgorithm md5, Stream stream, ChunkHeader chunkHeader) {
@@ -522,7 +528,7 @@ public partial class TFChunk : IDisposable {
 		stream.Write(chunkHeaderBytes, 0, ChunkHeader.Size);
 	}
 
-	private void WriteTransformHeader(HashAlgorithm md5, Stream stream, ReadOnlyMemory<byte> transformHeader) {
+	private static void WriteTransformHeader(HashAlgorithm md5, Stream stream, ReadOnlyMemory<byte> transformHeader) {
 		if (transformHeader.IsEmpty)
 			return;
 
@@ -548,53 +554,42 @@ public partial class TFChunk : IDisposable {
 			throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
 
 		Log.Debug("Verifying hash for TFChunk '{chunk}'...", _filename);
-		using (var reader = AcquireRawReader()) {
-			reader.Stream.Seek(0, SeekOrigin.Begin);
-			var stream = reader.Stream;
-			var footer = _chunkFooter;
+		using var reader = AcquireRawReader();
+		reader.Stream.Seek(0, SeekOrigin.Begin);
+		var stream = reader.Stream;
+		var footer = _chunkFooter;
 
-			byte[] hash;
-			using (var md5 = MD5.Create()) {
-				// hash whole chunk except MD5 hash sum which should always be last
-				await MD5Hash.ContinuousHashFor(md5, stream, 0, _fileSize - ChunkFooter.ChecksumSize, token);
-				md5.TransformFinalBlock([], 0, 0);
-				hash = md5.Hash;
-			}
-
-			// Perf: use hardware accelerated byte array comparison
-			if (!MemoryExtensions.SequenceEqual<byte>(footer.MD5Hash, hash))
-				throw new HashValidationException();
+		byte[] hash;
+		using (var md5 = MD5.Create()) {
+			// hash whole chunk except MD5 hash sum which should always be last
+			await MD5Hash.ContinuousHashFor(md5, stream, 0, _fileSize - ChunkFooter.ChecksumSize, token);
+			md5.TransformFinalBlock([], 0, 0);
+			hash = md5.Hash;
 		}
+
+		// Perf: use hardware accelerated byte array comparison
+		if (!MemoryExtensions.SequenceEqual<byte>(footer.MD5Hash, hash))
+			throw new HashValidationException();
 	}
 
-	private ChunkHeader ReadHeader(Stream stream) {
+	private ValueTask<ChunkHeader> ReadHeader(Stream stream, CancellationToken token) {
 		if (stream.Length < ChunkHeader.Size) {
-			throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-				string.Format("Chunk file '{0}' is too short to even read ChunkHeader, its size is {1} bytes.",
-					_filename,
-					stream.Length)));
+			return ValueTask.FromException<ChunkHeader>(new CorruptDatabaseException(new BadChunkInDatabaseException(
+				$"Chunk file '{_filename}' is too short to even read ChunkHeader, its size is {stream.Length} bytes.")));
 		}
 
 		stream.Seek(0, SeekOrigin.Begin);
-		var chunkHeader = ChunkHeader.FromStream(stream);
-		return chunkHeader;
+		return ChunkHeader.FromStream(stream, token);
 	}
 
-	private ChunkFooter ReadFooter(Stream stream) {
+	private ValueTask<ChunkFooter> ReadFooter(Stream stream, CancellationToken token) {
 		if (stream.Length < ChunkFooter.Size) {
-			throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-				string.Format("Chunk file '{0}' is too short to even read ChunkFooter, its size is {1} bytes.",
-					_filename,
-					stream.Length)));
+			return ValueTask.FromException<ChunkFooter>(new CorruptDatabaseException(new BadChunkInDatabaseException(
+				$"Chunk file '{_filename}' is too short to even read ChunkFooter, its size is {stream.Length} bytes.")));
 		}
 
-		try {
-			stream.Seek(-ChunkFooter.Size, SeekOrigin.End);
-			var footer = ChunkFooter.FromStream(stream);
-			return footer;
-		} catch (Exception ex) {
-			throw new Exception("error in chunk file " + _filename, ex);
-		}
+		stream.Seek(-ChunkFooter.Size, SeekOrigin.End);
+		return ChunkFooter.FromStream(stream, token);
 	}
 
 	private static long GetRawPosition(long logicalPosition) {
@@ -908,10 +903,10 @@ public partial class TFChunk : IDisposable {
 		SetAttributes(_filename, true);
 
 		if (!_inMem) {
-			using var stream = _handle.AsUnbufferedStream(FileAccess.Read);
-			_chunkFooter = ReadFooter(stream);
+			await using var stream = _handle.AsUnbufferedStream(FileAccess.Read);
+			_chunkFooter = await ReadFooter(stream, token);
 		} else {
-			_chunkFooter = ReadFooter(_sharedMemStream);
+			_chunkFooter = await ReadFooter(_sharedMemStream, token);
 		}
 	}
 

@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Validation;
@@ -32,7 +33,7 @@ public class when_truncating_right_at_the_end_of_multichunk : SpecificationWithD
 		DbUtil.CreateOngoingChunk(_config, 13, GetFilePathFor("chunk-000013.000000"));
 
 		var truncator = new TFChunkDbTruncator(_config, _ => new IdentityChunkTransformFactory());
-		truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed());
+		await truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed(), CancellationToken.None);
 	}
 
 	[OneTimeTearDown]
