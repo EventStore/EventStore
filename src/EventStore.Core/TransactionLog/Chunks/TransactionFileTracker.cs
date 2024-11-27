@@ -11,18 +11,23 @@ public class TFChunkTracker : ITransactionFileTracker {
 
 	public TFChunkTracker(CounterMetric eventMetric, CounterMetric byteMetric, string user) {
 		_subMetrics = new (CounterSubMetric, CounterSubMetric)[(int)(ITransactionFileTracker.Source.EnumLength)];
+
+		var unknownEvents = CreateSubMetric(eventMetric, "unknown", user);
+		var unknownBytes = CreateSubMetric(byteMetric, "unknown", user);
+
 		for (var i = 0; i < _subMetrics.Length; i++) {
 			var sourceName = NameOf((ITransactionFileTracker.Source)i);
+			var isUnknown = string.IsNullOrWhiteSpace(sourceName);
 			_subMetrics[i] = (
-				Events: CreateSubMetric(eventMetric, sourceName, user),
-				Bytes: CreateSubMetric(byteMetric, sourceName, user));
+				Events: isUnknown ? unknownEvents : CreateSubMetric(eventMetric, sourceName, user),
+				Bytes: isUnknown ? unknownBytes : CreateSubMetric(byteMetric, sourceName, user));
 		}
 	}
 
 	static string NameOf(ITransactionFileTracker.Source source) => source switch {
 		ITransactionFileTracker.Source.ChunkCache => "chunk-cache",
 		ITransactionFileTracker.Source.File => "file",
-		_ => "unknown",
+		_ => "",
 	};
 
 	static CounterSubMetric CreateSubMetric(CounterMetric metric, string source, string user) {

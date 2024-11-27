@@ -83,10 +83,6 @@ public class TFChunkTrackerTests : IDisposable {
 					Assert.Equal(0, m.Value);
 				},
 				m => {
-					AssertTags(m.Tags, "archive");
-					Assert.Equal(0, m.Value);
-				},
-				m => {
 					AssertTags(m.Tags, "chunk-cache");
 					Assert.Equal(0, m.Value);
 				},
