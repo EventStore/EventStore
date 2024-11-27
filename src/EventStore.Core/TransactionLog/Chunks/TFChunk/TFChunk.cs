@@ -47,7 +47,7 @@ public partial class TFChunk : IDisposable {
 	}
 
 	public bool IsCached {
-		get { return _cacheStatus == CacheStatus.Cached; }
+		get { return _cacheStatus is CacheStatus.Cached; }
 	}
 
 	// the logical size of (untransformed) data (could be > PhysicalDataSize if scavenged chunk)
@@ -557,7 +557,7 @@ public partial class TFChunk : IDisposable {
 			using (var md5 = MD5.Create()) {
 				// hash whole chunk except MD5 hash sum which should always be last
 				await MD5Hash.ContinuousHashFor(md5, stream, 0, _fileSize - ChunkFooter.ChecksumSize, token);
-				md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
+				md5.TransformFinalBlock([], 0, 0);
 				hash = md5.Hash;
 			}
 
@@ -645,19 +645,21 @@ public partial class TFChunk : IDisposable {
 				if (!IsReadOnly)
 					// we do not cache the header for the active chunk -
 					// it's not necessary as the cache is used only for reading data.
-					BuildCacheArray(
+					await BuildCacheArray(
 						size: GetAlignedSize(ChunkHeader.Size + _chunkHeader.ChunkSize + ChunkFooter.Size),
 						reader: AcquireFileReader(raw: false),
 						offset: ChunkHeader.Size,
 						count: _physicalDataSize,
-						transformed: false);
+						transformed: false,
+						token);
 				else
-					BuildCacheArray(
+					await BuildCacheArray(
 						size: _fileSize,
 						reader: AcquireFileReader(raw: true),
 						offset: 0,
 						count: _fileSize,
-						transformed: true);
+						transformed: true,
+						token);
 			} catch (OutOfMemoryException) {
 				Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk {chunk}.", this);
 				return;
@@ -673,7 +675,7 @@ public partial class TFChunk : IDisposable {
 			_memStreams.Reuse();
 
 			if (_selfdestructin54321) {
-				if (Interlocked.Add(ref _memStreamCount, -IndexPool.Capacity) == 0)
+				if (Interlocked.Add(ref _memStreamCount, -IndexPool.Capacity) is 0)
 					FreeCachedDataUnsafe();
 				Log.Debug("CACHING ABORTED for TFChunk {chunk} as TFChunk was probably marked for deletion.", this);
 				return;
@@ -704,7 +706,9 @@ public partial class TFChunk : IDisposable {
 		}
 	}
 
-	private unsafe void BuildCacheArray(int size, TFChunkBulkReader reader, int offset, int count, bool transformed) {
+	private async ValueTask BuildCacheArray(int size, TFChunkBulkReader reader, int offset, int count, bool transformed, CancellationToken token) {
+		Debug.Assert(_cachedDataLock.IsLockHeld);
+
 		try {
 			if (reader.IsMemory)
 				throw new InvalidOperationException(
@@ -715,9 +719,13 @@ public partial class TFChunk : IDisposable {
 			GC.AddMemoryPressure(_cachedLength);
 
 			try {
-				Span<byte> memoryView = new((cachedData + offset).ToPointer(), count);
+				Memory<byte> memoryView;
+				unsafe {
+					memoryView = UnmanagedMemory.AsMemory((byte*)(cachedData + offset), count);
+				}
+
 				reader.Stream.Seek(offset, SeekOrigin.Begin);
-				reader.Stream.ReadExactly(memoryView);
+				await reader.Stream.ReadExactlyAsync(memoryView, token);
 			} catch {
 				Marshal.FreeHGlobal(cachedData);
 				GC.RemoveMemoryPressure(_cachedLength);
