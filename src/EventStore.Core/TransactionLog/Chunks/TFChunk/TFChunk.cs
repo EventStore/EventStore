@@ -568,7 +568,7 @@ public partial class TFChunk : IDisposable {
 		}
 
 		// Perf: use hardware accelerated byte array comparison
-		if (!MemoryExtensions.SequenceEqual<byte>(footer.MD5Hash, hash))
+		if (!footer.MD5Hash.SequenceEqual(hash))
 			throw new HashValidationException();
 	}
 

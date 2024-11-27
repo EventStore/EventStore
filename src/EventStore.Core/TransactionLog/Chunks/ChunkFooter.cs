@@ -9,17 +9,19 @@ using DotNext.Buffers;
 using DotNext.Buffers.Binary;
 using DotNext.IO;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.TransactionLog.Chunks;
 
-
 // TODO: Consider struct instead of class
 public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 	public const int Size = TFConsts.ChunkFooterSize;
 	public const int ChecksumSize = 16;
+
+	private readonly MD5HashBuffer _checksum;
 
 	// flags within single byte
 	public readonly bool IsCompleted;
@@ -31,22 +33,21 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 		LogicalDataSize; // the size of a logical data size (after scavenge LogicalDataSize can be > physicalDataSize)
 
 	public readonly int MapSize;
-	public readonly byte[] MD5Hash; // TODO: Allocation can be removed with InlineArray
+
+	public ReadOnlySpan<byte> MD5Hash => _checksum;
 
 	public readonly int MapCount; // calculated, not stored
 
 	public ChunkFooter(bool isCompleted, bool isMap12Bytes, int physicalDataSize, long logicalDataSize, int mapSize,
-		byte[] md5Hash) {
-		Ensure.Nonnegative(physicalDataSize, "physicalDataSize");
-		Ensure.Nonnegative(logicalDataSize, "logicalDataSize");
+		ReadOnlySpan<byte> md5Hash) {
+		Ensure.Nonnegative(physicalDataSize, nameof(physicalDataSize));
+		Ensure.Nonnegative(logicalDataSize, nameof(logicalDataSize));
 		if (logicalDataSize < physicalDataSize)
-			throw new ArgumentOutOfRangeException("logicalDataSize",
-				string.Format("LogicalDataSize {0} is less than PhysicalDataSize {1}", logicalDataSize,
-					physicalDataSize));
+			throw new ArgumentOutOfRangeException(nameof(logicalDataSize),
+				$"LogicalDataSize {logicalDataSize} is less than PhysicalDataSize {physicalDataSize}");
 		Ensure.Nonnegative(mapSize, "mapSize");
-		Ensure.NotNull(md5Hash, "md5Hash");
 		if (md5Hash.Length != ChecksumSize)
-			throw new ArgumentException("MD5Hash is of wrong length.", "md5Hash");
+			throw new ArgumentException("MD5Hash is of wrong length.", nameof(md5Hash));
 
 		IsCompleted = isCompleted;
 		IsMap12Bytes = isMap12Bytes;
@@ -54,7 +55,8 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 		PhysicalDataSize = physicalDataSize;
 		LogicalDataSize = logicalDataSize;
 		MapSize = mapSize;
-		MD5Hash = md5Hash;
+
+		md5Hash.CopyTo(_checksum);
 
 		var posMapSize = isMap12Bytes ? PosMap.FullSize : PosMap.DeprecatedSize;
 		if (MapSize % posMapSize != 0)
@@ -78,7 +80,7 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 
 		MapSize = reader.ReadLittleEndian<int>();
 		reader.ConsumedCount = Size - ChecksumSize;
-		MD5Hash = reader.ReadToEnd().ToArray();
+		reader.Read(_checksum);
 
 		var posMapSize = IsMap12Bytes ? PosMap.FullSize : PosMap.DeprecatedSize;
 		if (MapSize % posMapSize is not 0) {
@@ -107,7 +109,7 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 
 		writer.WriteLittleEndian(MapSize);
 		writer.WrittenCount = Size - ChecksumSize;
-		writer.Write(MD5Hash);
+		writer.Write(_checksum);
 	}
 
 	static ChunkFooter IBinaryFormattable<ChunkFooter>.Parse(ReadOnlySpan<byte> source)
@@ -122,5 +124,10 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 	public static async ValueTask<ChunkFooter> FromStream(Stream stream, CancellationToken token) {
 		using var buffer = Memory.AllocateExactly<byte>(Size);
 		return await stream.ReadAsync<ChunkFooter>(buffer.Memory, token);
+	}
+
+	[InlineArray(ChecksumSize)]
+	private struct MD5HashBuffer {
+		private byte _element0;
 	}
 }
