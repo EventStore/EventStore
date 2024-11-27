@@ -12,16 +12,15 @@ namespace EventStore.Core.Services.UserManagement {
 		public static readonly ClaimsPrincipal Anonymous = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]{new Claim(ClaimTypes.Anonymous, ""), }));
 
 		public static readonly string SystemChaserName = "system-chaser";
-		public static readonly string SystemEpochManagerName = "system-epoch-manager";
+		public static readonly string SystemEpochManagerName = "system";
 		public static readonly string SystemName = "system";
-		public static readonly string SystemIndexMergeName = "system-index-merge";
-		public static readonly string SystemIndexCommitterName = "system-index-committer";
+		public static readonly string SystemIndexCommitterName = "system";
 		public static readonly string SystemPersistentSubscriptionsName = "system-persistent-subscriptions";
-		public static readonly string SystemRedactionName = "system-redaction";
+		public static readonly string SystemRedactionName = "system";
 		public static readonly string SystemReplicationName = "system-replication";
 		public static readonly string SystemScavengeName = "system-scavenge";
 		public static readonly string SystemSubscriptionsName = "system-subscriptions";
-		public static readonly string SystemTelemetryName = "system-telemetry";
-		public static readonly string SystemWriterName = "system-writer";
+		public static readonly string SystemTelemetryName = "system";
+		public static readonly string SystemWriterName = "system";
 	}
 }

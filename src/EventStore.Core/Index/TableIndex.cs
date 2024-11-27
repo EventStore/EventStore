@@ -311,7 +311,7 @@ namespace EventStore.Core.Index {
 						Log.Debug("Performing manual index merge.");
 
 						_isManualMergePending = false;
-						using (var reader = _tfReaderFactory(SystemAccounts.SystemIndexMergeName)) {
+						using (var reader = _tfReaderFactory(SystemAccounts.SystemName)) {
 							var manualMergeResult = _indexMap.TryManualMerge(
 								(streamId, currentHash) => UpgradeHash(streamId, currentHash),
 								entry => reader.ExistsAt(entry.Position),
@@ -362,7 +362,7 @@ namespace EventStore.Core.Index {
 					_indexMap.SaveToFile(indexmapFile);
 
 					if (addResult.CanMergeAny) {
-						using (var reader = _tfReaderFactory(SystemAccounts.SystemIndexMergeName)) {
+						using (var reader = _tfReaderFactory(SystemAccounts.SystemName)) {
 							MergeResult mergeResult;
 							do {
 								mergeResult = _indexMap.TryMergeOneLevel(
