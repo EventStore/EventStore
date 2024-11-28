@@ -26,6 +26,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog;
 using EventFilter = EventStore.Core.Services.Storage.ReaderIndex.EventFilter;
 using StreamMetadata = EventStore.Core.Data.StreamMetadata;
+using EventStore.Core.TransactionLog;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription {
 	public enum EventSource {
@@ -189,7 +190,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 				new FakeReadIndex<TLogFormat,TStreamId>(_ => false, new MetaStreamLookup()),
 				ioDispatcher, bus,
 				new PersistentSubscriptionConsumerStrategyRegistry(bus, bus,
-					Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()));
+					Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()),
+				ITransactionFileTrackerFactory.NoOp);
 
 			_sut.Start();
 			_sut.Handle(new SystemMessage.BecomeLeader(correlationId: Guid.NewGuid()));

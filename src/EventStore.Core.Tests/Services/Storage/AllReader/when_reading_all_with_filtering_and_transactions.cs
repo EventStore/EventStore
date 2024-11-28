@@ -3,6 +3,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader {
@@ -43,7 +44,8 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				pos: new Data.TFPos(0, 0),
 				maxCount: 10,
 				maxSearchWindow: int.MaxValue,
-				eventFilter: EventFilter.StreamName.Prefixes(false, "included"));
+				eventFilter: EventFilter.StreamName.Prefixes(false, "included"),
+				tracker: ITransactionFileTracker.NoOp);
 
 			Assert.AreEqual(10, read.Records.Count);
 			for (int j = 0; j < 10; j++)
@@ -83,7 +85,8 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				pos: new TFPos(writerCp, writerCp),
 				maxCount: 10,
 				maxSearchWindow: int.MaxValue,
-				eventFilter: EventFilter.StreamName.Prefixes(false, "included"));
+				eventFilter: EventFilter.StreamName.Prefixes(false, "included"),
+				tracker: ITransactionFileTracker.NoOp);
 
 			Assert.AreEqual(10, read.Records.Count);
 			for (int j = 9; j <= 0; j--)

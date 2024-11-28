@@ -1,4 +1,5 @@
 using EventStore.Core.Exceptions;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using NUnit.Framework;
@@ -8,8 +9,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 	public class when_opening_tfchunk_from_non_existing_file : SpecificationWithFile {
 		[Test]
 		public void it_should_throw_a_file_not_found_exception() {
-			Assert.Throws<CorruptDatabaseException>(() => TFChunk.FromCompletedFile(Filename, verifyHash: true,
-				unbufferedRead: false, initialReaderCount: Constants.TFChunkInitialReaderCountDefault, maxReaderCount: Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp()));
+			Assert.Throws<CorruptDatabaseException>(() => TFChunk.FromCompletedFile(Filename, verifyHash: true, tracker: ITransactionFileTracker.NoOp,
+				unbufferedRead: false, initialReaderCount: Constants.TFChunkInitialReaderCountDefault, maxReaderCount: Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false));
 		}
 	}
 }

@@ -7,6 +7,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Telemetry;
 using EventStore.Core.Tests.TransactionLog;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using Xunit;
@@ -33,6 +34,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 			new EnvelopePublisher(new ChannelEnvelope(channel)),
 			_sink,
 			new InMemoryCheckpoint(0),
+			ITransactionFileTracker.NoOp,
 			Guid.NewGuid());
 	}
 

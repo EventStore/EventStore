@@ -9,15 +9,18 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private readonly ICheckpoint _chaserCheckpoint;
+		private readonly ITransactionFileTracker _tfTracker;
 		private readonly TFChunkReader _reader;
 
 		public TFChunkChaser(TFChunkDb db, IReadOnlyCheckpoint writerCheckpoint, ICheckpoint chaserCheckpoint,
-			bool optimizeReadSideCache) {
+			bool optimizeReadSideCache,
+			ITransactionFileTracker tfTracker) {
 			Ensure.NotNull(db, "dbConfig");
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 			Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
 
 			_chaserCheckpoint = chaserCheckpoint;
+			_tfTracker = tfTracker;
 			_reader = new TFChunkReader(db, writerCheckpoint, _chaserCheckpoint.Read(), optimizeReadSideCache);
 		}
 
@@ -32,7 +35,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public SeqReadResult TryReadNext() {
-			var res = _reader.TryReadNext();
+			var res = _reader.TryReadNext(_tfTracker);
 			if (res.Success)
 				_chaserCheckpoint.Write(res.RecordPostPosition);
 			else

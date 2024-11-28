@@ -5,6 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
@@ -21,13 +22,13 @@ namespace EventStore.Core.LogV2 {
 	/// of the previous record, which is fine. the net effect is an extra record is initialized
 	/// on startup next time.
 	public class LogV2StreamExistenceFilterInitializer : INameExistenceFilterInitializer {
-		private readonly Func<TFReaderLease> _tfReaderFactory;
+		private readonly Func<string, TFReaderLease> _tfReaderFactory;
 		private readonly ITableIndex _tableIndex;
 
 		protected static readonly ILogger Log = Serilog.Log.ForContext<LogV2StreamExistenceFilterInitializer>();
 
 		public LogV2StreamExistenceFilterInitializer(
-			Func<TFReaderLease> tfReaderFactory,
+			Func<string, TFReaderLease> tfReaderFactory,
 			ITableIndex tableIndex) {
 
 			Ensure.NotNull(tableIndex, nameof(tableIndex));
@@ -134,7 +135,7 @@ namespace EventStore.Core.LogV2 {
 			// whether the checkpoint is the pre or post position of the last processed record.
 			var startPosition = filter.CurrentCheckpoint == -1 ? 0 : filter.CurrentCheckpoint;
 			Log.Information("Initializing from log starting at {startPosition:N0}", startPosition);
-			using var reader = _tfReaderFactory();
+			using var reader = _tfReaderFactory(SystemAccounts.SystemName);
 			reader.Reposition(startPosition);
 
 			while (TryReadNextLogRecord(reader, out var result)) {

@@ -2,6 +2,7 @@
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
@@ -56,7 +57,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_forward_returns_all_events() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, ITransactionFileTracker.NoOp).EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(2, events.Length);
@@ -66,7 +67,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_backward_returns_all_events() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, ITransactionFileTracker.NoOp).EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(2, events.Length);

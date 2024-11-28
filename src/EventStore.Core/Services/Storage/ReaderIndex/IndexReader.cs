@@ -21,27 +21,27 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		// streamId drives the read, streamName is only for populating on the result.
 		// this was less messy than safely adding the streamName to the EventRecord at some point after construction
-		IndexReadEventResult ReadEvent(string streamName, TStreamId streamId, long eventNumber);
-		IndexReadStreamResult ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
-		IndexReadStreamResult ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
-		StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId);
-		IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber);
-		IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition);
+		IndexReadEventResult ReadEvent(string streamName, TStreamId streamId, long eventNumber, ITransactionFileTracker tracker);
+		IndexReadStreamResult ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount, ITransactionFileTracker tracker);
+		IndexReadStreamResult ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount, ITransactionFileTracker tracker);
+		StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId, ITransactionFileTracker tracker);
+		IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber, ITransactionFileTracker tracker);
+		IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition, ITransactionFileTracker tracker);
 		IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition);
-		IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition);
-		IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long fromEventNumber, int maxCount, long beforePosition);
+		IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition, ITransactionFileTracker tracker);
+		IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long fromEventNumber, int maxCount, long beforePosition, ITransactionFileTracker tracker);
 
 		/// <summary>
 		/// Doesn't filter $maxAge, $maxCount, $tb(truncate before), doesn't check stream deletion, etc.
 		/// </summary>
-		IPrepareLogRecord<TStreamId> ReadPrepare(TStreamId streamId, long eventNumber);
+		IPrepareLogRecord<TStreamId> ReadPrepare(TStreamId streamId, long eventNumber, ITransactionFileTracker tracker);
 
-		TStreamId GetEventStreamIdByTransactionId(long transactionId);
+		TStreamId GetEventStreamIdByTransactionId(long transactionId, ITransactionFileTracker tracker);
 
-		StreamMetadata GetStreamMetadata(TStreamId streamId);
-		long GetStreamLastEventNumber(TStreamId streamId);
-		long GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition);
-		long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition);
+		StreamMetadata GetStreamMetadata(TStreamId streamId, ITransactionFileTracker tracker);
+		long GetStreamLastEventNumber(TStreamId streamId, ITransactionFileTracker tracker);
+		long GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition, ITransactionFileTracker tracker);
+		long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition, ITransactionFileTracker tracker);
 	}
 
 	public abstract class IndexReader {
@@ -105,11 +105,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_skipIndexScanOnRead = skipIndexScanOnRead;
 		}
 
-		IndexReadEventResult IIndexReader<TStreamId>.ReadEvent(string streamName, TStreamId streamId, long eventNumber) {
+		IndexReadEventResult IIndexReader<TStreamId>.ReadEvent(string streamName, TStreamId streamId, long eventNumber,
+			ITransactionFileTracker tracker) {
 			Ensure.Valid(streamId, _validator);
 			if (eventNumber < -1)
 				throw new ArgumentOutOfRangeException("eventNumber");
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				return ReadEventInternal(reader, streamName, streamId, eventNumber);
 			}
 		}
@@ -154,8 +155,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				originalStreamExists: originalStreamExists);
 		}
 
-		IPrepareLogRecord<TStreamId> IIndexReader<TStreamId>.ReadPrepare(TStreamId streamId, long eventNumber) {
-			using (var reader = _backend.BorrowReader()) {
+		IPrepareLogRecord<TStreamId> IIndexReader<TStreamId>.ReadPrepare(TStreamId streamId, long eventNumber,
+			ITransactionFileTracker tracker) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				return ReadPrepareInternal(reader, streamId, eventNumber);
 			}
 		}
@@ -216,17 +218,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		IndexReadStreamResult IIndexReader<TStreamId>.
-			ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount) {
-			return ReadStreamEventsForwardInternal(streamName, streamId, fromEventNumber, maxCount, _skipIndexScanOnRead);
+			ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount, ITransactionFileTracker tracker) {
+			return ReadStreamEventsForwardInternal(streamName, streamId, fromEventNumber, maxCount, _skipIndexScanOnRead, tracker);
 		}
 
 		private IndexReadStreamResult ReadStreamEventsForwardInternal(string streamName, TStreamId streamId, long fromEventNumber,
-			int maxCount, bool skipIndexScanOnRead) {
+			int maxCount, bool skipIndexScanOnRead,
+			ITransactionFileTracker tracker) {
 			Ensure.Valid(streamId, _validator);
 			Ensure.Nonnegative(fromEventNumber, "fromEventNumber");
 			Ensure.Positive(maxCount, "maxCount");
 
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				var lastEventNumber = GetStreamLastEventNumberCached(reader, streamId);
 				var metadata = GetStreamMetadataCached(reader, streamId);
 				if (lastEventNumber == EventNumber.DeletedStream)
@@ -502,8 +505,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			(indexReader, streamHandle, reader, startEventNumber, endEventNumber) => 
 				indexReader._tableIndex.GetRange(streamHandle, startEventNumber, endEventNumber);
 
-		public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber) {
-			using (var reader = _backend.BorrowReader()) {
+		public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber, ITransactionFileTracker tracker) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				var result = ReadEventInfoForwardInternal(
 					streamId,
 					reader,
@@ -521,8 +524,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		// note for simplicity skipIndexScanOnRead is always treated as false. see ReadEventInfoInternal
-		public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition) {
-			using (var reader = _backend.BorrowReader()) {
+		public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition,
+			ITransactionFileTracker tracker) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				return ReadEventInfoForwardInternal(
 					streamId,
 					reader,
@@ -593,16 +597,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		IndexReadStreamResult IIndexReader<TStreamId>.
-			ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount) {
-			return ReadStreamEventsBackwardInternal(streamName, streamId, fromEventNumber, maxCount, _skipIndexScanOnRead);
+			ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount, ITransactionFileTracker tracker) {
+			return ReadStreamEventsBackwardInternal(streamName, streamId, fromEventNumber, maxCount, _skipIndexScanOnRead, tracker);
 		}
 
 		private IndexReadStreamResult ReadStreamEventsBackwardInternal(string streamName, TStreamId streamId, long fromEventNumber,
-			int maxCount, bool skipIndexScanOnRead) {
+			int maxCount, bool skipIndexScanOnRead,
+			ITransactionFileTracker tracker) {
 			Ensure.Valid(streamId, _validator);
 			Ensure.Positive(maxCount, "maxCount");
 
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				var lastEventNumber = GetStreamLastEventNumberCached(reader, streamId);
 				var metadata = GetStreamMetadataCached(reader, streamId);
 				if (lastEventNumber == EventNumber.DeletedStream)
@@ -661,14 +666,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount,
-			long beforePosition) {
+			long beforePosition, ITransactionFileTracker tracker) {
 			if (fromEventNumber < 0)
-				fromEventNumber = GetStreamLastEventNumber_KnownCollisions(streamId, beforePosition);
+				fromEventNumber = GetStreamLastEventNumber_KnownCollisions(streamId, beforePosition, tracker);
 
 			if (fromEventNumber == ExpectedVersion.NoStream)
 				return new IndexReadEventInfoResult(new EventInfo[] { }, -1);
 
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				return ReadEventInfoBackwardInternal(
 					streamId,
 					reader,
@@ -693,10 +698,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Func<ulong, TStreamId> getStreamId,
 			long fromEventNumber,
 			int maxCount,
-			long beforePosition) {
+			long beforePosition,
+			ITransactionFileTracker tracker) {
 
 			if (fromEventNumber < 0)
-				fromEventNumber = GetStreamLastEventNumber_NoCollisions(stream, getStreamId, beforePosition);
+				fromEventNumber = GetStreamLastEventNumber_NoCollisions(stream, getStreamId, beforePosition, tracker);
 
 			if (fromEventNumber == ExpectedVersion.NoStream)
 				return new IndexReadEventInfoResult(new EventInfo[] { }, -1);
@@ -800,16 +806,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return result;
 		}
 
-		public TStreamId GetEventStreamIdByTransactionId(long transactionId) {
+		public TStreamId GetEventStreamIdByTransactionId(long transactionId, ITransactionFileTracker tracker) {
 			Ensure.Nonnegative(transactionId, "transactionId");
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				var res = ReadPrepareInternal(reader, transactionId);
 				return res == null ? default : res.EventStreamId;
 			}
 		}
 
-		public StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId) {
-			using (var reader = _backend.BorrowReader()) {
+		public StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId, ITransactionFileTracker tracker) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				var sysSettings = _backend.GetSystemSettings() ?? SystemSettings.Default;
 				StreamAcl acl;
 				StreamAcl sysAcl;
@@ -828,16 +834,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 		}
 
-		long IIndexReader<TStreamId>.GetStreamLastEventNumber(TStreamId streamId) {
+		long IIndexReader<TStreamId>.GetStreamLastEventNumber(TStreamId streamId, ITransactionFileTracker tracker) {
 			Ensure.Valid(streamId, _validator);
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				return GetStreamLastEventNumberCached(reader, streamId);
 			}
 		}
 
-		public long GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition) {
+		public long GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition, ITransactionFileTracker tracker) {
 			Ensure.Valid(streamId, _validator);
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				return GetStreamLastEventNumber_KnownCollisions(streamId, beforePosition, reader);
 			}
 		}
@@ -858,8 +864,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		// gets the last event number before beforePosition for the given stream hash. can assume that
 		// the hash does not collide with anything before beforePosition.
-		public long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition) {
-			using (var reader = _backend.BorrowReader()) {
+		public long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition,
+			ITransactionFileTracker tracker) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				return GetStreamLastEventNumber_NoCollisions(stream, getStreamId, beforePosition, reader);
 			}
 		}
@@ -892,9 +899,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return entry.Version;
 		}
 
-		StreamMetadata IIndexReader<TStreamId>.GetStreamMetadata(TStreamId streamId) {
+		StreamMetadata IIndexReader<TStreamId>.GetStreamMetadata(TStreamId streamId, ITransactionFileTracker tracker) {
 			Ensure.Valid(streamId, _validator);
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(tracker)) {
 				return GetStreamMetadataCached(reader, streamId);
 			}
 		}

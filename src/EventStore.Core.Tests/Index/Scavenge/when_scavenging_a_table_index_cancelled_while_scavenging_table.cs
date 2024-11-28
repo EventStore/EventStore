@@ -29,13 +29,13 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			var fakeReader = new TFReaderLease(new FakeIndexReader(l => {
 				cancellationTokenSource.Cancel();
 				return true;
-			}));
+			}), ITransactionFileTracker.NoOp);
 
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
-				() => fakeReader,
+				_ => fakeReader,
 				PTableVersions.IndexV4,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,
@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
-				() => fakeReader,
+				_ => fakeReader,
 				PTableVersions.IndexV4,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,

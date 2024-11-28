@@ -16,6 +16,7 @@ using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
 using EventStore.LogCommon;
+using OpenTelemetry.Trace;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
@@ -32,12 +33,15 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly ITableIndex<TStreamId> _tableIndex;
 		private readonly IReadIndex<TStreamId> _readIndex;
 		private readonly IMetastreamLookup<TStreamId> _metastreams;
+		private readonly ITransactionFileTracker _tfTracker;
 		private readonly long _maxChunkDataSize;
 		private readonly bool _unsafeIgnoreHardDeletes;
 		private readonly int _threads;
 
 		public TFChunkScavenger(ILogger logger, TFChunkDb db, ITFChunkScavengerLog scavengerLog, ITableIndex<TStreamId> tableIndex,
-			IReadIndex<TStreamId> readIndex, IMetastreamLookup<TStreamId> metastreams, long? maxChunkDataSize = null,
+			IReadIndex<TStreamId> readIndex, IMetastreamLookup<TStreamId> metastreams,
+			ITransactionFileTracker tfTracker,
+			long? maxChunkDataSize = null,
 			bool unsafeIgnoreHardDeletes = false, int threads = 1) {
 			Ensure.NotNull(logger, nameof(logger));
 			Ensure.NotNull(db, "db");
@@ -61,6 +65,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_tableIndex = tableIndex;
 			_readIndex = readIndex;
 			_metastreams = metastreams;
+			_tfTracker = tfTracker;
 			_maxChunkDataSize = maxChunkDataSize ?? db.Config.ChunkSize;
 			_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
 			_threads = threads;
@@ -157,6 +162,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					maxChunkDataSize: _maxChunkDataSize,
 					scavengerLog: _scavengerLog,
 					throttle: new Throttle(_logger, TimeSpan.Zero, TimeSpan.Zero, 100),
+					tracker: _tfTracker,
 					ct: ct);
 			}
 
@@ -196,7 +202,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					initialReaderCount: _db.Config.InitialReaderCount,
 					maxReaderCount: _db.Config.MaxReaderCount,
 					reduceFileCachePressure: _db.Config.ReduceFileCachePressure,
-					tracker: new TFChunkTracker.NoOp());
+					_tfTracker);
 			} catch (IOException exc) {
 				_logger.Error(exc,
 					"IOException during creating new chunk for scavenging purposes. Stopping scavenging process...");
@@ -204,7 +210,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 
 			try {
-				TraverseChunkBasic(oldChunk, ct,
+				TraverseChunkBasic(oldChunk, ct, _tfTracker,
 					result => {
 						threadLocalCache.Records.Add(result);
 
@@ -337,6 +343,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			long maxChunkDataSize,
 			ITFChunkScavengerLog scavengerLog,
 			Throttle throttle,
+			ITransactionFileTracker tracker,
 			CancellationToken ct) {
 
 			bool mergedSomething;
@@ -362,6 +369,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 								db: db,
 								scavengerLog: scavengerLog,
 								oldChunks: chunksToMerge,
+								tracker: tracker,
 								ct: ct)) {
 
 							mergedSomething = true;
@@ -382,6 +390,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						db: db,
 						scavengerLog: scavengerLog,
 						oldChunks: chunksToMerge,
+						tracker: tracker,
 						ct: ct)) {
 
 						mergedSomething = true;
@@ -398,6 +407,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			TFChunkDb db,
 			ITFChunkScavengerLog scavengerLog,
 			IList<TFChunk.TFChunk> oldChunks,
+			ITransactionFileTracker tracker,
 			CancellationToken ct) {
 
 			if (oldChunks.IsEmpty()) throw new ArgumentException("Provided list of chunks to merge is empty.");
@@ -432,7 +442,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					initialReaderCount: db.Config.InitialReaderCount,
 					maxReaderCount: db.Config.MaxReaderCount,
 					reduceFileCachePressure: db.Config.ReduceFileCachePressure,
-					tracker: new TFChunkTracker.NoOp());
+					tracker);
 			} catch (IOException exc) {
 				logger.Error(exc,
 					"IOException during creating new chunk for scavenging merge purposes. Stopping scavenging merge process...");
@@ -445,7 +455,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				var positionMapping = new List<PosMap>();
 				foreach (var oldChunk in oldChunks) {
 					var lastFlushedPage = -1;
-					TraverseChunkBasic(oldChunk, ct,
+					TraverseChunkBasic(oldChunk, ct, tracker,
 						result => {
 
 							positionMapping.Add(WriteRecord(newChunk, result.LogRecord));
@@ -614,7 +624,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				return true;
 			}
 
-			var lastEventNumber = _readIndex.GetStreamLastEventNumber(prepare.EventStreamId);
+			var lastEventNumber = _readIndex.GetStreamLastEventNumber(prepare.EventStreamId, _tfTracker);
 			if (lastEventNumber == EventNumber.DeletedStream) {
 				// The stream is hard deleted but this is not the tombstone.
 				// When all prepares and commit of transaction belong to single chunk and the stream is deleted,
@@ -672,7 +682,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				return true;
 			}
 
-			var meta = _readIndex.GetStreamMetadata(prepare.EventStreamId);
+			var meta = _readIndex.GetStreamMetadata(prepare.EventStreamId, _tfTracker);
 			bool canRemove = (meta.MaxCount.HasValue && eventNumber < lastEventNumber - meta.MaxCount.Value + 1)
 			                 || (meta.TruncateBefore.HasValue && eventNumber < meta.TruncateBefore.Value)
 			                 || (meta.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - meta.MaxAge.Value);
@@ -687,7 +697,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private bool DiscardBecauseDuplicate(IPrepareLogRecord<TStreamId> prepare, long eventNumber) {
-			var result = _readIndex.ReadEvent(IndexReader.UnspecifiedStreamName, prepare.EventStreamId, eventNumber);
+			var result = _readIndex.ReadEvent(IndexReader.UnspecifiedStreamName, prepare.EventStreamId, eventNumber, _tfTracker);
 			if (result.Result == ReadEventResult.Success && result.Record.LogPosition != prepare.LogPosition) {
 				// prepare isn't the record we get for an index read at its own stream/version.
 				// therefore it is a duplicate that cannot be read from the index, discard it.
@@ -702,13 +712,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			TStreamId msh;
 			if (_metastreams.IsMetaStream(eventStreamId)) {
 				var originalStreamId = _metastreams.OriginalStreamOf(eventStreamId);
-				var meta = _readIndex.GetStreamMetadata(originalStreamId);
+				var meta = _readIndex.GetStreamMetadata(originalStreamId, _tfTracker);
 				if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
 					return false;
 				sh = originalStreamId;
 				msh = eventStreamId;
 			} else {
-				var meta = _readIndex.GetStreamMetadata(eventStreamId);
+				var meta = _readIndex.GetStreamMetadata(eventStreamId, _tfTracker);
 				if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
 					return false;
 				sh = eventStreamId;
@@ -728,14 +738,15 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private static void TraverseChunkBasic(TFChunk.TFChunk chunk, CancellationToken ct,
+			ITransactionFileTracker tracker,
 			Action<CandidateRecord> process) {
-			var result = chunk.TryReadFirst();
+			var result = chunk.TryReadFirst(tracker);
 			while (result.Success) {
 				process(new CandidateRecord(result.LogRecord, result.RecordLength));
 
 				ct.ThrowIfCancellationRequested();
 
-				result = chunk.TryReadClosestForward(result.NextPosition);
+				result = chunk.TryReadClosestForward(result.NextPosition, tracker);
 			}
 		}
 

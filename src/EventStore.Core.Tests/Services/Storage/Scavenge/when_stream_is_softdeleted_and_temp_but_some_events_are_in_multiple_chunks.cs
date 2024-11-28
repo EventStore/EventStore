@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
@@ -74,20 +75,20 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		public void the_stream_is_present_physically() {
 			var headOfTf = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
 			Assert.AreEqual(1,
-				ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 1000).Records
+				ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 1000, ITransactionFileTracker.NoOp).Records
 					.Count(x => x.Event.EventStreamId == "test"));
 			Assert.AreEqual(1,
-				ReadIndex.ReadAllEventsBackward(headOfTf, 1000).Records.Count(x => x.Event.EventStreamId == "test"));
+				ReadIndex.ReadAllEventsBackward(headOfTf, 1000, ITransactionFileTracker.NoOp).Records.Count(x => x.Event.EventStreamId == "test"));
 		}
 
 		[Test]
 		public void the_metastream_is_present_physically() {
 			var headOfTf = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
 			Assert.AreEqual(1,
-				ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 1000).Records
+				ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 1000, ITransactionFileTracker.NoOp).Records
 					.Count(x => x.Event.EventStreamId == "$$test"));
 			Assert.AreEqual(1,
-				ReadIndex.ReadAllEventsBackward(headOfTf, 1000).Records.Count(x => x.Event.EventStreamId == "$$test"));
+				ReadIndex.ReadAllEventsBackward(headOfTf, 1000, ITransactionFileTracker.NoOp).Records.Count(x => x.Event.EventStreamId == "$$test"));
 		}
 	}
 }

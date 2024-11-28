@@ -181,6 +181,7 @@ namespace EventStore.Core {
 						.AddSingleton(_readIndex)
 						.AddSingleton(new Streams<TStreamId>(_mainQueue, _readIndex, _maxAppendSize,
 							_writeTimeout, _expiryStrategy,
+							_trackers.TransactionFileTrackers,
 							_trackers.GrpcTrackers,
 							_authorizationProvider))
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))

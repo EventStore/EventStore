@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -446,7 +447,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 				.WriteTo.Sink(sink)
 				.MinimumLevel.Verbose()
 				.CreateLogger())
-			using (var db = new TFChunkDb(config, new TFChunkTracker.NoOp(), log)) {
+			using (var db = new TFChunkDb(config, ITransactionFileTracker.NoOp, log)) {
 				byte[] contents = new byte[config.ChunkSize];
 				for (var i = 0; i < config.ChunkSize; i++) {
 					contents[i] = 0;

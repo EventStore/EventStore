@@ -10,6 +10,8 @@ using EventStore.Core.Services.TimerService;
 using System.Linq;
 using EventStore.Core.Util;
 using ILogger = Serilog.ILogger;
+using EventStore.Core.TransactionLog;
+using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.Core.Services {
 	public enum SubscriptionDropReason {
@@ -56,12 +58,15 @@ namespace EventStore.Core.Services {
 		private readonly IEnvelope _busEnvelope;
 		private readonly IQueuedHandler _queuedHandler;
 		private readonly IReadIndex<TStreamId> _readIndex;
+		private readonly ITransactionFileTrackerFactory _tfTrackers;
+		private readonly ITransactionFileTracker _tfTracker;
 		private static readonly char[] _linkToSeparator = new[] { '@' };
 
 		public SubscriptionsService(
 			IPublisher bus,
 			IQueuedHandler queuedHandler,
-			IReadIndex<TStreamId> readIndex) {
+			IReadIndex<TStreamId> readIndex,
+			ITransactionFileTrackerFactory tfTrackers) {
 
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(queuedHandler, "queuedHandler");
@@ -71,6 +76,8 @@ namespace EventStore.Core.Services {
 			_busEnvelope = new PublishEnvelope(bus);
 			_queuedHandler = queuedHandler;
 			_readIndex = readIndex;
+			_tfTrackers = tfTrackers;
+			_tfTracker = tfTrackers.For(SystemAccounts.SystemSubscriptionsName);
 		}
 
 		public void Handle(SystemMessage.SystemStart message) {
@@ -120,7 +127,7 @@ namespace EventStore.Core.Services {
 			if (isInMemoryStream) {
 				lastEventNumber = -1;
 			} else if (!msg.EventStreamId.IsEmptyString()) {
-				lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
+				lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId), _tfTrackers.For(msg));
 			}
 
 			var lastIndexedPos = isInMemoryStream ? -1 : _readIndex.LastIndexedPosition;
@@ -140,7 +147,7 @@ namespace EventStore.Core.Services {
 			if (isInMemoryStream) {
 				lastEventNumber = -1;
 			} else if (!msg.EventStreamId.IsEmptyString()) {
-				lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
+				lastEventNumber = _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId), _tfTrackers.For(msg));
 			}
 
 			var lastIndexedPos = isInMemoryStream ? -1 : _readIndex.LastIndexedPosition;
@@ -342,7 +349,7 @@ namespace EventStore.Core.Services {
 					long eventNumber = long.Parse(parts[0]);
 					string streamName = parts[1];
 					var streamId = _readIndex.GetStreamId(streamName);
-					var res = _readIndex.ReadEvent(streamName, streamId, eventNumber);
+					var res = _readIndex.ReadEvent(streamName, streamId, eventNumber, _tfTracker);
 
 					if (res.Result == ReadEventResult.Success)
 						return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);

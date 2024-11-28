@@ -29,9 +29,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_result = _chunk.TryAppend(_record);
 			_chunk.Flush();
 			_chunk.Complete();
-			_cachedChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true, unbufferedRead: false,
-				initialReaderCount: Constants.TFChunkInitialReaderCountDefault, maxReaderCount: Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp());
-			_cachedChunk.CacheInMemory();
+			_cachedChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true, unbufferedRead: false, tracker: ITransactionFileTracker.NoOp,
+				initialReaderCount: Constants.TFChunkInitialReaderCountDefault, maxReaderCount: Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false);
+			_cachedChunk.CacheInMemory(ITransactionFileTracker.NoOp);
 		}
 
 		[OneTimeTearDown]
@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_at_exact_position() {
-			var res = _cachedChunk.TryReadAt(0, couldBeScavenged: true);
+			var res = _cachedChunk.TryReadAt(0, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record, res.LogRecord);
 			Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);
@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_as_first_record() {
-			var res = _cachedChunk.TryReadFirst();
+			var res = _cachedChunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
 			Assert.AreEqual(_record, res.LogRecord);
@@ -72,7 +72,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_as_closest_forward_to_zero_pos() {
-			var res = _cachedChunk.TryReadClosestForward(0);
+			var res = _cachedChunk.TryReadClosestForward(0, ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
 			Assert.AreEqual(_record, res.LogRecord);
@@ -81,7 +81,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_as_closest_backward_from_end() {
-			var res = _cachedChunk.TryReadClosestBackward(_record.GetSizeWithLengthPrefixAndSuffix());
+			var res = _cachedChunk.TryReadClosestBackward(_record.GetSizeWithLengthPrefixAndSuffix(), ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(0, res.NextPosition);
 			Assert.AreEqual(_record, res.LogRecord);
@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_as_last() {
-			var res = _cachedChunk.TryReadLast();
+			var res = _cachedChunk.TryReadLast(ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(0, res.NextPosition);
 			Assert.AreEqual(_record, res.LogRecord);

@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_at_exact_position() {
-			var res = _chunk.TryReadAt(0, couldBeScavenged: false);
+			var res = _chunk.TryReadAt(0, couldBeScavenged: false, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record, res.LogRecord);
 			Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_as_first_one() {
-			var res = _chunk.TryReadFirst();
+			var res = _chunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record, res.LogRecord);
 			Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_as_closest_forward_to_pos_zero() {
-			var res = _chunk.TryReadClosestForward(0);
+			var res = _chunk.TryReadClosestForward(0, ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record, res.LogRecord);
 			Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
@@ -84,7 +84,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_as_closest_backward_from_end() {
-			var res = _chunk.TryReadClosestBackward(_record.GetSizeWithLengthPrefixAndSuffix());
+			var res = _chunk.TryReadClosestBackward(_record.GetSizeWithLengthPrefixAndSuffix(), ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record, res.LogRecord);
 			Assert.AreEqual(0, res.NextPosition);
@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_as_last_one() {
-			var res = _chunk.TryReadLast();
+			var res = _chunk.TryReadLast(ITransactionFileTracker.NoOp);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record, res.LogRecord);
 			Assert.AreEqual(0, res.NextPosition);

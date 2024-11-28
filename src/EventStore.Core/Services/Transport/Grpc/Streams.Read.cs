@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
+using EventStore.Core.Messages;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using Grpc.Core;
@@ -29,6 +30,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				var compatibility = options.ControlOption?.Compatibility ?? 0;
 
 				var user = context.GetHttpContext().User;
+				var tfTracker = _tfTrackers.For(user);
 				var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
 				var op = streamOptionsCase switch {
@@ -170,6 +172,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								requiresLeader,
 								_readIndex,
 								options.UuidOption,
+								tfTracker,
 								context.CancellationToken),
 						(StreamOptionOneofCase.All,
 							CountOptionOneofCase.Subscription,
@@ -191,6 +194,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								},
 								request.Options.Filter.CheckpointIntervalMultiplier,
 								options.UuidOption,
+								tfTracker,
 								context.CancellationToken),
 						_ => throw RpcExceptions.InvalidCombination((streamOptionsCase, countOptionsCase, readDirection,
 							filterOptionsCase))

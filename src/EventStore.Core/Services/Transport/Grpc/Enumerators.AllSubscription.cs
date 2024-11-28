@@ -10,6 +10,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog;
 using Serilog;
 
 namespace EventStore.Core.Services.Transport.Grpc {
@@ -25,6 +26,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly bool _requiresLeader;
 			private readonly IReadIndex _readIndex;
 			private readonly ReadReq.Types.Options.Types.UUIDOption _uuidOption;
+			private readonly ITransactionFileTracker _tracker;
 			private readonly CancellationToken _cancellationToken;
 			private readonly Channel<ReadResp> _channel;
 			private readonly SemaphoreSlim _semaphore;
@@ -45,6 +47,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				bool requiresLeader,
 				IReadIndex readIndex,
 				ReadReq.Types.Options.Types.UUIDOption uuidOption,
+				ITransactionFileTracker tracker,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
 					throw new ArgumentNullException(nameof(bus));
@@ -62,6 +65,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_requiresLeader = requiresLeader;
 				_readIndex = readIndex;
 				_uuidOption = uuidOption;
+				_tracker = tracker;
 				_cancellationToken = cancellationToken;
 				_channel = Channel.CreateBounded<ReadResp>(BoundedChannelOptions);
 				_semaphore = new SemaphoreSlim(1, 1);
@@ -128,7 +132,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					var (commitPosition, preparePosition) = startPosition.Value.ToInt64();
 					try {
 						var indexResult =
-							_readIndex.ReadAllEventsForward(new TFPos(commitPosition, preparePosition), 1);
+							_readIndex.ReadAllEventsForward(new TFPos(commitPosition, preparePosition), 1, _tracker);
 						CatchUp(Position.FromInt64(indexResult.NextPos.CommitPosition,
 							indexResult.NextPos.PreparePosition));
 					} catch (Exception ex) {

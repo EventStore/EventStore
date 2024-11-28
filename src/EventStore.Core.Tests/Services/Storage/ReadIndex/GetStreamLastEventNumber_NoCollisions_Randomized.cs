@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.Index.Hashers;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
@@ -48,7 +49,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 			foreach (var @event in _events)
 			{
 				Assert.AreEqual(expectedLastEventNumber,
-					ReadIndex.GetStreamLastEventNumber_NoCollisions(Hash, GetStreamId, @event.LogPosition));
+					ReadIndex.GetStreamLastEventNumber_NoCollisions(Hash, GetStreamId, @event.LogPosition, ITransactionFileTracker.NoOp));
 
 				if (@event.EventStreamId == Stream)
 					expectedLastEventNumber = @event.EventNumber;

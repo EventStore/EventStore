@@ -14,6 +14,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private readonly IMetastreamLookup<TStreamId> _metaStreamLookup;
 		private readonly IStreamIdConverter<TStreamId> _streamIdConverter;
 		private readonly ICheckpoint _replicationChk;
+		private readonly ITransactionFileTracker _tracker;
 		private readonly int _chunkSize;
 
 		private readonly Func<int, byte[]> _getBuffer;
@@ -24,12 +25,14 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IMetastreamLookup<TStreamId> metastreamLookup,
 			IStreamIdConverter<TStreamId> streamIdConverter,
 			ICheckpoint replicationChk,
+			ITransactionFileTracker tracker,
 			int chunkSize) {
 
 			_manager = manager;
 			_metaStreamLookup = metastreamLookup;
 			_streamIdConverter = streamIdConverter;
 			_replicationChk = replicationChk;
+			_tracker = tracker;
 			_chunkSize = chunkSize;
 
 			var reusableRecordBuffer = new ReusableBuffer(8192);
@@ -62,7 +65,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 				var localPos = chunk.ChunkHeader.GetLocalLogPosition(nextPos);
 
-				var result = chunk.TryReadClosestForwardRaw(localPos, _getBuffer);
+				var result = chunk.TryReadClosestForwardRaw(localPos, _getBuffer, _tracker);
 
 				if (!result.Success) {
 					// there is no need to release the reusable buffer here since result.Success is false

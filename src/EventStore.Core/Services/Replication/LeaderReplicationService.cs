@@ -16,6 +16,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -62,7 +63,7 @@ namespace EventStore.Core.Services.Replication {
 		private readonly IEpochManager _epochManager;
 		private readonly int _clusterSize;
 		private readonly bool _unsafeAllowSurplusNodes;
-
+		private readonly ITransactionFileTracker _tfTracker;
 		private readonly Thread _mainLoopThread;
 		private volatile bool _stop;
 		private readonly QueueStatsCollector _queueStats;
@@ -93,6 +94,7 @@ namespace EventStore.Core.Services.Replication {
 			IEpochManager epochManager,
 			int clusterSize,
 			bool unsafeAllowSurplusNodes,
+			ITransactionFileTracker tfTracker,
 			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
@@ -108,6 +110,7 @@ namespace EventStore.Core.Services.Replication {
 			_epochManager = epochManager;
 			_clusterSize = clusterSize;
 			_unsafeAllowSurplusNodes = unsafeAllowSurplusNodes;
+			_tfTracker = tfTracker;
 			_queueStats = queueStatsManager.CreateQueueStatsCollector("Leader Replication Service");
 
 			_lastRolesAssignmentTimestamp = _stopwatch.Elapsed;
@@ -357,7 +360,7 @@ namespace EventStore.Core.Services.Replication {
 				Debug.Assert(chunk != null, string.Format(
 					"Chunk for LogPosition {0} (0x{0:X}) is null in LeaderReplicationService! Replica: [{1},C:{2},S:{3}]",
 					logPosition, sub.ReplicaEndPoint, sub.ConnectionId, sub.SubscriptionId));
-				var bulkReader = chunk.AcquireReader();
+				var bulkReader = chunk.AcquireReader(_tfTracker);
 				if (chunk.ChunkHeader.IsScavenged && (chunkId == Guid.Empty || chunkId != chunk.ChunkHeader.ChunkId)) {
 					var chunkStartPos = chunk.ChunkHeader.ChunkStartPosition;
 					if (verbose) {

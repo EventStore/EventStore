@@ -17,6 +17,7 @@ using EventStore.Core.Tests.Authentication;
 using EventStore.Core.Tests.Authorization;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Transport.Tcp;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -74,6 +75,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				_logFormat.CreatePartitionManager(
 					reader: new TFChunkReader(Db, Db.Config.WriterCheckpoint),
 					writer: Writer),
+				ITransactionFileTrackerFactory.NoOp,
 				Guid.NewGuid());
 			Service = new LeaderReplicationService(
 				Publisher,
@@ -83,6 +85,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				EpochManager,
 				ClusterSize,
 				false,
+				ITransactionFileTracker.NoOp,
 				new QueueStatsManager());
 
 			Service.Handle(new SystemMessage.SystemStart());

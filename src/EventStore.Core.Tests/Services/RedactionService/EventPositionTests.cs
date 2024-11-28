@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Data.Redaction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -21,7 +22,7 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 				_positions[eventNumber] = new();
 
 			var chunk = Db.Manager.GetChunkFor(eventRecord.LogPosition);
-			var eventOffset = chunk.GetActualRawPosition(eventRecord.LogPosition);
+			var eventOffset = chunk.GetActualRawPosition(eventRecord.LogPosition, ITransactionFileTracker.NoOp);
 			var eventPosition = new EventPosition(
 				eventRecord.LogPosition, Path.GetFileName(chunk.FileName), chunk.ChunkHeader.Version, chunk.IsReadOnly, (uint)eventOffset);
 			_positions[eventNumber].Add(eventPosition);

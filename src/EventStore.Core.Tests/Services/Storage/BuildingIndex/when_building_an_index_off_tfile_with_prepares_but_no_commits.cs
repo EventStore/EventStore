@@ -1,6 +1,7 @@
 using System;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -52,13 +53,13 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 		[Test]
 		public void read_all_events_forward_returns_no_events() {
-			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).EventRecords();
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10, ITransactionFileTracker.NoOp).EventRecords();
 			Assert.AreEqual(0, records.Count);
 		}
 
 		[Test]
 		public void read_all_events_backward_returns_no_events() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).EventRecords();
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10, ITransactionFileTracker.NoOp).EventRecords();
 			Assert.AreEqual(0, records.Count);
 		}
 	}

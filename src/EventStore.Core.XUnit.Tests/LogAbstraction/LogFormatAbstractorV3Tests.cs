@@ -317,7 +317,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			public int StreamCount => _index[LogV3SystemStreams.StreamsCreatedStreamNumber].Count;
 			public int EventTypeCount => _index[LogV3SystemStreams.EventTypesStreamNumber].Count;
 
-			public IPrepareLogRecord<StreamId> ReadPrepare(StreamId streamId, long eventNumber) {
+			public IPrepareLogRecord<StreamId> ReadPrepare(StreamId streamId, long eventNumber, ITransactionFileTracker tracker) {
 				// simulates what would be in the index.
 				return _index[streamId][eventNumber];
 			}
@@ -328,56 +328,56 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 
 			public long HashCollisions => throw new NotImplementedException();
 
-			public StorageMessage.EffectiveAcl GetEffectiveAcl(StreamId streamId) =>
+			public StorageMessage.EffectiveAcl GetEffectiveAcl(StreamId streamId, ITransactionFileTracker tracker) =>
 				throw new NotImplementedException();
 
-			public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(uint streamId, long eventNumber) {
+			public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(uint streamId, long eventNumber, ITransactionFileTracker tracker) {
 				throw new NotImplementedException();
 			}
 
-			public StreamId GetEventStreamIdByTransactionId(long transactionId) =>
+			public StreamId GetEventStreamIdByTransactionId(long transactionId, ITransactionFileTracker tracker) =>
 				throw new NotImplementedException();
 
-			public long GetStreamLastEventNumber(StreamId streamId) {
+			public long GetStreamLastEventNumber(StreamId streamId, ITransactionFileTracker tracker) {
 				if (streamId == LogV3SystemStreams.StreamsCreatedStreamNumber)
 					return _index[streamId].Count - 1;
 				throw new NotImplementedException();
 			}
 
-			public StreamMetadata GetStreamMetadata(StreamId streamId) =>
+			public StreamMetadata GetStreamMetadata(StreamId streamId, ITransactionFileTracker tracker) =>
 				throw new NotImplementedException();
 
-			public IndexReadEventResult ReadEvent(string streamName, StreamId streamId, long eventNumber) =>
+			public IndexReadEventResult ReadEvent(string streamName, StreamId streamId, long eventNumber, ITransactionFileTracker tracker) =>
 				throw new NotImplementedException();
 
-			public IndexReadStreamResult ReadStreamEventsBackward(string streamName, StreamId streamId, long fromEventNumber, int maxCount) =>
+			public IndexReadStreamResult ReadStreamEventsBackward(string streamName, StreamId streamId, long fromEventNumber, int maxCount, ITransactionFileTracker tracker) =>
 				throw new NotImplementedException();
 
-			public IndexReadStreamResult ReadStreamEventsForward(string streamName, StreamId streamId, long fromEventNumber, int maxCount) =>
+			public IndexReadStreamResult ReadStreamEventsForward(string streamName, StreamId streamId, long fromEventNumber, int maxCount, ITransactionFileTracker tracker) =>
 				throw new NotImplementedException();
 
-			public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(uint streamId, long fromEventNumber, int maxCount, long beforePosition) =>
+			public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(uint streamId, long fromEventNumber, int maxCount, long beforePosition, ITransactionFileTracker tracker) =>
 				throw new NotImplementedException();
 
 			public IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition) =>
 				throw new NotImplementedException();
 
-			public IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(uint streamId, long fromEventNumber, int maxCount, long beforePosition) =>
+			public IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(uint streamId, long fromEventNumber, int maxCount, long beforePosition, ITransactionFileTracker tracker) =>
 				throw new NotImplementedException();
 
-			public IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, uint> getStreamId, long fromEventNumber, int maxCount, long beforePosition) =>
+			public IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, uint> getStreamId, long fromEventNumber, int maxCount, long beforePosition, ITransactionFileTracker tracker) =>
 				throw new NotImplementedException();
 
-			public long GetStreamLastEventNumber_KnownCollisions(uint streamId, long beforePosition) =>
+			public long GetStreamLastEventNumber_KnownCollisions(uint streamId, long beforePosition, ITransactionFileTracker tracker) =>
 				throw new NotImplementedException();
 
-			public long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, uint> getStreamId, long beforePosition) =>
+			public long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, uint> getStreamId, long beforePosition, ITransactionFileTracker tracker) =>
 				throw new NotImplementedException();
 		}
 	}
 
 	public class MockIndexBackend<TStreamId> : IIndexBackend<TStreamId> {
-		public TFReaderLease BorrowReader() {
+		public TFReaderLease BorrowReader(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 

@@ -6,10 +6,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 	public class OldScavengeChunkMergerBackend : IChunkMergerBackend {
 		private readonly ILogger _logger;
 		private readonly TFChunkDb _db;
+		private readonly ITransactionFileTracker _tracker;
 
-		public OldScavengeChunkMergerBackend(ILogger logger, TFChunkDb db) {
+		public OldScavengeChunkMergerBackend(ILogger logger, TFChunkDb db, ITransactionFileTracker tracker) {
 			_logger = logger;
 			_db = db;
+			_tracker = tracker;
 		}
 
 		public void MergeChunks(
@@ -29,6 +31,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				maxChunkDataSize: _db.Config.ChunkSize,
 				scavengerLog: scavengerLogger,
 				throttle: throttle,
+				tracker: _tracker,
 				ct: cancellationToken);
 		}
 	}

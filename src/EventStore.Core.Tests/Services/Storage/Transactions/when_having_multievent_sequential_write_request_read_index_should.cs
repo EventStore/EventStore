@@ -1,5 +1,6 @@
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
@@ -87,7 +88,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 
 		[Test]
 		public void read_all_events_forward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).Records;
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10, ITransactionFileTracker.NoOp).Records;
 
 			Assert.AreEqual(3, records.Count);
 			Assert.AreEqual(_p1, records[0].Event);
@@ -97,7 +98,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 
 		[Test]
 		public void read_all_events_backward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, ITransactionFileTracker.NoOp).Records;
 
 			Assert.AreEqual(3, records.Count);
 			Assert.AreEqual(_p1, records[2].Event);

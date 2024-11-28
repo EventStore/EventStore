@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -34,7 +35,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
 			db.Open();
 
-			var chaser = new TFChunkChaser(db, writerchk, new InMemoryCheckpoint(), false);
+			var chaser = new TFChunkChaser(db, writerchk, new InMemoryCheckpoint(), false, ITransactionFileTracker.NoOp);
 			chaser.Open();
 
 			ILogRecord record;
@@ -55,7 +56,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			chaserchk.Write(12);
 			chaserchk.Flush();
 
-			var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
+			var chaser = new TFChunkChaser(db, writerchk, chaserchk, false, ITransactionFileTracker.NoOp);
 			chaser.Open();
 
 			ILogRecord record;
@@ -102,7 +103,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
 			db.Open();
 
-			var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
+			var chaser = new TFChunkChaser(db, writerchk, chaserchk, false, ITransactionFileTracker.NoOp);
 			chaser.Open();
 
 			ILogRecord record;
@@ -151,7 +152,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
 
-			var reader = new TFChunkChaser(db, writerchk, chaserchk, false);
+			var reader = new TFChunkChaser(db, writerchk, chaserchk, false, ITransactionFileTracker.NoOp);
 			reader.Open();
 
 			ILogRecord record;
@@ -198,7 +199,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
 
-			var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
+			var chaser = new TFChunkChaser(db, writerchk, chaserchk, false, ITransactionFileTracker.NoOp);
 			chaser.Open();
 
 			ILogRecord record;

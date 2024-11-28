@@ -3,6 +3,7 @@ using EventStore.Common.Configuration;
 using EventStore.Core.Bus;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog;
 using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services.Transport.Grpc {
@@ -12,6 +13,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private readonly int _maxAppendSize;
 		private readonly TimeSpan _writeTimeout;
 		private readonly IExpiryStrategy _expiryStrategy;
+		private readonly ITransactionFileTrackerFactory _tfTrackers;
 		private readonly IDurationTracker _readTracker;
 		private readonly IDurationTracker _appendTracker;
 		private readonly IDurationTracker _batchAppendTracker;
@@ -24,6 +26,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		public Streams(IPublisher publisher, IReadIndex<TStreamId> readIndex, int maxAppendSize, TimeSpan writeTimeout,
 			IExpiryStrategy expiryStrategy,
+			ITransactionFileTrackerFactory tfTrackers,
 			GrpcTrackers trackers,
 			IAuthorizationProvider provider) {
 	
@@ -33,6 +36,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			_maxAppendSize = maxAppendSize;
 			_writeTimeout = writeTimeout;
 			_expiryStrategy = expiryStrategy;
+			_tfTrackers = tfTrackers;
 			_readTracker = trackers[MetricsConfiguration.GrpcMethod.StreamRead];
 			_appendTracker = trackers[MetricsConfiguration.GrpcMethod.StreamAppend];
 			_batchAppendTracker = trackers[MetricsConfiguration.GrpcMethod.StreamBatchAppend];

@@ -34,7 +34,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				if (chunk == null)
 					return false;
 				Log.Debug("Optimizing chunk {chunk} for fast merge...", chunk.FileName);
-				chunk.OptimizeExistsAt();
+				chunk.OptimizeExistsAt(ITransactionFileTracker.NoOp); // noop ok, deprecated path
 				return true;
 			};
 

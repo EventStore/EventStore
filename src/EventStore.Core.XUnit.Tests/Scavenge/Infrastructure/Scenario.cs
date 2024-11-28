@@ -247,6 +247,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			}
 
 			var hasher = new CompositeHasher<TStreamId>(lowHasher, highHasher);
+			var tracker = ITransactionFileTracker.NoOp;
 
 			var tableIndex = new TableIndex<TStreamId>(
 				directory: indexPath,
@@ -254,7 +255,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				highHasher: highHasher,
 				emptyStreamId: logFormat.EmptyStreamId,
 				memTableFactory: () => new HashListMemTable(PTableVersions.IndexV4, maxSize: 200),
-				tfReaderFactory: () => new TFReaderLease(readerPool),
+				tfReaderFactory: _ => new TFReaderLease(readerPool, tracker),
 				ptableVersion: PTableVersions.IndexV4,
 				maxAutoMergeIndexLevel: int.MaxValue,
 				pTableMaxReaderCount: ESConsts.PTableInitialReaderCount,
@@ -286,6 +287,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				indexCheckpoint: dbResult.Db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
 				indexTracker: new IndexTracker.NoOp(),
+				tfTrackers: ITransactionFileTrackerFactory.NoOp,
 				cacheTracker: new CacheHitsMissesTracker.NoOp());
 
 			readIndex.IndexCommitter.Init(dbResult.Db.Config.WriterCheckpoint.Read());
@@ -316,9 +318,10 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					metastreamLookup,
 					logFormat.StreamIdConverter,
 					dbResult.Db.Config.ReplicationCheckpoint,
+					tracker,
 					dbConfig.ChunkSize);
 
-				var indexReader = new IndexReaderForAccumulator<TStreamId>(readIndex);
+				var indexReader = new IndexReaderForAccumulator<TStreamId>(readIndex, tracker);
 
 				var accumulatorMetastreamLookup = new AdHocMetastreamLookupInterceptor<TStreamId>(
 					metastreamLookup,
@@ -331,8 +334,9 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				var calculatorIndexReader = new AdHocIndexReaderInterceptor<TStreamId>(
 					new IndexReaderForCalculator<TStreamId>(
 						readIndex,
-						() => new TFReaderLease(readerPool),
-						scavengeState.LookupUniqueHashUser),
+						() => new TFReaderLease(readerPool, tracker),
+						scavengeState.LookupUniqueHashUser,
+						tracker),
 					(f, handle, from, maxCount, x) => {
 						if (_calculatingCancellationTrigger != null)
 							if ((handle.Kind == StreamHandle.Kind.Hash && handle.StreamHash == hasher.Hash(_calculatingCancellationTrigger)) ||
@@ -402,7 +406,8 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 						new ChunkManagerForExecutor<TStreamId>(
 							logger,
 							dbResult.Db.Manager,
-							dbConfig),
+							dbConfig,
+							tracker),
 						Tracer),
 					chunkSize: dbConfig.ChunkSize,
 					unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes,
@@ -413,13 +418,13 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				IChunkMerger chunkMerger = new ChunkMerger(
 					logger: logger,
 					mergeChunks: _mergeChunks,
-					new OldScavengeChunkMergerBackend(logger, dbResult.Db),
+					new OldScavengeChunkMergerBackend(logger, dbResult.Db, tracker),
 					throttle: throttle);
 
 				IIndexExecutor<TStreamId> indexExecutor = new IndexExecutor<TStreamId>(
 					logger: logger,
 					indexScavenger: cancellationWrappedIndexScavenger,
-					streamLookup: new ChunkReaderForIndexExecutor<TStreamId>(() => new TFReaderLease(readerPool)),
+					streamLookup: new ChunkReaderForIndexExecutor<TStreamId>(() => new TFReaderLease(readerPool, tracker)),
 					unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes,
 					restPeriod: restPeriod,
 					throttle: throttle);
@@ -574,10 +579,10 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				var chunk = actual.Db.Manager.GetChunk(i);
 
 				var chunkRecords = new List<ILogRecord>();
-				var result = chunk.TryReadFirst();
+				var result = chunk.TryReadFirst(ITransactionFileTracker.NoOp);
 				while (result.Success) {
 					chunkRecords.Add(result.LogRecord);
-					result = chunk.TryReadClosestForward((int)result.NextPosition);
+					result = chunk.TryReadClosestForward((int)result.NextPosition, ITransactionFileTracker.NoOp);
 				}
 
 				Assert.True(
@@ -640,7 +645,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 							streamId: streamId,
 							fromEventNumber: eventNumber,
 							maxCount: 1,
-							beforePosition: long.MaxValue)
+							beforePosition: long.MaxValue, tracker: ITransactionFileTracker.NoOp)
 						: actual.ReadEventInfoForward_NoCollisions(
 							stream: hasher.Hash(streamId),
 							fromEventNumber: eventNumber,
@@ -649,7 +654,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 					if (result.EventInfos.Length != 1) {
 						// remember this applies metadata, so is of limited use
-						var wholeStream = actual.ReadStreamEventsForward($"{streamId}", streamId, fromEventNumber: 0, maxCount: 100);
+						var wholeStream = actual.ReadStreamEventsForward($"{streamId}", streamId, fromEventNumber: 0, maxCount: 100, tracker: ITransactionFileTracker.NoOp);
 						Assert.True(result.EventInfos.Length == 1, $"Couldn't find {streamId}:{eventNumber} in index.");
 					}
 
@@ -674,7 +679,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 						streamId: streamId,
 						fromEventNumber: 0,
 						maxCount: 1000,
-						beforePosition: long.MaxValue)
+						beforePosition: long.MaxValue, tracker: ITransactionFileTracker.NoOp)
 					: actual.ReadEventInfoForward_NoCollisions(
 						stream: hasher.Hash(streamId),
 						fromEventNumber: 0,
@@ -714,7 +719,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					initialReaderCount: 1,
 					maxReaderCount: 1,
 					reduceFileCachePressure: false,
-					new TFChunkTracker.NoOp());
+					tracker: ITransactionFileTracker.NoOp);
 
 				newChunk.CompleteScavenge(null);
 

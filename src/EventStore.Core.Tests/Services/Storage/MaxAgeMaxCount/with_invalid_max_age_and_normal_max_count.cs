@@ -1,5 +1,6 @@
 using System;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
@@ -77,7 +78,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 
 		[Test]
 		public void on_read_all_forward_metadata_is_ignored() {
-			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records;
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, ITransactionFileTracker.NoOp).Records;
 
 			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
 				Assert.AreEqual(6, records.Count);
@@ -102,7 +103,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 
 		[Test]
 		public void on_read_all_backward_metadata_is_ignored() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, ITransactionFileTracker.NoOp).Records;
 
 			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
 				Assert.AreEqual(6, records.Count);

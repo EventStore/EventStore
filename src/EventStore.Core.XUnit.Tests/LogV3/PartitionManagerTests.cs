@@ -213,12 +213,12 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
     			_results.Add(new SeqReadResult(true, false, rootPartition, 0, 0, 0));			
 			}
 		}
-		
+
 		public void Reposition(long position) {
 			_resultIndex = (int) position;
 		}
 
-		public SeqReadResult TryReadNext() {
+		public SeqReadResult TryReadNext(ITransactionFileTracker tracker) {
 			_readCount++;
 			
 			if(_resultIndex < _results.Count)
@@ -227,15 +227,15 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 			return SeqReadResult.Failure;
 		}
 
-		public SeqReadResult TryReadPrev() {
+		public SeqReadResult TryReadPrev(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged, ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public bool ExistsAt(long position) {
+		public bool ExistsAt(long position, ITransactionFileTracker tracker) {
 			return true;
 		}
 	}

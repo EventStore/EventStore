@@ -14,6 +14,7 @@ using EventStore.Core.Tests.Authorization;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.ElectionsService;
 using EventStore.Core.Tests.Services.Transport.Tcp;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -68,6 +69,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				epochManager: new FakeEpochManager(),
 				clusterSize: ClusterSize,
 				unsafeAllowSurplusNodes: false,
+				tfTracker: ITransactionFileTracker.NoOp,
 				queueStatsManager: new QueueStatsManager());
 
 			Service.Handle(new SystemMessage.SystemStart());

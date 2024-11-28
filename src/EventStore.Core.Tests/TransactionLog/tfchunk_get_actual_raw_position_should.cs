@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -69,7 +70,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			Assert.AreEqual(numEvents, logPositions.Count);
 			foreach(var logPos in logPositions)
-				Assert.AreEqual(ChunkHeader.Size + logPos, chunk.GetActualRawPosition(logPos));
+				Assert.AreEqual(ChunkHeader.Size + logPos, chunk.GetActualRawPosition(logPos, ITransactionFileTracker.NoOp));
 			Assert.IsNull(posMap);
 		}
 
@@ -87,7 +88,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			Assert.AreEqual(numEvents, logPositions.Count);
 			foreach(var logPos in logPositions)
-				Assert.AreEqual(ChunkHeader.Size + logPos, chunk.GetActualRawPosition(logPos));
+				Assert.AreEqual(ChunkHeader.Size + logPos, chunk.GetActualRawPosition(logPos, ITransactionFileTracker.NoOp));
 			Assert.IsNull(posMap);
 		}
 
@@ -107,7 +108,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.AreEqual(numEvents, posMap.Count);
 			for (int i = 0; i < numEvents; i++) {
 				Assert.AreEqual(posMap[i].LogPos, logPositions[i]);
-				Assert.AreEqual(ChunkHeader.Size + posMap[i].ActualPos, chunk.GetActualRawPosition(logPositions[i]));
+				Assert.AreEqual(ChunkHeader.Size + posMap[i].ActualPos, chunk.GetActualRawPosition(logPositions[i], ITransactionFileTracker.NoOp));
 			}
 		}
 
@@ -125,9 +126,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.IsNull(posMap);
 
 			Assert.AreEqual(chunk.LogicalDataSize, chunk.PhysicalDataSize);
-			Assert.AreEqual(ChunkHeader.Size + chunk.LogicalDataSize - 1, chunk.GetActualRawPosition(chunk.LogicalDataSize - 1));
-			Assert.AreEqual(-1, chunk.GetActualRawPosition(chunk.LogicalDataSize));
-			Assert.AreEqual(-1, chunk.GetActualRawPosition(chunk.LogicalDataSize + 1));
+			Assert.AreEqual(ChunkHeader.Size + chunk.LogicalDataSize - 1, chunk.GetActualRawPosition(chunk.LogicalDataSize - 1, ITransactionFileTracker.NoOp));
+			Assert.AreEqual(-1, chunk.GetActualRawPosition(chunk.LogicalDataSize, ITransactionFileTracker.NoOp));
+			Assert.AreEqual(-1, chunk.GetActualRawPosition(chunk.LogicalDataSize + 1, ITransactionFileTracker.NoOp));
 		}
 
 		[Test]
@@ -143,8 +144,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.AreEqual(1, logPositions.Count);
 			Assert.AreEqual(1, posMap.Count);
 
-			Assert.AreEqual(ChunkHeader.Size + posMap[0].ActualPos, chunk.GetActualRawPosition(logPositions[0]));
-			Assert.AreEqual(-1, chunk.GetActualRawPosition(logPositions[0] + 1));
+			Assert.AreEqual(ChunkHeader.Size + posMap[0].ActualPos, chunk.GetActualRawPosition(logPositions[0], ITransactionFileTracker.NoOp));
+			Assert.AreEqual(-1, chunk.GetActualRawPosition(logPositions[0] + 1, ITransactionFileTracker.NoOp));
 		}
 
 		[Test]
@@ -157,7 +158,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				out _,
 				out _);
 
-			Assert.Throws<ArgumentOutOfRangeException>(() => chunk.GetActualRawPosition(-1));
+			Assert.Throws<ArgumentOutOfRangeException>(() => chunk.GetActualRawPosition(-1, ITransactionFileTracker.NoOp));
 		}
 	}
 }

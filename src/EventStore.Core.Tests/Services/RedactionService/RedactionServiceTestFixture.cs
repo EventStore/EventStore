@@ -3,6 +3,7 @@ using EventStore.Core.Services;
 using EventStore.Core.Synchronization;
 using EventStore.Core.Tests.Bus;
 using EventStore.Core.Tests.Services.Storage;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.RedactionService {
@@ -16,7 +17,8 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 		[SetUp]
 		public virtual Task SetUp() {
 			_switchChunksLock = new SemaphoreSlimLock();
-			RedactionService = new RedactionService<TStreamId>(new FakeQueuedHandler(), Db, ReadIndex, _switchChunksLock);
+			RedactionService = new RedactionService<TStreamId>(new FakeQueuedHandler(), Db, ReadIndex, _switchChunksLock,
+				ITransactionFileTracker.NoOp);
 			return Task.CompletedTask;
 		}
 

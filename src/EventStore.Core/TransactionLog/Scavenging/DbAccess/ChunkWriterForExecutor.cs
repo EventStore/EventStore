@@ -20,7 +20,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			ILogger logger,
 			ChunkManagerForExecutor<TStreamId> manager,
 			TFChunkDbConfig dbConfig,
-			IChunkReaderForExecutor<TStreamId, ILogRecord> sourceChunk) {
+			IChunkReaderForExecutor<TStreamId, ILogRecord> sourceChunk,
+			ITransactionFileTracker tracker) {
 
 			_logger = logger;
 			_manager = manager;
@@ -45,7 +46,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				initialReaderCount: dbConfig.InitialReaderCount,
 				maxReaderCount: dbConfig.MaxReaderCount,
 				reduceFileCachePressure: dbConfig.ReduceFileCachePressure,
-				tracker: new TFChunkTracker.NoOp());
+				tracker);
 		}
 
 		public string FileName { get; }

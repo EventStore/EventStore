@@ -14,6 +14,7 @@ using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using ILogger = Serilog.ILogger;
 using EventStore.LogCommon;
+using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.Core.Services.Storage.EpochManager {
 	public abstract class Epochmanager {
@@ -30,6 +31,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		private readonly INameIndex<TStreamId> _streamNameIndex;
 		private readonly INameIndex<TStreamId> _eventTypeIndex;
 		private readonly IPartitionManager _partitionManager;
+		private readonly ITransactionFileTracker _tfTracker;
 		private readonly Guid _instanceId;
 
 		private readonly object _locker = new object();
@@ -77,6 +79,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			INameIndex<TStreamId> streamNameIndex,
 			INameIndex<TStreamId> eventTypeIndex,
 			IPartitionManager partitionManager,
+			ITransactionFileTrackerFactory tfTrackers,
 			Guid instanceId) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.Nonnegative(cachedEpochCount, "cachedEpochCount");
@@ -99,6 +102,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			_streamNameIndex = streamNameIndex;
 			_eventTypeIndex = eventTypeIndex;
 			_partitionManager = partitionManager;
+			_tfTracker = tfTrackers.GetOrAdd(SystemAccounts.SystemEpochManagerName);
 			_instanceId = instanceId;
 		}
 
@@ -117,7 +121,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 						reader.Reposition(_writer.FlushedPosition);
 
 						SeqReadResult result;
-						while ((result = reader.TryReadPrev()).Success) {
+						while ((result = reader.TryReadPrev(_tfTracker)).Success) {
 							var rec = result.LogRecord;
 							if (rec.RecordType != LogRecordType.System ||
 								((ISystemLogRecord)rec).SystemRecordType != SystemRecordType.Epoch)
@@ -147,7 +151,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			}
 		}
 		private EpochRecord ReadEpochAt(ITransactionFileReader reader, long epochPos) {
-			var result = reader.TryReadAt(epochPos, couldBeScavenged: false);
+			var result = reader.TryReadAt(epochPos, couldBeScavenged: false, tracker: _tfTracker);
 			if (!result.Success)
 				throw new Exception($"Could not find Epoch record at LogPosition {epochPos}.");
 			if (result.LogRecord.RecordType != LogRecordType.System)
@@ -201,7 +205,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				try {
 					epoch = firstEpoch;
 					do {
-						var result = reader.TryReadAt(epoch.PrevEpochPosition, couldBeScavenged: false);
+						var result = reader.TryReadAt(epoch.PrevEpochPosition, couldBeScavenged: false, tracker: _tfTracker);
 						if (!result.Success)
 							throw new Exception(
 								$"Could not find Epoch record at LogPosition {epoch.PrevEpochPosition}.");
@@ -255,7 +259,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			// epochNumber < _minCachedEpochNumber
 			var reader = _readers.Get();
 			try {
-				var res = reader.TryReadAt(epochPosition, couldBeScavenged: false);
+				var res = reader.TryReadAt(epochPosition, couldBeScavenged: false, tracker: _tfTracker);
 				if (!res.Success || res.LogRecord.RecordType != LogRecordType.System)
 					return false;
 				var sysRec = (ISystemLogRecord)res.LogRecord;
@@ -381,13 +385,13 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				reader.Reposition(epoch.PrevEpochPosition);
 
 				// read the epoch
-				var result = reader.TryReadNext();
+				var result = reader.TryReadNext(_tfTracker);
 				if (!result.Success)
 					return false;
 
 				// read the epoch-information (if there is one)
 				while (true) {
-					result = reader.TryReadNext();
+					result = reader.TryReadNext(_tfTracker);
 					if (!result.Success)
 						return false;
 

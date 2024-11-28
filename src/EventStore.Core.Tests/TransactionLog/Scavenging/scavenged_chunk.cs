@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -15,7 +16,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 				Constants.TFChunkInitialReaderCountDefault,
 				Constants.TFChunkMaxReaderCountDefault,
 				false,
-				new TFChunkTracker.NoOp());
+				ITransactionFileTracker.NoOp);
 			long logPos = 0;
 			for (int i = 0, n = ChunkFooter.Size / PosMap.FullSize + 1; i < n; ++i) {
 				map.Add(new PosMap(logPos, (int)logPos));
@@ -26,11 +27,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 
 			chunk.CompleteScavenge(map);
 
-			chunk.CacheInMemory();
+			chunk.CacheInMemory(ITransactionFileTracker.NoOp);
 
 			Assert.IsTrue(chunk.IsCached);
 
-			var last = chunk.TryReadLast();
+			var last = chunk.TryReadLast(ITransactionFileTracker.NoOp);
 			Assert.IsTrue(last.Success);
 			Assert.AreEqual(map[map.Count - 1].ActualPos, last.LogRecord.LogPosition);
 

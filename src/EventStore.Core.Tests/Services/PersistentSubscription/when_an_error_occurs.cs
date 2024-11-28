@@ -10,6 +10,7 @@ using EventStore.Core.Metrics;
 using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Tests.TransactionLog;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription {
@@ -34,7 +35,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					new FakeReadIndex<TLogFormat, TStreamId>(_ => false, new MetaStreamLookup()),
 					new IODispatcher(bus, new PublishEnvelope(bus)), bus,
 					new PersistentSubscriptionConsumerStrategyRegistry(bus, bus,
-						Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()));
+						Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()),
+					ITransactionFileTrackerFactory.NoOp);
 				_envelope = new CallbackEnvelope(_replySource.SetResult);
 				_sut.Start();
 			}

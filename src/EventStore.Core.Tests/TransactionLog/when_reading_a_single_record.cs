@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			RecordReadResult res;
 			for (var i = 0; i < RecordsCount; i++) {
 				var rec = _records[i];
-				res = reader.TryReadAt(rec.LogPosition, couldBeScavenged: true);
+				res = reader.TryReadAt(rec.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 
 				Assert.IsTrue(res.Success);
 				Assert.AreEqual(rec, res.LogRecord);

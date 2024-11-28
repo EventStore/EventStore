@@ -66,6 +66,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Mono.Unix.Native;
 using ILogger = Serilog.ILogger;
+using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
@@ -306,7 +307,7 @@ namespace EventStore.Core {
 			metricsConfiguration ??= new();
 			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
-			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker);
+			Db = new TFChunkDb(dbConfig, trackers.TransactionFileTrackers.For(SystemAccounts.System));
 
 			TFChunkDbConfig CreateDbConfig(
 				out SystemStatsHelper statsHelper,
@@ -596,7 +597,10 @@ namespace EventStore.Core {
 				MaxReaderCount = pTableMaxReaderCount,
 				StreamExistenceFilterSize = options.Database.StreamExistenceFilterSize,
 				StreamExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint,
-				TFReaderLeaseFactory = () => new TFReaderLease(readerPool)
+				TFReaderLeaseFactory = username => {
+					var tracker = trackers.TransactionFileTrackers.For(username);
+					return new TFReaderLease(readerPool, tracker);
+				}
 			});
 
 			ICacheResizer streamInfoCacheResizer;
@@ -642,7 +646,10 @@ namespace EventStore.Core {
 				logFormat.EmptyStreamId,
 				() => new HashListMemTable(options.IndexBitnessVersion,
 					maxSize: options.Database.MaxMemTableSize * 2),
-				() => new TFReaderLease(readerPool),
+				username => {
+					var tracker = trackers.TransactionFileTrackers.For(username);
+					return new TFReaderLease(readerPool, tracker);
+				},
 				options.IndexBitnessVersion,
 				maxSizeForMemory: options.Database.MaxMemTableSize,
 				maxTablesPerLevel: 2,
@@ -680,6 +687,7 @@ namespace EventStore.Core {
 				Db.Config.IndexCheckpoint,
 				trackers.IndexStatusTracker,
 				trackers.IndexTracker,
+				trackers.TransactionFileTrackers,
 				trackers.CacheHitsMissesTracker);
 			_readIndex = readIndex;
 			var writer = new TFChunkWriter(Db);
@@ -704,6 +712,7 @@ namespace EventStore.Core {
 				logFormat.StreamNameIndex,
 				logFormat.EventTypeIndex,
 				partitionManager,
+				ITransactionFileTrackerFactory.NoOp,
 				NodeInfo.InstanceId);
 			epochManager.Init();
 
@@ -734,7 +743,9 @@ namespace EventStore.Core {
 
 			var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
 				logFormat.SystemStreams,
-				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), inMemReader, _queueStatsManager,
+				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), inMemReader,
+				trackers.TransactionFileTrackers,
+				_queueStatsManager,
 				trackers.QueueTrackers);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
@@ -787,7 +798,8 @@ namespace EventStore.Core {
 				Db,
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				Db.Config.ChaserCheckpoint,
-				Db.Config.OptimizeReadSideCache);
+				Db.Config.OptimizeReadSideCache,
+				trackers.TransactionFileTrackers.For(SystemAccounts.SystemChaserName));
 
 			var storageChaser = new StorageChaser<TStreamId>(
 				_mainQueue,
@@ -1123,7 +1135,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.InMemoryEventCommitted, Message>());
 
-			var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, readIndex);
+			var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, readIndex, trackers.TransactionFileTrackers);
 			subscrBus.Subscribe<SystemMessage.SystemStart>(subscription);
 			subscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(subscription);
 			subscrBus.Subscribe<TcpMessage.ConnectionClosed>(subscription);
@@ -1182,7 +1194,7 @@ namespace EventStore.Core {
 			var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus,
 				additionalPersistentSubscriptionConsumerStrategyFactories);
 			var persistentSubscription = new PersistentSubscriptionService<TStreamId>(perSubscrQueue, readIndex, psubDispatcher,
-				_mainQueue, consumerStrategyRegistry);
+				_mainQueue, consumerStrategyRegistry, trackers.TransactionFileTrackers);
 			perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
 			perSubscrBus.Subscribe<SystemMessage.BecomeLeader>(persistentSubscription);
 			perSubscrBus.Subscribe<SystemMessage.StateChangeMessage>(persistentSubscription);
@@ -1269,6 +1281,8 @@ namespace EventStore.Core {
 						},
 						dispose: backend => backend.Dispose());
 
+					var tracker = trackers.TransactionFileTrackers.For(SystemAccounts.SystemScavengeName);
+
 					var state = new ScavengeState<TStreamId>(
 						logger,
 						longHasher,
@@ -1285,8 +1299,9 @@ namespace EventStore.Core {
 							logFormat.Metastreams,
 							logFormat.StreamIdConverter,
 							Db.Config.ReplicationCheckpoint,
+							tracker,
 							TFConsts.ChunkSize),
-						index: new IndexReaderForAccumulator<TStreamId>(readIndex),
+						index: new IndexReaderForAccumulator<TStreamId>(readIndex, tracker),
 						cancellationCheckPeriod: cancellationCheckPeriod,
 						throttle: throttle);
 
@@ -1294,8 +1309,9 @@ namespace EventStore.Core {
 						logger: logger,
 						new IndexReaderForCalculator<TStreamId>(
 							readIndex,
-							() => new TFReaderLease(readerPool),
-							state.LookupUniqueHashUser),
+							() => new TFReaderLease(readerPool, tracker),
+							state.LookupUniqueHashUser,
+							tracker),
 						chunkSize: TFConsts.ChunkSize,
 						cancellationCheckPeriod: cancellationCheckPeriod,
 						buffer: calculatorBuffer,
@@ -1304,7 +1320,7 @@ namespace EventStore.Core {
 					var chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
 						logger,
 						logFormat.Metastreams,
-						new ChunkManagerForExecutor<TStreamId>(logger, Db.Manager, Db.Config),
+						new ChunkManagerForExecutor<TStreamId>(logger, Db.Manager, Db.Config, tracker),
 						chunkSize: Db.Config.ChunkSize,
 						unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
 						cancellationCheckPeriod: cancellationCheckPeriod,
@@ -1314,13 +1330,13 @@ namespace EventStore.Core {
 					var chunkMerger = new ChunkMerger(
 						logger: logger,
 						mergeChunks: !options.Database.DisableScavengeMerging,
-						backend: new OldScavengeChunkMergerBackend(logger, db: Db),
+						backend: new OldScavengeChunkMergerBackend(logger, db: Db, tracker: tracker),
 						throttle: throttle);
 
 					var indexExecutor = new IndexExecutor<TStreamId>(
 						logger,
 						new IndexScavenger(tableIndex),
-						new ChunkReaderForIndexExecutor<TStreamId>(() => new TFReaderLease(readerPool)),
+						new ChunkReaderForIndexExecutor<TStreamId>(() => new TFReaderLease(readerPool, tracker)),
 						unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
 						restPeriod: 32_768,
 						throttle: throttle);
@@ -1371,6 +1387,7 @@ namespace EventStore.Core {
 							tableIndex: tableIndex,
 							readIndex: readIndex,
 							metastreams: logFormat.SystemStreams,
+							tfTracker: trackers.TransactionFileTrackers.For(SystemAccounts.SystemScavengeName),
 							unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
 							threads: message.Threads)));
 			}
@@ -1403,7 +1420,8 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(redactionQueue.WidenFrom<RedactionMessage.ReleaseChunksLock, Message>());
 			_mainBus.Subscribe(redactionQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
 
-			var redactionService = new RedactionService<TStreamId>(redactionQueue, Db, _readIndex, _switchChunksLock);
+			var redactionService = new RedactionService<TStreamId>(redactionQueue, Db, _readIndex, _switchChunksLock,
+				trackers.TransactionFileTrackers.For(SystemAccounts.SystemRedactionName));
 			redactionBus.Subscribe<RedactionMessage.GetEventPosition>(redactionService);
 			redactionBus.Subscribe<RedactionMessage.AcquireChunksLock>(redactionService);
 			redactionBus.Subscribe<RedactionMessage.SwitchChunk>(redactionService);
@@ -1436,6 +1454,7 @@ namespace EventStore.Core {
 				_mainQueue,
 				new TelemetrySink(options.Application.TelemetryOptout),
 				Db.Config.WriterCheckpoint.AsReadOnly(),
+				trackers.TransactionFileTrackers.For(SystemAccounts.SystemTelemetryName),
 				memberInfo.InstanceId);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(telemetryService);
 			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(telemetryService);
@@ -1446,6 +1465,7 @@ namespace EventStore.Core {
 					_workersHandler,
 					epochManager, options.Cluster.ClusterSize,
 					options.Cluster.UnsafeAllowSurplusNodes,
+					trackers.TransactionFileTrackers.For(SystemAccounts.SystemReplicationName),
 					_queueStatsManager);
 				AddTask(leaderReplicationService.Task);
 				_mainBus.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);

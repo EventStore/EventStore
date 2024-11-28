@@ -143,7 +143,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			var emptyStreamId = _logFormat.EmptyStreamId;
 			_tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
-				() => new TFReaderLease(readers),
+				_ => new TFReaderLease(readers, ITransactionFileTracker.NoOp),
 				IndexBitnessVersion,
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,
@@ -172,6 +172,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				indexCheckpoint: _db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
 				indexTracker: new IndexTracker.NoOp(),
+				tfTrackers: ITransactionFileTrackerFactory.NoOp,
 				cacheTracker: new CacheHitsMissesTracker.NoOp());
 
 
@@ -192,7 +193,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 			_tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
-				() => new TFReaderLease(readers),
+				_ => new TFReaderLease(readers, ITransactionFileTracker.NoOp),
 				IndexBitnessVersion,
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,
@@ -220,6 +221,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				indexCheckpoint: _db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
 				indexTracker: new IndexTracker.NoOp(),
+				tfTrackers: ITransactionFileTrackerFactory.NoOp,
 				cacheTracker: new CacheHitsMissesTracker.NoOp());
 
 			readIndex.IndexCommitter.Init(chaserCheckpoint.Read());

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -47,7 +48,7 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 			initialReaderCount: db.Config.InitialReaderCount,
 			maxReaderCount: db.Config.MaxReaderCount,
 			reduceFileCachePressure: db.Config.ReduceFileCachePressure,
-			tracker: new TFChunkTracker.NoOp());
+			tracker: ITransactionFileTracker.NoOp);
 
 		var posMaps = new List<PosMap>();
 

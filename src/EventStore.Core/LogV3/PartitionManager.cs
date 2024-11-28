@@ -82,7 +82,7 @@ namespace EventStore.Core.LogV3 {
 		private void ReadRootPartition() {
 			SeqReadResult result;
 			_reader.Reposition(0);
-			while ((result = _reader.TryReadNext()).Success) {
+			while ((result = _reader.TryReadNext(ITransactionFileTracker.NoOp)).Success) {
 				var rec = result.LogRecord;
 				switch (rec.RecordType) {
 					case LogRecordType.PartitionType:

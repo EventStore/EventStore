@@ -48,6 +48,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly INameExistenceFilter _streamExistenceFilter;
 		private readonly IIndexStatusTracker _statusTracker;
 		private readonly IIndexTracker _tracker;
+		private readonly ITransactionFileTracker _tfTracker;
 		private INameExistenceFilterInitializer _streamExistenceFilterInitializer;
 		private readonly bool _additionalCommitChecks;
 		private long _persistedPreparePos = -1;
@@ -70,6 +71,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			ICheckpoint indexChk,
 			IIndexStatusTracker statusTracker,
 			IIndexTracker tracker,
+			ITransactionFileTracker tfTracker,
 			bool additionalCommitChecks) {
 			_bus = bus;
 			_backend = backend;
@@ -86,6 +88,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_additionalCommitChecks = additionalCommitChecks;
 			_statusTracker = statusTracker;
 			_tracker = tracker;
+			_tfTracker = tfTracker;
 		}
 
 		public void Init(long buildToPosition) {
@@ -131,7 +134,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			_indexRebuild = true;
 			using (_statusTracker.StartRebuilding())
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(_tfTracker)) {
 				var startPosition = Math.Max(0, _persistedCommitPos);
 				var fullRebuild = startPosition == 0;
 				reader.Reposition(startPosition);
@@ -288,7 +291,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			if (indexEntries.Count > 0) {
 				if (_additionalCommitChecks && cacheLastEventNumber) {
-					CheckStreamVersion(streamId, indexEntries[0].Version, commit);
+					CheckStreamVersion(streamId, indexEntries[0].Version, commit, _tfTracker);
 					CheckDuplicateEvents(streamId, commit, indexEntries, prepares);
 				}
 
@@ -398,7 +401,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			if (indexEntries.Count > 0) {
 				if (_additionalCommitChecks && cacheLastEventNumber) {
-					CheckStreamVersion(streamId, indexEntries[0].Version, null); // TODO AN: bad passing null commit
+					CheckStreamVersion(streamId, indexEntries[0].Version, null, _tfTracker); // TODO AN: bad passing null commit
 					CheckDuplicateEvents(streamId, null, indexEntries, prepares); // TODO AN: bad passing null commit
 				}
 
@@ -450,7 +453,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private IEnumerable<IPrepareLogRecord<TStreamId>> GetTransactionPrepares(long transactionPos, long commitPos) {
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(_tfTracker)) {
 				reader.Reposition(transactionPos);
 
 				// in case all prepares were scavenged, we should not read past Commit LogPosition
@@ -469,11 +472,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 		}
 
-		private void CheckStreamVersion(TStreamId streamId, long newEventNumber, CommitLogRecord commit) {
+		private void CheckStreamVersion(TStreamId streamId, long newEventNumber, CommitLogRecord commit,
+			ITransactionFileTracker tracker) {
 			if (newEventNumber == EventNumber.DeletedStream)
 				return;
 
-			long lastEventNumber = _indexReader.GetStreamLastEventNumber(streamId);
+			long lastEventNumber = _indexReader.GetStreamLastEventNumber(streamId, tracker);
 			if (newEventNumber != lastEventNumber + 1) {
 				if (Debugger.IsAttached)
 					Debugger.Break();
@@ -487,7 +491,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private void CheckDuplicateEvents(TStreamId streamId, CommitLogRecord commit, IList<IndexKey<TStreamId>> indexEntries,
 			IList<IPrepareLogRecord<TStreamId>> prepares) {
-			using (var reader = _backend.BorrowReader()) {
+			using (var reader = _backend.BorrowReader(_tfTracker)) {
 				var entries = _tableIndex.GetRange(streamId, indexEntries[0].Version,
 					indexEntries[indexEntries.Count - 1].Version);
 				foreach (var indexEntry in entries) {
@@ -508,7 +512,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private SystemSettings GetSystemSettings() {
-			var res = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, _systemStreams.SettingsStream, -1);
+			var res = _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, _systemStreams.SettingsStream, -1, _tfTracker);
 			return res.Result == ReadEventResult.Success ? DeserializeSystemSettings(res.Record.Data) : null;
 		}
 

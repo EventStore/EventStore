@@ -25,7 +25,7 @@ public class Trackers {
 	public GrpcTrackers GrpcTrackers { get; } = new();
 	public QueueTrackers QueueTrackers { get; set; } = new();
 	public GossipTrackers GossipTrackers { get; set; } = new ();
-	public ITransactionFileTracker TransactionFileTracker { get; set; } = new TFChunkTracker.NoOp();
+	public ITransactionFileTrackerFactory TransactionFileTrackers { get; set; } = ITransactionFileTrackerFactory.NoOp;
 	public IIndexTracker IndexTracker { get; set; } = new IndexTracker.NoOp();
 	public IMaxTracker<long> WriterFlushSizeTracker { get; set; } = new MaxTracker<long>.NoOp();
 	public IDurationMaxTracker WriterFlushDurationTracker { get; set; } = new DurationMaxTracker.NoOp();
@@ -113,10 +113,9 @@ public static class MetricsBootstrapper {
 
 		// events
 		if (conf.Events.TryGetValue(Conf.EventTracker.Read, out var readEnabled) && readEnabled) {
-			var readTag = new KeyValuePair<string, object>("activity", "read");
-			trackers.TransactionFileTracker = new TFChunkTracker(
-				readBytes: new CounterSubMetric(byteMetric, new[] {readTag}),
-				readEvents: new CounterSubMetric(eventMetric, new[] {readTag}));
+			trackers.TransactionFileTrackers = new TransactionFileTrackerFactory(
+				eventMetric: eventMetric,
+				byteMetric: byteMetric);
 		}
 
 		// from a users perspective an event is written when it is indexed: thats when it can be read.

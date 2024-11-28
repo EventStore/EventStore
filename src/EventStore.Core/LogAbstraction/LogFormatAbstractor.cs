@@ -21,7 +21,7 @@ namespace EventStore.Core.LogAbstraction {
 		public ICheckpoint StreamExistenceFilterCheckpoint { get; init; }
 		public TimeSpan StreamExistenceFilterCheckpointInterval { get; init; } = TimeSpan.FromSeconds(30);
 		public TimeSpan StreamExistenceFilterCheckpointDelay { get; init; } = TimeSpan.FromSeconds(5);
-		public Func<TFReaderLease> TFReaderLeaseFactory { get; init; }
+		public Func<string, TFReaderLease> TFReaderLeaseFactory { get; init; }
 	}
 
 	public interface ILogFormatAbstractorFactory<TStreamId> {

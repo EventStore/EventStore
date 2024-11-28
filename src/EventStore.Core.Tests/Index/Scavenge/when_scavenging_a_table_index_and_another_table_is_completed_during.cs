@@ -40,13 +40,13 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 				if (!scavengeBlocker.Wait(5000))
 					throw new Exception("Failed to continue.");
 				return false;
-			}));
+			}), ITransactionFileTracker.NoOp);
 
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
-				() => fakeReader,
+				_ => fakeReader,
 				PTableVersions.IndexV4,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,
@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
-				() => fakeReader,
+				_ => fakeReader,
 				PTableVersions.IndexV4,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,

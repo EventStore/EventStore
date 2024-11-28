@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation {
@@ -121,7 +122,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 
 		[Test]
 		public void read_all_returns_only_survived_events() {
-			var res = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100);
+			var res = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, ITransactionFileTracker.NoOp);
 			var records = res.EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
@@ -134,7 +135,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 
 		[Test]
 		public void read_all_backward_doesnt_return_truncated_records() {
-			var res = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100);
+			var res = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100, ITransactionFileTracker.NoOp);
 			var records = res.EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
@@ -147,7 +148,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		[Test]
 		public void read_all_backward_from_last_truncated_record_returns_no_records() {
 			var pos = new TFPos(_event7.LogPosition, _event3.LogPosition);
-			var res = ReadIndex.ReadAllEventsForward(pos, 100);
+			var res = ReadIndex.ReadAllEventsForward(pos, 100, ITransactionFileTracker.NoOp);
 			var records = res.EventRecords()
 				.Select(r => r.Event)
 				.ToArray();

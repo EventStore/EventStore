@@ -21,6 +21,7 @@ using EventStore.Core.Data;
 using EventStore.Common.Utils;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogV3;
+using EventStore.Core.TransactionLog;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -55,6 +56,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				_logFormat.CreatePartitionManager(
 					reader: new TFChunkReader(_db, _db.Config.WriterCheckpoint),
 					writer: _writer),
+				ITransactionFileTrackerFactory.NoOp,
 				_instanceId);
 		}
 		private LinkedList<EpochRecord> GetCache(EpochManager<TStreamId> manager) {
@@ -159,10 +161,10 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.AreEqual(1 + 4 + 16, epochsWritten.Length);
 			for (int i = 0; i < epochsWritten.Length; i++) {
 				_reader.Reposition(epochsWritten[i].Epoch.EpochPosition);
-				_reader.TryReadNext(); // read epoch
+				_reader.TryReadNext(ITransactionFileTracker.NoOp); // read epoch
 				IPrepareLogRecord<TStreamId> epochInfo;
 				while (true) {
-					var result = _reader.TryReadNext();
+					var result = _reader.TryReadNext(ITransactionFileTracker.NoOp);
 					Assert.True(result.Success);
 					if (result.LogRecord is IPrepareLogRecord<TStreamId> prepare) {
 						epochInfo = prepare;

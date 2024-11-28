@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			var scavenger = new TFChunkScavenger<TStreamId>(Serilog.Log.Logger, _db, new FakeTFScavengerLog(), new FakeTableIndex<TStreamId>(),
 				new FakeReadIndex<TLogFormat, TStreamId>(x => EqualityComparer<TStreamId>.Default.Equals(x, streamId), _logFormat.Metastreams),
-				_logFormat.Metastreams);
+				_logFormat.Metastreams, ITransactionFileTracker.NoOp);
 			await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 
 			_scavengedChunk = _db.Manager.GetChunk(0);
@@ -116,47 +116,47 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void prepare1_cant_be_read_at_position() {
-			var res = _scavengedChunk.TryReadAt((int)_p1.LogPosition, couldBeScavenged: true);
+			var res = _scavengedChunk.TryReadAt((int)_p1.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void commit1_cant_be_read_at_position() {
-			var res = _scavengedChunk.TryReadAt((int)_c1.LogPosition, couldBeScavenged: true);
+			var res = _scavengedChunk.TryReadAt((int)_c1.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void prepare2_cant_be_read_at_position() {
-			var res = _scavengedChunk.TryReadAt((int)_p2.LogPosition, couldBeScavenged: true);
+			var res = _scavengedChunk.TryReadAt((int)_p2.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void commit2_cant_be_read_at_position() {
-			var res = _scavengedChunk.TryReadAt((int)_c2.LogPosition, couldBeScavenged: true);
+			var res = _scavengedChunk.TryReadAt((int)_c2.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void prepare3_cant_be_read_at_position() {
-			var res = _scavengedChunk.TryReadAt((int)_p3.LogPosition, couldBeScavenged: true);
+			var res = _scavengedChunk.TryReadAt((int)_p3.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void commit3_cant_be_read_at_position() {
-			var res = _scavengedChunk.TryReadAt((int)_c3.LogPosition, couldBeScavenged: true);
+			var res = _scavengedChunk.TryReadAt((int)_c3.LogPosition, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp);
 			Assert.IsFalse(res.Success);
 		}
 
 		[Test]
 		public void sequencial_read_returns_no_records() {
 			var records = new List<ILogRecord>();
-			RecordReadResult res = _scavengedChunk.TryReadFirst();
+			RecordReadResult res = _scavengedChunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			while (res.Success) {
 				records.Add(res.LogRecord);
-				res = _scavengedChunk.TryReadClosestForward((int)res.NextPosition);
+				res = _scavengedChunk.TryReadClosestForward((int)res.NextPosition, ITransactionFileTracker.NoOp);
 			}
 
 			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {

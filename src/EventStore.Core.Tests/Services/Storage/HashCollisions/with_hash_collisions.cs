@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		public void Setup() {
 			given();
 			_indexDir = PathName;
-			_fakeReader = new TFReaderLease(new FakeReader());
+			_fakeReader = new TFReaderLease(new FakeReader(), ITransactionFileTracker.NoOp);
 			_indexBackend = new FakeIndexBackend<string>(_fakeReader);
 
 			_logFormat = LogFormatHelper<LogFormat.V2, string>.LogFormatFactory.Create(new() {
@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_highHasher = _logFormat.HighHasher;
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, _logFormat.EmptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: _maxMemTableSize),
-				() => _fakeReader,
+				_ => _fakeReader,
 				PTableVersions.IndexV1,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: _maxMemTableSize,
@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void should_return_no_stream() {
-			Assert.AreEqual(ExpectedVersion.NoStream, _indexReader.GetStreamLastEventNumber("account--696193173"));
+			Assert.AreEqual(ExpectedVersion.NoStream, _indexReader.GetStreamLastEventNumber("account--696193173", ITransactionFileTracker.NoOp));
 		}
 	}
 
@@ -138,7 +138,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		[Test]
 		public void should_return_invalid_event_number() {
 			Assert.AreEqual(EventStore.Core.Data.EventNumber.Invalid,
-				_indexReader.GetStreamLastEventNumber(stream1Id));
+				_indexReader.GetStreamLastEventNumber(stream1Id, ITransactionFileTracker.NoOp));
 		}
 	}
 
@@ -174,7 +174,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void should_return_last_event_number() {
-			Assert.AreEqual(0, _indexReader.GetStreamLastEventNumber(stream1Id));
+			Assert.AreEqual(0, _indexReader.GetStreamLastEventNumber(stream1Id, ITransactionFileTracker.NoOp));
 		}
 	}
 
@@ -209,7 +209,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		[Test]
 		public void should_return_invalid_event_number() {
 			Assert.AreEqual(EventStore.Core.Data.EventNumber.Invalid,
-				_indexReader.GetStreamLastEventNumber("account--696193173"));
+				_indexReader.GetStreamLastEventNumber("account--696193173", ITransactionFileTracker.NoOp));
 		}
 	}
 
@@ -311,7 +311,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_tableIndex.Close(false);
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV2, maxSize: _maxMemTableSize),
-				() => _fakeReader,
+				_ => _fakeReader,
 				PTableVersions.IndexV2,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: _maxMemTableSize,
@@ -330,7 +330,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void should_return_the_correct_last_event_number() {
-			var result = _indexReader.GetStreamLastEventNumber(streamId);
+			var result = _indexReader.GetStreamLastEventNumber(streamId, ITransactionFileTracker.NoOp);
 			Assert.AreEqual(2, result);
 		}
 
@@ -419,7 +419,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_readerLease = readerLease;
 		}
 
-		public TFReaderLease BorrowReader() {
+		public TFReaderLease BorrowReader(ITransactionFileTracker tracker) {
 			return _readerLease;
 		}
 
@@ -466,22 +466,22 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			throw new NotImplementedException();
 		}
 
-		public SeqReadResult TryReadNext() {
+		public SeqReadResult TryReadNext(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public SeqReadResult TryReadPrev() {
+		public SeqReadResult TryReadPrev(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged, ITransactionFileTracker tracker) {
 			var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				position % 2 == 0 ? "account--696193173" : "LPN-FC002_LPK51001", null, -1, DateTime.UtcNow, PrepareFlags.None,
 				"type", null, new byte[0], null);
 			return new RecordReadResult(true, position + 1, record, 1);
 		}
 
-		public bool ExistsAt(long position) {
+		public bool ExistsAt(long position, ITransactionFileTracker tracker) {
 			return true;
 		}
 	}

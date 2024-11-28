@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void should_be_able_to_read_the_all_stream() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100, ITransactionFileTracker.NoOp).EventRecords()
 				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(5, events.Count());
@@ -53,10 +53,10 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		public void should_have_updated_deleted_stream_event_number() {
 			var chunk = Db.Manager.GetChunk(0);
 			var chunkRecords = new List<ILogRecord>();
-			RecordReadResult result = chunk.TryReadFirst();
+			RecordReadResult result = chunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);
-				result = chunk.TryReadClosestForward(result.NextPosition);
+				result = chunk.TryReadClosestForward(result.NextPosition, ITransactionFileTracker.NoOp);
 			}
 
 			var id = _logFormat.StreamIds.LookupValue(_deletedEventStreamId);

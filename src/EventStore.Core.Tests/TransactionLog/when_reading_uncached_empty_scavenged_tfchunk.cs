@@ -1,3 +1,4 @@
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using NUnit.Framework;
 
@@ -21,27 +22,27 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void no_record_at_exact_position_can_be_read() {
-			Assert.IsFalse(_chunk.TryReadAt(0, couldBeScavenged: true).Success);
+			Assert.IsFalse(_chunk.TryReadAt(0, couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp).Success);
 		}
 
 		[Test]
 		public void no_record_can_be_read_as_first_record() {
-			Assert.IsFalse(_chunk.TryReadFirst().Success);
+			Assert.IsFalse(_chunk.TryReadFirst(ITransactionFileTracker.NoOp).Success);
 		}
 
 		[Test]
 		public void no_record_can_be_read_as_closest_forward_record() {
-			Assert.IsFalse(_chunk.TryReadClosestForward(0).Success);
+			Assert.IsFalse(_chunk.TryReadClosestForward(0, ITransactionFileTracker.NoOp).Success);
 		}
 
 		[Test]
 		public void no_record_can_be_read_as_closest_backward_record() {
-			Assert.IsFalse(_chunk.TryReadClosestBackward(0).Success);
+			Assert.IsFalse(_chunk.TryReadClosestBackward(0, ITransactionFileTracker.NoOp).Success);
 		}
 
 		[Test]
 		public void no_record_can_be_read_as_last_record() {
-			Assert.IsFalse(_chunk.TryReadLast().Success);
+			Assert.IsFalse(_chunk.TryReadLast(ITransactionFileTracker.NoOp).Success);
 		}
 	}
 }

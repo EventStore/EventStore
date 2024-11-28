@@ -34,12 +34,12 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 			await base.TestFixtureSetUp();
 
 			_indexDir = PathName;
-			var fakeReader = new TFReaderLease(new FakeIndexReader());
+			var fakeReader = new TFReaderLease(new FakeIndexReader(), ITransactionFileTracker.NoOp);
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: 5),
-				() => fakeReader,
+				_ => fakeReader,
 				PTableVersions.IndexV1,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 5 + _extraStreamHashesAtBeginning + _extraStreamHashesAtEnd,
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(_ptableVersion, maxSize: 5),
-				() => fakeReader,
+				_ => fakeReader,
 				_ptableVersion,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 5,
@@ -150,22 +150,22 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 			throw new NotImplementedException();
 		}
 
-		public SeqReadResult TryReadNext() {
+		public SeqReadResult TryReadNext(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public SeqReadResult TryReadPrev() {
+		public SeqReadResult TryReadPrev(ITransactionFileTracker tracker) {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged, ITransactionFileTracker tracker) {
 			var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				position % 2 == 0 ? "account--696193173" : "LPN-FC002_LPK51001", null, -1, DateTime.UtcNow, PrepareFlags.None,
 				"type", null, new byte[0], null);
 			return new RecordReadResult(true, position + 1, record, 1);
 		}
 
-		public bool ExistsAt(long position) {
+		public bool ExistsAt(long position, ITransactionFileTracker tracker) {
 			return true;
 		}
 	}

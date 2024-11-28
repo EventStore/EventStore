@@ -7,15 +7,18 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private readonly IReadIndex<TStreamId> _readIndex;
 		private readonly Func<TFReaderLease> _tfReaderFactory;
 		private readonly Func<ulong, TStreamId> _lookupUniqueHashUser;
+		private readonly ITransactionFileTracker _tracker;
 
 		public IndexReaderForCalculator(
 			IReadIndex<TStreamId> readIndex,
 			Func<TFReaderLease> tfReaderFactory,
-			Func<ulong, TStreamId> lookupUniqueHashUser) {
+			Func<ulong, TStreamId> lookupUniqueHashUser,
+			ITransactionFileTracker tracker) {
 
 			_readIndex = readIndex;
 			_tfReaderFactory = tfReaderFactory;
 			_lookupUniqueHashUser = lookupUniqueHashUser;
+			_tracker = tracker;
 		}
 
 		public long GetLastEventNumber(
@@ -28,12 +31,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					return _readIndex.GetStreamLastEventNumber_NoCollisions(
 						handle.StreamHash,
 						_lookupUniqueHashUser,
-						scavengePoint.Position);
+						scavengePoint.Position, _tracker);
 				case StreamHandle.Kind.Id:
 					// uses the index and the log to fetch the last event number
 					return _readIndex.GetStreamLastEventNumber_KnownCollisions(
 						handle.StreamId,
-						scavengePoint.Position);
+						scavengePoint.Position, _tracker);
 				default:
 					throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
 			}
@@ -59,7 +62,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 						handle.StreamId,
 						fromEventNumber,
 						maxCount,
-						scavengePoint.Position);
+						scavengePoint.Position, _tracker);
 				default:
 					throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
 			}

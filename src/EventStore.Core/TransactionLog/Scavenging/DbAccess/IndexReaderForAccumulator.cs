@@ -4,9 +4,11 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class IndexReaderForAccumulator<TStreamId> : IIndexReaderForAccumulator<TStreamId> {
 		private readonly IReadIndex<TStreamId> _readIndex;
+		private readonly ITransactionFileTracker _tracker;
 
-		public IndexReaderForAccumulator(IReadIndex<TStreamId> readIndex) {
+		public IndexReaderForAccumulator(IReadIndex<TStreamId> readIndex, ITransactionFileTracker tracker) {
 			_readIndex = readIndex;
+			_tracker = tracker;
 		}
 
 		// reads a stream forward but only returns event info not the full event.
@@ -30,7 +32,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 						handle.StreamId,
 						fromEventNumber,
 						maxCount,
-						scavengePoint.Position);
+						scavengePoint.Position,
+						_tracker);
 				default:
 					throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
 			}
@@ -52,14 +55,16 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 						_ => streamId,
 						fromEventNumber,
 						maxCount,
-						scavengePoint.Position);
+						scavengePoint.Position,
+						_tracker);
 				case StreamHandle.Kind.Id:
 					// uses log to check for hash collisions
 					return _readIndex.ReadEventInfoBackward_KnownCollisions(
 						handle.StreamId,
 						fromEventNumber,
 						maxCount,
-						scavengePoint.Position);
+						scavengePoint.Position,
+						_tracker);
 				default:
 					throw new ArgumentOutOfRangeException(nameof(handle), handle, null);
 			}

@@ -9,6 +9,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -29,6 +30,7 @@ public sealed class TelemetryService : IDisposable,
 	private readonly CancellationTokenSource _cts = new();
 	private readonly IPublisher _publisher;
 	private readonly IReadOnlyCheckpoint _writerCheckpoint;
+	private readonly ITransactionFileTracker _tfTracker;
 	private readonly DateTime _startTime = DateTime.UtcNow;
 	private readonly Guid _nodeId;
 	private readonly TFChunkManager _manager;
@@ -44,12 +46,14 @@ public sealed class TelemetryService : IDisposable,
 		IPublisher publisher,
 		ITelemetrySink sink,
 		IReadOnlyCheckpoint writerCheckpoint,
+		ITransactionFileTracker tfTracker,
 		Guid nodeId) {
 
 		_manager = manager;
 		_nodeOptions = nodeOptions;
 		_publisher = publisher;
 		_writerCheckpoint = writerCheckpoint;
+		_tfTracker = tfTracker;
 		_nodeId = nodeId;
 		Task.Run(async () => {
 			try {
@@ -178,7 +182,7 @@ public sealed class TelemetryService : IDisposable,
 	private void ReadFirstEpoch() {
 		try {
 			var chunk = _manager.GetChunkFor(0);
-			var result = chunk.TryReadAt(0, false);
+			var result = chunk.TryReadAt(0, false, _tfTracker);
 
 			if (!result.Success)
 				return;

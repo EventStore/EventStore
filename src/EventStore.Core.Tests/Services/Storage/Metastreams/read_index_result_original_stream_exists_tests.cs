@@ -2,6 +2,7 @@
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
@@ -25,7 +26,7 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams {
 		public void original_stream_exists_is_true_when_reading_metastream_for_existing_stream() {
 			var metaStreamName = SystemStreams.MetastreamOf("existing_stream");
 			var metaStreamId = _logFormat.StreamIds.LookupValue(metaStreamName);
-			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, metaStreamId, 0);
+			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, metaStreamId, 0, ITransactionFileTracker.NoOp);
 			Assert.True(read.OriginalStreamExists);
 		}
 
@@ -33,21 +34,21 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams {
 		public void original_stream_exists_is_false_when_reading_metastream_for_non_existent_stream() {
 			var metaStreamName = SystemStreams.MetastreamOf("non_existent_stream");
 			var metaStreamId = _logFormat.StreamIds.LookupValue(metaStreamName);
-			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, metaStreamId, 0);
+			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, metaStreamId, 0, ITransactionFileTracker.NoOp);
 			Assert.False(read.OriginalStreamExists);
 		}
 
 		[Test]
 		public void original_stream_exists_is_null_when_reading_existing_stream() {
 			var streamId = _logFormat.StreamIds.LookupValue("existing_stream");
-			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, 0);
+			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, 0, ITransactionFileTracker.NoOp);
 			Assert.IsNull(read.OriginalStreamExists);
 		}
 
 		[Test]
 		public void original_stream_exists_is_null_when_reading_non_existent_stream() {
 			var streamId = _logFormat.StreamIds.LookupValue("non_existent_stream");
-			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, 0);
+			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, 0, ITransactionFileTracker.NoOp);
 			Assert.IsNull(read.OriginalStreamExists);
 		}
 
@@ -55,7 +56,7 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams {
 		public void original_stream_exists_is_true_when_reading_metastream_for_existing_system_stream() {
 			var metaStreamName = SystemStreams.MetastreamOf("$existing_stream");
 			var metaStreamId = _logFormat.StreamIds.LookupValue(metaStreamName);
-			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, metaStreamId, 0);
+			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, metaStreamId, 0, ITransactionFileTracker.NoOp);
 			Assert.True(read.OriginalStreamExists);
 		}
 
@@ -63,21 +64,21 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams {
 		public void original_stream_exists_is_false_when_reading_metastream_for_non_existent_system_stream() {
 			var metaStreamName = SystemStreams.MetastreamOf("$non_existent_stream");
 			var metaStreamId = _logFormat.StreamIds.LookupValue(metaStreamName);
-			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, metaStreamId, 0);
+			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, metaStreamId, 0, ITransactionFileTracker.NoOp);
 			Assert.False(read.OriginalStreamExists);
 		}
 
 		[Test]
 		public void original_stream_exists_is_null_when_reading_existing_system_stream() {
 			var streamId = _logFormat.StreamIds.LookupValue("$existing_stream");
-			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, 0);
+			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, 0, ITransactionFileTracker.NoOp);
 			Assert.IsNull(read.OriginalStreamExists);
 		}
 
 		[Test]
 		public void original_stream_exists_is_null_when_reading_non_existent_system_stream() {
 			var streamId = _logFormat.StreamIds.LookupValue("$non_existent_stream");
-			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, 0);
+			var read = ReadIndex.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, 0, ITransactionFileTracker.NoOp);
 			Assert.IsNull(read.OriginalStreamExists);
 		}
 	}

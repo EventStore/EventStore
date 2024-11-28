@@ -88,7 +88,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			for (int chunkNum = lastChunkToCache; chunkNum < _chunksCount;) {
 				var chunk = _chunks[chunkNum];
 				if (chunk.IsReadOnly)
-					chunk.CacheInMemory();
+					chunk.CacheInMemory(_tracker);
 				chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
 			}
 		}
@@ -122,7 +122,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					initialReaderCount: _config.InitialReaderCount,
 					maxReaderCount: _config.MaxReaderCount,
 					reduceFileCachePressure: _config.ReduceFileCachePressure,
-					tracker: _tracker);
+					_tracker);
 				AddChunk(chunk);
 				return chunk;
 			}
@@ -148,7 +148,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					initialReaderCount: _config.InitialReaderCount,
 					maxReaderCount: _config.MaxReaderCount,
 					reduceFileCachePressure: _config.ReduceFileCachePressure,
-					tracker: _tracker);
+					_tracker);
 				AddChunk(chunk);
 				return chunk;
 			}

@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_data_is_written() {
-			using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint, false)) {
+			using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint, false, ITransactionFileTracker.NoOp)) {
 				reader.Open();
 				ILogRecord r;
 				Assert.IsTrue(reader.TryReadNext(out r));
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void trying_to_read_past_writer_checksum_returns_false() {
 			var reader = new TFChunkReader(_db, _writerCheckpoint);
-			Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read(), couldBeScavenged: true).Success);
+			Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read(), couldBeScavenged: true, tracker: ITransactionFileTracker.NoOp).Success);
 		}
 	}
 }

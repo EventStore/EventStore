@@ -22,11 +22,11 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			bool createForceVerifyFile = false) {
 			var lowHasher = new XXHashUnsafe();
 			var highHasher = new Murmur3AUnsafe();
-			var fakeReader = new TFReaderLease(new FakeIndexReader());
+			var fakeReader = new TFReaderLease(new FakeIndexReader(), ITransactionFileTracker.NoOp);
 
 			_tableIndex = new TableIndex<string>(PathName, lowHasher, highHasher, "",
 				() => new HashListMemTable(version, maxSize: NumIndexEntries),
-				() => fakeReader,
+				_ => fakeReader,
 				version,
 				int.MaxValue, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: NumIndexEntries,
@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			//load table index again
 			_tableIndex = new TableIndex<string>(PathName, lowHasher, highHasher, "",
 				() => new HashListMemTable(version, maxSize: NumIndexEntries),
-				() => fakeReader,
+				_ => fakeReader,
 				version,
 				int.MaxValue, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: NumIndexEntries,

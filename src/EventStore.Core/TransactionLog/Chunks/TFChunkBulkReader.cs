@@ -16,15 +16,18 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		private readonly TFChunk.TFChunk _chunk;
 		private readonly Stream _stream;
+		private readonly ITransactionFileTracker _tfTracker;
 		private bool _disposed;
 		public bool IsMemory { get; init; }
 
-		internal TFChunkBulkReader(TFChunk.TFChunk chunk, Stream streamToUse, bool isMemory) {
+		internal TFChunkBulkReader(TFChunk.TFChunk chunk, Stream streamToUse, bool isMemory,
+			ITransactionFileTracker tfTracker) {
 			Ensure.NotNull(chunk, "chunk");
 			Ensure.NotNull(streamToUse, "stream");
 			_chunk = chunk;
 			_stream = streamToUse;
 			IsMemory = isMemory;
+			_tfTracker = tfTracker;
 		}
 
 		~TFChunkBulkReader() {
@@ -62,6 +65,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			var oldPos = (int)_stream.Position;
 			int bytesRead = _stream.Read(buffer, 0, count);
+
+			_tfTracker.OnRead(bytesRead, IsMemory
+				? ITransactionFileTracker.Source.ChunkCache
+				: ITransactionFileTracker.Source.File);
+
 			return new BulkReadResult(oldPos, bytesRead, isEof: _stream.Length == _stream.Position);
 		}
 
@@ -80,6 +88,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			Debug.Assert(toRead >= 0);
 			_stream.Position = _stream.Position; // flush read buffer
 			int bytesRead = _stream.Read(buffer, 0, toRead);
+
+			_tfTracker.OnRead(bytesRead, IsMemory
+				? ITransactionFileTracker.Source.ChunkCache
+				: ITransactionFileTracker.Source.File);
+
 			return new BulkReadResult(oldPos,
 				bytesRead,
 				isEof: _chunk.IsReadOnly && oldPos + bytesRead == _chunk.PhysicalDataSize);

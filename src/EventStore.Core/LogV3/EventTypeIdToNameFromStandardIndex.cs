@@ -2,6 +2,7 @@
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.LogV3 {
@@ -15,7 +16,7 @@ namespace EventStore.Core.LogV3 {
 		public bool TryGetName(uint eventTypeId, out string name) {
 			var record = _indexReader.ReadPrepare(
 				streamId: LogV3SystemStreams.EventTypesStreamNumber,
-				eventNumber: EventTypeIdConverter.ToEventNumber(eventTypeId));
+				eventNumber: EventTypeIdConverter.ToEventNumber(eventTypeId), tracker: ITransactionFileTracker.NoOp); // noop ok: LogV3
 
 			if (record is null) {
 				name = null;
@@ -30,7 +31,7 @@ namespace EventStore.Core.LogV3 {
 		}
 
 		public bool TryGetLastValue(out uint lastValue) {
-			var lastEventNumber = _indexReader.GetStreamLastEventNumber(LogV3SystemStreams.EventTypesStreamNumber);
+			var lastEventNumber = _indexReader.GetStreamLastEventNumber(LogV3SystemStreams.EventTypesStreamNumber, ITransactionFileTracker.NoOp); // noop ok: LogV3
 			var success = ExpectedVersion.NoStream < lastEventNumber && lastEventNumber != EventNumber.DeletedStream;
 			lastValue = EventTypeIdConverter.ToEventTypeId(lastEventNumber);
 			return success;

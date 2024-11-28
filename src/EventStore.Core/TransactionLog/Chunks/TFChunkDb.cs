@@ -10,17 +10,17 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkDb : IDisposable {
 		public readonly TFChunkDbConfig Config;
+		private readonly ITransactionFileTracker _tracker;
 		public readonly TFChunkManager Manager;
 
 		private readonly ILogger _log;
-		private readonly ITransactionFileTracker _tracker;
 		private int _closed;
 
 		public TFChunkDb(TFChunkDbConfig config, ITransactionFileTracker tracker = null, ILogger log = null) {
 			Ensure.NotNull(config, "config");
 
 			Config = config;
-			_tracker = tracker ?? new TFChunkTracker.NoOp();
+			_tracker = tracker ?? ITransactionFileTracker.NoOp;
 			Manager = new TFChunkManager(Config, _tracker);
 			_log = log ?? Serilog.Log.ForContext<TFChunkDb>();
 		}
@@ -76,9 +76,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 									unbufferedRead: Config.Unbuffered,
 									initialReaderCount: Config.InitialReaderCount,
 									maxReaderCount: Config.MaxReaderCount,
-									tracker: _tracker,
 									optimizeReadSideCache: Config.OptimizeReadSideCache,
-									reduceFileCachePressure: Config.ReduceFileCachePressure);
+									reduceFileCachePressure: Config.ReduceFileCachePressure,
+									tracker: _tracker);
 							else {
 								chunk = TFChunk.TFChunk.FromOngoingFile(chunkInfo.ChunkFileName, Config.ChunkSize,
 									checkSize: false,
@@ -179,7 +179,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					for (int chunkNum = lastBgChunkNum; chunkNum >= 0;) {
 						var chunk = Manager.GetChunk(chunkNum);
 						try {
-							chunk.VerifyFileHash();
+							chunk.VerifyFileHash(_tracker);
 						} catch (FileBeingDeletedException exc) {
 							_log.Debug(
 								"{exceptionType} exception was thrown while doing background validation of chunk {chunk}.",

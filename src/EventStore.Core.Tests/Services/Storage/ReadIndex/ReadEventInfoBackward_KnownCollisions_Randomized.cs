@@ -4,6 +4,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Index.Hashers;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
@@ -59,23 +60,23 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 				IndexReadEventInfoResult result;
 				if (@event.EventStreamId == Stream) {
 					result = ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream,
-						@event.EventNumber - 1, int.MaxValue, @event.LogPosition);
+						@event.EventNumber - 1, int.MaxValue, @event.LogPosition, ITransactionFileTracker.NoOp);
 					CheckResult(curEvents.ToArray(),result);
 					Assert.True(result.IsEndOfStream);
 
 					// events >= @event.EventNumber should be filtered out
 					result = ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream,
-						@event.EventNumber, int.MaxValue, @event.LogPosition);
+						@event.EventNumber, int.MaxValue, @event.LogPosition, ITransactionFileTracker.NoOp);
 					CheckResult(curEvents.ToArray(), result);
 					Assert.True(result.IsEndOfStream);
 
 					result = ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream,
-						@event.EventNumber + 1, int.MaxValue, @event.LogPosition);
+						@event.EventNumber + 1, int.MaxValue, @event.LogPosition, ITransactionFileTracker.NoOp);
 					CheckResult(curEvents.ToArray(), result);
 					Assert.True(result.IsEndOfStream);
 				}
 
-				result = ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream, -1, int.MaxValue, @event.LogPosition);
+				result = ReadIndex.ReadEventInfoBackward_KnownCollisions(Stream, -1, int.MaxValue, @event.LogPosition, ITransactionFileTracker.NoOp);
 				CheckResult(curEvents.ToArray(), result);
 				Assert.True(result.IsEndOfStream);
 
@@ -99,7 +100,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 				Assert.GreaterOrEqual(fromEventNumber, 0);
 
 				var result = ReadIndex.ReadEventInfoBackward_KnownCollisions(
-					Stream, fromEventNumber, maxCount, long.MaxValue);
+					Stream, fromEventNumber, maxCount, long.MaxValue, ITransactionFileTracker.NoOp);
 				CheckResult(curEvents.Skip(curEvents.Count - maxCount).ToArray(), result);
 
 				if (fromEventNumber - maxCount < 0)

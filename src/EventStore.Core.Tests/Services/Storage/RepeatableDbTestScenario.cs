@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			var emptyStreamId = _logFormat.EmptyStreamId;
 			TableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV3, MaxEntriesInMemTable * 2),
-				() => new TFReaderLease(readers),
+				_ => new TFReaderLease(readers, ITransactionFileTracker.NoOp),
 				PTableVersions.IndexV3,
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,
@@ -93,6 +93,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				indexCheckpoint: DbRes.Db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
 				indexTracker: new IndexTracker.NoOp(),
+				tfTrackers: ITransactionFileTrackerFactory.NoOp,
 				cacheTracker: new CacheHitsMissesTracker.NoOp());
 
 			readIndex.IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read());

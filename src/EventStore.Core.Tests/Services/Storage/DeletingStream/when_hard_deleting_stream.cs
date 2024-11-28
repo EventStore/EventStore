@@ -21,10 +21,10 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 		public void should_change_expected_version_to_deleted_event_number_when_reading() {
 			var chunk = Db.Manager.GetChunk(0);
 			var chunkRecords = new List<ILogRecord>();
-			RecordReadResult result = chunk.TryReadFirst();
+			RecordReadResult result = chunk.TryReadFirst(ITransactionFileTracker.NoOp);
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);
-				result = chunk.TryReadClosestForward(result.NextPosition);
+				result = chunk.TryReadClosestForward(result.NextPosition, ITransactionFileTracker.NoOp);
 			}
 
 			Assert.That(chunkRecords.Any(x =>

@@ -31,12 +31,12 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 			_indexDir = PathName;
 
-			var fakeReader = new TFReaderLease(new FakeIndexReader());
+			var fakeReader = new TFReaderLease(new FakeIndexReader(), ITransactionFileTracker.NoOp);
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
-				() => throw new Exception("Expected exception") /* throw an exception when the first PTable scavenge starts and tries to acquire a reader */,
+				_ => throw new Exception("Expected exception") /* throw an exception when the first PTable scavenge starts and tries to acquire a reader */,
 				PTableVersions.IndexV4,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,
@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
-				() => fakeReader,
+				_ => fakeReader,
 				PTableVersions.IndexV4,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,

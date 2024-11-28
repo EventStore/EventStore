@@ -12,19 +12,19 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void a_null_file_config_throws_argument_null_exception() {
 			Assert.Throws<ArgumentNullException>(
-				() => new TFChunkChaser(null, new InMemoryCheckpoint(0), new InMemoryCheckpoint(0), false));
+				() => new TFChunkChaser(null, new InMemoryCheckpoint(0), new InMemoryCheckpoint(0), false, ITransactionFileTracker.NoOp));
 		}
 
 		[Test]
 		public void a_null_writer_checksum_throws_argument_null_exception() {
 			using var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
-			Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, null, new InMemoryCheckpoint(), false));
+			Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, null, new InMemoryCheckpoint(), false, ITransactionFileTracker.NoOp));
 		}
 
 		[Test]
 		public void a_null_chaser_checksum_throws_argument_null_exception() {
 			using var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
-			Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, new InMemoryCheckpoint(), null, false));
+			Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, new InMemoryCheckpoint(), null, false, ITransactionFileTracker.NoOp));
 		}
 	}
 }

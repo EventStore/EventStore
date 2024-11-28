@@ -10,6 +10,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog;
 using Serilog;
 using IReadIndex = EventStore.Core.Services.Storage.ReaderIndex.IReadIndex;
 
@@ -27,6 +28,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly bool _requiresLeader;
 			private readonly IReadIndex _readIndex;
 			private readonly ReadReq.Types.Options.Types.UUIDOption _uuidOption;
+			private readonly ITransactionFileTracker _tfTracker;
 			private readonly uint _maxSearchWindow;
 			private readonly CancellationToken _cancellationToken;
 			private readonly Channel<ReadResp> _channel;
@@ -53,6 +55,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				uint? maxSearchWindow,
 				uint checkpointIntervalMultiplier,
 				ReadReq.Types.Options.Types.UUIDOption uuidOption,
+				ITransactionFileTracker tfTracker,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
 					throw new ArgumentNullException(nameof(bus));
@@ -80,6 +83,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_readIndex = readIndex;
 				_maxSearchWindow = maxSearchWindow ?? ReadBatchSize;
 				_uuidOption = uuidOption;
+				_tfTracker = tfTracker;
 				_cancellationToken = cancellationToken;
 				_subscriptionStarted = 0;
 				_channel = Channel.CreateBounded<ReadResp>(BoundedChannelOptions);
@@ -151,7 +155,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					var (commitPosition, preparePosition) = startPosition.Value.ToInt64();
 					try {
 						var indexResult =
-							_readIndex.ReadAllEventsForward(new TFPos(commitPosition, preparePosition), 1);
+							_readIndex.ReadAllEventsForward(new TFPos(commitPosition, preparePosition), 1, _tfTracker);
 						CatchUp(Position.FromInt64(indexResult.NextPos.CommitPosition,
 							indexResult.NextPos.PreparePosition));
 					} catch (Exception ex) {

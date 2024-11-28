@@ -9,6 +9,7 @@ using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.TransactionLog;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc;
@@ -159,6 +160,7 @@ public class EnumeratorsTests {
 			requiresLeader: false,
 			readIndex: new FakeReadIndex<TLogFormat, TStreamId>(_ => false, null),
 			uuidOption: new ReadReq.Types.Options.Types.UUIDOption(),
+			tracker: ITransactionFileTracker.NoOp,
 			cancellationToken: CancellationToken.None));
 	}
 
@@ -179,6 +181,7 @@ public class EnumeratorsTests {
 			maxSearchWindow: null,
 			checkpointIntervalMultiplier: 1,
 			uuidOption: new ReadReq.Types.Options.Types.UUIDOption(),
+			tfTracker: ITransactionFileTracker.NoOp,
 			cancellationToken: CancellationToken.None));
 	}
 

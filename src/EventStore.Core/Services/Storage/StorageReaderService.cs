@@ -7,6 +7,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using ILogger = Serilog.ILogger;
 
@@ -33,6 +34,7 @@ namespace EventStore.Core.Services.Storage {
 			int threadCount,
 			IReadOnlyCheckpoint writerCheckpoint,
 			IInMemoryStreamReader inMemReader,
+			ITransactionFileTrackerFactory tfTrackers,
 			QueueStatsManager queueStatsManager,
 			QueueTrackers trackers) {
 
@@ -49,7 +51,7 @@ namespace EventStore.Core.Services.Storage {
 			StorageReaderWorker<TStreamId>[] readerWorkers = new StorageReaderWorker<TStreamId>[threadCount];
 			InMemoryBus[] storageReaderBuses = new InMemoryBus[threadCount];
 			for (var i = 0; i < threadCount; i++) {
-				readerWorkers[i] = new StorageReaderWorker<TStreamId>(bus, readIndex, systemStreams, writerCheckpoint, inMemReader, i);
+				readerWorkers[i] = new StorageReaderWorker<TStreamId>(bus, readIndex, systemStreams, writerCheckpoint, inMemReader, tfTrackers, i);
 				storageReaderBuses[i] = new InMemoryBus("StorageReaderBus", watchSlowMsg: false);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadEvent>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadStreamEventsBackward>(readerWorkers[i]);

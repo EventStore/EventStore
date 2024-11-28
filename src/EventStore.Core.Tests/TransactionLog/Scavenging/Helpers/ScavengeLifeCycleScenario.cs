@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Tests.Services.Storage;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
 
@@ -42,7 +43,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			Log = new FakeTFScavengerLog();
 			FakeTableIndex = new FakeTableIndex<TStreamId>();
 			TfChunkScavenger = new TFChunkScavenger<TStreamId>(Serilog.Log.Logger, _dbResult.Db, Log, FakeTableIndex, new FakeReadIndex<TLogFormat, TStreamId>(_ => false, _logFormat.Metastreams),
-				_logFormat.Metastreams);
+				_logFormat.Metastreams, ITransactionFileTracker.NoOp);
 
 			try {
 				await When().WithTimeout(TimeSpan.FromMinutes(1));

@@ -1,6 +1,7 @@
 using System;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.Index.Hashers;
+using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
@@ -35,7 +36,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 					ReadIndex.GetStreamLastEventNumber_NoCollisions(
 						Hash,
 						GetStreamId,
-						long.MaxValue));
+						long.MaxValue, ITransactionFileTracker.NoOp));
 			}
 		}
 
@@ -50,7 +51,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 					ReadIndex.GetStreamLastEventNumber_NoCollisions(
 						Hash,
 						GetStreamId,
-						long.MaxValue));
+						long.MaxValue, ITransactionFileTracker.NoOp));
 			}
 		}
 
@@ -79,7 +80,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 					ReadIndex.GetStreamLastEventNumber_NoCollisions(
 						Hash,
 						GetStreamId,
-						long.MaxValue));
+						long.MaxValue, ITransactionFileTracker.NoOp));
 			}
 
 			[Test]
@@ -88,31 +89,31 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 					ReadIndex.GetStreamLastEventNumber_NoCollisions(
 						Hash,
 						GetStreamId,
-						_third.LogPosition + 1));
+						_third.LogPosition + 1, ITransactionFileTracker.NoOp));
 
 				Assert.AreEqual(2,
 					ReadIndex.GetStreamLastEventNumber_NoCollisions(
 						Hash,
 						GetStreamId,
-						_third.LogPosition));
+						_third.LogPosition, ITransactionFileTracker.NoOp));
 
 				Assert.AreEqual(1,
 					ReadIndex.GetStreamLastEventNumber_NoCollisions(
 						Hash,
 						GetStreamId,
-						_second.LogPosition));
+						_second.LogPosition, ITransactionFileTracker.NoOp));
 
 				Assert.AreEqual(0,
 					ReadIndex.GetStreamLastEventNumber_NoCollisions(
 						Hash,
 						GetStreamId,
-						_first.LogPosition));
+						_first.LogPosition, ITransactionFileTracker.NoOp));
 
 				Assert.AreEqual(ExpectedVersion.NoStream,
 					ReadIndex.GetStreamLastEventNumber_NoCollisions(
 						Hash,
 						GetStreamId,
-						_zeroth.LogPosition));
+						_zeroth.LogPosition, ITransactionFileTracker.NoOp));
 			}
 		}
 
@@ -131,7 +132,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 					ReadIndex.GetStreamLastEventNumber_NoCollisions(
 						Hash,
 						GetStreamId,
-						long.MaxValue));
+						long.MaxValue, ITransactionFileTracker.NoOp));
 			}
 		}
 	}
