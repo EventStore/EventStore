@@ -23,10 +23,12 @@ public class ArchiverServiceTests {
 
 	private static (ArchiverService, FakeArchiveStorage) CreateSut(
 		TimeSpan? chunkStorageDelay = null,
-		string[] existingChunks = null) {
+		string[] existingChunks = null,
+		long? existingCheckpoint = null) {
 		var archive = new FakeArchiveStorage(
 			chunkStorageDelay ?? TimeSpan.Zero,
-			existingChunks ?? Array.Empty<string>());
+			existingChunks ?? Array.Empty<string>(),
+			existingCheckpoint ?? 0L);
 		var service = new ArchiverService(new FakeSubscriber(), archive);
 		return (service, archive);
 	}
@@ -175,7 +177,7 @@ public class ArchiverServiceTests {
 
 	[Fact]
 	public async Task doesnt_archive_existing_chunks_that_were_already_archived() {
-		var (sut, archive) = CreateSut(existingChunks:	[ "0-0", "1-1" ]);
+		var (sut, archive) = CreateSut(existingChunks:	[ "0-0", "1-1" ], existingCheckpoint: 2 * TFConsts.ChunkSize);
 
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(0, 0, complete: true)));
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(1, 1, complete: true)));
@@ -186,6 +188,20 @@ public class ArchiverServiceTests {
 		await WaitFor(archive, numStores: 2);
 
 		Assert.Equal([ "0-0", "1-1", "2-2", "3-3" ], archive.Chunks);
+	}
+
+	[Fact]
+	public async Task archives_an_existing_chunk_if_it_starts_before_but_ends_after_the_checkpoint() {
+		var (sut, archive) = CreateSut(existingChunks:	[ "0-0", "1-1" ], existingCheckpoint: 2 * TFConsts.ChunkSize);
+
+		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(0, 0, complete: true)));
+		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(1, 2, complete: true))); // <-- the chunk being tested
+		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(3, 3, complete: true)));
+		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(GetChunkInfo(3, 3, complete: true).ChunkEndPosition));
+
+		await WaitFor(archive, numStores: 2);
+
+		Assert.Equal([ "0-0", "1-2", "3-3" ], archive.Chunks);
 	}
 
 	[Fact]
@@ -278,9 +294,10 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 	public int NumCheckpoints { get; private set; }
 	private long _checkpoint;
 
-	public FakeArchiveStorage(TimeSpan chunkStorageDelay, string[] existingChunks) {
+	public FakeArchiveStorage(TimeSpan chunkStorageDelay, string[] existingChunks, long existingCheckpoint) {
 		_chunkStorageDelay = chunkStorageDelay;
 		_existingChunks = existingChunks;
+		_checkpoint = existingCheckpoint;
 		Chunks = new List<string>(existingChunks);
 	}
 
