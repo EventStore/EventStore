@@ -14,10 +14,10 @@ public interface IArchiveStorageReader {
 	public ValueTask<long> GetCheckpoint(CancellationToken ct);
 
 	/// <returns>A stream of the chunk's contents. Dispose this after use.</returns>
-	public ValueTask<Stream> GetChunk(string chunkPath, CancellationToken ct);
+	public ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct);
 
 	/// <returns>A stream of the chunk's contents over the specified range. Dispose this after use.</returns>
-	public ValueTask<Stream> GetChunk(string chunkPath, long start, long end, CancellationToken ct);
+	public ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct);
 
 	/// <summary>List all chunk files present in the archive</summary>
 	/// <returns>The file names of all chunks present in the archive</returns>

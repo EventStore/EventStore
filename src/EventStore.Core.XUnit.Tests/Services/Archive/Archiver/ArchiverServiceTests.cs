@@ -336,11 +336,11 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 		return ValueTask.FromResult(true);
 	}
 
-	public ValueTask<Stream> GetChunk(string chunkPath, CancellationToken ct) {
+	public ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) {
 		throw new NotImplementedException();
 	}
 
-	public ValueTask<Stream> GetChunk(string chunkPath, long start, long end, CancellationToken ct) {
+	public ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) {
 		throw new NotImplementedException();
 	}
 
