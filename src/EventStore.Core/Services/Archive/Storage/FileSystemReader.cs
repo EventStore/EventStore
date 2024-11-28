@@ -44,24 +44,26 @@ public class FileSystemReader : IArchiveStorageReader {
 		}
 	}
 
-	public async ValueTask<Stream> GetChunk(string chunkPath, CancellationToken ct) {
+	public async ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) {
 		try {
+			var chunkPath = Path.Combine(_archivePath, chunkFile);
 			return File.OpenRead(chunkPath);
 		} catch (FileNotFoundException) {
 			throw new ChunkDeletedException();
 		}
 	}
 
-	public async ValueTask<Stream> GetChunk(string chunkPath, long start, long end, CancellationToken ct) {
+	public async ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) {
 		var longLength = end - start;
 
 		if (longLength > int.MaxValue)
-			throw new InvalidOperationException($"Attempted to read too much from chunk {chunkPath}. Start: {start}. End {end}");
+			throw new InvalidOperationException($"Attempted to read too much from chunk {chunkFile}. Start: {start}. End {end}");
 		else if (longLength < 0)
-			throw new InvalidOperationException($"Attempted to read negative amount from chunk {chunkPath}. Start: {start}. End {end}");
+			throw new InvalidOperationException($"Attempted to read negative amount from chunk {chunkFile}. Start: {start}. End {end}");
 
 		var length = (int)longLength;
 
+		var chunkPath = Path.Combine(_archivePath, chunkFile);
 		try {
 			using var fileStream = File.OpenRead(chunkPath);
 			fileStream.Position = start;
