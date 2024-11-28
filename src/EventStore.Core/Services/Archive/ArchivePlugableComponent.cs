@@ -1,9 +1,11 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System;
 using System.Collections.Generic;
 using EventStore.Core.Services.Archive.Archiver;
 using EventStore.Core.Services.Archive.Storage;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Plugins;
 using EventStore.Plugins.Licensing;
 using Microsoft.AspNetCore.Builder;
@@ -57,8 +59,29 @@ public class ArchivePlugableComponent : IPlugableComponent {
 
 		services.AddSingleton(options);
 		services.AddScoped<IArchiveStorageFactory, ArchiveStorageFactory>();
+		services.Decorate<IReadOnlyList<IClusterVNodeStartupTask>>(AddArchiveCatchupTask);
 
 		if (_isArchiver)
 			services.AddSingleton<ArchiverService>();
+	}
+
+	private static IReadOnlyList<IClusterVNodeStartupTask> AddArchiveCatchupTask(
+		IReadOnlyList<IClusterVNodeStartupTask> startupTasks,
+		IServiceProvider serviceProvider) {
+
+		var newStartupTasks = new List<IClusterVNodeStartupTask>();
+		if (startupTasks != null)
+			newStartupTasks.AddRange(startupTasks);
+
+		var standardComponents = serviceProvider.GetRequiredService<StandardComponents>();
+		newStartupTasks.Add(new ArchiveCatchup.ArchiveCatchup(
+			dbPath: standardComponents.DbConfig.Path,
+			writerCheckpoint: standardComponents.DbConfig.WriterCheckpoint,
+			replicationCheckpoint: standardComponents.DbConfig.ReplicationCheckpoint,
+			chunkSize: standardComponents.DbConfig.ChunkSize,
+			serviceProvider.GetRequiredService<IVersionedFileNamingStrategy>(),
+			serviceProvider.GetRequiredService<IArchiveStorageFactory>()));
+
+		return newStartupTasks;
 	}
 }
