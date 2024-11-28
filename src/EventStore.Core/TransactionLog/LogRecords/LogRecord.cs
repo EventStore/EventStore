@@ -154,12 +154,8 @@ public abstract class LogRecord : ILogRecord {
 		internal readonly LogRecordType Type;
 		internal readonly byte Version;
 
-		internal Header(LogRecordType type, byte version) {
-			Type = type;
-			Version = version;
-		}
-
 		private Header(ReadOnlySpan<byte> input) {
+			// Perf: Read the span from the last element to have just one range check inserted by JIT
 			Version = input[1];
 			Type = (LogRecordType)input[0];
 		}
