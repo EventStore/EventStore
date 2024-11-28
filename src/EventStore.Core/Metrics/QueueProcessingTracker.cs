@@ -7,6 +7,7 @@ using EventStore.Core.Time;
 namespace EventStore.Core.Metrics;
 
 public interface IQueueProcessingTracker {
+	// returns the current time
 	Instant RecordNow(Instant start, string messageType);
 }
 
@@ -27,6 +28,6 @@ public class QueueProcessingTracker : IQueueProcessingTracker {
 	}
 
 	public class NoOp : IQueueProcessingTracker {
-		public Instant RecordNow(Instant start, string messageType) => start;
+		public Instant RecordNow(Instant start, string messageType) => Instant.Now;
 	}
 }
