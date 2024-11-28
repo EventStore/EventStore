@@ -3,7 +3,9 @@
 
 using System;
 using System.Diagnostics.Metrics;
+using System.Threading.Tasks;
 using EventStore.Core.Metrics;
+using EventStore.Core.Time;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Metrics;
@@ -52,5 +54,17 @@ public class QueueProcessingTrackerTests : IDisposable {
 						Assert.Equal("the-message-type", t.Value);
 					});
 			});
+	}
+}
+
+public class QueueProcessingTrackerNoOpTests {
+	// the noop tracker doesn't track anything but it still needs to return the current time
+	[Fact]
+	public async Task noop_returns_current_time() {
+		var sut = new QueueProcessingTracker.NoOp();
+		var start = Instant.Now;
+		await Task.Delay(1);
+		var end = sut.RecordNow(start, "some message type");
+		Assert.True(start < end);
 	}
 }
