@@ -2,20 +2,16 @@ name: Build Jammy Container
 
 on:
   pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "samples/**"
-      - "**.md"
+    paths:
+      - "src/**"
   push:
     branches:
       - master
       - release/oss-v*
     tags:
       - oss-v*
-    paths-ignore:
-      - "docs/**"
-      - "samples/**"
-      - "**.md"
+    paths:
+      - "src/**"
 
 jobs:
   build-container:

@@ -12,10 +12,8 @@ on:
       - release/oss-v*
     tags:
       - oss-v*
-    paths-ignore:
-      - "docs/**"
-      - "samples/**"
-      - "**.md"
+    paths:
+      - "src/**"
 
 jobs:
   vulnerability-scan:
