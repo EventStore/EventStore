@@ -298,7 +298,7 @@ public partial class TFChunk : IDisposable {
 			FileMode.Open,
 			FileAccess.Read,
 			FileShare.ReadWrite,
-			_reduceFileCachePressure ? FileOptions.None : FileOptions.RandomAccess);
+			_reduceFileCachePressure ? FileOptions.Asynchronous : FileOptions.RandomAccess | FileOptions.Asynchronous);
 
 		IsReadOnly = true;
 		SetAttributes(_filename, true);
@@ -448,7 +448,9 @@ public partial class TFChunk : IDisposable {
 
 	private FileOptions WritableHandleOptions {
 		get {
-			var options = _reduceFileCachePressure ? FileOptions.None : FileOptions.RandomAccess;
+			var options = _reduceFileCachePressure
+				? FileOptions.Asynchronous
+				: FileOptions.RandomAccess | FileOptions.Asynchronous;
 			if (_writeThrough)
 				options |= FileOptions.WriteThrough;
 
