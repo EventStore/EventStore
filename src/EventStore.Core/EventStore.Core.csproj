@@ -37,7 +37,7 @@
 		<PackageReference Include="DotNext.Threading" Version="5.15.0" />
 		<PackageReference Include="DotNext.Unsafe" Version="5.14.0" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-		<PackageReference Include="System.Threading.Channels" Version="9.0.0-rc.2.24473.5" />
+		<PackageReference Include="System.Threading.Channels" Version="9.0.0" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />

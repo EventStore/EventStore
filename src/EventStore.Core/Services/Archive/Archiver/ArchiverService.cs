@@ -55,7 +55,6 @@ public class ArchiverService :
 			});
 
 		Subscribe();
-		Start();
 	}
 
 	private void Subscribe() {
@@ -65,10 +64,6 @@ public class ArchiverService :
 		_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(this);
 		_mainBus.Subscribe<SystemMessage.SystemStart>(this);
 		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
-	}
-
-	private void Start() {
-		Task.Run(() => ArchiveChunks(_cts.Token), _cts.Token);
 	}
 
 	public void Handle(SystemMessage.ChunkLoaded message) {
@@ -98,7 +93,10 @@ public class ArchiverService :
 	}
 
 	public void Handle(SystemMessage.SystemStart message) {
-		Task.Run(() => ScheduleExistingChunksForArchiving(_cts.Token), _cts.Token);
+		Task.Run(async () => {
+			await ScheduleExistingChunksForArchiving(_cts.Token);
+			await ArchiveChunks(_cts.Token);
+		}, _cts.Token);
 	}
 
 	public void Handle(SystemMessage.BecomeShuttingDown message) {
