@@ -56,6 +56,7 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 		LogicalDataSize = logicalDataSize;
 		MapSize = mapSize;
 
+		Unsafe.SkipInit(out _checksum); // fix for Qodana false positive about init of readonly field
 		md5Hash.CopyTo(_checksum);
 
 		var posMapSize = isMap12Bytes ? PosMap.FullSize : PosMap.DeprecatedSize;
