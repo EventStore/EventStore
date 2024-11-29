@@ -797,8 +797,8 @@ public partial class TFChunk : IDisposable {
 
 		token.ThrowIfCancellationRequested();
 		var workItem = _writerWorkItem;
-		var buffer = workItem.Buffer;
 		var bufferWriter = workItem.BufferWriter;
+		var buffer = bufferWriter.BaseStream;
 
 		buffer.SetLength(4);
 		buffer.Position = 4;
@@ -811,7 +811,9 @@ public partial class TFChunk : IDisposable {
 		if (workItem.WorkingStream.Position + length + 2 * sizeof(int) > ChunkHeader.Size + _chunkHeader.ChunkSize)
 			return RecordWriteResult.Failed(GetDataPosition(workItem));
 
-		var oldPosition = WriteRawData(workItem, buffer);
+		var oldPosition = GetDataPosition(workItem);
+		await workItem.AppendData(workItem.WrittenBuffer, token);
+
 		_physicalDataSize = (int)GetDataPosition(workItem); // should fit 32 bits
 		_logicalDataSize = ChunkHeader.GetLocalLogPosition(record.LogPosition + length + 2 * sizeof(int));
 
@@ -819,9 +821,8 @@ public partial class TFChunk : IDisposable {
 		// for scavenged chunk _logicalDataSize should be at least the same as _physicalDataSize
 		if ((!ChunkHeader.IsScavenged && _logicalDataSize != _physicalDataSize)
 		    || (ChunkHeader.IsScavenged && _logicalDataSize < _physicalDataSize)) {
-			throw new Exception(string.Format(
-				"Data sizes violation. Chunk: {0}, IsScavenged: {1}, LogicalDataSize: {2}, PhysicalDataSize: {3}.",
-				FileName, ChunkHeader.IsScavenged, _logicalDataSize, _physicalDataSize));
+			throw new Exception(
+				$"Data sizes violation. Chunk: {FileName}, IsScavenged: {ChunkHeader.IsScavenged}, LogicalDataSize: {_logicalDataSize}, PhysicalDataSize: {_physicalDataSize}.");
 		}
 
 		return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
@@ -832,21 +833,8 @@ public partial class TFChunk : IDisposable {
 		var workItem = _writerWorkItem;
 		if (workItem.WorkingStream.Position + buffer.Length > workItem.WorkingStream.Length)
 			return false;
-		WriteRawData(workItem, buffer);
+		await workItem.AppendData(buffer, token);
 		return true;
-	}
-
-	private static long WriteRawData(WriterWorkItem workItem, MemoryStream buffer) {
-		var len = (int)buffer.Length;
-		var buf = buffer.GetBuffer();
-		return WriteRawData(workItem, buf.AsMemory(0, len));
-	}
-
-	private static long WriteRawData(WriterWorkItem workItem, ReadOnlyMemory<byte> buf) {
-		var curPos = GetDataPosition(workItem);
-		// the writer work item's stream is responsible for updating the checksum
-		workItem.AppendData(buf);
-		return curPos;
 	}
 
 	public ValueTask Flush(CancellationToken token) {
@@ -940,13 +928,13 @@ public partial class TFChunk : IDisposable {
 			}
 
 			mapSize = mapping.Count * PosMap.FullSize;
-			workItem.Buffer.SetLength(mapSize);
-			workItem.Buffer.Position = 0;
+			workItem.BufferWriter.BaseStream.SetLength(mapSize);
+			workItem.BufferWriter.BaseStream.Position = 0;
 			foreach (var map in mapping) {
 				map.Write(workItem.BufferWriter);
 			}
 
-			WriteRawData(workItem, workItem.Buffer);
+			await workItem.AppendData(workItem.WrittenBuffer, token);
 		}
 
 		workItem.FlushToDisk();
