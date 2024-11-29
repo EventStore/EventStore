@@ -3,6 +3,11 @@
 
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext.Buffers;
+using DotNext.Buffers.Binary;
+using DotNext.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
@@ -26,42 +31,41 @@ public abstract class LogRecord : ILogRecord {
 		return logicalPosition - length - 2 * sizeof(int);
 	}
 
-	public static ILogRecord ReadFrom(BinaryReader reader, int length) {
-		var recordType = (LogRecordType)reader.ReadByte();
-		var version = reader.ReadByte();
+	public static async ValueTask<ILogRecord> ReadFrom(IAsyncBinaryReader reader, int length, CancellationToken token) {
+		var header = await reader.ReadAsync<Header>(token);
 
-		static long ReadPosition(BinaryReader reader) {
-			var logPosition = reader.ReadInt64();
-			Ensure.Nonnegative(logPosition, "logPosition");
-			return logPosition;
-		}
-
-		switch (recordType) {
+		switch (header.Type) {
 			case LogRecordType.Prepare:
-				return new PrepareLogRecord(reader, version, ReadPosition(reader));
+				var logPosition = await reader.ReadLittleEndianAsync<long>(token);
+				Ensure.Nonnegative(logPosition, nameof(logPosition));
+				return await PrepareLogRecord.ParseAsync(reader, header.Version, logPosition, token);
 			case LogRecordType.Commit:
-				return new CommitLogRecord(reader, version, ReadPosition(reader));
+				logPosition = await reader.ReadLittleEndianAsync<long>(token);
+				Ensure.Nonnegative(logPosition, nameof(logPosition));
+				return await CommitLogRecord.ParseAsync(reader, header.Version, logPosition, token);
 			case LogRecordType.System:
-				if (version > SystemLogRecord.SystemRecordVersion)
-					return new LogV3EpochLogRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
+				if (header.Version > SystemLogRecord.SystemRecordVersion)
+					return new LogV3EpochLogRecord(await LogV3Reader.ReadBytes(header.Type, header.Version, reader, length, token));
 
-				return new SystemLogRecord(reader, version, ReadPosition(reader));
+				logPosition = await reader.ReadLittleEndianAsync<long>(token);
+				Ensure.Nonnegative(logPosition, nameof(logPosition));
+				return await SystemLogRecord.ParseAsync(reader, header.Version, logPosition, token);
 
 			case LogRecordType.StreamWrite:
-				return new LogV3StreamWriteRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
+				return new LogV3StreamWriteRecord(await LogV3Reader.ReadBytes(header.Type, header.Version, reader, length, token));
 
 			case LogRecordType.Stream:
-				return new LogV3StreamRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
+				return new LogV3StreamRecord(await LogV3Reader.ReadBytes(header.Type, header.Version, reader, length, token));
 
 			case LogRecordType.EventType:
-				return new LogV3EventTypeRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
+				return new LogV3EventTypeRecord(await LogV3Reader.ReadBytes(header.Type, header.Version, reader, length, token));
 
 			case LogRecordType.PartitionType:
-				return new PartitionTypeLogRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
-			
+				return new PartitionTypeLogRecord(await LogV3Reader.ReadBytes(header.Type, header.Version, reader, length, token));
+
 			case LogRecordType.Partition:
-				return new PartitionLogRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
-			
+				return new PartitionLogRecord(await LogV3Reader.ReadBytes(header.Type, header.Version, reader, length, token));
+
 			default:
 				throw new ArgumentOutOfRangeException("recordType");
 		}
@@ -143,5 +147,27 @@ public abstract class LogRecord : ILogRecord {
 			WriteTo(new BinaryWriter(memoryStream));
 			return 8 + (int)memoryStream.Length;
 		}
+	}
+
+	private readonly struct Header : IBinaryFormattable<Header> {
+		private const int Size = sizeof(LogRecordType) + sizeof(byte);
+		internal readonly LogRecordType Type;
+		internal readonly byte Version;
+
+		private Header(ReadOnlySpan<byte> input) {
+			// Perf: Read the span from the last element to have just one range check inserted by JIT
+			Version = input[1];
+			Type = (LogRecordType)input[0];
+		}
+
+		public void Format(Span<byte> output) {
+			output[1] = Version;
+			output[0] = (byte)Type;
+		}
+
+		static int IBinaryFormattable<Header>.Size => Size;
+
+		static Header IBinaryFormattable<Header>.Parse(ReadOnlySpan<byte> input)
+			=> new(input);
 	}
 }

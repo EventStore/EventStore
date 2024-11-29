@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Validation;
 using EventStore.Core.TransactionLog.Chunks;
@@ -36,18 +37,18 @@ public class when_truncating_against_max_truncation_config : SpecificationWithDi
 
 	[Test]
 	public void truncate_above_max_throws_exception() {
-		Assert.Throws<Exception>(() => {
+		Assert.ThrowsAsync<Exception>(async () => {
 			var truncator = new TFChunkDbTruncator(_config, _ => new IdentityChunkTransformFactory());
-			truncator.TruncateDb(0);
+			await truncator.TruncateDb(0, CancellationToken.None);
 		});
 	}
 
 	[Test]
 	public void truncate_within_max_does_not_throw_exception() {
 
-		Assert.DoesNotThrow(() => {
+		Assert.DoesNotThrowAsync(async () => {
 			var truncator = new TFChunkDbTruncator(_config, _ => new IdentityChunkTransformFactory());
-			truncator.TruncateDb(4800);
+			await truncator.TruncateDb(4800 ,CancellationToken.None);
 		});
 	}
 }

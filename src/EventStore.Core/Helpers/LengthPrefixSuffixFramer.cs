@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Transport.Tcp.Framing;
@@ -13,7 +14,7 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Helpers;
 
-public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<BinaryReader> {
+public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<IAsyncBinaryReader> {
 	private static readonly ILogger Log = Serilog.Log.ForContext<LengthPrefixSuffixFramer>();
 
 	private const int PrefixLength = sizeof(int);
@@ -23,10 +24,10 @@ public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<BinaryReader>
 	}
 
 	private readonly int _maxPackageSize;
-	private Func<BinaryReader, CancellationToken, ValueTask> _packageHandler = static (_, _) => ValueTask.CompletedTask;
+	private Func<IAsyncBinaryReader, CancellationToken, ValueTask> _packageHandler = static (_, _) => ValueTask.CompletedTask;
 
 	private readonly MemoryStream _memStream;
-	private readonly BinaryReader _binaryReader;
+	private readonly IAsyncBinaryReader _binaryReader;
 
 	private int _prefixBytes;
 	private int _packageLength;
@@ -36,7 +37,7 @@ public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<BinaryReader>
 
 		_maxPackageSize = maxPackageSize;
 		_memStream = new MemoryStream();
-		_binaryReader = new BinaryReader(_memStream);
+		_binaryReader = IAsyncBinaryReader.Create(_memStream, new byte[512]);
 	}
 
 	public void Reset() {
@@ -53,7 +54,7 @@ public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<BinaryReader>
 		}
 	}
 
-	public void RegisterMessageArrivedCallback(Func<BinaryReader, CancellationToken, ValueTask> packageHandler) {
+	public void RegisterMessageArrivedCallback(Func<IAsyncBinaryReader, CancellationToken, ValueTask> packageHandler) {
 		Ensure.NotNull(packageHandler, nameof(packageHandler));
 		_packageHandler = packageHandler;
 	}

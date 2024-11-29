@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
@@ -14,7 +16,7 @@ namespace EventStore.Core.Tests.TransactionLog;
 public class with_tfchunk_enumerator : SpecificationWithDirectory {
 
 	[Test]
-	public void iterates_chunks_with_correct_callback_order() {
+	public async Task iterates_chunks_with_correct_callback_order() {
 		File.Create(GetFilePathFor("foo")).Close(); // should be ignored
 		File.Create(GetFilePathFor("bla")).Close(); // should be ignored
 		File.Create(GetFilePathFor("chunk-000001.000000.tmp")).Close(); // should be ignored
@@ -37,21 +39,21 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 		var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
 		var chunkEnumerator = new TFChunkEnumerator(strategy);
 		var result = new List<string>();
-		int GetNextFileNumber((string chunk, int chunkNumber, int chunkVersion) t) {
-			return Path.GetFileName(t.chunk) switch {
-				"chunk-000001.000000" => 2,
-				"chunk-000002.000001" => 3,
-				"chunk-000005.000000" => 6,
-				"chunk-000005.000001" => 7,
-				"chunk-000005.000002" => 8,
-				"chunk-000006.000000" => 7,
-				"chunk-000008.000007" => 9,
-				"chunk-000010.000005" => 15,
-				_ => throw new Exception($"Unexpected file: {t.chunk}")
+		ValueTask<int> GetNextFileNumber(string chunk, int chunkNumber, int chunkVersion, CancellationToken token) {
+			return Path.GetFileName(chunk) switch {
+				"chunk-000001.000000" => new(2),
+				"chunk-000002.000001" => new(3),
+				"chunk-000005.000000" => new(6),
+				"chunk-000005.000001" => new(7),
+				"chunk-000005.000002" => new(8),
+				"chunk-000006.000000" => new(7),
+				"chunk-000008.000007" => new(9),
+				"chunk-000010.000005" => new(15),
+				_ => ValueTask.FromException<int>(new Exception($"Unexpected file: {chunk}"))
 			};
 		}
 
-		foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(16, GetNextFileNumber)) {
+		await foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(16, GetNextFileNumber)) {
 			switch (chunkInfo) {
 				case LatestVersion(var fileName, var start, var end):
 					result.Add($"latest {Path.GetFileName(fileName)} {start}-{end}");

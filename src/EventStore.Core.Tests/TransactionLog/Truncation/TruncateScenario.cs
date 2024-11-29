@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog.Chunks;
@@ -35,7 +36,7 @@ public abstract class TruncateScenario<TLogFormat, TStreamId> : ReadIndexTestSce
 		await Db.DisposeAsync();
 
 		var truncator = new TFChunkDbTruncator(Db.Config, _ => new IdentityChunkTransformFactory());
-		truncator.TruncateDb(TruncateCheckpoint);
+		await truncator.TruncateDb(TruncateCheckpoint, CancellationToken.None);
 	}
 
 	protected virtual void OnBeforeTruncating() {

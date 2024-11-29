@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Validation;
 using EventStore.Core.TransactionLog.Chunks;
@@ -31,7 +32,7 @@ public class when_truncating_to_a_scavenged_chunk_boundary : SpecificationWithDi
 		DbUtil.CreateOngoingChunk(_config, 5, GetFilePathFor("chunk-000005.000000"));
 
 		var truncator = new TFChunkDbTruncator(_config, _ => new IdentityChunkTransformFactory());
-		truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed());
+		await truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed(), CancellationToken.None);
 	}
 
 	[OneTimeTearDown]

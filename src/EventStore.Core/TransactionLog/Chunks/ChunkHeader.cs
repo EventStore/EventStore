@@ -5,11 +5,14 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using DotNext.Buffers;
 using DotNext.Buffers.Binary;
+using DotNext.IO;
 using EventStore.Plugins.Transforms;
 using ChunkVersions = EventStore.Core.TransactionLog.Chunks.TFChunk.TFChunk.ChunkVersions;
 
@@ -80,7 +83,6 @@ public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 		ChunkId = new(reader.Read(16));
 
 		Version = reader.Read();
-		Debug.Assert(Version >= 0);
 
 		if (Version == 0)
 			Version = MinCompatibleVersion;
@@ -131,11 +133,9 @@ public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 		return array;
 	}
 
-	[SkipLocalsInit]
-	public static ChunkHeader FromStream(Stream stream) {
-		Span<byte> buffer = stackalloc byte[Size];
-		stream.ReadExactly(buffer);
-		return new(buffer);
+	public static async ValueTask<ChunkHeader> FromStream(Stream stream, CancellationToken token) {
+		using var buffer = Memory.AllocateExactly<byte>(Size);
+		return await stream.ReadAsync<ChunkHeader>(buffer.Memory, token);
 	}
 
 	public long GetLocalLogPosition(long globalLogicalPosition) {

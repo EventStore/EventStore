@@ -3,6 +3,10 @@
 
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext.Buffers.Binary;
+using DotNext.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Helpers;
 using EventStore.LogCommon;
@@ -12,11 +16,11 @@ namespace EventStore.Core.TransactionLog.LogRecords;
 public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 	public const byte CommitRecordVersion = 1;
 
-	public readonly long TransactionPosition;
-	public readonly long FirstEventNumber;
-	public readonly long SortKey;
-	public readonly Guid CorrelationId;
-	public readonly DateTime TimeStamp;
+	public long TransactionPosition { get; private init; }
+	public long FirstEventNumber { get; private init; }
+	public long SortKey { get; private init; }
+	public Guid CorrelationId { get; private init; }
+	public DateTime TimeStamp { get; private init; }
 
 	public CommitLogRecord(long logPosition,
 		Guid correlationId,
@@ -36,23 +40,28 @@ public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 		TimeStamp = timeStamp;
 	}
 
-	internal CommitLogRecord(BinaryReader reader, byte version, long logPosition) : base(LogRecordType.Commit,
-		version, logPosition) {
-		if (version != LogRecordVersion.LogRecordV0 && version != LogRecordVersion.LogRecordV1)
+	private CommitLogRecord(byte version, long logPosition)
+		: base(LogRecordType.Commit, version, logPosition) {
+
+		if (version is not LogRecordVersion.LogRecordV0 and not LogRecordVersion.LogRecordV1)
 			throw new ArgumentException(
 				string.Format("CommitRecord version {0} is incorrect. Supported version: {1}.", version,
 					CommitRecordVersion));
+	}
 
-		TransactionPosition = reader.ReadInt64();
-		FirstEventNumber = version == LogRecordVersion.LogRecordV0 ? reader.ReadInt32() : reader.ReadInt64();
+	internal static async ValueTask<CommitLogRecord> ParseAsync(IAsyncBinaryReader reader, byte version, long logPosition, CancellationToken token) {
+		return new(version, logPosition) {
+			TransactionPosition = await reader.ReadLittleEndianAsync<long>(token),
+			FirstEventNumber = version is LogRecordVersion.LogRecordV0
+				? AdjustVersion(await reader.ReadLittleEndianAsync<int>(token))
+				: await reader.ReadLittleEndianAsync<long>(token),
+			SortKey = await reader.ReadLittleEndianAsync<long>(token),
+			CorrelationId = (await reader.ReadAsync<Blittable<Guid>>(token)).Value,
+			TimeStamp = new(await reader.ReadLittleEndianAsync<long>(token)),
+		};
 
-		if (version == LogRecordVersion.LogRecordV0) {
-			FirstEventNumber = FirstEventNumber == int.MaxValue ? long.MaxValue : FirstEventNumber;
-		}
-
-		SortKey = reader.ReadInt64();
-		CorrelationId = new Guid(reader.ReadBytes(16));
-		TimeStamp = new DateTime(reader.ReadInt64());
+		static long AdjustVersion(int version)
+			=> version is int.MaxValue ? long.MaxValue : version;
 	}
 
 	public override void WriteTo(BinaryWriter writer) {

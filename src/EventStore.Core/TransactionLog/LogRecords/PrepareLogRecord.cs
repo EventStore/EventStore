@@ -5,8 +5,14 @@ using System;
 using System.IO;
 using System.Numerics;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using DotNext.Buffers.Binary;
+using DotNext.IO;
+using DotNext.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Util;
 using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords;
@@ -47,20 +53,20 @@ public static class PrepareFlagsExtensions {
 public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepareLogRecord<string> {
 	public const byte PrepareRecordVersion = 1;
 
-	public PrepareFlags Flags { get; }
-	public long TransactionPosition { get; }
-	public int TransactionOffset { get; }
-	public long ExpectedVersion { get; } // if IsCommitted is set, this is final EventNumber
-	public string EventStreamId { get; }
+	public PrepareFlags Flags { get; private init; }
+	public long TransactionPosition { get; private init; }
+	public int TransactionOffset { get; private init; }
+	public long ExpectedVersion { get; private init; } // if IsCommitted is set, this is final EventNumber
+	public string EventStreamId { get; private init; }
 	private int? _eventStreamIdSize;
-	public Guid EventId { get; }
-	public Guid CorrelationId { get; }
-	public DateTime TimeStamp { get; }
-	public string EventType { get; }
+	public Guid EventId { get; private init; }
+	public Guid CorrelationId { get; private init; }
+	public DateTime TimeStamp { get; private init; }
+	public string EventType { get; private init; }
 	private int? _eventTypeSize;
-	public ReadOnlyMemory<byte> Data { get; }
-	private readonly ReadOnlyMemory<byte> _dataOnDisk;
-	public ReadOnlyMemory<byte> Metadata { get; }
+	public ReadOnlyMemory<byte> Data => Flags.HasFlag(PrepareFlags.IsRedacted) ? NoData : _dataOnDisk;
+	private ReadOnlyMemory<byte> _dataOnDisk;
+	public ReadOnlyMemory<byte> Metadata { get; private init; }
 
 	private int? _sizeOnDisk;
 
@@ -164,39 +170,48 @@ public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepar
 		EventType = eventType ?? string.Empty;
 		_eventTypeSize = eventTypeSize;
 		_dataOnDisk = data;
-		Data = Flags.HasFlag(PrepareFlags.IsRedacted) ? NoData : _dataOnDisk;
 		Metadata = metadata;
 		if (InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
 	}
 
-	internal PrepareLogRecord(BinaryReader reader, byte version, long logPosition) : base(LogRecordType.Prepare,
-		version, logPosition) {
-		if (version != LogRecordVersion.LogRecordV0 && version != LogRecordVersion.LogRecordV1)
+	private PrepareLogRecord(byte version, long logPosition)
+		: base(LogRecordType.Prepare, version, logPosition) {
+
+		if (version is not LogRecordVersion.LogRecordV0 and not LogRecordVersion.LogRecordV1)
 			throw new ArgumentException(string.Format(
 				"PrepareRecord version {0} is incorrect. Supported version: {1}.", version, PrepareRecordVersion));
+	}
 
-		Flags = (PrepareFlags)reader.ReadUInt16();
-		TransactionPosition = reader.ReadInt64();
-		TransactionOffset = reader.ReadInt32();
-		ExpectedVersion = version == LogRecordVersion.LogRecordV0 ? reader.ReadInt32() : reader.ReadInt64();
+	internal static async ValueTask<PrepareLogRecord> ParseAsync(IAsyncBinaryReader reader, byte version,
+		long logPosition, CancellationToken token) {
+		var context = new DecodingContext(Encoding.UTF8, reuseDecoder: true);
 
-		if (version == LogRecordVersion.LogRecordV0) {
-			ExpectedVersion = ExpectedVersion == int.MaxValue - 1 ? long.MaxValue - 1 : ExpectedVersion;
-		}
+		var record = new PrepareLogRecord(version, logPosition) {
+			Flags = (PrepareFlags)await reader.ReadLittleEndianAsync<ushort>(token),
+			TransactionPosition = await reader.ReadLittleEndianAsync<long>(token),
+			TransactionOffset = await reader.ReadLittleEndianAsync<int>(token),
+			ExpectedVersion = version is LogRecordVersion.LogRecordV0
+				? AdjustVersion(await reader.ReadLittleEndianAsync<int>(token))
+				: await reader.ReadLittleEndianAsync<long>(token),
+			EventStreamId = await reader.ReadStringAsync(context, token),
+			EventId = (await reader.ReadAsync<Blittable<Guid>>(token)).Value,
+			CorrelationId = (await reader.ReadAsync<Blittable<Guid>>(token)).Value,
+			TimeStamp = new(await reader.ReadLittleEndianAsync<long>(token)),
+			EventType = await reader.ReadStringAsync(context, token),
+			_dataOnDisk = await reader.ReadLittleEndianAsync<int>(token) is var dataCount && dataCount > 0
+				? await reader.ReadBytesAsync(dataCount, token)
+				: NoData,
+			Metadata = await reader.ReadLittleEndianAsync<int>(token) is var metadataCount && metadataCount > 0
+				? await reader.ReadBytesAsync(metadataCount, token)
+				: NoData,
+		};
 
-		EventStreamId = reader.ReadString();
-		EventId = new Guid(reader.ReadBytes(16));
-		CorrelationId = new Guid(reader.ReadBytes(16));
-		TimeStamp = new DateTime(reader.ReadInt64());
-		EventType = reader.ReadString();
+		if (record.InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
 
-		var dataCount = reader.ReadInt32();
-		_dataOnDisk = dataCount == 0 ? NoData : reader.ReadBytes(dataCount);
-		Data = Flags.HasFlag(PrepareFlags.IsRedacted) ? NoData : _dataOnDisk;
+		return record;
 
-		var metadataCount = reader.ReadInt32();
-		Metadata = metadataCount == 0 ? NoData : reader.ReadBytes(metadataCount);
-		if (InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
+		static long AdjustVersion(int version)
+			=> version is int.MaxValue - 1 ? long.MaxValue - 1L : version;
 	}
 
 	public IPrepareLogRecord<string> CopyForRetry(long logPosition, long transactionPosition) {

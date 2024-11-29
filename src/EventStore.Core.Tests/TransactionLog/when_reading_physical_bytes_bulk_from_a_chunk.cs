@@ -1,9 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog;
@@ -16,7 +15,7 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 		using (var reader = chunk.AcquireRawReader()) {
 			chunk.MarkForDeletion();
 			var buffer = new byte[1024];
-			var result = reader.ReadNextBytes(1024, buffer);
+			var result = await reader.ReadNextBytes(buffer, CancellationToken.None);
 			Assert.IsFalse(result.IsEOF);
 			Assert.AreEqual(1024, result.BytesRead);
 		}
@@ -29,7 +28,7 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 		var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
 		using (var reader = chunk.AcquireRawReader()) {
 			var buffer = new byte[1024];
-			var result = reader.ReadNextBytes(1024, buffer);
+			var result = await reader.ReadNextBytes(buffer, CancellationToken.None);
 			Assert.IsFalse(result.IsEOF);
 			Assert.AreEqual(1024, result.BytesRead);
 		}
@@ -76,7 +75,7 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 		var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 3000);
 		using (var reader = chunk.AcquireRawReader()) {
 			var buffer = new byte[1024];
-			var result = reader.ReadNextBytes(3000, buffer);
+			var result = await reader.ReadNextBytes(buffer, CancellationToken.None);
 			Assert.IsFalse(result.IsEOF);
 			Assert.AreEqual(1024, result.BytesRead);
 		}
@@ -90,7 +89,7 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 		var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
 		using (var reader = chunk.AcquireRawReader()) {
 			var buffer = new byte[8092];
-			var result = reader.ReadNextBytes(8092, buffer);
+			var result = await reader.ReadNextBytes(buffer, CancellationToken.None);
 			Assert.IsTrue(result.IsEOF);
 			Assert.AreEqual(4096, result.BytesRead); //does not includes header and footer space
 		}

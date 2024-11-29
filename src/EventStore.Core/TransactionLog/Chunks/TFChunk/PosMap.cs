@@ -4,8 +4,11 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using DotNext.Buffers;
 using DotNext.Buffers.Binary;
+using DotNext.IO;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
@@ -38,24 +41,11 @@ public struct PosMap : IBinaryFormattable<PosMap> {
 	public static PosMap FromNewFormat(ReadOnlySpan<byte> source)
 		=> new(source);
 
-	public static PosMap FromNewFormat(BinaryReader reader) {
-		var actualPos = reader.ReadInt32();
-		var logPos = reader.ReadInt64();
-		return new PosMap(logPos, actualPos);
-	}
-
-	public static PosMap FromOldFormat(ReadOnlySpan<byte> source) {
-		SpanReader<byte> reader = new(source);
-		var posmap = reader.ReadLittleEndian<ulong>();
+	public static async ValueTask<PosMap> FromOldFormat(IAsyncBinaryReader reader, CancellationToken token) {
+		var posmap = await reader.ReadLittleEndianAsync<ulong>(token);
 		var logPos = (int)(posmap >>> 32);
 		var actualPos = (int)(posmap & 0xFFFFFFFF);
 		return new(logPos, actualPos);
-	}
-
-	public static PosMap FromOldFormat(BinaryReader reader) {
-		Span<byte> buffer = stackalloc byte[DeprecatedSize];
-		var bytesRead = reader.Read(buffer);
-		return FromOldFormat(buffer.Slice(0, bytesRead));
 	}
 
 	public readonly void Write(BinaryWriter writer) {
