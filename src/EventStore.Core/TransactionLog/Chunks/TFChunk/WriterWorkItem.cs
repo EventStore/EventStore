@@ -2,8 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Buffers;
-using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -12,12 +10,16 @@ using System.Threading.Tasks;
 using DotNext;
 using DotNext.IO;
 using EventStore.Plugins.Transforms;
+using Microsoft.IO;
 using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 internal sealed class WriterWorkItem : Disposable {
 	public const int BufferSize = 8192;
+
+	// Remove buffer for writes in future
+	private static readonly RecyclableMemoryStreamManager StreamManager = new();
 
 	public Stream WorkingStream { get; private set; }
 
@@ -35,7 +37,7 @@ internal sealed class WriterWorkItem : Disposable {
 
 		var chunkDataWriteStream = new ChunkDataWriteStream(memStream, md5);
 		WorkingStream = _memStream = chunkWriteTransform.TransformData(chunkDataWriteStream);
-		BufferWriter = new(new MemoryStream(BufferSize), Encoding.UTF8, leaveOpen: false);
+		BufferWriter = new(StreamManager.GetStream(), Encoding.UTF8, leaveOpen: false);
 		MD5 = md5;
 	}
 
@@ -48,7 +50,7 @@ internal sealed class WriterWorkItem : Disposable {
 		var chunkDataWriteStream = new ChunkDataWriteStream(fileStream, md5);
 
 		WorkingStream = _fileStream = chunkWriteTransform.TransformData(chunkDataWriteStream);
-		BufferWriter = new(new MemoryStream(BufferSize), Encoding.UTF8, leaveOpen: false);
+		BufferWriter = new(StreamManager.GetStream(), Encoding.UTF8, leaveOpen: false);
 		MD5 = md5;
 	}
 
