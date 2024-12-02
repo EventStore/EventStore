@@ -814,7 +814,7 @@ public partial class TFChunk : IDisposable {
 			return RecordWriteResult.Failed(GetDataPosition(workItem));
 
 		var oldPosition = GetDataPosition(workItem);
-		await workItem.AppendData(workItem.WrittenBuffer, token);
+		await workItem.DrainBufferAsync(token);
 
 		_physicalDataSize = (int)GetDataPosition(workItem); // should fit 32 bits
 		_logicalDataSize = ChunkHeader.GetLocalLogPosition(record.LogPosition + length + 2 * sizeof(int));
@@ -936,7 +936,7 @@ public partial class TFChunk : IDisposable {
 				map.Write(workItem.BufferWriter);
 			}
 
-			await workItem.AppendData(workItem.WrittenBuffer, token);
+			await workItem.DrainBufferAsync(token);
 		}
 
 		workItem.FlushToDisk();

@@ -2,9 +2,9 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 using DotNext;
 using DotNext.IO;
 using EventStore.Plugins.Transforms;
-using Microsoft.IO;
 using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -53,15 +52,6 @@ internal sealed class WriterWorkItem : Disposable {
 		MD5 = md5;
 	}
 
-	public ReadOnlyMemory<byte> WrittenBuffer {
-		get {
-			Debug.Assert(BufferWriter.BaseStream is MemoryStream);
-
-			var stream = Unsafe.As<MemoryStream>(BufferWriter.BaseStream);
-			return new(stream.GetBuffer(), 0, (int)stream.Length);
-		}
-	}
-
 	public void SetMemStream(UnmanagedMemoryStream memStream) {
 		_memStream = memStream;
 		if (_fileStream is null)
@@ -74,6 +64,21 @@ internal sealed class WriterWorkItem : Disposable {
 
 		// as we are always append-only, stream's position should be right here
 		return _fileStream?.WriteAsync(buf, token) ?? ValueTask.CompletedTask;
+	}
+
+	public ValueTask DrainBufferAsync(CancellationToken token) {
+		var task = ValueTask.CompletedTask;
+		if (_memStream is not null) {
+			BufferWriter.BaseStream.Position = 0L;
+			BufferWriter.BaseStream.CopyTo(_memStream);
+		}
+
+		if (_fileStream is not null) {
+			BufferWriter.BaseStream.Position = 0L;
+			task = new(BufferWriter.BaseStream.CopyToAsync(_fileStream, token));
+		}
+
+		return task;
 	}
 
 	public void ResizeStream(int fileSize) {
