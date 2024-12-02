@@ -108,10 +108,7 @@ public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 		writer.WriteLittleEndian(ChunkStartNumber);
 		writer.WriteLittleEndian(ChunkEndNumber);
 		writer.WriteLittleEndian<int>(Unsafe.BitCast<bool, byte>(IsScavenged));
-
-		Span<byte> guidBuffer = stackalloc byte[16];
-		ChunkId.TryWriteBytes(guidBuffer);
-		writer.Write(guidBuffer);
+		ChunkId.TryWriteBytes(writer.Slide(16));
 
 		if (Version >= (byte)ChunkVersions.Transformed)
 			// we started to use this byte of the chunk header to store `Version` as from `ChunkVersions.Transformed`
