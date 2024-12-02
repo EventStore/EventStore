@@ -18,8 +18,6 @@ namespace EventStore.Core.TransactionLog.Chunks;
 
 // TODO: Consider struct instead of class
 public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
-	private static readonly MD5HashBuffer EmptyHash = new();
-
 	public const int Size = TFConsts.ChunkFooterSize;
 	public const int ChecksumSize = 16;
 
@@ -36,20 +34,25 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 
 	public readonly int MapSize;
 
-	public ReadOnlySpan<byte> MD5Hash => _checksum;
+	public ReadOnlySpan<byte> MD5Hash {
+		get => _checksum;
+		init
+		{
+			ArgumentOutOfRangeException.ThrowIfNotEqual(value.Length, ChecksumSize);
+
+			value.CopyTo(_checksum);
+		}
+	}
 
 	public readonly int MapCount; // calculated, not stored
 
-	public ChunkFooter(bool isCompleted, bool isMap12Bytes, int physicalDataSize, long logicalDataSize, int mapSize,
-		ReadOnlySpan<byte> md5Hash) {
+	public ChunkFooter(bool isCompleted, bool isMap12Bytes, int physicalDataSize, long logicalDataSize, int mapSize) {
 		Ensure.Nonnegative(physicalDataSize, nameof(physicalDataSize));
 		Ensure.Nonnegative(logicalDataSize, nameof(logicalDataSize));
 		if (logicalDataSize < physicalDataSize)
 			throw new ArgumentOutOfRangeException(nameof(logicalDataSize),
 				$"LogicalDataSize {logicalDataSize} is less than PhysicalDataSize {physicalDataSize}");
 		Ensure.Nonnegative(mapSize, "mapSize");
-		if (md5Hash.Length != ChecksumSize)
-			throw new ArgumentException("MD5Hash is of wrong length.", nameof(md5Hash));
 
 		IsCompleted = isCompleted;
 		IsMap12Bytes = isMap12Bytes;
@@ -59,12 +62,10 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 		MapSize = mapSize;
 
 		Unsafe.SkipInit(out _checksum); // fix for Qodana false positive about init of readonly field
-		md5Hash.CopyTo(_checksum);
 
 		var posMapSize = isMap12Bytes ? PosMap.FullSize : PosMap.DeprecatedSize;
-		if (MapSize % posMapSize != 0)
-			throw new Exception(string.Format("Wrong MapSize {0} -- not divisible by PosMap.Size {1}.", MapSize,
-				posMapSize));
+		if (MapSize % posMapSize is not 0)
+			throw new Exception($"Wrong MapSize {MapSize} -- not divisible by PosMap.Size {posMapSize}.");
 		MapCount = mapSize / posMapSize;
 	}
 
@@ -87,8 +88,7 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 
 		var posMapSize = IsMap12Bytes ? PosMap.FullSize : PosMap.DeprecatedSize;
 		if (MapSize % posMapSize is not 0) {
-			throw new Exception(string.Format("Wrong MapSize {0} -- not divisible by PosMap.Size {1}.", MapSize,
-				posMapSize));
+			throw new Exception($"Wrong MapSize {MapSize} -- not divisible by PosMap.Size {posMapSize}.");
 		}
 
 		MapCount = MapSize / posMapSize;
@@ -128,8 +128,6 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 		using var buffer = Memory.AllocateExactly<byte>(Size);
 		return await stream.ReadAsync<ChunkFooter>(buffer.Memory, token);
 	}
-
-	public static ReadOnlySpan<byte> EmptyHashBytes => EmptyHash;
 
 	[InlineArray(ChecksumSize)]
 	private struct MD5HashBuffer {

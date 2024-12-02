@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -949,16 +950,27 @@ public partial class TFChunk : IDisposable {
 
 		await Flush(token);
 
-		var footerNoHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize,
-			ChunkFooter.EmptyHashBytes);
+		var footerBuffer = ArrayPool<byte>.Shared.Rent(ChunkFooter.Size);
+		int fileSize;
+		ChunkFooter footerWithHash;
+		try {
+			var footerNoHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize);
 
-		//MD5
-		workItem.MD5.TransformFinalBlock(footerNoHash.AsByteArray(), 0,
-			ChunkFooter.Size - ChunkFooter.ChecksumSize);
-		//FILE
-		var footerWithHash =
-			new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5.Hash);
-		_transform.Write.WriteFooter(footerWithHash.AsByteArray(), out var fileSize);
+			//MD5
+			footerNoHash.Format(footerBuffer);
+			workItem.MD5.TransformFinalBlock(footerBuffer, 0,
+				ChunkFooter.Size - ChunkFooter.ChecksumSize);
+
+			//FILE
+			footerWithHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize) {
+				MD5Hash = workItem.MD5.Hash,
+			};
+
+			footerWithHash.Format(footerBuffer);
+			_transform.Write.WriteFooter(footerBuffer.AsSpan(0, ChunkFooter.Size), out fileSize);
+		} finally {
+			ArrayPool<byte>.Shared.Return(footerBuffer);
+		}
 
 		await Flush(token);
 
