@@ -99,7 +99,7 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 	public void Format(Span<byte> destination) {
 		Debug.Assert(destination.Length >= Size);
 
-		SpanWriter<byte> writer = new(destination);
+		SpanWriter<byte> writer = new(destination.Slice(0, Size));
 		int flags = Unsafe.BitCast<bool, byte>(IsCompleted)
 			| Unsafe.BitCast<bool, byte>(IsMap12Bytes) << 1;
 
@@ -111,7 +111,10 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 			writer.WriteLittleEndian((int)LogicalDataSize);
 
 		writer.WriteLittleEndian(MapSize);
-		writer.WrittenCount = Size - ChecksumSize;
+
+		// reserved bytes must be zero
+		writer.Slide(Size - writer.WrittenCount - ChecksumSize).Clear();
+
 		writer.Write(_checksum);
 	}
 

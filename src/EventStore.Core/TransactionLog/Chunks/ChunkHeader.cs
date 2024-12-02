@@ -62,13 +62,12 @@ public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 	public ChunkHeader(ReadOnlySpan<byte> source) {
 		Debug.Assert(source.Length >= Size);
 
-		SpanReader<byte> reader = new(source);
+		SpanReader<byte> reader = new(source.Slice(0, Size));
 
 		if ((FileType)reader.Read() is not FileType.ChunkFile)
 			throw new CorruptDatabaseException(new InvalidFileException());
 
 		MinCompatibleVersion = reader.Read();
-		Debug.Assert(MinCompatibleVersion >= 0);
 
 		ChunkSize = reader.ReadLittleEndian<int>();
 		Debug.Assert(ChunkSize >= 0);
@@ -84,7 +83,7 @@ public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 
 		Version = reader.Read();
 
-		if (Version == 0)
+		if (Version is 0)
 			Version = MinCompatibleVersion;
 		Debug.Assert(Version >= MinCompatibleVersion);
 
@@ -121,6 +120,9 @@ public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 
 		if (Version >= (byte)ChunkVersions.Transformed)
 			writer.Add((byte)TransformType);
+
+		// reserved bytes must be zero
+		writer.RemainingSpan.Clear();
 	}
 
 	static ChunkHeader IBinaryFormattable<ChunkHeader>.Parse(ReadOnlySpan<byte> source)
