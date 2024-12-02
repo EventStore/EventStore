@@ -18,6 +18,8 @@ namespace EventStore.Core.TransactionLog.Chunks;
 
 // TODO: Consider struct instead of class
 public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
+	private static readonly MD5HashBuffer EmptyHash = new();
+
 	public const int Size = TFConsts.ChunkFooterSize;
 	public const int ChecksumSize = 16;
 
@@ -126,6 +128,8 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 		using var buffer = Memory.AllocateExactly<byte>(Size);
 		return await stream.ReadAsync<ChunkFooter>(buffer.Memory, token);
 	}
+
+	public static ReadOnlySpan<byte> EmptyHashBytes => EmptyHash;
 
 	[InlineArray(ChecksumSize)]
 	private struct MD5HashBuffer {

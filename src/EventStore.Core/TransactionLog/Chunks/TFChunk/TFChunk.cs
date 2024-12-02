@@ -950,7 +950,8 @@ public partial class TFChunk : IDisposable {
 		await Flush(token);
 
 		var footerNoHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize,
-			new byte[ChunkFooter.ChecksumSize]);
+			ChunkFooter.EmptyHashBytes);
+
 		//MD5
 		workItem.MD5.TransformFinalBlock(footerNoHash.AsByteArray(), 0,
 			ChunkFooter.Size - ChunkFooter.ChecksumSize);
