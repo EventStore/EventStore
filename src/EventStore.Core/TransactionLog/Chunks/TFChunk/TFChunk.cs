@@ -930,8 +930,10 @@ public partial class TFChunk : IDisposable {
 			}
 
 			mapSize = mapping.Count * PosMap.FullSize;
-			workItem.BufferWriter.BaseStream.SetLength(mapSize);
-			workItem.BufferWriter.BaseStream.Position = 0;
+
+			var buffer = workItem.BufferWriter.BaseStream;
+			buffer.SetLength(mapSize);
+			buffer.Position = 0;
 			foreach (var map in mapping) {
 				map.Write(workItem.BufferWriter);
 			}

@@ -70,14 +70,16 @@ internal sealed class WriterWorkItem : Disposable {
 
 	public ValueTask DrainBufferAsync(CancellationToken token) {
 		var task = ValueTask.CompletedTask;
+		var buffer = BufferWriter.BaseStream;
+
 		if (_memStream is not null) {
-			BufferWriter.BaseStream.Position = 0L;
-			BufferWriter.BaseStream.CopyTo(_memStream);
+			buffer.Position = 0L;
+			buffer.CopyTo(_memStream);
 		}
 
 		if (_fileStream is not null) {
-			BufferWriter.BaseStream.Position = 0L;
-			task = new(BufferWriter.BaseStream.CopyToAsync(_fileStream, token));
+			buffer.Position = 0L;
+			task = new(buffer.CopyToAsync(_fileStream, token));
 		}
 
 		return task;
