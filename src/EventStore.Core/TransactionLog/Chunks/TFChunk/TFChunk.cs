@@ -841,10 +841,10 @@ public partial class TFChunk : IDisposable {
 		buffer.Position = 0;
 		bufferWriter.Write(length); // length prefix
 
-		if (workItem.WorkingStream.Position + length + 2 * sizeof(int) > ChunkHeader.Size + _chunkHeader.ChunkSize)
-			return RecordWriteResult.Failed(GetDataPosition(workItem));
-
 		var oldPosition = GetDataPosition(workItem);
+		if (workItem.WorkingStream.Position + length + 2 * sizeof(int) > ChunkHeader.Size + _chunkHeader.ChunkSize)
+			return RecordWriteResult.Failed(oldPosition);
+
 		await workItem.DrainBufferAsync(token);
 
 		_physicalDataSize = (int)GetDataPosition(workItem); // should fit 32 bits
