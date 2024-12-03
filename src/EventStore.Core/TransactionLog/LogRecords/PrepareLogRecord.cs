@@ -247,8 +247,13 @@ public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepar
 
 		writer.Write(EventStreamId);
 
-		writer.Write(EventId.ToByteArray());
-		writer.Write(CorrelationId.ToByteArray());
+		Span<byte> buffer = stackalloc byte[16];
+		EventId.TryWriteBytes(buffer);
+		writer.Write(buffer);
+
+		CorrelationId.TryWriteBytes(buffer);
+		writer.Write(buffer);
+
 		writer.Write(TimeStamp.Ticks);
 		writer.Write(EventType);
 		writer.Write(_dataOnDisk.Length);

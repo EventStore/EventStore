@@ -18,7 +18,7 @@ public static class DbUtil {
 		var dataSize = actualDataSize ?? config.ChunkSize;
 		var buf = new byte[ChunkHeader.Size + dataSize + ChunkFooter.Size];
 		Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
-		var chunkFooter = new ChunkFooter(true, true, dataSize, dataSize, 0, new byte[ChunkFooter.ChecksumSize]);
+		var chunkFooter = new ChunkFooter(true, true, dataSize, dataSize, 0);
 		chunkBytes = chunkFooter.AsByteArray();
 		Buffer.BlockCopy(chunkBytes, 0, buf, buf.Length - ChunkFooter.Size, chunkBytes.Length);
 
@@ -42,8 +42,7 @@ public static class DbUtil {
 		var logicalDataSize = logicalSize ?? (chunkEndNum - chunkStartNum + 1) * config.ChunkSize;
 		var buf = new byte[ChunkHeader.Size + physicalDataSize + ChunkFooter.Size];
 		Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
-		var chunkFooter = new ChunkFooter(true, true, physicalDataSize, logicalDataSize, 0,
-			new byte[ChunkFooter.ChecksumSize]);
+		var chunkFooter = new ChunkFooter(true, true, physicalDataSize, logicalDataSize, 0);
 		chunkBytes = chunkFooter.AsByteArray();
 		Buffer.BlockCopy(chunkBytes, 0, buf, buf.Length - ChunkFooter.Size, chunkBytes.Length);
 		File.WriteAllBytes(filename, buf);

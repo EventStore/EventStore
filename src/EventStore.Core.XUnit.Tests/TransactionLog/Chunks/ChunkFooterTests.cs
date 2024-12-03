@@ -15,7 +15,7 @@ public class ChunkFooterTests {
 	[InlineData(true, false)]
 	[InlineData(true, true)]
 	public void can_round_trip(bool isCompleted, bool isMap12Bytes) {
-		var hash = new byte[ChunkFooter.ChecksumSize];
+		Span<byte> hash = stackalloc byte[ChunkFooter.ChecksumSize];
 		Random.Shared.NextBytes(hash);
 
 		var source = new ChunkFooter(
@@ -23,8 +23,9 @@ public class ChunkFooterTests {
 			isMap12Bytes: isMap12Bytes,
 			physicalDataSize: Random.Shared.Next(500, 600),
 			logicalDataSize: Random.Shared.Next(600, 700),
-			mapSize: Random.Shared.Next(500, 600).RoundUpToMultipleOf(24),
-			md5Hash: hash);
+			mapSize: Random.Shared.Next(500, 600).RoundUpToMultipleOf(24)) {
+			MD5Hash = hash
+		};
 
 		var destination = new ChunkFooter(source.AsByteArray());
 

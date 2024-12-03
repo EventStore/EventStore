@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
@@ -143,10 +144,9 @@ public abstract class LogRecord : ILogRecord {
 	}
 
 	public int GetSizeWithLengthPrefixAndSuffix() {
-		using (var memoryStream = new MemoryStream()) {
-			WriteTo(new BinaryWriter(memoryStream));
-			return 8 + (int)memoryStream.Length;
-		}
+		using var writer = new BinaryWriter(new MemoryStream(), Encoding.UTF8, leaveOpen: false);
+		WriteTo(writer);
+		return 8 + (int)writer.BaseStream.Length;
 	}
 
 	private readonly struct Header : IBinaryFormattable<Header> {

@@ -68,7 +68,7 @@ public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 		base.WriteTo(writer);
 
 		writer.Write(TransactionPosition);
-		if (Version == LogRecordVersion.LogRecordV0) {
+		if (Version is LogRecordVersion.LogRecordV0) {
 			int firstEventNumber = FirstEventNumber == long.MaxValue ? int.MaxValue : (int)FirstEventNumber;
 			writer.Write(firstEventNumber);
 		} else {
@@ -76,7 +76,11 @@ public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 		}
 
 		writer.Write(SortKey);
-		writer.Write(CorrelationId.ToByteArray());
+
+		Span<byte> correlationIdBuffer = stackalloc byte[16];
+		CorrelationId.TryWriteBytes(correlationIdBuffer);
+		writer.Write(correlationIdBuffer);
+
 		writer.Write(TimeStamp.Ticks);
 	}
 
