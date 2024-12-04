@@ -24,7 +24,7 @@ public class ArchiveStorageWriterTests : ArchiveStorageTestsBase<ArchiveStorageW
 		Assert.True(await sut.StoreChunk(localChunk, CancellationToken.None));
 
 		var localChunkContent = await File.ReadAllBytesAsync(localChunk);
-		using var archivedChunkContent = await CreateReaderSut(storageType).GetChunk(localChunk, CancellationToken.None);
+		using var archivedChunkContent = await CreateReaderSut(storageType).GetChunk(Path.GetFileName(localChunk), CancellationToken.None);
 		Assert.Equal(localChunkContent, archivedChunkContent.ToByteArray());
 	}
 

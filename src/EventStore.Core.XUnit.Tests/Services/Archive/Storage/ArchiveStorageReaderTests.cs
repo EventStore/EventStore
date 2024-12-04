@@ -23,13 +23,14 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 
 		// create a chunk and upload it
 		var chunkPath = CreateLocalChunk(0, 0);
+		var chunkFile = Path.GetFileName(chunkPath);
 		await CreateWriterSut(storageType).StoreChunk(chunkPath, CancellationToken.None);
 
 		// read the local chunk
 		var localContent = await File.ReadAllBytesAsync(chunkPath);
 
 		// read the uploaded chunk
-		using var chunkStream = await sut.GetChunk(chunkPath, CancellationToken.None);
+		using var chunkStream = await sut.GetChunk(chunkFile, CancellationToken.None);
 		var chunkStreamContent = chunkStream.ToByteArray();
 
 		// then
@@ -44,6 +45,7 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 
 		// create a chunk and upload it
 		var chunkPath = CreateLocalChunk(0, 0);
+		var chunkFile = Path.GetFileName(chunkPath);
 		await CreateWriterSut(storageType).StoreChunk(chunkPath, CancellationToken.None);
 
 		// read the local chunk
@@ -52,7 +54,7 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 		// read the uploaded chunk partially
 		var start = localContent.Length / 2;
 		var end = localContent.Length;
-		using var chunkStream = await sut.GetChunk(chunkPath, start, end, CancellationToken.None);
+		using var chunkStream = await sut.GetChunk(chunkFile, start, end, CancellationToken.None);
 		var chunkStreamContent = chunkStream.ToByteArray();
 
 		// then

@@ -94,9 +94,10 @@ public class TFChunkReader : ITransactionFileReader {
 			if (pos <= 0)
 				return SeqReadResult.Failure;
 
-			var chunk = _db.Manager.GetChunkFor(pos);
 			bool readLast = false;
-			if (pos == chunk.ChunkHeader.ChunkStartPosition) {
+
+			if (!_db.Manager.TryGetChunkFor(pos, out var chunk) ||
+			    pos == chunk.ChunkHeader.ChunkStartPosition) {
 				// we are exactly at the boundary of physical chunks
 				// so we switch to previous chunk and request TryReadLast
 				readLast = true;

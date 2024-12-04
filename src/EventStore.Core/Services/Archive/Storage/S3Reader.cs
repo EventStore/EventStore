@@ -31,10 +31,10 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 
 	protected override IBlobStorage BlobStorage => _awsBlobStorage;
 
-	public async ValueTask<Stream> GetChunk(string chunkPath, long start, long end, CancellationToken ct) {
+	public async ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) {
 		var request = new GetObjectRequest {
 			BucketName = _options.Bucket,
-			Key = Path.GetFileName(chunkPath),
+			Key = chunkFile,
 			ByteRange = new ByteRange(start, end),
 		};
 

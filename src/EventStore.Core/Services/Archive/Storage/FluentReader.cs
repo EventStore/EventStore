@@ -20,9 +20,8 @@ public abstract class FluentReader {
 		throw new NotImplementedException();
 	}
 
-	public async ValueTask<Stream> GetChunk(string chunkPath, CancellationToken ct) {
-		var fileName = Path.GetFileName(chunkPath);
-		var stream = await BlobStorage.OpenReadAsync(fileName, ct);
+	public async ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) {
+		var stream = await BlobStorage.OpenReadAsync(chunkFile, ct);
 		return stream ?? throw new ChunkDeletedException();
 	}
 

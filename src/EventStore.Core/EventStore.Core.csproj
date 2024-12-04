@@ -38,6 +38,7 @@
 		<PackageReference Include="DotNext.Unsafe" Version="5.14.0" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 		<PackageReference Include="System.Threading.Channels" Version="9.0.0" />
+		<PackageReference Include="Scrutor" Version="5.0.2" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
