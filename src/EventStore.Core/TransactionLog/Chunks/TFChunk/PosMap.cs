@@ -48,11 +48,19 @@ public struct PosMap : IBinaryFormattable<PosMap> {
 		return new(logPos, actualPos);
 	}
 
+	public readonly void Write(BinaryWriter writer) {
+		Span<byte> buffer = stackalloc byte[FullSize];
+		Format(buffer);
+		writer.Write(buffer);
+	}
+
 	public readonly void Format(Span<byte> destination){
 		SpanWriter<byte> writer = new(destination);
 		writer.WriteLittleEndian(ActualPos);
 		writer.WriteLittleEndian(LogPos);
 	}
 
-	public readonly override string ToString() => $"LogPos: {LogPos}, ActualPos: {ActualPos}";
+	public readonly override string ToString() {
+		return string.Format("LogPos: {0}, ActualPos: {1}", LogPos, ActualPos);
+	}
 }
