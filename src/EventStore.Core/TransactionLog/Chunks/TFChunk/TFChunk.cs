@@ -961,8 +961,8 @@ public partial class TFChunk : IDisposable {
 			mapSize = mapping.Count * PosMap.FullSize;
 
 			using var buffer = Memory.AllocateAtLeast<byte>(mapSize);
-			var bytesWritten = WriteMapping(buffer.Span, mapping);
-			await workItem.AppendData(buffer.Memory.Slice(0, bytesWritten), token);
+			mapSize = WriteMapping(buffer.Span, mapping);
+			await workItem.AppendData(buffer.Memory.Slice(0, mapSize), token);
 		}
 
 		workItem.FlushToDisk();
