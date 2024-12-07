@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using DotNext.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
@@ -89,20 +90,19 @@ public class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, ISystemLo
 			}
 			default:
 				throw new ArgumentOutOfRangeException(
-					string.Format("Unexpected SystemRecordSerialization type: {0}", SystemRecordSerialization),
+					$"Unexpected SystemRecordSerialization type: {SystemRecordSerialization}",
 					"SystemRecordSerialization");
 		}
 	}
 
-	public override void WriteTo(BinaryWriter writer) {
-		base.WriteTo(writer);
+	public override void WriteTo(ref BufferWriterSlim<byte> writer) {
+		base.WriteTo(ref writer);
 
-		writer.Write(TimeStamp.Ticks);
-		writer.Write((byte)SystemRecordType);
-		writer.Write((byte)SystemRecordSerialization);
-		writer.Write(Reserved);
-		writer.Write(Data.Length);
-		writer.Write(Data.Span);
+		writer.WriteLittleEndian(TimeStamp.Ticks);
+		writer.Add((byte)SystemRecordType);
+		writer.Add((byte)SystemRecordSerialization);
+		writer.WriteLittleEndian(Reserved);
+		writer.Write(Data.Span, LengthFormat.LittleEndian);
 	}
 
 	public bool Equals(SystemLogRecord other) {
