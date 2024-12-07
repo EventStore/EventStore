@@ -960,9 +960,9 @@ public partial class TFChunk : IDisposable {
 
 			mapSize = mapping.Count * PosMap.FullSize;
 
-			using var buffer = Memory.AllocateAtLeast<byte>(mapSize);
-			mapSize = WriteMapping(buffer.Span, mapping);
-			await workItem.AppendData(buffer.Memory.Slice(0, mapSize), token);
+			using var buffer = Memory.AllocateExactly<byte>(mapSize);
+			WriteMapping(buffer.Span, mapping);
+			await workItem.AppendData(buffer.Memory, token);
 		}
 
 		workItem.FlushToDisk();
@@ -1000,13 +1000,11 @@ public partial class TFChunk : IDisposable {
 		_fileSize = fileSize;
 		return footerWithHash;
 
-		static int WriteMapping(Span<byte> buffer, IReadOnlyCollection<PosMap> mapping) {
+		static void WriteMapping(Span<byte> buffer, IReadOnlyCollection<PosMap> mapping) {
 			var writer = new SpanWriter<byte>(buffer);
 			foreach (var map in mapping) {
 				writer.Write(map);
 			}
-
-			return writer.WrittenCount;
 		}
 	}
 
