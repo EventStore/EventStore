@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using DotNext.Buffers.Binary;
 using DotNext.IO;
 using DotNext.Text;
@@ -50,7 +51,7 @@ public static class PrepareFlagsExtensions {
 	}
 }
 
-public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepareLogRecord<string> {
+public sealed class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepareLogRecord<string> {
 	public const byte PrepareRecordVersion = 1;
 
 	public PrepareFlags Flags { get; private init; }
@@ -100,9 +101,7 @@ public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepar
 
 			_sizeOnDisk =
 				2 * sizeof(int) /* Length prefix & suffix */
-				+ sizeof(byte) /* Record Type */
-				+ sizeof(byte) /* Version */
-				+ sizeof(long) /* Log Position */
+				+ BaseSize
 				+ sizeof(ushort) /* Flags */
 				+ sizeof(long) /* TransactionPosition */
 				+ sizeof(int) /* TransactionOffset */
@@ -232,30 +231,47 @@ public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepar
 			metadata: Metadata);
 	}
 
-	public override void WriteTo(BinaryWriter writer) {
-		base.WriteTo(writer);
+	public override void WriteTo(ref BufferWriterSlim<byte> writer) {
+		base.WriteTo(ref writer);
 
-		writer.Write((ushort)Flags);
-		writer.Write(TransactionPosition);
-		writer.Write(TransactionOffset);
-		if (Version == LogRecordVersion.LogRecordV0) {
+		writer.WriteLittleEndian((ushort)Flags);
+		writer.WriteLittleEndian(TransactionPosition);
+		writer.WriteLittleEndian(TransactionOffset);
+		if (Version is LogRecordVersion.LogRecordV0) {
 			int expectedVersion = ExpectedVersion == long.MaxValue - 1 ? int.MaxValue - 1 : (int)ExpectedVersion;
-			writer.Write(expectedVersion);
+			writer.WriteLittleEndian(expectedVersion);
 		} else {
-			writer.Write(ExpectedVersion);
+			writer.WriteLittleEndian(ExpectedVersion);
 		}
 
-		writer.Write(EventStreamId);
+		_eventStreamIdSize ??= Encoding.UTF8.GetByteCount(EventStreamId);
 
-		writer.Write(EventId.ToByteArray());
-		writer.Write(CorrelationId.ToByteArray());
-		writer.Write(TimeStamp.Ticks);
-		writer.Write(EventType);
-		writer.Write(_dataOnDisk.Length);
-		writer.Write(_dataOnDisk.Span);
-		writer.Write(Metadata.Length);
-		writer.Write(Metadata.Span);
+		// 7-bit encoded int from BinaryWriter is actually ULEB128, so we need to cast int to uint
+		// first to preserve binary compatibility
+		writer.WriteLeb128((uint)_eventStreamIdSize.GetValueOrDefault());
+		var buffer = writer.GetSpan(_eventStreamIdSize.GetValueOrDefault());
+		writer.Advance(Encoding.UTF8.GetBytes(EventStreamId, buffer));
+
+		buffer = writer.GetSpan(16);
+		EventId.TryWriteBytes(buffer);
+		writer.Advance(16);
+
+		buffer = writer.GetSpan(16);
+		CorrelationId.TryWriteBytes(buffer);
+		writer.Advance(16);
+
+		writer.WriteLittleEndian(TimeStamp.Ticks);
+
+		_eventTypeSize ??= Encoding.UTF8.GetByteCount(EventType);
+		writer.WriteLeb128((uint)_eventTypeSize.GetValueOrDefault());
+		buffer = writer.GetSpan(_eventTypeSize.GetValueOrDefault());
+		writer.Advance(Encoding.UTF8.GetBytes(EventType, buffer));
+
+		writer.Write(_dataOnDisk.Span, LengthFormat.LittleEndian);
+		writer.Write(Metadata.Span, LengthFormat.LittleEndian);
 	}
+
+	public override int GetSizeWithLengthPrefixAndSuffix() => SizeOnDisk;
 
 	public bool Equals(PrepareLogRecord other) {
 		if (ReferenceEquals(null, other)) return false;

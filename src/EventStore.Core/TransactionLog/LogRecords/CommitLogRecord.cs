@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using DotNext.Buffers.Binary;
 using DotNext.IO;
 using EventStore.Common.Utils;
@@ -13,7 +14,7 @@ using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords;
 
-public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
+public sealed class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 	public const byte CommitRecordVersion = 1;
 
 	public long TransactionPosition { get; private init; }
@@ -64,20 +65,34 @@ public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 			=> version is int.MaxValue ? long.MaxValue : version;
 	}
 
-	public override void WriteTo(BinaryWriter writer) {
-		base.WriteTo(writer);
+	public override void WriteTo(ref BufferWriterSlim<byte> writer) {
+		base.WriteTo(ref writer); // 10 + 8 = 18
 
-		writer.Write(TransactionPosition);
-		if (Version == LogRecordVersion.LogRecordV0) {
-			int firstEventNumber = FirstEventNumber == long.MaxValue ? int.MaxValue : (int)FirstEventNumber;
-			writer.Write(firstEventNumber);
+		writer.WriteLittleEndian(TransactionPosition); // 18 + 8 = 26
+		if (Version is LogRecordVersion.LogRecordV0) {
+			int firstEventNumber = FirstEventNumber is long.MaxValue ? int.MaxValue : (int)FirstEventNumber;
+			writer.WriteLittleEndian(firstEventNumber);
 		} else {
-			writer.Write(FirstEventNumber);
+			writer.WriteLittleEndian(FirstEventNumber); // 26 + 8 = 34
 		}
 
-		writer.Write(SortKey);
-		writer.Write(CorrelationId.ToByteArray());
-		writer.Write(TimeStamp.Ticks);
+		writer.WriteLittleEndian(SortKey); // 34 + 8 = 42
+
+		Span<byte> correlationIdBuffer = writer.GetSpan(16);
+		CorrelationId.TryWriteBytes(correlationIdBuffer);
+		writer.Advance(16); // 42 + 16 = 58
+
+		writer.WriteLittleEndian(TimeStamp.Ticks); // 58 + 8 = 66
+	}
+
+	public override int GetSizeWithLengthPrefixAndSuffix() {
+		return sizeof(int) * 2														/* Length prefix & suffix */
+		+ sizeof(long)																/* TransactionPosition */
+		+ (Version is LogRecordVersion.LogRecordV0 ? sizeof(int) : sizeof(long))	/* Version */
+		+ sizeof(long)																/* SortKey */
+		+ 16																		/* CorrelationId */
+		+ sizeof(long)																/* TimeStamp */
+		+ BaseSize;
 	}
 
 	public bool Equals(CommitLogRecord other) {

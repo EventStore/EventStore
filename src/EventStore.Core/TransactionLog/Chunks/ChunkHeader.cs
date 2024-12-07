@@ -62,13 +62,12 @@ public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 	public ChunkHeader(ReadOnlySpan<byte> source) {
 		Debug.Assert(source.Length >= Size);
 
-		SpanReader<byte> reader = new(source);
+		SpanReader<byte> reader = new(source.Slice(0, Size));
 
 		if ((FileType)reader.Read() is not FileType.ChunkFile)
 			throw new CorruptDatabaseException(new InvalidFileException());
 
 		MinCompatibleVersion = reader.Read();
-		Debug.Assert(MinCompatibleVersion >= 0);
 
 		ChunkSize = reader.ReadLittleEndian<int>();
 		Debug.Assert(ChunkSize >= 0);
@@ -84,7 +83,7 @@ public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 
 		Version = reader.Read();
 
-		if (Version == 0)
+		if (Version is 0)
 			Version = MinCompatibleVersion;
 		Debug.Assert(Version >= MinCompatibleVersion);
 
@@ -109,10 +108,7 @@ public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 		writer.WriteLittleEndian(ChunkStartNumber);
 		writer.WriteLittleEndian(ChunkEndNumber);
 		writer.WriteLittleEndian<int>(Unsafe.BitCast<bool, byte>(IsScavenged));
-
-		Span<byte> guidBuffer = stackalloc byte[16];
-		ChunkId.TryWriteBytes(guidBuffer);
-		writer.Write(guidBuffer);
+		ChunkId.TryWriteBytes(writer.Slide(16));
 
 		if (Version >= (byte)ChunkVersions.Transformed)
 			// we started to use this byte of the chunk header to store `Version` as from `ChunkVersions.Transformed`
@@ -121,6 +117,9 @@ public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 
 		if (Version >= (byte)ChunkVersions.Transformed)
 			writer.Add((byte)TransformType);
+
+		// reserved bytes must be zero
+		writer.RemainingSpan.Clear();
 	}
 
 	static ChunkHeader IBinaryFormattable<ChunkHeader>.Parse(ReadOnlySpan<byte> source)
