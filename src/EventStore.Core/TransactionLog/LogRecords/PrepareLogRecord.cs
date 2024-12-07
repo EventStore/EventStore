@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using DotNext.Buffers.Binary;
 using DotNext.IO;
 using DotNext.Text;
@@ -232,33 +233,42 @@ public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepar
 			metadata: Metadata);
 	}
 
-	public override void WriteTo(BinaryWriter writer) {
-		base.WriteTo(writer);
+	public override void WriteTo(ref BufferWriterSlim<byte> writer) {
+		base.WriteTo(ref writer);
 
-		writer.Write((ushort)Flags);
-		writer.Write(TransactionPosition);
-		writer.Write(TransactionOffset);
-		if (Version == LogRecordVersion.LogRecordV0) {
+		writer.WriteLittleEndian((ushort)Flags);
+		writer.WriteLittleEndian(TransactionPosition);
+		writer.WriteLittleEndian(TransactionOffset);
+		if (Version is LogRecordVersion.LogRecordV0) {
 			int expectedVersion = ExpectedVersion == long.MaxValue - 1 ? int.MaxValue - 1 : (int)ExpectedVersion;
-			writer.Write(expectedVersion);
+			writer.WriteLittleEndian(expectedVersion);
 		} else {
-			writer.Write(ExpectedVersion);
+			writer.WriteLittleEndian(ExpectedVersion);
 		}
 
-		writer.Write(EventStreamId);
+		_eventStreamIdSize ??= Encoding.UTF8.GetByteCount(EventStreamId);
+		writer.WriteLeb128(_eventStreamIdSize.GetValueOrDefault());
+		var buffer = writer.GetSpan(_eventStreamIdSize.GetValueOrDefault());
+		writer.Advance(Encoding.UTF8.GetBytes(EventStreamId, buffer));
 
-		Span<byte> buffer = stackalloc byte[16];
+		buffer = writer.GetSpan(16);
 		EventId.TryWriteBytes(buffer);
-		writer.Write(buffer);
+		writer.Advance(16);
 
+		buffer = writer.GetSpan(16);
 		CorrelationId.TryWriteBytes(buffer);
-		writer.Write(buffer);
+		writer.Advance(16);
 
-		writer.Write(TimeStamp.Ticks);
-		writer.Write(EventType);
-		writer.Write(_dataOnDisk.Length);
+		writer.WriteLittleEndian(TimeStamp.Ticks);
+
+		_eventTypeSize ??= Encoding.UTF8.GetByteCount(EventType);
+		writer.WriteLeb128(_eventTypeSize.GetValueOrDefault());
+		buffer = writer.GetSpan(_eventTypeSize.GetValueOrDefault());
+		writer.Advance(Encoding.UTF8.GetBytes(EventType, buffer));
+
+		writer.WriteLittleEndian(_dataOnDisk.Length);
 		writer.Write(_dataOnDisk.Span);
-		writer.Write(Metadata.Length);
+		writer.WriteLittleEndian(Metadata.Length);
 		writer.Write(Metadata.Span);
 	}
 

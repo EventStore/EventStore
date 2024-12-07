@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using DotNext.Buffers.Binary;
 using DotNext.IO;
 using EventStore.Common.Utils;
@@ -64,24 +65,24 @@ public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 			=> version is int.MaxValue ? long.MaxValue : version;
 	}
 
-	public override void WriteTo(BinaryWriter writer) {
-		base.WriteTo(writer);
+	public override void WriteTo(ref BufferWriterSlim<byte> writer) {
+		base.WriteTo(ref writer);
 
-		writer.Write(TransactionPosition);
+		writer.WriteLittleEndian(TransactionPosition);
 		if (Version is LogRecordVersion.LogRecordV0) {
-			int firstEventNumber = FirstEventNumber == long.MaxValue ? int.MaxValue : (int)FirstEventNumber;
-			writer.Write(firstEventNumber);
+			int firstEventNumber = FirstEventNumber is long.MaxValue ? int.MaxValue : (int)FirstEventNumber;
+			writer.WriteLittleEndian(firstEventNumber);
 		} else {
-			writer.Write(FirstEventNumber);
+			writer.WriteLittleEndian(FirstEventNumber);
 		}
 
-		writer.Write(SortKey);
+		writer.WriteLittleEndian(SortKey);
 
-		Span<byte> correlationIdBuffer = stackalloc byte[16];
+		Span<byte> correlationIdBuffer = writer.GetSpan(16);
 		CorrelationId.TryWriteBytes(correlationIdBuffer);
-		writer.Write(correlationIdBuffer);
+		writer.Advance(16);
 
-		writer.Write(TimeStamp.Ticks);
+		writer.WriteLittleEndian(TimeStamp.Ticks);
 	}
 
 	public bool Equals(CommitLogRecord other) {

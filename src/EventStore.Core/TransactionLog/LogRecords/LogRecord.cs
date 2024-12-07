@@ -137,16 +137,20 @@ public abstract class LogRecord : ILogRecord {
 		LogPosition = logPosition;
 	}
 
-	public virtual void WriteTo(BinaryWriter writer) {
-		writer.Write((byte)RecordType);
-		writer.Write(Version);
-		writer.Write(LogPosition);
+	public virtual void WriteTo(ref BufferWriterSlim<byte> writer) {
+		writer.Add((byte)RecordType);
+		writer.Add(Version);
+		writer.WriteLittleEndian(LogPosition);
 	}
 
 	public int GetSizeWithLengthPrefixAndSuffix() {
-		using var writer = new BinaryWriter(new MemoryStream(), Encoding.UTF8, leaveOpen: false);
-		WriteTo(writer);
-		return 8 + (int)writer.BaseStream.Length;
+		var writer = new BufferWriterSlim<byte>(512);
+		try {
+			WriteTo(ref writer);
+			return 8 + writer.WrittenCount;
+		} finally {
+			writer.Dispose();
+		}
 	}
 
 	private readonly struct Header : IBinaryFormattable<Header> {
