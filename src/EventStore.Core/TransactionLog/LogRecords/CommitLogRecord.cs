@@ -14,7 +14,7 @@ using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords;
 
-public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
+public sealed class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 	public const byte CommitRecordVersion = 1;
 
 	public long TransactionPosition { get; private init; }
@@ -66,32 +66,32 @@ public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 	}
 
 	public override void WriteTo(ref BufferWriterSlim<byte> writer) {
-		base.WriteTo(ref writer);
+		base.WriteTo(ref writer); // 10 + 8 = 18
 
-		writer.WriteLittleEndian(TransactionPosition);
+		writer.WriteLittleEndian(TransactionPosition); // 18 + 8 = 26
 		if (Version is LogRecordVersion.LogRecordV0) {
 			int firstEventNumber = FirstEventNumber is long.MaxValue ? int.MaxValue : (int)FirstEventNumber;
 			writer.WriteLittleEndian(firstEventNumber);
 		} else {
-			writer.WriteLittleEndian(FirstEventNumber);
+			writer.WriteLittleEndian(FirstEventNumber); // 26 + 8 = 34
 		}
 
-		writer.WriteLittleEndian(SortKey);
+		writer.WriteLittleEndian(SortKey); // 34 + 8 = 42
 
 		Span<byte> correlationIdBuffer = writer.GetSpan(16);
 		CorrelationId.TryWriteBytes(correlationIdBuffer);
-		writer.Advance(16);
+		writer.Advance(16); // 42 + 16 = 58
 
-		writer.WriteLittleEndian(TimeStamp.Ticks);
+		writer.WriteLittleEndian(TimeStamp.Ticks); // 58 + 8 = 66
 	}
 
 	public override int GetSizeWithLengthPrefixAndSuffix() {
-		return sizeof(int) * 2													/* Length prefix & suffix */
-		+ sizeof(long)															/* TransactionPosition */
-		+ Version is LogRecordVersion.LogRecordV0 ? sizeof(int) : sizeof(long)	/* Version */
-		+ sizeof(long)															/* SortKey */
-		+ 16																	/* CorrelationId */
-		+ sizeof(long)															/* TimeStamp */
+		return sizeof(int) * 2														/* Length prefix & suffix */
+		+ sizeof(long)																/* TransactionPosition */
+		+ (Version is LogRecordVersion.LogRecordV0 ? sizeof(int) : sizeof(long))	/* Version */
+		+ sizeof(long)																/* SortKey */
+		+ 16																		/* CorrelationId */
+		+ sizeof(long)																/* TimeStamp */
 		+ BaseSize;
 	}
 

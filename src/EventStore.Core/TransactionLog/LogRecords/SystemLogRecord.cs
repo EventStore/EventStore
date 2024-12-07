@@ -25,7 +25,7 @@ public enum SystemRecordSerialization : byte {
 	Bson = 3
 }
 
-public class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, ISystemLogRecord {
+public sealed class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, ISystemLogRecord {
 	public const byte SystemRecordVersion = 0;
 
 	public DateTime TimeStamp { get; private init; }
