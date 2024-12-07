@@ -51,7 +51,7 @@ public static class PrepareFlagsExtensions {
 	}
 }
 
-public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepareLogRecord<string> {
+public sealed class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepareLogRecord<string> {
 	public const byte PrepareRecordVersion = 1;
 
 	public PrepareFlags Flags { get; private init; }
