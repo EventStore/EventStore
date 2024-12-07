@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -829,22 +830,15 @@ public partial class TFChunk : IDisposable {
 			throw new InvalidOperationException("Cannot write to a read-only block.");
 
 		var workItem = _writerWorkItem;
-		var bufferWriter = workItem.BufferWriter;
-		var buffer = bufferWriter.BaseStream;
+		long oldPosition;
+		int length;
+		using (var dataOnDisk = SerializeLogRecord(record, out length)) {
+			oldPosition = GetDataPosition(workItem);
+			if (workItem.WorkingStream.Position + length + 2 * sizeof(int) > ChunkHeader.Size + _chunkHeader.ChunkSize)
+				return RecordWriteResult.Failed(oldPosition);
 
-		buffer.SetLength(4);
-		buffer.Position = 4;
-		record.WriteTo(bufferWriter);
-		var length = (int)buffer.Length - 4;
-		bufferWriter.Write(length); // length suffix
-		buffer.Position = 0;
-		bufferWriter.Write(length); // length prefix
-
-		var oldPosition = GetDataPosition(workItem);
-		if (workItem.WorkingStream.Position + length + 2 * sizeof(int) > ChunkHeader.Size + _chunkHeader.ChunkSize)
-			return RecordWriteResult.Failed(oldPosition);
-
-		await workItem.DrainBufferAsync(token);
+			await workItem.AppendData(dataOnDisk.Memory, token);
+		}
 
 		_physicalDataSize = (int)GetDataPosition(workItem); // should fit 32 bits
 		_logicalDataSize = ChunkHeader.GetLocalLogPosition(record.LogPosition + length + 2 * sizeof(int));
@@ -858,6 +852,21 @@ public partial class TFChunk : IDisposable {
 		}
 
 		return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
+
+		static MemoryOwner<byte> SerializeLogRecord(ILogRecord record, out int recordLength) {
+			var writer = new BufferWriterSlim<byte>(WriterWorkItem.BufferSize);
+			writer.Advance(sizeof(int)); // reserved for length prefix
+			record.WriteTo(ref writer);
+
+			recordLength = writer.WrittenCount - sizeof(int);
+			writer.WriteLittleEndian(recordLength); // length suffix
+
+			var buffer = writer.DetachOrCopyBuffer();
+
+			// write length prefix
+			BinaryPrimitives.WriteInt32LittleEndian(buffer.Span, recordLength);
+			return buffer;
+		}
 	}
 
 	public async ValueTask<bool> TryAppendRawData(ReadOnlyMemory<byte> buffer, CancellationToken token) {
