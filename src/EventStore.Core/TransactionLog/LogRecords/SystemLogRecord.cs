@@ -105,6 +105,17 @@ public class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, ISystemLo
 		writer.Write(Data.Span, LengthFormat.LittleEndian);
 	}
 
+	public override int GetSizeWithLengthPrefixAndSuffix() {
+		return sizeof(int) * 2	/* Length prefix & suffix */
+		       + sizeof(long)	/* TimeStamp */
+		       + sizeof(byte)	/* SystemRecordType */
+		       + sizeof(byte)	/* SystemRecordSerialization */
+		       + sizeof(long)	/* Reserved */
+		       + sizeof(int)	/* Data.Length */
+		       + Data.Length	/* Data */
+		       + BaseSize;
+	}
+
 	public bool Equals(SystemLogRecord other) {
 		if (ReferenceEquals(null, other)) return false;
 		if (ReferenceEquals(this, other)) return true;

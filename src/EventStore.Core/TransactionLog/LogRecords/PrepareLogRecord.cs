@@ -101,9 +101,7 @@ public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepar
 
 			_sizeOnDisk =
 				2 * sizeof(int) /* Length prefix & suffix */
-				+ sizeof(byte) /* Record Type */
-				+ sizeof(byte) /* Version */
-				+ sizeof(long) /* Log Position */
+				+ BaseSize
 				+ sizeof(ushort) /* Flags */
 				+ sizeof(long) /* TransactionPosition */
 				+ sizeof(int) /* TransactionOffset */
@@ -272,6 +270,8 @@ public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepar
 		writer.Write(_dataOnDisk.Span, LengthFormat.LittleEndian);
 		writer.Write(Metadata.Span, LengthFormat.LittleEndian);
 	}
+
+	public override int GetSizeWithLengthPrefixAndSuffix() => SizeOnDisk;
 
 	public bool Equals(PrepareLogRecord other) {
 		if (ReferenceEquals(null, other)) return false;
