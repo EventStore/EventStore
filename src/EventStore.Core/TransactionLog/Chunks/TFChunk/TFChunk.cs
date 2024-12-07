@@ -854,7 +854,7 @@ public partial class TFChunk : IDisposable {
 		return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
 
 		static MemoryOwner<byte> SerializeLogRecord(ILogRecord record, out int recordLength) {
-			var writer = new BufferWriterSlim<byte>(WriterWorkItem.BufferSize);
+			var writer = new BufferWriterSlim<byte>(record.GetSizeWithLengthPrefixAndSuffix());
 			writer.Advance(sizeof(int)); // reserved for length prefix
 			record.WriteTo(ref writer);
 
@@ -862,6 +862,7 @@ public partial class TFChunk : IDisposable {
 			writer.WriteLittleEndian(recordLength); // length suffix
 
 			var buffer = writer.DetachOrCopyBuffer();
+			Debug.Assert(record.GetSizeWithLengthPrefixAndSuffix() == buffer.Length);
 
 			// write length prefix
 			BinaryPrimitives.WriteInt32LittleEndian(buffer.Span, recordLength);

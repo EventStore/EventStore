@@ -85,6 +85,16 @@ public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 		writer.WriteLittleEndian(TimeStamp.Ticks);
 	}
 
+	public override int GetSizeWithLengthPrefixAndSuffix() {
+		return sizeof(int) * 2													/* Length prefix & suffix */
+		+ sizeof(long)															/* TransactionPosition */
+		+ Version is LogRecordVersion.LogRecordV0 ? sizeof(int) : sizeof(long)	/* Version */
+		+ sizeof(long)															/* SortKey */
+		+ 16																	/* CorrelationId */
+		+ sizeof(long)															/* TimeStamp */
+		+ BaseSize;
+	}
+
 	public bool Equals(CommitLogRecord other) {
 		if (ReferenceEquals(null, other)) return false;
 		if (ReferenceEquals(this, other)) return true;
