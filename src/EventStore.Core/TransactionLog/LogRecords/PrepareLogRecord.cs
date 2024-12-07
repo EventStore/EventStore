@@ -247,7 +247,10 @@ public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepar
 		}
 
 		_eventStreamIdSize ??= Encoding.UTF8.GetByteCount(EventStreamId);
-		writer.WriteLeb128(_eventStreamIdSize.GetValueOrDefault());
+
+		// 7-bit encoded int from BinaryWriter is actually ULEB128, so we need to cast int to uint
+		// first to preserve binary compatibility
+		writer.WriteLeb128((uint)_eventStreamIdSize.GetValueOrDefault());
 		var buffer = writer.GetSpan(_eventStreamIdSize.GetValueOrDefault());
 		writer.Advance(Encoding.UTF8.GetBytes(EventStreamId, buffer));
 
@@ -262,14 +265,12 @@ public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepar
 		writer.WriteLittleEndian(TimeStamp.Ticks);
 
 		_eventTypeSize ??= Encoding.UTF8.GetByteCount(EventType);
-		writer.WriteLeb128(_eventTypeSize.GetValueOrDefault());
+		writer.WriteLeb128((uint)_eventTypeSize.GetValueOrDefault());
 		buffer = writer.GetSpan(_eventTypeSize.GetValueOrDefault());
 		writer.Advance(Encoding.UTF8.GetBytes(EventType, buffer));
 
-		writer.WriteLittleEndian(_dataOnDisk.Length);
-		writer.Write(_dataOnDisk.Span);
-		writer.WriteLittleEndian(Metadata.Length);
-		writer.Write(Metadata.Span);
+		writer.Write(_dataOnDisk.Span, LengthFormat.LittleEndian);
+		writer.Write(Metadata.Span, LengthFormat.LittleEndian);
 	}
 
 	public bool Equals(PrepareLogRecord other) {

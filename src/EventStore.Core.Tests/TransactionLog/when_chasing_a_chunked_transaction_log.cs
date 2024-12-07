@@ -2,9 +2,11 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -17,14 +19,17 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog;
 
 public static class LogRecordExtensions {
-	public static void WriteWithLengthPrefixAndSuffixTo(this ILogRecord record, BinaryWriter writer) {
-		using (var memoryStream = new MemoryStream()) {
-			record.WriteTo(new BinaryWriter(memoryStream));
-			var length = (int)memoryStream.Length;
-			writer.Write(length);
-			writer.Write(memoryStream.GetBuffer(), 0, (int)memoryStream.Length);
-			writer.Write(length);
-		}
+	public static void SerializeWithLengthPrefixAndSuffixTo(this ILogRecord record, BinaryWriter writer) {
+		var localWriter = new BufferWriterSlim<byte>();
+		localWriter.Advance(sizeof(int));
+		record.WriteTo(ref localWriter);
+
+		var length = localWriter.WrittenCount - sizeof(int);
+		localWriter.WriteLittleEndian(length);
+
+		using var buffer = localWriter.DetachOrCopyBuffer();
+		BinaryPrimitives.WriteInt32LittleEndian(buffer.Span, length);
+		writer.Write(buffer.Span);
 	}
 }
 
@@ -96,7 +101,7 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 				.AsByteArray();
 			var writer = new BinaryWriter(fs);
 			writer.Write(chunkHeader);
-			recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
+			recordToWrite.SerializeWithLengthPrefixAndSuffixTo(writer);
 			fs.Close();
 		}
 
