@@ -19,17 +19,17 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog;
 
 public static class LogRecordExtensions {
-	public static void SerializeWithLengthPrefixAndSuffixTo(this ILogRecord record, BinaryWriter writer) {
+	public static void WriteWithLengthPrefixAndSuffixTo(this ILogRecord record, BinaryWriter writer) {
 		var localWriter = new BufferWriterSlim<byte>();
-		localWriter.Advance(sizeof(int));
-		record.WriteTo(ref localWriter);
+		try {
+			record.WriteTo(ref localWriter);
 
-		var length = localWriter.WrittenCount - sizeof(int);
-		localWriter.WriteLittleEndian(length);
-
-		using var buffer = localWriter.DetachOrCopyBuffer();
-		BinaryPrimitives.WriteInt32LittleEndian(buffer.Span, length);
-		writer.Write(buffer.Span);
+			writer.Write(localWriter.WrittenCount);
+			writer.Write(localWriter.WrittenSpan);
+			writer.Write(localWriter.WrittenCount);
+		} finally {
+			localWriter.Dispose();
+		}
 	}
 }
 
@@ -101,7 +101,7 @@ public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : Spe
 				.AsByteArray();
 			var writer = new BinaryWriter(fs);
 			writer.Write(chunkHeader);
-			recordToWrite.SerializeWithLengthPrefixAndSuffixTo(writer);
+			recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
 			fs.Close();
 		}
 
