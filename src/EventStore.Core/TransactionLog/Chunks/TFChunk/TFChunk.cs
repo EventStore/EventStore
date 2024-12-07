@@ -947,8 +947,14 @@ public partial class TFChunk : IDisposable {
 		var workItem = _writerWorkItem;
 		workItem.ResizeStream((int)workItem.WorkingStream.Position);
 
-		int mapSize = 0;
-		if (mapping is not null) {
+		int mapSize;
+
+		// reuse rented buffer for position mapping serialization and chunk footer
+		byte[] bufferFromPool;
+		if (mapping is null) {
+			mapSize = 0;
+			bufferFromPool = ArrayPool<byte>.Shared.Rent(ChunkFooter.Size);
+		} else {
 			if (_inMem)
 				throw new InvalidOperationException(
 					"Cannot write an in-memory chunk with a PosMap. " +
@@ -962,9 +968,9 @@ public partial class TFChunk : IDisposable {
 
 			mapSize = mapping.Count * PosMap.FullSize;
 
-			using var buffer = Memory.AllocateExactly<byte>(mapSize);
-			WriteMapping(buffer.Span, mapping);
-			await workItem.AppendData(buffer.Memory, token);
+			bufferFromPool = ArrayPool<byte>.Shared.Rent(Math.Max(mapSize, ChunkFooter.Size));
+			mapSize = WriteMapping(bufferFromPool, mapping);
+			await workItem.AppendData(bufferFromPool.AsMemory(0, mapSize), token);
 		}
 
 		workItem.FlushToDisk();
@@ -975,15 +981,14 @@ public partial class TFChunk : IDisposable {
 
 		await Flush(token);
 
-		var footerBuffer = ArrayPool<byte>.Shared.Rent(ChunkFooter.Size);
 		int fileSize;
 		ChunkFooter footerWithHash;
 		try {
 			var footerNoHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize);
 
 			//MD5
-			footerNoHash.Format(footerBuffer);
-			workItem.MD5.TransformFinalBlock(footerBuffer, 0,
+			footerNoHash.Format(bufferFromPool);
+			workItem.MD5.TransformFinalBlock(bufferFromPool, 0,
 				ChunkFooter.Size - ChunkFooter.ChecksumSize);
 
 			//FILE
@@ -991,10 +996,10 @@ public partial class TFChunk : IDisposable {
 				MD5Hash = workItem.MD5.Hash,
 			};
 
-			footerWithHash.Format(footerBuffer);
-			_transform.Write.WriteFooter(footerBuffer.AsSpan(0, ChunkFooter.Size), out fileSize);
+			footerWithHash.Format(bufferFromPool);
+			_transform.Write.WriteFooter(bufferFromPool.AsSpan(0, ChunkFooter.Size), out fileSize);
 		} finally {
-			ArrayPool<byte>.Shared.Return(footerBuffer);
+			ArrayPool<byte>.Shared.Return(bufferFromPool);
 		}
 
 		await Flush(token);
@@ -1002,11 +1007,13 @@ public partial class TFChunk : IDisposable {
 		_fileSize = fileSize;
 		return footerWithHash;
 
-		static void WriteMapping(Span<byte> buffer, IReadOnlyCollection<PosMap> mapping) {
+		static int WriteMapping(Span<byte> buffer, IReadOnlyCollection<PosMap> mapping) {
 			var writer = new SpanWriter<byte>(buffer);
 			foreach (var map in mapping) {
 				writer.Write(map);
 			}
+
+			return writer.WrittenCount;
 		}
 	}
 
