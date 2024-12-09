@@ -152,20 +152,21 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 		try {
 			Log.Information("Fetching {chunk} from the archive", chunkFile);
 
-			await using var inputStream = await _archiveReader.GetChunk(chunkFile, ct);
-
 			var tempPath = Path.Combine(_dbPath, Guid.NewGuid() + ".archive.tmp");
-			await using var outputStream = File.Open(
-				path: tempPath,
-				options: new FileStreamOptions {
-					Mode = FileMode.CreateNew,
-					Access = FileAccess.ReadWrite,
-					Share = FileShare.None,
-					Options = FileOptions.Asynchronous,
-					PreallocationSize = _chunkSize
-				});
 
-			await inputStream.CopyToAsync(outputStream, ct);
+			await using (var inputStream = await _archiveReader.GetChunk(chunkFile, ct)) {
+				await using var outputStream = File.Open(
+					path: tempPath,
+					options: new FileStreamOptions {
+						Mode = FileMode.CreateNew,
+						Access = FileAccess.ReadWrite,
+						Share = FileShare.None,
+						Options = FileOptions.Asynchronous,
+						PreallocationSize = _chunkSize
+					});
+
+				await inputStream.CopyToAsync(outputStream, ct);
+			}
 
 			if (File.Exists(destinationPath)) {
 				var backupPath = $"{destinationPath}.archive.bkup";
