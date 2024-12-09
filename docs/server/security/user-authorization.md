@@ -631,6 +631,10 @@ curl -X POST \
 If a policy update is invalid, it will not be applied and an error will be logged. EventStoreDB will continue running with the previous valid policy in place.
 :::
 
+##### Tutorial
+
+[Learn how to set up and use Stream Policy Authorization in EventStoreDB through a tutorial.](https://developers.eventstore.com/docs/tutorials/Tutorial_%20Setting%20up%20and%20using%20Stream%20Policy%20Authorization%20in%20EventStoreDB.md) 
+
 ##### Stream policy schema
 
 ###### Policy
