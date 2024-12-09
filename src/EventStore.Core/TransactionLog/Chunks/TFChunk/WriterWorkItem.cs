@@ -4,9 +4,13 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using DotNext;
 using DotNext.IO;
 using EventStore.Plugins.Transforms;
+using Microsoft.IO;
 using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -14,24 +18,26 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 internal sealed class WriterWorkItem : Disposable {
 	public const int BufferSize = 8192;
 
+	// Remove buffer for writes in future
+	private static readonly RecyclableMemoryStreamManager StreamManager = new();
+
 	public Stream WorkingStream { get; private set; }
 
 	private readonly Stream _fileStream;
 	private Stream _memStream;
 
-	public readonly MemoryStream Buffer;
 	public readonly BinaryWriter BufferWriter;
 	public readonly HashAlgorithm MD5;
 
 	public unsafe WriterWorkItem(nint memoryPtr, int length, HashAlgorithm md5,
 		IChunkWriteTransform chunkWriteTransform, int initialStreamPosition) {
-		var memStream = new UnmanagedMemoryStream((byte*)memoryPtr, length, length, FileAccess.ReadWrite);
-		memStream.Position = initialStreamPosition;
-		var chunkDataWriteStream = new ChunkDataWriteStream(memStream, md5);
+		var memStream = new UnmanagedMemoryStream((byte*)memoryPtr, length, length, FileAccess.ReadWrite) {
+			Position = initialStreamPosition,
+		};
 
+		var chunkDataWriteStream = new ChunkDataWriteStream(memStream, md5);
 		WorkingStream = _memStream = chunkWriteTransform.TransformData(chunkDataWriteStream);
-		Buffer = new(BufferSize);
-		BufferWriter = new(Buffer);
+		BufferWriter = new(StreamManager.GetStream(), Encoding.UTF8, leaveOpen: false);
 		MD5 = md5;
 	}
 
@@ -44,8 +50,7 @@ internal sealed class WriterWorkItem : Disposable {
 		var chunkDataWriteStream = new ChunkDataWriteStream(fileStream, md5);
 
 		WorkingStream = _fileStream = chunkWriteTransform.TransformData(chunkDataWriteStream);
-		Buffer = new(BufferSize);
-		BufferWriter = new(Buffer);
+		BufferWriter = new(StreamManager.GetStream(), Encoding.UTF8, leaveOpen: false);
 		MD5 = md5;
 	}
 
@@ -55,12 +60,29 @@ internal sealed class WriterWorkItem : Disposable {
 			WorkingStream = memStream;
 	}
 
-	public void AppendData(ReadOnlyMemory<byte> buf) {
-		// as we are always append-only, stream's position should be right here
-		_fileStream?.Write(buf.Span);
-
-		//MEMORY
+	public ValueTask AppendData(ReadOnlyMemory<byte> buf, CancellationToken token) {
+		// MEMORY (in-memory write doesn't require async I/O)
 		_memStream?.Write(buf.Span);
+
+		// as we are always append-only, stream's position should be right here
+		return _fileStream?.WriteAsync(buf, token) ?? ValueTask.CompletedTask;
+	}
+
+	public ValueTask DrainBufferAsync(CancellationToken token) {
+		var task = ValueTask.CompletedTask;
+		var buffer = BufferWriter.BaseStream;
+
+		if (_memStream is not null) {
+			buffer.Position = 0L;
+			buffer.CopyTo(_memStream);
+		}
+
+		if (_fileStream is not null) {
+			buffer.Position = 0L;
+			task = new(buffer.CopyToAsync(_fileStream, token));
+		}
+
+		return task;
 	}
 
 	public void ResizeStream(int fileSize) {
@@ -72,7 +94,6 @@ internal sealed class WriterWorkItem : Disposable {
 		if (disposing) {
 			_fileStream?.Dispose();
 			DisposeMemStream();
-			Buffer.Dispose();
 			BufferWriter.Dispose();
 			MD5.Dispose();
 		}
