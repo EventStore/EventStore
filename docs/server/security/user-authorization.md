@@ -672,7 +672,7 @@ Having metadata read or metadata write access to a stream does not grant read or
 
 #### Tutorial
 
-[Learn how to set up and use Stream Policy Authorization in EventStoreDB through a tutorial.](https://developers.eventstore.com/docs/tutorials/Tutorial_%20Setting%20up%20and%20using%20Stream%20Policy%20Authorization%20in%20EventStoreDB.md) 
+[Learn how to set up and use Stream Policy Authorization in EventStoreDB through a tutorial.](https://developers.eventstore.com/tutorials/Tutorial_%20Setting%20up%20and%20using%20Stream%20Policy%20Authorization%20in%20EventStoreDB.md) 
 
 
 #### Troubleshooting
