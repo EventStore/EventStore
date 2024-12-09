@@ -828,7 +828,6 @@ public partial class TFChunk : IDisposable {
 		if (IsReadOnly)
 			throw new InvalidOperationException("Cannot write to a read-only block.");
 
-		token.ThrowIfCancellationRequested();
 		var workItem = _writerWorkItem;
 		var bufferWriter = workItem.BufferWriter;
 		var buffer = bufferWriter.BaseStream;
@@ -862,7 +861,6 @@ public partial class TFChunk : IDisposable {
 	}
 
 	public async ValueTask<bool> TryAppendRawData(ReadOnlyMemory<byte> buffer, CancellationToken token) {
-		token.ThrowIfCancellationRequested();
 		var workItem = _writerWorkItem;
 		if (workItem.WorkingStream.Position + buffer.Length > workItem.WorkingStream.Length)
 			return false;
