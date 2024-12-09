@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -829,22 +830,15 @@ public partial class TFChunk : IDisposable {
 			throw new InvalidOperationException("Cannot write to a read-only block.");
 
 		var workItem = _writerWorkItem;
-		var bufferWriter = workItem.BufferWriter;
-		var buffer = bufferWriter.BaseStream;
+		long oldPosition;
+		int length;
+		using (var dataOnDisk = SerializeLogRecord(record, out length)) {
+			oldPosition = GetDataPosition(workItem);
+			if (workItem.WorkingStream.Position + length + 2 * sizeof(int) > ChunkHeader.Size + _chunkHeader.ChunkSize)
+				return RecordWriteResult.Failed(oldPosition);
 
-		buffer.SetLength(4);
-		buffer.Position = 4;
-		record.WriteTo(bufferWriter);
-		var length = (int)buffer.Length - 4;
-		bufferWriter.Write(length); // length suffix
-		buffer.Position = 0;
-		bufferWriter.Write(length); // length prefix
-
-		var oldPosition = GetDataPosition(workItem);
-		if (workItem.WorkingStream.Position + length + 2 * sizeof(int) > ChunkHeader.Size + _chunkHeader.ChunkSize)
-			return RecordWriteResult.Failed(oldPosition);
-
-		await workItem.DrainBufferAsync(token);
+			await workItem.AppendData(dataOnDisk.Memory, token);
+		}
 
 		_physicalDataSize = (int)GetDataPosition(workItem); // should fit 32 bits
 		_logicalDataSize = ChunkHeader.GetLocalLogPosition(record.LogPosition + length + 2 * sizeof(int));
@@ -858,6 +852,22 @@ public partial class TFChunk : IDisposable {
 		}
 
 		return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
+
+		static MemoryOwner<byte> SerializeLogRecord(ILogRecord record, out int recordLength) {
+			var writer = new BufferWriterSlim<byte>(record.GetSizeWithLengthPrefixAndSuffix());
+			writer.Advance(sizeof(int)); // reserved for length prefix
+			record.WriteTo(ref writer);
+
+			recordLength = writer.WrittenCount - sizeof(int);
+			writer.WriteLittleEndian(recordLength); // length suffix
+
+			var buffer = writer.DetachOrCopyBuffer();
+			Debug.Assert(record.GetSizeWithLengthPrefixAndSuffix() == buffer.Length);
+
+			// write length prefix
+			BinaryPrimitives.WriteInt32LittleEndian(buffer.Span, recordLength);
+			return buffer;
+		}
 	}
 
 	public async ValueTask<bool> TryAppendRawData(ReadOnlyMemory<byte> buffer, CancellationToken token) {
@@ -945,8 +955,14 @@ public partial class TFChunk : IDisposable {
 		var workItem = _writerWorkItem;
 		workItem.ResizeStream((int)workItem.WorkingStream.Position);
 
-		int mapSize = 0;
-		if (mapping is not null) {
+		int mapSize;
+
+		// reuse rented buffer for position mapping serialization and chunk footer
+		byte[] bufferFromPool;
+		if (mapping is null) {
+			mapSize = 0;
+			bufferFromPool = ArrayPool<byte>.Shared.Rent(ChunkFooter.Size);
+		} else {
 			if (_inMem)
 				throw new InvalidOperationException(
 					"Cannot write an in-memory chunk with a PosMap. " +
@@ -960,14 +976,9 @@ public partial class TFChunk : IDisposable {
 
 			mapSize = mapping.Count * PosMap.FullSize;
 
-			var buffer = workItem.BufferWriter.BaseStream;
-			buffer.SetLength(mapSize);
-			buffer.Position = 0;
-			foreach (var map in mapping) {
-				map.Write(workItem.BufferWriter);
-			}
-
-			await workItem.DrainBufferAsync(token);
+			bufferFromPool = ArrayPool<byte>.Shared.Rent(Math.Max(mapSize, ChunkFooter.Size));
+			mapSize = WriteMapping(bufferFromPool, mapping);
+			await workItem.AppendData(bufferFromPool.AsMemory(0, mapSize), token);
 		}
 
 		workItem.FlushToDisk();
@@ -978,15 +989,14 @@ public partial class TFChunk : IDisposable {
 
 		await Flush(token);
 
-		var footerBuffer = ArrayPool<byte>.Shared.Rent(ChunkFooter.Size);
 		int fileSize;
 		ChunkFooter footerWithHash;
 		try {
 			var footerNoHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize);
 
 			//MD5
-			footerNoHash.Format(footerBuffer);
-			workItem.MD5.TransformFinalBlock(footerBuffer, 0,
+			footerNoHash.Format(bufferFromPool);
+			workItem.MD5.TransformFinalBlock(bufferFromPool, 0,
 				ChunkFooter.Size - ChunkFooter.ChecksumSize);
 
 			//FILE
@@ -994,16 +1004,25 @@ public partial class TFChunk : IDisposable {
 				MD5Hash = workItem.MD5.Hash,
 			};
 
-			footerWithHash.Format(footerBuffer);
-			_transform.Write.WriteFooter(footerBuffer.AsSpan(0, ChunkFooter.Size), out fileSize);
+			footerWithHash.Format(bufferFromPool);
+			_transform.Write.WriteFooter(bufferFromPool.AsSpan(0, ChunkFooter.Size), out fileSize);
 		} finally {
-			ArrayPool<byte>.Shared.Return(footerBuffer);
+			ArrayPool<byte>.Shared.Return(bufferFromPool);
 		}
 
 		await Flush(token);
 
 		_fileSize = fileSize;
 		return footerWithHash;
+
+		static int WriteMapping(Span<byte> buffer, IReadOnlyCollection<PosMap> mapping) {
+			var writer = new SpanWriter<byte>(buffer);
+			foreach (var map in mapping) {
+				writer.Write(map);
+			}
+
+			return writer.WrittenCount;
+		}
 	}
 
 	public void Dispose() => TryClose();

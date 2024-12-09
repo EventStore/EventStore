@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using DotNext.Buffers.Binary;
 using DotNext.IO;
 using EventStore.Common.Utils;
@@ -13,7 +14,7 @@ using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords;
 
-public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
+public sealed class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 	public const byte CommitRecordVersion = 1;
 
 	public long TransactionPosition { get; private init; }
@@ -64,24 +65,34 @@ public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 			=> version is int.MaxValue ? long.MaxValue : version;
 	}
 
-	public override void WriteTo(BinaryWriter writer) {
-		base.WriteTo(writer);
+	public override void WriteTo(ref BufferWriterSlim<byte> writer) {
+		base.WriteTo(ref writer);
 
-		writer.Write(TransactionPosition);
+		writer.WriteLittleEndian(TransactionPosition);
 		if (Version is LogRecordVersion.LogRecordV0) {
-			int firstEventNumber = FirstEventNumber == long.MaxValue ? int.MaxValue : (int)FirstEventNumber;
-			writer.Write(firstEventNumber);
+			int firstEventNumber = FirstEventNumber is long.MaxValue ? int.MaxValue : (int)FirstEventNumber;
+			writer.WriteLittleEndian(firstEventNumber);
 		} else {
-			writer.Write(FirstEventNumber);
+			writer.WriteLittleEndian(FirstEventNumber);
 		}
 
-		writer.Write(SortKey);
+		writer.WriteLittleEndian(SortKey);
 
-		Span<byte> correlationIdBuffer = stackalloc byte[16];
+		Span<byte> correlationIdBuffer = writer.GetSpan(16);
 		CorrelationId.TryWriteBytes(correlationIdBuffer);
-		writer.Write(correlationIdBuffer);
+		writer.Advance(16);
 
-		writer.Write(TimeStamp.Ticks);
+		writer.WriteLittleEndian(TimeStamp.Ticks);
+	}
+
+	public override int GetSizeWithLengthPrefixAndSuffix() {
+		return sizeof(int) * 2														/* Length prefix & suffix */
+		+ sizeof(long)																/* TransactionPosition */
+		+ (Version is LogRecordVersion.LogRecordV0 ? sizeof(int) : sizeof(long))	/* Version */
+		+ sizeof(long)																/* SortKey */
+		+ 16																		/* CorrelationId */
+		+ sizeof(long)																/* TimeStamp */
+		+ BaseSize;
 	}
 
 	public bool Equals(CommitLogRecord other) {

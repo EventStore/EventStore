@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Text;
+using DotNext.Buffers;
 using EventStore.Core.TransactionLog.LogRecords;
 using Xunit;
 
@@ -66,5 +67,17 @@ public class PrepareLogRecordViewTests {
 		Assert.True(_prepare.Data.SequenceEqual(_data));
 		Assert.True(_prepare.Metadata.SequenceEqual(_metadata));
 		Assert.Equal(Version, _prepare.Version);
+	}
+}
+
+public static class LogRecordExtensions {
+	public static void WriteTo(this ILogRecord record, BinaryWriter writer) {
+		var localWriter = new BufferWriterSlim<byte>();
+		try {
+			record.WriteTo(ref localWriter);
+			writer.Write(localWriter.WrittenSpan);
+		} finally {
+			localWriter.Dispose();
+		}
 	}
 }
