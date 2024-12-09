@@ -850,11 +850,21 @@ public partial class EnumeratorTests {
 				return;
 			}
 
-			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
+			var current = await sub.GetNext();
+			Assert.True(
+				current is SubscriptionConfirmation,
+				"Case \"{0}\": Expected SubscriptionConfirmation but was {1}",
+				_testData.TestCase,
+				current.GetType().FullName);
 
 			_nextEventNumber = await ReadExpectedEvents(sub, _nextEventNumber, LastEventNumber);
 
-			Assert.True(await sub.GetNext() is CaughtUp);
+			current = await sub.GetNext();
+			Assert.True(
+				current is CaughtUp,
+				"Case \"{0}\": Expected CaughtUp but was {1}",
+				_testData.TestCase,
+				current.GetType().FullName);
 
 			var (numEventsAdded, softDeleted, hardDeleted, accessRevoked, shouldFallBehindThenCatchup) = await ApplyLiveProperties();
 
