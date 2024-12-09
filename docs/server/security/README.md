@@ -219,4 +219,4 @@ The encrypted chunks would first need to be decrypted before a user can revert t
 
 ### Tutorial
 
-[Learn how to set up and use Encryption-At-Rest in EventStoreDB with a tutorial.](https://github.com/EventStore/documentation/blob/d01d5cf3ecd5e94486f471393de0ef5032c17fe0/docs/tutorials/Tutorial_%20Setting%20up%20and%20using%20Encryption-At-Rest%20in%20EventStoreDB.md)
+[Learn how to set up and use Encryption-At-Rest in EventStoreDB with a tutorial.](https://github.com/EventStore/documentation/blob/main/docs/tutorials/Tutorial_%20Setting%20up%20and%20using%20Encryption-At-Rest%20in%20EventStoreDB.md)
