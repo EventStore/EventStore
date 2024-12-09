@@ -673,9 +673,9 @@ public partial class EnumeratorTests {
 		private Task Truncate(long tb) => WriteMetadata(@$"{{""$tb"":{tb}}}");
 		private Task MaxCount(long maxCount) => WriteMetadata(@$"{{""$maxCount"":{maxCount}}}");
 		private async Task ExpiredMaxAge() {
-			// a max age of zero doesn't do anything, so we're forced to introduce a delay of 1 second
-			await WriteMetadata(@"{""$maxAge"": 1 }");
-			await Task.Delay(TimeSpan.FromMilliseconds(1001));
+			// a max age of zero doesn't do anything, so we're forced to introduce a delay of 1 second. Make it 2 to be sure.
+			await WriteMetadata(@"{""$maxAge"": 1 }"); // seconds
+			await Task.Delay(TimeSpan.FromMilliseconds(2000));
 		}
 
 		private Task ApplyTruncation() {
