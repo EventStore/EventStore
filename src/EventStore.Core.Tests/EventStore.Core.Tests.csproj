@@ -20,7 +20,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Scrutor" Version="4.2.2" />
+		<PackageReference Include="Scrutor" Version="5.0.2" />
 		<PackageReference Include="Serilog.Sinks.InMemory" Version="0.11.0" />
 
 	</ItemGroup>

@@ -1543,6 +1543,7 @@ public class ClusterVNode<TStreamId> :
 				.AddSingleton(authorizationGateway)
 				.AddSingleton(certificateProvider)
 				.AddSingleton<IReadOnlyList<IDbTransform>>(new List<IDbTransform> { new IdentityDbTransform() })
+				.AddSingleton<IReadOnlyList<IClusterVNodeStartupTask>>(new List<IClusterVNodeStartupTask> { })
 				.AddSingleton<IReadOnlyList<IHttpAuthenticationProvider>>(httpAuthenticationProviders)
 				.AddSingleton<Func<(X509Certificate2 Node, X509Certificate2Collection Intermediates,
 						X509Certificate2Collection Roots)>>
@@ -1563,7 +1564,7 @@ public class ClusterVNode<TStreamId> :
 					$"Unknown {nameof(options.Database.Transform)} specified: {options.Database.Transform}");
 		}
 
-		void StartNode() {
+		void StartNode(IApplicationBuilder app) {
 			// TRUNCATE IF NECESSARY
 			var truncPos = Db.Config.TruncateCheckpoint.Read();
 			if (truncPos != -1) {
@@ -1591,6 +1592,11 @@ public class ClusterVNode<TStreamId> :
 				Application.Exit(0, "Shutting down after successful truncation.");
 				return;
 			}
+
+			var startupTasks = (app.ApplicationServices.GetRequiredService<IReadOnlyList<IClusterVNodeStartupTask>>())
+				.Select(x => x.Run())
+				.ToArray();
+			Task.WaitAll(startupTasks); // No timeout or cancellation, this is intended
 
 			// start the main queue as we publish messages to it while opening the db
 			AddTask(_controller.Start());
