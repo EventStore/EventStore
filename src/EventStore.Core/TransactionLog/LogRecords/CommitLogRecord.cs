@@ -66,23 +66,23 @@ public sealed class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 	}
 
 	public override void WriteTo(ref BufferWriterSlim<byte> writer) {
-		base.WriteTo(ref writer); // 10 + 8 = 18
+		base.WriteTo(ref writer);
 
-		writer.WriteLittleEndian(TransactionPosition); // 18 + 8 = 26
+		writer.WriteLittleEndian(TransactionPosition);
 		if (Version is LogRecordVersion.LogRecordV0) {
 			int firstEventNumber = FirstEventNumber is long.MaxValue ? int.MaxValue : (int)FirstEventNumber;
 			writer.WriteLittleEndian(firstEventNumber);
 		} else {
-			writer.WriteLittleEndian(FirstEventNumber); // 26 + 8 = 34
+			writer.WriteLittleEndian(FirstEventNumber);
 		}
 
-		writer.WriteLittleEndian(SortKey); // 34 + 8 = 42
+		writer.WriteLittleEndian(SortKey);
 
 		Span<byte> correlationIdBuffer = writer.GetSpan(16);
 		CorrelationId.TryWriteBytes(correlationIdBuffer);
-		writer.Advance(16); // 42 + 16 = 58
+		writer.Advance(16);
 
-		writer.WriteLittleEndian(TimeStamp.Ticks); // 58 + 8 = 66
+		writer.WriteLittleEndian(TimeStamp.Ticks);
 	}
 
 	public override int GetSizeWithLengthPrefixAndSuffix() {
