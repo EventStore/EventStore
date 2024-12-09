@@ -673,9 +673,9 @@ public partial class EnumeratorTests {
 		private Task Truncate(long tb) => WriteMetadata(@$"{{""$tb"":{tb}}}");
 		private Task MaxCount(long maxCount) => WriteMetadata(@$"{{""$maxCount"":{maxCount}}}");
 		private async Task ExpiredMaxAge() {
-			// a max age of zero doesn't do anything, so we're forced to introduce a delay of 1 second
-			await WriteMetadata(@"{""$maxAge"": 1 }");
-			await Task.Delay(TimeSpan.FromMilliseconds(1001));
+			// a max age of zero doesn't do anything, so we're forced to introduce a delay of 1 second. Make it 2 to be sure.
+			await WriteMetadata(@"{""$maxAge"": 1 }"); // seconds
+			await Task.Delay(TimeSpan.FromMilliseconds(2000));
 		}
 
 		private Task ApplyTruncation() {
@@ -850,11 +850,21 @@ public partial class EnumeratorTests {
 				return;
 			}
 
-			Assert.True(await sub.GetNext() is SubscriptionConfirmation);
+			var current = await sub.GetNext();
+			Assert.True(
+				current is SubscriptionConfirmation,
+				"Case \"{0}\": Expected SubscriptionConfirmation but was {1}",
+				_testData.TestCase,
+				current.GetType().FullName);
 
 			_nextEventNumber = await ReadExpectedEvents(sub, _nextEventNumber, LastEventNumber);
 
-			Assert.True(await sub.GetNext() is CaughtUp);
+			current = await sub.GetNext();
+			Assert.True(
+				current is CaughtUp,
+				"Case \"{0}\": Expected CaughtUp but was {1}",
+				_testData.TestCase,
+				current.GetType().FullName);
 
 			var (numEventsAdded, softDeleted, hardDeleted, accessRevoked, shouldFallBehindThenCatchup) = await ApplyLiveProperties();
 

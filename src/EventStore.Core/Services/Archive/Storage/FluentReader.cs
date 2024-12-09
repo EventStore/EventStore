@@ -16,9 +16,12 @@ public abstract class FluentReader {
 	protected abstract ILogger Log { get; }
 	protected abstract IBlobStorage BlobStorage { get; }
 
-	public async ValueTask<Stream> GetChunk(string chunkPath, CancellationToken ct) {
-		var fileName = Path.GetFileName(chunkPath);
-		var stream = await BlobStorage.OpenReadAsync(fileName, ct);
+	public ValueTask<long> GetCheckpoint(CancellationToken ct) {
+		throw new NotImplementedException();
+	}
+
+	public async ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) {
+		var stream = await BlobStorage.OpenReadAsync(chunkFile, ct);
 		return stream ?? throw new ChunkDeletedException();
 	}
 

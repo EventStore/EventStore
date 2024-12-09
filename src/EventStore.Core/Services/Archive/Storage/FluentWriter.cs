@@ -15,6 +15,10 @@ public abstract class FluentWriter {
 	protected abstract ILogger Log { get; }
 	protected abstract IBlobStorage BlobStorage { get; }
 
+	public ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) {
+		throw new NotImplementedException();
+	}
+
 	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
 		var fileName = "unknown";
 		try {
