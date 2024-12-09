@@ -114,6 +114,7 @@ public sealed class KeygenClient : IDisposable {
 
 	public async Task<RestResponse<EntitlementsResponse>> GetEntitlements(string licenseId) {
 		var request = new RestRequest($"licenses/{licenseId}/entitlements");
+		request.AddQueryParameter("limit", 100); // only gets 10 entitlements by default
 		var response = await _client.ExecuteGetAsync<EntitlementsResponse>(request);
 		return response;
 	}
