@@ -216,3 +216,7 @@ When encryption is enabled, it's no longer possible to revert back to an unencry
 - at least one chunk has been scavenged
 
 The encrypted chunks would first need to be decrypted before a user can revert to the `identity` transform. Special tooling or endpoints are not currently available to do this.
+
+### Tutorial
+
+[Learn how to set up and use Encryption-At-Rest in EventStoreDB with a tutorial.](https://github.com/EventStore/documentation/blob/main/docs/tutorials/encryption-at-rest.md)
