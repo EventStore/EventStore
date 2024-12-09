@@ -101,7 +101,7 @@ public class ArchiverService :
 	private async Task StartArchiving(CancellationToken ct) {
 		try {
 			await LoadArchiveCheckpoint(ct);
-			await ScheduleExistingChunksForArchiving(ct);
+			ScheduleExistingChunksForArchiving();
 			await ArchiveChunks(ct);
 		} catch (OperationCanceledException) {
 			// ignore
@@ -204,14 +204,17 @@ public class ArchiverService :
 		} while (true);
 	}
 
-	private async Task ScheduleExistingChunksForArchiving(CancellationToken ct) {
-		await foreach (var archivedChunk in _archiveReader.ListChunks(ct))
-			_existingChunks.Remove(archivedChunk, out _);
+	private void ScheduleExistingChunksForArchiving() {
+		var scheduledChunks = 0;
+		foreach (var chunkInfo in _existingChunks.Values) {
+			if (chunkInfo.ChunkEndPosition <= _checkpoint)
+				continue;
 
-		Log.Information("Scheduling archiving of {numChunks} existing chunks.", _existingChunks.Count);
-		foreach (var chunkInfo in _existingChunks.Values)
 			ScheduleChunkForArchiving(chunkInfo, "old");
+			scheduledChunks++;
+		}
 
+		Log.Information("Scheduled archiving of {numChunks} existing chunks.", scheduledChunks);
 		_existingChunks.Clear();
 	}
 }
