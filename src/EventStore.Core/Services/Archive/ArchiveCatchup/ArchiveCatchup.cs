@@ -142,7 +142,7 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 		if (!await FetchChunk(chunkFile, chunkPath, ct))
 			return false;
 
-		await CommitChunk(chunkPath);
+		await CommitChunk(chunkPath, ct);
 		return true;
 	}
 
@@ -184,9 +184,9 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 		}
 	}
 
-	private async Task CommitChunk(string chunkPath) {
+	private async Task CommitChunk(string chunkPath, CancellationToken ct) {
 		await using var headerStream = File.OpenRead(chunkPath);
-		var header = ChunkHeader.FromStream(headerStream);
+		var header = await ChunkHeader.FromStream(headerStream, ct);
 
 		_writerCheckpoint.Write(header.ChunkEndPosition);
 		_writerCheckpoint.Flush();
