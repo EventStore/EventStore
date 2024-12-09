@@ -631,7 +631,6 @@ curl -X POST \
 If a policy update is invalid, it will not be applied and an error will be logged. EventStoreDB will continue running with the previous valid policy in place.
 :::
 
-
 ##### Stream policy schema
 
 ###### Policy
