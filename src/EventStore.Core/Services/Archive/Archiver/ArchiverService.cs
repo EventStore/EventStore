@@ -38,6 +38,7 @@ public class ArchiverService :
 	private readonly TimeSpan RetryInterval = TimeSpan.FromMinutes(1);
 	private long _replicationPosition;
 	private bool _archivingStarted;
+	private long _checkpoint;
 
 	public ArchiverService(ISubscriber mainBus, IArchiveStorageFactory archiveStorageFactory) {
 		_mainBus = mainBus;
@@ -94,10 +95,19 @@ public class ArchiverService :
 			return;
 
 		_archivingStarted = true;
-		Task.Run(async () => {
-			await ScheduleExistingChunksForArchiving(_cts.Token);
-			await ArchiveChunks(_cts.Token);
-		}, _cts.Token);
+		Task.Run(() => StartArchiving(_cts.Token), _cts.Token);
+	}
+
+	private async Task StartArchiving(CancellationToken ct) {
+		try {
+			await LoadArchiveCheckpoint(ct);
+			await ScheduleExistingChunksForArchiving(ct);
+			await ArchiveChunks(ct);
+		} catch (OperationCanceledException) {
+			// ignore
+		} catch (Exception ex) {
+			Log.Fatal(ex, "Archiving has stopped working due to an unhandled exception.");
+		}
 	}
 
 	public void Handle(SystemMessage.BecomeShuttingDown message) {
@@ -124,7 +134,8 @@ public class ArchiverService :
 		var writeResult = _archiveChunkCommands.Writer.TryWrite(new Commands.ArchiveChunk {
 			ChunkPath = chunkInfo.ChunkFileName,
 			ChunkStartNumber = chunkInfo.ChunkStartNumber,
-			ChunkEndNumber = chunkInfo.ChunkEndNumber
+			ChunkEndNumber = chunkInfo.ChunkEndNumber,
+			ChunkEndPosition = chunkInfo.ChunkEndPosition
 		});
 
 		Debug.Assert(writeResult); // writes should never fail as the channel's length is unbounded
@@ -134,18 +145,11 @@ public class ArchiverService :
 	}
 
 	private async Task ArchiveChunks(CancellationToken ct) {
-		try {
-			await foreach (var cmd in _archiveChunkCommands.Reader.ReadAllAsync(ct)) {
-				await ArchiveChunk(cmd.ChunkPath, cmd.ChunkStartNumber, cmd.ChunkEndNumber, ct);
-			}
-		} catch (OperationCanceledException) {
-			// ignore
-		} catch (Exception ex) {
-			Log.Fatal(ex, "Archiving has stopped working due to an unhandled exception.");
-		}
+		await foreach (var cmd in _archiveChunkCommands.Reader.ReadAllAsync(ct))
+			await ArchiveChunk(cmd.ChunkPath, cmd.ChunkStartNumber, cmd.ChunkEndNumber, cmd.ChunkEndPosition, ct);
 	}
 
-	private async Task ArchiveChunk(string chunkPath, int chunkStartNumber, int chunkEndNumber, CancellationToken ct) {
+	private async Task ArchiveChunk(string chunkPath, int chunkStartNumber, int chunkEndNumber, long chunkEndPosition, CancellationToken ct) {
 		var chunkFile = Path.GetFileName(chunkPath);
 		try {
 			Log.Information("Archiving {chunkFile}", chunkFile);
@@ -162,6 +166,17 @@ public class ArchiverService :
 				await Task.Delay(RetryInterval, ct);
 			}
 
+			if (chunkEndPosition > _checkpoint) {
+				while (!await _archiveWriter.SetCheckpoint(chunkEndPosition, ct)) {
+					Log.Warning(
+						"Failed to set the archive checkpoint to: 0x{checkpoint:X}. Retrying in: {retryInterval}.",
+						chunkEndPosition, RetryInterval);
+					await Task.Delay(RetryInterval, ct);
+				}
+				_checkpoint = chunkEndPosition;
+				Log.Debug("Archive checkpoint set to: 0x{checkpoint:X}", _checkpoint);
+			}
+
 			Log.Information("Archiving of {chunkFile} succeeded.", chunkFile);
 		} catch (ChunkDeletedException) {
 			// the chunk has been deleted, presumably during scavenge or redaction
@@ -174,20 +189,29 @@ public class ArchiverService :
 		}
 	}
 
+	private async Task LoadArchiveCheckpoint(CancellationToken ct) {
+		do {
+			try {
+				_checkpoint = await _archiveReader.GetCheckpoint(ct);
+				Log.Debug("Archive checkpoint is: 0x{checkpoint:X}", _checkpoint);
+				return;
+			} catch (OperationCanceledException) {
+				throw;
+			} catch (Exception ex) {
+				Log.Warning(ex, "Failed to load the archive checkpoint. Retrying in: {retryInterval}.", RetryInterval);
+				await Task.Delay(RetryInterval, ct);
+			}
+		} while (true);
+	}
+
 	private async Task ScheduleExistingChunksForArchiving(CancellationToken ct) {
-		try {
-			await foreach (var archivedChunk in _archiveReader.ListChunks(ct))
-				_existingChunks.Remove(archivedChunk, out _);
+		await foreach (var archivedChunk in _archiveReader.ListChunks(ct))
+			_existingChunks.Remove(archivedChunk, out _);
 
-			Log.Information("Scheduling archiving of {numChunks} existing chunks.", _existingChunks.Count);
-			foreach (var chunkInfo in _existingChunks.Values)
-				ScheduleChunkForArchiving(chunkInfo, "old");
+		Log.Information("Scheduling archiving of {numChunks} existing chunks.", _existingChunks.Count);
+		foreach (var chunkInfo in _existingChunks.Values)
+			ScheduleChunkForArchiving(chunkInfo, "old");
 
-			_existingChunks.Clear();
-		} catch (OperationCanceledException) {
-			// ignore
-		} catch (Exception ex) {
-			Log.Error(ex, "Archiving of existing chunks has stopped due to an unhandled exception.");
-		}
+		_existingChunks.Clear();
 	}
 }

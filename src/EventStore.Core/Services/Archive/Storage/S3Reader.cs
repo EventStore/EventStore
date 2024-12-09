@@ -19,7 +19,7 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 	private readonly S3Options _options;
 	private readonly IAwsS3BlobStorage _awsBlobStorage;
 
-	public S3Reader(S3Options options, Func<int?, int?, string> getChunkPrefix) {
+	public S3Reader(S3Options options, Func<int?, int?, string> getChunkPrefix, string archiveCheckpointFile) {
 		_options = options;
 		_awsBlobStorage = StorageFactory.Blobs.AwsS3(
 			awsCliProfileName: options.AwsCliProfileName,

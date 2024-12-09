@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 namespace EventStore.Core.Services.Archive.Storage;
 
 public interface IArchiveStorageReader {
+	/// <returns>A position in the transaction log up to which all chunks have been archived</returns>
+	public ValueTask<long> GetCheckpoint(CancellationToken ct);
+
 	/// <returns>A stream of the chunk's contents. Dispose this after use.</returns>
 	public ValueTask<Stream> GetChunk(string chunkPath, CancellationToken ct);
 
