@@ -66,6 +66,8 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 			writerChk = _writerCheckpoint.Read();
 	}
 
+	// returns true if the catchup is done
+	// returns false if it needs to be invoked again to continue the catchup
 	private async Task<bool> CatchUpWithArchive(long writerChk, CancellationToken ct) {
 		string previousChunk = null;
 		var firstChunksToFetch = new List<string>(capacity: 2);
