@@ -116,21 +116,21 @@ public class PartitionManagerTests {
 	}
 
 	[Fact]
-	public void throws_on_unexpected_log_record_type() {
+	public async Task throws_on_unexpected_log_record_type() {
 		var reader = new FakeReader(UnexpectedLogRecord);
 
 		IPartitionManager partitionManager = new PartitionManager(reader, new FakeWriter(), new LogV3RecordFactory());
 
-		Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => partitionManager.Initialize(CancellationToken.None).AsTask());
+		await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => partitionManager.Initialize(CancellationToken.None).AsTask());
 	}
 
 	[Fact]
-	public void throws_on_unexpected_system_log_record_type() {
+	public async Task throws_on_unexpected_system_log_record_type() {
 		var reader = new FakeReader(UnexpectedSystemLogRecord);
 
 		IPartitionManager partitionManager = new PartitionManager(reader, new FakeWriter(), new LogV3RecordFactory());
 
-		Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => partitionManager.Initialize(CancellationToken.None).AsTask());
+		await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => partitionManager.Initialize(CancellationToken.None).AsTask());
 	}
 
 	private LogV3StreamRecord UnexpectedLogRecord => new LogV3StreamRecord(
