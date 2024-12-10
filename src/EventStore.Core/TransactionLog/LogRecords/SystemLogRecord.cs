@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using DotNext.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
@@ -24,7 +25,7 @@ public enum SystemRecordSerialization : byte {
 	Bson = 3
 }
 
-public class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, ISystemLogRecord {
+public sealed class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, ISystemLogRecord {
 	public const byte SystemRecordVersion = 0;
 
 	public DateTime TimeStamp { get; private init; }
@@ -89,20 +90,30 @@ public class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, ISystemLo
 			}
 			default:
 				throw new ArgumentOutOfRangeException(
-					string.Format("Unexpected SystemRecordSerialization type: {0}", SystemRecordSerialization),
+					$"Unexpected SystemRecordSerialization type: {SystemRecordSerialization}",
 					"SystemRecordSerialization");
 		}
 	}
 
-	public override void WriteTo(BinaryWriter writer) {
-		base.WriteTo(writer);
+	public override void WriteTo(ref BufferWriterSlim<byte> writer) {
+		base.WriteTo(ref writer);
 
-		writer.Write(TimeStamp.Ticks);
-		writer.Write((byte)SystemRecordType);
-		writer.Write((byte)SystemRecordSerialization);
-		writer.Write(Reserved);
-		writer.Write(Data.Length);
-		writer.Write(Data.Span);
+		writer.WriteLittleEndian(TimeStamp.Ticks);
+		writer.Add((byte)SystemRecordType);
+		writer.Add((byte)SystemRecordSerialization);
+		writer.WriteLittleEndian(Reserved);
+		writer.Write(Data.Span, LengthFormat.LittleEndian);
+	}
+
+	public override int GetSizeWithLengthPrefixAndSuffix() {
+		return sizeof(int) * 2	/* Length prefix & suffix */
+		       + sizeof(long)	/* TimeStamp */
+		       + sizeof(byte)	/* SystemRecordType */
+		       + sizeof(byte)	/* SystemRecordSerialization */
+		       + sizeof(long)	/* Reserved */
+		       + sizeof(int)	/* Data.Length */
+		       + Data.Length	/* Data */
+		       + BaseSize;
 	}
 
 	public bool Equals(SystemLogRecord other) {

@@ -18,15 +18,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 internal sealed class WriterWorkItem : Disposable {
 	public const int BufferSize = 8192;
 
-	// Remove buffer for writes in future
-	private static readonly RecyclableMemoryStreamManager StreamManager = new();
-
 	public Stream WorkingStream { get; private set; }
 
 	private readonly Stream _fileStream;
 	private Stream _memStream;
-
-	public readonly BinaryWriter BufferWriter;
 	public readonly HashAlgorithm MD5;
 
 	public unsafe WriterWorkItem(nint memoryPtr, int length, HashAlgorithm md5,
@@ -37,7 +32,6 @@ internal sealed class WriterWorkItem : Disposable {
 
 		var chunkDataWriteStream = new ChunkDataWriteStream(memStream, md5);
 		WorkingStream = _memStream = chunkWriteTransform.TransformData(chunkDataWriteStream);
-		BufferWriter = new(StreamManager.GetStream(), Encoding.UTF8, leaveOpen: false);
 		MD5 = md5;
 	}
 
@@ -50,7 +44,6 @@ internal sealed class WriterWorkItem : Disposable {
 		var chunkDataWriteStream = new ChunkDataWriteStream(fileStream, md5);
 
 		WorkingStream = _fileStream = chunkWriteTransform.TransformData(chunkDataWriteStream);
-		BufferWriter = new(StreamManager.GetStream(), Encoding.UTF8, leaveOpen: false);
 		MD5 = md5;
 	}
 
@@ -68,23 +61,6 @@ internal sealed class WriterWorkItem : Disposable {
 		return _fileStream?.WriteAsync(buf, token) ?? ValueTask.CompletedTask;
 	}
 
-	public ValueTask DrainBufferAsync(CancellationToken token) {
-		var task = ValueTask.CompletedTask;
-		var buffer = BufferWriter.BaseStream;
-
-		if (_memStream is not null) {
-			buffer.Position = 0L;
-			buffer.CopyTo(_memStream);
-		}
-
-		if (_fileStream is not null) {
-			buffer.Position = 0L;
-			task = new(buffer.CopyToAsync(_fileStream, token));
-		}
-
-		return task;
-	}
-
 	public void ResizeStream(int fileSize) {
 		_fileStream?.SetLength(fileSize);
 		_memStream?.SetLength(fileSize);
@@ -94,7 +70,6 @@ internal sealed class WriterWorkItem : Disposable {
 		if (disposing) {
 			_fileStream?.Dispose();
 			DisposeMemStream();
-			BufferWriter.Dispose();
 			MD5.Dispose();
 		}
 

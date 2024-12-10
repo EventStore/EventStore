@@ -2,9 +2,11 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -18,12 +20,15 @@ namespace EventStore.Core.Tests.TransactionLog;
 
 public static class LogRecordExtensions {
 	public static void WriteWithLengthPrefixAndSuffixTo(this ILogRecord record, BinaryWriter writer) {
-		using (var memoryStream = new MemoryStream()) {
-			record.WriteTo(new BinaryWriter(memoryStream));
-			var length = (int)memoryStream.Length;
-			writer.Write(length);
-			writer.Write(memoryStream.GetBuffer(), 0, (int)memoryStream.Length);
-			writer.Write(length);
+		var localWriter = new BufferWriterSlim<byte>();
+		try {
+			record.WriteTo(ref localWriter);
+
+			writer.Write(localWriter.WrittenCount);
+			writer.Write(localWriter.WrittenSpan);
+			writer.Write(localWriter.WrittenCount);
+		} finally {
+			localWriter.Dispose();
 		}
 	}
 }

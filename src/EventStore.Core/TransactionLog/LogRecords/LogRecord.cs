@@ -2,8 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
@@ -12,13 +10,15 @@ using DotNext.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
-using EventStore.Core.Services;
 using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords;
 
 public abstract class LogRecord : ILogRecord {
 	public static readonly ReadOnlyMemory<byte> NoData = Empty.ByteArray;
+
+	// RecordType + Version + LogPosition
+	protected const int BaseSize = sizeof(byte) + sizeof(byte) + sizeof(long);
 
 	public LogRecordType RecordType { get; }
 	public byte Version { get; }
@@ -137,17 +137,13 @@ public abstract class LogRecord : ILogRecord {
 		LogPosition = logPosition;
 	}
 
-	public virtual void WriteTo(BinaryWriter writer) {
-		writer.Write((byte)RecordType);
-		writer.Write(Version);
-		writer.Write(LogPosition);
+	public virtual void WriteTo(ref BufferWriterSlim<byte> writer) {
+		writer.Add((byte)RecordType);
+		writer.Add(Version);
+		writer.WriteLittleEndian(LogPosition);
 	}
 
-	public int GetSizeWithLengthPrefixAndSuffix() {
-		using var writer = new BinaryWriter(new MemoryStream(), Encoding.UTF8, leaveOpen: false);
-		WriteTo(writer);
-		return 8 + (int)writer.BaseStream.Length;
-	}
+	public abstract int GetSizeWithLengthPrefixAndSuffix();
 
 	private readonly struct Header : IBinaryFormattable<Header> {
 		private const int Size = sizeof(LogRecordType) + sizeof(byte);
