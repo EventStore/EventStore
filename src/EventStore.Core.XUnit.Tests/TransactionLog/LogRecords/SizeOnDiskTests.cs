@@ -34,15 +34,19 @@ public class SizeOnDiskTests {
 			metadata: new byte[] { 0XC0, 0xDE },
 			prepareRecordVersion: 1);
 
-		var writer = new BufferWriterSlim<byte>();
-		var length = 111;
+		var writer = new BufferWriterSlim<byte>(prepare.GetSizeWithLengthPrefixAndSuffix());
+		try {
+			const int dummyLength = 111;
 
-		writer.WriteLittleEndian(length);
-		prepare.WriteTo(ref writer);
-		writer.WriteLittleEndian(length);
+			writer.WriteLittleEndian(dummyLength);
+			prepare.WriteTo(ref writer);
+			writer.WriteLittleEndian(dummyLength);
 
-		var recordLen = writer.WrittenCount;
+			var recordLen = writer.WrittenCount;
 
-		Assert.Equal(recordLen, prepare.SizeOnDisk);
+			Assert.Equal(recordLen, prepare.SizeOnDisk);
+		} finally {
+			writer.Dispose();
+		}
 	}
 }
