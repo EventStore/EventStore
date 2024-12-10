@@ -49,4 +49,55 @@ public class SizeOnDiskTests {
 			writer.Dispose();
 		}
 	}
+
+	[Fact]
+	public void commit_record_size_on_disk_is_correct() {
+		var record = new CommitLogRecord(
+			logPosition: 123,
+			correlationId: Guid.NewGuid(),
+			transactionPosition: 456,
+			timeStamp: DateTime.Now,
+			firstEventNumber: 789,
+			commitRecordVersion: 1);
+
+		var writer = new BufferWriterSlim<byte>(record.GetSizeWithLengthPrefixAndSuffix());
+		try {
+			const int dummyLength = 111;
+
+			writer.WriteLittleEndian(dummyLength);
+			record.WriteTo(ref writer);
+			writer.WriteLittleEndian(dummyLength);
+
+			var recordLen = writer.WrittenCount;
+
+			Assert.Equal(recordLen, record.GetSizeWithLengthPrefixAndSuffix());
+		} finally {
+			writer.Dispose();
+		}
+	}
+
+	[Fact]
+	public void system_record_size_on_disk_is_correct() {
+		var record = new SystemLogRecord(
+			logPosition: 123,
+			timeStamp: DateTime.Now,
+			systemRecordType: SystemRecordType.Epoch,
+			systemRecordSerialization: SystemRecordSerialization.Binary,
+			data: new byte[] { 0xDE, 0XAD, 0xC0, 0XDE });
+
+		var writer = new BufferWriterSlim<byte>(record.GetSizeWithLengthPrefixAndSuffix());
+		try {
+			const int dummyLength = 111;
+
+			writer.WriteLittleEndian(dummyLength);
+			record.WriteTo(ref writer);
+			writer.WriteLittleEndian(dummyLength);
+
+			var recordLen = writer.WrittenCount;
+
+			Assert.Equal(recordLen, record.GetSizeWithLengthPrefixAndSuffix());
+		} finally {
+			writer.Dispose();
+		}
+	}
 }
