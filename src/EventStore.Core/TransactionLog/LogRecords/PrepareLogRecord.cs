@@ -93,8 +93,8 @@ public sealed class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, 
 
 	// including length and suffix
 	private int ComputeSizeOnDisk() {
-		_eventStreamIdSize ??= Encoding.UTF8.GetByteCount(EventStreamId);
-		_eventTypeSize ??= Encoding.UTF8.GetByteCount(EventType);
+		int eventStreamIdSize = _eventStreamIdSize ??= Encoding.UTF8.GetByteCount(EventStreamId);
+		int eventTypeSize = _eventTypeSize ??= Encoding.UTF8.GetByteCount(EventType);
 
 		return
 			2 * sizeof(int) /* Length prefix & suffix */
@@ -102,12 +102,12 @@ public sealed class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, 
 			+ sizeof(ushort) /* Flags */
 			+ sizeof(long) /* TransactionPosition */
 			+ sizeof(int) /* TransactionOffset */
-			+ (Version == LogRecordVersion.LogRecordV0 ? sizeof(int) : sizeof(long)) /* ExpectedVersion */
-			+ StringSizeWithLengthPrefix(_eventStreamIdSize.Value) /* EventStreamId */
+			+ (Version is LogRecordVersion.LogRecordV0 ? sizeof(int) : sizeof(long)) /* ExpectedVersion */
+			+ StringSizeWithLengthPrefix(eventStreamIdSize) /* EventStreamId */
 			+ 16 /* EventId */
 			+ 16 /* CorrelationId */
 			+ sizeof(long) /* TimeStamp */
-			+ StringSizeWithLengthPrefix(_eventTypeSize.Value) /* EventType */
+			+ StringSizeWithLengthPrefix(eventTypeSize) /* EventType */
 			+ sizeof(int) /* Data length */
 			+ _dataOnDisk.Length /* Data */
 			+ sizeof(int) /* Metadata length */
