@@ -2,7 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.IO;
 using System.Text;
 using DotNext.Buffers;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -44,13 +43,13 @@ public class PrepareLogRecordViewTests {
 			_metadata,
 			Version);
 
-		using var memoryStream = new MemoryStream();
-		var writer = new BinaryWriter(memoryStream);
-		prepare.WriteTo(writer);
+		var writer = new BufferWriterSlim<byte>();
+		prepare.WriteTo(ref writer);
 
-		var recordLen = (int)memoryStream.Length;
-		var record = memoryStream.GetBuffer();
-		_prepare = new PrepareLogRecordView(record, recordLen);
+		using var recordBuffer = writer.DetachOrCopyBuffer();
+		var record = recordBuffer.Memory.ToArray();
+
+		_prepare = new PrepareLogRecordView(record, record.Length);
 	}
 
 	[Fact]
@@ -67,17 +66,5 @@ public class PrepareLogRecordViewTests {
 		Assert.True(_prepare.Data.SequenceEqual(_data));
 		Assert.True(_prepare.Metadata.SequenceEqual(_metadata));
 		Assert.Equal(Version, _prepare.Version);
-	}
-}
-
-public static class LogRecordExtensions {
-	public static void WriteTo(this ILogRecord record, BinaryWriter writer) {
-		var localWriter = new BufferWriterSlim<byte>();
-		try {
-			record.WriteTo(ref localWriter);
-			writer.Write(localWriter.WrittenSpan);
-		} finally {
-			localWriter.Dispose();
-		}
 	}
 }

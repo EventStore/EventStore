@@ -2,7 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.IO;
+using DotNext.Buffers;
 using EventStore.Core.TransactionLog.LogRecords;
 using Xunit;
 
@@ -34,15 +34,14 @@ public class SizeOnDiskTests {
 			metadata: new byte[] { 0XC0, 0xDE },
 			prepareRecordVersion: 1);
 
-		using var memoryStream = new MemoryStream();
-		var writer = new BinaryWriter(memoryStream);
+		var writer = new BufferWriterSlim<byte>();
 		var length = 111;
 
-		writer.Write(length);
-		prepare.WriteTo(writer);
-		writer.Write(length);
+		writer.WriteLittleEndian(length);
+		prepare.WriteTo(ref writer);
+		writer.WriteLittleEndian(length);
 
-		var recordLen = (int)memoryStream.Length;
+		var recordLen = writer.WrittenCount;
 
 		Assert.Equal(recordLen, prepare.SizeOnDisk);
 	}
