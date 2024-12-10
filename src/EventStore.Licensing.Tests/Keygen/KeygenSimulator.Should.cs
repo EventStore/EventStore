@@ -29,7 +29,7 @@ partial class KeygenSimulator {
 
 	public async Task ShouldReceive_EntitlementRequest() {
 		var request = await Receive();
-		Assert.Equal("https://mock-key-gen/licenses/the-license-id/entitlements", $"{request.RequestUri}");
+		Assert.Equal("https://mock-key-gen/licenses/the-license-id/entitlements?limit=100", $"{request.RequestUri}");
 		Assert.Equal(HttpMethod.Get, request.Method);
 	}
 
