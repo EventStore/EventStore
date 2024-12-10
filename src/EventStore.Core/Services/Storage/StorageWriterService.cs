@@ -301,7 +301,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 			if (streamRecord is not null) {
 				prepares.Add(streamRecord);
-				logPosition += streamRecord.SizeOnDisk;
+				logPosition += streamRecord.GetSizeWithLengthPrefixAndSuffix();
 			}
 
 			var commitCheck = await _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
@@ -318,7 +318,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 					GetOrReserveEventType(evnt.EventType, logPosition, out eventTypes[i], out var eventTypeRecord);
 					if (eventTypeRecord != null) {
 						prepares.Add(eventTypeRecord);
-						logPosition += eventTypeRecord.SizeOnDisk;
+						logPosition += eventTypeRecord.GetSizeWithLengthPrefixAndSuffix();
 					}
 				}
 
@@ -340,7 +340,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 						expectedVersion, flags, eventTypes[i], evnt.Data, evnt.Metadata);
 					prepares.Add(prepare);
 
-					logPosition += prepare.SizeOnDisk;
+					logPosition += prepare.GetSizeWithLengthPrefixAndSuffix();
 				}
 			} else {
 				prepares.Add(
@@ -715,7 +715,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 		var prepareSizes = 0;
 		foreach (var prepare in prepares)
-			prepareSizes += prepare.SizeOnDisk;
+			prepareSizes += prepare.GetSizeWithLengthPrefixAndSuffix();
 
 		if (prepareSizes > Db.Config.ChunkSize) {
 			Log.Error("Transaction size ({prepareSizes:N0}) exceeds chunk size ({chunkSize:N0})",
@@ -740,7 +740,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 					transactionPos = logPos;
 
 				prepares[i] = prepares[i].CopyForRetry(logPos, transactionPos);
-				logPos += prepares[i].SizeOnDisk;
+				logPos += prepares[i].GetSizeWithLengthPrefixAndSuffix();
 			}
 		}
 
@@ -755,8 +755,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		foreach (var prepare in prepares) {
 			long newWriterPos = await Writer.WriteToTransaction(prepare, token)
 			                    ?? throw new InvalidOperationException("The transaction does not fit in the current chunk.");
-			if (newWriterPos - writerPos != prepare.SizeOnDisk)
-				throw new Exception($"Expected writer position to be at: {writerPos + prepare.SizeOnDisk} but it was at {newWriterPos}");
+			if (newWriterPos - writerPos != prepare.GetSizeWithLengthPrefixAndSuffix())
+				throw new Exception($"Expected writer position to be at: {writerPos + prepare.GetSizeWithLengthPrefixAndSuffix()} but it was at {newWriterPos}");
 
 			writerPos = newWriterPos;
 		}

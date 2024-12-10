@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 using System.Text;
@@ -91,44 +92,33 @@ public sealed class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, 
 	}
 
 	// including length and suffix
-	public int SizeOnDisk {
-		get {
-			if (_sizeOnDisk.HasValue)
-				return _sizeOnDisk.Value;
+	private int ComputeSizeOnDisk() {
+		_eventStreamIdSize ??= Encoding.UTF8.GetByteCount(EventStreamId);
+		_eventTypeSize ??= Encoding.UTF8.GetByteCount(EventType);
 
-			_eventStreamIdSize ??= Encoding.UTF8.GetByteCount(EventStreamId);
-			_eventTypeSize ??= Encoding.UTF8.GetByteCount(EventType);
+		return
+			2 * sizeof(int) /* Length prefix & suffix */
+			+ BaseSize
+			+ sizeof(ushort) /* Flags */
+			+ sizeof(long) /* TransactionPosition */
+			+ sizeof(int) /* TransactionOffset */
+			+ (Version == LogRecordVersion.LogRecordV0 ? sizeof(int) : sizeof(long)) /* ExpectedVersion */
+			+ StringSizeWithLengthPrefix(_eventStreamIdSize.Value) /* EventStreamId */
+			+ 16 /* EventId */
+			+ 16 /* CorrelationId */
+			+ sizeof(long) /* TimeStamp */
+			+ StringSizeWithLengthPrefix(_eventTypeSize.Value) /* EventType */
+			+ sizeof(int) /* Data length */
+			+ _dataOnDisk.Length /* Data */
+			+ sizeof(int) /* Metadata length */
+			+ Metadata.Length; /* Metadata */
 
-			_sizeOnDisk =
-				2 * sizeof(int) /* Length prefix & suffix */
-				+ BaseSize
-				+ sizeof(ushort) /* Flags */
-				+ sizeof(long) /* TransactionPosition */
-				+ sizeof(int) /* TransactionOffset */
-				+ (Version == LogRecordVersion.LogRecordV0 ? sizeof(int) : sizeof(long)) /* ExpectedVersion */
-				+ StringSizeWithLengthPrefix(_eventStreamIdSize.Value) /* EventStreamId */
-				+ 16 /* EventId */
-				+ 16 /* CorrelationId */
-				+ sizeof(long) /* TimeStamp */
-				+ StringSizeWithLengthPrefix(_eventTypeSize.Value) /* EventType */
-				+ sizeof(int) /* Data length */
-				+ _dataOnDisk.Length /* Data */
-				+ sizeof(int) /* Metadata length */
-				+ Metadata.Length; /* Metadata */
+		// when written to disk, a string is prefixed with its length which is written as ULEB128
+		static int StringSizeWithLengthPrefix(int stringSize) {
+			Debug.Assert(stringSize >= 0);
 
-			return _sizeOnDisk.Value;
+			return stringSize is 0 ? 1 : stringSize + int.Log2(stringSize) / 7 + 1;
 		}
-	}
-
-	private static int StringSizeWithLengthPrefix(int stringSize) {
-		// when written to disk by the BinaryWriter, a string is prefixed with its length which is written as a 7-bit encoded integer
-		Ensure.Nonnegative(stringSize, nameof(stringSize));
-
-		if (stringSize == 0)
-			return 1;
-
-		var msb = 31 - BitOperations.LeadingZeroCount((uint)stringSize);
-		return stringSize + msb / 7 + 1;
 	}
 
 	public PrepareLogRecord(long logPosition,
@@ -271,7 +261,8 @@ public sealed class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, 
 		writer.Write(Metadata.Span, LengthFormat.LittleEndian);
 	}
 
-	public override int GetSizeWithLengthPrefixAndSuffix() => SizeOnDisk;
+	public override int GetSizeWithLengthPrefixAndSuffix()
+		=> _sizeOnDisk ??= ComputeSizeOnDisk();
 
 	public bool Equals(PrepareLogRecord other) {
 		if (ReferenceEquals(null, other)) return false;

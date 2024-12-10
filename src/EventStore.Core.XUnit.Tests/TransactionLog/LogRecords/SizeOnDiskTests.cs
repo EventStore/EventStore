@@ -68,9 +68,6 @@ public class SizeOnDiskTests {
 			writer.WriteLittleEndian(dummyLength);
 
 			Assert.Equal(writer.WrittenCount, record.GetSizeWithLengthPrefixAndSuffix());
-
-			if (record is IPrepareLogRecord prepare)
-				Assert.Equal(writer.WrittenCount, prepare.SizeOnDisk);
 		} finally {
 			writer.Dispose();
 		}
