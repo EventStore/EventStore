@@ -22,28 +22,28 @@ internal sealed class WriterWorkItem : Disposable {
 
 	private readonly Stream _fileStream;
 	private Stream _memStream;
-	public readonly HashAlgorithm MD5;
+	public readonly IncrementalHash MD5;
 
-	public unsafe WriterWorkItem(nint memoryPtr, int length, HashAlgorithm md5,
+	public unsafe WriterWorkItem(nint memoryPtr, int length, IncrementalHash md5,
 		IChunkWriteTransform chunkWriteTransform, int initialStreamPosition) {
 		var memStream = new UnmanagedMemoryStream((byte*)memoryPtr, length, length, FileAccess.ReadWrite) {
 			Position = initialStreamPosition,
 		};
 
-		var chunkDataWriteStream = new ChunkDataWriteStream(memStream, md5);
-		WorkingStream = _memStream = chunkWriteTransform.TransformData(chunkDataWriteStream);
+		// var chunkDataWriteStream = new ChunkDataWriteStream(memStream, md5);
+		WorkingStream = _memStream = memStream; // chunkWriteTransform.TransformData(chunkDataWriteStream);
 		MD5 = md5;
 	}
 
-	public WriterWorkItem(SafeFileHandle handle, HashAlgorithm md5, bool unbuffered,
+	public WriterWorkItem(SafeFileHandle handle, IncrementalHash md5, bool unbuffered,
 		IChunkWriteTransform chunkWriteTransform, int initialStreamPosition) {
 		var fileStream = unbuffered
 			? handle.AsUnbufferedStream(FileAccess.ReadWrite)
 			: new BufferedStream(handle.AsUnbufferedStream(FileAccess.ReadWrite), BufferSize);
 		fileStream.Position = initialStreamPosition;
-		var chunkDataWriteStream = new ChunkDataWriteStream(fileStream, md5);
+		// var chunkDataWriteStream = new ChunkDataWriteStream(fileStream, md5);
 
-		WorkingStream = _fileStream = chunkWriteTransform.TransformData(chunkDataWriteStream);
+		WorkingStream = _fileStream = fileStream; // = chunkWriteTransform.TransformData(chunkDataWriteStream);
 		MD5 = md5;
 	}
 
