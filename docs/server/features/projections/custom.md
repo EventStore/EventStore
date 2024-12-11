@@ -327,7 +327,7 @@ projection starts reading again.
 
 #### Projection Execution Timeout
 
-The `ProjectionExecutionTimeout` setting specifies per event projection processing timeout. If an event is not processed within the specified duration, the projection will fault and won't process further events.
+The `ProjectionExecutionTimeout` setting determines how long a projection has to process an event. If an event is not processed within the specified duration, the projection will fault and won't process further events. This setting applies to all projections unless a specific timeout is set for a particular projection.
 
 ::: tip
 Increase value of this setting if projection handler is compute intensive or server is under heavy load
@@ -344,6 +344,10 @@ events that are stored in the database in addition to the original event. This e
 the number of events appended and therefore creates pressure on the IO of the server node. We often call this
 effect "write amplification".
 :::
+
+#### Per Event Projection Processing Timeout
+
+This setting works like ProjectionExecutionTimeout but applies to individual projections. If both timeouts are configured for a projection, the Per Event Projection Processing Timeout takes precedence.
 
 ### Projection runtime
 
