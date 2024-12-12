@@ -57,6 +57,7 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 		LogicalDataSize = logicalDataSize;
 		MapSize = mapSize;
 
+		Debug.Assert(hash is null || hash.HashLengthInBytes is ChecksumSize);
 		Unsafe.SkipInit(out _checksum); // fix for Qodana false positive about init of readonly field
 		hash?.TryGetHashAndReset(_checksum, out _);
 
