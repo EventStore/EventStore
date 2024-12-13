@@ -42,13 +42,10 @@ public class FileSystemWriter : IArchiveStorageWriter {
 		}
 	}
 
-	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
+	public async ValueTask<bool> StoreChunk(string chunkPath, string destinationFile, CancellationToken ct) {
 		try {
-			var destinationPath = Path.Combine(_archivePath, Path.GetFileName(chunkPath));
+			var destinationPath = Path.Combine(_archivePath, destinationFile);
 			var tempPath = $"{destinationPath}.tmp";
-
-			if (File.Exists(destinationPath))
-				File.Delete(destinationPath);
 
 			if (File.Exists(tempPath))
 				File.Delete(tempPath);
@@ -76,7 +73,7 @@ public class FileSystemWriter : IArchiveStorageWriter {
 				await source.CopyToAsync(destination, ct);
 			}
 
-			File.Move(tempPath, destinationPath);
+			File.Move(tempPath, destinationPath, overwrite: true);
 
 			return true;
 		} catch (OperationCanceledException) {
@@ -88,28 +85,5 @@ public class FileSystemWriter : IArchiveStorageWriter {
 			Log.Error(ex, "Error while storing chunk: {chunkFile}", Path.GetFileName(chunkPath));
 			return false;
 		}
-	}
-
-	public ValueTask<bool> RemoveChunks(int chunkStartNumber, int chunkEndNumber, string exceptChunk, CancellationToken ct) {
-		try {
-			var directoryInfo = new DirectoryInfo(_archivePath);
-			for (var chunkNumber = chunkStartNumber; chunkNumber <= chunkEndNumber; chunkNumber++) {
-				var chunkPrefix = _getChunkPrefix(chunkNumber, null);
-				foreach (var file in directoryInfo.EnumerateFiles($"{chunkPrefix}*")) {
-					if (file.Name == exceptChunk)
-						continue;
-
-					File.Delete(file.FullName);
-				}
-			}
-		} catch (OperationCanceledException) {
-			throw;
-		} catch (Exception ex) {
-			Log.Error(ex, "Error while removing chunks in range: {chunkStartNumber}-{chunkEndNumber} (except {chunk})",
-				chunkStartNumber, chunkEndNumber, exceptChunk);
-			return ValueTask.FromResult(false);
-		}
-
-		return ValueTask.FromResult(true);
 	}
 }

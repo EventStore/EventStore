@@ -23,6 +23,9 @@ namespace EventStore.Core.Services.Archive.ArchiveCatchup;
 //     data was restored from a backup, we can end up in a situation where the leader-to-be is behind the archive.
 //     in this case, we still want all nodes to catch up with the archive *before* joining the cluster to maintain
 //     consistency between the data that's in the cluster and in the archive.
+//
+// Note: This class has been designed in such a way that it can also handle chunks that are merged in the archive.
+// However, chunks are now unmerged before being archived. This does not affect the correctness of this implementation.
 
 public class ArchiveCatchup : IClusterVNodeStartupTask {
 	private readonly string _dbPath;

@@ -24,7 +24,7 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 		// create a chunk and upload it
 		var chunkPath = CreateLocalChunk(0, 0);
 		var chunkFile = Path.GetFileName(chunkPath);
-		await CreateWriterSut(storageType).StoreChunk(chunkPath, CancellationToken.None);
+		await CreateWriterSut(storageType).StoreChunk(chunkPath, chunkFile, CancellationToken.None);
 
 		// read the local chunk
 		var localContent = await File.ReadAllBytesAsync(chunkPath);
@@ -46,7 +46,7 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 		// create a chunk and upload it
 		var chunkPath = CreateLocalChunk(0, 0);
 		var chunkFile = Path.GetFileName(chunkPath);
-		await CreateWriterSut(storageType).StoreChunk(chunkPath, CancellationToken.None);
+		await CreateWriterSut(storageType).StoreChunk(chunkPath, chunkFile, CancellationToken.None);
 
 		// read the local chunk
 		var localContent = await File.ReadAllBytesAsync(chunkPath);

@@ -13,6 +13,8 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Archive.Archiver;
 using EventStore.Core.Services.Archive.Storage;
+using EventStore.Core.Services.Archive.Archiver.Unmerger;
+using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.TransactionLog.Chunks;
 using Xunit;
 
@@ -29,7 +31,7 @@ public class ArchiverServiceTests {
 			chunkStorageDelay ?? TimeSpan.Zero,
 			existingChunks ?? Array.Empty<string>(),
 			existingCheckpoint ?? 0L);
-		var service = new ArchiverService(new FakeSubscriber(), archive);
+		var service = new ArchiverService(new FakeSubscriber(), archive, new FakeUnmerger(), new FakeArchiveChunkNamer());
 		return (service, archive);
 	}
 
@@ -65,7 +67,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 1);
 
-		Assert.Equal(["0-0"], archive.Chunks);
+		Assert.Equal(["0-0.renamed"], archive.Chunks);
 	}
 
 	[Fact]
@@ -93,7 +95,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 1);
 
-		Assert.Equal(["0-0"], archive.Chunks);
+		Assert.Equal(["0-0.renamed"], archive.Chunks);
 	}
 
 	[Fact]
@@ -131,7 +133,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 1);
 
-		Assert.Equal(["0-0"], archive.Chunks);
+		Assert.Equal(["0-0.renamed"], archive.Chunks);
 	}
 
 	[Fact]
@@ -150,7 +152,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 5);
 
-		Assert.Equal(["0-0", "1-1", "2-2", "3-3", "4-4"], archive.Chunks);
+		Assert.Equal(["0-0.renamed", "1-1.renamed", "2-2.renamed", "3-3.renamed", "4-4.renamed"], archive.Chunks);
 	}
 
 	[Fact]
@@ -170,9 +172,9 @@ public class ArchiverServiceTests {
 
 		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(GetChunkInfo(5, 5, complete: true).ChunkEndPosition));
 
-		await WaitFor(archive, numStores: 4);
+		await WaitFor(archive, numStores: 5);
 
-		Assert.Equal(["3-3", "4-4", "1-2", "5-5"], archive.Chunks);
+		Assert.Equal(["3-3.renamed", "4-4.renamed", "1-1.renamed", "2-2.renamed", "5-5.renamed"], archive.Chunks);
 	}
 
 	[Fact]
@@ -187,7 +189,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 2);
 
-		Assert.Equal([ "0-0", "1-1", "2-2", "3-3" ], archive.Chunks);
+		Assert.Equal([ "0-0", "1-1", "2-2.renamed", "3-3.renamed" ], archive.Chunks);
 	}
 
 	[Fact]
@@ -199,21 +201,9 @@ public class ArchiverServiceTests {
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(3, 3, complete: true)));
 		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(GetChunkInfo(3, 3, complete: true).ChunkEndPosition));
 
-		await WaitFor(archive, numStores: 2);
+		await WaitFor(archive, numStores: 3);
 
-		Assert.Equal([ "0-0", "1-2", "3-3" ], archive.Chunks);
-	}
-
-	[Fact]
-	public async Task removes_previous_chunks_with_same_chunk_numbers_from_the_archive() {
-		var (sut, archive) = CreateSut(existingChunks:	[ "0-0", "1-1" ]);
-
-		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(0));
-		sut.Handle(new SystemMessage.ChunkSwitched(GetChunkInfo(0, 1, complete: true)));
-
-		await WaitFor(archive, numStores: 1);
-
-		Assert.Equal([ "0-1" ], archive.Chunks);
+		Assert.Equal([ "0-0", "1-1", "1-1.renamed", "2-2.renamed", "3-3.renamed" ], archive.Chunks);
 	}
 
 	[Fact]
@@ -275,6 +265,22 @@ public class ArchiverServiceTests {
 		await WaitFor(archive, numStores: 2, numCheckpoints: 1);
 		Assert.Equal(5 * ChunkSize, await archive.GetCheckpoint(CancellationToken.None));
 	}
+
+	[Fact]
+	public async Task unmerges_merged_chunks_when_archiving() {
+		var (sut, archive) = CreateSut();
+
+		sut.Handle(new SystemMessage.ChunkSwitched(GetChunkInfo(0, 4, complete: true)));
+		sut.Handle(new SystemMessage.ChunkSwitched(GetChunkInfo(5, 5, complete: true)));
+		sut.Handle(new SystemMessage.ChunkSwitched(GetChunkInfo(6, 7, complete: true)));
+
+		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(GetChunkInfo(6, 10, complete: true).ChunkEndPosition));
+
+		await WaitFor(archive, numStores: 8);
+
+		Assert.Equal(["0-0.renamed", "1-1.renamed", "2-2.renamed", "3-3.renamed", "4-4.renamed", "5-5.renamed", "6-6.renamed", "7-7.renamed"],
+			archive.Chunks);
+	}
 }
 
 internal class FakeSubscriber : ISubscriber {
@@ -282,6 +288,18 @@ internal class FakeSubscriber : ISubscriber {
 	public void Unsubscribe<T>(IAsyncHandle<T> handler) where T : Message { }
 }
 
+internal class FakeUnmerger : IChunkUnmerger {
+	public async IAsyncEnumerable<string> Unmerge(string chunkPath, int chunkStartNumber, int chunkEndNumber) {
+		await Task.Delay(TimeSpan.Zero);
+		for (var i = chunkStartNumber; i <= chunkEndNumber; i++) {
+			yield return $"{i}-{i}";
+		}
+	}
+}
+
+internal class FakeArchiveChunkNamer : IArchiveChunkNamer {
+	public string GetFileNameFor(int logicalChunkNumber) => $"{logicalChunkNumber}-{logicalChunkNumber}.renamed";
+}
 
 internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader, IArchiveStorageFactory {
 	public List<string> Chunks;
@@ -304,26 +322,11 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 	public IArchiveStorageReader CreateReader() => this;
 	public IArchiveStorageWriter CreateWriter() => this;
 
-	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
+	public async ValueTask<bool> StoreChunk(string chunkPath, string destinationFile, CancellationToken ct) {
 		await Task.Delay(_chunkStorageDelay, ct);
-		Chunks.Add(chunkPath);
+		Chunks.Add(destinationFile);
 		Interlocked.Increment(ref _stores);
 		return true;
-	}
-
-	public ValueTask<bool> RemoveChunks(int chunkStartNumber, int chunkEndNumber, string exceptChunk, CancellationToken ct) {
-		var chunks = Chunks.ToArray();
-		foreach (var chunk in chunks) {
-			if (chunk == exceptChunk)
-				continue;
-			var tokens = chunk.Split("-");
-			var curChunkStartNumber = int.Parse(tokens[0]);
-			var curChunkEndNumber = int.Parse(tokens[0]);
-			if (curChunkStartNumber >= chunkStartNumber && curChunkEndNumber <= chunkEndNumber)
-				Chunks.Remove(chunk);
-		}
-
-		return ValueTask.FromResult(true);
 	}
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) {

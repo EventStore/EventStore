@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -14,6 +15,8 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
+using EventStore.Core.Services.Archive.Archiver.Unmerger;
+using EventStore.Core.Services.Archive.Naming;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Archiver;
@@ -34,16 +37,24 @@ public class ArchiverService :
 	private readonly ConcurrentDictionary<string, ChunkInfo> _existingChunks;
 	private readonly CancellationTokenSource _cts;
 	private readonly Channel<Commands.ArchiveChunk> _archiveChunkCommands;
+	private readonly IChunkUnmerger _chunkUnmerger;
+	private readonly IArchiveChunkNamer _chunkNamer;
 
 	private readonly TimeSpan RetryInterval = TimeSpan.FromMinutes(1);
 	private long _replicationPosition;
 	private bool _archivingStarted;
 	private long _checkpoint;
 
-	public ArchiverService(ISubscriber mainBus, IArchiveStorageFactory archiveStorageFactory) {
+	public ArchiverService(
+		ISubscriber mainBus,
+		IArchiveStorageFactory archiveStorageFactory,
+		IChunkUnmerger chunkUnmerger,
+		IArchiveChunkNamer chunkNamer) {
 		_mainBus = mainBus;
 		_archiveWriter = archiveStorageFactory.CreateWriter();
 		_archiveReader = archiveStorageFactory.CreateReader();
+		_chunkUnmerger = chunkUnmerger;
+		_chunkNamer = chunkNamer;
 
 		_uncommittedChunks = new();
 		_existingChunks = new();
@@ -154,16 +165,34 @@ public class ArchiverService :
 		try {
 			Log.Information("Archiving {chunkFile}", chunkFile);
 
-			while (!await _archiveWriter.StoreChunk(chunkPath, ct)) {
-				Log.Warning("Archiving of {chunkFile} failed. Retrying in: {retryInterval}.", chunkFile, RetryInterval);
-				await Task.Delay(RetryInterval, ct);
+			string[] chunksToStore;
+			bool chunksUnmerged;
+
+			if (chunkStartNumber == chunkEndNumber) {
+				chunksToStore = [ chunkPath ];
+				chunksUnmerged = false;
+			} else {
+				Log.Information("Unmerging {chunkFile}", chunkFile);
+				chunksToStore = await _chunkUnmerger.Unmerge(chunkPath, chunkStartNumber, chunkEndNumber).ToArrayAsync(cancellationToken: ct);
+				chunksUnmerged = true;
 			}
 
-			while (!await _archiveWriter.RemoveChunks(chunkStartNumber, chunkEndNumber, chunkFile, ct)) {
-				Log.Warning(
-					"Clean up of old chunks: {chunkStartNumber}-{chunkEndNumber} failed. Retrying in: {retryInterval}.",
-					chunkStartNumber, chunkEndNumber, RetryInterval);
-				await Task.Delay(RetryInterval, ct);
+			var logicalChunkNumber = chunkStartNumber;
+			foreach (var chunkToStore in chunksToStore) {
+				var destinationFile = _chunkNamer.GetFileNameFor(logicalChunkNumber);
+
+				while (!await _archiveWriter.StoreChunk(chunkToStore, destinationFile, ct)) {
+					Log.Warning("Archiving of {chunkFile}{chunkDetails} failed. Retrying in: {retryInterval}.",
+						Path.GetFileName(chunkPath),
+						chunksUnmerged ? $" (logical chunk no.: {logicalChunkNumber})" : string.Empty,
+						RetryInterval);
+					await Task.Delay(RetryInterval, ct);
+				}
+
+				if (chunksUnmerged)
+					File.Delete(chunkToStore);
+
+				logicalChunkNumber++;
 			}
 
 			if (chunkEndPosition > _checkpoint) {
