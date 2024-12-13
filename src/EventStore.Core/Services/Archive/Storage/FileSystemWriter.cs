@@ -89,27 +89,4 @@ public class FileSystemWriter : IArchiveStorageWriter {
 			return false;
 		}
 	}
-
-	public ValueTask<bool> RemoveChunks(int chunkStartNumber, int chunkEndNumber, string exceptChunk, CancellationToken ct) {
-		try {
-			var directoryInfo = new DirectoryInfo(_archivePath);
-			for (var chunkNumber = chunkStartNumber; chunkNumber <= chunkEndNumber; chunkNumber++) {
-				var chunkPrefix = _getChunkPrefix(chunkNumber, null);
-				foreach (var file in directoryInfo.EnumerateFiles($"{chunkPrefix}*")) {
-					if (file.Name == exceptChunk)
-						continue;
-
-					File.Delete(file.FullName);
-				}
-			}
-		} catch (OperationCanceledException) {
-			throw;
-		} catch (Exception ex) {
-			Log.Error(ex, "Error while removing chunks in range: {chunkStartNumber}-{chunkEndNumber} (except {chunk})",
-				chunkStartNumber, chunkEndNumber, exceptChunk);
-			return ValueTask.FromResult(false);
-		}
-
-		return ValueTask.FromResult(true);
-	}
 }

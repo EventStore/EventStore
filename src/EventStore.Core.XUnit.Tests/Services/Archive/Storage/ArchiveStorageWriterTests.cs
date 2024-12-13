@@ -37,21 +37,4 @@ public class ArchiveStorageWriterTests : ArchiveStorageTestsBase<ArchiveStorageW
 		File.Delete(localChunk);
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => await sut.StoreChunk(localChunk, CancellationToken.None));
 	}
-
-	[Theory]
-	[InlineData(StorageType.FileSystem)]
-	public async Task can_remove_chunks(StorageType storageType) {
-		var sut = CreateWriterSut(storageType);
-
-		CreateArchiveChunk(0, 0);
-		CreateArchiveChunk(1, 0);
-		CreateArchiveChunk(2, 0);
-
-		Assert.True(await sut.RemoveChunks(0, 2, "chunk-000001.000000", CancellationToken.None));
-
-		var archivedChunks = Directory
-			.EnumerateFiles(ArchivePath)
-			.Select(Path.GetFileName);
-		Assert.Equal(["chunk-000001.000000"], archivedChunks);
-	}
 }

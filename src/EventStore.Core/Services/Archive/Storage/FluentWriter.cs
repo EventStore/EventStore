@@ -34,13 +34,4 @@ public abstract class FluentWriter {
 			return false;
 		}
 	}
-
-	public ValueTask<bool> RemoveChunks(
-		int chunkStartNumber,
-		int chunkEndNumber,
-		string exceptChunk,
-		CancellationToken ct) {
-
-		throw new NotImplementedException();
-	}
 }

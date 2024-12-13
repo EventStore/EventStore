@@ -23,14 +23,4 @@ public interface IArchiveStorageWriter {
 	/// <see langword="false"/> if the operation failed and the caller needs to retry after some time
 	/// </returns>
 	public ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct);
-
-	/// <summary>Removes all chunks within the specified chunk number range from the archive, except the specified one</summary>
-	/// <param name="chunkStartNumber">The chunk start number</param>
-	/// <param name="chunkEndNumber">The chunk end number</param>
-	/// <param name="exceptChunk">The file name of the chunk that must not be removed from the archive</param>
-	/// <returns>
-	/// <see langword="true"/> if the operation was successful<br/>
-	/// <see langword="false"/> if the operation failed and the caller needs to retry after some time
-	/// </returns>
-	public ValueTask<bool> RemoveChunks(int chunkStartNumber, int chunkEndNumber, string exceptChunk, CancellationToken ct);
 }
