@@ -42,13 +42,10 @@ public class FileSystemWriter : IArchiveStorageWriter {
 		}
 	}
 
-	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
+	public async ValueTask<bool> StoreChunk(string chunkPath, string destinationFile, CancellationToken ct) {
 		try {
-			var destinationPath = Path.Combine(_archivePath, Path.GetFileName(chunkPath));
+			var destinationPath = Path.Combine(_archivePath, destinationFile);
 			var tempPath = $"{destinationPath}.tmp";
-
-			if (File.Exists(destinationPath))
-				File.Delete(destinationPath);
 
 			if (File.Exists(tempPath))
 				File.Delete(tempPath);
@@ -76,7 +73,7 @@ public class FileSystemWriter : IArchiveStorageWriter {
 				await source.CopyToAsync(destination, ct);
 			}
 
-			File.Move(tempPath, destinationPath);
+			File.Move(tempPath, destinationPath, overwrite: true);
 
 			return true;
 		} catch (OperationCanceledException) {

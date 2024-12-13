@@ -19,18 +19,16 @@ public abstract class FluentWriter {
 		throw new NotImplementedException();
 	}
 
-	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
-		var fileName = "unknown";
+	public async ValueTask<bool> StoreChunk(string chunkPath, string destinationFile, CancellationToken ct) {
 		try {
-			fileName = Path.GetFileName(chunkPath);
-			await BlobStorage.WriteFileAsync(fileName, filePath: chunkPath, ct);
+			await BlobStorage.WriteFileAsync(destinationFile, filePath: chunkPath, ct);
 			return true;
 		} catch (FileNotFoundException) {
 			throw new ChunkDeletedException();
 		} catch (OperationCanceledException) {
 			throw;
 		} catch (Exception ex) {
-			Log.Error(ex, "Error while storing chunk: {ChunkFile}", fileName);
+			Log.Error(ex, "Error while storing chunk: {chunkFile}", destinationFile);
 			return false;
 		}
 	}

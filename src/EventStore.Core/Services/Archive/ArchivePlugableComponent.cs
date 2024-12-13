@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using EventStore.Core.Services.Archive.Archiver;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Archiver.Unmerger;
+using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Plugins;
 using EventStore.Plugins.Licensing;
@@ -61,6 +62,7 @@ public class ArchivePlugableComponent : IPlugableComponent {
 		services.AddSingleton(options);
 		services.AddScoped<IArchiveStorageFactory, ArchiveStorageFactory>();
 		services.Decorate<IReadOnlyList<IClusterVNodeStartupTask>>(AddArchiveCatchupTask);
+		services.AddSingleton<IArchiveChunkNamer, ArchiveChunkNamer>();
 
 		if (_isArchiver) {
 			services.AddSingleton<IChunkUnmerger, ChunkUnmerger>();

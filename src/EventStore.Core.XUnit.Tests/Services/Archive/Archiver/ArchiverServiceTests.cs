@@ -14,6 +14,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Archive.Archiver;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Archiver.Unmerger;
+using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.TransactionLog.Chunks;
 using Xunit;
 
@@ -30,7 +31,7 @@ public class ArchiverServiceTests {
 			chunkStorageDelay ?? TimeSpan.Zero,
 			existingChunks ?? Array.Empty<string>(),
 			existingCheckpoint ?? 0L);
-		var service = new ArchiverService(new FakeSubscriber(), archive, new FakeUnmerger());
+		var service = new ArchiverService(new FakeSubscriber(), archive, new FakeUnmerger(), new FakeArchiveChunkNamer());
 		return (service, archive);
 	}
 
@@ -66,7 +67,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 1);
 
-		Assert.Equal(["0-0"], archive.Chunks);
+		Assert.Equal(["0-0.renamed"], archive.Chunks);
 	}
 
 	[Fact]
@@ -94,7 +95,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 1);
 
-		Assert.Equal(["0-0"], archive.Chunks);
+		Assert.Equal(["0-0.renamed"], archive.Chunks);
 	}
 
 	[Fact]
@@ -132,7 +133,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 1);
 
-		Assert.Equal(["0-0"], archive.Chunks);
+		Assert.Equal(["0-0.renamed"], archive.Chunks);
 	}
 
 	[Fact]
@@ -151,7 +152,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 5);
 
-		Assert.Equal(["0-0", "1-1", "2-2", "3-3", "4-4"], archive.Chunks);
+		Assert.Equal(["0-0.renamed", "1-1.renamed", "2-2.renamed", "3-3.renamed", "4-4.renamed"], archive.Chunks);
 	}
 
 	[Fact]
@@ -173,7 +174,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 5);
 
-		Assert.Equal(["3-3", "4-4", "1-1.unmerged", "2-2.unmerged", "5-5"], archive.Chunks);
+		Assert.Equal(["3-3.renamed", "4-4.renamed", "1-1.renamed", "2-2.renamed", "5-5.renamed"], archive.Chunks);
 	}
 
 	[Fact]
@@ -188,7 +189,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 2);
 
-		Assert.Equal([ "0-0", "1-1", "2-2", "3-3" ], archive.Chunks);
+		Assert.Equal([ "0-0", "1-1", "2-2.renamed", "3-3.renamed" ], archive.Chunks);
 	}
 
 	[Fact]
@@ -202,7 +203,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 3);
 
-		Assert.Equal([ "0-0", "1-1", "1-1.unmerged", "2-2.unmerged", "3-3" ], archive.Chunks);
+		Assert.Equal([ "0-0", "1-1", "1-1.renamed", "2-2.renamed", "3-3.renamed" ], archive.Chunks);
 	}
 
 	[Fact]
@@ -277,7 +278,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 8);
 
-		Assert.Equal(["0-0.unmerged", "1-1.unmerged", "2-2.unmerged", "3-3.unmerged", "4-4.unmerged", "5-5", "6-6.unmerged", "7-7.unmerged"],
+		Assert.Equal(["0-0.renamed", "1-1.renamed", "2-2.renamed", "3-3.renamed", "4-4.renamed", "5-5.renamed", "6-6.renamed", "7-7.renamed"],
 			archive.Chunks);
 	}
 }
@@ -291,9 +292,13 @@ internal class FakeUnmerger : IChunkUnmerger {
 	public async IAsyncEnumerable<string> Unmerge(string chunkPath, int chunkStartNumber, int chunkEndNumber) {
 		await Task.Delay(TimeSpan.Zero);
 		for (var i = chunkStartNumber; i <= chunkEndNumber; i++) {
-			yield return $"{i}-{i}.unmerged";
+			yield return $"{i}-{i}";
 		}
 	}
+}
+
+internal class FakeArchiveChunkNamer : IArchiveChunkNamer {
+	public string GetFileNameFor(int logicalChunkNumber) => $"{logicalChunkNumber}-{logicalChunkNumber}.renamed";
 }
 
 internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader, IArchiveStorageFactory {
@@ -317,9 +322,9 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 	public IArchiveStorageReader CreateReader() => this;
 	public IArchiveStorageWriter CreateWriter() => this;
 
-	public async ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) {
+	public async ValueTask<bool> StoreChunk(string chunkPath, string destinationFile, CancellationToken ct) {
 		await Task.Delay(_chunkStorageDelay, ct);
-		Chunks.Add(chunkPath);
+		Chunks.Add(destinationFile);
 		Interlocked.Increment(ref _stores);
 		return true;
 	}

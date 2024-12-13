@@ -47,7 +47,7 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 	public IArchiveStorageReader CreateReader() => this;
 	public IArchiveStorageWriter CreateWriter() => this;
 
-	public ValueTask<bool> StoreChunk(string chunkPath, CancellationToken ct) => throw new NotImplementedException();
+	public ValueTask<bool> StoreChunk(string chunkPath, string destinationFile, CancellationToken ct) => throw new NotImplementedException();
 	public ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) => throw new NotImplementedException();
 	public ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) => throw new NotImplementedException();
 

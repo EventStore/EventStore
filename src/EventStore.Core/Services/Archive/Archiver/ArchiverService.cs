@@ -16,6 +16,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using EventStore.Core.Services.Archive.Archiver.Unmerger;
+using EventStore.Core.Services.Archive.Naming;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Archiver;
@@ -37,6 +38,7 @@ public class ArchiverService :
 	private readonly CancellationTokenSource _cts;
 	private readonly Channel<Commands.ArchiveChunk> _archiveChunkCommands;
 	private readonly IChunkUnmerger _chunkUnmerger;
+	private readonly IArchiveChunkNamer _chunkNamer;
 
 	private readonly TimeSpan RetryInterval = TimeSpan.FromMinutes(1);
 	private long _replicationPosition;
@@ -46,11 +48,13 @@ public class ArchiverService :
 	public ArchiverService(
 		ISubscriber mainBus,
 		IArchiveStorageFactory archiveStorageFactory,
-		IChunkUnmerger chunkUnmerger) {
+		IChunkUnmerger chunkUnmerger,
+		IArchiveChunkNamer chunkNamer) {
 		_mainBus = mainBus;
 		_archiveWriter = archiveStorageFactory.CreateWriter();
 		_archiveReader = archiveStorageFactory.CreateReader();
 		_chunkUnmerger = chunkUnmerger;
+		_chunkNamer = chunkNamer;
 
 		_uncommittedChunks = new();
 		_existingChunks = new();
@@ -173,17 +177,22 @@ public class ArchiverService :
 				chunksUnmerged = true;
 			}
 
+			var logicalChunkNumber = chunkStartNumber;
 			foreach (var chunkToStore in chunksToStore) {
-				while (!await _archiveWriter.StoreChunk(chunkToStore, ct)) {
-					Log.Warning("Archiving of {chunkFile}{chunkType} failed. Retrying in: {retryInterval}.",
-						Path.GetFileName(chunkToStore),
-						chunksUnmerged ? " (unmerged)" : string.Empty,
+				var destinationFile = _chunkNamer.GetFileNameFor(logicalChunkNumber);
+
+				while (!await _archiveWriter.StoreChunk(chunkToStore, destinationFile, ct)) {
+					Log.Warning("Archiving of {chunkFile}{chunkDetails} failed. Retrying in: {retryInterval}.",
+						Path.GetFileName(chunkPath),
+						chunksUnmerged ? $" (logical chunk no.: {logicalChunkNumber})" : string.Empty,
 						RetryInterval);
 					await Task.Delay(RetryInterval, ct);
 				}
 
 				if (chunksUnmerged)
 					File.Delete(chunkToStore);
+
+				logicalChunkNumber++;
 			}
 
 			if (chunkEndPosition > _checkpoint) {
