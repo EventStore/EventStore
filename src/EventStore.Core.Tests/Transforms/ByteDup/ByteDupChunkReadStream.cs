@@ -18,9 +18,6 @@ public class ByteDupChunkReadStream(ChunkDataReadStream stream)
 		var buf = new byte[buffer.Length * 2];
 		int numRead = base.Read(buf);
 
-		if (int.IsOddInteger(numRead))
-			Debugger.Break();
-
 		for (int i = 0; i < buffer.Length; i++)
 			buffer[i] = buf[i * 2];
 
@@ -30,9 +27,6 @@ public class ByteDupChunkReadStream(ChunkDataReadStream stream)
 	public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default) {
 		var buf = new byte[buffer.Length * 2];
 		int numRead = await base.ReadAsync(buf, token);
-
-		if (int.IsOddInteger(numRead))
-			Debugger.Break();
 
 		for (int i = 0; i < buffer.Length; i++)
 			buffer.Span[i] = buf[i * 2];
