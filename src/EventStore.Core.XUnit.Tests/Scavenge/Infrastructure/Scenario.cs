@@ -27,7 +27,6 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
 using EventStore.Core.Transforms;
 using EventStore.Core.Util;
-using Google.Protobuf.WellKnownTypes;
 using Xunit;
 using static EventStore.Core.XUnit.Tests.Scavenge.StreamMetadatas;
 using Type = System.Type;
@@ -37,7 +36,6 @@ using Type = System.Type;
 namespace EventStore.Core.XUnit.Tests.Scavenge;
 
 public class Scenario {
-	protected const int Threads = 1;
 	public const bool CollideEverything = false;
 }
 
@@ -52,6 +50,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 	private List<ScavengePoint> _newScavengePoint;
 	private ITFChunkScavengerLog _logger;
 
+	private int _threads = 1;
 	private bool _mergeChunks;
 	private bool _syncOnly;
 	private string _dbPath;
@@ -81,6 +80,11 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 		bool unsafeIgnoreHardDeletes = true) {
 
 		_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
+		return this;
+	}
+
+	public Scenario<TLogFormat, TStreamId> WithThreads(int threads) {
+		_threads = threads;
 		return this;
 	}
 
@@ -420,7 +424,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 				chunkSize: dbConfig.ChunkSize,
 				unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes,
 				cancellationCheckPeriod: cancellationCheckPeriod,
-				threads: Threads,
+				threads: _threads,
 				throttle: throttle);
 
 			IChunkMerger chunkMerger = new ChunkMerger(
@@ -481,9 +485,9 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 					$"Status: {successLogger.Result}. Error: {successLogger.Error}");
 			}
 
-			// check the trace. only when Threads == 1 or the order isn't guaranteed.
+			// check the trace. only when _threads == 1, otherwise the order isn't guaranteed.
 			// only when not colliding everything, because the collisions will change the trace
-			if (_expectedTrace != null && Threads == 1 && !CollideEverything) {
+			if (_expectedTrace != null && _threads == 1 && !CollideEverything) {
 				var expected = _expectedTrace;
 				var actual = Tracer.ToArray();
 				for (var i = 0; i < Math.Max(expected.Length, actual.Length); i++) {
