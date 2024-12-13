@@ -53,10 +53,10 @@ public class ArchivePlugableComponent : IPlugableComponent {
 	}
 
 	public void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
-		var options = configuration.GetSection("EventStore:Archive").Get<ArchiveOptions>();
-		Enabled = options?.Enabled ?? false; // disabled by default
+		var options = configuration.GetSection("EventStore:Archive").Get<ArchiveOptions>() ?? new();
+		Enabled = options.StorageType is not StorageType.None;
 
-		if (options is null || !Enabled || options.StorageType is StorageType.None)
+		if (!Enabled)
 			return;
 
 		services.AddSingleton(options);

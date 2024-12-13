@@ -30,7 +30,7 @@ public class ArchivePlugableComponentTests {
 
 		if (enabled)
 			configBuilder = configBuilder.AddInMemoryCollection(new Dictionary<string, string> {
-				{"EventStore:Archive:Enabled", "true"},
+				{"EventStore:Archive:StorageType", "S3"},
 			});
 
 		var config = configBuilder.Build();
@@ -39,6 +39,7 @@ public class ArchivePlugableComponentTests {
 
 		var licenseService = new FakeLicenseService(licensePresent, entitlement);
 		builder.Services.AddSingleton<ILicenseService>(licenseService);
+		builder.Services.AddSingleton<IReadOnlyList<IClusterVNodeStartupTask>>([]);
 
 		((IPlugableComponent)sut).ConfigureServices(
 			builder.Services,
