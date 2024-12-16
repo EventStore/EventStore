@@ -7,7 +7,7 @@ namespace System.Diagnostics;
 
 public static class DriveStats {
 	public static DriveData GetDriveInfo(string path) {
-		var info = new DriveInfo(path);
+		var info = new DriveInfo(Path.GetFullPath(path));
 		var target = info.Name;
 		var diskName = "";
 
