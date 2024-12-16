@@ -50,7 +50,7 @@ public class MD5Hash {
 		}
 	}
 
-	public static async ValueTask ContinuousHashFor(HashAlgorithm md5, Stream s, int startPosition, long count, CancellationToken token) {
+	public static async ValueTask ContinuousHashFor(IncrementalHash md5, Stream s, int startPosition, long count, CancellationToken token) {
 		Ensure.NotNull(md5, "md5");
 		Ensure.Nonnegative(count, "count");
 
@@ -59,14 +59,12 @@ public class MD5Hash {
 
 		var buffer = ArrayPool<byte>.Shared.Rent(4096);
 		try {
-			long toRead = count;
-			while (toRead > 0) {
-				int read = await s.ReadAsync(buffer.AsMemory(0, (int)Math.Min(toRead, buffer.Length)), token);
-				if (read is 0)
+			for (int bytesRead; count > 0L; count -= bytesRead) {
+				bytesRead = await s.ReadAsync(buffer.AsMemory(0, (int)Math.Min(count, buffer.Length)), token);
+				if (bytesRead is 0)
 					break;
 
-				md5.TransformBlock(buffer, 0, read, null, 0);
-				toRead -= read;
+				md5.AppendData(buffer, 0, bytesRead);
 			}
 		} finally {
 			ArrayPool<byte>.Shared.Return(buffer);

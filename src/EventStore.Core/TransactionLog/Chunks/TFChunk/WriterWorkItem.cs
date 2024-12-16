@@ -4,13 +4,11 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext;
 using DotNext.IO;
 using EventStore.Plugins.Transforms;
-using Microsoft.IO;
 using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -22,9 +20,9 @@ internal sealed class WriterWorkItem : Disposable {
 
 	private readonly Stream _fileStream;
 	private Stream _memStream;
-	public readonly HashAlgorithm MD5;
+	public readonly IncrementalHash MD5;
 
-	public unsafe WriterWorkItem(nint memoryPtr, int length, HashAlgorithm md5,
+	public unsafe WriterWorkItem(nint memoryPtr, int length, IncrementalHash md5,
 		IChunkWriteTransform chunkWriteTransform, int initialStreamPosition) {
 		var memStream = new UnmanagedMemoryStream((byte*)memoryPtr, length, length, FileAccess.ReadWrite) {
 			Position = initialStreamPosition,
@@ -35,7 +33,7 @@ internal sealed class WriterWorkItem : Disposable {
 		MD5 = md5;
 	}
 
-	public WriterWorkItem(SafeFileHandle handle, HashAlgorithm md5, bool unbuffered,
+	public WriterWorkItem(SafeFileHandle handle, IncrementalHash md5, bool unbuffered,
 		IChunkWriteTransform chunkWriteTransform, int initialStreamPosition) {
 		var fileStream = unbuffered
 			? handle.AsUnbufferedStream(FileAccess.ReadWrite)

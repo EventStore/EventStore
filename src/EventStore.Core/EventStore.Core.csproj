@@ -9,7 +9,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.3.2" />
-		<PackageReference Include="EventStore.Plugins" Version="24.10.6" />
+		<PackageReference Include="EventStore.Plugins" Version="25.2.5" />
 		<PackageReference Include="FluentStorage" Version="5.6.0" />
 		<PackageReference Include="FluentStorage.AWS" Version="5.5.0" />
 		<PackageReference Include="Google.Protobuf" Version="3.27.2" />

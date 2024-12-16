@@ -27,7 +27,6 @@ using EventStore.Plugins.Transforms;
 using Microsoft.Win32.SafeHandles;
 using static System.Threading.Timeout;
 using ILogger = Serilog.ILogger;
-using MD5 = EventStore.Core.Hashing.MD5;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
@@ -256,8 +255,11 @@ public partial class TFChunk : IDisposable {
 			isScavenged, Guid.NewGuid(), transformFactory.Type);
 		var fileSize = GetAlignedSize(transformFactory.TransformDataPosition(chunkDataSize) + ChunkHeader.Size + ChunkFooter.Size);
 
+		var transformHeader = transformFactory.TransformHeaderLength > 0
+			? new byte[transformFactory.TransformHeaderLength]
+			: [];
 		return await CreateWithHeader(filename, chunkHeader, fileSize, inMem, unbuffered, writethrough,
-			reduceFileCachePressure, tracker, transformFactory, transformFactory.CreateTransformHeader(), token);
+			reduceFileCachePressure, tracker, transformFactory, transformHeader, token);
 	}
 
 	public static async ValueTask<TFChunk> CreateWithHeader(string filename,
@@ -314,8 +316,13 @@ public partial class TFChunk : IDisposable {
 					CurrentChunkVersion));
 
 			var transformFactory = getTransformFactory(_chunkHeader.TransformType);
-			_transformHeader = transformFactory.ReadTransformHeader(stream);
-			_transform = transformFactory.CreateTransform(_transformHeader);
+
+			var transformHeader = transformFactory.TransformHeaderLength > 0
+				? new byte[transformFactory.TransformHeaderLength]
+				: [];
+			await transformFactory.ReadTransformHeader(stream, transformHeader, token);
+			_transformHeader = transformHeader;
+			_transform = transformFactory.CreateTransform(transformHeader);
 
 			_chunkFooter = await ReadFooter(stream, token);
 			if (!_chunkFooter.IsCompleted) {
@@ -341,7 +348,8 @@ public partial class TFChunk : IDisposable {
 	}
 
 	private async ValueTask InitNew(ChunkHeader chunkHeader, int fileSize, ITransactionFileTracker tracker,
-		IChunkTransformFactory transformFactory, ReadOnlyMemory<byte> transformHeader,
+		IChunkTransformFactory transformFactory,
+		ReadOnlyMemory<byte> transformHeader,
 		CancellationToken token) {
 		Ensure.NotNull(chunkHeader, "chunkHeader");
 		Ensure.Positive(fileSize, "fileSize");
@@ -351,8 +359,9 @@ public partial class TFChunk : IDisposable {
 		_chunkHeader = chunkHeader;
 		_physicalDataSize = 0;
 		_logicalDataSize = 0;
+
 		_transformHeader = transformHeader;
-		_transform = transformFactory.CreateTransform(_transformHeader);
+		_transform = transformFactory.CreateTransform(transformHeader.Span);
 
 		if (_inMem)
 			await CreateInMemChunk(chunkHeader, fileSize, transformHeader, token);
@@ -410,7 +419,7 @@ public partial class TFChunk : IDisposable {
 	}
 
 	private async ValueTask CreateInMemChunk(ChunkHeader chunkHeader, int fileSize, ReadOnlyMemory<byte> transformHeader, CancellationToken token) {
-		var md5 = MD5.Create();
+		var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
 
 		// ALLOCATE MEM
 		_cacheStatus = CacheStatus.Cached;
@@ -466,7 +475,7 @@ public partial class TFChunk : IDisposable {
 	}
 
 	private async ValueTask CreateWriterWorkItemForNewChunk(ChunkHeader chunkHeader, int fileSize, ReadOnlyMemory<byte> transformHeader, CancellationToken token) {
-		var md5 = MD5.Create();
+		var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
 
 		// create temp file first and set desired length
 		// if there is not enough disk space or something else prevents file to be resized as desired
@@ -529,8 +538,13 @@ public partial class TFChunk : IDisposable {
 			}
 
 			var transformFactory = getTransformFactory(chunkHeader.TransformType);
-			_transformHeader = transformFactory.ReadTransformHeader(stream); // TODO: Move to async
-			_transform = transformFactory.CreateTransform(_transformHeader);
+
+			var transformHeader = transformFactory.TransformHeaderLength > 0
+				? new byte[transformFactory.TransformHeaderLength]
+				: [];
+			await transformFactory.ReadTransformHeader(stream, transformHeader, token);
+			_transformHeader = transformHeader;
+			_transform = transformFactory.CreateTransform(transformHeader);
 		} catch {
 			_handle.Dispose();
 			throw;
@@ -538,7 +552,7 @@ public partial class TFChunk : IDisposable {
 			await stream.DisposeAsync();
 		}
 
-		var workItem = new WriterWorkItem(_handle, MD5.Create(), _unbuffered, _transform.Write, 0);
+		var workItem = new WriterWorkItem(_handle, IncrementalHash.CreateHash(HashAlgorithmName.MD5), _unbuffered, _transform.Write, 0);
 		var realPosition = GetRawPosition(writePosition);
 		// the writer work item's stream is responsible for computing the current checksum when the position is set
 		workItem.WorkingStream.Position = realPosition;
@@ -547,40 +561,23 @@ public partial class TFChunk : IDisposable {
 		return chunkHeader;
 	}
 
-	private static async ValueTask WriteHeader(HashAlgorithm md5, Stream stream, ChunkHeader chunkHeader, CancellationToken token) {
+	private static async ValueTask WriteHeader(IncrementalHash md5, Stream stream, ChunkHeader chunkHeader, CancellationToken token) {
 		var chunkHeaderBytes = ArrayPool<byte>.Shared.Rent(ChunkHeader.Size);
 		try {
 			chunkHeader.Format(chunkHeaderBytes);
-			md5.TransformBlock(chunkHeaderBytes, 0, ChunkHeader.Size, null, 0);
+			md5.AppendData(chunkHeaderBytes, 0, ChunkHeader.Size);
 			await stream.WriteAsync(chunkHeaderBytes.AsMemory(0, ChunkHeader.Size), token);
 		} finally {
 			ArrayPool<byte>.Shared.Return(chunkHeaderBytes);
 		}
 	}
 
-	private static async ValueTask WriteTransformHeader(HashAlgorithm md5, Stream stream, ReadOnlyMemory<byte> transformHeader, CancellationToken token) {
+	private static ValueTask WriteTransformHeader(IncrementalHash md5, Stream stream, ReadOnlyMemory<byte> transformHeader, CancellationToken token) {
 		if (transformHeader.IsEmpty)
-			return;
+			return ValueTask.CompletedTask;
 
-		byte[] pooledArray;
-		if (MemoryMarshal.TryGetArray(transformHeader, out var transformHeaderBytes)) {
-			pooledArray = null;
-		} else {
-			pooledArray = ArrayPool<byte>.Shared.Rent(transformHeader.Length);
-			transformHeader.CopyTo(pooledArray);
-			transformHeaderBytes = new(pooledArray, 0, transformHeader.Length);
-		}
-
-		Debug.Assert(transformHeaderBytes.Array is not null);
-
-		try {
-			md5.TransformBlock(transformHeaderBytes.Array, transformHeaderBytes.Offset, transformHeaderBytes.Count,
-				null, 0);
-			await stream.WriteAsync(transformHeaderBytes, token);
-		} finally {
-			if (pooledArray is not null)
-				ArrayPool<byte>.Shared.Return(pooledArray);
-		}
+		md5.AppendData(transformHeader.Span);
+		return stream.WriteAsync(transformHeader, token);
 	}
 
 	private void SetAttributes(string filename, bool isReadOnly) {
@@ -605,17 +602,21 @@ public partial class TFChunk : IDisposable {
 		var stream = reader.Stream;
 		var footer = _chunkFooter;
 
-		byte[] hash;
-		using (var md5 = MD5.Create()) {
-			// hash whole chunk except MD5 hash sum which should always be last
-			await MD5Hash.ContinuousHashFor(md5, stream, 0, _fileSize - ChunkFooter.ChecksumSize, token);
-			md5.TransformFinalBlock([], 0, 0);
-			hash = md5.Hash;
-		}
+		using var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
 
-		// Perf: use hardware accelerated byte array comparison
-		if (!footer.MD5Hash.SequenceEqual(hash))
-			throw new HashValidationException();
+		// hash whole chunk except MD5 hash sum which should always be last
+		await MD5Hash.ContinuousHashFor(md5, stream, 0, _fileSize - ChunkFooter.ChecksumSize, token);
+		VerifyHash(footer.MD5Hash, md5);
+
+		static void VerifyHash(ReadOnlySpan<byte> expected, IncrementalHash actual) {
+			Span<byte> buffer = stackalloc byte[ChunkFooter.ChecksumSize];
+			var bytesWritten = actual.GetCurrentHash(buffer);
+			Debug.Assert(bytesWritten is ChunkFooter.ChecksumSize);
+
+			// Perf: use hardware accelerated byte array comparison
+			if (!expected.SequenceEqual(buffer.Slice(0, bytesWritten)))
+				throw new HashValidationException();
+		}
 	}
 
 	private ValueTask<ChunkHeader> ReadHeader(Stream stream, CancellationToken token) {
@@ -983,9 +984,10 @@ public partial class TFChunk : IDisposable {
 
 		workItem.FlushToDisk();
 
-		_transform.Write.CompleteData(
+		await _transform.Write.CompleteData(
 			footerSize: ChunkFooter.Size,
-			alignmentSize: _chunkHeader.Version >= (byte)ChunkVersions.Aligned ? AlignmentSize : 1);
+			alignmentSize: _chunkHeader.Version >= (byte)ChunkVersions.Aligned ? AlignmentSize : 1,
+			token);
 
 		await Flush(token);
 
@@ -996,16 +998,14 @@ public partial class TFChunk : IDisposable {
 
 			//MD5
 			footerNoHash.Format(bufferFromPool);
-			workItem.MD5.TransformFinalBlock(bufferFromPool, 0,
+			workItem.MD5.AppendData(bufferFromPool, 0,
 				ChunkFooter.Size - ChunkFooter.ChecksumSize);
 
 			//FILE
-			footerWithHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize) {
-				MD5Hash = workItem.MD5.Hash,
-			};
+			footerWithHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5);
 
 			footerWithHash.Format(bufferFromPool);
-			_transform.Write.WriteFooter(bufferFromPool.AsSpan(0, ChunkFooter.Size), out fileSize);
+			fileSize = await _transform.Write.WriteFooter(new(bufferFromPool, 0, ChunkFooter.Size), token);
 		} finally {
 			ArrayPool<byte>.Shared.Return(bufferFromPool);
 		}

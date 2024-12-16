@@ -11,6 +11,7 @@ using DotNext.IO;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -36,17 +37,12 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 
 	public ReadOnlySpan<byte> MD5Hash {
 		get => _checksum;
-		init
-		{
-			ArgumentOutOfRangeException.ThrowIfNotEqual(value.Length, ChecksumSize);
-
-			value.CopyTo(_checksum);
-		}
+		init => value.CopyTo(_checksum);
 	}
 
 	public readonly int MapCount; // calculated, not stored
 
-	public ChunkFooter(bool isCompleted, bool isMap12Bytes, int physicalDataSize, long logicalDataSize, int mapSize) {
+	public ChunkFooter(bool isCompleted, bool isMap12Bytes, int physicalDataSize, long logicalDataSize, int mapSize, IncrementalHash hash = null) {
 		Ensure.Nonnegative(physicalDataSize, nameof(physicalDataSize));
 		Ensure.Nonnegative(logicalDataSize, nameof(logicalDataSize));
 		if (logicalDataSize < physicalDataSize)
@@ -61,7 +57,9 @@ public sealed class ChunkFooter : IBinaryFormattable<ChunkFooter> {
 		LogicalDataSize = logicalDataSize;
 		MapSize = mapSize;
 
+		Debug.Assert(hash is null || hash.HashLengthInBytes is ChecksumSize);
 		Unsafe.SkipInit(out _checksum); // fix for Qodana false positive about init of readonly field
+		hash?.TryGetHashAndReset(_checksum, out _);
 
 		var posMapSize = isMap12Bytes ? PosMap.FullSize : PosMap.DeprecatedSize;
 		if (MapSize % posMapSize is not 0)
