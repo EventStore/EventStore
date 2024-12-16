@@ -130,7 +130,7 @@ public class SoftDeleteTests : SqliteDbPerTest<SoftDeleteTests> {
 				Assert.False(state.TryGetOriginalStreamData("ab-1", out _));
 				Assert.False(state.TryGetMetastreamData("$$ab-1", out _));
 			})
-			.RunAsync(
+			.RunAndKeepDbAsync(
 				x => new[] {
 					x.Recs[0].KeepIndexes(2, 3),
 					x.Recs[1],

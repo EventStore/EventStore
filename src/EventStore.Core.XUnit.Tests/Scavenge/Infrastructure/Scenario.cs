@@ -94,10 +94,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 	}
 
 	public Scenario<TLogFormat, TStreamId> WithDb(DbResult db) {
-		_getDb = async (_, _) => {
-			await db.Db.Open();
-			return db;
-		};
+		_getDb = (_, _) => new(db);
 		return this;
 	}
 
@@ -198,7 +195,17 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 	}
 
 	// if getExpectedKeptIndexEntries is null then it is the same as getExpectedKeptRecords
-	public async Task<DbResult> RunAsync(
+	public async Task RunAsync(
+		Func<DbResult, ILogRecord[][]> getExpectedKeptRecords = null,
+		Func<DbResult, ILogRecord[][]> getExpectedKeptIndexEntries = null) {
+
+		await using var x = await RunInternalAsync(
+			getExpectedKeptRecords,
+			getExpectedKeptIndexEntries);
+	}
+
+	// caller disposes DbResult
+	public async Task<DbResult> RunAndKeepDbAsync(
 		Func<DbResult, ILogRecord[][]> getExpectedKeptRecords = null,
 		Func<DbResult, ILogRecord[][]> getExpectedKeptIndexEntries = null) {
 
@@ -578,7 +585,6 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 		} finally {
 			sut?.Dispose();
 			readIndex.Close();
-			await dbResult.Db.DisposeAsync();
 		}
 	}
 
