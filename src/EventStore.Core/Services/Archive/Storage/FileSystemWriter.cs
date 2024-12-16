@@ -27,11 +27,12 @@ public class FileSystemWriter : IArchiveStorageWriter {
 
 	public ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) {
 		try {
-			var buffer = ArrayPool<byte>.Shared.Rent(8).AsSpan(0, 8);
-			BinaryPrimitives.WriteInt64LittleEndian(buffer, checkpoint);
-
 			var checkpointPath = Path.Combine(_archivePath, _archiveCheckpointFile);
 			using var fs = File.OpenWrite(checkpointPath);
+
+			Span<byte> buffer = stackalloc byte[8];
+			BinaryPrimitives.WriteInt64LittleEndian(buffer, checkpoint);
+
 			fs.Write(buffer);
 			fs.Flush(flushToDisk: true);
 

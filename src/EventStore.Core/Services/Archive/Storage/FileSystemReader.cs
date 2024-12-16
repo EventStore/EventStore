@@ -31,10 +31,10 @@ public class FileSystemReader : IArchiveStorageReader {
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) {
 		try {
-			var buffer = ArrayPool<byte>.Shared.Rent(8).AsSpan(0, 8);
-
 			var checkpointPath = Path.Combine(_archivePath, _archiveCheckpointFile);
 			using var fs = File.OpenRead(checkpointPath);
+
+			Span<byte> buffer = stackalloc byte[8];
 			fs.ReadExactly(buffer);
 
 			var checkpoint = BinaryPrimitives.ReadInt64LittleEndian(buffer);
