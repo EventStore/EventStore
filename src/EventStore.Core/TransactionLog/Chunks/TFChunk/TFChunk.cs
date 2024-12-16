@@ -610,10 +610,11 @@ public partial class TFChunk : IDisposable {
 
 		static void VerifyHash(ReadOnlySpan<byte> expected, IncrementalHash actual) {
 			Span<byte> buffer = stackalloc byte[ChunkFooter.ChecksumSize];
+			var bytesWritten = actual.GetCurrentHash(buffer);
+			Debug.Assert(bytesWritten is ChunkFooter.ChecksumSize);
 
 			// Perf: use hardware accelerated byte array comparison
-			if (!actual.TryGetCurrentHash(buffer, out var bytesWritten)
-			    || !expected.SequenceEqual(buffer.Slice(0, bytesWritten)))
+			if (!expected.SequenceEqual(buffer.Slice(0, bytesWritten)))
 				throw new HashValidationException();
 		}
 	}
