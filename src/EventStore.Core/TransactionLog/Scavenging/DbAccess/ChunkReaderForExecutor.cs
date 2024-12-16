@@ -27,6 +27,8 @@ public class ChunkReaderForExecutor<TStreamId> : IChunkReaderForExecutor<TStream
 
 	public bool IsReadOnly => _chunk.IsReadOnly;
 
+	public bool IsRemote => _chunk.IsRemote;
+
 	public long ChunkStartPosition => _chunk.ChunkHeader.ChunkStartPosition;
 
 	public long ChunkEndPosition => _chunk.ChunkHeader.ChunkEndPosition;

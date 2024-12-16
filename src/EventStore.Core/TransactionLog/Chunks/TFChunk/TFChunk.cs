@@ -52,6 +52,8 @@ public partial class TFChunk : IDisposable {
 		get { return _cacheStatus is CacheStatus.Cached; }
 	}
 
+	public bool IsRemote => false;
+
 	// the logical size of (untransformed) data (could be > PhysicalDataSize if scavenged chunk)
 	public long LogicalDataSize {
 		get { return Interlocked.Read(ref _logicalDataSize); }

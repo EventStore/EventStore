@@ -18,6 +18,7 @@ using Serilog;
 namespace EventStore.Core.Services.Storage;
 
 // This tracks the current scavenge and starts/stops/creates it according to the client instructions
+// It works for both old and new scavenge, determined by ScavengerFactory
 public class StorageScavenger :
 	IHandle<ClientMessage.ScavengeDatabase>,
 	IHandle<ClientMessage.StopDatabaseScavenge>,

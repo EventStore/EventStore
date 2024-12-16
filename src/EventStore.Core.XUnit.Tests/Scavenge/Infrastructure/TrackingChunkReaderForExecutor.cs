@@ -11,13 +11,16 @@ public class TrackingChunkReaderForExecutor<TStreamId, TRecord> :
 	IChunkReaderForExecutor<TStreamId, TRecord> {
 
 	private readonly IChunkReaderForExecutor<TStreamId, TRecord> _wrapped;
+	private readonly bool _isRemote;
 	private readonly Tracer _tracer;
 
 	public TrackingChunkReaderForExecutor(
 		IChunkReaderForExecutor<TStreamId, TRecord> wrapped,
+		bool isRemote,
 		Tracer tracer) {
 
 		_wrapped = wrapped;
+		_isRemote = isRemote;
 		_tracer = tracer;
 	}
 
@@ -30,6 +33,8 @@ public class TrackingChunkReaderForExecutor<TStreamId, TRecord> :
 	public int ChunkEndNumber => _wrapped.ChunkEndNumber;
 
 	public bool IsReadOnly => _wrapped.IsReadOnly;
+
+	public bool IsRemote => _isRemote;
 
 	public long ChunkStartPosition => _wrapped.ChunkStartPosition;
 
