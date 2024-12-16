@@ -3,24 +3,34 @@
 
 // ReSharper disable CheckNamespace
 
+using Serilog;
+
 namespace System.Diagnostics;
 
-public static class DriveStats {
+public class DriveStats {
+	public static readonly ILogger Log = Serilog.Log.ForContext<DriveStats>();
+
 	public static DriveData GetDriveInfo(string path) {
-		var info = new DriveInfo(Path.GetFullPath(path));
-		var target = info.Name;
-		var diskName = "";
+		try {
+			var info = new DriveInfo(Path.GetFullPath(path));
+			var target = info.Name;
+			var diskName = "";
 
-		// info.VolumeLabel looks like what we want but on linux it is just the name again.
-		// so we find the best match in the list of drives.
-		foreach (var candidate in DriveInfo.GetDrives()) {
-			if (target.StartsWith(candidate.Name, StringComparison.InvariantCultureIgnoreCase) &&
-				candidate.Name.StartsWith(diskName, StringComparison.InvariantCultureIgnoreCase)) {
-				diskName = candidate.Name;
+			// info.VolumeLabel looks like what we want but on linux it is just the name again.
+			// so we find the best match in the list of drives.
+			foreach (var candidate in DriveInfo.GetDrives()) {
+				if (target.StartsWith(candidate.Name, StringComparison.InvariantCultureIgnoreCase) &&
+					candidate.Name.StartsWith(diskName, StringComparison.InvariantCultureIgnoreCase)) {
+					diskName = candidate.Name;
+				}
 			}
-		}
 
-		return new DriveData(diskName, info.TotalSize, info.AvailableFreeSpace);
+			return new DriveData(diskName, info.TotalSize, info.AvailableFreeSpace);
+
+		} catch (Exception ex) {
+			Log.Warning(ex, "Failed to retrieve drive stats for {Path}", path);
+			return new DriveData("Unknown", 0, 0);
+		}
 	}
 }
 
