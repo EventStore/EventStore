@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -14,10 +15,10 @@ using EventStore.Transport.Tcp.Framing;
 namespace EventStore.Core.Services.Replication;
 
 internal sealed class LogRecordFramer : IAsyncMessageFramer<ILogRecord> {
-	private readonly IAsyncMessageFramer<IAsyncBinaryReader> _inner;
+	private readonly IAsyncMessageFramer<ReadOnlySequence<byte>> _inner;
 	private Func<ILogRecord, CancellationToken, ValueTask> _handler = static (_, _) => ValueTask.CompletedTask;
 
-	public LogRecordFramer(IAsyncMessageFramer<IAsyncBinaryReader> inner) {
+	public LogRecordFramer(IAsyncMessageFramer<ReadOnlySequence<byte>> inner) {
 		_inner = inner;
 		_inner.RegisterMessageArrivedCallback(OnMessageArrived);
 	}
@@ -28,16 +29,10 @@ internal sealed class LogRecordFramer : IAsyncMessageFramer<ILogRecord> {
 	public ValueTask UnFrameData(ArraySegment<byte> data, CancellationToken token) => _inner.UnFrameData(data, token);
 	public void Reset() => _inner.Reset();
 
-	private async ValueTask OnMessageArrived(IAsyncBinaryReader reader, CancellationToken token) {
-		if (!reader.TryGetRemainingBytesCount(out var rawLength) || rawLength >= int.MaxValue)
-			throw new ArgumentOutOfRangeException(
-				nameof(reader),
-				$"Length of stream was {rawLength}");
-
-		var length = (int)rawLength;
-
-		var record = await LogRecord.ReadFrom(reader, length, token);
-		await _handler(record, token);
+	private ValueTask OnMessageArrived(ReadOnlySequence<byte> recordPayload, CancellationToken token) {
+		var reader = new SequenceReader(recordPayload);
+		var record = LogRecord.ReadFrom(ref reader);
+		return _handler(record, token);
 	}
 
 	public void RegisterMessageArrivedCallback(Func<ILogRecord, CancellationToken, ValueTask> handler) {

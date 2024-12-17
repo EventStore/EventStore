@@ -41,8 +41,8 @@ public struct PosMap : IBinaryFormattable<PosMap> {
 	public static PosMap FromNewFormat(ReadOnlySpan<byte> source)
 		=> new(source);
 
-	public static async ValueTask<PosMap> FromOldFormat(IAsyncBinaryReader reader, CancellationToken token) {
-		var posmap = await reader.ReadLittleEndianAsync<ulong>(token);
+	public static async ValueTask<PosMap> FromOldFormat(Stream stream, Memory<byte> buffer, CancellationToken token) {
+		var posmap = await stream.ReadLittleEndianAsync<ulong>(buffer, token);
 		var logPos = (int)(posmap >>> 32);
 		var actualPos = (int)(posmap & 0xFFFFFFFF);
 		return new(logPos, actualPos);

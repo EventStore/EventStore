@@ -2,11 +2,11 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Collections.Generic;
+using System.Buffers.Binary;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using DotNext.Threading;
 using DotNext.IO;
 using EventStore.Common.Utils;
@@ -197,11 +197,12 @@ public partial class TFChunk {
 
 		private async ValueTask<Midpoint[]> PopulateMidpoints(int depth, ReaderWorkItem workItem, CancellationToken token) {
 			if (depth > 31)
-				throw new ArgumentOutOfRangeException("depth", "Depth too for midpoints.");
+				throw new ArgumentOutOfRangeException(nameof(depth), "Depth too for midpoints.");
 
 			if (Chunk.ChunkFooter.MapCount is 0) // empty chunk
 				return null;
 
+			var buffer = Memory.AllocateAtLeast<byte>(PosMap.FullSize);
 			try {
 				int midPointsCnt = 1 << depth;
 				int segmentSize;
@@ -216,46 +217,35 @@ public partial class TFChunk {
 				}
 
 				for (int x = 0, i = 0, xN = mapCount - 1; x < xN; x += segmentSize, i++) {
-					midpoints[i] = new Midpoint(x, await ReadPosMap(workItem, x, token));
+					midpoints[i] = new Midpoint(x, await ReadPosMap(workItem, x, buffer.Memory, token));
 				}
 
 				// add the very last item as the last midpoint (possibly it is done twice)
-				midpoints[^1] = new Midpoint(mapCount - 1, await ReadPosMap(workItem, mapCount - 1, token));
+				midpoints[^1] = new Midpoint(mapCount - 1,
+					await ReadPosMap(workItem, mapCount - 1, buffer.Memory, token));
 				return midpoints;
 			} catch (FileBeingDeletedException) {
 				return null;
 			} catch (OutOfMemoryException) {
 				return null;
+			} finally {
+				buffer.Dispose();
 			}
 		}
 
-		private ValueTask<PosMap> ReadPosMap(ReaderWorkItem workItem, long index, CancellationToken token) {
+		private ValueTask<PosMap> ReadPosMap(ReaderWorkItem workItem, long index, Memory<byte> buffer, CancellationToken token) {
 			ValueTask<PosMap> task;
 			if (Chunk.ChunkFooter.IsMap12Bytes) {
 				var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.FullSize;
 				workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
-				task = workItem.Reader.ReadAsync<PosMap>(token);
+				task = workItem.BaseStream.ReadAsync<PosMap>(buffer, token);
 			} else {
 				var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.DeprecatedSize;
 				workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
-				task = PosMap.FromOldFormat(workItem.Reader, token);
+				task = PosMap.FromOldFormat(workItem.BaseStream, buffer, token);
 			}
 
 			return task;
-		}
-
-		private async IAsyncEnumerable<PosMap> ReadPosMap(ReaderWorkItem workItem, long index, int count, [EnumeratorCancellation] CancellationToken token) {
-			if (Chunk.ChunkFooter.IsMap12Bytes) {
-				var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.FullSize;
-				workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
-				for (int i = 0; i < count; i++)
-					yield return await workItem.Reader.ReadAsync<PosMap>(token);
-			} else {
-				var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.DeprecatedSize;
-				workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
-				for (int i = 0; i < count; i++)
-					yield return await PosMap.FromOldFormat(workItem.Reader, token);
-			}
 		}
 
 		public async ValueTask<bool> ExistsAt(long logicalPosition, CancellationToken token) {
@@ -310,9 +300,11 @@ public partial class TFChunk {
 			long endIndex, CancellationToken token) {
 			long low = startIndex;
 			long high = endIndex;
+
+			using var buffer = Memory.AllocateAtLeast<byte>(PosMap.FullSize);
 			while (low <= high) {
 				var mid = low + (high - low) / 2;
-				var v = await ReadPosMap(workItem, mid, token);
+				var v = await ReadPosMap(workItem, mid, buffer.Memory, token);
 
 				if (v.LogPos == pos)
 					return v.ActualPos;
@@ -430,7 +422,9 @@ public partial class TFChunk {
 
 		private async ValueTask<int> TranslateClosestForwardWithoutMidpoints(ReaderWorkItem workItem, long pos, long startIndex,
 			long endIndex, CancellationToken token) {
-			PosMap res = await ReadPosMap(workItem, endIndex, token);
+
+			using var buffer = Memory.AllocateAtLeast<byte>(PosMap.FullSize);
+			PosMap res = await ReadPosMap(workItem, endIndex, buffer.Memory, token);
 
 			// to allow backward reading of the last record, forward read will decline anyway
 			if (pos > res.LogPos)
@@ -440,7 +434,7 @@ public partial class TFChunk {
 			long high = endIndex;
 			while (low < high) {
 				var mid = low + (high - low) / 2;
-				var v = await ReadPosMap(workItem, mid, token);
+				var v = await ReadPosMap(workItem, mid, buffer.Memory, token);
 
 				if (v.LogPos < pos)
 					low = mid + 1;
@@ -461,7 +455,7 @@ public partial class TFChunk {
 
 		/// <summary>
 		/// Returns the index of lower midpoint for given logical position.
-		/// Assumes it always exist.
+		/// Assumes it always exists.
 		/// </summary>
 		private static int LowerMidpointBound(Midpoint[] midpoints, long pos) {
 			int l = 0;
@@ -479,7 +473,7 @@ public partial class TFChunk {
 
 		/// <summary>
 		/// Returns the index of upper midpoint for given logical position.
-		/// Assumes it always exist.
+		/// Assumes it always exists.
 		/// </summary>
 		private static int UpperMidpointBound(Midpoint[] midpoints, long pos) {
 			int l = 0;
@@ -499,7 +493,7 @@ public partial class TFChunk {
 	private abstract class TFChunkReadSide {
 		protected readonly TFChunk Chunk;
 		protected readonly ILogger _log = Log.ForContext<TFChunkReader>();
-		protected readonly ITransactionFileTracker _tracker;
+		private readonly ITransactionFileTracker _tracker;
 
 		protected TFChunkReadSide(TFChunk chunk, ITransactionFileTracker tracker) {
 			Ensure.NotNull(chunk, "chunk");
@@ -553,20 +547,35 @@ public partial class TFChunk {
 			if (!ValidateRecordPosition(actualPosition))
 				return (null, -1);
 
-			var length = await workItem.Reader.ReadLittleEndianAsync<int>(token);
-			ValidateRecordLength(length, actualPosition);
+			int length;
+			MemoryOwner<byte> buffer;
+
+			using (buffer = Memory.AllocateAtLeast<byte>(sizeof(int))) {
+				length = await workItem.BaseStream.ReadLittleEndianAsync<int>(buffer.Memory, token);
+				ValidateRecordLength(length, actualPosition);
+			}
 
 			ILogRecord record;
 			try {
-				record = await LogRecord.ReadFrom(workItem.Reader, length, token);
+				// log record payload + lenght suffix
+				buffer = Memory.AllocateExactly<byte>(length + sizeof(int));
+				await workItem.BaseStream.ReadExactlyAsync(buffer.Memory, token);
+
+				var reader = new SequenceReader(new(buffer.Memory[..length]));
+				record = LogRecord.ReadFrom(ref reader);
+
+				_tracker.OnRead(record);
+
+				int suffixLength =
+					BinaryPrimitives.ReadInt32LittleEndian(buffer.Span[^sizeof(int)..]);
+
+				ValidatePrefixSuffixLength(length, suffixLength, actualPosition, "pre-position");
 			} catch (Exception exc) {
-				throw new InvalidReadException($"Error while reading log record forwards at actual position {actualPosition}. {exc.Message}");
+				throw new InvalidReadException(
+					$"Error while reading log record forwards at actual position {actualPosition}. {exc.Message}");
+			} finally {
+				buffer.Dispose();
 			}
-
-			_tracker.OnRead(record);
-
-			int suffixLength = await workItem.Reader.ReadLittleEndianAsync<int>(token);
-			ValidatePrefixSuffixLength(length, suffixLength, actualPosition, "pre-position");
 
 			return (record, length);
 		}
@@ -577,13 +586,14 @@ public partial class TFChunk {
 			if (!ValidateRecordPosition(actualPosition))
 				return default;
 
-			var length = await workItem.Reader.ReadLittleEndianAsync<int>(token);
+			using var buffer = Memory.AllocateAtLeast<byte>(sizeof(int));
+			var length = await workItem.BaseStream.ReadLittleEndianAsync<int>(buffer.Memory, token);
 			ValidateRecordLength(length, actualPosition);
 
 			var record = getBuffer(length);
 			await workItem.BaseStream.ReadExactlyAsync(record.AsMemory(0, length), token);
 
-			var suffixLength = await workItem.Reader.ReadLittleEndianAsync<int>(token);
+			var suffixLength = await workItem.BaseStream.ReadLittleEndianAsync<int>(buffer.Memory, token);
 			ValidatePrefixSuffixLength(length, suffixLength, actualPosition, "pre-position");
 
 			return new(record, 0, length);
@@ -600,41 +610,51 @@ public partial class TFChunk {
 
 			var realPos = GetRawPosition(actualPosition);
 			workItem.BaseStream.Position = realPos - sizeof(int);
+			int length;
+			MemoryOwner<byte> buffer;
 
-			var length = await workItem.Reader.ReadLittleEndianAsync<int>(token);
-			if (length <= 0) {
-				throw new InvalidReadException(
-					string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "
-								  + "In chunk {2}.",
-						actualPosition, length, Chunk));
+			using (buffer = Memory.AllocateAtLeast<byte>(sizeof(int))) {
+				length = await workItem.BaseStream.ReadLittleEndianAsync<int>(buffer.Memory, token);
+				if (length <= 0) {
+					throw new InvalidReadException(
+						string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "
+						              + "In chunk {2}.",
+							actualPosition, length, Chunk));
+				}
+
+				if (length > TFConsts.MaxLogRecordSize) {
+					throw new InvalidReadException(
+						string.Format("Log record that ends at actual pos {0} has too large length: {1} bytes, "
+						              + "while limit is {2} bytes. In chunk {3}.",
+							actualPosition, length, TFConsts.MaxLogRecordSize, Chunk));
+				}
+
+				if (actualPosition < length + 2 * sizeof(int)) // no space for record + length prefix and suffix
+				{
+					throw new UnableToReadPastEndOfStreamException(
+						string.Format("There is not enough space to read full record (length suffix: {0}). "
+						              + "Actual post-position: {1}. Something is seriously wrong in chunk {2}.",
+							length, actualPosition, Chunk));
+				}
+
+				workItem.BaseStream.Position = realPos - length - 2 * sizeof(int);
+
+				// verify suffix length == prefix length
+				int prefixLength = await workItem.BaseStream.ReadLittleEndianAsync<int>(buffer.Memory, token);
+				ValidatePrefixSuffixLength(prefixLength, length, actualPosition, "post-position");
 			}
-
-			if (length > TFConsts.MaxLogRecordSize) {
-				throw new InvalidReadException(
-					string.Format("Log record that ends at actual pos {0} has too large length: {1} bytes, "
-								  + "while limit is {2} bytes. In chunk {3}.",
-						actualPosition, length, TFConsts.MaxLogRecordSize, Chunk));
-			}
-
-			if (actualPosition < length + 2 * sizeof(int)) // no space for record + length prefix and suffix
-			{
-				throw new UnableToReadPastEndOfStreamException(
-					string.Format("There is not enough space to read full record (length suffix: {0}). "
-								  + "Actual post-position: {1}. Something is seriously wrong in chunk {2}.",
-						length, actualPosition, Chunk));
-			}
-
-			workItem.BaseStream.Position = realPos - length - 2 * sizeof(int);
-
-			// verify suffix length == prefix length
-			int prefixLength = await workItem.Reader.ReadLittleEndianAsync<int>(token);
-			ValidatePrefixSuffixLength(prefixLength, length, actualPosition, "post-position");
 
 			ILogRecord record;
+			buffer = Memory.AllocateExactly<byte>(length);
 			try {
-				record = await LogRecord.ReadFrom(workItem.Reader, length, token);
+				await workItem.BaseStream.ReadExactlyAsync(buffer.Memory, token);
+				var reader = new SequenceReader(new(buffer.Memory));
+				record = LogRecord.ReadFrom(ref reader);
 			} catch (Exception exc) {
-				throw new InvalidReadException($"Error while reading log record backwards at actual position {actualPosition}. {exc.Message}");
+				throw new InvalidReadException(
+					$"Error while reading log record backwards at actual position {actualPosition}. {exc.Message}");
+			} finally {
+				buffer.Dispose();
 			}
 
 			_tracker.OnRead(record);

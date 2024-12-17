@@ -6,10 +6,8 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.IO;
-using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -57,9 +55,12 @@ public class when_writing_a_new_chunked_transaction_file<TLogFormat, TStreamId> 
 		await using var filestream = File.Open(GetFilePathFor("chunk-000000.000000"), FileMode.Open, FileAccess.Read);
 		filestream.Position = ChunkHeader.Size;
 
-		var reader = IAsyncBinaryReader.Create(filestream, new byte[128]);
-		var recordLength = await reader.ReadLittleEndianAsync<int>();
-		var read = await LogRecord.ReadFrom(reader, recordLength, CancellationToken.None);
+		var recordLength = await filestream.ReadLittleEndianAsync<int>(new byte[sizeof(int)]);
+		var buffer = new byte[recordLength];
+		await filestream.ReadExactlyAsync(buffer);
+
+		var reader = new SequenceReader(new(buffer));
+		var read = LogRecord.ReadFrom(ref reader);
 		Assert.AreEqual(record, read);
 	}
 }
