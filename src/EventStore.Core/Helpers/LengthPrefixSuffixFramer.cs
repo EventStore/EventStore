@@ -87,21 +87,24 @@ public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<ReadOnlySeque
 				i += copyCnt;
 
 				if (_memStream.Length == _packageLength) {
+					byte[] buf;
+					var prefixLength = _packageLength - PrefixLength;
 #if DEBUG
-					var buf = _memStream.GetBuffer();
+					buf = _memStream.GetBuffer();
 					int suffixLength = (buf[_packageLength - 4] << 0)
 					                   | (buf[_packageLength - 3] << 8)
 					                   | (buf[_packageLength - 2] << 16)
 					                   | (buf[_packageLength - 1] << 24);
-					if (_packageLength - PrefixLength != suffixLength) {
+					if (prefixLength != suffixLength) {
 						throw new Exception(string.Format("Prefix length: {0} is not equal to suffix length: {1}.",
-							_packageLength - PrefixLength, suffixLength));
+							prefixLength, suffixLength));
 					}
 #endif
-					_memStream.SetLength(suffixLength); // remove suffix length
+					_memStream.SetLength(prefixLength); // remove suffix length
 					_memStream.Position = 0;
+					buf = _memStream.GetBuffer();
 
-					await _packageHandler(new(buf, 0, suffixLength), token);
+					await _packageHandler(new(buf, 0, prefixLength), token);
 
 					_memStream.SetLength(0);
 					_prefixBytes = 0;
