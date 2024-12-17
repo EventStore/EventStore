@@ -39,7 +39,5 @@ public abstract class FluentReader(string archiveCheckpointFile) {
 		return stream ?? throw new ChunkDeletedException();
 	}
 
-	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
-		throw new NotImplementedException();
-	}
+	public abstract IAsyncEnumerable<string> ListChunks(CancellationToken ct);
 }

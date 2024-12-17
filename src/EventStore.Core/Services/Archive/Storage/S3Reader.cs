@@ -2,11 +2,15 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
+using EventStore.Common.Exceptions;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using FluentStorage;
 using FluentStorage.AWS.Blobs;
@@ -17,15 +21,37 @@ namespace EventStore.Core.Services.Archive.Storage;
 
 public class S3Reader : FluentReader, IArchiveStorageReader {
 	private readonly S3Options _options;
+	private readonly AmazonS3Client _s3Client;
 	private readonly IAwsS3BlobStorage _awsBlobStorage;
+	private readonly Func<int?, int?, string> _getChunkPrefix;
 
 	public S3Reader(S3Options options, Func<int?, int?, string> getChunkPrefix, string archiveCheckpointFile)
 		: base(archiveCheckpointFile) {
 		_options = options;
+		_getChunkPrefix = getChunkPrefix;
+
+		if (string.IsNullOrEmpty(options.Bucket))
+			throw new InvalidConfigurationException("Please specify an Archive S3 Bucket");
+
+		if (string.IsNullOrEmpty(options.Region))
+			throw new InvalidConfigurationException("Please specify an Archive S3 Region");
+
+		_s3Client = CreateS3Client(options);
+
 		_awsBlobStorage = StorageFactory.Blobs.AwsS3(
 			awsCliProfileName: options.AwsCliProfileName,
 			bucketName: options.Bucket,
 			region: options.Region) as IAwsS3BlobStorage;
+	}
+
+	private static AmazonS3Client CreateS3Client(S3Options options) {
+		var profile = new Profile(options.AwsCliProfileName);
+		var region = options.Region;
+		var config = new AmazonS3Config {
+			Profile = profile,
+			RegionEndpoint = RegionEndpoint.GetBySystemName(region)
+		};
+		return new AmazonS3Client(config);
 	}
 
 	protected override ILogger Log { get; } = Serilog.Log.ForContext<S3Reader>();
@@ -48,5 +74,15 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 				throw new ChunkDeletedException();
 			throw;
 		}
+	}
+
+	public override async IAsyncEnumerable<string> ListChunks([EnumeratorCancellation] CancellationToken ct) {
+		var listResponse = _s3Client.Paginators.ListObjectsV2(new ListObjectsV2Request {
+			BucketName = _options.Bucket,
+			Prefix = _getChunkPrefix(null, null)
+		});
+
+		await foreach (var s3Object in listResponse.S3Objects.WithCancellation(ct))
+			yield return s3Object.Key;
 	}
 }
