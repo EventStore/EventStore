@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Text;
 using DotNext.Buffers;
@@ -10,7 +11,6 @@ using DotNext.IO;
 using DotNext.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Util;
 using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords;
@@ -63,8 +63,8 @@ public sealed class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, 
 	public string EventType { get; }
 	private int? _eventTypeSize;
 	public ReadOnlyMemory<byte> Data => Flags.HasFlag(PrepareFlags.IsRedacted) ? NoData : _dataOnDisk;
-	private ReadOnlyMemory<byte> _dataOnDisk;
-	public ReadOnlyMemory<byte> Metadata { get; private init; }
+	private readonly ReadOnlyMemory<byte> _dataOnDisk;
+	public ReadOnlyMemory<byte> Metadata { get; }
 
 	private int? _sizeOnDisk;
 
@@ -172,16 +172,16 @@ public sealed class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, 
 		ExpectedVersion = version is LogRecordVersion.LogRecordV0
 			? AdjustVersion(reader.ReadLittleEndian<int>())
 			: reader.ReadLittleEndian<long>();
-		EventStreamId = reader.ReadString(in context);
+		EventStreamId = ReadString(ref reader, in context);
 		EventId = reader.Read<Blittable<Guid>>().Value;
 		CorrelationId = reader.Read<Blittable<Guid>>().Value;
 		TimeStamp = new(reader.ReadLittleEndian<long>());
-		EventType = reader.ReadString(in context);
+		EventType = ReadString(ref reader, in context);
 		_dataOnDisk = reader.ReadLittleEndian<int>() is var dataCount && dataCount > 0
-			? reader.ReadBytes(dataCount)
+			? reader.Read(dataCount).ToArray()
 			: NoData;
 		Metadata = reader.ReadLittleEndian<int>() is var metadataCount && metadataCount > 0
-			? reader.ReadBytes(metadataCount)
+			? reader.Read(metadataCount).ToArray()
 			: NoData;
 
 		if (InMemorySize > TFConsts.MaxLogRecordSize)
@@ -189,6 +189,11 @@ public sealed class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, 
 
 		static long AdjustVersion(int version)
 			=> version is int.MaxValue - 1 ? long.MaxValue - 1L : version;
+
+		static string ReadString(ref SequenceReader reader, in DecodingContext context) {
+			using var buffer = reader.Decode(in context, LengthFormat.Compressed);
+			return buffer.ToString();
+		}
 	}
 
 	public IPrepareLogRecord<string> CopyForRetry(long logPosition, long transactionPosition) {

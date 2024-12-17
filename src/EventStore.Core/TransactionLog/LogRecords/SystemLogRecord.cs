@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
 using EventStore.Common.Utils;
@@ -65,7 +66,7 @@ public sealed class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, IS
 					$"Invalid SystemRecordSerialization {recordSer} at LogPosition {logPosition}.");
 		Reserved = reader.ReadLittleEndian<long>();
 		Data = reader.ReadLittleEndian<int>() is var dataCount && dataCount > 0
-			? reader.ReadBytes(dataCount)
+			? reader.Read(dataCount).ToArray()
 			: NoData;
 	}
 
