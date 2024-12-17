@@ -322,7 +322,7 @@ public class CancellationAndContinuationTests : SqliteDbPerTest<CancellationAndC
 				var accumulating = Assert.IsType<ScavengeCheckpoint.Accumulating>(checkpoint);
 				Assert.Equal(0, accumulating.DoneLogicalChunkNumber);
 			})
-			.RunAsync();
+			.RunAndKeepDbAsync();
 
 		// now complete the scavenge
 		await new Scenario<LogFormat.V2, string>()
@@ -468,7 +468,7 @@ public class CancellationAndContinuationTests : SqliteDbPerTest<CancellationAndC
 				var calculating = Assert.IsType<ScavengeCheckpoint.Calculating<string>>(checkpoint);
 				Assert.Equal("None", calculating.DoneStreamHandle.ToString());
 			})
-			.RunAsync();
+			.RunAndKeepDbAsync();
 
 		// now complete the scavenge
 		await new Scenario<LogFormat.V2, string>()
@@ -602,7 +602,7 @@ public class CancellationAndContinuationTests : SqliteDbPerTest<CancellationAndC
 				var executing = Assert.IsType<ScavengeCheckpoint.ExecutingChunks>(checkpoint);
 				Assert.Equal(0, executing.DoneLogicalChunkNumber);
 			})
-			.RunAsync();
+			.RunAndKeepDbAsync();
 
 		// now complete the scavenge
 		await new Scenario<LogFormat.V2, string>()
@@ -740,7 +740,7 @@ public class CancellationAndContinuationTests : SqliteDbPerTest<CancellationAndC
 				Assert.True(state.TryGetCheckpoint(out var checkpoint));
 				var executing = Assert.IsType<ScavengeCheckpoint.ExecutingIndex>(checkpoint);
 			})
-			.RunAsync();
+			.RunAndKeepDbAsync();
 
 		// now complete the scavenge
 		await new Scenario<LogFormat.V2, string>()
@@ -803,7 +803,7 @@ public class CancellationAndContinuationTests : SqliteDbPerTest<CancellationAndC
 				Assert.True(state.TryGetCheckpoint(out var checkpoint));
 				var executing = Assert.IsType<ScavengeCheckpoint.Cleaning>(checkpoint);
 			})
-			.RunAsync();
+			.RunAndKeepDbAsync();
 
 		// now complete the scavenge
 		await new Scenario<LogFormat.V2, string>()

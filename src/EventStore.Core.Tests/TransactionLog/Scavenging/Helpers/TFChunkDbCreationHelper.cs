@@ -429,7 +429,7 @@ public class StreamInfo {
 	}
 }
 
-public class DbResult {
+public sealed class DbResult : IAsyncDisposable {
 	public TFChunkDb Db { get; }
 	public ILogRecord[][] Recs { get; }
 	public HashSet<int> RemoteChunks { get; }
@@ -448,6 +448,10 @@ public class DbResult {
 		Recs = recs;
 		RemoteChunks = remoteChunks;
 		Streams = streams;
+	}
+
+	public async ValueTask DisposeAsync() {
+		await Db.DisposeAsync();
 	}
 }
 
