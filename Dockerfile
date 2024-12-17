@@ -47,7 +47,7 @@ FROM build as publish
 ARG RUNTIME=linux-x64
 
 RUN dotnet publish --configuration=Release --runtime=${RUNTIME} --self-contained \
-     --framework=net8.0 --output /publish EventStore.ClusterNode
+     --framework=net9.0 --output /publish EventStore.ClusterNode
 
 # "runtime" image
 FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-${CONTAINER_RUNTIME} AS runtime
