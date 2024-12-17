@@ -28,6 +28,7 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core.TransactionLog.Chunks;
 
 public abstract class TFChunkScavenger {
+	public const int MinThreadCount = 1;
 	public const int MaxThreadCount = 4;
 	public const int MaxRetryCount = 5;
 	public const int FlushPageInterval = 32; // max 65536 pages to write resulting in 2048 flushes per chunk

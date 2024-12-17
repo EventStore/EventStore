@@ -40,14 +40,13 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 		_chunkSize = chunkSize;
 		_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
 		_cancellationCheckPeriod = cancellationCheckPeriod;
-
-		if (threads < 1 || threads > TFChunkScavenger.MaxThreadCount) {
-			_logger.Warning("SCAVENGING: Number of threads specified ({SpecifiedThreads}) is too high, clamping to {AdjustedThreads}",
-				threads, TFChunkScavenger.MaxThreadCount);
-		}
-
-		_threads = Math.Clamp(threads, 1, TFChunkScavenger.MaxThreadCount);
+		_threads = Math.Clamp(threads, TFChunkScavenger.MinThreadCount, TFChunkScavenger.MaxThreadCount);
 		_throttle = throttle;
+
+		if (_threads != threads) {
+			_logger.Warning("SCAVENGING: Number of threads specified ({SpecifiedThreads}) is out of range. Clamping to {AdjustedThreads}",
+				threads, _threads);
+		}
 	}
 
 	public ValueTask Execute(
