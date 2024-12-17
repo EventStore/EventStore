@@ -30,7 +30,7 @@ public class ArchivePlugableComponentTests {
 
 		if (enabled)
 			configBuilder = configBuilder.AddInMemoryCollection(new Dictionary<string, string> {
-				{"EventStore:Archive:StorageType", "S3"},
+				{"EventStore:Archive:Enabled", "true"},
 			});
 
 		var config = configBuilder.Build();

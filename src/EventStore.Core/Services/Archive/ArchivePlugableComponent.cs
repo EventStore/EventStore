@@ -54,7 +54,7 @@ public class ArchivePlugableComponent : IPlugableComponent {
 
 	public void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
 		var options = configuration.GetSection("EventStore:Archive").Get<ArchiveOptions>() ?? new();
-		Enabled = options.StorageType is not StorageType.None;
+		Enabled = options.Enabled;
 
 		if (!Enabled)
 			return;

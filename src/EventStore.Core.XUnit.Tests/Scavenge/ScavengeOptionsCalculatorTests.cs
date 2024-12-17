@@ -60,7 +60,7 @@ public class ScavengeOptionsCalculatorTests {
 	public void merging_is_disabled_when_archiving_is_enabled() {
 		var sut = GenSut(
 			vNodeOptions: [
-				new("EventStore:Archive:StorageType", "S3"),
+				new("EventStore:Archive:Enabled", "true"),
 			]);
 
 		Assert.False(sut.MergeChunks);

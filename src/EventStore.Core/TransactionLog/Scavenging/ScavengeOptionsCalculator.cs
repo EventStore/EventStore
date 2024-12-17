@@ -26,7 +26,7 @@ public class ScavengeOptionsCalculator {
 			.GetSection("EventStore:Archive")
 			.Get<ArchiveOptions>() ?? new();
 
-		_archiveEnabled = archiveOptions.StorageType is not StorageType.None;
+		_archiveEnabled = archiveOptions.Enabled;
 	}
 
 	// Archiving disables chunk merging because the two in combination make things
