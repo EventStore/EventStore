@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
@@ -32,40 +33,48 @@ public abstract class LogRecord : ILogRecord {
 		return logicalPosition - length - 2 * sizeof(int);
 	}
 
-	public static async ValueTask<ILogRecord> ReadFrom(IAsyncBinaryReader reader, int length, CancellationToken token) {
-		var header = await reader.ReadAsync<Header>(token);
+	public static ILogRecord ReadFrom(ref SequenceReader reader) {
+		var header = reader.Read<Header>();
 
 		switch (header.Type) {
 			case LogRecordType.Prepare:
-				var logPosition = await reader.ReadLittleEndianAsync<long>(token);
+				var logPosition = reader.ReadLittleEndian<long>();
 				Ensure.Nonnegative(logPosition, nameof(logPosition));
-				return await PrepareLogRecord.ParseAsync(reader, header.Version, logPosition, token);
-			case LogRecordType.Commit:
-				logPosition = await reader.ReadLittleEndianAsync<long>(token);
-				Ensure.Nonnegative(logPosition, nameof(logPosition));
-				return await CommitLogRecord.ParseAsync(reader, header.Version, logPosition, token);
-			case LogRecordType.System:
-				if (header.Version > SystemLogRecord.SystemRecordVersion)
-					return new LogV3EpochLogRecord(await LogV3Reader.ReadBytes(header.Type, header.Version, reader, length, token));
+				return new PrepareLogRecord(ref reader, header.Version, logPosition);
 
-				logPosition = await reader.ReadLittleEndianAsync<long>(token);
+			case LogRecordType.Commit:
+				logPosition = reader.ReadLittleEndian<long>();
 				Ensure.Nonnegative(logPosition, nameof(logPosition));
-				return await SystemLogRecord.ParseAsync(reader, header.Version, logPosition, token);
+				return new CommitLogRecord(ref reader, header.Version, logPosition);
+
+			case LogRecordType.System when header.Version > SystemLogRecord.SystemRecordVersion:
+				reader.Reset();
+				return new LogV3EpochLogRecord(reader.ReadToEnd().ToArray());
+
+			case LogRecordType.System:
+				logPosition = reader.ReadLittleEndian<long>();
+				Ensure.Nonnegative(logPosition, nameof(logPosition));
+				return new SystemLogRecord(ref reader, header.Version, logPosition);
 
 			case LogRecordType.StreamWrite:
-				return new LogV3StreamWriteRecord(await LogV3Reader.ReadBytes(header.Type, header.Version, reader, length, token));
+				reader.Reset();
+				return new LogV3StreamWriteRecord(reader.ReadToEnd().ToArray());
 
 			case LogRecordType.Stream:
-				return new LogV3StreamRecord(await LogV3Reader.ReadBytes(header.Type, header.Version, reader, length, token));
+				reader.Reset();
+				return new LogV3StreamRecord(reader.ReadToEnd().ToArray());
 
 			case LogRecordType.EventType:
-				return new LogV3EventTypeRecord(await LogV3Reader.ReadBytes(header.Type, header.Version, reader, length, token));
+				reader.Reset();
+				return new LogV3EventTypeRecord(reader.ReadToEnd().ToArray());
 
 			case LogRecordType.PartitionType:
-				return new PartitionTypeLogRecord(await LogV3Reader.ReadBytes(header.Type, header.Version, reader, length, token));
+				reader.Reset();
+				return new PartitionTypeLogRecord(reader.ReadToEnd().ToArray());
 
 			case LogRecordType.Partition:
-				return new PartitionLogRecord(await LogV3Reader.ReadBytes(header.Type, header.Version, reader, length, token));
+				reader.Reset();
+				return new PartitionLogRecord(reader.ReadToEnd().ToArray());
 
 			default:
 				throw new ArgumentOutOfRangeException("recordType");

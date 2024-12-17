@@ -2,7 +2,9 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +16,7 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Helpers;
 
-public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<IAsyncBinaryReader> {
+public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<ReadOnlySequence<byte>> {
 	private static readonly ILogger Log = Serilog.Log.ForContext<LengthPrefixSuffixFramer>();
 
 	private const int PrefixLength = sizeof(int);
@@ -24,10 +26,9 @@ public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<IAsyncBinaryR
 	}
 
 	private readonly int _maxPackageSize;
-	private Func<IAsyncBinaryReader, CancellationToken, ValueTask> _packageHandler = static (_, _) => ValueTask.CompletedTask;
+	private Func<ReadOnlySequence<byte>, CancellationToken, ValueTask> _packageHandler = static (_, _) => ValueTask.CompletedTask;
 
 	private readonly MemoryStream _memStream;
-	private readonly IAsyncBinaryReader _binaryReader;
 
 	private int _prefixBytes;
 	private int _packageLength;
@@ -37,7 +38,6 @@ public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<IAsyncBinaryR
 
 		_maxPackageSize = maxPackageSize;
 		_memStream = new MemoryStream();
-		_binaryReader = IAsyncBinaryReader.Create(_memStream, new byte[512]);
 	}
 
 	public void Reset() {
@@ -54,7 +54,7 @@ public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<IAsyncBinaryR
 		}
 	}
 
-	public void RegisterMessageArrivedCallback(Func<IAsyncBinaryReader, CancellationToken, ValueTask> packageHandler) {
+	public void RegisterMessageArrivedCallback(Func<ReadOnlySequence<byte>, CancellationToken, ValueTask> packageHandler) {
 		Ensure.NotNull(packageHandler, nameof(packageHandler));
 		_packageHandler = packageHandler;
 	}
@@ -64,6 +64,8 @@ public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<IAsyncBinaryR
 	// Parses a stream chunking based on length-prefixed-suffixed framing. Calls are re-entrant and hold state internally.
 	private async ValueTask Parse(ArraySegment<byte> bytes, CancellationToken token) {
 		byte[] data = bytes.Array;
+		Debug.Assert(data is not null);
+
 		for (int i = bytes.Offset; i < bytes.Offset + bytes.Count;) {
 			if (_prefixBytes < PrefixLength) {
 				_packageLength |= (data[i] << (_prefixBytes * 8)); // little-endian order
@@ -81,7 +83,7 @@ public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<IAsyncBinaryR
 				}
 			} else {
 				int copyCnt = Math.Min(bytes.Count + bytes.Offset - i, _packageLength - (int)_memStream.Length);
-				_memStream.Write(bytes.Array, i, copyCnt);
+				_memStream.Write(data, i, copyCnt);
 				i += copyCnt;
 
 				if (_memStream.Length == _packageLength) {
@@ -96,10 +98,10 @@ public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<IAsyncBinaryR
 							_packageLength - PrefixLength, suffixLength));
 					}
 #endif
-					_memStream.SetLength(_packageLength - PrefixLength); // remove suffix length
+					_memStream.SetLength(suffixLength); // remove suffix length
 					_memStream.Position = 0;
 
-					await _packageHandler(_binaryReader, token);
+					await _packageHandler(new(buf, 0, suffixLength), token);
 
 					_memStream.SetLength(0);
 					_prefixBytes = 0;

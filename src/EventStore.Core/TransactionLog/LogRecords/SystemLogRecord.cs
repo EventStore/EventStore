@@ -2,9 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using DotNext.Buffers;
 using DotNext.IO;
 using EventStore.Common.Utils;
@@ -28,11 +25,11 @@ public enum SystemRecordSerialization : byte {
 public sealed class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, ISystemLogRecord {
 	public const byte SystemRecordVersion = 0;
 
-	public DateTime TimeStamp { get; private init; }
-	public SystemRecordType SystemRecordType { get; private init; }
-	public SystemRecordSerialization SystemRecordSerialization { get; private init; }
-	public long Reserved { get; private init; }
-	public ReadOnlyMemory<byte> Data { get; private init; }
+	public DateTime TimeStamp { get; }
+	public SystemRecordType SystemRecordType { get; }
+	public SystemRecordSerialization SystemRecordSerialization { get; }
+	public long Reserved { get; }
+	public ReadOnlyMemory<byte> Data { get; }
 
 	public SystemLogRecord(long logPosition,
 		DateTime timeStamp,
@@ -47,34 +44,29 @@ public sealed class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, IS
 		Data = data ?? NoData;
 	}
 
-	private SystemLogRecord(byte version, long logPosition)
+	internal SystemLogRecord(ref SequenceReader reader, byte version, long logPosition)
 		: base(LogRecordType.System, version, logPosition) {
-
 		if (version is not SystemRecordVersion)
-			throw new ArgumentException(string.Format(
-				"SystemRecord version {0} is incorrect. Supported version: {1}.", version, SystemRecordVersion));
-	}
+			throw new ArgumentException(
+				$"SystemRecord version {version} is incorrect. Supported version: {SystemRecordVersion}.");
 
-	internal static async ValueTask<SystemLogRecord> ParseAsync(IAsyncBinaryReader reader, byte version, long logPosition, CancellationToken token) {
-		return new SystemLogRecord(version, logPosition) {
-			TimeStamp = new(await reader.ReadLittleEndianAsync<long>(token)),
-			SystemRecordType =
-				(SystemRecordType)(await reader.ReadLittleEndianAsync<byte>(token)) is var recordType
-				&& recordType is not SystemRecordType.Invalid
-					? recordType
-					: throw new ArgumentException(
-						$"Invalid SystemRecordType {recordType} at LogPosition {logPosition}."),
-			SystemRecordSerialization =
-				(SystemRecordSerialization)(await reader.ReadLittleEndianAsync<byte>(token)) is var recordSer
-				&& recordSer is not SystemRecordSerialization.Invalid
-					? recordSer
-					: throw new ArgumentException(
-						$"Invalid SystemRecordSerialization {recordSer} at LogPosition {logPosition}."),
-			Reserved = await reader.ReadLittleEndianAsync<long>(token),
-			Data = await reader.ReadLittleEndianAsync<int>(token) is var dataCount && dataCount > 0
-				? await reader.ReadBytesAsync(dataCount, token)
-				: NoData,
-		};
+		TimeStamp = new(reader.ReadLittleEndian<long>());
+		SystemRecordType =
+			(SystemRecordType)(reader.ReadLittleEndian<byte>()) is var recordType
+			&& recordType is not SystemRecordType.Invalid
+				? recordType
+				: throw new ArgumentException(
+					$"Invalid SystemRecordType {recordType} at LogPosition {logPosition}.");
+		SystemRecordSerialization =
+			(SystemRecordSerialization)(reader.ReadLittleEndian<byte>()) is var recordSer
+			&& recordSer is not SystemRecordSerialization.Invalid
+				? recordSer
+				: throw new ArgumentException(
+					$"Invalid SystemRecordSerialization {recordSer} at LogPosition {logPosition}.");
+		Reserved = reader.ReadLittleEndian<long>();
+		Data = reader.ReadLittleEndian<int>() is var dataCount && dataCount > 0
+			? reader.ReadBytes(dataCount)
+			: NoData;
 	}
 
 	public EpochRecord GetEpochRecord() {

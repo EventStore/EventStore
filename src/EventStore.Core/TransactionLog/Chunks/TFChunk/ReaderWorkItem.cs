@@ -17,17 +17,13 @@ internal sealed class ReaderWorkItem : Disposable {
 	// if item was taken from the pool, the field contains position within the array (>= 0)
 	private readonly int _positionInPool = -1;
 	public readonly Stream BaseStream;
-	public readonly IAsyncBinaryReader Reader;
 	private readonly bool _leaveOpen;
-	private MemoryOwner<byte> _buffer;
 
 	private ReaderWorkItem(Stream stream, bool leaveOpen, int bufferSize) {
 		Debug.Assert(stream is not null);
 
 		_leaveOpen = leaveOpen;
 		BaseStream = stream;
-		_buffer = Memory.AllocateAtLeast<byte>(bufferSize);
-		Reader = IAsyncBinaryReader.Create(stream, _buffer.Memory);
 	}
 
 	public ReaderWorkItem(Stream sharedStream, IChunkReadTransform chunkReadTransform)
@@ -64,8 +60,6 @@ internal sealed class ReaderWorkItem : Disposable {
 		if (disposing) {
 			if (!_leaveOpen)
 				BaseStream.Dispose();
-
-			_buffer.Dispose();
 		}
 
 		base.Dispose(disposing);

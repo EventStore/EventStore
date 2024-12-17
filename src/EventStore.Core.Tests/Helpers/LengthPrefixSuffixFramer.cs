@@ -2,12 +2,10 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext;
-using DotNext.IO;
 using EventStore.Core.Helpers;
 using NUnit.Framework;
 
@@ -158,10 +156,8 @@ public class length_prefix_suffix_framer_should {
 		Assert.AreEqual(2, unframedCnt);
 	}
 
-	private static async ValueTask<byte[]> ReadAll(IAsyncBinaryReader br, CancellationToken token) {
-		Assert.True(br.TryGetRemainingBytesCount(out var bytesCount));
-		var result = new byte[bytesCount];
-		await br.ReadAsync(result, token);
-		return result;
-	}
+	private static ValueTask<byte[]> ReadAll(ReadOnlySequence<byte> br, CancellationToken token)
+		=> token.IsCancellationRequested
+			? ValueTask.FromCanceled<byte[]>(token)
+			: ValueTask.FromResult<byte[]>(br.ToArray());
 }

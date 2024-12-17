@@ -2,14 +2,10 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using DotNext.Buffers;
 using DotNext.Buffers.Binary;
 using DotNext.IO;
 using EventStore.Common.Utils;
-using EventStore.Core.Helpers;
 using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords;
@@ -17,11 +13,11 @@ namespace EventStore.Core.TransactionLog.LogRecords;
 public sealed class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 	public const byte CommitRecordVersion = 1;
 
-	public long TransactionPosition { get; private init; }
-	public long FirstEventNumber { get; private init; }
-	public long SortKey { get; private init; }
-	public Guid CorrelationId { get; private init; }
-	public DateTime TimeStamp { get; private init; }
+	public long TransactionPosition { get; }
+	public long FirstEventNumber { get; }
+	public long SortKey { get; }
+	public Guid CorrelationId { get; }
+	public DateTime TimeStamp { get; }
 
 	public CommitLogRecord(long logPosition,
 		Guid correlationId,
@@ -41,25 +37,19 @@ public sealed class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
 		TimeStamp = timeStamp;
 	}
 
-	private CommitLogRecord(byte version, long logPosition)
+	internal CommitLogRecord(ref SequenceReader reader, byte version, long logPosition)
 		: base(LogRecordType.Commit, version, logPosition) {
-
 		if (version is not LogRecordVersion.LogRecordV0 and not LogRecordVersion.LogRecordV1)
 			throw new ArgumentException(
-				string.Format("CommitRecord version {0} is incorrect. Supported version: {1}.", version,
-					CommitRecordVersion));
-	}
+				$"CommitRecord version {version} is incorrect. Supported version: {CommitRecordVersion}.");
 
-	internal static async ValueTask<CommitLogRecord> ParseAsync(IAsyncBinaryReader reader, byte version, long logPosition, CancellationToken token) {
-		return new(version, logPosition) {
-			TransactionPosition = await reader.ReadLittleEndianAsync<long>(token),
-			FirstEventNumber = version is LogRecordVersion.LogRecordV0
-				? AdjustVersion(await reader.ReadLittleEndianAsync<int>(token))
-				: await reader.ReadLittleEndianAsync<long>(token),
-			SortKey = await reader.ReadLittleEndianAsync<long>(token),
-			CorrelationId = (await reader.ReadAsync<Blittable<Guid>>(token)).Value,
-			TimeStamp = new(await reader.ReadLittleEndianAsync<long>(token)),
-		};
+		TransactionPosition = reader.ReadLittleEndian<long>();
+		FirstEventNumber = version is LogRecordVersion.LogRecordV0
+			? AdjustVersion(reader.ReadLittleEndian<int>())
+			: reader.ReadLittleEndian<long>();
+		SortKey = reader.ReadLittleEndian<long>();
+		CorrelationId = reader.Read<Blittable<Guid>>().Value;
+		TimeStamp = new(reader.ReadLittleEndian<long>());
 
 		static long AdjustVersion(int version)
 			=> version is int.MaxValue ? long.MaxValue : version;

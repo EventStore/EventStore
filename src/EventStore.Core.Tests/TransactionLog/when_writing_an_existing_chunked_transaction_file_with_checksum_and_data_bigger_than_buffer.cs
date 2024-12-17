@@ -6,11 +6,9 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.IO;
-using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Plugins.Transforms;
 using NUnit.Framework;
@@ -74,10 +72,13 @@ public class
 			new FileStreamOptions
 				{ Mode = FileMode.Open, Access = FileAccess.Read, Options = FileOptions.Asynchronous });
 		filestream.Seek(ChunkHeader.Size + 137 + sizeof(int), SeekOrigin.Begin);
-		var reader = IAsyncBinaryReader.Create(filestream, new byte[128]);
 
-		Assert.True(reader.TryGetRemainingBytesCount(out var recordLength));
-		var read = await LogRecord.ReadFrom(reader, (int)recordLength, CancellationToken.None);
+		var recordLength = filestream.Length - filestream.Position;
+		var buffer = new byte[recordLength];
+		await filestream.ReadExactlyAsync(buffer);
+
+		var reader = new SequenceReader(new(buffer));
+		var read = LogRecord.ReadFrom(ref reader);
 		Assert.AreEqual(record, read);
 	}
 }
