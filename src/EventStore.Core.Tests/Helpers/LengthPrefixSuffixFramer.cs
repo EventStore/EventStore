@@ -159,5 +159,5 @@ public class length_prefix_suffix_framer_should {
 	private static ValueTask<byte[]> ReadAll(ReadOnlySequence<byte> br, CancellationToken token)
 		=> token.IsCancellationRequested
 			? ValueTask.FromCanceled<byte[]>(token)
-			: ValueTask.FromResult<byte[]>(br.ToArray());
+			: ValueTask.FromResult(br.ToArray());
 }

@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.IO;
 using DotNext;
-using DotNext.Buffers;
 using DotNext.IO;
 using EventStore.Plugins.Transforms;
 using Microsoft.Win32.SafeHandles;
@@ -19,7 +18,7 @@ internal sealed class ReaderWorkItem : Disposable {
 	public readonly Stream BaseStream;
 	private readonly bool _leaveOpen;
 
-	private ReaderWorkItem(Stream stream, bool leaveOpen, int bufferSize) {
+	private ReaderWorkItem(Stream stream, bool leaveOpen) {
 		Debug.Assert(stream is not null);
 
 		_leaveOpen = leaveOpen;
@@ -27,12 +26,12 @@ internal sealed class ReaderWorkItem : Disposable {
 	}
 
 	public ReaderWorkItem(Stream sharedStream, IChunkReadTransform chunkReadTransform)
-		: this(CreateTransformedMemoryStream(sharedStream, chunkReadTransform), leaveOpen: true, BufferSize) {
+		: this(CreateTransformedMemoryStream(sharedStream, chunkReadTransform), leaveOpen: true) {
 		IsMemory = true;
 	}
 
 	public ReaderWorkItem(SafeFileHandle handle, IChunkReadTransform chunkReadTransform)
-		: this(CreateTransformedFileStream(handle, chunkReadTransform), leaveOpen: false, BufferSize) {
+		: this(CreateTransformedFileStream(handle, chunkReadTransform), leaveOpen: false) {
 		IsMemory = false;
 	}
 

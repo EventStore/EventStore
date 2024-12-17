@@ -6,7 +6,6 @@ using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
 using EventStore.Common.Utils;
-using EventStore.Core.Util;
 using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords;

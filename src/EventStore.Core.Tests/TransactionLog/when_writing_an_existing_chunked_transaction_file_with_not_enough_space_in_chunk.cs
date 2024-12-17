@@ -5,7 +5,6 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext.Buffers;
 using DotNext.IO;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;

@@ -117,7 +117,7 @@ public sealed class LengthPrefixSuffixFramer : IAsyncMessageFramer<ReadOnlySeque
 		var length = data.Count;
 
 		var lengthArray = new ArraySegment<byte>(
-			new[] {(byte)length, (byte)(length >> 8), (byte)(length >> 16), (byte)(length >> 24)});
+			[(byte)length, (byte)(length >> 8), (byte)(length >> 16), (byte)(length >> 24)]);
 		yield return lengthArray;
 		yield return data;
 		yield return lengthArray;
