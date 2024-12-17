@@ -39,6 +39,7 @@ public class ArchivePlugableComponentTests {
 
 		var licenseService = new FakeLicenseService(licensePresent, entitlement);
 		builder.Services.AddSingleton<ILicenseService>(licenseService);
+		builder.Services.AddSingleton<IReadOnlyList<IClusterVNodeStartupTask>>([]);
 
 		((IPlugableComponent)sut).ConfigureServices(
 			builder.Services,

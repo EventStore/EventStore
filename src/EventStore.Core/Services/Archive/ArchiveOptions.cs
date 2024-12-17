@@ -4,14 +4,14 @@
 namespace EventStore.Core.Services.Archive;
 
 public class ArchiveOptions {
-	public bool Enabled { get; init; } = true;
-	public StorageType StorageType { get; init; } = StorageType.None;
+	public bool Enabled { get; init; } = false;
+	public StorageType StorageType { get; init; } = StorageType.Unspecified;
 	public FileSystemOptions FileSystem { get; init; } = new();
 	public S3Options S3 { get; init; } = new();
 }
 
 public enum StorageType {
-	None,
+	Unspecified,
 	FileSystem,
 	S3,
 }

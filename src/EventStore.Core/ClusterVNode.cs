@@ -1216,6 +1216,8 @@ public class ClusterVNode<TStreamId> :
 
 		scavengerFactory = new ScavengerFactory((message, scavengerLogger, logger) => {
 			// currently on the main queue
+			var optionsCalculator = new ScavengeOptionsCalculator(options, message);
+
 			var throttle = new Throttle(
 				logger: logger,
 				minimumRest: TimeSpan.FromMilliseconds(1000),
@@ -1304,7 +1306,7 @@ public class ClusterVNode<TStreamId> :
 
 			var chunkMerger = new ChunkMerger(
 				logger: logger,
-				mergeChunks: !options.Database.DisableScavengeMerging,
+				mergeChunks: optionsCalculator.MergeChunks,
 				backend: new OldScavengeChunkMergerBackend(logger, db: Db),
 				throttle: throttle);
 
@@ -1344,7 +1346,7 @@ public class ClusterVNode<TStreamId> :
 				// threshold < 0: execute all chunks, even those with no weight
 				// threshold = 0: execute all chunks with weight greater than 0
 				// threshold > 0: execute all chunks above a certain weight
-				thresholdForNewScavenge: message.Threshold ?? 0,
+				thresholdForNewScavenge: optionsCalculator.ChunkExecutionThreshold,
 				syncOnly: message.SyncOnly,
 				getThrottleStats: () => throttle.PrettyPrint());
 		});
