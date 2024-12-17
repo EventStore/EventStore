@@ -66,7 +66,7 @@ public class when_writing_an_existing_chunked_transaction_file_with_checksum<TLo
 		await using var filestream = File.Open(filename, new FileStreamOptions
 			{ Mode = FileMode.Open, Access = FileAccess.Read, Options = FileOptions.Asynchronous });
 		filestream.Seek(ChunkHeader.Size + 137 + sizeof(int), SeekOrigin.Begin);
-		var recordLength = filename.Length - filestream.Position;
+		var recordLength = filestream.Length - filestream.Position;
 
 		var buffer = new byte[recordLength];
 		await filestream.ReadExactlyAsync(buffer);
