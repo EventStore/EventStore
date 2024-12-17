@@ -102,7 +102,16 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 						physicalChunk.ChunkStartNumber,
 						physicalChunk.ChunkEndNumber);
 
-					if (physicalWeight > scavengePoint.Threshold || _unsafeIgnoreHardDeletes) {
+					if (physicalChunk.IsRemote) {
+						// Later the archiver node will scavenge remote chunks
+						// The other nodes will never scavenge them (because the archiver will)
+						_logger.Debug(
+							"SCAVENGING: Skipped physical chunk: {oldChunkName} " +
+							"with weight {physicalWeight:N0} because it is remote.",
+							physicalChunk.Name,
+							physicalWeight);
+
+					} else if (physicalWeight > scavengePoint.Threshold || _unsafeIgnoreHardDeletes) {
 						await ExecutePhysicalChunk(
 							physicalWeight,
 							scavengePoint,
@@ -118,6 +127,7 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 						concurrentState.ResetChunkWeights(
 							physicalChunk.ChunkStartNumber,
 							physicalChunk.ChunkEndNumber);
+
 					} else {
 						_logger.Debug(
 							"SCAVENGING: Skipped physical chunk: {oldChunkName} " +

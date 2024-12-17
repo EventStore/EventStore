@@ -193,6 +193,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 		return this;
 	}
 
+	// if getExpectedKeptIndexEntries is null then it is the same as getExpectedKeptRecords
 	public async Task<DbResult> RunAsync(
 		Func<DbResult, ILogRecord[][]> getExpectedKeptRecords = null,
 		Func<DbResult, ILogRecord[][]> getExpectedKeptIndexEntries = null) {
@@ -416,6 +417,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 						dbResult.Db.Manager,
 						dbConfig,
 						dbTransformManager),
+					dbResult.RemoteChunks,
 					Tracer),
 				chunkSize: dbConfig.ChunkSize,
 				unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes,

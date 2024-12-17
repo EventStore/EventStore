@@ -31,6 +31,7 @@ public interface IChunkReaderForExecutor<TStreamId, TRecord> {
 	int ChunkStartNumber { get; }
 	int ChunkEndNumber { get; }
 	bool IsReadOnly { get; }
+	bool IsRemote { get; }
 	long ChunkStartPosition { get; }
 	long ChunkEndPosition { get; }
 	IAsyncEnumerable<bool> ReadInto(

@@ -23,7 +23,8 @@ public class TFChunkDbCreationHelper<TLogFormat, TStreamId> {
 	private readonly TFChunkDbConfig _dbConfig;
 	private readonly TFChunkDb _db;
 
-	private readonly List<Rec[]> _chunkRecs = new();
+	private readonly List<Rec[]> _chunkRecs = [];
+	private readonly HashSet<int> _remoteChunks = [];
 
 	private bool _completeLast;
 
@@ -51,6 +52,12 @@ public class TFChunkDbCreationHelper<TLogFormat, TStreamId> {
 	}
 
 	public TFChunkDbCreationHelper<TLogFormat, TStreamId> Chunk(params Rec[] records) {
+		_chunkRecs.Add(records);
+		return this;
+	}
+
+	public TFChunkDbCreationHelper<TLogFormat, TStreamId> RemoteChunk(params Rec[] records) {
+		_remoteChunks.Add(_chunkRecs.Count);
 		_chunkRecs.Add(records);
 		return this;
 	}
@@ -253,7 +260,7 @@ public class TFChunkDbCreationHelper<TLogFormat, TStreamId> {
 			_db.Config.WriterCheckpoint.Write(logPos);
 
 		_db.Config.WriterCheckpoint.Flush();
-		return new DbResult(_db, records.Select(rs => rs.ToArray()).ToArray(), streams);
+		return new DbResult(_db, records.Select(rs => rs.ToArray()).ToArray(), _remoteChunks, streams);
 	}
 
 	async ValueTask<long> Write(int chunkNum, TFChunk chunk, ILogRecord record, bool commitWrite, CancellationToken token) {
@@ -425,15 +432,21 @@ public class StreamInfo {
 public class DbResult {
 	public TFChunkDb Db { get; }
 	public ILogRecord[][] Recs { get; }
+	public HashSet<int> RemoteChunks { get; }
 	public Dictionary<string, StreamInfo> Streams { get; }
 
-	public DbResult(TFChunkDb db, ILogRecord[][] recs, Dictionary<string, StreamInfo> streams) {
+	public DbResult(TFChunkDb db, ILogRecord[][] recs,
+		HashSet<int> remoteChunks,
+		Dictionary<string, StreamInfo> streams) {
+
 		Ensure.NotNull(db, "db");
 		Ensure.NotNull(recs, "recs");
+		Ensure.NotNull(remoteChunks, nameof(remoteChunks));
 		Ensure.NotNull(streams, "streams");
 
 		Db = db;
 		Recs = recs;
+		RemoteChunks = remoteChunks;
 		Streams = streams;
 	}
 }
