@@ -69,6 +69,9 @@ public class TFChunkDb : IAsyncDisposable {
 	public async ValueTask Open(bool verifyHash = true, bool readOnly = false, int threads = 1, bool createNewChunks = true, CancellationToken token = default) {
 		Ensure.Positive(threads, "threads");
 
+		if (Interlocked.CompareExchange(ref _closed, 0, 0) != 0)
+			throw new InvalidOperationException("Cannot reopen database after closing");
+
 		ValidateReaderChecksumsMustBeLess(Config);
 		var checkpoint = Config.WriterCheckpoint.Read();
 
