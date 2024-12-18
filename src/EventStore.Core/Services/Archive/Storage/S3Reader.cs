@@ -21,7 +21,6 @@ namespace EventStore.Core.Services.Archive.Storage;
 
 public class S3Reader : FluentReader, IArchiveStorageReader {
 	private readonly S3Options _options;
-	private readonly AmazonS3Client _s3Client;
 	private readonly IAwsS3BlobStorage _awsBlobStorage;
 	private readonly Func<int?, int?, string> _getChunkPrefix;
 
@@ -36,22 +35,10 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 		if (string.IsNullOrEmpty(options.Region))
 			throw new InvalidConfigurationException("Please specify an Archive S3 Region");
 
-		_s3Client = CreateS3Client(options);
-
 		_awsBlobStorage = StorageFactory.Blobs.AwsS3(
 			awsCliProfileName: options.AwsCliProfileName,
 			bucketName: options.Bucket,
 			region: options.Region) as IAwsS3BlobStorage;
-	}
-
-	private static AmazonS3Client CreateS3Client(S3Options options) {
-		var profile = new Profile(options.AwsCliProfileName);
-		var region = options.Region;
-		var config = new AmazonS3Config {
-			Profile = profile,
-			RegionEndpoint = RegionEndpoint.GetBySystemName(region)
-		};
-		return new AmazonS3Client(config);
 	}
 
 	protected override ILogger Log { get; } = Serilog.Log.ForContext<S3Reader>();
@@ -77,7 +64,7 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 	}
 
 	public override async IAsyncEnumerable<string> ListChunks([EnumeratorCancellation] CancellationToken ct) {
-		var listResponse = _s3Client.Paginators.ListObjectsV2(new ListObjectsV2Request {
+		var listResponse = _awsBlobStorage.NativeBlobClient.Paginators.ListObjectsV2(new ListObjectsV2Request {
 			BucketName = _options.Bucket,
 			Prefix = _getChunkPrefix(null, null)
 		});
