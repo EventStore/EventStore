@@ -9,15 +9,13 @@ As of version 24.10.0, all of our packages are hosted on [Cloudsmith](https://cl
 
 You can also download the package files for each platform from our [website](https://www.eventstore.com/downloads).
 
-There is no longer a distinction between the open-source (OSS) and commercial version of EventStoreDB. This unified release is licensed under [ESLv2](https://github.com/EventStore/EventStore/blob/master/LICENSE.md), meaning that anyone can access and use it, but enterprise features are only enabled with a valid license key.
+There is no longer a distinction between the open-source (OSS) and commercial versions of EventStoreDB. This unified release is licensed under [ESLv2](https://github.com/EventStore/EventStore/blob/master/LICENSE.md), meaning that anyone can access and use it, but enterprise features are only enabled with a valid license key.
 
 If you have a previous version of EventStoreDB installed through PackageCloud or Chocolatey, please uninstall those versions before installing version 24.10 from Cloudsmith.
 
 ## Should you upgrade?
 
-Version 24.10 is currently in preview and running it in production is not supported.
-
-We recommend trying the 24.10 preview if you are interested in any of the [new features](./whatsnew.md) coming in the official 24.10 LTS release.
+We recommend upgrading if you are interested in any of the [new features](./whatsnew.md) in the 24.10 LTS release.  Also, please note with the release of 24.10, versions 24.2 and 24.6 are no longer supported.  Users of these versions should upgrade to 24.10. 
 
 ## Upgrade procedure
 
@@ -32,13 +30,13 @@ Follow the upgrade procedure below on each node, starting with a follower node:
 
 1. Stop the node.
 2. Uninstall any previous versions of EventStoreDB.
-3. Install EventStoreDB 24.10 and update configuration. If you are using any licensed features, ensure that you configure a [license key](../quick-start/installation.md#license-keys).
+3. Install EventStoreDB 24.10 and update the configuration. If you use licensed features, ensure that you configure a [license key](../quick-start/installation.md#license-keys).
 4. Start the node.
 5. Wait for the node to become a follower or read-only replica.
 6. Repeat the process for the next node.
 
 Upgrading the cluster this way keeps the cluster online and able to service requests. There may still be disruptions to your services during the upgrade, namely:
-- Client connections may be disconnected when nodes go offline, or when elections take place.
+- Client connections may be disconnected when nodes go offline or elections occur.
 - The cluster is less fault-tolerant while a node is offline for an upgrade because the cluster requires a quorum of nodes to be online to service write requests.
 - Replicating large amounts of data to a node can have a performance impact on the Leader in the cluster.
 
@@ -48,13 +46,13 @@ If you modified the Linux service file to increase the open files limit, those c
 
 ## Upgrading from 24.10-preview1
 
-There have been a few changes to 24.10 since the preview, both in the configuration and the behaviour of some of the new features.
+There have been a few changes to 24.10 since the preview, both in the configuration and the behavior of some new features.
 
-Be aware of the following if you are upgrading from or tested out 24.10.0-preview1.
+Be aware of the following if upgrading from or tested 24.10.0-preview1.
 
 ### Plugins configuration section removed
 
-The configuration for some features was previously nested in a subsection titled `Plugins`. This has been changed so that all configuration is nested in the `EventStore` subsection.
+The configuration for some features was previously nested in a subsection titled `Plugins`. This has been changed, so all configurations are nested in the `EventStore` subsection.
 
 Additionally, these features can now be configured directly in the server main config as well as via JSON or environment variables.
 
@@ -71,7 +69,7 @@ And the following features from versions 23.10 and below:
 - [Otel exporter](#otel-exporter-commercial-plugin-configuration-changes)
 - [User certificates](#user-certificates-commercial-plugin-configuration-changes)
 
-As an example, if a feature was enabled with a json file with a `Plugins` subsection, the json would previously have been structured like this:
+As an example, if a feature were enabled with a JSON file with a `Plugins` subsection, the JSON would previously have been structured like this:
 
 ```json
 {
@@ -104,7 +102,7 @@ Feature_Name:
   Feature_Option: "value"
 ```
 
-In the same manner, environment variables with the `PLUGINS` section have been changed. From this:
+Similarly, environment variables with the `PLUGINS` section have been changed. From this:
 
 ```bash
 EVENTSTORE__PLUGINS__FEATURE_NAME__FEATURE_OPTION="value"
@@ -180,7 +178,7 @@ AutoScavenge:
 ```
 
 ::: note
-EventStoreDB will not run any scavenges until a schedule is set via the HTTP endpoint.
+EventStoreDB will not run scavenges until a schedule is set via the HTTP endpoint.
 :::
 
 Refer to [auto-scavenge](../operations/auto-scavenge.md) for more details about this feature.
@@ -276,23 +274,23 @@ EncryptionAtRest:
 
 The `/histogram/{name}` endpoint has been removed.
 
-Any tooling that relies on the histogram endpoint will receive a 404 after when requesting this endpoint after upgrading.
+Any tooling that relies on the histogram endpoint will receive a 404 when requesting this endpoint after upgrading.
 
 #### Support for v1 PTables has been removed
 
 Support for extremely old PTables (v1) has been removed.
 
-This will only affect databases that were created on EventStoreDB versions 3.9.0 and before, and which have not upgraded their PTables since EventStoreDB version 3.9.0.
+This will only affect databases created on EventStoreDB version 3.9.0 and before, and which have not upgraded their PTables since EventStoreDB version 3.9.0.
 
-PTables are automatically upgraded when they are merged, or when the PTables are rebuilt. So if your EventStoreDB has been running for some time on a version greater than 3.9.0, then you are unlikely to be affected by this change.
+PTables are automatically upgraded when merged or when the PTables are rebuilt. So, if your EventStoreDB has been running for some time on a version greater than 3.9.0, then you are unlikely to be affected by this change.
 
-If 32bit PTables are present we detect them on startup and exit. If this happens, you can use a version between v3.9.0 and v24.10.0 to upgrade the PTables, or rebuild the index.
+If 32bit PTables are present, we detect them on startup and exit. If this happens, you can use a version between v3.9.0 and v24.10.0 to upgrade the PTables or rebuild the index.
 
 #### Otel Exporter commercial plugin configuration changes
 
-The configuration for this plugin is now nested in the `EventStore` subsection for consistency with the other plugins. Additionally, this plugin used to be configured via JSON or environment variables, and can now additionally be configured directly in the server main config.
+The configuration for this plugin is now nested in the `EventStore` subsection to ensure consistency with the other plugins. Additionally, this plugin used to be configured via JSON or environment variables, but it can now be configured directly in the server's main configuration.
 
-For example an old JSON configuration file could look like this:
+For example, an old JSON configuration file could look like this:
 
 ```json
 {
@@ -328,9 +326,9 @@ OpenTelemetry:
 
 #### User Certificates commercial plugin configuration changes
 
-The configuration for this plugin used to be nested in a subsection titled `Plugins`. This is no longer the case. Additionally, this plugin used to be configured via JSON or environment variables, and can now additionally be configured directly in the server main config.
+The configuration for this plugin used to be nested in a subsection titled `Plugins`. This is no longer the case. Additionally, this plugin used to be configured via JSON or environment variables, but it can now be configured directly in the server's main configuration.
 
-For example an old JSON configuration file could look like this:
+For example, an old JSON configuration file could look like this:
 
 ```json
 {
@@ -367,7 +365,7 @@ UserCertificates:
 
 #### External TCP API removed
 
-The external TCP API was removed in 24.2.0. This affects external clients using the TCP API and configurations related to it.
+The external TCP API was removed in 24.2.0. This affects external clients using the TCP API and its related configurations.
 
 ::: tip
 EventStoreDB 24.10 includes [a plugin](../configuration/networking.md#external-tcp) that enables the TCP client protocol. This plugin can only be used with a [license](../quick-start/installation.md#license-keys)
@@ -400,27 +398,27 @@ When upgrading from 22.10 and earlier, you will need to account for the followin
 
 We have disabled anonymous access to streams by default in this version. This means that read and write requests from clients need to be authenticated.
 
-If you see authentication errors when connecting to EventStoreDB after upgrading, please ensure that you are either using default credentials on the connection, or are providing user credentials with the request itself.
+If you see authentication errors when connecting to EventStoreDB after upgrading, please ensure that you either use default credentials on the connection or provide user credentials with the request itself.
 
-If you want to revert back to the old behavior, you can enable the `AllowAnonymousStreamAccess` and `AllowAnonymousEndpointAccess` options in EventStoreDB.
+If you want to revert to the old behavior, you can enable the `AllowAnonymousStreamAccess` and `AllowAnonymousEndpointAccess` options in EventStoreDB.
 Requests to the HTTP API must be authenticated by default.
 Like with anonymous access to streams, anonymous access to the HTTP and gRPC endpoints has been disabled by default. The exceptions are the `/gossip`, `/info`, and `/ping` endpoints.
 
-Any tools or monitoring scripts accessing the HTTP endpoints (e.g. `/stats`) will need to make authenticated requests to EventStoreDB.
+Any tools or monitoring scripts accessing the HTTP endpoints (e.g., `/stats`) must make authenticated requests to EventStoreDB.
 
-If you want to revert back to the old behavior, you can enable the `AllowAnonymousStreamAccess` and `AllowAnonymousEndpointAccess` options in EventStoreDB.
+If you want to revert to the old behavior, you can enable the `AllowAnonymousStreamAccess` and `AllowAnonymousEndpointAccess` options in EventStoreDB.
 
 #### PrepareCount and CommitCount options have been removed
 
-We have removed the `PrepareCount` and `CommitCount` options from EventStoreDB. EventStoreDB will now fail if these options are present in the config on startup.
+We have removed the `PrepareCount` and `CommitCount` options from EventStoreDB. EventStoreDB will fail if these options are present in the config on startup.
 
 These options did not have any effect and can be safely removed from your configuration file if you have them defined.
 
 #### Persistent subscriptions config event has been renamed
 
-We have renamed the event type used to store a persistent subscriptions configuration from `PersistentConfig1` to `$PersistentConfig`. This event type is a system event, so naming it as such will allow certain filters to exclude it correctly.
+We have renamed the event type used to store a persistent subscription configuration from `PersistentConfig1` to `$PersistentConfig`. This event type is a system event, so naming it as such will allow certain filters to exclude it correctly.
 
-If you have any tools or clients relying on this event type, then you will need to update them before you upgrade.
+If you have any tools or clients relying on this event type, you will need to update them before upgrading.
 
 ### From 21.10 and earlier
 
