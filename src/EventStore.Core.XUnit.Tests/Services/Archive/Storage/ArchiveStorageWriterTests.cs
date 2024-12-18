@@ -2,8 +2,10 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services.Archive;
@@ -38,5 +40,19 @@ public class ArchiveStorageWriterTests : ArchiveStorageTestsBase<ArchiveStorageW
 		var destinationFile = Path.GetFileName(localChunk);
 		File.Delete(localChunk);
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => await sut.StoreChunk(localChunk, destinationFile, CancellationToken.None));
+	}
+
+
+	[Theory]
+	[InlineData(StorageType.FileSystem)]
+	[InlineData(StorageType.S3, Skip = SkipS3)]
+	public async Task can_write_and_read_checkpoint(StorageType storageType) {
+		var checkpoint = BinaryPrimitives.ReadInt64LittleEndian(RandomNumberGenerator.GetBytes(8));
+		var sut = CreateReaderSut(storageType);
+
+		var writerSut = CreateWriterSut(storageType);
+		await writerSut.SetCheckpoint(checkpoint, CancellationToken.None);
+
+		Assert.Equal(checkpoint, await sut.GetCheckpoint(CancellationToken.None));
 	}
 }
