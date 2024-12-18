@@ -1,8 +1,6 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-//#define RUN_S3_TESTS // uncomment to run S3 tests, requires AWS CLI to be installed and configured
-
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -11,16 +9,11 @@ using System.Security.Cryptography;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
-public class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
-#if RUN_S3_TESTS
-	protected const string SkipS3 = null;
-#else
-	protected const string SkipS3 = "run manually";
-#endif
-
+public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 	protected const string ChunkPrefix = "chunk-";
 	protected string ArchivePath => Path.Combine(Fixture.Directory, "archive");
 	protected string DbPath => Path.Combine(Fixture.Directory, "db");
+	protected abstract StorageType StorageType { get; }
 
 	public ArchiveStorageTestsBase() {
 		Directory.CreateDirectory(ArchivePath);
