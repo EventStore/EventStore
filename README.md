@@ -161,9 +161,9 @@ Currently, we support the following configurations:
 - `CONTAINER_RUNTIME=bookworm-slim`
 - `RUNTIME=linux-x64`
 
-2. Jammy:
+2. Noble:
 
-- `CONTAINER_RUNTIME=Jammy`
+- `CONTAINER_RUNTIME=noble`
 - `RUNTIME=linux-x64`
 
 3. Alpine:
