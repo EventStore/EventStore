@@ -106,7 +106,7 @@ public partial class TFChunk : IDisposable {
 
 	private readonly bool _inMem;
 	private readonly string _filename;
-	private SafeFileHandle _handle;
+	private IChunkHandle _handle;
 	private int _fileSize;
 
 	// This field establishes happens-before relationship with _fileStreams as follows:
@@ -299,17 +299,17 @@ public partial class TFChunk : IDisposable {
 
 		_fileSize = (int)fileInfo.Length;
 
-		_handle = File.OpenHandle(
-			_filename,
-			FileMode.Open,
-			FileAccess.Read,
-			FileShare.ReadWrite,
-			_reduceFileCachePressure ? FileOptions.Asynchronous : FileOptions.RandomAccess | FileOptions.Asynchronous);
+		var options = new FileStreamOptions() {
+			Mode = FileMode.Open,
+			Access = FileAccess.Read,
+			Share = FileShare.ReadWrite,
+			Options = _reduceFileCachePressure ? FileOptions.Asynchronous : FileOptions.RandomAccess | FileOptions.Asynchronous
+		};
+		_handle = new ChunkFileHandle(_filename, options);
 
 		IsReadOnly = true;
-		SetAttributes(_filename, true);
 
-		await using (var stream = _handle.AsUnbufferedStream(FileAccess.Read)) {
+		await using (var stream = _handle.CreateStream()) {
 			_chunkHeader = await ReadHeader(stream, token);
 			Log.Debug("Opened completed {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", _filename, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
 
@@ -369,7 +369,6 @@ public partial class TFChunk : IDisposable {
 			await CreateInMemChunk(chunkHeader, fileSize, transformHeader, token);
 		else {
 			await CreateWriterWorkItemForNewChunk(chunkHeader, fileSize, transformHeader, token);
-			SetAttributes(_filename, false);
 		}
 
 		_readSide = chunkHeader.IsScavenged
@@ -396,7 +395,6 @@ public partial class TFChunk : IDisposable {
 		_physicalDataSize = writePosition;
 		_logicalDataSize = writePosition;
 
-		SetAttributes(_filename, false);
 		_chunkHeader = await CreateWriterWorkItemForExistingChunk(writePosition, getTransformFactory, token);
 		Log.Debug("Opened ongoing {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", _filename, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
 
@@ -505,7 +503,9 @@ public partial class TFChunk : IDisposable {
 
 		File.Move(tempFilename, _filename);
 
-		_handle = File.OpenHandle(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read, WritableHandleOptions);
+		options.Mode = FileMode.Open;
+		options.Options = WritableHandleOptions;
+		_handle = new ChunkFileHandle(_filename, options);
 		_writerWorkItem = new(_handle, md5, _unbuffered, _transform.Write, ChunkHeader.Size + transformHeader.Length);
 		await Flush(token); // persist file move result
 	}
@@ -513,9 +513,16 @@ public partial class TFChunk : IDisposable {
 	private async ValueTask<ChunkHeader> CreateWriterWorkItemForExistingChunk(int writePosition,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory,
 		CancellationToken token) {
-		_handle = File.OpenHandle(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read, WritableHandleOptions);
+		var options = new FileStreamOptions {
+			Mode = FileMode.Open,
+			Access = FileAccess.ReadWrite,
+			Share = FileShare.Read,
+			Options = WritableHandleOptions,
+		};
 
-		var stream = _handle.AsUnbufferedStream(FileAccess.ReadWrite);
+		_handle = new ChunkFileHandle(_filename, options);
+
+		var stream = _handle.CreateStream();
 		ChunkHeader chunkHeader;
 		try {
 			chunkHeader = await ReadHeader(stream, token);
@@ -580,18 +587,6 @@ public partial class TFChunk : IDisposable {
 
 		md5.AppendData(transformHeader.Span);
 		return stream.WriteAsync(transformHeader, token);
-	}
-
-	private void SetAttributes(string filename, bool isReadOnly) {
-		if (_inMem)
-			return;
-		// in mono SetAttributes on non-existing file throws exception, in windows it just works silently.
-		Helper.EatException(() => {
-			if (isReadOnly)
-				File.SetAttributes(filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
-			else
-				File.SetAttributes(filename, FileAttributes.NotContentIndexed);
-		});
 	}
 
 	public async ValueTask VerifyFileHash(CancellationToken token) {
@@ -925,7 +920,7 @@ public partial class TFChunk : IDisposable {
 		_writerWorkItem?.Dispose();
 		_writerWorkItem = null;
 
-		SetAttributes(_filename, true);
+		await (_handle?.SetReadOnlyAsync(true, token) ?? ValueTask.CompletedTask);
 	}
 
 	public async ValueTask CompleteRaw(CancellationToken token) {
@@ -944,10 +939,9 @@ public partial class TFChunk : IDisposable {
 		_writerWorkItem?.Dispose();
 		_writerWorkItem = null;
 
-		SetAttributes(_filename, true);
-
 		if (!_inMem) {
-			await using var stream = _handle.AsUnbufferedStream(FileAccess.Read);
+			await _handle.SetReadOnlyAsync(true, token);
+			await using var stream = _handle.CreateStream();
 			_chunkFooter = await ReadFooter(stream, token);
 		} else {
 			_chunkFooter = await ReadFooter(_sharedMemStream, token);
