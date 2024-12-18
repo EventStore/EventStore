@@ -24,7 +24,6 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
 using EventStore.Plugins.Transforms;
-using Microsoft.Win32.SafeHandles;
 using static System.Threading.Timeout;
 using ILogger = Serilog.ILogger;
 

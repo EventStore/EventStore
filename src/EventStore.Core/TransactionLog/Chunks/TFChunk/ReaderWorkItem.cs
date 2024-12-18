@@ -4,9 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using DotNext;
-using DotNext.IO;
 using EventStore.Plugins.Transforms;
-using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
