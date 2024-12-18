@@ -503,8 +503,10 @@ public partial class TFChunk : IDisposable {
 
 		File.Move(tempFilename, _filename);
 
+		// reuse FileStreamOptions instance
 		options.Mode = FileMode.Open;
 		options.Options = WritableHandleOptions;
+		options.PreallocationSize = 0L;
 		_handle = new ChunkFileHandle(_filename, options);
 		_writerWorkItem = new(_handle, md5, _unbuffered, _transform.Write, ChunkHeader.Size + transformHeader.Length);
 		await Flush(token); // persist file move result
