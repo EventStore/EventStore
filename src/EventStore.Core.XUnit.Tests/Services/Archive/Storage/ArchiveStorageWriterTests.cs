@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services.Archive;
@@ -38,5 +37,18 @@ public class ArchiveStorageWriterTests : ArchiveStorageTestsBase<ArchiveStorageW
 		var destinationFile = Path.GetFileName(localChunk);
 		File.Delete(localChunk);
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => await sut.StoreChunk(localChunk, destinationFile, CancellationToken.None));
+	}
+
+	[Theory]
+	[InlineData(StorageType.FileSystem)]
+	[InlineData(StorageType.S3, Skip = SkipS3)]
+	public async Task can_write_and_read_checkpoint(StorageType storageType) {
+		var checkpoint = Random.Shared.NextInt64();
+		var sut = CreateReaderSut(storageType);
+
+		var writerSut = CreateWriterSut(storageType);
+		await writerSut.SetCheckpoint(checkpoint, CancellationToken.None);
+
+		Assert.Equal(checkpoint, await sut.GetCheckpoint(CancellationToken.None));
 	}
 }

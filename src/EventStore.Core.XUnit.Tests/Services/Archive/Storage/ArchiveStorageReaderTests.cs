@@ -85,16 +85,24 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 
 	[Theory]
 	[InlineData(StorageType.FileSystem)]
+	[InlineData(StorageType.S3, Skip = SkipS3)]
 	public async Task can_list_chunks(StorageType storageType) {
 		var sut = CreateReaderSut(storageType);
 
-		Assert.Equal(0, await sut.ListChunks(CancellationToken.None).CountAsync());
+		var chunk0 = CreateLocalChunk(0, 0);
+		var chunk1 = CreateLocalChunk(1, 0);
+		var chunk2 = CreateLocalChunk(2, 0);
 
-		var chunk0 = Path.GetFileName(CreateArchiveChunk(0, 0));
-		var chunk1 = Path.GetFileName(CreateArchiveChunk(1, 0));
-		var chunk2 = Path.GetFileName(CreateArchiveChunk(2, 0));
+		var writerSut = CreateWriterSut(storageType);
+		await writerSut.StoreChunk(chunk0, Path.GetFileName(chunk0), CancellationToken.None);
+		await writerSut.StoreChunk(chunk1, Path.GetFileName(chunk1), CancellationToken.None);
+		await writerSut.StoreChunk(chunk1, Path.GetFileName(chunk2), CancellationToken.None);
 
 		var archivedChunks = sut.ListChunks(CancellationToken.None).ToEnumerable();
-		Assert.Equal([chunk0, chunk1, chunk2], archivedChunks);
+		Assert.Equal([
+			Path.GetFileName(chunk0),
+			Path.GetFileName(chunk1),
+			Path.GetFileName(chunk2)
+		], archivedChunks);
 	}
 }
