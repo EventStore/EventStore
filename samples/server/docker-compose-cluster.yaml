@@ -25,7 +25,7 @@ services:
       - volumes-provisioner
 
   node1.eventstore: &template
-    image: docker.eventstore.com/eventstore-preview/eventstoredb-ee:24.10.0-preview1-x64-8.0-bookworm-slim
+    image: docker.eventstore.com/eventstore/eventstoredb-ee:24.10.1
     container_name: node1.eventstore
     env_file:
       - vars.env
