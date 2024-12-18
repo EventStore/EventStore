@@ -1,6 +1,6 @@
 services:
   eventstore.db:
-    image: docker.eventstore.com/eventstore-preview/eventstoredb-ee:24.10.0-preview1-x64-8.0-bookworm-slim
+    image: docker.eventstore.com/eventstore/eventstoredb-ee:24.10.1
     environment:
       - EVENTSTORE_CLUSTER_SIZE=1
       - EVENTSTORE_RUN_PROJECTIONS=All

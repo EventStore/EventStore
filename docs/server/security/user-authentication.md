@@ -573,7 +573,7 @@ OAuth:
 5. Start EventStoreDB. You should see the following logs indicating that OAuth is in use:
 
 ```
-[INF] OAuthAuthenticationProvider    OAuthAuthentication 24.10.0.1338 plugin enabled.
+[INF] OAuthAuthenticationProvider    OAuthAuthentication 24.10.1.1499 plugin enabled.
 ...
 [INF] OAuthAuthenticationPlugin      Obtaining auth token signing key from https://localhost:5001/
 ...

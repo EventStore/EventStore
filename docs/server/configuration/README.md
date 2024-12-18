@@ -20,13 +20,13 @@ Use the `--version` parameter in the command line to check the installed version
 @tab Linux
 ```bash:no-line-numbers
 $ eventstored --version
-EventStoreDB version 24.10.0.1182-preview1 ee (52a0cf4c-94a4-4e7b-ad13-d6096ba30a74/4cab8ca81a63f0a8f708d5564ea459fe5a7131de)
+EventStoreDB version 24.10.1.1499 ee (52a0cf4c-94a4-4e7b-ad13-d6096ba30a74/4cab8ca81a63f0a8f708d5564ea459fe5a7131de)
 ```
 
 @tab Windows
 ```powershell
 > EventStore.ClusterNode.exe --version
-EventStoreDB version 24.10.0.1182-preview1 ee (52a0cf4c-94a4-4e7b-ad13-d6096ba30a74/4cab8ca81a63f0a8f708d5564ea459fe5a7131de)
+EventStoreDB version 24.10.1.1499 ee (52a0cf4c-94a4-4e7b-ad13-d6096ba30a74/4cab8ca81a63f0a8f708d5564ea459fe5a7131de)
 ```
 :::
 
