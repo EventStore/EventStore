@@ -18,6 +18,7 @@ public abstract class FluentWriter(string archiveCheckpointFile) {
 
 	private readonly byte[] _buffer = new byte[8];
 
+	// not thread safe
 	public async ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) {
 		try {
 			BinaryPrimitives.WriteInt64LittleEndian(_buffer.AsSpan(0, 8), checkpoint);

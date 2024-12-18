@@ -2,12 +2,12 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using FluentStorage.Blobs;
 using Serilog;
@@ -24,14 +24,10 @@ public abstract class FluentReader(string archiveCheckpointFile) {
 		if (stream is null)
 			return 0L;
 
-		var buffer = ArrayPool<byte>.Shared.Rent(8);
-		try {
-			stream.ReadExactly(buffer.AsSpan(0, 8));
-			var checkpoint = BinaryPrimitives.ReadInt64LittleEndian(buffer.AsSpan(0, 8));
-			return checkpoint;
-		} finally {
-			ArrayPool<byte>.Shared.Return(buffer);
-		}
+		using var buffer = Memory.AllocateExactly<byte>(sizeof(long));
+		await stream.ReadExactlyAsync(buffer.Memory, ct);
+		var checkpoint = BinaryPrimitives.ReadInt64LittleEndian(buffer.Span);
+		return checkpoint;
 	}
 
 	public async ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) {
