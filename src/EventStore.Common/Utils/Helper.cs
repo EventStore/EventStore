@@ -9,11 +9,18 @@ using System.Text;
 namespace EventStore.Common.Utils;
 
 public static class Helper {
-	public static readonly UTF8Encoding UTF8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+	public static readonly UTF8Encoding UTF8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
 	public static void EatException(Action action) {
 		try {
 			action();
+		} catch (Exception) {
+		}
+	}
+
+	public static void EatException<TArg>(TArg arg, Action<TArg> action) {
+		try {
+			action(arg);
 		} catch (Exception) {
 		}
 	}
