@@ -292,19 +292,17 @@ public partial class TFChunk : IDisposable {
 
 	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
-		var fileInfo = new FileInfo(_filename);
-		if (!fileInfo.Exists)
+		if (!File.Exists(_filename))
 			throw new CorruptDatabaseException(new ChunkNotFoundException(_filename));
 
-		_fileSize = (int)fileInfo.Length;
-
-		var options = new FileStreamOptions() {
+		var options = new FileStreamOptions {
 			Mode = FileMode.Open,
 			Access = FileAccess.Read,
 			Share = FileShare.ReadWrite,
 			Options = _reduceFileCachePressure ? FileOptions.Asynchronous : FileOptions.RandomAccess | FileOptions.Asynchronous
 		};
 		_handle = new ChunkFileHandle(_filename, options);
+		_fileSize = (int)_handle.Length;
 
 		IsReadOnly = true;
 
