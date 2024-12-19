@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNext.IO;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
+using Microsoft.Win32.SafeHandles;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage;
@@ -34,45 +35,68 @@ public class FileSystemReader : IArchiveStorageReader {
 	}
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) {
+		ValueTask<long> task;
+		var handle = default(SafeFileHandle);
 		try {
 			var checkpointPath = Path.Combine(_archivePath, _archiveCheckpointFile);
-			using var fs = File.OpenRead(checkpointPath);
 
-			Span<byte> buffer = stackalloc byte[8];
-			fs.ReadExactly(buffer);
+			// Perf: we don't need buffered read for simple one-shot read of 8 bytes
+			handle = File.OpenHandle(checkpointPath);
+
+			Span<byte> buffer = stackalloc byte[sizeof(long)];
+			if (RandomAccess.Read(handle, buffer, fileOffset: 0L) != buffer.Length)
+				throw new EndOfStreamException();
 
 			var checkpoint = BinaryPrimitives.ReadInt64LittleEndian(buffer);
-			return ValueTask.FromResult(checkpoint);
+			task = ValueTask.FromResult(checkpoint);
 		} catch (FileNotFoundException) {
-			return ValueTask.FromResult(0L);
+			task = ValueTask.FromResult(0L);
+		} catch (Exception e) {
+			task = ValueTask.FromException<long>(e);
+		} finally {
+			handle?.Dispose();
 		}
+
+		return task;
 	}
 
-	public async ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) {
+	public ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) {
+		ValueTask<Stream> task;
 		try {
 			var chunkPath = Path.Combine(_archivePath, chunkFile);
-			return File.Open(chunkPath, _fileStreamOptions);
+			task = ValueTask.FromResult<Stream>(File.Open(chunkPath, _fileStreamOptions));
 		} catch (FileNotFoundException) {
-			throw new ChunkDeletedException();
+			task = ValueTask.FromException<Stream>(new ChunkDeletedException());
+		} catch (Exception e) {
+			task = ValueTask.FromException<Stream>(e);
 		}
+
+		return task;
 	}
 
-	public async ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) {
+	public ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) {
 		var length = end - start;
 
-		if (length < 0)
-			throw new InvalidOperationException($"Attempted to read negative amount from chunk {chunkFile}. Start: {start}. End {end}");
+		ValueTask<Stream> task;
+		if (length < 0) {
+			task = ValueTask.FromException<Stream>(new InvalidOperationException(
+				$"Attempted to read negative amount from chunk {chunkFile}. Start: {start}. End {end}"));
+		} else {
+			try {
+				var chunkPath = Path.Combine(_archivePath, chunkFile);
+				var fileStream = File.Open(chunkPath, _fileStreamOptions);
+				var segment = new StreamSegment(fileStream, leaveOpen: false);
+				segment.Adjust(start, length);
+				task = ValueTask.FromResult<Stream>(segment);
 
-		try {
-			var chunkPath = Path.Combine(_archivePath, chunkFile);
-			var fileStream = File.Open(chunkPath, _fileStreamOptions);
-			var segment = new StreamSegment(fileStream, leaveOpen: false);
-			segment.Adjust(start, length);
-			return segment;
-
-		} catch (FileNotFoundException) {
-			throw new ChunkDeletedException();
+			} catch (FileNotFoundException) {
+				task = ValueTask.FromException<Stream>(new ChunkDeletedException());
+			} catch (Exception e) {
+				task = ValueTask.FromException<Stream>(e);
+			}
 		}
+
+		return task;
 	}
 
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
