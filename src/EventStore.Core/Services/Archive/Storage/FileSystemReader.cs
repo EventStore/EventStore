@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNext.IO;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
+using Microsoft.Win32.SafeHandles;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage;
@@ -34,18 +35,29 @@ public class FileSystemReader : IArchiveStorageReader {
 	}
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) {
+		ValueTask<long> task;
+		var handle = default(SafeFileHandle);
 		try {
 			var checkpointPath = Path.Combine(_archivePath, _archiveCheckpointFile);
-			using var fs = File.OpenRead(checkpointPath);
 
-			Span<byte> buffer = stackalloc byte[8];
-			fs.ReadExactly(buffer);
+			// Perf: we don't need buffered read for simple one-shot read of 8 bytes
+			handle = File.OpenHandle(checkpointPath);
+
+			Span<byte> buffer = stackalloc byte[sizeof(long)];
+			if (RandomAccess.Read(handle, buffer, fileOffset: 0L) != buffer.Length)
+				throw new EndOfStreamException();
 
 			var checkpoint = BinaryPrimitives.ReadInt64LittleEndian(buffer);
-			return ValueTask.FromResult(checkpoint);
+			task = ValueTask.FromResult(checkpoint);
 		} catch (FileNotFoundException) {
-			return ValueTask.FromResult(0L);
+			task = ValueTask.FromResult(0L);
+		} catch (Exception e) {
+			task = ValueTask.FromException<long>(e);
+		} finally {
+			handle?.Dispose();
 		}
+
+		return task;
 	}
 
 	public ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) {
@@ -55,6 +67,8 @@ public class FileSystemReader : IArchiveStorageReader {
 			task = ValueTask.FromResult<Stream>(File.Open(chunkPath, _fileStreamOptions));
 		} catch (FileNotFoundException) {
 			task = ValueTask.FromException<Stream>(new ChunkDeletedException());
+		} catch (Exception e) {
+			task = ValueTask.FromException<Stream>(e);
 		}
 
 		return task;
@@ -77,6 +91,8 @@ public class FileSystemReader : IArchiveStorageReader {
 
 			} catch (FileNotFoundException) {
 				task = ValueTask.FromException<Stream>(new ChunkDeletedException());
+			} catch (Exception e) {
+				task = ValueTask.FromException<Stream>(e);
 			}
 		}
 
