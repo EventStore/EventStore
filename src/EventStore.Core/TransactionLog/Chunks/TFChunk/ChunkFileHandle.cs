@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Security.AccessControl;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext;
@@ -61,7 +62,15 @@ internal sealed class ChunkFileHandle : Disposable, IChunkHandle {
 			? FileAttributes.ReadOnly | FileAttributes.NotContentIndexed
 			: FileAttributes.NotContentIndexed;
 
-		File.SetAttributes(handle, flags);
+		if (OperatingSystem.IsWindows()) {
+			try {
+				File.SetAttributes(handle, flags);
+			} catch (UnauthorizedAccessException) {
+				// suppress exception
+			}
+		} else {
+			File.SetAttributes(handle, flags);
+		}
 	}
 
 	protected override void Dispose(bool disposing) {
