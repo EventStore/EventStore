@@ -24,12 +24,9 @@ public class TracingChunkDeleter<TStreamId, TRecord> :
 		IChunkReaderForExecutor<TStreamId, TRecord> physicalChunk,
 		CancellationToken ct) {
 
-		var delete = await _wrapped.DeleteIfNotRetained(scavengePoint, concurrentState, physicalChunk, ct);
-		if (delete) {
-			_tracer.Trace($"Deleted chunk {physicalChunk.Name}");
-		} else {
-			// no need to trace the common case
-		}
-		return delete;
+		var deleted = await _wrapped.DeleteIfNotRetained(scavengePoint, concurrentState, physicalChunk, ct);
+		var decision = deleted ? "Deleted" : "Retained";
+		_tracer.Trace($"{decision} Chunk {physicalChunk.ChunkStartNumber}-{physicalChunk.ChunkEndNumber}");
+		return deleted;
 	}
 }

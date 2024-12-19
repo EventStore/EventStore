@@ -42,6 +42,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
 using EventStore.Core.TransactionLog.Scavenging.Sqlite;
+using EventStore.Core.TransactionLog.Scavenging.Stages;
 using EventStore.Core.Authentication;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.PersistentSubscription;
@@ -81,6 +82,7 @@ using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 using EventStore.Licensing;
+using EventStore.Core.Services.Archive.Storage;
 
 namespace EventStore.Core;
 public abstract class ClusterVNode {
@@ -261,6 +263,8 @@ public class ClusterVNode<TStreamId> :
 #if DEBUG
 		AddTask(_taskAddedTrigger.Task);
 #endif
+
+		var archiveOptions = configuration.GetSection("EventStore:Archive").Get<ArchiveOptions>() ?? new();
 
 		var disableInternalTcpTls = options.Application.Insecure;
 		var disableExternalTcpTls = options.Application.Insecure;
@@ -1294,9 +1298,21 @@ public class ClusterVNode<TStreamId> :
 				buffer: calculatorBuffer,
 				throttle: throttle);
 
+			var chunkDeleter = IChunkDeleter<TStreamId, ILogRecord>.NoOp;
+			if (archiveOptions.Enabled) {
+				// todo: consider if we can/should reuse the same reader elsewhere
+				var archiveReader = new ArchiveStorageFactory(archiveOptions, _fileNamingStrategy).CreateReader();
+				chunkDeleter = new ChunkDeleter<TStreamId, ILogRecord>(
+					logger: logger,
+					archiveCheckpoint: new AdvancingCheckpoint(archiveReader.GetCheckpoint),
+					retainPeriod: TimeSpan.FromDays(archiveOptions.RetainAtLeast.Days),
+					retainBytes: archiveOptions.RetainAtLeast.LogicalBytes);
+			}
+
 			var chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
 				logger,
 				logFormat.Metastreams,
+				chunkDeleter,
 				new ChunkManagerForExecutor<TStreamId>(logger, Db.Manager, Db.Config, Db.TransformManager),
 				chunkSize: Db.Config.ChunkSize,
 				unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
