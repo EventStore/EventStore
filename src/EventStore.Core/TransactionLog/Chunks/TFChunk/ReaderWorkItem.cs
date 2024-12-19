@@ -4,9 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using DotNext;
-using DotNext.IO;
 using EventStore.Plugins.Transforms;
-using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
@@ -30,7 +28,7 @@ internal sealed class ReaderWorkItem : Disposable {
 		IsMemory = true;
 	}
 
-	public ReaderWorkItem(SafeFileHandle handle, IChunkReadTransform chunkReadTransform)
+	public ReaderWorkItem(IChunkHandle handle, IChunkReadTransform chunkReadTransform)
 		: this(CreateTransformedFileStream(handle, chunkReadTransform), leaveOpen: false) {
 		IsMemory = false;
 	}
@@ -39,8 +37,9 @@ internal sealed class ReaderWorkItem : Disposable {
 		return chunkReadTransform.TransformData(new ChunkDataReadStream(memStream));
 	}
 
-	private static ChunkDataReadStream CreateTransformedFileStream(SafeFileHandle handle, IChunkReadTransform chunkReadTransform) {
-		var fileStream = new BufferedStream(handle.AsUnbufferedStream(FileAccess.Read), BufferSize);
+	private static ChunkDataReadStream CreateTransformedFileStream(IChunkHandle handle,
+		IChunkReadTransform chunkReadTransform) {
+		var fileStream = new BufferedStream(handle.CreateStream(), BufferSize);
 		return chunkReadTransform.TransformData(new ChunkDataReadStream(fileStream));
 	}
 
