@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.InMemory;
 
 public class InMemoryOriginalStreamScavengeMap<TKey> :
 	InMemoryScavengeMap<TKey, OriginalStreamData>,
