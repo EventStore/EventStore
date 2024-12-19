@@ -114,6 +114,7 @@ public interface IScavengeStateForChunkExecutorWorker<TStreamId> : IDisposable {
 	float SumChunkWeights(int startLogicalChunkNumber, int endLogicalChunkNumber);
 	bool TryGetChunkExecutionInfo(TStreamId streamId, out ChunkExecutionInfo info);
 	bool TryGetMetastreamData(TStreamId streamId, out MetastreamData metastreamData);
+	bool TryGetChunkTimeStampRange(int logicalChunkNumber, out ChunkTimeStampRange range);
 }
 
 public interface IScavengeStateForChunkMerger : IScavengeStateCommon {

@@ -327,11 +327,12 @@ public class ScavengeState<TStreamId> : IScavengeState<TStreamId> {
 
 // in the chunk executor each worker gets its own state so that it has its own dbconnection and
 // prepared commands.
-public struct ScavengeStateForChunkWorker<TStreamId> : 
+public readonly struct ScavengeStateForChunkWorker<TStreamId> : 
 	IScavengeStateForChunkExecutorWorker<TStreamId>{
 
 	private readonly MetastreamCollisionMap<TStreamId> _metastreamDatas;
 	private readonly OriginalStreamCollisionMap<TStreamId> _originalStreamDatas;
+	private readonly IScavengeMap<int, ChunkTimeStampRange> _chunkTimeStampRanges;
 	private readonly IChunkWeightScavengeMap _chunkWeights;
 	private readonly Action _onDispose;
 
@@ -353,6 +354,7 @@ public struct ScavengeStateForChunkWorker<TStreamId> :
 			backend.OriginalStorage,
 			backend.OriginalCollisionStorage);
 
+		_chunkTimeStampRanges = backend.ChunkTimeStampRanges;
 		_chunkWeights = backend.ChunkWeights;
 
 		_onDispose = onDispose;
@@ -361,15 +363,17 @@ public struct ScavengeStateForChunkWorker<TStreamId> :
 	public float SumChunkWeights(int startLogicalChunkNumber, int endLogicalChunkNumber) =>
 		_chunkWeights.SumChunkWeights(startLogicalChunkNumber, endLogicalChunkNumber);
 
-	public void ResetChunkWeights(int startLogicalChunkNumber, int endLogicalChunkNumber) {
+	public void ResetChunkWeights(int startLogicalChunkNumber, int endLogicalChunkNumber) =>
 		_chunkWeights.ResetChunkWeights(startLogicalChunkNumber, endLogicalChunkNumber);
-	}
 
 	public bool TryGetChunkExecutionInfo(TStreamId streamId, out ChunkExecutionInfo info) =>
 		_originalStreamDatas.TryGetChunkExecutionInfo(streamId, out info);
 
 	public bool TryGetMetastreamData(TStreamId streamId, out MetastreamData data) =>
 		_metastreamDatas.TryGetValue(streamId, out data);
+
+	public bool TryGetChunkTimeStampRange(int logicalChunkNumber, out ChunkTimeStampRange range) =>
+		_chunkTimeStampRanges.TryGetValue(logicalChunkNumber, out range);
 
 	public void Dispose() {
 		_onDispose();
