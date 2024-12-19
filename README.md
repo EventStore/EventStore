@@ -117,7 +117,7 @@ The build scripts: `build.sh` and `build.ps1` are also available for Linux and W
 To start a single node, you can then run:
 
 ```
-dotnet ./src/EventStore.ClusterNode/bin/x64/Release/net8.0/EventStore.ClusterNode.dll --dev --db ./tmp/data --index ./tmp/index --log ./tmp/log
+dotnet ./src/EventStore.ClusterNode/bin/x64/Release/net9.0/EventStore.ClusterNode.dll --dev --db ./tmp/data --index ./tmp/index --log ./tmp/log
 ```
 
 ### Running the tests
@@ -161,9 +161,9 @@ Currently, we support the following configurations:
 - `CONTAINER_RUNTIME=bookworm-slim`
 - `RUNTIME=linux-x64`
 
-2. Jammy:
+2. Noble:
 
-- `CONTAINER_RUNTIME=Jammy`
+- `CONTAINER_RUNTIME=noble`
 - `RUNTIME=linux-x64`
 
 3. Alpine:

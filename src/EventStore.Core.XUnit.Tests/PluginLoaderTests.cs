@@ -91,7 +91,7 @@ public class PluginLoaderTests : IAsyncLifetime {
 		using var process = new Process {
 			StartInfo = new ProcessStartInfo {
 				FileName = "dotnet",
-				Arguments = $"publish --configuration {BuildConfiguration} --framework=net8.0 --output {outputFolder.FullName}",
+				Arguments = $"publish --configuration {BuildConfiguration} --framework=net9.0 --output {outputFolder.FullName}",
 				WorkingDirectory = PluginSourceDirectory,
 				UseShellExecute = false,
 				RedirectStandardError = true,

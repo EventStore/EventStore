@@ -10,7 +10,7 @@ COPYRIGHT="Copyright 2021 Event Store Ltd. All rights reserved."
 
 CONFIGURATION="Release"
 BUILD_UI="no"
-NET_FRAMEWORK="net8.0"
+NET_FRAMEWORK="net9.0"
 
 function usage() {    
 cat <<EOF

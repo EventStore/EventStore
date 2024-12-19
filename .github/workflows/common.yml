@@ -24,10 +24,10 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-    - name: Install net8.0
+    - name: Install net9.0
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 9.0.x
     - name: Scan for Vulnerabilities
       run: |
         cd src
