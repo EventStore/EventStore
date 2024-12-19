@@ -1074,12 +1074,12 @@ public partial class TFChunk : IDisposable {
 
 		if (!_inMem) {
 			_handle?.Dispose();
-			Helper.EatException(() => File.SetAttributes(_filename, FileAttributes.Normal));
+			Helper.EatException(_filename, static filename => File.SetAttributes(filename, FileAttributes.Normal));
 
 			if (_deleteFile) {
 				Log.Information("File {chunk} has been marked for delete and will be deleted in TryDestructFileStreams.",
 					Path.GetFileName(_filename));
-				Helper.EatException(() => File.Delete(_filename));
+				Helper.EatException(_filename, File.Delete);
 			}
 		}
 
