@@ -387,7 +387,7 @@ before attempting to reconfigure it.
 ## Delete
 
 Delete a connector by sending a `DELETE` request to
-`/connectors/{connector_id}/delete`, where `{connector_id}` is the unique
+`/connectors/{connector_id}`, where `{connector_id}` is the unique
 identifier used when the connector was created.
 
 ::: tabs
