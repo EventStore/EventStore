@@ -7,9 +7,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext;
-using DotNext.IO;
 using EventStore.Plugins.Transforms;
-using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
@@ -33,11 +31,12 @@ internal sealed class WriterWorkItem : Disposable {
 		MD5 = md5;
 	}
 
-	public WriterWorkItem(SafeFileHandle handle, IncrementalHash md5, bool unbuffered,
+	public WriterWorkItem(IChunkHandle handle, IncrementalHash md5, bool unbuffered,
 		IChunkWriteTransform chunkWriteTransform, int initialStreamPosition) {
+		var chunkStream = handle.CreateStream();
 		var fileStream = unbuffered
-			? handle.AsUnbufferedStream(FileAccess.ReadWrite)
-			: new BufferedStream(handle.AsUnbufferedStream(FileAccess.ReadWrite), BufferSize);
+			? chunkStream
+			: new BufferedStream(chunkStream, BufferSize);
 		fileStream.Position = initialStreamPosition;
 		var chunkDataWriteStream = new ChunkDataWriteStream(fileStream, md5);
 
