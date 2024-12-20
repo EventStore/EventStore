@@ -32,20 +32,20 @@ public class Locations {
 
 		switch (RuntimeInformation.OsPlatform) {
 			case RuntimeOSPlatform.Linux:
-				DefaultContentDirectory = "/usr/share/eventstore";
-				DefaultConfigurationDirectory = "/etc/eventstore";
-				DefaultDataDirectory = "/var/lib/eventstore";
-				DefaultLogDirectory = "/var/log/eventstore";
+				DefaultContentDirectory = "/usr/share/kurrentdb";
+				DefaultConfigurationDirectory = "/etc/kurrentdb";
+				DefaultDataDirectory = "/var/lib/kurrentdb";
+				DefaultLogDirectory = "/var/log/kurrentdb";
 				DefaultTrustedRootCertificateDirectory = "/etc/ssl/certs";
 				DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
 				if (!Directory.Exists(PluginsDirectory))
 					PluginsDirectory = Path.Combine(DefaultContentDirectory, "plugins");
 				break;
 			case RuntimeOSPlatform.OSX:
-				DefaultContentDirectory = "/usr/local/share/eventstore";
-				DefaultConfigurationDirectory = "/etc/eventstore";
-				DefaultDataDirectory = "/var/lib/eventstore";
-				DefaultLogDirectory = "/var/log/eventstore";
+				DefaultContentDirectory = "/usr/local/share/kurrentdb";
+				DefaultConfigurationDirectory = "/etc/kurrentdb";
+				DefaultDataDirectory = "/var/lib/kurrentdb";
+				DefaultLogDirectory = "/var/log/kurrentdb";
 				DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
 				if (!Directory.Exists(PluginsDirectory))
 					PluginsDirectory = Path.Combine(DefaultContentDirectory, "plugins");

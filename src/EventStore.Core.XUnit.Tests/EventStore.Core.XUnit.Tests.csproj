@@ -31,7 +31,7 @@
 			<Link>version.properties</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="Configuration\test.eventstore.conf">
+		<None Update="Configuration\test.kurrentdb.conf">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>

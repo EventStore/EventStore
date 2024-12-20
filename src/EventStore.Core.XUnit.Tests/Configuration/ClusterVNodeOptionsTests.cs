@@ -87,11 +87,11 @@ public class ClusterVNodeOptionsTests {
 
 		options.Unknown.Options.Should().BeEmpty();
 	}
-	
+
 	[Fact]
 	public void unknown_options_ignores_repeated_keys_from_other_sources() {
 		Environment.SetEnvironmentVariable("EVENTSTORE__CLUSTER_SIZE", "3");
-		
+
 		var configuration = new ConfigurationBuilder()
 			.AddEnvironmentVariables()
 			.AddEventStoreEnvironmentVariables()
@@ -244,7 +244,7 @@ public class ClusterVNodeOptionsTests {
 
 	[Fact]
 	public void can_set_cluster_size_from_config_file() {
-		var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configuration", "test.eventstore.conf");
+		var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configuration", "test.kurrentdb.conf");
 
 		var config = new ConfigurationBuilder()
 			.AddEventStoreYamlConfigFile(path, optional: false)
