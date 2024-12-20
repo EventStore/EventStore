@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.InMemory;
 
 public class InMemoryScavengeMap<TKey, TValue> : IScavengeMap<TKey, TValue> {
 	public InMemoryScavengeMap() {

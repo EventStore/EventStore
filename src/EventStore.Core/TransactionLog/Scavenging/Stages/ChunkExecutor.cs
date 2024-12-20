@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Scavenging.Stages;
 using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging;
@@ -17,6 +18,7 @@ namespace EventStore.Core.TransactionLog.Scavenging;
 public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 	private readonly ILogger _logger;
 	private readonly IMetastreamLookup<TStreamId> _metastreamLookup;
+	private readonly IChunkDeleter<TStreamId, TRecord> _chunkDeleter;
 	private readonly IChunkManagerForChunkExecutor<TStreamId, TRecord> _chunkManager;
 	private readonly long _chunkSize;
 	private readonly bool _unsafeIgnoreHardDeletes;
@@ -27,6 +29,7 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 	public ChunkExecutor(
 		ILogger logger,
 		IMetastreamLookup<TStreamId> metastreamLookup,
+		IChunkDeleter<TStreamId, TRecord> chunkDeleter,
 		IChunkManagerForChunkExecutor<TStreamId, TRecord> chunkManager,
 		long chunkSize,
 		bool unsafeIgnoreHardDeletes,
@@ -36,6 +39,7 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 
 		_logger = logger;
 		_metastreamLookup = metastreamLookup;
+		_chunkDeleter = chunkDeleter;
 		_chunkManager = chunkManager;
 		_chunkSize = chunkSize;
 		_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
@@ -115,6 +119,19 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 							"with weight {physicalWeight:N0} because it is remote.",
 							physicalChunk.Name,
 							physicalWeight);
+
+
+					} else if (await _chunkDeleter.DeleteIfNotRetained(
+						scavengePoint,
+						concurrentState,
+						physicalChunk,
+						cancellationToken)) {
+
+						// delete occurs regardless of weight
+						// skip scavenging this chunk, still reset the weights
+						concurrentState.ResetChunkWeights(
+							physicalChunk.ChunkStartNumber,
+							physicalChunk.ChunkEndNumber);
 
 					} else if (physicalWeight > scavengePoint.Threshold || _unsafeIgnoreHardDeletes) {
 						await ExecutePhysicalChunk(
