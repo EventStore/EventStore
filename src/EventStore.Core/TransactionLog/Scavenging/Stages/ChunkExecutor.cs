@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.Scavenging;
 using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Serilog;
 
