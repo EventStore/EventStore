@@ -51,7 +51,8 @@ public partial class TFChunk : IDisposable {
 		get { return _cacheStatus is CacheStatus.Cached; }
 	}
 
-	public bool IsRemote => false;
+	// if inMem, _handle is null but not remote
+	public bool IsRemote => _handle is not null and not ChunkFileHandle;
 
 	// the logical size of (untransformed) data (could be > PhysicalDataSize if scavenged chunk)
 	public long LogicalDataSize {
@@ -200,9 +201,11 @@ public partial class TFChunk : IDisposable {
 		FreeCachedData();
 	}
 
+	// local or remote
 	public static async ValueTask<TFChunk> FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead,
 		ITransactionFileTracker tracker, Func<TransformType, IChunkTransformFactory> getTransformFactory,
 		bool reduceFileCachePressure = false, CancellationToken token = default) {
+
 		var chunk = new TFChunk(filename,
 			TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure);
 		try {
@@ -215,6 +218,7 @@ public partial class TFChunk : IDisposable {
 		return chunk;
 	}
 
+	// always local
 	public static async ValueTask<TFChunk> FromOngoingFile(string filename, int writePosition, bool unbuffered,
 		bool writethrough, bool reduceFileCachePressure, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory,
@@ -235,6 +239,7 @@ public partial class TFChunk : IDisposable {
 		return chunk;
 	}
 
+	// always local
 	public static async ValueTask<TFChunk> CreateNew(string filename,
 		int chunkDataSize,
 		int chunkStartNumber,
@@ -263,6 +268,7 @@ public partial class TFChunk : IDisposable {
 			reduceFileCachePressure, tracker, transformFactory, transformHeader, token);
 	}
 
+	// local only
 	public static async ValueTask<TFChunk> CreateWithHeader(string filename,
 		ChunkHeader header,
 		int fileSize,
