@@ -3,6 +3,7 @@
 
 using System;
 using EventStore.Common.Utils;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Microsoft.Data.Sqlite;
 using Serilog;
 

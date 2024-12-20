@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Tests.Index.Hashers;
 using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.TransactionLog.Scavenging.CollisionManagement;
 using EventStore.Core.TransactionLog.Scavenging.Sqlite;
 using EventStore.Core.XUnit.Tests.Scavenge.Sqlite;
 using Xunit;

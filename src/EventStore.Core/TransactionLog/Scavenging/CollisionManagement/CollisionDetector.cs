@@ -5,9 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Serilog;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.CollisionManagement;
 
 // add things to the collision detector and it keeps a list of things that collided.
 public class CollisionDetector<T> {

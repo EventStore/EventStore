@@ -3,8 +3,9 @@
 
 using System.Threading;
 using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge;
+namespace EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 
 public class TracingCleaner : ICleaner {
 	private readonly ICleaner _wrapped;

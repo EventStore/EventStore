@@ -4,7 +4,7 @@
 using System;
 using EventStore.Core.LogAbstraction;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge;
+namespace EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 
 public class AdHocMetastreamLookupInterceptor<TStreamId> : IMetastreamLookup<TStreamId> {
 	private readonly IMetastreamLookup<TStreamId> _wrapped;

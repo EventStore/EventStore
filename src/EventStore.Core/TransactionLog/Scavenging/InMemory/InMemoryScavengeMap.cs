@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 namespace EventStore.Core.TransactionLog.Scavenging.InMemory;
 

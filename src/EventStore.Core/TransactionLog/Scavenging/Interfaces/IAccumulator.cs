@@ -4,7 +4,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 // The Accumulator reads through the log up to the scavenge point
 // its purpose is to do any log scanning that is necessary for a scavenge _only once_

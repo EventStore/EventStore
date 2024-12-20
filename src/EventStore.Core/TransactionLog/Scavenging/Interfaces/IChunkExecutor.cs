@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 // The chunk executor performs the actual removal of the log records
 public interface IChunkExecutor<TStreamId> {

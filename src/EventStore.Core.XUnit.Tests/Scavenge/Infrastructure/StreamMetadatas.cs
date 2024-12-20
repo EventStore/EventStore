@@ -7,7 +7,7 @@ using EventStore.Core.Services;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.Scavenging;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge;
+namespace EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 
 public class StreamMetadatas {
 	public static StreamMetadata TruncateBefore1 { get; } = new StreamMetadata(truncateBefore: 1);

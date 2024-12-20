@@ -6,8 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNext;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.DbAccess;
 
 public class ChunkReaderForIndexExecutor<TStreamId> : IChunkReaderForIndexExecutor<TStreamId> {
 	private readonly Func<TFReaderLease> _tfReaderFactory;

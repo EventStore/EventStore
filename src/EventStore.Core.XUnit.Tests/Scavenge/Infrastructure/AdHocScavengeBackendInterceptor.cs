@@ -3,8 +3,9 @@
 
 using System;
 using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge;
+namespace EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 
 public class AdHocScavengeBackendInterceptor<TStreamId> : IScavengeStateBackend<TStreamId> {
 	private readonly IScavengeStateBackend<TStreamId> _wrapped;

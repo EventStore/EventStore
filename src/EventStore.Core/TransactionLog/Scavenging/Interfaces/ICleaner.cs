@@ -3,7 +3,7 @@
 
 using System.Threading;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 public interface ICleaner {
 	void Clean(

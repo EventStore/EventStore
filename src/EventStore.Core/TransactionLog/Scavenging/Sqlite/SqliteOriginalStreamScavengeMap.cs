@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Microsoft.Data.Sqlite;
 
 namespace EventStore.Core.TransactionLog.Scavenging.Sqlite;

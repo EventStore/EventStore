@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 public interface IChunkManagerForChunkExecutor<TStreamId, TRecord> {
 	ValueTask<IChunkWriterForExecutor<TStreamId, TRecord>> CreateChunkWriter(

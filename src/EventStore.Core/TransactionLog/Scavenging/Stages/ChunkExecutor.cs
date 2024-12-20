@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.Scavenging.Stages;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Serilog;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Stages;
 
 public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 	private readonly ILogger _logger;

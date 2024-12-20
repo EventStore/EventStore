@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 // There are two kinds of streams that we might want to remove events from
 //    - original streams (i.e. streams with metadata)

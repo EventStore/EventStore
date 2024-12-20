@@ -5,8 +5,9 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Stages;
 
 // the idea of this is we load some context into this class for the given stream
 // and then it helps us calculate and make decisions about what to keep.

@@ -4,7 +4,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 // The Calculator calculates the DiscardPoints that depend on the ScavengePoint
 // (after which all the scavengable streams will have discard points calculated correctly)

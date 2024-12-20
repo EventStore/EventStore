@@ -5,9 +5,10 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Serilog;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Stages;
 
 public class IndexExecutor<TStreamId> : IIndexExecutor<TStreamId> {
 	private readonly ILogger _logger;
