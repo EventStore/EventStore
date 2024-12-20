@@ -6,9 +6,11 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Serilog;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Stages;
 
 public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
 	private readonly ILogger _logger;

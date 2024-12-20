@@ -6,6 +6,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging.Stages;

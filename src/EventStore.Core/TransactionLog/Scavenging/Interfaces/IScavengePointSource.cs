@@ -4,7 +4,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 public interface IScavengePointSource {
 	// returns null when no scavenge point

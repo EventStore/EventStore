@@ -9,8 +9,9 @@ using EventStore.Core.Services;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge;
+namespace EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 
 // The real ScavengePointSource is a bit awkward to use in the tests because it uses the IODispatcher
 // Also even if we plumbed in the necessary components to the test to get that to work, it would

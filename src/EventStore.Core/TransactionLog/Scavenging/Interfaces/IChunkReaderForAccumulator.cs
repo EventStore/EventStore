@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Threading;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 public interface IChunkReaderForAccumulator<TStreamId> {
 	// Each element in the enumerable indicates which of the three records has been populated for

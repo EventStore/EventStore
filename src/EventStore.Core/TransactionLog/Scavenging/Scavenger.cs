@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using DotNext.Runtime.CompilerServices;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging;

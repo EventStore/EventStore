@@ -25,16 +25,18 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.TransactionLog.Scavenging.DbAccess;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using EventStore.Core.TransactionLog.Scavenging.Stages;
 using EventStore.Core.Transforms;
 using EventStore.Core.Util;
 using Xunit;
-using static EventStore.Core.XUnit.Tests.Scavenge.StreamMetadatas;
+using static EventStore.Core.XUnit.Tests.Scavenge.Infrastructure.StreamMetadatas;
 using Type = System.Type;
 
 #pragma warning disable CS0162 // Unreachable code detected
 
-namespace EventStore.Core.XUnit.Tests.Scavenge;
+namespace EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 
 public class Scenario {
 	public const bool CollideEverything = false;

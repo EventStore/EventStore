@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 public interface IScavengeState<TStreamId> :
 	IScavengeStateForAccumulator<TStreamId>,

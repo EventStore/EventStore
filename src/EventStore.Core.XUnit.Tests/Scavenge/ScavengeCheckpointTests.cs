@@ -3,7 +3,7 @@
 
 using EventStore.Core.TransactionLog.Scavenging;
 using Xunit;
-using static EventStore.Core.XUnit.Tests.Scavenge.StreamMetadatas;
+using static EventStore.Core.XUnit.Tests.Scavenge.Infrastructure.StreamMetadatas;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge;
 

@@ -6,8 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.CollisionManagement;
 
 public class OriginalStreamCollisionMap<TStreamId> :
 	CollisionMap<TStreamId, OriginalStreamData> {

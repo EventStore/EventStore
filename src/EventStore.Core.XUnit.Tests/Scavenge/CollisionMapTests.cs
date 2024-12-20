@@ -3,6 +3,8 @@
 
 using EventStore.Core.Tests.Index.Hashers;
 using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.TransactionLog.Scavenging.CollisionManagement;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using EventStore.Core.TransactionLog.Scavenging.Sqlite;
 using EventStore.Core.XUnit.Tests.Scavenge.Sqlite;
 using Xunit;

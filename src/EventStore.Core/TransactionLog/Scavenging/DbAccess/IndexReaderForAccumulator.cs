@@ -5,8 +5,9 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.DbAccess;
 
 public class IndexReaderForAccumulator<TStreamId> : IIndexReaderForAccumulator<TStreamId> {
 	private readonly IReadIndex<TStreamId> _readIndex;

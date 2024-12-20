@@ -9,7 +9,9 @@ using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using EventStore.Core.TransactionLog.Scavenging.Sqlite;
+using EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 using Microsoft.Data.Sqlite;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge;

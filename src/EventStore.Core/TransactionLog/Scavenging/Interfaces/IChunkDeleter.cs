@@ -4,7 +4,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 // responsible for deleting chunks that are present in the archive and no longer
 // needed locally according to the retention policy

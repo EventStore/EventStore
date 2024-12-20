@@ -5,9 +5,9 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
-namespace EventStore.Core.XUnit.Tests.Scavenge;
+namespace EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 
 public class AdHocIndexScavengerInterceptor : IIndexScavenger {
 	private readonly IIndexScavenger _wrapped;
