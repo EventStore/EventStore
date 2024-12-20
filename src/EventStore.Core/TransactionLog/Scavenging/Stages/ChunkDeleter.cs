@@ -32,6 +32,10 @@ public class ChunkDeleter<TStreamId, TRecord> : IChunkDeleter<TStreamId, TRecord
 		_retainBytes = retainBytes;
 		_maxAttempts = maxAttempts;
 		_retryDelay = TimeSpan.FromMilliseconds(retryDelayMs);
+
+		_logger.Debug("SCAVENGING: Chunk retention criteria is Days: {Days}, LogicalBytes: {LogicalBytes}",
+			retainPeriod.Days,
+			retainBytes);
 	}
 
 	// returns true iff deleted

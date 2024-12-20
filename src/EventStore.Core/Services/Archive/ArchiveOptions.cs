@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System;
+
 namespace EventStore.Core.Services.Archive;
 
 public class ArchiveOptions {
@@ -28,7 +30,7 @@ public class S3Options {
 }
 
 public class RetentionOptions {
-	public long Days { get; init; }
+	public long Days { get; init; } = TimeSpan.MaxValue.Days;
 	// number of bytes in the logical log
-	public long LogicalBytes { get; init; }
+	public long LogicalBytes { get; init; } = long.MaxValue;
 }
