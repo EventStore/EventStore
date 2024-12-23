@@ -247,7 +247,7 @@ public class ClusterVNodeOptionsTests {
 		var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configuration", "test.kurrentdb.conf");
 
 		var config = new ConfigurationBuilder()
-			.AddEventStoreYamlConfigFile(path, optional: false)
+			.AddKurrentYamlConfigFile(path, optional: false)
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);

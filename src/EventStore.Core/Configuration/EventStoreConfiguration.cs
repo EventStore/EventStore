@@ -30,17 +30,18 @@ public static class EventStoreConfiguration {
 		var builder = new ConfigurationBuilder()
 			// we should be able to stop doing this soon as long as we bind the options automatically
 			.AddKurrentDefaultValues()
-			.AddEventStoreYamlConfigFile(configFile.Path, configFile.Optional)
+			.AddKurrentYamlConfigFile(configFile.Path, configFile.Optional)
 
-			.AddSection("EventStore:Metrics", x => x.AddEsdbConfigFile("metricsconfig.json", true, true))
+			.AddSection($"{EventStoreConfigurationKeys.Prefix}:Metrics",
+				x => x.AddKurrentConfigFile("metricsconfig.json", true, true))
 
 			// The other config files are added to the root, and must put themselves in the appropriate sections
-			.AddEsdbConfigFile("kestrelsettings.json", true, true)
-			.AddEsdbConfigFile("logconfig.json", true, true)
+			.AddKurrentConfigFile("kestrelsettings.json", true, true)
+			.AddKurrentConfigFile("logconfig.json", true, true)
 
 			// Load all json files in the  `config` subdirectory (if it exists) of each configuration
 			// directory. We use the subdirectory to ensure that we only load configuration files.
-			.AddEsdbConfigFiles("*.json")
+			.AddKurrentConfigFiles("*.json")
 
 			#if DEBUG
 			// load all json files in the current directory
@@ -69,7 +70,7 @@ public static class EventStoreConfiguration {
 			.AddEventStoreCommandLine(args)
 			.Build();
 
-		var configFilePath = configuration.GetValue<string?>("EventStore:Config");
+		var configFilePath = configuration.GetValue<string?>($"{EventStoreConfigurationKeys.Prefix}:Config");
 
 		return string.IsNullOrEmpty(configFilePath)
 			// get the default config file path
@@ -78,7 +79,7 @@ public static class EventStoreConfiguration {
 			: (configFilePath, false);
 	}
 
-	public static IConfigurationBuilder AddEventStoreYamlConfigFile(
+	public static IConfigurationBuilder AddKurrentYamlConfigFile(
 		this IConfigurationBuilder builder,
 		string path,
 		bool optional) =>

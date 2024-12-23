@@ -12,7 +12,7 @@ using Microsoft.Extensions.FileProviders;
 namespace EventStore.Core.Configuration;
 
 public static class ConfigurationBuilderExtensions {
-	public static IConfigurationBuilder AddEsdbConfigFile(this IConfigurationBuilder builder, string configFilePath,
+	public static IConfigurationBuilder AddKurrentConfigFile(this IConfigurationBuilder builder, string configFilePath,
 		bool optional = false, bool reloadOnChange = false) {
 		if (!Locations.TryLocateConfigFile(configFilePath, out var directory, out var fileName)) {
 			if (optional)
@@ -36,7 +36,7 @@ public static class ConfigurationBuilderExtensions {
 		return builder;
 	}
 
-	public static IConfigurationBuilder AddEsdbConfigFiles(this IConfigurationBuilder builder, string subdirectory,
+	public static IConfigurationBuilder AddKurrentConfigFiles(this IConfigurationBuilder builder, string subdirectory,
 		string pattern) {
 		// when searching for a file we check the directories in forward order until we find it
 		// so when adding all the files we apply them in reverse order to keep the same precedence
@@ -46,13 +46,13 @@ public static class ConfigurationBuilderExtensions {
 				continue;
 
 			foreach (var configFile in Directory.EnumerateFiles(configDirectory, pattern).Order()) {
-				builder.AddEsdbConfigFile(configFile, optional: true, reloadOnChange: true);
+				builder.AddKurrentConfigFile(configFile, optional: true, reloadOnChange: true);
 			}
 		}
 
 		return builder;
 	}
 
-	public static IConfigurationBuilder AddEsdbConfigFiles(this IConfigurationBuilder builder, string pattern) =>
-		builder.AddEsdbConfigFiles("config", pattern);
+	public static IConfigurationBuilder AddKurrentConfigFiles(this IConfigurationBuilder builder, string pattern) =>
+		builder.AddKurrentConfigFiles("config", pattern);
 }
