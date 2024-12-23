@@ -445,3 +445,7 @@ to `true`.
 
 **Default**: `false`
 
+### Impact of resetting projections
+Resetting a projection in EventStore will soft-delete the output streams associated with the projection. If 'TrackEmittedStreams' is enabled when the projection is created, it will also allow the projection subsystem to truncate all streams created by the projection.
+
+The checkpoint will also be reset. This means that the projection will start processing events from the beginning of the event stream and not from the latest checkpoint.
