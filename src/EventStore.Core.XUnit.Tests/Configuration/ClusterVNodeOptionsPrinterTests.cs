@@ -18,7 +18,7 @@ public class ClusterVNodeOptionsPrinterTests {
 	[Fact]
 	public void prints_options() {
 		var config = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues(new Dictionary<string, string?> {
+			.AddKurrentDefaultValues(new Dictionary<string, string?> {
 				{ "ChunkSize", "10000"},
 				{ "ChunksCacheSize", "20000" },
 				{ "ClusterSize", "1" },
@@ -71,7 +71,7 @@ DEFAULT OPTIONS:
 		var secretText = Guid.NewGuid().ToString();
 
 		var config = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.AddEventStoreCommandLine($"--default-ops-password={secretText}")
 			.Build();
 
@@ -85,7 +85,7 @@ DEFAULT OPTIONS:
 	[Fact]
 	public void loaded_options_show_allowed_values() {
 		var config = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.Build();
 
 		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
@@ -98,7 +98,7 @@ DEFAULT OPTIONS:
 	[Fact]
 	public void loaded_option_provided_by_another_source_shows_the_correct_source() {
 		var config = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.AddEventStoreEnvironmentVariables(
 				("EVENTSTORE_CLUSTER_SIZE", "15"),
 				("EVENTSTORE_LOG_LEVEL", "Fatal"))

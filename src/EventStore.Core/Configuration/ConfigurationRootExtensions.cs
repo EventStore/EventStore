@@ -30,7 +30,7 @@ public static class ConfigurationRootExtensions {
 		foreach (var provider in configurationRoot.Providers) {
 			var source = provider.GetType();
 
-			if (source == typeof(EventStoreDefaultValuesConfigurationProvider) ||
+			if (source == typeof(KurrentDefaultValuesConfigurationProvider) ||
 				source == typeof(EventStoreEnvironmentVariablesConfigurationProvider))
 				continue;
 

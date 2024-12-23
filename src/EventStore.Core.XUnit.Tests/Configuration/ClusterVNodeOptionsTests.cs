@@ -72,7 +72,7 @@ public class ClusterVNodeOptionsTests {
 	[Fact]
 	public void unknown_options_ignores_subsection_arguments() {
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.AddEventStoreEnvironmentVariables(
 				("EVENTSTORE__METRICS__X", "xxx"),
 				("EVENTSTORE__PLUGINS__Y", "yyy")
@@ -105,7 +105,7 @@ public class ClusterVNodeOptionsTests {
 	[Fact]
 	public void validation_should_return_error_when_default_password_options_pass_through_command_line() {
 		var configuration =  new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.AddEventStoreCommandLine(
 				"--DefaultAdminPassword=Admin#",
 				"--DefaultOpsPassword=Ops#")
@@ -125,7 +125,7 @@ public class ClusterVNodeOptionsTests {
 	[Fact]
 	public void validation_should_return_null_when_default_password_options_pass_through_environment_variables() {
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.AddEventStoreEnvironmentVariables(
 				("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#"),
 				("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#")
@@ -269,7 +269,7 @@ public class ClusterVNodeOptionsTests {
 	[Fact]
 	public void no_defaults_are_deprecated() {
 		var config = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -279,7 +279,7 @@ public class ClusterVNodeOptionsTests {
 	[Fact]
 	public void can_get_deprecation_warnings() {
 		var config = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.AddEventStoreEnvironmentVariables(("EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP", "true"))
 			.Build();
 

@@ -15,7 +15,8 @@ using static System.StringComparison;
 namespace EventStore.Core.Configuration.Sources;
 
 public static class EventStoreConfigurationKeys {
-	public const string Prefix = "EventStore";
+	public const string Prefix = "Kurrent";
+	public const string FallbackPrefix = "EventStore";
 
 	private const string EnvVarKeyDelimiter = "__";
 	private const string ArgWordDelimiter = "-";
@@ -78,7 +79,7 @@ public static class EventStoreConfigurationKeys {
 	/// <summary>
 	/// Determines if the given key is an event store environment variable.
 	/// </summary>
-	public static bool IsEventStoreEnvVar(string? key) => 
+	public static bool IsEventStoreEnvVar(string? key) =>
 		key is not null && key.StartsWith($"{Prefix}{EnvVarWordDelimiter}", OrdinalIgnoreCase);
 
 	/// <summary>

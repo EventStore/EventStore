@@ -17,7 +17,7 @@ public class DefaultValuesConfigurationSourceTests {
 	
 		// Act
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.Build()
 			.GetSection(EventStoreConfigurationKeys.Prefix);
 	

@@ -94,7 +94,7 @@ public partial record ClusterVNodeOptions {
 
 				var title = GetTitle(option);
 				var sourceDisplayName = GetSourceDisplayName(option.Value.Key, provider);
-				var isDefault = provider.GetType() == typeof(EventStoreDefaultValuesConfigurationProvider);
+				var isDefault = provider.GetType() == typeof(KurrentDefaultValuesConfigurationProvider);
 
 				// Handle options that have been configured as arrays (GossipSeed is currently the only one
 				// where this is possible)
@@ -130,7 +130,7 @@ public partial record ClusterVNodeOptions {
 	}
 
 	public static string GetSourceDisplayName(string key, IConfigurationProvider provider) {
-		if (provider is EventStoreDefaultValuesConfigurationProvider) {
+		if (provider is KurrentDefaultValuesConfigurationProvider) {
 			return "<DEFAULT>";
 		} else if (provider is SectionProvider sectionProvider) {
 			return sectionProvider.TryGetProviderFor(key, out var innerProvider)

@@ -151,7 +151,7 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 				// limitation: the LoadedOptions here will only reflect the defaults and not the rest
 				// of the config specified above. however we only use it for /info/options
 				LoadedOptions = ClusterVNodeOptions.GetLoadedOptions(new ConfigurationBuilder()
-					.AddEventStoreDefaultValues()
+					.AddKurrentDefaultValues()
 					.Build()),
 			}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 				ssl_connections.GetServerCertificate())

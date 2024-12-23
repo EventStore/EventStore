@@ -24,9 +24,12 @@ public static class EventStoreConfiguration {
 		// - metricsconfig.json needs loading into the EventStore:Metrics section.
 		// - kestrelsettings.json is not located in a config/ directory
 		// - logconfig.json is not located in a config/ directory
+		//
+		// The EventStore configuration section is kept for backwards compatibility
+		// but is overridden by any Kurrent configuration sections
 		var builder = new ConfigurationBuilder()
 			// we should be able to stop doing this soon as long as we bind the options automatically
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.AddEventStoreYamlConfigFile(configFile.Path, configFile.Optional)
 
 			.AddSection("EventStore:Metrics", x => x.AddEsdbConfigFile("metricsconfig.json", true, true))

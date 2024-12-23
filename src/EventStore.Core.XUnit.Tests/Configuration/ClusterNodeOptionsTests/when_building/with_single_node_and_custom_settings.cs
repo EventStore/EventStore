@@ -186,7 +186,7 @@ public class
 	[Test]
 	public void should_return_error_when_default_password_options_pass_through_command_line() {
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.AddEventStoreCommandLine(
 				"--DefaultAdminPassword=Admin#",
 				"--DefaultOpsPassword=Ops#")
@@ -202,7 +202,7 @@ public class
 	[Test]
 	public void should_return_null_when_default_password_options_pass_through_environment_variables() {
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.AddEventStoreEnvironmentVariables(
 				("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#"),
 				("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#")
@@ -221,7 +221,7 @@ public class
 	public void ignores_subsection_arguments() {
 		var configuration = new ConfigurationBuilder()
 			// we should be able to stop doing this soon as long as we bind the options automatically
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.AddEventStoreEnvironmentVariables(
 				("EVENTSTORE__METRICS__X", "xxx"),
 				("EVENTSTORE__PLUGINS__Y", "yyy")
