@@ -11,7 +11,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.Configuration;
 
-public static class EventStoreConfiguration {
+public static class KurrentConfiguration {
 	public static IConfigurationRoot Build(string[] args, IDictionary environment) {
 
 		// resolve the main configuration file
@@ -54,7 +54,7 @@ public static class EventStoreConfiguration {
 
 			// follows current behaviour yet Env Vars should take precedence
 			// to handle real-world deployment pipeline scenarios
-			.AddEventStoreCommandLine(args);
+			.AddKurrentCommandLine(args);
 
 		return builder.Build();
 	}
@@ -67,7 +67,7 @@ public static class EventStoreConfiguration {
 	private static (string Path, bool Optional) ResolveConfigurationFile(string[] args, IDictionary environment) {
 		var configuration = new ConfigurationBuilder()
 			.AddKurrentEnvironmentVariables(environment)
-			.AddEventStoreCommandLine(args)
+			.AddKurrentCommandLine(args)
 			.Build();
 
 		var configFilePath = configuration.GetValue<string?>($"{KurrentConfigurationKeys.Prefix}:Config");

@@ -244,7 +244,7 @@ public class with_cluster_custom_settings_check_for_environment_only_options<TLo
 				[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
 				[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
 			})
-			.AddEventStoreCommandLine(args)
+			.AddKurrentCommandLine(args)
 			.Build();
 
 		var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);
@@ -264,7 +264,7 @@ public class with_cluster_custom_settings_check_for_environment_only_options<TLo
 				[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
 				[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
 			})
-			.AddEventStoreCommandLine(args)
+			.AddKurrentCommandLine(args)
 			.AddKurrentEnvironmentVariables(environmentVariables)
 			.Build();
 

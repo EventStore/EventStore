@@ -9,8 +9,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.Configuration.Sources;
 
-public class EventStoreCommandLineConfigurationSource : IConfigurationSource {
-	public EventStoreCommandLineConfigurationSource(string[] args) {
+public class KurrentCommandLineConfigurationSource : IConfigurationSource {
+	public KurrentCommandLineConfigurationSource(string[] args) {
 		Args = args.Select(NormalizeKeys).Select(NormalizeBooleans);
 
 		return;
@@ -40,5 +40,5 @@ public class EventStoreCommandLineConfigurationSource : IConfigurationSource {
 	private IEnumerable<string> Args { get; set; }
 
 	public IConfigurationProvider Build(IConfigurationBuilder builder) =>
-		new EventStoreCommandLineConfigurationProvider(Args);
+		new KurrentCommandLineConfigurationProvider(Args);
 }

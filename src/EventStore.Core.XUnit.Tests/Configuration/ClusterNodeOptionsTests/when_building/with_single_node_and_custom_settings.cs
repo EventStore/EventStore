@@ -187,7 +187,7 @@ public class
 	public void should_return_error_when_default_password_options_pass_through_command_line() {
 		var configuration = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddEventStoreCommandLine(
+			.AddKurrentCommandLine(
 				"--DefaultAdminPassword=Admin#",
 				"--DefaultOpsPassword=Ops#")
 			.Build();
@@ -207,7 +207,7 @@ public class
 				("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#"),
 				("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#")
 			)
-			.AddEventStoreCommandLine()
+			.AddKurrentCommandLine()
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(configuration);
@@ -226,7 +226,7 @@ public class
 				("EVENTSTORE__METRICS__X", "xxx"),
 				("EVENTSTORE__PLUGINS__Y", "yyy")
 			)
-			.AddEventStoreCommandLine(
+			.AddKurrentCommandLine(
 				"--EventStore:Metrics:A aaa " +
 				"--EventStore:Plugins:B bbb"
 			)

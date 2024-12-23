@@ -30,7 +30,7 @@ public class ClusterVNodeOptionsPrinterTests {
 				("EVENTSTORE_UNSAFE_ALLOW_SURPLUS_NODES", "true"),
 				("EVENTSTORE_CONFIG", "/path/to/config/envvar"),
 				("EVENTSTORE_RUN_PROJECTIONS", "All"))
-			.AddEventStoreCommandLine(
+			.AddKurrentCommandLine(
 				"--config", "/path/to/config/commandline",
 				"--cluster-gossip-port=88",
 				$"--default-ops-password={Guid.NewGuid()}")
@@ -72,7 +72,7 @@ DEFAULT OPTIONS:
 
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddEventStoreCommandLine($"--default-ops-password={secretText}")
+			.AddKurrentCommandLine($"--default-ops-password={secretText}")
 			.Build();
 
 		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
@@ -102,7 +102,7 @@ DEFAULT OPTIONS:
 			.AddKurrentEnvironmentVariables(
 				("EVENTSTORE_CLUSTER_SIZE", "15"),
 				("EVENTSTORE_LOG_LEVEL", "Fatal"))
-			.AddEventStoreCommandLine($"--log-level=Information")
+			.AddKurrentCommandLine($"--log-level=Information")
 			.Build();
 
 		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);

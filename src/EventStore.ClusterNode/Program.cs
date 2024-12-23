@@ -33,7 +33,7 @@ namespace EventStore.ClusterNode;
 
 internal static class Program {
 	public static async Task<int> Main(string[] args) {
-		var configuration = EventStoreConfiguration.Build(args);
+		var configuration = KurrentConfiguration.Build(args);
 
 		ThreadPool.SetMaxThreads(1000, 1000);
 		var exitCodeSource = new TaskCompletionSource<int>();

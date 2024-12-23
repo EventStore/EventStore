@@ -23,7 +23,7 @@ public class CommandLineConfigurationSourceTests {
 	public void AddsArguments(string[] arguments, string normalizedKey, string expectedValue) {
 		// Act
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreCommandLine(arguments)
+			.AddKurrentCommandLine(arguments)
 			.Build();
 
 		// Assert
@@ -32,7 +32,7 @@ public class CommandLineConfigurationSourceTests {
 
 	static IConfiguration BuildConfiguration(params string[] args) =>
 		new ConfigurationBuilder()
-			.AddEventStoreCommandLine(args)
+			.AddKurrentCommandLine(args)
 			.Build()
 			.GetSection(KurrentConfigurationKeys.Prefix);
 

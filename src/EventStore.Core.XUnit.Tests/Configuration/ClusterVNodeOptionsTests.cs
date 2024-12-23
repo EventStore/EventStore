@@ -19,7 +19,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration;
 
 public class ClusterVNodeOptionsTests {
 	static ClusterVNodeOptions GetOptions(string args) {
-		var configuration = EventStoreConfiguration.Build(args.Split());
+		var configuration = KurrentConfiguration.Build(args.Split());
 		return ClusterVNodeOptions.FromConfiguration(configuration);
 	}
 
@@ -77,7 +77,7 @@ public class ClusterVNodeOptionsTests {
 				("EVENTSTORE__METRICS__X", "xxx"),
 				("EVENTSTORE__PLUGINS__Y", "yyy")
 			)
-			.AddEventStoreCommandLine(
+			.AddKurrentCommandLine(
 				"--EventStore:Metrics:A aaa " +
 				"--EventStore:Plugins:B bbb"
 			)
@@ -106,7 +106,7 @@ public class ClusterVNodeOptionsTests {
 	public void validation_should_return_error_when_default_password_options_pass_through_command_line() {
 		var configuration =  new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddEventStoreCommandLine(
+			.AddKurrentCommandLine(
 				"--DefaultAdminPassword=Admin#",
 				"--DefaultOpsPassword=Ops#")
 			.Build();
@@ -130,7 +130,7 @@ public class ClusterVNodeOptionsTests {
 				("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#"),
 				("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#")
 			)
-			.AddEventStoreCommandLine()
+			.AddKurrentCommandLine()
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(configuration);
@@ -234,7 +234,7 @@ public class ClusterVNodeOptionsTests {
 	[Fact]
 	public void can_set_cluster_size_from_args() {
 		var config = new ConfigurationBuilder()
-			.AddEventStoreCommandLine("--CLUSTER-SIZE=23")
+			.AddKurrentCommandLine("--CLUSTER-SIZE=23")
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
