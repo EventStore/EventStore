@@ -14,7 +14,7 @@ using static System.StringComparison;
 
 namespace EventStore.Core.Configuration.Sources;
 
-public static class EventStoreConfigurationKeys {
+public static class KurrentConfigurationKeys {
 	public const string Prefix = "Kurrent";
 	public const string FallbackPrefix = "EventStore";
 
@@ -28,7 +28,7 @@ public static class EventStoreConfigurationKeys {
 	private static readonly IReadOnlyList<string> OptionsKeys;
 	private static readonly IReadOnlyList<string> AllKnownKeys;
 
-	static EventStoreConfigurationKeys() {
+	static KurrentConfigurationKeys() {
 		SectionKeys = typeof(ClusterVNodeOptions).GetProperties()
 			.Where(prop => prop.GetCustomAttribute<ClusterVNodeOptions.OptionGroupAttribute>() != null)
 			.Select(property => property.Name)
@@ -44,7 +44,7 @@ public static class EventStoreConfigurationKeys {
 		AllKnownKeys = SectionKeys.Concat(OptionsKeys).Distinct(StringComparer.InvariantCultureIgnoreCase).ToList();
 	}
 
-	// outputs a key for IConfiguration e.g. EventStore:StreamInfoCacheCapacity
+	// outputs a key for IConfiguration e.g. Kurrent:StreamInfoCacheCapacity
 	public static string Normalize(string key) {
 		// if the key doesn't contain any delimiters,
 		// we can just get out, transforming the key
@@ -79,17 +79,17 @@ public static class EventStoreConfigurationKeys {
 	/// <summary>
 	/// Determines if the given key is an event store environment variable.
 	/// </summary>
-	public static bool IsEventStoreEnvVar(string? key) =>
+	public static bool IsKurrentEnvVar(string? key) =>
 		key is not null && key.StartsWith($"{Prefix}{EnvVarWordDelimiter}", OrdinalIgnoreCase);
 
 	/// <summary>
-	/// Only normalizes the given key if it is an event store environment variable.
+	/// Only normalizes the given key if it is a kurrent environment variable.
 	/// </summary>
 	public static bool TryNormalizeEnvVar(string key, [MaybeNullWhen(false)] out string normalizedKey) =>
-		(normalizedKey = IsEventStoreEnvVar(key) ? Normalize(key) : null) is not null;
+		(normalizedKey = IsKurrentEnvVar(key) ? Normalize(key) : null) is not null;
 
 	/// <summary>
-	/// Only normalizes the given key if it is an event store environment variable.
+	/// Only normalizes the given key if it is a kurrent environment variable.
 	/// </summary>
 	public static bool TryNormalizeEnvVar(object? key, [MaybeNullWhen(false)] out string normalizedKey) =>
 		TryNormalizeEnvVar(key?.ToString() ?? Empty, out normalizedKey);

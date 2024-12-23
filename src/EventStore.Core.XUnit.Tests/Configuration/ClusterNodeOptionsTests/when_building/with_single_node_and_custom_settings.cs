@@ -203,7 +203,7 @@ public class
 	public void should_return_null_when_default_password_options_pass_through_environment_variables() {
 		var configuration = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddEventStoreEnvironmentVariables(
+			.AddKurrentEnvironmentVariables(
 				("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#"),
 				("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#")
 			)
@@ -222,7 +222,7 @@ public class
 		var configuration = new ConfigurationBuilder()
 			// we should be able to stop doing this soon as long as we bind the options automatically
 			.AddKurrentDefaultValues()
-			.AddEventStoreEnvironmentVariables(
+			.AddKurrentEnvironmentVariables(
 				("EVENTSTORE__METRICS__X", "xxx"),
 				("EVENTSTORE__PLUGINS__Y", "yyy")
 			)

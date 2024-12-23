@@ -32,7 +32,7 @@ public static class EventStoreConfiguration {
 			.AddKurrentDefaultValues()
 			.AddKurrentYamlConfigFile(configFile.Path, configFile.Optional)
 
-			.AddSection($"{EventStoreConfigurationKeys.Prefix}:Metrics",
+			.AddSection($"{KurrentConfigurationKeys.Prefix}:Metrics",
 				x => x.AddKurrentConfigFile("metricsconfig.json", true, true))
 
 			// The other config files are added to the root, and must put themselves in the appropriate sections
@@ -50,7 +50,7 @@ public static class EventStoreConfiguration {
 			#endif
 
 			.AddEnvironmentVariables()
-			.AddEventStoreEnvironmentVariables(environment)
+			.AddKurrentEnvironmentVariables(environment)
 
 			// follows current behaviour yet Env Vars should take precedence
 			// to handle real-world deployment pipeline scenarios
@@ -66,11 +66,11 @@ public static class EventStoreConfiguration {
 
 	private static (string Path, bool Optional) ResolveConfigurationFile(string[] args, IDictionary environment) {
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreEnvironmentVariables(environment)
+			.AddKurrentEnvironmentVariables(environment)
 			.AddEventStoreCommandLine(args)
 			.Build();
 
-		var configFilePath = configuration.GetValue<string?>($"{EventStoreConfigurationKeys.Prefix}:Config");
+		var configFilePath = configuration.GetValue<string?>($"{KurrentConfigurationKeys.Prefix}:Config");
 
 		return string.IsNullOrEmpty(configFilePath)
 			// get the default config file path
@@ -85,7 +85,7 @@ public static class EventStoreConfiguration {
 		bool optional) =>
 
 		builder.AddSection(
-			EventStoreConfigurationKeys.Prefix,
+			KurrentConfigurationKeys.Prefix,
 			x => x.AddYamlFile(
 				path: path,
 				optional: optional,

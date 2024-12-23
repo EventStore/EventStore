@@ -31,7 +31,7 @@ public static class ConfigurationRootExtensions {
 			var source = provider.GetType();
 
 			if (source == typeof(KurrentDefaultValuesConfigurationProvider) ||
-				source == typeof(EventStoreEnvironmentVariablesConfigurationProvider))
+				source == typeof(KurrentEnvironmentVariablesConfigurationProvider))
 				continue;
 
 			var errorDescriptions =
@@ -44,7 +44,7 @@ public static class ConfigurationRootExtensions {
 				errorDescriptions
 					.Aggregate(
 						new StringBuilder(),
-						(sb, pair) => sb.AppendLine($"\"{pair.key}\" Provided by: {ClusterVNodeOptions.GetSourceDisplayName(EventStoreConfigurationKeys.Prefix + ":" + pair.key, provider)}. {pair.Message}")
+						(sb, pair) => sb.AppendLine($"\"{pair.key}\" Provided by: {ClusterVNodeOptions.GetSourceDisplayName(KurrentConfigurationKeys.Prefix + ":" + pair.key, provider)}. {pair.Message}")
 					)
 			);
 		}

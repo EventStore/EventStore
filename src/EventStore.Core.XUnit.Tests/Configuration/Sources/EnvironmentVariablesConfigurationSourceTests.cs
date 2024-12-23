@@ -10,7 +10,7 @@ using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Configuration;
 
-public class EventStoreEnvironmentVariablesSourceTests {
+public class KurrentEnvironmentVariablesSourceTests {
 	[Theory]
 	[InlineData("EVENTSTORE_STREAM_INFO_CACHE_CAPACITY", "EventStore:StreamInfoCacheCapacity")]
 	public void AddsEventStoreEnvVars(string key, string normalizedKey) {
@@ -19,7 +19,7 @@ public class EventStoreEnvironmentVariablesSourceTests {
 
 		// Act
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreEnvironmentVariables(environment)
+			.AddKurrentEnvironmentVariables(environment)
 			.Build();
 
 		// Assert
@@ -40,7 +40,7 @@ public class EventStoreEnvironmentVariablesSourceTests {
 
 		// Act
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreEnvironmentVariables(environment)
+			.AddKurrentEnvironmentVariables(environment)
 			.Build();
 
 		// Assert

@@ -18,7 +18,7 @@ public class EventStoreCommandLineConfigurationProvider(IEnumerable<string> args
 
 		Data = Data.Keys
 			.ToDictionary(
-				EventStoreConfigurationKeys.Normalize,
+				KurrentConfigurationKeys.Normalize,
 				x => Data[x], OrdinalIgnoreCase
 			);
 	}

@@ -73,7 +73,7 @@ public class ClusterVNodeOptionsTests {
 	public void unknown_options_ignores_subsection_arguments() {
 		var configuration = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddEventStoreEnvironmentVariables(
+			.AddKurrentEnvironmentVariables(
 				("EVENTSTORE__METRICS__X", "xxx"),
 				("EVENTSTORE__PLUGINS__Y", "yyy")
 			)
@@ -94,7 +94,7 @@ public class ClusterVNodeOptionsTests {
 
 		var configuration = new ConfigurationBuilder()
 			.AddEnvironmentVariables()
-			.AddEventStoreEnvironmentVariables()
+			.AddKurrentEnvironmentVariables()
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(configuration);
@@ -126,7 +126,7 @@ public class ClusterVNodeOptionsTests {
 	public void validation_should_return_null_when_default_password_options_pass_through_environment_variables() {
 		var configuration = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddEventStoreEnvironmentVariables(
+			.AddKurrentEnvironmentVariables(
 				("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#"),
 				("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#")
 			)
@@ -151,7 +151,7 @@ public class ClusterVNodeOptionsTests {
 		var values = string.Join(",", endpoints.Select(x => $"{x}"));
 
 		var config = new ConfigurationBuilder()
-			.AddEventStoreEnvironmentVariables(("EVENTSTORE_GOSSIP_SEED", values))
+			.AddKurrentEnvironmentVariables(("EVENTSTORE_GOSSIP_SEED", values))
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -183,7 +183,7 @@ public class ClusterVNodeOptionsTests {
 	[InlineData("hostA\thostB", "Invalid delimiter for gossip seed value: hostA\thostB.")]
 	public void reports_gossip_seed_errors(string gossipSeed, string expectedError) {
 		var config = new ConfigurationBuilder()
-			.AddEventStoreEnvironmentVariables(("EVENTSTORE_GOSSIP_SEED", gossipSeed))
+			.AddKurrentEnvironmentVariables(("EVENTSTORE_GOSSIP_SEED", gossipSeed))
 			.Build();
 
 		var ex = Assert.Throws<InvalidConfigurationException>(() =>
@@ -198,7 +198,7 @@ public class ClusterVNodeOptionsTests {
 	[InlineData("127.0.0.1.0", "An invalid IP address was specified.")]
 	public void reports_ip_address_errors(string nodeIp, string expectedError) {
 		var config = new ConfigurationBuilder()
-			.AddEventStoreEnvironmentVariables(("EVENTSTORE_NODE_IP", nodeIp))
+			.AddKurrentEnvironmentVariables(("EVENTSTORE_NODE_IP", nodeIp))
 			.Build();
 
 		var ex = Assert.Throws<InvalidConfigurationException>(() =>
@@ -212,7 +212,7 @@ public class ClusterVNodeOptionsTests {
 	[Fact]
 	public void can_set_node_ip() {
 		var config = new ConfigurationBuilder()
-			.AddEventStoreEnvironmentVariables(("EVENTSTORE_NODE_IP", "192.168.0.1"))
+			.AddKurrentEnvironmentVariables(("EVENTSTORE_NODE_IP", "192.168.0.1"))
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -223,7 +223,7 @@ public class ClusterVNodeOptionsTests {
 	[Fact]
 	public void can_set_cluster_size_from_env_vars() {
 		var config = new ConfigurationBuilder()
-			.AddEventStoreEnvironmentVariables(("EVENTSTORE_CLUSTER_SIZE", "23"))
+			.AddKurrentEnvironmentVariables(("EVENTSTORE_CLUSTER_SIZE", "23"))
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -258,7 +258,7 @@ public class ClusterVNodeOptionsTests {
 	[Fact]
 	public void can_set_log_level_from_env_vars() {
 		var config = new ConfigurationBuilder()
-			.AddEventStoreEnvironmentVariables(("EVENTSTORE_LOG_LEVEL", LogLevel.Fatal.ToString()))
+			.AddKurrentEnvironmentVariables(("EVENTSTORE_LOG_LEVEL", LogLevel.Fatal.ToString()))
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -280,7 +280,7 @@ public class ClusterVNodeOptionsTests {
 	public void can_get_deprecation_warnings() {
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddEventStoreEnvironmentVariables(("EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP", "true"))
+			.AddKurrentEnvironmentVariables(("EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP", "true"))
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);

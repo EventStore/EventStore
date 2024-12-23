@@ -69,7 +69,7 @@ public partial record ClusterVNodeOptions {
 			from option in section.GetProperties()
 			let deprecationWarning = option.GetCustomAttribute<DeprecatedAttribute>()?.Message
 			where deprecationWarning is not null
-			let value = ConfigurationRoot?.GetValue<string?>(EventStoreConfigurationKeys.Normalize(option.Name))
+			let value = ConfigurationRoot?.GetValue<string?>(KurrentConfigurationKeys.Normalize(option.Name))
 			where defaultValues.TryGetValue(option.Name, out var defaultValue)
 			      && !string.Equals(value, defaultValue?.ToString(), StringComparison.OrdinalIgnoreCase)
 			      select deprecationWarning;
@@ -126,7 +126,7 @@ public partial record ClusterVNodeOptions {
 		return loadedOptions;
 
 		static string GetTitle(KeyValuePair<string, OptionMetadata> option) =>
-			CombineByPascalCase(EventStoreConfigurationKeys.StripConfigurationPrefix(option.Value.Key)).ToUpper();
+			CombineByPascalCase(KurrentConfigurationKeys.StripConfigurationPrefix(option.Value.Key)).ToUpper();
 	}
 
 	public static string GetSourceDisplayName(string key, IConfigurationProvider provider) {

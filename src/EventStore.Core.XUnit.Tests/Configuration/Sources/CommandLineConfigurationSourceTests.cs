@@ -34,7 +34,7 @@ public class CommandLineConfigurationSourceTests {
 		new ConfigurationBuilder()
 			.AddEventStoreCommandLine(args)
 			.Build()
-			.GetSection(EventStoreConfigurationKeys.Prefix);
+			.GetSection(KurrentConfigurationKeys.Prefix);
 
 	[Fact]
 	public void normalize_keys() {

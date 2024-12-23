@@ -9,5 +9,5 @@ namespace EventStore.Core.Configuration;
 
 public static class ConfigurationProviderExtensions {
 	public static IEnumerable<string> GetChildKeys(this IConfigurationProvider provider) => 
-		provider.GetChildKeys([], EventStoreConfigurationKeys.Prefix);
+		provider.GetChildKeys([], KurrentConfigurationKeys.Prefix);
 }

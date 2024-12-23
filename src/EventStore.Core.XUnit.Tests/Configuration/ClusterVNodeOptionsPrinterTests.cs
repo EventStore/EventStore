@@ -24,7 +24,7 @@ public class ClusterVNodeOptionsPrinterTests {
 				{ "ClusterSize", "1" },
 				{ "UnsafeAllowSurplusNodes", "false" },
 			})
-			.AddEventStoreEnvironmentVariables(
+			.AddKurrentEnvironmentVariables(
 				("EVENTSTORE_SOME_UNKNOWN_OPTION", "77"),
 				("EVENTSTORE_CLUSTER_GOSSIP_PORT", "99"),
 				("EVENTSTORE_UNSAFE_ALLOW_SURPLUS_NODES", "true"),
@@ -99,7 +99,7 @@ DEFAULT OPTIONS:
 	public void loaded_option_provided_by_another_source_shows_the_correct_source() {
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddEventStoreEnvironmentVariables(
+			.AddKurrentEnvironmentVariables(
 				("EVENTSTORE_CLUSTER_SIZE", "15"),
 				("EVENTSTORE_LOG_LEVEL", "Fatal"))
 			.AddEventStoreCommandLine($"--log-level=Information")

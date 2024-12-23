@@ -612,8 +612,8 @@ public partial record ClusterVNodeOptions {
 				var unknownKeys = configuration
 					.AsEnumerable()
 					.Select(kvp => kvp.Key)
-					.Where(key => key != EventStoreConfigurationKeys.Prefix
-					              && !knownKeys.Contains(EventStoreConfigurationKeys.Normalize(key)))
+					.Where(key => key != KurrentConfigurationKeys.Prefix
+					              && !knownKeys.Contains(KurrentConfigurationKeys.Normalize(key)))
 					.ToList();
 
 				var unknownSections = FindUnknownSections(unknownKeys);
@@ -641,10 +641,10 @@ public partial record ClusterVNodeOptions {
 					.MinBy(x => x.Distance);
 
 				return (
-					UnknownKey: EventStoreConfigurationKeys.StripConfigurationPrefix(unknownKey),
+					UnknownKey: KurrentConfigurationKeys.StripConfigurationPrefix(unknownKey),
 					SuggestedKey: suggestion.Distance > distanceThreshold
 						? ""
-						: EventStoreConfigurationKeys.StripConfigurationPrefix(suggestion.AllowedKey)
+						: KurrentConfigurationKeys.StripConfigurationPrefix(suggestion.AllowedKey)
 				);
 			}
 		}
