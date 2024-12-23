@@ -139,7 +139,7 @@ public partial record ClusterVNodeOptions {
 		} else {
 			return CombineByPascalCase(
 				provider.GetType().Name
-					.Replace("EventStore", "")
+					.Replace(KurrentConfigurationKeys.Prefix, "")
 					.Replace("ConfigurationProvider", "")
 			);
 		}
@@ -153,7 +153,7 @@ public partial record ClusterVNodeOptions {
 			OptionHeaderColumnWidth(o.Name, DefaultValue(o)));
 
 		var header = $"{OPTION.PadRight(optionColumnWidth, ' ')}{DESCRIPTION}";
-		
+
 		var environmentOnlyOptions = OptionSections.SelectMany(section => section.GetProperties())
 			.Where(option => option.GetCustomAttribute<EnvironmentOnlyAttribute>() != null)
 			.Select(option => option)
@@ -177,7 +177,7 @@ public partial record ClusterVNodeOptions {
 					(stringBuilder, property) => stringBuilder.Append(Line(property)).AppendLine()))
 			.AppendLine().AppendLine("EnvironmentOnly Options").Append(environmentOnlyOptionsBuilder)
 			.ToString();
-		
+
 
 		string Line(PropertyInfo property) {
 			var description = property.GetCustomAttribute<DescriptionAttribute>()?.Description;
@@ -199,7 +199,7 @@ public partial record ClusterVNodeOptions {
 
 			return builder.ToString();
 		}
-		
+
 		static IEnumerable<PropertyInfo> Options() => OptionSections.SelectMany(type => type.GetProperties());
 
 		static int OptionWidth(string name, string @default) =>

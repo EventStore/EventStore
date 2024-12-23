@@ -12,7 +12,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration;
 
 public class KurrentEnvironmentVariablesSourceTests {
 	[Theory]
-	[InlineData("EVENTSTORE_STREAM_INFO_CACHE_CAPACITY", "EventStore:StreamInfoCacheCapacity")]
+	[InlineData("KURRENT_STREAM_INFO_CACHE_CAPACITY", "Kurrent:StreamInfoCacheCapacity")]
 	public void AddsEventStoreEnvVars(string key, string normalizedKey) {
 		// Arrange
 		var environment = new Dictionary<string, string> { { key, key } };
@@ -32,8 +32,8 @@ public class KurrentEnvironmentVariablesSourceTests {
 	[Theory]
 	[InlineData("StreamInfoCacheCapacity")]
 	[InlineData("stream-info-cache-capacity")]
-	[InlineData("EventStore:Cluster:StreamInfoCacheCapacity")]
-	[InlineData("UNSUPPORTED_EVENTSTORE_TCP_API_ENABLED")]
+	[InlineData("Kurrent:Cluster:StreamInfoCacheCapacity")]
+	[InlineData("UNSUPPORTED_KURRENT_TCP_API_ENABLED")]
 	public void IgnoresOtherEnvVars(string key) {
 		// Arrange
 		var environment = new Dictionary<string, string> { { key, key } };

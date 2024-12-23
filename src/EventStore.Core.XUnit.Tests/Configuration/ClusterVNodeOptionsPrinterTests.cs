@@ -17,6 +17,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration;
 public class ClusterVNodeOptionsPrinterTests {
 	[Fact]
 	public void prints_options() {
+		var prefix = KurrentConfigurationKeys.Prefix.ToUpper();
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues(new Dictionary<string, string?> {
 				{ "ChunkSize", "10000"},
@@ -25,11 +26,11 @@ public class ClusterVNodeOptionsPrinterTests {
 				{ "UnsafeAllowSurplusNodes", "false" },
 			})
 			.AddKurrentEnvironmentVariables(
-				("EVENTSTORE_SOME_UNKNOWN_OPTION", "77"),
-				("EVENTSTORE_CLUSTER_GOSSIP_PORT", "99"),
-				("EVENTSTORE_UNSAFE_ALLOW_SURPLUS_NODES", "true"),
-				("EVENTSTORE_CONFIG", "/path/to/config/envvar"),
-				("EVENTSTORE_RUN_PROJECTIONS", "All"))
+				($"{prefix}_SOME_UNKNOWN_OPTION", "77"),
+				($"{prefix}_CLUSTER_GOSSIP_PORT", "99"),
+				($"{prefix}_UNSAFE_ALLOW_SURPLUS_NODES", "true"),
+				($"{prefix}_CONFIG", "/path/to/config/envvar"),
+				($"{prefix}_RUN_PROJECTIONS", "All"))
 			.AddKurrentCommandLine(
 				"--config", "/path/to/config/commandline",
 				"--cluster-gossip-port=88",
@@ -43,26 +44,26 @@ public class ClusterVNodeOptionsPrinterTests {
 		output.Should().Be(@"
 MODIFIED OPTIONS:
     APPLICATION OPTIONS:
-         CONFIG:                             /path/to/config/commandline (Command Line)
+         CONFIG:                          /path/to/config/commandline (Command Line)
 
     CLUSTER OPTIONS:
-         CLUSTER GOSSIP PORT:                88 (Command Line)
-         UNSAFE ALLOW SURPLUS NODES:         true (Environment Variables)
+         CLUSTER GOSSIP PORT:             88 (Command Line)
+         UNSAFE ALLOW SURPLUS NODES:      true (Environment Variables)
 
     DEFAULT USER OPTIONS:
-         DEFAULT OPS PASSWORD:               ******** (Command Line)
+         DEFAULT OPS PASSWORD:            ******** (Command Line)
 
     PROJECTION OPTIONS:
-         RUN PROJECTIONS:                    All (Environment Variables)
+         RUN PROJECTIONS:                 All (Environment Variables)
 
 
 DEFAULT OPTIONS:
     CLUSTER OPTIONS:
-         CLUSTER SIZE:                       1 (<DEFAULT>)
+         CLUSTER SIZE:                    1 (<DEFAULT>)
 
     DATABASE OPTIONS:
-         CHUNK SIZE:                         10000 (<DEFAULT>)
-         CHUNKS CACHE SIZE:                  20000 (<DEFAULT>)
+         CHUNK SIZE:                      10000 (<DEFAULT>)
+         CHUNKS CACHE SIZE:               20000 (<DEFAULT>)
 ");
 	}
 
@@ -77,7 +78,7 @@ DEFAULT OPTIONS:
 
 		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
 
-		var option = loadedOptions["EventStore:DefaultOpsPassword"];
+		var option = loadedOptions[$"{KurrentConfigurationKeys.Prefix}:DefaultOpsPassword"];
 
 		option.DisplayValue.Should().BeEquivalentTo("********");
 	}
@@ -90,35 +91,36 @@ DEFAULT OPTIONS:
 
 		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
 
-		var option = loadedOptions["EventStore:DbLogFormat"];
+		var option = loadedOptions[$"{KurrentConfigurationKeys.Prefix}:DbLogFormat"];
 
 		option.Metadata.AllowedValues.Should().BeEquivalentTo(Enum.GetNames(typeof(DbLogFormat)));
 	}
 
 	[Fact]
 	public void loaded_option_provided_by_another_source_shows_the_correct_source() {
+		var prefix = KurrentConfigurationKeys.Prefix;
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
 			.AddKurrentEnvironmentVariables(
-				("EVENTSTORE_CLUSTER_SIZE", "15"),
-				("EVENTSTORE_LOG_LEVEL", "Fatal"))
+				($"{prefix.ToUpper()}_CLUSTER_SIZE", "15"),
+				($"{prefix.ToUpper()}_LOG_LEVEL", "Fatal"))
 			.AddKurrentCommandLine($"--log-level=Information")
 			.Build();
 
 		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
 
 		// default
-		var insecure = loadedOptions["EventStore:Insecure"];
+		var insecure = loadedOptions[$"{prefix}:Insecure"];
 		insecure.DisplayValue.Should().BeEquivalentTo("false");
 		insecure.SourceDisplayName.Should().BeEquivalentTo("<DEFAULT>");
 
 		// environment variables
-		var clusterSize = loadedOptions["EventStore:ClusterSize"];
+		var clusterSize = loadedOptions[$"{prefix}:ClusterSize"];
 		clusterSize.DisplayValue.Should().BeEquivalentTo("15");
 		clusterSize.SourceDisplayName.Should().BeEquivalentTo("Environment Variables");
 
 		// command line
-		var logLevel = loadedOptions["EventStore:LogLevel"];
+		var logLevel = loadedOptions[$"{prefix}:LogLevel"];
 		logLevel.DisplayValue.Should().BeEquivalentTo("Information");
 		logLevel.SourceDisplayName.Should().BeEquivalentTo("Command Line");
 	}

@@ -10,16 +10,16 @@ namespace EventStore.Core.XUnit.Tests.Configuration;
 
 public class CommandLineConfigurationSourceTests {
 	[Theory]
-	[InlineData(new[] { "--stream_info_cache_capacity=99" }, "EventStore:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--stream_info_cache_capacity", "99" }, "EventStore:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--stream-info-cache-capacity=99" }, "EventStore:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--stream-info-cache-capacity", "99" }, "EventStore:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--EventStore:StreamInfoCacheCapacity=99" }, "EventStore:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--EventStore:StreamInfoCacheCapacity", "99" }, "EventStore:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--EventStore:Stream-Info-Cache-Capacity=99" }, "EventStore:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--EventStore:Stream-Info-Cache-Capacity", "99" }, "EventStore:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--EventStore:Stream_Info_Cache_Capacity=99" }, "EventStore:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--EventStore:Stream_Info_Cache_Capacity", "99" }, "EventStore:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--stream_info_cache_capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--stream_info_cache_capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--stream-info-cache-capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--stream-info-cache-capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--Kurrent:StreamInfoCacheCapacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--Kurrent:StreamInfoCacheCapacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--Kurrent:Stream-Info-Cache-Capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--Kurrent:Stream-Info-Cache-Capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--Kurrent:Stream_Info_Cache_Capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--Kurrent:Stream_Info_Cache_Capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
 	public void AddsArguments(string[] arguments, string normalizedKey, string expectedValue) {
 		// Act
 		var configuration = new ConfigurationBuilder()
@@ -38,9 +38,9 @@ public class CommandLineConfigurationSourceTests {
 
 	[Fact]
 	public void normalize_keys() {
-		var configuration = BuildConfiguration("--cluster-size", "3", "--log", "/tmp/eventstore/logs");
+		var configuration = BuildConfiguration("--cluster-size", "3", "--log", "/tmp/kurrentdb/logs");
 		Assert.Equal(3, configuration.GetValue<int>("ClusterSize"));
-		Assert.Equal("/tmp/eventstore/logs", configuration.GetValue<string>("Log"));
+		Assert.Equal("/tmp/kurrentdb/logs", configuration.GetValue<string>("Log"));
 	}
 
 	[Fact]

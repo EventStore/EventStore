@@ -18,6 +18,8 @@ using Xunit;
 namespace EventStore.Core.XUnit.Tests.Configuration;
 
 public class ClusterVNodeOptionsTests {
+	private string Prefix => KurrentConfigurationKeys.Prefix;
+	private string EnvVarPrefix => KurrentConfigurationKeys.Prefix.ToUpper();
 	static ClusterVNodeOptions GetOptions(string args) {
 		var configuration = KurrentConfiguration.Build(args.Split());
 		return ClusterVNodeOptions.FromConfiguration(configuration);
@@ -74,12 +76,12 @@ public class ClusterVNodeOptionsTests {
 		var configuration = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
 			.AddKurrentEnvironmentVariables(
-				("EVENTSTORE__METRICS__X", "xxx"),
-				("EVENTSTORE__PLUGINS__Y", "yyy")
+				($"{EnvVarPrefix}__METRICS__X", "xxx"),
+				($"{EnvVarPrefix}__PLUGINS__Y", "yyy")
 			)
 			.AddKurrentCommandLine(
-				"--EventStore:Metrics:A aaa " +
-				"--EventStore:Plugins:B bbb"
+				$"--{Prefix}:Metrics:A aaa " +
+				$"--{Prefix}:Plugins:B bbb"
 			)
 			.Build();
 
@@ -90,7 +92,7 @@ public class ClusterVNodeOptionsTests {
 
 	[Fact]
 	public void unknown_options_ignores_repeated_keys_from_other_sources() {
-		Environment.SetEnvironmentVariable("EVENTSTORE__CLUSTER_SIZE", "3");
+		Environment.SetEnvironmentVariable($"{EnvVarPrefix}__CLUSTER_SIZE", "3");
 
 		var configuration = new ConfigurationBuilder()
 			.AddEnvironmentVariables()
@@ -127,8 +129,8 @@ public class ClusterVNodeOptionsTests {
 		var configuration = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
 			.AddKurrentEnvironmentVariables(
-				("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#"),
-				("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#")
+				($"{EnvVarPrefix}_DEFAULT_ADMIN_PASSWORD", "Admin#"),
+				($"{EnvVarPrefix}_DEFAULT_OPS_PASSWORD", "Ops#")
 			)
 			.AddKurrentCommandLine()
 			.Build();
@@ -151,7 +153,7 @@ public class ClusterVNodeOptionsTests {
 		var values = string.Join(",", endpoints.Select(x => $"{x}"));
 
 		var config = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(("EVENTSTORE_GOSSIP_SEED", values))
+			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_GOSSIP_SEED", values))
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -163,8 +165,8 @@ public class ClusterVNodeOptionsTests {
 	public void can_set_gossip_seed_values_via_array() {
 		var config = new ConfigurationBuilder()
 			.AddInMemoryCollection([
-				new("EventStore:GossipSeed:0", "127.0.0.1:1113"),
-				new("EventStore:GossipSeed:1", "some-host:1114"),
+				new($"{Prefix}:GossipSeed:0", "127.0.0.1:1113"),
+				new($"{Prefix}:GossipSeed:1", "some-host:1114"),
 			])
 			.Build();
 
@@ -183,14 +185,14 @@ public class ClusterVNodeOptionsTests {
 	[InlineData("hostA\thostB", "Invalid delimiter for gossip seed value: hostA\thostB.")]
 	public void reports_gossip_seed_errors(string gossipSeed, string expectedError) {
 		var config = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(("EVENTSTORE_GOSSIP_SEED", gossipSeed))
+			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_GOSSIP_SEED", gossipSeed))
 			.Build();
 
 		var ex = Assert.Throws<InvalidConfigurationException>(() =>
 			ClusterVNodeOptions.FromConfiguration(config));
 
 		Assert.Equal(
-			"Failed to convert configuration value at 'EventStore:GossipSeed' to type 'System.Net.EndPoint[]'. " + expectedError,
+			$"Failed to convert configuration value at '{Prefix}:GossipSeed' to type 'System.Net.EndPoint[]'. " + expectedError,
 			ex.Message);
 	}
 
@@ -198,21 +200,21 @@ public class ClusterVNodeOptionsTests {
 	[InlineData("127.0.0.1.0", "An invalid IP address was specified.")]
 	public void reports_ip_address_errors(string nodeIp, string expectedError) {
 		var config = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(("EVENTSTORE_NODE_IP", nodeIp))
+			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_NODE_IP", nodeIp))
 			.Build();
 
 		var ex = Assert.Throws<InvalidConfigurationException>(() =>
 			ClusterVNodeOptions.FromConfiguration(config));
 
 		Assert.Equal(
-			"Failed to convert configuration value at 'EventStore:NodeIp' to type 'System.Net.IPAddress'. " + expectedError,
+			$"Failed to convert configuration value at '{Prefix}:NodeIp' to type 'System.Net.IPAddress'. " + expectedError,
 			ex.Message);
 	}
 
 	[Fact]
 	public void can_set_node_ip() {
 		var config = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(("EVENTSTORE_NODE_IP", "192.168.0.1"))
+			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_NODE_IP", "192.168.0.1"))
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -223,7 +225,7 @@ public class ClusterVNodeOptionsTests {
 	[Fact]
 	public void can_set_cluster_size_from_env_vars() {
 		var config = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(("EVENTSTORE_CLUSTER_SIZE", "23"))
+			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_CLUSTER_SIZE", "23"))
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -258,7 +260,7 @@ public class ClusterVNodeOptionsTests {
 	[Fact]
 	public void can_set_log_level_from_env_vars() {
 		var config = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(("EVENTSTORE_LOG_LEVEL", LogLevel.Fatal.ToString()))
+			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_LOG_LEVEL", LogLevel.Fatal.ToString()))
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -280,7 +282,7 @@ public class ClusterVNodeOptionsTests {
 	public void can_get_deprecation_warnings() {
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddKurrentEnvironmentVariables(("EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP", "true"))
+			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_ENABLE_ATOM_PUB_OVER_HTTP", "true"))
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
