@@ -81,7 +81,9 @@ DEFAULT OPTIONS:
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
 			.AddFallbackEnvironmentVariables(
-				($"{KurrentConfigurationKeys.FallbackPrefix}_DEFAULT_ADMIN_PASSWORD", secretText))
+				($"{KurrentConfigurationKeys.FallbackPrefix.ToUpper()}_DEFAULT_ADMIN_PASSWORD", secretText))
+			.AddFallbackCommandLine(
+				$"--{KurrentConfigurationKeys.FallbackPrefix}:CertificatePassword", secretText)
 			.AddKurrentCommandLine($"--default-ops-password={secretText}")
 			.Build();
 
@@ -89,9 +91,11 @@ DEFAULT OPTIONS:
 
 		var opsPassword = loadedOptions[$"{KurrentConfigurationKeys.Prefix}:DefaultOpsPassword"];
 		var adminPassword = loadedOptions[$"{KurrentConfigurationKeys.Prefix}:DefaultAdminPassword"];
+		var certPassword = loadedOptions[$"{KurrentConfigurationKeys.Prefix}:CertificatePassword"];
 
 		opsPassword.DisplayValue.Should().BeEquivalentTo("********");
 		adminPassword.DisplayValue.Should().BeEquivalentTo("********");
+		certPassword.DisplayValue.Should().BeEquivalentTo("********");
 	}
 
 	[Fact]
@@ -118,8 +122,14 @@ DEFAULT OPTIONS:
 				($"{fallbackPrefix.ToUpper()}_NODE_PRIORITY", "11"))
 			.AddKurrentEnvironmentVariables(
 				($"{prefix.ToUpper()}_CLUSTER_SIZE", "15"),
-				($"{prefix.ToUpper()}_LOG_LEVEL", "Fatal"))
-			.AddKurrentCommandLine($"--log-level=Information")
+				($"{prefix.ToUpper()}_LOG_LEVEL", "Fatal"),
+				($"{prefix.ToUpper()}_LOG_FORMAT", "json"))
+			.AddFallbackCommandLine(
+				$"--{fallbackPrefix}:NodePort=17",
+				$"--{fallbackPrefix}:ReadOnlyReplica=true")
+			.AddKurrentCommandLine(
+				$"--log-level=Information",
+				$"--{prefix}:NodePort=18")
 			.Build();
 
 		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
@@ -139,9 +149,19 @@ DEFAULT OPTIONS:
 		clusterSize.DisplayValue.Should().BeEquivalentTo("15");
 		clusterSize.SourceDisplayName.Should().BeEquivalentTo("Environment Variables");
 
+		// fallback command line
+		var readOnly = loadedOptions[$"{prefix}:ReadOnlyReplica"];
+		readOnly.DisplayValue.Should().BeEquivalentTo("true");
+		readOnly.SourceDisplayName.Should().BeEquivalentTo("Fallback Command Line");
+
 		// command line
 		var logLevel = loadedOptions[$"{prefix}:LogLevel"];
 		logLevel.DisplayValue.Should().BeEquivalentTo("Information");
 		logLevel.SourceDisplayName.Should().BeEquivalentTo("Command Line");
+
+		// command line - override fallback
+		var nodePort = loadedOptions[$"{prefix}:NodePort"];
+		nodePort.DisplayValue.Should().BeEquivalentTo("18");
+		nodePort.SourceDisplayName.Should().BeEquivalentTo("Command Line");
 	}
 }

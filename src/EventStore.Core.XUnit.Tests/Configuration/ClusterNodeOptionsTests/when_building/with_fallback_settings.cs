@@ -26,6 +26,26 @@ public class with_cluster_node_and_fallback_settings<TLogFormat, TStreamId> : Si
 	private IConfigurationRoot _configurationRoot;
 
 	[Test]
+	public void should_return_error_when_default_password_options_pass_through_fallback_command_line() {
+		var args = new[] {
+			$"--{KurrentConfigurationKeys.FallbackPrefix}:DefaultAdminPassword=Admin2023#",
+			$"--{KurrentConfigurationKeys.FallbackPrefix}:DefaultOpsPassword=Ops2023#"
+		};
+
+		_configurationRoot = new ConfigurationBuilder()
+			.AddKurrentDefaultValues(new Dictionary<string, object> {
+				[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
+				[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
+			})
+			.AddFallbackCommandLine(args)
+			.Build();
+
+		var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);
+
+		Assert.NotNull(clusterVNodeOptions.CheckForEnvironmentOnlyOptions());
+	}
+
+	[Test]
 	public void should_return_null_when_default_password_options_pass_through_environment_variables() {
 		var prefix = KurrentConfigurationKeys.FallbackPrefix.ToUpper();
 		var args = Array.Empty<string>();
@@ -53,6 +73,22 @@ public class
 	with_single_node_and_fallback_settings<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat,
 	TStreamId> {
 	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options with { };
+
+	[Test]
+	public void should_return_error_when_default_password_options_pass_through_fallback_command_line() {
+		var configuration = new ConfigurationBuilder()
+			.AddKurrentDefaultValues()
+			.AddFallbackCommandLine(
+				$"--{KurrentConfigurationKeys.FallbackPrefix}:DefaultAdminPassword=Admin#",
+				$"--{KurrentConfigurationKeys.FallbackPrefix}:DefaultOpsPassword=Ops#")
+			.Build();
+
+		var options = ClusterVNodeOptions.FromConfiguration(configuration);
+
+		var result = options.CheckForEnvironmentOnlyOptions();
+
+		result.Should().NotBeNull();
+	}
 
 	[Test]
 	public void should_return_null_when_default_password_options_pass_through_environment_variables() {

@@ -46,6 +46,7 @@ public static class KurrentConfigurationKeys {
 
 	// outputs a key for IConfiguration e.g. Kurrent:StreamInfoCacheCapacity
 	public static string Normalize(string key) => Normalize(Prefix, Prefix, key);
+	public static string NormalizeFallback(string key) => Normalize(FallbackPrefix, Prefix, key);
 
 	public static string Normalize(string originalPrefix, string targetPrefix, string key) {
 		// if the key doesn't contain any delimiters,

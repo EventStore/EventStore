@@ -54,6 +54,7 @@ public static class KurrentConfiguration {
 
 			// follows current behaviour yet Env Vars should take precedence
 			// to handle real-world deployment pipeline scenarios
+			.AddFallbackCommandLine(args)
 			.AddKurrentCommandLine(args);
 
 		return builder.Build();

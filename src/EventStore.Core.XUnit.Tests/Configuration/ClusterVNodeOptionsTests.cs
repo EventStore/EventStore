@@ -18,9 +18,9 @@ using Xunit;
 namespace EventStore.Core.XUnit.Tests.Configuration;
 
 public class ClusterVNodeOptionsTests {
-	private string Prefix => KurrentConfigurationKeys.Prefix;
+	private const string Prefix = KurrentConfigurationKeys.Prefix;
 	private string EnvVarPrefix => KurrentConfigurationKeys.Prefix.ToUpper();
-	private string FallbackPrefix => KurrentConfigurationKeys.FallbackPrefix;
+	private const string FallbackPrefix = KurrentConfigurationKeys.FallbackPrefix;
 	private string FallbackEnvVarPrefix => KurrentConfigurationKeys.FallbackPrefix.ToUpper();
 	static ClusterVNodeOptions GetOptions(string args) {
 		var configuration = KurrentConfiguration.Build(args.Split());
@@ -85,9 +85,13 @@ public class ClusterVNodeOptionsTests {
 				($"{EnvVarPrefix}__METRICS__X", "xxx"),
 				($"{EnvVarPrefix}__PLUGINS__Y", "yyy")
 			)
+			.AddFallbackCommandLine(
+				$"--{FallbackPrefix}:Metrics:A aaa " +
+				$"--{FallbackPrefix}:Plugins:B bbb"
+				)
 			.AddKurrentCommandLine(
-				$"--{Prefix}:Metrics:A aaa " +
-				$"--{Prefix}:Plugins:B bbb"
+				$"--{Prefix}:Metrics:C ccc " +
+				$"--{Prefix}:Plugins:D ddd"
 			)
 			.Build();
 
@@ -114,8 +118,9 @@ public class ClusterVNodeOptionsTests {
 	public void validation_should_return_error_when_default_password_options_pass_through_command_line() {
 		var configuration =  new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
+			.AddFallbackCommandLine(
+				$"--{FallbackPrefix}:DefaultAdminPassword=Admin#")
 			.AddKurrentCommandLine(
-				"--DefaultAdminPassword=Admin#",
 				"--DefaultOpsPassword=Ops#")
 			.Build();
 
@@ -124,7 +129,7 @@ public class ClusterVNodeOptionsTests {
 		var result = options.CheckForEnvironmentOnlyOptions();
 
 		result.Should().BeEquivalentTo(
-			"\"DefaultAdminPassword\" Provided by: Command Line. " +
+			"\"DefaultAdminPassword\" Provided by: Fallback Command Line. " +
 			"The Admin user password can only be set using Environment Variables" + Environment.NewLine +
 			"\"DefaultOpsPassword\" Provided by: Command Line. " +
 			"The Ops user password can only be set using Environment Variables" + Environment.NewLine);
@@ -283,11 +288,16 @@ public class ClusterVNodeOptionsTests {
 		options.Cluster.ClusterSize.Should().Be(23);
 	}
 
-	[Fact]
-	public void can_set_cluster_size_from_args() {
-		var config = new ConfigurationBuilder()
-			.AddKurrentCommandLine("--CLUSTER-SIZE=23")
-			.Build();
+	[Theory]
+	[InlineData(true)]
+	[InlineData(false)]
+	public void can_set_cluster_size_from_args(bool useFallback) {
+		var builder = new ConfigurationBuilder();
+		if (useFallback)
+			builder.AddFallbackCommandLine($"--{FallbackPrefix}:CLUSTER-SIZE=23");
+		else
+			builder.AddKurrentCommandLine("--CLUSTER-SIZE=23");
+		var config = builder.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
 
