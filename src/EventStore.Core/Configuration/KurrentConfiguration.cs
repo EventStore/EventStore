@@ -26,7 +26,6 @@ public static class KurrentConfiguration {
 		// - logconfig.json is not located in a config/ directory
 		//
 		// The EventStore configuration section is kept for backwards compatibility
-		// but is overridden by any Kurrent configuration sections
 		var builder = new ConfigurationBuilder()
 			// we should be able to stop doing this soon as long as we bind the options automatically
 			.AddKurrentDefaultValues()
@@ -50,6 +49,7 @@ public static class KurrentConfiguration {
 			#endif
 
 			.AddEnvironmentVariables()
+			.AddFallbackEnvironmentVariables(environment)
 			.AddKurrentEnvironmentVariables(environment)
 
 			// follows current behaviour yet Env Vars should take precedence

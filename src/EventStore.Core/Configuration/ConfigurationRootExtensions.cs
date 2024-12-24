@@ -31,7 +31,8 @@ public static class ConfigurationRootExtensions {
 			var source = provider.GetType();
 
 			if (source == typeof(KurrentDefaultValuesConfigurationProvider) ||
-				source == typeof(KurrentEnvironmentVariablesConfigurationProvider))
+				source == typeof(KurrentEnvironmentVariablesConfigurationProvider) ||
+				source == typeof(FallbackEnvironmentVariablesConfigurationProvider))
 				continue;
 
 			var errorDescriptions =

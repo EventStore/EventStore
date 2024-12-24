@@ -60,7 +60,7 @@ public partial record ClusterVNodeOptions {
 	public bool UnknownOptionsDetected => Unknown.Options.Any();
 
 	public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
-		var configuration = configurationRoot.GetRequiredSection("Kurrent");
+		var configuration = configurationRoot.GetRequiredSection(KurrentConfigurationKeys.Prefix);
 
 		// required because of a bug in the configuration system that
 		// is not reading the attribute from the property itself

@@ -18,6 +18,7 @@ public class ClusterVNodeOptionsPrinterTests {
 	[Fact]
 	public void prints_options() {
 		var prefix = KurrentConfigurationKeys.Prefix.ToUpper();
+		var fallbackPrefix = KurrentConfigurationKeys.FallbackPrefix.ToUpper();
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues(new Dictionary<string, string?> {
 				{ "ChunkSize", "10000"},
@@ -25,6 +26,10 @@ public class ClusterVNodeOptionsPrinterTests {
 				{ "ClusterSize", "1" },
 				{ "UnsafeAllowSurplusNodes", "false" },
 			})
+			.AddFallbackEnvironmentVariables(
+				($"{fallbackPrefix}_WORKER_THREADS", "5"),
+				($"{fallbackPrefix}_NODE_PRIORITY", "6"),
+				($"{fallbackPrefix}_ANOTHER_UNKNOWN_OPTIONS", "7"))
 			.AddKurrentEnvironmentVariables(
 				($"{prefix}_SOME_UNKNOWN_OPTION", "77"),
 				($"{prefix}_CLUSTER_GOSSIP_PORT", "99"),
@@ -45,9 +50,11 @@ public class ClusterVNodeOptionsPrinterTests {
 MODIFIED OPTIONS:
     APPLICATION OPTIONS:
          CONFIG:                          /path/to/config/commandline (Command Line)
+         WORKER THREADS:                  5 (Fallback Environment Variables)
 
     CLUSTER OPTIONS:
          CLUSTER GOSSIP PORT:             88 (Command Line)
+         NODE PRIORITY:                   6 (Fallback Environment Variables)
          UNSAFE ALLOW SURPLUS NODES:      true (Environment Variables)
 
     DEFAULT USER OPTIONS:
@@ -73,14 +80,18 @@ DEFAULT OPTIONS:
 
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
+			.AddFallbackEnvironmentVariables(
+				($"{KurrentConfigurationKeys.FallbackPrefix}_DEFAULT_ADMIN_PASSWORD", secretText))
 			.AddKurrentCommandLine($"--default-ops-password={secretText}")
 			.Build();
 
 		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
 
-		var option = loadedOptions[$"{KurrentConfigurationKeys.Prefix}:DefaultOpsPassword"];
+		var opsPassword = loadedOptions[$"{KurrentConfigurationKeys.Prefix}:DefaultOpsPassword"];
+		var adminPassword = loadedOptions[$"{KurrentConfigurationKeys.Prefix}:DefaultAdminPassword"];
 
-		option.DisplayValue.Should().BeEquivalentTo("********");
+		opsPassword.DisplayValue.Should().BeEquivalentTo("********");
+		adminPassword.DisplayValue.Should().BeEquivalentTo("********");
 	}
 
 	[Fact]
@@ -99,8 +110,12 @@ DEFAULT OPTIONS:
 	[Fact]
 	public void loaded_option_provided_by_another_source_shows_the_correct_source() {
 		var prefix = KurrentConfigurationKeys.Prefix;
+		var fallbackPrefix = KurrentConfigurationKeys.FallbackPrefix;
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
+			.AddFallbackEnvironmentVariables(
+				($"{fallbackPrefix.ToUpper()}_CLUSTER_SIZE", "10"),
+				($"{fallbackPrefix.ToUpper()}_NODE_PRIORITY", "11"))
 			.AddKurrentEnvironmentVariables(
 				($"{prefix.ToUpper()}_CLUSTER_SIZE", "15"),
 				($"{prefix.ToUpper()}_LOG_LEVEL", "Fatal"))
@@ -113,6 +128,11 @@ DEFAULT OPTIONS:
 		var insecure = loadedOptions[$"{prefix}:Insecure"];
 		insecure.DisplayValue.Should().BeEquivalentTo("false");
 		insecure.SourceDisplayName.Should().BeEquivalentTo("<DEFAULT>");
+
+		// fallback environment variables
+		var nodePriority = loadedOptions[$"{prefix}:NodePriority"];
+		nodePriority.DisplayValue.Should().BeEquivalentTo("11");
+		nodePriority.SourceDisplayName.Should().BeEquivalentTo("Fallback Environment Variables");
 
 		// environment variables
 		var clusterSize = loadedOptions[$"{prefix}:ClusterSize"];

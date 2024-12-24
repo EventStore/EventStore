@@ -45,22 +45,26 @@ public static class KurrentConfigurationKeys {
 	}
 
 	// outputs a key for IConfiguration e.g. Kurrent:StreamInfoCacheCapacity
-	public static string Normalize(string key) {
+	public static string Normalize(string key) => Normalize(Prefix, Prefix, key);
+
+	public static string Normalize(string originalPrefix, string targetPrefix, string key) {
 		// if the key doesn't contain any delimiters,
 		// we can just get out, transforming the key
 		// if needed because of cli lowercase args
 		if (!key.Any(Delimiters.Contains))
-			return $"{Prefix}:{Transform(key)}";
+			return $"{targetPrefix}:{Transform(key)}";
 
 		// remove the prefix and normalize the key
-		var keys = (key.StartsWith(Prefix, OrdinalIgnoreCase) ? key.Remove(0, Prefix.Length) : key)
+		var keys = (key.StartsWith(originalPrefix, OrdinalIgnoreCase)
+				? key.Remove(0, originalPrefix.Length)
+				: key)
 			.Replace(EnvVarKeyDelimiter, ConfigurationPath.KeyDelimiter)
 			.Replace(ArgWordDelimiter, EnvVarWordDelimiter)
 			.Split(ConfigurationPath.KeyDelimiter)
 			.Where(x => x.Length > 0)
 			.Select(Transform);
 
-		return $"{Prefix}:{Join(ConfigurationPath.KeyDelimiter, keys)}";
+		return $"{targetPrefix}:{Join(ConfigurationPath.KeyDelimiter, keys)}";
 
 		// because we know all keys, we can ensure the name is always correct
 		static string Transform(string key) {
@@ -77,22 +81,28 @@ public static class KurrentConfigurationKeys {
 	}
 
 	/// <summary>
-	/// Determines if the given key is an event store environment variable.
+	/// Determines if the given key starts with the given prefix
 	/// </summary>
-	public static bool IsKurrentEnvVar(string? key) =>
-		key is not null && key.StartsWith($"{Prefix}{EnvVarWordDelimiter}", OrdinalIgnoreCase);
+	private static bool IsEnvVarWithPrefix(string prefix, string? key) =>
+		key is not null && key.StartsWith($"{prefix}{EnvVarWordDelimiter}", OrdinalIgnoreCase);
 
 	/// <summary>
-	/// Only normalizes the given key if it is a kurrent environment variable.
+	/// Only normalizes the given key if it starts with the given prefix
 	/// </summary>
-	public static bool TryNormalizeEnvVar(string key, [MaybeNullWhen(false)] out string normalizedKey) =>
-		(normalizedKey = IsKurrentEnvVar(key) ? Normalize(key) : null) is not null;
+	private static bool TryNormalizeEnvVar(string originalPrefix, string targetPrefix, string key, [MaybeNullWhen(false)] out string normalizedKey) =>
+		(normalizedKey = IsEnvVarWithPrefix(originalPrefix, key) ? Normalize(originalPrefix, targetPrefix, key) : null) is not null;
 
 	/// <summary>
-	/// Only normalizes the given key if it is a kurrent environment variable.
+	/// Only normalizes the given key if it is an Event Store environment variable.
+	/// </summary>
+	public static bool TryNormalizeFallbackEnvVar(object? key, [MaybeNullWhen(false)] out string normalizedKey) =>
+		TryNormalizeEnvVar(FallbackPrefix, Prefix, key?.ToString() ?? Empty, out normalizedKey);
+
+	/// <summary>
+	/// Only normalizes the given key if it is a Kurrent environment variable.
 	/// </summary>
 	public static bool TryNormalizeEnvVar(object? key, [MaybeNullWhen(false)] out string normalizedKey) =>
-		TryNormalizeEnvVar(key?.ToString() ?? Empty, out normalizedKey);
+		TryNormalizeEnvVar(Prefix, Prefix, key?.ToString() ?? Empty, out normalizedKey);
 
 	public static string StripConfigurationPrefix(string key) =>
 		key.StartsWith($"{Prefix}:", OrdinalIgnoreCase) ? key.Remove(0, Prefix.Length + 1) : key;

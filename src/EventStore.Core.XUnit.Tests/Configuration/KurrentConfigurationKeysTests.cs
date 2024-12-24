@@ -25,4 +25,21 @@ public class KurrentConfigurationKeysTests {
 	public void NormalizesKurrentKeys(string key, string normalizedKey) {
 		KurrentConfigurationKeys.Normalize(key).Should().Be(normalizedKey);
 	}
+
+	[Theory]
+	[InlineData("EVENTSTORE_StreamInfoCacheCapacity", "Kurrent:StreamInfoCacheCapacity")]
+	[InlineData("EVENTSTORE_STREAM_INFO_CACHE_CAPACITY", "Kurrent:StreamInfoCacheCapacity")]
+	[InlineData("EVENTSTORE__STREAM_INFO_CACHE_CAPACITY", "Kurrent:StreamInfoCacheCapacity")]
+	[InlineData("EVENTSTORE__CLUSTER__STREAM_INFO_CACHE_CAPACITY", "Kurrent:Cluster:StreamInfoCacheCapacity")]
+	[InlineData("EVENTSTORE__KEY_WITH_UNDERSCORES__ANOTHER_ONE", "Kurrent:KeyWithUnderscores:AnotherOne")]
+	[InlineData("StreamInfoCacheCapacity", "Kurrent:StreamInfoCacheCapacity")]
+	[InlineData("stream-info-cache-capacity", "Kurrent:StreamInfoCacheCapacity")]
+	[InlineData("EventStore:Cluster:StreamInfoCacheCapacity", "Kurrent:Cluster:StreamInfoCacheCapacity")]
+	[InlineData("GossipSeed", "Kurrent:GossipSeed")]
+	[InlineData("EVENTSTORE_GOSSIP_SEED", "Kurrent:GossipSeed")]
+	[InlineData("EVENTSTORE_GOSSIPSEED", "Kurrent:GossipSeed")]
+	public void TransformsEventStoreEnvVars(string key, string normalizedKey) {
+		KurrentConfigurationKeys.Normalize(
+			KurrentConfigurationKeys.FallbackPrefix, KurrentConfigurationKeys.Prefix, key).Should().Be(normalizedKey);
+	}
 }

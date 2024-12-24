@@ -20,6 +20,8 @@ namespace EventStore.Core.XUnit.Tests.Configuration;
 public class ClusterVNodeOptionsTests {
 	private string Prefix => KurrentConfigurationKeys.Prefix;
 	private string EnvVarPrefix => KurrentConfigurationKeys.Prefix.ToUpper();
+	private string FallbackPrefix => KurrentConfigurationKeys.FallbackPrefix;
+	private string FallbackEnvVarPrefix => KurrentConfigurationKeys.FallbackPrefix.ToUpper();
 	static ClusterVNodeOptions GetOptions(string args) {
 		var configuration = KurrentConfiguration.Build(args.Split());
 		return ClusterVNodeOptions.FromConfiguration(configuration);
@@ -75,6 +77,10 @@ public class ClusterVNodeOptionsTests {
 	public void unknown_options_ignores_subsection_arguments() {
 		var configuration = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
+			.AddFallbackEnvironmentVariables(
+				($"{FallbackEnvVarPrefix}__METRICS__Q", "qqq"),
+				($"{FallbackEnvVarPrefix}__PLUGINS__R", "rrr")
+			)
 			.AddKurrentEnvironmentVariables(
 				($"{EnvVarPrefix}__METRICS__X", "xxx"),
 				($"{EnvVarPrefix}__PLUGINS__Y", "yyy")
@@ -143,7 +149,27 @@ public class ClusterVNodeOptionsTests {
 	}
 
 	[Fact]
-	public void can_set_gossip_seed_values() {
+	public void validation_should_return_null_when_default_password_options_pass_through_fallback_environment_variables() {
+		var configuration = new ConfigurationBuilder()
+			.AddKurrentDefaultValues()
+			.AddFallbackEnvironmentVariables(
+				($"{FallbackEnvVarPrefix}_DEFAULT_ADMIN_PASSWORD", "Admin#"),
+				($"{FallbackEnvVarPrefix}_DEFAULT_OPS_PASSWORD", "Ops#")
+			)
+			.AddKurrentCommandLine()
+			.Build();
+
+		var options = ClusterVNodeOptions.FromConfiguration(configuration);
+
+		var result = options.CheckForEnvironmentOnlyOptions();
+
+		result.Should().BeNull();
+	}
+
+	[Theory]
+	[InlineData(true)]
+	[InlineData(false)]
+	public void can_set_gossip_seed_values(bool useFallback) {
 		EndPoint[] endpoints = [
 			new IPEndPoint(IPAddress.Loopback, 1113),
 			new DnsEndPoint("some-host", 1114),
@@ -152,9 +178,12 @@ public class ClusterVNodeOptionsTests {
 
 		var values = string.Join(",", endpoints.Select(x => $"{x}"));
 
-		var config = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_GOSSIP_SEED", values))
-			.Build();
+		var builder = new ConfigurationBuilder();
+		if (useFallback)
+			builder.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_GOSSIP_SEED", values));
+		else
+			builder.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_GOSSIP_SEED", values));
+		var config = builder.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
 
@@ -179,14 +208,21 @@ public class ClusterVNodeOptionsTests {
 	}
 
 	[Theory]
-	[InlineData("127.0.0.1", "You must specify the ports in the gossip seed.")]
-	[InlineData("127.0.0.1:3.1415", "Invalid format for gossip seed port: 3.1415.")]
-	[InlineData("hostA;hostB", "Invalid delimiter for gossip seed value: hostA;hostB.")]
-	[InlineData("hostA\thostB", "Invalid delimiter for gossip seed value: hostA\thostB.")]
-	public void reports_gossip_seed_errors(string gossipSeed, string expectedError) {
-		var config = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_GOSSIP_SEED", gossipSeed))
-			.Build();
+	[InlineData(true, "127.0.0.1", "You must specify the ports in the gossip seed.")]
+	[InlineData(true, "127.0.0.1:3.1415", "Invalid format for gossip seed port: 3.1415.")]
+	[InlineData(true, "hostA;hostB", "Invalid delimiter for gossip seed value: hostA;hostB.")]
+	[InlineData(true, "hostA\thostB", "Invalid delimiter for gossip seed value: hostA\thostB.")]
+	[InlineData(false, "127.0.0.1", "You must specify the ports in the gossip seed.")]
+	[InlineData(false, "127.0.0.1:3.1415", "Invalid format for gossip seed port: 3.1415.")]
+	[InlineData(false, "hostA;hostB", "Invalid delimiter for gossip seed value: hostA;hostB.")]
+	[InlineData(false, "hostA\thostB", "Invalid delimiter for gossip seed value: hostA\thostB.")]
+	public void reports_gossip_seed_errors(bool useFallback, string gossipSeed, string expectedError) {
+		var builder = new ConfigurationBuilder();
+		if (useFallback)
+			builder.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_GOSSIP_SEED", gossipSeed));
+		else
+			builder.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_GOSSIP_SEED", gossipSeed));
+		var config = builder.Build();
 
 		var ex = Assert.Throws<InvalidConfigurationException>(() =>
 			ClusterVNodeOptions.FromConfiguration(config));
@@ -197,11 +233,15 @@ public class ClusterVNodeOptionsTests {
 	}
 
 	[Theory]
-	[InlineData("127.0.0.1.0", "An invalid IP address was specified.")]
-	public void reports_ip_address_errors(string nodeIp, string expectedError) {
-		var config = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_NODE_IP", nodeIp))
-			.Build();
+	[InlineData(true, "127.0.0.1.0", "An invalid IP address was specified.")]
+	[InlineData(false, "127.0.0.1.0", "An invalid IP address was specified.")]
+	public void reports_ip_address_errors(bool useFallback, string nodeIp, string expectedError) {
+		var builder = new ConfigurationBuilder();
+		if (useFallback)
+			builder.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_NODE_IP", nodeIp));
+		else
+			builder.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_NODE_IP", nodeIp));
+		var config = builder.Build();
 
 		var ex = Assert.Throws<InvalidConfigurationException>(() =>
 			ClusterVNodeOptions.FromConfiguration(config));
@@ -211,22 +251,32 @@ public class ClusterVNodeOptionsTests {
 			ex.Message);
 	}
 
-	[Fact]
-	public void can_set_node_ip() {
-		var config = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_NODE_IP", "192.168.0.1"))
-			.Build();
+	[Theory]
+	[InlineData(true)]
+	[InlineData(false)]
+	public void can_set_node_ip(bool useFallback) {
+		var builder = new ConfigurationBuilder();
+		if (useFallback)
+			builder.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_NODE_IP", "192.168.0.1"));
+		else
+			builder.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_NODE_IP", "192.168.0.1"));
+		var config = builder.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
 
 		options.Interface.NodeIp.Should().Be(IPAddress.Parse("192.168.0.1"));
 	}
 
-	[Fact]
-	public void can_set_cluster_size_from_env_vars() {
-		var config = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_CLUSTER_SIZE", "23"))
-			.Build();
+	[Theory]
+	[InlineData(true)]
+	[InlineData(false)]
+	public void can_set_cluster_size_from_env_vars(bool useFallback) {
+		var builder = new ConfigurationBuilder();
+		if (useFallback)
+			builder.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_CLUSTER_SIZE", "23"));
+		else
+			builder.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_CLUSTER_SIZE", "23"));
+		var config = builder.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
 
@@ -257,11 +307,16 @@ public class ClusterVNodeOptionsTests {
 		options.Cluster.ClusterSize.Should().Be(23);
 	}
 
-	[Fact]
-	public void can_set_log_level_from_env_vars() {
-		var config = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_LOG_LEVEL", LogLevel.Fatal.ToString()))
-			.Build();
+	[Theory]
+	[InlineData(true)]
+	[InlineData(false)]
+	public void can_set_log_level_from_env_vars(bool useFallback) {
+		var builder = new ConfigurationBuilder();
+		if (useFallback)
+			builder.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_LOG_LEVEL", LogLevel.Fatal.ToString()));
+		else
+			builder.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_LOG_LEVEL", LogLevel.Fatal.ToString()));
+		var config = builder.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
 
@@ -282,11 +337,14 @@ public class ClusterVNodeOptionsTests {
 	public void can_get_deprecation_warnings() {
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
+			.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_ENABLE_HISTOGRAMS", "true"))
 			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_ENABLE_ATOM_PUB_OVER_HTTP", "true"))
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
 		options.GetDeprecationWarnings().Should().Be(
+			"The EnableHistograms setting has been deprecated as of version 24.10.0 and currently has no effect. Please contact EventStore if this feature is of interest to you." +
+			Environment.NewLine +
 			"AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead" +
 			Environment.NewLine);
 	}
