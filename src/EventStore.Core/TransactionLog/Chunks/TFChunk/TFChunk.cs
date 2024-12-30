@@ -955,7 +955,7 @@ public partial class TFChunk : IDisposable {
 
 	private async ValueTask<ChunkFooter> WriteFooter(IReadOnlyCollection<PosMap> mapping, CancellationToken token) {
 		var workItem = _writerWorkItem;
-		workItem.ResizeStream((int)workItem.WorkingStream.Position);
+		workItem.ResizeStream(workItem.WorkingStream.Position);
 
 		int mapSize;
 

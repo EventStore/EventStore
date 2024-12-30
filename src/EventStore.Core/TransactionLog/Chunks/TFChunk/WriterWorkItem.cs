@@ -59,7 +59,7 @@ internal sealed class WriterWorkItem : Disposable {
 		return _fileStream?.WriteAsync(buf, token) ?? ValueTask.CompletedTask;
 	}
 
-	public void ResizeStream(int fileSize) {
+	public void ResizeStream(long fileSize) {
 		_fileStream?.SetLength(fileSize);
 		_memStream?.SetLength(fileSize);
 	}
