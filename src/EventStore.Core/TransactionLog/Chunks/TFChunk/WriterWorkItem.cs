@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext;
+using DotNext.IO;
 using EventStore.Plugins.Transforms;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -36,7 +37,7 @@ internal sealed class WriterWorkItem : Disposable {
 		var chunkStream = handle.CreateStream();
 		var fileStream = unbuffered
 			? chunkStream
-			: new BufferedStream(chunkStream, BufferSize);
+			: new PoolingBufferedStream(chunkStream) { MaxBufferSize = BufferSize };
 		fileStream.Position = initialStreamPosition;
 		var chunkDataWriteStream = new ChunkDataWriteStream(fileStream, md5);
 
