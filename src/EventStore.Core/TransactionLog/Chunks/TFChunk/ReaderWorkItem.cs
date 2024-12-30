@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.IO;
 using DotNext;
-using DotNext.IO;
 using EventStore.Plugins.Transforms;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -40,7 +39,7 @@ internal sealed class ReaderWorkItem : Disposable {
 
 	private static ChunkDataReadStream CreateTransformedFileStream(IChunkHandle handle,
 		IChunkReadTransform chunkReadTransform) {
-		var fileStream = new PoolingBufferedStream(handle.CreateStream()) { MaxBufferSize = BufferSize };
+		var fileStream = new BufferedStream(handle.CreateStream(), BufferSize);
 		return chunkReadTransform.TransformData(new ChunkDataReadStream(fileStream));
 	}
 
