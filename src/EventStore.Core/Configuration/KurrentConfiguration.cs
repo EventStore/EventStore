@@ -40,6 +40,7 @@ public static class KurrentConfiguration {
 
 			// Load all json files in the  `config` subdirectory (if it exists) of each configuration
 			// directory. We use the subdirectory to ensure that we only load configuration files.
+			.AddFallbackConfigFiles("*.json")
 			.AddKurrentConfigFiles("*.json")
 
 			#if DEBUG
