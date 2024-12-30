@@ -881,21 +881,8 @@ public partial class TFChunk : IDisposable {
 		return true;
 	}
 
-	public ValueTask Flush(CancellationToken token) {
-		var task = ValueTask.CompletedTask;
-
-		if (token.IsCancellationRequested) {
-			task = ValueTask.FromCanceled(token);
-		} else if (!IsReadOnly) {
-			try {
-				_writerWorkItem.FlushToDisk();
-			} catch (Exception e) {
-				task = ValueTask.FromException(e);
-			}
-		}
-
-		return task;
-	}
+	public ValueTask Flush(CancellationToken token)
+		=> IsReadOnly ? ValueTask.CompletedTask : _writerWorkItem.FlushToDisk(token);
 
 	public ValueTask Complete(CancellationToken token) {
 		return ChunkHeader.IsScavenged
@@ -983,7 +970,7 @@ public partial class TFChunk : IDisposable {
 			await workItem.AppendData(bufferFromPool.AsMemory(0, mapSize), token);
 		}
 
-		workItem.FlushToDisk();
+		await workItem.FlushToDisk(token);
 
 		await _transform.Write.CompleteData(
 			footerSize: ChunkFooter.Size,

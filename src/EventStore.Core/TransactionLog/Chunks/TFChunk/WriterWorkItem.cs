@@ -74,6 +74,13 @@ internal sealed class WriterWorkItem : Disposable {
 		base.Dispose(disposing);
 	}
 
+	public ValueTask FlushToDisk(CancellationToken token) {
+		// in-mem stream doesn't require async call
+		_memStream.Flush();
+
+		return new(_fileStream is not null ? _fileStream.FlushAsync(token) : Task.CompletedTask);
+	}
+
 	public void FlushToDisk() {
 		_fileStream?.Flush();
 		_memStream?.Flush();
