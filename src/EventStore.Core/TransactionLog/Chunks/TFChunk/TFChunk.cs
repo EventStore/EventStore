@@ -977,7 +977,7 @@ public partial class TFChunk : IDisposable {
 			alignmentSize: _chunkHeader.Version >= (byte)ChunkVersions.Aligned ? AlignmentSize : 1,
 			token);
 
-		await Flush(token);
+		await workItem.FlushToDisk(token);
 
 		int fileSize;
 		ChunkFooter footerWithHash;
@@ -998,7 +998,7 @@ public partial class TFChunk : IDisposable {
 			ArrayPool<byte>.Shared.Return(bufferFromPool);
 		}
 
-		await Flush(token);
+		await workItem.FlushToDisk(token);
 
 		_fileSize = fileSize;
 		return footerWithHash;
