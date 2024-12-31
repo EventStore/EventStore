@@ -4,17 +4,81 @@ EventStoreDB is purpose-built for event storage. Unlike traditional state-based 
 
 These **events** are logically organized into **streams**, typically only one stream per entity.
 
+## Types of Streams
+
+### User-Created Streams
+
+User-created streams are streams that are explicitly created by users to organize events related to their application’s entities or processes. Examples of user-created stream names include:
+
+- foo
+- order-12345
+- user-johndoe
+
+### System Streams
+
+System streams are used internally by EventStoreDB for managing its internal operations and features. System stream names always start with the $ prefix. Examples of system stream names include:
+
+- $stats
+- $projections
+- $scavenges
+
+::: warning
+EventStoreDB uses a **`$`** prefix for all internal data, such as **`$maxCount`** in a stream's metadata, or **`$all`** in a stream name. Do not use a **`$`** prefix for event names, metadata keys, or stream names.
+Doing so may result in conflicts with internally created streams. It is also not recommended to write data to or modify existing data in the system streams except as detailed below.
+:::
+
+#### Non-specific System Streams
+
+The following system streams are created by the system regardless of which subsystem is active:
+
+| Stream name format      | Purpose                                                                                                                                                                        |
+|:------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`$all`**              | Record of all the events in the database irrespective of stream. Events in the $all stream are in the ordered in the sequence that they are written to the database.           |
+| **`$users`**            | Record of users in the database. All events have the reserved type **`$User`**.                                                                                                |
+| **`$user-{name}`**      | For each user, one such stream is created. Events in this stream detail the username, full name, password hash and salt, as well as which groups this user is affiliated with. |
+| **`$stats-{endpoint}`** | If write-stats-to-db is enabled in the server configuration, this stream will be created.                                                                                      |
+
+#### Projection Streams
+
+Below are the streams created by the projection subsystem:
+
+| Stream name format                   | Purpose                                                                                                                                                                                                                                                                                                                  |
+|:-------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`$projections-$all`**              | Record of all operations affecting the projection subsystem. For example, creating a projection or updating a projection's code will cause a new event to be appended to this stream.                                                                                                                                    |
+| **`$projections-{name}`**            | Record of each projection's configuration. Stores the projection code and configuration. Events are of type **`$ProjectionUpdated`**                                                                                                                                                                                     |
+| **`$projections-{name}-checkpoint`** | The projection's checkpoints. A new event is added everytime the projection checkpoints.                                                                                                                                                                                                                                 |
+| **`$projections-{name}-order`**      | This stream is created when a projection uses the **`fromStreams`** source. This stream is used to manage the order of events processed by the projection.                                                                                                                                                               |
+| **`$projections-{name}-result`**     | Data added to the projection state is written in this stream.                                                                                                                                                                                                                                                            |
+| **`$streams`**                       | Created by the **`$streams`** system projection, if enabled. An event will be emitted to this stream every time a new stream is created.                                                                                                                                                                                 |
+| **`$category-{category_name}`**      | Created by the **`$stream_by_category`** system projection, if enabled. Everytime a new stream is created, an event is emitted to the stream with the corresponding category. E.g. Streams with names **`$foo-bar`* and **`$foo-bar`** will cause events to be emitted to **`$category-foo`** upon creation.             |
+| **`$et-{event_type}`**               | Created by the **`$by_event_type`** system projection, if enabled. Everytime an event is written to the database, the event is emitted to the stream with the corresponding event type. E.g. An event of type **`Order`** will get emitted to stream **`$et-order`**.                                                    |
+| **`$ce-{category_name}`**            | Created by the **`$by_category`** system projection, if enabled. Everytime an event is added to the database, the event is emitted to the stream with the corresponding category. E.g. An event added to a stream **`foo-bar`** will be emitted to stream **`$ce-foo`**.                                                 |
+| **`$bc-{correlation_id}`**           | Created by the **`$by_correlation_id`** system projection, if enabled. Everytime an event containing a correlation ID is added to the database, the event is emitted to this type of stream. E.g. An event added to a stream with **`"$correlationId": "123"`** in its metadata will be emitted to stream **`$bc-123`**. |
+
+#### Persistent Subscriptions Streams
+
+Below are the streams created by the persistent subscriptions subsystem:
+
+| Stream name format                              | Purpose                                                                                                                                                                                             |
+|:------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`$persistentSubscriptionConfig`**             | Records the configurations of all persistent subscriptions. A new event is added each time a subscription is updated, added or removed.                                                             |
+| **`$persistentSubscription-{name}-checkpoint`** | Holds the checkpoint of a persistent subscription. This stream is created when a subscription checkpoints the first time. Each checkpoint thereafter causes a new event to be added to this stream. |
+
+#### Scavenges Stream
+
+Below are the streams created by the scavenging subsystem:
+
+| Stream name format | Purpose                                                  |
+|:-------------------|:---------------------------------------------------------|
+| **`$scavenges`**   | Records the results and states of scavenging operations. |
+
 ## Metadata and reserved names
 
-## Stream metadata
+In EventStoreDB, every stream and event is accompanied by metadata, distinguished by the **`$$`** prefix. For example, the stream metadata for a stream named **`foo`** is **`$$foo`**, or for a system stream **`$et`** is **`$$$et`** You can modify specific metadata values and write your data to the metadata, which can be referenced in your code.
 
-In EventStoreDB, every stream and event is accompanied by metadata, distinguished by the **`$$`** prefix. For example, the stream metadata for a stream named **`foo`** is **`$$foo`**. You can modify specific metadata values and write your data to the metadata, which can be referenced in your code.
+### Reserved words in metadata
 
-### Reserved names
-
-EventStoreDB uses a **`$`** prefix for all internal data, such as **`$maxCount`** in a stream's metadata. Do not use a **`$`** prefix for event names, metadata keys, or stream names, except as detailed below.
-
-The supported internal settings are:
+The reserved keywords in metadata are:
 
 | Property name       | Description                                                                                                                                                                                                                                                                                                                                                            |
 | :------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
