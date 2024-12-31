@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using DotNext;
 using DotNext.Buffers;
 using DotNext.IO;
+using DotNext.Threading.Tasks;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
@@ -83,15 +84,12 @@ public interface IChunkHandle : IFlushable, IDisposable {
 			// In practice, no one should call synchronous write
 			var bufferCopy = buffer.Copy();
 			var timeoutToken = GetTimeoutToken(WriteTimeout);
-			var task = WriteAsync(bufferCopy.Memory, offset, timeoutToken).AsTask();
+			var task = WriteAsync(bufferCopy.Memory, offset, timeoutToken);
 			try {
 				task.Wait();
-			} catch (AggregateException e) when (e.InnerExceptions is [OperationCanceledException canceledEx] &&
-			                                     canceledEx.CancellationToken == timeoutToken) {
-				throw new TimeoutException(e.Message, canceledEx);
-			}
-			finally {
-				task.Dispose();
+			} catch (OperationCanceledException canceledEx) when (canceledEx.CancellationToken == timeoutToken) {
+				throw new TimeoutException(canceledEx.Message, canceledEx);
+			} finally {
 				ResetTimeout();
 				bufferCopy.Dispose();
 			}
@@ -111,20 +109,16 @@ public interface IChunkHandle : IFlushable, IDisposable {
 				// In practice, no one should call synchronous write
 				var bufferCopy = Memory.AllocateExactly<byte>(buffer.Length);
 				var timeoutToken = GetTimeoutToken(ReadTimeout);
-				var task = ReadAsync(bufferCopy.Memory, offset, timeoutToken).AsTask();
+				var task = ReadAsync(bufferCopy.Memory, offset, timeoutToken);
 				try {
-					task.Wait();
-					bytesRead = task.Result;
-				} catch (AggregateException e) when (e.InnerExceptions is [OperationCanceledException canceledEx] &&
-				                                     canceledEx.CancellationToken == timeoutToken) {
-					throw new TimeoutException(e.Message, canceledEx);
+					bytesRead = task.Wait();
+					bufferCopy.Span.Slice(0, bytesRead).CopyTo(buffer);
+				} catch (OperationCanceledException canceledEx) when (canceledEx.CancellationToken == timeoutToken) {
+					throw new TimeoutException(canceledEx.Message, canceledEx);
 				} finally {
-					task.Dispose();
 					ResetTimeout();
 					bufferCopy.Dispose();
 				}
-
-				bufferCopy.Span.Slice(0, bytesRead).CopyTo(buffer);
 			}
 
 			return bytesRead;
