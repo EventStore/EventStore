@@ -18,10 +18,10 @@ using Xunit;
 namespace EventStore.Core.XUnit.Tests.Configuration;
 
 public class ClusterVNodeOptionsTests {
-	private const string Prefix = KurrentConfigurationKeys.Prefix;
-	private string EnvVarPrefix => KurrentConfigurationKeys.Prefix.ToUpper();
-	private const string FallbackPrefix = KurrentConfigurationKeys.FallbackPrefix;
-	private string FallbackEnvVarPrefix => KurrentConfigurationKeys.FallbackPrefix.ToUpper();
+	private const string KurrentPrefix = KurrentConfigurationKeys.Prefix;
+	private string KurrentEnvVarPrefix => KurrentConfigurationKeys.Prefix.ToUpper();
+	private const string EventStorePrefix = KurrentConfigurationKeys.LegacyEventStorePrefix;
+	private string EventStoreEnvVarPrefix => KurrentConfigurationKeys.LegacyEventStorePrefix.ToUpper();
 	static ClusterVNodeOptions GetOptions(string args) {
 		var configuration = KurrentConfiguration.Build(args.Split());
 		return ClusterVNodeOptions.FromConfiguration(configuration);
@@ -77,21 +77,21 @@ public class ClusterVNodeOptionsTests {
 	public void unknown_options_ignores_subsection_arguments() {
 		var configuration = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddFallbackEnvironmentVariables(
-				($"{FallbackEnvVarPrefix}__METRICS__Q", "qqq"),
-				($"{FallbackEnvVarPrefix}__PLUGINS__R", "rrr")
+			.AddLegacyEventStoreEnvironmentVariables(
+				($"{EventStoreEnvVarPrefix}__METRICS__Q", "qqq"),
+				($"{EventStoreEnvVarPrefix}__PLUGINS__R", "rrr")
 			)
 			.AddKurrentEnvironmentVariables(
-				($"{EnvVarPrefix}__METRICS__X", "xxx"),
-				($"{EnvVarPrefix}__PLUGINS__Y", "yyy")
+				($"{KurrentEnvVarPrefix}__METRICS__X", "xxx"),
+				($"{KurrentEnvVarPrefix}__PLUGINS__Y", "yyy")
 			)
-			.AddFallbackCommandLine(
-				$"--{FallbackPrefix}:Metrics:A aaa " +
-				$"--{FallbackPrefix}:Plugins:B bbb"
+			.AddLegacyEventStoreCommandLine(
+				$"--{EventStorePrefix}:Metrics:A aaa " +
+				$"--{EventStorePrefix}:Plugins:B bbb"
 				)
 			.AddKurrentCommandLine(
-				$"--{Prefix}:Metrics:C ccc " +
-				$"--{Prefix}:Plugins:D ddd"
+				$"--{KurrentPrefix}:Metrics:C ccc " +
+				$"--{KurrentPrefix}:Plugins:D ddd"
 			)
 			.Build();
 
@@ -102,7 +102,7 @@ public class ClusterVNodeOptionsTests {
 
 	[Fact]
 	public void unknown_options_ignores_repeated_keys_from_other_sources() {
-		Environment.SetEnvironmentVariable($"{EnvVarPrefix}__CLUSTER_SIZE", "3");
+		Environment.SetEnvironmentVariable($"{KurrentEnvVarPrefix}__CLUSTER_SIZE", "3");
 
 		var configuration = new ConfigurationBuilder()
 			.AddEnvironmentVariables()
@@ -118,8 +118,8 @@ public class ClusterVNodeOptionsTests {
 	public void validation_should_return_error_when_default_password_options_pass_through_command_line() {
 		var configuration =  new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddFallbackCommandLine(
-				$"--{FallbackPrefix}:DefaultAdminPassword=Admin#")
+			.AddLegacyEventStoreCommandLine(
+				$"--{EventStorePrefix}:DefaultAdminPassword=Admin#")
 			.AddKurrentCommandLine(
 				"--DefaultOpsPassword=Ops#")
 			.Build();
@@ -129,7 +129,7 @@ public class ClusterVNodeOptionsTests {
 		var result = options.CheckForEnvironmentOnlyOptions();
 
 		result.Should().BeEquivalentTo(
-			"\"DefaultAdminPassword\" Provided by: Fallback Command Line. " +
+			"\"DefaultAdminPassword\" Provided by: Event Store Command Line. " +
 			"The Admin user password can only be set using Environment Variables" + Environment.NewLine +
 			"\"DefaultOpsPassword\" Provided by: Command Line. " +
 			"The Ops user password can only be set using Environment Variables" + Environment.NewLine);
@@ -140,8 +140,8 @@ public class ClusterVNodeOptionsTests {
 		var configuration = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
 			.AddKurrentEnvironmentVariables(
-				($"{EnvVarPrefix}_DEFAULT_ADMIN_PASSWORD", "Admin#"),
-				($"{EnvVarPrefix}_DEFAULT_OPS_PASSWORD", "Ops#")
+				($"{KurrentEnvVarPrefix}_DEFAULT_ADMIN_PASSWORD", "Admin#"),
+				($"{KurrentEnvVarPrefix}_DEFAULT_OPS_PASSWORD", "Ops#")
 			)
 			.AddKurrentCommandLine()
 			.Build();
@@ -154,12 +154,12 @@ public class ClusterVNodeOptionsTests {
 	}
 
 	[Fact]
-	public void validation_should_return_null_when_default_password_options_pass_through_fallback_environment_variables() {
+	public void validation_should_return_null_when_default_password_options_pass_through_legacy_eventstore_environment_variables() {
 		var configuration = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddFallbackEnvironmentVariables(
-				($"{FallbackEnvVarPrefix}_DEFAULT_ADMIN_PASSWORD", "Admin#"),
-				($"{FallbackEnvVarPrefix}_DEFAULT_OPS_PASSWORD", "Ops#")
+			.AddLegacyEventStoreEnvironmentVariables(
+				($"{EventStoreEnvVarPrefix}_DEFAULT_ADMIN_PASSWORD", "Admin#"),
+				($"{EventStoreEnvVarPrefix}_DEFAULT_OPS_PASSWORD", "Ops#")
 			)
 			.AddKurrentCommandLine()
 			.Build();
@@ -174,7 +174,7 @@ public class ClusterVNodeOptionsTests {
 	[Theory]
 	[InlineData(true)]
 	[InlineData(false)]
-	public void can_set_gossip_seed_values(bool useFallback) {
+	public void can_set_gossip_seed_values(bool useEventStorePrefix) {
 		EndPoint[] endpoints = [
 			new IPEndPoint(IPAddress.Loopback, 1113),
 			new DnsEndPoint("some-host", 1114),
@@ -184,10 +184,10 @@ public class ClusterVNodeOptionsTests {
 		var values = string.Join(",", endpoints.Select(x => $"{x}"));
 
 		var builder = new ConfigurationBuilder();
-		if (useFallback)
-			builder.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_GOSSIP_SEED", values));
+		if (useEventStorePrefix)
+			builder.AddLegacyEventStoreEnvironmentVariables(($"{EventStoreEnvVarPrefix}_GOSSIP_SEED", values));
 		else
-			builder.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_GOSSIP_SEED", values));
+			builder.AddKurrentEnvironmentVariables(($"{KurrentEnvVarPrefix}_GOSSIP_SEED", values));
 		var config = builder.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -199,8 +199,8 @@ public class ClusterVNodeOptionsTests {
 	public void can_set_gossip_seed_values_via_array() {
 		var config = new ConfigurationBuilder()
 			.AddInMemoryCollection([
-				new($"{Prefix}:GossipSeed:0", "127.0.0.1:1113"),
-				new($"{Prefix}:GossipSeed:1", "some-host:1114"),
+				new($"{KurrentPrefix}:GossipSeed:0", "127.0.0.1:1113"),
+				new($"{KurrentPrefix}:GossipSeed:1", "some-host:1114"),
 			])
 			.Build();
 
@@ -221,50 +221,50 @@ public class ClusterVNodeOptionsTests {
 	[InlineData(false, "127.0.0.1:3.1415", "Invalid format for gossip seed port: 3.1415.")]
 	[InlineData(false, "hostA;hostB", "Invalid delimiter for gossip seed value: hostA;hostB.")]
 	[InlineData(false, "hostA\thostB", "Invalid delimiter for gossip seed value: hostA\thostB.")]
-	public void reports_gossip_seed_errors(bool useFallback, string gossipSeed, string expectedError) {
+	public void reports_gossip_seed_errors(bool useEventStorePrefix, string gossipSeed, string expectedError) {
 		var builder = new ConfigurationBuilder();
-		if (useFallback)
-			builder.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_GOSSIP_SEED", gossipSeed));
+		if (useEventStorePrefix)
+			builder.AddLegacyEventStoreEnvironmentVariables(($"{EventStoreEnvVarPrefix}_GOSSIP_SEED", gossipSeed));
 		else
-			builder.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_GOSSIP_SEED", gossipSeed));
+			builder.AddKurrentEnvironmentVariables(($"{KurrentEnvVarPrefix}_GOSSIP_SEED", gossipSeed));
 		var config = builder.Build();
 
 		var ex = Assert.Throws<InvalidConfigurationException>(() =>
 			ClusterVNodeOptions.FromConfiguration(config));
 
 		Assert.Equal(
-			$"Failed to convert configuration value at '{Prefix}:GossipSeed' to type 'System.Net.EndPoint[]'. " + expectedError,
+			$"Failed to convert configuration value at '{KurrentPrefix}:GossipSeed' to type 'System.Net.EndPoint[]'. " + expectedError,
 			ex.Message);
 	}
 
 	[Theory]
 	[InlineData(true, "127.0.0.1.0", "An invalid IP address was specified.")]
 	[InlineData(false, "127.0.0.1.0", "An invalid IP address was specified.")]
-	public void reports_ip_address_errors(bool useFallback, string nodeIp, string expectedError) {
+	public void reports_ip_address_errors(bool useEventStorePrefix, string nodeIp, string expectedError) {
 		var builder = new ConfigurationBuilder();
-		if (useFallback)
-			builder.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_NODE_IP", nodeIp));
+		if (useEventStorePrefix)
+			builder.AddLegacyEventStoreEnvironmentVariables(($"{EventStoreEnvVarPrefix}_NODE_IP", nodeIp));
 		else
-			builder.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_NODE_IP", nodeIp));
+			builder.AddKurrentEnvironmentVariables(($"{KurrentEnvVarPrefix}_NODE_IP", nodeIp));
 		var config = builder.Build();
 
 		var ex = Assert.Throws<InvalidConfigurationException>(() =>
 			ClusterVNodeOptions.FromConfiguration(config));
 
 		Assert.Equal(
-			$"Failed to convert configuration value at '{Prefix}:NodeIp' to type 'System.Net.IPAddress'. " + expectedError,
+			$"Failed to convert configuration value at '{KurrentPrefix}:NodeIp' to type 'System.Net.IPAddress'. " + expectedError,
 			ex.Message);
 	}
 
 	[Theory]
 	[InlineData(true)]
 	[InlineData(false)]
-	public void can_set_node_ip(bool useFallback) {
+	public void can_set_node_ip(bool useEventStorePrefix) {
 		var builder = new ConfigurationBuilder();
-		if (useFallback)
-			builder.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_NODE_IP", "192.168.0.1"));
+		if (useEventStorePrefix)
+			builder.AddLegacyEventStoreEnvironmentVariables(($"{EventStoreEnvVarPrefix}_NODE_IP", "192.168.0.1"));
 		else
-			builder.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_NODE_IP", "192.168.0.1"));
+			builder.AddKurrentEnvironmentVariables(($"{KurrentEnvVarPrefix}_NODE_IP", "192.168.0.1"));
 		var config = builder.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -275,12 +275,12 @@ public class ClusterVNodeOptionsTests {
 	[Theory]
 	[InlineData(true)]
 	[InlineData(false)]
-	public void can_set_cluster_size_from_env_vars(bool useFallback) {
+	public void can_set_cluster_size_from_env_vars(bool useEventStorePrefix) {
 		var builder = new ConfigurationBuilder();
-		if (useFallback)
-			builder.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_CLUSTER_SIZE", "23"));
+		if (useEventStorePrefix)
+			builder.AddLegacyEventStoreEnvironmentVariables(($"{EventStoreEnvVarPrefix}_CLUSTER_SIZE", "23"));
 		else
-			builder.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_CLUSTER_SIZE", "23"));
+			builder.AddKurrentEnvironmentVariables(($"{KurrentEnvVarPrefix}_CLUSTER_SIZE", "23"));
 		var config = builder.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -291,10 +291,10 @@ public class ClusterVNodeOptionsTests {
 	[Theory]
 	[InlineData(true)]
 	[InlineData(false)]
-	public void can_set_cluster_size_from_args(bool useFallback) {
+	public void can_set_cluster_size_from_args(bool useEventStorePrefix) {
 		var builder = new ConfigurationBuilder();
-		if (useFallback)
-			builder.AddFallbackCommandLine($"--{FallbackPrefix}:CLUSTER-SIZE=23");
+		if (useEventStorePrefix)
+			builder.AddLegacyEventStoreCommandLine($"--{EventStorePrefix}:CLUSTER-SIZE=23");
 		else
 			builder.AddKurrentCommandLine("--CLUSTER-SIZE=23");
 		var config = builder.Build();
@@ -320,12 +320,12 @@ public class ClusterVNodeOptionsTests {
 	[Theory]
 	[InlineData(true)]
 	[InlineData(false)]
-	public void can_set_log_level_from_env_vars(bool useFallback) {
+	public void can_set_log_level_from_env_vars(bool useEventStorePrefix) {
 		var builder = new ConfigurationBuilder();
-		if (useFallback)
-			builder.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_LOG_LEVEL", LogLevel.Fatal.ToString()));
+		if (useEventStorePrefix)
+			builder.AddLegacyEventStoreEnvironmentVariables(($"{EventStoreEnvVarPrefix}_LOG_LEVEL", LogLevel.Fatal.ToString()));
 		else
-			builder.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_LOG_LEVEL", LogLevel.Fatal.ToString()));
+			builder.AddKurrentEnvironmentVariables(($"{KurrentEnvVarPrefix}_LOG_LEVEL", LogLevel.Fatal.ToString()));
 		var config = builder.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
@@ -347,8 +347,8 @@ public class ClusterVNodeOptionsTests {
 	public void can_get_deprecation_warnings() {
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddFallbackEnvironmentVariables(($"{FallbackEnvVarPrefix}_ENABLE_HISTOGRAMS", "true"))
-			.AddKurrentEnvironmentVariables(($"{EnvVarPrefix}_ENABLE_ATOM_PUB_OVER_HTTP", "true"))
+			.AddLegacyEventStoreEnvironmentVariables(($"{EventStoreEnvVarPrefix}_ENABLE_HISTOGRAMS", "true"))
+			.AddKurrentEnvironmentVariables(($"{KurrentEnvVarPrefix}_ENABLE_ATOM_PUB_OVER_HTTP", "true"))
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);

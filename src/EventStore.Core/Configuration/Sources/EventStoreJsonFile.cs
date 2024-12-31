@@ -12,30 +12,30 @@ using static System.StringComparer;
 
 namespace EventStore.Core.Configuration.Sources;
 
-public class FallbackJsonFileConfigurationProvider(FallbackJsonFileConfigurationSource source)
+public class EventStoreJsonFileConfigurationProvider(EventStoreJsonFileConfigurationSource source)
 	: JsonConfigurationProvider(source) {
 
 	public override void Load() {
 		base.Load();
 		Data = Data.Keys.ToDictionary(
-			KurrentConfigurationKeys.NormalizeFallback,
+			KurrentConfigurationKeys.NormalizeEventStorePrefix,
 			x => Data[x], OrdinalIgnoreCase
 		);
 	}
 }
 
-public class FallbackJsonFileConfigurationSource : JsonConfigurationSource {
+public class EventStoreJsonFileConfigurationSource : JsonConfigurationSource {
 	public override IConfigurationProvider Build(IConfigurationBuilder builder) {
 		EnsureDefaults(builder);
-		return new FallbackJsonFileConfigurationProvider(this);
+		return new EventStoreJsonFileConfigurationProvider(this);
 	}
 }
 
-public static class FallbackJsonFileConfigurationExtensions {
-	public static IConfigurationBuilder AddFallbackJsonFile(this IConfigurationBuilder builder, Action<FallbackJsonFileConfigurationSource> configureSource) =>
+public static class EventStoreJsonFileConfigurationExtensions {
+	public static IConfigurationBuilder AddLegacyEventStoreJsonFile(this IConfigurationBuilder builder, Action<EventStoreJsonFileConfigurationSource> configureSource) =>
 		builder.Add(configureSource);
 
-	public static IConfigurationBuilder AddFallbackConfigFile(this IConfigurationBuilder builder, string configFilePath,
+	public static IConfigurationBuilder AddLegacyEventStoreConfigFile(this IConfigurationBuilder builder, string configFilePath,
 		bool optional = false, bool reloadOnChange = false) {
 		if (!Locations.TryLocateConfigFile(configFilePath, out var directory, out var fileName)) {
 			if (optional)
@@ -45,7 +45,7 @@ public static class FallbackJsonFileConfigurationExtensions {
 				$"Could not find {configFilePath} in the following directories: {string.Join(", ", Locations.GetPotentialConfigurationDirectories())}");
 		}
 
-		builder.AddFallbackJsonFile(config => {
+		builder.AddLegacyEventStoreJsonFile(config => {
 			config.Optional = optional;
 			config.FileProvider = new PhysicalFileProvider(directory) {
 				UseActivePolling = reloadOnChange,
@@ -59,9 +59,9 @@ public static class FallbackJsonFileConfigurationExtensions {
 		return builder;
 	}
 
-	public static IConfigurationBuilder AddFallbackConfigFiles(this IConfigurationBuilder builder, string pattern) {
+	public static IConfigurationBuilder AddLegacyEventStoreConfigFiles(this IConfigurationBuilder builder, string pattern) {
 		ConfigurationBuilderExtensions.AddConfigFiles("config", pattern, (file) =>
-			builder.AddFallbackConfigFile(file, optional: true, reloadOnChange: true));
+			builder.AddLegacyEventStoreConfigFile(file, optional: true, reloadOnChange: true));
 		return builder;
 	}
 }

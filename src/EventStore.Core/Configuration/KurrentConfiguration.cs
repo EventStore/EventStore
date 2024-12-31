@@ -40,7 +40,7 @@ public static class KurrentConfiguration {
 
 			// Load all json files in the  `config` subdirectory (if it exists) of each configuration
 			// directory. We use the subdirectory to ensure that we only load configuration files.
-			.AddFallbackConfigFiles("*.json")
+			.AddLegacyEventStoreConfigFiles("*.json")
 			.AddKurrentConfigFiles("*.json")
 
 			#if DEBUG
@@ -50,12 +50,12 @@ public static class KurrentConfiguration {
 			#endif
 
 			.AddEnvironmentVariables()
-			.AddFallbackEnvironmentVariables(environment)
+			.AddLegacyEventStoreEnvironmentVariables(environment)
 			.AddKurrentEnvironmentVariables(environment)
 
 			// follows current behaviour yet Env Vars should take precedence
 			// to handle real-world deployment pipeline scenarios
-			.AddFallbackCommandLine(args)
+			.AddLegacyEventStoreCommandLine(args)
 			.AddKurrentCommandLine(args);
 
 		return builder.Build();

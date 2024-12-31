@@ -16,20 +16,20 @@ using Microsoft.Extensions.Configuration;
 namespace EventStore.Core.Configuration;
 
 public static class ConfigurationRootExtensions {
-	public static string[] CheckProvidersForEventStoreConfiguration(this IConfigurationRoot? configurationRoot) {
+	public static string[] CheckProvidersForLegacyEventStoreConfiguration(this IConfigurationRoot? configurationRoot) {
 		if (configurationRoot == null)
 			return [];
 		var errorMessages = new List<string>();
 		foreach (var provider in configurationRoot.Providers) {
 			var source = provider.GetType();
-			if (source == typeof(FallbackCommandLineConfigurationProvider) ||
-			    source == typeof(FallbackEnvironmentVariablesConfigurationProvider) ||
-			    source == typeof(FallbackJsonFileConfigurationProvider)) {
+			if (source == typeof(EventStoreCommandLineConfigurationProvider) ||
+			    source == typeof(EventStoreEnvironmentVariablesConfigurationProvider) ||
+			    source == typeof(EventStoreJsonFileConfigurationProvider)) {
 				errorMessages.AddRange(
 					provider.GetChildKeys().Select(
 						key =>
 							$"\"{key}\" Provided by: {ClusterVNodeOptions.GetSourceDisplayName(KurrentConfigurationKeys.Prefix + ":" + key, provider)}. " +
-							$"The \"EventStore\" configuration root has been deprecated. Use \"Kurrent\" instead."));
+							$"The \"EventStore\" configuration root has been deprecated, use \"Kurrent\" instead."));
 			}
 		}
 
@@ -52,7 +52,7 @@ public static class ConfigurationRootExtensions {
 
 			if (source == typeof(KurrentDefaultValuesConfigurationProvider) ||
 				source == typeof(KurrentEnvironmentVariablesConfigurationProvider) ||
-				source == typeof(FallbackEnvironmentVariablesConfigurationProvider))
+				source == typeof(EventStoreEnvironmentVariablesConfigurationProvider))
 				continue;
 
 			var errorDescriptions =

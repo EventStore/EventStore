@@ -16,7 +16,7 @@ namespace EventStore.Core.Configuration.Sources;
 
 public static class KurrentConfigurationKeys {
 	public const string Prefix = "Kurrent";
-	public const string FallbackPrefix = "EventStore";
+	public const string LegacyEventStorePrefix = "EventStore";
 
 	private const string EnvVarKeyDelimiter = "__";
 	private const string ArgWordDelimiter = "-";
@@ -46,7 +46,9 @@ public static class KurrentConfigurationKeys {
 
 	// outputs a key for IConfiguration e.g. Kurrent:StreamInfoCacheCapacity
 	public static string Normalize(string key) => Normalize(Prefix, Prefix, key);
-	public static string NormalizeFallback(string key) => Normalize(FallbackPrefix, Prefix, key);
+
+	// outputs a key for IConfiguration converted from EventStore:* to Kurrent:*
+	public static string NormalizeEventStorePrefix(string key) => Normalize(LegacyEventStorePrefix, Prefix, key);
 
 	public static string Normalize(string originalPrefix, string targetPrefix, string key) {
 		// if the key doesn't contain any delimiters,
@@ -85,7 +87,7 @@ public static class KurrentConfigurationKeys {
 	/// Determines if the given key is an EventStore key
 	/// </summary>
 	public static bool IsEventStoreKey(string? key) =>
-		key is not null && key.StartsWith($"{FallbackPrefix}", OrdinalIgnoreCase);
+		key is not null && key.StartsWith($"{LegacyEventStorePrefix}", OrdinalIgnoreCase);
 
 	/// <summary>
 	/// Determines if the given key starts with the given prefix
@@ -102,8 +104,8 @@ public static class KurrentConfigurationKeys {
 	/// <summary>
 	/// Only normalizes the given key if it is an Event Store environment variable.
 	/// </summary>
-	public static bool TryNormalizeFallbackEnvVar(object? key, [MaybeNullWhen(false)] out string normalizedKey) =>
-		TryNormalizeEnvVar(FallbackPrefix, Prefix, key?.ToString() ?? Empty, out normalizedKey);
+	public static bool TryNormalizeEventStoreEnvVar(object? key, [MaybeNullWhen(false)] out string normalizedKey) =>
+		TryNormalizeEnvVar(LegacyEventStorePrefix, Prefix, key?.ToString() ?? Empty, out normalizedKey);
 
 	/// <summary>
 	/// Only normalizes the given key if it is a Kurrent environment variable.

@@ -83,8 +83,8 @@ public partial record ClusterVNodeOptions {
 	public string? CheckForEnvironmentOnlyOptions() =>
 		ConfigurationRoot.CheckProvidersForEnvironmentVariables(OptionSections);
 
-	public string[] CheckForEventStoreConfiguration() =>
-		ConfigurationRoot.CheckProvidersForEventStoreConfiguration();
+	public string[] CheckForLegacyEventStoreConfiguration() =>
+		ConfigurationRoot.CheckProvidersForLegacyEventStoreConfiguration();
 
 	public static IReadOnlyDictionary<string, LoadedOption> GetLoadedOptions(IConfigurationRoot configurationRoot) {
 		var loadedOptions = new Dictionary<string, LoadedOption>();

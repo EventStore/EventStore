@@ -17,8 +17,8 @@ namespace EventStore.Core.XUnit.Tests.Configuration;
 public class ClusterVNodeOptionsPrinterTests {
 	[Fact]
 	public void prints_options() {
-		var prefix = KurrentConfigurationKeys.Prefix.ToUpper();
-		var fallbackPrefix = KurrentConfigurationKeys.FallbackPrefix.ToUpper();
+		var kurrentPrefix = KurrentConfigurationKeys.Prefix.ToUpper();
+		var eventStorePrefix = KurrentConfigurationKeys.LegacyEventStorePrefix.ToUpper();
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues(new Dictionary<string, string?> {
 				{ "ChunkSize", "10000"},
@@ -26,16 +26,16 @@ public class ClusterVNodeOptionsPrinterTests {
 				{ "ClusterSize", "1" },
 				{ "UnsafeAllowSurplusNodes", "false" },
 			})
-			.AddFallbackEnvironmentVariables(
-				($"{fallbackPrefix}_WORKER_THREADS", "5"),
-				($"{fallbackPrefix}_NODE_PRIORITY", "6"),
-				($"{fallbackPrefix}_ANOTHER_UNKNOWN_OPTIONS", "7"))
+			.AddLegacyEventStoreEnvironmentVariables(
+				($"{eventStorePrefix}_WORKER_THREADS", "5"),
+				($"{eventStorePrefix}_NODE_PRIORITY", "6"),
+				($"{eventStorePrefix}_ANOTHER_UNKNOWN_OPTIONS", "7"))
 			.AddKurrentEnvironmentVariables(
-				($"{prefix}_SOME_UNKNOWN_OPTION", "77"),
-				($"{prefix}_CLUSTER_GOSSIP_PORT", "99"),
-				($"{prefix}_UNSAFE_ALLOW_SURPLUS_NODES", "true"),
-				($"{prefix}_CONFIG", "/path/to/config/envvar"),
-				($"{prefix}_RUN_PROJECTIONS", "All"))
+				($"{kurrentPrefix}_SOME_UNKNOWN_OPTION", "77"),
+				($"{kurrentPrefix}_CLUSTER_GOSSIP_PORT", "99"),
+				($"{kurrentPrefix}_UNSAFE_ALLOW_SURPLUS_NODES", "true"),
+				($"{kurrentPrefix}_CONFIG", "/path/to/config/envvar"),
+				($"{kurrentPrefix}_RUN_PROJECTIONS", "All"))
 			.AddKurrentCommandLine(
 				"--config", "/path/to/config/commandline",
 				"--cluster-gossip-port=88",
@@ -50,11 +50,11 @@ public class ClusterVNodeOptionsPrinterTests {
 MODIFIED OPTIONS:
     APPLICATION OPTIONS:
          CONFIG:                          /path/to/config/commandline (Command Line)
-         WORKER THREADS:                  5 (Fallback Environment Variables)
+         WORKER THREADS:                  5 (Event Store Environment Variables)
 
     CLUSTER OPTIONS:
          CLUSTER GOSSIP PORT:             88 (Command Line)
-         NODE PRIORITY:                   6 (Fallback Environment Variables)
+         NODE PRIORITY:                   6 (Event Store Environment Variables)
          UNSAFE ALLOW SURPLUS NODES:      true (Environment Variables)
 
     DEFAULT USER OPTIONS:
@@ -80,10 +80,10 @@ DEFAULT OPTIONS:
 
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddFallbackEnvironmentVariables(
-				($"{KurrentConfigurationKeys.FallbackPrefix.ToUpper()}_DEFAULT_ADMIN_PASSWORD", secretText))
-			.AddFallbackCommandLine(
-				$"--{KurrentConfigurationKeys.FallbackPrefix}:CertificatePassword", secretText)
+			.AddLegacyEventStoreEnvironmentVariables(
+				($"{KurrentConfigurationKeys.LegacyEventStorePrefix.ToUpper()}_DEFAULT_ADMIN_PASSWORD", secretText))
+			.AddLegacyEventStoreCommandLine(
+				$"--{KurrentConfigurationKeys.LegacyEventStorePrefix}:CertificatePassword", secretText)
 			.AddKurrentCommandLine($"--default-ops-password={secretText}")
 			.Build();
 
@@ -113,54 +113,54 @@ DEFAULT OPTIONS:
 
 	[Fact]
 	public void loaded_option_provided_by_another_source_shows_the_correct_source() {
-		var prefix = KurrentConfigurationKeys.Prefix;
-		var fallbackPrefix = KurrentConfigurationKeys.FallbackPrefix;
+		var kurrentPrefix = KurrentConfigurationKeys.Prefix;
+		var eventStorePrefix = KurrentConfigurationKeys.LegacyEventStorePrefix;
 		var config = new ConfigurationBuilder()
 			.AddKurrentDefaultValues()
-			.AddFallbackEnvironmentVariables(
-				($"{fallbackPrefix.ToUpper()}_CLUSTER_SIZE", "10"),
-				($"{fallbackPrefix.ToUpper()}_NODE_PRIORITY", "11"))
+			.AddLegacyEventStoreEnvironmentVariables(
+				($"{eventStorePrefix.ToUpper()}_CLUSTER_SIZE", "10"),
+				($"{eventStorePrefix.ToUpper()}_NODE_PRIORITY", "11"))
 			.AddKurrentEnvironmentVariables(
-				($"{prefix.ToUpper()}_CLUSTER_SIZE", "15"),
-				($"{prefix.ToUpper()}_LOG_LEVEL", "Fatal"),
-				($"{prefix.ToUpper()}_LOG_FORMAT", "json"))
-			.AddFallbackCommandLine(
-				$"--{fallbackPrefix}:NodePort=17",
-				$"--{fallbackPrefix}:ReadOnlyReplica=true")
+				($"{kurrentPrefix.ToUpper()}_CLUSTER_SIZE", "15"),
+				($"{kurrentPrefix.ToUpper()}_LOG_LEVEL", "Fatal"),
+				($"{kurrentPrefix.ToUpper()}_LOG_FORMAT", "json"))
+			.AddLegacyEventStoreCommandLine(
+				$"--{eventStorePrefix}:NodePort=17",
+				$"--{eventStorePrefix}:ReadOnlyReplica=true")
 			.AddKurrentCommandLine(
 				$"--log-level=Information",
-				$"--{prefix}:NodePort=18")
+				$"--{kurrentPrefix}:NodePort=18")
 			.Build();
 
 		var loadedOptions = ClusterVNodeOptions.GetLoadedOptions(config);
 
 		// default
-		var insecure = loadedOptions[$"{prefix}:Insecure"];
+		var insecure = loadedOptions[$"{kurrentPrefix}:Insecure"];
 		insecure.DisplayValue.Should().BeEquivalentTo("false");
 		insecure.SourceDisplayName.Should().BeEquivalentTo("<DEFAULT>");
 
-		// fallback environment variables
-		var nodePriority = loadedOptions[$"{prefix}:NodePriority"];
+		// legacy EventStore environment variables
+		var nodePriority = loadedOptions[$"{kurrentPrefix}:NodePriority"];
 		nodePriority.DisplayValue.Should().BeEquivalentTo("11");
-		nodePriority.SourceDisplayName.Should().BeEquivalentTo("Fallback Environment Variables");
+		nodePriority.SourceDisplayName.Should().BeEquivalentTo("Event Store Environment Variables");
 
 		// environment variables
-		var clusterSize = loadedOptions[$"{prefix}:ClusterSize"];
+		var clusterSize = loadedOptions[$"{kurrentPrefix}:ClusterSize"];
 		clusterSize.DisplayValue.Should().BeEquivalentTo("15");
 		clusterSize.SourceDisplayName.Should().BeEquivalentTo("Environment Variables");
 
-		// fallback command line
-		var readOnly = loadedOptions[$"{prefix}:ReadOnlyReplica"];
+		// legacy EventStore command line
+		var readOnly = loadedOptions[$"{kurrentPrefix}:ReadOnlyReplica"];
 		readOnly.DisplayValue.Should().BeEquivalentTo("true");
-		readOnly.SourceDisplayName.Should().BeEquivalentTo("Fallback Command Line");
+		readOnly.SourceDisplayName.Should().BeEquivalentTo("Event Store Command Line");
 
 		// command line
-		var logLevel = loadedOptions[$"{prefix}:LogLevel"];
+		var logLevel = loadedOptions[$"{kurrentPrefix}:LogLevel"];
 		logLevel.DisplayValue.Should().BeEquivalentTo("Information");
 		logLevel.SourceDisplayName.Should().BeEquivalentTo("Command Line");
 
-		// command line - override fallback
-		var nodePort = loadedOptions[$"{prefix}:NodePort"];
+		// command line - override legacy EventStore
+		var nodePort = loadedOptions[$"{kurrentPrefix}:NodePort"];
 		nodePort.DisplayValue.Should().BeEquivalentTo("18");
 		nodePort.SourceDisplayName.Should().BeEquivalentTo("Command Line");
 	}

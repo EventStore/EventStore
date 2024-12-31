@@ -11,7 +11,7 @@ using static System.StringComparer;
 
 namespace EventStore.Core.Configuration.Sources;
 
-public class FallbackCommandLineConfigurationProvider(IEnumerable<string> args)
+public class EventStoreCommandLineConfigurationProvider(IEnumerable<string> args)
 	: CommandLineConfigurationProvider(args) {
 
 	public override void Load() {
@@ -20,14 +20,14 @@ public class FallbackCommandLineConfigurationProvider(IEnumerable<string> args)
 		Data = Data.Keys
 			.Where(KurrentConfigurationKeys.IsEventStoreKey)
 			.ToDictionary(
-				KurrentConfigurationKeys.NormalizeFallback,
+				KurrentConfigurationKeys.NormalizeEventStorePrefix,
 				x => Data[x], OrdinalIgnoreCase
 			);
 	}
 }
 
-public class FallbackCommandLineConfigurationSource : IConfigurationSource {
-	public FallbackCommandLineConfigurationSource(string[] args) {
+public class CommandLineConfigurationSource : IConfigurationSource {
+	public CommandLineConfigurationSource(string[] args) {
 		Args = args
 			.Select(KurrentCommandLineConfigurationSource.NormalizeKeys)
 			.Select((x, i) => KurrentCommandLineConfigurationSource.NormalizeBooleans(args, x, i));
@@ -36,10 +36,10 @@ public class FallbackCommandLineConfigurationSource : IConfigurationSource {
 	private IEnumerable<string> Args { get; set; }
 
 	public IConfigurationProvider Build(IConfigurationBuilder builder) =>
-		new FallbackCommandLineConfigurationProvider(Args);
+		new EventStoreCommandLineConfigurationProvider(Args);
 }
 
-public static class FallbackCommandLineConfigurationExtensions {
-	public static IConfigurationBuilder AddFallbackCommandLine(this IConfigurationBuilder builder, params string[] args) =>
-		builder.Add(new FallbackCommandLineConfigurationSource(args));
+public static class EventStoreCommandLineConfigurationExtensions {
+	public static IConfigurationBuilder AddLegacyEventStoreCommandLine(this IConfigurationBuilder builder, params string[] args) =>
+		builder.Add(new CommandLineConfigurationSource(args));
 }

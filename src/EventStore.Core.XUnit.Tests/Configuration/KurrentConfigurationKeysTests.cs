@@ -40,6 +40,6 @@ public class KurrentConfigurationKeysTests {
 	[InlineData("EVENTSTORE_GOSSIPSEED", "Kurrent:GossipSeed")]
 	public void TransformsEventStoreEnvVars(string key, string normalizedKey) {
 		KurrentConfigurationKeys.Normalize(
-			KurrentConfigurationKeys.FallbackPrefix, KurrentConfigurationKeys.Prefix, key).Should().Be(normalizedKey);
+			KurrentConfigurationKeys.LegacyEventStorePrefix, KurrentConfigurationKeys.Prefix, key).Should().Be(normalizedKey);
 	}
 }

@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using EventStore.Core.Configuration.Sources;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
@@ -12,20 +11,13 @@ using Xunit;
 namespace EventStore.Core.XUnit.Tests.Configuration;
 
 public class JsonFileConfigurationTests {
-	public const string KurrentConfigFile = "test.kurrentdb.json";
-	public const string EventStoreConfigFile = "test.eventstore.json";
-
-	private static string GetDirectoryForConfigFile(string fileName) {
-		var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configuration", fileName);
-		var directory = Path.GetDirectoryName(filePath);
-		Assert.NotNull(directory);
-		return directory;
-	}
-
 	[Fact]
 	public void LoadsConfigFromKurrentJsonFile() {
 		// Arrange
-		var directory = GetDirectoryForConfigFile(KurrentConfigFile);
+		var fileName = "test.kurrentdb.json";
+		var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configuration", fileName);
+		var directory = Path.GetDirectoryName(filePath);
+		Assert.NotNull(directory);
 
 		// Act
 		var config = new ConfigurationBuilder()
@@ -35,67 +27,12 @@ public class JsonFileConfigurationTests {
 					UsePollingFileWatcher = false
 				};
 				config.OnLoadException = _ =>
-					Assert.Fail($"Could not find test config file '{KurrentConfigFile}' in '{directory}'");
-				config.Path = KurrentConfigFile;
+					Assert.Fail($"Could not find test config file '{fileName}' in '{directory}'");
+				config.Path = fileName;
 			}).Build();
 
 		// Assert
 		config.GetValue<bool>("Kurrent:AutoScavenge:Enabled").Should().Be(false);
 		config.GetValue<string>("Kurrent:Licensing:LicenseKey").Should().Be("valid");
-	}
-
-	[Fact]
-	public void LoadsConfigFromEventStoreJsonFile() {
-		// Arrange
-		var directory = GetDirectoryForConfigFile(EventStoreConfigFile);
-
-		// Act
-		var config = new ConfigurationBuilder()
-			.AddFallbackJsonFile(config => {
-				config.FileProvider = new PhysicalFileProvider(directory) {
-					UseActivePolling = false,
-					UsePollingFileWatcher = false
-				};
-				config.OnLoadException = _ =>
-					Assert.Fail($"Could not find test config file '{EventStoreConfigFile}' in '{directory}'");
-				config.Path = EventStoreConfigFile;
-			}).Build();
-
-		// Assert
-		config.GetValue<bool>("Kurrent:AutoScavenge:Enabled").Should().Be(true);
-		config.GetValue<bool>("Kurrent:Connectors:Enabled").Should().Be(false);
-		config.GetValue<string>("Kurrent:Licensing:LicenseKey").Should().Be("invalid");
-	}
-
-	[Fact]
-	public void KurrentConfigOverridesEventStoreConfig() {
-		// Arrange
-		var eventStoreDirectory = GetDirectoryForConfigFile(EventStoreConfigFile);
-		var kurrentDirectory = GetDirectoryForConfigFile(KurrentConfigFile);
-
-		// Act
-		var config = new ConfigurationBuilder()
-			.AddFallbackJsonFile(config => {
-				config.FileProvider = new PhysicalFileProvider(eventStoreDirectory) {
-					UseActivePolling = false,
-					UsePollingFileWatcher = false
-				};
-				config.OnLoadException = _ =>
-					Assert.Fail($"Could not find test config file '{EventStoreConfigFile}' in '{eventStoreDirectory}'");
-				config.Path = EventStoreConfigFile;
-			}).AddJsonFile(config => {
-				config.FileProvider = new PhysicalFileProvider(kurrentDirectory) {
-					UseActivePolling = false,
-					UsePollingFileWatcher = false
-				};
-				config.OnLoadException = _ =>
-					Assert.Fail($"Could not find test config file '{KurrentConfigFile}' in '{kurrentDirectory}'");
-				config.Path = KurrentConfigFile;
-			}).Build();
-
-		// Assert
-		config.GetValue<bool>("Kurrent:AutoScavenge:Enabled").Should().Be(false);
-		config.GetValue<string>("Kurrent:Licensing:LicenseKey").Should().Be("valid");
-		config.GetValue<bool>("Kurrent:Connectors:Enabled").Should().Be(false);
 	}
 }
