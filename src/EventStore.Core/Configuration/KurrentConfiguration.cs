@@ -68,7 +68,9 @@ public static class KurrentConfiguration {
 
 	private static (string Path, bool Optional) ResolveConfigurationFile(string[] args, IDictionary environment) {
 		var configuration = new ConfigurationBuilder()
+			.AddLegacyEventStoreEnvironmentVariables(environment)
 			.AddKurrentEnvironmentVariables(environment)
+			.AddLegacyEventStoreCommandLine(args)
 			.AddKurrentCommandLine(args)
 			.Build();
 
