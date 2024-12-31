@@ -10,24 +10,28 @@ namespace EventStore.Core.XUnit.Tests.Configuration;
 
 public class FallbackCommandLineConfigurationSourceTests {
 	[Theory]
-	[InlineData(new[] { "--stream_info_cache_capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--stream_info_cache_capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--stream-info-cache-capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--stream-info-cache-capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--stream_info_cache_capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "")]
+	[InlineData(new[] { "--stream_info_cache_capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "")]
+	[InlineData(new[] { "--stream-info-cache-capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "")]
+	[InlineData(new[] { "--stream-info-cache-capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "")]
 	[InlineData(new[] { "--EventStore:StreamInfoCacheCapacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
 	[InlineData(new[] { "--EventStore:StreamInfoCacheCapacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
 	[InlineData(new[] { "--EventStore:Stream-Info-Cache-Capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
 	[InlineData(new[] { "--EventStore:Stream-Info-Cache-Capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
 	[InlineData(new[] { "--EventStore:Stream_Info_Cache_Capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
 	[InlineData(new[] { "--EventStore:Stream_Info_Cache_Capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	public void AddsArguments(string[] arguments, string normalizedKey, string expectedValue) {
+	public void AddsEventStoreArguments(string[] arguments, string normalizedKey, string expectedValue) {
 		// Act
 		var configuration = new ConfigurationBuilder()
 			.AddFallbackCommandLine(arguments)
 			.Build();
 
 		// Assert
-		configuration.GetValue<string>(normalizedKey).Should().Be(expectedValue);
+		if (string.IsNullOrEmpty(expectedValue)) {
+			configuration.GetValue<string>(normalizedKey).Should().BeNull();
+		} else {
+			configuration.GetValue<string>(normalizedKey).Should().Be(expectedValue);
+		}
 	}
 }
 public class CommandLineConfigurationSourceTests {

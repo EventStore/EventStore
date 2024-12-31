@@ -18,6 +18,7 @@ public class FallbackCommandLineConfigurationProvider(IEnumerable<string> args)
 		base.Load();
 
 		Data = Data.Keys
+			.Where(KurrentConfigurationKeys.IsEventStoreKey)
 			.ToDictionary(
 				KurrentConfigurationKeys.NormalizeFallback,
 				x => Data[x], OrdinalIgnoreCase

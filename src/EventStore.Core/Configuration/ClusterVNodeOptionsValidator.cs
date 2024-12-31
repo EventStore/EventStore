@@ -4,6 +4,7 @@
 // ReSharper disable CheckNamespace
 using System;
 using System.IO;
+using System.Linq;
 using EventStore.Common.Exceptions;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.Chunks;
@@ -112,6 +113,16 @@ public static class ClusterVNodeOptionsValidator {
 		if (environmentOnlyOptions != null) {
 			Log.Error($"Invalid Option {environmentOnlyOptions}");
 			return false;
+		}
+
+		var eventStoreOptions = options.CheckForEventStoreConfiguration();
+		if (eventStoreOptions.Any()) {
+			Log.Warning(
+				"The \"EventStore\" configuration root has been deprecated and renamed to \"Kurrent\"." +
+				"The following settings will still be used, but will stop working in a future release.");
+			foreach (var warning in eventStoreOptions) {
+				Log.Warning(warning);
+			}
 		}
 
 		if (options.Application.Insecure || options.Auth.AuthenticationType != Opts.AuthenticationTypeDefault) {

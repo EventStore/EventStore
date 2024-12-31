@@ -16,6 +16,26 @@ using Microsoft.Extensions.Configuration;
 namespace EventStore.Core.Configuration;
 
 public static class ConfigurationRootExtensions {
+	public static string[] CheckProvidersForEventStoreConfiguration(this IConfigurationRoot? configurationRoot) {
+		if (configurationRoot == null)
+			return [];
+		var errorMessages = new List<string>();
+		foreach (var provider in configurationRoot.Providers) {
+			var source = provider.GetType();
+			if (source == typeof(FallbackCommandLineConfigurationProvider) ||
+			    source == typeof(FallbackEnvironmentVariablesConfigurationProvider) ||
+			    source == typeof(FallbackJsonFileConfigurationProvider)) {
+				errorMessages.AddRange(
+					provider.GetChildKeys().Select(
+						key =>
+							$"\"{key}\" Provided by: {ClusterVNodeOptions.GetSourceDisplayName(KurrentConfigurationKeys.Prefix + ":" + key, provider)}. " +
+							$"The \"EventStore\" configuration root has been deprecated. Use \"Kurrent\" instead."));
+			}
+		}
+
+		return errorMessages.ToArray();
+	}
+
 	public static string? CheckProvidersForEnvironmentVariables(this IConfigurationRoot? configurationRoot, IEnumerable<Type> optionSections) {
 		if (configurationRoot == null)
 			return null;

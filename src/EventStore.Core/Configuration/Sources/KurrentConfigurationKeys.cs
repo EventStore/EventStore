@@ -82,6 +82,12 @@ public static class KurrentConfigurationKeys {
 	}
 
 	/// <summary>
+	/// Determines if the given key is an EventStore key
+	/// </summary>
+	public static bool IsEventStoreKey(string? key) =>
+		key is not null && key.StartsWith($"{FallbackPrefix}", OrdinalIgnoreCase);
+
+	/// <summary>
 	/// Determines if the given key starts with the given prefix
 	/// </summary>
 	private static bool IsEnvVarWithPrefix(string prefix, string? key) =>
