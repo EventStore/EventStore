@@ -143,6 +143,21 @@ internal static class Program {
 				certificateProvider = new OptionsCertificateProvider();
 			}
 
+			var defaultConfigWarning = options.CheckForLegacyDefaultConfig();
+			if (defaultConfigWarning != null) {
+				Log.Warning(defaultConfigWarning);
+			}
+
+			var eventStoreOptionWarnings = options.CheckForLegacyEventStoreConfiguration();
+			if (eventStoreOptionWarnings.Any()) {
+				Log.Warning(
+					"The \"EventStore\" configuration root has been deprecated and renamed to \"Kurrent\". " +
+					"The following settings will still be used, but will stop working in a future release:");
+				foreach (var warning in eventStoreOptionWarnings) {
+					Log.Warning(warning);
+				}
+			}
+
 			var deprecationWarnings = options.GetDeprecationWarnings();
 			if (deprecationWarnings != null) {
 				Log.Warning($"DEPRECATED{Environment.NewLine}{deprecationWarnings}");

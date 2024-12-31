@@ -22,6 +22,7 @@ public class Locations {
 	public static readonly string DefaultTestClientLogDirectory;
 	public static readonly string FallbackDefaultDataDirectory;
 	public static readonly string DefaultTrustedRootCertificateDirectory;
+	public static readonly string LegacyConfigurationDirectory;
 
 	static Locations() {
 		ApplicationDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
@@ -34,6 +35,7 @@ public class Locations {
 			case RuntimeOSPlatform.Linux:
 				DefaultContentDirectory = "/usr/share/kurrentdb";
 				DefaultConfigurationDirectory = "/etc/kurrentdb";
+				LegacyConfigurationDirectory = "/etc/eventstore";
 				DefaultDataDirectory = "/var/lib/kurrentdb";
 				DefaultLogDirectory = "/var/log/kurrentdb";
 				DefaultTrustedRootCertificateDirectory = "/etc/ssl/certs";
@@ -44,6 +46,7 @@ public class Locations {
 			case RuntimeOSPlatform.OSX:
 				DefaultContentDirectory = "/usr/local/share/kurrentdb";
 				DefaultConfigurationDirectory = "/etc/kurrentdb";
+				LegacyConfigurationDirectory = "/etc/eventstore";
 				DefaultDataDirectory = "/var/lib/kurrentdb";
 				DefaultLogDirectory = "/var/log/kurrentdb";
 				DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
@@ -53,6 +56,7 @@ public class Locations {
 			default:
 				DefaultContentDirectory = ApplicationDirectory;
 				DefaultConfigurationDirectory = ApplicationDirectory;
+				LegacyConfigurationDirectory = ApplicationDirectory;
 				DefaultDataDirectory = Path.Combine(ApplicationDirectory, "data");
 				DefaultLogDirectory = Path.Combine(ApplicationDirectory, "logs");
 				DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
@@ -93,6 +97,7 @@ public class Locations {
 	/// <returns></returns>
 	public static string[] GetPotentialConfigurationDirectories() => new[] {
 		DefaultConfigurationDirectory,
+		LegacyConfigurationDirectory,
 		ApplicationDirectory,
 	}.Distinct().ToArray();
 

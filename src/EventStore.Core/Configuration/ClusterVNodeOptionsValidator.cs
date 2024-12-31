@@ -115,16 +115,6 @@ public static class ClusterVNodeOptionsValidator {
 			return false;
 		}
 
-		var eventStoreOptions = options.CheckForLegacyEventStoreConfiguration();
-		if (eventStoreOptions.Any()) {
-			Log.Warning(
-				"The \"EventStore\" configuration root has been deprecated and renamed to \"Kurrent\". " +
-				"The following settings will still be used, but will stop working in a future release:");
-			foreach (var warning in eventStoreOptions) {
-				Log.Warning(warning);
-			}
-		}
-
 		if (options.Application.Insecure || options.Auth.AuthenticationType != Opts.AuthenticationTypeDefault) {
 			if (options.DefaultUser.DefaultAdminPassword != SystemUsers.DefaultAdminPassword) {
 				Log.Error("Cannot set default admin password when not using the internal authentication.");

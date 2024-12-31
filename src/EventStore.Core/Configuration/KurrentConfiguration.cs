@@ -5,8 +5,10 @@
 
 using System;
 using System.Collections;
+using System.IO;
 using EventStore.Common.Configuration;
 using EventStore.Core.Configuration.Sources;
+using EventStore.Core.Util;
 using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.Configuration;
@@ -76,18 +78,29 @@ public static class KurrentConfiguration {
 
 		var configFilePath = configuration.GetValue<string?>($"{KurrentConfigurationKeys.Prefix}:Config");
 
-		return string.IsNullOrEmpty(configFilePath)
-			// get the default config file path
-			? (new ClusterVNodeOptions.ApplicationOptions().Config, true)
+		if (configFilePath is not null) {
 			// if the user has specified a config file make it non optional
-			: (configFilePath, false);
+			return (configFilePath, false);
+		}
+
+		// get the default config file path
+		if (File.Exists(DefaultFiles.DefaultConfigPath)) {
+			return (DefaultFiles.DefaultConfigPath, true);
+		}
+
+		// if the default config file is not found, check for a legacy one
+		if (File.Exists(DefaultFiles.LegacyEventStoreConfigPath)) {
+			return (DefaultFiles.LegacyEventStoreConfigPath, true);
+		}
+
+		// no config was found, use the default kurrent config
+		return (DefaultFiles.DefaultConfigPath, true);
 	}
 
 	public static IConfigurationBuilder AddKurrentYamlConfigFile(
 		this IConfigurationBuilder builder,
 		string path,
 		bool optional) =>
-
 		builder.AddSection(
 			KurrentConfigurationKeys.Prefix,
 			x => x.AddYamlFile(

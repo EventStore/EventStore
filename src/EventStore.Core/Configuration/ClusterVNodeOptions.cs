@@ -119,8 +119,7 @@ public partial record ClusterVNodeOptions {
 		[Description("Show version.")] public bool Version { get; init; } = false;
 
 		[Description("Configuration files.")]
-		public string Config { get; init; } =
-			Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile);
+		public string Config { get; init; } = DefaultFiles.DefaultConfigPath;
 
 		[Description("Print effective configuration to console and then exit.")]
 		public bool WhatIf { get; init; } = false;

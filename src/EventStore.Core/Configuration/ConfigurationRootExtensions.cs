@@ -11,7 +11,9 @@ using System.Text;
 using EventStore.Common.Configuration;
 using EventStore.Common.Exceptions;
 using EventStore.Core.Configuration.Sources;
+using EventStore.Core.Util;
 using Microsoft.Extensions.Configuration;
+using NetEscapades.Configuration.Yaml;
 
 namespace EventStore.Core.Configuration;
 
@@ -71,6 +73,29 @@ public static class ConfigurationRootExtensions {
 		}
 
 		return errorBuilder.Length != 0 ? errorBuilder.ToString() : null;
+	}
+
+	public static string? CheckDefaultConfigForLegacyEventStoreConfig(this IConfigurationRoot? configurationRoot) {
+		if (configurationRoot is null) {
+			return null;
+		}
+
+		var sectionProviders = configurationRoot.Providers
+			.OfType<SectionProvider>()
+			.SelectMany(x => x.Providers);
+		if (sectionProviders.FirstOrDefault(
+			    x => x.GetType() == typeof(YamlConfigurationProvider))
+		    is not YamlConfigurationProvider configFileSource) {
+			return null;
+		}
+		if (!string.IsNullOrEmpty(configFileSource.Source.Path)
+		    && configFileSource.Source.Path == DefaultFiles.LegacyEventStoreConfigFile) {
+			return $"The default config file and configuration location \"{DefaultFiles.LegacyEventStoreConfigPath}\" " +
+			       $"has been deprecated and will stop working in a future release. " +
+			       $"Use \"{DefaultFiles.DefaultConfigPath}\" instead.";
+		}
+
+		return null;
 	}
 
 	public static T BindOptions<T>(this IConfiguration configuration) where T : new() {
