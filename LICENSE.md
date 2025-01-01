@@ -1,6 +1,6 @@
 # Event Store License v2
 
-Copyright (c) 2011-2024, Event Store Ltd. All rights reserved.
+Copyright (c) 2011-2025, Event Store Ltd. All rights reserved.
 
 ### Acceptance
 
