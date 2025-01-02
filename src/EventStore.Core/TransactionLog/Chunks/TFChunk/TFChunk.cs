@@ -942,8 +942,6 @@ public partial class TFChunk : IDisposable {
 
 	private async ValueTask<ChunkFooter> WriteFooter(IReadOnlyCollection<PosMap> mapping, CancellationToken token) {
 		var workItem = _writerWorkItem;
-		workItem.ResizeStream(workItem.WorkingStream.Position);
-
 		int mapSize;
 
 		// reuse rented buffer for position mapping serialization and chunk footer
@@ -970,14 +968,10 @@ public partial class TFChunk : IDisposable {
 			await workItem.AppendData(bufferFromPool.AsMemory(0, mapSize), token);
 		}
 
-		await workItem.FlushToDisk(token);
-
 		await _transform.Write.CompleteData(
 			footerSize: ChunkFooter.Size,
 			alignmentSize: _chunkHeader.Version >= (byte)ChunkVersions.Aligned ? AlignmentSize : 1,
 			token);
-
-		await workItem.FlushToDisk(token);
 
 		int fileSize;
 		ChunkFooter footerWithHash;
@@ -991,14 +985,15 @@ public partial class TFChunk : IDisposable {
 
 			//FILE
 			footerWithHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5);
-
 			footerWithHash.Format(bufferFromPool);
 			fileSize = await _transform.Write.WriteFooter(new(bufferFromPool, 0, ChunkFooter.Size), token);
 		} finally {
 			ArrayPool<byte>.Shared.Return(bufferFromPool);
 		}
 
-		await workItem.FlushToDisk(token);
+		// at this point in code, 'WorkingStream` should not contain buffered bytes because SeLength
+		// can cause sync-over-async write. This fact is checked within `IChunkHandle.UnbufferedStream` class
+		workItem.WorkingStream.SetLength(fileSize);
 
 		_fileSize = fileSize;
 		return footerWithHash;

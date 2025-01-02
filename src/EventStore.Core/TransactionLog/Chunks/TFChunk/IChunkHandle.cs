@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -93,6 +94,10 @@ public interface IChunkHandle : IFlushable, IDisposable {
 				ResetTimeout();
 				bufferCopy.Dispose();
 			}
+
+			// In Release build, the following statement will be removed by the compiler automatically.
+			// We want to be sure that no one will call sync-over-async at least in tests
+			Debug.Fail("Async writes are not allowed");
 		}
 
 
@@ -121,6 +126,7 @@ public interface IChunkHandle : IFlushable, IDisposable {
 				}
 			}
 
+			Debug.Fail("Async reads are not allowed");
 			return bytesRead;
 		}
 
