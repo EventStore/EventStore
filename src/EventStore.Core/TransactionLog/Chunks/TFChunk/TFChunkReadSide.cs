@@ -559,7 +559,7 @@ public partial class TFChunk {
 				buffer.Dispose();
 			}
 
-			// log record payload + lenght suffix
+			// log record payload + length suffix
 			var lengthWithSuffix = length + sizeof(int);
 			ILogRecord record;
 			IBufferedReader bufferedReader = null;
@@ -567,7 +567,7 @@ public partial class TFChunk {
 				// Perf: if buffered stream contains necessary amount of buffered bytes, we can omit expensive buffer
 				// rental and copy
 				if ((bufferedReader = workItem.TryGetBufferedReader(lengthWithSuffix, out var input)) is null) {
-					buffer = Memory.AllocateExactly<byte>(length + sizeof(int));
+					buffer = Memory.AllocateExactly<byte>(lengthWithSuffix);
 					await workItem.BaseStream.ReadExactlyAsync(buffer.Memory, token);
 					input = buffer.Memory;
 				} else {
