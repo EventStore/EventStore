@@ -951,15 +951,18 @@ public partial class TFChunk : IDisposable {
 		if (mapping is null) {
 			mapSize = 0;
 			bufferFromPool = ArrayPool<byte>.Shared.Rent(ChunkFooter.Size);
-		} else if (_inMem) {
-			throw new InvalidOperationException(
-				"Cannot write an in-memory chunk with a PosMap. " +
-				"Scavenge is not supported on in-memory databases");
-		} else if (_cacheStatus is not CacheStatus.Uncached) {
-			throw new InvalidOperationException("Trying to write mapping while chunk is cached. "
-			                                    + "You probably are writing scavenged chunk as cached. "
-			                                    + "Do not do this.");
 		} else {
+			if (_inMem)
+				throw new InvalidOperationException(
+					"Cannot write an in-memory chunk with a PosMap. " +
+					"Scavenge is not supported on in-memory databases");
+
+			if (_cacheStatus is not CacheStatus.Uncached) {
+				throw new InvalidOperationException("Trying to write mapping while chunk is cached. "
+				                                    + "You probably are writing scavenged chunk as cached. "
+				                                    + "Do not do this.");
+			}
+
 			mapSize = mapping.Count * PosMap.FullSize;
 
 			bufferFromPool = ArrayPool<byte>.Shared.Rent(Math.Max(mapSize, ChunkFooter.Size));
