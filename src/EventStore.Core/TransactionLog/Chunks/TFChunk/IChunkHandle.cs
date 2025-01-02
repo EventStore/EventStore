@@ -95,9 +95,11 @@ public interface IChunkHandle : IFlushable, IDisposable {
 				bufferCopy.Dispose();
 			}
 
-			// In Release build, the following statement will be removed by the compiler automatically.
-			// We want to be sure that no one will call sync-over-async at least in tests
-			Debug.Fail("Async writes are not allowed");
+			// This synchronous Write implementation exists because it is hard to be sure that it is
+			// never called. Quite a few synchronous stream operations can call synchronous write under
+			// the hood (e.g. SetLength). We want to be sure that these are at least not called
+			// routinely, because it is inefficient.
+			Debug.Fail("Synchronous writes are undesirable");
 		}
 
 
@@ -126,7 +128,8 @@ public interface IChunkHandle : IFlushable, IDisposable {
 				}
 			}
 
-			Debug.Fail("Async reads are not allowed");
+			// see comment on other Debug.Fail call
+			Debug.Fail("Synchronous writes are undesirable");
 			return bytesRead;
 		}
 
