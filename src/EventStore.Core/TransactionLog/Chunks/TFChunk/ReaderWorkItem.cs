@@ -14,10 +14,10 @@ internal sealed class ReaderWorkItem : Disposable {
 
 	// if item was taken from the pool, the field contains position within the array (>= 0)
 	private readonly int _positionInPool = -1;
-	public readonly Stream BaseStream;
+	public readonly ChunkDataReadStream BaseStream;
 	private readonly bool _leaveOpen;
 
-	private ReaderWorkItem(Stream stream, bool leaveOpen) {
+	private ReaderWorkItem(ChunkDataReadStream stream, bool leaveOpen) {
 		Debug.Assert(stream is not null);
 
 		_leaveOpen = leaveOpen;
@@ -34,7 +34,7 @@ internal sealed class ReaderWorkItem : Disposable {
 		IsMemory = false;
 	}
 
-	private static Stream CreateTransformedMemoryStream(Stream memStream, IChunkReadTransform chunkReadTransform) {
+	private static ChunkDataReadStream CreateTransformedMemoryStream(Stream memStream, IChunkReadTransform chunkReadTransform) {
 		return chunkReadTransform.TransformData(new ChunkDataReadStream(memStream));
 	}
 

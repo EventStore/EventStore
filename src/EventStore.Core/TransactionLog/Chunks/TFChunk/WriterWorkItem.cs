@@ -17,7 +17,7 @@ internal sealed class WriterWorkItem : Disposable {
 
 	public Stream WorkingStream { get; private set; }
 
-	private readonly Stream _fileStream;
+	private readonly ChunkDataWriteStream _fileStream;
 	private Stream _memStream;
 	public readonly IncrementalHash MD5;
 
