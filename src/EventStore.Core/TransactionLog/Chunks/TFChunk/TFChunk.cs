@@ -993,7 +993,7 @@ public partial class TFChunk : IDisposable {
 
 		// at this point in code, 'WorkingStream` should not contain buffered bytes because SeLength
 		// can cause sync-over-async write. This fact is checked within `IChunkHandle.UnbufferedStream` class
-		workItem.WorkingStream.SetLength(fileSize);
+		workItem.ResizeStream(fileSize);
 
 		_fileSize = fileSize;
 		return footerWithHash;
