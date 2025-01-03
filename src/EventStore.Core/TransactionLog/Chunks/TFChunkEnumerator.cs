@@ -11,6 +11,10 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.TransactionLog.Chunks;
 
+// Uses a naming strategy (which can access the chunk storage) to enumerate through
+// the chunks in the storage, in ascending order, determining whether each chunk file
+// is the Latest for its (logical) chunkNumber, an older version of its chunkNumber,
+// and spotting if any chunkNumbers are missing entirely.
 public class TFChunkEnumerator {
 	private readonly IVersionedFileNamingStrategy _chunkFileNamingStrategy;
 	private string[] _allFiles;
@@ -22,6 +26,8 @@ public class TFChunkEnumerator {
 		_nextChunkNumber = [];
 	}
 
+	// lastChunkNumber is not a filter/limit, it is used to spot missing chunks
+	// getNextChunkNumber is used from tests only. todo: do we really need it
 	public async IAsyncEnumerable<TFChunkInfo> EnumerateChunks(
 		int lastChunkNumber,
 		Func<string, int, int, CancellationToken, ValueTask<int>> getNextChunkNumber = null,

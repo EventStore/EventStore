@@ -51,7 +51,8 @@ public sealed class TFChunkDb : IAsyncDisposable {
 		public string ChunkFileName;
 	}
 
-	private static async IAsyncEnumerable<ChunkInfo> GetAllLatestChunksExceptLast(
+	// Gets the latest versions of all historic chunks
+	private static async IAsyncEnumerable<ChunkInfo> GetHistoricChunks(
 		TFChunkEnumerator chunkEnumerator,
 		int lastChunkNum,
 		[EnumeratorCancellation] CancellationToken token) {
@@ -60,12 +61,18 @@ public sealed class TFChunkDb : IAsyncDisposable {
 			switch (chunkInfo) {
 				case LatestVersion(var fileName, var start, _):
 					if (start <= lastChunkNum - 1)
-						yield return new ChunkInfo { ChunkFileName = fileName, ChunkStartNumber = start };
+						yield return new ChunkInfo {
+							ChunkFileName = fileName,
+							ChunkStartNumber = start,
+						};
 					break;
 				case MissingVersion(var fileName, var start):
 					if (start <= lastChunkNum - 1)
 						throw new CorruptDatabaseException(new ChunkNotFoundException(fileName));
+
+					// fine for last chunk to be 'missing' (not created yet)
 					break;
+				// OldVersion: don't open old versions. they will soon be deleted
 			}
 		}
 	}
@@ -95,8 +102,10 @@ public sealed class TFChunkDb : IAsyncDisposable {
 		var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
 		var chunkEnumerator = new TFChunkEnumerator(Config.FileNamingStrategy);
 
+		// Open the historic chunks. New records will not be written to any of these.
+		// (but the last one may need completing)
 		try {
-			await Parallel.ForEachAsync(GetAllLatestChunksExceptLast(chunkEnumerator, lastChunkNum, token), // the last chunk is dealt with separately
+			await Parallel.ForEachAsync(GetHistoricChunks(chunkEnumerator, lastChunkNum, token),
 				new ParallelOptions {MaxDegreeOfParallelism = threads, CancellationToken = token},
 				async (chunkInfo, token) => {
 					TFChunk.TFChunk chunk;
@@ -107,26 +116,33 @@ public sealed class TFChunkDb : IAsyncDisposable {
 						// but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
 						var footer = await ReadChunkFooter(chunkInfo.ChunkFileName, token);
 						if (footer.IsCompleted)
-							chunk = await TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
+							chunk = await TFChunk.TFChunk.FromCompletedFile(
+								filename: chunkInfo.ChunkFileName,
+								verifyHash: false,
 								unbufferedRead: Config.Unbuffered,
 								tracker: _tracker,
 								reduceFileCachePressure: Config.ReduceFileCachePressure,
 								getTransformFactory: TransformManager.GetFactoryForExistingChunk,
 								token: token);
 						else {
-							chunk = await TFChunk.TFChunk.FromOngoingFile(chunkInfo.ChunkFileName, Config.ChunkSize,
+							chunk = await TFChunk.TFChunk.FromOngoingFile(
+								filename: chunkInfo.ChunkFileName,
+								writePosition: Config.ChunkSize,
 								unbuffered: Config.Unbuffered,
 								writethrough: Config.WriteThrough,
 								reduceFileCachePressure: Config.ReduceFileCachePressure,
 								tracker: _tracker,
 								getTransformFactory: TransformManager.GetFactoryForExistingChunk,
-								token);
+								token: token);
 							// chunk is full with data, we should complete it right here
 							if (!readOnly)
 								await chunk.Complete(token);
 						}
 					} else {
-						chunk = await TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
+						// common case
+						chunk = await TFChunk.TFChunk.FromCompletedFile(
+							filename: chunkInfo.ChunkFileName,
+							verifyHash: false,
 							unbufferedRead: Config.Unbuffered,
 							reduceFileCachePressure: Config.ReduceFileCachePressure,
 							tracker: _tracker,
@@ -142,6 +158,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 			throw aggEx.InnerException;
 		}
 
+		// Open the current chunk, where new records will be written. It might not exist yet.
 		if (lastChunkVersions.Length == 0) {
 			var onBoundary = writerCheckpoint == (Config.ChunkSize * (long)lastChunkNum);
 			if (!onBoundary)
