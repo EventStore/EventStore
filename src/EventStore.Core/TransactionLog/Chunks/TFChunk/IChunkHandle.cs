@@ -5,8 +5,6 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext;
-using DotNext.Buffers;
 using DotNext.IO;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -41,12 +39,12 @@ public interface IChunkHandle : IFlushable, IDisposable {
 	/// <returns>The unbuffered stream for this handle.</returns>
 	Stream CreateStream() => CreateStream(this, 60_000);
 
+	//qq maybe dont need the synchronous timeout?
 	protected static Stream CreateStream(IChunkHandle handle, int synchronousTimeout)
 		=> new UnbufferedStream(handle) { ReadTimeout = synchronousTimeout, WriteTimeout = synchronousTimeout };
 
 	private sealed class UnbufferedStream(IChunkHandle handle) : RandomAccessStream {
 		private int _readTimeout, _writeTimeout;
-		private CancellationTokenSource _timeoutSource;
 
 		public override void Flush() => handle.Flush();
 
@@ -75,84 +73,17 @@ public interface IChunkHandle : IFlushable, IDisposable {
 		public override long Length => handle.Length;
 
 		protected override void Write(ReadOnlySpan<byte> buffer, long offset) {
-			// leave fast without sync over async
-			if (buffer.IsEmpty)
-				return;
-
-			// Do sync over async without any optimizations to make it just works.
-			// In practice, no one should call synchronous write
-			var bufferCopy = buffer.Copy();
-			var timeoutToken = GetTimeoutToken(WriteTimeout);
-			var task = WriteAsync(bufferCopy.Memory, offset, timeoutToken).AsTask();
-			try {
-				task.Wait();
-			} catch (AggregateException e) when (e.InnerExceptions is [OperationCanceledException canceledEx] &&
-			                                     canceledEx.CancellationToken == timeoutToken) {
-				throw new TimeoutException(e.Message, canceledEx);
-			}
-			finally {
-				task.Dispose();
-				ResetTimeout();
-				bufferCopy.Dispose();
-			}
+			throw new NotSupportedException("Call the async version instead");
 		}
-
 
 		protected override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, long offset, CancellationToken token)
 			=> handle.WriteAsync(buffer, offset, token);
 
 		protected override int Read(Span<byte> buffer, long offset) {
-			// leave fast without sync over async
-			int bytesRead;
-			if (buffer.IsEmpty) {
-				bytesRead = 0;
-			} else {
-				// Do sync over async without any optimizations to make it just works.
-				// In practice, no one should call synchronous write
-				var bufferCopy = Memory.AllocateExactly<byte>(buffer.Length);
-				var timeoutToken = GetTimeoutToken(ReadTimeout);
-				var task = ReadAsync(bufferCopy.Memory, offset, timeoutToken).AsTask();
-				try {
-					task.Wait();
-					bytesRead = task.Result;
-				} catch (AggregateException e) when (e.InnerExceptions is [OperationCanceledException canceledEx] &&
-				                                     canceledEx.CancellationToken == timeoutToken) {
-					throw new TimeoutException(e.Message, canceledEx);
-				} finally {
-					task.Dispose();
-					ResetTimeout();
-					bufferCopy.Dispose();
-				}
-
-				bufferCopy.Span.Slice(0, bytesRead).CopyTo(buffer);
-			}
-
-			return bytesRead;
+			throw new NotSupportedException("Call the async version instead");
 		}
 
 		protected override ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token)
 			=> handle.ReadAsync(buffer, offset, token);
-
-		private CancellationToken GetTimeoutToken(int timeout) {
-			_timeoutSource ??= new();
-			_timeoutSource.CancelAfter(timeout);
-			return _timeoutSource.Token;
-		}
-
-		private void ResetTimeout() {
-			// attempt to reuse the token source to avoid extra memory allocation
-			if (!_timeoutSource.TryReset()) {
-				_timeoutSource.Dispose();
-				_timeoutSource = null;
-			}
-		}
-
-		protected override void Dispose(bool disposing) {
-			if (disposing) {
-				_timeoutSource?.Dispose();
-			}
-
-			base.Dispose(disposing);
-		}
 	}
 }
