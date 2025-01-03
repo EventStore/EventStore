@@ -101,6 +101,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 		var lastChunkNum = (int)(writerCheckpoint / Config.ChunkSize);
 		var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
 		var chunkEnumerator = new TFChunkEnumerator(Config.FileNamingStrategy);
+		var getTransformFactoryForExistingChunk = TransformManager.GetFactoryForExistingChunk;
 
 		// Open the historic chunks. New records will not be written to any of these.
 		// (but the last one may need completing)
@@ -122,7 +123,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 								unbufferedRead: Config.Unbuffered,
 								tracker: _tracker,
 								reduceFileCachePressure: Config.ReduceFileCachePressure,
-								getTransformFactory: TransformManager.GetFactoryForExistingChunk,
+								getTransformFactory: getTransformFactoryForExistingChunk,
 								token: token);
 						else {
 							chunk = await TFChunk.TFChunk.FromOngoingFile(
@@ -132,7 +133,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 								writethrough: Config.WriteThrough,
 								reduceFileCachePressure: Config.ReduceFileCachePressure,
 								tracker: _tracker,
-								getTransformFactory: TransformManager.GetFactoryForExistingChunk,
+								getTransformFactory: getTransformFactoryForExistingChunk,
 								token: token);
 							// chunk is full with data, we should complete it right here
 							if (!readOnly)
@@ -146,7 +147,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 							unbufferedRead: Config.Unbuffered,
 							reduceFileCachePressure: Config.ReduceFileCachePressure,
 							tracker: _tracker,
-							getTransformFactory: TransformManager.GetFactoryForExistingChunk,
+							getTransformFactory: getTransformFactoryForExistingChunk,
 							token: token);
 					}
 
@@ -192,7 +193,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 					unbufferedRead: Config.Unbuffered,
 					reduceFileCachePressure: Config.ReduceFileCachePressure,
 					tracker: _tracker,
-					getTransformFactory: TransformManager.GetFactoryForExistingChunk,
+					getTransformFactory: getTransformFactoryForExistingChunk,
 					token: token);
 
 				lastChunkNum = lastChunk.ChunkHeader.ChunkEndNumber + 1;
@@ -215,13 +216,15 @@ public sealed class TFChunkDb : IAsyncDisposable {
 						await Manager.AddNewChunk(token);
 				}
 			} else {
-				var lastChunk = await TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos,
+				var lastChunk = await TFChunk.TFChunk.FromOngoingFile(
+					filename: chunkFileName,
+					writePosition: (int)chunkLocalPos,
 					unbuffered: Config.Unbuffered,
 					writethrough: Config.WriteThrough,
 					reduceFileCachePressure: Config.ReduceFileCachePressure,
 					tracker: _tracker,
-					getTransformFactory: type => TransformManager.GetFactoryForExistingChunk(type),
-					token);
+					getTransformFactory: getTransformFactoryForExistingChunk,
+					token: token);
 				await Manager.AddChunk(lastChunk, token);
 			}
 		}
