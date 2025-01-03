@@ -444,4 +444,3 @@ to `true`.
 | Environment variable | `EVENTSTORE_FAULT_OUT_OF_ORDER_PROJECTIONS` |
 
 **Default**: `false`
-

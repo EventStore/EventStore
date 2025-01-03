@@ -87,3 +87,7 @@ etc. If anyone can append to the emitted streams, then the projection would have
 in terms of processing. Therefore, it can no longer trust that the projection itself emitted that event or if
 something else did.
 
+### Impact of resetting projections
+Resetting a projection in EventStore will soft-delete the output streams associated with the projection. If 'TrackEmittedStreams' is enabled when the projection is created, it will also allow the projection subsystem to truncate all streams created by the projection.
+
+The checkpoint will also be reset. This means that the projection will start processing events from the beginning of the event stream and not from the latest checkpoint.
