@@ -22,7 +22,7 @@ public static class KurrentConfiguration {
 		// plugin configuration. We will add it to the DI and make it available to the plugins.
 		//
 		// Three json files are loaded explicitly for backwards compatibility
-		// - metricsconfig.json needs loading into the EventStore:Metrics section.
+		// - metricsconfig.json needs loading into the Kurrent:Metrics section.
 		// - kestrelsettings.json is not located in a config/ directory
 		// - logconfig.json is not located in a config/ directory
 		//

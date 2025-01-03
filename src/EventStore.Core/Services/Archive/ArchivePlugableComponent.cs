@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Services.Archive.Archiver;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Archiver.Unmerger;
@@ -53,7 +54,7 @@ public class ArchivePlugableComponent : IPlugableComponent {
 	}
 
 	public void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
-		var options = configuration.GetSection("EventStore:Archive").Get<ArchiveOptions>() ?? new();
+		var options = configuration.GetSection($"{KurrentConfigurationKeys.Prefix}:Archive").Get<ArchiveOptions>() ?? new();
 		Enabled = options.Enabled;
 
 		if (!Enabled)

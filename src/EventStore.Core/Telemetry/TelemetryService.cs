@@ -15,6 +15,7 @@ using DotNext.Collections.Generic;
 using DotNext.Runtime.CompilerServices;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -239,7 +240,7 @@ public sealed class TelemetryService :
 		_publisher.Publish(new GossipMessage.ReadGossip(new CallbackEnvelope(resp => OnGossipReceived(message.Envelope, resp))));
 
 		{
-			var extraTelemetry = _configuration.GetSection("EventStore:Telemetry").Get<Dictionary<string, string>>() ?? [];
+			var extraTelemetry = _configuration.GetSection($"{KurrentConfigurationKeys.Prefix}:Telemetry").Get<Dictionary<string, string>>() ?? [];
 			var payload = JsonSerializer.SerializeToNode(extraTelemetry.ToDictionary(kvp => LowerFirstLetter(kvp.Key), kvp => kvp.Value));
 			message.Envelope.ReplyWith(new TelemetryMessage.Response(
 				"telemetry", payload));

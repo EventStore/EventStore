@@ -237,11 +237,11 @@ public partial record ClusterVNodeOptions {
 		}
 
 		static string GetEnvironmentOption(PropertyInfo property, int optionColumnWidth) {
-			const string Prefix = "EVENTSTORE";
+			var prefix = KurrentConfigurationKeys.Prefix.ToUpper();
 
 			var builder = new StringBuilder();
 
-			builder.Append($"{Prefix}_")
+			builder.Append($"{prefix}_")
 				.Append(CombineByPascalCase(property.Name, "_").ToUpper());
 
 			var description = property.GetCustomAttribute<EnvironmentOnlyAttribute>()?.Message;
