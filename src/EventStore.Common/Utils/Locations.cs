@@ -13,7 +13,6 @@ public class Locations {
 	public static readonly string WebContentDirectory;
 	public static readonly string ProjectionsDirectory;
 	public static readonly string PreludeDirectory;
-	public static readonly string PreludeResourcesPath;
 	public static readonly string PluginsDirectory;
 	public static readonly string DefaultContentDirectory;
 	public static readonly string DefaultConfigurationDirectory;
@@ -22,7 +21,10 @@ public class Locations {
 	public static readonly string DefaultTestClientLogDirectory;
 	public static readonly string FallbackDefaultDataDirectory;
 	public static readonly string DefaultTrustedRootCertificateDirectory;
+	// Legacy EventStore directories
 	public static readonly string LegacyConfigurationDirectory;
+	public static readonly string LegacyDataDirectory;
+	public static readonly string LegacyLogDirectory;
 
 	static Locations() {
 		ApplicationDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
@@ -37,7 +39,9 @@ public class Locations {
 				DefaultConfigurationDirectory = "/etc/kurrentdb";
 				LegacyConfigurationDirectory = "/etc/eventstore";
 				DefaultDataDirectory = "/var/lib/kurrentdb";
+				LegacyDataDirectory = "/var/lib/eventstore";
 				DefaultLogDirectory = "/var/log/kurrentdb";
+				LegacyLogDirectory = "/var/log/eventstore";
 				DefaultTrustedRootCertificateDirectory = "/etc/ssl/certs";
 				DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
 				if (!Directory.Exists(PluginsDirectory))
@@ -48,7 +52,9 @@ public class Locations {
 				DefaultConfigurationDirectory = "/etc/kurrentdb";
 				LegacyConfigurationDirectory = "/etc/eventstore";
 				DefaultDataDirectory = "/var/lib/kurrentdb";
+				LegacyDataDirectory = "/var/lib/eventstore";
 				DefaultLogDirectory = "/var/log/kurrentdb";
+				LegacyLogDirectory = "/var/log/eventstore";
 				DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
 				if (!Directory.Exists(PluginsDirectory))
 					PluginsDirectory = Path.Combine(DefaultContentDirectory, "plugins");
@@ -75,7 +81,6 @@ public class Locations {
 			Path.Combine(ApplicationDirectory, "Prelude"),
 			Path.Combine(DefaultContentDirectory, "Prelude")
 		);
-		PreludeResourcesPath = "EventStore.Projections.Core.Prelude";
 	}
 
 	/// <summary>
