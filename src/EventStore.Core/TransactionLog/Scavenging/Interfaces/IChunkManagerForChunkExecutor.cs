@@ -22,7 +22,7 @@ public interface IChunkWriterForExecutor<TStreamId, TRecord> {
 
 	ValueTask<(string NewFileName, long NewFileSize)> Complete(CancellationToken token);
 
-	void Abort(bool deleteImmediately);
+	ValueTask Abort(bool deleteImmediately, CancellationToken token);
 }
 
 public interface IChunkReaderForExecutor<TStreamId, TRecord> {

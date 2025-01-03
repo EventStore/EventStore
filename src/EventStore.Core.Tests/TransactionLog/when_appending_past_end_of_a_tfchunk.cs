@@ -33,9 +33,9 @@ public class when_appending_past_end_of_a_tfchunk<TLogFormat, TStreamId> : Speci
 	}
 
 	[TearDown]
-	public override void TearDown() {
+	public override Task TearDown() {
 		_chunk.Dispose();
-		base.TearDown();
+		return base.TearDown();
 	}
 
 	[Test]

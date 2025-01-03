@@ -1022,13 +1022,13 @@ public partial class TFChunk : IDisposable {
 		return closed;
 	}
 
-	public void MarkForDeletion() {
+	public async ValueTask MarkForDeletion(CancellationToken token) {
 		_selfdestructin54321 = true;
 		_deleteFile = true;
 
 		Thread.MemoryBarrier();
 
-		TryDestructFileStreams();
+		await TryDestructFileStreams(token);
 		TryDestructMemStreams();
 	}
 
@@ -1043,6 +1043,13 @@ public partial class TFChunk : IDisposable {
 				return false;
 		}
 	}
+
+	private ValueTask TryDestructFileStreams(CancellationToken token)
+		=> _fileStreams.Drain(ref _fileStreamCount) switch {
+			< 0 => ValueTask.FromException(new Exception("Count of file streams reduced below zero.")),
+			0 => CleanUpFileStreamDestruction(token),
+			_ => ValueTask.CompletedTask,
+		};
 
 	// Called when the filestreams have all been returned and disposed.
 	// This used to be a 'last one out turns off the light' mechanism, but now it is idempotent
@@ -1060,6 +1067,22 @@ public partial class TFChunk : IDisposable {
 			_writerWorkItem.Dispose();
 		}
 
+		Delete();
+	}
+
+	private async ValueTask CleanUpFileStreamDestruction(CancellationToken token) {
+		if (Interlocked.CompareExchange(ref _cleanedUpFileStreams, 1, 0) is not 0)
+			return;
+
+		if (_writerWorkItem is not null) {
+			await _writerWorkItem.FlushToDisk(token);
+			_writerWorkItem.Dispose();
+		}
+
+		Delete();
+	}
+
+	private void Delete() {
 		if (!_inMem) {
 			_handle?.Dispose();
 			Helper.EatException(_filename, static filename => File.SetAttributes(filename, FileAttributes.Normal));

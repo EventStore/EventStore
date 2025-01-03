@@ -79,8 +79,10 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 
 	public override async ValueTask HandleAsync(SystemMessage.StateChangeMessage message, CancellationToken token) {
 		if (message.State is VNodeState.PreLeader) {
-			_activeChunk?.MarkForDeletion();
-			_activeChunk = null;
+			if (_activeChunk is not null) {
+				await _activeChunk.MarkForDeletion(token);
+				_activeChunk = null;
+			}
 
 			_subscriptionId = Guid.Empty;
 			_subscriptionPos = -1;
@@ -91,8 +93,8 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 	}
 
 	async ValueTask IAsyncHandle<ReplicationMessage.ReplicaSubscribed>.HandleAsync(ReplicationMessage.ReplicaSubscribed message, CancellationToken token) {
-		if (_activeChunk != null) {
-			_activeChunk.MarkForDeletion();
+		if (_activeChunk is not null) {
+			await _activeChunk.MarkForDeletion(token);
 			_activeChunk = null;
 		}
 
@@ -200,8 +202,8 @@ public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStre
 	async ValueTask IAsyncHandle<ReplicationMessage.CreateChunk>.HandleAsync(ReplicationMessage.CreateChunk message, CancellationToken token) {
 		if (_subscriptionId != message.SubscriptionId) return;
 
-		if (_activeChunk != null) {
-			_activeChunk.MarkForDeletion();
+		if (_activeChunk is not null) {
+			await _activeChunk.MarkForDeletion(token);
 			_activeChunk = null;
 		}
 

@@ -259,7 +259,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 					+ "\nOld chunk total size: {oldSize}, scavenged chunk size: {newSize}."
 					+ "\nScavenged chunk removed.", oldChunkName, sw.Elapsed, oldSize, newSize);
 
-				newChunk.MarkForDeletion();
+				await newChunk.MarkForDeletion(ct);
 				_scavengerLog.ChunksNotScavenged(chunkStartNumber, chunkEndNumber, sw.Elapsed, "");
 			} else {
 				var positionMapping = new List<PosMap>(filteredCount);
@@ -327,7 +327,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 			_scavengerLog.ChunksNotScavenged(chunkStartNumber, chunkEndNumber, sw.Elapsed, exc.Message);
 		} catch (OperationCanceledException) {
 			_logger.Information("Scavenging cancelled at: {oldChunkName}", oldChunkName);
-			newChunk.MarkForDeletion();
+			await newChunk.MarkForDeletion(CancellationToken.None);
 			_scavengerLog.ChunksNotScavenged(chunkStartNumber, chunkEndNumber, sw.Elapsed, "Scavenge cancelled");
 		} catch (Exception ex) {
 			_logger.Information(
@@ -511,7 +511,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 			logger.Information("Scavenging cancelled at:"
 			         + "\n{oldChunksList}",
 				oldChunksList);
-			newChunk.MarkForDeletion();
+			await newChunk.MarkForDeletion(CancellationToken.None);
 			scavengerLog.ChunksNotMerged(chunkStartNumber, chunkEndNumber, sw.Elapsed, "Scavenge cancelled");
 			return false;
 		} catch (Exception ex) {

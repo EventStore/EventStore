@@ -33,10 +33,10 @@ public abstract class PTableReadScenario : SpecificationWithFile {
 	}
 
 	[TearDown]
-	public override void TearDown() {
+	public override Task TearDown() {
 		PTable.Dispose();
 
-		base.TearDown();
+		return base.TearDown();
 	}
 
 	protected abstract void AddItemsForScenario(IMemTable memTable);

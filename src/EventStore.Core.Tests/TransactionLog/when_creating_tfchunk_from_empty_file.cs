@@ -22,9 +22,9 @@ public class when_creating_tfchunk_from_empty_file : SpecificationWithFile {
 	}
 
 	[TearDown]
-	public override void TearDown() {
+	public override Task TearDown() {
 		_chunk.Dispose();
-		base.TearDown();
+		return base.TearDown();
 	}
 
 	[Test]

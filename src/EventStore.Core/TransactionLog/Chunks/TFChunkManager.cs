@@ -285,16 +285,16 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		bool triggerCaching;
 		await _chunksLocker.AcquireAsync(token);
 		try {
-			if (!ReplaceChunksWith(newChunk, "Old")) {
+			if (!await ReplaceChunksWith(newChunk, "Old", token)) {
 				Log.Information("Chunk {chunk} will be not switched, marking for remove...", newChunk);
-				newChunk.MarkForDeletion();
+				await newChunk.MarkForDeletion(token);
 			} else
 				OnChunkSwitched?.Invoke(newChunk.ChunkInfo);
 
 			if (removeChunksWithGreaterNumbers) {
 				var oldChunksCount = _chunksCount;
 				_chunksCount = newChunk.ChunkHeader.ChunkEndNumber + 1;
-				RemoveChunks(chunkHeader.ChunkEndNumber + 1, oldChunksCount - 1, "Excessive");
+				await RemoveChunks(chunkHeader.ChunkEndNumber + 1, oldChunksCount - 1, "Excessive", token);
 				if (_chunks[_chunksCount] is not null)
 					throw new Exception(string.Format("Excessive chunk #{0} found after raw replication switch.",
 						_chunksCount));
@@ -310,7 +310,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		return newChunk;
 	}
 
-	private bool ReplaceChunksWith(TFChunk.TFChunk newChunk, string chunkExplanation) {
+	private async ValueTask<bool> ReplaceChunksWith(TFChunk.TFChunk newChunk, string chunkExplanation, CancellationToken token) {
 		Debug.Assert(_chunksLocker.IsLockHeld);
 
 		var chunkStartNumber = newChunk.ChunkHeader.ChunkStartNumber;
@@ -334,8 +334,8 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunk);
 			if (!ReferenceEquals(previousRemovedChunk, oldChunk)) {
 				// Once we've swapped all entries for the previousRemovedChunk we can safely delete it.
-				if (previousRemovedChunk != null) {
-					previousRemovedChunk.MarkForDeletion();
+				if (previousRemovedChunk is not null) {
+					await previousRemovedChunk.MarkForDeletion(token);
 					Log.Information("{chunkExplanation} chunk #{oldChunk} is marked for deletion.", chunkExplanation,
 						previousRemovedChunk);
 				}
@@ -344,9 +344,9 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			}
 		}
 
-		if (previousRemovedChunk != null) {
+		if (previousRemovedChunk is not null) {
 			// Delete the last chunk swapped out now it's fully replaced.
-			previousRemovedChunk.MarkForDeletion();
+			await previousRemovedChunk.MarkForDeletion(token);
 			Log.Information("{chunkExplanation} chunk #{oldChunk} is marked for deletion.", chunkExplanation,
 				previousRemovedChunk);
 		}
@@ -354,14 +354,14 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		return true;
 	}
 
-	private void RemoveChunks(int chunkStartNumber, int chunkEndNumber, string chunkExplanation) {
+	private async ValueTask RemoveChunks(int chunkStartNumber, int chunkEndNumber, string chunkExplanation, CancellationToken token) {
 		Debug.Assert(_chunksLocker.IsLockHeld);
 
 		TFChunk.TFChunk lastRemovedChunk = null;
 		for (int i = chunkStartNumber; i <= chunkEndNumber; i += 1) {
 			var oldChunk = Interlocked.Exchange(ref _chunks[i], null);
-			if (oldChunk != null && !ReferenceEquals(lastRemovedChunk, oldChunk)) {
-				oldChunk.MarkForDeletion();
+			if (oldChunk is not null && !ReferenceEquals(lastRemovedChunk, oldChunk)) {
+				await oldChunk.MarkForDeletion(token);
 				Log.Information("{chunkExplanation} chunk {oldChunk} is marked for deletion.", chunkExplanation, oldChunk);
 			}
 
