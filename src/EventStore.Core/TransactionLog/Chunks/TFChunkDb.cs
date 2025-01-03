@@ -51,8 +51,8 @@ public sealed class TFChunkDb : IAsyncDisposable {
 		public string ChunkFileName;
 	}
 
-	// Gets the latest versions of all historic chunks
-	private static async IAsyncEnumerable<ChunkInfo> GetHistoricChunks(
+	// Gets the latest versions of all historical chunks
+	private static async IAsyncEnumerable<ChunkInfo> GetHistoricalChunks(
 		TFChunkEnumerator chunkEnumerator,
 		int lastChunkNum,
 		[EnumeratorCancellation] CancellationToken token) {
@@ -103,10 +103,10 @@ public sealed class TFChunkDb : IAsyncDisposable {
 		var chunkEnumerator = new TFChunkEnumerator(Config.FileNamingStrategy);
 		var getTransformFactoryForExistingChunk = TransformManager.GetFactoryForExistingChunk;
 
-		// Open the historic chunks. New records will not be written to any of these.
+		// Open the historical chunks. New records will not be written to any of these.
 		// (but the last one may need completing)
 		try {
-			await Parallel.ForEachAsync(GetHistoricChunks(chunkEnumerator, lastChunkNum, token),
+			await Parallel.ForEachAsync(GetHistoricalChunks(chunkEnumerator, lastChunkNum, token),
 				new ParallelOptions {MaxDegreeOfParallelism = threads, CancellationToken = token},
 				async (chunkInfo, token) => {
 					TFChunk.TFChunk chunk;
