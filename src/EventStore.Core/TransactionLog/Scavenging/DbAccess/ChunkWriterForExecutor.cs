@@ -105,12 +105,13 @@ public class ChunkWriterForExecutor<TStreamId> : IChunkWriterForExecutor<TStream
 	}
 
 	// tbh not sure why this distinction is important
-	public void Abort(bool deleteImmediately) {
+	public async ValueTask Abort(bool deleteImmediately, CancellationToken token) {
 		if (deleteImmediately) {
+			await _outputChunk.Flush(token);
 			_outputChunk.Dispose();
 			TFChunkScavenger<TStreamId>.DeleteTempChunk(_logger, FileName, TFChunkScavenger.MaxRetryCount);
 		} else {
-			_outputChunk.MarkForDeletion();
+			await _outputChunk.MarkForDeletion(token);
 		}
 	}
 }

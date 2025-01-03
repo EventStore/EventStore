@@ -305,12 +305,12 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 				outputChunk.FileName,
 				exc.Message);
 
-			outputChunk.Abort(deleteImmediately: true);
+			await outputChunk.Abort(deleteImmediately: true, cancellationToken);
 			throw;
 
 		} catch (OperationCanceledException) {
 			_logger.Information("SCAVENGING: Cancelled at: {oldChunkName}", oldChunkName);
-			outputChunk.Abort(deleteImmediately: false);
+			await outputChunk.Abort(deleteImmediately: false, CancellationToken.None);
 			throw;
 
 		} catch (Exception ex) {
@@ -319,7 +319,7 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 				"SCAVENGING: Got exception while scavenging chunk: #{chunkStartNumber}-{chunkEndNumber}.",
 				chunkStartNumber, chunkEndNumber);
 
-			outputChunk.Abort(deleteImmediately: true);
+			await outputChunk.Abort(deleteImmediately: true, cancellationToken);
 			throw;
 		}
 	}

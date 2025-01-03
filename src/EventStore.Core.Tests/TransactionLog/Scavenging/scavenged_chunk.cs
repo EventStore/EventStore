@@ -39,9 +39,9 @@ public class scavenged_chunk : SpecificationWithFile {
 
 		var last = await chunk.TryReadLast(CancellationToken.None);
 		Assert.IsTrue(last.Success);
-		Assert.AreEqual(map[map.Count - 1].ActualPos, last.LogRecord.LogPosition);
+		Assert.AreEqual(map[^1].ActualPos, last.LogRecord.LogPosition);
 
-		chunk.MarkForDeletion();
+		await chunk.MarkForDeletion(CancellationToken.None);
 		chunk.WaitForDestroy(1000);
 	}
 }

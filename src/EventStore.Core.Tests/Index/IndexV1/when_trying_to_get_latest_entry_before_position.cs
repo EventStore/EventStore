@@ -64,9 +64,9 @@ public class when_trying_to_get_latest_entry_before_position : SpecificationWith
 	}
 
 	[TearDown]
-	public override void TearDown() {
+	public override Task TearDown() {
 		_pTable?.Dispose();
-		base.TearDown();
+		return base.TearDown();
 	}
 
 	private ISearchTable GetTable(bool memTableOrPTable) => memTableOrPTable ? (ISearchTable) _memTable : _pTable;

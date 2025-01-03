@@ -19,7 +19,7 @@ public class when_reading_logical_bytes_bulk_from_a_chunk<TLogFormat, TStreamId>
 	public async Task the_file_will_not_be_deleted_until_reader_released() {
 		var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
 		using (var reader = chunk.AcquireDataReader()) {
-			chunk.MarkForDeletion();
+			await chunk.MarkForDeletion(CancellationToken.None);
 			var buffer = new byte[1024];
 			var result = await reader.ReadNextBytes(buffer, CancellationToken.None);
 			Assert.IsFalse(result.IsEOF);
@@ -39,7 +39,7 @@ public class when_reading_logical_bytes_bulk_from_a_chunk<TLogFormat, TStreamId>
 			Assert.AreEqual(0, result.BytesRead);
 		}
 
-		chunk.MarkForDeletion();
+		await chunk.MarkForDeletion(CancellationToken.None);
 		chunk.WaitForDestroy(5000);
 	}
 
@@ -54,7 +54,7 @@ public class when_reading_logical_bytes_bulk_from_a_chunk<TLogFormat, TStreamId>
 			Assert.AreEqual(0, result.BytesRead);
 		}
 
-		chunk.MarkForDeletion();
+		await chunk.MarkForDeletion(CancellationToken.None);
 		chunk.WaitForDestroy(5000);
 	}
 
@@ -69,7 +69,7 @@ public class when_reading_logical_bytes_bulk_from_a_chunk<TLogFormat, TStreamId>
 			Assert.AreEqual(0, result.BytesRead); //header 128 + footer 128 + map 16
 		}
 
-		chunk.MarkForDeletion();
+		await chunk.MarkForDeletion(CancellationToken.None);
 		chunk.WaitForDestroy(5000);
 	}
 
@@ -91,7 +91,7 @@ public class when_reading_logical_bytes_bulk_from_a_chunk<TLogFormat, TStreamId>
 			Assert.AreEqual(1024, result.BytesRead);
 		}
 
-		chunk.MarkForDeletion();
+		await chunk.MarkForDeletion(CancellationToken.None);
 		chunk.WaitForDestroy(5000);
 	}
 
@@ -109,7 +109,7 @@ public class when_reading_logical_bytes_bulk_from_a_chunk<TLogFormat, TStreamId>
 				"Read wrong number of bytes.");
 		}
 
-		chunk.MarkForDeletion();
+		await chunk.MarkForDeletion(CancellationToken.None);
 		chunk.WaitForDestroy(5000);
 	}
 
@@ -130,7 +130,7 @@ public class when_reading_logical_bytes_bulk_from_a_chunk<TLogFormat, TStreamId>
 				"Read wrong number of bytes.");
 		}
 
-		chunk.MarkForDeletion();
+		await chunk.MarkForDeletion(CancellationToken.None);
 		chunk.WaitForDestroy(5000);
 	}
 }
