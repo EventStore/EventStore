@@ -9,10 +9,10 @@ namespace EventStore.Core.XUnit.Tests.Services.Archive.ArchiveCatchup;
 // this naming strategy uses the version field to store the chunk's end number
 internal class CustomNamingStrategy : IVersionedFileNamingStrategy {
 	public string GetFilenameFor(int chunkStartNumber, int chunkEndNumber) => $"chunk-{chunkStartNumber}.{chunkEndNumber}";
-	public string DetermineBestVersionFilenameFor(int index, int initialVersion) => throw new NotImplementedException();
+	public string DetermineNewVersionFilenameForIndex(int index, int defaultVersion) => throw new NotImplementedException();
 	public string[] GetAllVersionsFor(int index) => throw new NotImplementedException();
 	public string[] GetAllPresentFiles() => throw new NotImplementedException();
-	public string GetTempFilename() => throw new NotImplementedException();
+	public string CreateTempFilename() => throw new NotImplementedException();
 	public string[] GetAllTempFiles() => throw new NotImplementedException();
 
 	public int GetIndexFor(string fileName) {
