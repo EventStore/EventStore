@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext;
+using DotNext.IO;
 using EventStore.Plugins.Transforms;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -16,7 +17,7 @@ internal sealed class WriterWorkItem : Disposable {
 
 	public Stream WorkingStream { get; private set; }
 
-	private readonly Stream _fileStream;
+	private readonly ChunkDataWriteStream _fileStream;
 	private Stream _memStream;
 	public readonly IncrementalHash MD5;
 
@@ -36,7 +37,7 @@ internal sealed class WriterWorkItem : Disposable {
 		var chunkStream = handle.CreateStream();
 		var fileStream = unbuffered
 			? chunkStream
-			: new BufferedStream(chunkStream, BufferSize);
+			: new PoolingBufferedStream(chunkStream) { MaxBufferSize = BufferSize };
 		fileStream.Position = initialStreamPosition;
 		var chunkDataWriteStream = new ChunkDataWriteStream(fileStream, md5);
 
@@ -58,7 +59,7 @@ internal sealed class WriterWorkItem : Disposable {
 		return _fileStream?.WriteAsync(buf, token) ?? ValueTask.CompletedTask;
 	}
 
-	public void ResizeStream(int fileSize) {
+	public void ResizeStream(long fileSize) {
 		_fileStream?.SetLength(fileSize);
 		_memStream?.SetLength(fileSize);
 	}
@@ -71,6 +72,13 @@ internal sealed class WriterWorkItem : Disposable {
 		}
 
 		base.Dispose(disposing);
+	}
+
+	public ValueTask FlushToDisk(CancellationToken token) {
+		// in-mem stream doesn't require async call
+		_memStream?.Flush();
+
+		return new(_fileStream is not null ? _fileStream.FlushAsync(token) : Task.CompletedTask);
 	}
 
 	public void FlushToDisk() {

@@ -34,7 +34,11 @@ public sealed class IdentityChunkWriteTransform : IChunkWriteTransform {
 
 	public async ValueTask<int> WriteFooter(ReadOnlyMemory<byte> footer, CancellationToken token) {
 		await _stream.ChunkFileStream.WriteAsync(footer, token);
-		return (int)_stream.Length;
+
+		// The underlying stream can implement buffered I/O, this is why we need to flush it
+		// to get the correct length (because some bytes can be in the internal buffer)
+		await _stream.ChunkFileStream.FlushAsync(token);
+		return (int)_stream.Position;
 	}
 
 	private static int GetAlignedSize(int size, int alignmentSize) {

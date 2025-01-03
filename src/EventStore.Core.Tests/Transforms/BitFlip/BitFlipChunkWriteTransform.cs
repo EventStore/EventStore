@@ -28,7 +28,8 @@ public class BitFlipChunkWriteTransform : IChunkWriteTransform {
 
 	public async ValueTask<int> WriteFooter(ReadOnlyMemory<byte> footer, CancellationToken token) {
 		await _transformedStream.ChunkFileStream.WriteAsync(footer, token);
-		return (int)_transformedStream.ChunkFileStream.Length;
+		await _transformedStream.ChunkFileStream.FlushAsync(token);
+		return (int)_transformedStream.Position;
 	}
 
 	private static int GetAlignedSize(int size, int alignmentSize) {

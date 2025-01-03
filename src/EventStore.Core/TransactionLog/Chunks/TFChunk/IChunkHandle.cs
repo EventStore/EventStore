@@ -2,12 +2,14 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext;
 using DotNext.Buffers;
 using DotNext.IO;
+using DotNext.Threading.Tasks;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
@@ -83,18 +85,21 @@ public interface IChunkHandle : IFlushable, IDisposable {
 			// In practice, no one should call synchronous write
 			var bufferCopy = buffer.Copy();
 			var timeoutToken = GetTimeoutToken(WriteTimeout);
-			var task = WriteAsync(bufferCopy.Memory, offset, timeoutToken).AsTask();
+			var task = WriteAsync(bufferCopy.Memory, offset, timeoutToken);
 			try {
 				task.Wait();
-			} catch (AggregateException e) when (e.InnerExceptions is [OperationCanceledException canceledEx] &&
-			                                     canceledEx.CancellationToken == timeoutToken) {
-				throw new TimeoutException(e.Message, canceledEx);
-			}
-			finally {
-				task.Dispose();
+			} catch (OperationCanceledException canceledEx) when (canceledEx.CancellationToken == timeoutToken) {
+				throw new TimeoutException(canceledEx.Message, canceledEx);
+			} finally {
 				ResetTimeout();
 				bufferCopy.Dispose();
 			}
+
+			// This synchronous Write implementation exists because it is hard to be sure that it is
+			// never called. Quite a few synchronous stream operations can call synchronous write under
+			// the hood (e.g. SetLength). We want to be sure that these are at least not called
+			// routinely, because it is inefficient.
+			Debug.Fail("Synchronous writes are undesirable");
 		}
 
 
@@ -111,22 +116,20 @@ public interface IChunkHandle : IFlushable, IDisposable {
 				// In practice, no one should call synchronous write
 				var bufferCopy = Memory.AllocateExactly<byte>(buffer.Length);
 				var timeoutToken = GetTimeoutToken(ReadTimeout);
-				var task = ReadAsync(bufferCopy.Memory, offset, timeoutToken).AsTask();
+				var task = ReadAsync(bufferCopy.Memory, offset, timeoutToken);
 				try {
-					task.Wait();
-					bytesRead = task.Result;
-				} catch (AggregateException e) when (e.InnerExceptions is [OperationCanceledException canceledEx] &&
-				                                     canceledEx.CancellationToken == timeoutToken) {
-					throw new TimeoutException(e.Message, canceledEx);
+					bytesRead = task.Wait();
+					bufferCopy.Span.Slice(0, bytesRead).CopyTo(buffer);
+				} catch (OperationCanceledException canceledEx) when (canceledEx.CancellationToken == timeoutToken) {
+					throw new TimeoutException(canceledEx.Message, canceledEx);
 				} finally {
-					task.Dispose();
 					ResetTimeout();
 					bufferCopy.Dispose();
 				}
-
-				bufferCopy.Span.Slice(0, bytesRead).CopyTo(buffer);
 			}
 
+			// see comment on other Debug.Fail call
+			Debug.Fail("Synchronous writes are undesirable");
 			return bytesRead;
 		}
 
