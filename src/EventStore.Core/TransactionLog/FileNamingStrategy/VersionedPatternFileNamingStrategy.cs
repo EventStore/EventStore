@@ -33,12 +33,17 @@ public class VersionedPatternFileNamingStrategy : IVersionedFileNamingStrategy {
 		return Path.Combine(_path, $"{_prefix}{index:000000}.{version:000000}");
 	}
 
-	public string DetermineBestVersionFilenameFor(int index, int initialVersion) {
+	public string DetermineNewVersionFilenameForIndex(int index, int defaultVersion) {
 		var allVersions = GetAllVersionsFor(index);
+
 		if (allVersions.Length == 0)
-			return GetFilenameFor(index, initialVersion);
-		if (!int.TryParse(allVersions[0].AsSpan(allVersions[0].LastIndexOf('.') + 1), out var lastVersion))
-			throw new Exception($"Could not determine version from filename '{allVersions[0]}'.");
+			return GetFilenameFor(index, defaultVersion);
+
+		var lastFile = allVersions[0];
+		var lastVersionSpan = lastFile.AsSpan(lastFile.LastIndexOf('.') + 1);
+		if (!int.TryParse(lastVersionSpan, out var lastVersion))
+			throw new Exception($"Could not determine version from filename '{lastFile}'.");
+
 		return GetFilenameFor(index, lastVersion + 1);
 	}
 
@@ -85,7 +90,7 @@ public class VersionedPatternFileNamingStrategy : IVersionedFileNamingStrategy {
 		return versions;
 	}
 
-	public string GetTempFilename() {
+	public string CreateTempFilename() {
 		return Path.Combine(_path, $"{Guid.NewGuid()}.tmp");
 	}
 
