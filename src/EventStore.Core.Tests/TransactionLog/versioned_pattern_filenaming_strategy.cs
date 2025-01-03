@@ -133,8 +133,8 @@ public class versioned_pattern_filenaming_strategy : SpecificationWithDirectory 
 		var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
 		Assert.AreEqual(0, strategy.GetAllTempFiles().Length);
 
-		var tmp1 = strategy.GetTempFilename();
-		var tmp2 = strategy.GetTempFilename();
+		var tmp1 = strategy.CreateTempFilename();
+		var tmp2 = strategy.CreateTempFilename();
 		File.Create(tmp1).Close();
 		File.Create(tmp2).Close();
 		var tmp = new[] { tmp1, tmp2 };

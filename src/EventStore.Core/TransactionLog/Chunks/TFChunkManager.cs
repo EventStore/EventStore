@@ -119,7 +119,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 	}
 
 	public ValueTask<TFChunk.TFChunk> CreateTempChunk(ChunkHeader chunkHeader, int fileSize, CancellationToken token) {
-		var chunkFileName = _config.FileNamingStrategy.GetTempFilename();
+		var chunkFileName = _config.FileNamingStrategy.CreateTempFilename();
 		return TFChunk.TFChunk.CreateWithHeader(chunkFileName,
 			chunkHeader,
 			fileSize,
@@ -266,7 +266,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			}
 
 			var newFileName =
-				_config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber, initialVersion: 1);
+				_config.FileNamingStrategy.DetermineNewVersionFilenameForIndex(chunkHeader.ChunkStartNumber, defaultVersion: 1);
 			Log.Information("File {oldFileName} will be moved to file {newFileName}", Path.GetFileName(oldFileName),
 				Path.GetFileName(newFileName));
 			try {
