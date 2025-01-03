@@ -30,21 +30,20 @@ public class VersionedPatternFileNamingStrategy : IVersionedFileNamingStrategy {
 		Ensure.Nonnegative(index, "index");
 		Ensure.Nonnegative(version, "version");
 
-		return Path.Combine(_path, string.Format("{0}{1:000000}.{2:000000}", _prefix, index, version));
+		return Path.Combine(_path, $"{_prefix}{index:000000}.{version:000000}");
 	}
 
 	public string DetermineBestVersionFilenameFor(int index, int initialVersion) {
 		var allVersions = GetAllVersionsFor(index);
 		if (allVersions.Length == 0)
 			return GetFilenameFor(index, initialVersion);
-		int lastVersion;
-		if (!int.TryParse(allVersions[0].Substring(allVersions[0].LastIndexOf('.') + 1), out lastVersion))
-			throw new Exception(string.Format("Could not determine version from filename '{0}'.", allVersions[0]));
+		if (!int.TryParse(allVersions[0].AsSpan(allVersions[0].LastIndexOf('.') + 1), out var lastVersion))
+			throw new Exception($"Could not determine version from filename '{allVersions[0]}'.");
 		return GetFilenameFor(index, lastVersion + 1);
 	}
 
 	public string[] GetAllVersionsFor(int index) {
-		var versions = Directory.EnumerateFiles(_path, string.Format("{0}{1:000000}.*", _prefix, index))
+		var versions = Directory.EnumerateFiles(_path, $"{_prefix}{index:000000}.*")
 			.Where(x => _pattern.IsMatch(Path.GetFileName(x)))
 			.OrderByDescending(x => x, StringComparer.CurrentCultureIgnoreCase)
 			.ToArray();
@@ -79,14 +78,15 @@ public class VersionedPatternFileNamingStrategy : IVersionedFileNamingStrategy {
 	}
 
 	public string[] GetAllPresentFiles() {
-		var versions = Directory.EnumerateFiles(_path, string.Format("{0}*.*", _prefix))
+		var versions = Directory
+			.EnumerateFiles(_path, $"{_prefix}*.*")
 			.Where(x => _pattern.IsMatch(Path.GetFileName(x)))
 			.ToArray();
 		return versions;
 	}
 
 	public string GetTempFilename() {
-		return Path.Combine(_path, string.Format("{0}.tmp", Guid.NewGuid()));
+		return Path.Combine(_path, $"{Guid.NewGuid()}.tmp");
 	}
 
 	public string[] GetAllTempFiles() {

@@ -7,7 +7,6 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.TransactionLog.Chunks;
@@ -20,12 +19,14 @@ public class TFChunkEnumerator {
 	public TFChunkEnumerator(IVersionedFileNamingStrategy chunkFileNamingStrategy) {
 		_chunkFileNamingStrategy = chunkFileNamingStrategy;
 		_allFiles = null;
-		_nextChunkNumber = new Dictionary<string, int>();
+		_nextChunkNumber = [];
 	}
 
-	public async IAsyncEnumerable<TFChunkInfo> EnumerateChunks(int lastChunkNumber,
+	public async IAsyncEnumerable<TFChunkInfo> EnumerateChunks(
+		int lastChunkNumber,
 		Func<string, int, int, CancellationToken, ValueTask<int>> getNextChunkNumber = null,
 		[EnumeratorCancellation] CancellationToken token = default) {
+
 		getNextChunkNumber ??= GetNextChunkNumber;
 
 		if (_allFiles is null) {
