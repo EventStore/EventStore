@@ -5,7 +5,6 @@
 
 using System;
 using System.Collections;
-using System.IO;
 using EventStore.Common.Configuration;
 using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Util;
@@ -14,10 +13,10 @@ using Microsoft.Extensions.Configuration;
 namespace EventStore.Core.Configuration;
 
 public static class KurrentConfiguration {
-	public static IConfigurationRoot Build(string[] args, IDictionary environment) {
+	public static IConfigurationRoot Build(LocationOptionWithLegacyDefault[] optionsWithLegacyDefaults, string[] args, IDictionary environment) {
 
 		// resolve the main configuration file
-		var configFile = ResolveConfigurationFile(args, environment);
+		var configFile = ResolveConfigurationFile(optionsWithLegacyDefaults, args, environment);
 
 		// Create a single IConfiguration object that contains the whole configuration, including
 		// plugin configuration. We will add it to the DI and make it available to the plugins.
@@ -27,10 +26,14 @@ public static class KurrentConfiguration {
 		// - kestrelsettings.json is not located in a config/ directory
 		// - logconfig.json is not located in a config/ directory
 		//
-		// The EventStore configuration section is kept for backwards compatibility
+		// The EventStore configuration section is transformed to Kurrent by the EventStore configuration providers
+		// to maintain backwards compatibility
 		var builder = new ConfigurationBuilder()
 			// we should be able to stop doing this soon as long as we bind the options automatically
 			.AddKurrentDefaultValues()
+			// check for the existence of Kurrent default locations
+			// if they do not exist, use the EventStore ones if the EventStore location exists.
+			.AddLegacyDefaultLocations(optionsWithLegacyDefaults)
 			.AddKurrentYamlConfigFile(configFile.Path, configFile.Optional)
 
 			.AddSection($"{KurrentConfigurationKeys.Prefix}:Metrics",
@@ -45,11 +48,11 @@ public static class KurrentConfiguration {
 			.AddLegacyEventStoreConfigFiles("*.json")
 			.AddKurrentConfigFiles("*.json")
 
-			#if DEBUG
+#if DEBUG
 			// load all json files in the current directory
 			.AddJsonFile("appsettings.json", true)
 			.AddJsonFile("appsettings.Development.json", true)
-			#endif
+#endif
 
 			.AddEnvironmentVariables()
 			.AddLegacyEventStoreEnvironmentVariables(environment)
@@ -63,12 +66,13 @@ public static class KurrentConfiguration {
 		return builder.Build();
 	}
 
-	public static IConfigurationRoot Build(params string[] args) {
+	public static IConfigurationRoot Build(LocationOptionWithLegacyDefault[] optionsWithLegacyDefaults, params string[] args) {
 		var environment = Environment.GetEnvironmentVariables();
-		return Build(args, environment);
+		return Build(optionsWithLegacyDefaults, args, environment);
 	}
 
-	private static (string Path, bool Optional) ResolveConfigurationFile(string[] args, IDictionary environment) {
+	private static (string Path, bool Optional) ResolveConfigurationFile(
+		LocationOptionWithLegacyDefault[] optionsWithLegacyDefaults, string[] args, IDictionary environment) {
 		var configuration = new ConfigurationBuilder()
 			.AddLegacyEventStoreEnvironmentVariables(environment)
 			.AddKurrentEnvironmentVariables(environment)
@@ -83,18 +87,17 @@ public static class KurrentConfiguration {
 			return (configFilePath, false);
 		}
 
-		// get the default config file path
-		if (File.Exists(DefaultFiles.DefaultConfigPath)) {
-			return (DefaultFiles.DefaultConfigPath, true);
-		}
+		// rebuild the configuration just with the defaults
+		configuration = new ConfigurationBuilder()
+			.AddKurrentDefaultValues()
+			.AddLegacyDefaultLocations(optionsWithLegacyDefaults)
+			.Build();
 
-		// if the default config file is not found, check for a legacy one
-		if (File.Exists(DefaultFiles.LegacyEventStoreConfigPath)) {
-			return (DefaultFiles.LegacyEventStoreConfigPath, true);
-		}
-
-		// no config was found, use the default kurrent config
-		return (DefaultFiles.DefaultConfigPath, true);
+		configFilePath = configuration.GetValue<string?>($"{KurrentConfigurationKeys.Prefix}:Config");
+		// this is a default, so it can be optional
+		return configFilePath is not null
+			? (configFilePath, true)
+			: (DefaultFiles.DefaultConfigPath, true);
 	}
 
 	public static IConfigurationBuilder AddKurrentYamlConfigFile(

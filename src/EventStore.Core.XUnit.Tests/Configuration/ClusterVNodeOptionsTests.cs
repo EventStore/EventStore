@@ -23,7 +23,8 @@ public class ClusterVNodeOptionsTests {
 	private const string EventStorePrefix = KurrentConfigurationKeys.LegacyEventStorePrefix;
 	private string EventStoreEnvVarPrefix => KurrentConfigurationKeys.LegacyEventStorePrefix.ToUpper();
 	static ClusterVNodeOptions GetOptions(string args) {
-		var configuration = KurrentConfiguration.Build(args.Split());
+		var configuration = KurrentConfiguration.Build(
+			LocationOptionWithLegacyDefault.SupportedLegacyLocations, args.Split());
 		return ClusterVNodeOptions.FromConfiguration(configuration);
 	}
 

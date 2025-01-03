@@ -86,8 +86,8 @@ public partial record ClusterVNodeOptions {
 	public string[] CheckForLegacyEventStoreConfiguration() =>
 		ConfigurationRoot.CheckProvidersForLegacyEventStoreConfiguration();
 
-	public string? CheckForLegacyDefaultConfig() =>
-		ConfigurationRoot.CheckDefaultConfigForLegacyEventStoreConfig();
+	public string[] CheckForLegacyDefaultLocations(LocationOptionWithLegacyDefault[] optionsWithLegacyDefaults) =>
+		ConfigurationRoot.CheckProvidersForEventStoreDefaultLocations(optionsWithLegacyDefaults);
 
 	public static IReadOnlyDictionary<string, LoadedOption> GetLoadedOptions(IConfigurationRoot configurationRoot) {
 		var loadedOptions = new Dictionary<string, LoadedOption>();

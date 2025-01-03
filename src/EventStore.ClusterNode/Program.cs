@@ -25,6 +25,7 @@ using Serilog;
 using System.Runtime;
 using EventStore.Common.DevCertificates;
 using EventStore.Core.Configuration;
+using EventStore.Core.Configuration.Sources;
 using Microsoft.Extensions.Logging;
 using Serilog.Events;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
@@ -33,7 +34,8 @@ namespace EventStore.ClusterNode;
 
 internal static class Program {
 	public static async Task<int> Main(string[] args) {
-		var configuration = KurrentConfiguration.Build(args);
+		var optionsWithLegacyDefaults = LocationOptionWithLegacyDefault.SupportedLegacyLocations;
+		var configuration = KurrentConfiguration.Build(optionsWithLegacyDefaults, args);
 
 		ThreadPool.SetMaxThreads(1000, 1000);
 		var exitCodeSource = new TaskCompletionSource<int>();
@@ -43,11 +45,7 @@ internal static class Program {
 		try {
 			var options = ClusterVNodeOptions.FromConfiguration(configuration);
 
-			var logsDirectory = string.IsNullOrWhiteSpace(options.Logging.Log)
-				? Locations.DefaultLogDirectory
-				: options.Logging.Log;
-
-			EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName(),
+			EventStoreLoggerConfiguration.Initialize(options.Logging.Log, options.GetComponentName(),
 				options.Logging.LogConsoleFormat,
 				options.Logging.LogFileSize,
 				options.Logging.LogFileInterval,
@@ -84,7 +82,7 @@ internal static class Program {
 				GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : $"{GC.MaxGeneration + 1} GENERATIONS",
 				GCSettings.IsServerGC,
 				GCSettings.LatencyMode);
-			Log.Information("{description,-25} {logsDirectory}", "LOGS:", logsDirectory);
+			Log.Information("{description,-25} {logsDirectory}", "LOGS:", options.Logging.Log);
 			Log.Information(options.DumpOptions());
 
 			var level = options.Application.AllowUnknownOptions
@@ -143,9 +141,9 @@ internal static class Program {
 				certificateProvider = new OptionsCertificateProvider();
 			}
 
-			var defaultConfigWarning = options.CheckForLegacyDefaultConfig();
-			if (defaultConfigWarning != null) {
-				Log.Warning(defaultConfigWarning);
+			var defaultLocationWarnings = options.CheckForLegacyDefaultLocations(optionsWithLegacyDefaults);
+			foreach(var locationWarning in defaultLocationWarnings) {
+				Log.Warning(locationWarning);
 			}
 
 			var eventStoreOptionWarnings = options.CheckForLegacyEventStoreConfiguration();
