@@ -153,12 +153,12 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 
 		var inMemConf = new ConfigurationBuilder()
 			.AddInMemoryCollection(new KeyValuePair<string, string>[] {
-				new("EventStore:TcpPlugin:NodeTcpPort", externalTcp.Port.ToString()),
-				new("EventStore:TcpPlugin:EnableExternalTcp", "true"),
-				new("EventStore:TcpUnitTestPlugin:NodeTcpPort", externalTcp.Port.ToString()),
-				new("EventStore:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
-				new("EventStore:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
-				new("EventStore:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
+				new("Kurrent:TcpPlugin:NodeTcpPort", externalTcp.Port.ToString()),
+				new("Kurrent:TcpPlugin:EnableExternalTcp", "true"),
+				new("Kurrent:TcpUnitTestPlugin:NodeTcpPort", externalTcp.Port.ToString()),
+				new("Kurrent:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
+				new("Kurrent:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
+				new("Kurrent:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
 			}).Build();
 		var serverCertificate = useHttps ? ssl_connections.GetServerCertificate() : null;
 		var trustedRootCertificates =

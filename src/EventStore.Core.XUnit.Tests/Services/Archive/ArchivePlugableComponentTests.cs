@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Collections.Generic;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Services.Archive;
 using EventStore.Plugins;
 using EventStore.Plugins.Licensing;
@@ -30,7 +31,7 @@ public class ArchivePlugableComponentTests {
 
 		if (enabled)
 			configBuilder = configBuilder.AddInMemoryCollection(new Dictionary<string, string> {
-				{"EventStore:Archive:Enabled", "true"},
+				{$"{KurrentConfigurationKeys.Prefix}:Archive:Enabled", "true"},
 			});
 
 		var config = configBuilder.Build();

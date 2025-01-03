@@ -30,9 +30,9 @@ public record OptionMetadata(
 	public static OptionMetadata
 		FromPropertyInfo(SectionMetadata sectionMetadata, PropertyInfo property, int sequence) {
 		var sectionName = property.DeclaringType?.Name.Replace("Options", "") ?? "";
-		var key = EventStoreConfigurationKeys.Normalize(property.Name);
+		var key = KurrentConfigurationKeys.Normalize(property.Name);
 		var fullKey =
-			$"{EventStoreConfigurationKeys.Prefix}:{sectionName}:{EventStoreConfigurationKeys.StripConfigurationPrefix(property.Name)}";
+			$"{KurrentConfigurationKeys.Prefix}:{sectionName}:{KurrentConfigurationKeys.StripConfigurationPrefix(property.Name)}";
 
 		var description = property.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
 		var isSensitive = property.GetCustomAttribute<SensitiveAttribute>() != null;

@@ -17,9 +17,9 @@ public class DefaultValuesConfigurationSourceTests {
 	
 		// Act
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
+			.AddKurrentDefaultValues()
 			.Build()
-			.GetSection(EventStoreConfigurationKeys.Prefix);
+			.GetSection(KurrentConfigurationKeys.Prefix);
 	
 		// Assert
 		foreach (var (key, expectedValue) in defaults) {

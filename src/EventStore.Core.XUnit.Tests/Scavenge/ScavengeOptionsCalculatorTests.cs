@@ -12,10 +12,12 @@ using Microsoft.Extensions.Configuration;
 using Xunit;
 using EventStore.Core.Services.UserManagement;
 using System;
+using EventStore.Core.Configuration.Sources;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge;
 
 public class ScavengeOptionsCalculatorTests {
+	private const string SectionName = KurrentConfigurationKeys.Prefix;
 	private static ScavengeOptionsCalculator GenSut(
 		KeyValuePair<string, string?>[]? vNodeOptions = null,
 		int? threshold = null) {
@@ -32,7 +34,7 @@ public class ScavengeOptionsCalculatorTests {
 			syncOnly: false);
 
 		var config = new ConfigurationBuilder().AddInMemoryCollection(
-				vNodeOptions.Append(new("EventStore:ClusterSize", "1")))
+				vNodeOptions.Append(new($"{SectionName}:ClusterSize", "1")))
 			.Build();
 		var options = ClusterVNodeOptions.FromConfiguration(config);
 		var sut = new ScavengeOptionsCalculator(options, message);
@@ -50,7 +52,7 @@ public class ScavengeOptionsCalculatorTests {
 	[Fact]
 	public void merging_can_be_disabled() {
 		var sut = GenSut([
-			new("EventStore:DisableScavengeMerging", "true"),
+			new($"{SectionName}:DisableScavengeMerging", "true"),
 		]);
 
 		Assert.False(sut.MergeChunks);
@@ -60,7 +62,7 @@ public class ScavengeOptionsCalculatorTests {
 	public void merging_is_disabled_when_archiving_is_enabled() {
 		var sut = GenSut(
 			vNodeOptions: [
-				new("EventStore:Archive:Enabled", "true"),
+				new($"{SectionName}:Archive:Enabled", "true"),
 			]);
 
 		Assert.False(sut.MergeChunks);

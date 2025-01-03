@@ -9,6 +9,7 @@ using System.Text.Json.Nodes;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using EventStore.Core.Cluster;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -50,7 +51,7 @@ public sealed class TelemetryServiceTests : IAsyncLifetime {
 			_db.Manager,
 			new ClusterVNodeOptions().WithPlugableComponent(_plugin),
 			new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>() {
-				{ "EventStore:Telemetry:CloudIdentifier", "abc"},
+				{ $"{KurrentConfigurationKeys.Prefix}:Telemetry:CloudIdentifier", "abc"},
 			}).Build(),
 			new EnvelopePublisher(new ChannelEnvelope(channel)),
 			_sink,
