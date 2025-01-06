@@ -13,7 +13,7 @@ public class ArchiveStorageFactory(
 
 	public IArchiveStorageReader CreateReader() {
 		return options.StorageType switch {
-			StorageType.Unspecified => throw new InvalidOperationException("Please specify an Archive StorageType"),
+			StorageType.Unspecified => NoArchiveReader.Instance,
 			StorageType.FileSystem => new FileSystemReader(options.FileSystem, fileNamingStrategy.GetPrefixFor, ArchiveCheckpointFile),
 			StorageType.S3 => new S3Reader(options.S3, fileNamingStrategy.GetPrefixFor, ArchiveCheckpointFile),
 			_ => throw new ArgumentOutOfRangeException(nameof(options.StorageType))
