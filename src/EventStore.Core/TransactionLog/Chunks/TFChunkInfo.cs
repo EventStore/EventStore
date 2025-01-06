@@ -3,7 +3,11 @@
 
 namespace EventStore.Core.TransactionLog.Chunks;
 
-public record TFChunkInfo(string fileName);
-public record LatestVersion(string fileName, int start, int end) : TFChunkInfo(fileName);
-public record OldVersion(string fileName, int start) : TFChunkInfo(fileName);
-public record MissingVersion(string fileName, int chunkNumber) : TFChunkInfo(fileName);
+public record TFChunkInfo {
+	private protected TFChunkInfo() { }
+}
+
+public record LatestVersion(string fileName, int start, int end) : TFChunkInfo;
+public record OldVersion(string fileName, int start) : TFChunkInfo;
+public record MissingVersion(string fileName, int chunkNumber) : TFChunkInfo;
+public record ArchivedVersion(int chunkNumber) : TFChunkInfo;

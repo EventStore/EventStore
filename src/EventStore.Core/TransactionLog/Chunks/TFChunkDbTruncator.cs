@@ -7,6 +7,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.Archive.Storage;
 using EventStore.Plugins.Transforms;
 using ILogger = Serilog.ILogger;
 
@@ -17,15 +18,22 @@ public class TFChunkDbTruncator {
 
 	private readonly TFChunkDbConfig _config;
 	private readonly Func<TransformType, IChunkTransformFactory> _getTransformFactory;
+	private readonly IArchiveStorageReader _archiveReader;
 
-	public TFChunkDbTruncator(TFChunkDbConfig config, Func<TransformType, IChunkTransformFactory> getTransformFactory) {
+	public TFChunkDbTruncator(
+		TFChunkDbConfig config,
+		Func<TransformType, IChunkTransformFactory> getTransformFactory,
+		IArchiveStorageReader archiveReader = null) {
+
 		Ensure.NotNull(config, "config");
 		Ensure.NotNull(getTransformFactory, "getTransformFactory");
 		_config = config;
 		_getTransformFactory = getTransformFactory;
+		_archiveReader = archiveReader ?? NoArchiveReader.Instance;
 	}
 
 	public async ValueTask TruncateDb(long truncateChk, CancellationToken token) {
+		var archiveCheckpoint = await _archiveReader.GetCheckpoint(token);
 		var writerChk = _config.WriterCheckpoint.Read();
 		var requestedTruncation = writerChk - truncateChk;
 		if (_config.MaxTruncation >= 0 && requestedTruncation > _config.MaxTruncation) {
@@ -38,7 +46,9 @@ public class TFChunkDbTruncator {
 
 		var oldLastChunkNum = (int)(writerChk / _config.ChunkSize);
 		var newLastChunkNum = (int)(truncateChk / _config.ChunkSize);
-		var chunkEnumerator = new TFChunkEnumerator(_config.FileNamingStrategy);
+
+		var firstChunkNotInArchive = (int)(archiveCheckpoint / _config.ChunkSize);
+		var chunkEnumerator = new TFChunkEnumerator(_config.FileNamingStrategy, firstChunkNotInArchive);
 		var truncatingToBoundary = truncateChk % _config.ChunkSize == 0;
 
 		var excessiveChunks = _config.FileNamingStrategy.GetAllVersionsFor(oldLastChunkNum + 1);

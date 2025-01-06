@@ -17,11 +17,17 @@ namespace EventStore.Core.TransactionLog.Chunks;
 // and spotting if any chunkNumbers are missing entirely.
 public class TFChunkEnumerator {
 	private readonly IVersionedFileNamingStrategy _chunkFileNamingStrategy;
-	private string[] _allFiles;
+	private readonly int _firstChunkNotInArchive;
 	private readonly Dictionary<string, int> _nextChunkNumber;
+	private string[] _allFiles;
 
-	public TFChunkEnumerator(IVersionedFileNamingStrategy chunkFileNamingStrategy) {
+	public TFChunkEnumerator(
+		IVersionedFileNamingStrategy chunkFileNamingStrategy,
+		int firstChunkNotInArchive) {
+
 		_chunkFileNamingStrategy = chunkFileNamingStrategy;
+		_firstChunkNotInArchive = firstChunkNotInArchive;
+
 		_allFiles = null;
 		_nextChunkNumber = [];
 	}
@@ -56,7 +62,7 @@ public class TFChunkEnumerator {
 
 			if (chunkNumber > expectedChunkNumber) { // one or more chunks are missing
 				for (int j = expectedChunkNumber; j < chunkNumber; j++) {
-					yield return new MissingVersion(_chunkFileNamingStrategy.GetFilenameFor(j, 0), j);
+					yield return MissingVersionOrArchive(j);
 				}
 				// set the expected chunk number to prevent calling onFileMissing() again for the same chunk numbers
 				expectedChunkNumber = chunkNumber;
@@ -71,9 +77,19 @@ public class TFChunkEnumerator {
 		}
 
 		for (int i = expectedChunkNumber; i <= lastChunkNumber; i++) {
-			yield return new MissingVersion(_chunkFileNamingStrategy.GetFilenameFor(i, 0), i);
+			yield return MissingVersionOrArchive(i);
 		}
 	}
+
+	private TFChunkInfo MissingVersionOrArchive(int chunkNumber) =>
+		IsInArchive(chunkNumber)
+			? new ArchivedVersion(chunkNumber)
+			: new MissingVersion(
+				_chunkFileNamingStrategy.GetFilenameFor(chunkNumber, 0),
+				chunkNumber);
+
+	private bool IsInArchive(int chunkNumber) =>
+		chunkNumber < _firstChunkNotInArchive;
 
 	private async ValueTask<int> GetNextChunkNumber(string chunkFileName, int chunkNumber, int chunkVersion, CancellationToken token) {
 		if (chunkVersion is 0)
