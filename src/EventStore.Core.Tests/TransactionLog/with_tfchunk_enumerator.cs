@@ -14,7 +14,6 @@ namespace EventStore.Core.Tests.TransactionLog;
 
 [TestFixture]
 public class with_tfchunk_enumerator : SpecificationWithDirectory {
-
 	[Test]
 	public async Task iterates_chunks_with_correct_callback_order() {
 		File.Create(GetFilePathFor("foo")).Close(); // should be ignored
@@ -22,10 +21,11 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 		File.Create(GetFilePathFor("chunk-000001.000000.tmp")).Close(); // should be ignored
 		File.Create(GetFilePathFor("chunk-001.000")).Close(); // should be ignored
 
-		// chunk 0 is missing
+		// chunk 0 is archived
 		File.Create(GetFilePathFor("chunk-000001.000000")).Close(); // chunks 1 - 1 (latest)
 		File.Create(GetFilePathFor("chunk-000002.000001")).Close(); // chunks 2 - 2 (latest)
-		// chunks 3 & 4 are missing
+		// chunk 3 is archived
+		// chunk 4 is missing
 		File.Create(GetFilePathFor("chunk-000005.000000")).Close(); // chunks 5 - 5 (old)
 		File.Create(GetFilePathFor("chunk-000005.000001")).Close(); // chunks 5 - 6 (old)
 		File.Create(GetFilePathFor("chunk-000005.000002")).Close(); // chunks 5 - 7 (latest)
@@ -36,7 +36,7 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 		File.Create(GetFilePathFor("chunk-000010.000005")).Close(); // chunks 10 - 14 (latest)
 		// chunks 15 & 16 are missing
 
-		var chunkEnumerator = new TFChunkEnumerator(new ChunkLocalFileSystem(PathName));
+		var chunkEnumerator = new TFChunkEnumerator(new ChunkLocalFileSystem(PathName), firstChunkNotInArchive: 4);
 		var result = new List<string>();
 		ValueTask<int> GetNextFileNumber(string chunk, int chunkNumber, int chunkVersion, CancellationToken token) {
 			return Path.GetFileName(chunk) switch {
@@ -63,16 +63,19 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 				case MissingVersion(var fileName, var chunkNum):
 					result.Add($"missing {Path.GetFileName(fileName)} {chunkNum}");
 					break;
+				case ArchivedVersion(var chunkNum):
+					result.Add($"archived chunk {chunkNum}");
+					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(chunkInfo));
 			}
 		}
 
 		var expectedResult = new List<string> {
-			"missing chunk-000000.000000 0",
+			"archived chunk 0",
 			"latest chunk-000001.000000 1-1",
 			"latest chunk-000002.000001 2-2",
-			"missing chunk-000003.000000 3",
+			"archived chunk 3",
 			"missing chunk-000004.000000 4",
 			"old chunk-000005.000000 5",
 			"old chunk-000005.000001 5",

@@ -9,6 +9,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
+using EventStore.Core.Services.Archive.Storage;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.Transforms;
 using ILogger = Serilog.ILogger;
 
@@ -21,6 +23,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 
 	private readonly ILogger _log;
 	private readonly ITransactionFileTracker _tracker;
+	private readonly IArchiveStorageReader _archiveReader;
 	private int _closed;
 
 	public TFChunkDb(
@@ -28,6 +31,8 @@ public sealed class TFChunkDb : IAsyncDisposable {
 		ITransactionFileTracker tracker = null,
 		ILogger log = null,
 		DbTransformManager transformManager = null,
+		IChunkFileSystem fileSystem = null,
+		IArchiveStorageReader archiveReader = null,
 		Action<Data.ChunkInfo> onChunkLoaded = null,
 		Action<Data.ChunkInfo> onChunkCompleted = null,
 		Action<Data.ChunkInfo> onChunkSwitched = null) {
@@ -35,8 +40,9 @@ public sealed class TFChunkDb : IAsyncDisposable {
 
 		Config = config;
 		TransformManager = transformManager ?? DbTransformManager.Default;
+		_archiveReader = archiveReader ?? NoArchiveReader.Instance;
 		_tracker = tracker ?? new TFChunkTracker.NoOp();
-		Manager = new TFChunkManager(Config, _tracker, TransformManager) {
+		Manager = new TFChunkManager(Config, fileSystem, _tracker, TransformManager) {
 			OnChunkLoaded = onChunkLoaded,
 			OnChunkCompleted = onChunkCompleted,
 			OnChunkSwitched = onChunkSwitched
@@ -65,13 +71,21 @@ public sealed class TFChunkDb : IAsyncDisposable {
 							ChunkStartNumber = start,
 						};
 					break;
+
 				case MissingVersion(var fileName, var chunkNum):
 					if (chunkNum <= lastChunkNum - 1)
 						throw new CorruptDatabaseException(new ChunkNotFoundException(fileName));
 
 					// fine for last chunk to be 'missing' (not created yet)
 					break;
-				// OldVersion: don't open old versions. they will soon be deleted
+
+				case ArchivedVersion:
+					// nothing to do, we will resolve it on demand later to save time at startup.
+					break;
+
+				case OldVersion:
+					// don't open old versions. they will soon be deleted
+					break;
 			}
 		}
 	}
@@ -89,6 +103,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 			throw new InvalidOperationException("Cannot reopen database after closing");
 
 		ValidateReaderChecksumsMustBeLess(Config);
+		var archiveCheckpoint = await _archiveReader.GetCheckpoint(token);
 		var writerCheckpoint = Config.WriterCheckpoint.Read();
 
 		if (Config.InMemDb) {
@@ -97,9 +112,10 @@ public sealed class TFChunkDb : IAsyncDisposable {
 			return;
 		}
 
+		var firstChunkNotInArchive = (int)(archiveCheckpoint / Config.ChunkSize);
 		var lastChunkNum = (int)(writerCheckpoint / Config.ChunkSize);
 		var lastChunkVersions = Manager.FileSystem.NamingStrategy.GetAllVersionsFor(lastChunkNum);
-		var chunkEnumerator = new TFChunkEnumerator(Manager.FileSystem);
+		var chunkEnumerator = new TFChunkEnumerator(Manager.FileSystem, firstChunkNotInArchive);
 		var getTransformFactoryForExistingChunk = TransformManager.GetFactoryForExistingChunk;
 
 		// Open the historical chunks. New records will not be written to any of these.
@@ -297,9 +313,15 @@ public sealed class TFChunkDb : IAsyncDisposable {
 					else if (start > lastChunkNum)
 						extraneousFiles.Add(fileName);
 					break;
+
 				case OldVersion(var fileName, var start):
 					if (start > lastChunkNum)
 						extraneousFiles.Add(fileName);
+					break;
+
+				case MissingVersion:
+				case ArchivedVersion:
+					// no op
 					break;
 			}
 		}
@@ -320,6 +342,12 @@ public sealed class TFChunkDb : IAsyncDisposable {
 				case OldVersion(var fileName, var start):
 					if (start <= lastChunkNum)
 						RemoveFile("Removing old chunk version: {chunk}...", fileName);
+					break;
+
+				case LatestVersion:
+				case MissingVersion:
+				case ArchivedVersion:
+					// no op
 					break;
 			}
 		}

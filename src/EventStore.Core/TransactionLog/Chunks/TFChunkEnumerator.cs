@@ -16,14 +16,16 @@ namespace EventStore.Core.TransactionLog.Chunks;
 // is the Latest for its (logical) chunkNumber, an older version of its chunkNumber,
 // and spotting if any chunkNumbers are missing entirely.
 public class TFChunkEnumerator {
-	private string[] _allFiles;
+	private readonly int _firstChunkNotInArchive;
 	private readonly Dictionary<string, int> _nextChunkNumber;
 	private readonly IChunkFileSystem _fileSystem;
+	private string[] _allFiles;
 
-	public TFChunkEnumerator(IChunkFileSystem fileSystem) {
+	public TFChunkEnumerator(IChunkFileSystem fileSystem, int firstChunkNotInArchive) {
 		_allFiles = null;
 		_nextChunkNumber = [];
 		_fileSystem = fileSystem;
+		_firstChunkNotInArchive = firstChunkNotInArchive;
 	}
 
 	// lastChunkNumber is not a filter/limit, it is used to spot missing chunks
@@ -56,7 +58,7 @@ public class TFChunkEnumerator {
 
 			if (chunkNumber > expectedChunkNumber) { // one or more chunks are missing
 				for (int j = expectedChunkNumber; j < chunkNumber; j++) {
-					yield return new MissingVersion(_fileSystem.NamingStrategy.GetFilenameFor(j, 0), j);
+					yield return MissingVersionOrArchive(j);
 				}
 				// set the expected chunk number to prevent calling onFileMissing() again for the same chunk numbers
 				expectedChunkNumber = chunkNumber;
@@ -71,9 +73,19 @@ public class TFChunkEnumerator {
 		}
 
 		for (int i = expectedChunkNumber; i <= lastChunkNumber; i++) {
-			yield return new MissingVersion(_fileSystem.NamingStrategy.GetFilenameFor(i, 0), i);
+			yield return MissingVersionOrArchive(i);
 		}
 	}
+
+	private TFChunkInfo MissingVersionOrArchive(int chunkNumber) =>
+		IsInArchive(chunkNumber)
+			? new ArchivedVersion(chunkNumber)
+			: new MissingVersion(
+				_fileSystem.NamingStrategy.GetFilenameFor(chunkNumber, 0),
+				chunkNumber);
+
+	private bool IsInArchive(int chunkNumber) =>
+		chunkNumber < _firstChunkNotInArchive;
 
 	private async ValueTask<int> GetNextChunkNumber(string chunkFileName, int chunkNumber, int chunkVersion, CancellationToken token) {
 		if (chunkVersion is 0)

@@ -61,11 +61,13 @@ using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
 using EventStore.Core.Services.Archive;
 using EventStore.Core.Services.Storage.InMemory;
+using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.PeriodicLogs;
 using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
 using EventStore.Core.Synchronization;
 using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
@@ -82,7 +84,6 @@ using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 using EventStore.Licensing;
-using EventStore.Core.Services.Archive.Storage;
 
 namespace EventStore.Core;
 public abstract class ClusterVNode {
@@ -314,10 +315,15 @@ public class ClusterVNode<TStreamId> :
 		var metricsConfiguration = MetricsConfiguration.Get((configuration));
 		MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
+		var fileSystem = new ChunkLocalFileSystem(dbConfig.Path);
+		var archiveReader = new ArchiveStorageFactory(archiveOptions, fileSystem.NamingStrategy).CreateReader();
+
 		Db = new TFChunkDb(
 			dbConfig,
 			tracker: trackers.TransactionFileTracker,
 			transformManager: new DbTransformManager(),
+			fileSystem: fileSystem,
+			archiveReader: archiveReader,
 			onChunkLoaded: chunkInfo => {
 				_mainQueue.Publish(new SystemMessage.ChunkLoaded(chunkInfo));
 			},
@@ -1297,8 +1303,6 @@ public class ClusterVNode<TStreamId> :
 
 			var chunkDeleter = IChunkDeleter<TStreamId, ILogRecord>.NoOp;
 			if (archiveOptions.Enabled) {
-				// todo: consider if we can/should reuse the same reader elsewhere
-				var archiveReader = new ArchiveStorageFactory(archiveOptions, Db.Manager.FileSystem.NamingStrategy).CreateReader();
 				chunkDeleter = new ChunkDeleter<TStreamId, ILogRecord>(
 					logger: logger,
 					archiveCheckpoint: new AdvancingCheckpoint(archiveReader.GetCheckpoint),
@@ -1596,7 +1600,11 @@ public class ClusterVNode<TStreamId> :
 					"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
 					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
 					epochCheckpoint, epochCheckpoint);
-				var truncator = new TFChunkDbTruncator(Db.Config, Db.Manager.FileSystem, type => Db.TransformManager.GetFactoryForExistingChunk(type));
+				var truncator = new TFChunkDbTruncator(
+					Db.Config,
+					Db.Manager.FileSystem,
+					Db.TransformManager.GetFactoryForExistingChunk,
+					archiveReader);
 				using (var task = truncator.TruncateDb(truncPos, CancellationToken.None).AsTask()) {
 					task.Wait(DefaultShutdownTimeout);
 				}
