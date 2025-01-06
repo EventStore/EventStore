@@ -17,6 +17,7 @@ using DotNext.Collections.Concurrent;
 using DotNext.Diagnostics;
 using DotNext.IO;
 using DotNext.Threading;
+using DotNext.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
@@ -201,7 +202,39 @@ public partial class TFChunk : IDisposable {
 		FreeCachedData();
 	}
 
-	// local or remote
+	// always remote
+	public static TFChunk FromCompletedRemote(
+		int chunkNumber,
+		ITransactionFileTracker tracker,
+		Func<TransformType, IChunkTransformFactory> getTransformFactory,
+		CancellationToken token) {
+
+		var chunk = new TFChunk(
+			//qq look to see where this is used exactly, hopefully only for log messages
+			filename: $"Archived Chunk {chunkNumber}",
+			midpointsDepth: TFConsts.MidpointsDepth,
+			inMem: false,
+			unbuffered: false, // unbuffered only affects writes
+			writethrough: false,
+			reduceFileCachePressure: false); // reduceFileCachePressure only affects file streams
+
+		try {
+			chunk.SetupRemoteHandle(chunkNumber: chunkNumber);
+
+			//qqqqq todo: defer this until the chunk is actually accessed so that we can
+			// 1. avoid doing this while we hold the chunks locker in the manager (which would block all reads)
+			// 2. avoid doing this while not holding the chunks locker resulting in it being executed repeatedly
+			var init = chunk.InitCompleted(verifyHash: false, tracker, getTransformFactory, token);
+			init.Wait();
+		} catch {
+			chunk.Dispose();
+			throw;
+		}
+
+		return chunk;
+	}
+
+	// always local
 	public static async ValueTask<TFChunk> FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead,
 		ITransactionFileTracker tracker, Func<TransformType, IChunkTransformFactory> getTransformFactory,
 		bool reduceFileCachePressure = false, CancellationToken token = default) {
@@ -209,6 +242,7 @@ public partial class TFChunk : IDisposable {
 		var chunk = new TFChunk(filename,
 			TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure);
 		try {
+			chunk.SetupLocalHandle();
 			await chunk.InitCompleted(verifyHash, tracker, getTransformFactory, token);
 		} catch {
 			chunk.Dispose();
@@ -296,8 +330,7 @@ public partial class TFChunk : IDisposable {
 		return chunk;
 	}
 
-	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
-		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
+	private void SetupLocalHandle() {
 		if (!File.Exists(_filename))
 			throw new CorruptDatabaseException(new ChunkNotFoundException(_filename));
 
@@ -308,6 +341,31 @@ public partial class TFChunk : IDisposable {
 			Options = _reduceFileCachePressure ? FileOptions.Asynchronous : FileOptions.RandomAccess | FileOptions.Asynchronous
 		};
 		_handle = new ChunkFileHandle(_filename, options);
+	}
+
+	private void SetupRemoteHandle(int chunkNumber) {
+		//qq todo: replace with remote handle implementation
+		//qq hack
+		var fileName = $"D:\\qa\\flooblserwer\\archive\\chunk-{chunkNumber:000000}.000001";
+		if (!File.Exists(fileName))
+			throw new CorruptDatabaseException(new ChunkNotFoundException(fileName));
+
+		var options = new FileStreamOptions {
+			Mode = FileMode.Open,
+			Access = FileAccess.Read,
+			Share = FileShare.ReadWrite,
+			Options = _reduceFileCachePressure
+				? FileOptions.Asynchronous
+				: FileOptions.Asynchronous | FileOptions.RandomAccess
+		};
+		_handle = new ChunkFileHandle(fileName, options);
+		//qq end todo
+	}
+
+	// local and remote
+	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
+		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
+
 		_fileSize = (int)_handle.Length;
 
 		IsReadOnly = true;

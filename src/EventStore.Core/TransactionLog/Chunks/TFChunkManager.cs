@@ -84,8 +84,10 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			long totalSize = 0;
 			lastChunkToCache = _chunksCount;
 
+			// work backwards through the history until we have found enough chunks
+			// to cache according to the chunk cache size. determines lastChunkToCache.
 			for (int chunkNum = _chunksCount - 1; chunkNum >= 0;) {
-				var chunk = _chunks[chunkNum];
+				var chunk = GetChunkImpl(chunkNum, lockPreacquired: true, token);
 				var chunkSize = chunk.IsReadOnly
 					? chunk.ChunkFooter.PhysicalDataSize + chunk.ChunkFooter.MapSize + ChunkHeader.Size +
 					  ChunkFooter.Size
@@ -103,17 +105,29 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			_chunksLocker.Release();
 		}
 
+		// uncache everything earlier than lastChunkToCache
 		for (int chunkNum = lastChunkToCache - 1; chunkNum >= 0;) {
 			var chunk = _chunks[chunkNum];
+
+			if (chunk is null) {
+				// definitely uncached already
+				chunkNum--;
+				continue;
+			}
+
 			if (chunk.IsReadOnly)
 				chunk.UnCacheFromMemory();
+
 			chunkNum = chunk.ChunkHeader.ChunkStartNumber - 1;
 		}
 
+		// cache everything from lastChunkToCache up to now
 		for (int chunkNum = lastChunkToCache; chunkNum < _chunksCount;) {
-			var chunk = _chunks[chunkNum];
+			var chunk = GetChunkImpl(chunkNum, lockPreacquired: false, token);
+
 			if (chunk.IsReadOnly)
 				await chunk.CacheInMemory(token);
+
 			chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
 		}
 	}
@@ -217,7 +231,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 
 		if (isNew) {
 			if (chunk.ChunkHeader.ChunkStartNumber > 0)
-				OnChunkCompleted?.Invoke(_chunks[chunk.ChunkHeader.ChunkStartNumber - 1].ChunkInfo);
+				OnChunkCompleted?.Invoke(GetChunkImpl(chunk.ChunkHeader.ChunkStartNumber - 1, lockPreacquired: true).ChunkInfo);
 		} else {
 			OnChunkLoaded?.Invoke(chunk.ChunkInfo);
 		}
@@ -277,6 +291,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 				throw;
 			}
 
+			//qq the new chunk won't necessarily be a file
 			newChunk = await TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash, _config.Unbuffered,
 				_tracker, _transformManager.GetFactoryForExistingChunk,
 				_config.ReduceFileCachePressure, token: token);
@@ -316,7 +331,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		var chunkStartNumber = newChunk.ChunkHeader.ChunkStartNumber;
 		var chunkEndNumber = newChunk.ChunkHeader.ChunkEndNumber;
 		for (int i = chunkStartNumber; i <= chunkEndNumber;) {
-			var chunk = _chunks[i];
+			var chunk = GetChunkImpl(i, lockPreacquired: true);
 			if (chunk != null) {
 				var chunkHeader = chunk.ChunkHeader;
 				if (chunkHeader.ChunkStartNumber < chunkStartNumber || chunkHeader.ChunkEndNumber > chunkEndNumber)
@@ -324,7 +339,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 				i = chunkHeader.ChunkEndNumber + 1;
 			} else {
 				//Cover the case of initial replication of merged chunks where they were never set
-				// in the map in the first place.
+				// in the map in the first place. //qqq what?
 				i = i + 1;
 			}
 		}
@@ -359,6 +374,8 @@ public class TFChunkManager : IThreadPoolWorkItem {
 
 		TFChunk.TFChunk lastRemovedChunk = null;
 		for (int i = chunkStartNumber; i <= chunkEndNumber; i += 1) {
+			// this only happens when replicating a raw chunk. i think the chunks we are removing must be
+			// beyond the writer checkpoint.
 			var oldChunk = Interlocked.Exchange(ref _chunks[i], null);
 			if (oldChunk != null && !ReferenceEquals(lastRemovedChunk, oldChunk)) {
 				oldChunk.MarkForDeletion();
@@ -391,21 +408,48 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			throw new ArgumentOutOfRangeException("logPosition",
 				string.Format("LogPosition {0} does not have corresponding chunk in DB.", logPosition));
 
-		var chunk = _chunks[chunkNum];
-		if (chunk == null)
+		var chunk = GetChunkImpl(chunkNum, lockPreacquired: false);
+		if (chunk is null)
 			throw new Exception(string.Format(
 				"Requested chunk for LogPosition {0}, which is not present in TFChunkManager.", logPosition));
 		return chunk;
 	}
 
-	public TFChunk.TFChunk GetChunk(int chunkNum) {
+	public TFChunk.TFChunk GetChunk(int chunkNum, CancellationToken token = default) {
 		if (chunkNum < 0 || chunkNum >= _chunksCount)
 			throw new ArgumentOutOfRangeException("chunkNum",
 				string.Format("Chunk #{0} is not present in DB.", chunkNum));
 
-		if (_chunks[chunkNum] is not { } chunk)
-			throw new Exception(string.Format("Requested chunk #{0}, which is not present in TFChunkManager.",
-				chunkNum));
+		return GetChunkImpl(chunkNum, lockPreacquired: false, token: token);
+	}
+
+	private TFChunk.TFChunk GetChunkImpl(
+		int chunkNum,
+		bool lockPreacquired,
+		CancellationToken token = default) {
+
+		if (_chunks[chunkNum] is not { } chunk) {
+			//qq todo: check the archive checkpoint
+			//qq what timeout?
+			if (lockPreacquired || _chunksLocker.TryAcquire(timeout: TimeSpan.FromDays(1), token: token)) {
+				try {
+					chunk = TFChunk.TFChunk.FromCompletedRemote(
+						chunkNumber: chunkNum,
+						tracker: _tracker,
+						getTransformFactory: _transformManager.GetFactoryForExistingChunk, //qq cache this
+						token: token);
+					_chunks[chunkNum] = chunk;
+				} finally {
+					if (!lockPreacquired) {
+						_chunksLocker.Release();
+					}
+				}
+			} else {
+				//qq presumably we get in here if the token is cancelled?
+				token.ThrowIfCancellationRequested();
+				throw new Exception("unexpected");
+			}
+		}
 
 		return chunk;
 	}
@@ -416,8 +460,8 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		await _chunksLocker.AcquireAsync(token);
 		try {
 			for (int i = 0; i < _chunksCount; ++i) {
-				if (_chunks[i] != null)
-					allChunksClosed &= _chunks[i].TryClose();
+				if (_chunks[i] is { } chunk)
+					allChunksClosed &= chunk.TryClose();
 			}
 		} finally {
 			_chunksLocker.Release();
