@@ -61,8 +61,8 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 				case OldVersion(var fileName, var start):
 					result.Add($"old {Path.GetFileName(fileName)} {start}");
 					break;
-				case MissingVersion(var fileName, var start):
-					result.Add($"missing {Path.GetFileName(fileName)} {start}");
+				case MissingVersion(var fileName, var chunkNum):
+					result.Add($"missing {Path.GetFileName(fileName)} {chunkNum}");
 					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(chunkInfo));

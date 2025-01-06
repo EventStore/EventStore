@@ -66,8 +66,8 @@ public sealed class TFChunkDb : IAsyncDisposable {
 							ChunkStartNumber = start,
 						};
 					break;
-				case MissingVersion(var fileName, var start):
-					if (start <= lastChunkNum - 1)
+				case MissingVersion(var fileName, var chunkNum):
+					if (chunkNum <= lastChunkNum - 1)
 						throw new CorruptDatabaseException(new ChunkNotFoundException(fileName));
 
 					// fine for last chunk to be 'missing' (not created yet)
