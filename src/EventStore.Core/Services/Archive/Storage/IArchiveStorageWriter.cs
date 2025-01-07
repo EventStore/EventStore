@@ -17,11 +17,11 @@ public interface IArchiveStorageWriter {
 
 	/// <summary>Stores a chunk in the archive</summary>
 	/// <param name="chunkPath">The path of the chunk to archive</param>
-	/// <param name="destinationFile">The destination file name in the archive</param>
+	/// <param name="logicalChunkNumber">The number of the logical chunk being archived</param>
 	/// <exception cref="ChunkDeletedException">Thrown if the chunk file is deleted while being archived</exception>
 	/// <returns>
 	/// <see langword="true"/> if the chunk was successfully archived<br/>
 	/// <see langword="false"/> if the operation failed and the caller needs to retry after some time
 	/// </returns>
-	public ValueTask<bool> StoreChunk(string chunkPath, string destinationFile, CancellationToken ct);
+	public ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct);
 }

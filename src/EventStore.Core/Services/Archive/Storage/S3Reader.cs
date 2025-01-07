@@ -26,9 +26,9 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 
 	public S3Reader(
 		S3Options options,
-		IArchiveChunkNamer chunkNamer,
+		IArchiveChunkNameResolver chunkNameResolver,
 		string archiveCheckpointFile)
-		: base(chunkNamer, archiveCheckpointFile) {
+		: base(chunkNameResolver, archiveCheckpointFile) {
 
 		_options = options;
 
@@ -48,7 +48,8 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 
 	protected override IBlobStorage BlobStorage => _awsBlobStorage;
 
-	public async ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) {
+	public async ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) {
+		var chunkFile = await ChunkNameResolver.GetFileNameFor(logicalChunkNumber);
 		var request = new GetObjectRequest {
 			BucketName = _options.Bucket,
 			Key = chunkFile,
@@ -69,7 +70,7 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 	public override async IAsyncEnumerable<string> ListChunks([EnumeratorCancellation] CancellationToken ct) {
 		var listResponse = _awsBlobStorage.NativeBlobClient.Paginators.ListObjectsV2(new ListObjectsV2Request {
 			BucketName = _options.Bucket,
-			Prefix = ChunkNamer.Prefix,
+			Prefix = ChunkNameResolver.Prefix,
 		});
 
 		await foreach (var s3Object in listResponse.S3Objects.WithCancellation(ct))

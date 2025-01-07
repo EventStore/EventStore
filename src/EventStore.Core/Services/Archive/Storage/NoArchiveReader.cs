@@ -17,23 +17,24 @@ public class NoArchiveReader : IArchiveStorageReader {
 
 	public static NoArchiveReader Instance { get; } = new();
 
-	public IArchiveChunkNamer ChunkNamer { get; } = new NoNamer();
+	public IArchiveChunkNameResolver ChunkNameResolver { get; } = new NoNamer();
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) =>
 		ValueTask.FromResult<long>(0);
 
-	public ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) =>
+	public ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct) =>
 		ValueTask.FromException<Stream>(new ChunkDeletedException());
 
-	public ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) =>
+	public ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) =>
 		ValueTask.FromException<Stream>(new ChunkDeletedException());
 
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) =>
 		AsyncEnumerable.Empty<string>();
 
 	// There is no archive so it doesn't matter how we would name the chunks in it.
-	class NoNamer : IArchiveChunkNamer {
+	class NoNamer : IArchiveChunkNameResolver {
 		public string Prefix => "chunk-";
-		public string GetFileNameFor(int logicalChunkNumber) => $"{Prefix}{logicalChunkNumber}";
+
+		public ValueTask<string> GetFileNameFor(int logicalChunkNumber) => ValueTask.FromResult($"{Prefix}{logicalChunkNumber}");
 	}
 }

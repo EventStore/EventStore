@@ -7,12 +7,13 @@ using System.IO;
 using System.Threading;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Archive.Naming;
 using Serilog;
 using FluentStorage.Blobs;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
-public abstract class FluentWriter(string archiveCheckpointFile) {
+public abstract class FluentWriter(IArchiveChunkNameResolver chunkNameResolver, string archiveCheckpointFile) {
 	protected abstract ILogger Log { get; }
 	protected abstract IBlobStorage BlobStorage { get; }
 
@@ -32,8 +33,9 @@ public abstract class FluentWriter(string archiveCheckpointFile) {
 		}
 	}
 
-	public async ValueTask<bool> StoreChunk(string chunkPath, string destinationFile, CancellationToken ct) {
+	public async ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) {
 		try {
+			var destinationFile = await chunkNameResolver.GetFileNameFor(logicalChunkNumber);
 			await BlobStorage.WriteFileAsync(destinationFile, filePath: chunkPath, ct);
 			return true;
 		} catch (FileNotFoundException) {
@@ -41,7 +43,7 @@ public abstract class FluentWriter(string archiveCheckpointFile) {
 		} catch (OperationCanceledException) {
 			throw;
 		} catch (Exception ex) {
-			Log.Error(ex, "Error while storing chunk: {chunkFile}", destinationFile);
+			Log.Error(ex, "Error while storing chunk: {logicalChunkNumber} ({chunkPath})", logicalChunkNumber, chunkPath);
 			return false;
 		}
 	}

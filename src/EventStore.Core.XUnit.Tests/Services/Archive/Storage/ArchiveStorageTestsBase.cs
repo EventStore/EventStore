@@ -22,7 +22,8 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 	}
 
 	protected IArchiveStorageFactory CreateSutFactory(StorageType storageType) {
-		var namingStrategy = new ArchiveChunkNamer(new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix));
+		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
+		var chunkNameResolver = new ArchiveChunkNameResolver(namingStrategy);
 		var factory = new ArchiveStorageFactory(
 				new() {
 					StorageType = storageType,
@@ -35,7 +36,7 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 						Region = "eu-west-1",
 					}
 				},
-				namingStrategy);
+				chunkNameResolver);
 		return factory;
 	}
 

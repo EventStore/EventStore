@@ -21,14 +21,14 @@ public class NoArchiveReaderTests {
 	[Fact]
 	public async Task get_chunk_throws_chunk_deleted_exception() {
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => {
-			await _sut.GetChunk("a-chunk", CancellationToken.None);
+			await _sut.GetChunk(0, CancellationToken.None);
 		});
 	}
 
 	[Fact]
 	public async Task get_partial_chunk_throws_chunk_deleted_exception() {
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => {
-			await _sut.GetChunk("a-chunk", 3, 4, CancellationToken.None);
+			await _sut.GetChunk(0, 3, 4, CancellationToken.None);
 		});
 	}
 

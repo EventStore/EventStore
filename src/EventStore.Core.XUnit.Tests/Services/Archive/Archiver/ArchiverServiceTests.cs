@@ -25,13 +25,13 @@ public class ArchiverServiceTests {
 
 	private static (ArchiverService, FakeArchiveStorage) CreateSut(
 		TimeSpan? chunkStorageDelay = null,
-		string[] existingChunks = null,
+		int[] existingChunks = null,
 		long? existingCheckpoint = null) {
 		var archive = new FakeArchiveStorage(
 			chunkStorageDelay ?? TimeSpan.Zero,
-			existingChunks ?? Array.Empty<string>(),
+			existingChunks ?? Array.Empty<int>(),
 			existingCheckpoint ?? 0L);
-		var service = new ArchiverService(new FakeSubscriber(), archive, new FakeUnmerger(), new FakeArchiveChunkNamer());
+		var service = new ArchiverService(new FakeSubscriber(), archive, new FakeUnmerger());
 		return (service, archive);
 	}
 
@@ -67,7 +67,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 1);
 
-		Assert.Equal(["0-0.renamed"], archive.Chunks);
+		Assert.Equal([ 0 ], archive.Chunks);
 	}
 
 	[Fact]
@@ -95,7 +95,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 1);
 
-		Assert.Equal(["0-0.renamed"], archive.Chunks);
+		Assert.Equal([ 0 ], archive.Chunks);
 	}
 
 	[Fact]
@@ -133,7 +133,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 1);
 
-		Assert.Equal(["0-0.renamed"], archive.Chunks);
+		Assert.Equal([ 0 ], archive.Chunks);
 	}
 
 	[Fact]
@@ -152,7 +152,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 5);
 
-		Assert.Equal(["0-0.renamed", "1-1.renamed", "2-2.renamed", "3-3.renamed", "4-4.renamed"], archive.Chunks);
+		Assert.Equal([ 0, 1, 2, 3, 4 ], archive.Chunks);
 	}
 
 	[Fact]
@@ -174,12 +174,12 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 5);
 
-		Assert.Equal(["3-3.renamed", "4-4.renamed", "1-1.renamed", "2-2.renamed", "5-5.renamed"], archive.Chunks);
+		Assert.Equal([ 3, 4, 1, 2, 5 ], archive.Chunks);
 	}
 
 	[Fact]
 	public async Task doesnt_archive_existing_chunks_that_were_already_archived() {
-		var (sut, archive) = CreateSut(existingChunks:	[ "0-0", "1-1" ], existingCheckpoint: 2 * TFConsts.ChunkSize);
+		var (sut, archive) = CreateSut(existingChunks:	[ 0, 1 ], existingCheckpoint: 2 * TFConsts.ChunkSize);
 
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(0, 0, complete: true)));
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(1, 1, complete: true)));
@@ -189,12 +189,12 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 2);
 
-		Assert.Equal([ "0-0", "1-1", "2-2.renamed", "3-3.renamed" ], archive.Chunks);
+		Assert.Equal([ 0, 1, 2, 3 ], archive.Chunks);
 	}
 
 	[Fact]
 	public async Task archives_an_existing_chunk_if_it_starts_before_but_ends_after_the_checkpoint() {
-		var (sut, archive) = CreateSut(existingChunks:	[ "0-0", "1-1" ], existingCheckpoint: 2 * TFConsts.ChunkSize);
+		var (sut, archive) = CreateSut(existingChunks:	[ 0, 1 ], existingCheckpoint: 2 * TFConsts.ChunkSize);
 
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(0, 0, complete: true)));
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(1, 2, complete: true))); // <-- the chunk being tested
@@ -203,7 +203,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 3);
 
-		Assert.Equal([ "0-0", "1-1", "1-1.renamed", "2-2.renamed", "3-3.renamed" ], archive.Chunks);
+		Assert.Equal([ 0, 1, 1, 2, 3 ], archive.Chunks);
 	}
 
 	[Fact]
@@ -217,7 +217,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 0);
 
-		Assert.Equal([ ], archive.Chunks);
+		Assert.Equal([], archive.Chunks);
 	}
 
 	[Fact]
@@ -278,8 +278,7 @@ public class ArchiverServiceTests {
 
 		await WaitFor(archive, numStores: 8);
 
-		Assert.Equal(["0-0.renamed", "1-1.renamed", "2-2.renamed", "3-3.renamed", "4-4.renamed", "5-5.renamed", "6-6.renamed", "7-7.renamed"],
-			archive.Chunks);
+		Assert.Equal([ 0, 1, 2, 3, 4, 5, 6, 7 ], archive.Chunks);
 	}
 }
 
@@ -297,38 +296,32 @@ internal class FakeUnmerger : IChunkUnmerger {
 	}
 }
 
-internal class FakeArchiveChunkNamer : IArchiveChunkNamer {
-	public string Prefix => "";
-
-	public string GetFileNameFor(int logicalChunkNumber) => $"{logicalChunkNumber}-{logicalChunkNumber}.renamed";
-}
-
 internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader, IArchiveStorageFactory {
-	public List<string> Chunks;
+	public List<int> Chunks;
 	public int NumStores => Interlocked.CompareExchange(ref _stores, 0, 0);
 	private int _stores;
 
 	private readonly TimeSpan _chunkStorageDelay;
-	private readonly string[] _existingChunks;
+	private readonly int[] _existingChunks;
 
 	public int NumCheckpoints { get; private set; }
 	private long _checkpoint;
 
-	public FakeArchiveStorage(TimeSpan chunkStorageDelay, string[] existingChunks, long existingCheckpoint) {
+	public FakeArchiveStorage(TimeSpan chunkStorageDelay, int[] existingChunks, long existingCheckpoint) {
 		_chunkStorageDelay = chunkStorageDelay;
 		_existingChunks = existingChunks;
 		_checkpoint = existingCheckpoint;
-		Chunks = new List<string>(existingChunks);
+		Chunks = new List<int>(existingChunks);
 	}
 
-	public IArchiveChunkNamer ChunkNamer => throw new NotImplementedException();
+	public IArchiveChunkNameResolver ChunkNameResolver => throw new NotImplementedException();
 
 	public IArchiveStorageReader CreateReader() => this;
 	public IArchiveStorageWriter CreateWriter() => this;
 
-	public async ValueTask<bool> StoreChunk(string chunkPath, string destinationFile, CancellationToken ct) {
+	public async ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) {
 		await Task.Delay(_chunkStorageDelay, ct);
-		Chunks.Add(destinationFile);
+		Chunks.Add(logicalChunkNumber);
 		Interlocked.Increment(ref _stores);
 		return true;
 	}
@@ -343,15 +336,15 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 		return ValueTask.FromResult(true);
 	}
 
-	public ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) {
+	public ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct) {
 		throw new NotImplementedException();
 	}
 
-	public ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) {
+	public ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) {
 		throw new NotImplementedException();
 	}
 
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
-		return _existingChunks.ToAsyncEnumerable();
+		throw new NotImplementedException();
 	}
 }

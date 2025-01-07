@@ -25,12 +25,13 @@ public class FileSystemReader : IArchiveStorageReader {
 
 	public FileSystemReader(
 		FileSystemOptions options,
-		IArchiveChunkNamer chunkNamer,
+		IArchiveChunkNameResolver chunkNameResolver,
 		string archiveCheckpointFile) {
 
 		_archivePath = options.Path;
-		ChunkNamer = chunkNamer;
+		ChunkNameResolver = chunkNameResolver;
 		_archiveCheckpointFile = archiveCheckpointFile;
+
 		_fileStreamOptions = new FileStreamOptions {
 			Access = FileAccess.Read,
 			Mode = FileMode.Open,
@@ -38,7 +39,7 @@ public class FileSystemReader : IArchiveStorageReader {
 		};
 	}
 
-	public IArchiveChunkNamer ChunkNamer { get; init; }
+	public IArchiveChunkNameResolver ChunkNameResolver { get; init; }
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) {
 		ValueTask<long> task;
@@ -66,9 +67,10 @@ public class FileSystemReader : IArchiveStorageReader {
 		return task;
 	}
 
-	public ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) {
+	public async ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct) {
 		ValueTask<Stream> task;
 		try {
+			var chunkFile = await ChunkNameResolver.GetFileNameFor(logicalChunkNumber);
 			var chunkPath = Path.Combine(_archivePath, chunkFile);
 			task = ValueTask.FromResult<Stream>(File.Open(chunkPath, _fileStreamOptions));
 		} catch (FileNotFoundException) {
@@ -77,16 +79,17 @@ public class FileSystemReader : IArchiveStorageReader {
 			task = ValueTask.FromException<Stream>(e);
 		}
 
-		return task;
+		return await task;
 	}
 
-	public ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) {
+	public async ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) {
 		var length = end - start;
+		var chunkFile = await ChunkNameResolver.GetFileNameFor(logicalChunkNumber);
 
 		ValueTask<Stream> task;
 		if (length < 0) {
 			task = ValueTask.FromException<Stream>(new InvalidOperationException(
-				$"Attempted to read negative amount from chunk {chunkFile}. Start: {start}. End {end}"));
+				$"Attempted to read negative amount from chunk: {logicalChunkNumber}. Start: {start}. End {end}"));
 		} else {
 			try {
 				var chunkPath = Path.Combine(_archivePath, chunkFile);
@@ -102,12 +105,12 @@ public class FileSystemReader : IArchiveStorageReader {
 			}
 		}
 
-		return task;
+		return await task;
 	}
 
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
 		return new DirectoryInfo(_archivePath)
-			.EnumerateFiles($"{ChunkNamer.Prefix}*")
+			.EnumerateFiles($"{ChunkNameResolver.Prefix}*")
 			.Select(chunk => chunk.Name)
 			.Order()
 			.ToAsyncEnumerable();

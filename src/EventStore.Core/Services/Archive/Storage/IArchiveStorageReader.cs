@@ -10,16 +10,16 @@ using EventStore.Core.Services.Archive.Naming;
 namespace EventStore.Core.Services.Archive.Storage;
 
 public interface IArchiveStorageReader {
-	public IArchiveChunkNamer ChunkNamer { get; }
+	public IArchiveChunkNameResolver ChunkNameResolver { get; }
 
 	/// <returns>A position in the transaction log up to which all chunks have been archived</returns>
 	public ValueTask<long> GetCheckpoint(CancellationToken ct);
 
 	/// <returns>A stream of the chunk's contents. Dispose this after use.</returns>
-	public ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct);
+	public ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct);
 
 	/// <returns>A stream of the chunk's contents over the specified range. Dispose this after use.</returns>
-	public ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct);
+	public ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct);
 
 	/// <summary>List all chunk files present in the archive</summary>
 	/// <returns>The file names of all chunks present in the archive, sorted alphabetically</returns>
