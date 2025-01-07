@@ -1583,6 +1583,15 @@ public class ClusterVNode<TStreamId> :
 					$"Unknown {nameof(options.Database.Transform)} specified: {options.Database.Transform}");
 		}
 
+		void StartNodeUnwrapException(IApplicationBuilder app) {
+			try {
+				StartNode(app);
+			} catch (AggregateException aggEx) when (aggEx.InnerException is { } innerEx) {
+				// We only really care that *something* is wrong - throw the first inner exception.
+				throw innerEx;
+			}
+		}
+
 		void StartNode(IApplicationBuilder app) {
 			// TRUNCATE IF NECESSARY
 			var truncPos = Db.Config.TruncateCheckpoint.Read();
@@ -1654,7 +1663,7 @@ public class ClusterVNode<TStreamId> :
 			options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
 			ConfigureNodeServices,
 			ConfigureNode,
-			StartNode);
+			StartNodeUnwrapException);
 
 		_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);

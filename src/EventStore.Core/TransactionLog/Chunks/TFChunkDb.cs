@@ -105,59 +105,54 @@ public sealed class TFChunkDb : IAsyncDisposable {
 
 		// Open the historical chunks. New records will not be written to any of these.
 		// (but the last one may need completing)
-		try {
-			await Parallel.ForEachAsync(GetHistoricalChunks(chunkEnumerator, lastChunkNum, token),
-				new ParallelOptions {MaxDegreeOfParallelism = threads, CancellationToken = token},
-				async (chunkInfo, token) => {
-					TFChunk.TFChunk chunk;
-					if (lastChunkVersions.Length == 0 &&
-					    (chunkInfo.ChunkStartNumber + 1) * (long)Config.ChunkSize == writerCheckpoint) {
-						// The situation where the logical data size is exactly divisible by ChunkSize,
-						// so it might happen that we have checkpoint indicating one more chunk should exist,
-						// but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
-						var footer = await ReadChunkFooter(chunkInfo.ChunkFileName, token);
-						if (footer.IsCompleted)
-							chunk = await TFChunk.TFChunk.FromCompletedFile(
-								filename: chunkInfo.ChunkFileName,
-								verifyHash: false,
-								unbufferedRead: Config.Unbuffered,
-								tracker: _tracker,
-								reduceFileCachePressure: Config.ReduceFileCachePressure,
-								getTransformFactory: getTransformFactoryForExistingChunk,
-								token: token);
-						else {
-							chunk = await TFChunk.TFChunk.FromOngoingFile(
-								filename: chunkInfo.ChunkFileName,
-								writePosition: Config.ChunkSize,
-								unbuffered: Config.Unbuffered,
-								writethrough: Config.WriteThrough,
-								reduceFileCachePressure: Config.ReduceFileCachePressure,
-								tracker: _tracker,
-								getTransformFactory: getTransformFactoryForExistingChunk,
-								token: token);
-							// chunk is full with data, we should complete it right here
-							if (!readOnly)
-								await chunk.Complete(token);
-						}
-					} else {
-						// common case
+		await Parallel.ForEachAsync(GetHistoricalChunks(chunkEnumerator, lastChunkNum, token),
+			new ParallelOptions {MaxDegreeOfParallelism = threads, CancellationToken = token},
+			async (chunkInfo, token) => {
+				TFChunk.TFChunk chunk;
+				if (lastChunkVersions.Length == 0 &&
+					(chunkInfo.ChunkStartNumber + 1) * (long)Config.ChunkSize == writerCheckpoint) {
+					// The situation where the logical data size is exactly divisible by ChunkSize,
+					// so it might happen that we have checkpoint indicating one more chunk should exist,
+					// but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
+					var footer = await ReadChunkFooter(chunkInfo.ChunkFileName, token);
+					if (footer.IsCompleted)
 						chunk = await TFChunk.TFChunk.FromCompletedFile(
 							filename: chunkInfo.ChunkFileName,
 							verifyHash: false,
 							unbufferedRead: Config.Unbuffered,
+							tracker: _tracker,
+							reduceFileCachePressure: Config.ReduceFileCachePressure,
+							getTransformFactory: getTransformFactoryForExistingChunk,
+							token: token);
+					else {
+						chunk = await TFChunk.TFChunk.FromOngoingFile(
+							filename: chunkInfo.ChunkFileName,
+							writePosition: Config.ChunkSize,
+							unbuffered: Config.Unbuffered,
+							writethrough: Config.WriteThrough,
 							reduceFileCachePressure: Config.ReduceFileCachePressure,
 							tracker: _tracker,
 							getTransformFactory: getTransformFactoryForExistingChunk,
 							token: token);
+						// chunk is full with data, we should complete it right here
+						if (!readOnly)
+							await chunk.Complete(token);
 					}
+				} else {
+					// common case
+					chunk = await TFChunk.TFChunk.FromCompletedFile(
+						filename: chunkInfo.ChunkFileName,
+						verifyHash: false,
+						unbufferedRead: Config.Unbuffered,
+						reduceFileCachePressure: Config.ReduceFileCachePressure,
+						tracker: _tracker,
+						getTransformFactory: getTransformFactoryForExistingChunk,
+						token: token);
+				}
 
-					// This call is thread-safe.
-					await Manager.AddChunk(chunk, token);
-				});
-		} catch (AggregateException aggEx) {
-			// We only really care that *something* is wrong - throw the first inner exception.
-			throw aggEx.InnerException;
-		}
+				// This call is thread-safe.
+				await Manager.AddChunk(chunk, token);
+			});
 
 		// Open the current chunk, where new records will be written. It might not exist yet.
 		if (lastChunkVersions.Length == 0) {
