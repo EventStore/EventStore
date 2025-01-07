@@ -76,7 +76,7 @@ public class RedactionService<TStreamId> :
 		for (int i = 0; i < result.EventInfos.Length; i++) {
 			var eventInfo = result.EventInfos[i];
 			var logPos = eventInfo.LogPosition;
-			var chunk = _db.Manager.GetChunkFor(logPos);
+			var chunk = await _db.Manager.GetChunkFor(logPos, token);
 			var localPosition = chunk.ChunkHeader.GetLocalLogPosition(logPos);
 			var chunkEventOffset = await chunk.GetActualRawPosition(localPosition, token);
 

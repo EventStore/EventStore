@@ -362,17 +362,19 @@ public class LeaderReplicationService : IMonitoredQueue,
 		return Math.Min(replicaPosition, nextEpoch.EpochPosition);
 	}
 
-	private long SetSubscriptionPosition(ReplicaSubscription sub,
+	private async ValueTask<long> SetSubscriptionPosition(ReplicaSubscription sub,
 		long logPosition,
 		Guid chunkId,
 		bool replicationStart,
 		bool verbose,
-		int trial) {
+		int trial,
+		CancellationToken token) {
+
 		if (trial >= 10)
 			throw new Exception("Too many retrials to acquire reader for subscriber.");
 
 		try {
-			var chunk = _db.Manager.GetChunkFor(logPosition);
+			var chunk = await _db.Manager.GetChunkFor(logPosition, token);
 			Debug.Assert(chunk != null, string.Format(
 				"Chunk for LogPosition {0} (0x{0:X}) is null in LeaderReplicationService! Replica: [{1},C:{2},S:{3}]",
 				logPosition, sub.ReplicaEndPoint, sub.ConnectionId, sub.SubscriptionId));
@@ -435,7 +437,7 @@ public class LeaderReplicationService : IMonitoredQueue,
 				oldBulkReader.Release();
 			return sub.LogPosition;
 		} catch (FileBeingDeletedException) {
-			return SetSubscriptionPosition(sub, logPosition, chunkId, replicationStart, verbose, trial + 1);
+			return await SetSubscriptionPosition(sub, logPosition, chunkId, replicationStart, verbose, trial + 1, token);
 		}
 	}
 
@@ -601,8 +603,8 @@ public class LeaderReplicationService : IMonitoredQueue,
 			var newLogPosition = chunkHeader.ChunkEndPosition;
 			if (newLogPosition < leaderCheckpoint) {
 				dataFound = true;
-				SetSubscriptionPosition(subscription, newLogPosition, Guid.Empty, replicationStart: false,
-					verbose: true, trial: 0);
+				await SetSubscriptionPosition(subscription, newLogPosition, Guid.Empty, replicationStart: false,
+					verbose: true, trial: 0, token);
 			}
 		}
 
