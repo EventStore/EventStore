@@ -8,6 +8,7 @@ using System.Threading;
 using EventStore.Common.Utils;
 using System.Threading.Tasks;
 using DotNext.Threading;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using ChunkInfo = EventStore.Core.Data.ChunkInfo;
@@ -51,7 +52,10 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		_config = config;
 		_tracker = tracker;
 		_transformManager = transformManager;
+		FileSystem = ChunkLocalFileSystem.Instance;
 	}
+
+	public IChunkFileSystem FileSystem { get; }
 
 	public async ValueTask EnableCaching(CancellationToken token) {
 		await _chunksLocker.AcquireAsync(token);
@@ -277,7 +281,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 				throw;
 			}
 
-			newChunk = await TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash, _config.Unbuffered,
+			newChunk = await TFChunk.TFChunk.FromCompletedFile(FileSystem, newFileName, verifyHash, _config.Unbuffered,
 				_tracker, _transformManager.GetFactoryForExistingChunk,
 				_config.ReduceFileCachePressure, token: token);
 		}

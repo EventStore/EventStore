@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.TransactionLog.Chunks;
@@ -24,7 +25,10 @@ public class TFChunkEnumerator {
 		_chunkFileNamingStrategy = chunkFileNamingStrategy;
 		_allFiles = null;
 		_nextChunkNumber = [];
+		FileSystem = ChunkLocalFileSystem.Instance;
 	}
+
+	public IChunkFileSystem FileSystem { get; }
 
 	// lastChunkNumber is not a filter/limit, it is used to spot missing chunks
 	// getNextChunkNumber is used from tests only. todo: do we really need it
@@ -83,7 +87,7 @@ public class TFChunkEnumerator {
 		if (_nextChunkNumber.TryGetValue(chunkFileName, out var nextChunkNumber))
 			return nextChunkNumber;
 
-		var header = await TFChunkDb.ReadChunkHeader(chunkFileName, token);
+		var header = await FileSystem.ReadHeaderAsync(chunkFileName, token);
 		_nextChunkNumber[chunkFileName] = header.ChunkEndNumber + 1;
 		return header.ChunkEndNumber + 1;
 	}

@@ -54,7 +54,7 @@ public class TFChunkDbTruncator {
 			switch (chunkInfo) {
 				case LatestVersion(var fileName, var _, var end):
 					if (newLastChunkFilename != null || end < newLastChunkNum) break;
-					newLastChunkHeader = await TFChunkDb.ReadChunkHeader(fileName, token);
+					newLastChunkHeader = await chunkEnumerator.FileSystem.ReadHeaderAsync(fileName, token);
 					newLastChunkFilename = fileName;
 					break;
 				case MissingVersion(var fileName, var chunkNum) when (chunkNum < newLastChunkNum):
