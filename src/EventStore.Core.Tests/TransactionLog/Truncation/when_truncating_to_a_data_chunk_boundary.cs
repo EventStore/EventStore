@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Validation;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.Transforms.Identity;
 using NUnit.Framework;
 
@@ -31,7 +32,7 @@ public class when_truncating_to_a_data_chunk_boundary : SpecificationWithDirecto
 		DbUtil.CreateSingleChunk(_config, 4, GetFilePathFor("chunk-000004.000000"));
 		DbUtil.CreateOngoingChunk(_config, 5, GetFilePathFor("chunk-000005.000000"));
 
-		var truncator = new TFChunkDbTruncator(_config, _ => new IdentityChunkTransformFactory());
+		var truncator = new TFChunkDbTruncator(_config, ChunkLocalFileSystem.Instance, static _ => new IdentityChunkTransformFactory());
 		await truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed(), CancellationToken.None);
 	}
 

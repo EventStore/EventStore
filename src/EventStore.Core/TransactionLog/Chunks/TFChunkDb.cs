@@ -7,7 +7,6 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext.Buffers;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Transforms;
@@ -100,7 +99,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 
 		var lastChunkNum = (int)(writerCheckpoint / Config.ChunkSize);
 		var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
-		var chunkEnumerator = new TFChunkEnumerator(Config.FileNamingStrategy);
+		var chunkEnumerator = new TFChunkEnumerator(Config.FileNamingStrategy, Manager.FileSystem);
 		var getTransformFactoryForExistingChunk = TransformManager.GetFactoryForExistingChunk;
 
 		// Open the historical chunks. New records will not be written to any of these.
@@ -114,9 +113,10 @@ public sealed class TFChunkDb : IAsyncDisposable {
 					// The situation where the logical data size is exactly divisible by ChunkSize,
 					// so it might happen that we have checkpoint indicating one more chunk should exist,
 					// but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
-					var footer = await ReadChunkFooter(chunkInfo.ChunkFileName, token);
+					var footer = await Manager.FileSystem.ReadFooterAsync(chunkInfo.ChunkFileName, token);
 					if (footer.IsCompleted)
 						chunk = await TFChunk.TFChunk.FromCompletedFile(
+							Manager.FileSystem,
 							filename: chunkInfo.ChunkFileName,
 							verifyHash: false,
 							unbufferedRead: Config.Unbuffered,
@@ -141,6 +141,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 				} else {
 					// common case
 					chunk = await TFChunk.TFChunk.FromCompletedFile(
+						Manager.FileSystem,
 						filename: chunkInfo.ChunkFileName,
 						verifyHash: false,
 						unbufferedRead: Config.Unbuffered,
@@ -165,7 +166,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 				await Manager.AddNewChunk(token);
 		} else {
 			var chunkFileName = lastChunkVersions[0];
-			var chunkHeader = await ReadChunkHeader(chunkFileName, token);
+			var chunkHeader = await Manager.FileSystem.ReadHeaderAsync(chunkFileName, token);
 			var chunkLocalPos = chunkHeader.GetLocalLogPosition(writerCheckpoint);
 			if (chunkHeader.IsScavenged) {
 				// scavenged chunks are first replicated to a temporary file before being atomically switched in.
@@ -184,7 +185,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 						$"Writer checkpoint: {writerCheckpoint}."));
 				}
 
-				var lastChunk = await TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false,
+				var lastChunk = await TFChunk.TFChunk.FromCompletedFile(Manager.FileSystem, chunkFileName, verifyHash: false,
 					unbufferedRead: Config.Unbuffered,
 					reduceFileCachePressure: Config.ReduceFileCachePressure,
 					tracker: _tracker,
@@ -275,36 +276,6 @@ public sealed class TFChunkDb : IAsyncDisposable {
 			if (checkpoint.Read() > current)
 				throw new CorruptDatabaseException(new ReaderCheckpointHigherThanWriterException(checkpoint.Name));
 		}
-	}
-
-	internal static async ValueTask<ChunkHeader> ReadChunkHeader(string chunkFileName, CancellationToken token) {
-		using var handle = File.OpenHandle(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-			FileOptions.Asynchronous);
-
-		var length = RandomAccess.GetLength(handle);
-		if (length < ChunkFooter.Size + ChunkHeader.Size) {
-			throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-				$"Chunk file '{chunkFileName}' is bad. It does not have enough size for header and footer. File size is {length} bytes."));
-		}
-
-		using var buffer = Memory.AllocateExactly<byte>(ChunkHeader.Size);
-		await RandomAccess.ReadAsync(handle, buffer.Memory, 0L, token);
-		return new(buffer.Span);
-	}
-
-	private static async ValueTask<ChunkFooter> ReadChunkFooter(string chunkFileName, CancellationToken token) {
-		using var handle = File.OpenHandle(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-			FileOptions.Asynchronous);
-
-		var length = RandomAccess.GetLength(handle);
-		if (length < ChunkFooter.Size + ChunkHeader.Size) {
-			throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-				$"Chunk file '{chunkFileName}' is bad. It does not have enough size for header and footer. File size is {length} bytes."));
-		}
-
-		using var buffer = Memory.AllocateExactly<byte>(ChunkFooter.Size);
-		await RandomAccess.ReadAsync(handle, buffer.Memory, length - ChunkFooter.Size, token);
-		return new(buffer.Span);
 	}
 
 	private async ValueTask EnsureNoExcessiveChunks(

@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.TransactionLog.Chunks;
@@ -19,11 +20,13 @@ public class TFChunkEnumerator {
 	private readonly IVersionedFileNamingStrategy _chunkFileNamingStrategy;
 	private string[] _allFiles;
 	private readonly Dictionary<string, int> _nextChunkNumber;
+	private readonly IChunkFileSystem _fileSystem;
 
-	public TFChunkEnumerator(IVersionedFileNamingStrategy chunkFileNamingStrategy) {
+	public TFChunkEnumerator(IVersionedFileNamingStrategy chunkFileNamingStrategy, IChunkFileSystem fileSystem) {
 		_chunkFileNamingStrategy = chunkFileNamingStrategy;
 		_allFiles = null;
 		_nextChunkNumber = [];
+		_fileSystem = fileSystem;
 	}
 
 	// lastChunkNumber is not a filter/limit, it is used to spot missing chunks
@@ -83,7 +86,7 @@ public class TFChunkEnumerator {
 		if (_nextChunkNumber.TryGetValue(chunkFileName, out var nextChunkNumber))
 			return nextChunkNumber;
 
-		var header = await TFChunkDb.ReadChunkHeader(chunkFileName, token);
+		var header = await _fileSystem.ReadHeaderAsync(chunkFileName, token);
 		_nextChunkNumber[chunkFileName] = header.ChunkEndNumber + 1;
 		return header.ChunkEndNumber + 1;
 	}
