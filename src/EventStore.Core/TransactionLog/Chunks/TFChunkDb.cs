@@ -101,7 +101,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 
 		var lastChunkNum = (int)(writerCheckpoint / Config.ChunkSize);
 		var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
-		var chunkEnumerator = new TFChunkEnumerator(Config.FileNamingStrategy);
+		var chunkEnumerator = new TFChunkEnumerator(Config.FileNamingStrategy, Manager.FileSystem);
 		var getTransformFactoryForExistingChunk = TransformManager.GetFactoryForExistingChunk;
 
 		// Open the historical chunks. New records will not be written to any of these.

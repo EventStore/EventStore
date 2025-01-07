@@ -7,6 +7,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
@@ -37,7 +38,7 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 		// chunks 15 & 16 are missing
 
 		var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
-		var chunkEnumerator = new TFChunkEnumerator(strategy);
+		var chunkEnumerator = new TFChunkEnumerator(strategy, ChunkLocalFileSystem.Instance);
 		var result = new List<string>();
 		ValueTask<int> GetNextFileNumber(string chunk, int chunkNumber, int chunkVersion, CancellationToken token) {
 			return Path.GetFileName(chunk) switch {

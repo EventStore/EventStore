@@ -11,7 +11,7 @@ using EventStore.Core.Exceptions;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
-internal sealed class ChunkLocalFileSystem : IChunkFileSystem, ISingleton<ChunkLocalFileSystem> {
+public sealed class ChunkLocalFileSystem : IChunkFileSystem, ISingleton<ChunkLocalFileSystem> {
 	public static ChunkLocalFileSystem Instance { get; } = new();
 
 	private ChunkLocalFileSystem() {

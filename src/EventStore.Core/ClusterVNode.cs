@@ -1600,7 +1600,7 @@ public class ClusterVNode<TStreamId> :
 					"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
 					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
 					epochCheckpoint, epochCheckpoint);
-				var truncator = new TFChunkDbTruncator(Db.Config, type => Db.TransformManager.GetFactoryForExistingChunk(type));
+				var truncator = new TFChunkDbTruncator(Db.Config, Db.Manager.FileSystem, type => Db.TransformManager.GetFactoryForExistingChunk(type));
 				using (var task = truncator.TruncateDb(truncPos, CancellationToken.None).AsTask()) {
 					task.Wait(DefaultShutdownTimeout);
 				}

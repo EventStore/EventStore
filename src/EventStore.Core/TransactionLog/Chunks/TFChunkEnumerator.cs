@@ -20,15 +20,14 @@ public class TFChunkEnumerator {
 	private readonly IVersionedFileNamingStrategy _chunkFileNamingStrategy;
 	private string[] _allFiles;
 	private readonly Dictionary<string, int> _nextChunkNumber;
+	private readonly IChunkFileSystem _fileSystem;
 
-	public TFChunkEnumerator(IVersionedFileNamingStrategy chunkFileNamingStrategy) {
+	public TFChunkEnumerator(IVersionedFileNamingStrategy chunkFileNamingStrategy, IChunkFileSystem fileSystem) {
 		_chunkFileNamingStrategy = chunkFileNamingStrategy;
 		_allFiles = null;
 		_nextChunkNumber = [];
-		FileSystem = ChunkLocalFileSystem.Instance;
+		_fileSystem = fileSystem;
 	}
-
-	public IChunkFileSystem FileSystem { get; }
 
 	// lastChunkNumber is not a filter/limit, it is used to spot missing chunks
 	// getNextChunkNumber is used from tests only. todo: do we really need it
@@ -87,7 +86,7 @@ public class TFChunkEnumerator {
 		if (_nextChunkNumber.TryGetValue(chunkFileName, out var nextChunkNumber))
 			return nextChunkNumber;
 
-		var header = await FileSystem.ReadHeaderAsync(chunkFileName, token);
+		var header = await _fileSystem.ReadHeaderAsync(chunkFileName, token);
 		_nextChunkNumber[chunkFileName] = header.ChunkEndNumber + 1;
 		return header.ChunkEndNumber + 1;
 	}
