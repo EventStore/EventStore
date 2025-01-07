@@ -71,7 +71,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		public Instant RecordNow(Instant start) => start;
 	}
 
-	private StorageWriterService<TStreamId> CreateStorageWriter(TFChunkDb db, ISubscriber inputBus, IPublisher outputBus) {
+	private async static ValueTask<StorageWriterService<TStreamId>> CreateStorageWriter(TFChunkDb db, ISubscriber inputBus, IPublisher outputBus) {
 		var writer = new TFChunkWriter(db);
 		var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
 			IndexDirectory = Path.Combine(db.Config.Path, "index")
@@ -100,7 +100,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			flushDurationTracker: new ZeroDurationTracker(), // to force a flush on each write to easily detect when a write is complete
 			getLastIndexedPosition: () => -1);
 
-		storageWriterService.Start();
+		await storageWriterService.Start(CancellationToken.None);
 
 		return storageWriterService;
 	}
@@ -112,7 +112,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		var subscribeBus = new SynchronousScheduler("subscribeBus");
 		var publishBus = subscribeBus;
 
-		var writer = CreateStorageWriter(
+		var writer = await CreateStorageWriter(
 			db: db,
 			inputBus: subscribeBus,
 			outputBus: publishBus);
@@ -203,7 +203,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		var publishBus = adhocReplicaController.Publisher;
 
 		var replicationInterceptor = new ReplicationInterceptor(subscribeBus);
-		var writer = CreateStorageWriter(
+		var writer = await CreateStorageWriter(
 			db: db,
 			inputBus: replicationInterceptor.Bus,
 			outputBus: publishBus);

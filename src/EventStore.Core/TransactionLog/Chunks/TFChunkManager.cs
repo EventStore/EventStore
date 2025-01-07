@@ -87,7 +87,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			// work backwards through the history until we have found enough chunks
 			// to cache according to the chunk cache size. determines lastChunkToCache.
 			for (int chunkNum = _chunksCount - 1; chunkNum >= 0;) {
-				var chunk = GetChunkImpl(chunkNum, lockPreacquired: true, token);
+				var chunk = await GetChunkImpl(chunkNum, lockPreacquired: true, token);
 				var chunkSize = chunk.IsReadOnly
 					? chunk.ChunkFooter.PhysicalDataSize + chunk.ChunkFooter.MapSize + ChunkHeader.Size +
 					  ChunkFooter.Size
@@ -123,7 +123,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 
 		// cache everything from lastChunkToCache up to now
 		for (int chunkNum = lastChunkToCache; chunkNum < _chunksCount;) {
-			var chunk = GetChunkImpl(chunkNum, lockPreacquired: false, token);
+			var chunk = await GetChunkImpl(chunkNum, lockPreacquired: false, token);
 
 			if (chunk.IsReadOnly)
 				await chunk.CacheInMemory(token);
@@ -170,7 +170,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 				tracker: _tracker,
 				transformFactory: _transformManager.GetFactoryForNewChunk(),
 				token);
-			AddChunk(chunk, isNew: true);
+			await AddChunk(chunk, isNew: true, token);
 			triggerCaching = _cachingEnabled;
 		} finally {
 			_chunksLocker.Release();
@@ -207,7 +207,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 				transformFactory: _transformManager.GetFactoryForExistingChunk(chunkHeader.TransformType),
 				transformHeader: transformHeader,
 				token);
-			AddChunk(chunk, isNew: true);
+			await AddChunk(chunk, isNew: true, token);
 			triggerCaching = _cachingEnabled;
 		} finally {
 			_chunksLocker.Release();
@@ -219,7 +219,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		return chunk;
 	}
 
-	private void AddChunk(TFChunk.TFChunk chunk, bool isNew) {
+	private async ValueTask AddChunk(TFChunk.TFChunk chunk, bool isNew, CancellationToken token) {
 		Debug.Assert(chunk is not null);
 		Debug.Assert(_chunksLocker.IsLockHeld);
 
@@ -231,7 +231,11 @@ public class TFChunkManager : IThreadPoolWorkItem {
 
 		if (isNew) {
 			if (chunk.ChunkHeader.ChunkStartNumber > 0)
-				OnChunkCompleted?.Invoke(GetChunkImpl(chunk.ChunkHeader.ChunkStartNumber - 1, lockPreacquired: true).ChunkInfo);
+				OnChunkCompleted?.Invoke(
+					(await GetChunkImpl(
+						chunk.ChunkHeader.ChunkStartNumber - 1,
+						lockPreacquired: true,
+						token: token)).ChunkInfo);
 		} else {
 			OnChunkLoaded?.Invoke(chunk.ChunkInfo);
 		}
@@ -243,7 +247,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		bool triggerCaching;
 		await _chunksLocker.AcquireAsync(token);
 		try {
-			AddChunk(chunk, isNew: false);
+			await AddChunk(chunk, isNew: false, token);
 			triggerCaching = _cachingEnabled;
 		} finally {
 			_chunksLocker.Release();
@@ -254,10 +258,14 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			TriggerBackgroundCaching();
 	}
 
-	public async ValueTask<TFChunk.TFChunk> SwitchChunk(TFChunk.TFChunk chunk, bool verifyHash,
+	public async ValueTask<TFChunk.TFChunk> SwitchChunk(
+		TFChunk.TFChunk chunk,
+		bool verifyHash,
 		bool removeChunksWithGreaterNumbers,
 		CancellationToken token) {
+
 		Ensure.NotNull(chunk, "chunk");
+
 		if (!chunk.IsReadOnly)
 			throw new ArgumentException(string.Format("Passed TFChunk is not completed: {0}.", chunk.FileName));
 
@@ -300,7 +308,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		bool triggerCaching;
 		await _chunksLocker.AcquireAsync(token);
 		try {
-			if (!ReplaceChunksWith(newChunk, "Old")) {
+			if (!await ReplaceChunksWith(newChunk, "Old", token)) {
 				Log.Information("Chunk {chunk} will be not switched, marking for remove...", newChunk);
 				newChunk.MarkForDeletion();
 			} else
@@ -325,13 +333,13 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		return newChunk;
 	}
 
-	private bool ReplaceChunksWith(TFChunk.TFChunk newChunk, string chunkExplanation) {
+	private async ValueTask<bool> ReplaceChunksWith(TFChunk.TFChunk newChunk, string chunkExplanation, CancellationToken token) {
 		Debug.Assert(_chunksLocker.IsLockHeld);
 
 		var chunkStartNumber = newChunk.ChunkHeader.ChunkStartNumber;
 		var chunkEndNumber = newChunk.ChunkHeader.ChunkEndNumber;
 		for (int i = chunkStartNumber; i <= chunkEndNumber;) {
-			var chunk = GetChunkImpl(i, lockPreacquired: true);
+			var chunk = await GetChunkImpl(i, lockPreacquired: true, token);
 			if (chunk != null) {
 				var chunkHeader = chunk.ChunkHeader;
 				if (chunkHeader.ChunkStartNumber < chunkStartNumber || chunkHeader.ChunkEndNumber > chunkEndNumber)
@@ -392,48 +400,60 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
 	}
 
-	public bool TryGetChunkFor(long logPosition, out TFChunk.TFChunk chunk) {
+	//qq refactor this into fewer methods for efficiency
+	public async ValueTask<TFChunk.TFChunk> TryGetChunkFor(long logPosition, CancellationToken token) {
+		TFChunk.TFChunk chunk;
 		try {
-			chunk = GetChunkFor(logPosition);
-			return true;
+			chunk = await GetChunkFor(logPosition, token);
 		} catch {
 			chunk = null;
-			return false;
 		}
+		return chunk;
 	}
 
-	public TFChunk.TFChunk GetChunkFor(long logPosition) {
+	//qq refactor this into fewer methods for efficiency
+	public async ValueTask<TFChunk.TFChunk> GetChunkFor(long logPosition, CancellationToken token) {
 		var chunkNum = (int)(logPosition / _config.ChunkSize);
 		if (chunkNum < 0 || chunkNum >= _chunksCount)
 			throw new ArgumentOutOfRangeException("logPosition",
 				string.Format("LogPosition {0} does not have corresponding chunk in DB.", logPosition));
 
-		var chunk = GetChunkImpl(chunkNum, lockPreacquired: false);
+		var chunk = await GetChunkImpl(chunkNum, lockPreacquired: false, token);
 		if (chunk is null)
 			throw new Exception(string.Format(
 				"Requested chunk for LogPosition {0}, which is not present in TFChunkManager.", logPosition));
 		return chunk;
 	}
 
-	public TFChunk.TFChunk GetChunk(int chunkNum, CancellationToken token = default) {
+	//qq refactor this into fewer methods for efficiency
+	public async ValueTask<TFChunk.TFChunk> GetChunk(int chunkNum, CancellationToken token) {
 		if (chunkNum < 0 || chunkNum >= _chunksCount)
 			throw new ArgumentOutOfRangeException("chunkNum",
 				string.Format("Chunk #{0} is not present in DB.", chunkNum));
 
-		return GetChunkImpl(chunkNum, lockPreacquired: false, token: token);
+		return await GetChunkImpl(chunkNum, lockPreacquired: false, token: token);
 	}
 
-	private TFChunk.TFChunk GetChunkImpl(
+	private async ValueTask<TFChunk.TFChunk> GetChunkImpl(
 		int chunkNum,
 		bool lockPreacquired,
-		CancellationToken token = default) {
+		CancellationToken token) {
 
 		if (_chunks[chunkNum] is not { } chunk) {
+			// the chunk in this slot is null, which should only be possible if the chunk is archived.
 			//qq todo: check the archive checkpoint
+
+			//qq current choice: do we instantiate the chunk and hand it out before it is fully initialized
+			// and leave it up to the chunk to make sure it is initialised before being read
+			//  this means the chunk can always be retrieved synchronously but the chunk is more complicated
+			// OR do we make it so that retrieving the chunk is asynchronous
+			// asynchronous is better because it makes the chunk simpler. try rolling that out.
+			//qq remember then that we will still want to avoid multiple initializations. maybe use lazy
+
 			//qq what timeout?
 			if (lockPreacquired || _chunksLocker.TryAcquire(timeout: TimeSpan.FromDays(1), token: token)) {
 				try {
-					chunk = TFChunk.TFChunk.FromCompletedRemote(
+					chunk = await TFChunk.TFChunk.FromCompletedRemote(
 						chunkNumber: chunkNum,
 						tracker: _tracker,
 						getTransformFactory: _transformManager.GetFactoryForExistingChunk, //qq cache this

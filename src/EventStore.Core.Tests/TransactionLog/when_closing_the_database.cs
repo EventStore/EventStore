@@ -73,11 +73,11 @@ public class when_closing_the_database<TLogFormat, TStreamId> : SpecificationWit
 	public async Task checkpoints_should_be_flushed_only_when_chunks_are_properly_closed(bool chunksClosed) {
 		if (!chunksClosed) {
 			// acquire a reader to prevent the chunk from being properly closed
-			_db.Manager.GetChunk(0).AcquireRawReader();
+			(await _db.Manager.GetChunk(0, CancellationToken.None)).AcquireRawReader();
 		}
 
 		var writer = new TFChunkWriter(_db);
-		writer.Open();
+		await writer.Open(CancellationToken.None);
 		Assert.IsTrue(await writer.Write(CreateRecord(), CancellationToken.None) is (true, _));
 
 		_db.Config.ChaserCheckpoint.Write(1); // any non-zero value just to test if the checkpoint is flushed

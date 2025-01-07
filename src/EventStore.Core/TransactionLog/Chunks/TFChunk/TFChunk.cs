@@ -203,7 +203,7 @@ public partial class TFChunk : IDisposable {
 	}
 
 	// always remote
-	public static TFChunk FromCompletedRemote(
+	public async static ValueTask<TFChunk> FromCompletedRemote(
 		int chunkNumber,
 		ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory,
@@ -220,12 +220,7 @@ public partial class TFChunk : IDisposable {
 
 		try {
 			chunk.SetupRemoteHandle(chunkNumber: chunkNumber);
-
-			//qqqqq todo: defer this until the chunk is actually accessed so that we can
-			// 1. avoid doing this while we hold the chunks locker in the manager (which would block all reads)
-			// 2. avoid doing this while not holding the chunks locker resulting in it being executed repeatedly
-			var init = chunk.InitCompleted(verifyHash: false, tracker, getTransformFactory, token);
-			init.Wait();
+			await chunk.InitCompleted(verifyHash: false, tracker, getTransformFactory, token);
 		} catch {
 			chunk.Dispose();
 			throw;

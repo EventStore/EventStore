@@ -203,7 +203,7 @@ public class RedactionService<TStreamId> :
 
 		TFChunk targetChunk;
 		try {
-			targetChunk = _db.Manager.GetChunk(targetChunkNumber);
+			targetChunk = await _db.Manager.GetChunk(targetChunkNumber, token);
 		} catch(ArgumentOutOfRangeException) {
 			return new(SwitchChunkResult.TargetChunkExcessive);
 		}

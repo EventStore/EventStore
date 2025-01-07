@@ -96,12 +96,12 @@ public class TFChunkReader : ITransactionFileReader {
 
 			bool readLast = false;
 
-			if (!_db.Manager.TryGetChunkFor(pos, out var chunk) ||
+			if (await _db.Manager.TryGetChunkFor(pos) is not { } chunk ||
 			    pos == chunk.ChunkHeader.ChunkStartPosition) {
 				// we are exactly at the boundary of physical chunks
 				// so we switch to previous chunk and request TryReadLast
 				readLast = true;
-				chunk = _db.Manager.GetChunkFor(pos - 1);
+				chunk = await _db.Manager.GetChunkFor(pos - 1);
 			}
 
 			RecordReadResult result;

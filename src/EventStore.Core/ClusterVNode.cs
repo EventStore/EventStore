@@ -1642,7 +1642,9 @@ public class ClusterVNode<TStreamId> :
 				task.Wait(); // No timeout or cancellation, this is intended
 			}
 
-			storageWriter.Start();
+			using (var task = storageWriter.Start(CancellationToken.None).AsTask()) {
+				task.Wait(); // No timeout or cancellation, this is intended
+			}
 			AddTasks(storageWriter.Tasks);
 
 			AddTasks(_workersHandler.Start());

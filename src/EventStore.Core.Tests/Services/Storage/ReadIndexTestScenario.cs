@@ -102,7 +102,7 @@ public abstract class ReadIndexTestScenario<TLogFormat, TStreamId> : Specificati
 		await Db.Open();
 		// create db
 		Writer = new TFChunkWriter(Db);
-		Writer.Open();
+		await Writer.Open(CancellationToken.None);
 		await WriteTestScenario(CancellationToken.None);
 		await Writer.DisposeAsync();
 		Writer = null;
