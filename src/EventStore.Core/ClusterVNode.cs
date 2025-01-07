@@ -1586,9 +1586,9 @@ public class ClusterVNode<TStreamId> :
 		void StartNodeUnwrapException(IApplicationBuilder app) {
 			try {
 				StartNode(app);
-			} catch (AggregateException aggEx) {
+			} catch (AggregateException aggEx) when (aggEx.InnerException is { } innerEx) {
 				// We only really care that *something* is wrong - throw the first inner exception.
-				throw aggEx.InnerException;
+				throw innerEx;
 			}
 		}
 
