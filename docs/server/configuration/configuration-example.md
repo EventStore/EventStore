@@ -2,10 +2,10 @@
 title: "Configutation Example"
 order: 3
 ---
-To set up a basic configuration for our cluster, we will need to define 4 fundamental section.
+You must define four fundamental aspects to set up a basic configuration for your cluster.
 
 ## Data Storage Configuration
-First define the directory where to store each node database, index, and log files respectively.
+First, define the directory where each node database, index, and log file is stored.
 ```bash
 Db: C:\Path\To\Folder\Cluster\node1\Data
 Index: C:\Path\To\Folder\Cluster\node1\Index
@@ -13,7 +13,7 @@ Log: C:\Path\To\Folder\Cluster\node1\Log
 ```
 
 ## Network Configuration
-After defining the storage directory, configured each node network settings.
+After defining the storage directory, configure each node's network settings.
 ```bash
 ReplicationIp: 127.0.0.1
 NodeIp: 127.0.0.1
@@ -23,7 +23,7 @@ EnableAtomPubOverHTTP: true
 ```
 
 ## Cluster Configuration
-After configuring each node's network settings, define the cluster settings to specifies a cluster size, and sets up gossip seeds for node discovery.
+After configuring each node's network settings, define the cluster settings to specify a cluster size and set up gossip seeds for node discovery.
 ```bash
 ClusterSize: 3
 DiscoverViaDns: false
