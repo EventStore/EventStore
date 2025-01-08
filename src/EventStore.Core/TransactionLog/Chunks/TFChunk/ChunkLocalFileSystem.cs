@@ -11,12 +11,10 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
-public sealed class ChunkLocalFileSystem(IVersionedFileNamingStrategy namingStrategy) : IChunkFileSystem {
-	public IVersionedFileNamingStrategy NamingStrategy => namingStrategy;
+public sealed class ChunkLocalFileSystem(string path, string chunkFilePrefix = "chunk-") : IChunkFileSystem {
+	private readonly VersionedPatternFileNamingStrategy _strategy = new(path, chunkFilePrefix);
 
-	public ChunkLocalFileSystem(string path, string prefix = "chunk-")
-		: this(new VersionedPatternFileNamingStrategy(path, prefix)) {
-	}
+	public IVersionedFileNamingStrategy NamingStrategy => _strategy;
 
 	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, bool reduceFileCachePressure, CancellationToken token) {
 		ValueTask<IChunkHandle> task;

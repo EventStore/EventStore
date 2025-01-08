@@ -9,7 +9,6 @@ using EventStore.Common.Utils;
 using System.Threading.Tasks;
 using DotNext.Threading;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using ChunkInfo = EventStore.Core.Data.ChunkInfo;
@@ -53,7 +52,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		_config = config;
 		_tracker = tracker;
 		_transformManager = transformManager;
-		FileSystem = new ChunkLocalFileSystem(new VersionedPatternFileNamingStrategy(config.Path, "chunk-"));
+		FileSystem = new ChunkLocalFileSystem(config.Path);
 	}
 
 	public IChunkFileSystem FileSystem { get; }
