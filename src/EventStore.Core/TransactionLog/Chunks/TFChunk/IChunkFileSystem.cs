@@ -21,6 +21,8 @@ public interface IChunkFileSystem {
 	IChunkEnumerable GetChunks();
 
 	public interface IChunkEnumerable : IAsyncEnumerable<TFChunkInfo> {
+
+		// It is not a filter/limit, it is used to spot missing chunks
 		int LastChunkNumber { get; set; }
 	}
 }
