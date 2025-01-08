@@ -4,6 +4,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Collections.Generic;
 using EventStore.Core.Data;
 using NUnit.Framework;
 
@@ -75,9 +76,11 @@ public class when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_me
 	}
 
 	[Test]
-	public void untouched_chunk_should_survive() {
-		var chunks = Db.Manager.FileSystem.NamingStrategy.GetAllPresentFiles();
+	public async Task untouched_chunk_should_survive() {
+		var chunks = await Db.Manager.FileSystem.GetChunks().ToArrayAsync();
 		Assert.AreEqual(1, chunks.Length);
+
 		Assert.AreEqual(chunk0, GetChunkName(0));
+		Assert.AreEqual(chunk0, chunks[0].FileName);
 	}
 }

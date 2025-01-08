@@ -16,7 +16,6 @@ public interface IVersionedFileNamingStrategy {
 
 	// Methods that rely on the state of the storage
 	string[] GetAllVersionsFor(int index);
-	string[] GetAllPresentFiles();
 	string[] GetAllTempFiles();
 
 	// When we are creating a new version of a chunk at the given index, this determines
