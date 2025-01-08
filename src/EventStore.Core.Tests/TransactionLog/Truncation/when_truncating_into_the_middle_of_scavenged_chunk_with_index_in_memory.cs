@@ -81,6 +81,6 @@ public class when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_me
 		Assert.AreEqual(1, chunks.Length);
 
 		Assert.AreEqual(chunk0, GetChunkName(0));
-		Assert.AreEqual(chunk0, chunks[0]);
+		Assert.AreEqual(chunk0, chunks[0].FileName);
 	}
 }
