@@ -26,11 +26,9 @@ using EventStore.Core.Tests.Services.Storage.ReadIndex;
 using EventStore.Core.Time;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using Serilog;
-using Serilog.Events;
 
 namespace EventStore.Core.Tests.Services.Replication.LogReplication;
 

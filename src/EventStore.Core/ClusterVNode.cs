@@ -66,7 +66,6 @@ using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
 using EventStore.Core.Synchronization;
 using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;

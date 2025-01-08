@@ -6,14 +6,12 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
-using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Tests.Services.ElectionsService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Chaser;
