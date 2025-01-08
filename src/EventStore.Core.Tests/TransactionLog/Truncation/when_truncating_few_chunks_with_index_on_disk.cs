@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Collections.Generic;
 using EventStore.Core.Data;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation;
