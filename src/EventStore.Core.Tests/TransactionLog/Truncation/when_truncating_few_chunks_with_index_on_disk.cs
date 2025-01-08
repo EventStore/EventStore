@@ -4,7 +4,9 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Collections.Generic;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation;
@@ -64,14 +66,14 @@ public class when_truncating_few_chunks_with_index_on_disk<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void not_truncated_chunks_should_survive() {
-		var chunks = Db.Manager.FileSystem.NamingStrategy.GetAllPresentFiles();
+	public async Task not_truncated_chunks_should_survive() {
+		var chunks = await Db.Manager.FileSystem.GetChunks().ToArrayAsync();
 		Assert.AreEqual(2, chunks.Length);
-		Assert.AreEqual(_chunk0, GetChunkName(0));
-		Assert.AreEqual(_chunk1, GetChunkName(1));
-	}
 
-	[Test]
-	public void read_all_returns_only_survived_events() {
+		Assert.AreEqual(_chunk0, GetChunkName(0));
+		Assert.AreEqual(_chunk0, chunks[0].FileName);
+
+		Assert.AreEqual(_chunk1, GetChunkName(1));
+		Assert.AreEqual(_chunk1, chunks[1].FileName);
 	}
 }

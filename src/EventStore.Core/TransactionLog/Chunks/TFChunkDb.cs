@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.Transforms;
 using ILogger = Serilog.ILogger;
 
@@ -52,21 +53,20 @@ public sealed class TFChunkDb : IAsyncDisposable {
 
 	// Gets the latest versions of all historical chunks
 	private static async IAsyncEnumerable<ChunkInfo> GetHistoricalChunks(
-		TFChunkEnumerator chunkEnumerator,
-		int lastChunkNum,
+		IChunkFileSystem.IChunkEnumerable chunkEnumerator,
 		[EnumeratorCancellation] CancellationToken token) {
 
-		await foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum, token: token)) {
+		await foreach (var chunkInfo in chunkEnumerator.WithCancellation(token)) {
 			switch (chunkInfo) {
 				case LatestVersion(var fileName, var start, _):
-					if (start <= lastChunkNum - 1)
+					if (start <= chunkEnumerator.LastChunkNumber - 1)
 						yield return new ChunkInfo {
 							ChunkFileName = fileName,
 							ChunkStartNumber = start,
 						};
 					break;
 				case MissingVersion(var fileName, var start):
-					if (start <= lastChunkNum - 1)
+					if (start <= chunkEnumerator.LastChunkNumber - 1)
 						throw new CorruptDatabaseException(new ChunkNotFoundException(fileName));
 
 					// fine for last chunk to be 'missing' (not created yet)
@@ -99,12 +99,13 @@ public sealed class TFChunkDb : IAsyncDisposable {
 
 		var lastChunkNum = (int)(writerCheckpoint / Config.ChunkSize);
 		var lastChunkVersions = Manager.FileSystem.NamingStrategy.GetAllVersionsFor(lastChunkNum);
-		var chunkEnumerator = new TFChunkEnumerator(Manager.FileSystem);
+		var chunkEnumerator = Manager.FileSystem.GetChunks();
 		var getTransformFactoryForExistingChunk = TransformManager.GetFactoryForExistingChunk;
 
 		// Open the historical chunks. New records will not be written to any of these.
 		// (but the last one may need completing)
-		await Parallel.ForEachAsync(GetHistoricalChunks(chunkEnumerator, lastChunkNum, token),
+		chunkEnumerator.LastChunkNumber = lastChunkNum;
+		await Parallel.ForEachAsync(GetHistoricalChunks(chunkEnumerator, token),
 			new ParallelOptions {MaxDegreeOfParallelism = threads, CancellationToken = token},
 			async (chunkInfo, token) => {
 				TFChunk.TFChunk chunk;
@@ -225,13 +226,14 @@ public sealed class TFChunkDb : IAsyncDisposable {
 			}
 		}
 
+		chunkEnumerator.LastChunkNumber = lastChunkNum;
 		_log.Information("Ensuring no excessive chunks...");
-		await EnsureNoExcessiveChunks(chunkEnumerator, lastChunkNum, token);
+		await EnsureNoExcessiveChunks(chunkEnumerator, token);
 		_log.Information("Done ensuring no excessive chunks.");
 
 		if (!readOnly) {
 			_log.Information("Removing old chunk versions...");
-			await RemoveOldChunksVersions(chunkEnumerator, lastChunkNum, token);
+			await RemoveOldChunksVersions(chunkEnumerator, token);
 			_log.Information("Done removing old chunk versions.");
 
 			_log.Information("Cleaning up temp files...");
@@ -279,26 +281,25 @@ public sealed class TFChunkDb : IAsyncDisposable {
 	}
 
 	private async ValueTask EnsureNoExcessiveChunks(
-		TFChunkEnumerator chunkEnumerator,
-		int lastChunkNum,
+		IChunkFileSystem.IChunkEnumerable chunkEnumerator,
 		CancellationToken token) {
 
 		var extraneousFiles = new List<string>();
 
-		await foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum, token: token)) {
+		await foreach (var chunkInfo in chunkEnumerator.WithCancellation(token)) {
 			switch (chunkInfo) {
 				case LatestVersion(var fileName, var start, var end):
 					// there can be at most one excessive chunk at startup:
 					// when a new chunk was created but the writer checkpoint was not yet committed and flushed
-					if (start == lastChunkNum + 1 &&
+					if (start == chunkEnumerator.LastChunkNumber + 1 &&
 					    start == end &&
 					    Manager.FileSystem.NamingStrategy.GetVersionFor(Path.GetFileName(fileName)) == 0)
 						RemoveFile("Removing excessive chunk: {chunk}", fileName);
-					else if (start > lastChunkNum)
+					else if (start > chunkEnumerator.LastChunkNumber)
 						extraneousFiles.Add(fileName);
 					break;
 				case OldVersion(var fileName, var start):
-					if (start > lastChunkNum)
+					if (start > chunkEnumerator.LastChunkNumber)
 						extraneousFiles.Add(fileName);
 					break;
 			}
@@ -311,14 +312,13 @@ public sealed class TFChunkDb : IAsyncDisposable {
 	}
 
 	private async ValueTask RemoveOldChunksVersions(
-		TFChunkEnumerator chunkEnumerator,
-		int lastChunkNum,
+		IChunkFileSystem.IChunkEnumerable chunkEnumerator,
 		CancellationToken token) {
 
-		await foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum, token: token)) {
+		await foreach (var chunkInfo in chunkEnumerator.WithCancellation(token)) {
 			switch (chunkInfo) {
 				case OldVersion(var fileName, var start):
-					if (start <= lastChunkNum)
+					if (start <= chunkEnumerator.LastChunkNumber)
 						RemoveFile("Removing old chunk version: {chunk}...", fileName);
 					break;
 			}

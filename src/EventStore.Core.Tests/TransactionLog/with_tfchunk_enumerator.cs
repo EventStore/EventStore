@@ -36,7 +36,6 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 		File.Create(GetFilePathFor("chunk-000010.000005")).Close(); // chunks 10 - 14 (latest)
 		// chunks 15 & 16 are missing
 
-		var chunkEnumerator = new TFChunkEnumerator(new ChunkLocalFileSystem(PathName));
 		var result = new List<string>();
 		ValueTask<int> GetNextFileNumber(string chunk, int chunkNumber, int chunkVersion, CancellationToken token) {
 			return Path.GetFileName(chunk) switch {
@@ -52,7 +51,12 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 			};
 		}
 
-		await foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(16, GetNextFileNumber)) {
+		var chunkEnumerator = new ChunkLocalFileSystem(PathName) {
+			ChunkNumberProvider = GetNextFileNumber,
+		}.GetChunks();
+
+		chunkEnumerator.LastChunkNumber = 16;
+		await foreach (var chunkInfo in chunkEnumerator) {
 			switch (chunkInfo) {
 				case LatestVersion(var fileName, var start, var end):
 					result.Add($"latest {Path.GetFileName(fileName)} {start}-{end}");

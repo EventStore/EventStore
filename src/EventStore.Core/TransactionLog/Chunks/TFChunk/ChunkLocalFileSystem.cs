@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,12 @@ public sealed class ChunkLocalFileSystem(string path, string chunkFilePrefix = "
 	private readonly VersionedPatternFileNamingStrategy _strategy = new(path, chunkFilePrefix);
 
 	public IVersionedFileNamingStrategy NamingStrategy => _strategy;
+
+	// is used from tests only
+	public Func<string, int, int, CancellationToken, ValueTask<int>> ChunkNumberProvider {
+		get;
+		init;
+	}
 
 	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, bool reduceFileCachePressure, CancellationToken token) {
 		ValueTask<IChunkHandle> task;
@@ -67,5 +74,80 @@ public sealed class ChunkLocalFileSystem(string path, string chunkFilePrefix = "
 		using var buffer = Memory.AllocateExactly<byte>(ChunkFooter.Size);
 		await RandomAccess.ReadAsync(handle, buffer.Memory, length - ChunkFooter.Size, token);
 		return new(buffer.Span);
+	}
+
+	public IChunkFileSystem.IChunkEnumerable GetChunks()
+		=> new TFChunkEnumerable(this) { ChunkNumberProvider = ChunkNumberProvider };
+
+	private sealed class TFChunkEnumerable(ChunkLocalFileSystem fileSystem)
+		: Dictionary<string, int>, IChunkFileSystem.IChunkEnumerable {
+		private string[] _allFiles;
+		private readonly Func<string, int, int, CancellationToken, ValueTask<int>> _chunkNumberProvider;
+
+		public required Func<string, int, int, CancellationToken, ValueTask<int>> ChunkNumberProvider {
+			init => _chunkNumberProvider = value ?? GetNextChunkNumber;
+		}
+
+		public int LastChunkNumber { get; set; }
+
+		public async IAsyncEnumerator<TFChunkInfo> GetAsyncEnumerator(CancellationToken token = default) {
+			if (_allFiles is null) {
+				var allFiles = fileSystem._strategy.GetAllPresentFiles();
+				Array.Sort(allFiles, StringComparer.CurrentCultureIgnoreCase);
+				_allFiles = allFiles;
+			}
+
+			int expectedChunkNumber = 0;
+			for (int i = 0; i < _allFiles.Length; i++) {
+				var chunkFileName = _allFiles[i];
+				var chunkNumber = fileSystem._strategy.GetIndexFor(Path.GetFileName(_allFiles[i]));
+				var nextChunkNumber = -1;
+				if (i + 1 < _allFiles.Length)
+					nextChunkNumber = fileSystem._strategy.GetIndexFor(Path.GetFileName(_allFiles[i + 1]));
+
+				if (chunkNumber < expectedChunkNumber) {
+					// present in an earlier, merged, chunk
+					yield return new OldVersion(chunkFileName, chunkNumber);
+					continue;
+				}
+
+				if (chunkNumber > expectedChunkNumber) {
+					// one or more chunks are missing
+					for (int j = expectedChunkNumber; j < chunkNumber; j++) {
+						yield return new MissingVersion(fileSystem._strategy.GetFilenameFor(j, 0), j);
+					}
+
+					// set the expected chunk number to prevent calling onFileMissing() again for the same chunk numbers
+					expectedChunkNumber = chunkNumber;
+				}
+
+				if (chunkNumber == nextChunkNumber) {
+					// there is a newer version of this chunk
+					yield return new OldVersion(chunkFileName, chunkNumber);
+				} else {
+					// latest version of chunk with the expected chunk number
+					expectedChunkNumber = await _chunkNumberProvider(chunkFileName, chunkNumber,
+						fileSystem._strategy.GetVersionFor(Path.GetFileName(chunkFileName)), token);
+					yield return new LatestVersion(chunkFileName, chunkNumber, expectedChunkNumber - 1);
+				}
+			}
+
+			for (int i = expectedChunkNumber; i <= LastChunkNumber; i++) {
+				yield return new MissingVersion(fileSystem._strategy.GetFilenameFor(i, 0), i);
+			}
+		}
+
+		private async ValueTask<int> GetNextChunkNumber(string chunkFileName, int chunkNumber, int chunkVersion, CancellationToken token) {
+			if (chunkVersion is 0)
+				return chunkNumber + 1;
+
+			// we only cache next chunk numbers for chunks having a non-zero version
+			if (TryGetValue(chunkFileName, out var nextChunkNumber))
+				return nextChunkNumber;
+
+			var header = await fileSystem.ReadHeaderAsync(chunkFileName, token);
+			this[chunkFileName] = header.ChunkEndNumber + 1;
+			return header.ChunkEndNumber + 1;
+		}
 	}
 }
