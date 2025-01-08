@@ -8,6 +8,9 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
+// This abstracts away the storage of chunks.
+// Chunks can be stored in different locations (say, archive vs local) but the access still goes through
+// one implementation of this interface.
 public interface IChunkFileSystem {
 	ValueTask<IChunkHandle> OpenForReadAsync(string fileName, bool reduceFileCachePressure, CancellationToken token);
 

@@ -17,7 +17,7 @@ public class NoArchiveReader : IArchiveStorageReader {
 
 	public static NoArchiveReader Instance { get; } = new();
 
-	public IArchiveChunkNamer ChunkNamer => new NoNamer();
+	public IArchiveChunkNamer ChunkNamer { get; } = new NoNamer();
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) =>
 		ValueTask.FromResult<long>(0);
