@@ -38,7 +38,7 @@ public class when_truncating_into_the_middle_of_ongoing_chunk : SpecificationWit
 		DbUtil.CreateSingleChunk(_config, 0, GetFilePathFor("chunk-000000.000001"), contents: _file1Contents);
 		DbUtil.CreateOngoingChunk(_config, 1, GetFilePathFor("chunk-000001.000002"), contents: _file2Contents);
 
-		var truncator = new TFChunkDbTruncator(_config, ChunkLocalFileSystem.Instance, static _ => new IdentityChunkTransformFactory());
+		var truncator = new TFChunkDbTruncator(_config, new ChunkLocalFileSystem(_config.Path), static _ => new IdentityChunkTransformFactory());
 		await truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed(), CancellationToken.None);
 	}
 

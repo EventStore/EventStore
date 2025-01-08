@@ -98,8 +98,8 @@ public sealed class TFChunkDb : IAsyncDisposable {
 		}
 
 		var lastChunkNum = (int)(writerCheckpoint / Config.ChunkSize);
-		var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
-		var chunkEnumerator = new TFChunkEnumerator(Config.FileNamingStrategy, Manager.FileSystem);
+		var lastChunkVersions = Manager.FileSystem.NamingStrategy.GetAllVersionsFor(lastChunkNum);
+		var chunkEnumerator = new TFChunkEnumerator(Manager.FileSystem);
 		var getTransformFactoryForExistingChunk = TransformManager.GetFactoryForExistingChunk;
 
 		// Open the historical chunks. New records will not be written to any of these.
@@ -160,7 +160,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 			var onBoundary = writerCheckpoint == (Config.ChunkSize * (long)lastChunkNum);
 			if (!onBoundary)
 				throw new CorruptDatabaseException(
-					new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(lastChunkNum, 0)));
+					new ChunkNotFoundException(Manager.FileSystem.NamingStrategy.GetFilenameFor(lastChunkNum, 0)));
 
 			if (!readOnly && createNewChunks)
 				await Manager.AddNewChunk(token);
@@ -204,7 +204,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 
 					// as of recent versions, it's possible that a new chunk was already created as the writer checkpoint
 					// is updated & flushed _after_ the new chunk is created. if that's the case, we remove it.
-					var newChunk = Config.FileNamingStrategy.GetFilenameFor(lastChunkNum, 0);
+					var newChunk = Manager.FileSystem.NamingStrategy.GetFilenameFor(lastChunkNum, 0);
 					if (File.Exists(newChunk))
 						RemoveFile("Removing excessive chunk: {chunk}", newChunk);
 
@@ -292,7 +292,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 					// when a new chunk was created but the writer checkpoint was not yet committed and flushed
 					if (start == lastChunkNum + 1 &&
 					    start == end &&
-					    Config.FileNamingStrategy.GetVersionFor(Path.GetFileName(fileName)) == 0)
+					    Manager.FileSystem.NamingStrategy.GetVersionFor(Path.GetFileName(fileName)) == 0)
 						RemoveFile("Removing excessive chunk: {chunk}", fileName);
 					else if (start > lastChunkNum)
 						extraneousFiles.Add(fileName);
@@ -326,7 +326,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 	}
 
 	private void CleanUpTempFiles() {
-		var tempFiles = Config.FileNamingStrategy.GetAllTempFiles();
+		var tempFiles = Manager.FileSystem.NamingStrategy.GetAllTempFiles();
 		foreach (string tempFile in tempFiles) {
 			try {
 				RemoveFile("Deleting temporary file {file}...", tempFile);

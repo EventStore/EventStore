@@ -183,7 +183,7 @@ public class RedactionService<TStreamId> :
 
 		int targetChunkNumber;
 		try {
-			targetChunkNumber = _db.Config.FileNamingStrategy.GetIndexFor(targetChunkFile);
+			targetChunkNumber = _db.Manager.FileSystem.NamingStrategy.GetIndexFor(targetChunkFile);
 		} catch {
 			return new(SwitchChunkResult.TargetChunkFileNameInvalid);
 		}

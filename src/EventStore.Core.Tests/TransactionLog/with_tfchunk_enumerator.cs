@@ -37,8 +37,7 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 		File.Create(GetFilePathFor("chunk-000010.000005")).Close(); // chunks 10 - 14 (latest)
 		// chunks 15 & 16 are missing
 
-		var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
-		var chunkEnumerator = new TFChunkEnumerator(strategy, ChunkLocalFileSystem.Instance);
+		var chunkEnumerator = new TFChunkEnumerator(new ChunkLocalFileSystem(PathName));
 		var result = new List<string>();
 		ValueTask<int> GetNextFileNumber(string chunk, int chunkNumber, int chunkVersion, CancellationToken token) {
 			return Path.GetFileName(chunk) switch {

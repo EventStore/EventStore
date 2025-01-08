@@ -142,7 +142,6 @@ public abstract class with_replication_service : SpecificationWithDirectoryPerTe
 		ICheckpoint streamExistenceFilterCheckpoint = new InMemoryCheckpoint(-1);
 		var nodeConfig = new TFChunkDbConfig(
 			PathName,
-			new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
 			1000,
 			10000,
 			writerChk,

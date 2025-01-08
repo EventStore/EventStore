@@ -82,7 +82,6 @@ public abstract class with_storage_chaser_service<TLogFormat, TStreamId> : Speci
 
 		var nodeConfig = new TFChunkDbConfig(
 			PathName,
-			new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
 			1000,
 			10000,
 			_writerChk,

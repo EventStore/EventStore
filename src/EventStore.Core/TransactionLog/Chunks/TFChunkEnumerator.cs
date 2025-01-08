@@ -17,13 +17,11 @@ namespace EventStore.Core.TransactionLog.Chunks;
 // is the Latest for its (logical) chunkNumber, an older version of its chunkNumber,
 // and spotting if any chunkNumbers are missing entirely.
 public class TFChunkEnumerator {
-	private readonly IVersionedFileNamingStrategy _chunkFileNamingStrategy;
 	private string[] _allFiles;
 	private readonly Dictionary<string, int> _nextChunkNumber;
 	private readonly IChunkFileSystem _fileSystem;
 
-	public TFChunkEnumerator(IVersionedFileNamingStrategy chunkFileNamingStrategy, IChunkFileSystem fileSystem) {
-		_chunkFileNamingStrategy = chunkFileNamingStrategy;
+	public TFChunkEnumerator(IChunkFileSystem fileSystem) {
 		_allFiles = null;
 		_nextChunkNumber = [];
 		_fileSystem = fileSystem;
@@ -39,7 +37,7 @@ public class TFChunkEnumerator {
 		getNextChunkNumber ??= GetNextChunkNumber;
 
 		if (_allFiles is null) {
-			var allFiles = _chunkFileNamingStrategy.GetAllPresentFiles();
+			var allFiles = _fileSystem.NamingStrategy.GetAllPresentFiles();
 			Array.Sort(allFiles, StringComparer.CurrentCultureIgnoreCase);
 			_allFiles = allFiles;
 		}
@@ -47,10 +45,10 @@ public class TFChunkEnumerator {
 		int expectedChunkNumber = 0;
 		for (int i = 0; i < _allFiles.Length; i++) {
 			var chunkFileName = _allFiles[i];
-			var chunkNumber = _chunkFileNamingStrategy.GetIndexFor(Path.GetFileName(_allFiles[i]));
+			var chunkNumber = _fileSystem.NamingStrategy.GetIndexFor(Path.GetFileName(_allFiles[i]));
 			var nextChunkNumber = -1;
 			if (i + 1 < _allFiles.Length)
-				nextChunkNumber = _chunkFileNamingStrategy.GetIndexFor(Path.GetFileName(_allFiles[i+1]));
+				nextChunkNumber = _fileSystem.NamingStrategy.GetIndexFor(Path.GetFileName(_allFiles[i+1]));
 
 			if (chunkNumber < expectedChunkNumber) { // present in an earlier, merged, chunk
 				yield return new OldVersion(chunkFileName, chunkNumber);
@@ -59,7 +57,7 @@ public class TFChunkEnumerator {
 
 			if (chunkNumber > expectedChunkNumber) { // one or more chunks are missing
 				for (int j = expectedChunkNumber; j < chunkNumber; j++) {
-					yield return new MissingVersion(_chunkFileNamingStrategy.GetFilenameFor(j, 0), j);
+					yield return new MissingVersion(_fileSystem.NamingStrategy.GetFilenameFor(j, 0), j);
 				}
 				// set the expected chunk number to prevent calling onFileMissing() again for the same chunk numbers
 				expectedChunkNumber = chunkNumber;
@@ -68,13 +66,13 @@ public class TFChunkEnumerator {
 			if (chunkNumber == nextChunkNumber) { // there is a newer version of this chunk
 				yield return new OldVersion(chunkFileName, chunkNumber);
 			} else { // latest version of chunk with the expected chunk number
-				expectedChunkNumber = await getNextChunkNumber(chunkFileName, chunkNumber, _chunkFileNamingStrategy.GetVersionFor(Path.GetFileName(chunkFileName)), token);
+				expectedChunkNumber = await getNextChunkNumber(chunkFileName, chunkNumber, _fileSystem.NamingStrategy.GetVersionFor(Path.GetFileName(chunkFileName)), token);
 				yield return new LatestVersion(chunkFileName, chunkNumber, expectedChunkNumber - 1);
 			}
 		}
 
 		for (int i = expectedChunkNumber; i <= lastChunkNumber; i++) {
-			yield return new MissingVersion(_chunkFileNamingStrategy.GetFilenameFor(i, 0), i);
+			yield return new MissingVersion(_fileSystem.NamingStrategy.GetFilenameFor(i, 0), i);
 		}
 	}
 

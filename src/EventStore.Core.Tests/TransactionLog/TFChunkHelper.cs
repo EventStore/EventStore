@@ -34,7 +34,6 @@ public static class TFChunkHelper {
 		long maxTruncation // Default -1
 		) {
 		return new TFChunkDbConfig(pathName,
-			new VersionedPatternFileNamingStrategy(pathName, "chunk-"),
 			chunkSize,
 			0,
 			new InMemoryCheckpoint(writerCheckpointPosition),
@@ -57,7 +56,6 @@ public static class TFChunkHelper {
 		if (replicationCheckpoint == null) replicationCheckpoint = new InMemoryCheckpoint(-1);
 		return new TFChunkDbConfig(
 			pathName,
-			new VersionedPatternFileNamingStrategy(pathName, "chunk-"),
 			chunkSize,
 			0,
 			writerCheckpoint,

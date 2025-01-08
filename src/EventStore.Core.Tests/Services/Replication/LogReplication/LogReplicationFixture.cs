@@ -52,7 +52,6 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 
 		var dbConfig = new TFChunkDbConfig(
 			path: dbPath,
-			fileNamingStrategy: new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
 			chunkSize: ChunkSize,
 			maxChunksCacheSize: 2 * ChunkSize,
 			writerCheckpoint: new InterceptorCheckpoint(new InMemoryCheckpoint()),

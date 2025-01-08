@@ -166,7 +166,6 @@ public abstract class with_replication_service_and_epoch_manager<TLogFormat, TSt
 		ICheckpoint streamExistenceFilterCheckpoint = new InMemoryCheckpoint(-1);
 		var nodeConfig = new TFChunkDbConfig(
 			PathName,
-			new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
 			chunkSize: 1000,
 			maxChunksCacheSize: 10000,
 			writerChk,

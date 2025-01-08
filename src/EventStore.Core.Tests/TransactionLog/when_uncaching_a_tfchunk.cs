@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog;
@@ -36,7 +37,7 @@ public class when_uncaching_a_tfchunk<TLogFormat, TStreamId> : SpecificationWith
 		_result = await _chunk.TryAppend(_record, CancellationToken.None);
 		await _chunk.Flush(CancellationToken.None);
 		await _chunk.Complete(CancellationToken.None);
-		_uncachedChunk = await TFChunk.FromCompletedFile(ChunkLocalFileSystem.Instance, Filename, verifyHash: true, unbufferedRead: false,
+		_uncachedChunk = await TFChunk.FromCompletedFile(new ChunkLocalFileSystem(Path.GetDirectoryName(Filename)), Filename, verifyHash: true, unbufferedRead: false,
 			reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
 			getTransformFactory: _ => new IdentityChunkTransformFactory());
 		await _uncachedChunk.CacheInMemory(CancellationToken.None);
