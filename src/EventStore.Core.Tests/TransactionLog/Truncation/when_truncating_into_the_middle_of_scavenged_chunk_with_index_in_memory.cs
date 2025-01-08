@@ -52,7 +52,7 @@ public class when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_me
 	}
 
 	private string GetChunkName(int chunkNumber) {
-		var allVersions = Db.Config.FileNamingStrategy.GetAllVersionsFor(chunkNumber);
+		var allVersions = Db.Manager.FileSystem.NamingStrategy.GetAllVersionsFor(chunkNumber);
 		Assert.AreEqual(1, allVersions.Length);
 		return allVersions[0];
 	}
@@ -76,7 +76,7 @@ public class when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_me
 
 	[Test]
 	public void untouched_chunk_should_survive() {
-		var chunks = Db.Config.FileNamingStrategy.GetAllPresentFiles();
+		var chunks = Db.Manager.FileSystem.NamingStrategy.GetAllPresentFiles();
 		Assert.AreEqual(1, chunks.Length);
 		Assert.AreEqual(chunk0, GetChunkName(0));
 	}

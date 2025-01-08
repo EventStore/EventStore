@@ -52,7 +52,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		_config = config;
 		_tracker = tracker;
 		_transformManager = transformManager;
-		FileSystem = ChunkLocalFileSystem.Instance;
+		FileSystem = new ChunkLocalFileSystem(config.Path);
 	}
 
 	public IChunkFileSystem FileSystem { get; }
@@ -123,7 +123,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 	}
 
 	public ValueTask<TFChunk.TFChunk> CreateTempChunk(ChunkHeader chunkHeader, int fileSize, CancellationToken token) {
-		var chunkFileName = _config.FileNamingStrategy.CreateTempFilename();
+		var chunkFileName = FileSystem.NamingStrategy.CreateTempFilename();
 		return TFChunk.TFChunk.CreateWithHeader(chunkFileName,
 			chunkHeader,
 			fileSize,
@@ -147,7 +147,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		await _chunksLocker.AcquireAsync(token);
 		try {
 			var chunkNumber = _chunksCount;
-			var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
+			var chunkName = FileSystem.NamingStrategy.GetFilenameFor(chunkNumber, 0);
 			chunk = await TFChunk.TFChunk.CreateNew(chunkName,
 				_config.ChunkSize,
 				chunkNumber,
@@ -185,7 +185,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 					"Received request to create a new ongoing chunk #{0}-{1}, but current chunks count is {2}.",
 					chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, _chunksCount));
 
-			var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, 0);
+			var chunkName = FileSystem.NamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, 0);
 			chunk = await TFChunk.TFChunk.CreateWithHeader(chunkName,
 				chunkHeader,
 				fileSize,
@@ -270,7 +270,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			}
 
 			var newFileName =
-				_config.FileNamingStrategy.DetermineNewVersionFilenameForIndex(chunkHeader.ChunkStartNumber, defaultVersion: 1);
+				FileSystem.NamingStrategy.DetermineNewVersionFilenameForIndex(chunkHeader.ChunkStartNumber, defaultVersion: 1);
 			Log.Information("File {oldFileName} will be moved to file {newFileName}", Path.GetFileName(oldFileName),
 				Path.GetFileName(newFileName));
 			try {

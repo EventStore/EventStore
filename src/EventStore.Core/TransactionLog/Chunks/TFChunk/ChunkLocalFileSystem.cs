@@ -6,17 +6,15 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
-using DotNext.Patterns;
 using EventStore.Core.Exceptions;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
-public sealed class ChunkLocalFileSystem : IChunkFileSystem, ISingleton<ChunkLocalFileSystem> {
-	public static ChunkLocalFileSystem Instance { get; } = new();
+public sealed class ChunkLocalFileSystem(string path, string chunkFilePrefix = "chunk-") : IChunkFileSystem {
+	private readonly VersionedPatternFileNamingStrategy _strategy = new(path, chunkFilePrefix);
 
-	private ChunkLocalFileSystem() {
-
-	}
+	public IVersionedFileNamingStrategy NamingStrategy => _strategy;
 
 	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, bool reduceFileCachePressure, CancellationToken token) {
 		ValueTask<IChunkHandle> task;

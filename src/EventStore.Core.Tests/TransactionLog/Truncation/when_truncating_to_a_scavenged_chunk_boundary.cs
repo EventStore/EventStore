@@ -32,7 +32,7 @@ public class when_truncating_to_a_scavenged_chunk_boundary : SpecificationWithDi
 		DbUtil.CreateSingleChunk(_config, 4, GetFilePathFor("chunk-000004.000000"));
 		DbUtil.CreateOngoingChunk(_config, 5, GetFilePathFor("chunk-000005.000000"));
 
-		var truncator = new TFChunkDbTruncator(_config, ChunkLocalFileSystem.Instance, static _ => new IdentityChunkTransformFactory());
+		var truncator = new TFChunkDbTruncator(_config, new ChunkLocalFileSystem(_config.Path), static _ => new IdentityChunkTransformFactory());
 		await truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed(), CancellationToken.None);
 	}
 

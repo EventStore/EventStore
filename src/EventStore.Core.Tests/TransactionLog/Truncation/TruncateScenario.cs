@@ -36,7 +36,7 @@ public abstract class TruncateScenario<TLogFormat, TStreamId> : ReadIndexTestSce
 
 		await Db.DisposeAsync();
 
-		var truncator = new TFChunkDbTruncator(Db.Config, ChunkLocalFileSystem.Instance, static _ => new IdentityChunkTransformFactory());
+		var truncator = new TFChunkDbTruncator(Db.Config, new ChunkLocalFileSystem(Db.Config.Path), static _ => new IdentityChunkTransformFactory());
 		await truncator.TruncateDb(TruncateCheckpoint, CancellationToken.None);
 	}
 

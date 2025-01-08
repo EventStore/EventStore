@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
@@ -12,4 +13,6 @@ public interface IChunkFileSystem {
 	ValueTask<ChunkHeader> ReadHeaderAsync(string fileName, CancellationToken token);
 
 	ValueTask<ChunkFooter> ReadFooterAsync(string fileName, CancellationToken token);
+
+	IVersionedFileNamingStrategy NamingStrategy { get; }
 }

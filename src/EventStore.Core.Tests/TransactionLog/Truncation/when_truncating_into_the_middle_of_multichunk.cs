@@ -36,7 +36,7 @@ public class when_truncating_into_the_middle_of_multichunk : SpecificationWithDi
 		DbUtil.CreateMultiChunk(_config, 8, 9, GetFilePathFor("chunk-000008.000001"));
 		DbUtil.CreateOngoingChunk(_config, 11, GetFilePathFor("chunk-000011.000000"));
 
-		var truncator = new TFChunkDbTruncator(_config, ChunkLocalFileSystem.Instance, static _ => new IdentityChunkTransformFactory());
+		var truncator = new TFChunkDbTruncator(_config, new ChunkLocalFileSystem(_config.Path), static _ => new IdentityChunkTransformFactory());
 		await truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed(), CancellationToken.None);
 	}
 

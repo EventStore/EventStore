@@ -66,7 +66,6 @@ using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
 using EventStore.Core.Synchronization;
 using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
@@ -174,7 +173,6 @@ public class ClusterVNode<TStreamId> :
 	private readonly ISubscriber _mainBus;
 
 	private readonly ClusterVNodeController<TStreamId> _controller;
-	private IVersionedFileNamingStrategy _fileNamingStrategy;
 	private readonly TimerService _timerService;
 	private readonly KestrelHttpService _httpService;
 	private readonly ITimeProvider _timeProvider;
@@ -432,9 +430,7 @@ public class ClusterVNode<TStreamId> :
 				ThreadCountCalculator.CalculateWorkerThreadCount(options.Application.WorkerThreads,
 					readerThreadsCount, isRunningInContainer);
 
-			_fileNamingStrategy = new VersionedPatternFileNamingStrategy(dbPath, "chunk-");
 			return new TFChunkDbConfig(dbPath,
-				_fileNamingStrategy,
 				options.Database.ChunkSize,
 				cache,
 				writerChk,
@@ -1302,7 +1298,7 @@ public class ClusterVNode<TStreamId> :
 			var chunkDeleter = IChunkDeleter<TStreamId, ILogRecord>.NoOp;
 			if (archiveOptions.Enabled) {
 				// todo: consider if we can/should reuse the same reader elsewhere
-				var archiveReader = new ArchiveStorageFactory(archiveOptions, _fileNamingStrategy).CreateReader();
+				var archiveReader = new ArchiveStorageFactory(archiveOptions, Db.Manager.FileSystem.NamingStrategy).CreateReader();
 				chunkDeleter = new ChunkDeleter<TStreamId, ILogRecord>(
 					logger: logger,
 					archiveCheckpoint: new AdvancingCheckpoint(archiveReader.GetCheckpoint),
@@ -1568,7 +1564,7 @@ public class ClusterVNode<TStreamId> :
 						X509Certificate2Collection Roots)>>
 					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()))
 				.AddSingleton(_nodeHttpClientFactory)
-				.AddSingleton(_fileNamingStrategy);
+				.AddSingleton(Db.Manager.FileSystem.NamingStrategy);
 
 			configureAdditionalNodeServices?.Invoke(services);
 			return services;
