@@ -17,11 +17,9 @@ public class FileSystemWriter : IArchiveStorageWriter {
 
 	private readonly string _archivePath;
 	private readonly string _archiveCheckpointFile;
-	private readonly Func<int?, int?, string> _getChunkPrefix;
 
-	public FileSystemWriter(FileSystemOptions options, Func<int?, int?, string> getChunkPrefix, string archiveCheckpointFile) {
+	public FileSystemWriter(FileSystemOptions options, string archiveCheckpointFile) {
 		_archivePath = options.Path;
-		_getChunkPrefix = getChunkPrefix;
 		_archiveCheckpointFile = archiveCheckpointFile;
 	}
 

@@ -9,7 +9,7 @@ using Xunit;
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Naming;
 
 public class ArchiveChunkNamerTests {
-	private ArchiveChunkNamer CreateSut() {
+	private static ArchiveChunkNamer CreateSut() {
 		var namingStrategy = new VersionedPatternFileNamingStrategy(string.Empty, "chunk-");
 		return new ArchiveChunkNamer(namingStrategy);
 	}
@@ -28,5 +28,11 @@ public class ArchiveChunkNamerTests {
 		var sut = CreateSut();
 		Assert.Throws<ArgumentOutOfRangeException>(() => sut.GetFileNameFor(-1));
 		Assert.Throws<ArgumentOutOfRangeException>(() => sut.GetFileNameFor(-2));
+	}
+
+	[Fact]
+	public void returns_correct_prefix() {
+		var sut = CreateSut();
+		Assert.Equal("chunk-", sut.Prefix);
 	}
 }
