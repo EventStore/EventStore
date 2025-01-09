@@ -3,9 +3,10 @@
 
 using System;
 using System.Threading;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Serilog;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Stages;
 
 public class Cleaner : ICleaner {
 	private readonly ILogger _logger;

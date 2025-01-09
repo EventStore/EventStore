@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -43,6 +44,8 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 		_onGetChunk = onGetChunk;
 		_chunkGets = new();
 	}
+
+	public IArchiveChunkNamer ChunkNamer => throw new NotImplementedException();
 
 	public IArchiveStorageReader CreateReader() => this;
 	public IArchiveStorageWriter CreateWriter() => this;

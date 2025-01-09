@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.Transforms.Identity;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation;
@@ -35,7 +36,7 @@ public abstract class TruncateScenario<TLogFormat, TStreamId> : ReadIndexTestSce
 
 		await Db.DisposeAsync();
 
-		var truncator = new TFChunkDbTruncator(Db.Config, _ => new IdentityChunkTransformFactory());
+		var truncator = new TFChunkDbTruncator(Db.Config, new ChunkLocalFileSystem(Db.Config.Path), static _ => new IdentityChunkTransformFactory());
 		await truncator.TruncateDb(TruncateCheckpoint, CancellationToken.None);
 	}
 

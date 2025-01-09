@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 public interface IIndexScavenger {
 	ValueTask ScavengeIndex(

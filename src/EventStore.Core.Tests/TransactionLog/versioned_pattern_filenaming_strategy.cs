@@ -133,8 +133,8 @@ public class versioned_pattern_filenaming_strategy : SpecificationWithDirectory 
 		var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
 		Assert.AreEqual(0, strategy.GetAllTempFiles().Length);
 
-		var tmp1 = strategy.GetTempFilename();
-		var tmp2 = strategy.GetTempFilename();
+		var tmp1 = strategy.CreateTempFilename();
+		var tmp2 = strategy.CreateTempFilename();
 		File.Create(tmp1).Close();
 		File.Create(tmp2).Close();
 		var tmp = new[] { tmp1, tmp2 };
@@ -180,13 +180,8 @@ public class versioned_pattern_filenaming_strategy : SpecificationWithDirectory 
 	}
 
 	[Test]
-	public void returns_correct_prefix_with_get_prefix_for() {
+	public void returns_correct_prefix() {
 		var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
-		Assert.AreEqual("chunk-", strategy.GetPrefixFor(null, null));
-		Assert.AreEqual("chunk-000000.", strategy.GetPrefixFor(0, null));
-		Assert.AreEqual("chunk-001337.", strategy.GetPrefixFor(1337, null));
-		Assert.AreEqual("chunk-000000.000000", strategy.GetPrefixFor(0, 0));
-		Assert.AreEqual("chunk-000000.001337", strategy.GetPrefixFor(0, 1337));
-		Assert.AreEqual("chunk-001234.005678", strategy.GetPrefixFor(1234, 5678));
+		Assert.AreEqual("chunk-", strategy.Prefix);
 	}
 }

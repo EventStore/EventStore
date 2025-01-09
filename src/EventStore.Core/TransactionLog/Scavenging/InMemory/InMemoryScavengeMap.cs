@@ -3,8 +3,9 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.InMemory;
 
 public class InMemoryScavengeMap<TKey, TValue> : IScavengeMap<TKey, TValue> {
 	public InMemoryScavengeMap() {

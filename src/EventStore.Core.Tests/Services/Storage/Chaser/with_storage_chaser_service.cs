@@ -6,14 +6,12 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
-using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Tests.Services.ElectionsService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Chaser;
@@ -82,7 +80,6 @@ public abstract class with_storage_chaser_service<TLogFormat, TStreamId> : Speci
 
 		var nodeConfig = new TFChunkDbConfig(
 			PathName,
-			new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
 			1000,
 			10000,
 			_writerChk,

@@ -183,7 +183,7 @@ public class RedactionService<TStreamId> :
 
 		int targetChunkNumber;
 		try {
-			targetChunkNumber = _db.Config.FileNamingStrategy.GetIndexFor(targetChunkFile);
+			targetChunkNumber = _db.Manager.FileSystem.NamingStrategy.GetIndexFor(targetChunkFile);
 		} catch {
 			return new(SwitchChunkResult.TargetChunkFileNameInvalid);
 		}
@@ -249,6 +249,7 @@ public class RedactionService<TStreamId> :
 		try {
 			// temporarily open the chunk to verify its integrity
 			return await TFChunk.FromCompletedFile(
+				_db.Manager.FileSystem,
 				filename: newChunkPath,
 				verifyHash: true,
 				unbufferedRead: _db.Config.Unbuffered,

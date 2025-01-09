@@ -1,22 +1,24 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
+using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using FluentStorage.Blobs;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
-public abstract class FluentReader(string archiveCheckpointFile) {
+public abstract class FluentReader(IArchiveChunkNamer chunkNamer, string archiveCheckpointFile) {
 	protected abstract ILogger Log { get; }
 	protected abstract IBlobStorage BlobStorage { get; }
+
+	public IArchiveChunkNamer ChunkNamer => chunkNamer;
 
 	public async ValueTask<long> GetCheckpoint(CancellationToken ct) {
 		await using var stream = await BlobStorage.OpenReadAsync(archiveCheckpointFile, ct);

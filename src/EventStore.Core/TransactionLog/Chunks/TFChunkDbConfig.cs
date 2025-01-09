@@ -3,7 +3,6 @@
 
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.TransactionLog.Chunks;
 
@@ -19,7 +18,6 @@ public class TFChunkDbConfig {
 	public readonly ICheckpoint ReplicationCheckpoint;
 	public readonly ICheckpoint IndexCheckpoint;
 	public readonly ICheckpoint StreamExistenceFilterCheckpoint;
-	public readonly IVersionedFileNamingStrategy FileNamingStrategy;
 	public readonly bool InMemDb;
 	public readonly bool Unbuffered;
 	public readonly bool WriteThrough;
@@ -27,7 +25,6 @@ public class TFChunkDbConfig {
 	public readonly long MaxTruncation;
 
 	public TFChunkDbConfig(string path,
-		IVersionedFileNamingStrategy fileNamingStrategy,
 		int chunkSize,
 		long maxChunksCacheSize,
 		ICheckpoint writerCheckpoint,
@@ -44,7 +41,6 @@ public class TFChunkDbConfig {
 		bool reduceFileCachePressure = false,
 		long maxTruncation = 256 * 1024 * 1024) {
 		Ensure.NotNullOrEmpty(path, "path");
-		Ensure.NotNull(fileNamingStrategy, "fileNamingStrategy");
 		Ensure.Positive(chunkSize, "chunkSize");
 		Ensure.Nonnegative(maxChunksCacheSize, "maxChunksCacheSize");
 		Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
@@ -67,7 +63,6 @@ public class TFChunkDbConfig {
 		ReplicationCheckpoint = replicationCheckpoint;
 		IndexCheckpoint = indexCheckpoint;
 		StreamExistenceFilterCheckpoint = streamExistenceFilterCheckpoint;
-		FileNamingStrategy = fileNamingStrategy;
 		InMemDb = inMemDb;
 		Unbuffered = unbuffered;
 		WriteThrough = writethrough;

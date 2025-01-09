@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using EventStore.Core.Data;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 public interface IOriginalStreamScavengeMap<TKey> :
 	IScavengeMap<TKey, OriginalStreamData> {

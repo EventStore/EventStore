@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -548,32 +549,45 @@ public partial class TFChunk {
 				return (null, -1);
 
 			int length;
-			MemoryOwner<byte> buffer;
+			var buffer = Memory.AllocateAtLeast<byte>(sizeof(int));
 
-			using (buffer = Memory.AllocateAtLeast<byte>(sizeof(int))) {
+			// Perf: use 'try-catch' instead of 'using' to avoid defensive copy of 'buffer' caused by the compiler
+			try {
 				length = await workItem.BaseStream.ReadLittleEndianAsync<int>(buffer.Memory, token);
 				ValidateRecordLength(length, actualPosition);
+			} finally {
+				buffer.Dispose();
 			}
 
+			// log record payload + length suffix
+			var lengthWithSuffix = length + sizeof(int);
 			ILogRecord record;
+			IBufferedReader bufferedReader = null;
 			try {
-				// log record payload + lenght suffix
-				buffer = Memory.AllocateExactly<byte>(length + sizeof(int));
-				await workItem.BaseStream.ReadExactlyAsync(buffer.Memory, token);
+				// Perf: if buffered stream contains necessary amount of buffered bytes, we can omit expensive buffer
+				// rental and copy
+				if ((bufferedReader = workItem.TryGetBufferedReader(lengthWithSuffix, out var input)) is null) {
+					buffer = Memory.AllocateExactly<byte>(lengthWithSuffix);
+					await workItem.BaseStream.ReadExactlyAsync(buffer.Memory, token);
+					input = buffer.Memory;
+				} else {
+					Debug.Assert(buffer.IsEmpty);
+				}
 
-				var reader = new SequenceReader(new(buffer.Memory[..length]));
+				var reader = new SequenceReader(new(input[..length]));
 				record = LogRecord.ReadFrom(ref reader);
 
 				_tracker.OnRead(record);
 
 				int suffixLength =
-					BinaryPrimitives.ReadInt32LittleEndian(buffer.Span[^sizeof(int)..]);
+					BinaryPrimitives.ReadInt32LittleEndian(input.Span[^sizeof(int)..]);
 
 				ValidatePrefixSuffixLength(length, suffixLength, actualPosition, "pre-position");
 			} catch (Exception exc) {
 				throw new InvalidReadException(
 					$"Error while reading log record forwards at actual position {actualPosition}. {exc.Message}");
 			} finally {
+				bufferedReader?.Consume(lengthWithSuffix);
 				buffer.Dispose();
 			}
 

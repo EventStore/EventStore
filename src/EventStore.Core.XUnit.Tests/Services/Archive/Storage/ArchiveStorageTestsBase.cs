@@ -1,11 +1,12 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-using EventStore.Core.Services.Archive.Storage;
-using EventStore.Core.Services.Archive;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using System.IO;
 using System.Security.Cryptography;
+using EventStore.Core.Services.Archive;
+using EventStore.Core.Services.Archive.Naming;
+using EventStore.Core.Services.Archive.Storage;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
@@ -21,7 +22,7 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 	}
 
 	protected IArchiveStorageFactory CreateSutFactory(StorageType storageType) {
-		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
+		var namingStrategy = new ArchiveChunkNamer(new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix));
 		var factory = new ArchiveStorageFactory(
 				new() {
 					StorageType = storageType,

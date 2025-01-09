@@ -7,6 +7,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Plugins.Transforms;
 using ILogger = Serilog.ILogger;
 
@@ -17,12 +18,16 @@ public class TFChunkDbTruncator {
 
 	private readonly TFChunkDbConfig _config;
 	private readonly Func<TransformType, IChunkTransformFactory> _getTransformFactory;
+	private readonly IChunkFileSystem _fileSystem;
 
-	public TFChunkDbTruncator(TFChunkDbConfig config, Func<TransformType, IChunkTransformFactory> getTransformFactory) {
-		Ensure.NotNull(config, "config");
-		Ensure.NotNull(getTransformFactory, "getTransformFactory");
+	public TFChunkDbTruncator(TFChunkDbConfig config, IChunkFileSystem fileSystem, Func<TransformType, IChunkTransformFactory> getTransformFactory) {
+		ArgumentNullException.ThrowIfNull(config);
+		ArgumentNullException.ThrowIfNull(fileSystem);
+		ArgumentNullException.ThrowIfNull(getTransformFactory);
+
 		_config = config;
 		_getTransformFactory = getTransformFactory;
+		_fileSystem = fileSystem;
 	}
 
 	public async ValueTask TruncateDb(long truncateChk, CancellationToken token) {
@@ -38,10 +43,11 @@ public class TFChunkDbTruncator {
 
 		var oldLastChunkNum = (int)(writerChk / _config.ChunkSize);
 		var newLastChunkNum = (int)(truncateChk / _config.ChunkSize);
-		var chunkEnumerator = new TFChunkEnumerator(_config.FileNamingStrategy);
-		var truncatingToBoundary = truncateChk % _config.ChunkSize == 0;
+		var chunkEnumerator = _fileSystem.GetChunks();
+		chunkEnumerator.LastChunkNumber = oldLastChunkNum;
+		var truncatingToBoundary = truncateChk % _config.ChunkSize is 0;
 
-		var excessiveChunks = _config.FileNamingStrategy.GetAllVersionsFor(oldLastChunkNum + 1);
+		var excessiveChunks = _fileSystem.NamingStrategy.GetAllVersionsFor(oldLastChunkNum + 1);
 		if (excessiveChunks.Length > 0)
 			throw new Exception(
 				$"During truncation of DB excessive TFChunks were found:\n{string.Join("\n", excessiveChunks)}.");
@@ -50,11 +56,11 @@ public class TFChunkDbTruncator {
 		string newLastChunkFilename = null;
 
 		// find the chunk to truncate to
-		await foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(oldLastChunkNum, token: token)) {
+		await foreach (var chunkInfo in chunkEnumerator.WithCancellation(token)) {
 			switch (chunkInfo) {
 				case LatestVersion(var fileName, var _, var end):
 					if (newLastChunkFilename != null || end < newLastChunkNum) break;
-					newLastChunkHeader = await TFChunkDb.ReadChunkHeader(fileName, token);
+					newLastChunkHeader = await _fileSystem.ReadHeaderAsync(fileName, token);
 					newLastChunkFilename = fileName;
 					break;
 				case MissingVersion(var fileName, var chunkNum) when (chunkNum < newLastChunkNum):
@@ -78,7 +84,7 @@ public class TFChunkDbTruncator {
 				chunkNumToDeleteFrom--;
 			}
 
-			await foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(oldLastChunkNum, token: token)) {
+			await foreach (var chunkInfo in chunkEnumerator.WithCancellation(token)) {
 				switch (chunkInfo) {
 					case LatestVersion(var fileName, var start, _):
 						if (start >= chunkNumToDeleteFrom)

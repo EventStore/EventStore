@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 public interface IScavengeMap<TKey, TValue> {
 	bool TryGetValue(TKey key, out TValue value);

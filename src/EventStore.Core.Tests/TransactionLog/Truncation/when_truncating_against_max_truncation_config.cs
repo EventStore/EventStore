@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Validation;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.Transforms.Identity;
 using NUnit.Framework;
 
@@ -38,7 +39,7 @@ public class when_truncating_against_max_truncation_config : SpecificationWithDi
 	[Test]
 	public void truncate_above_max_throws_exception() {
 		Assert.ThrowsAsync<Exception>(async () => {
-			var truncator = new TFChunkDbTruncator(_config, _ => new IdentityChunkTransformFactory());
+			var truncator = new TFChunkDbTruncator(_config, new ChunkLocalFileSystem(_config.Path), static _ => new IdentityChunkTransformFactory());
 			await truncator.TruncateDb(0, CancellationToken.None);
 		});
 	}
@@ -47,7 +48,7 @@ public class when_truncating_against_max_truncation_config : SpecificationWithDi
 	public void truncate_within_max_does_not_throw_exception() {
 
 		Assert.DoesNotThrowAsync(async () => {
-			var truncator = new TFChunkDbTruncator(_config, _ => new IdentityChunkTransformFactory());
+			var truncator = new TFChunkDbTruncator(_config, new ChunkLocalFileSystem(_config.Path), static _ => new IdentityChunkTransformFactory());
 			await truncator.TruncateDb(4800 ,CancellationToken.None);
 		});
 	}

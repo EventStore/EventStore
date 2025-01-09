@@ -21,8 +21,6 @@ using EventStore.Core.Tests.Services.ElectionsService;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
-using EventStore.Core.Util;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.LeaderReplication;
@@ -142,7 +140,6 @@ public abstract class with_replication_service : SpecificationWithDirectoryPerTe
 		ICheckpoint streamExistenceFilterCheckpoint = new InMemoryCheckpoint(-1);
 		var nodeConfig = new TFChunkDbConfig(
 			PathName,
-			new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
 			1000,
 			10000,
 			writerChk,

@@ -41,7 +41,10 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
+using EventStore.Core.TransactionLog.Scavenging.DbAccess;
 using EventStore.Core.TransactionLog.Scavenging.Sqlite;
+using EventStore.Core.TransactionLog.Scavenging.Stages;
 using EventStore.Core.Authentication;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.PersistentSubscription;
@@ -58,16 +61,20 @@ using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
 using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Services.Archive;
+using EventStore.Core.Services.Archive.Naming;
+using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.PeriodicLogs;
 using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
 using EventStore.Core.Synchronization;
 using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
+using EventStore.Licensing;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Subsystems;
@@ -80,7 +87,6 @@ using Microsoft.Extensions.DependencyInjection;
 using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
-using EventStore.Licensing;
 
 namespace EventStore.Core;
 public abstract class ClusterVNode {
@@ -171,7 +177,6 @@ public class ClusterVNode<TStreamId> :
 	private readonly ISubscriber _mainBus;
 
 	private readonly ClusterVNodeController<TStreamId> _controller;
-	private IVersionedFileNamingStrategy _fileNamingStrategy;
 	private readonly TimerService _timerService;
 	private readonly KestrelHttpService _httpService;
 	private readonly ITimeProvider _timeProvider;
@@ -262,6 +267,8 @@ public class ClusterVNode<TStreamId> :
 		AddTask(_taskAddedTrigger.Task);
 #endif
 
+		var archiveOptions = configuration.GetSection("EventStore:Archive").Get<ArchiveOptions>() ?? new();
+
 		var disableInternalTcpTls = options.Application.Insecure;
 		var disableExternalTcpTls = options.Application.Insecure;
 		var nodeTcpOptions = configuration.GetSection($"{KurrentConfigurationKeys.Prefix}:TcpPlugin").Get<NodeTcpOptions>() ?? new();
@@ -311,9 +318,27 @@ public class ClusterVNode<TStreamId> :
 		var metricsConfiguration = MetricsConfiguration.Get((configuration));
 		MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
+		var namingStrategy = new VersionedPatternFileNamingStrategy(dbConfig.Path, "chunk-");
+		var archiveReader = new ArchiveStorageFactory(
+				options: archiveOptions,
+				chunkNamer: new ArchiveChunkNamer(namingStrategy))
+			.CreateReader();
+
+		IChunkFileSystem fileSystem = new ChunkLocalFileSystem(namingStrategy);
+
+		if (archiveOptions.Enabled) {
+			fileSystem = new FileSystemWithArchive(
+				chunkSize: dbConfig.ChunkSize,
+				locatorCodec: new PrefixingLocatorCodec(),
+				localFileSystem: fileSystem,
+				remoteFileSystem: new ArchiveBlobFileSystem(),
+				archive: archiveReader);
+		}
+
 		Db = new TFChunkDb(
 			dbConfig,
 			tracker: trackers.TransactionFileTracker,
+			fileSystem: fileSystem,
 			transformManager: new DbTransformManager(),
 			onChunkLoaded: chunkInfo => {
 				_mainQueue.Publish(new SystemMessage.ChunkLoaded(chunkInfo));
@@ -427,9 +452,7 @@ public class ClusterVNode<TStreamId> :
 				ThreadCountCalculator.CalculateWorkerThreadCount(options.Application.WorkerThreads,
 					readerThreadsCount, isRunningInContainer);
 
-			_fileNamingStrategy = new VersionedPatternFileNamingStrategy(dbPath, "chunk-");
 			return new TFChunkDbConfig(dbPath,
-				_fileNamingStrategy,
 				options.Database.ChunkSize,
 				cache,
 				writerChk,
@@ -1294,9 +1317,19 @@ public class ClusterVNode<TStreamId> :
 				buffer: calculatorBuffer,
 				throttle: throttle);
 
+			var chunkDeleter = IChunkDeleter<TStreamId, ILogRecord>.NoOp;
+			if (archiveOptions.Enabled) {
+				chunkDeleter = new ChunkDeleter<TStreamId, ILogRecord>(
+					logger: logger,
+					archiveCheckpoint: new AdvancingCheckpoint(archiveReader.GetCheckpoint),
+					retainPeriod: TimeSpan.FromDays(archiveOptions.RetainAtLeast.Days),
+					retainBytes: archiveOptions.RetainAtLeast.LogicalBytes);
+			}
+
 			var chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
 				logger,
 				logFormat.Metastreams,
+				chunkDeleter,
 				new ChunkManagerForExecutor<TStreamId>(logger, Db.Manager, Db.Config, Db.TransformManager),
 				chunkSize: Db.Config.ChunkSize,
 				unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
@@ -1551,7 +1584,7 @@ public class ClusterVNode<TStreamId> :
 						X509Certificate2Collection Roots)>>
 					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()))
 				.AddSingleton(_nodeHttpClientFactory)
-				.AddSingleton(_fileNamingStrategy);
+				.AddSingleton(Db.Manager.FileSystem.NamingStrategy);
 
 			configureAdditionalNodeServices?.Invoke(services);
 			return services;
@@ -1566,6 +1599,15 @@ public class ClusterVNode<TStreamId> :
 					$"Unknown {nameof(options.Database.Transform)} specified: {options.Database.Transform}");
 		}
 
+		void StartNodeUnwrapException(IApplicationBuilder app) {
+			try {
+				StartNode(app);
+			} catch (AggregateException aggEx) when (aggEx.InnerException is { } innerEx) {
+				// We only really care that *something* is wrong - throw the first inner exception.
+				throw innerEx;
+			}
+		}
+
 		void StartNode(IApplicationBuilder app) {
 			// TRUNCATE IF NECESSARY
 			var truncPos = Db.Config.TruncateCheckpoint.Read();
@@ -1574,7 +1616,7 @@ public class ClusterVNode<TStreamId> :
 					"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
 					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
 					epochCheckpoint, epochCheckpoint);
-				var truncator = new TFChunkDbTruncator(Db.Config, type => Db.TransformManager.GetFactoryForExistingChunk(type));
+				var truncator = new TFChunkDbTruncator(Db.Config, Db.Manager.FileSystem, type => Db.TransformManager.GetFactoryForExistingChunk(type));
 				using (var task = truncator.TruncateDb(truncPos, CancellationToken.None).AsTask()) {
 					task.Wait(DefaultShutdownTimeout);
 				}
@@ -1637,7 +1679,7 @@ public class ClusterVNode<TStreamId> :
 			options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
 			ConfigureNodeServices,
 			ConfigureNode,
-			StartNode);
+			StartNodeUnwrapException);
 
 		_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);

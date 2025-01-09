@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 public interface IScavengeState<TStreamId> :
 	IScavengeStateForAccumulator<TStreamId>,
@@ -38,7 +38,7 @@ public interface ITransactionCompleter {
 	void Commit(ScavengeCheckpoint checkpoint);
 }
 
-public interface ITransactionManager : ITransactionCompleter{
+public interface ITransactionManager : ITransactionCompleter {
 	void Begin();
 	void RegisterOnRollback(Action onRollback);
 	void UnregisterOnRollback();
@@ -114,6 +114,7 @@ public interface IScavengeStateForChunkExecutorWorker<TStreamId> : IDisposable {
 	float SumChunkWeights(int startLogicalChunkNumber, int endLogicalChunkNumber);
 	bool TryGetChunkExecutionInfo(TStreamId streamId, out ChunkExecutionInfo info);
 	bool TryGetMetastreamData(TStreamId streamId, out MetastreamData metastreamData);
+	bool TryGetChunkTimeStampRange(int logicalChunkNumber, out ChunkTimeStampRange range);
 }
 
 public interface IScavengeStateForChunkMerger : IScavengeStateCommon {

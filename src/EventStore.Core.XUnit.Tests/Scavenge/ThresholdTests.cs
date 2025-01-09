@@ -4,9 +4,10 @@
 using System.Threading.Tasks;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 using EventStore.Core.XUnit.Tests.Scavenge.Sqlite;
 using Xunit;
-using static EventStore.Core.XUnit.Tests.Scavenge.StreamMetadatas;
+using static EventStore.Core.XUnit.Tests.Scavenge.Infrastructure.StreamMetadatas;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge;
 
@@ -65,18 +66,21 @@ public class ThresholdTests : SqliteDbPerTest<ThresholdTests> {
 				Tracer.Line("    Begin"),
 				Tracer.Line("        Checkpoint: Executing chunks for SP-0 done None"),
 				Tracer.Line("    Commit"),
+				Tracer.Line("    Retained Chunk 0-0"),
 				Tracer.Line("    Opening Chunk 0-0"),
 				Tracer.Line("    Switched in chunk-000000.000001"), // executed
 				Tracer.Line("    Begin"),
 				Tracer.Line("        Checkpoint: Executing chunks for SP-0 done Chunk 0"),
 				Tracer.Line("    Commit"),
 
+				Tracer.Line("    Retained Chunk 1-1"),
 				Tracer.Line("    Opening Chunk 1-1"),
 				Tracer.Line("    Switched in chunk-000001.000001"), // executed
 				Tracer.Line("    Begin"),
 				Tracer.Line("        Checkpoint: Executing chunks for SP-0 done Chunk 1"),
 				Tracer.Line("    Commit"),
 
+				Tracer.Line("    Retained Chunk 2-2"),
 				Tracer.Line("    Opening Chunk 2-2"),
 				Tracer.Line("    Switched in chunk-000002.000001"), // executed
 				Tracer.Line("    Begin"),
@@ -152,18 +156,21 @@ public class ThresholdTests : SqliteDbPerTest<ThresholdTests> {
 				Tracer.Line("    Begin"),
 				Tracer.Line("        Checkpoint: Executing chunks for SP-0 done None"),
 				Tracer.Line("    Commit"),
+				Tracer.Line("    Retained Chunk 0-0"),
 				Tracer.Line("    Opening Chunk 0-0"),
 				Tracer.Line("    Switched in chunk-000000.000001"), // executed
 				Tracer.Line("    Begin"),
 				Tracer.Line("        Checkpoint: Executing chunks for SP-0 done Chunk 0"),
 				Tracer.Line("    Commit"),
 
+				Tracer.Line("    Retained Chunk 1-1"),
 				Tracer.Line("    Opening Chunk 1-1"),
 				Tracer.Line("    Switched in chunk-000001.000001"), // executed
 				Tracer.Line("    Begin"),
 				Tracer.Line("        Checkpoint: Executing chunks for SP-0 done Chunk 1"),
 				Tracer.Line("    Commit"),
 
+				Tracer.Line("    Retained Chunk 2-2"),
 				//               no opening or switch, not executed.
 				Tracer.Line("    Begin"),
 				Tracer.Line("        Checkpoint: Executing chunks for SP-0 done Chunk 2"),

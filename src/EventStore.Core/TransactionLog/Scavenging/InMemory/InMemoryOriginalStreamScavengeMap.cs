@@ -5,8 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.InMemory;
 
 public class InMemoryOriginalStreamScavengeMap<TKey> :
 	InMemoryScavengeMap<TKey, OriginalStreamData>,

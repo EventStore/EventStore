@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using EventStore.Core.DataStructures;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 namespace EventStore.Core.TransactionLog.Scavenging;
 

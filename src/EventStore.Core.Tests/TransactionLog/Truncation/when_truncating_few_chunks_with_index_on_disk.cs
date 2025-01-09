@@ -4,6 +4,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Collections.Generic;
 using EventStore.Core.Data;
 using NUnit.Framework;
 
@@ -46,7 +47,7 @@ public class when_truncating_few_chunks_with_index_on_disk<TLogFormat, TStreamId
 	}
 
 	private string GetChunkName(int chunkNumber) {
-		var allVersions = Db.Config.FileNamingStrategy.GetAllVersionsFor(chunkNumber);
+		var allVersions = Db.Manager.FileSystem.NamingStrategy.GetAllVersionsFor(chunkNumber);
 		Assert.AreEqual(1, allVersions.Length);
 		return allVersions[0];
 	}
@@ -64,14 +65,14 @@ public class when_truncating_few_chunks_with_index_on_disk<TLogFormat, TStreamId
 	}
 
 	[Test]
-	public void not_truncated_chunks_should_survive() {
-		var chunks = Db.Config.FileNamingStrategy.GetAllPresentFiles();
+	public async Task not_truncated_chunks_should_survive() {
+		var chunks = await Db.Manager.FileSystem.GetChunks().ToArrayAsync();
 		Assert.AreEqual(2, chunks.Length);
-		Assert.AreEqual(_chunk0, GetChunkName(0));
-		Assert.AreEqual(_chunk1, GetChunkName(1));
-	}
 
-	[Test]
-	public void read_all_returns_only_survived_events() {
+		Assert.AreEqual(_chunk0, GetChunkName(0));
+		Assert.AreEqual(_chunk0, chunks[0].FileName);
+
+		Assert.AreEqual(_chunk1, GetChunkName(1));
+		Assert.AreEqual(_chunk1, chunks[1].FileName);
 	}
 }

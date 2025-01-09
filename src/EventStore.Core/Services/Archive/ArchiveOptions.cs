@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System;
+
 namespace EventStore.Core.Services.Archive;
 
 public class ArchiveOptions {
@@ -8,6 +10,7 @@ public class ArchiveOptions {
 	public StorageType StorageType { get; init; } = StorageType.Unspecified;
 	public FileSystemOptions FileSystem { get; init; } = new();
 	public S3Options S3 { get; init; } = new();
+	public RetentionOptions RetainAtLeast { get; init; } = new();
 }
 
 public enum StorageType {
@@ -24,4 +27,10 @@ public class S3Options {
 	public string AwsCliProfileName { get; init; } = "default";
 	public string Bucket { get; init; } = "";
 	public string Region { get; init; } = "";
+}
+
+public class RetentionOptions {
+	public long Days { get; init; } = TimeSpan.MaxValue.Days;
+	// number of bytes in the logical log
+	public long LogicalBytes { get; init; } = long.MaxValue;
 }

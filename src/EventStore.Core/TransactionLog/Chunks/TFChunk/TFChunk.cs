@@ -24,7 +24,6 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
 using EventStore.Plugins.Transforms;
-using Microsoft.Win32.SafeHandles;
 using static System.Threading.Timeout;
 using ILogger = Serilog.ILogger;
 
@@ -52,7 +51,8 @@ public partial class TFChunk : IDisposable {
 		get { return _cacheStatus is CacheStatus.Cached; }
 	}
 
-	public bool IsRemote => false;
+	// if inMem, _handle is null but not remote
+	public bool IsRemote => _handle is not null and not ChunkFileHandle;
 
 	// the logical size of (untransformed) data (could be > PhysicalDataSize if scavenged chunk)
 	public long LogicalDataSize {
@@ -106,7 +106,7 @@ public partial class TFChunk : IDisposable {
 
 	private readonly bool _inMem;
 	private readonly string _filename;
-	private SafeFileHandle _handle;
+	private IChunkHandle _handle;
 	private int _fileSize;
 
 	// This field establishes happens-before relationship with _fileStreams as follows:
@@ -201,13 +201,15 @@ public partial class TFChunk : IDisposable {
 		FreeCachedData();
 	}
 
-	public static async ValueTask<TFChunk> FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead,
+	// local or remote
+	public static async ValueTask<TFChunk> FromCompletedFile(IBlobFileSystem fileSystem, string filename, bool verifyHash, bool unbufferedRead,
 		ITransactionFileTracker tracker, Func<TransformType, IChunkTransformFactory> getTransformFactory,
 		bool reduceFileCachePressure = false, CancellationToken token = default) {
+
 		var chunk = new TFChunk(filename,
 			TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure);
 		try {
-			await chunk.InitCompleted(verifyHash, tracker, getTransformFactory, token);
+			await chunk.InitCompleted(fileSystem, verifyHash, tracker, getTransformFactory, token);
 		} catch {
 			chunk.Dispose();
 			throw;
@@ -216,6 +218,7 @@ public partial class TFChunk : IDisposable {
 		return chunk;
 	}
 
+	// always local
 	public static async ValueTask<TFChunk> FromOngoingFile(string filename, int writePosition, bool unbuffered,
 		bool writethrough, bool reduceFileCachePressure, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory,
@@ -236,6 +239,7 @@ public partial class TFChunk : IDisposable {
 		return chunk;
 	}
 
+	// always local
 	public static async ValueTask<TFChunk> CreateNew(string filename,
 		int chunkDataSize,
 		int chunkStartNumber,
@@ -264,6 +268,7 @@ public partial class TFChunk : IDisposable {
 			reduceFileCachePressure, tracker, transformFactory, transformHeader, token);
 	}
 
+	// local only
 	public static async ValueTask<TFChunk> CreateWithHeader(string filename,
 		ChunkHeader header,
 		int fileSize,
@@ -291,25 +296,14 @@ public partial class TFChunk : IDisposable {
 		return chunk;
 	}
 
-	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
+	private async ValueTask InitCompleted(IBlobFileSystem fileSystem, bool verifyHash, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
-		var fileInfo = new FileInfo(_filename);
-		if (!fileInfo.Exists)
-			throw new CorruptDatabaseException(new ChunkNotFoundException(_filename));
-
-		_fileSize = (int)fileInfo.Length;
-
-		_handle = File.OpenHandle(
-			_filename,
-			FileMode.Open,
-			FileAccess.Read,
-			FileShare.ReadWrite,
-			_reduceFileCachePressure ? FileOptions.Asynchronous : FileOptions.RandomAccess | FileOptions.Asynchronous);
+		_handle = await fileSystem.OpenForReadAsync(_filename, _reduceFileCachePressure, token);
+		_fileSize = (int)_handle.Length;
 
 		IsReadOnly = true;
-		SetAttributes(_filename, true);
 
-		await using (var stream = _handle.AsUnbufferedStream(FileAccess.Read)) {
+		await using (var stream = _handle.CreateStream()) {
 			_chunkHeader = await ReadHeader(stream, token);
 			Log.Debug("Opened completed {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", _filename, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
 
@@ -369,7 +363,6 @@ public partial class TFChunk : IDisposable {
 			await CreateInMemChunk(chunkHeader, fileSize, transformHeader, token);
 		else {
 			await CreateWriterWorkItemForNewChunk(chunkHeader, fileSize, transformHeader, token);
-			SetAttributes(_filename, false);
 		}
 
 		_readSide = chunkHeader.IsScavenged
@@ -396,7 +389,6 @@ public partial class TFChunk : IDisposable {
 		_physicalDataSize = writePosition;
 		_logicalDataSize = writePosition;
 
-		SetAttributes(_filename, false);
 		_chunkHeader = await CreateWriterWorkItemForExistingChunk(writePosition, getTransformFactory, token);
 		Log.Debug("Opened ongoing {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", _filename, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
 
@@ -505,7 +497,11 @@ public partial class TFChunk : IDisposable {
 
 		File.Move(tempFilename, _filename);
 
-		_handle = File.OpenHandle(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read, WritableHandleOptions);
+		// reuse FileStreamOptions instance
+		options.Mode = FileMode.Open;
+		options.Options = WritableHandleOptions;
+		options.PreallocationSize = 0L;
+		_handle = new ChunkFileHandle(_filename, options);
 		_writerWorkItem = new(_handle, md5, _unbuffered, _transform.Write, ChunkHeader.Size + transformHeader.Length);
 		await Flush(token); // persist file move result
 	}
@@ -513,9 +509,16 @@ public partial class TFChunk : IDisposable {
 	private async ValueTask<ChunkHeader> CreateWriterWorkItemForExistingChunk(int writePosition,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory,
 		CancellationToken token) {
-		_handle = File.OpenHandle(_filename, FileMode.Open, FileAccess.ReadWrite, FileShare.Read, WritableHandleOptions);
+		var options = new FileStreamOptions {
+			Mode = FileMode.Open,
+			Access = FileAccess.ReadWrite,
+			Share = FileShare.Read,
+			Options = WritableHandleOptions,
+		};
 
-		var stream = _handle.AsUnbufferedStream(FileAccess.ReadWrite);
+		_handle = new ChunkFileHandle(_filename, options);
+
+		var stream = _handle.CreateStream();
 		ChunkHeader chunkHeader;
 		try {
 			chunkHeader = await ReadHeader(stream, token);
@@ -580,18 +583,6 @@ public partial class TFChunk : IDisposable {
 
 		md5.AppendData(transformHeader.Span);
 		return stream.WriteAsync(transformHeader, token);
-	}
-
-	private void SetAttributes(string filename, bool isReadOnly) {
-		if (_inMem)
-			return;
-		// in mono SetAttributes on non-existing file throws exception, in windows it just works silently.
-		Helper.EatException(() => {
-			if (isReadOnly)
-				File.SetAttributes(filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
-			else
-				File.SetAttributes(filename, FileAttributes.NotContentIndexed);
-		});
 	}
 
 	public async ValueTask VerifyFileHash(CancellationToken token) {
@@ -881,21 +872,8 @@ public partial class TFChunk : IDisposable {
 		return true;
 	}
 
-	public ValueTask Flush(CancellationToken token) {
-		var task = ValueTask.CompletedTask;
-
-		if (token.IsCancellationRequested) {
-			task = ValueTask.FromCanceled(token);
-		} else if (!IsReadOnly) {
-			try {
-				_writerWorkItem.FlushToDisk();
-			} catch (Exception e) {
-				task = ValueTask.FromException(e);
-			}
-		}
-
-		return task;
-	}
+	public ValueTask Flush(CancellationToken token)
+		=> IsReadOnly ? ValueTask.CompletedTask : _writerWorkItem.FlushToDisk(token);
 
 	public ValueTask Complete(CancellationToken token) {
 		return ChunkHeader.IsScavenged
@@ -925,7 +903,7 @@ public partial class TFChunk : IDisposable {
 		_writerWorkItem?.Dispose();
 		_writerWorkItem = null;
 
-		SetAttributes(_filename, true);
+		await (_handle?.SetReadOnlyAsync(true, token) ?? ValueTask.CompletedTask);
 	}
 
 	public async ValueTask CompleteRaw(CancellationToken token) {
@@ -944,10 +922,9 @@ public partial class TFChunk : IDisposable {
 		_writerWorkItem?.Dispose();
 		_writerWorkItem = null;
 
-		SetAttributes(_filename, true);
-
 		if (!_inMem) {
-			await using var stream = _handle.AsUnbufferedStream(FileAccess.Read);
+			await _handle.SetReadOnlyAsync(true, token);
+			await using var stream = _handle.CreateStream();
 			_chunkFooter = await ReadFooter(stream, token);
 		} else {
 			_chunkFooter = await ReadFooter(_sharedMemStream, token);
@@ -956,8 +933,6 @@ public partial class TFChunk : IDisposable {
 
 	private async ValueTask<ChunkFooter> WriteFooter(IReadOnlyCollection<PosMap> mapping, CancellationToken token) {
 		var workItem = _writerWorkItem;
-		workItem.ResizeStream((int)workItem.WorkingStream.Position);
-
 		int mapSize;
 
 		// reuse rented buffer for position mapping serialization and chunk footer
@@ -984,14 +959,10 @@ public partial class TFChunk : IDisposable {
 			await workItem.AppendData(bufferFromPool.AsMemory(0, mapSize), token);
 		}
 
-		workItem.FlushToDisk();
-
 		await _transform.Write.CompleteData(
 			footerSize: ChunkFooter.Size,
 			alignmentSize: _chunkHeader.Version >= (byte)ChunkVersions.Aligned ? AlignmentSize : 1,
 			token);
-
-		await Flush(token);
 
 		int fileSize;
 		ChunkFooter footerWithHash;
@@ -1005,14 +976,15 @@ public partial class TFChunk : IDisposable {
 
 			//FILE
 			footerWithHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5);
-
 			footerWithHash.Format(bufferFromPool);
 			fileSize = await _transform.Write.WriteFooter(new(bufferFromPool, 0, ChunkFooter.Size), token);
 		} finally {
 			ArrayPool<byte>.Shared.Return(bufferFromPool);
 		}
 
-		await Flush(token);
+		// at this point in code, 'WorkingStream` should not contain buffered bytes because SeLength
+		// can cause sync-over-async write. This fact is checked within `IChunkHandle.UnbufferedStream` class
+		workItem.ResizeStream(fileSize);
 
 		_fileSize = fileSize;
 		return footerWithHash;
@@ -1081,12 +1053,12 @@ public partial class TFChunk : IDisposable {
 
 		if (!_inMem) {
 			_handle?.Dispose();
-			Helper.EatException(() => File.SetAttributes(_filename, FileAttributes.Normal));
+			Helper.EatException(_filename, static filename => File.SetAttributes(filename, FileAttributes.Normal));
 
 			if (_deleteFile) {
 				Log.Information("File {chunk} has been marked for delete and will be deleted in TryDestructFileStreams.",
 					Path.GetFileName(_filename));
-				Helper.EatException(() => File.Delete(_filename));
+				Helper.EatException(_filename, File.Delete);
 			}
 		}
 

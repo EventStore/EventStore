@@ -12,7 +12,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Serilog;
 
 namespace EventStore.Core.Services.Storage;

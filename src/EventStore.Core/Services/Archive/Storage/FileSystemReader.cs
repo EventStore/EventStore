@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.IO;
+using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using Microsoft.Win32.SafeHandles;
 using Serilog;
@@ -19,13 +20,16 @@ public class FileSystemReader : IArchiveStorageReader {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<FileSystemReader>();
 
 	private readonly string _archivePath;
-	private readonly Func<int?, int?, string> _getChunkPrefix;
 	private readonly string _archiveCheckpointFile;
 	private readonly FileStreamOptions _fileStreamOptions;
 
-	public FileSystemReader(FileSystemOptions options, Func<int?, int?, string> getChunkPrefix, string archiveCheckpointFile) {
+	public FileSystemReader(
+		FileSystemOptions options,
+		IArchiveChunkNamer chunkNamer,
+		string archiveCheckpointFile) {
+
 		_archivePath = options.Path;
-		_getChunkPrefix = getChunkPrefix;
+		ChunkNamer = chunkNamer;
 		_archiveCheckpointFile = archiveCheckpointFile;
 		_fileStreamOptions = new FileStreamOptions {
 			Access = FileAccess.Read,
@@ -33,6 +37,8 @@ public class FileSystemReader : IArchiveStorageReader {
 			Options = FileOptions.Asynchronous,
 		};
 	}
+
+	public IArchiveChunkNamer ChunkNamer { get; init; }
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) {
 		ValueTask<long> task;
@@ -101,7 +107,7 @@ public class FileSystemReader : IArchiveStorageReader {
 
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
 		return new DirectoryInfo(_archivePath)
-			.EnumerateFiles($"{_getChunkPrefix(null, null)}*")
+			.EnumerateFiles($"{ChunkNamer.Prefix}*")
 			.Select(chunk => chunk.Name)
 			.Order()
 			.ToAsyncEnumerable();

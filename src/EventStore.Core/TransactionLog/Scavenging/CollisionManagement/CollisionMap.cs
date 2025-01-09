@@ -3,8 +3,9 @@
 
 using System;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
-namespace EventStore.Core.TransactionLog.Scavenging;
+namespace EventStore.Core.TransactionLog.Scavenging.CollisionManagement;
 
 // this class efficiently stores/retrieves data against keys that very rarely but sometimes have a
 // hash collision.
