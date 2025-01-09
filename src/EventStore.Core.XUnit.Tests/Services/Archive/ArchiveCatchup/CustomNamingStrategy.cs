@@ -26,5 +26,5 @@ internal class CustomNamingStrategy : IVersionedFileNamingStrategy {
 		return int.Parse(fileName[idx..]);
 	}
 
-	public string GetPrefixFor(int? index, int? version) => throw new NotImplementedException();
+	public string Prefix => "chunk-";
 }

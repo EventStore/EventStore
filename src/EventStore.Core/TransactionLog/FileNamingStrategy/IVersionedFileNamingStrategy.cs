@@ -7,12 +7,12 @@ namespace EventStore.Core.TransactionLog.FileNamingStrategy;
 // chunk versions, to chunk files in storage. Strictly it is more than a naming strategy
 // because it also reads the storage to list the chunks.
 public interface IVersionedFileNamingStrategy {
-	// Pure naming strategy methods
+	// Pure naming strategy
+	string Prefix { get; }
 	string GetFilenameFor(int index, int version);
 	string CreateTempFilename();
 	int GetIndexFor(string fileName);
 	int GetVersionFor(string fileName);
-	string GetPrefixFor(int? index, int? version);
 
 	// Methods that rely on the state of the storage
 	string[] GetAllVersionsFor(int index);

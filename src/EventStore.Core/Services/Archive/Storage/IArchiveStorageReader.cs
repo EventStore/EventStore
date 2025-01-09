@@ -5,10 +5,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Archive.Naming;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
 public interface IArchiveStorageReader {
+	public IArchiveChunkNamer ChunkNamer { get; }
+
 	/// <returns>A position in the transaction log up to which all chunks have been archived</returns>
 	public ValueTask<long> GetCheckpoint(CancellationToken ct);
 

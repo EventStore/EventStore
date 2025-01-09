@@ -180,13 +180,8 @@ public class versioned_pattern_filenaming_strategy : SpecificationWithDirectory 
 	}
 
 	[Test]
-	public void returns_correct_prefix_with_get_prefix_for() {
+	public void returns_correct_prefix() {
 		var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
-		Assert.AreEqual("chunk-", strategy.GetPrefixFor(null, null));
-		Assert.AreEqual("chunk-000000.", strategy.GetPrefixFor(0, null));
-		Assert.AreEqual("chunk-001337.", strategy.GetPrefixFor(1337, null));
-		Assert.AreEqual("chunk-000000.000000", strategy.GetPrefixFor(0, 0));
-		Assert.AreEqual("chunk-000000.001337", strategy.GetPrefixFor(0, 1337));
-		Assert.AreEqual("chunk-001234.005678", strategy.GetPrefixFor(1234, 5678));
+		Assert.AreEqual("chunk-", strategy.Prefix);
 	}
 }

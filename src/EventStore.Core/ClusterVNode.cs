@@ -60,6 +60,8 @@ using EventStore.Core.Caching;
 using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
 using EventStore.Core.Services.Archive;
+using EventStore.Core.Services.Archive.Naming;
+using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.PeriodicLogs;
 using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
@@ -82,7 +84,6 @@ using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 using EventStore.Licensing;
-using EventStore.Core.Services.Archive.Storage;
 
 namespace EventStore.Core;
 public abstract class ClusterVNode {
@@ -1298,7 +1299,10 @@ public class ClusterVNode<TStreamId> :
 			var chunkDeleter = IChunkDeleter<TStreamId, ILogRecord>.NoOp;
 			if (archiveOptions.Enabled) {
 				// todo: consider if we can/should reuse the same reader elsewhere
-				var archiveReader = new ArchiveStorageFactory(archiveOptions, Db.Manager.FileSystem.NamingStrategy).CreateReader();
+				var archiveReader = new ArchiveStorageFactory(
+						archiveOptions,
+						new ArchiveChunkNamer(Db.Manager.FileSystem.NamingStrategy))
+					.CreateReader();
 				chunkDeleter = new ChunkDeleter<TStreamId, ILogRecord>(
 					logger: logger,
 					archiveCheckpoint: new AdvancingCheckpoint(archiveReader.GetCheckpoint),

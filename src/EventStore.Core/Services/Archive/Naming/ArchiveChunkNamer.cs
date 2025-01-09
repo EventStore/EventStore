@@ -14,6 +14,8 @@ public class ArchiveChunkNamer : IArchiveChunkNamer {
 		_namingStrategy = namingStrategy;
 	}
 
+	public string Prefix => _namingStrategy.Prefix;
+
 	public string GetFileNameFor(int logicalChunkNumber) {
 		ArgumentOutOfRangeException.ThrowIfNegative(logicalChunkNumber);
 
