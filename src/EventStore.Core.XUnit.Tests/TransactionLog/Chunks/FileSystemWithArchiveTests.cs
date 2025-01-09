@@ -25,6 +25,7 @@ public class FileSystemWithArchiveTests {
 			chunkSize: 256 * 1024 * 1024,
 			locatorCodec: codec,
 			localFileSystem: _local,
+			remoteFileSystem: new ArchiveBlobFileSystem(),
 			archive: NoArchiveReader.Instance);
 		var chunk = "chunk-000.000";
 		_localLocator = codec.EncodeLocalName(chunk);

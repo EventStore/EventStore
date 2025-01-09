@@ -1,7 +1,6 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,48 +14,38 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 	private readonly int _chunkSize;
 	private readonly ILocatorCodec _locatorCodec;
 	private readonly IChunkFileSystem _localFileSystem;
+	private readonly IBlobFileSystem _remoteFileSystem;
 	private readonly IArchiveStorageReader _archive;
 
 	public FileSystemWithArchive(
 		int chunkSize,
 		ILocatorCodec locatorCodec,
 		IChunkFileSystem localFileSystem,
+		IBlobFileSystem remoteFileSystem,
 		IArchiveStorageReader archive) {
 
 		_chunkSize = chunkSize;
 		_locatorCodec = locatorCodec;
 		_localFileSystem = localFileSystem;
+		_remoteFileSystem = remoteFileSystem;
 		_archive = archive;
 	}
 
 	public IVersionedFileNamingStrategy NamingStrategy =>
 		_localFileSystem.NamingStrategy;
 
-	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, bool reduceFileCachePressure, CancellationToken token) {
-		var isRemote = _locatorCodec.Decode(fileName, out var decoded);
-		if (!isRemote) {
-			return _localFileSystem.OpenForReadAsync(decoded, reduceFileCachePressure, token);
-		}
+	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, bool reduceFileCachePressure, CancellationToken token) =>
+		Choose(fileName, out var decoded).OpenForReadAsync(decoded, reduceFileCachePressure, token);
 
-		throw new NotImplementedException();
-	}
+	public ValueTask<ChunkFooter> ReadFooterAsync(string fileName, CancellationToken token) =>
+		Choose(fileName, out var decoded).ReadFooterAsync(decoded, token);
 
-	public ValueTask<ChunkFooter> ReadFooterAsync(string fileName, CancellationToken token) {
-		var isRemote = _locatorCodec.Decode(fileName, out var decoded);
-		if (!isRemote) {
-			return _localFileSystem.ReadFooterAsync(decoded, token);
-		}
+	public ValueTask<ChunkHeader> ReadHeaderAsync(string fileName, CancellationToken token) =>
+		Choose(fileName, out var decoded).ReadHeaderAsync(decoded, token);
 
-		throw new InvalidOperationException("Tried the read the footer of an archived chunk");
-	}
-
-	public ValueTask<ChunkHeader> ReadHeaderAsync(string fileName, CancellationToken token) {
-		var isRemote = _locatorCodec.Decode(fileName, out var decoded);
-		if (!isRemote) {
-			return _localFileSystem.ReadHeaderAsync(decoded, token);
-		}
-
-		throw new InvalidOperationException("Tried the read the header of an archived chunk");
+	private IBlobFileSystem Choose(string fileName, out string decoded) {
+		var isRemote = _locatorCodec.Decode(fileName, out decoded);
+		return isRemote ? _remoteFileSystem : _localFileSystem;
 	}
 
 	public IChunkFileSystem.IChunkEnumerable GetChunks() {
@@ -64,7 +53,7 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 	}
 
 	sealed class ChunkEnumerableWithArchive(FileSystemWithArchive fileSystem) : IChunkFileSystem.IChunkEnumerable {
-		private readonly IChunkFileSystem.IChunkEnumerable _localChunks = fileSystem.GetChunks();
+		private readonly IChunkFileSystem.IChunkEnumerable _localChunks = fileSystem._localFileSystem.GetChunks();
 
 		public int LastChunkNumber {
 			get => _localChunks.LastChunkNumber;

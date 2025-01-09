@@ -323,11 +323,16 @@ public class ClusterVNode<TStreamId> :
 				chunkNamer: new ArchiveChunkNamer(namingStrategy))
 			.CreateReader();
 
-		var fileSystem = new FileSystemWithArchive(
-			chunkSize: dbConfig.ChunkSize,
-			locatorCodec: new PrefixingLocatorCodec(),
-			localFileSystem: new ChunkLocalFileSystem(namingStrategy),
-			archive: archiveReader);
+		IChunkFileSystem fileSystem = new ChunkLocalFileSystem(namingStrategy);
+
+		if (archiveOptions.Enabled) {
+			fileSystem = new FileSystemWithArchive(
+				chunkSize: dbConfig.ChunkSize,
+				locatorCodec: new PrefixingLocatorCodec(),
+				localFileSystem: fileSystem,
+				remoteFileSystem: new ArchiveBlobFileSystem(),
+				archive: archiveReader);
+		}
 
 		Db = new TFChunkDb(
 			dbConfig,

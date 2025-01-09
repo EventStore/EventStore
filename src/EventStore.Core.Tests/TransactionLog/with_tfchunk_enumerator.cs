@@ -62,6 +62,7 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 			localFileSystem: new ChunkLocalFileSystem(PathName) {
 				ChunkNumberProvider = GetNextFileNumber,
 			},
+			remoteFileSystem: new ArchiveBlobFileSystem(),
 			archive: new FakeArchiveStorageReader(checkpoint: 4000)).GetChunks();
 
 		chunkEnumerator.LastChunkNumber = 16;

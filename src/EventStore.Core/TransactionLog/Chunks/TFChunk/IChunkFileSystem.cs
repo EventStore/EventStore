@@ -23,13 +23,11 @@ public interface IBlobFileSystem {
 // one implementation of this interface. That implementation can compose more than one implementation
 // of IBlobFileSystem interface and act as a proxy
 public interface IChunkFileSystem : IBlobFileSystem {
-
 	IVersionedFileNamingStrategy NamingStrategy { get; }
 
 	IChunkEnumerable GetChunks();
 
 	public interface IChunkEnumerable : IAsyncEnumerable<TFChunkInfo> {
-
 		// It is not a filter/limit, it is used to spot missing chunks
 		int LastChunkNumber { get; set; }
 	}
