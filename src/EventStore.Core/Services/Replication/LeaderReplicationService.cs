@@ -192,8 +192,7 @@ public class LeaderReplicationService : IMonitoredQueue,
 				subscr.ShouldDispose = true;
 		}
 
-		if (await SubscribeReplica(subscription, message.LastEpochs, message.CorrelationId, message.LogPosition,
-			message.ChunkId, token)) {
+		if (await SubscribeReplica(subscription, message.LastEpochs, message.CorrelationId, message.LogPosition, token)) {
 			_newSubscriptions = true;
 			if (!_subscriptions.TryAdd(subscription.SubscriptionId, subscription)) {
 				ReplicaSubscription existingSubscr;
@@ -247,7 +246,7 @@ public class LeaderReplicationService : IMonitoredQueue,
 	}
 
 	private async ValueTask<bool> SubscribeReplica(ReplicaSubscription replica, IReadOnlyList<Epoch> lastEpochs, Guid correlationId,
-		long logPosition, Guid chunkId, CancellationToken token) {
+		long logPosition, CancellationToken token) {
 		try {
 			var epochs = lastEpochs ?? Array.Empty<Epoch>();
 			Log.Information(
@@ -257,8 +256,8 @@ public class LeaderReplicationService : IMonitoredQueue,
 
 			var epochCorrectedLogPos =
 				await GetValidLogPosition(logPosition, epochs, replica.ReplicaEndPoint, replica.SubscriptionId, token);
-			var subscriptionPos = SetSubscriptionPosition(replica, epochCorrectedLogPos, chunkId,
-				replicationStart: true, verbose: true, trial: 0);
+			var subscriptionPos = await SetSubscriptionPosition(replica, epochCorrectedLogPos,
+				replicationStart: true, verbose: true, token: token);
 			Interlocked.Exchange(ref replica.AckedLogPosition, subscriptionPos);
 
 			if (subscriptionPos != logPosition) {
@@ -362,80 +361,81 @@ public class LeaderReplicationService : IMonitoredQueue,
 		return Math.Min(replicaPosition, nextEpoch.EpochPosition);
 	}
 
-	private long SetSubscriptionPosition(ReplicaSubscription sub,
+	private async ValueTask<long> SetSubscriptionPosition(ReplicaSubscription sub,
 		long logPosition,
-		Guid chunkId,
 		bool replicationStart,
 		bool verbose,
-		int trial) {
-		if (trial >= 10)
-			throw new Exception("Too many retrials to acquire reader for subscriber.");
+		CancellationToken token) {
 
-		try {
-			var chunk = _db.Manager.GetChunkFor(logPosition);
-			Debug.Assert(chunk != null, string.Format(
-				"Chunk for LogPosition {0} (0x{0:X}) is null in LeaderReplicationService! Replica: [{1},C:{2},S:{3}]",
-				logPosition, sub.ReplicaEndPoint, sub.ConnectionId, sub.SubscriptionId));
-			var rawSend = chunk.ChunkHeader.IsScavenged;
-			var bulkReader = rawSend ? chunk.AcquireRawReader() : chunk.AcquireDataReader();
-			if (rawSend) {
-				var chunkStartPos = chunk.ChunkHeader.ChunkStartPosition;
-				if (verbose) {
-					Log.Information(
-						"Subscribed replica [{replicaEndPoint}, S:{subscriptionId}] for raw send at {chunkStartPosition} (0x{chunkStartPosition:X}) (requested {logPosition} (0x{logPosition:X})).",
-						sub.ReplicaEndPoint, sub.SubscriptionId, chunkStartPos, chunkStartPos, logPosition,
-						logPosition);
-					if (chunkStartPos != logPosition) {
+		const int maxRetryCount = 10;
+		for(var trial = 0;;){
+			try {
+				var chunk = _db.Manager.GetChunkFor(logPosition);
+				Debug.Assert(chunk != null, string.Format(
+					"Chunk for LogPosition {0} (0x{0:X}) is null in LeaderReplicationService! Replica: [{1},C:{2},S:{3}]",
+					logPosition, sub.ReplicaEndPoint, sub.ConnectionId, sub.SubscriptionId));
+				var rawSend = chunk.ChunkHeader.IsScavenged;
+				var bulkReader = await (rawSend ? chunk.AcquireRawReader(token) : chunk.AcquireDataReader(token));
+				if (rawSend) {
+					var chunkStartPos = chunk.ChunkHeader.ChunkStartPosition;
+					if (verbose) {
 						Log.Information(
-							"Forcing replica [{replicaEndPoint}, S:{subscriptionId}] to recreate chunk from position {chunkStartPosition} (0x{chunkStartPosition:X})...",
-							sub.ReplicaEndPoint, sub.SubscriptionId, chunkStartPos, chunkStartPos);
+							"Subscribed replica [{replicaEndPoint}, S:{subscriptionId}] for raw send at {chunkStartPosition} (0x{chunkStartPosition:X}) (requested {logPosition} (0x{logPosition:X})).",
+							sub.ReplicaEndPoint, sub.SubscriptionId, chunkStartPos, chunkStartPos, logPosition,
+							logPosition);
+						if (chunkStartPos != logPosition) {
+							Log.Information(
+								"Forcing replica [{replicaEndPoint}, S:{subscriptionId}] to recreate chunk from position {chunkStartPosition} (0x{chunkStartPosition:X})...",
+								sub.ReplicaEndPoint, sub.SubscriptionId, chunkStartPos, chunkStartPos);
+						}
 					}
-				}
 
-				sub.LogPosition = chunkStartPos;
-				sub.RawSend = true;
-				bulkReader.SetPosition(ChunkHeader.Size);
-				if (replicationStart)
-					sub.SendMessage(new ReplicationMessage.ReplicaSubscribed(_instanceId, sub.SubscriptionId,
-						sub.LogPosition));
-				sub.SendMessage(new ReplicationMessage.CreateChunk(_instanceId,
-					sub.SubscriptionId,
-					chunk.ChunkHeader,
-					chunk.FileSize,
-					isScavengedChunk: true,
-					chunk.TransformHeader));
-			} else {
-				if (verbose)
-					Log.Information(
-						"Subscribed replica [{replicaEndPoint},S:{subscriptionId}] for data send at {logPosition} (0x{logPosition:X}).",
-						sub.ReplicaEndPoint, sub.SubscriptionId, logPosition, logPosition);
-
-				sub.LogPosition = logPosition;
-				sub.RawSend = false;
-				bulkReader.SetPosition(chunk.ChunkHeader.GetLocalLogPosition(logPosition));
-				if (replicationStart)
-					sub.SendMessage(new ReplicationMessage.ReplicaSubscribed(_instanceId, sub.SubscriptionId,
-						sub.LogPosition));
-
-				if (logPosition == chunk.ChunkHeader.ChunkStartPosition &&
-					sub.Version >= ReplicationSubscriptionVersions.V2) {
-
+					sub.LogPosition = chunkStartPos;
+					sub.RawSend = true;
+					bulkReader.SetPosition(ChunkHeader.Size);
+					if (replicationStart)
+						sub.SendMessage(new ReplicationMessage.ReplicaSubscribed(_instanceId, sub.SubscriptionId,
+							sub.LogPosition));
 					sub.SendMessage(new ReplicationMessage.CreateChunk(_instanceId,
 						sub.SubscriptionId,
 						chunk.ChunkHeader,
 						chunk.FileSize,
-						isScavengedChunk: false,
+						isScavengedChunk: true,
 						chunk.TransformHeader));
-				}
-			}
+				} else {
+					if (verbose)
+						Log.Information(
+							"Subscribed replica [{replicaEndPoint},S:{subscriptionId}] for data send at {logPosition} (0x{logPosition:X}).",
+							sub.ReplicaEndPoint, sub.SubscriptionId, logPosition, logPosition);
 
-			sub.EOFSent = false;
-			var oldBulkReader = Interlocked.Exchange(ref sub.BulkReader, bulkReader);
-			if (oldBulkReader != null)
-				oldBulkReader.Release();
-			return sub.LogPosition;
-		} catch (FileBeingDeletedException) {
-			return SetSubscriptionPosition(sub, logPosition, chunkId, replicationStart, verbose, trial + 1);
+					sub.LogPosition = logPosition;
+					sub.RawSend = false;
+					bulkReader.SetPosition(chunk.ChunkHeader.GetLocalLogPosition(logPosition));
+					if (replicationStart)
+						sub.SendMessage(new ReplicationMessage.ReplicaSubscribed(_instanceId, sub.SubscriptionId,
+							sub.LogPosition));
+
+					if (logPosition == chunk.ChunkHeader.ChunkStartPosition &&
+					    sub.Version >= ReplicationSubscriptionVersions.V2) {
+
+						sub.SendMessage(new ReplicationMessage.CreateChunk(_instanceId,
+							sub.SubscriptionId,
+							chunk.ChunkHeader,
+							chunk.FileSize,
+							isScavengedChunk: false,
+							chunk.TransformHeader));
+					}
+				}
+
+				sub.EOFSent = false;
+				var oldBulkReader = Interlocked.Exchange(ref sub.BulkReader, bulkReader);
+				oldBulkReader?.Release();
+				return sub.LogPosition;
+			} catch (FileBeingDeletedException e) when (trial is maxRetryCount) {
+				throw new Exception("Too many retrials to acquire reader for subscriber.", e);
+			} catch (FileBeingDeletedException) {
+				trial++;
+			}
 		}
 	}
 
@@ -601,8 +601,8 @@ public class LeaderReplicationService : IMonitoredQueue,
 			var newLogPosition = chunkHeader.ChunkEndPosition;
 			if (newLogPosition < leaderCheckpoint) {
 				dataFound = true;
-				SetSubscriptionPosition(subscription, newLogPosition, Guid.Empty, replicationStart: false,
-					verbose: true, trial: 0);
+				await SetSubscriptionPosition(subscription, newLogPosition, replicationStart: false,
+					verbose: true, token: token);
 			}
 		}
 

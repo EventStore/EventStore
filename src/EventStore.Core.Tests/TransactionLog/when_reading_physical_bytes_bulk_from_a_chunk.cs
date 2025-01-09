@@ -12,7 +12,7 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 	[Test]
 	public async Task the_file_will_not_be_deleted_until_reader_released() {
 		var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
-		using (var reader = chunk.AcquireRawReader()) {
+		using (var reader = await chunk.AcquireRawReader(CancellationToken.None)) {
 			chunk.MarkForDeletion();
 			var buffer = new byte[1024];
 			var result = await reader.ReadNextBytes(buffer, CancellationToken.None);
@@ -26,7 +26,7 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 	[Test]
 	public async Task a_read_on_new_file_can_be_performed() {
 		var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
-		using (var reader = chunk.AcquireRawReader()) {
+		using (var reader = await chunk.AcquireRawReader(CancellationToken.None)) {
 			var buffer = new byte[1024];
 			var result = await reader.ReadNextBytes(buffer, CancellationToken.None);
 			Assert.IsFalse(result.IsEOF);
@@ -73,7 +73,7 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 	[Test]
 	public async Task if_asked_for_more_than_buffer_size_will_only_read_buffer_size() {
 		var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 3000);
-		using (var reader = chunk.AcquireRawReader()) {
+		using (var reader = await chunk.AcquireRawReader(CancellationToken.None)) {
 			var buffer = new byte[1024];
 			var result = await reader.ReadNextBytes(buffer, CancellationToken.None);
 			Assert.IsFalse(result.IsEOF);
@@ -87,7 +87,7 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 	[Test]
 	public async Task a_read_past_eof_returns_eof_and_no_footer() {
 		var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
-		using (var reader = chunk.AcquireRawReader()) {
+		using (var reader = await chunk.AcquireRawReader(CancellationToken.None)) {
 			var buffer = new byte[8092];
 			var result = await reader.ReadNextBytes(buffer, CancellationToken.None);
 			Assert.IsTrue(result.IsEOF);

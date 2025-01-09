@@ -38,7 +38,7 @@ public sealed class ChunkLocalFileSystem : IChunkFileSystem {
 				Mode = FileMode.Open,
 				Access = FileAccess.Read,
 				Share = FileShare.ReadWrite,
-				Options = ConvertToFileOptions(hint),
+				Options = ChunkFileHandle.ConvertToFileOptions(hint),
 			};
 
 			task = new(new ChunkFileHandle(fileName, options));
@@ -51,12 +51,6 @@ public sealed class ChunkLocalFileSystem : IChunkFileSystem {
 
 		return task;
 	}
-
-	private static FileOptions ConvertToFileOptions(IBlobFileSystem.ReadOptimizationHint optimizationHint) => optimizationHint switch {
-		IBlobFileSystem.ReadOptimizationHint.RandomAccess => FileOptions.Asynchronous | FileOptions.RandomAccess,
-		IBlobFileSystem.ReadOptimizationHint.SequentialScan => FileOptions.Asynchronous | FileOptions.SequentialScan,
-		_ => FileOptions.Asynchronous,
-	};
 
 	public async ValueTask<ChunkHeader> ReadHeaderAsync(string fileName, CancellationToken token) {
 		using var handle = File.OpenHandle(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
