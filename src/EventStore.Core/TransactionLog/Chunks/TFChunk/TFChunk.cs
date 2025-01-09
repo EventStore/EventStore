@@ -441,12 +441,7 @@ public partial class TFChunk : IDisposable {
 
 
 		// WRITE HEADERS
-		UnmanagedMemoryStream headerStream;
-		unsafe {
-			headerStream = new((byte*)_cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite);
-		}
-
-		await using (headerStream) {
+		await using (var headerStream = CreateMemoryStream(_cachedLength, FileAccess.ReadWrite)) {
 			await WriteHeader(md5, headerStream, chunkHeader, token);
 			await WriteTransformHeader(md5, headerStream, transformHeader, token);
 		}
@@ -1298,14 +1293,14 @@ public partial class TFChunk : IDisposable {
 		return new TFChunkBulkDataReader(this, streamToUse, isMemory: false);
 	}
 
-	private unsafe UnmanagedMemoryStream CreateMemoryStream() =>
-		new((byte*)_cachedData, _fileSize);
+	private unsafe UnmanagedMemoryStream CreateMemoryStream(int length, FileAccess access = FileAccess.Read) =>
+		new((byte*)_cachedData, length, length, access);
 
 	private async ValueTask<Stream> CreateFileStreamForBulkReader(CancellationToken token) {
 		// TODO: A branch with FileStream is a temporary solution. When the abstract file system starts supporting chunk writes, the branch can be removed
 		const int bufferSize = 65535;
 		return _inMem
-			? CreateMemoryStream()
+			? CreateMemoryStream(_fileSize)
 			: _fileSystem is not null
 				? new PoolingBufferedStream((await _fileSystem.OpenForReadAsync(_filename,
 						IBlobFileSystem.ReadOptimizationHint.SequentialScan, token)).CreateStream())
@@ -1363,7 +1358,7 @@ public partial class TFChunk : IDisposable {
 			throw new Exception("Unexpected error: a cached chunk had no cached data");
 
 		Interlocked.Increment(ref _memStreamCount);
-		var stream = CreateMemoryStream();
+		var stream = CreateMemoryStream(_cachedLength);
 
 		if (raw) {
 			reader = new TFChunkBulkRawReader(chunk: this, streamToUse: stream, isMemory: true);
