@@ -34,8 +34,8 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 	public IVersionedFileNamingStrategy NamingStrategy =>
 		_localFileSystem.NamingStrategy;
 
-	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, bool reduceFileCachePressure, CancellationToken token) =>
-		Choose(fileName, out var decoded).OpenForReadAsync(decoded, reduceFileCachePressure, token);
+	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, IBlobFileSystem.ReadOptimizationHint hint, CancellationToken token) =>
+		Choose(fileName, out var decoded).OpenForReadAsync(decoded, hint, token);
 
 	public ValueTask<ChunkFooter> ReadFooterAsync(string fileName, CancellationToken token) =>
 		Choose(fileName, out var decoded).ReadFooterAsync(decoded, token);

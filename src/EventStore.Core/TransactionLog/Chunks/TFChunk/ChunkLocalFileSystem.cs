@@ -31,16 +31,14 @@ public sealed class ChunkLocalFileSystem : IChunkFileSystem {
 		init;
 	}
 
-	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, bool reduceFileCachePressure, CancellationToken token) {
+	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, IChunkFileSystem.ReadOptimizationHint hint, CancellationToken token) {
 		ValueTask<IChunkHandle> task;
 		try {
 			var options = new FileStreamOptions {
 				Mode = FileMode.Open,
 				Access = FileAccess.Read,
 				Share = FileShare.ReadWrite,
-				Options = reduceFileCachePressure
-					? FileOptions.Asynchronous
-					: FileOptions.RandomAccess | FileOptions.Asynchronous
+				Options = ChunkFileHandle.ConvertToFileOptions(hint),
 			};
 
 			task = new(new ChunkFileHandle(fileName, options));
