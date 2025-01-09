@@ -10,7 +10,7 @@ using static System.StringComparer;
 
 namespace EventStore.Core.Configuration.Sources;
 
-public class KurrentCommandLineConfigurationProvider(IEnumerable<string> args)
+public class KurrentDBCommandLineConfigurationProvider(IEnumerable<string> args)
 	: CommandLineConfigurationProvider(args) {
 
 	public override void Load() {

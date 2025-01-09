@@ -29,7 +29,8 @@ public static class ConfigurationRootExtensions {
 					provider.GetChildKeys().Select(
 						key =>
 							$"\"{key}\" Provided by: {ClusterVNodeOptions.GetSourceDisplayName(KurrentConfigurationKeys.Prefix + ":" + key, provider)}. " +
-							$"The \"EventStore\" configuration root has been deprecated, use \"Kurrent\" instead."));
+							$"The \"{KurrentConfigurationKeys.LegacyEventStorePrefix}\" configuration root " +
+							$"has been deprecated, use \"{KurrentConfigurationKeys.Prefix}\" instead."));
 			}
 		}
 
@@ -51,7 +52,7 @@ public static class ConfigurationRootExtensions {
 			var source = provider.GetType();
 
 			if (source == typeof(KurrentDefaultValuesConfigurationProvider) ||
-				source == typeof(KurrentEnvironmentVariablesConfigurationProvider) ||
+				source == typeof(KurrentDBEnvironmentVariablesConfigurationProvider) ||
 				source == typeof(EventStoreEnvironmentVariablesConfigurationProvider))
 				continue;
 

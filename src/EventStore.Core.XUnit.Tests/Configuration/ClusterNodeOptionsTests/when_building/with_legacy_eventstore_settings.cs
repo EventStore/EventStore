@@ -80,11 +80,11 @@ public class with_legacy_eventstore_settings : SingleNodeScenario<LogFormat.V2, 
 		var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);
 		var warnings = clusterVNodeOptions.CheckForLegacyEventStoreConfiguration();
 		var expected = new[] {
-			"\"Autoscavenge\" Provided by: Event Store Json File. The \"EventStore\" configuration root has been deprecated, use \"Kurrent\" instead.",
-			"\"Connectors\" Provided by: Event Store Json File. The \"EventStore\" configuration root has been deprecated, use \"Kurrent\" instead.",
-			"\"Licensing\" Provided by: Event Store Json File. The \"EventStore\" configuration root has been deprecated, use \"Kurrent\" instead.",
-			"\"NodePort\" Provided by: Event Store Environment Variables. The \"EventStore\" configuration root has been deprecated, use \"Kurrent\" instead.",
-			"\"RunProjections\" Provided by: Event Store Command Line. The \"EventStore\" configuration root has been deprecated, use \"Kurrent\" instead."
+			$"\"Autoscavenge\" Provided by: Event Store Json File. The \"EventStore\" configuration root has been deprecated, use \"{kurrentPrefix}\" instead.",
+			$"\"Connectors\" Provided by: Event Store Json File. The \"EventStore\" configuration root has been deprecated, use \"{kurrentPrefix}\" instead.",
+			$"\"Licensing\" Provided by: Event Store Json File. The \"EventStore\" configuration root has been deprecated, use \"{kurrentPrefix}\" instead.",
+			$"\"NodePort\" Provided by: Event Store Environment Variables. The \"EventStore\" configuration root has been deprecated, use \"{kurrentPrefix}\" instead.",
+			$"\"RunProjections\" Provided by: Event Store Command Line. The \"EventStore\" configuration root has been deprecated, use \"{kurrentPrefix}\" instead."
 		};
 		Assert.AreEqual(expected, warnings);
 	}

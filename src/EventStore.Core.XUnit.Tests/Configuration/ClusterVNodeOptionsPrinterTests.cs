@@ -49,28 +49,28 @@ public class ClusterVNodeOptionsPrinterTests {
 		output.Should().Be(@"
 MODIFIED OPTIONS:
     APPLICATION OPTIONS:
-         CONFIG:                          /path/to/config/commandline (Command Line)
-         WORKER THREADS:                  5 (Event Store Environment Variables)
+         CONFIG:                            /path/to/config/commandline (Command Line)
+         WORKER THREADS:                    5 (Event Store Environment Variables)
 
     CLUSTER OPTIONS:
-         CLUSTER GOSSIP PORT:             88 (Command Line)
-         NODE PRIORITY:                   6 (Event Store Environment Variables)
-         UNSAFE ALLOW SURPLUS NODES:      true (Environment Variables)
+         CLUSTER GOSSIP PORT:               88 (Command Line)
+         NODE PRIORITY:                     6 (Event Store Environment Variables)
+         UNSAFE ALLOW SURPLUS NODES:        true (Environment Variables)
 
     DEFAULT USER OPTIONS:
-         DEFAULT OPS PASSWORD:            ******** (Command Line)
+         DEFAULT OPS PASSWORD:              ******** (Command Line)
 
     PROJECTION OPTIONS:
-         RUN PROJECTIONS:                 All (Environment Variables)
+         RUN PROJECTIONS:                   All (Environment Variables)
 
 
 DEFAULT OPTIONS:
     CLUSTER OPTIONS:
-         CLUSTER SIZE:                    1 (<DEFAULT>)
+         CLUSTER SIZE:                      1 (<DEFAULT>)
 
     DATABASE OPTIONS:
-         CHUNK SIZE:                      10000 (<DEFAULT>)
-         CHUNKS CACHE SIZE:               20000 (<DEFAULT>)
+         CHUNK SIZE:                        10000 (<DEFAULT>)
+         CHUNKS CACHE SIZE:                 20000 (<DEFAULT>)
 ");
 	}
 

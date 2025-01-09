@@ -7,7 +7,6 @@ using System;
 using System.IO;
 using System.Linq;
 using EventStore.Common.Utils;
-using EventStore.Core.Configuration.Sources;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 

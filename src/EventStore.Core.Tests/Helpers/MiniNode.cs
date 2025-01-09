@@ -161,12 +161,12 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 
 		var inMemConf = new ConfigurationBuilder()
 			.AddInMemoryCollection(new KeyValuePair<string, string>[] {
-				new("Kurrent:TcpPlugin:NodeTcpPort", extTcpPort.ToString()),
-				new("Kurrent:TcpPlugin:EnableExternalTcp", "true"),
-				new("Kurrent:TcpUnitTestPlugin:NodeTcpPort", extTcpPort.ToString()),
-				new("Kurrent:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
-				new("Kurrent:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
-				new("Kurrent:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpPlugin:NodeTcpPort", extTcpPort.ToString()),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpPlugin:EnableExternalTcp", "true"),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeTcpPort", extTcpPort.ToString()),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
 			}).Build();
 
 		if (advertisedExtHostAddress != null)

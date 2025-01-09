@@ -11,7 +11,7 @@ using static System.Environment;
 
 namespace EventStore.Core.Configuration.Sources;
 
-public class KurrentEnvironmentVariablesConfigurationProvider(IDictionary? environment = null) : ConfigurationProvider {
+public class KurrentDBEnvironmentVariablesConfigurationProvider(IDictionary? environment = null) : ConfigurationProvider {
 	IDictionary? Environment { get; } = environment;
 
 	public override void Load() {

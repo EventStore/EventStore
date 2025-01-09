@@ -29,8 +29,8 @@ public class EventStoreCommandLineConfigurationProvider(IEnumerable<string> args
 public class CommandLineConfigurationSource : IConfigurationSource {
 	public CommandLineConfigurationSource(string[] args) {
 		Args = args
-			.Select(KurrentCommandLineConfigurationSource.NormalizeKeys)
-			.Select((x, i) => KurrentCommandLineConfigurationSource.NormalizeBooleans(args, x, i));
+			.Select(KurrentDBCommandLineConfigurationSource.NormalizeKeys)
+			.Select((x, i) => KurrentDBCommandLineConfigurationSource.NormalizeBooleans(args, x, i));
 	}
 
 	private IEnumerable<string> Args { get; set; }

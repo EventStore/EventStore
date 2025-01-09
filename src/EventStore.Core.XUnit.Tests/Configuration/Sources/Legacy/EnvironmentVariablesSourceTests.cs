@@ -12,7 +12,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration.Sources.Legacy;
 
 public class EnvironmentVariablesSourceTests {
 	[Theory]
-	[InlineData("EVENTSTORE_STREAM_INFO_CACHE_CAPACITY", "Kurrent:StreamInfoCacheCapacity")]
+	[InlineData("EVENTSTORE_STREAM_INFO_CACHE_CAPACITY", "KurrentDB:StreamInfoCacheCapacity")]
 	public void TransformsEventStoreEnvVars(string key, string normalizedKey) {
 		// Arrange
 		var environment = new Dictionary<string, string> { { key, key } };

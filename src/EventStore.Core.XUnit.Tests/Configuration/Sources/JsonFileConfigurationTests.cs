@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using EventStore.Core.Configuration.Sources;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
@@ -32,7 +33,7 @@ public class JsonFileConfigurationTests {
 			}).Build();
 
 		// Assert
-		config.GetValue<bool>("Kurrent:AutoScavenge:Enabled").Should().Be(false);
-		config.GetValue<string>("Kurrent:Licensing:LicenseKey").Should().Be("valid");
+		config.GetValue<bool>($"{KurrentConfigurationKeys.Prefix}:AutoScavenge:Enabled").Should().Be(false);
+		config.GetValue<string>($"{KurrentConfigurationKeys.Prefix}:Licensing:LicenseKey").Should().Be("valid");
 	}
 }

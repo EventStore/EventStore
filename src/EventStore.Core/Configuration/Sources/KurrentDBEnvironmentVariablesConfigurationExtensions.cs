@@ -10,13 +10,13 @@ using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.Configuration.Sources;
 
-public static class KurrentEnvironmentVariablesConfigurationExtensions {
+public static class KurrentDBEnvironmentVariablesConfigurationExtensions {
 	public static IConfigurationBuilder AddKurrentEnvironmentVariables(this IConfigurationBuilder builder, IDictionary? environment = null) =>
-		builder.Add(new KurrentEnvironmentVariablesSource(environment));
+		builder.Add(new KurrentDBEnvironmentVariablesSource(environment));
 
 	public static IConfigurationBuilder AddKurrentEnvironmentVariables(this IConfigurationBuilder builder, Dictionary<string, string> environment) =>
-		builder.Add(new KurrentEnvironmentVariablesSource(environment));
+		builder.Add(new KurrentDBEnvironmentVariablesSource(environment));
 
 	public static IConfigurationBuilder AddKurrentEnvironmentVariables(this IConfigurationBuilder builder, params (string Key, string Value)[] environment) =>
-		builder.Add(new KurrentEnvironmentVariablesSource(environment.ToDictionary(x => x.Key, x => x.Value)));
+		builder.Add(new KurrentDBEnvironmentVariablesSource(environment.ToDictionary(x => x.Key, x => x.Value)));
 }

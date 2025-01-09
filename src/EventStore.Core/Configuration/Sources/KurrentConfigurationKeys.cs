@@ -15,7 +15,7 @@ using static System.StringComparison;
 namespace EventStore.Core.Configuration.Sources;
 
 public static class KurrentConfigurationKeys {
-	public const string Prefix = "Kurrent";
+	public const string Prefix = "KurrentDB";
 	public const string LegacyEventStorePrefix = "EventStore";
 
 	private const string EnvVarKeyDelimiter = "__";
@@ -44,10 +44,10 @@ public static class KurrentConfigurationKeys {
 		AllKnownKeys = SectionKeys.Concat(OptionsKeys).Distinct(StringComparer.InvariantCultureIgnoreCase).ToList();
 	}
 
-	// outputs a key for IConfiguration e.g. Kurrent:StreamInfoCacheCapacity
+	// outputs a key for IConfiguration e.g. KurrentDB:StreamInfoCacheCapacity
 	public static string Normalize(string key) => Normalize(Prefix, Prefix, key);
 
-	// outputs a key for IConfiguration converted from EventStore:* to Kurrent:*
+	// outputs a key for IConfiguration converted from EventStore:* to KurrentDB:*
 	public static string NormalizeEventStorePrefix(string key) => Normalize(LegacyEventStorePrefix, Prefix, key);
 
 	public static string Normalize(string originalPrefix, string targetPrefix, string key) {
@@ -108,7 +108,7 @@ public static class KurrentConfigurationKeys {
 		TryNormalizeEnvVar(LegacyEventStorePrefix, Prefix, key?.ToString() ?? Empty, out normalizedKey);
 
 	/// <summary>
-	/// Only normalizes the given key if it is a Kurrent environment variable.
+	/// Only normalizes the given key if it is a KurrentDB environment variable.
 	/// </summary>
 	public static bool TryNormalizeEnvVar(object? key, [MaybeNullWhen(false)] out string normalizedKey) =>
 		TryNormalizeEnvVar(Prefix, Prefix, key?.ToString() ?? Empty, out normalizedKey);

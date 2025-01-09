@@ -9,8 +9,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.Configuration.Sources;
 
-public class KurrentCommandLineConfigurationSource : IConfigurationSource {
-	public KurrentCommandLineConfigurationSource(string[] args) {
+public class KurrentDBCommandLineConfigurationSource : IConfigurationSource {
+	public KurrentDBCommandLineConfigurationSource(string[] args) {
 		Args = args.Select(NormalizeKeys).Select((x, i) => NormalizeBooleans(args, x, i));
 	}
 
@@ -37,5 +37,5 @@ public class KurrentCommandLineConfigurationSource : IConfigurationSource {
 	private IEnumerable<string> Args { get; set; }
 
 	public IConfigurationProvider Build(IConfigurationBuilder builder) =>
-		new KurrentCommandLineConfigurationProvider(Args);
+		new KurrentDBCommandLineConfigurationProvider(Args);
 }

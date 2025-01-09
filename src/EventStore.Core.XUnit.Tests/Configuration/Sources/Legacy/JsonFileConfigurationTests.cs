@@ -41,9 +41,9 @@ public class JsonFileConfigurationTests {
 			}).Build();
 
 		// Assert
-		config.GetValue<bool>("Kurrent:AutoScavenge:Enabled").Should().Be(true);
-		config.GetValue<bool>("Kurrent:Connectors:Enabled").Should().Be(false);
-		config.GetValue<string>("Kurrent:Licensing:LicenseKey").Should().Be("invalid");
+		config.GetValue<bool>($"{KurrentConfigurationKeys.Prefix}:AutoScavenge:Enabled").Should().Be(true);
+		config.GetValue<bool>($"{KurrentConfigurationKeys.Prefix}:Connectors:Enabled").Should().Be(false);
+		config.GetValue<string>($"{KurrentConfigurationKeys.Prefix}:Licensing:LicenseKey").Should().Be("invalid");
 	}
 
 	[Fact]
@@ -73,8 +73,8 @@ public class JsonFileConfigurationTests {
 			}).Build();
 
 		// Assert
-		config.GetValue<bool>("Kurrent:AutoScavenge:Enabled").Should().Be(false);
-		config.GetValue<string>("Kurrent:Licensing:LicenseKey").Should().Be("valid");
-		config.GetValue<bool>("Kurrent:Connectors:Enabled").Should().Be(false);
+		config.GetValue<bool>($"{KurrentConfigurationKeys.Prefix}:AutoScavenge:Enabled").Should().Be(false);
+		config.GetValue<string>($"{KurrentConfigurationKeys.Prefix}:Licensing:LicenseKey").Should().Be("valid");
+		config.GetValue<bool>($"{KurrentConfigurationKeys.Prefix}:Connectors:Enabled").Should().Be(false);
 	}
 }

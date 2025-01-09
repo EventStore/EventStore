@@ -10,16 +10,17 @@ namespace EventStore.Core.XUnit.Tests.Configuration;
 
 public class CommandLineConfigurationSourceTests {
 	[Theory]
-	[InlineData(new[] { "--stream_info_cache_capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--stream_info_cache_capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--stream-info-cache-capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--stream-info-cache-capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--Kurrent:StreamInfoCacheCapacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--Kurrent:StreamInfoCacheCapacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--Kurrent:Stream-Info-Cache-Capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--Kurrent:Stream-Info-Cache-Capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--Kurrent:Stream_Info_Cache_Capacity=99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
-	[InlineData(new[] { "--Kurrent:Stream_Info_Cache_Capacity", "99" }, "Kurrent:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--stream_info_cache_capacity=99" }, "KurrentDB:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--stream_info_cache_capacity", "99" }, "KurrentDB:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--stream-info-cache-capacity=99" }, "KurrentDB:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--stream-info-cache-capacity", "99" }, "KurrentDB:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--KurrentDB:StreamInfoCacheCapacity=99" }, "KurrentDB:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--KurrentDB:StreamInfoCacheCapacity", "99" }, "KurrentDB:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--KurrentDB:Stream-Info-Cache-Capacity=99" }, "KurrentDB:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--KurrentDB:Stream-Info-Cache-Capacity", "99" }, "KurrentDB:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--KurrentDB:Stream_Info_Cache_Capacity=99" }, "KurrentDB:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--KurrentDB:Stream_Info_Cache_Capacity", "99" }, "KurrentDB:StreamInfoCacheCapacity", "99")]
+	[InlineData(new[] { "--Kurrentdb:Stream_Info_Cache_Capacity=99" }, "KurrentDB:StreamInfoCacheCapacity", "99")]
 	public void AddsArguments(string[] arguments, string normalizedKey, string expectedValue) {
 		// Act
 		var configuration = new ConfigurationBuilder()

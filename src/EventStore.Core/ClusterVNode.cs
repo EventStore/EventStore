@@ -58,7 +58,6 @@ using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
 using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Services.Archive;
-using EventStore.Core.Services.Archive.Archiver;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.PeriodicLogs;
 using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
@@ -1957,7 +1956,8 @@ public class ClusterVNode<TStreamId> :
 		Log.Warning(
 			"The \"Plugins\" configuration subsection has been removed. " +
 			"The following settings will be ignored. " +
-			"Please move them out of the \"Plugins\" subsection and directly into the \"Kurrent\" root.");
+			"Please move them out of the \"Plugins\" subsection and " +
+			$"directly into the \"{KurrentConfigurationKeys.Prefix}\" root.");
 
 		foreach (var kvp in pluginSubsectionOptions) {
 			if (kvp.Value is not null)

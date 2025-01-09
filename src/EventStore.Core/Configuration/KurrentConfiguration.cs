@@ -22,16 +22,16 @@ public static class KurrentConfiguration {
 		// plugin configuration. We will add it to the DI and make it available to the plugins.
 		//
 		// Three json files are loaded explicitly for backwards compatibility
-		// - metricsconfig.json needs loading into the Kurrent:Metrics section.
+		// - metricsconfig.json needs loading into the KurrentDB:Metrics section.
 		// - kestrelsettings.json is not located in a config/ directory
 		// - logconfig.json is not located in a config/ directory
 		//
-		// The EventStore configuration section is transformed to Kurrent by the EventStore configuration providers
+		// The EventStore configuration section is transformed to KurrentDB by the EventStore configuration providers
 		// to maintain backwards compatibility
 		var builder = new ConfigurationBuilder()
 			// we should be able to stop doing this soon as long as we bind the options automatically
 			.AddKurrentDefaultValues()
-			// check for the existence of Kurrent default locations
+			// check for the existence of KurrentDB default locations
 			// if they do not exist, use the EventStore ones if the EventStore location exists.
 			.AddLegacyDefaultLocations(optionsWithLegacyDefaults)
 			.AddKurrentYamlConfigFile(configFile.Path, configFile.Optional)

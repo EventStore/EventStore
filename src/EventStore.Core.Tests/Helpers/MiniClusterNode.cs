@@ -17,6 +17,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Authorization.AuthorizationPolicies;
 using EventStore.Core.Bus;
 using EventStore.Core.Certificates;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Http;
@@ -153,12 +154,12 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 
 		var inMemConf = new ConfigurationBuilder()
 			.AddInMemoryCollection(new KeyValuePair<string, string>[] {
-				new("Kurrent:TcpPlugin:NodeTcpPort", externalTcp.Port.ToString()),
-				new("Kurrent:TcpPlugin:EnableExternalTcp", "true"),
-				new("Kurrent:TcpUnitTestPlugin:NodeTcpPort", externalTcp.Port.ToString()),
-				new("Kurrent:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
-				new("Kurrent:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
-				new("Kurrent:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpPlugin:NodeTcpPort", externalTcp.Port.ToString()),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpPlugin:EnableExternalTcp", "true"),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeTcpPort", externalTcp.Port.ToString()),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
 			}).Build();
 		var serverCertificate = useHttps ? ssl_connections.GetServerCertificate() : null;
 		var trustedRootCertificates =
