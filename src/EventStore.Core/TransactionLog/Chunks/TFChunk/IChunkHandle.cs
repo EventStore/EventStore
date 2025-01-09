@@ -41,12 +41,12 @@ public interface IChunkHandle : IFlushable, IDisposable {
 	/// Creates an unbuffered stream for this handle.
 	/// </summary>
 	/// <returns>The unbuffered stream for this handle.</returns>
-	Stream CreateStream() => CreateStream(this, 60_000);
+	Stream CreateStream(bool leaveOpen = true) => CreateStream(this, leaveOpen, 60_000);
 
-	protected static Stream CreateStream(IChunkHandle handle, int synchronousTimeout)
-		=> new UnbufferedStream(handle) { ReadTimeout = synchronousTimeout, WriteTimeout = synchronousTimeout };
+	protected static Stream CreateStream(IChunkHandle handle, bool leaveOpen, int synchronousTimeout)
+		=> new UnbufferedStream(handle, leaveOpen) { ReadTimeout = synchronousTimeout, WriteTimeout = synchronousTimeout };
 
-	private sealed class UnbufferedStream(IChunkHandle handle) : RandomAccessStream {
+	private sealed class UnbufferedStream(IChunkHandle handle, bool leaveOpen) : RandomAccessStream {
 		private int _readTimeout, _writeTimeout;
 		private CancellationTokenSource _timeoutSource;
 
@@ -153,6 +153,8 @@ public interface IChunkHandle : IFlushable, IDisposable {
 		protected override void Dispose(bool disposing) {
 			if (disposing) {
 				_timeoutSource?.Dispose();
+				if (!leaveOpen)
+					handle.Dispose();
 			}
 
 			base.Dispose(disposing);

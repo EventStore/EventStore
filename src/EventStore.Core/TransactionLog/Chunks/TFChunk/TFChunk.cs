@@ -1298,15 +1298,24 @@ public partial class TFChunk : IDisposable {
 
 	private async ValueTask<Stream> CreateFileStreamForBulkReader(CancellationToken token) {
 		// TODO: A branch with FileStream is a temporary solution. When the abstract file system starts supporting chunk writes, the branch can be removed
-		const int bufferSize = 65535;
-		return _inMem
-			? CreateMemoryStream(_fileSize)
-			: _fileSystem is not null
-				? new PoolingBufferedStream((await _fileSystem.OpenForReadAsync(_filename,
-						IBlobFileSystem.ReadOptimizationHint.SequentialScan, token)).CreateStream())
-					{ MaxBufferSize = bufferSize }
-				: new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, bufferSize,
-					FileOptions.SequentialScan);
+		if (_inMem)
+			return CreateMemoryStream(_fileSize);
+
+		IChunkHandle handle;
+		if (_fileSystem is null) {
+			var options = new FileStreamOptions {
+				Mode = FileMode.Open,
+				Access = FileAccess.Read,
+				Share = FileShare.ReadWrite,
+				Options = FileOptions.SequentialScan,
+			};
+			handle = new ChunkFileHandle(_filename, options);
+		} else {
+			handle = await _fileSystem.OpenForReadAsync(_filename, IBlobFileSystem.ReadOptimizationHint.SequentialScan,
+				token);
+		}
+
+		return new PoolingBufferedStream(handle.CreateStream(leaveOpen: false)) { MaxBufferSize = 65535 };
 	}
 
 	// tries to acquire a bulk reader over a memstream but
