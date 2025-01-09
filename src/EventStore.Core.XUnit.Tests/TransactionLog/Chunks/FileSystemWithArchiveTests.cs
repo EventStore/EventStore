@@ -30,7 +30,7 @@ public class FileSystemWithArchiveTests {
 		var chunk = "chunk-000.000";
 		_localLocator = codec.EncodeLocalName(chunk);
 		_remoteLocator = codec.EncodeRemoteName(chunk);
-		
+
 	}
 
 	[Fact]
@@ -85,7 +85,7 @@ public class FileSystemWithArchiveTests {
 			throw new NotImplementedException();
 		}
 
-		public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, bool reduceFileCachePressure, CancellationToken token) {
+		public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, IBlobFileSystem.ReadOptimizationHint hint, CancellationToken token) {
 			OpenCount++;
 			return ValueTask.FromResult<IChunkHandle>(null);
 		}

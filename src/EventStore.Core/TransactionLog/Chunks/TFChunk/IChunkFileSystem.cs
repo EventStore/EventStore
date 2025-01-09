@@ -12,11 +12,18 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 // Every type of the data tier needs to implement this interface. For instance, local file system and
 // cloud-based object storage have their own implementations.
 public interface IBlobFileSystem {
-	ValueTask<IChunkHandle> OpenForReadAsync(string fileName, bool reduceFileCachePressure, CancellationToken token);
+	ValueTask<IChunkHandle> OpenForReadAsync(string fileName, ReadOptimizationHint hint, CancellationToken token);
 
 	ValueTask<ChunkHeader> ReadHeaderAsync(string fileName, CancellationToken token);
 
 	ValueTask<ChunkFooter> ReadFooterAsync(string fileName, CancellationToken token);
+
+	// it's not a flag enum
+	public enum ReadOptimizationHint {
+		None = 0,
+		RandomAccess = 1,
+		SequentialScan = 2,
+	}
 }
 
 // Chunks can be stored in different locations (say, archive vs local) but the access still goes through

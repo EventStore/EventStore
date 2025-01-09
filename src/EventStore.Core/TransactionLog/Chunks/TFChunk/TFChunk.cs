@@ -298,7 +298,12 @@ public partial class TFChunk : IDisposable {
 
 	private async ValueTask InitCompleted(IBlobFileSystem fileSystem, bool verifyHash, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
-		_handle = await fileSystem.OpenForReadAsync(_filename, _reduceFileCachePressure, token);
+		_handle = await fileSystem.OpenForReadAsync(
+			_filename,
+			_reduceFileCachePressure
+				? IBlobFileSystem.ReadOptimizationHint.None
+				: IBlobFileSystem.ReadOptimizationHint.RandomAccess,
+			token);
 		_fileSize = (int)_handle.Length;
 
 		IsReadOnly = true;

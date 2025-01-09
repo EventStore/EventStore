@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 public class ArchiveBlobFileSystem : IBlobFileSystem {
-	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, bool reduceFileCachePressure, CancellationToken token) {
+	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, IBlobFileSystem.ReadOptimizationHint hint, CancellationToken token) {
 		throw new NotImplementedException();
 	}
 
