@@ -12,8 +12,16 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
-public sealed class ChunkLocalFileSystem(string path, string chunkFilePrefix = "chunk-") : IChunkFileSystem {
-	private readonly VersionedPatternFileNamingStrategy _strategy = new(path, chunkFilePrefix);
+public sealed class ChunkLocalFileSystem : IChunkFileSystem {
+	private readonly VersionedPatternFileNamingStrategy _strategy;
+
+	public ChunkLocalFileSystem(VersionedPatternFileNamingStrategy namingStrategy) {
+		_strategy = namingStrategy;
+	}
+
+	public ChunkLocalFileSystem(string path, string chunkFilePrefix = "chunk-")
+		: this(new(path, chunkFilePrefix)) {
+	}
 
 	public IVersionedFileNamingStrategy NamingStrategy => _strategy;
 

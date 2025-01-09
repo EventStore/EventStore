@@ -46,13 +46,14 @@ public class TFChunkManager : IThreadPoolWorkItem {
 
 	public TFChunkManager(
 		TFChunkDbConfig config,
+		IChunkFileSystem fileSystem,
 		ITransactionFileTracker tracker,
 		DbTransformManager transformManager) {
 		Ensure.NotNull(config, "config");
 		_config = config;
 		_tracker = tracker;
 		_transformManager = transformManager;
-		FileSystem = new ChunkLocalFileSystem(config.Path);
+		FileSystem = fileSystem;
 	}
 
 	public IChunkFileSystem FileSystem { get; }
