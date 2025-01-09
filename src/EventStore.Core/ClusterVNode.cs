@@ -68,9 +68,12 @@ using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
 using EventStore.Core.Synchronization;
 using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
+using EventStore.Licensing;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using EventStore.Plugins.Subsystems;
@@ -83,7 +86,6 @@ using Microsoft.Extensions.DependencyInjection;
 using ILogger = Serilog.ILogger;
 using LogLevel = EventStore.Common.Options.LogLevel;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
-using EventStore.Licensing;
 
 namespace EventStore.Core;
 public abstract class ClusterVNode {
@@ -315,9 +317,27 @@ public class ClusterVNode<TStreamId> :
 		var metricsConfiguration = MetricsConfiguration.Get((configuration));
 		MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
+		var namingStrategy = new VersionedPatternFileNamingStrategy(dbConfig.Path, "chunk-");
+		var archiveReader = new ArchiveStorageFactory(
+				options: archiveOptions,
+				chunkNamer: new ArchiveChunkNamer(namingStrategy))
+			.CreateReader();
+
+		IChunkFileSystem fileSystem = new ChunkLocalFileSystem(namingStrategy);
+
+		if (archiveOptions.Enabled) {
+			fileSystem = new FileSystemWithArchive(
+				chunkSize: dbConfig.ChunkSize,
+				locatorCodec: new PrefixingLocatorCodec(),
+				localFileSystem: fileSystem,
+				remoteFileSystem: new ArchiveBlobFileSystem(),
+				archive: archiveReader);
+		}
+
 		Db = new TFChunkDb(
 			dbConfig,
 			tracker: trackers.TransactionFileTracker,
+			fileSystem: fileSystem,
 			transformManager: new DbTransformManager(),
 			onChunkLoaded: chunkInfo => {
 				_mainQueue.Publish(new SystemMessage.ChunkLoaded(chunkInfo));
@@ -1298,11 +1318,6 @@ public class ClusterVNode<TStreamId> :
 
 			var chunkDeleter = IChunkDeleter<TStreamId, ILogRecord>.NoOp;
 			if (archiveOptions.Enabled) {
-				// todo: consider if we can/should reuse the same reader elsewhere
-				var archiveReader = new ArchiveStorageFactory(
-						archiveOptions,
-						new ArchiveChunkNamer(Db.Manager.FileSystem.NamingStrategy))
-					.CreateReader();
 				chunkDeleter = new ChunkDeleter<TStreamId, ILogRecord>(
 					logger: logger,
 					archiveCheckpoint: new AdvancingCheckpoint(archiveReader.GetCheckpoint),

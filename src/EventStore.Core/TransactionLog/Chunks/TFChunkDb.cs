@@ -28,6 +28,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 		TFChunkDbConfig config,
 		ITransactionFileTracker tracker = null,
 		ILogger log = null,
+		IChunkFileSystem fileSystem = null,
 		DbTransformManager transformManager = null,
 		Action<Data.ChunkInfo> onChunkLoaded = null,
 		Action<Data.ChunkInfo> onChunkCompleted = null,
@@ -37,7 +38,9 @@ public sealed class TFChunkDb : IAsyncDisposable {
 		Config = config;
 		TransformManager = transformManager ?? DbTransformManager.Default;
 		_tracker = tracker ?? new TFChunkTracker.NoOp();
-		Manager = new TFChunkManager(Config, _tracker, TransformManager) {
+		fileSystem ??= new ChunkLocalFileSystem(config.Path);
+
+		Manager = new TFChunkManager(Config, fileSystem, _tracker, TransformManager) {
 			OnChunkLoaded = onChunkLoaded,
 			OnChunkCompleted = onChunkCompleted,
 			OnChunkSwitched = onChunkSwitched
@@ -65,8 +68,8 @@ public sealed class TFChunkDb : IAsyncDisposable {
 							ChunkStartNumber = start,
 						};
 					break;
-				case MissingVersion(var fileName, var start):
-					if (start <= chunkEnumerator.LastChunkNumber - 1)
+				case MissingVersion(var fileName, var chunkNum):
+					if (chunkNum <= chunkEnumerator.LastChunkNumber - 1)
 						throw new CorruptDatabaseException(new ChunkNotFoundException(fileName));
 
 					// fine for last chunk to be 'missing' (not created yet)

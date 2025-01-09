@@ -6,8 +6,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Archive.Naming;
+using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog;
@@ -22,10 +25,11 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 		File.Create(GetFilePathFor("chunk-000001.000000.tmp")).Close(); // should be ignored
 		File.Create(GetFilePathFor("chunk-001.000")).Close(); // should be ignored
 
-		// chunk 0 is missing
+		// chunk 0 is archived
 		File.Create(GetFilePathFor("chunk-000001.000000")).Close(); // chunks 1 - 1 (latest)
 		File.Create(GetFilePathFor("chunk-000002.000001")).Close(); // chunks 2 - 2 (latest)
-		// chunks 3 & 4 are missing
+		// chunk 3 is archived
+		// chunk 4 is missing
 		File.Create(GetFilePathFor("chunk-000005.000000")).Close(); // chunks 5 - 5 (old)
 		File.Create(GetFilePathFor("chunk-000005.000001")).Close(); // chunks 5 - 6 (old)
 		File.Create(GetFilePathFor("chunk-000005.000002")).Close(); // chunks 5 - 7 (latest)
@@ -37,7 +41,7 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 		// chunks 15 & 16 are missing
 
 		var result = new List<string>();
-		ValueTask<int> GetNextFileNumber(string chunk, int chunkNumber, int chunkVersion, CancellationToken token) {
+		static ValueTask<int> GetNextFileNumber(string chunk, int chunkNumber, int chunkVersion, CancellationToken token) {
 			return Path.GetFileName(chunk) switch {
 				"chunk-000001.000000" => new(2),
 				"chunk-000002.000001" => new(3),
@@ -51,32 +55,41 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 			};
 		}
 
-		var chunkEnumerator = new ChunkLocalFileSystem(PathName) {
-			ChunkNumberProvider = GetNextFileNumber,
-		}.GetChunks();
+		var locatorCodec = new PrefixingLocatorCodec();
+		var chunkEnumerator = new FileSystemWithArchive(
+			chunkSize: 1000,
+			locatorCodec: locatorCodec,
+			localFileSystem: new ChunkLocalFileSystem(PathName) {
+				ChunkNumberProvider = GetNextFileNumber,
+			},
+			remoteFileSystem: new ArchiveBlobFileSystem(),
+			archive: new FakeArchiveStorageReader(checkpoint: 4000)).GetChunks();
 
 		chunkEnumerator.LastChunkNumber = 16;
 		await foreach (var chunkInfo in chunkEnumerator) {
 			switch (chunkInfo) {
-				case LatestVersion(var fileName, var start, var end):
+				case LatestVersion(var fileName, var start, var end): {
 					result.Add($"latest {Path.GetFileName(fileName)} {start}-{end}");
 					break;
-				case OldVersion(var fileName, var start):
+				}
+				case OldVersion(var fileName, var start): {
 					result.Add($"old {Path.GetFileName(fileName)} {start}");
 					break;
-				case MissingVersion(var fileName, var start):
-					result.Add($"missing {Path.GetFileName(fileName)} {start}");
+				}
+				case MissingVersion(var fileName, var chunkNum): {
+					result.Add($"missing {Path.GetFileName(fileName)} {chunkNum}");
 					break;
+				}
 				default:
 					throw new ArgumentOutOfRangeException(nameof(chunkInfo));
 			}
 		}
 
 		var expectedResult = new List<string> {
-			"missing chunk-000000.000000 0",
+			"latest archive:chunk-000000.000001 0-0",
 			"latest chunk-000001.000000 1-1",
 			"latest chunk-000002.000001 2-2",
-			"missing chunk-000003.000000 3",
+			"latest archive:chunk-000003.000001 3-3",
 			"missing chunk-000004.000000 4",
 			"old chunk-000005.000000 5",
 			"old chunk-000005.000001 5",
@@ -89,5 +102,21 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 			"missing chunk-000016.000000 16"
 		};
 		Assert.AreEqual(expectedResult, result);
+	}
+
+	public class FakeArchiveStorageReader(long checkpoint) : IArchiveStorageReader {
+		public IArchiveChunkNamer ChunkNamer { get; } =
+			new ArchiveChunkNamer(new VersionedPatternFileNamingStrategy("", "chunk-"));
+
+		public ValueTask<long> GetCheckpoint(CancellationToken ct) => new(checkpoint);
+
+		public ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) =>
+			throw new NotImplementedException();
+
+		public ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) =>
+			throw new NotImplementedException();
+
+		public IAsyncEnumerable<string> ListChunks(CancellationToken ct) =>
+			throw new NotImplementedException();
 	}
 }
