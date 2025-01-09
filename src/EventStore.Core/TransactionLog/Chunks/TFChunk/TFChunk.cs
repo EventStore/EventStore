@@ -791,8 +791,8 @@ public partial class TFChunk : IDisposable {
 		}
 	}
 
-	public void UnCacheFromMemory() {
-		_cachedDataLock.TryAcquire(InfiniteTimeSpan);
+	public async ValueTask UnCacheFromMemory(CancellationToken token) {
+		await _cachedDataLock.AcquireAsync(token);
 		try {
 			if (_inMem)
 				return;

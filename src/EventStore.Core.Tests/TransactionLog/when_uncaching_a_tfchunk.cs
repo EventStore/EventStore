@@ -41,7 +41,7 @@ public class when_uncaching_a_tfchunk<TLogFormat, TStreamId> : SpecificationWith
 			reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
 			getTransformFactory: _ => new IdentityChunkTransformFactory());
 		await _uncachedChunk.CacheInMemory(CancellationToken.None);
-		_uncachedChunk.UnCacheFromMemory();
+		await _uncachedChunk.UnCacheFromMemory(CancellationToken.None);
 	}
 
 	[OneTimeTearDown]

@@ -111,7 +111,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		for (int chunkNum = lastChunkToCache - 1; chunkNum >= 0;) {
 			var chunk = _chunks[chunkNum];
 			if (chunk.IsReadOnly)
-				chunk.UnCacheFromMemory();
+				await chunk.UnCacheFromMemory(token);
 			chunkNum = chunk.ChunkHeader.ChunkStartNumber - 1;
 		}
 
