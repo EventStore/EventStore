@@ -9,15 +9,14 @@ using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.Configuration.Sources;
 
-public class EventStoreCommandLineConfigurationSource : IConfigurationSource {
-	public EventStoreCommandLineConfigurationSource(string[] args) {
-		Args = args.Select(NormalizeKeys).Select(NormalizeBooleans);
+public class KurrentDBCommandLineConfigurationSource : IConfigurationSource {
+	public KurrentDBCommandLineConfigurationSource(string[] args) {
+		Args = args.Select(NormalizeKeys).Select((x, i) => NormalizeBooleans(args, x, i));
+	}
 
-		return;
+	public static string NormalizeKeys(string x)  => x[0] == '-' && x[1] != '-' ? $"-{x}" : x;
 
-		static string NormalizeKeys(string x) => x[0] == '-' && x[1] != '-' ? $"-{x}" : x;
-
-		string NormalizeBooleans(string x, int i) {
+	public static string NormalizeBooleans(string[] args, string x, int i) {
 			if (!x.StartsWith("--"))
 				return x;
 
@@ -34,11 +33,9 @@ public class EventStoreCommandLineConfigurationSource : IConfigurationSource {
 				return x;
 
 			return $"{x}=true";
-		}
 	}
-
 	private IEnumerable<string> Args { get; set; }
 
 	public IConfigurationProvider Build(IConfigurationBuilder builder) =>
-		new EventStoreCommandLineConfigurationProvider(Args);
+		new KurrentDBCommandLineConfigurationProvider(Args);
 }

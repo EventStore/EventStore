@@ -10,7 +10,7 @@ namespace EventStore.Common.Configuration;
 public class MetricsConfiguration {
 	public static MetricsConfiguration Get(IConfiguration configuration) =>
 		configuration
-			.GetSection("EventStore:Metrics")
+			.GetSection("KurrentDB:Metrics")
 			.Get<MetricsConfiguration>() ?? new();
 
 	public enum StatusTracker {

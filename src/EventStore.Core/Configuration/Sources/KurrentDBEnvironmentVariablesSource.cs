@@ -3,11 +3,12 @@
 
 #nullable enable
 
+using System.Collections;
 using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Core.Configuration.Sources;
 
-public static class EventStoreCommandLineConfigurationExtensions {
-	public static IConfigurationBuilder AddEventStoreCommandLine(this IConfigurationBuilder builder, params string[] args) =>
-		builder.Add(new EventStoreCommandLineConfigurationSource(args));
+public class KurrentDBEnvironmentVariablesSource(IDictionary? environment = null) : IConfigurationSource {
+	public IConfigurationProvider Build(IConfigurationBuilder builder) =>
+		new KurrentDBEnvironmentVariablesConfigurationProvider(environment);
 }

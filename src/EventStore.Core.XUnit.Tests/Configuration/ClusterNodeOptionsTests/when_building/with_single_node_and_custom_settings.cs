@@ -186,8 +186,8 @@ public class
 	[Test]
 	public void should_return_error_when_default_password_options_pass_through_command_line() {
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
-			.AddEventStoreCommandLine(
+			.AddKurrentDefaultValues()
+			.AddKurrentCommandLine(
 				"--DefaultAdminPassword=Admin#",
 				"--DefaultOpsPassword=Ops#")
 			.Build();
@@ -201,13 +201,14 @@ public class
 
 	[Test]
 	public void should_return_null_when_default_password_options_pass_through_environment_variables() {
+		var prefix = KurrentConfigurationKeys.Prefix.ToUpper();
 		var configuration = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues()
-			.AddEventStoreEnvironmentVariables(
-				("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#"),
-				("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#")
+			.AddKurrentDefaultValues()
+			.AddKurrentEnvironmentVariables(
+				($"{prefix}_DEFAULT_ADMIN_PASSWORD", "Admin#"),
+				($"{prefix}_DEFAULT_OPS_PASSWORD", "Ops#")
 			)
-			.AddEventStoreCommandLine()
+			.AddKurrentCommandLine()
 			.Build();
 
 		var options = ClusterVNodeOptions.FromConfiguration(configuration);
@@ -219,16 +220,17 @@ public class
 
 	[Test]
 	public void ignores_subsection_arguments() {
+		var prefix = KurrentConfigurationKeys.Prefix;
 		var configuration = new ConfigurationBuilder()
 			// we should be able to stop doing this soon as long as we bind the options automatically
-			.AddEventStoreDefaultValues()
-			.AddEventStoreEnvironmentVariables(
-				("EVENTSTORE__METRICS__X", "xxx"),
-				("EVENTSTORE__PLUGINS__Y", "yyy")
+			.AddKurrentDefaultValues()
+			.AddKurrentEnvironmentVariables(
+				($"{prefix.ToUpper()}__METRICS__X", "xxx"),
+				($"{prefix.ToUpper()}__PLUGINS__Y", "yyy")
 			)
-			.AddEventStoreCommandLine(
-				"--EventStore:Metrics:A aaa " +
-				"--EventStore:Plugins:B bbb"
+			.AddKurrentCommandLine(
+				$"--{prefix}:Metrics:A aaa " +
+				$"--{prefix}:Plugins:B bbb"
 			)
 			.Build();
 

@@ -151,7 +151,7 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 				// limitation: the LoadedOptions here will only reflect the defaults and not the rest
 				// of the config specified above. however we only use it for /info/options
 				LoadedOptions = ClusterVNodeOptions.GetLoadedOptions(new ConfigurationBuilder()
-					.AddEventStoreDefaultValues()
+					.AddKurrentDefaultValues()
 					.Build()),
 			}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 				ssl_connections.GetServerCertificate())
@@ -161,12 +161,12 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 
 		var inMemConf = new ConfigurationBuilder()
 			.AddInMemoryCollection(new KeyValuePair<string, string>[] {
-				new("EventStore:TcpPlugin:NodeTcpPort", extTcpPort.ToString()),
-				new("EventStore:TcpPlugin:EnableExternalTcp", "true"),
-				new("EventStore:TcpUnitTestPlugin:NodeTcpPort", extTcpPort.ToString()),
-				new("EventStore:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
-				new("EventStore:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
-				new("EventStore:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpPlugin:NodeTcpPort", extTcpPort.ToString()),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpPlugin:EnableExternalTcp", "true"),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeTcpPort", extTcpPort.ToString()),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeHeartbeatInterval", "10000"),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:NodeHeartbeatTimeout", "10000"),
+				new($"{KurrentConfigurationKeys.Prefix}:TcpUnitTestPlugin:Insecure", options.Application.Insecure.ToString()),
 			}).Build();
 
 		if (advertisedExtHostAddress != null)

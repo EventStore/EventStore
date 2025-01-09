@@ -59,6 +59,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Caching;
 using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Services.Archive;
 using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage;
@@ -270,7 +271,7 @@ public class ClusterVNode<TStreamId> :
 
 		var disableInternalTcpTls = options.Application.Insecure;
 		var disableExternalTcpTls = options.Application.Insecure;
-		var nodeTcpOptions = configuration.GetSection("EventStore:TcpPlugin").Get<NodeTcpOptions>() ?? new();
+		var nodeTcpOptions = configuration.GetSection($"{KurrentConfigurationKeys.Prefix}:TcpPlugin").Get<NodeTcpOptions>() ?? new();
 		var enableExternalTcp = nodeTcpOptions.EnableExternalTcp;
 
 		var httpEndPoint = new IPEndPoint(options.Interface.NodeIp, options.Interface.NodePort);
@@ -1990,14 +1991,15 @@ public class ClusterVNode<TStreamId> :
 	}
 
 	private static void LogPluginSubsectionWarnings(IConfiguration configuration) {
-		var pluginSubsectionOptions = configuration.GetSection("EventStore:Plugins").AsEnumerable().ToList();
+		var pluginSubsectionOptions = configuration.GetSection($"{KurrentConfigurationKeys.Prefix}:Plugins").AsEnumerable().ToList();
 		if (pluginSubsectionOptions.Count <= 1)
 			return;
 
 		Log.Warning(
 			"The \"Plugins\" configuration subsection has been removed. " +
 			"The following settings will be ignored. " +
-			"Please move them out of the \"Plugins\" subsection and directly into the \"EventStore\" root.");
+			"Please move them out of the \"Plugins\" subsection and " +
+			$"directly into the \"{KurrentConfigurationKeys.Prefix}\" root.");
 
 		foreach (var kvp in pluginSubsectionOptions) {
 			if (kvp.Value is not null)

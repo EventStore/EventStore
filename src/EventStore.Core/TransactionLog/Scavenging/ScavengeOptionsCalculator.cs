@@ -3,6 +3,7 @@
 
 #nullable enable
 
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Archive;
 using Microsoft.Extensions.Configuration;
@@ -23,7 +24,7 @@ public class ScavengeOptionsCalculator {
 		_message = message;
 
 		var archiveOptions = vNodeOptions.ConfigurationRoot?
-			.GetSection("EventStore:Archive")
+			.GetSection($"{KurrentConfigurationKeys.Prefix}:Archive")
 			.Get<ArchiveOptions>() ?? new();
 
 		_archiveEnabled = archiveOptions.Enabled;

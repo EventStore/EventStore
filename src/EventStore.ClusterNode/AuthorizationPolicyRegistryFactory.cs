@@ -10,6 +10,7 @@ using EventStore.Common.Exceptions;
 using EventStore.Core;
 using EventStore.Core.Authorization.AuthorizationPolicies;
 using EventStore.Core.Bus;
+using EventStore.Core.Configuration.Sources;
 using EventStore.PluginHosting;
 using EventStore.Plugins;
 using EventStore.Plugins.Subsystems;
@@ -49,7 +50,7 @@ public class AuthorizationPolicyRegistryFactory: SubsystemsPlugin {
 
 		// Check if there is a default policy type. Use this if the settings stream is empty
 		var defaultPolicyType =
-			configuration.GetValue<string>("EventStore:Authorization:DefaultPolicyType") ?? string.Empty;
+			configuration.GetValue<string>($"{KurrentConfigurationKeys.Prefix}:Authorization:DefaultPolicyType") ?? string.Empty;
 		AuthorizationPolicySettings defaultSettings;
 		if (!string.IsNullOrEmpty(defaultPolicyType)) {
 			if (_pluginSelectorFactories.Any(x => x.CommandLineName == defaultPolicyType)) {

@@ -68,7 +68,7 @@ public class EventStoreLoggerConfiguration {
 		}
 
 		var configurationRoot = new ConfigurationBuilder()
-			.AddEsdbConfigFile(logConfig, reloadOnChange: true)
+			.AddKurrentConfigFile(logConfig, reloadOnChange: true)
 			.Build();
 
 		Serilog.Debugging.SelfLog.Enable(ConsoleLog.Information);

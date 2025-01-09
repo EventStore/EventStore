@@ -8,19 +8,18 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.Configuration;
+namespace EventStore.Core.XUnit.Tests.Configuration.Sources.Legacy;
 
-public class KurrentDbEnvironmentVariablesSourceTests {
+public class EnvironmentVariablesSourceTests {
 	[Theory]
-	[InlineData("KURRENTDB_STREAM_INFO_CACHE_CAPACITY", "KurrentDB:StreamInfoCacheCapacity")]
-	[InlineData("KURRENTDB__STREAM_INFO_CACHE_CAPACITY", "KurrentDB:StreamInfoCacheCapacity")]
-	public void AddsKurrentEnvVars(string key, string normalizedKey) {
+	[InlineData("EVENTSTORE_STREAM_INFO_CACHE_CAPACITY", "KurrentDB:StreamInfoCacheCapacity")]
+	public void TransformsEventStoreEnvVars(string key, string normalizedKey) {
 		// Arrange
 		var environment = new Dictionary<string, string> { { key, key } };
 
 		// Act
 		var configuration = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(environment)
+			.AddLegacyEventStoreEnvironmentVariables(environment)
 			.Build();
 
 		// Assert
@@ -33,15 +32,15 @@ public class KurrentDbEnvironmentVariablesSourceTests {
 	[Theory]
 	[InlineData("StreamInfoCacheCapacity")]
 	[InlineData("stream-info-cache-capacity")]
-	[InlineData("KurrentDB:Cluster:StreamInfoCacheCapacity")]
-	[InlineData("UNSUPPORTED_KURRENTDB_TCP_API_ENABLED")]
+	[InlineData("EventStore:Cluster:StreamInfoCacheCapacity")]
+	[InlineData("UNSUPPORTED_EVENTSTORE_TCP_API_ENABLED")]
 	public void IgnoresOtherEnvVars(string key) {
 		// Arrange
 		var environment = new Dictionary<string, string> { { key, key } };
 
 		// Act
 		var configuration = new ConfigurationBuilder()
-			.AddKurrentEnvironmentVariables(environment)
+			.AddLegacyEventStoreEnvironmentVariables(environment)
 			.Build();
 
 		// Assert

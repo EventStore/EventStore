@@ -10,7 +10,7 @@ using static System.StringComparer;
 
 namespace EventStore.Core.Configuration.Sources;
 
-public class EventStoreCommandLineConfigurationProvider(IEnumerable<string> args)
+public class KurrentDBCommandLineConfigurationProvider(IEnumerable<string> args)
 	: CommandLineConfigurationProvider(args) {
 
 	public override void Load() {
@@ -18,7 +18,7 @@ public class EventStoreCommandLineConfigurationProvider(IEnumerable<string> args
 
 		Data = Data.Keys
 			.ToDictionary(
-				EventStoreConfigurationKeys.Normalize,
+				KurrentConfigurationKeys.Normalize,
 				x => Data[x], OrdinalIgnoreCase
 			);
 	}

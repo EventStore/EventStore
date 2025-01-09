@@ -8,7 +8,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
@@ -60,7 +59,7 @@ public partial record ClusterVNodeOptions {
 	public bool UnknownOptionsDetected => Unknown.Options.Any();
 
 	public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
-		var configuration = configurationRoot.GetRequiredSection("EventStore");
+		var configuration = configurationRoot.GetRequiredSection(KurrentConfigurationKeys.Prefix);
 
 		// required because of a bug in the configuration system that
 		// is not reading the attribute from the property itself
@@ -119,8 +118,7 @@ public partial record ClusterVNodeOptions {
 		[Description("Show version.")] public bool Version { get; init; } = false;
 
 		[Description("Configuration files.")]
-		public string Config { get; init; } =
-			Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile);
+		public string Config { get; init; } = DefaultFiles.DefaultConfigPath;
 
 		[Description("Print effective configuration to console and then exit.")]
 		public bool WhatIf { get; init; } = false;
@@ -612,8 +610,8 @@ public partial record ClusterVNodeOptions {
 				var unknownKeys = configuration
 					.AsEnumerable()
 					.Select(kvp => kvp.Key)
-					.Where(key => key != EventStoreConfigurationKeys.Prefix
-					              && !knownKeys.Contains(EventStoreConfigurationKeys.Normalize(key)))
+					.Where(key => key != KurrentConfigurationKeys.Prefix
+					              && !knownKeys.Contains(KurrentConfigurationKeys.Normalize(key)))
 					.ToList();
 
 				var unknownSections = FindUnknownSections(unknownKeys);
@@ -641,10 +639,10 @@ public partial record ClusterVNodeOptions {
 					.MinBy(x => x.Distance);
 
 				return (
-					UnknownKey: EventStoreConfigurationKeys.StripConfigurationPrefix(unknownKey),
+					UnknownKey: KurrentConfigurationKeys.StripConfigurationPrefix(unknownKey),
 					SuggestedKey: suggestion.Distance > distanceThreshold
 						? ""
-						: EventStoreConfigurationKeys.StripConfigurationPrefix(suggestion.AllowedKey)
+						: KurrentConfigurationKeys.StripConfigurationPrefix(suggestion.AllowedKey)
 				);
 			}
 		}

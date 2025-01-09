@@ -240,11 +240,11 @@ public class with_cluster_custom_settings_check_for_environment_only_options<TLo
 		};
 
 		_configurationRoot = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues(new Dictionary<string, object> {
+			.AddKurrentDefaultValues(new Dictionary<string, object> {
 				[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
 				[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
 			})
-			.AddEventStoreCommandLine(args)
+			.AddKurrentCommandLine(args)
 			.Build();
 
 		var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);
@@ -254,18 +254,19 @@ public class with_cluster_custom_settings_check_for_environment_only_options<TLo
 
 	[Test]
 	public void should_return_null_when_default_password_options_pass_through_environment_variables() {
+		var prefix = KurrentConfigurationKeys.Prefix.ToUpper();
 		var args = Array.Empty<string>();
 		IDictionary environmentVariables = new Dictionary<string, string>();
-		environmentVariables.Add("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#");
-		environmentVariables.Add("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#");
+		environmentVariables.Add($"{prefix}_DEFAULT_ADMIN_PASSWORD", "Admin#");
+		environmentVariables.Add($"{prefix}_DEFAULT_OPS_PASSWORD", "Ops#");
 
 		_configurationRoot = new ConfigurationBuilder()
-			.AddEventStoreDefaultValues(new Dictionary<string, object> {
+			.AddKurrentDefaultValues(new Dictionary<string, object> {
 				[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
 				[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
 			})
-			.AddEventStoreCommandLine(args)
-			.AddEventStoreEnvironmentVariables(environmentVariables)
+			.AddKurrentCommandLine(args)
+			.AddKurrentEnvironmentVariables(environmentVariables)
 			.Build();
 
 		var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);
