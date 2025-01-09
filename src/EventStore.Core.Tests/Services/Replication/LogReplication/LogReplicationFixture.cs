@@ -489,8 +489,8 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 			var replicaChunk = _replicaInfo.Db.Manager.GetChunk(chunkNum);
 
 			VerifyHeader(leaderChunk.ChunkHeader, replicaChunk.ChunkHeader);
-			var leaderData = ReadChunkData(leaderChunk.FileName, excludeChecksum: leaderChunk.ChunkFooter != null);
-			var replicaData = ReadChunkData(replicaChunk.FileName, excludeChecksum: replicaChunk.ChunkFooter != null);
+			var leaderData = ReadChunkData(leaderChunk.LocalFileName, excludeChecksum: leaderChunk.ChunkFooter != null);
+			var replicaData = ReadChunkData(replicaChunk.LocalFileName, excludeChecksum: replicaChunk.ChunkFooter != null);
 			Assert.True(leaderData.SequenceEqual(replicaData));
 
 			chunkNum = leaderChunk.ChunkHeader.ChunkEndNumber + 1;
@@ -499,7 +499,7 @@ public abstract class LogReplicationFixture<TLogFormat, TStreamId> : Specificati
 		if (atChunkBoundary) {
 			// verify that the chunk data is empty on the leader
 			var leaderChunk = _leaderInfo.Db.Manager.GetChunk(expectedLogicalChunks);
-			var leaderData = ReadChunkData(leaderChunk.FileName, excludeChecksum: false);
+			var leaderData = ReadChunkData(leaderChunk.LocalFileName, excludeChecksum: false);
 			Assert.True(leaderData.SequenceEqual(new byte[leaderData.Length]));
 		}
 	}

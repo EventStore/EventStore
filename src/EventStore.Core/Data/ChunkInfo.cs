@@ -4,7 +4,7 @@
 namespace EventStore.Core.Data;
 
 public record ChunkInfo {
-	public string ChunkFileName;
+	public string ChunkLocator;
 	public int ChunkStartNumber;
 	public int ChunkEndNumber;
 	public long ChunkStartPosition;
