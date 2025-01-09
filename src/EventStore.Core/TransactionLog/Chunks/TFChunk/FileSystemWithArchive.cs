@@ -85,7 +85,7 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 				switch (chunkInfo) {
 					// replace missing local versions with latest from archive if they
 					// are present there
-					case MissingVersion(_, int chunkNumber) when (chunkNumber < firstChunkNotInArchive): {
+					case MissingVersion(_, var chunkNumber) when (chunkNumber < firstChunkNotInArchive): {
 						yield return CreateLatestVersionInArchive(chunkNumber);
 						break;
 					}

@@ -4,10 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext.Threading;
 using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
