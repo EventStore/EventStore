@@ -23,7 +23,7 @@ public class TracingChunkWriterForExecutor<TStreamId, TRecord> :
 		_tracer = tracer;
 	}
 
-	public string FileName => _wrapped.FileName;
+	public string LocalFileName => _wrapped.LocalFileName;
 
 	public ValueTask WriteRecord(RecordForExecutor<TStreamId, TRecord> record, CancellationToken token)
 		=> _wrapped.WriteRecord(record, token);

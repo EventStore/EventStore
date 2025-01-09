@@ -768,7 +768,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 
 			transformFactory.CreateTransformHeader(transformHeader);
 			var newChunk = await TFChunk.CreateWithHeader(
-				filename: $"{chunk.FileName}.tmp",
+				filename: $"{chunk.LocalFileName}.tmp",
 				header: newChunkHeader,
 				fileSize: ChunkHeader.Size,
 				inMem: false,

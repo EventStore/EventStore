@@ -42,7 +42,7 @@ public class ArchiverServiceTests {
 			ChunkStartPosition = (long) chunkStartNumber * ChunkSize,
 			ChunkEndPosition = (long) (chunkEndNumber + 1) * ChunkSize,
 			IsCompleted = complete,
-			ChunkFileName = $"{chunkStartNumber}-{chunkEndNumber}"
+			ChunkLocator = $"{chunkStartNumber}-{chunkEndNumber}"
 		};
 	}
 

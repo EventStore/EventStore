@@ -245,15 +245,18 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			TriggerBackgroundCaching();
 	}
 
+	// Switches the specified chunk in.
+	// Switches other chunks out as appropriate.
+	// The specified chunk is at a temp path, part of switching it in involves renaming it to the appropriate version.
 	public async ValueTask<TFChunk.TFChunk> SwitchChunk(TFChunk.TFChunk chunk, bool verifyHash,
 		bool removeChunksWithGreaterNumbers,
 		CancellationToken token) {
 		Ensure.NotNull(chunk, "chunk");
 		if (!chunk.IsReadOnly)
-			throw new ArgumentException(string.Format("Passed TFChunk is not completed: {0}.", chunk.FileName));
+			throw new ArgumentException(string.Format("Passed TFChunk is not completed: {0}.", chunk.ChunkLocator));
 
 		var chunkHeader = chunk.ChunkHeader;
-		var oldFileName = chunk.FileName;
+		var oldFileName = chunk.LocalFileName;
 
 		Log.Information("Switching chunk #{chunkStartNumber}-{chunkEndNumber} ({oldFileName})...",
 			chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, Path.GetFileName(oldFileName));
@@ -270,6 +273,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 					string.Format("The chunk that is being switched {0} is used by someone else.", chunk), exc);
 			}
 
+			// calculate the appropriate chunk version and move the chunk to the right filename.
 			var newFileName =
 				FileSystem.NamingStrategy.DetermineNewVersionFilenameForIndex(chunkHeader.ChunkStartNumber, defaultVersion: 1);
 			Log.Information("File {oldFileName} will be moved to file {newFileName}", Path.GetFileName(oldFileName),
@@ -287,6 +291,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 				_config.ReduceFileCachePressure, token: token);
 		}
 
+		// update the chunks array
 		bool triggerCaching;
 		await _chunksLocker.AcquireAsync(token);
 		try {
