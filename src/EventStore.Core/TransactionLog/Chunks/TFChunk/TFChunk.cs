@@ -202,7 +202,7 @@ public partial class TFChunk : IDisposable {
 	}
 
 	// local or remote
-	public static async ValueTask<TFChunk> FromCompletedFile(IChunkFileSystem fileSystem, string filename, bool verifyHash, bool unbufferedRead,
+	public static async ValueTask<TFChunk> FromCompletedFile(IBlobFileSystem fileSystem, string filename, bool verifyHash, bool unbufferedRead,
 		ITransactionFileTracker tracker, Func<TransformType, IChunkTransformFactory> getTransformFactory,
 		bool reduceFileCachePressure = false, CancellationToken token = default) {
 
@@ -296,7 +296,7 @@ public partial class TFChunk : IDisposable {
 		return chunk;
 	}
 
-	private async ValueTask InitCompleted(IChunkFileSystem fileSystem, bool verifyHash, ITransactionFileTracker tracker,
+	private async ValueTask InitCompleted(IBlobFileSystem fileSystem, bool verifyHash, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
 		_handle = await fileSystem.OpenForReadAsync(_filename, _reduceFileCachePressure, token);
 		_fileSize = (int)_handle.Length;
