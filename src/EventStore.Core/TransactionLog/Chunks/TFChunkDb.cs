@@ -130,6 +130,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 							token: token);
 					else {
 						chunk = await TFChunk.TFChunk.FromOngoingFile(
+							Manager.FileSystem,
 							filename: chunkInfo.ChunkFileName,
 							writePosition: Config.ChunkSize,
 							unbuffered: Config.Unbuffered,
@@ -217,6 +218,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 				}
 			} else {
 				var lastChunk = await TFChunk.TFChunk.FromOngoingFile(
+					Manager.FileSystem,
 					filename: chunkFileName,
 					writePosition: (int)chunkLocalPos,
 					unbuffered: Config.Unbuffered,

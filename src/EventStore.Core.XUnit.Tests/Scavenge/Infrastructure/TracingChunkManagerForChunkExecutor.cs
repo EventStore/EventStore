@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
@@ -24,6 +25,8 @@ public class TracingChunkManagerForChunkExecutor<TStreamId, TRecord> :
 		_remoteChunks = remoteChunks;
 		_tracer = tracer;
 	}
+
+	public IChunkFileSystem FileSystem => _wrapped.FileSystem;
 
 	public async ValueTask<IChunkWriterForExecutor<TStreamId, TRecord>> CreateChunkWriter(
 		IChunkReaderForExecutor<TStreamId, TRecord> sourceChunk,

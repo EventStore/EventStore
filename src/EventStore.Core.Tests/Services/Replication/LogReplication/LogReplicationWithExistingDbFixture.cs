@@ -46,6 +46,7 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 			transformType: TransformType.Identity);
 
 		var chunk = await TFChunk.CreateWithHeader(
+			db.Manager.FileSystem,
 			filename: filename,
 			header: header,
 			fileSize: TFChunk.GetAlignedSize(db.Config.ChunkSize + ChunkHeader.Size + ChunkFooter.Size),

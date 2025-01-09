@@ -4,10 +4,13 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 public interface IChunkManagerForChunkExecutor<TStreamId, TRecord> {
+	IChunkFileSystem FileSystem { get; }
+
 	ValueTask<IChunkWriterForExecutor<TStreamId, TRecord>> CreateChunkWriter(
 		IChunkReaderForExecutor<TStreamId, TRecord> sourceChunk,
 		CancellationToken token);

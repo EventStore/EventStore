@@ -68,7 +68,7 @@ public static class TFChunkHelper {
 	}
 
 	public static ValueTask<TFChunk> CreateNewChunk(string fileName, int chunkSize = 4096, bool isScavenged = false, CancellationToken token = default) {
-		return TFChunk.CreateNew(fileName, chunkSize, 0, 0,
+		return TFChunk.CreateNew(new ChunkLocalFileSystem(path: ""), fileName, chunkSize, 0, 0,
 			isScavenged: isScavenged, inMem: false, unbuffered: false,
 			writethrough: false, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
 			transformFactory: new IdentityChunkTransformFactory(),
