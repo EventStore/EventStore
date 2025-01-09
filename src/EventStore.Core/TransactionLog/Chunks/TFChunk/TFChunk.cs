@@ -1315,7 +1315,7 @@ public partial class TFChunk : IDisposable {
 				token);
 		}
 
-		return new PoolingBufferedStream(handle.CreateStream(leaveOpen: false)) { MaxBufferSize = 65535 };
+		return new PoolingBufferedStream(handle.CreateStream(leaveOpen: false)) { MaxBufferSize = 65536 };
 	}
 
 	// tries to acquire a bulk reader over a memstream but
