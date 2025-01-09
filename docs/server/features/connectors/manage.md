@@ -142,7 +142,7 @@ $JSON = @"
   "state": ["CONNECTOR_STATE_STOPPED", "CONNECTOR_STATE_RUNNING"],
   "instanceTypeName": ["logger-sink"],
   "connectorId": ["logger-sink"],
-  "includeSettings": "true",
+  "includeSettings": true,
   "paging": {
       "page": 1,
       "pageSize": 100
