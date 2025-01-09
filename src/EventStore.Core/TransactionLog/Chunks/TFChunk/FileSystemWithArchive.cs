@@ -63,14 +63,8 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 		return new ChunkEnumerableWithArchive(this);
 	}
 
-	class ChunkEnumerableWithArchive : IChunkFileSystem.IChunkEnumerable {
-		private readonly FileSystemWithArchive _fileSystem;
-		private readonly IChunkFileSystem.IChunkEnumerable _localChunks;
-
-		public ChunkEnumerableWithArchive(FileSystemWithArchive fileSystem) {
-			_fileSystem = fileSystem;
-			_localChunks = fileSystem._localFileSystem.GetChunks();
-		}
+	sealed class ChunkEnumerableWithArchive(FileSystemWithArchive fileSystem) : IChunkFileSystem.IChunkEnumerable {
+		private readonly IChunkFileSystem.IChunkEnumerable _localChunks = fileSystem.GetChunks();
 
 		public int LastChunkNumber {
 			get => _localChunks.LastChunkNumber;
@@ -78,8 +72,8 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 		}
 
 		public async IAsyncEnumerator<TFChunkInfo> GetAsyncEnumerator(CancellationToken token = default) {
-			var archiveCheckpoint = await _fileSystem._archive.GetCheckpoint(token);
-			var firstChunkNotInArchive = (int)(archiveCheckpoint / _fileSystem._chunkSize);
+			var archiveCheckpoint = await fileSystem._archive.GetCheckpoint(token);
+			var firstChunkNotInArchive = (int)(archiveCheckpoint / fileSystem._chunkSize);
 
 			await foreach (var chunkInfo in _localChunks.WithCancellation(token)) {
 				switch (chunkInfo) {
@@ -98,8 +92,8 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 		}
 
 		LatestVersion CreateLatestVersionInArchive(int chunkNumber) {
-			var archiveObjectName = _fileSystem._archive.ChunkNamer.GetFileNameFor(chunkNumber);
-			var fileName = _fileSystem._locatorCodec.EncodeRemoteName(archiveObjectName);
+			var archiveObjectName = fileSystem._archive.ChunkNamer.GetFileNameFor(chunkNumber);
+			var fileName = fileSystem._locatorCodec.EncodeRemoteName(archiveObjectName);
 			return new LatestVersion(fileName, chunkNumber, chunkNumber);
 		}
 	}
