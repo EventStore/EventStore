@@ -22,15 +22,15 @@ public class when_destroying_a_tfchunk_that_is_locked : SpecificationWithFile {
 		await _chunk.Complete(CancellationToken.None);
 		_chunk.UnCacheFromMemory();
 		_reader = _chunk.AcquireRawReader();
-		_chunk.MarkForDeletion();
+		await _chunk.MarkForDeletion(CancellationToken.None);
 	}
 
 	[TearDown]
-	public override void TearDown() {
+	public override async Task TearDown() {
 		_reader.Release();
-		_chunk.MarkForDeletion();
+		await _chunk.MarkForDeletion(CancellationToken.None);
 		_chunk.WaitForDestroy(2000);
-		base.TearDown();
+		await base.TearDown();
 	}
 
 	[Test]

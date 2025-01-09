@@ -19,8 +19,15 @@ public class SpecificationWithFile {
 	}
 
 	[TearDown]
-	public virtual void TearDown() {
-		if (File.Exists(Filename))
-			File.Delete(Filename);
+	public virtual Task TearDown() {
+		var task = Task.CompletedTask;
+		try {
+			if (File.Exists(Filename))
+				File.Delete(Filename);
+		} catch (Exception e) {
+			task = Task.FromException(e);
+		}
+
+		return task;
 	}
 }

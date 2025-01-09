@@ -13,7 +13,7 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 	public async Task the_file_will_not_be_deleted_until_reader_released() {
 		var chunk = await TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
 		using (var reader = chunk.AcquireRawReader()) {
-			chunk.MarkForDeletion();
+			await chunk.MarkForDeletion(CancellationToken.None);
 			var buffer = new byte[1024];
 			var result = await reader.ReadNextBytes(buffer, CancellationToken.None);
 			Assert.IsFalse(result.IsEOF);
@@ -33,7 +33,7 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 			Assert.AreEqual(1024, result.BytesRead);
 		}
 
-		chunk.MarkForDeletion();
+		await chunk.MarkForDeletion(CancellationToken.None);
 		chunk.WaitForDestroy(5000);
 	}
 /*
@@ -80,7 +80,7 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 			Assert.AreEqual(1024, result.BytesRead);
 		}
 
-		chunk.MarkForDeletion();
+		await chunk.MarkForDeletion(CancellationToken.None);
 		chunk.WaitForDestroy(5000);
 	}
 
@@ -94,7 +94,7 @@ public class when_reading_physical_bytes_bulk_from_a_chunk : SpecificationWithDi
 			Assert.AreEqual(4096, result.BytesRead); //does not includes header and footer space
 		}
 
-		chunk.MarkForDeletion();
+		await chunk.MarkForDeletion(CancellationToken.None);
 		chunk.WaitForDestroy(5000);
 	}
 }

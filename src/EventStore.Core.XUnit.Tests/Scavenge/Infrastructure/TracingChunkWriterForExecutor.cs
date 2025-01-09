@@ -35,7 +35,6 @@ public class TracingChunkWriterForExecutor<TStreamId, TRecord> :
 		return result;
 	}
 
-	public void Abort(bool deleteImmediately) {
-		_wrapped.Abort(deleteImmediately);
-	}
+	public ValueTask Abort(bool deleteImmediately, CancellationToken token)
+		=> _wrapped.Abort(deleteImmediately, token);
 }
