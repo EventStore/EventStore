@@ -11,19 +11,26 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
 public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
+	protected const string AwsCliProfileName = "default";
+	protected const string AwsRegion = "eu-west-1";
+	protected const string AwsBucket = "archiver-unit-tests";
+
 	protected const string ChunkPrefix = "chunk-";
 	protected string ArchivePath => Path.Combine(Fixture.Directory, "archive");
 	protected string DbPath => Path.Combine(Fixture.Directory, "db");
-	protected abstract StorageType StorageType { get; }
+	protected readonly IArchiveChunkNameResolver NameResolver;
 
 	public ArchiveStorageTestsBase() {
 		Directory.CreateDirectory(ArchivePath);
 		Directory.CreateDirectory(DbPath);
+
+		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
+		NameResolver  = new ArchiveChunkNameResolver(namingStrategy);
 	}
 
 	protected IArchiveStorageFactory CreateSutFactory(StorageType storageType) {
-		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
-		var chunkNameResolver = new ArchiveChunkNameResolver(namingStrategy);
+
+
 		var factory = new ArchiveStorageFactory(
 				new() {
 					StorageType = storageType,
@@ -31,12 +38,12 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 						Path = ArchivePath
 					},
 					S3 = new() {
-						AwsCliProfileName = "default",
-						Bucket = "archiver-unit-tests",
-						Region = "eu-west-1",
+						AwsCliProfileName = AwsCliProfileName,
+						Bucket = AwsBucket,
+						Region = AwsRegion,
 					}
 				},
-				chunkNameResolver);
+				NameResolver);
 		return factory;
 	}
 
