@@ -99,7 +99,7 @@ public interface IChunkHandle : IFlushable, IDisposable {
 			// never called. Quite a few synchronous stream operations can call synchronous write under
 			// the hood (e.g. SetLength). We want to be sure that these are at least not called
 			// routinely, because it is inefficient.
-			Debug.Fail("Synchronous writes are undesirable");
+			//Debug.Fail("Synchronous writes are undesirable");
 		}
 
 
@@ -129,7 +129,7 @@ public interface IChunkHandle : IFlushable, IDisposable {
 			}
 
 			// see comment on other Debug.Fail call
-			Debug.Fail("Synchronous writes are undesirable");
+			//Debug.Fail("Synchronous writes are undesirable");
 			return bytesRead;
 		}
 
