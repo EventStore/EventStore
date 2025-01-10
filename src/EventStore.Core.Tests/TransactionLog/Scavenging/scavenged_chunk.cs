@@ -18,7 +18,7 @@ public class scavenged_chunk : SpecificationWithFile {
 	[Test]
 	public async Task is_fully_resident_in_memory_when_cached() {
 		var map = new List<PosMap>();
-		var chunk = await TFChunk.CreateNew(Filename, 1024 * 1024, 0, 0, true, false, false, false,
+		var chunk = await TFChunk.CreateNew(new ChunkLocalFileSystem(path: ""), Filename, 1024 * 1024, 0, 0, true, false, false, false,
 			false,
 			new TFChunkTracker.NoOp(),
 			new IdentityChunkTransformFactory(),

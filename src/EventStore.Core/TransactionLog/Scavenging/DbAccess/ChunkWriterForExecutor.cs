@@ -50,6 +50,7 @@ public class ChunkWriterForExecutor<TStreamId> : IChunkWriterForExecutor<TStream
 
 		// from TFChunkScavenger.ScavengeChunk
 		var chunk = await TFChunk.CreateNew(
+			manager.FileSystem,
 			filename: Path.Combine(dbConfig.Path, Guid.NewGuid() + ".scavenge.tmp"),
 			chunkDataSize: dbConfig.ChunkSize,
 			chunkStartNumber: sourceChunk.ChunkStartNumber,

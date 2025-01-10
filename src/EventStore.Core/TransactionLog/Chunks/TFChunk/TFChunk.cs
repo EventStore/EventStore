@@ -224,7 +224,7 @@ public partial class TFChunk : IDisposable {
 			fileSystem);
 
 		try {
-			await chunk.InitCompleted(fileSystem, verifyHash, tracker, getTransformFactory, token);
+			await chunk.InitCompleted(verifyHash, tracker, getTransformFactory, token);
 		} catch {
 			chunk.Dispose();
 			throw;
@@ -234,7 +234,7 @@ public partial class TFChunk : IDisposable {
 	}
 
 	// always local
-	public static async ValueTask<TFChunk> FromOngoingFile(string filename, int writePosition, bool unbuffered,
+	public static async ValueTask<TFChunk> FromOngoingFile(IBlobFileSystem fileSystem, string filename, int writePosition, bool unbuffered,
 		bool writethrough, bool reduceFileCachePressure, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory,
 		CancellationToken token) {
@@ -244,7 +244,7 @@ public partial class TFChunk : IDisposable {
 			unbuffered,
 			writethrough,
 			reduceFileCachePressure,
-			fileSystem: null);
+			fileSystem: fileSystem);
 		try {
 			await chunk.InitOngoing(writePosition, tracker, getTransformFactory, token);
 		} catch {
@@ -256,7 +256,9 @@ public partial class TFChunk : IDisposable {
 	}
 
 	// always local
-	public static async ValueTask<TFChunk> CreateNew(string filename,
+	public static async ValueTask<TFChunk> CreateNew(
+		IBlobFileSystem fileSystem,
+		string filename,
 		int chunkDataSize,
 		int chunkStartNumber,
 		int chunkEndNumber,
@@ -280,12 +282,14 @@ public partial class TFChunk : IDisposable {
 		var transformHeader = transformFactory.TransformHeaderLength > 0
 			? new byte[transformFactory.TransformHeaderLength]
 			: [];
-		return await CreateWithHeader(filename, chunkHeader, fileSize, inMem, unbuffered, writethrough,
+		return await CreateWithHeader(fileSystem, filename, chunkHeader, fileSize, inMem, unbuffered, writethrough,
 			reduceFileCachePressure, tracker, transformFactory, transformHeader, token);
 	}
 
 	// local only
-	public static async ValueTask<TFChunk> CreateWithHeader(string filename,
+	public static async ValueTask<TFChunk> CreateWithHeader(
+		IBlobFileSystem fileSystem,
+		string filename,
 		ChunkHeader header,
 		int fileSize,
 		bool inMem,
@@ -302,7 +306,7 @@ public partial class TFChunk : IDisposable {
 			unbuffered,
 			writethrough,
 			reduceFileCachePressure,
-			fileSystem: null);
+			fileSystem: fileSystem);
 		try {
 			await chunk.InitNew(header, fileSize, tracker, transformFactory, transformHeader, token);
 		} catch {
@@ -313,9 +317,9 @@ public partial class TFChunk : IDisposable {
 		return chunk;
 	}
 
-	private async ValueTask InitCompleted(IBlobFileSystem fileSystem, bool verifyHash, ITransactionFileTracker tracker,
+	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
-		_handle = await fileSystem.OpenForReadAsync(
+		_handle = await _fileSystem.OpenForReadAsync(
 			ChunkLocator,
 			_reduceFileCachePressure
 				? IBlobFileSystem.ReadOptimizationHint.None
@@ -1302,25 +1306,17 @@ public partial class TFChunk : IDisposable {
 		new((byte*)_cachedData, length, length, access);
 
 	private async ValueTask<Stream> CreateFileStreamForBulkReader(CancellationToken token) {
-		// TODO: A branch with FileStream is a temporary solution. When the abstract file system starts supporting chunk writes, the branch can be removed
 		if (_inMem)
 			return CreateMemoryStream(_fileSize);
 
-		IChunkHandle handle;
-		if (_fileSystem is null) {
-			var options = new FileStreamOptions {
-				Mode = FileMode.Open,
-				Access = FileAccess.Read,
-				Share = FileShare.ReadWrite,
-				Options = FileOptions.SequentialScan,
-			};
-			handle = new ChunkFileHandle(LocalFileName, options);
-		} else {
-			handle = await _fileSystem.OpenForReadAsync(ChunkLocator, IBlobFileSystem.ReadOptimizationHint.SequentialScan,
-				token);
-		}
+		var handle = await _fileSystem.OpenForReadAsync(
+			ChunkLocator,
+			IBlobFileSystem.ReadOptimizationHint.SequentialScan,
+			token);
 
-		return new PoolingBufferedStream(handle.CreateStream(leaveOpen: false)) { MaxBufferSize = 65536 };
+		return new PoolingBufferedStream(handle.CreateStream(leaveOpen: false)) {
+			MaxBufferSize = 65536
+		};
 	}
 
 	// tries to acquire a bulk reader over a memstream but
