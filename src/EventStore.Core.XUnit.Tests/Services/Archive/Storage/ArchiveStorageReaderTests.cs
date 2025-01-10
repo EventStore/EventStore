@@ -14,8 +14,9 @@ namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
 [Collection("ArchiveStorageTests")]
 public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageReaderTests> {
-	[RemoteStorageTheory]
-	[InlineData(StorageType.S3)]
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
 	public async Task can_read_chunk_entirely(StorageType storageType) {
 		var sut = CreateReaderSut(storageType);
 
@@ -34,8 +35,9 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 		Assert.Equal(localContent, chunkStreamContent);
 	}
 
-	[RemoteStorageTheory]
-	[InlineData(StorageType.S3)]
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
 	public async Task can_read_chunk_partially(StorageType storageType) {
 		var sut = CreateReaderSut(storageType);
 
@@ -56,8 +58,9 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 		Assert.Equal(localContent[start..end], chunkStreamContent);
 	}
 
-	[RemoteStorageTheory]
-	[InlineData(StorageType.S3)]
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
 	public async Task read_missing_chunk_throws_ChunkDeletedException(StorageType storageType) {
 		var sut = CreateReaderSut(storageType);
 
@@ -66,8 +69,9 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 		});
 	}
 
-	[RemoteStorageTheory]
-	[InlineData(StorageType.S3)]
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
 	public async Task partial_read_missing_chunk_throws_ChunkDeletedException(StorageType storageType) {
 		var sut = CreateReaderSut(storageType);
 
@@ -76,8 +80,9 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 		});
 	}
 
-	[RemoteStorageTheory]
-	[InlineData(StorageType.S3)]
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
 	public async Task can_list_chunks(StorageType storageType) {
 		var sut = CreateReaderSut(storageType);
 

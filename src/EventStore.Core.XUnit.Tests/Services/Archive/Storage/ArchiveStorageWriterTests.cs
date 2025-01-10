@@ -14,8 +14,9 @@ namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
 [Collection("ArchiveStorageTests")]
 public abstract class ArchiveStorageWriterTests : ArchiveStorageTestsBase<ArchiveStorageWriterTests> {
-	[RemoteStorageTheory]
-	[InlineData(StorageType.S3)]
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
 	public async Task can_store_a_chunk(StorageType storageType) {
 		var sut = CreateWriterSut(storageType);
 		var localChunk = CreateLocalChunk(0, 0);
@@ -26,8 +27,9 @@ public abstract class ArchiveStorageWriterTests : ArchiveStorageTestsBase<Archiv
 		Assert.Equal(localChunkContent, archivedChunkContent.ToByteArray());
 	}
 
-	[RemoteStorageTheory]
-	[InlineData(StorageType.S3)]
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
 	public async Task throws_chunk_deleted_exception_if_local_chunk_doesnt_exist(StorageType storageType) {
 		var sut = CreateWriterSut(storageType);
 		var localChunk = CreateLocalChunk(0, 0);
@@ -35,8 +37,9 @@ public abstract class ArchiveStorageWriterTests : ArchiveStorageTestsBase<Archiv
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => await sut.StoreChunk(localChunk, 0, CancellationToken.None));
 	}
 
-	[RemoteStorageTheory]
-	[InlineData(StorageType.S3)]
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
 	public async Task can_write_and_read_checkpoint(StorageType storageType) {
 		var checkpoint = Random.Shared.NextInt64();
 		var sut = CreateReaderSut(storageType);
