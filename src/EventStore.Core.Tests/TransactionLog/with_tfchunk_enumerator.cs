@@ -105,15 +105,15 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 	}
 
 	public class FakeArchiveStorageReader(long checkpoint) : IArchiveStorageReader {
-		public IArchiveChunkNamer ChunkNamer { get; } =
-			new ArchiveChunkNamer(new VersionedPatternFileNamingStrategy("", "chunk-"));
+		public IArchiveChunkNameResolver ChunkNameResolver { get; } =
+			new ArchiveChunkNameResolver(new VersionedPatternFileNamingStrategy("", "chunk-"));
 
 		public ValueTask<long> GetCheckpoint(CancellationToken ct) => new(checkpoint);
 
-		public ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) =>
+		public ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct) =>
 			throw new NotImplementedException();
 
-		public ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) =>
+		public ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) =>
 			throw new NotImplementedException();
 
 		public IAsyncEnumerable<string> ListChunks(CancellationToken ct) =>

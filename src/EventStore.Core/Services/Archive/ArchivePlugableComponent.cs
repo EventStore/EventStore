@@ -8,7 +8,6 @@ using EventStore.Core.Services.Archive.Archiver;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Archiver.Unmerger;
 using EventStore.Core.Services.Archive.Naming;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Plugins;
 using EventStore.Plugins.Licensing;
 using Microsoft.AspNetCore.Builder;
@@ -63,7 +62,7 @@ public class ArchivePlugableComponent : IPlugableComponent {
 		services.AddSingleton(options);
 		services.AddScoped<IArchiveStorageFactory, ArchiveStorageFactory>();
 		services.Decorate<IReadOnlyList<IClusterVNodeStartupTask>>(AddArchiveCatchupTask);
-		services.AddSingleton<IArchiveChunkNamer, ArchiveChunkNamer>();
+		services.AddSingleton<IArchiveChunkNameResolver, ArchiveChunkNameResolver>();
 
 		if (_isArchiver) {
 			services.AddSingleton<IChunkUnmerger, ChunkUnmerger>();
@@ -85,8 +84,8 @@ public class ArchivePlugableComponent : IPlugableComponent {
 			writerCheckpoint: standardComponents.DbConfig.WriterCheckpoint,
 			replicationCheckpoint: standardComponents.DbConfig.ReplicationCheckpoint,
 			chunkSize: standardComponents.DbConfig.ChunkSize,
-			serviceProvider.GetRequiredService<IVersionedFileNamingStrategy>(),
-			serviceProvider.GetRequiredService<IArchiveStorageFactory>()));
+			serviceProvider.GetRequiredService<IArchiveStorageFactory>(),
+			serviceProvider.GetRequiredService<IArchiveChunkNameResolver>()));
 
 		return newStartupTasks;
 	}

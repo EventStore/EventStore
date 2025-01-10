@@ -20,14 +20,13 @@ public abstract class ArchiveStorageReaderTests<T> : ArchiveStorageTestsBase<T> 
 
 		// create a chunk and upload it
 		var chunkPath = CreateLocalChunk(0, 0);
-		var chunkFile = Path.GetFileName(chunkPath);
-		await CreateWriterSut(StorageType).StoreChunk(chunkPath, chunkFile, CancellationToken.None);
+		await CreateWriterSut(StorageType).StoreChunk(chunkPath, 0, CancellationToken.None);
 
 		// read the local chunk
 		var localContent = await File.ReadAllBytesAsync(chunkPath);
 
 		// read the uploaded chunk
-		using var chunkStream = await sut.GetChunk(chunkFile, CancellationToken.None);
+		using var chunkStream = await sut.GetChunk(0, CancellationToken.None);
 		var chunkStreamContent = chunkStream.ToByteArray();
 
 		// then
@@ -40,8 +39,7 @@ public abstract class ArchiveStorageReaderTests<T> : ArchiveStorageTestsBase<T> 
 
 		// create a chunk and upload it
 		var chunkPath = CreateLocalChunk(0, 0);
-		var chunkFile = Path.GetFileName(chunkPath);
-		await CreateWriterSut(StorageType).StoreChunk(chunkPath, chunkFile, CancellationToken.None);
+		await CreateWriterSut(StorageType).StoreChunk(chunkPath, 0, CancellationToken.None);
 
 		// read the local chunk
 		var localContent = await File.ReadAllBytesAsync(chunkPath);
@@ -49,7 +47,7 @@ public abstract class ArchiveStorageReaderTests<T> : ArchiveStorageTestsBase<T> 
 		// read the uploaded chunk partially
 		var start = localContent.Length / 2;
 		var end = localContent.Length;
-		using var chunkStream = await sut.GetChunk(chunkFile, start, end, CancellationToken.None);
+		using var chunkStream = await sut.GetChunk(0, start, end, CancellationToken.None);
 		var chunkStreamContent = chunkStream.ToByteArray();
 
 		// then
@@ -61,7 +59,7 @@ public abstract class ArchiveStorageReaderTests<T> : ArchiveStorageTestsBase<T> 
 		var sut = CreateReaderSut(StorageType);
 
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => {
-			using var _ = await sut.GetChunk("missing-chunk", CancellationToken.None);
+			using var _ = await sut.GetChunk(33, CancellationToken.None);
 		});
 	}
 
@@ -70,7 +68,7 @@ public abstract class ArchiveStorageReaderTests<T> : ArchiveStorageTestsBase<T> 
 		var sut = CreateReaderSut(StorageType);
 
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => {
-			using var _ = await sut.GetChunk("missing-chunk", 1, 2, CancellationToken.None);
+			await using var _ = await sut.GetChunk(33, 1, 2, CancellationToken.None);
 		});
 	}
 
@@ -83,15 +81,15 @@ public abstract class ArchiveStorageReaderTests<T> : ArchiveStorageTestsBase<T> 
 		var chunk2 = CreateLocalChunk(2, 0);
 
 		var writerSut = CreateWriterSut(StorageType);
-		await writerSut.StoreChunk(chunk0, Path.GetFileName(chunk0), CancellationToken.None);
-		await writerSut.StoreChunk(chunk1, Path.GetFileName(chunk1), CancellationToken.None);
-		await writerSut.StoreChunk(chunk1, Path.GetFileName(chunk2), CancellationToken.None);
+		await writerSut.StoreChunk(chunk0, 0, CancellationToken.None);
+		await writerSut.StoreChunk(chunk1, 1, CancellationToken.None);
+		await writerSut.StoreChunk(chunk2, 2, CancellationToken.None);
 
 		var archivedChunks = sut.ListChunks(CancellationToken.None).ToEnumerable();
 		Assert.Equal([
-			Path.GetFileName(chunk0),
-			Path.GetFileName(chunk1),
-			Path.GetFileName(chunk2)
+			"chunk-000000.000001",
+			"chunk-000001.000001",
+			"chunk-000002.000001"
 		], archivedChunks);
 	}
 }

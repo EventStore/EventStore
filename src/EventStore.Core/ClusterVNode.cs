@@ -322,7 +322,7 @@ public class ClusterVNode<TStreamId> :
 		var namingStrategy = new VersionedPatternFileNamingStrategy(dbConfig.Path, "chunk-");
 		var archiveReader = new ArchiveStorageFactory(
 				options: archiveOptions,
-				chunkNamer: new ArchiveChunkNamer(namingStrategy))
+				chunkNameResolver: new ArchiveChunkNameResolver(namingStrategy))
 			.CreateReader();
 
 		IChunkFileSystem fileSystem = new ChunkLocalFileSystem(namingStrategy);

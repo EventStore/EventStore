@@ -8,15 +8,15 @@ namespace EventStore.Core.Services.Archive.Storage;
 
 public class ArchiveStorageFactory(
 	ArchiveOptions options,
-	IArchiveChunkNamer chunkNamer) : IArchiveStorageFactory {
+	IArchiveChunkNameResolver chunkNameResolver) : IArchiveStorageFactory {
 
 	private const string ArchiveCheckpointFile = "archive.chk";
 
 	public IArchiveStorageReader CreateReader() {
 		return options.StorageType switch {
 			StorageType.Unspecified => NoArchiveReader.Instance,
-			StorageType.FileSystem => new FileSystemReader(options.FileSystem, chunkNamer, ArchiveCheckpointFile),
-			StorageType.S3 => new S3Reader(options.S3, chunkNamer, ArchiveCheckpointFile),
+			StorageType.FileSystem => new FileSystemReader(options.FileSystem, chunkNameResolver, ArchiveCheckpointFile),
+			StorageType.S3 => new S3Reader(options.S3, chunkNameResolver, ArchiveCheckpointFile),
 			_ => throw new ArgumentOutOfRangeException(nameof(options.StorageType))
 		};
 	}
@@ -26,8 +26,8 @@ public class ArchiveStorageFactory(
 		// we use our own implementation instead (todo: consider if it could be an IBlobStorage)
 		return options.StorageType switch {
 			StorageType.Unspecified => throw new InvalidOperationException("Please specify an Archive StorageType"),
-			StorageType.FileSystem => new FileSystemWriter(options.FileSystem, ArchiveCheckpointFile),
-			StorageType.S3 => new S3Writer(options.S3, ArchiveCheckpointFile),
+			StorageType.FileSystem => new FileSystemWriter(options.FileSystem, chunkNameResolver, ArchiveCheckpointFile),
+			StorageType.S3 => new S3Writer(options.S3, chunkNameResolver, ArchiveCheckpointFile),
 			_ => throw new ArgumentOutOfRangeException(nameof(options.StorageType))
 		};
 	}

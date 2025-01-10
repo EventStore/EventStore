@@ -7,6 +7,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using Serilog;
 
@@ -16,10 +17,12 @@ public class FileSystemWriter : IArchiveStorageWriter {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<FileSystemWriter>();
 
 	private readonly string _archivePath;
+	private readonly IArchiveChunkNameResolver _chunkNameResolver;
 	private readonly string _archiveCheckpointFile;
 
-	public FileSystemWriter(FileSystemOptions options, string archiveCheckpointFile) {
+	public FileSystemWriter(FileSystemOptions options, IArchiveChunkNameResolver chunkNameResolver, string archiveCheckpointFile) {
 		_archivePath = options.Path;
+		_chunkNameResolver = chunkNameResolver;
 		_archiveCheckpointFile = archiveCheckpointFile;
 	}
 
@@ -41,8 +44,9 @@ public class FileSystemWriter : IArchiveStorageWriter {
 		}
 	}
 
-	public async ValueTask<bool> StoreChunk(string chunkPath, string destinationFile, CancellationToken ct) {
+	public async ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) {
 		try {
+			var destinationFile = await _chunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
 			var destinationPath = Path.Combine(_archivePath, destinationFile);
 			var tempPath = $"{destinationPath}.tmp";
 
@@ -81,7 +85,7 @@ public class FileSystemWriter : IArchiveStorageWriter {
 			if (!File.Exists(chunkPath))
 				throw new ChunkDeletedException();
 
-			Log.Error(ex, "Error while storing chunk: {chunkFile}", Path.GetFileName(chunkPath));
+			Log.Error(ex, "Error while storing chunk: {logicalChunkNumber} ({chunkPath})", logicalChunkNumber, chunkPath);
 			return false;
 		}
 	}

@@ -2,7 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,41 +17,37 @@ namespace EventStore.Core.XUnit.Tests.Services.Archive.ArchiveCatchup;
 
 internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader, IArchiveStorageFactory {
 	private readonly int _chunkSize;
-	private readonly string[] _chunks;
 	private readonly long _checkpoint;
-	private readonly CustomNamingStrategy _customNamingStrategy = new();
 
-	public int NumListings => Interlocked.CompareExchange(ref _listings, 0, 0);
-	private int _listings;
+	private readonly Action<int> _onGetChunk;
 
-	private readonly Action<string> _onGetChunk;
-
-	public string[] ChunkGets {
+	public int[] ChunkGets {
 		get {
 			lock (_chunkGets) {
 				return _chunkGets.Order().ToArray();
 			}
 		}
 	}
-	private readonly List<string> _chunkGets;
+	private readonly List<int> _chunkGets;
+	private readonly IArchiveChunkNameResolver _chunkNameResolver;
 
 
-	public FakeArchiveStorage(int chunkSize, string[] chunks, long checkpoint, Action<string> onGetChunk) {
+	public FakeArchiveStorage(int chunkSize, long checkpoint, Action<int> onGetChunk, IArchiveChunkNameResolver chunkNameResolver) {
 		_chunkSize = chunkSize;
-		_chunks = chunks;
 		_checkpoint = checkpoint;
 		_onGetChunk = onGetChunk;
 		_chunkGets = new();
+		_chunkNameResolver = chunkNameResolver;
 	}
 
-	public IArchiveChunkNamer ChunkNamer => throw new NotImplementedException();
+	public IArchiveChunkNameResolver ChunkNameResolver => _chunkNameResolver;
 
 	public IArchiveStorageReader CreateReader() => this;
 	public IArchiveStorageWriter CreateWriter() => this;
 
-	public ValueTask<bool> StoreChunk(string chunkPath, string destinationFile, CancellationToken ct) => throw new NotImplementedException();
+	public ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) => throw new NotImplementedException();
 	public ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) => throw new NotImplementedException();
-	public ValueTask<Stream> GetChunk(string chunkFile, long start, long end, CancellationToken ct) => throw new NotImplementedException();
+	public ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) => throw new NotImplementedException();
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) {
 		return ValueTask.FromResult(_checkpoint);
@@ -70,24 +65,19 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 			transformType: TransformType.Identity);
 	}
 
-	public ValueTask<Stream> GetChunk(string chunkFile, CancellationToken ct) {
+	public ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct) {
 		lock (_chunkGets) {
-			_chunkGets.Add(chunkFile);
+			_chunkGets.Add(logicalChunkNumber);
 		}
 
-		_onGetChunk?.Invoke(chunkFile);
+		_onGetChunk?.Invoke(logicalChunkNumber);
 		var chunk = new byte[ChunkHeader.Size + _chunkSize];
-		var chunkStartNumber = _customNamingStrategy.GetIndexFor(chunkFile);
-		var chunkEndNumber = _customNamingStrategy.GetVersionFor(chunkFile);
-		var header = CreateChunkHeader(chunkStartNumber, chunkEndNumber);
+		var header = CreateChunkHeader(logicalChunkNumber, logicalChunkNumber);
 		header.Format(chunk.AsSpan()[..ChunkHeader.Size]);
 
 		var stream = new MemoryStream(chunk);
 		return ValueTask.FromResult((Stream)stream);
 	}
 
-	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
-		Interlocked.Increment(ref _listings);
-		return _chunks.ToAsyncEnumerable();
-	}
+	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) => throw new NotImplementedException();
 }

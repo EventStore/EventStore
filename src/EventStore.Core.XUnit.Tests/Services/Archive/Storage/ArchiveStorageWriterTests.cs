@@ -17,11 +17,10 @@ public abstract class ArchiveStorageWriterTests<T> : ArchiveStorageTestsBase<T> 
 	public async Task can_store_a_chunk() {
 		var sut = CreateWriterSut(StorageType);
 		var localChunk = CreateLocalChunk(0, 0);
-		var destinationFile = Path.GetFileName(localChunk);
-		Assert.True(await sut.StoreChunk(localChunk, destinationFile, CancellationToken.None));
+		Assert.True(await sut.StoreChunk(localChunk, 0, CancellationToken.None));
 
 		var localChunkContent = await File.ReadAllBytesAsync(localChunk);
-		using var archivedChunkContent = await CreateReaderSut(StorageType).GetChunk(destinationFile, CancellationToken.None);
+		await using var archivedChunkContent = await CreateReaderSut(StorageType).GetChunk(0, CancellationToken.None);
 		Assert.Equal(localChunkContent, archivedChunkContent.ToByteArray());
 	}
 
@@ -29,9 +28,8 @@ public abstract class ArchiveStorageWriterTests<T> : ArchiveStorageTestsBase<T> 
 	public async Task throws_chunk_deleted_exception_if_local_chunk_doesnt_exist() {
 		var sut = CreateWriterSut(StorageType);
 		var localChunk = CreateLocalChunk(0, 0);
-		var destinationFile = Path.GetFileName(localChunk);
 		File.Delete(localChunk);
-		await Assert.ThrowsAsync<ChunkDeletedException>(async () => await sut.StoreChunk(localChunk, destinationFile, CancellationToken.None));
+		await Assert.ThrowsAsync<ChunkDeletedException>(async () => await sut.StoreChunk(localChunk, 0, CancellationToken.None));
 	}
 
 	[Fact]
