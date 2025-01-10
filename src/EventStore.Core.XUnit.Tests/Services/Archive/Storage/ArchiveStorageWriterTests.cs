@@ -13,7 +13,7 @@ using Xunit;
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
 [Collection("ArchiveStorageTests")]
-public abstract class ArchiveStorageWriterTests : ArchiveStorageTestsBase<ArchiveStorageWriterTests> {
+public class ArchiveStorageWriterTests : ArchiveStorageTestsBase<ArchiveStorageWriterTests> {
 	[Theory]
 	[StorageData.S3]
 	[StorageData.FileSystem]
