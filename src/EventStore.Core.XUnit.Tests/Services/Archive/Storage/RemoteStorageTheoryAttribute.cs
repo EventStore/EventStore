@@ -17,29 +17,34 @@ namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 //    else the required symbol is not defined -> skip
 public static class StorageData {
 	public abstract class RemoteStorageDataAttribute : DataAttribute {
-		public RemoteStorageDataAttribute() {
+		private readonly StorageType _storageType;
+		private readonly object[] _extraArgs;
+
+		protected RemoteStorageDataAttribute(StorageType storageType, object[] args, string symbol, PrerequisiteChecker checker) {
 			var symbolSet = false;
-			CheckPrerequisites(out var symbol, ref symbolSet);
+			checker(ref symbolSet);
 			if (!symbolSet)
 				Skip = $"This remote storage test is disabled. Enable with {symbol} symbol.";
+
+			_extraArgs = args;
+			_storageType = storageType;
 		}
 
-		protected abstract StorageType StorageType { get; }
-		protected abstract void CheckPrerequisites(out string symbol, ref bool symbolSet);
-		public override IEnumerable<object[]> GetData(MethodInfo testMethod) => [[StorageType]];
+		public sealed override IEnumerable<object[]> GetData(MethodInfo testMethod) => [[_storageType, .._extraArgs]];
+
+		protected delegate void PrerequisiteChecker(ref bool symbolSet);
 	}
 
 
-	public sealed class S3Attribute : RemoteStorageDataAttribute {
+	public sealed class S3Attribute(params object[] args) : RemoteStorageDataAttribute(
+		StorageType.S3,
+		args,
+		Symbol,
+		static (ref bool isSet) => CheckPrerequisites(ref isSet)) {
 		const string Symbol = "RUN_S3_TESTS";
-		protected override StorageType StorageType => StorageType.S3;
-		protected override void CheckPrerequisites(out string symbol, ref bool symbolSet) {
-			symbol = Symbol;
-			CheckPrerequisitesImpl(ref symbolSet);
-		}
 
 		[Conditional(Symbol)]
-		private static void CheckPrerequisitesImpl(ref bool symbolSet) {
+		private static void CheckPrerequisites(ref bool symbolSet) {
 			symbolSet = true;
 			const string awsDirectoryName = ".aws";
 			var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -49,12 +54,10 @@ public static class StorageData {
 		}
 	}
 
-	public sealed class FileSystemAttribute : RemoteStorageDataAttribute {
-		protected override StorageType StorageType => StorageType.FileSystem;
-
-		protected override void CheckPrerequisites(out string symbol, ref bool symbolSet) {
-			symbol = default;
-			symbolSet = true;
-		}
+	public sealed class FileSystemAttribute(params object[] args) : RemoteStorageDataAttribute(
+		StorageType.FileSystem,
+		args,
+		string.Empty,
+		static (ref bool isSet) => isSet = true) {
 	}
 }
