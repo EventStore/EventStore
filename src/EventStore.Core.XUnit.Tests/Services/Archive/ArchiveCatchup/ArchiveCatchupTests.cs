@@ -28,7 +28,6 @@ public class ArchiveCatchupTests : DirectoryPerTest<ArchiveCatchupTests> {
 	private struct Sut {
 		public ArchiveCatchup Catchup { get; init; }
 		public FakeArchiveStorage Archive { get; init; }
-		public IArchiveChunkNameResolver ArchiveChunkNameResolver { get; init; }
 		public ICheckpoint WriterCheckpoint { get; init; }
 		public ICheckpoint ReplicationCheckpoint { get; init; }
 	}
@@ -69,7 +68,6 @@ public class ArchiveCatchupTests : DirectoryPerTest<ArchiveCatchupTests> {
 		return new Sut {
 			Catchup = catchup,
 			Archive = archive,
-			ArchiveChunkNameResolver = archiveChunkNameResolver,
 			WriterCheckpoint = writerCheckpoint,
 			ReplicationCheckpoint = replicationCheckpoint
 		};

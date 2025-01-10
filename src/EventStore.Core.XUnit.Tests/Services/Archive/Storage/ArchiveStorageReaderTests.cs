@@ -39,7 +39,6 @@ public abstract class ArchiveStorageReaderTests<T> : ArchiveStorageTestsBase<T> 
 
 		// create a chunk and upload it
 		var chunkPath = CreateLocalChunk(0, 0);
-		var chunkFile = Path.GetFileName(chunkPath);
 		await CreateWriterSut(StorageType).StoreChunk(chunkPath, 0, CancellationToken.None);
 
 		// read the local chunk

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
@@ -29,7 +28,7 @@ public class ArchiverServiceTests {
 		long? existingCheckpoint = null) {
 		var archive = new FakeArchiveStorage(
 			chunkStorageDelay ?? TimeSpan.Zero,
-			existingChunks ?? Array.Empty<int>(),
+			existingChunks ?? [],
 			existingCheckpoint ?? 0L);
 		var service = new ArchiverService(new FakeSubscriber(), archive, new FakeUnmerger());
 		return (service, archive);
@@ -302,14 +301,12 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 	private int _stores;
 
 	private readonly TimeSpan _chunkStorageDelay;
-	private readonly int[] _existingChunks;
 
 	public int NumCheckpoints { get; private set; }
 	private long _checkpoint;
 
 	public FakeArchiveStorage(TimeSpan chunkStorageDelay, int[] existingChunks, long existingCheckpoint) {
 		_chunkStorageDelay = chunkStorageDelay;
-		_existingChunks = existingChunks;
 		_checkpoint = existingCheckpoint;
 		Chunks = new List<int>(existingChunks);
 	}

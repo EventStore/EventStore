@@ -40,7 +40,7 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 		_chunkNameResolver = chunkNameResolver;
 	}
 
-	public IArchiveChunkNameResolver ChunkNameResolver => throw new NotImplementedException();
+	public IArchiveChunkNameResolver ChunkNameResolver => _chunkNameResolver;
 
 	public IArchiveStorageReader CreateReader() => this;
 	public IArchiveStorageWriter CreateWriter() => this;
