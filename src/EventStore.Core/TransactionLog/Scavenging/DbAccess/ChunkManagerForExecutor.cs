@@ -26,6 +26,8 @@ public class ChunkManagerForExecutor<TStreamId> : IChunkManagerForChunkExecutor<
 		_transformManager = transformManager;
 	}
 
+	public IChunkFileSystem FileSystem => _manager.FileSystem;
+
 	public async ValueTask<IChunkWriterForExecutor<TStreamId, ILogRecord>> CreateChunkWriter(
 		IChunkReaderForExecutor<TStreamId, ILogRecord> sourceChunk,
 		CancellationToken token)

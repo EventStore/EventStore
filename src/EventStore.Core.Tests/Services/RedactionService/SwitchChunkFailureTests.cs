@@ -138,7 +138,7 @@ public class SwitchChunkFailureTests<TLogFormat, TStreamId> : SwitchChunkTests<T
 
 		newChunk = $"{nameof(cannot_switch_with_chunk_having_mismatched_range)}-chunk-0-2.tmp";
 		var chunkHeader = new ChunkHeader(1, 1, 1024, 0, 2, true, Guid.NewGuid(), TransformType.Identity);
-		var chunk = await TFChunk.CreateWithHeader(Path.Combine(PathName, newChunk), chunkHeader, 1024, false, false, false, false,
+		var chunk = await TFChunk.CreateWithHeader(new ChunkLocalFileSystem(path: ""), Path.Combine(PathName, newChunk), chunkHeader, 1024, false, false, false, false,
 			new TFChunkTracker.NoOp(), new IdentityChunkTransformFactory(), ReadOnlyMemory<byte>.Empty, CancellationToken.None);
 		chunk.Dispose();
 		msg = await SwitchChunk(GetChunk(0, 0), newChunk);
