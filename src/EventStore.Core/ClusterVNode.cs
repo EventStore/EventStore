@@ -9,68 +9,69 @@ using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Configuration;
+using EventStore.Common.Exceptions;
+using EventStore.Common.Log;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
+using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.DelegatedAuthentication;
+using EventStore.Core.Authentication.PassthroughAuthentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
+using EventStore.Core.Caching;
+using EventStore.Core.Certificates;
+using EventStore.Core.Cluster;
+using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
+using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Services.Archive;
+using EventStore.Core.Services.Archive.Naming;
+using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Services.PeriodicLogs;
+using EventStore.Core.Services.PersistentSubscription;
+using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Services.Replication;
 using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.EpochManager;
+using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
+using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.Settings;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.TransactionLog.Scavenging;
-using EventStore.Core.TransactionLog.Scavenging.Interfaces;
-using EventStore.Core.TransactionLog.Scavenging.DbAccess;
-using EventStore.Core.TransactionLog.Scavenging.Sqlite;
-using EventStore.Core.TransactionLog.Scavenging.Stages;
-using EventStore.Core.Authentication;
-using EventStore.Core.Helpers;
-using EventStore.Core.Services.PersistentSubscription;
-using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
-using System.Threading.Tasks;
-using EventStore.Common.Exceptions;
-using EventStore.Common.Log;
-using EventStore.Common.Options;
-using EventStore.Core.Authentication.DelegatedAuthentication;
-using EventStore.Core.Authentication.PassthroughAuthentication;
-using EventStore.Core.Authorization;
-using EventStore.Core.Caching;
-using EventStore.Core.Certificates;
-using EventStore.Core.Cluster;
-using EventStore.Core.Configuration.Sources;
-using EventStore.Core.Services.Archive;
-using EventStore.Core.Services.Archive.Naming;
-using EventStore.Core.Services.Archive.Storage;
-using EventStore.Core.Services.Storage.InMemory;
-using EventStore.Core.Services.PeriodicLogs;
-using EventStore.Core.Services.Transport.Http.NodeHttpClientFactory;
 using EventStore.Core.Synchronization;
 using EventStore.Core.Telemetry;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.TransactionLog.Scavenging.DbAccess;
+using EventStore.Core.TransactionLog.Scavenging.Interfaces;
+using EventStore.Core.TransactionLog.Scavenging.Sqlite;
+using EventStore.Core.TransactionLog.Scavenging.Stages;
 using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
@@ -267,7 +268,7 @@ public class ClusterVNode<TStreamId> :
 		AddTask(_taskAddedTrigger.Task);
 #endif
 
-		var archiveOptions = configuration.GetSection("EventStore:Archive").Get<ArchiveOptions>() ?? new();
+		var archiveOptions = configuration.GetSection($"{KurrentConfigurationKeys.Prefix}:Archive").Get<ArchiveOptions>() ?? new();
 
 		var disableInternalTcpTls = options.Application.Insecure;
 		var disableExternalTcpTls = options.Application.Insecure;
@@ -1604,7 +1605,8 @@ public class ClusterVNode<TStreamId> :
 				StartNode(app);
 			} catch (AggregateException aggEx) when (aggEx.InnerException is { } innerEx) {
 				// We only really care that *something* is wrong - throw the first inner exception.
-				throw innerEx;
+				// keeping its original stack
+				ExceptionDispatchInfo.Capture(innerEx).Throw();
 			}
 		}
 
