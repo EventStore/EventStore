@@ -42,15 +42,18 @@ public class ArchiverService :
 	private long _replicationPosition;
 	private bool _archivingStarted;
 	private long _checkpoint;
+	private readonly int _chunkSize;
 
 	public ArchiverService(
 		ISubscriber mainBus,
 		IArchiveStorageFactory archiveStorageFactory,
-		IChunkUnmerger chunkUnmerger) {
+		IChunkUnmerger chunkUnmerger,
+		int chunkSize) {
 		_mainBus = mainBus;
 		_archiveWriter = archiveStorageFactory.CreateWriter();
 		_archiveReader = archiveStorageFactory.CreateReader();
 		_chunkUnmerger = chunkUnmerger;
+		_chunkSize = chunkSize;
 
 		_uncommittedChunks = new();
 		_existingChunks = new();
@@ -174,8 +177,16 @@ public class ArchiverService :
 				chunksUnmerged = true;
 			}
 
+			var isSwitchedChunk = chunkEndPosition <= _checkpoint;
 			var logicalChunkNumber = chunkStartNumber;
 			foreach (var chunkToStore in chunksToStore) {
+				var logicalChunkEndPosition = (long)(logicalChunkNumber + 1) * _chunkSize;
+				if (logicalChunkEndPosition <= _checkpoint && !isSwitchedChunk) {
+					// don't rearchive logical chunks that are already present in the archive, unless if it's a switched chunk
+					logicalChunkNumber++;
+					continue;
+				}
+
 				while (!await _archiveWriter.StoreChunk(chunkToStore, logicalChunkNumber, ct)) {
 					Log.Warning("Archiving of {chunkFile}{chunkDetails} failed. Retrying in: {retryInterval}.",
 						Path.GetFileName(chunkPath),

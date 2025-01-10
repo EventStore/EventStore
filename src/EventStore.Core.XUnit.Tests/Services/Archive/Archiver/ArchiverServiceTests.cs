@@ -30,7 +30,7 @@ public class ArchiverServiceTests {
 			chunkStorageDelay ?? TimeSpan.Zero,
 			existingChunks ?? [],
 			existingCheckpoint ?? 0L);
-		var service = new ArchiverService(new FakeSubscriber(), archive, new FakeUnmerger());
+		var service = new ArchiverService(new FakeSubscriber(), archive, new FakeUnmerger(), ChunkSize);
 		return (service, archive);
 	}
 
@@ -192,7 +192,7 @@ public class ArchiverServiceTests {
 	}
 
 	[Fact]
-	public async Task archives_an_existing_chunk_if_it_starts_before_but_ends_after_the_checkpoint() {
+	public async Task archives_part_of_an_existing_chunk_if_it_starts_before_but_ends_after_the_checkpoint() {
 		var (sut, archive) = CreateSut(existingChunks:	[ 0, 1 ], existingCheckpoint: 2 * TFConsts.ChunkSize);
 
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(0, 0, complete: true)));
@@ -200,9 +200,9 @@ public class ArchiverServiceTests {
 		sut.Handle(new SystemMessage.ChunkLoaded(GetChunkInfo(3, 3, complete: true)));
 		sut.Handle(new ReplicationTrackingMessage.ReplicatedTo(GetChunkInfo(3, 3, complete: true).ChunkEndPosition));
 
-		await WaitFor(archive, numStores: 3);
+		await WaitFor(archive, numStores: 2);
 
-		Assert.Equal([ 0, 1, 1, 2, 3 ], archive.Chunks);
+		Assert.Equal([ 0, 1, 2, 3 ], archive.Chunks);
 	}
 
 	[Fact]

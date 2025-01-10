@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Bus;
 using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Services.Archive.Archiver;
 using EventStore.Core.Services.Archive.Storage;
@@ -66,7 +67,15 @@ public class ArchivePlugableComponent : IPlugableComponent {
 
 		if (_isArchiver) {
 			services.AddSingleton<IChunkUnmerger, ChunkUnmerger>();
-			services.AddSingleton<ArchiverService>();
+			services.AddSingleton(serviceProvider => {
+				var standardComponents = serviceProvider.GetRequiredService<StandardComponents>();
+				return new ArchiverService(
+					mainBus: serviceProvider.GetRequiredService<ISubscriber>(),
+					archiveStorageFactory: serviceProvider.GetRequiredService<IArchiveStorageFactory>(),
+					chunkUnmerger: serviceProvider.GetRequiredService<IChunkUnmerger>(),
+					chunkSize: standardComponents.DbConfig.ChunkSize
+				);
+			});
 		}
 	}
 
