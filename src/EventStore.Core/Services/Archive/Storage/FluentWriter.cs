@@ -35,7 +35,7 @@ public abstract class FluentWriter(IArchiveChunkNameResolver chunkNameResolver, 
 
 	public async ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) {
 		try {
-			var destinationFile = await chunkNameResolver.GetFileNameFor(logicalChunkNumber);
+			var destinationFile = await chunkNameResolver.GetFileNameFor(logicalChunkNumber, ct);
 			await BlobStorage.WriteFileAsync(destinationFile, filePath: chunkPath, ct);
 			return true;
 		} catch (FileNotFoundException) {

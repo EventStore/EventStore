@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
@@ -17,10 +18,14 @@ public class ArchiveChunkNameResolver : IArchiveChunkNameResolver {
 
 	public string Prefix => _namingStrategy.Prefix;
 
-	public ValueTask<string> GetFileNameFor(int logicalChunkNumber) {
-		ArgumentOutOfRangeException.ThrowIfNegative(logicalChunkNumber);
+	public ValueTask<string> GetFileNameFor(int logicalChunkNumber, CancellationToken token) {
+		try {
+			ArgumentOutOfRangeException.ThrowIfNegative(logicalChunkNumber);
 
-		var filePath = _namingStrategy.GetFilenameFor(logicalChunkNumber, version: 1);
-		return ValueTask.FromResult(Path.GetFileName(filePath));
+			var filePath = _namingStrategy.GetFilenameFor(logicalChunkNumber, version: 1);
+			return new(Path.GetFileName(filePath));
+		} catch (Exception ex) {
+			return ValueTask.FromException<string>(ex);
+		}
 	}
 }

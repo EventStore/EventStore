@@ -46,7 +46,7 @@ public class FileSystemWriter : IArchiveStorageWriter {
 
 	public async ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) {
 		try {
-			var destinationFile = await _chunkNameResolver.GetFileNameFor(logicalChunkNumber);
+			var destinationFile = await _chunkNameResolver.GetFileNameFor(logicalChunkNumber, ct);
 			var destinationPath = Path.Combine(_archivePath, destinationFile);
 			var tempPath = $"{destinationPath}.tmp";
 

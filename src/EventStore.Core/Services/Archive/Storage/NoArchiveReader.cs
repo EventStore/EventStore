@@ -35,6 +35,7 @@ public class NoArchiveReader : IArchiveStorageReader {
 	class NoNamer : IArchiveChunkNameResolver {
 		public string Prefix => "chunk-";
 
-		public ValueTask<string> GetFileNameFor(int logicalChunkNumber) => ValueTask.FromResult($"{Prefix}{logicalChunkNumber}");
+		public ValueTask<string> GetFileNameFor(int logicalChunkNumber, CancellationToken token) =>
+			new($"{Prefix}{logicalChunkNumber}");
 	}
 }

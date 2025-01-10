@@ -49,7 +49,7 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 	protected override IBlobStorage BlobStorage => _awsBlobStorage;
 
 	public async ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) {
-		var chunkFile = await ChunkNameResolver.GetFileNameFor(logicalChunkNumber);
+		var chunkFile = await ChunkNameResolver.GetFileNameFor(logicalChunkNumber, ct);
 		var request = new GetObjectRequest {
 			BucketName = _options.Bucket,
 			Key = chunkFile,
