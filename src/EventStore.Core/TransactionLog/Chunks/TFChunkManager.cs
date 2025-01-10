@@ -89,6 +89,8 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			long totalSize = 0;
 			lastChunkToCache = _chunksCount;
 
+			// work backwards through the history until we have found enough chunks
+			// to cache according to the chunk cache size. determines lastChunkToCache.
 			for (int chunkNum = _chunksCount - 1; chunkNum >= 0;) {
 				var chunk = _chunks[chunkNum];
 				var chunkSize = chunk.IsReadOnly
@@ -108,6 +110,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			_chunksLocker.Release();
 		}
 
+		// uncache everything earlier than lastChunkToCache
 		for (int chunkNum = lastChunkToCache - 1; chunkNum >= 0;) {
 			var chunk = _chunks[chunkNum];
 			if (chunk.IsReadOnly)
@@ -115,6 +118,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			chunkNum = chunk.ChunkHeader.ChunkStartNumber - 1;
 		}
 
+		// cache everything from lastChunkToCache up to now
 		for (int chunkNum = lastChunkToCache; chunkNum < _chunksCount;) {
 			var chunk = _chunks[chunkNum];
 			if (chunk.IsReadOnly)
@@ -432,8 +436,8 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		await _chunksLocker.AcquireAsync(token);
 		try {
 			for (int i = 0; i < _chunksCount; ++i) {
-				if (_chunks[i] != null)
-					allChunksClosed &= _chunks[i].TryClose();
+				if (_chunks[i] is { } chunk)
+					allChunksClosed &= chunk.TryClose();
 			}
 		} finally {
 			_chunksLocker.Release();
