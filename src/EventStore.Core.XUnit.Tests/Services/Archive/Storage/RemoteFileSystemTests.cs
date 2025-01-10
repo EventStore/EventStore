@@ -7,7 +7,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services.Archive;
-using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Storage.S3;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
