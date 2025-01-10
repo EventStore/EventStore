@@ -70,7 +70,7 @@ public class FileSystemReader : IArchiveStorageReader {
 	public async ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct) {
 		ValueTask<Stream> task;
 		try {
-			var chunkFile = await ChunkNameResolver.GetFileNameFor(logicalChunkNumber, ct);
+			var chunkFile = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
 			var chunkPath = Path.Combine(_archivePath, chunkFile);
 			task = ValueTask.FromResult<Stream>(File.Open(chunkPath, _fileStreamOptions));
 		} catch (FileNotFoundException) {
@@ -84,7 +84,7 @@ public class FileSystemReader : IArchiveStorageReader {
 
 	public async ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) {
 		var length = end - start;
-		var chunkFile = await ChunkNameResolver.GetFileNameFor(logicalChunkNumber, ct);
+		var chunkFile = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
 
 		ValueTask<Stream> task;
 		if (length < 0) {

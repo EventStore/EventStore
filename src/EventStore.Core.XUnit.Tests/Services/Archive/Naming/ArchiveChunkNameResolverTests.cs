@@ -22,14 +22,14 @@ public class ArchiveChunkNameResolverTests {
 	[InlineData(1000, "chunk-001000.000001")]
 	public async Task returns_correct_file_name(int logicalChunkNumber, string expectedFileName) {
 		var sut = CreateSut();
-		Assert.Equal(expectedFileName, await sut.GetFileNameFor(logicalChunkNumber, CancellationToken.None));
+		Assert.Equal(expectedFileName, await sut.ResolveFileName(logicalChunkNumber, CancellationToken.None));
 	}
 
 	[Fact]
 	public async Task throws_if_chunk_number_is_negative() {
 		var sut = CreateSut();
-		await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await sut.GetFileNameFor(-1, CancellationToken.None));
-		await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await sut.GetFileNameFor(-2, CancellationToken.None));
+		await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await sut.ResolveFileName(-1, CancellationToken.None));
+		await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await sut.ResolveFileName(-2, CancellationToken.None));
 	}
 
 	[Fact]
