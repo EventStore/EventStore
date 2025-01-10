@@ -69,7 +69,8 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 					// replace missing local versions with latest from archive if they
 					// are present there
 					case MissingVersion(_, var chunkNumber) when (chunkNumber < firstChunkNotInArchive): {
-						yield return await CreateLatestVersionInArchive(chunkNumber);
+						var archiveObjectName = await fileSystem._archive.ChunkNameResolver.GetFileNameFor(chunkNumber);
+						yield return CreateLatestVersionInArchive(archiveObjectName, chunkNumber);
 						break;
 					}
 
@@ -80,8 +81,7 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 			}
 		}
 
-		async ValueTask<LatestVersion> CreateLatestVersionInArchive(int chunkNumber) {
-			var archiveObjectName = await fileSystem._archive.ChunkNameResolver.GetFileNameFor(chunkNumber);
+		LatestVersion CreateLatestVersionInArchive(string archiveObjectName, int chunkNumber) {
 			var fileName = fileSystem._locatorCodec.EncodeRemoteName(archiveObjectName);
 			return new LatestVersion(fileName, chunkNumber, chunkNumber);
 		}
