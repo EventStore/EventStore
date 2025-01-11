@@ -93,6 +93,8 @@ public static class MetricsBootstrapper {
 		var eventMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "events");
 		var electionsCounterMetric = new CounterMetric(coreMeter, "eventstore-elections-count", unit: "");
 
+		TempIndexMetrics.Setup(coreMeter);
+
 		// incoming grpc calls
 		var enabledCalls = conf.IncomingGrpcCalls.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToArray();
 		if (enabledCalls.Length > 0) {

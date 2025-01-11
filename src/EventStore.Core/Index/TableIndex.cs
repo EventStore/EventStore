@@ -15,6 +15,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.Metrics;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -801,6 +802,7 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		int? limit = null) => GetRange(CreateHash(streamId), startVersion, endVersion, limit);
 
 	public IReadOnlyList<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null) {
+		using var _ = TempIndexMetrics.MeasureIndex("get_range");
 		var counter = 0;
 		while (counter < 5) {
 			counter++;
