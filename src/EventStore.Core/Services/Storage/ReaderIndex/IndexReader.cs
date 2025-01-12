@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.Duck;
 using EventStore.Core.Index;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
@@ -218,8 +219,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 		return (IPrepareLogRecord<TStreamId>)result.LogRecord;
 	}
 
-	ValueTask<IndexReadStreamResult> IIndexReader<TStreamId>.
-		ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount, CancellationToken token) {
+	ValueTask<IndexReadStreamResult> IIndexReader<TStreamId>.ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount, CancellationToken token) {
 		return ReadStreamEventsForwardInternal(streamName, streamId, fromEventNumber, maxCount, _skipIndexScanOnRead, token);
 	}
 
@@ -232,55 +232,56 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 		using (var reader = _backend.BorrowReader()) {
 			var lastEventNumber = await GetStreamLastEventNumberCached(reader, streamId, token);
 			var metadata = await GetStreamMetadataCached(reader, streamId, token);
-			if (lastEventNumber is EventNumber.DeletedStream)
-				return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted,
-					StreamMetadata.Empty, lastEventNumber);
-			if (lastEventNumber == ExpectedVersion.NoStream || metadata.TruncateBefore == EventNumber.DeletedStream)
-				return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata,
-					lastEventNumber);
-			if (lastEventNumber == EventNumber.Invalid)
-				return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata,
-					lastEventNumber);
-
-			long startEventNumber = fromEventNumber;
-			long endEventNumber = fromEventNumber < long.MaxValue - maxCount + 1 ?
-				fromEventNumber + maxCount - 1 : long.MaxValue;
-
-			// calculate minEventNumber, which is the lower bound that we are allowed to read
-			// according to the MaxCount and TruncateBefore
-			long minEventNumber = 0;
-			if (metadata.MaxCount.HasValue)
-				minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
-			if (metadata.TruncateBefore.HasValue)
-				minEventNumber = Math.Max(minEventNumber, metadata.TruncateBefore.Value);
-
-			// early return if we are trying to read events that are all below the lower bound
-			if (endEventNumber < minEventNumber)
-				return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
-					metadata, minEventNumber, lastEventNumber, isEndOfStream: false);
-
-			// start our read at the lower bound if we were going to start it before hand.
-			startEventNumber = Math.Max(startEventNumber, minEventNumber);
-
-			// early return if we are trying to read events that are all above the upper bound
-			if (startEventNumber > lastEventNumber)
-				return new IndexReadStreamResult(
-					fromEventNumber: fromEventNumber,
-					maxCount: maxCount,
-					records: IndexReadStreamResult.EmptyRecords,
-					metadata: metadata,
-					nextEventNumber: lastEventNumber + 1,
-					lastEventNumber: lastEventNumber,
-					isEndOfStream: true);
-
-			if (metadata.MaxAge.HasValue) {
-				return await ForStreamWithMaxAge(streamId, streamName,
-					fromEventNumber, maxCount,
-					startEventNumber, endEventNumber, lastEventNumber,
-					metadata.MaxAge.Value, metadata, _tableIndex, reader, _eventTypes,
-					skipIndexScanOnRead, token);
-			}
-			var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
+			// if (lastEventNumber is EventNumber.DeletedStream)
+			// 	return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted,
+			// 		StreamMetadata.Empty, lastEventNumber);
+			// if (lastEventNumber == ExpectedVersion.NoStream || metadata.TruncateBefore == EventNumber.DeletedStream)
+			// 	return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata,
+			// 		lastEventNumber);
+			// if (lastEventNumber == EventNumber.Invalid)
+			// 	return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata,
+			// 		lastEventNumber);
+			//
+			// long startEventNumber = fromEventNumber;
+			// long endEventNumber = fromEventNumber < long.MaxValue - maxCount + 1 ?
+			// 	fromEventNumber + maxCount - 1 : long.MaxValue;
+			//
+			// // calculate minEventNumber, which is the lower bound that we are allowed to read
+			// // according to the MaxCount and TruncateBefore
+			// long minEventNumber = 0;
+			// if (metadata.MaxCount.HasValue)
+			// 	minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
+			// if (metadata.TruncateBefore.HasValue)
+			// 	minEventNumber = Math.Max(minEventNumber, metadata.TruncateBefore.Value);
+			//
+			// // early return if we are trying to read events that are all below the lower bound
+			// if (endEventNumber < minEventNumber)
+			// 	return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
+			// 		metadata, minEventNumber, lastEventNumber, isEndOfStream: false);
+			//
+			// // start our read at the lower bound if we were going to start it before hand.
+			// startEventNumber = Math.Max(startEventNumber, minEventNumber);
+			//
+			// // early return if we are trying to read events that are all above the upper bound
+			// if (startEventNumber > lastEventNumber)
+			// 	return new IndexReadStreamResult(
+			// 		fromEventNumber: fromEventNumber,
+			// 		maxCount: maxCount,
+			// 		records: IndexReadStreamResult.EmptyRecords,
+			// 		metadata: metadata,
+			// 		nextEventNumber: lastEventNumber + 1,
+			// 		lastEventNumber: lastEventNumber,
+			// 		isEndOfStream: true);
+			//
+			// if (metadata.MaxAge.HasValue) {
+			// 	return await ForStreamWithMaxAge(streamId, streamName,
+			// 		fromEventNumber, maxCount,
+			// 		startEventNumber, endEventNumber, lastEventNumber,
+			// 		metadata.MaxAge.Value, metadata, _tableIndex, reader, _eventTypes,
+			// 		skipIndexScanOnRead, token);
+			// }
+			var range = DuckDb.GetRange(streamName, 0, fromEventNumber, maxCount);
+			var recordsQuery = range
 				.ToAsyncEnumerable()
 				.SelectAwaitWithCancellation(async (x, token) => new { x.Version, Prepare = await ReadPrepareInternal(reader, x.Position, token) })
 				.Where(x => x.Prepare != null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId));
@@ -293,6 +294,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 				.Reverse()
 				.SelectAwaitWithCancellation((x, token) => CreateEventRecord(x.Version, x.Prepare, streamName, token))
 				.ToArrayAsync(token);
+			var endEventNumber = range.Count > 0 ? records[^1].EventNumber : -1;
 
 			long nextEventNumber = Math.Min(endEventNumber + 1, lastEventNumber + 1);
 			if (records.Length > 0)
@@ -302,193 +304,193 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 				nextEventNumber, lastEventNumber, isEndOfStream);
 		}
 
-		async ValueTask<IndexReadStreamResult> ForStreamWithMaxAge(TStreamId streamId,
-			string streamName,
-			long fromEventNumber, int maxCount, long startEventNumber,
-			long endEventNumber, long lastEventNumber, TimeSpan maxAge, StreamMetadata metadata,
-			ITableIndex<TStreamId> tableIndex, TFReaderLease reader, INameLookup< TStreamId> eventTypes,
-			bool skipIndexScanOnRead,
-			CancellationToken token) {
-
-			if (startEventNumber > lastEventNumber) {
-				return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
-					metadata, lastEventNumber + 1, lastEventNumber, isEndOfStream: true);
-			}
-
-			var ageThreshold = DateTime.UtcNow - maxAge;
-			var nextEventNumber = lastEventNumber;
-			var indexEntries = tableIndex.GetRange(streamId, startEventNumber, endEventNumber);
-
-			//Move to the first valid entries. At this point we could instead return an empty result set with the minimum set, but that would
-			//involve an additional set of reads for no good reason
-			while (indexEntries is []) {
-				// we didn't find any indexEntries, and we already early returned in the case that startEventNumber > lastEventNumber
-				// so we want to find the oldest entry that is after startEventNumber.
-				// startEventNumber may be before the start of the stream, or it may be in a gap caused by scavenging.
-				// this will generally only iterate once, unless a scavenge completes exactly now, in which case it might iterate twice
-				if (tableIndex.TryGetNextEntry(streamId, startEventNumber, out var next)) {
-					startEventNumber = next.Version;
-					endEventNumber = startEventNumber + maxCount - 1;
-					indexEntries = tableIndex.GetRange(streamId, startEventNumber, endEventNumber);
-				} else {
-					//scavenge completed and deleted our stream? return empty set and get the client to try again?
-					return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
-						metadata, lastEventNumber + 1, lastEventNumber, isEndOfStream: false);
-				}
-			}
-
-			var results = new ResultsDeduplicator(maxCount, skipIndexScanOnRead);
-
-			for (int i = 0; i < indexEntries.Count; i++) {
-
-				if (await ReadPrepareInternal(reader, indexEntries[i].Position, token) is not { } prepare ||
-				    !StreamIdComparer.Equals(prepare.EventStreamId, streamId)) {
-					continue;
-				}
-
-				if (prepare.TimeStamp >= ageThreshold) {
-					results.Add(await CreateEventRecord(indexEntries[i].Version, prepare, streamName, eventTypes, token));
-				} else {
-					break;
-				}
-			}
-
-			if (results.Count > 0) {
-				//We got at least one event in the correct age range, so we will return whatever was valid and indicate where to read from next
-				var resultsArray = results.ProduceArray();
-				nextEventNumber = resultsArray[0].EventNumber + 1;
-				Array.Reverse(resultsArray);
-
-				var isEndOfStream = endEventNumber >= lastEventNumber;
-				return new IndexReadStreamResult(fromEventNumber, maxCount, resultsArray, metadata,
-					nextEventNumber, lastEventNumber, isEndOfStream);
-			}
-
-			//we didn't find anything valid yet, now we need to search
-			//the entries we found were all either scavenged, or expired, or for another stream.
-
-			//check high value will be valid, otherwise early return.
-			// this resolves hash collisions itself
-			if (await ReadPrepareInternal(reader, streamId, eventNumber: lastEventNumber, token) is not { } lastEvent ||
-			    lastEvent.TimeStamp < ageThreshold || lastEventNumber < fromEventNumber) {
-				//No events in the stream are < max age, so return an empty set
-				return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
-					metadata, lastEventNumber + 1, lastEventNumber, isEndOfStream: true);
-			}
-
-			// intuition for loop termination here is that the explicit continue cases are
-			// the only way to continue the iteration. apart from those it return;s or break;s.
-			// the continue cases always narrow the gap between low and high
-			//
-			// low, mid, and high are event numbers (versions)
-			// attempt to initialize low to the latest (highest) entry that we found but in the unlikely event that
-			// they're out of version order thats still ok, low will just be lower than it could have been.
-			var low = indexEntries[0].Version;
-			var high = lastEventNumber;
-			while (low <= high) {
-				var mid = low + ((high - low) / 2);
-				indexEntries = tableIndex.GetRange(streamId, mid, mid + maxCount - 1);
-				if (indexEntries.Count > 0) {
-					nextEventNumber = indexEntries[0].Version + 1;
-				} else {
-					// midpoint is in a gap. everything before any gap is no longer part of the stream
-					// though the entries may not have been removed yet. skip to higher event numbers
-					if (!tableIndex.TryGetNextEntry(streamId, mid, out var next)) {
-						// there is nothing in this stream (maybe a scavenge just completed)
-						nextEventNumber = lastEventNumber;
-						break;
-					}
-					low = next.Version;
-					continue;
-				}
-
-				// be really careful if adjusting these, to make sure that the loop still terminates
-				var (lowPrepareVersion, lowPrepare) = await LowPrepare(reader, indexEntries, streamId, token);
-				if (lowPrepare?.TimeStamp >= ageThreshold) {
-					// found a lowPrepare for this stream. it has not expired. chop lower in case there are more
-					high = mid - 1;
-					nextEventNumber = lowPrepareVersion;
-					continue;
-				}
-
-				var (highPrepareVersion, highPrepare) = await HighPrepare(reader, indexEntries, streamId, token);
-				if (highPrepare?.TimeStamp < ageThreshold) {
-					// found a highPrepare for this stream. it has expired. chop higher
-					low = highPrepareVersion + 1;
-					continue;
-				}
-
-				//ok, some entries must match, if not (due to time moving forwards) we can just reissue based on the current mid
-				// also might have no matches because the getrange call returned addresses that
-				// were all scavenged or for other streams, in which case we won't add anything to results here
-				for (int i = 0; i < indexEntries.Count; i++) {
-					if (await ReadPrepareInternal(reader, indexEntries[i].Position, token) is not { } prepare ||
-					    !StreamIdComparer.Equals(prepare.EventStreamId, streamId))
-						continue;
-
-					if (prepare?.TimeStamp >= ageThreshold) {
-						results.Add(await CreateEventRecord(indexEntries[i].Version, prepare, streamName, eventTypes, token));
-					} else {
-						break;
-					}
-				}
-
-				if (results.Count > 0) {
-					//We got at least one event in the correct age range, so we will return whatever was valid and indicate where to read from next
-					var resultsList = results.ProduceList();
-					endEventNumber = resultsList[0].EventNumber;
-					nextEventNumber = endEventNumber + 1;
-					resultsList.Reverse();
-					var isEndOfStream = endEventNumber >= lastEventNumber;
-
-					var maxEventNumberToReturn = fromEventNumber + maxCount - 1;
-					while (resultsList.Count > 0 && resultsList[^1].EventNumber > maxEventNumberToReturn) {
-						nextEventNumber = resultsList[^1].EventNumber;
-						resultsList.RemoveAt(resultsList.Count - 1);
-						isEndOfStream = false;
-					}
-
-					return new IndexReadStreamResult(fromEventNumber, maxCount, resultsList.ToArray(), metadata,
-						nextEventNumber, lastEventNumber, isEndOfStream);
-				}
-
-				break;
-			}
-
-			//We didn't find anything, send back to the client with the latest position to retry
-			return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
-				metadata, nextEventNumber, lastEventNumber, isEndOfStream: false);
-
-			static async ValueTask<(long, IPrepareLogRecord<TStreamId>)> LowPrepare(
-				TFReaderLease tfReaderLease,
-				IReadOnlyList<IndexEntry> entries,
-				TStreamId streamId,
-				CancellationToken token) {
-
-				for (int i = entries.Count - 1; i >= 0; i--) {
-					if (await ReadPrepareInternal(tfReaderLease, entries[i].Position, token) is { } prepare &&
-					    StreamIdComparer.Equals(prepare.EventStreamId, streamId))
-						return (entries[i].Version, prepare);
-				}
-
-				return default;
-			}
-
-			static async ValueTask<(long, IPrepareLogRecord<TStreamId>)> HighPrepare(
-				TFReaderLease tfReaderLease,
-				IReadOnlyList<IndexEntry> entries,
-				TStreamId streamId,
-				CancellationToken token) {
-
-				for (int i = 0; i < entries.Count; i++) {
-					if (await ReadPrepareInternal(tfReaderLease, entries[i].Position, token) is { } prepare &&
-					    StreamIdComparer.Equals(prepare.EventStreamId, streamId))
-						return (entries[i].Version, prepare);
-				}
-
-				return default;
-			}
-		}
+		// async ValueTask<IndexReadStreamResult> ForStreamWithMaxAge(TStreamId streamId,
+		// 	string streamName,
+		// 	long fromEventNumber, int maxCount, long startEventNumber,
+		// 	long endEventNumber, long lastEventNumber, TimeSpan maxAge, StreamMetadata metadata,
+		// 	ITableIndex<TStreamId> tableIndex, TFReaderLease reader, INameLookup< TStreamId> eventTypes,
+		// 	bool skipIndexScanOnRead,
+		// 	CancellationToken token) {
+		//
+		// 	if (startEventNumber > lastEventNumber) {
+		// 		return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
+		// 			metadata, lastEventNumber + 1, lastEventNumber, isEndOfStream: true);
+		// 	}
+		//
+		// 	var ageThreshold = DateTime.UtcNow - maxAge;
+		// 	var nextEventNumber = lastEventNumber;
+		// 	var indexEntries = tableIndex.GetRange(streamId, startEventNumber, endEventNumber);
+		//
+		// 	//Move to the first valid entries. At this point we could instead return an empty result set with the minimum set, but that would
+		// 	//involve an additional set of reads for no good reason
+		// 	while (indexEntries is []) {
+		// 		// we didn't find any indexEntries, and we already early returned in the case that startEventNumber > lastEventNumber
+		// 		// so we want to find the oldest entry that is after startEventNumber.
+		// 		// startEventNumber may be before the start of the stream, or it may be in a gap caused by scavenging.
+		// 		// this will generally only iterate once, unless a scavenge completes exactly now, in which case it might iterate twice
+		// 		if (tableIndex.TryGetNextEntry(streamId, startEventNumber, out var next)) {
+		// 			startEventNumber = next.Version;
+		// 			endEventNumber = startEventNumber + maxCount - 1;
+		// 			indexEntries = tableIndex.GetRange(streamId, startEventNumber, endEventNumber);
+		// 		} else {
+		// 			//scavenge completed and deleted our stream? return empty set and get the client to try again?
+		// 			return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
+		// 				metadata, lastEventNumber + 1, lastEventNumber, isEndOfStream: false);
+		// 		}
+		// 	}
+		//
+		// 	var results = new ResultsDeduplicator(maxCount, skipIndexScanOnRead);
+		//
+		// 	for (int i = 0; i < indexEntries.Count; i++) {
+		//
+		// 		if (await ReadPrepareInternal(reader, indexEntries[i].Position, token) is not { } prepare ||
+		// 		    !StreamIdComparer.Equals(prepare.EventStreamId, streamId)) {
+		// 			continue;
+		// 		}
+		//
+		// 		if (prepare.TimeStamp >= ageThreshold) {
+		// 			results.Add(await CreateEventRecord(indexEntries[i].Version, prepare, streamName, eventTypes, token));
+		// 		} else {
+		// 			break;
+		// 		}
+		// 	}
+		//
+		// 	if (results.Count > 0) {
+		// 		//We got at least one event in the correct age range, so we will return whatever was valid and indicate where to read from next
+		// 		var resultsArray = results.ProduceArray();
+		// 		nextEventNumber = resultsArray[0].EventNumber + 1;
+		// 		Array.Reverse(resultsArray);
+		//
+		// 		var isEndOfStream = endEventNumber >= lastEventNumber;
+		// 		return new IndexReadStreamResult(fromEventNumber, maxCount, resultsArray, metadata,
+		// 			nextEventNumber, lastEventNumber, isEndOfStream);
+		// 	}
+		//
+		// 	//we didn't find anything valid yet, now we need to search
+		// 	//the entries we found were all either scavenged, or expired, or for another stream.
+		//
+		// 	//check high value will be valid, otherwise early return.
+		// 	// this resolves hash collisions itself
+		// 	if (await ReadPrepareInternal(reader, streamId, eventNumber: lastEventNumber, token) is not { } lastEvent ||
+		// 	    lastEvent.TimeStamp < ageThreshold || lastEventNumber < fromEventNumber) {
+		// 		//No events in the stream are < max age, so return an empty set
+		// 		return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
+		// 			metadata, lastEventNumber + 1, lastEventNumber, isEndOfStream: true);
+		// 	}
+		//
+		// 	// intuition for loop termination here is that the explicit continue cases are
+		// 	// the only way to continue the iteration. apart from those it return;s or break;s.
+		// 	// the continue cases always narrow the gap between low and high
+		// 	//
+		// 	// low, mid, and high are event numbers (versions)
+		// 	// attempt to initialize low to the latest (highest) entry that we found but in the unlikely event that
+		// 	// they're out of version order thats still ok, low will just be lower than it could have been.
+		// 	var low = indexEntries[0].Version;
+		// 	var high = lastEventNumber;
+		// 	while (low <= high) {
+		// 		var mid = low + ((high - low) / 2);
+		// 		indexEntries = tableIndex.GetRange(streamId, mid, mid + maxCount - 1);
+		// 		if (indexEntries.Count > 0) {
+		// 			nextEventNumber = indexEntries[0].Version + 1;
+		// 		} else {
+		// 			// midpoint is in a gap. everything before any gap is no longer part of the stream
+		// 			// though the entries may not have been removed yet. skip to higher event numbers
+		// 			if (!tableIndex.TryGetNextEntry(streamId, mid, out var next)) {
+		// 				// there is nothing in this stream (maybe a scavenge just completed)
+		// 				nextEventNumber = lastEventNumber;
+		// 				break;
+		// 			}
+		// 			low = next.Version;
+		// 			continue;
+		// 		}
+		//
+		// 		// be really careful if adjusting these, to make sure that the loop still terminates
+		// 		var (lowPrepareVersion, lowPrepare) = await LowPrepare(reader, indexEntries, streamId, token);
+		// 		if (lowPrepare?.TimeStamp >= ageThreshold) {
+		// 			// found a lowPrepare for this stream. it has not expired. chop lower in case there are more
+		// 			high = mid - 1;
+		// 			nextEventNumber = lowPrepareVersion;
+		// 			continue;
+		// 		}
+		//
+		// 		var (highPrepareVersion, highPrepare) = await HighPrepare(reader, indexEntries, streamId, token);
+		// 		if (highPrepare?.TimeStamp < ageThreshold) {
+		// 			// found a highPrepare for this stream. it has expired. chop higher
+		// 			low = highPrepareVersion + 1;
+		// 			continue;
+		// 		}
+		//
+		// 		//ok, some entries must match, if not (due to time moving forwards) we can just reissue based on the current mid
+		// 		// also might have no matches because the getrange call returned addresses that
+		// 		// were all scavenged or for other streams, in which case we won't add anything to results here
+		// 		for (int i = 0; i < indexEntries.Count; i++) {
+		// 			if (await ReadPrepareInternal(reader, indexEntries[i].Position, token) is not { } prepare ||
+		// 			    !StreamIdComparer.Equals(prepare.EventStreamId, streamId))
+		// 				continue;
+		//
+		// 			if (prepare?.TimeStamp >= ageThreshold) {
+		// 				results.Add(await CreateEventRecord(indexEntries[i].Version, prepare, streamName, eventTypes, token));
+		// 			} else {
+		// 				break;
+		// 			}
+		// 		}
+		//
+		// 		if (results.Count > 0) {
+		// 			//We got at least one event in the correct age range, so we will return whatever was valid and indicate where to read from next
+		// 			var resultsList = results.ProduceList();
+		// 			endEventNumber = resultsList[0].EventNumber;
+		// 			nextEventNumber = endEventNumber + 1;
+		// 			resultsList.Reverse();
+		// 			var isEndOfStream = endEventNumber >= lastEventNumber;
+		//
+		// 			var maxEventNumberToReturn = fromEventNumber + maxCount - 1;
+		// 			while (resultsList.Count > 0 && resultsList[^1].EventNumber > maxEventNumberToReturn) {
+		// 				nextEventNumber = resultsList[^1].EventNumber;
+		// 				resultsList.RemoveAt(resultsList.Count - 1);
+		// 				isEndOfStream = false;
+		// 			}
+		//
+		// 			return new IndexReadStreamResult(fromEventNumber, maxCount, resultsList.ToArray(), metadata,
+		// 				nextEventNumber, lastEventNumber, isEndOfStream);
+		// 		}
+		//
+		// 		break;
+		// 	}
+		//
+		// 	//We didn't find anything, send back to the client with the latest position to retry
+		// 	return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
+		// 		metadata, nextEventNumber, lastEventNumber, isEndOfStream: false);
+		//
+		// 	static async ValueTask<(long, IPrepareLogRecord<TStreamId>)> LowPrepare(
+		// 		TFReaderLease tfReaderLease,
+		// 		IReadOnlyList<IndexEntry> entries,
+		// 		TStreamId streamId,
+		// 		CancellationToken token) {
+		//
+		// 		for (int i = entries.Count - 1; i >= 0; i--) {
+		// 			if (await ReadPrepareInternal(tfReaderLease, entries[i].Position, token) is { } prepare &&
+		// 			    StreamIdComparer.Equals(prepare.EventStreamId, streamId))
+		// 				return (entries[i].Version, prepare);
+		// 		}
+		//
+		// 		return default;
+		// 	}
+		//
+		// 	static async ValueTask<(long, IPrepareLogRecord<TStreamId>)> HighPrepare(
+		// 		TFReaderLease tfReaderLease,
+		// 		IReadOnlyList<IndexEntry> entries,
+		// 		TStreamId streamId,
+		// 		CancellationToken token) {
+		//
+		// 		for (int i = 0; i < entries.Count; i++) {
+		// 			if (await ReadPrepareInternal(tfReaderLease, entries[i].Position, token) is { } prepare &&
+		// 			    StreamIdComparer.Equals(prepare.EventStreamId, streamId))
+		// 				return (entries[i].Version, prepare);
+		// 		}
+		//
+		// 		return default;
+		// 	}
+		// }
 	}
 
 	delegate IAsyncEnumerable<IndexEntry> ReadIndexEntries<in TStreamHandle>(

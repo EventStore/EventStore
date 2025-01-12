@@ -59,6 +59,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Caching;
 using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
+using EventStore.Core.Duck;
 using EventStore.Core.Services.Archive;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.PeriodicLogs;
@@ -86,6 +87,7 @@ using EventStore.Licensing;
 using EventStore.Core.Services.Archive.Storage;
 
 namespace EventStore.Core;
+
 public abstract class ClusterVNode {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
 
@@ -99,7 +101,6 @@ public abstract class ClusterVNode {
 		IConfiguration configuration = null,
 		Guid? instanceId = null,
 		int debugIndex = 0) {
-
 		return new ClusterVNode<TStreamId>(
 			options,
 			logFormatAbstractorFactory,
@@ -233,7 +234,6 @@ public class ClusterVNode<TStreamId> :
 		IExpiryStrategy expiryStrategy = null,
 		Guid? instanceId = null, int debugIndex = 0,
 		Action<IServiceCollection> configureAdditionalNodeServices = null) {
-
 		configuration ??= new ConfigurationBuilder().Build();
 
 		LogPluginSubsectionWarnings(configuration);
@@ -316,6 +316,8 @@ public class ClusterVNode<TStreamId> :
 		var metricsConfiguration = MetricsConfiguration.Get((configuration));
 		MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
+		DuckDb.Init();
+
 		Db = new TFChunkDb(
 			dbConfig,
 			tracker: trackers.TransactionFileTracker,
@@ -334,7 +336,6 @@ public class ClusterVNode<TStreamId> :
 			out SystemStatsHelper statsHelper,
 			out int readerThreadsCount,
 			out int workerThreadsCount) {
-
 			ICheckpoint writerChk;
 			ICheckpoint chaserChk;
 			ICheckpoint epochChk;
@@ -841,6 +842,7 @@ public class ClusterVNode<TStreamId> :
 		});
 
 		GossipAdvertiseInfo = GetGossipAdvertiseInfo();
+
 		GossipAdvertiseInfo GetGossipAdvertiseInfo() {
 			IPAddress intIpAddress = options.Interface.ReplicationIp;
 
@@ -959,11 +961,12 @@ public class ClusterVNode<TStreamId> :
 						TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatInterval),
 						TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatTimeout),
 						_authenticationProvider, authorizationGateway, null, null, null, ESConsts.UnrestrictedPendingSendBytes,
-					ESConsts.MaxConnectionQueueSize);
+						ESConsts.MaxConnectionQueueSize);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
 					_mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
 					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intTcpService);
 				}
+
 				// INTERNAL SECURE TCP
 				if (NodeInfo.InternalSecureTcp != null) {
 					var intSecTcpService = new TcpService(_mainQueue, NodeInfo.InternalSecureTcp, _workersHandler,
@@ -1057,6 +1060,7 @@ public class ClusterVNode<TStreamId> :
 			_httpService.SetupController(statController);
 			_httpService.SetupController(metricsController);
 		}
+
 		if (options.Interface.EnableAtomPubOverHttp || options.DevMode.Dev)
 			_httpService.SetupController(atomController);
 		if (!options.Interface.DisableGossipOnHttp)
@@ -1502,13 +1506,13 @@ public class ClusterVNode<TStreamId> :
 			options.Cluster.DiscoverViaDns,
 			options.Cluster.ClusterSize > 1,
 			options.Cluster.GossipSeed is { Length: > 0 }) switch {
-				(true, true, _) => (IGossipSeedSource)new DnsGossipSeedSource(options.Cluster.ClusterDns,
-					options.Cluster.ClusterGossipPort),
-				(false, true, false) => throw new InvalidConfigurationException(
-					"DNS discovery is disabled, but no gossip seed endpoints have been specified. "
-					+ "Specify gossip seeds using the `GossipSeed` option."),
-				_ => new KnownEndpointGossipSeedSource(options.Cluster.GossipSeed)
-			};
+			(true, true, _) => (IGossipSeedSource)new DnsGossipSeedSource(options.Cluster.ClusterDns,
+				options.Cluster.ClusterGossipPort),
+			(false, true, false) => throw new InvalidConfigurationException(
+				"DNS discovery is disabled, but no gossip seed endpoints have been specified. "
+				+ "Specify gossip seeds using the `GossipSeed` option."),
+			_ => new KnownEndpointGossipSeedSource(options.Cluster.GossipSeed)
+		};
 
 		var gossip = new NodeGossipService(
 			_mainQueue,
@@ -1695,7 +1699,6 @@ public class ClusterVNode<TStreamId> :
 		out ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
 		out ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
 		out ICacheResizer streamInfoCacheResizer) {
-
 		streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
 			"LastEventNumber", streamInfoCacheCapacity);
 
@@ -1715,7 +1718,6 @@ public class ClusterVNode<TStreamId> :
 		out ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
 		out ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
 		out ICacheResizer streamInfoCacheResizer) {
-
 		int LastEventNumberCacheItemSize(TStreamId streamId, IndexBackend<TStreamId>.EventNumberCached eventNumberCached) =>
 			LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>.ApproximateItemSize(
 				keyRefsSize: sizer.GetSizeInBytes(streamId),
@@ -1790,8 +1792,8 @@ public class ClusterVNode<TStreamId> :
 
 		try {
 			await _shutdownSource.Task.WaitAsync(timeout ?? DefaultShutdownTimeout, cancellationToken);
-		}
-		catch (Exception) {
+			DuckDb.Close();
+		} catch (Exception) {
 			Log.Error("Graceful shutdown not complete. Forcing shutdown now.");
 			throw;
 		}
@@ -1908,7 +1910,8 @@ public class ClusterVNode<TStreamId> :
 			sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors; //set the RemoteCertificateChainErrors flag
 
 		if (otherNames != null && (sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0) {
-			if (otherNames.Any(certificate.MatchesName)) { // if we have a match,
+			if (otherNames.Any(certificate.MatchesName)) {
+				// if we have a match,
 				sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNameMismatch; // clear the RemoteCertificateNameMismatch flag
 			}
 		}
@@ -1917,6 +1920,7 @@ public class ClusterVNode<TStreamId> :
 			foreach (var status in chainStatusInformation) {
 				Log.Error(status);
 			}
+
 			return (false, $"The certificate ({certificate.Subject}) provided by the {certificateOrigin} failed validation with the following error(s): {sslPolicyErrors.ToString()} ({chainStatus})");
 		}
 

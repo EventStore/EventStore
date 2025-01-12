@@ -7,15 +7,14 @@
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 	<ItemGroup>
+		<PackageReference Include="Dapper" Version="2.1.35" />
+		<PackageReference Include="DuckDB.NET.Data.Full" Version="1.1.3" />
 		<PackageReference Include="EventStore.Plugins" Version="25.2.5" />
 		<PackageReference Include="FluentStorage" Version="5.6.0" />
 		<PackageReference Include="FluentStorage.AWS" Version="5.5.0" />
 		<PackageReference Include="Google.Protobuf" Version="3.27.2" />
 		<PackageReference Include="Grpc.AspNetCore" Version="2.64.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.65.0">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-		</PackageReference>
+		<PackageReference Include="Grpc.Tools" Version="2.65.0" PrivateAssets="All"/>
 		<PackageReference Include="JetBrains.Annotations" Version="2023.3.0" />
 		<PackageReference Include="librdkafka.redist" Version="2.5.0" />
 		<PackageReference Include="Microsoft.FASTER.Core" Version="1.9.16" />

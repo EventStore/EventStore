@@ -350,8 +350,8 @@ public class StorageReaderWorker<TStreamId> :
 
 			var streamName = msg.EventStreamId;
 			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
-			if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
-				return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion.Value);
+			// if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
+				// return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion.Value);
 
 			var result = await _readIndex.ReadStreamEventsForward(streamName, streamId, msg.FromEventNumber, msg.MaxCount, token);
 			CheckEventsOrder(msg, result);
