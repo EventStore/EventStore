@@ -16,7 +16,7 @@ public static class TempIndexMetrics {
 		ReadDuration = new(meter, "eventstore-temp-read-duration");
 	}
 
-	public static IDisposable MeasureIndex(string name) => new Duration(IndexDuration, name, Instant.Now);
+	public static Duration MeasureIndex(string name) => new(IndexDuration, name, Instant.Now);
 
-	public static IDisposable MeasureRead(string name) => new Duration(ReadDuration, name, Instant.Now);
+	public static Duration MeasureRead(string name) => new(ReadDuration, name, Instant.Now);
 }

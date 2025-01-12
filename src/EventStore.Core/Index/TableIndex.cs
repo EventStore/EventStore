@@ -99,7 +99,6 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		bool useBloomFilter = true,
 		int lruCacheSize = 1_000_000,
 		IIndexStatusTracker statusTracker = null) {
-
 		Ensure.NotNullOrEmpty(directory, "directory");
 		Ensure.NotNull(memTableFactory, "memTableFactory");
 		Ensure.NotNull(lowHasher, "lowHasher");
@@ -128,7 +127,7 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		_useBloomFilter = useBloomFilter;
 		_lruCacheSize = lruCacheSize;
 		_ptableVersion = ptableVersion;
-		_awaitingMemTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1, 0)};
+		_awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1, 0) };
 
 		_lowHasher = lowHasher;
 		_highHasher = highHasher;
@@ -202,8 +201,9 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		// clean up all other remaining files
 		var indexFiles = _indexMap.InOrder().SelectMany(x => new[] {
 				Path.GetFileName(x.Filename),
- 					Path.GetFileName(x.BloomFilterFilename) })
-			.Union(new[] {IndexMapFilename});
+				Path.GetFileName(x.BloomFilterFilename)
+			})
+			.Union(new[] { IndexMapFilename });
 		var toDeleteFiles = Directory.EnumerateFiles(_directory).Select(Path.GetFileName)
 			.Except(indexFiles, StringComparer.OrdinalIgnoreCase);
 		foreach (var filePath in toDeleteFiles) {
@@ -244,7 +244,7 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		Ensure.Nonnegative(version, "version");
 		Ensure.Nonnegative(position, "position");
 
-		AddEntries(commitPos, new[] {CreateIndexKey(streamId, version, position)});
+		AddEntries(commitPos, new[] { CreateIndexKey(streamId, version, position) });
 	}
 
 	public void AddEntries(long commitPos, IList<IndexKey<TStreamId>> entries) {
@@ -276,7 +276,7 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 	//Automerge only
 	private void TryProcessAwaitingTables(long commitPos, long prepareCheckpoint) {
 		lock (_awaitingTablesLock) {
-			var newTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1, 0)};
+			var newTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1, 0) };
 			newTables.AddRange(_awaitingMemTables.Select(
 				(x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos, x.Level) : x));
 
@@ -329,6 +329,7 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 						_indexMap.SaveToFile(indexmapFile);
 						manualMergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
 					}
+
 					Log.Debug("Manual index merge completed: {numMergedPTables} PTable(s) merged.", manualMergeResult.ToDelete.Count);
 				}
 
@@ -424,7 +425,6 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		Func<IndexEntry, CancellationToken, ValueTask<bool>> shouldKeep,
 		IIndexScavengerLog log,
 		CancellationToken ct) {
-
 		GetExclusiveBackgroundTask(ct);
 		var sw = Stopwatch.StartNew();
 
@@ -448,7 +448,6 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		Func<IndexEntry, CancellationToken, ValueTask<bool>> shouldKeep,
 		IIndexScavengerLog log,
 		CancellationToken ct) {
-
 		var toScavenge = _indexMap.InOrder().ToList();
 
 		foreach (var pTable in toScavenge) {
@@ -802,13 +801,14 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		int? limit = null) => GetRange(CreateHash(streamId), startVersion, endVersion, limit);
 
 	public IReadOnlyList<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null) {
-		using var _ = TempIndexMetrics.MeasureIndex("get_range");
 		var counter = 0;
 		while (counter < 5) {
 			counter++;
+			using var duration = TempIndexMetrics.MeasureIndex("get_range");
 			try {
 				return GetRangeInternal(stream, startVersion, endVersion, limit);
-			} catch (FileBeingDeletedException) {
+			} catch (FileBeingDeletedException e) {
+				duration.SetException(e);
 				Log.Debug("File being deleted.");
 			} catch (MaybeCorruptIndexException) {
 				ForceIndexVerifyOnNextStartup();
@@ -870,6 +870,7 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 				prevOldestVersion = oldestVersion;
 			}
 		}
+
 		var areInOrder = maybeInOrder;
 
 		// 3. sort the entries by consuming the enumerators
@@ -888,8 +889,8 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 
 			var best = winner.Current;
 			if (first ||
-				((last.Stream != best.Stream) && (last.Version != best.Version)) ||
-				last.Position != best.Position) {
+			    ((last.Stream != best.Stream) && (last.Version != best.Version)) ||
+			    last.Position != best.Position) {
 				last = best;
 				sortedCandidates.Add(best);
 				first = false;
