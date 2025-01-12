@@ -110,26 +110,16 @@ public class EventStoreLoggerConfiguration {
 	private EventStoreLoggerConfiguration(string logsDirectory, string componentName,
 		IConfigurationRoot logLevelConfigurationRoot, LogConsoleFormat logConsoleFormat,
 		RollingInterval logFileInterval, int logFileSize, int logFileRetentionCount, bool disableLogFile) {
-		if (logsDirectory == null) {
-			throw new ArgumentNullException(nameof(logsDirectory));
-		}
+        ArgumentNullException.ThrowIfNull(logLevelConfigurationRoot);
 
-		if (componentName == null) {
-			throw new ArgumentNullException(nameof(componentName));
-		}
-
-		if (logLevelConfigurationRoot == null) {
-			throw new ArgumentNullException(nameof(logLevelConfigurationRoot));
-		}
-
-		_logsDirectory = logsDirectory;
-		_componentName = componentName;
+        _logsDirectory = logsDirectory ?? throw new ArgumentNullException(nameof(logsDirectory));
+		_componentName = componentName ?? throw new ArgumentNullException(nameof(componentName));
 
 		var loglevelSection = logLevelConfigurationRoot.GetSection("Logging").GetSection("LogLevel");
 		var defaultLogLevelSection = loglevelSection.GetSection("Default");
 		lock (_defaultLogLevelSwitchLock) {
 			_defaultLogLevelSwitch = new LoggingLevelSwitch {
-				MinimumLevel = LogEventLevel.Verbose
+				MinimumLevel = LogEventLevel.Information
 			};
 			ApplyLogLevel(defaultLogLevelSection, _defaultLogLevelSwitch);
 		}
