@@ -19,6 +19,7 @@ public static class DuckDb {
 	public static void Init() {
 		Connection = new("Data Source=./data/file.db");
 		Connection.Open();
+		Connection.Execute("SET threads TO 10;");
 	}
 
 	public static void Close() {
