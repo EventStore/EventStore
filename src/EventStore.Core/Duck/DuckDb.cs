@@ -9,10 +9,13 @@ using DuckDB.NET.Data;
 using EventStore.Core.Index;
 using EventStore.Core.Metrics;
 using Microsoft.Extensions.Caching.Memory;
+using Serilog;
 
 namespace EventStore.Core.Duck;
 
 public static class DuckDb {
+	static ILogger Log = Serilog.Log.ForContext(typeof(DuckDb));
+
 	public static void Init() {
 		Connection = new("Data Source=./data/file.db");
 		Connection.Open();
@@ -34,7 +37,7 @@ public static class DuckDb {
 				var result = Connection.Query<IndexRecord>(query, new { stream, start = fromEventNumber, count = maxCount });
 				return result.Select(x => new IndexEntry(streamId, x.event_number, x.log_position)).ToList();
 			} catch (Exception e) {
-				Console.WriteLine(e);
+				Log.Warning("Error while reading index: {Exception}", e.Message);
 			}
 		}
 	}
