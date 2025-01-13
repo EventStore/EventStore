@@ -1,6 +1,7 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -30,6 +31,10 @@ public class NoArchiveReader : IArchiveStorageReader {
 
 	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) =>
 		AsyncEnumerable.Empty<string>();
+
+	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
+		throw new NotImplementedException();
+	}
 
 	// There is no archive so it doesn't matter how we would name the chunks in it.
 	class NoNamer : IArchiveChunkNameResolver {

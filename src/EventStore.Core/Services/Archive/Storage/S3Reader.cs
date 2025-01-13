@@ -76,4 +76,8 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 		await foreach (var s3Object in listResponse.S3Objects.WithCancellation(ct))
 			yield return s3Object.Key;
 	}
+
+	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
+		throw new NotImplementedException();
+	}
 }

@@ -115,4 +115,8 @@ public class FileSystemReader : IArchiveStorageReader {
 			.Order()
 			.ToAsyncEnumerable();
 	}
+
+	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
+		throw new NotImplementedException();
+	}
 }
