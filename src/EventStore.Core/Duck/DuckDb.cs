@@ -87,6 +87,7 @@ public static class DuckDb {
 				))
 			);
 		var result = await records.ToListAsync(cancellationToken);
+		Log.Information("Retrieved {Count} events from category stream {StreamName} from {From} max {MaxCount}", result.Count, streamName, fromEventNumber, maxCount);
 		return result;
 
 		async ValueTask<IPrepareLogRecord<TStreamId>> ReadPrepare(long logPosition) {
