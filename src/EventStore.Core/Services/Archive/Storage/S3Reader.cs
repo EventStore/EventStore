@@ -67,16 +67,6 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 		}
 	}
 
-	public override async IAsyncEnumerable<string> ListChunks([EnumeratorCancellation] CancellationToken ct) {
-		var listResponse = _awsBlobStorage.NativeBlobClient.Paginators.ListObjectsV2(new ListObjectsV2Request {
-			BucketName = _options.Bucket,
-			Prefix = ChunkNameResolver.Prefix,
-		});
-
-		await foreach (var s3Object in listResponse.S3Objects.WithCancellation(ct))
-			yield return s3Object.Key;
-	}
-
 	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
 		throw new NotImplementedException();
 	}

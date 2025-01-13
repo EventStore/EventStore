@@ -108,14 +108,6 @@ public class FileSystemReader : IArchiveStorageReader {
 		return await task;
 	}
 
-	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
-		return new DirectoryInfo(_archivePath)
-			.EnumerateFiles($"{ChunkNameResolver.Prefix}*")
-			.Select(chunk => chunk.Name)
-			.Order()
-			.ToAsyncEnumerable();
-	}
-
 	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
 		throw new NotImplementedException();
 	}

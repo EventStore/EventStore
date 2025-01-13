@@ -29,9 +29,6 @@ public class NoArchiveReader : IArchiveStorageReader {
 	public ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) =>
 		ValueTask.FromException<Stream>(new ChunkDeletedException());
 
-	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) =>
-		AsyncEnumerable.Empty<string>();
-
 	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
 		throw new NotImplementedException();
 	}

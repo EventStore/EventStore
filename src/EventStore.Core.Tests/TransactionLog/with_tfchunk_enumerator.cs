@@ -116,9 +116,6 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 		public ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) =>
 			throw new NotImplementedException();
 
-		public IAsyncEnumerable<string> ListChunks(CancellationToken ct) =>
-			throw new NotImplementedException();
-
 		public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
 			throw new NotImplementedException();
 		}

@@ -31,9 +31,4 @@ public class NoArchiveReaderTests {
 			await _sut.GetChunk(0, 3, 4, CancellationToken.None);
 		});
 	}
-
-	[Fact]
-	public async Task list_chunks_returns_empty() {
-		Assert.Empty(await _sut.ListChunks(CancellationToken.None).ToArrayAsync());
-	}
 }

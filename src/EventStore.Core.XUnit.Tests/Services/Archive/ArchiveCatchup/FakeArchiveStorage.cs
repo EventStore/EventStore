@@ -79,8 +79,6 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 		return ValueTask.FromResult((Stream)stream);
 	}
 
-	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) => throw new NotImplementedException();
-
 	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
 		throw new NotImplementedException();
 	}

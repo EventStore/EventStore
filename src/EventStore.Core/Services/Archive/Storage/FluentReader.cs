@@ -2,7 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,6 +36,4 @@ public abstract class FluentReader(IArchiveChunkNameResolver chunkNameResolver, 
 		var stream = await BlobStorage.OpenReadAsync(chunkFile, ct);
 		return stream ?? throw new ChunkDeletedException();
 	}
-
-	public abstract IAsyncEnumerable<string> ListChunks(CancellationToken ct);
 }

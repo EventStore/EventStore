@@ -79,27 +79,4 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 			await using var _ = await sut.GetChunk(33, 1, 2, CancellationToken.None);
 		});
 	}
-
-	[Theory]
-	[StorageData.S3]
-	[StorageData.FileSystem]
-	public async Task can_list_chunks(StorageType storageType) {
-		var sut = CreateReaderSut(storageType);
-
-		var chunk0 = CreateLocalChunk(0, 0);
-		var chunk1 = CreateLocalChunk(1, 0);
-		var chunk2 = CreateLocalChunk(2, 0);
-
-		var writerSut = CreateWriterSut(storageType);
-		await writerSut.StoreChunk(chunk0, 0, CancellationToken.None);
-		await writerSut.StoreChunk(chunk1, 1, CancellationToken.None);
-		await writerSut.StoreChunk(chunk2, 2, CancellationToken.None);
-
-		var archivedChunks = sut.ListChunks(CancellationToken.None).ToEnumerable();
-		Assert.Equal([
-			"chunk-000000.000001",
-			"chunk-000001.000001",
-			"chunk-000002.000001"
-		], archivedChunks);
-	}
 }
