@@ -345,19 +345,19 @@ public class StorageReaderWorker<TStreamId>(
 				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
 					ReadStreamResult.Success, resolved, StreamMetadata.Empty, false, string.Empty,
 					resolved[^1].OriginalEventNumber + 1, lastEventNumber, resolved.Count < msg.MaxCount, lastIndexPosition);
-			} else {
-				if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
-					return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion.Value);
-
-				var result = await _readIndex.ReadStreamEventsForward(msg.EventStreamId, streamId, msg.FromEventNumber, msg.MaxCount, token);
-				CheckEventsOrder(msg, result);
-				if (await ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User, token) is not { } resolvedPairs)
-					return NoData(msg, ReadStreamResult.AccessDenied, lastIndexPosition);
-
-				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
-					(ReadStreamResult)result.Result, resolvedPairs, result.Metadata, false, string.Empty,
-					result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastIndexPosition);
 			}
+
+			if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
+				return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion.Value);
+
+			var result = await _readIndex.ReadStreamEventsForward(msg.EventStreamId, streamId, msg.FromEventNumber, msg.MaxCount, token);
+			CheckEventsOrder(msg, result);
+			if (await ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User, token) is not { } resolvedPairs)
+				return NoData(msg, ReadStreamResult.AccessDenied, lastIndexPosition);
+
+			return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
+				(ReadStreamResult)result.Result, resolvedPairs, result.Metadata, false, string.Empty,
+				result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastIndexPosition);
 		} catch (Exception exc) {
 			Log.Error(exc, "Error during processing ReadStreamEventsForward request.");
 			return NoData(msg, ReadStreamResult.Error, lastIndexPosition, error: exc.Message);
@@ -385,6 +385,17 @@ public class StorageReaderWorker<TStreamId>(
 
 			var streamName = msg.EventStreamId;
 			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
+			if (DuckDb.UseDuckDb && msg.EventStreamId.StartsWith("$ce") && msg.ResolveLinkTos) {
+				var lastEventNumber = DuckDb.GetCategoryLastEventNumber(msg.EventStreamId);
+				if (lastEventNumber == 0)
+					return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);
+				var resolved = await DuckDb.GetCategoryEvents(_readIndex.IndexReader, streamId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
+				if (resolved.Count == 0)
+					return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);
+				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
+					ReadStreamResult.Success, resolved, StreamMetadata.Empty, false, string.Empty,
+					resolved[^1].OriginalEventNumber + 1, lastEventNumber, resolved.Count < msg.MaxCount, lastIndexedPosition);
+			}
 			if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
 				return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion.Value);
 

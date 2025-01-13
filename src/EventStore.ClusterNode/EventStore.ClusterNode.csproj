@@ -43,6 +43,8 @@
 	<ItemGroup>
 		<Content Include="app2.ico" />
 		<None Remove="certs\**\*" />
+		<Content Include="bin\ARM64\Debug\net8.0\data\file.db" />
+		<Content Include="bin\Debug\net8.0\data\file.db" />
 		<Content Include="certs\**\*" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 	<!-- TODO(jen20): Investigate which of these are correct -->

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
@@ -12,6 +13,8 @@ using EventStore.Core.Data;
 using EventStore.Core.Index;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
@@ -51,13 +54,14 @@ public static class DuckDb {
 		}
 	}
 
-	public static async ValueTask<IReadOnlyList<ResolvedEvent>> GetCategoryEvents<TStreamId>(IIndexReader<TStreamId> reader, TStreamId streamId, string streamName, long fromEventNumber, int maxCount,
+	public static async ValueTask<IReadOnlyList<ResolvedEvent>> GetCategoryEvents<TStreamId>(IIndexReader<TStreamId> index, TStreamId streamId, string streamName, long fromEventNumber, int maxCount,
 		CancellationToken cancellationToken) {
 		var range = QueryCategory(streamName, fromEventNumber, fromEventNumber + maxCount - 1);
+		using var reader = index.BorrowReader();
 		var recordsQuery = range
 			.ToAsyncEnumerable()
 			.SelectAwaitWithCancellation(async (x, ct)
-				=> (Version: x.category_seq, StreamName: x.stream_name, EventType: x.event_type, EventNumber: x.event_number, Prepare: await reader.ReadPrepare(streamId, x.log_position, ct))
+				=> (Version: x.category_seq, StreamName: x.stream_name, EventType: x.event_type, EventNumber: x.event_number, Prepare: await ReadPrepare(x.log_position))
 			)
 			.Where(x => x.Prepare != null)
 			.OrderByDescending(x => x.Version);
@@ -77,11 +81,24 @@ public static class DuckDb {
 					x.Prepare.TimeStamp,
 					x.Prepare.Flags,
 					"$>",
-					[],
+					Encoding.UTF8.GetBytes($"{x.EventNumber}@{x.StreamName}"),
 					[]
 				))
 			);
-		return await records.ToListAsync(cancellationToken);
+		var result = await records.ToListAsync(cancellationToken);
+		return result;
+
+		async ValueTask<IPrepareLogRecord<TStreamId>> ReadPrepare(long logPosition) {
+			var r = await reader.TryReadAt(logPosition, couldBeScavenged: true, cancellationToken);
+			if (!r.Success)
+				return null;
+
+			if (r.LogRecord.RecordType is not LogRecordType.Prepare
+			    and not LogRecordType.Stream
+			    and not LogRecordType.EventType)
+				throw new($"Incorrect type of log record {r.LogRecord.RecordType}, expected Prepare record.");
+			return (IPrepareLogRecord<TStreamId>)r.LogRecord;
+		}
 	}
 
 	static List<CategoryRecord> QueryCategory(string streamName, long fromEventNumber, long toEventNumber) {
@@ -104,8 +121,8 @@ public static class DuckDb {
 			using var duration = TempIndexMetrics.MeasureIndex("duck_get_cat_range");
 			try {
 				var categoryId = GetCategoryId(category);
-				var result = Connection.Query<CategoryRecord>(query, new { cat = categoryId, start = fromEventNumber, end = toEventNumber });
-				return result.ToList();
+				var result = Connection.Query<CategoryRecord>(query, new { cat = categoryId, start = fromEventNumber, end = toEventNumber }).ToList();
+				return result;
 			} catch (Exception e) {
 				Log.Warning("Error while reading index: {Exception}", e.Message);
 				duration.SetException(e);
@@ -147,6 +164,7 @@ public static class DuckDb {
 		while (true) {
 			try {
 				var categoryId = GetCategoryId(category);
+				if (categoryId == 0) return 0;
 				return Connection.Query<long>("select max(seq) from idx_all where category=$cat", new { cat = categoryId }).SingleOrDefault();
 			} catch (Exception e) {
 				Log.Warning("Error while reading index: {Exception}", e.Message);
@@ -158,6 +176,7 @@ public static class DuckDb {
 		return Cache.GetOrCreate(category, GetFromDb);
 
 		static long GetFromDb(ICacheEntry arg) {
+			Log.Information("Resolving category {Category}", arg.Key);
 			const string sql = "select id from category where name=$name";
 			arg.SlidingExpiration = TimeSpan.FromDays(7);
 			var id = Connection.Query<long>(sql, new { name = arg.Key }).SingleOrDefault();

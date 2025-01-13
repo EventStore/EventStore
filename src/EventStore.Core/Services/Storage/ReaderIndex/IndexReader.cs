@@ -49,6 +49,7 @@ public interface IIndexReader<TStreamId> {
 	ValueTask<long> GetStreamLastEventNumber(TStreamId streamId, CancellationToken token);
 	ValueTask<long> GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition, CancellationToken token);
 	ValueTask<long> GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition, CancellationToken token);
+	TFReaderLease BorrowReader();
 }
 
 public abstract class IndexReader {
@@ -157,7 +158,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 		long eventNumber, CancellationToken token) {
 		var recordsQuery = _tableIndex.GetRange(streamId, eventNumber, eventNumber)
 			.ToAsyncEnumerable()
-			.SelectAwaitWithCancellation(async (x, token) => new { x.Version, Prepare = await ReadPrepareInternal(reader, x.Position, token) })
+			.SelectAwaitWithCancellation(async (x, token) => new { x.Version, Prepare = await ReadPrepareAtLogPosition(reader, x.Position, token) })
 			.Where(x => x.Prepare is not null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId))
 			.GroupBy(static x => x.Version)
 			.SelectAwaitWithCancellation(AsyncEnumerable.LastAsync)
@@ -169,7 +170,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 	private async ValueTask<IPrepareLogRecord<TStreamId>> ReadPrepareSkipScan(TFReaderLease reader, TStreamId streamId, long eventNumber, CancellationToken token) {
 		if (!_tableIndex.TryGetOneValue(streamId, eventNumber, out var position)) return null;
 
-		if (await ReadPrepareInternal(reader, position, token) is { } rec &&
+		if (await ReadPrepareAtLogPosition(reader, position, token) is { } rec &&
 		    StreamIdComparer.Equals(rec.EventStreamId, streamId))
 			return rec;
 
@@ -177,7 +178,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 			Interlocked.Increment(ref _hashCollisions);
 			if (indexEntry.Position == position)
 				continue;
-			rec = await ReadPrepareInternal(reader, indexEntry.Position, token);
+			rec = await ReadPrepareAtLogPosition(reader, indexEntry.Position, token);
 			if (rec != null && StreamIdComparer.Equals(rec.EventStreamId, streamId))
 				return rec;
 		}
@@ -185,7 +186,11 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 		return null;
 	}
 
-	private static async ValueTask<IPrepareLogRecord<TStreamId>> ReadPrepareInternal(TFReaderLease reader, long logPosition, CancellationToken token) {
+	TFReaderLease IIndexReader<TStreamId>.BorrowReader() {
+		return _backend.BorrowReader();
+	}
+
+	private static async ValueTask<IPrepareLogRecord<TStreamId>> ReadPrepareAtLogPosition(TFReaderLease reader, long logPosition, CancellationToken token) {
 		var result = await reader.TryReadAt(logPosition, couldBeScavenged: true, token);
 		if (!result.Success)
 			return null;
@@ -263,15 +268,15 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 			// 		.Where(x => x.Prepare != null)
 			// 		.OrderByDescending(x => x.Version);
 			// } else {
-				var range = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber);
-				recordsQuery = range
-					.ToAsyncEnumerable()
-					.SelectAwaitWithCancellation(async (x, ct) => (x.Version, Prepare: await ReadPrepareInternal(reader, x.Position, ct)))
-					.Where(x => x.Prepare != null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId));
-				if (!skipIndexScanOnRead) {
-					recordsQuery = recordsQuery.OrderByDescending(x => x.Version)
-						.GroupBy(static x => x.Version).SelectAwaitWithCancellation(AsyncEnumerable.LastAsync);
-				}
+			var range = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber);
+			recordsQuery = range
+				.ToAsyncEnumerable()
+				.SelectAwaitWithCancellation(async (x, ct) => (x.Version, Prepare: await ReadPrepareAtLogPosition(reader, x.Position, ct)))
+				.Where(x => x.Prepare != null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId));
+			if (!skipIndexScanOnRead) {
+				recordsQuery = recordsQuery.OrderByDescending(x => x.Version)
+					.GroupBy(static x => x.Version).SelectAwaitWithCancellation(AsyncEnumerable.LastAsync);
+			}
 			// }
 
 			var records = await recordsQuery
@@ -319,7 +324,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 			var results = new ResultsDeduplicator(maxCount, skipIndexScanOnRead);
 
 			for (int i = 0; i < indexEntries.Count; i++) {
-				if (await ReadPrepareInternal(reader, indexEntries[i].Position, token) is not { } prepare ||
+				if (await ReadPrepareAtLogPosition(reader, indexEntries[i].Position, token) is not { } prepare ||
 				    !StreamIdComparer.Equals(prepare.EventStreamId, streamId)) {
 					continue;
 				}
@@ -398,7 +403,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 				// also might have no matches because the getrange call returned addresses that
 				// were all scavenged or for other streams, in which case we won't add anything to results here
 				for (int i = 0; i < indexEntries.Count; i++) {
-					if (await ReadPrepareInternal(reader, indexEntries[i].Position, token) is not { } prepare ||
+					if (await ReadPrepareAtLogPosition(reader, indexEntries[i].Position, token) is not { } prepare ||
 					    !StreamIdComparer.Equals(prepare.EventStreamId, streamId))
 						continue;
 
@@ -439,7 +444,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 				TStreamId streamId,
 				CancellationToken token) {
 				for (int i = entries.Count - 1; i >= 0; i--) {
-					if (await ReadPrepareInternal(tfReaderLease, entries[i].Position, token) is { } prepare && StreamIdComparer.Equals(prepare.EventStreamId, streamId))
+					if (await ReadPrepareAtLogPosition(tfReaderLease, entries[i].Position, token) is { } prepare && StreamIdComparer.Equals(prepare.EventStreamId, streamId))
 						return (entries[i].Version, prepare);
 				}
 
@@ -452,7 +457,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 				TStreamId streamId,
 				CancellationToken token) {
 				for (int i = 0; i < entries.Count; i++) {
-					if (await ReadPrepareInternal(tfReaderLease, entries[i].Position, token) is { } prepare && StreamIdComparer.Equals(prepare.EventStreamId, streamId))
+					if (await ReadPrepareAtLogPosition(tfReaderLease, entries[i].Position, token) is { } prepare && StreamIdComparer.Equals(prepare.EventStreamId, streamId))
 						return (entries[i].Version, prepare);
 				}
 
@@ -475,7 +480,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 		long endEventNumber)
 		=> indexReader._tableIndex.GetRange(streamHandle, startEventNumber, endEventNumber)
 			.ToAsyncEnumerable()
-			.SelectAwaitWithCancellation(async (x, token) => new { IndexEntry = x, Prepare = await ReadPrepareInternal(reader, x.Position, token) })
+			.SelectAwaitWithCancellation(async (x, token) => new { IndexEntry = x, Prepare = await ReadPrepareAtLogPosition(reader, x.Position, token) })
 			.Where(x => x.Prepare is not null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamHandle))
 			.Select(static x => x.IndexEntry);
 
@@ -608,7 +613,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 
 		var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
 			.ToAsyncEnumerable()
-			.SelectAwaitWithCancellation(async (x, token) => new { x.Version, Prepare = await ReadPrepareInternal(reader, x.Position, token) })
+			.SelectAwaitWithCancellation(async (x, token) => new { x.Version, Prepare = await ReadPrepareAtLogPosition(reader, x.Position, token) })
 			.Where(x => x.Prepare is not null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId));
 		if (!skipIndexScanOnRead) {
 			recordsQuery = recordsQuery.OrderByDescending(static x => x.Version)
@@ -771,7 +776,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 	public async ValueTask<TStreamId> GetEventStreamIdByTransactionId(long transactionId, CancellationToken token) {
 		Ensure.Nonnegative(transactionId, "transactionId");
 		using var reader = _backend.BorrowReader();
-		var res = await ReadPrepareInternal(reader, transactionId, token);
+		var res = await ReadPrepareAtLogPosition(reader, transactionId, token);
 		return res is null ? default : res.EventStreamId;
 	}
 
@@ -811,7 +816,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 		async ValueTask<bool> IsForThisStream(IndexEntry indexEntry, CancellationToken token) {
 			// we know that collisions have occurred for this stream's hash prior to "beforePosition" in the log
 			// we just fetch the stream name from the log to make sure this index entry is for the correct stream
-			var prepare = await ReadPrepareInternal(reader, indexEntry.Position, token);
+			var prepare = await ReadPrepareAtLogPosition(reader, indexEntry.Position, token);
 			return StreamIdComparer.Equals(prepare.EventStreamId, streamId);
 		}
 
@@ -845,7 +850,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 				streamId = getStreamId(stream);
 
 			// compare the correct stream name against this index entry's stream name fetched from the log
-			var prepare = await ReadPrepareInternal(reader, indexEntry.Position, token);
+			var prepare = await ReadPrepareAtLogPosition(reader, indexEntry.Position, token);
 			return StreamIdComparer.Equals(prepare.EventStreamId, streamId);
 		}
 
@@ -889,7 +894,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 		if (!_tableIndex.TryGetLatestEntry(streamId, out var latestEntry))
 			return ExpectedVersion.NoStream;
 
-		if (await ReadPrepareInternal(reader, latestEntry.Position, token) is not { } rec)
+		if (await ReadPrepareAtLogPosition(reader, latestEntry.Position, token) is not { } rec)
 			throw new Exception(
 				$"Could not read latest stream's prepare for stream '{streamId}' at position {latestEntry.Position}");
 
@@ -903,7 +908,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 
 		foreach (var indexEntry in _tableIndex.GetRange(streamId, startVersion, long.MaxValue,
 			         limit: _hashCollisionReadLimit + 1)) {
-			if (await ReadPrepareInternal(reader, indexEntry.Position, token) is { } r &&
+			if (await ReadPrepareAtLogPosition(reader, indexEntry.Position, token) is { } r &&
 			    StreamIdComparer.Equals(r.EventStreamId, streamId)) {
 				if (latestVersion is long.MinValue) {
 					latestVersion = indexEntry.Version;
