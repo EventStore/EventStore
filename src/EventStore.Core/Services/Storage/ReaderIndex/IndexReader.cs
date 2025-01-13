@@ -280,7 +280,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 			}
 
 			var range = streamName.StartsWith("$ce")
-				? DuckDb.GetCategoryRange(streamName, 0, fromEventNumber, maxCount)
+				? DuckDb.GetCategoryRange(streamName, 0, startEventNumber, endEventNumber)
 				: _tableIndex.GetRange(streamId, startEventNumber, endEventNumber);
 			var recordsQuery = range
 				.ToAsyncEnumerable()
