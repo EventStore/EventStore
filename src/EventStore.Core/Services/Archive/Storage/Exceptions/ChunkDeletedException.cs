@@ -5,4 +5,4 @@ using System;
 
 namespace EventStore.Core.Services.Archive.Storage.Exceptions;
 
-public class ChunkDeletedException : Exception;
+public class ChunkDeletedException : Exception; //qq is this adding anything over FileNotFoundException

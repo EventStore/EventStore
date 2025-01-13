@@ -11,5 +11,9 @@ namespace EventStore.Core.Services.Archive.Storage;
 // If the cloud provider is not suitable for this interface then implement IArchiveStorage instead.
 public interface IBlobStorage {
 	ValueTask<int> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken token);
-	ValueTask Store(string inputFilePath, string name, CancellationToken token);
+	ValueTask<BlobMetadata> GetMetadataAsync(string name, CancellationToken token);
+	ValueTask Store(byte[] sourceData, string name, CancellationToken ct);
+	ValueTask Store(string sourceFilePath, string name, CancellationToken token);
 }
+
+public readonly record struct BlobMetadata(long Size);

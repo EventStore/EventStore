@@ -22,11 +22,46 @@ public class FileSystemBlobStorage : IBlobStorage {
 	}
 
 	public async ValueTask<int> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken ct) {
-		var chunkPath = Path.Combine(_archivePath, name);
-		using var handle = File.OpenHandle(chunkPath, _fileStreamOptions.Mode, _fileStreamOptions.Access,
+		var targetPath = Path.Combine(_archivePath, name);
+		using var handle = File.OpenHandle(targetPath, _fileStreamOptions.Mode, _fileStreamOptions.Access,
 			_fileStreamOptions.Share,
 			_fileStreamOptions.Options);
 		return await RandomAccess.ReadAsync(handle, buffer, offset, ct);
+	}
+
+	public ValueTask<BlobMetadata> GetMetadataAsync(string name, CancellationToken token) {
+		ValueTask<BlobMetadata> task;
+		if (token.IsCancellationRequested) {
+			task = ValueTask.FromCanceled<BlobMetadata>(token);
+		} else {
+			try {
+				var targetPath = Path.Combine(_archivePath, name);
+				task = ValueTask.FromResult<BlobMetadata>(new(Size: new FileInfo(targetPath).Length));
+			} catch (Exception e) {
+				task = ValueTask.FromException<BlobMetadata>(e);
+			}
+		}
+
+		return task;
+	}
+
+	public ValueTask Store(byte[] sourceData, string name, CancellationToken ct) {
+		try {
+			if (sourceData.Length > sizeof(long)) {
+				// this is so far only used for checkpoints. data must be small so that flush is atomic
+				throw new NotSupportedException("This overload can only write small amounts of data");
+			}
+
+			var destinationPath = Path.Combine(_archivePath, name);
+			using var fs = File.OpenWrite(destinationPath);
+
+			fs.Write(sourceData);
+			fs.Flush(flushToDisk: true);
+
+			return ValueTask.CompletedTask;
+		} catch (Exception ex) {
+			return ValueTask.FromException(ex);
+		}
 	}
 
 	public async ValueTask Store(string input, string name, CancellationToken ct) {

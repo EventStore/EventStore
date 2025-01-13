@@ -6,6 +6,7 @@ using EventStore.Core.Services.Archive.Naming;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
+//qq convert to static factory method
 public class ArchiveStorageFactory(
 	ArchiveOptions options,
 	IArchiveChunkNameResolver chunkNameResolver) : IArchiveStorageFactory {
@@ -15,8 +16,8 @@ public class ArchiveStorageFactory(
 	public IArchiveStorageReader CreateReader() {
 		return options.StorageType switch {
 			StorageType.Unspecified => NoArchiveReader.Instance,
-			StorageType.FileSystem => new FileSystemReader(options.FileSystem, chunkNameResolver, ArchiveCheckpointFile),
-			StorageType.S3 => new S3Reader(options.S3, chunkNameResolver, ArchiveCheckpointFile),
+			StorageType.FileSystem => new ArchiveStorageReader(new FileSystemBlobStorage(options.FileSystem), chunkNameResolver, ArchiveCheckpointFile),
+			StorageType.S3 => new ArchiveStorageReader(new S3BlobStorage(options.S3), chunkNameResolver, ArchiveCheckpointFile),
 			_ => throw new ArgumentOutOfRangeException(nameof(options.StorageType))
 		};
 	}
@@ -26,8 +27,8 @@ public class ArchiveStorageFactory(
 		// we use our own implementation instead (todo: consider if it could be an IBlobStorage)
 		return options.StorageType switch {
 			StorageType.Unspecified => throw new InvalidOperationException("Please specify an Archive StorageType"),
-			StorageType.FileSystem => new FileSystemWriter(options.FileSystem, chunkNameResolver, ArchiveCheckpointFile),
-			StorageType.S3 => new S3Writer(options.S3, chunkNameResolver, ArchiveCheckpointFile),
+			StorageType.FileSystem => new ArchiveStorageWriter(new FileSystemBlobStorage(options.FileSystem), chunkNameResolver, ArchiveCheckpointFile),
+			StorageType.S3 => new ArchiveStorageWriter(new S3BlobStorage(options.S3), chunkNameResolver, ArchiveCheckpointFile),
 			_ => throw new ArgumentOutOfRangeException(nameof(options.StorageType))
 		};
 	}

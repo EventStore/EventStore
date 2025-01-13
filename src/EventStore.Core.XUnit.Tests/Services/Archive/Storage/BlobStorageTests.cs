@@ -19,7 +19,6 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 	protected const string AwsRegion = "eu-west-1";
 	protected const string AwsBucket = "archiver-unit-tests";
 
-	protected const string ChunkPrefix = "chunk-";
 	protected string ArchivePath => Path.Combine(Fixture.Directory, "archive");
 	protected string LocalPath => Path.Combine(Fixture.Directory, "local");
 
@@ -56,21 +55,21 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 	public async Task can_read_file_entirely(StorageType storageType) {
 		var sut = CreateSut(storageType);
 
-		// create a chunk and upload it
+		// create a file and upload it
 		var fileSize = 1000;
 		var localPath = CreateFile("local.file", fileSize);
 		await sut.Store(localPath, "output.file", CancellationToken.None);
 
-		// read the local chunk
+		// read the local file
 		var localContent = await File.ReadAllBytesAsync(localPath);
 
-		// read the uploaded chunk
+		// read the uploaded file
 		using var buffer = Memory.AllocateExactly<byte>(fileSize);
 		await sut.ReadAsync("output.file", buffer.Memory, offset: 0, CancellationToken.None);
-		var chunkStreamContent = buffer.Memory.ToArray();
+		var remoteContent = buffer.Memory.ToArray();
 
 		// then
-		Assert.Equal(localContent, chunkStreamContent);
+		Assert.Equal(localContent, remoteContent);
 	}
 
 	[Theory]
@@ -79,29 +78,47 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 	public async Task can_store_and_read_file_partially(StorageType storageType) {
 		var sut = CreateSut(storageType);
 
-		// create a chunk and upload it
+		// create a file and upload it
 		var localPath = CreateFile("local.file");
 		await sut.Store(localPath, "output.file", CancellationToken.None);
 
-		// read the local chunk
+		// read the local file
 		var localContent = await File.ReadAllBytesAsync(localPath);
 
-		// read the uploaded chunk partially
+		// read the uploaded file partially
 		var start = localContent.Length / 2;
 		var end = localContent.Length;
 		var length = end - start;
 		using var buffer = Memory.AllocateExactly<byte>(length);
 		await sut.ReadAsync("output.file", buffer.Memory, offset: start, CancellationToken.None);
-		var chunkStreamContent = buffer.Memory.ToArray();
+		var remoteContent = buffer.Memory.ToArray();
 
 		// then
-		Assert.Equal(localContent[start..end], chunkStreamContent);
+		Assert.Equal(localContent[start..end], remoteContent);
 	}
 
 	[Theory]
 	[StorageData.S3]
 	[StorageData.FileSystem]
-	public async Task read_missing_chunk_throws_FileNotFoundException(StorageType storageType) {
+	public async Task can_retrieve_metadata(StorageType storageType) {
+		var sut = CreateSut(storageType);
+
+		// create a file and upload it
+		var fileSize = 345;
+		var localPath = CreateFile("local.file", fileSize);
+		await sut.Store(localPath, "output.file", CancellationToken.None);
+
+		// when
+		var metadata = await sut.GetMetadataAsync("output.file", CancellationToken.None);
+
+		// then
+		Assert.Equal(fileSize, metadata.Size);
+	}
+
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
+	public async Task read_missing_file_throws_FileNotFoundException(StorageType storageType) {
 		var sut = CreateSut(storageType);
 
 		await Assert.ThrowsAsync<FileNotFoundException>(async () => {

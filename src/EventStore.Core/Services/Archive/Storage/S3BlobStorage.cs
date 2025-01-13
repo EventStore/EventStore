@@ -58,6 +58,10 @@ public class S3BlobStorage : IBlobStorage {
 		}
 	}
 
+	public async ValueTask Store(byte[] sourceData, string name, CancellationToken ct) {
+		await _awsBlobStorage.WriteAsync(name, sourceData, append: false, ct);
+	}
+
 	public async ValueTask Store(string input, string name, CancellationToken ct) {
 		await _awsBlobStorage.WriteFileAsync(name, filePath: input, ct);
 	}
@@ -66,4 +70,10 @@ public class S3BlobStorage : IBlobStorage {
 	private static ByteRange GetRange(long offset, int length) => new(
 		start: offset,
 		end: offset + length - 1L);
+
+	public async ValueTask<BlobMetadata> GetMetadataAsync(string name, CancellationToken token) {
+		var response = await _awsBlobStorage.NativeBlobClient.GetObjectMetadataAsync(
+			_awsBlobStorage.BucketName, name, token);
+		return new(Size: response.ContentLength);
+	}
 }
