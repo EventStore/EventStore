@@ -2,9 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services.Archive.Naming;
@@ -23,15 +20,8 @@ public class NoArchiveReader : IArchiveStorageReader {
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) =>
 		ValueTask.FromResult<long>(0);
 
-	public ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct) =>
-		ValueTask.FromException<Stream>(new ChunkDeletedException());
-
-	public ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) =>
-		ValueTask.FromException<Stream>(new ChunkDeletedException());
-
-	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
-		throw new NotImplementedException();
-	}
+	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) =>
+		ValueTask.FromException<int>(new ChunkDeletedException());
 
 	// There is no archive so it doesn't matter how we would name the chunks in it.
 	class NoNamer : IArchiveChunkNameResolver {

@@ -1,10 +1,12 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Buffers;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using EventStore.Core.Services.Archive;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using FluentStorage.Utils.Extensions;
@@ -28,8 +30,9 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 		var localContent = await File.ReadAllBytesAsync(chunkPath);
 
 		// read the uploaded chunk
-		await using var chunkStream = await sut.GetChunk(0, CancellationToken.None);
-		var chunkStreamContent = chunkStream.ToByteArray();
+		using var buffer = Memory.AllocateExactly<byte>(1000);
+		await sut.ReadAsync(0, buffer.Memory, offset: 0, CancellationToken.None);
+		var chunkStreamContent = buffer.Memory.ToArray();
 
 		// then
 		Assert.Equal(localContent, chunkStreamContent);
@@ -51,8 +54,10 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 		// read the uploaded chunk partially
 		var start = localContent.Length / 2;
 		var end = localContent.Length;
-		await using var chunkStream = await sut.GetChunk(0, start, end, CancellationToken.None);
-		var chunkStreamContent = chunkStream.ToByteArray();
+		var length = end - start;
+		using var buffer = Memory.AllocateExactly<byte>(length);
+		await sut.ReadAsync(0, buffer.Memory, offset: start, CancellationToken.None);
+		var chunkStreamContent = buffer.Memory.ToArray();
 
 		// then
 		Assert.Equal(localContent[start..end], chunkStreamContent);
@@ -65,18 +70,7 @@ public class ArchiveStorageReaderTests : ArchiveStorageTestsBase<ArchiveStorageR
 		var sut = CreateReaderSut(storageType);
 
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => {
-			using var _ = await sut.GetChunk(33, CancellationToken.None);
-		});
-	}
-
-	[Theory]
-	[StorageData.S3]
-	[StorageData.FileSystem]
-	public async Task partial_read_missing_chunk_throws_ChunkDeletedException(StorageType storageType) {
-		var sut = CreateReaderSut(storageType);
-
-		await Assert.ThrowsAsync<ChunkDeletedException>(async () => {
-			await using var _ = await sut.GetChunk(33, 1, 2, CancellationToken.None);
+			await sut.ReadAsync(33, System.Memory<byte>.Empty, offset: 0, CancellationToken.None);
 		});
 	}
 }

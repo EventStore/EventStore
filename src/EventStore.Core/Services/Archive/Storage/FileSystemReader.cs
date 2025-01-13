@@ -67,48 +67,15 @@ public class FileSystemReader : IArchiveStorageReader {
 		return task;
 	}
 
-	public async ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct) {
-		ValueTask<Stream> task;
+	public async ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
 		try {
 			var chunkFile = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
 			var chunkPath = Path.Combine(_archivePath, chunkFile);
-			task = ValueTask.FromResult<Stream>(File.Open(chunkPath, _fileStreamOptions));
+			using var fileStream = File.Open(chunkPath, _fileStreamOptions);
+			fileStream.Seek(offset, SeekOrigin.Begin);
+			return await fileStream.ReadAsync(buffer, ct);
 		} catch (FileNotFoundException) {
-			task = ValueTask.FromException<Stream>(new ChunkDeletedException());
-		} catch (Exception e) {
-			task = ValueTask.FromException<Stream>(e);
+			throw new ChunkDeletedException();
 		}
-
-		return await task;
-	}
-
-	public async ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) {
-		var length = end - start;
-		var chunkFile = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
-
-		ValueTask<Stream> task;
-		if (length < 0) {
-			task = ValueTask.FromException<Stream>(new InvalidOperationException(
-				$"Attempted to read negative amount from chunk: {logicalChunkNumber}. Start: {start}. End {end}"));
-		} else {
-			try {
-				var chunkPath = Path.Combine(_archivePath, chunkFile);
-				var fileStream = File.Open(chunkPath, _fileStreamOptions);
-				var segment = new StreamSegment(fileStream, leaveOpen: false);
-				segment.Adjust(start, length);
-				task = ValueTask.FromResult<Stream>(segment);
-
-			} catch (FileNotFoundException) {
-				task = ValueTask.FromException<Stream>(new ChunkDeletedException());
-			} catch (Exception e) {
-				task = ValueTask.FromException<Stream>(e);
-			}
-		}
-
-		return await task;
-	}
-
-	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
-		throw new NotImplementedException();
 	}
 }

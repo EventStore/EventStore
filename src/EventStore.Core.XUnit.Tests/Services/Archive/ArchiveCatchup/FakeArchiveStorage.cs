@@ -47,7 +47,6 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 
 	public ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) => throw new NotImplementedException();
 	public ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) => throw new NotImplementedException();
-	public ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) => throw new NotImplementedException();
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) {
 		return ValueTask.FromResult(_checkpoint);
@@ -65,7 +64,7 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 			transformType: TransformType.Identity);
 	}
 
-	public ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct) {
+	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
 		lock (_chunkGets) {
 			_chunkGets.Add(logicalChunkNumber);
 		}
@@ -75,11 +74,7 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 		var header = CreateChunkHeader(logicalChunkNumber, logicalChunkNumber);
 		header.Format(chunk.AsSpan()[..ChunkHeader.Size]);
 
-		var stream = new MemoryStream(chunk);
-		return ValueTask.FromResult((Stream)stream);
-	}
-
-	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
-		throw new NotImplementedException();
+		chunk.CopyTo(buffer);
+		return new(buffer.Length);
 	}
 }

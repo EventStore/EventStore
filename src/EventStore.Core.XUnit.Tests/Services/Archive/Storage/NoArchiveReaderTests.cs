@@ -1,7 +1,7 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
-using System.Linq;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services.Archive.Storage;
@@ -19,16 +19,9 @@ public class NoArchiveReaderTests {
 	}
 
 	[Fact]
-	public async Task get_chunk_throws_chunk_deleted_exception() {
+	public async Task read_throws_chunk_deleted_exception() {
 		await Assert.ThrowsAsync<ChunkDeletedException>(async () => {
-			await _sut.GetChunk(0, CancellationToken.None);
-		});
-	}
-
-	[Fact]
-	public async Task get_partial_chunk_throws_chunk_deleted_exception() {
-		await Assert.ThrowsAsync<ChunkDeletedException>(async () => {
-			await _sut.GetChunk(0, 3, 4, CancellationToken.None);
+			await _sut.ReadAsync(0, Memory<byte>.Empty, offset: 0, CancellationToken.None);
 		});
 	}
 }

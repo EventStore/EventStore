@@ -5,9 +5,9 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
 using EventStore.Core.Services.Archive;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
-using FluentStorage.Utils.Extensions;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
@@ -23,8 +23,10 @@ public class ArchiveStorageWriterTests : ArchiveStorageTestsBase<ArchiveStorageW
 		Assert.True(await sut.StoreChunk(localChunk, 0, CancellationToken.None));
 
 		var localChunkContent = await File.ReadAllBytesAsync(localChunk);
-		await using var archivedChunkContent = await CreateReaderSut(storageType).GetChunk(0, CancellationToken.None);
-		Assert.Equal(localChunkContent, archivedChunkContent.ToByteArray());
+
+		using var buffer = Memory.AllocateExactly<byte>(1000);
+		await CreateReaderSut(storageType).ReadAsync(0, buffer.Memory, offset: 0, CancellationToken.None);
+		Assert.Equal(localChunkContent, buffer.Memory.ToArray());
 	}
 
 	[Theory]
