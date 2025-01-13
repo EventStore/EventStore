@@ -316,7 +316,7 @@ public class ClusterVNode<TStreamId> :
 		var metricsConfiguration = MetricsConfiguration.Get((configuration));
 		MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
-		// DuckDb.Init();
+		DuckDb.Init();
 
 		Db = new TFChunkDb(
 			dbConfig,
@@ -1792,7 +1792,7 @@ public class ClusterVNode<TStreamId> :
 
 		try {
 			await _shutdownSource.Task.WaitAsync(timeout ?? DefaultShutdownTimeout, cancellationToken);
-			// DuckDb.Close();
+			DuckDb.Close();
 		} catch (Exception) {
 			Log.Error("Graceful shutdown not complete. Forcing shutdown now.");
 			throw;
