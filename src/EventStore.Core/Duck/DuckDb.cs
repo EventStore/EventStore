@@ -54,7 +54,6 @@ public static class DuckDb {
 		}
 
 		var category = streamName[(dashIndex + 1)..];
-		Log.Information("Reading category {Category} from {From} to {To}", category, fromEventNumber, toEventNumber);
 
 		while (true) {
 			using var duration = TempIndexMetrics.MeasureIndex("get_range");
@@ -62,7 +61,6 @@ public static class DuckDb {
 				var categoryId = GetCategoryId();
 				var result = Connection.Query<CategoryRecord>(query, new { cat = categoryId, start = fromEventNumber, end = toEventNumber });
 				var entries = result.Select(x => new IndexEntry(streamId, x.category_seq, x.log_position)).ToList();
-				Log.Information("Retrieved {Count} entries", entries.Count);
 				return entries;
 			} catch (Exception e) {
 				Log.Warning("Error while reading index: {Exception}", e.Message);
