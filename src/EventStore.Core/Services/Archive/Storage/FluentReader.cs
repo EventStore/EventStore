@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.Archive.Storage;
 
 public abstract class FluentReader(IArchiveChunkNameResolver chunkNameResolver, string archiveCheckpointFile) {
 	protected abstract ILogger Log { get; }
-	protected abstract IBlobStorage BlobStorage { get; }
+	protected abstract FluentStorage.Blobs.IBlobStorage BlobStorage { get; }
 
 	public IArchiveChunkNameResolver ChunkNameResolver => chunkNameResolver;
 

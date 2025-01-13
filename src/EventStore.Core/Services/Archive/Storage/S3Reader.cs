@@ -13,7 +13,6 @@ using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using FluentStorage;
 using FluentStorage.AWS.Blobs;
-using FluentStorage.Blobs;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage;
@@ -44,7 +43,7 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 
 	protected override ILogger Log { get; } = Serilog.Log.ForContext<S3Reader>();
 
-	protected override IBlobStorage BlobStorage => _awsBlobStorage;
+	protected override FluentStorage.Blobs.IBlobStorage BlobStorage => _awsBlobStorage;
 
 	public async ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) {
 		var chunkFile = ChunkNameResolver.ResolveFileName(logicalChunkNumber);

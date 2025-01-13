@@ -19,5 +19,5 @@ public class S3Writer : FluentWriter, IArchiveStorageWriter {
 
 	protected override ILogger Log { get; } = Serilog.Log.ForContext<S3Writer>();
 
-	protected override IBlobStorage BlobStorage { get; }
+	protected override FluentStorage.Blobs.IBlobStorage BlobStorage { get; }
 }
