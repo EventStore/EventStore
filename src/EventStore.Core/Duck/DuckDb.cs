@@ -54,7 +54,7 @@ public static class DuckDb {
 		}
 
 		var category = streamName[(dashIndex + 1)..];
-		Log.Information("Reading category {Category}", category);
+		Log.Information("Reading category {Category} from {From} to {To}", category, fromEventNumber, toEventNumber);
 
 		while (true) {
 			using var duration = TempIndexMetrics.MeasureIndex("get_range");
