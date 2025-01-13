@@ -7,15 +7,11 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services.Archive;
-using EventStore.Core.Services.Archive.Storage.S3;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Transforms.Identity;
-using FluentStorage;
-using FluentStorage.AWS.Blobs;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
@@ -27,9 +23,12 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 	//qq [StorageData.FileSystem]
 	public async Task can_read_chunk_from_object_storage(StorageType storageType) {
 		const int recordsCount = 10;
+		const int logicalChunkNumber = 42;
+
+		var reader = CreateReaderSut(storageType);
 
 		// setup local chunk first
-		var chunkName = Path.GetRandomFileName();
+		var chunkName = reader.ChunkNameResolver.ResolveFileName(logicalChunkNumber);
 		var chunkLocalPath = Path.Combine(DbPath, chunkName);
 		IReadOnlyList<ILogRecord> expectedRecords;
 		using (var localChunk = await TFChunkHelper.CreateNewChunk(chunkLocalPath)) {
@@ -39,13 +38,14 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 		}
 
 		// upload the chunk
-		Assert.True(await CreateWriterSut(storageType).StoreChunk(chunkLocalPath, 0, CancellationToken.None));
-		chunkName = NameResolver.ResolveFileName(0);
+		Assert.True(await CreateWriterSut(storageType).StoreChunk(chunkLocalPath, logicalChunkNumber, CancellationToken.None));
 
 		// download the chunk
-		var fileSystem = new RemoteFileSystem();
+		var codec = new PrefixingLocatorCodec();
+		chunkName = codec.EncodeRemoteName(chunkName);
+		var fs = new FileSystemWithArchive(chunkSize:4096, codec, new ChunkLocalFileSystem(DbPath), reader);
 		var actualRecords = new List<ILogRecord>(recordsCount);
-		using (var remoteChunk = await TFChunk.FromCompletedFile(fileSystem, chunkName, verifyHash: false,
+		using (var remoteChunk = await TFChunk.FromCompletedFile(fs, chunkName, verifyHash: false,
 			       unbufferedRead: false, tracker: new TFChunkTracker.NoOp(),
 			       getTransformFactory: static _ => new IdentityChunkTransformFactory())) {
 
@@ -79,20 +79,5 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 		}
 
 		return records;
-	}
-
-	private sealed class RemoteFileSystem : IChunkFileSystem {
-		private readonly IAwsS3BlobStorage _storage = (IAwsS3BlobStorage)StorageFactory.Blobs.AwsS3(
-			awsCliProfileName: AwsCliProfileName,
-			bucketName: AwsBucket,
-			region: AwsRegion);
-
-		public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, IChunkFileSystem.ReadOptimizationHint hint,
-			CancellationToken token)
-			=> S3ChunkHandle.OpenForReadAsync(_storage.NativeBlobClient, _storage.BucketName, fileName, token);
-
-		public IVersionedFileNamingStrategy NamingStrategy => throw new NotImplementedException();
-
-		public IChunkFileSystem.IChunkEnumerable GetChunks() => throw new NotImplementedException();
 	}
 }
