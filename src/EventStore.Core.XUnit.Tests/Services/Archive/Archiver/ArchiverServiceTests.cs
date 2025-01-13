@@ -333,7 +333,11 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 		return ValueTask.FromResult(true);
 	}
 
-	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
+	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
+		throw new NotImplementedException();
+	}
+
+	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) {
 		throw new NotImplementedException();
 	}
 }

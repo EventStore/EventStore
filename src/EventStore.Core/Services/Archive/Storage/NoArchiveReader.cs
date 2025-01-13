@@ -20,8 +20,11 @@ public class NoArchiveReader : IArchiveStorageReader {
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) =>
 		ValueTask.FromResult<long>(0);
 
-	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) =>
+	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) =>
 		ValueTask.FromException<int>(new ChunkDeletedException());
+
+	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) =>
+		ValueTask.FromException<ArchivedChunkMetadata>(new ChunkDeletedException());
 
 	// There is no archive so it doesn't matter how we would name the chunks in it.
 	class NoNamer : IArchiveChunkNameResolver {
@@ -29,5 +32,7 @@ public class NoArchiveReader : IArchiveStorageReader {
 
 		public ValueTask<string> ResolveFileName(int logicalChunkNumber, CancellationToken token) =>
 			new($"{Prefix}{logicalChunkNumber}");
+
+		public int ResolveChunkNumber(string fileName) => 0;
 	}
 }

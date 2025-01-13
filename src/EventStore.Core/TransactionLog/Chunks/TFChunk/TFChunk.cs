@@ -172,7 +172,7 @@ public partial class TFChunk : IDisposable {
 
 	// https://learn.microsoft.com/en-US/troubleshoot/windows-server/application-management/operating-system-performance-degrades
 	private readonly bool _reduceFileCachePressure;
-	private readonly IBlobFileSystem _fileSystem;
+	private readonly IChunkFileSystem _fileSystem;
 
 	private IChunkReadSide _readSide;
 
@@ -185,7 +185,7 @@ public partial class TFChunk : IDisposable {
 		bool unbuffered,
 		bool writethrough,
 		bool reduceFileCachePressure,
-		IBlobFileSystem fileSystem) {
+		IChunkFileSystem fileSystem) {
 		Ensure.NotNullOrEmpty(filename, "filename");
 		Ensure.Nonnegative(midpointsDepth, "midpointsDepth");
 
@@ -210,7 +210,7 @@ public partial class TFChunk : IDisposable {
 	}
 
 	// local or remote
-	public static async ValueTask<TFChunk> FromCompletedFile(IBlobFileSystem fileSystem, string filename, bool verifyHash, bool unbufferedRead,
+	public static async ValueTask<TFChunk> FromCompletedFile(IChunkFileSystem fileSystem, string filename, bool verifyHash, bool unbufferedRead,
 		ITransactionFileTracker tracker, Func<TransformType, IChunkTransformFactory> getTransformFactory,
 		bool reduceFileCachePressure = false, CancellationToken token = default) {
 
@@ -234,7 +234,7 @@ public partial class TFChunk : IDisposable {
 	}
 
 	// always local
-	public static async ValueTask<TFChunk> FromOngoingFile(IBlobFileSystem fileSystem, string filename, int writePosition, bool unbuffered,
+	public static async ValueTask<TFChunk> FromOngoingFile(IChunkFileSystem fileSystem, string filename, int writePosition, bool unbuffered,
 		bool writethrough, bool reduceFileCachePressure, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory,
 		CancellationToken token) {
@@ -257,7 +257,7 @@ public partial class TFChunk : IDisposable {
 
 	// always local
 	public static async ValueTask<TFChunk> CreateNew(
-		IBlobFileSystem fileSystem,
+		IChunkFileSystem fileSystem,
 		string filename,
 		int chunkDataSize,
 		int chunkStartNumber,
@@ -288,7 +288,7 @@ public partial class TFChunk : IDisposable {
 
 	// local only
 	public static async ValueTask<TFChunk> CreateWithHeader(
-		IBlobFileSystem fileSystem,
+		IChunkFileSystem fileSystem,
 		string filename,
 		ChunkHeader header,
 		int fileSize,
@@ -322,8 +322,8 @@ public partial class TFChunk : IDisposable {
 		_handle = await _fileSystem.OpenForReadAsync(
 			ChunkLocator,
 			_reduceFileCachePressure
-				? IBlobFileSystem.ReadOptimizationHint.None
-				: IBlobFileSystem.ReadOptimizationHint.RandomAccess,
+				? IChunkFileSystem.ReadOptimizationHint.None
+				: IChunkFileSystem.ReadOptimizationHint.RandomAccess,
 			token);
 		_fileSize = (int)_handle.Length;
 
@@ -1311,7 +1311,7 @@ public partial class TFChunk : IDisposable {
 
 		var handle = await _fileSystem.OpenForReadAsync(
 			ChunkLocator,
-			IBlobFileSystem.ReadOptimizationHint.SequentialScan,
+			IChunkFileSystem.ReadOptimizationHint.SequentialScan,
 			token);
 
 		return new PoolingBufferedStream(handle.CreateStream(leaveOpen: false)) {

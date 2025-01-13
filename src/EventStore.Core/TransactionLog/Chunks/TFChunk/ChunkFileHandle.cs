@@ -25,9 +25,9 @@ internal sealed class ChunkFileHandle : Disposable, IChunkHandle {
 		SetReadOnly(_handle, options.Access.HasFlag(FileAccess.Write) is false);
 	}
 
-	internal static FileOptions ConvertToFileOptions(IBlobFileSystem.ReadOptimizationHint optimizationHint) => optimizationHint switch {
-		IBlobFileSystem.ReadOptimizationHint.RandomAccess => FileOptions.Asynchronous | FileOptions.RandomAccess,
-		IBlobFileSystem.ReadOptimizationHint.SequentialScan => FileOptions.Asynchronous | FileOptions.SequentialScan,
+	internal static FileOptions ConvertToFileOptions(IChunkFileSystem.ReadOptimizationHint optimizationHint) => optimizationHint switch {
+		IChunkFileSystem.ReadOptimizationHint.RandomAccess => FileOptions.Asynchronous | FileOptions.RandomAccess,
+		IChunkFileSystem.ReadOptimizationHint.SequentialScan => FileOptions.Asynchronous | FileOptions.SequentialScan,
 		_ => FileOptions.Asynchronous,
 	};
 

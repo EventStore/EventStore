@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -64,7 +63,7 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 			transformType: TransformType.Identity);
 	}
 
-	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
+	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
 		lock (_chunkGets) {
 			_chunkGets.Add(logicalChunkNumber);
 		}
@@ -76,5 +75,9 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 
 		chunk.CopyTo(buffer);
 		return new(buffer.Length);
+	}
+
+	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) {
+		throw new NotImplementedException();
 	}
 }

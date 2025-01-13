@@ -14,5 +14,9 @@ public interface IArchiveStorageReader {
 	/// <returns>A position in the transaction log up to which all chunks have been archived</returns>
 	public ValueTask<long> GetCheckpoint(CancellationToken ct);
 
-	ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct);
+	ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct);
+
+	ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token);
 }
+
+public readonly record struct ArchivedChunkMetadata(long Size);

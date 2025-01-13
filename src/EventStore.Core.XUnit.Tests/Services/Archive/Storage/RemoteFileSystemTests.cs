@@ -11,6 +11,7 @@ using EventStore.Core.Services.Archive.Storage.S3;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Transforms.Identity;
 using FluentStorage;
@@ -80,20 +81,18 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 		return records;
 	}
 
-	private sealed class RemoteFileSystem : IBlobFileSystem {
+	private sealed class RemoteFileSystem : IChunkFileSystem {
 		private readonly IAwsS3BlobStorage _storage = (IAwsS3BlobStorage)StorageFactory.Blobs.AwsS3(
 			awsCliProfileName: AwsCliProfileName,
 			bucketName: AwsBucket,
 			region: AwsRegion);
 
-		public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, IBlobFileSystem.ReadOptimizationHint hint,
+		public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, IChunkFileSystem.ReadOptimizationHint hint,
 			CancellationToken token)
 			=> S3ChunkHandle.OpenForReadAsync(_storage.NativeBlobClient, _storage.BucketName, fileName, token);
 
-		public ValueTask<ChunkHeader> ReadHeaderAsync(string fileName, CancellationToken token)
-			=> ValueTask.FromException<ChunkHeader>(new NotImplementedException());
+		public IVersionedFileNamingStrategy NamingStrategy => throw new NotImplementedException();
 
-		public ValueTask<ChunkFooter> ReadFooterAsync(string fileName, CancellationToken token)
-			=> ValueTask.FromException<ChunkFooter>(new NotImplementedException());
+		public IChunkFileSystem.IChunkEnumerable GetChunks() => throw new NotImplementedException();
 	}
 }

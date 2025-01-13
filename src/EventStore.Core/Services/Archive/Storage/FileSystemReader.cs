@@ -3,12 +3,9 @@
 
 using System;
 using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext.IO;
 using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using Microsoft.Win32.SafeHandles;
@@ -67,15 +64,25 @@ public class FileSystemReader : IArchiveStorageReader {
 		return task;
 	}
 
-	public async ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
+	public async ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset,
+		CancellationToken ct) {
+		var handle = default(SafeFileHandle);
 		try {
 			var chunkFile = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
 			var chunkPath = Path.Combine(_archivePath, chunkFile);
-			using var fileStream = File.Open(chunkPath, _fileStreamOptions);
-			fileStream.Seek(offset, SeekOrigin.Begin);
-			return await fileStream.ReadAsync(buffer, ct);
+			handle = File.OpenHandle(chunkPath, _fileStreamOptions.Mode, _fileStreamOptions.Access,
+				_fileStreamOptions.Share,
+				_fileStreamOptions.Options);
+			return await RandomAccess.ReadAsync(handle, buffer, offset, ct);
 		} catch (FileNotFoundException) {
 			throw new ChunkDeletedException();
+		} finally {
+			handle?.Dispose();
 		}
+	}
+
+	public async ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken ct) {
+		var chunkFile = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
+		return new(Size: new FileInfo(chunkFile).Length);
 	}
 }

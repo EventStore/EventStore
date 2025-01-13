@@ -14,38 +14,28 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 	private readonly int _chunkSize;
 	private readonly ILocatorCodec _locatorCodec;
 	private readonly IChunkFileSystem _localFileSystem;
-	private readonly IBlobFileSystem _remoteFileSystem;
 	private readonly IArchiveStorageReader _archive;
 
 	public FileSystemWithArchive(
 		int chunkSize,
 		ILocatorCodec locatorCodec,
 		IChunkFileSystem localFileSystem,
-		IBlobFileSystem remoteFileSystem,
 		IArchiveStorageReader archive) {
 
 		_chunkSize = chunkSize;
 		_locatorCodec = locatorCodec;
 		_localFileSystem = localFileSystem;
-		_remoteFileSystem = remoteFileSystem;
 		_archive = archive;
 	}
 
 	public IVersionedFileNamingStrategy NamingStrategy =>
 		_localFileSystem.NamingStrategy;
 
-	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, IBlobFileSystem.ReadOptimizationHint hint, CancellationToken token) =>
-		Choose(fileName, out var decoded).OpenForReadAsync(decoded, hint, token);
-
-	public ValueTask<ChunkFooter> ReadFooterAsync(string fileName, CancellationToken token) =>
-		Choose(fileName, out var decoded).ReadFooterAsync(decoded, token);
-
-	public ValueTask<ChunkHeader> ReadHeaderAsync(string fileName, CancellationToken token) =>
-		Choose(fileName, out var decoded).ReadHeaderAsync(decoded, token);
-
-	private IBlobFileSystem Choose(string fileName, out string decoded) {
-		var isRemote = _locatorCodec.Decode(fileName, out decoded);
-		return isRemote ? _remoteFileSystem : _localFileSystem;
+	public ValueTask<IChunkHandle> OpenForReadAsync(string locator, IChunkFileSystem.ReadOptimizationHint hint,
+		CancellationToken token) {
+		return _locatorCodec.Decode(locator, out var fileName)
+			? ArchivedChunkHandle.OpenForReadAsync(_archive, fileName, token)
+			: _localFileSystem.OpenForReadAsync(fileName, hint, token);
 	}
 
 	public IChunkFileSystem.IChunkEnumerable GetChunks() {

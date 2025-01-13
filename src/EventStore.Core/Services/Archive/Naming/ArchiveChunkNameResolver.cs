@@ -28,4 +28,9 @@ public class ArchiveChunkNameResolver : IArchiveChunkNameResolver {
 			return ValueTask.FromException<string>(ex);
 		}
 	}
+
+	public int ResolveChunkNumber(string fileName) {
+		// TODO: Needs to be implemented
+		throw new NotImplementedException();
+	}
 }

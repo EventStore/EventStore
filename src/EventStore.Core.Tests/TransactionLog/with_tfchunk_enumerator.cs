@@ -62,7 +62,6 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 			localFileSystem: new ChunkLocalFileSystem(PathName) {
 				ChunkNumberProvider = GetNextFileNumber,
 			},
-			remoteFileSystem: new ArchiveBlobFileSystem(),
 			archive: new FakeArchiveStorageReader(checkpoint: 4000)).GetChunks();
 
 		chunkEnumerator.LastChunkNumber = 16;
@@ -110,7 +109,11 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 
 		public ValueTask<long> GetCheckpoint(CancellationToken ct) => new(checkpoint);
 
-		public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
+		public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
+			throw new NotImplementedException();
+		}
+
+		public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) {
 			throw new NotImplementedException();
 		}
 	}

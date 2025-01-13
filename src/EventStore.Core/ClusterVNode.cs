@@ -332,7 +332,6 @@ public class ClusterVNode<TStreamId> :
 				chunkSize: dbConfig.ChunkSize,
 				locatorCodec: new PrefixingLocatorCodec(),
 				localFileSystem: fileSystem,
-				remoteFileSystem: new ArchiveBlobFileSystem(),
 				archive: archiveReader);
 		}
 

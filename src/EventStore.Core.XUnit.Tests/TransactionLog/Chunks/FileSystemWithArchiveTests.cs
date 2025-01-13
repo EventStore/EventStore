@@ -25,7 +25,6 @@ public class FileSystemWithArchiveTests {
 			chunkSize: 256 * 1024 * 1024,
 			locatorCodec: codec,
 			localFileSystem: _local,
-			remoteFileSystem: new ArchiveBlobFileSystem(),
 			archive: NoArchiveReader.Instance);
 		var chunk = "chunk-000.000";
 		_localLocator = codec.EncodeLocalName(chunk);
@@ -85,19 +84,9 @@ public class FileSystemWithArchiveTests {
 			throw new NotImplementedException();
 		}
 
-		public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, IBlobFileSystem.ReadOptimizationHint hint, CancellationToken token) {
+		public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, IChunkFileSystem.ReadOptimizationHint hint, CancellationToken token) {
 			OpenCount++;
 			return ValueTask.FromResult<IChunkHandle>(null);
-		}
-
-		public ValueTask<ChunkFooter> ReadFooterAsync(string fileName, CancellationToken token) {
-			FooterCount++;
-			return ValueTask.FromResult<ChunkFooter>(null);
-		}
-
-		public ValueTask<ChunkHeader> ReadHeaderAsync(string fileName, CancellationToken token) {
-			HeaderCount++;
-			return ValueTask.FromResult<ChunkHeader>(null);
 		}
 	}
 }
