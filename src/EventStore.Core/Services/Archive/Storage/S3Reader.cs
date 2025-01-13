@@ -2,14 +2,11 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DotNext.Buffers;
 using EventStore.Common.Exceptions;
 using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
@@ -48,18 +45,21 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 
 	protected override IBlobStorage BlobStorage => _awsBlobStorage;
 
-	public async ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) {
+	public async ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
 		var chunkFile = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
 		var request = new GetObjectRequest {
 			BucketName = _options.Bucket,
 			Key = chunkFile,
-			ByteRange = new ByteRange(start, end),
+			ByteRange = GetRange(offset, buffer.Length),
 		};
 
 		try {
 			var client = _awsBlobStorage.NativeBlobClient;
-			var response = await client.GetObjectAsync(request, ct);
-			return response.ResponseStream;
+			using var response = await client.GetObjectAsync(request, ct);
+			var length = int.CreateSaturating(response.ContentLength);
+			await using var responseStream = response.ResponseStream;
+			await responseStream.ReadExactlyAsync(buffer.TrimLength(length), ct);
+			return length;
 		} catch (AmazonS3Exception ex) {
 			if (ex.ErrorCode == "NoSuchKey")
 				throw new ChunkDeletedException();
@@ -67,7 +67,8 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 		}
 	}
 
-	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, int offset, CancellationToken ct) {
-		throw new NotImplementedException();
-	}
+	// ByteRange is inclusive of both start and end
+	private static ByteRange GetRange(long offset, int length) => new(
+		start: offset,
+		end: offset + length - 1L);
 }

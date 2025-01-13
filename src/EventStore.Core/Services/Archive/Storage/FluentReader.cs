@@ -30,10 +30,4 @@ public abstract class FluentReader(IArchiveChunkNameResolver chunkNameResolver, 
 		var checkpoint = BinaryPrimitives.ReadInt64LittleEndian(buffer.Span);
 		return checkpoint;
 	}
-
-	public async ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct) {
-		var chunkFile = await chunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
-		var stream = await BlobStorage.OpenReadAsync(chunkFile, ct);
-		return stream ?? throw new ChunkDeletedException();
-	}
 }
