@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DotNext.Buffers;
 using EventStore.Common.Exceptions;
 using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
@@ -64,11 +65,26 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 		}
 	}
 
-	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
-		throw new NotImplementedException();
+	public async ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
+		var request = new GetObjectRequest {
+			BucketName = _awsBlobStorage.BucketName,
+			Key = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct),
+			ByteRange = GetRange(offset, buffer.Length),
+		};
+
+		using var response = await _awsBlobStorage.NativeBlobClient.GetObjectAsync(request, ct);
+		var length = int.CreateSaturating(response.ContentLength);
+		await using var responseStream = response.ResponseStream;
+		await responseStream.ReadExactlyAsync(buffer.TrimLength(length), ct);
+		return length;
 	}
 
-	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) {
-		throw new NotImplementedException();
+	private static ByteRange GetRange(long offset, int length) => new(offset, offset + length - 1L);
+
+	public async ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken ct) {
+		var objectName = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
+		var response =
+			await _awsBlobStorage.NativeBlobClient.GetObjectMetadataAsync(_awsBlobStorage.BucketName, objectName, ct);
+		return new(Size: response.ContentLength);
 	}
 }
