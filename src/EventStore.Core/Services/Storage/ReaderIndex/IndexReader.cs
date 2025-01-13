@@ -281,7 +281,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 			}
 
 			IAsyncEnumerable<(long Version, IPrepareLogRecord<TStreamId> Prepare)> recordsQuery;
-			if (streamName.StartsWith("$ce")) {
+			if (DuckDb.UseDuckDb && streamName.StartsWith("$ce")) {
 				var range = DuckDb.GetCategoryRange(streamName, 0, startEventNumber, endEventNumber);
 				recordsQuery = range
 					.ToAsyncEnumerable()

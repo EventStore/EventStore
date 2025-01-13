@@ -14,16 +14,18 @@ using Serilog;
 namespace EventStore.Core.Duck;
 
 public static class DuckDb {
-	static ILogger Log = Serilog.Log.ForContext(typeof(DuckDb));
+	static readonly ILogger Log = Serilog.Log.ForContext(typeof(DuckDb));
+	public static readonly bool UseDuckDb = Environment.GetEnvironmentVariable("ES_USE_DUCKDB") == "1";
 
 	public static void Init() {
+		if (!UseDuckDb) return;
 		Connection = new("Data Source=./data/file.db");
 		Connection.Open();
 		Connection.Execute("SET threads TO 10;");
-		Connection.Execute("SET memory_limit = '4GB';");
 	}
 
 	public static void Close() {
+		if (!UseDuckDb) return;
 		Connection.Close();
 	}
 
