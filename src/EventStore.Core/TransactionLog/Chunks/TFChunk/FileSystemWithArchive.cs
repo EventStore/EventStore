@@ -59,7 +59,7 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 					// replace missing local versions with latest from archive if they
 					// are present there
 					case MissingVersion(_, var chunkNumber) when (chunkNumber < firstChunkNotInArchive): {
-						var archiveObjectName = await fileSystem._archive.ChunkNameResolver.ResolveFileName(chunkNumber, token);
+						var archiveObjectName = fileSystem._archive.ChunkNameResolver.ResolveFileName(chunkNumber);
 						yield return CreateLatestVersionInArchive(archiveObjectName, chunkNumber);
 						break;
 					}

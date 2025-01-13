@@ -30,8 +30,8 @@ public class NoArchiveReader : IArchiveStorageReader {
 	class NoNamer : IArchiveChunkNameResolver {
 		public string Prefix => "chunk-";
 
-		public ValueTask<string> ResolveFileName(int logicalChunkNumber, CancellationToken token) =>
-			new($"{Prefix}{logicalChunkNumber}");
+		public string ResolveFileName(int logicalChunkNumber) =>
+			$"{Prefix}{logicalChunkNumber}";
 
 		public int ResolveChunkNumber(string fileName) => 0;
 	}

@@ -68,7 +68,7 @@ public class FileSystemReader : IArchiveStorageReader {
 		CancellationToken ct) {
 		var handle = default(SafeFileHandle);
 		try {
-			var chunkFile = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
+			var chunkFile = ChunkNameResolver.ResolveFileName(logicalChunkNumber);
 			var chunkPath = Path.Combine(_archivePath, chunkFile);
 			handle = File.OpenHandle(chunkPath, _fileStreamOptions.Mode, _fileStreamOptions.Access,
 				_fileStreamOptions.Share,
@@ -81,8 +81,19 @@ public class FileSystemReader : IArchiveStorageReader {
 		}
 	}
 
-	public async ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken ct) {
-		var chunkFile = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
-		return new(Size: new FileInfo(chunkFile).Length);
+	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) {
+		ValueTask<ArchivedChunkMetadata> task;
+		if (token.IsCancellationRequested) {
+			task = ValueTask.FromCanceled<ArchivedChunkMetadata>(token);
+		} else {
+			try {
+				var chunkFile = ChunkNameResolver.ResolveFileName(logicalChunkNumber);
+				task = ValueTask.FromResult<ArchivedChunkMetadata>(new(Size: new FileInfo(chunkFile).Length));
+			} catch (Exception e) {
+				task = ValueTask.FromException<ArchivedChunkMetadata>(e);
+			}
+		}
+
+		return task;
 	}
 }

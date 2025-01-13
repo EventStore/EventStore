@@ -18,15 +18,9 @@ public class ArchiveChunkNameResolver : IArchiveChunkNameResolver {
 
 	public string Prefix => _namingStrategy.Prefix;
 
-	public ValueTask<string> ResolveFileName(int logicalChunkNumber, CancellationToken token) {
-		try {
-			ArgumentOutOfRangeException.ThrowIfNegative(logicalChunkNumber);
-
-			var filePath = _namingStrategy.GetFilenameFor(logicalChunkNumber, version: 1);
-			return new(Path.GetFileName(filePath));
-		} catch (Exception ex) {
-			return ValueTask.FromException<string>(ex);
-		}
+	public string ResolveFileName(int logicalChunkNumber) {
+		var filePath = _namingStrategy.GetFilenameFor(logicalChunkNumber, version: 1);
+		return Path.GetFileName(filePath);
 	}
 
 	public int ResolveChunkNumber(string fileName) {

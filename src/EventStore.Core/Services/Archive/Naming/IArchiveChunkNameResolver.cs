@@ -8,6 +8,6 @@ namespace EventStore.Core.Services.Archive.Naming;
 
 public interface IArchiveChunkNameResolver {
 	string Prefix { get; } // The prefix that is applied to all chunks
-	ValueTask<string> ResolveFileName(int logicalChunkNumber, CancellationToken token);
+	string ResolveFileName(int logicalChunkNumber);
 	int ResolveChunkNumber(string fileName);
 }

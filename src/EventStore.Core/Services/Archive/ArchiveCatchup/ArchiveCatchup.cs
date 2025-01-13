@@ -91,7 +91,7 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 	}
 
 	private async Task<bool> FetchAndCommitChunk(int logicalChunkNumber, CancellationToken ct) {
-		var destinationFile = await _chunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
+		var destinationFile = _chunkNameResolver.ResolveFileName(logicalChunkNumber);
 		var destinationPath = Path.Combine(_dbPath, destinationFile);
 		if (!await FetchChunk(logicalChunkNumber, destinationPath, ct))
 			return false;

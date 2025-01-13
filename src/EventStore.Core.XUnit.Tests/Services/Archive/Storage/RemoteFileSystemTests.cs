@@ -40,7 +40,7 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 
 		// upload the chunk
 		Assert.True(await CreateWriterSut(storageType).StoreChunk(chunkLocalPath, 0, CancellationToken.None));
-		chunkName = await NameResolver.ResolveFileName(0, CancellationToken.None);
+		chunkName = NameResolver.ResolveFileName(0);
 
 		// download the chunk
 		var fileSystem = new RemoteFileSystem();

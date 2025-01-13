@@ -47,7 +47,7 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 	protected override IBlobStorage BlobStorage => _awsBlobStorage;
 
 	public async ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) {
-		var chunkFile = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
+		var chunkFile = ChunkNameResolver.ResolveFileName(logicalChunkNumber);
 		var request = new GetObjectRequest {
 			BucketName = _options.Bucket,
 			Key = chunkFile,
@@ -68,7 +68,7 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 	public async ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
 		var request = new GetObjectRequest {
 			BucketName = _awsBlobStorage.BucketName,
-			Key = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct),
+			Key = ChunkNameResolver.ResolveFileName(logicalChunkNumber),
 			ByteRange = GetRange(offset, buffer.Length),
 		};
 
@@ -82,7 +82,7 @@ public class S3Reader : FluentReader, IArchiveStorageReader {
 	private static ByteRange GetRange(long offset, int length) => new(offset, offset + length - 1L);
 
 	public async ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken ct) {
-		var objectName = await ChunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
+		var objectName = ChunkNameResolver.ResolveFileName(logicalChunkNumber);
 		var response =
 			await _awsBlobStorage.NativeBlobClient.GetObjectMetadataAsync(_awsBlobStorage.BucketName, objectName, ct);
 		return new(Size: response.ContentLength);
