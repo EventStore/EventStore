@@ -804,7 +804,7 @@ public class TableIndex<TStreamId> : TableIndex, ITableIndex<TStreamId> {
 		var counter = 0;
 		while (counter < 5) {
 			counter++;
-			using var duration = TempIndexMetrics.MeasureIndex("get_range");
+			using var duration = TempIndexMetrics.MeasureIndex("default_get_range");
 			try {
 				return GetRangeInternal(stream, startVersion, endVersion, limit);
 			} catch (FileBeingDeletedException e) {

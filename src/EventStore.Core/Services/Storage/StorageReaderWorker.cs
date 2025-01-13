@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Metadata;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,9 +12,9 @@ using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Duck;
 using EventStore.Core.Exceptions;
 using EventStore.Core.LogAbstraction;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -22,6 +24,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using static EventStore.Core.Messages.ClientMessage;
+using static EventStore.Core.Messages.StorageMessage;
 using static EventStore.Core.Messages.SubscriptionMessage;
 using ILogger = Serilog.ILogger;
 
@@ -31,51 +34,36 @@ public abstract class StorageReaderWorker {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<StorageReaderWorker>();
 }
 
-public class StorageReaderWorker<TStreamId> :
-	StorageReaderWorker,
-	IAsyncHandle<ReadEvent>,
-	IAsyncHandle<ReadStreamEventsBackward>,
-	IAsyncHandle<ReadStreamEventsForward>,
-	IAsyncHandle<ReadAllEventsForward>,
-	IAsyncHandle<ReadAllEventsBackward>,
-	IAsyncHandle<FilteredReadAllEventsForward>,
-	IAsyncHandle<FilteredReadAllEventsBackward>,
-	IAsyncHandle<StorageMessage.EffectiveStreamAclRequest>,
-	IAsyncHandle<StorageMessage.StreamIdFromTransactionIdRequest>,
-	IHandle<StorageMessage.BatchLogExpiredMessages> {
+public class StorageReaderWorker<TStreamId>(
+	IPublisher publisher,
+	IReadIndex<TStreamId> readIndex,
+	ISystemStreamLookup<TStreamId> systemStreams,
+	IReadOnlyCheckpoint writerCheckpoint,
+	IInMemoryStreamReader inMemReader,
+	int queueId)
+	:
+		StorageReaderWorker,
+		IAsyncHandle<ReadEvent>,
+		IAsyncHandle<ReadStreamEventsBackward>,
+		IAsyncHandle<ReadStreamEventsForward>,
+		IAsyncHandle<ReadAllEventsForward>,
+		IAsyncHandle<ReadAllEventsBackward>,
+		IAsyncHandle<FilteredReadAllEventsForward>,
+		IAsyncHandle<FilteredReadAllEventsBackward>,
+		IAsyncHandle<EffectiveStreamAclRequest>,
+		IAsyncHandle<StreamIdFromTransactionIdRequest>,
+		IHandle<BatchLogExpiredMessages> {
 	private static readonly ResolvedEvent[] EmptyRecords = [];
 
-	private readonly IPublisher _publisher;
-	private readonly IReadIndex<TStreamId> _readIndex;
-	private readonly ISystemStreamLookup<TStreamId> _systemStreams;
-	private readonly IReadOnlyCheckpoint _writerCheckpoint;
-	private readonly IInMemoryStreamReader _inMemReader;
-	private readonly int _queueId;
-	private static readonly char[] LinkToSeparator = { '@' };
+	private readonly IPublisher _publisher = Ensure.NotNull(publisher);
+	private readonly IReadIndex<TStreamId> _readIndex = Ensure.NotNull(readIndex);
+	private readonly ISystemStreamLookup<TStreamId> _systemStreams = Ensure.NotNull(systemStreams);
+	private readonly IReadOnlyCheckpoint _writerCheckpoint = Ensure.NotNull(writerCheckpoint);
+	private static readonly char[] LinkToSeparator = ['@'];
 	private const int MaxPageSize = 4096;
 	private DateTime? _lastExpireTime;
 	private long _expiredBatchCount;
 	private bool _batchLoggingEnabled;
-
-	public StorageReaderWorker(
-		IPublisher publisher,
-		IReadIndex<TStreamId> readIndex,
-		ISystemStreamLookup<TStreamId> systemStreams,
-		IReadOnlyCheckpoint writerCheckpoint,
-		IInMemoryStreamReader inMemReader,
-		int queueId) {
-		Ensure.NotNull(publisher, "publisher");
-		Ensure.NotNull(readIndex, "readIndex");
-		Ensure.NotNull(systemStreams, nameof(systemStreams));
-		Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
-
-		_publisher = publisher;
-		_readIndex = readIndex;
-		_systemStreams = systemStreams;
-		_writerCheckpoint = writerCheckpoint;
-		_queueId = queueId;
-		_inMemReader = inMemReader;
-	}
 
 	async ValueTask IAsyncHandle<ReadEvent>.HandleAsync(ReadEvent msg, CancellationToken token) {
 		if (msg.CancellationToken.IsCancellationRequested)
@@ -109,14 +97,14 @@ public class StorageReaderWorker<TStreamId> :
 
 			if (LogExpiredMessage(msg.Expires))
 				Log.Debug(
-					"Read Stream Events Forward operation has expired for Stream: {stream}, From Event Number: {fromEventNumber}, Max Count: {maxCount}. Operation Expired at {expiryDateTime}",
+					"ReadStreamEventsForward operation has expired for Stream: {stream}, From Event Number: {fromEventNumber}, Max Count: {maxCount}. Operation Expired at {expiryDateTime}",
 					msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.Expires);
 			return;
 		}
 
 		ReadStreamEventsForwardCompleted res;
 		using (token.LinkTo(msg.CancellationToken)) {
-			res = SystemStreams.IsInMemoryStream(msg.EventStreamId) ? _inMemReader.ReadForwards(msg) : await ReadStreamEventsForward(msg, token);
+			res = SystemStreams.IsInMemoryStream(msg.EventStreamId) ? inMemReader.ReadForwards(msg) : await ReadStreamEventsForward(msg, token);
 		}
 
 		switch (res.Result) {
@@ -147,13 +135,13 @@ public class StorageReaderWorker<TStreamId> :
 		if (msg.Expires < DateTime.UtcNow) {
 			if (LogExpiredMessage(msg.Expires))
 				Log.Debug(
-					"Read Stream Events Backward operation has expired for Stream: {stream}, From Event Number: {fromEventNumber}, Max Count: {maxCount}. Operation Expired at {expiryDateTime}",
+					"ReadStreamEventsBackward operation has expired for Stream: {stream}, From Event Number: {fromEventNumber}, Max Count: {maxCount}. Operation Expired at {expiryDateTime}",
 					msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.Expires);
 			return;
 		}
 
 		using var cts = token.LinkTo(msg.CancellationToken);
-		var res = SystemStreams.IsInMemoryStream(msg.EventStreamId) ? _inMemReader.ReadBackwards(msg) : await ReadStreamEventsBackward(msg, token);
+		var res = SystemStreams.IsInMemoryStream(msg.EventStreamId) ? inMemReader.ReadBackwards(msg) : await ReadStreamEventsBackward(msg, token);
 
 		msg.Envelope.ReplyWith(res);
 	}
@@ -173,7 +161,7 @@ public class StorageReaderWorker<TStreamId> :
 
 			if (LogExpiredMessage(msg.Expires))
 				Log.Debug(
-					"Read All Stream Events Forward operation has expired for C:{commitPosition}/P:{preparePosition}. Operation Expired at {expiryDateTime}",
+					"ReadAllStreamEventsForward operation has expired for C:{commitPosition}/P:{preparePosition}. Operation Expired at {expiryDateTime}",
 					msg.CommitPosition, msg.PreparePosition, msg.Expires);
 			return;
 		}
@@ -211,7 +199,7 @@ public class StorageReaderWorker<TStreamId> :
 
 		if (msg.Expires < DateTime.UtcNow) {
 			if (LogExpiredMessage(msg.Expires))
-				Log.Debug("Read All Stream Events Backward operation has expired for C:{commitPosition}/P:{preparePosition}. Operation Expired at {expiryDateTime}", msg.CommitPosition,
+				Log.Debug("ReadAllStreamEventsBackward operation has expired for C:{commitPosition}/P:{preparePosition}. Operation Expired at {expiryDateTime}", msg.CommitPosition,
 					msg.PreparePosition, msg.Expires);
 			return;
 		}
@@ -232,7 +220,7 @@ public class StorageReaderWorker<TStreamId> :
 			}
 
 			Log.Debug(
-				"Read All Stream Events Forward Filtered operation has expired for C:{0}/P:{1}. Operation Expired at {2}",
+				"ReadAllStreamEventsForwardFiltered operation has expired for C:{0}/P:{1}. Operation Expired at {2}",
 				msg.CommitPosition, msg.PreparePosition, msg.Expires);
 			return;
 		}
@@ -269,7 +257,7 @@ public class StorageReaderWorker<TStreamId> :
 			return;
 
 		if (msg.Expires < DateTime.UtcNow) {
-			Log.Debug("Read All Stream Events Backward Filtered operation has expired for C:{0}/P:{1}. Operation Expired at {2}", msg.CommitPosition, msg.PreparePosition, msg.Expires);
+			Log.Debug("ReadAllStreamEventsBackwardFiltered operation has expired for C:{0}/P:{1}. Operation Expired at {2}", msg.CommitPosition, msg.PreparePosition, msg.Expires);
 			return;
 		}
 
@@ -299,15 +287,15 @@ public class StorageReaderWorker<TStreamId> :
 		}
 	}
 
-	async ValueTask IAsyncHandle<StorageMessage.EffectiveStreamAclRequest>.HandleAsync(StorageMessage.EffectiveStreamAclRequest msg, CancellationToken token) {
+	async ValueTask IAsyncHandle<EffectiveStreamAclRequest>.HandleAsync(EffectiveStreamAclRequest msg, CancellationToken token) {
 		Message reply;
 		var cts = token.LinkTo(msg.CancellationToken);
 
 		try {
 			var acl = await _readIndex.GetEffectiveAcl(_readIndex.GetStreamId(msg.StreamId), token);
-			reply = new StorageMessage.EffectiveStreamAclResponse(acl);
+			reply = new EffectiveStreamAclResponse(acl);
 		} catch (OperationCanceledException e) when (e.CausedBy(cts, msg.CancellationToken)) {
-			reply = new StorageMessage.OperationCancelledMessage(msg.CancellationToken);
+			reply = new OperationCancelledMessage(msg.CancellationToken);
 		} finally {
 			cts?.Dispose();
 		}
@@ -321,7 +309,7 @@ public class StorageReaderWorker<TStreamId> :
 			var streamId = _readIndex.GetStreamId(streamName);
 			var result = await _readIndex.ReadEvent(streamName, streamId, msg.EventNumber, token);
 			var record = result.Result is ReadEventResult.Success && msg.ResolveLinkTos
-				? await ResolveLinkToEvent(result.Record, msg.User, null, token)
+				? await ResolveLinkToEvent(result.Record, null, token)
 				: ResolvedEvent.ForUnresolvedEvent(result.Record);
 			if (record is null)
 				return NoData(msg, ReadEventResult.AccessDenied);
@@ -348,22 +336,41 @@ public class StorageReaderWorker<TStreamId> :
 
 			using var _ = TempIndexMetrics.MeasureRead("read_stream_forward");
 
-			var streamName = msg.EventStreamId;
 			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
-			// if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
-				// return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion.Value);
+			if (DuckDb.UseDuckDb && msg.EventStreamId.StartsWith("$ce") && msg.ResolveLinkTos) {
+				var lastEventNumber = DuckDb.GetCategoryLastEventNumber(msg.EventStreamId);
+				var resolved = await DuckDb.GetCategoryEvents(_readIndex.IndexReader, streamId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
+				if (resolved.Count == 0)
+					return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion ?? 0);
+				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
+					ReadStreamResult.Success, resolved, StreamMetadata.Empty, false, string.Empty,
+					resolved[^1].OriginalEventNumber + 1, lastEventNumber, resolved.Count < msg.MaxCount, lastIndexPosition);
+			} else {
+				if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
+					return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion.Value);
 
-			var result = await _readIndex.ReadStreamEventsForward(streamName, streamId, msg.FromEventNumber, msg.MaxCount, token);
-			CheckEventsOrder(msg, result);
-			if (await ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User, token) is not { } resolvedPairs)
-				return NoData(msg, ReadStreamResult.AccessDenied, lastIndexPosition);
+				var result = await _readIndex.ReadStreamEventsForward(msg.EventStreamId, streamId, msg.FromEventNumber, msg.MaxCount, token);
+				CheckEventsOrder(msg, result);
+				if (await ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User, token) is not { } resolvedPairs)
+					return NoData(msg, ReadStreamResult.AccessDenied, lastIndexPosition);
 
-			return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
-				(ReadStreamResult)result.Result, resolvedPairs, result.Metadata, false, string.Empty,
-				result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastIndexPosition);
+				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
+					(ReadStreamResult)result.Result, resolvedPairs, result.Metadata, false, string.Empty,
+					result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastIndexPosition);
+			}
 		} catch (Exception exc) {
 			Log.Error(exc, "Error during processing ReadStreamEventsForward request.");
 			return NoData(msg, ReadStreamResult.Error, lastIndexPosition, error: exc.Message);
+		}
+
+		static void CheckEventsOrder(ReadStreamEventsForward msg, IndexReadStreamResult result) {
+			for (var index = 1; index < result.Records.Length; index++) {
+				if (result.Records[index].EventNumber != result.Records[index - 1].EventNumber + 1) {
+					throw new Exception(
+						$"Invalid order of events has been detected in read index for the event stream '{msg.EventStreamId}'. " +
+						$"The event {result.Records[index].EventNumber} at position {result.Records[index].LogPosition} goes after the event {result.Records[index - 1].EventNumber} at position {result.Records[index - 1].LogPosition}");
+				}
+			}
 		}
 	}
 
@@ -378,10 +385,8 @@ public class StorageReaderWorker<TStreamId> :
 
 			var streamName = msg.EventStreamId;
 			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
-			if (msg.ValidationStreamVersion.HasValue &&
-			    await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
+			if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
 				return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion.Value);
-
 
 			var result = await _readIndex.ReadStreamEventsBackward(streamName, streamId, msg.FromEventNumber, msg.MaxCount, token);
 			CheckEventsOrder(msg, result);
@@ -395,6 +400,16 @@ public class StorageReaderWorker<TStreamId> :
 		} catch (Exception exc) {
 			Log.Error(exc, "Error during processing ReadStreamEventsBackward request.");
 			return NoData(msg, ReadStreamResult.Error, lastIndexedPosition, error: exc.Message);
+		}
+
+		static void CheckEventsOrder(ReadStreamEventsBackward msg, IndexReadStreamResult result) {
+			for (var index = 1; index < result.Records.Length; index++) {
+				if (result.Records[index].EventNumber != result.Records[index - 1].EventNumber - 1) {
+					throw new Exception(
+						$"Invalid order of events has been detected in read index for the event stream '{msg.EventStreamId}'. " +
+						$"The event {result.Records[index].EventNumber} at position {result.Records[index].LogPosition} goes after the event {result.Records[index - 1].EventNumber} at position {result.Records[index - 1].LogPosition}");
+				}
+			}
 		}
 	}
 
@@ -482,8 +497,7 @@ public class StorageReaderWorker<TStreamId> :
 			if (msg.ValidationTfLastCommitPosition == lastIndexedPosition)
 				return NoDataForFilteredCommand(msg, FilteredReadAllResult.NotModified, pos, lastIndexedPosition);
 
-			var res = await _readIndex.ReadAllEventsForwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
-				msg.EventFilter, token);
+			var res = await _readIndex.ReadAllEventsForwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow, msg.EventFilter, token);
 			if (await ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User, token) is not { } resolved)
 				return NoDataForFilteredCommand(msg, FilteredReadAllResult.AccessDenied, pos, lastIndexedPosition);
 
@@ -563,31 +577,12 @@ public class StorageReaderWorker<TStreamId> :
 		return new(msg.CorrelationId, result, error, ResolvedEvent.EmptyArray, null, false, msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, lastIndexedPosition);
 	}
 
-	private static void CheckEventsOrder(ReadStreamEventsForward msg, IndexReadStreamResult result) {
-		for (var index = 1; index < result.Records.Length; index++) {
-			if (result.Records[index].EventNumber != result.Records[index - 1].EventNumber + 1) {
-				throw new Exception(
-					$"Invalid order of events has been detected in read index for the event stream '{msg.EventStreamId}'. " +
-					$"The event {result.Records[index].EventNumber} at position {result.Records[index].LogPosition} goes after the event {result.Records[index - 1].EventNumber} at position {result.Records[index - 1].LogPosition}");
-			}
-		}
-	}
-
-	private static void CheckEventsOrder(ReadStreamEventsBackward msg, IndexReadStreamResult result) {
-		for (var index = 1; index < result.Records.Length; index++) {
-			if (result.Records[index].EventNumber != result.Records[index - 1].EventNumber - 1) {
-				throw new Exception(
-					$"Invalid order of events has been detected in read index for the event stream '{msg.EventStreamId}'. " +
-					$"The event {result.Records[index].EventNumber} at position {result.Records[index].LogPosition} goes after the event {result.Records[index - 1].EventNumber} at position {result.Records[index - 1].LogPosition}");
-			}
-		}
-	}
 
 	private async ValueTask<IReadOnlyList<ResolvedEvent>> ResolveLinkToEvents(IReadOnlyList<EventRecord> records, bool resolveLinks, ClaimsPrincipal user, CancellationToken token) {
 		var resolved = new ResolvedEvent[records.Count];
 		if (resolveLinks) {
 			for (var i = 0; i < records.Count; i++) {
-				if (await ResolveLinkToEvent(records[i], user, null, token) is not { } rec)
+				if (await ResolveLinkToEvent(records[i], null, token) is not { } rec)
 					return null;
 
 				resolved[i] = rec;
@@ -601,42 +596,38 @@ public class StorageReaderWorker<TStreamId> :
 		return resolved;
 	}
 
-	private async ValueTask<ResolvedEvent?> ResolveLinkToEvent(EventRecord eventRecord, ClaimsPrincipal user, long? commitPosition, CancellationToken token) {
-		if (eventRecord.EventType is SystemEventTypes.LinkTo) {
-			try {
-				var linkPayload = Helper.UTF8NoBom.GetString(eventRecord.Data.Span);
-				var parts = linkPayload.Split(LinkToSeparator, 2);
-				if (long.TryParse(parts[0], out long eventNumber)) {
-					var streamName = parts[1];
-					var streamId = _readIndex.GetStreamId(streamName);
-					var res = await _readIndex.ReadEvent(streamName, streamId, eventNumber, token);
-					if (res.Result is ReadEventResult.Success)
-						return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);
+	private async ValueTask<ResolvedEvent?> ResolveLinkToEvent(EventRecord eventRecord, long? commitPosition, CancellationToken token) {
+		if (eventRecord.EventType is not SystemEventTypes.LinkTo)
+			return ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition);
 
-					return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
-				}
-
-				Log.Warning($"Invalid link event payload [{linkPayload}]: {eventRecord}");
-				return ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition);
-			} catch (Exception exc) {
-				Log.Error(exc, "Error while resolving link for event record: {eventRecord}",
-					eventRecord.ToString());
+		try {
+			var linkPayload = Helper.UTF8NoBom.GetString(eventRecord.Data.Span);
+			var parts = linkPayload.Split(LinkToSeparator, 2);
+			if (long.TryParse(parts[0], out long eventNumber)) {
+				var streamName = parts[1];
+				var streamId = _readIndex.GetStreamId(streamName);
+				var res = await _readIndex.ReadEvent(streamName, streamId, eventNumber, token);
+				return res.Result is ReadEventResult.Success
+					? ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition)
+					: ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
 			}
 
-			// return unresolved link
-			return ResolvedEvent.ForFailedResolvedLink(eventRecord, ReadEventResult.Error, commitPosition);
+			Log.Warning($"Invalid link event payload [{linkPayload}]: {eventRecord}");
+			return ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition);
+		} catch (Exception exc) {
+			Log.Error(exc, "Error while resolving link for event record: {eventRecord}", eventRecord.ToString());
 		}
 
-		return ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition);
+		// return unresolved link
+		return ResolvedEvent.ForFailedResolvedLink(eventRecord, ReadEventResult.Error, commitPosition);
 	}
 
-	private async ValueTask<IReadOnlyList<ResolvedEvent>> ResolveReadAllResult(IReadOnlyList<CommitEventRecord> records, bool resolveLinks,
-		ClaimsPrincipal user, CancellationToken token) {
+	private async ValueTask<IReadOnlyList<ResolvedEvent>> ResolveReadAllResult(IReadOnlyList<CommitEventRecord> records, bool resolveLinks, ClaimsPrincipal user, CancellationToken token) {
 		var result = new ResolvedEvent[records.Count];
 		if (resolveLinks) {
 			for (var i = 0; i < result.Length; ++i) {
 				var record = records[i];
-				if (await ResolveLinkToEvent(record.Event, user, record.CommitPosition, token) is not { } resolvedPair)
+				if (await ResolveLinkToEvent(record.Event, record.CommitPosition, token) is not { } resolvedPair)
 					return null;
 				result[i] = resolvedPair;
 			}
@@ -649,22 +640,18 @@ public class StorageReaderWorker<TStreamId> :
 		return result;
 	}
 
-	public void Handle(StorageMessage.BatchLogExpiredMessages message) {
+	public void Handle(BatchLogExpiredMessages message) {
 		if (!_batchLoggingEnabled)
 			return;
 		if (_expiredBatchCount == 0) {
 			_batchLoggingEnabled = false;
-			Log.Warning("StorageReaderWorker #{0}: Batch logging disabled, read load is back to normal", _queueId);
+			Log.Warning("StorageReaderWorker #{0}: Batch logging disabled, read load is back to normal", queueId);
 			return;
 		}
 
-		Log.Warning("StorageReaderWorker #{0}: {1} read operations have expired", _queueId, _expiredBatchCount);
+		Log.Warning("StorageReaderWorker #{0}: {1} read operations have expired", queueId, _expiredBatchCount);
 		_expiredBatchCount = 0;
-		_publisher.Publish(
-			TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2),
-				_publisher,
-				new StorageMessage.BatchLogExpiredMessages(Guid.NewGuid(), _queueId))
-		);
+		_publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2), _publisher, new BatchLogExpiredMessages(Guid.NewGuid(), queueId)));
 	}
 
 	private bool LogExpiredMessage(DateTime expire) {
@@ -676,44 +663,37 @@ public class StorageReaderWorker<TStreamId> :
 
 		if (!_batchLoggingEnabled) {
 			_expiredBatchCount++;
-			if (_expiredBatchCount >= 50) {
-				if (expire - _lastExpireTime.Value <= TimeSpan.FromSeconds(1)) {
-					//heuristic to match approximately >= 50 expired messages / second
-					_batchLoggingEnabled = true;
-					Log.Warning(
-						"StorageReaderWorker #{0}: Batch logging enabled, high rate of expired read messages detected",
-						_queueId);
-					_publisher.Publish(
-						TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2),
-							_publisher,
-							new StorageMessage.BatchLogExpiredMessages(Guid.NewGuid(), _queueId))
-					);
-					_expiredBatchCount = 1;
-					_lastExpireTime = expire;
-					return false;
-				} else {
-					_expiredBatchCount = 1;
-					_lastExpireTime = expire;
-				}
+			if (_expiredBatchCount < 50) return true;
+			if (expire - _lastExpireTime.Value <= TimeSpan.FromSeconds(1)) {
+				//heuristic to match approximately >= 50 expired messages / second
+				_batchLoggingEnabled = true;
+				Log.Warning("StorageReaderWorker #{0}: Batch logging enabled, high rate of expired read messages detected", queueId);
+				_publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2), _publisher, new BatchLogExpiredMessages(Guid.NewGuid(), queueId)));
+				_expiredBatchCount = 1;
+				_lastExpireTime = expire;
+				return false;
 			}
 
-			return true;
-		} else {
-			_expiredBatchCount++;
+			_expiredBatchCount = 1;
 			_lastExpireTime = expire;
-			return false;
+
+			return true;
 		}
+
+		_expiredBatchCount++;
+		_lastExpireTime = expire;
+		return false;
 	}
 
-	async ValueTask IAsyncHandle<StorageMessage.StreamIdFromTransactionIdRequest>.HandleAsync(StorageMessage.StreamIdFromTransactionIdRequest message, CancellationToken token) {
+	async ValueTask IAsyncHandle<StreamIdFromTransactionIdRequest>.HandleAsync(StreamIdFromTransactionIdRequest message, CancellationToken token) {
 		var cts = token.LinkTo(message.CancellationToken);
 		Message reply;
 		try {
 			var streamId = await _readIndex.GetEventStreamIdByTransactionId(message.TransactionId, token);
 			var streamName = await _readIndex.GetStreamName(streamId, token);
-			reply = new StorageMessage.StreamIdFromTransactionIdResponse(streamName);
+			reply = new StreamIdFromTransactionIdResponse(streamName);
 		} catch (OperationCanceledException e) when (e.CausedBy(cts, message.CancellationToken)) {
-			reply = new StorageMessage.OperationCancelledMessage(message.CancellationToken);
+			reply = new OperationCancelledMessage(message.CancellationToken);
 		} finally {
 			cts?.Dispose();
 		}

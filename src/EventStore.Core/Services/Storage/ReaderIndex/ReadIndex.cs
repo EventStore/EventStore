@@ -20,22 +20,14 @@ using static EventStore.Common.Configuration.MetricsConfiguration;
 namespace EventStore.Core.Services.Storage.ReaderIndex;
 
 public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId> {
-	public long LastIndexedPosition {
-		get { return _indexCommitter.LastIndexedPosition; }
-	}
+	public long LastIndexedPosition => IndexCommitter.LastIndexedPosition;
 
-	public IIndexWriter<TStreamId> IndexWriter {
-		get { return _indexWriter; }
-	}
+	public IIndexWriter<TStreamId> IndexWriter { get; }
+	public IIndexReader<TStreamId> IndexReader { get; }
 
-	public IIndexCommitter<TStreamId> IndexCommitter {
-		get { return _indexCommitter; }
-	}
+	public IIndexCommitter<TStreamId> IndexCommitter { get; }
 
-	private readonly IIndexReader<TStreamId> _indexReader;
-	private readonly IIndexWriter<TStreamId> _indexWriter;
-	private readonly IIndexCommitter<TStreamId> _indexCommitter;
-	private readonly IAllReader _allReader;
+	private readonly AllReader<TStreamId> _allReader;
 	private readonly IValueLookup<TStreamId> _streamIds;
 	private readonly INameLookup<TStreamId> _streamNames;
 
@@ -63,26 +55,26 @@ public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId> {
 		IIndexTracker indexTracker,
 		ICacheHitsMissesTracker cacheTracker) {
 
-		Ensure.NotNull(bus, "bus");
-		Ensure.NotNull(readerPool, "readerPool");
-		Ensure.NotNull(tableIndex, "tableIndex");
-		Ensure.NotNull(streamIds, nameof(streamIds));
-		Ensure.NotNull(streamNamesProvider, nameof(streamNamesProvider));
-		Ensure.NotNull(streamIdValidator, nameof(streamIdValidator));
-		Ensure.NotNull(sizer, nameof(sizer));
-		Ensure.NotNull(streamExistenceFilter, nameof(streamExistenceFilter));
-		Ensure.NotNull(streamExistenceFilterReader, nameof(streamExistenceFilterReader));
-		Ensure.NotNull(streamLastEventNumberCache, nameof(streamLastEventNumberCache));
-		Ensure.NotNull(streamMetadataCache, nameof(streamMetadataCache));
+		Ensure.NotNull(bus);
+		Ensure.NotNull(readerPool);
+		Ensure.NotNull(tableIndex);
+		Ensure.NotNull(streamIds);
+		Ensure.NotNull(streamNamesProvider);
+		Ensure.NotNull(streamIdValidator);
+		Ensure.NotNull(sizer);
+		Ensure.NotNull(streamExistenceFilter);
+		Ensure.NotNull(streamExistenceFilterReader);
+		Ensure.NotNull(streamLastEventNumberCache);
+		Ensure.NotNull(streamMetadataCache);
 		Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
-		Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
-		Ensure.NotNull(indexCheckpoint, "indexCheckpoint");
+		Ensure.NotNull(replicationCheckpoint);
+		Ensure.NotNull(indexCheckpoint);
 
 		var metastreamMetadata = new StreamMetadata(maxCount: metastreamMaxCount);
 
 		var indexBackend = new IndexBackend<TStreamId>(readerPool, streamLastEventNumberCache, streamMetadataCache);
 
-		_indexReader = new IndexReader<TStreamId>(indexBackend, tableIndex, streamNamesProvider, streamIdValidator,
+		IndexReader = new IndexReader<TStreamId>(indexBackend, tableIndex, streamNamesProvider, streamIdValidator,
 			streamExistenceFilterReader, metastreamMetadata, hashCollisionReadLimit, skipIndexScanOnReads);
 
 		_streamIds = streamIds;
@@ -91,25 +83,25 @@ public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId> {
 		var eventTypeNames = streamNamesProvider.EventTypes;
 		var streamExistenceFilterInitializer = streamNamesProvider.StreamExistenceFilterInitializer;
 
-		_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
-		_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex,
+		IndexWriter = new IndexWriter<TStreamId>(indexBackend, IndexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
+		IndexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, IndexReader, tableIndex, streamNameIndex,
 			_streamNames, eventTypeIndex, eventTypeNames, systemStreams, streamExistenceFilter,
 			streamExistenceFilterInitializer, indexCheckpoint, indexStatusTracker, indexTracker, additionalCommitChecks);
-		_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames, eventTypeNames);
+		_allReader = new AllReader<TStreamId>(indexBackend, IndexCommitter, _streamNames, eventTypeNames);
 
 		RegisterHitsMisses(cacheTracker);
 	}
 
 	ValueTask<IndexReadEventResult> IReadIndex<TStreamId>.ReadEvent(string streamName, TStreamId streamId, long eventNumber, CancellationToken token) {
-		return _indexReader.ReadEvent(streamName, streamId, eventNumber, token);
+		return IndexReader.ReadEvent(streamName, streamId, eventNumber, token);
 	}
 
 	ValueTask<IndexReadStreamResult> IReadIndex<TStreamId>.ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount, CancellationToken token) {
-		return _indexReader.ReadStreamEventsForward(streamName, streamId, fromEventNumber, maxCount, token);
+		return IndexReader.ReadStreamEventsForward(streamName, streamId, fromEventNumber, maxCount, token);
 	}
 
 	ValueTask<IndexReadStreamResult> IReadIndex<TStreamId>.ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount, CancellationToken token) {
-		return _indexReader.ReadStreamEventsBackward(streamName, streamId, fromEventNumber, maxCount, token);
+		return IndexReader.ReadStreamEventsBackward(streamName, streamId, fromEventNumber, maxCount, token);
 	}
 
 	TStreamId IReadIndex<TStreamId>.GetStreamId(string streamName) {
@@ -117,25 +109,25 @@ public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId> {
 	}
 
 	public ValueTask<IndexReadEventInfoResult> ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber, CancellationToken token) {
-		return _indexReader.ReadEventInfo_KeepDuplicates(streamId, eventNumber, token);
+		return IndexReader.ReadEventInfo_KeepDuplicates(streamId, eventNumber, token);
 	}
 
 	public ValueTask<IndexReadEventInfoResult> ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition, CancellationToken token) {
-		return _indexReader.ReadEventInfoForward_KnownCollisions(streamId, fromEventNumber, maxCount, beforePosition, token);
+		return IndexReader.ReadEventInfoForward_KnownCollisions(streamId, fromEventNumber, maxCount, beforePosition, token);
 	}
 
 	public ValueTask<IndexReadEventInfoResult> ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition, CancellationToken token) {
-		return _indexReader.ReadEventInfoForward_NoCollisions(stream, fromEventNumber, maxCount, beforePosition, token);
+		return IndexReader.ReadEventInfoForward_NoCollisions(stream, fromEventNumber, maxCount, beforePosition, token);
 	}
 
 	public ValueTask<IndexReadEventInfoResult> ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount,
 		long beforePosition, CancellationToken token) {
-		return _indexReader.ReadEventInfoBackward_KnownCollisions(streamId, fromEventNumber, maxCount, beforePosition, token);
+		return IndexReader.ReadEventInfoBackward_KnownCollisions(streamId, fromEventNumber, maxCount, beforePosition, token);
 	}
 
 	public ValueTask<IndexReadEventInfoResult> ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId,
 		long fromEventNumber, int maxCount, long beforePosition, CancellationToken token) {
-		return _indexReader.ReadEventInfoBackward_NoCollisions(stream, getStreamId, fromEventNumber, maxCount, beforePosition, token);
+		return IndexReader.ReadEventInfoBackward_NoCollisions(stream, getStreamId, fromEventNumber, maxCount, beforePosition, token);
 	}
 
 	ValueTask<string> IReadIndex<TStreamId>.GetStreamName(TStreamId streamId, CancellationToken token) {
@@ -143,27 +135,27 @@ public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId> {
 	}
 
 	async ValueTask<bool> IReadIndex<TStreamId>.IsStreamDeleted(TStreamId streamId, CancellationToken token) {
-		return await _indexReader.GetStreamLastEventNumber(streamId, token) is EventNumber.DeletedStream;
+		return await IndexReader.GetStreamLastEventNumber(streamId, token) is EventNumber.DeletedStream;
 	}
 
 	ValueTask<long> IReadIndex<TStreamId>.GetStreamLastEventNumber(TStreamId streamId, CancellationToken token) {
-		return _indexReader.GetStreamLastEventNumber(streamId, token);
+		return IndexReader.GetStreamLastEventNumber(streamId, token);
 	}
 
 	public ValueTask<long> GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition, CancellationToken token) {
-		return _indexReader.GetStreamLastEventNumber_KnownCollisions(streamId, beforePosition, token);
+		return IndexReader.GetStreamLastEventNumber_KnownCollisions(streamId, beforePosition, token);
 	}
 
 	public ValueTask<long> GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition, CancellationToken token) {
-		return _indexReader.GetStreamLastEventNumber_NoCollisions(stream, getStreamId, beforePosition, token);
+		return IndexReader.GetStreamLastEventNumber_NoCollisions(stream, getStreamId, beforePosition, token);
 	}
 
 	ValueTask<StreamMetadata> IReadIndex<TStreamId>.GetStreamMetadata(TStreamId streamId, CancellationToken token) {
-		return _indexReader.GetStreamMetadata(streamId, token);
+		return IndexReader.GetStreamMetadata(streamId, token);
 	}
 
 	public ValueTask<TStreamId> GetEventStreamIdByTransactionId(long transactionId, CancellationToken token) {
-		return _indexReader.GetEventStreamIdByTransactionId(transactionId, token);
+		return IndexReader.GetEventStreamIdByTransactionId(transactionId, token);
 	}
 
 	ValueTask<IndexReadAllResult> IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount, CancellationToken token) {
@@ -185,7 +177,7 @@ public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId> {
 	}
 
 	public ValueTask<StorageMessage.EffectiveAcl> GetEffectiveAcl(TStreamId streamId, CancellationToken token) {
-		return _indexReader.GetEffectiveAcl(streamId, token);
+		return IndexReader.GetEffectiveAcl(streamId, token);
 	}
 
 	void RegisterHitsMisses(ICacheHitsMissesTracker tracker) {
@@ -196,18 +188,18 @@ public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId> {
 
 		tracker.Register(
 			Cache.StreamInfo,
-			() => _indexReader.CachedStreamInfo,
-			() => _indexReader.NotCachedStreamInfo);
+			() => IndexReader.CachedStreamInfo,
+			() => IndexReader.NotCachedStreamInfo);
 	}
 
 	ReadIndexStats IReadIndex.GetStatistics() {
 		return new ReadIndexStats(Interlocked.Read(ref TFChunkReader.CachedReads),
 			Interlocked.Read(ref TFChunkReader.NotCachedReads),
-			_indexReader.CachedStreamInfo,
-			_indexReader.NotCachedStreamInfo,
-			_indexReader.HashCollisions,
-			_indexWriter.CachedTransInfo,
-			_indexWriter.NotCachedTransInfo);
+			IndexReader.CachedStreamInfo,
+			IndexReader.NotCachedStreamInfo,
+			IndexReader.HashCollisions,
+			IndexWriter.CachedTransInfo,
+			IndexWriter.NotCachedTransInfo);
 	}
 
 	public void Close() {
@@ -215,6 +207,6 @@ public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId> {
 	}
 
 	public void Dispose() {
-		_indexCommitter.Dispose();
+		IndexCommitter.Dispose();
 	}
 }

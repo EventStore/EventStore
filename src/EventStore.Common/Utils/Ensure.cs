@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Runtime.CompilerServices;
 
 namespace EventStore.Common.Utils;
 
@@ -10,9 +11,9 @@ public interface IValidator<T> {
 }
 
 public static class Ensure {
-	public static void NotNull<T>(T argument, string argumentName) where T : class {
-		if (argument == null)
-			throw new ArgumentNullException(argumentName);
+	public static T NotNull<T>(T argument, [CallerArgumentExpression("argument")] string argumentName = null) where T : class {
+        ArgumentNullException.ThrowIfNull(argument, argumentName);
+		return argument;
 	}
 
 	public static void NotNullOrEmpty(string argument, string argumentName) {

@@ -9,9 +9,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 namespace EventStore.Core.Data;
 
 public class EventRecord : IEquatable<EventRecord> {
-	public bool IsJson {
-		get { return (Flags & PrepareFlags.IsJson) == PrepareFlags.IsJson; }
-	}
+	public bool IsJson => (Flags & PrepareFlags.IsJson) == PrepareFlags.IsJson;
 
 	public bool IsSelfCommitted => Flags.HasAnyOf(PrepareFlags.IsCommitted);
 
@@ -31,7 +29,7 @@ public class EventRecord : IEquatable<EventRecord> {
 
 	public EventRecord(long eventNumber, IPrepareLogRecord prepare, string eventStreamId, string eventType) {
 		Ensure.Nonnegative(eventNumber, "eventNumber");
-		Ensure.NotNull(eventStreamId, "eventStreamId");
+		Ensure.NotNull(eventStreamId);
 
 		EventNumber = eventNumber;
 		LogPosition = prepare.LogPosition;
@@ -42,7 +40,6 @@ public class EventRecord : IEquatable<EventRecord> {
 		EventStreamId = eventStreamId;
 		ExpectedVersion = prepare.ExpectedVersion;
 		TimeStamp = prepare.TimeStamp;
-
 		Flags = prepare.Flags;
 		EventType = eventType ?? string.Empty;
 		Data = prepare.Data;
@@ -67,10 +64,10 @@ public class EventRecord : IEquatable<EventRecord> {
 		Ensure.Nonnegative(transactionPosition, "transactionPosition");
 		if (transactionOffset < -1)
 			throw new ArgumentOutOfRangeException("transactionOffset");
-		Ensure.NotNull(eventStreamId, "eventStreamId");
+		Ensure.NotNull(eventStreamId);
 		Ensure.Nonnegative(eventNumber, "eventNumber");
 		Ensure.NotEmptyGuid(eventId, "eventId");
-		Ensure.NotNull(data, "data");
+		Ensure.NotNull(data);
 
 		EventNumber = eventNumber;
 		LogPosition = logPosition;
@@ -140,37 +137,14 @@ public class EventRecord : IEquatable<EventRecord> {
 	}
 
 	public override string ToString() {
-		return string.Format("EventNumber: {0}, "
-		                     + "LogPosition: {1}, "
-		                     + "CorrelationId: {2}, "
-		                     + "EventId: {3}, "
-		                     + "TransactionPosition: {4}, "
-		                     + "TransactionOffset: {5}, "
-		                     + "EventStreamId: {6}, "
-		                     + "ExpectedVersion: {7}, "
-		                     + "TimeStamp: {8}, "
-		                     + "Flags: {9}, "
-		                     + "EventType: {10}",
-			EventNumber,
-			LogPosition,
-			CorrelationId,
-			EventId,
-			TransactionPosition,
-			TransactionOffset,
-			EventStreamId,
-			ExpectedVersion,
-			TimeStamp,
-			Flags,
-			EventType);
+		return $"EventNumber: {EventNumber}, " + $"LogPosition: {LogPosition}, " + $"CorrelationId: {CorrelationId}, " + $"EventId: {EventId}, " + $"TransactionPosition: {TransactionPosition}, " +
+		       $"TransactionOffset: {TransactionOffset}, " + $"EventStreamId: {EventStreamId}, " + $"ExpectedVersion: {ExpectedVersion}, " + $"TimeStamp: {TimeStamp}, " + $"Flags: {Flags}, " +
+		       $"EventType: {EventType}";
 	}
 
 #if DEBUG
-	public string DebugDataView {
-		get { return Encoding.UTF8.GetString(Data.Span); }
-	}
+	public string DebugDataView => Encoding.UTF8.GetString(Data.Span);
 
-	public string DebugMetadataView {
-		get { return Encoding.UTF8.GetString(Metadata.Span); }
-	}
+	public string DebugMetadataView => Encoding.UTF8.GetString(Metadata.Span);
 #endif
 }
