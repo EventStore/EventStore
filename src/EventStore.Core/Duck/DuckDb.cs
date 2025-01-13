@@ -28,7 +28,8 @@ public static class DuckDb {
 		if (!UseDuckDb) return;
 		Connection = new("Data Source=./data/file.db");
 		Connection.Open();
-		Connection.Execute("SET threads TO 10;");
+		Connection.Execute("SET threads = 10;");
+		Connection.Execute("SET memory_limit = '8GB';");
 	}
 
 	public static void Close() {
