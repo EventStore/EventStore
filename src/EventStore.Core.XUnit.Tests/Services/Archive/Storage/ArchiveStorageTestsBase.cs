@@ -18,19 +18,15 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 	protected const string ChunkPrefix = "chunk-";
 	protected string ArchivePath => Path.Combine(Fixture.Directory, "archive");
 	protected string DbPath => Path.Combine(Fixture.Directory, "db");
-	protected readonly IArchiveChunkNameResolver NameResolver;
 
 	public ArchiveStorageTestsBase() {
 		Directory.CreateDirectory(ArchivePath);
 		Directory.CreateDirectory(DbPath);
-
-		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
-		NameResolver  = new ArchiveChunkNameResolver(namingStrategy);
 	}
 
 	protected IArchiveStorageFactory CreateSutFactory(StorageType storageType) {
-
-
+		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
+		var nameResolver  = new ArchiveChunkNameResolver(namingStrategy);
 		var factory = new ArchiveStorageFactory(
 				new() {
 					StorageType = storageType,
@@ -43,7 +39,7 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 						Region = AwsRegion,
 					}
 				},
-				NameResolver);
+				nameResolver);
 		return factory;
 	}
 
