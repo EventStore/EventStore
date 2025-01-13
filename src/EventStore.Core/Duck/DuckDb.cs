@@ -62,7 +62,7 @@ public static class DuckDb {
 				var result = Connection.Query<CategoryRecord>(query, new { cat = categoryId, start = fromEventNumber, end = toEventNumber });
 				return result.Select(x => new IndexEntry(streamId, x.category_seq, x.log_position)).ToList();
 			} catch (Exception e) {
-				// Log.Warning("Error while reading index: {Exception}", e.Message);
+				Log.Warning("Error while reading index: {Exception}", e.Message);
 				duration.SetException(e);
 			}
 		}
