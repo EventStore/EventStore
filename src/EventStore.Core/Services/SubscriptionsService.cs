@@ -52,13 +52,9 @@ public class SubscriptionsService<TStreamId> :
 
 	private static readonly TimeSpan TimeoutPeriod = TimeSpan.FromSeconds(1);
 
-	private readonly Dictionary<string, List<Subscription>> _subscriptionTopics =
-		new Dictionary<string, List<Subscription>>();
-
-	private readonly Dictionary<Guid, Subscription> _subscriptionsById = new Dictionary<Guid, Subscription>();
-
-	private readonly Dictionary<string, List<PollSubscription>> _pollTopics =
-		new Dictionary<string, List<PollSubscription>>();
+	private readonly Dictionary<string, List<Subscription>> _subscriptionTopics = new();
+	private readonly Dictionary<Guid, Subscription> _subscriptionsById = new();
+	private readonly Dictionary<string, List<PollSubscription>> _pollTopics = new();
 
 	private long _lastSeenCommitPosition = -1;
 	private long _lastSeenInMemoryCommitPosition = -1;
@@ -69,7 +65,7 @@ public class SubscriptionsService<TStreamId> :
 	private readonly IReadIndex<TStreamId> _readIndex;
 	private readonly IInMemoryStreamReader _inMemReader;
 	private readonly IAuthorizationProvider _authorizationProvider;
-	private static readonly char[] _linkToSeparator = new[] { '@' };
+	private static readonly char[] _linkToSeparator = ['@'];
 
 	public SubscriptionsService(
 		IPublisher bus,
@@ -77,7 +73,6 @@ public class SubscriptionsService<TStreamId> :
 		IAuthorizationProvider authorizationProvider,
 		IReadIndex<TStreamId> readIndex,
 		IInMemoryStreamReader inMemReader) {
-
 		Ensure.NotNull(bus, nameof(bus));
 		Ensure.NotNull(queuedHandler, nameof(queuedHandler));
 		Ensure.NotNull(authorizationProvider, nameof(authorizationProvider));
@@ -93,8 +88,7 @@ public class SubscriptionsService<TStreamId> :
 	}
 
 	public void Handle(SystemMessage.SystemStart message) {
-		_bus.Publish(TimerMessage.Schedule.Create(TimeoutPeriod, _busEnvelope,
-			new SubscriptionMessage.CheckPollTimeout()));
+		_bus.Publish(TimerMessage.Schedule.Create(TimeoutPeriod, _busEnvelope, new SubscriptionMessage.CheckPollTimeout()));
 	}
 
 	/* SUBSCRIPTION SECTION */
@@ -119,8 +113,7 @@ public class SubscriptionsService<TStreamId> :
 			subscriptions.RemoveAll(x => x.ConnectionId == message.Connection.ConnectionId);
 			if (subscriptions.Count == 0) // schedule removal of list instance
 			{
-				if (subscriptionGroupsToRemove == null)
-					subscriptionGroupsToRemove = new List<string>();
+				subscriptionGroupsToRemove ??= [];
 				subscriptionGroupsToRemove.Add(subscriptionGroup.Key);
 			}
 		}
@@ -156,8 +149,7 @@ public class SubscriptionsService<TStreamId> :
 		}
 
 		if (lastEventNumber == EventNumber.DeletedStream) {
-			msg.Envelope.ReplyWith(
-				new ClientMessage.SubscriptionDropped(Guid.Empty, SubscriptionDropReason.StreamDeleted));
+			msg.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(Guid.Empty, SubscriptionDropReason.StreamDeleted));
 			return;
 		}
 
@@ -168,8 +160,7 @@ public class SubscriptionsService<TStreamId> :
 			msg.User,
 			msg.EventStreamId.IsEmptyString() ? EventFilter.DefaultAllFilter : EventFilter.DefaultStreamFilter);
 
-		var subscribedMessage =
-			new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
+		var subscribedMessage = new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
 		msg.Envelope.ReplyWith(subscribedMessage);
 	}
 
@@ -188,10 +179,8 @@ public class SubscriptionsService<TStreamId> :
 		SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
 			msg.ResolveLinkTos, lastIndexedPos, lastEventNumber, msg.User, msg.EventFilter,
 			msg.CheckpointInterval, msg.CheckpointIntervalCurrent);
-		var subscribedMessage =
-			new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
+		var subscribedMessage = new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
 		msg.Envelope.ReplyWith(subscribedMessage);
-
 	}
 
 	public void Handle(ClientMessage.UnsubscribeFromStream message) {
@@ -204,11 +193,9 @@ public class SubscriptionsService<TStreamId> :
 
 	private void SubscribeToStream(Guid correlationId, IEnvelope envelope, Guid connectionId,
 		string eventStreamId, bool resolveLinkTos, long lastIndexedPosition, long? lastEventNumber,
-		ClaimsPrincipal user,
-		IEventFilter eventFilter, int? checkpointInterval = null, int checkpointIntervalCurrent = 0) {
-		List<Subscription> subscribers;
-		if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscribers)) {
-			subscribers = new List<Subscription>();
+		ClaimsPrincipal user, IEventFilter eventFilter, int? checkpointInterval = null, int checkpointIntervalCurrent = 0) {
+		if (!_subscriptionTopics.TryGetValue(eventStreamId, out var subscribers)) {
+			subscribers = [];
 			_subscriptionTopics.Add(eventStreamId, subscribers);
 		}
 
@@ -229,18 +216,15 @@ public class SubscriptionsService<TStreamId> :
 	}
 
 	private void DropSubscription(Guid subscriptionId, SubscriptionDropReason dropReason) {
-		Subscription subscription;
-		if (_subscriptionsById.TryGetValue(subscriptionId, out subscription))
+		if (_subscriptionsById.TryGetValue(subscriptionId, out var subscription))
 			DropSubscription(subscription, dropReason, sendDropNotification: true);
 	}
 
 	private void DropSubscription(Subscription subscription, SubscriptionDropReason dropReason, bool sendDropNotification) {
 		if (sendDropNotification)
-			subscription.Envelope.ReplyWith(
-				new ClientMessage.SubscriptionDropped(subscription.CorrelationId, dropReason));
+			subscription.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(subscription.CorrelationId, dropReason));
 
-		List<Subscription> subscriptions;
-		if (_subscriptionTopics.TryGetValue(subscription.EventStreamId, out subscriptions)) {
+		if (_subscriptionTopics.TryGetValue(subscription.EventStreamId, out var subscriptions)) {
 			subscriptions.Remove(subscription);
 			if (subscriptions.Count == 0)
 				_subscriptionTopics.Remove(subscription.EventStreamId);
@@ -256,8 +240,7 @@ public class SubscriptionsService<TStreamId> :
 			return;
 		}
 
-		SubscribePoller(message.StreamId, message.ExpireAt, message.LastIndexedPosition, message.LastEventNumber,
-			message.OriginalRequest);
+		SubscribePoller(message.StreamId, message.ExpireAt, message.LastIndexedPosition, message.LastEventNumber, message.OriginalRequest);
 	}
 
 	private bool MissedEvents(string streamId, long lastIndexedPosition, long? lastEventNumber) {
@@ -266,11 +249,9 @@ public class SubscriptionsService<TStreamId> :
 			: _lastSeenCommitPosition > lastIndexedPosition;
 	}
 
-	private void SubscribePoller(string streamId, DateTime expireAt, long lastIndexedPosition, long? lastEventNumber,
-		Message originalRequest) {
-		List<PollSubscription> pollTopic;
-		if (!_pollTopics.TryGetValue(streamId, out pollTopic)) {
-			pollTopic = new List<PollSubscription>();
+	private void SubscribePoller(string streamId, DateTime expireAt, long lastIndexedPosition, long? lastEventNumber, Message originalRequest) {
+		if (!_pollTopics.TryGetValue(streamId, out var pollTopic)) {
+			pollTopic = [];
 			_pollTopics.Add(streamId, pollTopic);
 		}
 
@@ -290,8 +271,7 @@ public class SubscriptionsService<TStreamId> :
 
 					if (pollTopic.Count == 0) // schedule removal of list instance
 					{
-						if (pollTopicsToRemove == null)
-							pollTopicsToRemove = new List<string>();
+						pollTopicsToRemove ??= [];
 						pollTopicsToRemove.Add(pollTopicKeyVal.Key);
 					}
 				}
@@ -307,30 +287,21 @@ public class SubscriptionsService<TStreamId> :
 		_bus.Publish(TimerMessage.Schedule.Create(TimeSpan.FromSeconds(1), _busEnvelope, message));
 	}
 
-	private Message CloneReadRequestWithNoPollFlag(Message originalRequest) {
-		if (originalRequest is ClientMessage.ReadStreamEventsForward streamReq)
-			return new ClientMessage.ReadStreamEventsForward(
-				streamReq.InternalCorrId, streamReq.CorrelationId, streamReq.Envelope,
-				streamReq.EventStreamId, streamReq.FromEventNumber, streamReq.MaxCount, streamReq.ResolveLinkTos,
-				streamReq.RequireLeader, streamReq.ValidationStreamVersion, streamReq.User,
-				replyOnExpired: streamReq.ReplyOnExpired);
-
-		if (originalRequest is ClientMessage.ReadAllEventsForward allReq)
-			return new ClientMessage.ReadAllEventsForward(
-				allReq.InternalCorrId, allReq.CorrelationId, allReq.Envelope,
-				allReq.CommitPosition, allReq.PreparePosition, allReq.MaxCount, allReq.ResolveLinkTos,
-				allReq.RequireLeader, allReq.ValidationTfLastCommitPosition, allReq.User,
-				replyOnExpired: allReq.ReplyOnExpired);
-
-		throw new Exception(string.Format("Unexpected read request of type {0} for long polling: {1}.",
-			originalRequest.GetType(), originalRequest));
+	private static Message CloneReadRequestWithNoPollFlag(Message originalRequest) {
+		return originalRequest switch {
+			ClientMessage.ReadStreamEventsForward streamReq => new ClientMessage.ReadStreamEventsForward(streamReq.InternalCorrId, streamReq.CorrelationId, streamReq.Envelope, streamReq.EventStreamId,
+				streamReq.FromEventNumber, streamReq.MaxCount, streamReq.ResolveLinkTos, streamReq.RequireLeader, streamReq.ValidationStreamVersion, streamReq.User,
+				replyOnExpired: streamReq.ReplyOnExpired),
+			ClientMessage.ReadAllEventsForward allReq => new ClientMessage.ReadAllEventsForward(allReq.InternalCorrId, allReq.CorrelationId, allReq.Envelope, allReq.CommitPosition,
+				allReq.PreparePosition, allReq.MaxCount, allReq.ResolveLinkTos, allReq.RequireLeader, allReq.ValidationTfLastCommitPosition, allReq.User, replyOnExpired: allReq.ReplyOnExpired),
+			_ => throw new Exception($"Unexpected read request of type {originalRequest.GetType()} for long polling: {originalRequest}.")
+		};
 	}
 
 	async ValueTask IAsyncHandle<StorageMessage.EventCommitted>.HandleAsync(StorageMessage.EventCommitted message, CancellationToken token) {
 		_lastSeenCommitPosition = message.CommitPosition;
 
-		var resolvedEvent =
-			await ProcessEventCommited(AllStreamsSubscriptionId, message.CommitPosition, message.Event, null, token);
+		var resolvedEvent = await ProcessEventCommited(AllStreamsSubscriptionId, message.CommitPosition, message.Event, null, token);
 		await ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, resolvedEvent, token);
 
 		ProcessStreamMetadataChanges(message.Event.EventStreamId);
@@ -348,11 +319,8 @@ public class SubscriptionsService<TStreamId> :
 		ReissueReadsFor(message.Event.EventStreamId, message.CommitPosition, message.Event.EventNumber);
 	}
 
-	private async ValueTask<ResolvedEvent?> ProcessEventCommited(
-		string eventStreamId, long commitPosition, EventRecord evnt, ResolvedEvent? resolvedEvent,
-		CancellationToken token) {
-		List<Subscription> subscriptions;
-		if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscriptions))
+	private async ValueTask<ResolvedEvent?> ProcessEventCommited(string eventStreamId, long commitPosition, EventRecord evnt, ResolvedEvent? resolvedEvent, CancellationToken token) {
+		if (!_subscriptionTopics.TryGetValue(eventStreamId, out var subscriptions))
 			return resolvedEvent;
 		for (int i = 0, n = subscriptions.Count; i < n; i++) {
 			var subscr = subscriptions[i];
@@ -373,10 +341,8 @@ public class SubscriptionsService<TStreamId> :
 
 			subscr.CheckpointIntervalCurrent++;
 
-			if (subscr.CheckpointInterval != null &&
-				subscr.CheckpointIntervalCurrent >= subscr.CheckpointInterval) {
-				subscr.Envelope.ReplyWith(new ClientMessage.CheckpointReached(subscr.CorrelationId,
-					pair.OriginalPosition));
+			if (subscr.CheckpointInterval != null && subscr.CheckpointIntervalCurrent >= subscr.CheckpointInterval) {
+				subscr.Envelope.ReplyWith(new ClientMessage.CheckpointReached(subscr.CorrelationId, pair.OriginalPosition));
 				subscr.CheckpointIntervalCurrent = 0;
 			}
 		}
@@ -456,28 +422,24 @@ public class SubscriptionsService<TStreamId> :
 	}
 
 	private async ValueTask<ResolvedEvent> ResolveLinkToEvent(EventRecord eventRecord, long commitPosition, CancellationToken token) {
-		if (eventRecord.EventType is SystemEventTypes.LinkTo) {
-			try {
-				string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data.Span).Split(_linkToSeparator, 2);
-				long eventNumber = long.Parse(parts[0]);
-				string streamName = parts[1];
-				var streamId = _readIndex.GetStreamId(streamName);
-				var res = await _readIndex.ReadEvent(streamName, streamId, eventNumber, token);
+		if (eventRecord.EventType is not SystemEventTypes.LinkTo)
+			return ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition);
+		try {
+			string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data.Span).Split(_linkToSeparator, 2);
+			long eventNumber = long.Parse(parts[0]);
+			string streamName = parts[1];
+			var streamId = _readIndex.GetStreamId(streamName);
+			var res = await _readIndex.ReadEvent(streamName, streamId, eventNumber, token);
 
-				if (res.Result is ReadEventResult.Success)
-					return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);
-
-				return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
-			} catch (Exception exc) {
-				Log.Error(exc, "Error while resolving link for event record: {eventRecord}",
-					eventRecord.ToString());
-			}
-
-			// return unresolved link
-			return ResolvedEvent.ForFailedResolvedLink(eventRecord, ReadEventResult.Error, commitPosition);
+			return res.Result is ReadEventResult.Success
+				? ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition)
+				: ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
+		} catch (Exception exc) {
+			Log.Error(exc, "Error while resolving link for event record: {eventRecord}", eventRecord.ToString());
 		}
 
-		return ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition);
+		// return unresolved link
+		return ResolvedEvent.ForFailedResolvedLink(eventRecord, ReadEventResult.Error, commitPosition);
 	}
 
 	private void ReissueReadsFor(string streamId, long commitPosition, long eventNumber) {

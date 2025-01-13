@@ -29,18 +29,51 @@ public static class DuckDb {
 
 	static DuckDBConnection Connection;
 
-	public static IReadOnlyList<IndexEntry> GetRange(string streamName, ulong streamId, long fromEventNumber, int maxCount) {
-		const string query = "select event_number, log_position from idx_all where stream=$stream and event_number>=$start order by event_number limit $count";
+	public static IReadOnlyList<IndexEntry> GetRange(string streamName, ulong streamId, long fromEventNumber, long toEventNumber) {
+		const string query = "select event_number, log_position from idx_all where stream=$stream and event_number>=$start and event_number<=$end order by event_number limit $end";
 
 		while (true) {
 			using var duration = TempIndexMetrics.MeasureIndex("get_range");
 			try {
 				var stream = GetStreamId(streamName);
-				var result = Connection.Query<IndexRecord>(query, new { stream, start = fromEventNumber, count = maxCount });
+				var result = Connection.Query<IndexRecord>(query, new { stream, start = fromEventNumber, end = toEventNumber });
 				return result.Select(x => new IndexEntry(streamId, x.event_number, x.log_position)).ToList();
 			} catch (Exception e) {
 				// Log.Warning("Error while reading index: {Exception}", e.Message);
 				duration.SetException(e);
+			}
+		}
+	}
+
+	public static IReadOnlyList<IndexEntry> GetCategoryRange(string streamName, ulong streamId, long fromEventNumber, long toEventNumber) {
+		const string query = "select category_seq, log_position from idx_all where category=$cat and category_seq>=$start and category_seq<=$end";
+
+		var dashIndex = streamName.IndexOf('-');
+		if (dashIndex == -1) {
+			throw new InvalidOperationException($"Stream {streamName} is not a category stream");
+		}
+
+		var category = streamName[(dashIndex + 1)..];
+
+		while (true) {
+			using var duration = TempIndexMetrics.MeasureIndex("get_range");
+			try {
+				var categoryId = GetCategoryId();
+				var result = Connection.Query<CategoryRecord>(query, new { cat = categoryId, start = fromEventNumber, end = toEventNumber });
+				return result.Select(x => new IndexEntry(streamId, x.category_seq, x.log_position)).ToList();
+			} catch (Exception e) {
+				// Log.Warning("Error while reading index: {Exception}", e.Message);
+				duration.SetException(e);
+			}
+		}
+
+		long GetCategoryId() {
+			return Cache.GetOrCreate(category, GetFromDb);
+
+			static long GetFromDb(ICacheEntry arg) {
+				const string sql = "select id from category where name=$name";
+				arg.SlidingExpiration = TimeSpan.FromDays(7);
+				return Connection.Query<long>(sql, new { name = arg.Key }).SingleOrDefault();
 			}
 		}
 	}
@@ -59,6 +92,11 @@ public static class DuckDb {
 
 	class IndexRecord {
 		public int event_number { get; set; }
+		public long log_position { get; set; }
+	}
+
+	class CategoryRecord {
+		public int category_seq { get; set; }
 		public long log_position { get; set; }
 	}
 }

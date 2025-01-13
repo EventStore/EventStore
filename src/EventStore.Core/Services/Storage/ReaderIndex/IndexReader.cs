@@ -214,8 +214,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 		if (result.LogRecord.RecordType is not LogRecordType.Prepare
 			and not LogRecordType.Stream
 			and not LogRecordType.EventType)
-			throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",
-				result.LogRecord.RecordType));
+			throw new Exception($"Incorrect type of log record {result.LogRecord.RecordType}, expected Prepare record.");
 		return (IPrepareLogRecord<TStreamId>)result.LogRecord;
 	}
 
@@ -233,13 +232,13 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 			var lastEventNumber = await GetStreamLastEventNumberCached(reader, streamId, token);
 			var metadata = await GetStreamMetadataCached(reader, streamId, token);
 			if (lastEventNumber is EventNumber.DeletedStream)
-				return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted,
+				return new(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted,
 					StreamMetadata.Empty, lastEventNumber);
 			if (lastEventNumber == ExpectedVersion.NoStream || metadata.TruncateBefore == EventNumber.DeletedStream)
-				return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata,
+				return new(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata,
 					lastEventNumber);
 			if (lastEventNumber == EventNumber.Invalid)
-				return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata,
+				return new(fromEventNumber, maxCount, ReadStreamResult.NoStream, metadata,
 					lastEventNumber);
 
 			long startEventNumber = fromEventNumber;
@@ -256,15 +255,14 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 
 			// early return if we are trying to read events that are all below the lower bound
 			if (endEventNumber < minEventNumber)
-				return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
-					metadata, minEventNumber, lastEventNumber, isEndOfStream: false);
+				return new(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords, metadata, minEventNumber, lastEventNumber, isEndOfStream: false);
 
-			// start our read at the lower bound if we were going to start it before hand.
+			// start our read at the lower bound if we were going to start it beforehand.
 			startEventNumber = Math.Max(startEventNumber, minEventNumber);
 
 			// early return if we are trying to read events that are all above the upper bound
 			if (startEventNumber > lastEventNumber)
-				return new IndexReadStreamResult(
+				return new(
 					fromEventNumber: fromEventNumber,
 					maxCount: maxCount,
 					records: IndexReadStreamResult.EmptyRecords,
@@ -280,11 +278,13 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 					metadata.MaxAge.Value, metadata, _tableIndex, reader, _eventTypes,
 					skipIndexScanOnRead, token);
 			}
-			// var range = DuckDb.GetRange(streamName, 0, fromEventNumber, maxCount);
-			var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
-			// var recordsQuery = _tableIndex.GetRange(streamId, fromEventNumber, lastEventNumber)
+
+			var range = streamName.StartsWith("$ce")
+				? DuckDb.GetCategoryRange(streamName, 0, fromEventNumber, maxCount)
+				: _tableIndex.GetRange(streamId, startEventNumber, endEventNumber);
+			var recordsQuery = range
 				.ToAsyncEnumerable()
-				.SelectAwaitWithCancellation(async (x, token) => new { x.Version, Prepare = await ReadPrepareInternal(reader, x.Position, token) })
+				.SelectAwaitWithCancellation(async (x, ct) => new { x.Version, Prepare = await ReadPrepareInternal(reader, x.Position, ct) })
 				.Where(x => x.Prepare != null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId));
 			if (!skipIndexScanOnRead) {
 				recordsQuery = recordsQuery.OrderByDescending(x => x.Version)
@@ -293,7 +293,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 
 			var records = await recordsQuery
 				.Reverse()
-				.SelectAwaitWithCancellation((x, token) => CreateEventRecord(x.Version, x.Prepare, streamName, token))
+				.SelectAwaitWithCancellation((x, ct) => CreateEventRecord(x.Version, x.Prepare, streamName, ct))
 				.ToArrayAsync(token);
 			// var endEventNumber = range.Count > 0 ? records[^1].EventNumber : -1;
 
@@ -301,8 +301,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 			if (records.Length > 0)
 				nextEventNumber = records[^1].EventNumber + 1;
 			var isEndOfStream = endEventNumber >= lastEventNumber;
-			return new IndexReadStreamResult(fromEventNumber, maxCount, records, metadata,
-				nextEventNumber, lastEventNumber, isEndOfStream);
+			return new(fromEventNumber, maxCount, records, metadata, nextEventNumber, lastEventNumber, isEndOfStream);
 		}
 
 		async ValueTask<IndexReadStreamResult> ForStreamWithMaxAge(TStreamId streamId,

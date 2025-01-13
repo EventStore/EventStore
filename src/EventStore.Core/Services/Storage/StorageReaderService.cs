@@ -7,6 +7,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -23,7 +24,6 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 	IHandle<SystemMessage.BecomeShuttingDown>,
 	IHandle<SystemMessage.BecomeShutdown>,
 	IHandle<MonitoringMessage.InternalStatsRequest> {
-
 	private readonly IPublisher _bus;
 	private readonly IReadIndex _readIndex;
 	private readonly int _threadCount;
@@ -39,7 +39,6 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 		IInMemoryStreamReader inMemReader,
 		QueueStatsManager queueStatsManager,
 		QueueTrackers trackers) {
-
 		Ensure.NotNull(bus, "bus");
 		Ensure.NotNull(subscriber, "subscriber");
 		Ensure.NotNull(readIndex, "readIndex");
@@ -112,12 +111,12 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 	void IHandle<MonitoringMessage.InternalStatsRequest>.Handle(MonitoringMessage.InternalStatsRequest message) {
 		var s = _readIndex.GetStatistics();
 		var stats = new Dictionary<string, object> {
-			{"es-readIndex-cachedRecord", s.CachedRecordReads},
-			{"es-readIndex-notCachedRecord", s.NotCachedRecordReads},
-			{"es-readIndex-cachedStreamInfo", s.CachedStreamInfoReads},
-			{"es-readIndex-notCachedStreamInfo", s.NotCachedStreamInfoReads},
-			{"es-readIndex-cachedTransInfo", s.CachedTransInfoReads},
-			{"es-readIndex-notCachedTransInfo", s.NotCachedTransInfoReads},
+			{ "es-readIndex-cachedRecord", s.CachedRecordReads },
+			{ "es-readIndex-notCachedRecord", s.NotCachedRecordReads },
+			{ "es-readIndex-cachedStreamInfo", s.CachedStreamInfoReads },
+			{ "es-readIndex-notCachedStreamInfo", s.NotCachedStreamInfoReads },
+			{ "es-readIndex-cachedTransInfo", s.CachedTransInfoReads },
+			{ "es-readIndex-notCachedTransInfo", s.NotCachedTransInfoReads },
 		};
 
 		message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));
