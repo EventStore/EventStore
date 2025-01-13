@@ -55,15 +55,14 @@ public class VersionedPatternFileNamingStrategy : IVersionedFileNamingStrategy {
 		return versions;
 	}
 
-	public int GetIndexFor(string fileName) {
+	public int GetIndexFor(ReadOnlySpan<char> fileName) {
 		if (!_pattern.IsMatch(fileName))
 			throw new ArgumentException($"Invalid file name: {fileName}");
 
 		var start = _prefix.Length;
-		var end = fileName.IndexOf('.', _prefix.Length);
-		Debug.Assert(end != -1);
+		var end = fileName.Slice(_prefix.Length).IndexOf('.') + _prefix.Length;
 
-		if (!int.TryParse(fileName[start..end], out var fileIndex))
+		if (end < 0 || !int.TryParse(fileName[start..end], out var fileIndex))
 			throw new ArgumentException($"Invalid file name: {fileName}");
 
 		return fileIndex;

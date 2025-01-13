@@ -1,6 +1,8 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System;
+
 namespace EventStore.Core.TransactionLog.FileNamingStrategy;
 
 // This abstracts a translation from logical chunk numbers (indexes) and
@@ -11,7 +13,7 @@ public interface IVersionedFileNamingStrategy {
 	string Prefix { get; }
 	string GetFilenameFor(int index, int version);
 	string CreateTempFilename();
-	int GetIndexFor(string fileName);
+	int GetIndexFor(ReadOnlySpan<char> fileName);
 	int GetVersionFor(string fileName);
 
 	// Methods that rely on the state of the storage

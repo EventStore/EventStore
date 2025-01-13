@@ -23,8 +23,5 @@ public class ArchiveChunkNameResolver : IArchiveChunkNameResolver {
 		return Path.GetFileName(filePath);
 	}
 
-	public int ResolveChunkNumber(string fileName) {
-		// TODO: Needs to be implemented
-		throw new NotImplementedException();
-	}
+	public int ResolveChunkNumber(string fileName) => _namingStrategy.GetIndexFor(fileName);
 }
