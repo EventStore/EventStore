@@ -86,9 +86,9 @@ public static class DuckDb {
 
 	static List<CategoryRecord> QueryCategory(string streamName, long fromEventNumber, long toEventNumber) {
 		const string query = """
-		                     select category_seq, log_position, event_number, event_type.name as event_type, stream.name as stream_name
+		                     select category_seq, log_position, event_number, event_type.name as event_type, streams.name as stream_name
 		                     from idx_all
-		                     inner join stream on idx_all.stream = stream.id
+		                     inner join streams on idx_all.stream = streams.id
 		                     inner join event_type on idx_all.event_type = event_type.id
 		                     where category=$cat and category_seq>=$start and category_seq<=$end
 		                     """;
