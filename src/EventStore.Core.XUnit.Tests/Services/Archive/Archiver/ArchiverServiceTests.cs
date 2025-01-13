@@ -295,7 +295,7 @@ internal class FakeUnmerger : IChunkUnmerger {
 	}
 }
 
-internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader, IArchiveStorageFactory {
+internal class FakeArchiveStorage : IArchiveStorage {
 	public List<int> Chunks;
 	public int NumStores => Interlocked.CompareExchange(ref _stores, 0, 0);
 	private int _stores;
@@ -312,9 +312,6 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 	}
 
 	public IArchiveChunkNameResolver ChunkNameResolver => throw new NotImplementedException();
-
-	public IArchiveStorageReader CreateReader() => this;
-	public IArchiveStorageWriter CreateWriter() => this;
 
 	public async ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) {
 		await Task.Delay(_chunkStorageDelay, ct);

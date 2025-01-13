@@ -7,7 +7,7 @@ using EventStore.Core.Services.Archive.Storage.Exceptions;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
-public interface IArchiveStorageWriter {
+public interface IArchiveStorage : IArchiveStorageReader {
 	/// <summary>Sets the position in the transaction log up to which all chunks have been archived</summary>
 	/// <returns>
 	/// <see langword="true"/> if the checkpoint was set<br/>

@@ -30,8 +30,7 @@ public class ArchiverService :
 	private static readonly ILogger Log = Serilog.Log.ForContext<ArchiverService>();
 
 	private readonly ISubscriber _mainBus;
-	private readonly IArchiveStorageWriter _archiveWriter;
-	private readonly IArchiveStorageReader _archiveReader;
+	private readonly IArchiveStorage _archive;
 	private readonly Queue<ChunkInfo> _uncommittedChunks;
 	private readonly ConcurrentDictionary<string, ChunkInfo> _existingChunks;
 	private readonly CancellationTokenSource _cts;
@@ -45,11 +44,10 @@ public class ArchiverService :
 
 	public ArchiverService(
 		ISubscriber mainBus,
-		IArchiveStorageFactory archiveStorageFactory,
+		IArchiveStorage archiveStorage,
 		IChunkUnmerger chunkUnmerger) {
 		_mainBus = mainBus;
-		_archiveWriter = archiveStorageFactory.CreateWriter();
-		_archiveReader = archiveStorageFactory.CreateReader();
+		_archive = archiveStorage;
 		_chunkUnmerger = chunkUnmerger;
 
 		_uncommittedChunks = new();
@@ -176,7 +174,7 @@ public class ArchiverService :
 
 			var logicalChunkNumber = chunkStartNumber;
 			foreach (var chunkToStore in chunksToStore) {
-				while (!await _archiveWriter.StoreChunk(chunkToStore, logicalChunkNumber, ct)) {
+				while (!await _archive.StoreChunk(chunkToStore, logicalChunkNumber, ct)) {
 					Log.Warning("Archiving of {chunkFile}{chunkDetails} failed. Retrying in: {retryInterval}.",
 						Path.GetFileName(chunkPath),
 						chunksUnmerged ? $" (logical chunk no.: {logicalChunkNumber})" : string.Empty,
@@ -191,7 +189,7 @@ public class ArchiverService :
 			}
 
 			if (chunkEndPosition > _checkpoint) {
-				while (!await _archiveWriter.SetCheckpoint(chunkEndPosition, ct)) {
+				while (!await _archive.SetCheckpoint(chunkEndPosition, ct)) {
 					Log.Warning(
 						"Failed to set the archive checkpoint to: 0x{checkpoint:X}. Retrying in: {retryInterval}.",
 						chunkEndPosition, RetryInterval);
@@ -216,7 +214,7 @@ public class ArchiverService :
 	private async Task LoadArchiveCheckpoint(CancellationToken ct) {
 		do {
 			try {
-				_checkpoint = await _archiveReader.GetCheckpoint(ct);
+				_checkpoint = await _archive.GetCheckpoint(ct);
 				Log.Debug("Archive checkpoint is: 0x{checkpoint:X}", _checkpoint);
 				return;
 			} catch (OperationCanceledException) {

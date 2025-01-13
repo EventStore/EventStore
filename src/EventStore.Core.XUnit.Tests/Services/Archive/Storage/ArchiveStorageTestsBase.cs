@@ -24,10 +24,10 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 		Directory.CreateDirectory(DbPath);
 	}
 
-	protected IArchiveStorageFactory CreateSutFactory(StorageType storageType) {
+	protected IArchiveStorage CreateSut(StorageType storageType) {
 		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
 		var nameResolver  = new ArchiveChunkNameResolver(namingStrategy);
-		var factory = new ArchiveStorageFactory(
+		var archiveStorage = ArchiveStorageFactory.Create(
 				new() {
 					StorageType = storageType,
 					FileSystem = new() {
@@ -40,14 +40,8 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 					}
 				},
 				nameResolver);
-		return factory;
+		return archiveStorage;
 	}
-
-	protected IArchiveStorageWriter CreateWriterSut(StorageType storageType) =>
-		CreateSutFactory(storageType).CreateWriter();
-
-	protected IArchiveStorageReader CreateReaderSut(StorageType storageType) =>
-		CreateSutFactory(storageType).CreateReader();
 
 	protected static string CreateChunk(string path, int chunkStartNumber, int chunkVersion) {
 		var namingStrategy = new VersionedPatternFileNamingStrategy(path, ChunkPrefix);

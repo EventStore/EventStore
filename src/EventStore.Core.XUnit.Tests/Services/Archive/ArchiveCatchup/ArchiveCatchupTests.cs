@@ -61,7 +61,7 @@ public class ArchiveCatchupTests : DirectoryPerTest<ArchiveCatchupTests> {
 			writerCheckpoint: writerCheckpoint,
 			replicationCheckpoint: replicationCheckpoint,
 			chunkSize: ChunkSize,
-			archiveStorageFactory: archive,
+			archiveStorageReader: archive,
 			chunkNameResolver: archiveChunkNameResolver
 		);
 

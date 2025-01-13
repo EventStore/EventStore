@@ -14,7 +14,7 @@ using EventStore.Plugins.Transforms;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.ArchiveCatchup;
 
-internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader, IArchiveStorageFactory {
+internal class FakeArchiveStorage : IArchiveStorage {
 	private readonly int _chunkSize;
 	private readonly long _checkpoint;
 
@@ -40,9 +40,6 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 	}
 
 	public IArchiveChunkNameResolver ChunkNameResolver => _chunkNameResolver;
-
-	public IArchiveStorageReader CreateReader() => this;
-	public IArchiveStorageWriter CreateWriter() => this;
 
 	public ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) => throw new NotImplementedException();
 	public ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) => throw new NotImplementedException();

@@ -39,13 +39,13 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 		ICheckpoint writerCheckpoint,
 		ICheckpoint replicationCheckpoint,
 		int chunkSize,
-		IArchiveStorageFactory archiveStorageFactory,
+		IArchiveStorageReader archiveStorageReader,
 		IArchiveChunkNameResolver chunkNameResolver) {
 		_dbPath = dbPath;
 		_writerCheckpoint = writerCheckpoint;
 		_replicationCheckpoint = replicationCheckpoint;
 		_chunkSize = chunkSize;
-		_archiveReader = archiveStorageFactory.CreateReader();
+		_archiveReader = archiveStorageReader;
 		_chunkNameResolver = chunkNameResolver;
 	}
 
