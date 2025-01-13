@@ -14,7 +14,7 @@ public interface IVersionedFileNamingStrategy {
 	string GetFilenameFor(int index, int version);
 	string CreateTempFilename();
 	int GetIndexFor(ReadOnlySpan<char> fileName);
-	int GetVersionFor(string fileName);
+	int GetVersionFor(ReadOnlySpan<char> fileName);
 
 	// Methods that rely on the state of the storage
 	string[] GetAllVersionsFor(int index);
