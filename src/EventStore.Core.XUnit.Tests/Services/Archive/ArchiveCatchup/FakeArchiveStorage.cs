@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Archive.Naming;
+using DotNext.Buffers;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -16,6 +16,7 @@ namespace EventStore.Core.XUnit.Tests.Services.Archive.ArchiveCatchup;
 
 internal class FakeArchiveStorage : IArchiveStorage {
 	private readonly int _chunkSize;
+	private readonly int _fileSize;
 	private readonly long _checkpoint;
 
 	private readonly Action<int> _onGetChunk;
@@ -28,15 +29,13 @@ internal class FakeArchiveStorage : IArchiveStorage {
 		}
 	}
 	private readonly List<int> _chunkGets;
-	private readonly IArchiveChunkNameResolver _chunkNameResolver;
 
-
-	public FakeArchiveStorage(int chunkSize, long checkpoint, Action<int> onGetChunk, IArchiveChunkNameResolver chunkNameResolver) {
+	public FakeArchiveStorage(int chunkSize, long checkpoint, Action<int> onGetChunk) {
 		_chunkSize = chunkSize;
+		_fileSize = ChunkHeader.Size + _chunkSize;
 		_checkpoint = checkpoint;
 		_onGetChunk = onGetChunk;
-		_chunkGets = new();
-		_chunkNameResolver = chunkNameResolver;
+		_chunkGets = [];
 	}
 
 	public ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) => throw new NotImplementedException();
@@ -59,20 +58,28 @@ internal class FakeArchiveStorage : IArchiveStorage {
 	}
 
 	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
+		if (offset == _fileSize)
+			return new(0); // end of stream
+
+		// we expect to read the chunk in one shot
+		if (offset != 0)
+			throw new NotImplementedException();
+
+		if (buffer.Length < _fileSize)
+			throw new NotImplementedException();
+
 		lock (_chunkGets) {
 			_chunkGets.Add(logicalChunkNumber);
 		}
 
 		_onGetChunk?.Invoke(logicalChunkNumber);
-		var chunk = new byte[ChunkHeader.Size + _chunkSize];
 		var header = CreateChunkHeader(logicalChunkNumber, logicalChunkNumber);
-		header.Format(chunk.AsSpan()[..ChunkHeader.Size]);
+		header.Format(buffer.Span[..ChunkHeader.Size]);
 
-		chunk.CopyTo(buffer);
-		return new(buffer.Length);
+		return new(_fileSize);
 	}
 
 	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) {
-		throw new NotImplementedException();
+		return ValueTask.FromResult<ArchivedChunkMetadata>(new(Size: _fileSize));
 	}
 }

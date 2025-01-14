@@ -34,7 +34,7 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 	public ValueTask<IChunkHandle> OpenForReadAsync(string locator, IChunkFileSystem.ReadOptimizationHint hint,
 		CancellationToken token) {
 		return _locatorCodec.Decode(locator, out var chunkNumber, out var fileName)
-			? ArchivedChunkHandle.OpenForReadAsync(_archive, chunkNumber, token)
+			? _archive.OpenForReadAsync(chunkNumber, token)
 			: _localFileSystem.OpenForReadAsync(fileName, hint, token);
 	}
 

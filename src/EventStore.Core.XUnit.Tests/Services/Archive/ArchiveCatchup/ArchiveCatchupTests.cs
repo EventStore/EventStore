@@ -51,8 +51,7 @@ public class ArchiveCatchupTests : DirectoryPerTest<ArchiveCatchupTests> {
 		var archive = new FakeArchiveStorage(
 			chunkSize: ChunkSize,
 			archiveCheckpoint.Value,
-			onGetChunk,
-			archiveChunkNameResolver);
+			onGetChunk);
 
 		var writerCheckpoint = new InMemoryCheckpoint(dbCheckpoint.Value);
 		var replicationCheckpoint = new InMemoryCheckpoint(dbCheckpoint.Value);

@@ -10,6 +10,7 @@ using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.ArchiveCatchup;
@@ -106,20 +107,20 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 
 			var tempPath = Path.Combine(_dbPath, Guid.NewGuid() + ".archive.tmp");
 
-			//qqqq now actually needs an IChunkFileSystem
-			//await using (var inputStream = await _archiveReader.GetChunk(logicalChunkNumber, ct)) {
-			//	await using var outputStream = File.Open(
-			//		path: tempPath,
-			//		options: new FileStreamOptions {
-			//			Mode = FileMode.CreateNew,
-			//			Access = FileAccess.ReadWrite,
-			//			Share = FileShare.None,
-			//			Options = FileOptions.Asynchronous,
-			//			PreallocationSize = _chunkSize
-			//		});
+			using var handle = await _archiveReader.OpenForReadAsync(logicalChunkNumber, ct);
+			await using (var inputStream = handle.CreateStream()) {
+				await using var outputStream = File.Open(
+					path: tempPath,
+					options: new FileStreamOptions {
+						Mode = FileMode.CreateNew,
+						Access = FileAccess.ReadWrite,
+						Share = FileShare.None,
+						Options = FileOptions.Asynchronous,
+						PreallocationSize = _chunkSize,
+					});
 
-			//	await inputStream.CopyToAsync(outputStream, ct);
-			//}
+				await inputStream.CopyToAsync(outputStream, ct);
+			}
 
 			if (File.Exists(destinationPath)) {
 				var backupPath = $"{destinationPath}.archive.bkup";
