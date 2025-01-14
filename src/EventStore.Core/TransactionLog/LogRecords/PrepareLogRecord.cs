@@ -131,18 +131,15 @@ public sealed class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, 
 		int? eventTypeSize,
 		ReadOnlyMemory<byte> data,
 		ReadOnlyMemory<byte> metadata,
-		byte prepareRecordVersion = PrepareRecordVersion)
-		: base(LogRecordType.Prepare, prepareRecordVersion, logPosition) {
+		byte prepareRecordVersion = PrepareRecordVersion) : base(LogRecordType.Prepare, prepareRecordVersion, logPosition) {
 		Ensure.NotEmptyGuid(correlationId, "correlationId");
 		Ensure.NotEmptyGuid(eventId, "eventId");
 		Ensure.Nonnegative(transactionPosition, "transactionPosition");
-		if (transactionOffset < -1)
-			throw new ArgumentOutOfRangeException("transactionOffset");
-		Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-		if (expectedVersion < Core.Data.ExpectedVersion.Any)
-			throw new ArgumentOutOfRangeException("expectedVersion");
+        ArgumentOutOfRangeException.ThrowIfLessThan(transactionOffset, -1);
+        Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+        ArgumentOutOfRangeException.ThrowIfLessThan(expectedVersion, Core.Data.ExpectedVersion.Any);
 
-		Flags = flags;
+        Flags = flags;
 		TransactionPosition = transactionPosition;
 		TransactionOffset = transactionOffset;
 		ExpectedVersion = expectedVersion;
@@ -162,8 +159,7 @@ public sealed class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, 
 	internal PrepareLogRecord(ref SequenceReader reader, byte version, long logPosition)
 		: base(LogRecordType.Prepare, version, logPosition) {
 		if (version is not LogRecordVersion.LogRecordV0 and not LogRecordVersion.LogRecordV1)
-			throw new ArgumentException(
-				$"PrepareRecord version {version} is incorrect. Supported version: {PrepareRecordVersion}.");
+			throw new ArgumentException($"PrepareRecord version {version} is incorrect. Supported version: {PrepareRecordVersion}.");
 
 		var context = new DecodingContext(Encoding.UTF8, reuseDecoder: true);
 		Flags = (PrepareFlags)reader.ReadLittleEndian<ushort>();
