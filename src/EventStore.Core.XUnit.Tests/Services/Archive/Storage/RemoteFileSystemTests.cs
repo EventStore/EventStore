@@ -20,7 +20,7 @@ namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSystemTests> {
 	[Theory]
 	[StorageData.S3]
-	//qq [StorageData.FileSystem]
+	[StorageData.FileSystem]
 	public async Task can_read_chunk_from_object_storage(StorageType storageType) {
 		const int recordsCount = 10;
 		const int logicalChunkNumber = 42;
