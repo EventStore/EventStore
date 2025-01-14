@@ -15,6 +15,7 @@ using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
+using Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
@@ -30,6 +31,9 @@ public static class DuckDb {
 		Connection.Open();
 		Connection.Execute("SET threads = 10;");
 		Connection.Execute("SET memory_limit = '8GB';");
+
+		Categories = Connection.Query<ReferenceRecord>("select * from category").ToDictionary(x => x.name, x => x.id);
+		EventTypes = Connection.Query<ReferenceRecord>("select * from event_type").ToDictionary(x => x.id, x => x.name);
 	}
 
 	public static void Close() {
@@ -55,43 +59,49 @@ public static class DuckDb {
 		}
 	}
 
-	public static async ValueTask<IReadOnlyList<ResolvedEvent>> GetCategoryEvents<TStreamId>(IIndexReader<TStreamId> index, TStreamId streamId, string streamName, long fromEventNumber, int maxCount,
+	public static async ValueTask<IReadOnlyList<ResolvedEvent>> GetCategoryEvents<TStreamId>(IIndexReader<TStreamId> index, string streamName, long fromEventNumber, int maxCount,
 		CancellationToken cancellationToken) {
 		var range = QueryCategory(streamName, fromEventNumber, fromEventNumber + maxCount - 1);
 		using var reader = index.BorrowReader();
-		var recordsQuery = range
+		var recordsQuery = await range
 			.ToAsyncEnumerable()
-			.SelectAwaitWithCancellation(async (x, ct)
-				=> (Version: x.category_seq, StreamName: x.stream_name, EventType: x.event_type, EventNumber: x.event_number, Prepare: await ReadPrepare(x.log_position))
+			.SelectAwaitWithCancellation(async (x, ct) => (
+					Version: x.category_seq,
+					StreamId: x.stream,
+					EventType: x.event_type,
+					EventNumber: x.event_number,
+					Prepare: await ReadPrepare(x.log_position, ct)
+				)
 			)
 			.Where(x => x.Prepare != null)
-			.OrderByDescending(x => x.Version);
+			.OrderBy(x => x.Version)
+			.ToListAsync(cancellationToken: cancellationToken);
+		var streams = GetStreams(recordsQuery.Select(x => x.StreamId));
 		var records = recordsQuery
-			.Reverse()
+			.Select(x => (Record: x, StreamName: streams[x.StreamId]))
 			.Select(x => ResolvedEvent.ForResolvedLink(
-				new(x.EventNumber, x.Prepare, x.StreamName, x.EventType),
+				new(x.Record.EventNumber, x.Record.Prepare, x.StreamName, EventTypes[x.Record.EventType]),
 				new(
-					x.Version,
-					x.Prepare.LogPosition,
-					x.Prepare.CorrelationId,
-					x.Prepare.EventId,
-					x.Prepare.TransactionPosition,
-					x.Prepare.TransactionOffset,
+					x.Record.Version,
+					x.Record.Prepare.LogPosition,
+					x.Record.Prepare.CorrelationId,
+					x.Record.Prepare.EventId,
+					x.Record.Prepare.TransactionPosition,
+					x.Record.Prepare.TransactionOffset,
 					x.StreamName,
-					x.Version,
-					x.Prepare.TimeStamp,
-					x.Prepare.Flags,
+					x.Record.Version,
+					x.Record.Prepare.TimeStamp,
+					x.Record.Prepare.Flags,
 					"$>",
-					Encoding.UTF8.GetBytes($"{x.EventNumber}@{x.StreamName}"),
+					Encoding.UTF8.GetBytes($"{x.Record.EventNumber}@{x.StreamName}"),
 					[]
 				))
 			);
-		var result = await records.ToListAsync(cancellationToken);
-		Log.Information("Retrieved {Count} events from category stream {StreamName} from {From} max {MaxCount}", result.Count, streamName, fromEventNumber, maxCount);
+		var result = records.ToList();
 		return result;
 
-		async ValueTask<IPrepareLogRecord<TStreamId>> ReadPrepare(long logPosition) {
-			var r = await reader.TryReadAt(logPosition, couldBeScavenged: true, cancellationToken);
+		async ValueTask<IPrepareLogRecord<TStreamId>> ReadPrepare(long logPosition, CancellationToken ct) {
+			var r = await reader.TryReadAt(logPosition, couldBeScavenged: true, ct);
 			if (!r.Success)
 				return null;
 
@@ -105,11 +115,8 @@ public static class DuckDb {
 
 	static List<CategoryRecord> QueryCategory(string streamName, long fromEventNumber, long toEventNumber) {
 		const string query = """
-		                     select category_seq, log_position, event_number, event_type.name as event_type, streams.name as stream_name
-		                     from idx_all
-		                     inner join streams on idx_all.stream = streams.id
-		                     inner join event_type on idx_all.event_type = event_type.id
-		                     where category=$cat and category_seq>=$start and category_seq<=$end
+		                     select category_seq, log_position, event_number, event_type, stream
+		                     from idx_all where category=$cat and category_seq>=$start and category_seq<=$end
 		                     """;
 
 		var dashIndex = streamName.IndexOf('-');
@@ -122,7 +129,7 @@ public static class DuckDb {
 		while (true) {
 			using var duration = TempIndexMetrics.MeasureIndex("duck_get_cat_range");
 			try {
-				var categoryId = GetCategoryId(category);
+				var categoryId = Categories[category];
 				var result = Connection.Query<CategoryRecord>(query, new { cat = categoryId, start = fromEventNumber, end = toEventNumber }).ToList();
 				return result;
 			} catch (Exception e) {
@@ -145,7 +152,7 @@ public static class DuckDb {
 		while (true) {
 			using var duration = TempIndexMetrics.MeasureIndex("duck_get_cat_range");
 			try {
-				var categoryId = GetCategoryId(category);
+				var categoryId = Categories[category];
 				var result = Connection.Query<CategoryRecord>(query, new { cat = categoryId, start = fromEventNumber, end = toEventNumber });
 				var entries = result.Select(x => new IndexEntry(0, x.category_seq, x.log_position)).ToList();
 				return entries;
@@ -165,7 +172,7 @@ public static class DuckDb {
 		var category = streamName[(dashIndex + 1)..];
 		while (true) {
 			try {
-				var categoryId = GetCategoryId(category);
+				var categoryId = Categories[category];
 				if (categoryId == 0) return 0;
 				return Connection.Query<long>("select max(seq) from idx_all where category=$cat", new { cat = categoryId }).SingleOrDefault();
 			} catch (Exception e) {
@@ -174,21 +181,8 @@ public static class DuckDb {
 		}
 	}
 
-	static long GetCategoryId(string category) {
-		return Cache.GetOrCreate(category, GetFromDb);
-
-		static long GetFromDb(ICacheEntry arg) {
-			Log.Information("Resolving category {Category}", arg.Key);
-			const string sql = "select id from category where name=$name";
-			arg.SlidingExpiration = TimeSpan.FromDays(7);
-			var id = Connection.Query<long>(sql, new { name = arg.Key }).SingleOrDefault();
-			Log.Information("Resolved category {Category} to {Id}", arg.Key, id);
-			return id;
-		}
-	}
-
 	static long GetStreamId(string streamName) {
-		return Cache.GetOrCreate(streamName, GetFromDb);
+		return StreamCache.GetOrCreate(streamName, GetFromDb);
 
 		static long GetFromDb(ICacheEntry arg) {
 			const string sql = "select id from streams where name=$name";
@@ -197,7 +191,35 @@ public static class DuckDb {
 		}
 	}
 
-	static readonly MemoryCache Cache = new(new MemoryCacheOptions());
+	static readonly MemoryCacheEntryOptions Options = new() { SlidingExpiration = TimeSpan.FromMinutes(10) };
+
+	static Dictionary<long, string> GetStreams(IEnumerable<long> ids) {
+		using var duration = TempIndexMetrics.MeasureIndex("duck_get_streams");
+		var result = new Dictionary<long, string>();
+		var uncached = new List<long>();
+		foreach (var id in ids) {
+			if (StreamCache.TryGetValue(id, out var name)) {
+				result.Add(id, (string)name);
+				continue;
+			}
+
+			uncached.Add(id);
+		}
+
+		if (uncached.Count == 0) return result;
+		const string sql = "select * from streams where id in $ids";
+		var records = Connection.Query<ReferenceRecord>(sql, new { ids = uncached });
+		foreach (var record in records) {
+			StreamCache.Set(record.id, record.name, Options);
+			result.Add(record.id, record.name);
+		}
+
+		return result;
+	}
+
+	static readonly MemoryCache StreamCache = new(new MemoryCacheOptions());
+	static Dictionary<long, string> EventTypes = new();
+	static Dictionary<string, long> Categories = new();
 
 	class IndexRecord {
 		public int event_number { get; set; }
@@ -208,8 +230,13 @@ public static class DuckDb {
 		public int category_seq { get; set; }
 		public long log_position { get; set; }
 		public long event_number { get; set; }
-		public string event_type { get; set; }
-		public string stream_name { get; set; }
+		public long event_type { get; set; }
+		public long stream { get; set; }
+	}
+
+	class ReferenceRecord {
+		public long id { get; set; }
+		public string name { get; set; }
 	}
 }
 

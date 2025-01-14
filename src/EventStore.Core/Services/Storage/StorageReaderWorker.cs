@@ -339,7 +339,7 @@ public class StorageReaderWorker<TStreamId>(
 			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
 			if (DuckDb.UseDuckDb && msg.EventStreamId.StartsWith("$ce") && msg.ResolveLinkTos) {
 				var lastEventNumber = DuckDb.GetCategoryLastEventNumber(msg.EventStreamId);
-				var resolved = await DuckDb.GetCategoryEvents(_readIndex.IndexReader, streamId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
+				var resolved = await DuckDb.GetCategoryEvents(_readIndex.IndexReader, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
 				if (resolved.Count == 0)
 					return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion ?? 0);
 				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
@@ -389,7 +389,7 @@ public class StorageReaderWorker<TStreamId>(
 				var lastEventNumber = DuckDb.GetCategoryLastEventNumber(msg.EventStreamId);
 				if (lastEventNumber == 0)
 					return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);
-				var resolved = await DuckDb.GetCategoryEvents(_readIndex.IndexReader, streamId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
+				var resolved = await DuckDb.GetCategoryEvents(_readIndex.IndexReader, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
 				if (resolved.Count == 0)
 					return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);
 				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
