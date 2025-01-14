@@ -103,6 +103,7 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 		// make sure that chunks are equivalent
 		using (var localChunk = File.OpenHandle(chunkLocalPath, options: FileOptions.Asynchronous)) {
 			using var remoteReader = await remoteChunk.AcquireDataReader(CancellationToken.None);
+			Assert.False(remoteReader.IsMemory);
 			remoteReader.SetPosition(0L);
 
 			var expected = new byte[payloadSize];
@@ -111,7 +112,7 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 			var actual = new byte[payloadSize];
 			await remoteReader.ReadNextBytes(actual, CancellationToken.None);
 
-			Assert.Equal(actual, expected);
+			Assert.Equal(expected, actual);
 		}
 	}
 
