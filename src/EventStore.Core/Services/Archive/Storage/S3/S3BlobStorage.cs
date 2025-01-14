@@ -15,7 +15,7 @@ using FluentStorage.AWS.Blobs;
 using FluentStorage.Blobs;
 using Serilog;
 
-namespace EventStore.Core.Services.Archive.Storage;
+namespace EventStore.Core.Services.Archive.Storage.S3;
 
 public class S3BlobStorage : IBlobStorage {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<S3BlobStorage>();

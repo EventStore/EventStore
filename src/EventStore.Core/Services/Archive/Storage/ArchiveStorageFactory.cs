@@ -3,6 +3,7 @@
 
 using System;
 using EventStore.Core.Services.Archive.Naming;
+using EventStore.Core.Services.Archive.Storage.S3;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
