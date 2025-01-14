@@ -136,7 +136,7 @@ public static class DuckDb {
 				var result = Connection.Query<CategoryRecord>(query, new { cat = categoryId, start = fromEventNumber, end = toEventNumber }).ToList();
 				return result;
 			} catch (Exception e) {
-				Log.Warning("Error while reading index: {Exception}", e.Message);
+				Log.Warning("Error while querying category events: {Message}", e.Message);
 				duration.SetException(e);
 			}
 		}
@@ -177,7 +177,7 @@ public static class DuckDb {
 		return CategorySizes[categoryId];
 	}
 
-	public static long GetCategoryLastEventNumber(long categoryId) {
+	static long GetCategoryLastEventNumber(long categoryId) {
 		while (true) {
 			try {
 				return Connection.Query<long>("select max(seq) from idx_all where category=$cat", new { cat = categoryId }).SingleOrDefault();
@@ -200,7 +200,6 @@ public static class DuckDb {
 	static readonly MemoryCacheEntryOptions Options = new() { SlidingExpiration = TimeSpan.FromMinutes(10) };
 
 	static Dictionary<long, string> GetStreams(IEnumerable<long> ids) {
-		using var duration = TempIndexMetrics.MeasureIndex("duck_get_streams");
 		var result = new Dictionary<long, string>();
 		var uncached = new List<long>();
 		foreach (var id in ids) {
@@ -213,14 +212,23 @@ public static class DuckDb {
 		}
 
 		if (uncached.Count == 0) return result;
-		const string sql = "select * from streams where id in $ids";
-		var records = Connection.Query<ReferenceRecord>(sql, new { ids = uncached });
-		foreach (var record in records) {
-			StreamCache.Set(record.id, record.name, Options);
-			result.Add(record.id, record.name);
-		}
 
-		return result;
+		while (true) {
+			using var duration = TempIndexMetrics.MeasureIndex("duck_get_streams");
+			try {
+				const string sql = "select * from streams where id in $ids";
+				var records = Connection.Query<ReferenceRecord>(sql, new { ids = uncached });
+				foreach (var record in records) {
+					StreamCache.Set(record.id, record.name, Options);
+					result.Add(record.id, record.name);
+				}
+
+				return result;
+			} catch (Exception e) {
+				Log.Warning("Error while querying category events: {Message}", e.Message);
+				duration.SetException(e);
+			}
+		}
 	}
 
 	static readonly MemoryCache StreamCache = new(new MemoryCacheOptions());
@@ -247,5 +255,3 @@ public static class DuckDb {
 
 	static Dictionary<long, long> CategorySizes = new();
 }
-
-public record struct DuckIndexEntry(long Position, long EventNumber, long Sequence);
