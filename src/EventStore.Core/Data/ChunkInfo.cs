@@ -3,11 +3,11 @@
 
 namespace EventStore.Core.Data;
 
-public record ChunkInfo {
-	public string ChunkLocator;
-	public int ChunkStartNumber;
-	public int ChunkEndNumber;
-	public long ChunkStartPosition;
-	public long ChunkEndPosition;
-	public bool IsCompleted;
+public readonly record struct ChunkInfo {
+	public required string ChunkLocator { get; init; }
+	public required int ChunkStartNumber { get; init; }
+	public required int ChunkEndNumber { get; init; }
+	public required long ChunkStartPosition { get; init; }
+	public required long ChunkEndPosition { get; init; }
+	public required bool IsCompleted { get; init; }
 }

@@ -2,7 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using EventStore.Common.Utils;
@@ -55,28 +54,26 @@ public class VersionedPatternFileNamingStrategy : IVersionedFileNamingStrategy {
 		return versions;
 	}
 
-	public int GetIndexFor(string fileName) {
+	public int GetIndexFor(ReadOnlySpan<char> fileName) {
 		if (!_pattern.IsMatch(fileName))
 			throw new ArgumentException($"Invalid file name: {fileName}");
 
 		var start = _prefix.Length;
-		var end = fileName.IndexOf('.', _prefix.Length);
-		Debug.Assert(end != -1);
+		var end = fileName.Slice(_prefix.Length).IndexOf('.');
 
-		if (!int.TryParse(fileName[start..end], out var fileIndex))
+		if (end < 0 || !int.TryParse(fileName[start..(end + _prefix.Length)], out var fileIndex))
 			throw new ArgumentException($"Invalid file name: {fileName}");
 
 		return fileIndex;
 	}
 
-	public int GetVersionFor(string fileName) {
+	public int GetVersionFor(ReadOnlySpan<char> fileName) {
 		if (!_pattern.IsMatch(fileName))
 			throw new ArgumentException($"Invalid file name: {fileName}");
 
-		var dot = fileName.IndexOf('.', _prefix.Length);
-		Debug.Assert(dot != -1);
+		var dot = fileName.Slice(_prefix.Length).IndexOf('.');
 
-		if (!int.TryParse(fileName[(dot+1)..], out var version))
+		if (dot < 0 || !int.TryParse(fileName[(dot + 1 + _prefix.Length)..], out var version))
 			throw new ArgumentException($"Invalid file name: {fileName}");
 
 		return version;

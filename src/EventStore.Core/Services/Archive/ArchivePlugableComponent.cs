@@ -59,8 +59,11 @@ public class ArchivePlugableComponent : IPlugableComponent {
 		if (!Enabled)
 			return;
 
-		services.AddSingleton(options);
-		services.AddScoped<IArchiveStorageFactory, ArchiveStorageFactory>();
+		services.AddSingleton<ArchiveOptions>(options);
+		services.AddSingleton<IArchiveStorage>(s => {
+			var resolver = s.GetRequiredService<IArchiveChunkNameResolver>();
+			return ArchiveStorageFactory.Create(options, resolver);
+		});
 		services.Decorate<IReadOnlyList<IClusterVNodeStartupTask>>(AddArchiveCatchupTask);
 		services.AddSingleton<IArchiveChunkNameResolver, ArchiveChunkNameResolver>();
 
@@ -85,7 +88,7 @@ public class ArchivePlugableComponent : IPlugableComponent {
 			chaserCheckpoint: standardComponents.DbConfig.ChaserCheckpoint,
 			epochCheckpoint: standardComponents.DbConfig.EpochCheckpoint,
 			chunkSize: standardComponents.DbConfig.ChunkSize,
-			serviceProvider.GetRequiredService<IArchiveStorageFactory>(),
+			serviceProvider.GetRequiredService<IArchiveStorage>(),
 			serviceProvider.GetRequiredService<IArchiveChunkNameResolver>()));
 
 		return newStartupTasks;

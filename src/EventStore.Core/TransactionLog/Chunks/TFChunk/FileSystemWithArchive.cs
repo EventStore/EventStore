@@ -14,38 +14,28 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 	private readonly int _chunkSize;
 	private readonly ILocatorCodec _locatorCodec;
 	private readonly IChunkFileSystem _localFileSystem;
-	private readonly IBlobFileSystem _remoteFileSystem;
 	private readonly IArchiveStorageReader _archive;
 
 	public FileSystemWithArchive(
 		int chunkSize,
 		ILocatorCodec locatorCodec,
 		IChunkFileSystem localFileSystem,
-		IBlobFileSystem remoteFileSystem,
 		IArchiveStorageReader archive) {
 
 		_chunkSize = chunkSize;
 		_locatorCodec = locatorCodec;
 		_localFileSystem = localFileSystem;
-		_remoteFileSystem = remoteFileSystem;
 		_archive = archive;
 	}
 
 	public IVersionedFileNamingStrategy NamingStrategy =>
 		_localFileSystem.NamingStrategy;
 
-	public ValueTask<IChunkHandle> OpenForReadAsync(string fileName, IBlobFileSystem.ReadOptimizationHint hint, CancellationToken token) =>
-		Choose(fileName, out var decoded).OpenForReadAsync(decoded, hint, token);
-
-	public ValueTask<ChunkFooter> ReadFooterAsync(string fileName, CancellationToken token) =>
-		Choose(fileName, out var decoded).ReadFooterAsync(decoded, token);
-
-	public ValueTask<ChunkHeader> ReadHeaderAsync(string fileName, CancellationToken token) =>
-		Choose(fileName, out var decoded).ReadHeaderAsync(decoded, token);
-
-	private IBlobFileSystem Choose(string fileName, out string decoded) {
-		var isRemote = _locatorCodec.Decode(fileName, out decoded);
-		return isRemote ? _remoteFileSystem : _localFileSystem;
+	public ValueTask<IChunkHandle> OpenForReadAsync(string locator, IChunkFileSystem.ReadOptimizationHint hint,
+		CancellationToken token) {
+		return _locatorCodec.Decode(locator, out var chunkNumber, out var fileName)
+			? _archive.OpenForReadAsync(chunkNumber, token)
+			: _localFileSystem.OpenForReadAsync(fileName, hint, token);
 	}
 
 	public IChunkFileSystem.IChunkEnumerable GetChunks() {
@@ -69,8 +59,8 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 					// replace missing local versions with latest from archive if they
 					// are present there
 					case MissingVersion(_, var chunkNumber) when (chunkNumber < firstChunkNotInArchive): {
-						var archiveObjectName = await fileSystem._archive.ChunkNameResolver.ResolveFileName(chunkNumber, token);
-						yield return CreateLatestVersionInArchive(archiveObjectName, chunkNumber);
+						var fileName = fileSystem._locatorCodec.EncodeRemote(chunkNumber);
+						yield return new LatestVersion(fileName, chunkNumber, chunkNumber);
 						break;
 					}
 
@@ -79,11 +69,6 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 						break;
 				}
 			}
-		}
-
-		LatestVersion CreateLatestVersionInArchive(string archiveObjectName, int chunkNumber) {
-			var fileName = fileSystem._locatorCodec.EncodeRemoteName(archiveObjectName);
-			return new LatestVersion(fileName, chunkNumber, chunkNumber);
 		}
 	}
 }

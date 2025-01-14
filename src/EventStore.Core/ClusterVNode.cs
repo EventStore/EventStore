@@ -320,19 +320,21 @@ public class ClusterVNode<TStreamId> :
 		MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
 		var namingStrategy = new VersionedPatternFileNamingStrategy(dbConfig.Path, "chunk-");
-		var archiveReader = new ArchiveStorageFactory(
-				options: archiveOptions,
-				chunkNameResolver: new ArchiveChunkNameResolver(namingStrategy))
-			.CreateReader();
-
 		IChunkFileSystem fileSystem = new ChunkLocalFileSystem(namingStrategy);
+		IArchiveStorageReader archiveReader = NoArchiveReader.Instance;
 
+		// ARCHIVE
 		if (archiveOptions.Enabled) {
+			var archive = ArchiveStorageFactory.Create(
+				options: archiveOptions,
+				chunkNameResolver: new ArchiveChunkNameResolver(namingStrategy));
+
+			archiveReader = archive;
+
 			fileSystem = new FileSystemWithArchive(
 				chunkSize: dbConfig.ChunkSize,
 				locatorCodec: new PrefixingLocatorCodec(),
 				localFileSystem: fileSystem,
-				remoteFileSystem: new ArchiveBlobFileSystem(),
 				archive: archiveReader);
 		}
 

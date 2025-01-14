@@ -6,11 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog;
@@ -62,7 +60,6 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 			localFileSystem: new ChunkLocalFileSystem(PathName) {
 				ChunkNumberProvider = GetNextFileNumber,
 			},
-			remoteFileSystem: new ArchiveBlobFileSystem(),
 			archive: new FakeArchiveStorageReader(checkpoint: 4000)).GetChunks();
 
 		chunkEnumerator.LastChunkNumber = 16;
@@ -86,10 +83,10 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 		}
 
 		var expectedResult = new List<string> {
-			"latest archive:chunk-000000.000001 0-0",
+			"latest archived-chunk-0 0-0",
 			"latest chunk-000001.000000 1-1",
 			"latest chunk-000002.000001 2-2",
-			"latest archive:chunk-000003.000001 3-3",
+			"latest archived-chunk-3 3-3",
 			"missing chunk-000004.000000 4",
 			"old chunk-000005.000000 5",
 			"old chunk-000005.000001 5",
@@ -105,18 +102,14 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 	}
 
 	public class FakeArchiveStorageReader(long checkpoint) : IArchiveStorageReader {
-		public IArchiveChunkNameResolver ChunkNameResolver { get; } =
-			new ArchiveChunkNameResolver(new VersionedPatternFileNamingStrategy("", "chunk-"));
-
 		public ValueTask<long> GetCheckpoint(CancellationToken ct) => new(checkpoint);
 
-		public ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct) =>
+		public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
 			throw new NotImplementedException();
+		}
 
-		public ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) =>
+		public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) {
 			throw new NotImplementedException();
-
-		public IAsyncEnumerable<string> ListChunks(CancellationToken ct) =>
-			throw new NotImplementedException();
+		}
 	}
 }

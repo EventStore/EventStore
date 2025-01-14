@@ -11,40 +11,37 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
 public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
+	protected const string AwsCliProfileName = "default";
+	protected const string AwsRegion = "eu-west-1";
+	protected const string AwsBucket = "archiver-unit-tests";
+
 	protected const string ChunkPrefix = "chunk-";
 	protected string ArchivePath => Path.Combine(Fixture.Directory, "archive");
 	protected string DbPath => Path.Combine(Fixture.Directory, "db");
-	protected abstract StorageType StorageType { get; }
 
 	public ArchiveStorageTestsBase() {
 		Directory.CreateDirectory(ArchivePath);
 		Directory.CreateDirectory(DbPath);
 	}
 
-	protected IArchiveStorageFactory CreateSutFactory(StorageType storageType) {
+	protected IArchiveStorage CreateSut(StorageType storageType) {
 		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
-		var chunkNameResolver = new ArchiveChunkNameResolver(namingStrategy);
-		var factory = new ArchiveStorageFactory(
+		var nameResolver  = new ArchiveChunkNameResolver(namingStrategy);
+		var archiveStorage = ArchiveStorageFactory.Create(
 				new() {
 					StorageType = storageType,
 					FileSystem = new() {
 						Path = ArchivePath
 					},
 					S3 = new() {
-						AwsCliProfileName = "default",
-						Bucket = "archiver-unit-tests",
-						Region = "eu-west-1",
+						AwsCliProfileName = AwsCliProfileName,
+						Bucket = AwsBucket,
+						Region = AwsRegion,
 					}
 				},
-				chunkNameResolver);
-		return factory;
+				nameResolver);
+		return archiveStorage;
 	}
-
-	protected IArchiveStorageWriter CreateWriterSut(StorageType storageType) =>
-		CreateSutFactory(storageType).CreateWriter();
-
-	protected IArchiveStorageReader CreateReaderSut(StorageType storageType) =>
-		CreateSutFactory(storageType).CreateReader();
 
 	protected static string CreateChunk(string path, int chunkStartNumber, int chunkVersion) {
 		var namingStrategy = new VersionedPatternFileNamingStrategy(path, ChunkPrefix);

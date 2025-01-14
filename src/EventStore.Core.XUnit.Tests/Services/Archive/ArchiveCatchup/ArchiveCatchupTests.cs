@@ -52,8 +52,7 @@ public class ArchiveCatchupTests : DirectoryPerTest<ArchiveCatchupTests> {
 		var archive = new FakeArchiveStorage(
 			chunkSize: ChunkSize,
 			archiveCheckpoint.Value,
-			onGetChunk,
-			archiveChunkNameResolver);
+			onGetChunk);
 
 		var writerCheckpoint = new InMemoryCheckpoint(dbCheckpoint.Value);
 		var chaserCheckpoint = new InMemoryCheckpoint(dbCheckpoint.Value);
@@ -64,7 +63,7 @@ public class ArchiveCatchupTests : DirectoryPerTest<ArchiveCatchupTests> {
 			chaserCheckpoint: chaserCheckpoint,
 			epochCheckpoint: epochCheckpoint,
 			chunkSize: ChunkSize,
-			archiveStorageFactory: archive,
+			archiveStorageReader: archive,
 			chunkNameResolver: archiveChunkNameResolver
 		);
 

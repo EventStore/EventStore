@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
@@ -13,7 +12,6 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Archive.Archiver;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Archiver.Unmerger;
-using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.TransactionLog.Chunks;
 using Xunit;
 
@@ -295,7 +293,7 @@ internal class FakeUnmerger : IChunkUnmerger {
 	}
 }
 
-internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader, IArchiveStorageFactory {
+internal class FakeArchiveStorage : IArchiveStorage {
 	public List<int> Chunks;
 	public int NumStores => Interlocked.CompareExchange(ref _stores, 0, 0);
 	private int _stores;
@@ -310,11 +308,6 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 		_checkpoint = existingCheckpoint;
 		Chunks = new List<int>(existingChunks);
 	}
-
-	public IArchiveChunkNameResolver ChunkNameResolver => throw new NotImplementedException();
-
-	public IArchiveStorageReader CreateReader() => this;
-	public IArchiveStorageWriter CreateWriter() => this;
 
 	public async ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) {
 		await Task.Delay(_chunkStorageDelay, ct);
@@ -333,15 +326,11 @@ internal class FakeArchiveStorage : IArchiveStorageWriter, IArchiveStorageReader
 		return ValueTask.FromResult(true);
 	}
 
-	public ValueTask<Stream> GetChunk(int logicalChunkNumber, CancellationToken ct) {
+	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
 		throw new NotImplementedException();
 	}
 
-	public ValueTask<Stream> GetChunk(int logicalChunkNumber, long start, long end, CancellationToken ct) {
-		throw new NotImplementedException();
-	}
-
-	public IAsyncEnumerable<string> ListChunks(CancellationToken ct) {
+	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) {
 		throw new NotImplementedException();
 	}
 }

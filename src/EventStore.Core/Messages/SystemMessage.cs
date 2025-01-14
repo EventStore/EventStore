@@ -321,7 +321,6 @@ public static partial class SystemMessage {
 		public readonly ChunkInfo ChunkInfo;
 
 		public ChunkLoaded(ChunkInfo chunkInfo) {
-			Ensure.NotNull(chunkInfo, nameof(chunkInfo));
 			ChunkInfo = chunkInfo;
 		}
 	}
@@ -331,7 +330,6 @@ public static partial class SystemMessage {
 		public readonly ChunkInfo ChunkInfo;
 
 		public ChunkCompleted(ChunkInfo chunkInfo) {
-			Ensure.NotNull(chunkInfo, nameof(chunkInfo));
 			ChunkInfo = chunkInfo;
 		}
 	}
@@ -341,7 +339,6 @@ public static partial class SystemMessage {
 		public readonly ChunkInfo ChunkInfo;
 
 		public ChunkSwitched(ChunkInfo chunkInfo) {
-			Ensure.NotNull(chunkInfo, nameof(chunkInfo));
 			ChunkInfo = chunkInfo;
 		}
 	}

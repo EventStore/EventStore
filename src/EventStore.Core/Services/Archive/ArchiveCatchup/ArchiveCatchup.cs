@@ -10,6 +10,7 @@ using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.ArchiveCatchup;
@@ -41,14 +42,14 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 		ICheckpoint chaserCheckpoint,
 		ICheckpoint epochCheckpoint,
 		int chunkSize,
-		IArchiveStorageFactory archiveStorageFactory,
+		IArchiveStorageReader archiveStorageReader,
 		IArchiveChunkNameResolver chunkNameResolver) {
 		_dbPath = dbPath;
 		_writerCheckpoint = writerCheckpoint;
 		_chaserCheckpoint = chaserCheckpoint;
 		_epochCheckpoint = epochCheckpoint;
 		_chunkSize = chunkSize;
-		_archiveReader = archiveStorageFactory.CreateReader();
+		_archiveReader = archiveStorageReader;
 		_chunkNameResolver = chunkNameResolver;
 	}
 
@@ -94,7 +95,7 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 	}
 
 	private async Task<bool> FetchAndCommitChunk(int logicalChunkNumber, CancellationToken ct) {
-		var destinationFile = await _chunkNameResolver.ResolveFileName(logicalChunkNumber, ct);
+		var destinationFile = _chunkNameResolver.ResolveFileName(logicalChunkNumber);
 		var destinationPath = Path.Combine(_dbPath, destinationFile);
 		if (!await FetchChunk(logicalChunkNumber, destinationPath, ct))
 			return false;
@@ -109,7 +110,8 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 
 			var tempPath = Path.Combine(_dbPath, Guid.NewGuid() + ".archive.tmp");
 
-			await using (var inputStream = await _archiveReader.GetChunk(logicalChunkNumber, ct)) {
+			using var handle = await _archiveReader.OpenForReadAsync(logicalChunkNumber, ct);
+			await using (var inputStream = handle.CreateStream()) {
 				await using var outputStream = File.Open(
 					path: tempPath,
 					options: new FileStreamOptions {
@@ -117,7 +119,7 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 						Access = FileAccess.ReadWrite,
 						Share = FileShare.None,
 						Options = FileOptions.Asynchronous,
-						PreallocationSize = _chunkSize
+						PreallocationSize = _chunkSize,
 					});
 
 				await inputStream.CopyToAsync(outputStream, ct);

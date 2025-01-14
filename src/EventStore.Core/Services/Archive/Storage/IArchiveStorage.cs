@@ -7,7 +7,7 @@ using EventStore.Core.Services.Archive.Storage.Exceptions;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
-public interface IArchiveStorageWriter {
+public interface IArchiveStorage : IArchiveStorageReader {
 	/// <summary>Sets the position in the transaction log up to which all chunks have been archived</summary>
 	/// <returns>
 	/// <see langword="true"/> if the checkpoint was set<br/>
@@ -18,6 +18,7 @@ public interface IArchiveStorageWriter {
 	/// <summary>Stores a chunk in the archive</summary>
 	/// <param name="chunkPath">The path of the chunk to archive</param>
 	/// <param name="logicalChunkNumber">The number of the logical chunk being archived</param>
+	/// <param name="ct"></param>
 	/// <exception cref="ChunkDeletedException">Thrown if the chunk file is deleted while being archived</exception>
 	/// <returns>
 	/// <see langword="true"/> if the chunk was successfully archived<br/>
