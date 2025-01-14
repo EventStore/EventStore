@@ -87,13 +87,13 @@ public static class Convert {
 			feed.SetETag(Configure.GetPositionETag(msg.LastEventNumber, ContentType.AtomJson));
 
 		var prevEventNumber = Math.Min(msg.FromEventNumber, msg.LastEventNumber) + 1;
-		var nextEventNumber = msg.FromEventNumber - msg.MaxCount;
+		var nextEventNumber = msg.NextEventNumber;
 
 		feed.AddLink("self", self);
 		feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", escapedStreamId, msg.MaxCount));
 		if (!msg.IsEndOfStream) {
 			if (nextEventNumber < 0)
-				throw new Exception($"nextEventNumber is negative: {nextEventNumber} while IsEndOfStream");
+				throw new Exception($"nextEventNumber is negative: {nextEventNumber} not at the stream end");
 			feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, 0, msg.MaxCount));
 			feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", escapedStreamId, nextEventNumber, msg.MaxCount));
 		}

@@ -15,141 +15,94 @@ namespace EventStore.Core.Services.Transport.Http;
 
 public static class Format {
 	public static string TextMessage(HttpResponseFormatterArgs entity, Message message) {
-		var textMessage = message as HttpMessage.TextMessage;
-		return textMessage != null ? entity.ResponseCodec.To(textMessage) : String.Empty;
+		return message is HttpMessage.TextMessage textMessage ? entity.ResponseCodec.To(textMessage) : string.Empty;
 	}
 
 	public static object EventEntry(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed) {
-		var msg = message as ClientMessage.ReadEventCompleted;
-		if (msg == null || msg.Result != ReadEventResult.Success || msg.Record.Event == null)
+		if (message is not ClientMessage.ReadEventCompleted { Result: ReadEventResult.Success } msg || msg.Record.Event == null)
 			return entity.ResponseCodec.To(Empty.Result);
 
-		switch (entity.ResponseCodec.ContentType) {
-			case ContentType.Atom:
-			case ContentType.AtomJson:
-			case ContentType.Html:
-				return entity.ResponseCodec.To(Convert.ToEntry(msg.Record, entity.ResponseUrl, embed,
-					singleEntry: true));
-			default:
-				return AutoEventConverter.SmartFormat(msg.Record, entity.ResponseCodec);
-		}
+		return entity.ResponseCodec.ContentType switch {
+			ContentType.Atom or ContentType.AtomJson or ContentType.Html => entity.ResponseCodec.To(Convert.ToEntry(msg.Record, entity.ResponseUrl, embed, singleEntry: true)),
+			_ => AutoEventConverter.SmartFormat(msg.Record, entity.ResponseCodec)
+		};
 	}
 
-	public static string GetStreamEventsBackward(HttpResponseFormatterArgs entity, Message message,
-		EmbedLevel embed, bool headOfStream) {
-		var msg = message as ClientMessage.ReadStreamEventsBackwardCompleted;
-		if (msg == null || msg.Result != ReadStreamResult.Success)
-			return String.Empty;
-
-		return entity.ResponseCodec.To(
-			Convert.ToStreamEventBackwardFeed(msg, entity.ResponseUrl, embed, headOfStream));
+	public static string GetStreamEventsBackward(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed, bool headOfStream) {
+		return message is not ClientMessage.ReadStreamEventsBackwardCompleted { Result: ReadStreamResult.Success } msg
+			? string.Empty
+			: entity.ResponseCodec.To(Convert.ToStreamEventBackwardFeed(msg, entity.ResponseUrl, embed, headOfStream));
 	}
 
-	public static string GetStreamEventsForward(HttpResponseFormatterArgs entity, Message message,
-		EmbedLevel embed) {
-		var msg = message as ClientMessage.ReadStreamEventsForwardCompleted;
-		if (msg == null || msg.Result != ReadStreamResult.Success)
-			return String.Empty;
-
-		return entity.ResponseCodec.To(Convert.ToStreamEventForwardFeed(msg, entity.ResponseUrl, embed));
+	public static string GetStreamEventsForward(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed) {
+		return message is not ClientMessage.ReadStreamEventsForwardCompleted { Result: ReadStreamResult.Success } msg
+			? string.Empty
+			: entity.ResponseCodec.To(Convert.ToStreamEventForwardFeed(msg, entity.ResponseUrl, embed));
 	}
 
-	public static string ReadAllEventsBackwardCompleted(HttpResponseFormatterArgs entity, Message message,
-		EmbedLevel embed) {
-		var msg = message as ClientMessage.ReadAllEventsBackwardCompleted;
-		if (msg == null || msg.Result != ReadAllResult.Success)
-			return String.Empty;
-
-		return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg, entity.ResponseUrl, embed));
-	}
-	
-	public static string ReadAllEventsBackwardFilteredCompleted(HttpResponseFormatterArgs entity, Message message,
-		EmbedLevel embed) {
-		var msg = message as ClientMessage.FilteredReadAllEventsBackwardCompleted;
-		if (msg == null || msg.Result != FilteredReadAllResult.Success)
-			return String.Empty;
-
-		return entity.ResponseCodec.To(Convert.ToFilteredAllEventsBackwardFeed(msg, entity.ResponseUrl, embed));
+	public static string ReadAllEventsBackwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed) {
+		return message is not ClientMessage.ReadAllEventsBackwardCompleted { Result: ReadAllResult.Success } msg
+			? string.Empty
+			: entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg, entity.ResponseUrl, embed));
 	}
 
-	public static string ReadAllEventsForwardCompleted(HttpResponseFormatterArgs entity, Message message,
-		EmbedLevel embed) {
-		var msg = message as ClientMessage.ReadAllEventsForwardCompleted;
-		if (msg == null || msg.Result != ReadAllResult.Success)
-			return String.Empty;
-
-		return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg, entity.ResponseUrl, embed));
-	}
-	
-	public static string ReadAllEventsForwardFilteredCompleted(HttpResponseFormatterArgs entity, Message message,
-		EmbedLevel embed) {
-		var msg = message as ClientMessage.FilteredReadAllEventsForwardCompleted;
-		if (msg == null || msg.Result != FilteredReadAllResult.Success)
-			return String.Empty;
-
-		return entity.ResponseCodec.To(Convert.ToAllEventsForwardFilteredFeed(msg, entity.ResponseUrl, embed));
+	public static string ReadAllEventsBackwardFilteredCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed) {
+		return message is not ClientMessage.FilteredReadAllEventsBackwardCompleted { Result: FilteredReadAllResult.Success } msg
+			? string.Empty
+			: entity.ResponseCodec.To(Convert.ToFilteredAllEventsBackwardFeed(msg, entity.ResponseUrl, embed));
 	}
 
-	public static string WriteEventsCompleted(HttpResponseFormatterArgs entity, Message message) {
-		return String.Empty;
+	public static string ReadAllEventsForwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed) {
+		return message is not ClientMessage.ReadAllEventsForwardCompleted { Result: ReadAllResult.Success } msg
+			? string.Empty
+			: entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg, entity.ResponseUrl, embed));
 	}
 
-	public static string DeleteStreamCompleted(HttpResponseFormatterArgs entity, Message message) {
-		return String.Empty;
+	public static string ReadAllEventsForwardFilteredCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed) {
+		return message is not ClientMessage.FilteredReadAllEventsForwardCompleted { Result: FilteredReadAllResult.Success } msg
+			? string.Empty
+			: entity.ResponseCodec.To(Convert.ToAllEventsForwardFilteredFeed(msg, entity.ResponseUrl, embed));
 	}
+
+	public static string WriteEventsCompleted(HttpResponseFormatterArgs entity, Message message) => string.Empty;
+
+	public static string DeleteStreamCompleted(HttpResponseFormatterArgs entity, Message message) => string.Empty;
 
 	public static string GetFreshStatsCompleted(HttpResponseFormatterArgs entity, Message message) {
-		var completed = message as MonitoringMessage.GetFreshStatsCompleted;
-		if (completed == null || !completed.Success)
-			return String.Empty;
-
-		return entity.ResponseCodec.To(completed.Stats);
+		return message is not MonitoringMessage.GetFreshStatsCompleted { Success: true } completed ? string.Empty : entity.ResponseCodec.To(completed.Stats);
 	}
 
 	public static string GetReplicationStatsCompleted(HttpResponseFormatterArgs entity, Message message) {
 		if (message.GetType() != typeof(ReplicationMessage.GetReplicationStatsCompleted))
-			throw new Exception(string.Format("Unexpected type of Response message: {0}, expected: {1}",
-				message.GetType().Name,
-				typeof(ReplicationMessage.GetReplicationStatsCompleted).Name));
+			throw new Exception($"Unexpected type of Response message: {message.GetType().Name}, expected: {nameof(ReplicationMessage.GetReplicationStatsCompleted)}");
 		var completed = message as ReplicationMessage.GetReplicationStatsCompleted;
 		return entity.ResponseCodec.To(completed.ReplicationStats);
 	}
 
 	public static string GetFreshTcpConnectionStatsCompleted(HttpResponseFormatterArgs entity, Message message) {
-		var completed = message as MonitoringMessage.GetFreshTcpConnectionStatsCompleted;
-		if (completed == null)
-			return String.Empty;
+		if (message is not MonitoringMessage.GetFreshTcpConnectionStatsCompleted completed)
+			return string.Empty;
 
 		return entity.ResponseCodec.To(completed.ConnectionStats);
 	}
 
 	public static string SendPublicGossip(HttpResponseFormatterArgs entity, Message message) {
 		if (message.GetType() != typeof(GossipMessage.SendClientGossip))
-			throw new Exception(string.Format("Unexpected type of response message: {0}, expected: {1}",
-				message.GetType().Name,
-				typeof(GossipMessage.SendClientGossip).Name));
+			throw new Exception($"Unexpected type of response message: {message.GetType().Name}, expected: {typeof(GossipMessage.SendClientGossip).Name}");
 
-		var sendPublicGossip = message as GossipMessage.SendClientGossip;
-		return sendPublicGossip != null
+		return message is GossipMessage.SendClientGossip sendPublicGossip
 			? entity.ResponseCodec.To(sendPublicGossip.ClusterInfo)
 			: string.Empty;
 	}
 
-	public static string ReadNextNPersistentMessagesCompleted(HttpResponseFormatterArgs entity, Message message,
-		string streamId, string groupName, int count, EmbedLevel embed) {
+	public static string ReadNextNPersistentMessagesCompleted(HttpResponseFormatterArgs entity, Message message, string streamId, string groupName, int count, EmbedLevel embed) {
 		var msg = message as ClientMessage.ReadNextNPersistentMessagesCompleted;
-		if (msg == null || msg.Result != ClientMessage.ReadNextNPersistentMessagesCompleted
-			    .ReadNextNPersistentMessagesResult.Success) {
-			return msg != null ? entity.ResponseCodec.To(msg.Reason) : string.Empty;
-		}
-		
-		return entity.ResponseCodec.To(Convert.ToNextNPersistentMessagesFeed(msg, entity.ResponseUrl, streamId,
-			groupName, count, embed));
+		return msg is not { Result: ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult.Success }
+			? msg != null ? entity.ResponseCodec.To(msg.Reason) : string.Empty
+			: entity.ResponseCodec.To(Convert.ToNextNPersistentMessagesFeed(msg, entity.ResponseUrl, streamId, groupName, count, embed));
 	}
 
-	public static string GetDescriptionDocument(HttpResponseFormatterArgs entity, string streamId,
-		string[] persistentSubscriptionStats) {
-		return entity.ResponseCodec.To(Convert.ToDescriptionDocument(entity.RequestedUrl, streamId,
-			persistentSubscriptionStats));
+	public static string GetDescriptionDocument(HttpResponseFormatterArgs entity, string streamId, string[] persistentSubscriptionStats) {
+		return entity.ResponseCodec.To(Convert.ToDescriptionDocument(entity.RequestedUrl, streamId, persistentSubscriptionStats));
 	}
 }
