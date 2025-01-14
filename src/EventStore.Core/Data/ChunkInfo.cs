@@ -3,7 +3,7 @@
 
 namespace EventStore.Core.Data;
 
-public sealed record ChunkInfo {
+public readonly record struct ChunkInfo {
 	public required string ChunkLocator { get; init; }
 	public required int ChunkStartNumber { get; init; }
 	public required int ChunkEndNumber { get; init; }
