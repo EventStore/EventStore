@@ -1,0 +1,9 @@
+IntIp: 192.168.1.10
+ExtIp: 192.168.1.10
+IntHttpPort: 30777
+ExtHttpPort: 30778
+DiscoverViaDns: true
+ClusterDns: cluster.eventstore.local
+ClusterGossipPort: 30777
+EnableWatchdog: false
+Logs: d:\manager-log

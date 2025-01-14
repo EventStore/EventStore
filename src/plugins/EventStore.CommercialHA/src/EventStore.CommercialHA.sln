@@ -1,0 +1,139 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34309.116
+MinimumVisualStudioVersion = 15.0.26124.0
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Auth.Ldaps", "EventStore.Auth.Ldaps\EventStore.Auth.Ldaps.csproj", "{DD623C72-6774-4D51-86CE-406E5CE0B469}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Auth.OAuth.Tests", "EventStore.Auth.OAuth.Tests\EventStore.Auth.OAuth.Tests.csproj", "{FDE207C3-1C01-4D7F-9B50-5C59CFB19049}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Auth.OAuth", "EventStore.Auth.OAuth\EventStore.Auth.OAuth.csproj", "{04D0FCF4-68CD-487A-9B0E-9EEF35BF7DB2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Client.CloudTokenAuthentication", "EventStore.Client.CloudTokenAuthentication\EventStore.Client.CloudTokenAuthentication.csproj", "{DF47B4B6-53FE-4D96-BCDA-2C8E18AFBC87}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled", "EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled\EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled.csproj", "{5E1F26A6-C37D-4D51-9EFF-270C148EC743}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled.Tests", "EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled.Tests\EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled.Tests.csproj", "{48F4C3F8-6BA8-4A48-B1D3-77B264A4C69D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Auth.Ldaps.Tests", "EventStore.Auth.Ldaps.Tests\EventStore.Auth.Ldaps.Tests.csproj", "{38576611-C806-4BE6-844D-4D5ABD4BA5F1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.MD5", "EventStore.MD5\EventStore.MD5.csproj", "{1B8577EE-F563-44E8-A7C9-0E11ADA0B19F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.MD5.Tests", "EventStore.MD5.Tests\EventStore.MD5.Tests.csproj", "{8737D249-392B-476B-A356-8F4E3E2C1203}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Diagnostics.LogsEndpointPlugin", "EventStore.Diagnostics.LogsEndpointPlugin\EventStore.Diagnostics.LogsEndpointPlugin.csproj", "{7FE7D126-0CF5-47DC-B68E-8DA470180DB8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Diagnostics.LogsEndpointPlugin.Tests", "EventStore.Diagnostics.LogsEndpointPlugin.Tests\EventStore.Diagnostics.LogsEndpointPlugin.Tests.csproj", "{00D3D05E-DD25-4F2D-9EC3-54AF61A2FC04}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.OtlpExporterPlugin", "EventStore.OtlpExporterPlugin\EventStore.OtlpExporterPlugin.csproj", "{0919AB58-A158-444D-BF12-9591082A8907}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.OtlpExporterPlugin.Tests", "EventStore.OtlpExporterPlugin.Tests\EventStore.OtlpExporterPlugin.Tests.csproj", "{A81A7355-1AAD-454F-B872-6329740B83D6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Auth.UserCertificates", "EventStore.Auth.UserCertificates\EventStore.Auth.UserCertificates.csproj", "{61685646-DC26-4DAA-A75E-BC5FEF70EED2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Auth.UserCertificates.Tests", "EventStore.Auth.UserCertificates.Tests\EventStore.Auth.UserCertificates.Tests.csproj", "{5B2A44B8-3CF8-4A9A-B547-DC2316D95FFA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Plugins.Tests", "EventStore.Plugins.Tests\EventStore.Plugins.Tests.csproj", "{CFCAD2D6-9B8A-47A8-B9E1-159570615AC8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Plugins.LicenseInjector", "EventStore.Plugins.LicenseInjector\EventStore.Plugins.LicenseInjector.csproj", "{5E8CAD41-4CA9-4D4D-A833-38DC6DF43AA1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Security.EncryptionAtRest", "EventStore.Security.EncryptionAtRest\EventStore.Security.EncryptionAtRest.csproj", "{5CF6BC28-5A40-4706-B6DF-37DD32F43A30}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3AAA41AB-47C9-4B28-81DE-BA1055E0313A}"
+	ProjectSection(SolutionItems) = preProject
+		..\.editorconfig = ..\.editorconfig
+		Directory.Build.props = Directory.Build.props
+		..\Dockerfile = ..\Dockerfile
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Security.EncryptionAtRest.Tests", "EventStore.Security.EncryptionAtRest.Tests\EventStore.Security.EncryptionAtRest.Tests.csproj", "{BFF2E53C-9107-4AC8-B254-6E0426FED859}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DD623C72-6774-4D51-86CE-406E5CE0B469}.Debug|x64.ActiveCfg = Debug|x64
+		{DD623C72-6774-4D51-86CE-406E5CE0B469}.Debug|x64.Build.0 = Debug|x64
+		{DD623C72-6774-4D51-86CE-406E5CE0B469}.Release|x64.ActiveCfg = Release|x64
+		{DD623C72-6774-4D51-86CE-406E5CE0B469}.Release|x64.Build.0 = Release|x64
+		{FDE207C3-1C01-4D7F-9B50-5C59CFB19049}.Debug|x64.ActiveCfg = Debug|x64
+		{FDE207C3-1C01-4D7F-9B50-5C59CFB19049}.Debug|x64.Build.0 = Debug|x64
+		{FDE207C3-1C01-4D7F-9B50-5C59CFB19049}.Release|x64.ActiveCfg = Release|x64
+		{FDE207C3-1C01-4D7F-9B50-5C59CFB19049}.Release|x64.Build.0 = Release|x64
+		{04D0FCF4-68CD-487A-9B0E-9EEF35BF7DB2}.Debug|x64.ActiveCfg = Debug|x64
+		{04D0FCF4-68CD-487A-9B0E-9EEF35BF7DB2}.Debug|x64.Build.0 = Debug|x64
+		{04D0FCF4-68CD-487A-9B0E-9EEF35BF7DB2}.Release|x64.ActiveCfg = Release|x64
+		{04D0FCF4-68CD-487A-9B0E-9EEF35BF7DB2}.Release|x64.Build.0 = Release|x64
+		{DF47B4B6-53FE-4D96-BCDA-2C8E18AFBC87}.Debug|x64.ActiveCfg = Debug|x64
+		{DF47B4B6-53FE-4D96-BCDA-2C8E18AFBC87}.Debug|x64.Build.0 = Debug|x64
+		{DF47B4B6-53FE-4D96-BCDA-2C8E18AFBC87}.Release|x64.ActiveCfg = Release|x64
+		{DF47B4B6-53FE-4D96-BCDA-2C8E18AFBC87}.Release|x64.Build.0 = Release|x64
+		{5E1F26A6-C37D-4D51-9EFF-270C148EC743}.Debug|x64.ActiveCfg = Debug|x64
+		{5E1F26A6-C37D-4D51-9EFF-270C148EC743}.Debug|x64.Build.0 = Debug|x64
+		{5E1F26A6-C37D-4D51-9EFF-270C148EC743}.Release|x64.ActiveCfg = Release|x64
+		{5E1F26A6-C37D-4D51-9EFF-270C148EC743}.Release|x64.Build.0 = Release|x64
+		{48F4C3F8-6BA8-4A48-B1D3-77B264A4C69D}.Debug|x64.ActiveCfg = Debug|x64
+		{48F4C3F8-6BA8-4A48-B1D3-77B264A4C69D}.Debug|x64.Build.0 = Debug|x64
+		{48F4C3F8-6BA8-4A48-B1D3-77B264A4C69D}.Release|x64.ActiveCfg = Release|x64
+		{48F4C3F8-6BA8-4A48-B1D3-77B264A4C69D}.Release|x64.Build.0 = Release|x64
+		{38576611-C806-4BE6-844D-4D5ABD4BA5F1}.Debug|x64.ActiveCfg = Debug|x64
+		{38576611-C806-4BE6-844D-4D5ABD4BA5F1}.Debug|x64.Build.0 = Debug|x64
+		{38576611-C806-4BE6-844D-4D5ABD4BA5F1}.Release|x64.ActiveCfg = Release|x64
+		{38576611-C806-4BE6-844D-4D5ABD4BA5F1}.Release|x64.Build.0 = Release|x64
+		{1B8577EE-F563-44E8-A7C9-0E11ADA0B19F}.Debug|x64.ActiveCfg = Debug|x64
+		{1B8577EE-F563-44E8-A7C9-0E11ADA0B19F}.Debug|x64.Build.0 = Debug|x64
+		{1B8577EE-F563-44E8-A7C9-0E11ADA0B19F}.Release|x64.ActiveCfg = Release|x64
+		{1B8577EE-F563-44E8-A7C9-0E11ADA0B19F}.Release|x64.Build.0 = Release|x64
+		{8737D249-392B-476B-A356-8F4E3E2C1203}.Debug|x64.ActiveCfg = Debug|x64
+		{8737D249-392B-476B-A356-8F4E3E2C1203}.Debug|x64.Build.0 = Debug|x64
+		{8737D249-392B-476B-A356-8F4E3E2C1203}.Release|x64.ActiveCfg = Release|x64
+		{8737D249-392B-476B-A356-8F4E3E2C1203}.Release|x64.Build.0 = Release|x64
+		{7FE7D126-0CF5-47DC-B68E-8DA470180DB8}.Debug|x64.ActiveCfg = Debug|x64
+		{7FE7D126-0CF5-47DC-B68E-8DA470180DB8}.Debug|x64.Build.0 = Debug|x64
+		{7FE7D126-0CF5-47DC-B68E-8DA470180DB8}.Release|x64.ActiveCfg = Release|x64
+		{7FE7D126-0CF5-47DC-B68E-8DA470180DB8}.Release|x64.Build.0 = Release|x64
+		{00D3D05E-DD25-4F2D-9EC3-54AF61A2FC04}.Debug|x64.ActiveCfg = Debug|x64
+		{00D3D05E-DD25-4F2D-9EC3-54AF61A2FC04}.Debug|x64.Build.0 = Debug|x64
+		{00D3D05E-DD25-4F2D-9EC3-54AF61A2FC04}.Release|x64.ActiveCfg = Release|x64
+		{00D3D05E-DD25-4F2D-9EC3-54AF61A2FC04}.Release|x64.Build.0 = Release|x64
+		{0919AB58-A158-444D-BF12-9591082A8907}.Debug|x64.ActiveCfg = Debug|x64
+		{0919AB58-A158-444D-BF12-9591082A8907}.Debug|x64.Build.0 = Debug|x64
+		{0919AB58-A158-444D-BF12-9591082A8907}.Release|x64.ActiveCfg = Release|x64
+		{0919AB58-A158-444D-BF12-9591082A8907}.Release|x64.Build.0 = Release|x64
+		{A81A7355-1AAD-454F-B872-6329740B83D6}.Debug|x64.ActiveCfg = Debug|x64
+		{A81A7355-1AAD-454F-B872-6329740B83D6}.Debug|x64.Build.0 = Debug|x64
+		{A81A7355-1AAD-454F-B872-6329740B83D6}.Release|x64.ActiveCfg = Release|x64
+		{A81A7355-1AAD-454F-B872-6329740B83D6}.Release|x64.Build.0 = Release|x64
+		{61685646-DC26-4DAA-A75E-BC5FEF70EED2}.Debug|x64.ActiveCfg = Debug|x64
+		{61685646-DC26-4DAA-A75E-BC5FEF70EED2}.Debug|x64.Build.0 = Debug|x64
+		{61685646-DC26-4DAA-A75E-BC5FEF70EED2}.Release|x64.ActiveCfg = Release|x64
+		{61685646-DC26-4DAA-A75E-BC5FEF70EED2}.Release|x64.Build.0 = Release|x64
+		{5B2A44B8-3CF8-4A9A-B547-DC2316D95FFA}.Debug|x64.ActiveCfg = Debug|x64
+		{5B2A44B8-3CF8-4A9A-B547-DC2316D95FFA}.Debug|x64.Build.0 = Debug|x64
+		{5B2A44B8-3CF8-4A9A-B547-DC2316D95FFA}.Release|x64.ActiveCfg = Release|x64
+		{5B2A44B8-3CF8-4A9A-B547-DC2316D95FFA}.Release|x64.Build.0 = Release|x64
+		{CFCAD2D6-9B8A-47A8-B9E1-159570615AC8}.Debug|x64.ActiveCfg = Debug|x64
+		{CFCAD2D6-9B8A-47A8-B9E1-159570615AC8}.Debug|x64.Build.0 = Debug|x64
+		{CFCAD2D6-9B8A-47A8-B9E1-159570615AC8}.Release|x64.ActiveCfg = Release|x64
+		{CFCAD2D6-9B8A-47A8-B9E1-159570615AC8}.Release|x64.Build.0 = Release|x64
+		{5E8CAD41-4CA9-4D4D-A833-38DC6DF43AA1}.Debug|x64.ActiveCfg = Debug|x64
+		{5E8CAD41-4CA9-4D4D-A833-38DC6DF43AA1}.Debug|x64.Build.0 = Debug|x64
+		{5E8CAD41-4CA9-4D4D-A833-38DC6DF43AA1}.Release|x64.ActiveCfg = Release|x64
+		{5E8CAD41-4CA9-4D4D-A833-38DC6DF43AA1}.Release|x64.Build.0 = Release|x64
+		{5CF6BC28-5A40-4706-B6DF-37DD32F43A30}.Debug|x64.ActiveCfg = Debug|x64
+		{5CF6BC28-5A40-4706-B6DF-37DD32F43A30}.Debug|x64.Build.0 = Debug|x64
+		{5CF6BC28-5A40-4706-B6DF-37DD32F43A30}.Release|x64.ActiveCfg = Release|x64
+		{5CF6BC28-5A40-4706-B6DF-37DD32F43A30}.Release|x64.Build.0 = Release|x64
+		{BFF2E53C-9107-4AC8-B254-6E0426FED859}.Debug|x64.ActiveCfg = Debug|x64
+		{BFF2E53C-9107-4AC8-B254-6E0426FED859}.Debug|x64.Build.0 = Debug|x64
+		{BFF2E53C-9107-4AC8-B254-6E0426FED859}.Release|x64.ActiveCfg = Release|x64
+		{BFF2E53C-9107-4AC8-B254-6E0426FED859}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BB22F5E4-0007-411E-AD38-CAA5D96DE1B8}
+	EndGlobalSection
+EndGlobal

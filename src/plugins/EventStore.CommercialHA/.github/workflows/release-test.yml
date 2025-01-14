@@ -1,0 +1,67 @@
+name: Release Test
+
+on:
+   workflow_dispatch:
+      inputs:
+        version:
+          description: 'The version of plugins tag to test (e.g. commercial-v24.2.0)'
+          required: true
+        es_image:
+          description: 'Event Store container image to load plugins into and test against (e.g. docker.eventstore.com/eventstore-staging-ce/eventstoredb-ce:ci)'
+          required: true
+
+env:
+  DOTNET_SDK_VERSION: 8.0.x
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+        test: [ Auth.Ldaps, Auth.OAuth, Auth.LegacyAuthorizationWithStreamAuthorizationDisabled, MD5, Security.EncryptionAtRest ]
+        configuration: [ debug, release ]
+    runs-on: ${{ matrix.os }}
+    name: ci/github/build-${{ matrix.test }}-${{ matrix.configuration }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.version }}
+      - name: Install Dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+      - name: Login to Cloudsmith
+        uses: docker/login-action@v3
+        with:
+          registry: docker.eventstore.com
+          username: ${{ secrets.CLOUDSMITH_CICD_USER }}
+          password: ${{ secrets.CLOUDSMITH_CICD_TOKEN }}
+      - name: Pull Docker Images
+        shell: bash
+        run: |
+          docker pull ghcr.io/eventstore/idsrv4/idsrv4
+          docker pull ${{ inputs.es_image }}
+          docker pull rroemhild/test-openldap
+      - name: Compile
+        shell: bash
+        run: |
+          dotnet build --configuration ${{ matrix.configuration }} src/EventStore.${{ matrix.test }}.Tests
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Container
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: false
+      - name: Run Tests
+        shell: bash
+        env:
+          ES_IMAGE: ${{ inputs.es_image }}
+        run: |
+          dotnet test --configuration ${{ matrix.configuration }} src/EventStore.${{ matrix.test }}.Tests --logger GitHubActions

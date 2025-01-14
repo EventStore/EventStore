@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="FluentAssertions" Version="6.12.0" />
+		<PackageReference Include="GitHubActionsTestLogger" Version="2.3.3" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+		<PackageReference Include="xunit" Version="2.6.1" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" PrivateAssets="All" />
+		<PackageReference Include="coverlet.collector" Version="6.0.0" PrivateAssets="All" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.POC.ConnectorsEngine\EventStore.POC.ConnectorsEngine.csproj" />
+		<ProjectReference Include="..\EventStore.POC.ConnectorsPlugin\EventStore.POC.ConnectorsPlugin.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<Using Include="Xunit" />
+	</ItemGroup>
+</Project>

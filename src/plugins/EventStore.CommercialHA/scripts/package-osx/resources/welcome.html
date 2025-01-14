@@ -1,0 +1,28 @@
+<html>
+    <body>
+        <div>
+            <h1>Welcome to EventStore!</h1>
+            <a href="https://eventstore.org">Event Store</a> is a domain specific database for Event Sourcing
+        </div>
+        <div>
+            <br/>
+            <h2>Installation note</h2>
+            Please take note of the following important files and directories:
+            <li>/usr/local/bin/eventstored - The EventStore daemon</li>
+            <li>/etc/eventstore/eventstore.conf - The EventStore configuration file</li>
+            <li>/var/lib/eventstore - The path where data files will be stored by default</li>
+            <li>/var/log/eventstore - The path where log files will be stored by default</li>
+        </div>
+        <div>
+            <br/>
+            <h2>Starting and stopping the EventStore service</h2>
+            Once installed, the EventStore service will launch automatically. The Web UI will be accessible on <a href="http://localhost:2113">http://localhost:2113</a>
+            <br/><br/>
+            <b>Starting the EventStore service</b>
+            <pre>sudo launchctl start org.eventstore.eventstore-db</pre>
+            <br/>
+            <b>Stopping the EventStore service</b>
+            <pre>sudo launchctl stop org.eventstore.eventstore-db</pre>
+        </div>
+    </body>
+</html>

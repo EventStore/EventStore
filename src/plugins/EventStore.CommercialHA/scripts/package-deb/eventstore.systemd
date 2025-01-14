@@ -1,0 +1,11 @@
+[Unit]
+Description=Event Store Open Source
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/eventstored
+Restart=always
+LimitNOFILE=32768
+
+[Install]
+WantedBy=multi-user.target

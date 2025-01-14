@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="EventStore.Plugins" Version="24.10.5" />
+	</ItemGroup>
+</Project>

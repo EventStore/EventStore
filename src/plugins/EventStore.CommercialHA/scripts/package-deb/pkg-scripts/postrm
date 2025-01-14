@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ "$1" = "purge" ]
+then
+  rm -rf /etc/eventstore
+  userdel eventstore
+fi
+
+rm /usr/bin/eventstored
+
+exit 0

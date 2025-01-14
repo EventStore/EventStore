@@ -1,0 +1,11 @@
+Db: ./db/node1
+IntIp: 127.0.0.1
+ExtIp: 127.0.0.1
+IntTcpPort: 1111
+IntHttpPort: 1112
+ExtTcpPort: 1113
+ExtHttpPort: 1114
+DiscoverViaDns: false
+GossipSeed: ['127.0.0.1:30777']
+RunProjections: System
+ClusterSize: 3

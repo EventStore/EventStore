@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\EventStore\src\EventStore.Core\EventStore.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="EventStore.Plugins" Version="24.10.5" />
+		<PackageReference Include="System.ComponentModel.Composition" Version="8.0.0" />
+	</ItemGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<ItemGroup>
+			<PluginReferences Include="$(OutDir)\EventStore.Auth.StreamPolicyPlugin.deps.json" />
+			<PluginReferences Include="$(OutDir)\EventStore.Auth.StreamPolicyPlugin.dll" />
+			<PluginReferences Include="$(OutDir)\EventStore.Auth.StreamPolicyPlugin.pdb" />
+		</ItemGroup>
+		<Copy SourceFiles="@(PluginReferences)" DestinationFolder="..\..\EventStore\src\EventStore.ClusterNode\$(OutDir)\plugins\$(ProjectName)" />
+		<Copy SourceFiles="@(PluginRuntimeDependencies)" DestinationFolder="..\..\EventStore\src\EventStore.ClusterNode\$(OutDir)\plugins\$(ProjectName)\runtimes\%(RecursiveDir)" />
+	</Target>
+
+	<Target Name="PublishPlugin" AfterTargets="Publish">
+		<ItemGroup>
+			<PluginOutputFiles Include="$(PublishDir)\LICENSE.md" />
+			<PluginOutputFiles Include="$(PublishDir)\NOTICE.html" />
+			<PluginOutputFiles Include="$(PublishDir)\EventStore.Auth.StreamPolicyPlugin.deps.json" />
+			<PluginOutputFiles Include="$(PublishDir)\EventStore.Auth.StreamPolicyPlugin.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(PluginOutputFiles)" DestinationFolder="$(PublishDir)/package" />
+	</Target>
+</Project>

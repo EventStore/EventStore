@@ -1,0 +1,3 @@
+#--config c:\data\EventStore.CommercialHA\etc\configs\local\cluster-node1.yaml
+#--config c:\data\EventStore.CommercialHA\etc\configs\local\cluster-node2.yaml
+#--config c:\data\EventStore.CommercialHA\etc\configs\local\cluster-node3.yaml

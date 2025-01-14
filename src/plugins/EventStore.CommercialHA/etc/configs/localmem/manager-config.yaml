@@ -1,0 +1,7 @@
+IntIp: 127.0.0.1
+ExtIp: 127.0.0.1
+IntHttpPort: 30777
+ExtHttpPort: 30778
+DiscoverViaDns: false
+EnableWatchdog: true
+WatchdogConfig: C:\data\EventStore.CommercialHA\etc\configs\localmem\localmem.esconfig

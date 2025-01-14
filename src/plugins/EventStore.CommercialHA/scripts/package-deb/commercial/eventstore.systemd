@@ -1,0 +1,14 @@
+[Unit]
+Description=Event Store Commercial
+
+[Service]
+User=eventstore
+Group=eventstore
+Type=simple
+ExecStart=/bin/bash -c 'echo $$$ > /var/run/eventstore/eventstore.pid; exec /usr/bin/eventstored'
+PIDFile=/var/run/eventstore/eventstore.pid
+Restart=always
+LimitNOFILE=32768
+
+[Install]
+WantedBy=multi-user.target

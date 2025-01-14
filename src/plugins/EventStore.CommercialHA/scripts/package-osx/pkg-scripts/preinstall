@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+rm /etc/eventstore/eventstore.conf.bak || true
+cp /etc/eventstore/eventstore.conf /etc/eventstore/eventstore.conf.bak || true
+launchctl stop org.eventstore.eventstore-db || true
+launchctl unload /Library/LaunchDaemons/org.eventstore.eventstore-db.plist || true

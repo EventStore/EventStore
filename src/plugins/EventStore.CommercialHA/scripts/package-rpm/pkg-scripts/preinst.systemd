@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -eu
+
+USERNAME="eventstore"
+GROUP="$USERNAME"
+HOME="/var/log/eventstore"
+
+getent group $GROUP >/dev/null || groupadd -r $GROUP
+
+getent passwd $USERNAME >/dev/null || \
+    useradd \
+        --system \
+        --gid $GROUP \
+        --shell /sbin/nologin \
+        --home-dir /var/lib/eventstore \
+        --comment "Event Store" \
+        $USERNAME
+
+mkdir -p /var/run/eventstore /var/log/eventstore /var/lib/eventstore
+
+chown `id -u $USERNAME`:`id -g $GROUP` /var/run/eventstore /var/log/eventstore /var/lib/eventstore
