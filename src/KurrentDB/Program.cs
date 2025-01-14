@@ -30,7 +30,7 @@ using Microsoft.Extensions.Logging;
 using Serilog.Events;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 
-namespace EventStore.ClusterNode;
+namespace KurrentDB;
 
 internal static class Program {
 	public static async Task<int> Main(string[] args) {

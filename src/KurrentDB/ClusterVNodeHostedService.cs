@@ -35,7 +35,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using EventStore.Core.LogAbstraction;
 
-namespace EventStore.ClusterNode;
+namespace KurrentDB;
 
 public class ClusterVNodeHostedService : IHostedService, IDisposable {
 	private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeHostedService>();
