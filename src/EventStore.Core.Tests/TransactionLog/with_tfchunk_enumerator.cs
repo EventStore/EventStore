@@ -6,11 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog;

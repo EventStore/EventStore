@@ -2,7 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using EventStore.Common.Utils;

@@ -60,8 +60,8 @@ public class ArchivePlugableComponent : IPlugableComponent {
 			return;
 
 		services.AddSingleton<ArchiveOptions>(options);
-		services.AddSingleton<IArchiveStorage>(services => {
-			var resolver = services.GetRequiredService<IArchiveChunkNameResolver>();
+		services.AddSingleton<IArchiveStorage>(s => {
+			var resolver = s.GetRequiredService<IArchiveChunkNameResolver>();
 			return ArchiveStorageFactory.Create(options, resolver);
 		});
 		services.Decorate<IReadOnlyList<IClusterVNodeStartupTask>>(AddArchiveCatchupTask);

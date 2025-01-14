@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
@@ -13,7 +12,6 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Archive.Archiver;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Archiver.Unmerger;
-using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.TransactionLog.Chunks;
 using Xunit;
 

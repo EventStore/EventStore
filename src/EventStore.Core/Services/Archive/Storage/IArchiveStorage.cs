@@ -18,6 +18,7 @@ public interface IArchiveStorage : IArchiveStorageReader {
 	/// <summary>Stores a chunk in the archive</summary>
 	/// <param name="chunkPath">The path of the chunk to archive</param>
 	/// <param name="logicalChunkNumber">The number of the logical chunk being archived</param>
+	/// <param name="ct"></param>
 	/// <exception cref="ChunkDeletedException">Thrown if the chunk file is deleted while being archived</exception>
 	/// <returns>
 	/// <see langword="true"/> if the chunk was successfully archived<br/>
