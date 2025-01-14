@@ -1,0 +1,31 @@
+<Project>
+	<PropertyGroup>
+		<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+		<DebugType Condition=" '$(Configuration)' == 'Debug' ">full</DebugType>
+		<DebugType Condition=" '$(Configuration)' == 'Release' ">pdbonly</DebugType>
+		<OutputPath>$(MSBuildThisFileDirectory)..\bin\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
+		<IsTestProject>false</IsTestProject>
+		<VersionPrefix>24.10.0</VersionPrefix>
+		<VersionSuffix>prerelease</VersionSuffix>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(IsTestProject)' == 'true'">
+		<ProjectReference Include="..\EventStore.Plugins.Tests\EventStore.Plugins.Tests.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(IsTestProject)' == 'false'">
+		<None Include="..\..\LICENSE.md" Pack="true" PackagePath="\">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Include="..\..\NOTICE.html" Pack="true" PackagePath="\">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="EventStore.Plugins" Version="25.2.5">
+			<ExcludeAssets Condition="'$(IsTestProject)' == 'false'">runtime</ExcludeAssets>
+		</PackageReference>
+		<PackageReference Include="Serilog" Version="4.1.0" />
+	</ItemGroup>
+</Project>

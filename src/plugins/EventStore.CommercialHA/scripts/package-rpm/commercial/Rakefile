@@ -1,0 +1,67 @@
+NAME = ENV["PACKAGE_NAME"]
+VERSION = ENV["VERSION"]
+DISTRO_NAME = ENV["DISTRO_NAME"]
+DISTRO_TAG = ENV["DISTRO_TAG"]
+EPOCH = VERSION.gsub(/[^0-9]/, '').gsub(/^0+/, '')
+if EPOCH.length < 4
+  EPOCH << "0"
+end
+
+BUILD_DIR = './build'
+VENDOR = 'Event Store Ltd'
+MAINTAINER = 'Event Store Ltd <info@geteventstore.com>'
+ABSOLUTE_BUILD_DIR = File.expand_path(BUILD_DIR)
+TAR_DIR = "EventStore-Commercial-Linux-#{DISTRO_NAME}-v#{VERSION}"
+ITERATION = ENV["ITERATION"]
+
+task :clean do
+  sh %{ git clean -xdf }
+end
+
+task :build do
+  sh %{ mkdir -p #{BUILD_DIR} }
+  sh %{ mkdir -p #{BUILD_DIR}/usr/share/eventstore }
+  sh %{ mkdir -p #{BUILD_DIR}/etc/init }
+  sh %{ mkdir -p #{BUILD_DIR}/etc/systemd/system }
+  sh %{ mkdir -p #{BUILD_DIR}/var/lib/eventstore }
+  sh %{ mkdir -p #{BUILD_DIR}/var/log/eventstore }
+  sh %{ mkdir -p #{BUILD_DIR}/etc/eventstore }
+
+  sh %{ cp ../../../packages/el7/EventStore-Commercial-Linux-#{DISTRO_NAME}-v#{VERSION}.tar.gz . }
+  sh %{ tar -xf EventStore-Commercial-Linux-#{DISTRO_NAME}-v#{VERSION}.tar.gz }
+
+  sh %{ cp -R #{TAR_DIR}/* #{BUILD_DIR}/usr/share/eventstore/ }
+  # sh %{ mv #{TAR_DIR}/libjs1.so #{BUILD_DIR}/usr/lib/. }
+
+  sh %{ mv #{BUILD_DIR}/usr/share/eventstore/logconfig.json #{BUILD_DIR}/etc/eventstore/. }
+
+  sh %{ cp ./eventstore.conf #{BUILD_DIR}/etc/eventstore/. }
+  sh %{ cp ./eventstore.systemd #{BUILD_DIR}/etc/systemd/system/eventstore.service }
+
+  sh %{ rm -rf #{TAR_DIR} }
+end
+
+task :rpm do
+  sh %{ fpm -s dir -t rpm -n #{NAME} -v #{VERSION} -C build \
+    --epoch "#{EPOCH}" \
+    --iteration "#{ITERATION}" \
+    -a amd64 \
+    --config-files /etc/eventstore \
+    --before-install ../pkg-scripts/preinst.systemd \
+    --after-install ../pkg-scripts/postinst.systemd \
+    --before-remove ../pkg-scripts/prerm.systemd \
+    --after-remove ../pkg-scripts/postrm.systemd \
+    --vendor "#{VENDOR}" \
+    --maintainer "#{MAINTAINER}" \
+    --description "Event Store is a domain specific database for Event Sourcing" \
+    --url "https://eventstore.org" \
+    --rpm-dist "#{DISTRO_TAG}" \
+    --rpm-os linux \
+    --rpm-user root \
+    --rpm-group root \
+    --rpm-use-file-permissions \
+    --depends 'glibc >= 2.17'
+  }
+end
+
+task :default => [ :clean, :build, :rpm ]

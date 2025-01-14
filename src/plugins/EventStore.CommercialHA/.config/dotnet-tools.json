@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "dotnet-retire": {
+      "version": "4.0.1",
+      "commands": [
+        "dotnet-retire"
+      ]
+    },
+    "gpr": {
+      "version": "0.1.122",
+      "commands": [
+        "gpr"
+      ]
+    }
+  }
+}

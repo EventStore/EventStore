@@ -1,0 +1,64 @@
+name: Release by Tag
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - commercial-v*
+
+env:
+  DOTNET_SDK_VERSION: 8.0.x
+
+jobs:
+  input-transform:
+    name: get version from tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+    - name: Tag
+      id: tag
+      shell: pwsh
+      run: |
+          $version = "${{ github.ref }}".Replace("refs/tags/commercial-v", "")
+          Add-Content -Value "version=$($version)" -Path $env:GITHUB_OUTPUT
+
+  release:
+    needs: input-transform
+    strategy:
+      matrix:
+        project: [
+          Auth.Ldaps,
+          Auth.OAuth,
+          Auth.LegacyAuthorizationWithStreamAuthorizationDisabled,
+          Auth.UserCertificates,
+          MD5,
+          Security.EncryptionAtRest,
+          Diagnostics.LogsEndpointPlugin,
+          OtlpExporterPlugin ]
+    uses: ./.github/workflows/release-reusable.yml
+    with:
+      version: ${{ needs.input-transform.outputs.version }}
+      project: ${{ matrix.project }}
+
+  docker-publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Publish Container
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: eventstore/eventstore-commercial:ci

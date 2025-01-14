@@ -1,0 +1,31 @@
+<Project>
+	<PropertyGroup>
+		<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+		<DebugType Condition=" '$(Configuration)' == 'Debug' ">full</DebugType>
+		<DebugType Condition=" '$(Configuration)' == 'Release' ">pdbonly</DebugType>
+		<Authors>Event Store Ltd</Authors>
+		<PackageIconUrl>ouro.png</PackageIconUrl>
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+		<PackageProjectUrl>https://eventstore.com</PackageProjectUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<Copyright>Copyright 2012-2024 Event Store Ltd</Copyright>
+		<PackageReleaseNotes>https://eventstore.com/blog/</PackageReleaseNotes>
+		<TargetFramework>net8.0</TargetFramework>
+		<LangVersion>12.0</LangVersion>
+		<Platforms>AnyCPU;x64;ARM64</Platforms>
+		<IsPackable>false</IsPackable>
+		<VersionPrefix>24.10.0</VersionPrefix>
+		<VersionSuffix>prerelease</VersionSuffix>
+	</PropertyGroup>
+	<ItemGroup>
+		<None Include="..\..\LICENSE.md" Pack="true" PackagePath="\">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Include="..\..\NOTICE.html" Pack="true" PackagePath="\">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Include="..\..\ouro.png" Pack="true" PackagePath="\">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+</Project>

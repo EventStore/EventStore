@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>PATH</key>
+      <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:</string>
+    </dict>
+    <key>Label</key>
+    <string>org.eventstore.eventstore-db</string>
+    <key>Program</key>
+    <string>/usr/local/bin/eventstored</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>LaunchOnlyOnce</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>/var/log/eventstore/eventstore.stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/eventstore/eventstore.stderr.log</string>
+  </dict>
+</plist>

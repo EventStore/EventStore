@@ -1,0 +1,7 @@
+{
+  "EventStore": {
+    "UserCertificates": {
+      "Enabled": true
+    }
+  }
+}

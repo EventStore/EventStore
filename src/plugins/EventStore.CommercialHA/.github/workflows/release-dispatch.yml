@@ -1,0 +1,32 @@
+name: Release Dispatch
+
+permissions:
+  contents: write
+
+on:
+   workflow_dispatch:
+      inputs:
+        version:
+          description: 'The version to release (e.g. 23.6.0)'
+          required: true
+        project:
+          description: 'The plugin to release (Auth.Ldaps, Auth.OAuth, Auth.LegacyAuthorizationWithStreamAuthorizationDisabled, Auth.UserCertificates, MD5, Security.EncryptionAtRest, Diagnostics.LogsEndpointPlugin, OtlpExporterPlugin)'
+          required: true
+          options:
+            - Auth.Ldaps
+            - Auth.OAuth
+            - Auth.LegacyAuthorizationWithStreamAuthorizationDisabled
+            - Auth.UserCertificates
+            - MD5
+            - Security.EncryptionAtRest
+            - Diagnostics.LogsEndpointPlugin
+            - OtlpExporterPlugin
+env:
+  DOTNET_SDK_VERSION: 8.0.x
+
+jobs:
+  release:
+    uses: ./.github/workflows/release-reusable.yml
+    with:
+      version: ${{ github.event.inputs.version }}
+      project: ${{ github.event.inputs.project }}

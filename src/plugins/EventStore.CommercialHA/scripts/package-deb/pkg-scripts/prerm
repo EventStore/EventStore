@@ -1,0 +1,4 @@
+#!/bin/sh
+
+service eventstore stop
+exit 0

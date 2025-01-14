@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+mv /etc/eventstore/eventstore.conf.bak /etc/eventstore/eventstore.conf || true
+
+ln -s /usr/local/share/eventstore/eventstored /usr/local/bin/eventstored
+
+launchctl load /Library/LaunchDaemons/org.eventstore.eventstore-db.plist || true
+launchctl start org.eventstore.eventstore-db || true

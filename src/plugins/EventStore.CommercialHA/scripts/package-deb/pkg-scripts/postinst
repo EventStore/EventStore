@@ -1,0 +1,9 @@
+#!/bin/sh
+
+chown -R eventstore:eventstore /etc/eventstore
+chown -R eventstore:eventstore /var/lib/eventstore
+chown -R eventstore:eventstore /var/log/eventstore
+
+ln -s /usr/share/eventstore/eventstored /usr/bin/eventstored
+
+ldconfig

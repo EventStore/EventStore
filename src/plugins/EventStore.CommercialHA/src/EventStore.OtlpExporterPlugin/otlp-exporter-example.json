@@ -1,0 +1,9 @@
+﻿{
+  "EventStore": {
+    "OpenTelemetry": {
+      "Otlp": {
+        "Endpoint": "http://localhost:4317"
+      }
+    }
+  }
+}

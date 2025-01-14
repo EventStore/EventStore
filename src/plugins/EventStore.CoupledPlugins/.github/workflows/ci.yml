@@ -1,0 +1,39 @@
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - release/*
+    tags:
+      - v*
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+        configuration: [release]
+    runs-on: ${{ matrix.os }}
+    name: ci/github/build-${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Install net8.0
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0.x
+    - name: Compile
+      shell: bash
+      run: |
+        dotnet build --configuration ${{ matrix.configuration }} CoupledPlugins.sln
+    - name: Run Tests
+      shell: bash
+      run: |
+        find ./src -maxdepth 1 -type d -name "*.Tests"  -print0 \
+          | xargs -I{} -0 -n1 bash -c \
+          'dotnet test --configuration ${{ matrix.configuration }} --blame --logger:GitHubActions --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory=$(pwd)/test-results/$1 $1' - '{}'

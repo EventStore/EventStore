@@ -16,6 +16,11 @@ using EventStore.Core;
 using EventStore.Core.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using System.Threading.Tasks;
+using EventStore.Auth.Ldaps;
+using EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled;
+using EventStore.Auth.OAuth;
+using EventStore.Auth.UserCertificates;
+using EventStore.AutoScavenge;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
@@ -34,6 +39,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using EventStore.Core.LogAbstraction;
+using EventStore.Diagnostics.LogsEndpointPlugin;
+using EventStore.Plugins.Connectors;
+using EventStore.POC.ConnectedSubsystemsPlugin;
+using EventStore.TcpPlugin;
 
 namespace EventStore.ClusterNode;
 
@@ -148,8 +157,10 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			}
 
 			var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> { };
+			var authzPlugins = pluginLoader.Load<IAuthorizationPlugin>().ToList();
+			authzPlugins.Add(new LegacyAuthorizationWithStreamAuthorizationDisabledPlugin());
 
-			foreach (var potentialPlugin in pluginLoader.Load<IAuthorizationPlugin>()) {
+			foreach (var potentialPlugin in authzPlugins) {
 				try {
 					var commandLine = potentialPlugin.CommandLineName.ToLowerInvariant();
 					Log.Information(
@@ -230,7 +241,11 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 				}
 			};
 
-			foreach (var potentialPlugin in pluginLoader.Load<IAuthenticationPlugin>()) {
+			var authPlugins = pluginLoader.Load<IAuthenticationPlugin>().ToList();
+			authPlugins.Add(new LdapsAuthenticationPlugin());
+			authPlugins.Add(new OAuthAuthenticationPlugin());
+
+			foreach (var potentialPlugin in authPlugins) {
 				try {
 					var commandLine = potentialPlugin.CommandLineName.ToLowerInvariant();
 					Log.Information(
@@ -255,9 +270,17 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 		}
 
 		static ClusterVNodeOptions LoadSubsystemsPlugins(PluginLoader pluginLoader, ClusterVNodeOptions options) {
-			var plugins = pluginLoader.Load<ISubsystemsPlugin>().ToArray();
+			var plugins = pluginLoader.Load<ISubsystemsPlugin>().ToList();
+			plugins.Add(new ConnectedSubsystemsPlugin());
+			plugins.Add(new ConnectorsPlugin());
+			plugins.Add(new AutoScavengePlugin());
+			plugins.Add(new TcpApiPlugin());
+			plugins.Add(new UserCertificatesPlugin());
+			plugins.Add(new LogsEndpointPlugin());
+			plugins.Add(new OtlpExporterPlugin.OtlpExporterPlugin());
+
 			foreach (var plugin in plugins) {
-				Log.Information("Loaded SubsystemsPlugin plugin: {plugin} {version}.",
+				Log.Information("Loaded SubsystemsPlugin plugin: {Plugin} {Version}",
 					plugin.CommandLineName,
 					plugin.Version);
 				var subsystems = plugin.GetSubsystems();

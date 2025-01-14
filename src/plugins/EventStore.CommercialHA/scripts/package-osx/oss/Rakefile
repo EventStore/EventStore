@@ -1,0 +1,42 @@
+NAME = ENV["PACKAGE_NAME"]
+VERSION = ENV["VERSION"]
+BUILD_DIR = './build'
+ABSOLUTE_BUILD_DIR = File.expand_path(BUILD_DIR)
+TAR_DIR = "EventStore-OSS-MacOS-macOS-v#{VERSION}"
+PACKAGE_ID = "org.eventstore.eventstore-oss"
+
+task :clean do
+  sh %{ git clean -xdf }
+end
+
+task :build do
+  sh %{ mkdir -p #{BUILD_DIR} }
+  sh %{ mkdir -p #{BUILD_DIR}/usr/local/bin }
+  sh %{ mkdir -p #{BUILD_DIR}/usr/local/lib }
+  sh %{ mkdir -p #{BUILD_DIR}/usr/local/share/eventstore }
+  sh %{ mkdir -p #{BUILD_DIR}/var/log/eventstore }
+  sh %{ mkdir -p #{BUILD_DIR}/etc/eventstore }
+  sh %{ mkdir -p #{BUILD_DIR}/Library/LaunchDaemons/}
+
+  sh %{ cp ../../../packages/macos/EventStore-OSS-MacOS-macOS-v#{VERSION}.tar.gz . }
+  sh %{ tar -xf EventStore-OSS-MacOS-macOS-v#{VERSION}.tar.gz }
+
+  sh %{ cp -a #{TAR_DIR}/. #{BUILD_DIR}/usr/local/share/eventstore/ }
+  # sh %{ mv #{TAR_DIR}/libjs1.dylib #{BUILD_DIR}/usr/local/lib/. }
+
+  sh %{ mv #{BUILD_DIR}/usr/local/share/eventstore/logconfig.json #{BUILD_DIR}/etc/eventstore/logconfig.json }
+  sh %{ cp ./eventstore.conf #{BUILD_DIR}/etc/eventstore/. }
+
+  sh %{ cp ../plist/launchd.plist #{BUILD_DIR}/Library/LaunchDaemons/org.eventstore.eventstore-db.plist }
+  sh %{ rm -rf #{TAR_DIR} }
+end
+
+task :pkg do
+  sh %{ mkdir pkgoutput }
+  sh %{ pkgbuild --identifier #{PACKAGE_ID} --version #{VERSION} --ownership recommended --root #{BUILD_DIR} --scripts ../pkg-scripts pkgoutput/eventstore.pkg }
+  sh %{ productbuild --synthesize --product ../plist/requirements.plist --package pkgoutput/eventstore.pkg pkgoutput/distribution.plist }
+  sh %{ sed -i '' 's/\\(<\\/installer-gui-script\>\\\)/    <welcome file="welcome.html"\\/\>\\1/' pkgoutput/distribution.plist }
+  sh %{ productbuild --distribution pkgoutput/distribution.plist --package-path pkgoutput/ --resources ../resources/ eventstore-final.pkg }
+end
+
+task :default => [ :clean, :build, :pkg ]

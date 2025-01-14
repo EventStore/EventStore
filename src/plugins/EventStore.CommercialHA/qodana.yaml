@@ -1,0 +1,52 @@
+version: "1.0"
+
+linter: jetbrains/qodana-dotnet:2024.1
+
+dotnet:
+  solution: src/EventStore.CommercialHA.sln
+
+# Dependencies to exclude from the License Audit
+dependencyIgnores:
+  - name: "EventStore.Plugins" # Our own software
+
+dependencyOverrides:
+  # not automatically detectable in this older package
+  - name: "OpenTelemetry"
+    version: "1.4.0-rc.1"
+    licenses:
+      - key: "Apache-2.0"
+        url: "https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/LICENSE.TXT"
+
+  # not automatically detectable in this older package
+  - name: "OpenTelemetry.Api"
+    version: "1.4.0-rc.1"
+    licenses:
+      - key: "Apache-2.0"
+        url: "https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/LICENSE.TXT"
+
+  # not automatically detectable in this older package
+  - name: "OpenTelemetry.Exporter.OpenTelemetryProtocol"
+    version: "1.4.0-rc.1"
+    licenses:
+      - key: "Apache-2.0"
+        url: "https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/LICENSE.TXT"
+
+  # not automatically detectable in this older package
+  - name: "OpenTelemetry.Extensions.DependencyInjection"
+    version: "1.4.0-rc.1"
+    licenses:
+      - key: "Apache-2.0"
+        url: "https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/LICENSE.TXT"
+
+  # not automatically detectable in this older package
+  - name: "OpenTelemetry.Extensions.Hosting"
+    version: "1.4.0-rc.1"
+    licenses:
+      - key: "Apache-2.0"
+        url: "https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/LICENSE.TXT"
+
+  # not automatically detectable, but the MIT license is in the nuget package
+  - name: "NETStandard.Library"
+    version: "2.0.3"
+    licenses:
+      - key: "MIT"

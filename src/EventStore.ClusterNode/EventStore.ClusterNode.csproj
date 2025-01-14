@@ -15,6 +15,15 @@
 		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
 		<ProjectReference Include="..\EventStore.PluginHosting\EventStore.PluginHosting.csproj" />
 		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
+		<ProjectReference Include="..\plugins\EventStore.CommercialHA\src\EventStore.Auth.Ldaps\EventStore.Auth.Ldaps.csproj" />
+		<ProjectReference Include="..\plugins\EventStore.CommercialHA\src\EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled\EventStore.Auth.LegacyAuthorizationWithStreamAuthorizationDisabled.csproj" />
+		<ProjectReference Include="..\plugins\EventStore.CommercialHA\src\EventStore.Auth.OAuth\EventStore.Auth.OAuth.csproj" />
+		<ProjectReference Include="..\plugins\EventStore.CommercialHA\src\EventStore.Auth.UserCertificates\EventStore.Auth.UserCertificates.csproj" />
+		<ProjectReference Include="..\plugins\EventStore.CommercialHA\src\EventStore.Diagnostics.LogsEndpointPlugin\EventStore.Diagnostics.LogsEndpointPlugin.csproj" />
+		<ProjectReference Include="..\plugins\EventStore.CommercialHA\src\EventStore.OtlpExporterPlugin\EventStore.OtlpExporterPlugin.csproj" />
+		<ProjectReference Include="..\plugins\EventStore.CoupledPlugins\src\EventStore.AutoScavenge\EventStore.AutoScavenge.csproj" />
+		<ProjectReference Include="..\plugins\EventStore.CoupledPlugins\src\EventStore.TcpPlugin\EventStore.TcpPlugin.csproj" />
+		<ProjectReference Include="..\plugins\EventStore.Plugins.Connectors\src\EventStore.Plugins.Connectors\EventStore.Plugins.Connectors.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="..\EventStore.Common\Utils\version.properties">

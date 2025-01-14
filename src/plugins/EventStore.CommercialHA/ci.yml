@@ -1,0 +1,64 @@
+resources:
+  - repo: self
+
+jobs:
+  - job: windows_x64_release
+    displayName: "Windows x64 Release"
+    timeoutInMinutes: 30
+    pool:
+      vmImage: "vs2017-win2016"
+    steps:
+      - task: UseDotNet@1
+        displayName: "Install .NET Core 3.x SDK"
+        inputs:
+          packageType: "sdk"
+          version: "3.1.100"
+      - task: PowerShell@2
+        displayName: Build and Package
+        inputs:
+          targetType: "filePath"
+          workingDirectory: $(Build.SourcesDirectory)
+          filePath: './build.ps1'
+          arguments: "-Version $env:SemanticVersion -Configuration Release -Runtime win10-x64"
+          errorActionPreference: "stop"
+  - job: linux_x64_release
+    strategy:
+      matrix:
+        ubuntu16:
+          name: Ubuntu-16.04
+          runtime: 'ubuntu.16.04-x64'
+          os: ubuntu
+        ubuntu18:
+          name: Ubuntu-18.04
+          runtime: 'ubuntu.18.04-x64'
+          os: ubuntu
+        amazonlinux2:
+          name: AmazonLinux-2
+          runtime: 'centos.7-x64'
+          os: el7
+        oraclelinux7:
+          name: OracleLinux-7
+          runtime: 'ol.7.2-x64'
+          os: el7
+        centos7:
+          name: CentOS-7
+          runtime: 'centos.7-x64'
+          os: el7
+    displayName: "Linux x64 Releases"
+    timeoutInMinutes: 30
+    pool:
+      vmImage: "ubuntu-16.04"
+    steps:
+      - task: UseDotNet@1
+        displayName: "Install .NET Core 3.x SDK"
+        inputs:
+          packageType: "sdk"
+          version: "3.1.100"
+      - script: |
+          sudo apt-get update \
+          && sudo apt-get install -y rake ruby ruby-dev build-essential \
+          && sudo gem install --no-document fpm
+      - bash: ./build.sh $(AssemblyVersion) Release $(runtime)
+        workingDirectory: $(Build.SourcesDirectory)
+        displayName: Build and Package
+        failOnStderr: false

@@ -1,0 +1,23 @@
+﻿<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+  <metadata>
+    <id>eventstore-oss</id>
+    <version>0.0.0</version>
+    <title>EventStore</title>
+    <authors>EventStore</authors>
+    <owners>EventStore</owners>
+    <licenseUrl>https://github.com/EventStore/EventStore/blob/master/LICENSE.md</licenseUrl>
+    <projectUrl>https://eventstore.org/</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>The open-source, functional database with Complex Event Processing in JavaScript.</description>
+    <summary>Event Store database for windows</summary>
+    <releaseNotes>#### Program
+* [Source code](https://github.com/EventStore/EventStore)
+
+#### Package
+* The chocolatey package downloads Event Store and unzips it to the chocolatey install location. 
+Type `EventStore.ClusterNode.exe` to run the Event Store.</releaseNotes>
+    <copyright>© 2018 Event Store LLP</copyright>
+    <tags>eventstore database eventsourcing</tags>
+  </metadata>
+</package>

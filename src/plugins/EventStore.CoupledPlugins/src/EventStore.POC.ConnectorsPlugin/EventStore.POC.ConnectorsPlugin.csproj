@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<Nullable>enable</Nullable>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+	</PropertyGroup>
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.POC.IO.Core\EventStore.POC.IO.Core.csproj" />
+		<ProjectReference Include="..\EventStore.POC.ConnectorsEngine\EventStore.POC.ConnectorsEngine.csproj" />
+	</ItemGroup>
+	<!-- Temporary mechanism for publishing the plugins to the host and the node -->
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+			<ItemGroup>
+				<MySourceFiles Include="$(OutDir)\*.POC.ConnectorsPlugin.*" />
+				<MySourceFiles Include="$(OutDir)\*.POC.ConnectorsEngine.*" />
+				<MySourceFiles Include="$(OutDir)\Json*" />
+				<MySourceFiles Include="$(OutDir)\Polly*" />
+			</ItemGroup>
+		<Copy SourceFiles="@(MySourceFiles)" DestinationFolder="..\..\EventStore\src\EventStore.ClusterNode\$(OutDir)\plugins\$(ProjectName)" />
+		<Copy SourceFiles="@(MySourceFiles)" DestinationFolder="..\EventStore.POC.ConnectedSubsystemHost\$(OutDir)\plugins\$(ProjectName)" />
+	</Target>
+	<Target Name="PublishPlugin" AfterTargets="Publish">
+		<ItemGroup>
+			<PluginOutputFiles Include="$(PublishDir)\LICENSE.md" />
+			<PluginOutputFiles Include="$(PublishDir)\NOTICE.html" />
+			<PluginOutputFiles Include="$(PublishDir)\EventStore.POC.ConnectorsPlugin.deps.json" />
+			<PluginOutputFiles Include="$(PublishDir)\EventStore.POC.ConnectorsPlugin.dll" />
+			<PluginOutputFiles Include="$(PublishDir)\EventStore.POC.ConnectorsEngine.dll" />
+			<PluginOutputFiles Include="$(PublishDir)\Json*.dll" />
+			<PluginOutputFiles Include="$(PublishDir)\Polly*.dll" />
+		</ItemGroup>
+		<Copy SourceFiles="@(PluginOutputFiles)" DestinationFolder="$(PublishDir)/package" />
+	</Target>
+</Project>

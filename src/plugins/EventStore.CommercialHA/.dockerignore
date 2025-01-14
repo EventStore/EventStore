@@ -1,0 +1,13 @@
+Dockerfile
+.dockerignore
+**/.git/
+testresults/
+**/bin/
+**/obj/
+**/global.json
+**/Dockerfile*
+**/.dockerignore*
+**/*.user
+**/.idea/
+**/.vs/
+**/.vscode/

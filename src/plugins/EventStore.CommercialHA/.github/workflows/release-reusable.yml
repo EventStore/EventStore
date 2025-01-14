@@ -1,0 +1,48 @@
+name: Release (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+        description: 'The version without prefix. (e.g. 23.6.0)'
+      project:
+        required: true
+        type: string
+        description: 'The plugin project to release without the EventStore prefix. (e.g. Auth.Ldaps)'
+
+env:
+  DOTNET_SDK_VERSION: 8.0.x
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: refs/tags/commercial-v${{ inputs.version }}
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
+      - name: Build
+        run: |
+          dotnet build /p:Version=${{ inputs.version }} -o artefacts -c Release src/EventStore.${{ inputs.project }}/EventStore.${{ inputs.project }}.csproj
+
+      - name: Package
+        id: package
+        run: |
+          zip -r -j EventStore.${{ inputs.project }}.${{ inputs.version }}.zip artefacts
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: commercial-v${{ inputs.version }}
+          draft: false
+          prerelease: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            ./EventStore.${{ inputs.project }}.${{ inputs.version }}.zip

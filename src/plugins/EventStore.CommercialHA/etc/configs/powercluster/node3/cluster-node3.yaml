@@ -1,0 +1,6 @@
+Db: d:\es-data
+IntIp: 192.168.1.13
+ExtIp: 192.168.1.13
+DiscoverViaDns: false
+GossipSeed: ['192.168.1.13:30777']
+ClusterSize: 3

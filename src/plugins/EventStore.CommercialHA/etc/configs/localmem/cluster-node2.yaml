@@ -1,0 +1,11 @@
+MemDb: true
+IntIp: 127.0.0.1
+ExtIp: 127.0.0.1
+IntTcpPort: 2111
+IntHttpPort: 2112
+ExtTcpPort: 2113
+ExtHttpPort: 2114
+DiscoverViaDns: false
+GossipSeed: ['127.0.0.1:30777']
+RunProjections: System
+ClusterSize: 3
