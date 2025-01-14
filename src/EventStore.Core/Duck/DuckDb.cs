@@ -79,7 +79,7 @@ public static class DuckDb {
 			.Where(x => x.Prepare != null)
 			.OrderBy(x => x.Version)
 			.ToListAsync(cancellationToken: cancellationToken);
-		var streams = GetStreams(recordsQuery.Select(x => x.StreamId));
+		var streams = GetStreams(recordsQuery.Select(x => x.StreamId).Distinct());
 		var records = recordsQuery
 			.Select(x => (Record: x, StreamName: streams[x.StreamId]))
 			.Select(x => ResolvedEvent.ForResolvedLink(
