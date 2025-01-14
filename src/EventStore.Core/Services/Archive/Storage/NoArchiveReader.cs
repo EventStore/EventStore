@@ -33,6 +33,6 @@ public class NoArchiveReader : IArchiveStorageReader {
 		public string ResolveFileName(int logicalChunkNumber) =>
 			$"{Prefix}{logicalChunkNumber}";
 
-		public int ResolveChunkNumber(string fileName) => 0;
+		public int ResolveChunkNumber(ReadOnlySpan<char> fileName) => 0;
 	}
 }
