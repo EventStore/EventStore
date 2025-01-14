@@ -34,6 +34,9 @@ public static class DuckDb {
 
 		Categories = Connection.Query<ReferenceRecord>("select * from category").ToDictionary(x => x.name, x => x.id);
 		EventTypes = Connection.Query<ReferenceRecord>("select * from event_type").ToDictionary(x => x.id, x => x.name);
+		foreach (var categoryId in Categories.Values) {
+			CategorySizes[categoryId] = GetCategoryLastEventNumber(categoryId);
+		}
 	}
 
 	public static void Close() {
@@ -170,10 +173,13 @@ public static class DuckDb {
 		}
 
 		var category = streamName[(dashIndex + 1)..];
+		var categoryId = Categories[category];
+		return CategorySizes[categoryId];
+	}
+
+	public static long GetCategoryLastEventNumber(long categoryId) {
 		while (true) {
 			try {
-				var categoryId = Categories[category];
-				if (categoryId == 0) return 0;
 				return Connection.Query<long>("select max(seq) from idx_all where category=$cat", new { cat = categoryId }).SingleOrDefault();
 			} catch (Exception e) {
 				Log.Warning("Error while reading index: {Exception}", e.Message);
@@ -238,6 +244,8 @@ public static class DuckDb {
 		public long id { get; set; }
 		public string name { get; set; }
 	}
+
+	static Dictionary<long, long> CategorySizes = new();
 }
 
 public record struct DuckIndexEntry(long Position, long EventNumber, long Sequence);
