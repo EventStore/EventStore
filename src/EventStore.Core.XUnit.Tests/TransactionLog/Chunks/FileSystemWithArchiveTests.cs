@@ -5,7 +5,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services.Archive.Storage;
-using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using Xunit;
@@ -38,12 +37,11 @@ public class FileSystemWithArchiveTests {
 		Assert.Equal(1, _local.OpenCount);
 	}
 
-	// todo
-	//[Fact]
-	//public void can_open_remote() {
-	//	var _ = _sut.OpenForReadAsync(_remoteLocator, default, default);
-	//	Assert.Equal(0, _local.OpenCount);
-	//}
+	[Fact]
+	public void can_open_remote() {
+		var _ = _sut.OpenForReadAsync(_remoteLocator, default, default);
+		Assert.Equal(0, _local.OpenCount);
+	}
 
 	[Fact]
 	public void can_read_footer_local() {

@@ -21,6 +21,17 @@ public class ArchiveChunkNameResolverTests {
 	public void returns_correct_file_name(int logicalChunkNumber, string expectedFileName) {
 		var sut = CreateSut();
 		Assert.Equal(expectedFileName, sut.ResolveFileName(logicalChunkNumber));
+		Assert.Equal(logicalChunkNumber, sut.ResolveChunkNumber(expectedFileName));
+	}
+
+	[Theory]
+	[InlineData("chunk-000000.000001", 0)]
+	[InlineData("chunk-000001.000001", 1)]
+	[InlineData("chunk-000001.000005", 1)]
+	[InlineData("chunk-001000.000001", 1000)]
+	public void returns_correct_chunk_number(string fileName, int expectedChunkNumber) {
+		var sut = CreateSut();
+		Assert.Equal(expectedChunkNumber, sut.ResolveChunkNumber(fileName));
 	}
 
 	[Fact]

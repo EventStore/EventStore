@@ -39,7 +39,6 @@ public class ArchiveStorage(
 			var chunkFile = chunkNameResolver.ResolveFileName(logicalChunkNumber);
 			return await blobStorage.ReadAsync(chunkFile, buffer, offset, ct);
 		} catch (FileNotFoundException) {
-			//qq not sure that we want to convert this to ChunkDeletedException really? elsewhere in this file too
 			throw new ChunkDeletedException();
 		}
 	}
