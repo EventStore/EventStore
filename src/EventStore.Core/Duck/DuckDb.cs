@@ -30,6 +30,7 @@ public static class DuckDb {
 		Connection = new("Data Source=./data/file.db");
 		Connection.Open();
 		Connection.Execute("SET threads = 10;");
+		Connection.Execute("SET external_threads = 10;");
 		Connection.Execute("SET memory_limit = '8GB';");
 
 		Categories = Connection.Query<ReferenceRecord>("select * from category").ToDictionary(x => x.name, x => x.id);
