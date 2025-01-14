@@ -27,7 +27,8 @@ namespace EventStore.Core.Services.Archive.ArchiveCatchup;
 public class ArchiveCatchup : IClusterVNodeStartupTask {
 	private readonly string _dbPath;
 	private readonly ICheckpoint _writerCheckpoint;
-	private readonly ICheckpoint _replicationCheckpoint;
+	private readonly ICheckpoint _chaserCheckpoint;
+	private readonly ICheckpoint _epochCheckpoint;
 	private readonly int _chunkSize;
 	private readonly IArchiveStorageReader _archiveReader;
 	private readonly IArchiveChunkNameResolver _chunkNameResolver;
@@ -38,13 +39,15 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 	public ArchiveCatchup(
 		string dbPath,
 		ICheckpoint writerCheckpoint,
-		ICheckpoint replicationCheckpoint,
+		ICheckpoint chaserCheckpoint,
+		ICheckpoint epochCheckpoint,
 		int chunkSize,
 		IArchiveStorageReader archiveStorageReader,
 		IArchiveChunkNameResolver chunkNameResolver) {
 		_dbPath = dbPath;
 		_writerCheckpoint = writerCheckpoint;
-		_replicationCheckpoint = replicationCheckpoint;
+		_chaserCheckpoint = chaserCheckpoint;
+		_epochCheckpoint = epochCheckpoint;
 		_chunkSize = chunkSize;
 		_archiveReader = archiveStorageReader;
 		_chunkNameResolver = chunkNameResolver;
@@ -145,12 +148,16 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 		await using var headerStream = File.OpenRead(chunkPath);
 		var header = await ChunkHeader.FromStream(headerStream, ct);
 
+		_epochCheckpoint.Write(-1);
+		_epochCheckpoint.Flush();
+		Log.Debug("Reset {checkpoint} checkpoint to: 0x{position:X}", _epochCheckpoint.Name, -1);
+
+		_chaserCheckpoint.Write(header.ChunkEndPosition);
+		_chaserCheckpoint.Flush();
+		Log.Debug("Moved {checkpoint} checkpoint forward to: 0x{position:X}", _chaserCheckpoint.Name, header.ChunkEndPosition);
+
 		_writerCheckpoint.Write(header.ChunkEndPosition);
 		_writerCheckpoint.Flush();
 		Log.Debug("Moved {checkpoint} checkpoint forward to: 0x{position:X}", _writerCheckpoint.Name, header.ChunkEndPosition);
-
-		_replicationCheckpoint.Write(header.ChunkEndPosition);
-		_replicationCheckpoint.Flush();
-		Log.Debug("Moved {checkpoint} checkpoint forward to: 0x{position:X}", _replicationCheckpoint.Name, header.ChunkEndPosition);
 	}
 }
