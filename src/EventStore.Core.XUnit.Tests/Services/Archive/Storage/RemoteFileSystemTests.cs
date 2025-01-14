@@ -4,8 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using System.Text.Unicode;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.Buffers;
+using EventStore.Core.LogV2;
 using EventStore.Core.Services.Archive;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
@@ -18,61 +22,69 @@ namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
 [Collection("ArchiveStorageTests")]
 public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSystemTests> {
+	// this is an integration test to check that the chunks are able to read through to remote storage
 	[Theory]
 	[StorageData.S3]
 	[StorageData.FileSystem]
-	public async Task can_read_chunk_from_object_storage(StorageType storageType) {
+	public async Task chunk_can_read_record_from_object_storage(StorageType storageType) {
 		const int recordsCount = 10;
 		const int logicalChunkNumber = 42;
 
-		var sut = CreateSut(storageType);
+		var archive = CreateSut(storageType);
 
 		// setup local chunk first
 		var localChunkName = "my-chunk";
 		var chunkLocalPath = Path.Combine(DbPath, localChunkName);
 		IReadOnlyList<ILogRecord> expectedRecords;
 		using (var localChunk = await TFChunkHelper.CreateNewChunk(chunkLocalPath)) {
-			expectedRecords = await GenerateRecords(recordsCount, localChunk);
+			expectedRecords = await WriteRecords(recordsCount, localChunk);
 
 			await localChunk.Complete(CancellationToken.None);
 		}
 
 		// upload the chunk
-		Assert.True(await sut.StoreChunk(chunkLocalPath, logicalChunkNumber, CancellationToken.None));
+		Assert.True(await archive.StoreChunk(chunkLocalPath, logicalChunkNumber, CancellationToken.None));
 
-		// download the chunk
+		// read the remote chunk
 		var codec = new PrefixingLocatorCodec();
 		var remoteChunkName = codec.EncodeRemote(logicalChunkNumber);
-		var fs = new FileSystemWithArchive(chunkSize:4096, codec, new ChunkLocalFileSystem(DbPath), sut);
+		var fs = new FileSystemWithArchive(chunkSize: 4096, codec, new ChunkLocalFileSystem(DbPath), archive);
 		var actualRecords = new List<ILogRecord>(recordsCount);
-		using (var remoteChunk = await TFChunk.FromCompletedFile(fs, remoteChunkName, verifyHash: false,
-			       unbufferedRead: false, tracker: new TFChunkTracker.NoOp(),
-			       getTransformFactory: static _ => new IdentityChunkTransformFactory())) {
+		using var remoteChunk = await TFChunk.FromCompletedFile(
+			fs, remoteChunkName, verifyHash: false,
+			unbufferedRead: false, tracker: new TFChunkTracker.NoOp(),
+			getTransformFactory: static _ => new IdentityChunkTransformFactory());
 
-			var logPosition = 0L;
-			for (var i = 0; i < recordsCount; i++) {
-				var result =
-					await remoteChunk.TryReadClosestForward(remoteChunk.ChunkHeader.GetGlobalLogPosition(logPosition), CancellationToken.None);
-
-				Assert.True(result.Success);
-				actualRecords.Add(result.LogRecord);
-				logPosition = result.NextPosition;
-			}
+		var logPosition = 0L;
+		for (var i = 0; i < recordsCount; i++) {
+			var result = await remoteChunk.TryReadClosestForward(logPosition, CancellationToken.None);
+			Assert.True(result.Success);
+			actualRecords.Add(result.LogRecord);
+			logPosition = result.NextPosition;
 		}
 
 		Assert.Equal<ILogRecord>(expectedRecords, actualRecords);
 	}
 
-	private static async ValueTask<IReadOnlyList<ILogRecord>> GenerateRecords(int count, TFChunk chunk, CancellationToken token = default) {
+	private static async ValueTask<IReadOnlyList<ILogRecord>> WriteRecords(int count, TFChunk chunk, CancellationToken token = default) {
 		var records = new ILogRecord[count];
 
+		var recordFactory = new LogV2RecordFactory();
 		var logPosition = 0L;
 		for (var i = 0; i < count; i++) {
-			var record = records[i] = LogRecord.Commit(
-				chunk.ChunkHeader.GetGlobalLogPosition(logPosition),
-				Guid.NewGuid(),
-				i,
-				i);
+			var record = records[i] = recordFactory.CreatePrepare(
+				logPosition: logPosition,
+				correlationId: Guid.NewGuid(),
+				eventId: Guid.NewGuid(),
+				transactionPosition: logPosition,
+				transactionOffset: 0,
+				eventStreamId: "my-stream",
+				expectedVersion: i,
+				timeStamp: DateTime.Now,
+				flags: PrepareFlags.SingleWrite,
+				eventType: "my-event-type",
+				data: Encoding.UTF8.GetBytes($"my-data-{i}").AsMemory(),
+				metadata: Encoding.UTF8.GetBytes($"my-metadata-{i}").AsMemory());
 			var result = await chunk.TryAppend(record, token);
 			Assert.True(result.Success);
 			logPosition = result.NewPosition;
