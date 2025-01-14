@@ -4,7 +4,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 
 namespace EventStore.Core.Services.Archive.Storage;
@@ -15,8 +14,6 @@ public class NoArchiveReader : IArchiveStorageReader {
 
 	public static NoArchiveReader Instance { get; } = new();
 
-	public IArchiveChunkNameResolver ChunkNameResolver { get; } = new NoNamer();
-
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) =>
 		ValueTask.FromResult<long>(0);
 
@@ -25,14 +22,4 @@ public class NoArchiveReader : IArchiveStorageReader {
 
 	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) =>
 		ValueTask.FromException<ArchivedChunkMetadata>(new ChunkDeletedException());
-
-	// There is no archive so it doesn't matter how we would name the chunks in it.
-	class NoNamer : IArchiveChunkNameResolver {
-		public string Prefix => "chunk-";
-
-		public string ResolveFileName(int logicalChunkNumber) =>
-			$"{Prefix}{logicalChunkNumber}";
-
-		public int ResolveChunkNumber(ReadOnlySpan<char> fileName) => 0;
-	}
 }

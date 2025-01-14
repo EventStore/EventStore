@@ -311,8 +311,6 @@ internal class FakeArchiveStorage : IArchiveStorage {
 		Chunks = new List<int>(existingChunks);
 	}
 
-	public IArchiveChunkNameResolver ChunkNameResolver => throw new NotImplementedException();
-
 	public async ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) {
 		await Task.Delay(_chunkStorageDelay, ct);
 		Chunks.Add(logicalChunkNumber);

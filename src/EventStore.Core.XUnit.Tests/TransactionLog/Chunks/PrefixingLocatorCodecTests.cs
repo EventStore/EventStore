@@ -11,23 +11,23 @@ public class PrefixingLocatorCodecTests {
 
 	[Fact]
 	public void can_encode_local() {
-		Assert.Equal("chunk-123.456", _sut.EncodeLocalName("chunk-123.456"));
+		Assert.Equal("chunk-123.456", _sut.EncodeLocal("chunk-123.456"));
 	}
 
 	[Fact]
 	public void can_encode_remote() {
-		Assert.Equal("archive:chunk-123.456", _sut.EncodeRemoteName("chunk-123.456"));
+		Assert.Equal("archived-chunk-123", _sut.EncodeRemote(123));
 	}
 
 	[Fact]
 	public void can_decode_local() {
-		Assert.False(_sut.Decode("chunk-123.456", out var decoded));
-		Assert.Equal("chunk-123.456", decoded);
+		Assert.False(_sut.Decode("chunk-123.456", out _, out var fileName));
+		Assert.Equal("chunk-123.456", fileName);
 	}
 
 	[Fact]
 	public void can_decode_remote() {
-		Assert.True(_sut.Decode("archive:chunk-123.456", out var decoded));
-		Assert.Equal("chunk-123.456", decoded);
+		Assert.True(_sut.Decode("archived-chunk-123", out var chunkNumber, out _));
+		Assert.Equal(123, chunkNumber);
 	}
 }

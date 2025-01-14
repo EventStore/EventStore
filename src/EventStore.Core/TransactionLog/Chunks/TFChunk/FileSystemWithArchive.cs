@@ -33,8 +33,8 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 
 	public ValueTask<IChunkHandle> OpenForReadAsync(string locator, IChunkFileSystem.ReadOptimizationHint hint,
 		CancellationToken token) {
-		return _locatorCodec.Decode(locator, out var fileName)
-			? ArchivedChunkHandle.OpenForReadAsync(_archive, fileName, token)
+		return _locatorCodec.Decode(locator, out var chunkNumber, out var fileName)
+			? ArchivedChunkHandle.OpenForReadAsync(_archive, chunkNumber, token)
 			: _localFileSystem.OpenForReadAsync(fileName, hint, token);
 	}
 
@@ -59,8 +59,8 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 					// replace missing local versions with latest from archive if they
 					// are present there
 					case MissingVersion(_, var chunkNumber) when (chunkNumber < firstChunkNotInArchive): {
-						var archiveObjectName = fileSystem._archive.ChunkNameResolver.ResolveFileName(chunkNumber);
-						yield return CreateLatestVersionInArchive(archiveObjectName, chunkNumber);
+						var fileName = fileSystem._locatorCodec.EncodeRemote(chunkNumber);
+						yield return new LatestVersion(fileName, chunkNumber, chunkNumber);
 						break;
 					}
 
@@ -69,11 +69,6 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 						break;
 				}
 			}
-		}
-
-		LatestVersion CreateLatestVersionInArchive(string archiveObjectName, int chunkNumber) {
-			var fileName = fileSystem._locatorCodec.EncodeRemoteName(archiveObjectName);
-			return new LatestVersion(fileName, chunkNumber, chunkNumber);
 		}
 	}
 }

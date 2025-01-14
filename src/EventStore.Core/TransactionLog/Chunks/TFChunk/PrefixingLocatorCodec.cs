@@ -5,23 +5,25 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 // Prefixes remote chunks. Leaves local chunks as-is
 public class PrefixingLocatorCodec : ILocatorCodec {
-	const string RemotePrefix = "archive:";
+	const string RemotePrefix = "archived-chunk-";
 
 	private readonly int _remotePrefixLength = RemotePrefix.Length;
 
-	public string EncodeLocalName(string fileName) => fileName;
+	public string EncodeLocal(string fileName) => fileName;
 
-	public string EncodeRemoteName(string objectName) => $"{RemotePrefix}{objectName}";
+	public string EncodeRemote(int chunkNumber) => $"{RemotePrefix}{chunkNumber}";
 
-	public bool Decode(string locator, out string decoded) {
+	public bool Decode(string locator, out int chunkNumber, out string fileName) {
 		if (locator.StartsWith(RemotePrefix)) {
 			// remote
-			decoded = locator[_remotePrefixLength..];
+			chunkNumber = int.Parse(locator[_remotePrefixLength..]);
+			fileName = default;
 			return true;
 		}
 
 		// local
-		decoded = locator;
+		fileName = locator;
+		chunkNumber = default;
 		return false;
 	}
 }

@@ -21,8 +21,6 @@ public class ArchiveStorage(
 
 	private static readonly ILogger Log = Serilog.Log.ForContext<ArchiveStorage>();
 
-	public IArchiveChunkNameResolver ChunkNameResolver => chunkNameResolver;
-
 	public async ValueTask<long> GetCheckpoint(CancellationToken ct) {
 		try {
 			using var buffer = Memory.AllocateExactly<byte>(sizeof(long));

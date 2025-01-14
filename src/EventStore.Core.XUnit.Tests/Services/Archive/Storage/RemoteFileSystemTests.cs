@@ -28,8 +28,8 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 		var sut = CreateSut(storageType);
 
 		// setup local chunk first
-		var chunkName = sut.ChunkNameResolver.ResolveFileName(logicalChunkNumber);
-		var chunkLocalPath = Path.Combine(DbPath, chunkName);
+		var localChunkName = "my-chunk";
+		var chunkLocalPath = Path.Combine(DbPath, localChunkName);
 		IReadOnlyList<ILogRecord> expectedRecords;
 		using (var localChunk = await TFChunkHelper.CreateNewChunk(chunkLocalPath)) {
 			expectedRecords = await GenerateRecords(recordsCount, localChunk);
@@ -42,10 +42,10 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 
 		// download the chunk
 		var codec = new PrefixingLocatorCodec();
-		chunkName = codec.EncodeRemoteName(chunkName);
+		var remoteChunkName = codec.EncodeRemote(logicalChunkNumber);
 		var fs = new FileSystemWithArchive(chunkSize:4096, codec, new ChunkLocalFileSystem(DbPath), sut);
 		var actualRecords = new List<ILogRecord>(recordsCount);
-		using (var remoteChunk = await TFChunk.FromCompletedFile(fs, chunkName, verifyHash: false,
+		using (var remoteChunk = await TFChunk.FromCompletedFile(fs, remoteChunkName, verifyHash: false,
 			       unbufferedRead: false, tracker: new TFChunkTracker.NoOp(),
 			       getTransformFactory: static _ => new IdentityChunkTransformFactory())) {
 

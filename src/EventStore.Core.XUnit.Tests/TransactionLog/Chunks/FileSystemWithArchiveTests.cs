@@ -25,9 +25,8 @@ public class FileSystemWithArchiveTests {
 			locatorCodec: codec,
 			localFileSystem: _local,
 			archive: NoArchiveReader.Instance);
-		var chunk = "chunk-000.000";
-		_localLocator = codec.EncodeLocalName(chunk);
-		_remoteLocator = codec.EncodeRemoteName(chunk);
+		_localLocator = codec.EncodeLocal("chunk-123.000");
+		_remoteLocator = codec.EncodeRemote(123);
 
 	}
 

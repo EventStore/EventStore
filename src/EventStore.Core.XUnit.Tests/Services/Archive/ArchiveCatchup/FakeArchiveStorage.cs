@@ -39,8 +39,6 @@ internal class FakeArchiveStorage : IArchiveStorage {
 		_chunkNameResolver = chunkNameResolver;
 	}
 
-	public IArchiveChunkNameResolver ChunkNameResolver => _chunkNameResolver;
-
 	public ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) => throw new NotImplementedException();
 	public ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) => throw new NotImplementedException();
 

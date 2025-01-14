@@ -25,8 +25,7 @@ internal sealed class ArchivedChunkHandle : IChunkHandle {
 		_length = length;
 	}
 
-	public static async ValueTask<IChunkHandle> OpenForReadAsync(IArchiveStorageReader reader, string chunkName, CancellationToken token) {
-		var logicalChunkNumber = reader.ChunkNameResolver.ResolveChunkNumber(chunkName);
+	public static async ValueTask<IChunkHandle> OpenForReadAsync(IArchiveStorageReader reader, int logicalChunkNumber, CancellationToken token) {
 		var metadata = await reader.GetMetadataAsync(logicalChunkNumber, token);
 		return new ArchivedChunkHandle(reader, logicalChunkNumber, metadata.Size);
 	}

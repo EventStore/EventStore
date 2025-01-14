@@ -6,9 +6,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 // This is intended to be used within IChunkFileSystem only, to avoid leaking details of which
 // chunks are remote and which are local.
 public interface ILocatorCodec {
-	string EncodeLocalName(string fileName);
-	string EncodeRemoteName(string objectName);
+	string EncodeLocal(string fileName);
+	string EncodeRemote(int chunkNumber);
 
-	// returns false for local and true for remote
-	bool Decode(string locator, out string decoded);
+	// returns false => fileName is set (local)
+	// returns true => chunkNumber is set (remote)
+	bool Decode(string locator, out int chunkNumber, out string fileName);
 }
