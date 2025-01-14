@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Unicode;
 using System.Threading;
@@ -64,6 +65,54 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 		}
 
 		Assert.Equal<ILogRecord>(expectedRecords, actualRecords);
+	}
+
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
+	public async Task chunk_can_bulk_read_record_from_object_storage(StorageType storageType) {
+		const int recordsCount = 10;
+		const int logicalChunkNumber = 43;
+
+		var archive = CreateSut(storageType);
+
+		// setup local chunk first
+		var localChunkName = "my-chunk";
+		var chunkLocalPath = Path.Combine(DbPath, localChunkName);
+		long payloadSize;
+		using (var localChunk = await TFChunkHelper.CreateNewChunk(chunkLocalPath)) {
+			var records = await WriteRecords(recordsCount, localChunk);
+			payloadSize = records.Aggregate(0L,
+				static (size, record) => size + record.GetSizeWithLengthPrefixAndSuffix());
+
+			await localChunk.Complete(CancellationToken.None);
+		}
+
+		// upload the chunk
+		Assert.True(await archive.StoreChunk(chunkLocalPath, logicalChunkNumber, CancellationToken.None));
+
+		// read the remote chunk
+		var codec = new PrefixingLocatorCodec();
+		var remoteChunkName = codec.EncodeRemote(logicalChunkNumber);
+		var fs = new FileSystemWithArchive(chunkSize: 4096, codec, new ChunkLocalFileSystem(DbPath), archive);
+		using var remoteChunk = await TFChunk.FromCompletedFile(
+			fs, remoteChunkName, verifyHash: false,
+			unbufferedRead: false, tracker: new TFChunkTracker.NoOp(),
+			getTransformFactory: static _ => new IdentityChunkTransformFactory());
+
+		// make sure that chunks are equivalent
+		using (var localChunk = File.OpenHandle(chunkLocalPath, options: FileOptions.Asynchronous)) {
+			using var remoteReader = await remoteChunk.AcquireDataReader(CancellationToken.None);
+			remoteReader.SetPosition(0L);
+
+			var expected = new byte[payloadSize];
+			await RandomAccess.ReadAsync(localChunk, expected, fileOffset: ChunkHeader.Size);
+
+			var actual = new byte[payloadSize];
+			await remoteReader.ReadNextBytes(actual, CancellationToken.None);
+
+			Assert.Equal(actual, expected);
+		}
 	}
 
 	private static async ValueTask<IReadOnlyList<ILogRecord>> WriteRecords(int count, TFChunk chunk, CancellationToken token = default) {
