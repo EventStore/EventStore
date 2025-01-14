@@ -67,14 +67,13 @@ public static class Convert {
 		return feed;
 	}
 
-	public static FeedElement ToStreamEventBackwardFeed(ClientMessage.ReadStreamEventsBackwardCompleted msg,
-		Uri requestedUrl, EmbedLevel embedContent, bool headOfStream) {
-		Ensure.NotNull(msg, "msg");
+	public static FeedElement ToStreamEventBackwardFeed(ClientMessage.ReadStreamEventsBackwardCompleted msg, Uri requestedUrl, EmbedLevel embedContent, bool headOfStream) {
+		Ensure.NotNull(msg);
 
 		string escapedStreamId = Uri.EscapeDataString(msg.EventStreamId);
 		var self = HostName.Combine(requestedUrl, "/streams/{0}", escapedStreamId);
 		var feed = new FeedElement();
-		feed.SetTitle(string.Format("Event stream '{0}'", msg.EventStreamId));
+		feed.SetTitle($"Event stream '{msg.EventStreamId}'");
 		feed.StreamId = msg.EventStreamId;
 		feed.SetId(self);
 		feed.SetUpdated(msg.Events.Count > 0 && msg.Events[0].Event != null
@@ -91,22 +90,15 @@ public static class Convert {
 		var nextEventNumber = msg.FromEventNumber - msg.MaxCount;
 
 		feed.AddLink("self", self);
-		feed.AddLink("first",
-			HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", escapedStreamId, msg.MaxCount));
+		feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", escapedStreamId, msg.MaxCount));
 		if (!msg.IsEndOfStream) {
 			if (nextEventNumber < 0)
-				throw new Exception(string.Format("nextEventNumber is negative: {0} while IsEndOfStream",
-					nextEventNumber));
-			feed.AddLink("last",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, 0, msg.MaxCount));
-			feed.AddLink("next",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", escapedStreamId, nextEventNumber,
-					msg.MaxCount));
+				throw new Exception($"nextEventNumber is negative: {nextEventNumber} while IsEndOfStream");
+			feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, 0, msg.MaxCount));
+			feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", escapedStreamId, nextEventNumber, msg.MaxCount));
 		}
 
-		feed.AddLink("previous",
-			HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber,
-				msg.MaxCount));
+		feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber, msg.MaxCount));
 		feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", escapedStreamId));
 		for (int i = 0; i < msg.Events.Count; ++i) {
 			feed.AddEntry(ToEntry(msg.Events[i], requestedUrl, embedContent));

@@ -392,6 +392,7 @@ public class StorageReaderWorker<TStreamId>(
 				var resolved = await DuckDb.GetCategoryEvents(_readIndex.IndexReader, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
 				if (resolved.Count == 0)
 					return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);
+				Log.Information("First event number: {First}", resolved[0].OriginalEventNumber);
 				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
 					ReadStreamResult.Success, resolved, StreamMetadata.Empty, false, string.Empty,
 					resolved[0].OriginalEventNumber - 1, lastEventNumber, resolved.Count < msg.MaxCount, lastIndexedPosition);
