@@ -12,7 +12,7 @@ namespace EventStore.Core.Services.Archive.Storage;
 public interface IBlobStorage {
 	ValueTask<int> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken token);
 	ValueTask<BlobMetadata> GetMetadataAsync(string name, CancellationToken token);
-	ValueTask Store(byte[] sourceData, string name, CancellationToken ct);
+	ValueTask Store(ReadOnlyMemory<byte> sourceData, string name, CancellationToken ct);
 	ValueTask Store(string sourceFilePath, string name, CancellationToken token);
 }
 

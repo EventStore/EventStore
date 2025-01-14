@@ -55,9 +55,9 @@ public class ArchiveStorage(
 
 	public async ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) {
 		try {
-			var buffer = new byte[sizeof(long)]; // todo: alas.
-			BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(), checkpoint);
-			await blobStorage.Store(buffer, archiveCheckpointFile, ct);
+			var buffer = Memory.AllocateExactly<byte>(sizeof(long));
+			BinaryPrimitives.WriteInt64LittleEndian(buffer.Span, checkpoint);
+			await blobStorage.Store(buffer.Memory, archiveCheckpointFile, ct);
 			return true;
 		} catch (Exception ex) when (ex is not OperationCanceledException){
 			Log.Error(ex, "Error while setting checkpoint to: {checkpoint} (0x{checkpoint:X})",

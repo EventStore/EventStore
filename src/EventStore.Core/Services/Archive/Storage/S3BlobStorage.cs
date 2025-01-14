@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DotNext.Buffers;
+using DotNext.IO;
 using EventStore.Common.Exceptions;
 using FluentStorage;
 using FluentStorage.AWS.Blobs;
@@ -58,8 +59,9 @@ public class S3BlobStorage : IBlobStorage {
 		}
 	}
 
-	public async ValueTask Store(byte[] sourceData, string name, CancellationToken ct) {
-		await _awsBlobStorage.WriteAsync(name, sourceData, append: false, ct);
+	public async ValueTask Store(ReadOnlyMemory<byte> sourceData, string name, CancellationToken ct) {
+		await using var stream = sourceData.AsStream();
+		await _awsBlobStorage.WriteAsync(name, stream, append: false, ct);
 	}
 
 	public async ValueTask Store(string input, string name, CancellationToken ct) {

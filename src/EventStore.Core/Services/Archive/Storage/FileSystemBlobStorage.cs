@@ -45,23 +45,18 @@ public class FileSystemBlobStorage : IBlobStorage {
 		return task;
 	}
 
-	public ValueTask Store(byte[] sourceData, string name, CancellationToken ct) {
-		try {
-			if (sourceData.Length > sizeof(long)) {
-				// this is so far only used for checkpoints. data must be small so that flush is atomic
-				throw new NotSupportedException("This overload can only write small amounts of data");
-			}
-
-			var destinationPath = Path.Combine(_archivePath, name);
-			using var fs = File.OpenWrite(destinationPath);
-
-			fs.Write(sourceData);
-			fs.Flush(flushToDisk: true);
-
-			return ValueTask.CompletedTask;
-		} catch (Exception ex) {
-			return ValueTask.FromException(ex);
+	public async ValueTask Store(ReadOnlyMemory<byte> sourceData, string name, CancellationToken ct) {
+		if (sourceData.Length > sizeof(long)) {
+			// this is so far only used for checkpoints. data must be small so that flush is atomic
+			throw new NotSupportedException("This overload can only write small amounts of data");
 		}
+
+		var destinationPath = Path.Combine(_archivePath, name);
+		using var handle = File.OpenHandle(destinationPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None,
+			FileOptions.Asynchronous);
+
+		await RandomAccess.WriteAsync(handle, sourceData, fileOffset: 0L, ct);
+		RandomAccess.FlushToDisk(handle);
 	}
 
 	public async ValueTask Store(string input, string name, CancellationToken ct) {
