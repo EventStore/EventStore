@@ -260,14 +260,6 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 			}
 
 			IAsyncEnumerable<(long Version, IPrepareLogRecord<TStreamId> Prepare)> recordsQuery;
-			// if (DuckDb.UseDuckDb && streamName.StartsWith("$ce")) {
-			// 	var range = DuckDb.GetCategoryRange(streamName, startEventNumber, endEventNumber);
-			// 	recordsQuery = range
-			// 		.ToAsyncEnumerable()
-			// 		.SelectAwaitWithCancellation(async (x, ct) => (x.Version, Prepare: await ReadPrepareInternal(reader, x.Position, ct)))
-			// 		.Where(x => x.Prepare != null)
-			// 		.OrderByDescending(x => x.Version);
-			// } else {
 			var range = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber);
 			recordsQuery = range
 				.ToAsyncEnumerable()
@@ -277,7 +269,6 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 				recordsQuery = recordsQuery.OrderByDescending(x => x.Version)
 					.GroupBy(static x => x.Version).SelectAwaitWithCancellation(AsyncEnumerable.LastAsync);
 			}
-			// }
 
 			var records = await recordsQuery
 				.Reverse()

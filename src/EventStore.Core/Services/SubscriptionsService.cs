@@ -17,6 +17,8 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Plugins.Authorization;
+using static EventStore.Core.Messages.ClientMessage;
+using static EventStore.Core.Messages.StorageMessage;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services;
@@ -40,14 +42,14 @@ public class SubscriptionsService<TStreamId> :
 	IHandle<SystemMessage.SystemStart>,
 	IHandle<SystemMessage.BecomeShuttingDown>,
 	IHandle<TcpMessage.ConnectionClosed>,
-	IAsyncHandle<ClientMessage.SubscribeToStream>,
-	IAsyncHandle<ClientMessage.FilteredSubscribeToStream>,
-	IHandle<ClientMessage.UnsubscribeFromStream>,
+	IAsyncHandle<SubscribeToStream>,
+	IAsyncHandle<FilteredSubscribeToStream>,
+	IHandle<UnsubscribeFromStream>,
 	IHandle<SubscriptionMessage.DropSubscription>,
 	IHandle<SubscriptionMessage.PollStream>,
 	IHandle<SubscriptionMessage.CheckPollTimeout>,
-	IAsyncHandle<StorageMessage.InMemoryEventCommitted>,
-	IAsyncHandle<StorageMessage.EventCommitted> {
+	IAsyncHandle<InMemoryEventCommitted>,
+	IAsyncHandle<EventCommitted> {
 	private const int DontReportCheckpointReached = -1;
 
 	private static readonly TimeSpan TimeoutPeriod = TimeSpan.FromSeconds(1);
@@ -103,8 +105,7 @@ public class SubscriptionsService<TStreamId> :
 
 	public void Handle(TcpMessage.ConnectionClosed message) {
 		List<string> subscriptionGroupsToRemove = null;
-		foreach (var subscriptionGroup in _subscriptionTopics) {
-			var subscriptions = subscriptionGroup.Value;
+		foreach (var (key, subscriptions) in _subscriptionTopics) {
 			for (int i = 0, n = subscriptions.Count; i < n; ++i) {
 				if (subscriptions[i].ConnectionId == message.Connection.ConnectionId)
 					_subscriptionsById.Remove(subscriptions[i].CorrelationId);
@@ -114,7 +115,7 @@ public class SubscriptionsService<TStreamId> :
 			if (subscriptions.Count == 0) // schedule removal of list instance
 			{
 				subscriptionGroupsToRemove ??= [];
-				subscriptionGroupsToRemove.Add(subscriptionGroup.Key);
+				subscriptionGroupsToRemove.Add(key);
 			}
 		}
 
@@ -125,12 +126,12 @@ public class SubscriptionsService<TStreamId> :
 		}
 	}
 
-	async ValueTask IAsyncHandle<ClientMessage.SubscribeToStream>.HandleAsync(ClientMessage.SubscribeToStream msg, CancellationToken token) {
+	async ValueTask IAsyncHandle<SubscribeToStream>.HandleAsync(SubscribeToStream msg, CancellationToken token) {
 		var isInMemoryStream = SystemStreams.IsInMemoryStream(msg.EventStreamId);
 
 		long? lastEventNumber = null;
 		if (isInMemoryStream) {
-			var readMsg = new ClientMessage.ReadStreamEventsBackward(
+			var readMsg = new ReadStreamEventsBackward(
 				internalCorrId: Guid.NewGuid(),
 				correlationId: msg.CorrelationId,
 				envelope: new NoopEnvelope(),
@@ -149,7 +150,7 @@ public class SubscriptionsService<TStreamId> :
 		}
 
 		if (lastEventNumber == EventNumber.DeletedStream) {
-			msg.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(Guid.Empty, SubscriptionDropReason.StreamDeleted));
+			msg.Envelope.ReplyWith(new SubscriptionDropped(Guid.Empty, SubscriptionDropReason.StreamDeleted));
 			return;
 		}
 
@@ -160,11 +161,11 @@ public class SubscriptionsService<TStreamId> :
 			msg.User,
 			msg.EventStreamId.IsEmptyString() ? EventFilter.DefaultAllFilter : EventFilter.DefaultStreamFilter);
 
-		var subscribedMessage = new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
+		var subscribedMessage = new SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
 		msg.Envelope.ReplyWith(subscribedMessage);
 	}
 
-	async ValueTask IAsyncHandle<ClientMessage.FilteredSubscribeToStream>.HandleAsync(ClientMessage.FilteredSubscribeToStream msg, CancellationToken token) {
+	async ValueTask IAsyncHandle<FilteredSubscribeToStream>.HandleAsync(FilteredSubscribeToStream msg, CancellationToken token) {
 		var isInMemoryStream = SystemStreams.IsInMemoryStream(msg.EventStreamId);
 
 		long? lastEventNumber = null;
@@ -179,11 +180,11 @@ public class SubscriptionsService<TStreamId> :
 		SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
 			msg.ResolveLinkTos, lastIndexedPos, lastEventNumber, msg.User, msg.EventFilter,
 			msg.CheckpointInterval, msg.CheckpointIntervalCurrent);
-		var subscribedMessage = new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
+		var subscribedMessage = new SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
 		msg.Envelope.ReplyWith(subscribedMessage);
 	}
 
-	public void Handle(ClientMessage.UnsubscribeFromStream message) {
+	public void Handle(UnsubscribeFromStream message) {
 		DropSubscription(message.CorrelationId, SubscriptionDropReason.Unsubscribed);
 	}
 
@@ -222,7 +223,7 @@ public class SubscriptionsService<TStreamId> :
 
 	private void DropSubscription(Subscription subscription, SubscriptionDropReason dropReason, bool sendDropNotification) {
 		if (sendDropNotification)
-			subscription.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(subscription.CorrelationId, dropReason));
+			subscription.Envelope.ReplyWith(new SubscriptionDropped(subscription.CorrelationId, dropReason));
 
 		if (_subscriptionTopics.TryGetValue(subscription.EventStreamId, out var subscriptions)) {
 			subscriptions.Remove(subscription);
@@ -289,16 +290,16 @@ public class SubscriptionsService<TStreamId> :
 
 	private static Message CloneReadRequestWithNoPollFlag(Message originalRequest) {
 		return originalRequest switch {
-			ClientMessage.ReadStreamEventsForward streamReq => new ClientMessage.ReadStreamEventsForward(streamReq.InternalCorrId, streamReq.CorrelationId, streamReq.Envelope, streamReq.EventStreamId,
+			ReadStreamEventsForward streamReq => new ReadStreamEventsForward(streamReq.InternalCorrId, streamReq.CorrelationId, streamReq.Envelope, streamReq.EventStreamId,
 				streamReq.FromEventNumber, streamReq.MaxCount, streamReq.ResolveLinkTos, streamReq.RequireLeader, streamReq.ValidationStreamVersion, streamReq.User,
 				replyOnExpired: streamReq.ReplyOnExpired),
-			ClientMessage.ReadAllEventsForward allReq => new ClientMessage.ReadAllEventsForward(allReq.InternalCorrId, allReq.CorrelationId, allReq.Envelope, allReq.CommitPosition,
+			ReadAllEventsForward allReq => new ReadAllEventsForward(allReq.InternalCorrId, allReq.CorrelationId, allReq.Envelope, allReq.CommitPosition,
 				allReq.PreparePosition, allReq.MaxCount, allReq.ResolveLinkTos, allReq.RequireLeader, allReq.ValidationTfLastCommitPosition, allReq.User, replyOnExpired: allReq.ReplyOnExpired),
 			_ => throw new Exception($"Unexpected read request of type {originalRequest.GetType()} for long polling: {originalRequest}.")
 		};
 	}
 
-	async ValueTask IAsyncHandle<StorageMessage.EventCommitted>.HandleAsync(StorageMessage.EventCommitted message, CancellationToken token) {
+	async ValueTask IAsyncHandle<EventCommitted>.HandleAsync(EventCommitted message, CancellationToken token) {
 		_lastSeenCommitPosition = message.CommitPosition;
 
 		var resolvedEvent = await ProcessEventCommited(AllStreamsSubscriptionId, message.CommitPosition, message.Event, null, token);
@@ -311,7 +312,7 @@ public class SubscriptionsService<TStreamId> :
 		ReissueReadsFor(message.Event.EventStreamId, message.CommitPosition, message.Event.EventNumber);
 	}
 
-	async ValueTask IAsyncHandle<StorageMessage.InMemoryEventCommitted>.HandleAsync(StorageMessage.InMemoryEventCommitted message, CancellationToken token) {
+	async ValueTask IAsyncHandle<InMemoryEventCommitted>.HandleAsync(InMemoryEventCommitted message, CancellationToken token) {
 		_lastSeenInMemoryCommitPosition = message.CommitPosition;
 		await ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event, null, token);
 		ProcessStreamMetadataChanges(message.Event.EventStreamId);
@@ -333,7 +334,7 @@ public class SubscriptionsService<TStreamId> :
 				resolvedEvent = pair = resolvedEvent ?? await ResolveLinkToEvent(evnt, commitPosition, token);
 
 			if (subscr.EventFilter.IsEventAllowed(evnt)) {
-				subscr.Envelope.ReplyWith(new ClientMessage.StreamEventAppeared(subscr.CorrelationId, pair));
+				subscr.Envelope.ReplyWith(new StreamEventAppeared(subscr.CorrelationId, pair));
 			}
 
 			if (subscr.CheckpointInterval == DontReportCheckpointReached)
@@ -342,7 +343,7 @@ public class SubscriptionsService<TStreamId> :
 			subscr.CheckpointIntervalCurrent++;
 
 			if (subscr.CheckpointInterval != null && subscr.CheckpointIntervalCurrent >= subscr.CheckpointInterval) {
-				subscr.Envelope.ReplyWith(new ClientMessage.CheckpointReached(subscr.CorrelationId, pair.OriginalPosition));
+				subscr.Envelope.ReplyWith(new CheckpointReached(subscr.CorrelationId, pair.OriginalPosition));
 				subscr.CheckpointIntervalCurrent = 0;
 			}
 		}
@@ -443,23 +444,20 @@ public class SubscriptionsService<TStreamId> :
 	}
 
 	private void ReissueReadsFor(string streamId, long commitPosition, long eventNumber) {
-		List<PollSubscription> pollTopic;
-		if (_pollTopics.TryGetValue(streamId, out pollTopic)) {
-			List<PollSubscription> survivors = null;
-			foreach (var poller in pollTopic) {
-				if (commitPosition <= poller.LastIndexedPosition || eventNumber <= poller.LastEventNumber) {
-					if (survivors == null)
-						survivors = new List<PollSubscription>();
-					survivors.Add(poller);
-				} else {
-					_bus.Publish(CloneReadRequestWithNoPollFlag(poller.OriginalRequest));
-				}
+		if (!_pollTopics.TryGetValue(streamId, out var pollTopic)) return;
+		List<PollSubscription> survivors = null;
+		foreach (var poller in pollTopic) {
+			if (commitPosition <= poller.LastIndexedPosition || eventNumber <= poller.LastEventNumber) {
+				survivors ??= [];
+				survivors.Add(poller);
+			} else {
+				_bus.Publish(CloneReadRequestWithNoPollFlag(poller.OriginalRequest));
 			}
-
-			_pollTopics.Remove(streamId);
-			if (survivors != null)
-				_pollTopics.Add(streamId, survivors);
 		}
+
+		_pollTopics.Remove(streamId);
+		if (survivors != null)
+			_pollTopics.Add(streamId, survivors);
 	}
 
 	private class Subscription {
@@ -504,19 +502,14 @@ public class SubscriptionsService<TStreamId> :
 		}
 	}
 
-	private class PollSubscription {
-		public readonly DateTime ExpireAt;
-		public readonly long LastIndexedPosition;
-		public readonly long LastEventNumber;
-
-		public readonly Message OriginalRequest;
-
-		public PollSubscription(DateTime expireAt, long lastIndexedPosition, long lastEventNumber,
-			Message originalRequest) {
-			ExpireAt = expireAt;
-			LastIndexedPosition = lastIndexedPosition;
-			LastEventNumber = lastEventNumber;
-			OriginalRequest = originalRequest;
-		}
+	private class PollSubscription(
+		DateTime expireAt,
+		long lastIndexedPosition,
+		long lastEventNumber,
+		Message originalRequest) {
+		public readonly DateTime ExpireAt = expireAt;
+		public readonly long LastIndexedPosition = lastIndexedPosition;
+		public readonly long LastEventNumber = lastEventNumber;
+		public readonly Message OriginalRequest = originalRequest;
 	}
 }

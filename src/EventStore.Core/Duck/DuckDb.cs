@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -63,19 +64,20 @@ public static class DuckDb {
 		CancellationToken cancellationToken) {
 		var range = QueryCategory(streamName, fromEventNumber, fromEventNumber + maxCount - 1);
 		using var reader = index.BorrowReader();
-		var recordsQuery = await range
-			.ToAsyncEnumerable()
-			.SelectAwaitWithCancellation(async (x, ct) => (
+		var readPrepares = range
+			.Select(async x => (
 					Version: x.category_seq,
 					StreamId: x.stream,
 					EventType: x.event_type,
 					EventNumber: x.event_number,
-					Prepare: await ReadPrepare(x.log_position, ct)
+					Prepare: await ReadPrepare(x.log_position, cancellationToken)
 				)
-			)
+			);
+		var prepared = await Task.WhenAll(readPrepares);
+		var recordsQuery = prepared
 			.Where(x => x.Prepare != null)
 			.OrderBy(x => x.Version)
-			.ToListAsync(cancellationToken: cancellationToken);
+			.ToList();
 		var streams = GetStreams(recordsQuery.Select(x => x.StreamId).Distinct());
 		var records = recordsQuery
 			.Select(x => (Record: x, StreamName: streams[x.StreamId]))
@@ -113,6 +115,7 @@ public static class DuckDb {
 		}
 	}
 
+	[MethodImpl(MethodImplOptions.Synchronized)]
 	static List<CategoryRecord> QueryCategory(string streamName, long fromEventNumber, long toEventNumber) {
 		const string query = """
 		                     select category_seq, log_position, event_number, event_type, stream
@@ -208,22 +211,25 @@ public static class DuckDb {
 			uncached.Add(id);
 		}
 
-		if (uncached.Count == 0) return result;
+		return uncached.Count == 0 ? result : QueryStreams();
 
-		while (true) {
-			using var duration = TempIndexMetrics.MeasureIndex("duck_get_streams");
-			try {
-				const string sql = "select * from streams where id in $ids";
-				var records = Connection.Query<ReferenceRecord>(sql, new { ids = uncached });
-				foreach (var record in records) {
-					StreamCache.Set(record.id, record.name, Options);
-					result.Add(record.id, record.name);
+		[MethodImpl(MethodImplOptions.Synchronized)]
+		Dictionary<long, string> QueryStreams() {
+			while (true) {
+				using var duration = TempIndexMetrics.MeasureIndex("duck_get_streams");
+				try {
+					const string sql = "select * from streams where id in $ids";
+					var records = Connection.Query<ReferenceRecord>(sql, new { ids = uncached });
+					foreach (var record in records) {
+						StreamCache.Set(record.id, record.name, Options);
+						result.Add(record.id, record.name);
+					}
+
+					return result;
+				} catch (Exception e) {
+					Log.Warning("Error while querying category events: {Message}", e.Message);
+					duration.SetException(e);
 				}
-
-				return result;
-			} catch (Exception e) {
-				Log.Warning("Error while querying category events: {Message}", e.Message);
-				duration.SetException(e);
 			}
 		}
 	}

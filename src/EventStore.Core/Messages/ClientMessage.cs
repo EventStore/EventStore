@@ -636,9 +636,9 @@ public static partial class ClientMessage {
 			CancellationToken cancellationToken = default)
 			: base(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
 			Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-			if (fromEventNumber < -1) throw new ArgumentOutOfRangeException(nameof(fromEventNumber));
+            ArgumentOutOfRangeException.ThrowIfLessThan(fromEventNumber, -1);
 
-			EventStreamId = eventStreamId;
+            EventStreamId = eventStreamId;
 			FromEventNumber = fromEventNumber;
 			MaxCount = maxCount;
 			ResolveLinkTos = resolveLinkTos;
@@ -686,7 +686,7 @@ public static partial class ClientMessage {
 			long lastEventNumber,
 			bool isEndOfStream,
 			long tfLastCommitPosition) {
-			Ensure.NotNull(events, "events");
+			Ensure.NotNull(events);
 
 			if (result != ReadStreamResult.Success) {
 				Ensure.Equal(nextEventNumber, -1, "nextEventNumber");
@@ -711,33 +711,31 @@ public static partial class ClientMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class ReadAllEventsForward : ReadRequestMessage {
-		public readonly long CommitPosition;
-		public readonly long PreparePosition;
-		public readonly int MaxCount;
-		public readonly bool ResolveLinkTos;
-		public readonly bool RequireLeader;
+	public partial class ReadAllEventsForward(
+		Guid internalCorrId,
+		Guid correlationId,
+		IEnvelope envelope,
+		long commitPosition,
+		long preparePosition,
+		int maxCount,
+		bool resolveLinkTos,
+		bool requireLeader,
+		long? validationTfLastCommitPosition,
+		ClaimsPrincipal user,
+		bool replyOnExpired,
+		TimeSpan? longPollTimeout = null,
+		DateTime? expires = null,
+		CancellationToken cancellationToken = default)
+		: ReadRequestMessage(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
+		public readonly long CommitPosition = commitPosition;
+		public readonly long PreparePosition = preparePosition;
+		public readonly int MaxCount = maxCount;
+		public readonly bool ResolveLinkTos = resolveLinkTos;
+		public readonly bool RequireLeader = requireLeader;
 
-		public readonly long? ValidationTfLastCommitPosition;
-		public readonly TimeSpan? LongPollTimeout;
-		public readonly bool ReplyOnExpired;
-
-		public ReadAllEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-			long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
-			bool requireLeader, long? validationTfLastCommitPosition, ClaimsPrincipal user,
-			bool replyOnExpired,
-			TimeSpan? longPollTimeout = null, DateTime? expires = null,
-			CancellationToken cancellationToken = default)
-			: base(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
-			CommitPosition = commitPosition;
-			PreparePosition = preparePosition;
-			MaxCount = maxCount;
-			ResolveLinkTos = resolveLinkTos;
-			RequireLeader = requireLeader;
-			ValidationTfLastCommitPosition = validationTfLastCommitPosition;
-			LongPollTimeout = longPollTimeout;
-			ReplyOnExpired = replyOnExpired;
-		}
+		public readonly long? ValidationTfLastCommitPosition = validationTfLastCommitPosition;
+		public readonly TimeSpan? LongPollTimeout = longPollTimeout;
+		public readonly bool ReplyOnExpired = replyOnExpired;
 
 		public override string ToString() =>
 			$"{base.ToString()}, " +
@@ -792,28 +790,27 @@ public static partial class ClientMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class ReadAllEventsBackward : ReadRequestMessage {
-		public readonly long CommitPosition;
-		public readonly long PreparePosition;
-		public readonly int MaxCount;
-		public readonly bool ResolveLinkTos;
-		public readonly bool RequireLeader;
+	public partial class ReadAllEventsBackward(
+		Guid internalCorrId,
+		Guid correlationId,
+		IEnvelope envelope,
+		long commitPosition,
+		long preparePosition,
+		int maxCount,
+		bool resolveLinkTos,
+		bool requireLeader,
+		long? validationTfLastCommitPosition,
+		ClaimsPrincipal user,
+		DateTime? expires = null,
+		CancellationToken cancellationToken = default)
+		: ReadRequestMessage(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
+		public readonly long CommitPosition = commitPosition;
+		public readonly long PreparePosition = preparePosition;
+		public readonly int MaxCount = maxCount;
+		public readonly bool ResolveLinkTos = resolveLinkTos;
+		public readonly bool RequireLeader = requireLeader;
 
-		public readonly long? ValidationTfLastCommitPosition;
-
-		public ReadAllEventsBackward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-			long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
-			bool requireLeader, long? validationTfLastCommitPosition, ClaimsPrincipal user,
-			DateTime? expires = null,
-			CancellationToken cancellationToken = default)
-			: base(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
-			CommitPosition = commitPosition;
-			PreparePosition = preparePosition;
-			MaxCount = maxCount;
-			ResolveLinkTos = resolveLinkTos;
-			RequireLeader = requireLeader;
-			ValidationTfLastCommitPosition = validationTfLastCommitPosition;
-		}
+		public readonly long? ValidationTfLastCommitPosition = validationTfLastCommitPosition;
 
 		public override string ToString() =>
 			$"{base.ToString()}, " +
@@ -866,37 +863,35 @@ public static partial class ClientMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class FilteredReadAllEventsForward : ReadRequestMessage {
-		public readonly long CommitPosition;
-		public readonly long PreparePosition;
-		public readonly int MaxCount;
-		public readonly bool ResolveLinkTos;
-		public readonly bool RequireLeader;
-		public readonly int MaxSearchWindow;
-		public readonly IEventFilter EventFilter;
-		public readonly bool ReplyOnExpired;
+	public partial class FilteredReadAllEventsForward(
+		Guid internalCorrId,
+		Guid correlationId,
+		IEnvelope envelope,
+		long commitPosition,
+		long preparePosition,
+		int maxCount,
+		bool resolveLinkTos,
+		bool requireLeader,
+		int maxSearchWindow,
+		long? validationTfLastCommitPosition,
+		IEventFilter eventFilter,
+		ClaimsPrincipal user,
+		bool replyOnExpired,
+		TimeSpan? longPollTimeout = null,
+		DateTime? expires = null,
+		CancellationToken cancellationToken = default)
+		: ReadRequestMessage(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
+		public readonly long CommitPosition = commitPosition;
+		public readonly long PreparePosition = preparePosition;
+		public readonly int MaxCount = maxCount;
+		public readonly bool ResolveLinkTos = resolveLinkTos;
+		public readonly bool RequireLeader = requireLeader;
+		public readonly int MaxSearchWindow = maxSearchWindow;
+		public readonly IEventFilter EventFilter = eventFilter;
+		public readonly bool ReplyOnExpired = replyOnExpired;
 
-		public readonly long? ValidationTfLastCommitPosition;
-		public readonly TimeSpan? LongPollTimeout;
-
-		public FilteredReadAllEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-			long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireLeader,
-			int maxSearchWindow, long? validationTfLastCommitPosition, IEventFilter eventFilter, ClaimsPrincipal user,
-			bool replyOnExpired,
-			TimeSpan? longPollTimeout = null, DateTime? expires = null,
-			CancellationToken cancellationToken = default)
-			: base(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
-			CommitPosition = commitPosition;
-			PreparePosition = preparePosition;
-			MaxCount = maxCount;
-			ResolveLinkTos = resolveLinkTos;
-			RequireLeader = requireLeader;
-			ValidationTfLastCommitPosition = validationTfLastCommitPosition;
-			LongPollTimeout = longPollTimeout;
-			MaxSearchWindow = maxSearchWindow;
-			EventFilter = eventFilter;
-			ReplyOnExpired = replyOnExpired;
-		}
+		public readonly long? ValidationTfLastCommitPosition = validationTfLastCommitPosition;
+		public readonly TimeSpan? LongPollTimeout = longPollTimeout;
 
 		public override string ToString() =>
 			$"{base.ToString()}, " +
@@ -954,34 +949,33 @@ public static partial class ClientMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class FilteredReadAllEventsBackward : ReadRequestMessage {
-		public readonly long CommitPosition;
-		public readonly long PreparePosition;
-		public readonly int MaxCount;
-		public readonly bool ResolveLinkTos;
-		public readonly bool RequireLeader;
-		public readonly int MaxSearchWindow;
-		public readonly IEventFilter EventFilter;
+	public partial class FilteredReadAllEventsBackward(
+		Guid internalCorrId,
+		Guid correlationId,
+		IEnvelope envelope,
+		long commitPosition,
+		long preparePosition,
+		int maxCount,
+		bool resolveLinkTos,
+		bool requireLeader,
+		int maxSearchWindow,
+		long? validationTfLastCommitPosition,
+		IEventFilter eventFilter,
+		ClaimsPrincipal user,
+		TimeSpan? longPollTimeout = null,
+		DateTime? expires = null,
+		CancellationToken cancellationToken = default)
+		: ReadRequestMessage(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
+		public readonly long CommitPosition = commitPosition;
+		public readonly long PreparePosition = preparePosition;
+		public readonly int MaxCount = maxCount;
+		public readonly bool ResolveLinkTos = resolveLinkTos;
+		public readonly bool RequireLeader = requireLeader;
+		public readonly int MaxSearchWindow = maxSearchWindow;
+		public readonly IEventFilter EventFilter = eventFilter;
 
-		public readonly long? ValidationTfLastCommitPosition;
-		public readonly TimeSpan? LongPollTimeout;
-
-		public FilteredReadAllEventsBackward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-			long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireLeader,
-			int maxSearchWindow, long? validationTfLastCommitPosition, IEventFilter eventFilter, ClaimsPrincipal user,
-			TimeSpan? longPollTimeout = null, DateTime? expires = null,
-			CancellationToken cancellationToken = default)
-			: base(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
-			CommitPosition = commitPosition;
-			PreparePosition = preparePosition;
-			MaxCount = maxCount;
-			ResolveLinkTos = resolveLinkTos;
-			RequireLeader = requireLeader;
-			ValidationTfLastCommitPosition = validationTfLastCommitPosition;
-			LongPollTimeout = longPollTimeout;
-			MaxSearchWindow = maxSearchWindow;
-			EventFilter = eventFilter;
-		}
+		public readonly long? ValidationTfLastCommitPosition = validationTfLastCommitPosition;
+		public readonly TimeSpan? LongPollTimeout = longPollTimeout;
 
 		public override string ToString() =>
 			$"{base.ToString()}, " +
@@ -1062,86 +1056,76 @@ public static partial class ClientMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class ConnectToPersistentSubscriptionToAll : ReadRequestMessage {
-		public readonly Guid ConnectionId;
-		public readonly string ConnectionName;
-		public readonly string GroupName;
-		public readonly int AllowedInFlightMessages;
-		public readonly string From;
-
-		public ConnectToPersistentSubscriptionToAll(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-			Guid connectionId, string connectionName, string groupName,
-			int allowedInFlightMessages, string from, ClaimsPrincipal user, DateTime? expires = null)
-			: base(internalCorrId, correlationId, envelope, user, expires) {
-			Ensure.NotEmptyGuid(connectionId, "connectionId");
-			Ensure.NotNullOrEmpty(groupName, "groupName");
-			Ensure.Nonnegative(allowedInFlightMessages, "AllowedInFlightMessages");
-			GroupName = groupName;
-			ConnectionId = connectionId;
-			ConnectionName = connectionName;
-			AllowedInFlightMessages = allowedInFlightMessages;
-			From = from;
-		}
+	public partial class ConnectToPersistentSubscriptionToAll(
+		Guid internalCorrId,
+		Guid correlationId,
+		IEnvelope envelope,
+		Guid connectionId,
+		string connectionName,
+		string groupName,
+		int allowedInFlightMessages,
+		string from,
+		ClaimsPrincipal user,
+		DateTime? expires = null)
+		: ReadRequestMessage(internalCorrId, correlationId, envelope, user, expires) {
+		public readonly Guid ConnectionId = Ensure.NotEmptyGuid(connectionId);
+		public readonly string ConnectionName = connectionName;
+		public readonly string GroupName = Ensure.NotNullOrEmpty(groupName);
+		public readonly int AllowedInFlightMessages = Ensure.Nonnegative(allowedInFlightMessages, "AllowedInFlightMessages");
+		public readonly string From = from;
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class CreatePersistentSubscriptionToStream : ReadRequestMessage {
-		public readonly long StartFrom;
-		public readonly int MessageTimeoutMilliseconds;
-		public readonly bool RecordStatistics;
+	public partial class CreatePersistentSubscriptionToStream(
+		Guid internalCorrId,
+		Guid correlationId,
+		IEnvelope envelope,
+		string eventStreamId,
+		string groupName,
+		bool resolveLinkTos,
+		long startFrom,
+		int messageTimeoutMilliseconds,
+		bool recordStatistics,
+		int maxRetryCount,
+		int bufferSize,
+		int liveBufferSize,
+		int readbatchSize,
+		int checkPointAfterMilliseconds,
+		int minCheckPointCount,
+		int maxCheckPointCount,
+		int maxSubscriberCount,
+		string namedConsumerStrategy,
+		ClaimsPrincipal user,
+		DateTime? expires = null)
+		: ReadRequestMessage(internalCorrId, correlationId, envelope, user, expires) {
+		public readonly long StartFrom = startFrom;
+		public readonly int MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
+		public readonly bool RecordStatistics = recordStatistics;
 
-		public readonly bool ResolveLinkTos;
-		public readonly int MaxRetryCount;
-		public readonly int BufferSize;
-		public readonly int LiveBufferSize;
-		public readonly int ReadBatchSize;
+		public readonly bool ResolveLinkTos = resolveLinkTos;
+		public readonly int MaxRetryCount = maxRetryCount;
+		public readonly int BufferSize = bufferSize;
+		public readonly int LiveBufferSize = liveBufferSize;
+		public readonly int ReadBatchSize = readbatchSize;
 
-		public readonly string GroupName;
-		public readonly string EventStreamId;
-		public readonly int MaxSubscriberCount;
-		public readonly string NamedConsumerStrategy;
-		public readonly int MaxCheckPointCount;
-		public readonly int MinCheckPointCount;
-		public readonly int CheckPointAfterMilliseconds;
-
-		public CreatePersistentSubscriptionToStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-			string eventStreamId, string groupName, bool resolveLinkTos, long startFrom,
-			int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
-			int liveBufferSize, int readbatchSize,
-			int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
-			int maxSubscriberCount, string namedConsumerStrategy, ClaimsPrincipal user, DateTime? expires = null)
-			: base(internalCorrId, correlationId, envelope, user, expires) {
-			ResolveLinkTos = resolveLinkTos;
-			EventStreamId = eventStreamId;
-			GroupName = groupName;
-			StartFrom = startFrom;
-			MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
-			RecordStatistics = recordStatistics;
-			MaxRetryCount = maxRetryCount;
-			BufferSize = bufferSize;
-			LiveBufferSize = liveBufferSize;
-			ReadBatchSize = readbatchSize;
-			MaxCheckPointCount = maxCheckPointCount;
-			MinCheckPointCount = minCheckPointCount;
-			CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
-			MaxSubscriberCount = maxSubscriberCount;
-			NamedConsumerStrategy = namedConsumerStrategy;
-		}
+		public readonly string GroupName = groupName;
+		public readonly string EventStreamId = eventStreamId;
+		public readonly int MaxSubscriberCount = maxSubscriberCount;
+		public readonly string NamedConsumerStrategy = namedConsumerStrategy;
+		public readonly int MaxCheckPointCount = maxCheckPointCount;
+		public readonly int MinCheckPointCount = minCheckPointCount;
+		public readonly int CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class CreatePersistentSubscriptionToStreamCompleted : ReadResponseMessage {
-		public readonly Guid CorrelationId;
-		public readonly string Reason;
-		public readonly CreatePersistentSubscriptionToStreamResult Result;
-
-		public CreatePersistentSubscriptionToStreamCompleted(Guid correlationId, CreatePersistentSubscriptionToStreamResult result,
-			string reason) {
-			Ensure.NotEmptyGuid(correlationId, "correlationId");
-			CorrelationId = correlationId;
-			Result = result;
-			Reason = reason;
-		}
+	public partial class CreatePersistentSubscriptionToStreamCompleted(
+		Guid correlationId,
+		CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult result,
+		string reason)
+		: ReadResponseMessage {
+		public readonly Guid CorrelationId = Ensure.NotEmptyGuid(correlationId);
+		public readonly string Reason = reason;
+		public readonly CreatePersistentSubscriptionToStreamResult Result = result;
 
 		public enum CreatePersistentSubscriptionToStreamResult {
 			Success = 0,
@@ -1152,64 +1136,57 @@ public static partial class ClientMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class CreatePersistentSubscriptionToAll : ReadRequestMessage {
-		public readonly IEventFilter EventFilter;
+	public partial class CreatePersistentSubscriptionToAll(
+		Guid internalCorrId,
+		Guid correlationId,
+		IEnvelope envelope,
+		string groupName,
+		IEventFilter eventFilter,
+		bool resolveLinkTos,
+		TFPos startFrom,
+		int messageTimeoutMilliseconds,
+		bool recordStatistics,
+		int maxRetryCount,
+		int bufferSize,
+		int liveBufferSize,
+		int readbatchSize,
+		int checkPointAfterMilliseconds,
+		int minCheckPointCount,
+		int maxCheckPointCount,
+		int maxSubscriberCount,
+		string namedConsumerStrategy,
+		ClaimsPrincipal user,
+		DateTime? expires = null)
+		: ReadRequestMessage(internalCorrId, correlationId, envelope, user, expires) {
+		public readonly IEventFilter EventFilter = eventFilter;
 
-		public readonly TFPos StartFrom;
-		public readonly int MessageTimeoutMilliseconds;
-		public readonly bool RecordStatistics;
+		public readonly TFPos StartFrom = startFrom;
+		public readonly int MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
+		public readonly bool RecordStatistics = recordStatistics;
 
-		public readonly bool ResolveLinkTos;
-		public readonly int MaxRetryCount;
-		public readonly int BufferSize;
-		public readonly int LiveBufferSize;
-		public readonly int ReadBatchSize;
+		public readonly bool ResolveLinkTos = resolveLinkTos;
+		public readonly int MaxRetryCount = maxRetryCount;
+		public readonly int BufferSize = bufferSize;
+		public readonly int LiveBufferSize = liveBufferSize;
+		public readonly int ReadBatchSize = readbatchSize;
 
-		public readonly string GroupName;
-		public readonly int MaxSubscriberCount;
-		public readonly string NamedConsumerStrategy;
-		public readonly int MaxCheckPointCount;
-		public readonly int MinCheckPointCount;
-		public readonly int CheckPointAfterMilliseconds;
-
-		public CreatePersistentSubscriptionToAll(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-			string groupName, IEventFilter eventFilter, bool resolveLinkTos, TFPos startFrom,
-			int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
-			int liveBufferSize, int readbatchSize,
-			int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
-			int maxSubscriberCount, string namedConsumerStrategy, ClaimsPrincipal user, DateTime? expires = null)
-			: base(internalCorrId, correlationId, envelope, user, expires) {
-			ResolveLinkTos = resolveLinkTos;
-			GroupName = groupName;
-			EventFilter = eventFilter;
-			StartFrom = startFrom;
-			MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
-			RecordStatistics = recordStatistics;
-			MaxRetryCount = maxRetryCount;
-			BufferSize = bufferSize;
-			LiveBufferSize = liveBufferSize;
-			ReadBatchSize = readbatchSize;
-			MaxCheckPointCount = maxCheckPointCount;
-			MinCheckPointCount = minCheckPointCount;
-			CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
-			MaxSubscriberCount = maxSubscriberCount;
-			NamedConsumerStrategy = namedConsumerStrategy;
-		}
+		public readonly string GroupName = groupName;
+		public readonly int MaxSubscriberCount = maxSubscriberCount;
+		public readonly string NamedConsumerStrategy = namedConsumerStrategy;
+		public readonly int MaxCheckPointCount = maxCheckPointCount;
+		public readonly int MinCheckPointCount = minCheckPointCount;
+		public readonly int CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class CreatePersistentSubscriptionToAllCompleted : ReadResponseMessage {
-		public readonly Guid CorrelationId;
-		public readonly string Reason;
-		public readonly CreatePersistentSubscriptionToAllResult Result;
-
-		public CreatePersistentSubscriptionToAllCompleted(Guid correlationId, CreatePersistentSubscriptionToAllResult result,
-			string reason) {
-			Ensure.NotEmptyGuid(correlationId, "correlationId");
-			CorrelationId = correlationId;
-			Result = result;
-			Reason = reason;
-		}
+	public partial class CreatePersistentSubscriptionToAllCompleted(
+		Guid correlationId,
+		CreatePersistentSubscriptionToAllCompleted.CreatePersistentSubscriptionToAllResult result,
+		string reason)
+		: ReadResponseMessage {
+		public readonly Guid CorrelationId = Ensure.NotEmptyGuid(correlationId);
+		public readonly string Reason = reason;
+		public readonly CreatePersistentSubscriptionToAllResult Result = result;
 
 		public enum CreatePersistentSubscriptionToAllResult {
 			Success = 0,
@@ -1220,64 +1197,57 @@ public static partial class ClientMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class UpdatePersistentSubscriptionToStream : ReadRequestMessage {
-		public readonly long StartFrom;
-		public readonly int MessageTimeoutMilliseconds;
-		public readonly bool RecordStatistics;
+	public partial class UpdatePersistentSubscriptionToStream(
+		Guid internalCorrId,
+		Guid correlationId,
+		IEnvelope envelope,
+		string eventStreamId,
+		string groupName,
+		bool resolveLinkTos,
+		long startFrom,
+		int messageTimeoutMilliseconds,
+		bool recordStatistics,
+		int maxRetryCount,
+		int bufferSize,
+		int liveBufferSize,
+		int readbatchSize,
+		int checkPointAfterMilliseconds,
+		int minCheckPointCount,
+		int maxCheckPointCount,
+		int maxSubscriberCount,
+		string namedConsumerStrategy,
+		ClaimsPrincipal user,
+		DateTime? expires = null)
+		: ReadRequestMessage(internalCorrId, correlationId, envelope, user, expires) {
+		public readonly long StartFrom = startFrom;
+		public readonly int MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
+		public readonly bool RecordStatistics = recordStatistics;
 
-		public readonly bool ResolveLinkTos;
-		public readonly int MaxRetryCount;
-		public readonly int BufferSize;
-		public readonly int LiveBufferSize;
-		public readonly int ReadBatchSize;
+		public readonly bool ResolveLinkTos = resolveLinkTos;
+		public readonly int MaxRetryCount = maxRetryCount;
+		public readonly int BufferSize = bufferSize;
+		public readonly int LiveBufferSize = liveBufferSize;
+		public readonly int ReadBatchSize = readbatchSize;
 
-		public readonly string GroupName;
-		public readonly string EventStreamId;
-		public readonly int MaxSubscriberCount;
+		public readonly string GroupName = groupName;
+		public readonly string EventStreamId = eventStreamId;
+		public readonly int MaxSubscriberCount = maxSubscriberCount;
 
-		public readonly int MaxCheckPointCount;
-		public readonly int MinCheckPointCount;
-		public readonly int CheckPointAfterMilliseconds;
-		public readonly string NamedConsumerStrategy;
-
-		public UpdatePersistentSubscriptionToStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-			string eventStreamId, string groupName, bool resolveLinkTos, long startFrom,
-			int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
-			int liveBufferSize, int readbatchSize, int checkPointAfterMilliseconds, int minCheckPointCount,
-			int maxCheckPointCount, int maxSubscriberCount, string namedConsumerStrategy, ClaimsPrincipal user,
-			DateTime? expires = null)
-			: base(internalCorrId, correlationId, envelope, user, expires) {
-			ResolveLinkTos = resolveLinkTos;
-			EventStreamId = eventStreamId;
-			GroupName = groupName;
-			StartFrom = startFrom;
-			MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
-			RecordStatistics = recordStatistics;
-			MaxRetryCount = maxRetryCount;
-			BufferSize = bufferSize;
-			LiveBufferSize = liveBufferSize;
-			ReadBatchSize = readbatchSize;
-			MaxCheckPointCount = maxCheckPointCount;
-			MinCheckPointCount = minCheckPointCount;
-			CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
-			MaxSubscriberCount = maxSubscriberCount;
-			NamedConsumerStrategy = namedConsumerStrategy;
-		}
+		public readonly int MaxCheckPointCount = maxCheckPointCount;
+		public readonly int MinCheckPointCount = minCheckPointCount;
+		public readonly int CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
+		public readonly string NamedConsumerStrategy = namedConsumerStrategy;
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class UpdatePersistentSubscriptionToStreamCompleted : ReadResponseMessage {
-		public readonly Guid CorrelationId;
-		public readonly string Reason;
-		public readonly UpdatePersistentSubscriptionToStreamResult Result;
-
-		public UpdatePersistentSubscriptionToStreamCompleted(Guid correlationId, UpdatePersistentSubscriptionToStreamResult result,
-			string reason) {
-			Ensure.NotEmptyGuid(correlationId, "correlationId");
-			CorrelationId = correlationId;
-			Result = result;
-			Reason = reason;
-		}
+	public partial class UpdatePersistentSubscriptionToStreamCompleted(
+		Guid correlationId,
+		UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult result,
+		string reason)
+		: ReadResponseMessage {
+		public readonly Guid CorrelationId = Ensure.NotEmptyGuid(correlationId, "correlationId");
+		public readonly string Reason = reason;
+		public readonly UpdatePersistentSubscriptionToStreamResult Result = result;
 
 		public enum UpdatePersistentSubscriptionToStreamResult {
 			Success = 0,
@@ -1288,62 +1258,55 @@ public static partial class ClientMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class UpdatePersistentSubscriptionToAll : ReadRequestMessage {
-		public readonly TFPos StartFrom;
-		public readonly int MessageTimeoutMilliseconds;
-		public readonly bool RecordStatistics;
+	public partial class UpdatePersistentSubscriptionToAll(
+		Guid internalCorrId,
+		Guid correlationId,
+		IEnvelope envelope,
+		string groupName,
+		bool resolveLinkTos,
+		TFPos startFrom,
+		int messageTimeoutMilliseconds,
+		bool recordStatistics,
+		int maxRetryCount,
+		int bufferSize,
+		int liveBufferSize,
+		int readbatchSize,
+		int checkPointAfterMilliseconds,
+		int minCheckPointCount,
+		int maxCheckPointCount,
+		int maxSubscriberCount,
+		string namedConsumerStrategy,
+		ClaimsPrincipal user,
+		DateTime? expires = null)
+		: ReadRequestMessage(internalCorrId, correlationId, envelope, user, expires) {
+		public readonly TFPos StartFrom = startFrom;
+		public readonly int MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
+		public readonly bool RecordStatistics = recordStatistics;
 
-		public readonly bool ResolveLinkTos;
-		public readonly int MaxRetryCount;
-		public readonly int BufferSize;
-		public readonly int LiveBufferSize;
-		public readonly int ReadBatchSize;
+		public readonly bool ResolveLinkTos = resolveLinkTos;
+		public readonly int MaxRetryCount = maxRetryCount;
+		public readonly int BufferSize = bufferSize;
+		public readonly int LiveBufferSize = liveBufferSize;
+		public readonly int ReadBatchSize = readbatchSize;
 
-		public readonly string GroupName;
-		public readonly int MaxSubscriberCount;
+		public readonly string GroupName = groupName;
+		public readonly int MaxSubscriberCount = maxSubscriberCount;
 
-		public readonly int MaxCheckPointCount;
-		public readonly int MinCheckPointCount;
-		public readonly int CheckPointAfterMilliseconds;
-		public readonly string NamedConsumerStrategy;
-
-		public UpdatePersistentSubscriptionToAll(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-			string groupName, bool resolveLinkTos, TFPos startFrom,
-			int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
-			int liveBufferSize, int readbatchSize, int checkPointAfterMilliseconds, int minCheckPointCount,
-			int maxCheckPointCount, int maxSubscriberCount, string namedConsumerStrategy, ClaimsPrincipal user,
-			DateTime? expires = null)
-			: base(internalCorrId, correlationId, envelope, user, expires) {
-			ResolveLinkTos = resolveLinkTos;
-			GroupName = groupName;
-			StartFrom = startFrom;
-			MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
-			RecordStatistics = recordStatistics;
-			MaxRetryCount = maxRetryCount;
-			BufferSize = bufferSize;
-			LiveBufferSize = liveBufferSize;
-			ReadBatchSize = readbatchSize;
-			MaxCheckPointCount = maxCheckPointCount;
-			MinCheckPointCount = minCheckPointCount;
-			CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
-			MaxSubscriberCount = maxSubscriberCount;
-			NamedConsumerStrategy = namedConsumerStrategy;
-		}
+		public readonly int MaxCheckPointCount = maxCheckPointCount;
+		public readonly int MinCheckPointCount = minCheckPointCount;
+		public readonly int CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
+		public readonly string NamedConsumerStrategy = namedConsumerStrategy;
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class UpdatePersistentSubscriptionToAllCompleted : ReadResponseMessage {
-		public readonly Guid CorrelationId;
-		public readonly string Reason;
-		public readonly UpdatePersistentSubscriptionToAllResult Result;
-
-		public UpdatePersistentSubscriptionToAllCompleted(Guid correlationId, UpdatePersistentSubscriptionToAllResult result,
-			string reason) {
-			Ensure.NotEmptyGuid(correlationId, "correlationId");
-			CorrelationId = correlationId;
-			Result = result;
-			Reason = reason;
-		}
+	public partial class UpdatePersistentSubscriptionToAllCompleted(
+		Guid correlationId,
+		UpdatePersistentSubscriptionToAllCompleted.UpdatePersistentSubscriptionToAllResult result,
+		string reason)
+		: ReadResponseMessage {
+		public readonly Guid CorrelationId = Ensure.NotEmptyGuid(correlationId);
+		public readonly string Reason = reason;
+		public readonly UpdatePersistentSubscriptionToAllResult Result = result;
 
 		public enum UpdatePersistentSubscriptionToAllResult {
 			Success = 0,
@@ -1354,18 +1317,19 @@ public static partial class ClientMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class ReadNextNPersistentMessages : ReadRequestMessage {
-		public readonly string GroupName;
-		public readonly string EventStreamId;
-		public readonly int Count;
-
-		public ReadNextNPersistentMessages(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-			string eventStreamId, string groupName, int count, ClaimsPrincipal user, DateTime? expires = null)
-			: base(internalCorrId, correlationId, envelope, user, expires) {
-			GroupName = groupName;
-			EventStreamId = eventStreamId;
-			Count = count;
-		}
+	public partial class ReadNextNPersistentMessages(
+		Guid internalCorrId,
+		Guid correlationId,
+		IEnvelope envelope,
+		string eventStreamId,
+		string groupName,
+		int count,
+		ClaimsPrincipal user,
+		DateTime? expires = null)
+		: ReadRequestMessage(internalCorrId, correlationId, envelope, user, expires) {
+		public readonly string GroupName = groupName;
+		public readonly string EventStreamId = eventStreamId;
+		public readonly int Count = count;
 	}
 
 	[DerivedMessage(CoreMessage.Client)]

@@ -17,6 +17,10 @@ using EventStore.Core.Services.Transport.Common;
 using EventStore.Core.Services.Transport.Enumerators;
 using Google.Protobuf;
 using Grpc.Core;
+using static EventStore.Client.Streams.ReadReq.Types.Options.Types.FilterOptions;
+using static EventStore.Core.Services.Transport.Enumerators.Enumerator;
+using static EventStore.Core.Services.Transport.Enumerators.ReadResponse;
+using static EventStore.Plugins.Authorization.Operations.Streams;
 using CountOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.CountOptionOneofCase;
 using FilterOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.FilterOptionOneofCase;
 using ReadDirection = EventStore.Client.Streams.ReadReq.Types.Options.Types.ReadDirection;
@@ -29,7 +33,6 @@ internal partial class Streams<TStreamId> {
 		ReadReq request,
 		IServerStreamWriter<ReadResp> responseStream,
 		ServerCallContext context) {
-
 		var trackDuration = request.Options.CountOptionCase != CountOptionOneofCase.Subscription;
 		using var duration = trackDuration ? _readTracker.Start() : Duration.Nil;
 		try {
@@ -49,11 +52,8 @@ internal partial class Streams<TStreamId> {
 			}
 
 			var op = streamOptionsCase switch {
-				StreamOptionOneofCase.Stream => ReadOperation.WithParameter(
-					Plugins.Authorization.Operations.Streams.Parameters.StreamId(
-						request.Options.Stream.StreamIdentifier)),
-				StreamOptionOneofCase.All => ReadOperation.WithParameter(
-					Plugins.Authorization.Operations.Streams.Parameters.StreamId(SystemStreams.AllStream)),
+				StreamOptionOneofCase.Stream => ReadOperation.WithParameter(Parameters.StreamId(request.Options.Stream.StreamIdentifier)),
+				StreamOptionOneofCase.All => ReadOperation.WithParameter(Parameters.StreamId(SystemStreams.AllStream)),
 				_ => throw RpcExceptions.InvalidArgument(streamOptionsCase)
 			};
 
@@ -113,10 +113,8 @@ internal partial class Streams<TStreamId> {
 		DateTime deadline,
 		CancellationToken cancellationToken) {
 		return (streamOptionsCase, countOptionsCase, readDirection, filterOptionsCase) switch {
-			(StreamOptionOneofCase.Stream,
-				CountOptionOneofCase.Count,
-				ReadDirection.Forwards,
-				FilterOptionOneofCase.NoFilter) => new Enumerator.ReadStreamForwards(
+			(StreamOptionOneofCase.Stream, CountOptionOneofCase.Count, ReadDirection.Forwards, FilterOptionOneofCase.NoFilter)
+				=> new ReadStreamForwards(
 					_publisher,
 					request.Options.Stream.StreamIdentifier,
 					request.Options.Stream.ToStreamRevision(),
@@ -127,10 +125,8 @@ internal partial class Streams<TStreamId> {
 					deadline,
 					compatibility,
 					cancellationToken),
-			(StreamOptionOneofCase.Stream,
-				CountOptionOneofCase.Count,
-				ReadDirection.Backwards,
-				FilterOptionOneofCase.NoFilter) => new Enumerator.ReadStreamBackwards(
+			(StreamOptionOneofCase.Stream, CountOptionOneofCase.Count, ReadDirection.Backwards, FilterOptionOneofCase.NoFilter)
+				=> new ReadStreamBackwards(
 					_publisher,
 					request.Options.Stream.StreamIdentifier,
 					request.Options.Stream.ToStreamRevision(),
@@ -141,10 +137,8 @@ internal partial class Streams<TStreamId> {
 					deadline,
 					compatibility,
 					cancellationToken),
-			(StreamOptionOneofCase.All,
-				CountOptionOneofCase.Count,
-				ReadDirection.Forwards,
-				FilterOptionOneofCase.NoFilter) => new Enumerator.ReadAllForwards(
+			(StreamOptionOneofCase.All, CountOptionOneofCase.Count, ReadDirection.Forwards, FilterOptionOneofCase.NoFilter)
+				=> new ReadAllForwards(
 					_publisher,
 					request.Options.All.ToPosition(),
 					request.Options.Count,
@@ -153,41 +147,8 @@ internal partial class Streams<TStreamId> {
 					requiresLeader,
 					deadline,
 					cancellationToken),
-			(StreamOptionOneofCase.All,
-				CountOptionOneofCase.Count,
-				ReadDirection.Forwards,
-				FilterOptionOneofCase.Filter) => new Enumerator.ReadAllForwardsFiltered(
-					_publisher,
-					request.Options.All.ToPosition(),
-					request.Options.Count,
-					request.Options.ResolveLinks,
-					ConvertToEventFilter(true, request.Options.Filter),
-					user,
-					requiresLeader,
-					request.Options.Filter.WindowCase switch {
-						ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
-						ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter
-							.Max,
-						_ => throw RpcExceptions.InvalidArgument(request.Options.Filter.WindowCase)
-					},
-					deadline,
-					cancellationToken),
-			(StreamOptionOneofCase.All,
-				CountOptionOneofCase.Count,
-				ReadDirection.Backwards,
-				FilterOptionOneofCase.NoFilter) => new Enumerator.ReadAllBackwards(
-					_publisher,
-					request.Options.All.ToPosition(),
-					request.Options.Count,
-					request.Options.ResolveLinks,
-					user,
-					requiresLeader,
-					deadline,
-					cancellationToken),
-			(StreamOptionOneofCase.All,
-				CountOptionOneofCase.Count,
-				ReadDirection.Backwards,
-				FilterOptionOneofCase.Filter) => new Enumerator.ReadAllBackwardsFiltered(
+			(StreamOptionOneofCase.All, CountOptionOneofCase.Count, ReadDirection.Forwards, FilterOptionOneofCase.Filter)
+				=> new ReadAllForwardsFiltered(
 					_publisher,
 					request.Options.All.ToPosition(),
 					request.Options.Count,
@@ -196,17 +157,40 @@ internal partial class Streams<TStreamId> {
 					user,
 					requiresLeader,
 					request.Options.Filter.WindowCase switch {
-						ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
-						ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter
-							.Max,
+						WindowOneofCase.Count => null,
+						WindowOneofCase.Max => request.Options.Filter.Max,
 						_ => throw RpcExceptions.InvalidArgument(request.Options.Filter.WindowCase)
 					},
 					deadline,
 					cancellationToken),
-			(StreamOptionOneofCase.Stream,
-				CountOptionOneofCase.Subscription,
-				ReadDirection.Forwards,
-				FilterOptionOneofCase.NoFilter) => new Enumerator.StreamSubscription<TStreamId>(
+			(StreamOptionOneofCase.All, CountOptionOneofCase.Count, ReadDirection.Backwards, FilterOptionOneofCase.NoFilter)
+				=> new ReadAllBackwards(
+					_publisher,
+					request.Options.All.ToPosition(),
+					request.Options.Count,
+					request.Options.ResolveLinks,
+					user,
+					requiresLeader,
+					deadline,
+					cancellationToken),
+			(StreamOptionOneofCase.All, CountOptionOneofCase.Count, ReadDirection.Backwards, FilterOptionOneofCase.Filter)
+				=> new ReadAllBackwardsFiltered(
+					_publisher,
+					request.Options.All.ToPosition(),
+					request.Options.Count,
+					request.Options.ResolveLinks,
+					ConvertToEventFilter(true, request.Options.Filter),
+					user,
+					requiresLeader,
+					request.Options.Filter.WindowCase switch {
+						WindowOneofCase.Count => null,
+						WindowOneofCase.Max => request.Options.Filter.Max,
+						_ => throw RpcExceptions.InvalidArgument(request.Options.Filter.WindowCase)
+					},
+					deadline,
+					cancellationToken),
+			(StreamOptionOneofCase.Stream, CountOptionOneofCase.Subscription, ReadDirection.Forwards, FilterOptionOneofCase.NoFilter)
+				=> new StreamSubscription<TStreamId>(
 					_publisher,
 					_expiryStrategy,
 					request.Options.Stream.StreamIdentifier,
@@ -215,10 +199,8 @@ internal partial class Streams<TStreamId> {
 					user,
 					requiresLeader,
 					cancellationToken),
-			(StreamOptionOneofCase.All,
-				CountOptionOneofCase.Subscription,
-				ReadDirection.Forwards,
-				FilterOptionOneofCase.NoFilter) => new Enumerator.AllSubscription(
+			(StreamOptionOneofCase.All, CountOptionOneofCase.Subscription, ReadDirection.Forwards, FilterOptionOneofCase.NoFilter)
+				=> new AllSubscription(
 					_publisher,
 					_expiryStrategy,
 					request.Options.All.ToSubscriptionPosition(),
@@ -226,10 +208,8 @@ internal partial class Streams<TStreamId> {
 					user,
 					requiresLeader,
 					cancellationToken),
-			(StreamOptionOneofCase.All,
-				CountOptionOneofCase.Subscription,
-				ReadDirection.Forwards,
-				FilterOptionOneofCase.Filter) => new Enumerator.AllSubscriptionFiltered(
+			(StreamOptionOneofCase.All, CountOptionOneofCase.Subscription, ReadDirection.Forwards, FilterOptionOneofCase.Filter)
+				=> new AllSubscriptionFiltered(
 					_publisher,
 					_expiryStrategy,
 					request.Options.All.ToSubscriptionPosition(),
@@ -238,25 +218,23 @@ internal partial class Streams<TStreamId> {
 					user,
 					requiresLeader,
 					request.Options.Filter.WindowCase switch {
-						ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
-						ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter
-							.Max,
+						WindowOneofCase.Count => null,
+						WindowOneofCase.Max => request.Options.Filter.Max,
 						_ => throw RpcExceptions.InvalidArgument(request.Options.Filter.WindowCase)
 					},
 					request.Options.Filter.CheckpointIntervalMultiplier,
 					cancellationToken),
-			_ => throw RpcExceptions.InvalidCombination((streamOptionsCase, countOptionsCase, readDirection,
-				filterOptionsCase))
+			_ => throw RpcExceptions.InvalidCombination((streamOptionsCase, countOptionsCase, readDirection, filterOptionsCase))
 		};
 	}
 
 	private static IEventFilter ConvertToEventFilter(bool isAllStream, ReadReq.Types.Options.Types.FilterOptions filter) =>
 		filter.FilterCase switch {
-			ReadReq.Types.Options.Types.FilterOptions.FilterOneofCase.EventType => (
+			FilterOneofCase.EventType => (
 				string.IsNullOrEmpty(filter.EventType.Regex)
 					? EventFilter.EventType.Prefixes(isAllStream, filter.EventType.Prefix.ToArray())
 					: EventFilter.EventType.Regex(isAllStream, filter.EventType.Regex)),
-			ReadReq.Types.Options.Types.FilterOptions.FilterOneofCase.StreamIdentifier => (
+			FilterOneofCase.StreamIdentifier => (
 				string.IsNullOrEmpty(filter.StreamIdentifier.Regex)
 					? EventFilter.StreamName.Prefixes(isAllStream, filter.StreamIdentifier.Prefix.ToArray())
 					: EventFilter.StreamName.Regex(isAllStream, filter.StreamIdentifier.Regex)),
@@ -265,33 +243,27 @@ internal partial class Streams<TStreamId> {
 
 	private static bool TryConvertReadResponse(ReadResponse readResponse, ReadReq.Types.Options.Types.UUIDOption uuidOption, out ReadResp readResp) {
 		readResp = readResponse switch {
-			ReadResponse.EventReceived eventReceived => new ReadResp {
+			EventReceived eventReceived => new ReadResp {
 				Event = ConvertToReadEvent(uuidOption, eventReceived.Event)
 			},
-			ReadResponse.SubscriptionConfirmed subscriptionConfirmed => new ReadResp {
-				Confirmation = new ReadResp.Types.SubscriptionConfirmation {
-					SubscriptionId = subscriptionConfirmed.SubscriptionId
-				}
+			SubscriptionConfirmed subscriptionConfirmed => new ReadResp {
+				Confirmation = new() { SubscriptionId = subscriptionConfirmed.SubscriptionId }
 			},
-			ReadResponse.CheckpointReceived checkpointReceived => new ReadResp {
-				Checkpoint = new ReadResp.Types.Checkpoint {
+			CheckpointReceived checkpointReceived => new ReadResp {
+				Checkpoint = new() {
 					CommitPosition = checkpointReceived.CommitPosition,
 					PreparePosition = checkpointReceived.PreparePosition
 				}
 			},
-			ReadResponse.StreamNotFound streamNotFound => new ReadResp {
-				StreamNotFound = new ReadResp.Types.StreamNotFound {
-					StreamIdentifier = streamNotFound.StreamName
-				}
+			StreamNotFound streamNotFound => new ReadResp {
+				StreamNotFound = new() { StreamIdentifier = streamNotFound.StreamName }
 			},
-			ReadResponse.SubscriptionCaughtUp => new ReadResp {
-				CaughtUp = new ReadResp.Types.CaughtUp()
-			},
-			ReadResponse.SubscriptionFellBehind => null, // currently not sent to clients
-			ReadResponse.LastStreamPositionReceived lastStreamPositionReceived => new ReadResp {
+			SubscriptionCaughtUp => new ReadResp { CaughtUp = new() },
+			SubscriptionFellBehind => null, // currently not sent to clients
+			LastStreamPositionReceived lastStreamPositionReceived => new ReadResp {
 				LastStreamPosition = lastStreamPositionReceived.LastStreamPosition
 			},
-			ReadResponse.FirstStreamPositionReceived firstStreamPositionReceived => new ReadResp {
+			FirstStreamPositionReceived firstStreamPositionReceived => new ReadResp {
 				FirstStreamPosition = firstStreamPositionReceived.FirstStreamPosition
 			},
 			_ => throw new ArgumentException($"Unknown read response type: {readResponse.GetType().Name}", nameof(readResponse))
@@ -355,18 +327,13 @@ internal partial class Streams<TStreamId> {
 		};
 	}
 
-	private static ReadResp.Types.ReadEvent ConvertToReadEvent(ReadReq.Types.Options.Types.UUIDOption uuidOption,
-		ResolvedEvent e) {
+	private static ReadResp.Types.ReadEvent ConvertToReadEvent(ReadReq.Types.Options.Types.UUIDOption uuidOption, ResolvedEvent e) {
 		var readEvent = new ReadResp.Types.ReadEvent {
-			Link = ConvertToRecordedEvent(uuidOption, e.Link, e.LinkPosition?.CommitPosition,
-				e.LinkPosition?.PreparePosition),
-			Event = ConvertToRecordedEvent(uuidOption, e.Event, e.EventPosition?.CommitPosition,
-				e.EventPosition?.PreparePosition),
+			Link = ConvertToRecordedEvent(uuidOption, e.Link, e.LinkPosition?.CommitPosition, e.LinkPosition?.PreparePosition),
+			Event = ConvertToRecordedEvent(uuidOption, e.Event, e.EventPosition?.CommitPosition, e.EventPosition?.PreparePosition),
 		};
 		if (e.OriginalPosition.HasValue) {
-			var position = Position.FromInt64(
-				e.OriginalPosition.Value.CommitPosition,
-				e.OriginalPosition.Value.PreparePosition);
+			var position = Position.FromInt64(e.OriginalPosition.Value.CommitPosition, e.OriginalPosition.Value.PreparePosition);
 			readEvent.CommitPosition = position.CommitPosition;
 		} else {
 			readEvent.NoPosition = new Empty();
