@@ -391,11 +391,12 @@ public class StorageReaderWorker<TStreamId>(
 				if (lastEventNumber == 0)
 					return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);
 				var resolved = await CategoryIndex.GetCategoryEvents(_readIndex.IndexReader, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
+				var reversed = resolved.OrderByDescending(x => x.OriginalEvent.EventNumber).ToList();
 				if (resolved.Count == 0)
 					return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);
 				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
-					ReadStreamResult.Success, resolved, StreamMetadata.Empty, false, string.Empty,
-					resolved[0].OriginalEventNumber - 1, lastEventNumber, resolved[0].OriginalEventNumber == 0, lastIndexedPosition);
+					ReadStreamResult.Success, reversed, StreamMetadata.Empty, false, string.Empty,
+					reversed[0].OriginalEventNumber - 1, lastEventNumber, reversed[0].OriginalEventNumber == 0, lastIndexedPosition);
 			}
 			if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
 				return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion.Value);
