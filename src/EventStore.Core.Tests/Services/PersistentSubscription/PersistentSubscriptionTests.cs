@@ -189,7 +189,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 				new FakeReadIndex<TLogFormat,TStreamId>(_ => false, new MetaStreamLookup()),
 				ioDispatcher, bus,
 				new PersistentSubscriptionConsumerStrategyRegistry(bus, bus,
-					Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()));
+					Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()),
+				new ParkedMessagesTracker.NoOp());
 
 			_sut.Start();
 			_sut.Handle(new SystemMessage.BecomeLeader(correlationId: Guid.NewGuid()));

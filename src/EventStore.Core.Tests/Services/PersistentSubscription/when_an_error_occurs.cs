@@ -34,7 +34,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					new FakeReadIndex<TLogFormat, TStreamId>(_ => false, new MetaStreamLookup()),
 					new IODispatcher(bus, new PublishEnvelope(bus)), bus,
 					new PersistentSubscriptionConsumerStrategyRegistry(bus, bus,
-						Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()));
+						Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()),
+					new ParkedMessagesTracker.NoOp());
 				_envelope = new CallbackEnvelope(_replySource.SetResult);
 				_sut.Start();
 			}

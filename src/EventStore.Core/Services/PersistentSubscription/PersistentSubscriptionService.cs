@@ -57,6 +57,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private readonly IODispatcher _ioDispatcher;
 		private readonly IPublisher _bus;
 		private readonly PersistentSubscriptionConsumerStrategyRegistry _consumerStrategyRegistry;
+		private readonly IParkedMessagesTracker _parkedMessagesTracker;
 		private readonly IPersistentSubscriptionCheckpointReader _checkpointReader;
 		private readonly IPersistentSubscriptionStreamReader _streamReader;
 		private PersistentSubscriptionConfig _config = new PersistentSubscriptionConfig();
@@ -67,16 +68,19 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex<TStreamId> readIndex,
 			IODispatcher ioDispatcher, IPublisher bus,
-			PersistentSubscriptionConsumerStrategyRegistry consumerStrategyRegistry) {
+			PersistentSubscriptionConsumerStrategyRegistry consumerStrategyRegistry,
+			IParkedMessagesTracker parkedMessagesTracker) {
 			Ensure.NotNull(queuedHandler, "queuedHandler");
 			Ensure.NotNull(readIndex, "readIndex");
 			Ensure.NotNull(ioDispatcher, "ioDispatcher");
+			Ensure.NotNull(parkedMessagesTracker, "parkedMessagesTracker");
 
 			_queuedHandler = queuedHandler;
 			_readIndex = readIndex;
 			_ioDispatcher = ioDispatcher;
 			_bus = bus;
 			_consumerStrategyRegistry = consumerStrategyRegistry;
+			_parkedMessagesTracker = parkedMessagesTracker;
 			_checkpointReader = new PersistentSubscriptionCheckpointReader(_ioDispatcher);
 			_streamReader = new PersistentSubscriptionStreamReader(_ioDispatcher, 100);
 			_timerTickCorrelationId = Guid.NewGuid();
@@ -483,7 +487,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					_streamReader,
 					_checkpointReader,
 					new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher),
-					new PersistentSubscriptionMessageParker(key, _ioDispatcher)));
+					new PersistentSubscriptionMessageParker(key, _ioDispatcher),
+					_parkedMessagesTracker));
 
 			var updateEntry = new PersistentSubscriptionEntry {
 				Stream = stream, //'Stream' name kept for backward compatibility
@@ -693,8 +698,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					_streamReader,
 					_checkpointReader,
 					new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher),
-					new PersistentSubscriptionMessageParker(key, _ioDispatcher)));
-			
+					new PersistentSubscriptionMessageParker(key, _ioDispatcher),
+					_parkedMessagesTracker));
+
 			UpdateSubscription(stream, groupName, subscription);
 			return true;
 

@@ -7,6 +7,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Index;
 using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
+using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Scavenging;
@@ -31,6 +32,7 @@ public class Trackers {
 	public IDurationMaxTracker WriterFlushDurationTracker { get; set; } = new DurationMaxTracker.NoOp();
 	public ICacheHitsMissesTracker CacheHitsMissesTracker { get; set; } = new CacheHitsMissesTracker.NoOp();
 	public ICacheResourcesTracker CacheResourcesTracker { get; set; } = new CacheResourcesTracker.NoOp();
+	public IParkedMessagesTracker ParkedMessagesTracker { get; set; } = new ParkedMessagesTracker.NoOp();
 }
 
 public class GrpcTrackers {
@@ -227,6 +229,12 @@ public static class MetricsBootstrapper {
 		// kestrel
 		if (conf.Kestrel.TryGetValue(Conf.KestrelTracker.ConnectionCount, out var kestrelConnections) && kestrelConnections) {
 			_ = new ConnectionMetric(coreMeter, "eventstore-kestrel-connections");
+		}
+
+		// persistent subscriptions
+		if (conf.PersistentSubscriptions.TryGetValue(Conf.PersistentSubscriptionTracker.ParkedMessages, out var parkedMessages) && parkedMessages) {
+			var parkedMessagesMetrics = new ParkedMessagesMetrics(coreMeter, "eventstore-persistent-subscriptions");
+			trackers.ParkedMessagesTracker = new ParkedMessagesTracker(parkedMessagesMetrics);
 		}
 
 		var timeout = TimeSpan.FromSeconds(1);

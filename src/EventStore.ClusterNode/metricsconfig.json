@@ -234,5 +234,9 @@
 			"Regex": ".*",
 			"Label": "Other"
 		}
-	]
+	],
+
+	"PersistentSubscriptions": {
+		"ParkedMessages": true
+	}
 }
