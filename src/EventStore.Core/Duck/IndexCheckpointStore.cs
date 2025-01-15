@@ -20,6 +20,7 @@ public class IndexCheckpointStore(DefaultIndexHandler handler) : ICheckpointStor
 		while (true) {
 			try {
 				handler.Commit();
+				Log.Information("Committing checkpoint {Checkpoint}", checkpoint);
 				return checkpoint;
 			} catch (Exception) {
 				Log.Warning("Unable to commit {Checkpoint}, will retry", checkpoint);

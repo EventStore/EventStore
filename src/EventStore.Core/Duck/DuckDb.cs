@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Dapper;
 using DuckDB.NET.Data;
 using EventStore.Core.Duck.Default;
 using EventStore.Core.TransactionLog.Chunks;
@@ -27,6 +28,7 @@ public static class DuckDb {
 
 	public static void Close() {
 		if (!UseDuckDb) return;
+		Connection.Execute("checkpoint");
 		Connection.Close();
 	}
 
