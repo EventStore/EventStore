@@ -26,13 +26,13 @@ static class StreamIndex {
 		if (StreamCache.TryGetValue(name, out var existing)) return (long)existing!;
 		var fromDb = GetStreamIdFromDb(name);
 		if (fromDb.HasValue) {
-			StreamCache.Set(fromDb, ctx.Stream, Options);
+			StreamCache.Set(fromDb, name, Options);
 			return fromDb.Value;
 		}
 
 		var id = ++Seq;
-		StreamCache.Set(id, ctx.Stream, Options);
-		DuckDb.ExecuteWithRetry(StreamSql, new { id, name = ctx.Stream.ToString() });
+		StreamCache.Set(id, name, Options);
+		DuckDb.ExecuteWithRetry(StreamSql, new { id, name });
 		return id;
 	}
 
