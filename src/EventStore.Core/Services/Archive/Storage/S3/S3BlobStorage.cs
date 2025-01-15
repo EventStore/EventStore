@@ -46,16 +46,13 @@ public class S3BlobStorage : IBlobStorage {
 		};
 
 		try {
-			var client = _awsBlobStorage.NativeBlobClient;
-			using var response = await client.GetObjectAsync(request, ct);
+			using var response = await _awsBlobStorage.NativeBlobClient.GetObjectAsync(request, ct);
 			var length = int.CreateSaturating(response.ContentLength);
 			await using var responseStream = response.ResponseStream;
 			await responseStream.ReadExactlyAsync(buffer.TrimLength(length), ct);
 			return length;
-		} catch (AmazonS3Exception ex) {
-			if (ex.ErrorCode == "NoSuchKey")
-				throw new FileNotFoundException();
-			throw;
+		} catch (AmazonS3Exception ex) when (ex.ErrorCode is "NoSuchKey") {
+			throw new FileNotFoundException();
 		}
 	}
 
@@ -64,9 +61,8 @@ public class S3BlobStorage : IBlobStorage {
 		await _awsBlobStorage.WriteAsync(name, stream, append: false, ct);
 	}
 
-	public async ValueTask Store(string input, string name, CancellationToken ct) {
-		await _awsBlobStorage.WriteFileAsync(name, filePath: input, ct);
-	}
+	public ValueTask Store(string input, string name, CancellationToken ct)
+		=> new(_awsBlobStorage.WriteFileAsync(name, filePath: input, ct));
 
 	// ByteRange is inclusive of both start and end
 	private static ByteRange GetRange(long offset, int length) => new(
