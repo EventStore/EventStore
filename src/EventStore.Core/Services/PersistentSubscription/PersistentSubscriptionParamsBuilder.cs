@@ -22,6 +22,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private IPersistentSubscriptionCheckpointReader _checkpointReader;
 		private IPersistentSubscriptionCheckpointWriter _checkpointWriter;
 		private IPersistentSubscriptionMessageParker _messageParker;
+		private IParkedMessagesTracker _parkedMessagesTracker = new ParkedMessagesTracker.NoOp();
 		private TimeSpan _checkPointAfter;
 		private int _minCheckPointCount;
 		private int _maxCheckPointCount;
@@ -76,6 +77,16 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		/// <returns></returns>
 		public PersistentSubscriptionParamsBuilder WithMessageParker(IPersistentSubscriptionMessageParker parker) {
 			_messageParker = parker;
+			return this;
+		}
+		
+		/// <summary>
+		/// Sets the parked message tracker for the instance
+		/// </summary>
+		/// <param name="parkedMessagesTracker"></param>
+		/// <returns></returns>
+		public PersistentSubscriptionParamsBuilder WithParkedMessageTracker(IParkedMessagesTracker parkedMessagesTracker) {
+			_parkedMessagesTracker = parkedMessagesTracker;
 			return this;
 		}
 
@@ -310,7 +321,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				builder._streamReader,
 				builder._checkpointReader,
 				builder._checkpointWriter,
-				builder._messageParker);
+				builder._messageParker,
+				builder._parkedMessagesTracker);
 		}
 	}
 }

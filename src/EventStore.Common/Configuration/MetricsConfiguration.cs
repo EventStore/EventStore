@@ -138,6 +138,10 @@ namespace EventStore.Common.Configuration {
 			Processing,
 		}
 
+		public enum PersistentSubscriptionTracker {
+			ParkedMessages = 1,
+		}
+
 		public class LabelMappingCase {
 			public string Regex { get; set; }
 			public string Label { get; set; }
@@ -173,6 +177,8 @@ namespace EventStore.Common.Configuration {
 		public int ExpectedScrapeIntervalSeconds { get; set; }
 
 		public Dictionary<QueueTracker, bool> Queues { get; set; } = new();
+
+		public Dictionary<PersistentSubscriptionTracker, bool> PersistentSubscriptions { get; set; } = new();
 
 		public LabelMappingCase[] QueueLabels { get; set; } = Array.Empty<LabelMappingCase>();
 

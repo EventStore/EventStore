@@ -41,6 +41,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private bool _skipFirstEvent;
 		private DateTime _lastCheckPointTime = DateTime.MinValue;
 		private readonly PersistentSubscriptionParams _settings;
+		private readonly IParkedMessagesTracker _parkedMessagesTracker;
+
 		private long _nextSequenceNumber;
 		private long _lastCheckpointedSequenceNumber;
 		private long _lastKnownSequenceNumber;
@@ -76,12 +78,15 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Ensure.NotNull(persistentSubscriptionParams.SubscriptionId, "subscriptionId");
 			Ensure.NotNull(persistentSubscriptionParams.EventSource, "eventSource");
 			Ensure.NotNull(persistentSubscriptionParams.GroupName, "groupName");
+			Ensure.NotNull(persistentSubscriptionParams.ParkedMessagesTracker, "parkedMessagesTracker");
+
 			if (persistentSubscriptionParams.ReadBatchSize >= persistentSubscriptionParams.BufferSize) {
 				throw new ArgumentOutOfRangeException($"{nameof(persistentSubscriptionParams.ReadBatchSize)} may not be greater than or equal to {nameof(persistentSubscriptionParams.BufferSize)}");
 			}
 
 			_totalTimeWatch = new Stopwatch();
 			_settings = persistentSubscriptionParams;
+			_parkedMessagesTracker = persistentSubscriptionParams.ParkedMessagesTracker;
 			_nextEventToPullFrom = _settings.EventSource.StreamStartPosition;
 			_totalTimeWatch.Start();
 			_statistics = new PersistentSubscriptionStats(this, _settings, _totalTimeWatch);
@@ -481,7 +486,11 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					break;
 				case NakAction.Park:
 					if (_outstandingMessages.GetMessageById(id, out m)) {
-						ParkMessage(m.ResolvedEvent, "Client explicitly NAK'ed message.\n" + reason, 0);
+						ParkMessage(
+							resolvedEvent: m.ResolvedEvent,
+							reason: "Client explicitly NAK'ed message.\n" + reason,
+							parkReason: ParkReason.ByClient,
+							count: 0);
 					}
 
 					break;
@@ -497,14 +506,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 		}
 
-		private void ParkMessage(ResolvedEvent resolvedEvent, string reason, int count) {
+		private void ParkMessage(ResolvedEvent resolvedEvent, string reason, ParkReason parkReason, int count) {
 			_settings.MessageParker.BeginParkMessage(resolvedEvent, reason, (e, result) => {
 				if (result != OperationResult.Success) {
 					if (count < 5) {
 						Log.Information("Unable to park message {stream}/{eventNumber} operation failed {e} retrying",
 							e.OriginalStreamId,
 							e.OriginalEventNumber, result);
-						ParkMessage(e, reason, count + 1);
+						ParkMessage(e, reason, parkReason, count + 1);
 						return;
 					}
 
@@ -514,6 +523,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 						e.OriginalEventNumber, result);
 				}
 
+				_parkedMessagesTracker.OnMessageParked(parkReason);
 				lock (_lock) {
 					_outstandingMessages.Remove(e.OriginalEvent.EventId);
 					_pushClients.RemoveProcessingMessages(e.OriginalEvent.EventId);
@@ -529,6 +539,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					return;
 				if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) > 0)
 					return; //already replaying
+
+				_parkedMessagesTracker.OnParkedMessagesReplayed();
 				_state |= PersistentSubscriptionState.ReplayingParkedMessages;
 				_settings.MessageParker.BeginReadEndSequence(end => {
 					if (!end.HasValue) {
@@ -646,7 +658,11 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private bool ActionTakenForRetriedMessage(OutstandingMessage message) {
 			if (message.RetryCount < _settings.MaxRetryCount)
 				return false;
-			ParkMessage(message.ResolvedEvent, string.Format("Reached retry count of {0}", _settings.MaxRetryCount), 0);
+			ParkMessage(
+				resolvedEvent: message.ResolvedEvent,
+				reason: $"Reached retry count of {_settings.MaxRetryCount}",
+				parkReason: ParkReason.MaxRetries,
+				count: 0);
 			return true;
 		}
 
