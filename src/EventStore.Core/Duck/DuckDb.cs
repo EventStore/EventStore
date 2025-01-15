@@ -51,7 +51,7 @@ public static class DuckDb {
 			try {
 				return Connection.Query<T>(sql, arg);
 			} catch (Exception e) {
-				Log.Warning(e, "Error while executing {Sql}", sql);
+				Log.Warning("Error while executing {Sql}: {Error}", sql, e.Message);
 			}
 		}
 	}
