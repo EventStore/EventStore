@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.IO;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
@@ -45,18 +46,14 @@ public class FileSystemBlobStorage : IBlobStorage {
 		return task;
 	}
 
-	public async ValueTask Store(ReadOnlyMemory<byte> sourceData, string name, CancellationToken ct) {
-		if (sourceData.Length > sizeof(long)) {
-			// this is so far only used for checkpoints. data must be small so that flush is atomic
-			throw new NotSupportedException("This overload can only write small amounts of data");
-		}
-
+	public async ValueTask Store(Stream sourceData, string name, CancellationToken ct) {
 		var destinationPath = Path.Combine(_archivePath, name);
 		using var handle = File.OpenHandle(destinationPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None,
 			FileOptions.Asynchronous);
 
-		await RandomAccess.WriteAsync(handle, sourceData, fileOffset: 0L, ct);
-		RandomAccess.FlushToDisk(handle);
+		await using var output = handle.AsUnbufferedStream(FileAccess.Write);
+		await sourceData.CopyToAsync(output, ct);
+		await output.FlushAsync(ct);
 	}
 
 	public async ValueTask Store(string input, string name, CancellationToken ct) {

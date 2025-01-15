@@ -7,8 +7,10 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
+using DotNext.IO;
 using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
+using Microsoft.Win32.SafeHandles;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage;
@@ -53,23 +55,29 @@ public class ArchiveStorage(
 
 	public async ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) {
 		var buffer = Memory.AllocateExactly<byte>(sizeof(long));
+		var stream = StreamSource.AsStream(buffer.Memory);
 		try {
 			BinaryPrimitives.WriteInt64LittleEndian(buffer.Span, checkpoint);
-			await blobStorage.Store(buffer.Memory, archiveCheckpointFile, ct);
+			await blobStorage.Store(stream, archiveCheckpointFile, ct);
 			return true;
 		} catch (Exception ex) when (ex is not OperationCanceledException) {
 			Log.Error(ex, "Error while setting checkpoint to: {checkpoint} (0x{checkpoint:X})",
 				checkpoint, checkpoint);
 			return false;
 		} finally {
+			await stream.DisposeAsync();
 			buffer.Dispose();
 		}
 	}
 
 	public async ValueTask<bool> StoreChunk(string sourceChunkPath, int logicalChunkNumber, CancellationToken ct) {
+		var handle = default(SafeFileHandle);
+		var stream = default(Stream);
 		try {
+			handle = File.OpenHandle(sourceChunkPath, options: FileOptions.Asynchronous | FileOptions.SequentialScan);
+			stream = handle.AsUnbufferedStream(FileAccess.Read);
 			var destinationFile = chunkNameResolver.ResolveFileName(logicalChunkNumber);
-			await blobStorage.Store(sourceChunkPath, destinationFile, ct);
+			await blobStorage.Store(stream, destinationFile, ct);
 			return true;
 		} catch (FileNotFoundException) {
 			throw new ChunkDeletedException();
@@ -77,8 +85,12 @@ public class ArchiveStorage(
 			if (!File.Exists(sourceChunkPath))
 				throw new ChunkDeletedException();
 
-			Log.Error(ex, "Error while storing chunk: {logicalChunkNumber} ({chunkPath})", logicalChunkNumber, sourceChunkPath);
+			Log.Error(ex, "Error while storing chunk: {logicalChunkNumber} ({chunkPath})", logicalChunkNumber,
+				sourceChunkPath);
 			return false;
+		} finally {
+			await (stream?.DisposeAsync() ?? ValueTask.CompletedTask);
+			handle?.Dispose();
 		}
 	}
 }

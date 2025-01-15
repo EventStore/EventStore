@@ -56,13 +56,8 @@ public class S3BlobStorage : IBlobStorage {
 		}
 	}
 
-	public async ValueTask Store(ReadOnlyMemory<byte> sourceData, string name, CancellationToken ct) {
-		await using var stream = sourceData.AsStream();
-		await _awsBlobStorage.WriteAsync(name, stream, append: false, ct);
-	}
-
-	public ValueTask Store(string input, string name, CancellationToken ct)
-		=> new(_awsBlobStorage.WriteFileAsync(name, filePath: input, ct));
+	public ValueTask Store(Stream readableStream, string name, CancellationToken ct)
+		=> new(_awsBlobStorage.WriteAsync(name, readableStream, append: false, ct));
 
 	// ByteRange is inclusive of both start and end
 	private static ByteRange GetRange(long offset, int length) => new(
