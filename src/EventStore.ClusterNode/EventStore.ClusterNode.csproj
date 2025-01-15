@@ -47,6 +47,9 @@
 		<Content Include="bin\Debug\net8.0\data\file.db" />
 		<Content Include="certs\**\*" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="bin\Debug\net8.0\data\" />
+	</ItemGroup>
 	<!-- TODO(jen20): Investigate which of these are correct -->
 	<PropertyGroup>
 		<IsMac>false</IsMac>

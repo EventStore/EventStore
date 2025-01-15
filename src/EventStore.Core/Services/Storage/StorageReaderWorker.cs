@@ -13,6 +13,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Duck;
+using EventStore.Core.Duck.Default;
 using EventStore.Core.Exceptions;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.InMemory;
@@ -338,8 +339,8 @@ public class StorageReaderWorker<TStreamId>(
 
 			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
 			if (DuckDb.UseDuckDb && msg.EventStreamId.StartsWith("$ce") && msg.ResolveLinkTos) {
-				var lastEventNumber = DuckDb.GetCategoryLastEventNumber(msg.EventStreamId);
-				var resolved = await DuckDb.GetCategoryEvents(_readIndex.IndexReader, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
+				var lastEventNumber = CategoryIndex.GetCategoryLastEventNumber(msg.EventStreamId);
+				var resolved = await CategoryIndex.GetCategoryEvents(_readIndex.IndexReader, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
 				if (resolved.Count == 0)
 					return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion ?? 0);
 				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
@@ -386,13 +387,12 @@ public class StorageReaderWorker<TStreamId>(
 			var streamName = msg.EventStreamId;
 			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
 			if (DuckDb.UseDuckDb && msg.EventStreamId.StartsWith("$ce") && msg.ResolveLinkTos) {
-				var lastEventNumber = DuckDb.GetCategoryLastEventNumber(msg.EventStreamId);
+				var lastEventNumber = CategoryIndex.GetCategoryLastEventNumber(msg.EventStreamId);
 				if (lastEventNumber == 0)
 					return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);
-				var resolved = await DuckDb.GetCategoryEvents(_readIndex.IndexReader, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
+				var resolved = await CategoryIndex.GetCategoryEvents(_readIndex.IndexReader, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
 				if (resolved.Count == 0)
 					return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);
-				Log.Information("First event number: {First}", resolved[0].OriginalEventNumber);
 				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
 					ReadStreamResult.Success, resolved, StreamMetadata.Empty, false, string.Empty,
 					resolved[0].OriginalEventNumber - 1, lastEventNumber, resolved[0].OriginalEventNumber == 0, lastIndexedPosition);

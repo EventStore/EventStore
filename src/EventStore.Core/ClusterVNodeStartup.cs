@@ -83,24 +83,13 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		Action<IApplicationBuilder> startNode) {
 
 		Ensure.Positive(maxAppendSize, nameof(maxAppendSize));
-
-		if (httpService == null) {
-			throw new ArgumentNullException(nameof(httpService));
-		}
-
+		ArgumentNullException.ThrowIfNull(httpService);
 		ArgumentNullException.ThrowIfNull(configuration);
 
-		if (mainBus == null) {
-			throw new ArgumentNullException(nameof(mainBus));
-		}
-
-		if (monitoringQueue == null) {
-			throw new ArgumentNullException(nameof(monitoringQueue));
-		}
 		_plugableComponents = plugableComponents;
 		_mainQueue = mainQueue;
-		_monitoringQueue = monitoringQueue;
-		_mainBus = mainBus;
+		_monitoringQueue = monitoringQueue ?? throw new ArgumentNullException(nameof(monitoringQueue));
+		_mainBus = mainBus ?? throw new ArgumentNullException(nameof(mainBus));
 		_httpMessageHandler = httpMessageHandler;
 		_authenticationProvider = authenticationProvider;
 		_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));

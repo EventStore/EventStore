@@ -316,8 +316,6 @@ public class ClusterVNode<TStreamId> :
 		var metricsConfiguration = MetricsConfiguration.Get((configuration));
 		MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
-		DuckDb.Init();
-
 		Db = new TFChunkDb(
 			dbConfig,
 			tracker: trackers.TransactionFileTracker,
@@ -703,10 +701,7 @@ public class ClusterVNode<TStreamId> :
 		_readIndex = readIndex;
 		var writer = new TFChunkWriter(Db);
 
-		var partitionManager = logFormat.CreatePartitionManager(new TFChunkReader(
-				Db,
-				Db.Config.WriterCheckpoint.AsReadOnly()),
-			writer);
+		var partitionManager = logFormat.CreatePartitionManager(new TFChunkReader(Db, Db.Config.WriterCheckpoint.AsReadOnly()), writer);
 
 		var epochManager = new EpochManager<TStreamId>(_mainQueue,
 			ESConsts.CachedEpochCount,
@@ -806,10 +801,7 @@ public class ClusterVNode<TStreamId> :
 		_mainBus.Subscribe<StorageMessage.CommitAck>(indexCommitterService);
 		_mainBus.Subscribe<ClientMessage.MergeIndexes>(indexCommitterService);
 
-		var chaser = new TFChunkChaser(
-			Db,
-			Db.Config.WriterCheckpoint.AsReadOnly(),
-			Db.Config.ChaserCheckpoint);
+		var chaser = new TFChunkChaser(Db, Db.Config.WriterCheckpoint.AsReadOnly(), Db.Config.ChaserCheckpoint);
 
 		var storageChaser = new StorageChaser<TStreamId>(
 			_mainQueue,
@@ -821,9 +813,7 @@ public class ClusterVNode<TStreamId> :
 		AddTask(storageChaser.Task);
 
 #if DEBUG
-		_queueStatsManager.InitializeCheckpoints(
-			Db.Config.WriterCheckpoint.AsReadOnly(),
-			Db.Config.ChaserCheckpoint.AsReadOnly());
+		_queueStatsManager.InitializeCheckpoints(Db.Config.WriterCheckpoint.AsReadOnly(), Db.Config.ChaserCheckpoint.AsReadOnly());
 #endif
 		_mainBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
 		_mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
@@ -1212,7 +1202,6 @@ public class ClusterVNode<TStreamId> :
 		perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionsRestart>(persistentSubscription);
 
 		// STORAGE SCAVENGER
-		ScavengerFactory scavengerFactory;
 		var scavengerDispatcher = new IODispatcher(_mainQueue, _mainQueue);
 		_mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(scavengerDispatcher.BackwardReader);
 		_mainBus.Subscribe<ClientMessage.NotHandled>(scavengerDispatcher.BackwardReader);
@@ -1223,7 +1212,7 @@ public class ClusterVNode<TStreamId> :
 		// reuse the same buffer; it's quite big.
 		var calculatorBuffer = new Calculator<TStreamId>.Buffer(32_768);
 
-		scavengerFactory = new ScavengerFactory((message, scavengerLogger, logger) => {
+		var scavengerFactory = new ScavengerFactory((message, scavengerLogger, logger) => {
 			// currently on the main queue
 			var optionsCalculator = new ScavengeOptionsCalculator(options, message);
 
@@ -1247,8 +1236,8 @@ public class ClusterVNode<TStreamId> :
 			// so that we don't keep hold of memory used for the page caches between scavenges
 			var backendPool = new ObjectPool<IScavengeStateBackend<TStreamId>>(
 				objectPoolName: "scavenge backend pool",
-				initialCount: 0, // so that factory is not called on the main queue
-				maxCount: TFChunkScavenger.MaxThreadCount + 1,
+				initialCount: 0, maxCount // so that factory is not called on the main queue
+				: TFChunkScavenger.MaxThreadCount + 1,
 				factory: () => {
 					// not on the main queue
 					var scavengeDirectory = Path.Combine(indexPath, "scavenging");
@@ -1363,11 +1352,11 @@ public class ClusterVNode<TStreamId> :
 				cleaner: cleaner,
 				scavengePointSource: scavengePointSource,
 				scavengerLogger: scavengerLogger,
-				statusTracker: trackers.ScavengeStatusTracker,
+				statusTracker: trackers.ScavengeStatusTracker, thresholdForNewScavenge
 				// threshold < 0: execute all chunks, even those with no weight
 				// threshold = 0: execute all chunks with weight greater than 0
 				// threshold > 0: execute all chunks above a certain weight
-				thresholdForNewScavenge: optionsCalculator.ChunkExecutionThreshold,
+				: optionsCalculator.ChunkExecutionThreshold,
 				syncOnly: message.SyncOnly,
 				getThrottleStats: () => throttle.PrettyPrint());
 		});
@@ -1556,7 +1545,7 @@ public class ClusterVNode<TStreamId> :
 		_subsystems = options.Subsystems;
 
 		var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
-			httpSendService, new IHttpService[] { _httpService }, _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
+			httpSendService, [_httpService], _workersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
 
 		IServiceCollection ConfigureNodeServices(IServiceCollection services) {
 			services
@@ -1633,8 +1622,7 @@ public class ClusterVNode<TStreamId> :
 			// start the main queue as we publish messages to it while opening the db
 			AddTask(_controller.Start());
 
-			using (var task = Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads,
-				       createNewChunks: false).AsTask()) {
+			using (var task = Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads,createNewChunks: false).AsTask()) {
 				task.Wait(); // No timeout or cancellation, this is intended
 			}
 
@@ -1671,6 +1659,10 @@ public class ClusterVNode<TStreamId> :
 
 		_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
+
+		var indexBuilder = new DuckDbIndexBuilder(dbConfig, _mainQueue);
+		_mainBus.Subscribe<SystemMessage.SystemReady>(indexBuilder);
+		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(indexBuilder);
 
 		var certificateExpiryMonitor = new CertificateExpiryMonitor(_mainQueue, _certificateSelector, Log);
 		_mainBus.Subscribe<SystemMessage.SystemStart>(certificateExpiryMonitor);
@@ -1858,8 +1850,7 @@ public class ClusterVNode<TStreamId> :
 		var tcs = new TaskCompletionSource<ClusterVNode>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		if (waitUntilReady) {
-			_mainBus.Subscribe(new AdHocHandler<SystemMessage.SystemReady>(
-				_ => tcs.TrySetResult(this)));
+			_mainBus.Subscribe(new AdHocHandler<SystemMessage.SystemReady>(_ => tcs.TrySetResult(this)));
 		} else {
 			tcs.TrySetResult(this);
 		}

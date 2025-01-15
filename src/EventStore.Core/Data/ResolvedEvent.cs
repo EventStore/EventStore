@@ -28,17 +28,12 @@ public struct ResolvedEvent : IEquatable<ResolvedEvent> {
 
 	public readonly ReadEventResult ResolveResult;
 
-	public string OriginalStreamId {
-		get { return OriginalEvent.EventStreamId; }
-	}
+	public string OriginalStreamId => OriginalEvent.EventStreamId;
 
-	public long OriginalEventNumber {
-		get { return OriginalEvent.EventNumber; }
-	}
+	public long OriginalEventNumber => OriginalEvent.EventNumber;
 
 
-	private ResolvedEvent(EventRecord @event, EventRecord link, long? commitPosition,
-		ReadEventResult resolveResult = default(ReadEventResult)) {
+	ResolvedEvent(EventRecord @event, EventRecord link, long? commitPosition, ReadEventResult resolveResult = default) {
 		Event = @event;
 		Link = link;
 		_originalEventCommitPosition = commitPosition;
