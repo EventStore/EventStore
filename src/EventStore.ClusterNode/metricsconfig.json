@@ -49,6 +49,10 @@
 		"ProcessingRequestFromHttpClient": false
 	},
 
+	"PersistentSubscriptions": {
+		"ParkedMessages": true,
+	},
+
 	"Writer": {
 		"FlushSize": true,
 		"FlushDuration": true
@@ -234,9 +238,5 @@
 			"Regex": ".*",
 			"Label": "Other"
 		}
-	],
-
-	"PersistentSubscriptions": {
-		"ParkedMessages": true
-	}
+	]
 }

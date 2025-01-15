@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics.Metrics;
 
 namespace EventStore.Core.Metrics;
 
@@ -8,22 +7,20 @@ public class ParkedMessagesMetrics {
 	private readonly CounterSubMetric _parkedMaxRetries;
 	private readonly CounterSubMetric _parkedReplays;
 
-	public ParkedMessagesMetrics(Meter meter, string name) {
-		var counterMetric = new CounterMetric(meter, name);
+	public ParkedMessagesMetrics(
+		CounterMetric messagesParked,
+		CounterMetric replaysRequested) {
 
-		_parkedByClient = new CounterSubMetric(counterMetric, new [] {
-			new KeyValuePair<string, object>("op", "park-message"),
+		_parkedByClient = new CounterSubMetric(messagesParked, [
 			new KeyValuePair<string, object>("reason", "client-nak")
-		});
+		]);
 
-		_parkedMaxRetries = new CounterSubMetric(counterMetric, new [] {
-			new KeyValuePair<string, object>("op", "park-message"),
+		_parkedMaxRetries = new CounterSubMetric(messagesParked, [
 			new KeyValuePair<string, object>("reason", "max-retries")
-		});
+		]);
 
-		_parkedReplays = new CounterSubMetric(counterMetric, new [] {
-			new KeyValuePair<string, object>("op", "replay-parked-messages")
-		});
+		_parkedReplays = new CounterSubMetric(replaysRequested, [
+		]);
 	}
 
 	public void OnParkedMessageByClient() => _parkedByClient.Add(1);
