@@ -50,7 +50,7 @@
 	},
 
 	"PersistentSubscriptions": {
-		"ParkedMessages": true,
+		"ParkedMessages": true
 	},
 
 	"Writer": {
