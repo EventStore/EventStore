@@ -34,7 +34,7 @@ public static class EventTypeIndex {
 		}
 
 		var id = ++Seq;
-		DuckDb.Connection.Execute(Sql, new { id, name = ctx.MessageType });
+		DuckDb.ExecuteWithRetry(Sql, new { id, name = ctx.MessageType });
 		ctx.LogContext.InfoLog?.Log("Stored event type {EventType} with {Id}", ctx.MessageType, id);
 		EventTypes[ctx.MessageType] = id;
 		EventTypeIds[id] = ctx.MessageType;

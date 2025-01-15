@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Dapper;
@@ -33,4 +34,25 @@ public static class DuckDb {
 	}
 
 	public static DuckDBConnection Connection;
+
+	public static void ExecuteWithRetry(string sql, object arg) {
+		while (true) {
+			try {
+				Connection.Execute(sql, arg);
+				return;
+			} catch (Exception e) {
+				Log.Warning(e, "Error while executing {Sql}", sql);
+			}
+		}
+	}
+
+	public static IEnumerable<T> QueryWithRetry<T>(string sql, object arg = null) {
+		while (true) {
+			try {
+				return Connection.Query<T>(sql, arg);
+			} catch (Exception e) {
+				Log.Warning(e, "Error while executing {Sql}", sql);
+			}
+		}
+	}
 }

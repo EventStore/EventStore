@@ -107,14 +107,9 @@ static class CategoryIndex {
 
 		while (true) {
 			using var duration = TempIndexMetrics.MeasureIndex("duck_get_cat_range");
-			try {
-				var categoryId = Categories[category];
-				var result = DuckDb.Connection.Query<CategoryRecord>(query, new { cat = categoryId, start = fromEventNumber, end = toEventNumber }).ToList();
-				return result;
-			} catch (Exception e) {
-				Log.Warning("Error while querying category events: {Message}", e.Message);
-				duration.SetException(e);
-			}
+			var categoryId = Categories[category];
+			var result = DuckDb.QueryWithRetry<CategoryRecord>(query, new { cat = categoryId, start = fromEventNumber, end = toEventNumber }).ToList();
+			return result;
 		}
 	}
 
@@ -152,7 +147,7 @@ static class CategoryIndex {
 		}
 
 		var id = ++Seq;
-		DuckDb.Connection.Execute(CatSql, new { id, name = categoryName });
+		DuckDb.ExecuteWithRetry(CatSql, new { id, name = categoryName });
 		ctx.LogContext.InfoLog?.Log("Stored category {Category} with {Id}", categoryName, id);
 		Categories[categoryName] = id;
 		CategorySizes[id] = 0;

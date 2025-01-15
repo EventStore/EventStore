@@ -32,7 +32,7 @@ static class StreamIndex {
 
 		var id = ++Seq;
 		StreamCache.Set(id, ctx.Stream, Options);
-		DuckDb.Connection.Execute(StreamSql, new { id, name = ctx.Stream.ToString() });
+		DuckDb.ExecuteWithRetry(StreamSql, new { id, name = ctx.Stream.ToString() });
 		return id;
 	}
 
@@ -83,14 +83,8 @@ static class StreamIndex {
 
 	static long? GetStreamIdFromDb(string streamName) {
 		const string sql = "select id from streams where name=$name";
-		return DuckDb.Connection.Query<long?>(sql, new { name = streamName }).SingleOrDefault();
+		return DuckDb.QueryWithRetry<long?>(sql, new { name = streamName }).SingleOrDefault();
 	}
 
 	static readonly string StreamSql = Sql.AppendIndexSql.Replace("{table}", "streams");
-	// public override void Handle(IMessageConsumeContext context, DuckDBAppenderRow row) {
-	//     var id = CommonHandle(_streamSql, context.Stream);
-	//     row.AppendValue(id);
-	// }
-	//
-	// protected override void SetEntryOptions(ICacheEntry entry) => entry.SlidingExpiration = TimeSpan.FromMinutes(10);
 }
