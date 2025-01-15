@@ -42,7 +42,7 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 		_ => throw new NotImplementedException(),
 	};
 
-	private async ValueTask<FileStream> CreateFile(string fileName, int fileSize = 1000) {
+	private async ValueTask<FileStream> CreateFile(string fileName, int fileSize) {
 		var path = Path.Combine(LocalPath, fileName);
 		using var content = Memory.AllocateExactly<byte>(fileSize);
 		RandomNumberGenerator.Fill(content.Span);
@@ -86,7 +86,7 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 
 		// create a file and upload it
 		string localPath;
-		await using (var fs = await CreateFile("local.file")) {
+		await using (var fs = await CreateFile("local.file", fileSize: 1024)) {
 			await sut.StoreAsync(fs, "output.file", CancellationToken.None);
 			localPath = fs.Name;
 		}

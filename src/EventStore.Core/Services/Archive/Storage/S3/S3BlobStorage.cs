@@ -8,11 +8,9 @@ using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DotNext.Buffers;
-using DotNext.IO;
 using EventStore.Common.Exceptions;
 using FluentStorage;
 using FluentStorage.AWS.Blobs;
-using FluentStorage.Blobs;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage.S3;
