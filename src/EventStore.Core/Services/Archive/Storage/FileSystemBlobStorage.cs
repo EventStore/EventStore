@@ -55,37 +55,4 @@ public class FileSystemBlobStorage : IBlobStorage {
 		await sourceData.CopyToAsync(output, ct);
 		await output.FlushAsync(ct);
 	}
-
-	public async ValueTask Store(string input, string name, CancellationToken ct) {
-		var destinationPath = Path.Combine(_archivePath, name);
-		var tempPath = $"{destinationPath}.tmp";
-
-		if (File.Exists(tempPath))
-			File.Delete(tempPath);
-
-		{
-			await using var source = File.Open(
-				path: input,
-				options: new FileStreamOptions {
-					Mode = FileMode.Open,
-					Access = FileAccess.Read,
-					Share = FileShare.Read,
-					Options = FileOptions.SequentialScan | FileOptions.Asynchronous
-				});
-
-			await using var destination = File.Open(
-				path: tempPath,
-				options: new FileStreamOptions {
-					Mode = FileMode.CreateNew,
-					Access = FileAccess.ReadWrite,
-					Share = FileShare.None,
-					Options = FileOptions.Asynchronous,
-					PreallocationSize = new FileInfo(input).Length
-				});
-
-			await source.CopyToAsync(destination, ct);
-		}
-
-		File.Move(tempPath, destinationPath, overwrite: true);
-	}
 }
