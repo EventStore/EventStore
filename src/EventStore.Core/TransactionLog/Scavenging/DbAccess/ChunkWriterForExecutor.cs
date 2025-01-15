@@ -100,7 +100,7 @@ public class ChunkWriterForExecutor<TStreamId> : IChunkWriterForExecutor<TStream
 			unifiedPosMap.AddRange(list);
 
 		await _outputChunk.CompleteScavenge(unifiedPosMap, token);
-		var newFileName = await _manager.SwitchChunk(chunk: _outputChunk, token);
+		var newFileName = await _manager.SwitchInTempChunk(chunk: _outputChunk, token);
 
 		return (newFileName, _outputChunk.FileSize);
 	}

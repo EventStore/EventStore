@@ -293,7 +293,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 					_logger.Debug("Forcing scavenged chunk to be kept as old chunk is a previous version.");
 				}
 
-				var chunk = await _db.Manager.SwitchChunk(newChunk, verifyHash: false,
+				var chunk = await _db.Manager.SwitchInTempChunk(newChunk, verifyHash: false,
 					removeChunksWithGreaterNumbers: false, ct);
 				if (chunk is not null) {
 					_logger.Debug("Scavenging of chunks:"
@@ -475,7 +475,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 				logger.Debug("Forcing merged chunk to be kept as old chunk is a previous version.");
 			}
 
-			var chunk = await db.Manager.SwitchChunk(newChunk, verifyHash: false,
+			var chunk = await db.Manager.SwitchInTempChunk(newChunk, verifyHash: false,
 				removeChunksWithGreaterNumbers: false, ct);
 			if (chunk is not null) {
 				logger.Debug(
