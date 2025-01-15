@@ -56,7 +56,7 @@ public class S3BlobStorage : IBlobStorage {
 		}
 	}
 
-	public ValueTask Store(Stream readableStream, string name, CancellationToken ct)
+	public ValueTask StoreAsync(Stream readableStream, string name, CancellationToken ct)
 		=> new(_awsBlobStorage.WriteAsync(name, readableStream, append: false, ct));
 
 	// ByteRange is inclusive of both start and end

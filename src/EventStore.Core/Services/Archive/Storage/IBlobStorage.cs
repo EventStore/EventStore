@@ -13,7 +13,7 @@ namespace EventStore.Core.Services.Archive.Storage;
 public interface IBlobStorage {
 	ValueTask<int> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken token);
 	ValueTask<BlobMetadata> GetMetadataAsync(string name, CancellationToken token);
-	ValueTask Store(Stream readableStream, string name, CancellationToken ct);
+	ValueTask StoreAsync(Stream readableStream, string name, CancellationToken ct);
 }
 
 public readonly record struct BlobMetadata(long Size);

@@ -46,7 +46,7 @@ public class FileSystemBlobStorage : IBlobStorage {
 		return task;
 	}
 
-	public async ValueTask Store(Stream sourceData, string name, CancellationToken ct) {
+	public async ValueTask StoreAsync(Stream sourceData, string name, CancellationToken ct) {
 		var destinationPath = Path.Combine(_archivePath, name);
 		using var handle = File.OpenHandle(destinationPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None,
 			FileOptions.Asynchronous);

@@ -58,7 +58,7 @@ public class ArchiveStorage(
 		var stream = StreamSource.AsStream(buffer.Memory);
 		try {
 			BinaryPrimitives.WriteInt64LittleEndian(buffer.Span, checkpoint);
-			await blobStorage.Store(stream, archiveCheckpointFile, ct);
+			await blobStorage.StoreAsync(stream, archiveCheckpointFile, ct);
 			return true;
 		} catch (Exception ex) when (ex is not OperationCanceledException) {
 			Log.Error(ex, "Error while setting checkpoint to: {checkpoint} (0x{checkpoint:X})",
@@ -77,7 +77,7 @@ public class ArchiveStorage(
 			handle = File.OpenHandle(sourceChunkPath, options: FileOptions.Asynchronous | FileOptions.SequentialScan);
 			stream = handle.AsUnbufferedStream(FileAccess.Read);
 			var destinationFile = chunkNameResolver.ResolveFileName(logicalChunkNumber);
-			await blobStorage.Store(stream, destinationFile, ct);
+			await blobStorage.StoreAsync(stream, destinationFile, ct);
 			return true;
 		} catch (FileNotFoundException) {
 			throw new ChunkDeletedException();

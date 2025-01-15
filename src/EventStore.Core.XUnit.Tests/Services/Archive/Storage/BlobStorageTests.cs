@@ -63,7 +63,7 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 		const int fileSize = 1000;
 		string localPath;
 		await using (var fs = await CreateFile("local.file", fileSize)) {
-			await sut.Store(fs, "output.file", CancellationToken.None);
+			await sut.StoreAsync(fs, "output.file", CancellationToken.None);
 			localPath = fs.Name;
 		}
 
@@ -87,7 +87,7 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 		// create a file and upload it
 		string localPath;
 		await using (var fs = await CreateFile("local.file")) {
-			await sut.Store(fs, "output.file", CancellationToken.None);
+			await sut.StoreAsync(fs, "output.file", CancellationToken.None);
 			localPath = fs.Name;
 		}
 
@@ -114,7 +114,7 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 		// create a file and upload it
 		var fileSize = 345;
 		await using (var fs = await CreateFile("local.file", fileSize)) {
-			await sut.Store(fs, "output.file", CancellationToken.None);
+			await sut.StoreAsync(fs, "output.file", CancellationToken.None);
 		}
 
 		// when
