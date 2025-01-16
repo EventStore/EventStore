@@ -39,9 +39,9 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 	}
 
 	public ValueTask SetReadOnlyAsync(string locator, bool value, CancellationToken token) {
-		return _locatorCodec.Decode(locator, out var chunkNumber, out var fileName)
+		return _locatorCodec.Decode(locator, out _, out var fileName)
 			? ValueTask.CompletedTask
-			: _localFileSystem.SetReadOnlyAsync(locator, value, token);
+			: _localFileSystem.SetReadOnlyAsync(fileName, value, token);
 	}
 
 	public IChunkFileSystem.IChunkEnumerable GetChunks() {
