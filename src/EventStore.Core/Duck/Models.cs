@@ -11,8 +11,15 @@ class IndexRecord {
 class CategoryRecord {
 	public int category_seq { get; set; }
 	public long log_position { get; set; }
-	public long event_number { get; set; }
+	public int event_number { get; set; }
 	public long event_type { get; set; }
+	public long stream { get; set; }
+}
+
+class EventTypeRecord {
+	public int event_type_seq { get; set; }
+	public long log_position { get; set; }
+	public int event_number { get; set; }
 	public long stream { get; set; }
 }
 

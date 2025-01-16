@@ -2,22 +2,32 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Dapper;
-using EventStore.Core.Data;
 using EventStore.Core.Metrics;
-using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.LogCommon;
 using Eventuous.Subscriptions.Context;
 using Serilog;
 
 namespace EventStore.Core.Duck.Default;
 
+public class CategoryIndexReader : DuckIndexReader {
+	protected override long GetId(string streamName) {
+		var dashIndex = streamName.IndexOf('-');
+		if (dashIndex == -1) {
+			throw new InvalidOperationException($"Stream {streamName} is not a category stream");
+		}
+
+		var category = streamName[(dashIndex + 1)..];
+		return CategoryIndex.Categories[category];
+	}
+
+	protected override long GetLastNumber(long id) => CategoryIndex.GetLastEventNumber(id);
+
+	protected override IEnumerable<IndexedPrepare> GetIndexRecords(long id, long fromEventNumber, long toEventNumber)
+		=> CategoryIndex.GetRecords(id, fromEventNumber, toEventNumber);
+}
+
 static class CategoryIndex {
-	static Dictionary<string, long> Categories = new();
+	internal static Dictionary<string, long> Categories = new();
 	static readonly Dictionary<long, long> CategorySizes = new();
 
 	public static void Init() {
@@ -36,85 +46,28 @@ static class CategoryIndex {
 		Seq = Categories.Count > 0 ? Categories.Values.Max() : 0;
 	}
 
-	public static async ValueTask<IReadOnlyList<ResolvedEvent>> GetCategoryEvents<TStreamId>(IIndexReader<TStreamId> index, string streamName, long fromEventNumber, long toEventNumber,
-		CancellationToken cancellationToken) {
-		var range = QueryCategory(streamName, fromEventNumber, toEventNumber);
-		using var reader = index.BorrowReader();
-		var readPrepares = range
-			.Select(async x => (
-					Version: x.category_seq,
-					StreamId: x.stream,
-					EventType: x.event_type,
-					EventNumber: x.event_number,
-					Prepare: await ReadPrepare(x.log_position, cancellationToken)
-				)
-			);
-		var prepared = await Task.WhenAll(readPrepares);
-		var recordsQuery = prepared
-			.Where(x => x.Prepare != null)
-			.OrderBy(x => x.Version)
-			.ToList();
-		var streams = StreamIndex.GetStreams(recordsQuery.Select(x => x.StreamId).Distinct());
-		var records = recordsQuery
-			.Select(x => (Record: x, StreamName: streams[x.StreamId]))
-			.Select(x => ResolvedEvent.ForResolvedLink(
-				new(x.Record.EventNumber, x.Record.Prepare, x.StreamName, EventTypeIndex.EventTypeIds[x.Record.EventType]),
-				new(
-					x.Record.Version,
-					x.Record.Prepare.LogPosition,
-					x.Record.Prepare.CorrelationId,
-					x.Record.Prepare.EventId,
-					x.Record.Prepare.TransactionPosition,
-					x.Record.Prepare.TransactionOffset,
-					x.StreamName,
-					x.Record.Version,
-					x.Record.Prepare.TimeStamp,
-					x.Record.Prepare.Flags,
-					"$>",
-					Encoding.UTF8.GetBytes($"{x.Record.EventNumber}@{x.StreamName}"),
-					[]
-				))
-			);
-		var result = records.ToList();
-		return result;
-
-		async ValueTask<IPrepareLogRecord<TStreamId>> ReadPrepare(long logPosition, CancellationToken ct) {
-			var r = await reader.TryReadAt(logPosition, couldBeScavenged: true, ct);
-			if (!r.Success)
-				return null;
-
-			if (r.LogRecord.RecordType is not LogRecordType.Prepare
-			    and not LogRecordType.Stream
-			    and not LogRecordType.EventType)
-				throw new($"Incorrect type of log record {r.LogRecord.RecordType}, expected Prepare record.");
-			return (IPrepareLogRecord<TStreamId>)r.LogRecord;
-		}
+	public static IEnumerable<IndexedPrepare> GetRecords(long id, long fromEventNumber, long toEventNumber) {
+		var range = QueryCategory(id, fromEventNumber, toEventNumber);
+		var indexPrepares = range.Select(x => new IndexedPrepare(x.category_seq, x.stream, x.event_type, x.event_number, x.log_position));
+		return indexPrepares;
 	}
 
 	[MethodImpl(MethodImplOptions.Synchronized)]
-	static List<CategoryRecord> QueryCategory(string streamName, long fromEventNumber, long toEventNumber) {
+	static List<CategoryRecord> QueryCategory(long id, long fromEventNumber, long toEventNumber) {
 		const string query = """
 		                     select category_seq, log_position, event_number, event_type, stream
 		                     from idx_all where category=$cat and category_seq>=$start and category_seq<=$end
 		                     """;
 
-		var dashIndex = streamName.IndexOf('-');
-		if (dashIndex == -1) {
-			throw new InvalidOperationException($"Stream {streamName} is not a category stream");
-		}
-
-		var category = streamName[(dashIndex + 1)..];
 
 		while (true) {
 			using var duration = TempIndexMetrics.MeasureIndex("duck_get_cat_range");
-			var categoryId = Categories[category];
-			var result = DuckDb.QueryWithRetry<CategoryRecord>(query, new { cat = categoryId, start = fromEventNumber, end = toEventNumber }).ToList();
+			var result = DuckDb.QueryWithRetry<CategoryRecord>(query, new { cat = id, start = fromEventNumber, end = toEventNumber }).ToList();
 			return result;
 		}
 	}
 
-	public static long GetCategoryLastEventNumber(string streamName) {
-		var categoryId = Categories[GetCategoryName(streamName)];
+	public static long GetLastEventNumber(long categoryId) {
 		return CategorySizes[categoryId];
 	}
 

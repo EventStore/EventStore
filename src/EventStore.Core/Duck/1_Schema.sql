@@ -27,7 +27,10 @@ create table if not exists idx_all (
     event_type int4,
     event_type_seq int8,
     category int4,
-    category_seq int8
+    category_seq int8,
+	foreign key(stream) references streams(id),
+	foreign key(event_type) references event_type(id),
+	foreign key(category) references category(id)
 );
 
 create index if not exists idx_all_category on idx_all(category, category_seq);

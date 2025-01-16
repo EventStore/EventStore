@@ -3,7 +3,7 @@ using Dapper;
 
 namespace EventStore.Core.Duck.Default;
 
-public static class DefaultIndex{
+public static class DefaultIndex {
 	public static void Init() {
 		CategoryIndex.Init();
 		EventTypeIndex.Init();
@@ -15,6 +15,9 @@ public static class DefaultIndex{
 
 		return DuckDb.Connection.Query<ulong?>(query).FirstOrDefault();
 	}
+
+	public static CategoryIndexReader CategoryIndexReader = new();
+	public static EventTypeIndexReader EventTypeIndexReader = new();
 }
 
 public record struct SequenceRecord(long Id, long Sequence);
