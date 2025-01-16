@@ -319,6 +319,7 @@ public partial class TFChunk : IDisposable {
 
 	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
+		await _fileSystem.SetReadOnlyAsync(ChunkLocator, true, token);
 		_handle = await _fileSystem.OpenForReadAsync(
 			ChunkLocator,
 			_reduceFileCachePressure
@@ -415,6 +416,7 @@ public partial class TFChunk : IDisposable {
 		_physicalDataSize = writePosition;
 		_logicalDataSize = writePosition;
 
+		await _fileSystem.SetReadOnlyAsync(fileInfo.FullName, false, token);
 		_chunkHeader = await CreateWriterWorkItemForExistingChunk(writePosition, getTransformFactory, token);
 		Log.Debug("Opened ongoing {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", ChunkLocator, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
 
@@ -524,7 +526,7 @@ public partial class TFChunk : IDisposable {
 		options.PreallocationSize = 0L;
 		_handle = new ChunkFileHandle(LocalFileName, options);
 		_writerWorkItem = new(_handle, md5, _unbuffered, _transform.Write, ChunkHeader.Size + transformHeader.Length);
-		await Flush(token); // persist file move result
+		await _fileSystem.SetReadOnlyAsync(LocalFileName, false, token);
 	}
 
 	private async ValueTask<ChunkHeader> CreateWriterWorkItemForExistingChunk(int writePosition,
@@ -916,15 +918,18 @@ public partial class TFChunk : IDisposable {
 
 		_chunkFooter = await WriteFooter(mapping, token); // WriteFooter always calls Flush
 
-		if (!_inMem)
+		if (!_inMem) {
 			CreateReaderStreams();
+		}
 
 		IsReadOnly = true;
 
 		_writerWorkItem?.Dispose();
 		_writerWorkItem = null;
 
-		await (_handle?.SetReadOnlyAsync(true, token) ?? ValueTask.CompletedTask);
+		if (!_inMem) {
+			await _fileSystem.SetReadOnlyAsync(ChunkLocator, true, token);
+		}
 	}
 
 	public async ValueTask CompleteRaw(CancellationToken token) {
@@ -944,7 +949,7 @@ public partial class TFChunk : IDisposable {
 		_writerWorkItem = null;
 
 		if (!_inMem) {
-			await _handle.SetReadOnlyAsync(true, token);
+			await _fileSystem.SetReadOnlyAsync(ChunkLocator, true, token);
 			await using var stream = _handle.CreateStream();
 			_chunkFooter = await ReadFooter(stream, token);
 		} else {

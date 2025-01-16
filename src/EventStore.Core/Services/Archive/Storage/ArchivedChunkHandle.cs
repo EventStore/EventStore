@@ -49,9 +49,6 @@ internal sealed class ArchivedChunkHandle : IChunkHandle {
 
 	public FileAccess Access { get; init; } = FileAccess.Read;
 
-	ValueTask IChunkHandle.SetReadOnlyAsync(bool value, CancellationToken token)
-		=> new(CompletedOrCanceled(token));
-
 	private static Task CompletedOrCanceled(CancellationToken token)
 		=> token.IsCancellationRequested ? Task.FromCanceled(token) : Task.CompletedTask;
 

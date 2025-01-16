@@ -21,8 +21,6 @@ internal sealed class ChunkFileHandle : Disposable, IChunkHandle {
 		_handle = File.OpenHandle(path, options.Mode, options.Access, options.Share, options.Options,
 			options.PreallocationSize);
 		Access = options.Access;
-
-		SetReadOnly(_handle, options.Access.HasFlag(FileAccess.Write) is false);
 	}
 
 	internal static FileOptions ConvertToFileOptions(IChunkFileSystem.ReadOptimizationHint optimizationHint) => optimizationHint switch {
@@ -45,38 +43,6 @@ internal sealed class ChunkFileHandle : Disposable, IChunkHandle {
 	}
 
 	public FileAccess Access { get; }
-
-	public ValueTask SetReadOnlyAsync(bool value, CancellationToken token) {
-		ValueTask task;
-		if (token.IsCancellationRequested) {
-			task = ValueTask.FromCanceled(token);
-		} else {
-			task = ValueTask.CompletedTask;
-			try {
-				SetReadOnly(_handle, value);
-			} catch (Exception e) {
-				task = ValueTask.FromException(e);
-			}
-		}
-
-		return task;
-	}
-
-	private static void SetReadOnly(SafeFileHandle handle, bool value) {
-		var flags = value
-			? FileAttributes.ReadOnly | FileAttributes.NotContentIndexed
-			: FileAttributes.NotContentIndexed;
-
-		if (OperatingSystem.IsWindows()) {
-			try {
-				File.SetAttributes(handle, flags);
-			} catch (UnauthorizedAccessException) {
-				// suppress exception
-			}
-		} else {
-			File.SetAttributes(handle, flags);
-		}
-	}
 
 	protected override void Dispose(bool disposing) {
 		if (disposing) {
