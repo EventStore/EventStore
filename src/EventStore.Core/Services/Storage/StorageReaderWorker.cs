@@ -336,7 +336,7 @@ public class StorageReaderWorker<TStreamId>(
 
 			using var _ = TempIndexMetrics.MeasureRead("read_stream_forward");
 
-			if (msg.EventStreamId.StartsWith("$cat")) {
+			if (msg.EventStreamId.StartsWith("$cat-")) {
 				return await DuckIndexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
 			}
 
@@ -378,7 +378,7 @@ public class StorageReaderWorker<TStreamId>(
 			using var _ = TempIndexMetrics.MeasureRead("read_stream_backward");
 
 			var streamName = msg.EventStreamId;
-			if (msg.EventStreamId.StartsWith("$cat")) {
+			if (msg.EventStreamId.StartsWith("$cat-")) {
 				return await DuckIndexReader.ReadBackwards(msg, _readIndex.IndexReader, lastIndexedPosition, token);
 			}
 
