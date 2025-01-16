@@ -42,12 +42,15 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 		_ => throw new NotImplementedException(),
 	};
 
-	string CreateFile(string fileName, int fileSize = 1000) {
+	private async ValueTask<FileStream> CreateFile(string fileName, int fileSize) {
 		var path = Path.Combine(LocalPath, fileName);
-		var content = new byte[fileSize];
-		RandomNumberGenerator.Fill(content);
-		File.WriteAllBytes(path, content);
-		return path;
+		using var content = Memory.AllocateExactly<byte>(fileSize);
+		RandomNumberGenerator.Fill(content.Span);
+		var fs = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 512,
+			FileOptions.Asynchronous);
+		await fs.WriteAsync(content.Memory);
+		fs.Position = 0L;
+		return fs;
 	}
 
 	[Theory]
@@ -57,9 +60,12 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 		var sut = CreateSut(storageType);
 
 		// create a file and upload it
-		var fileSize = 1000;
-		var localPath = CreateFile("local.file", fileSize);
-		await sut.Store(localPath, "output.file", CancellationToken.None);
+		const int fileSize = 1000;
+		string localPath;
+		await using (var fs = await CreateFile("local.file", fileSize)) {
+			await sut.StoreAsync(fs, "output.file", CancellationToken.None);
+			localPath = fs.Name;
+		}
 
 		// read the local file
 		var localContent = await File.ReadAllBytesAsync(localPath);
@@ -67,10 +73,9 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 		// read the uploaded file
 		using var buffer = Memory.AllocateExactly<byte>(fileSize);
 		await sut.ReadAsync("output.file", buffer.Memory, offset: 0, CancellationToken.None);
-		var remoteContent = buffer.Memory.ToArray();
 
 		// then
-		Assert.Equal(localContent, remoteContent);
+		Assert.Equal(localContent, buffer.Span);
 	}
 
 	[Theory]
@@ -80,8 +85,11 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 		var sut = CreateSut(storageType);
 
 		// create a file and upload it
-		var localPath = CreateFile("local.file");
-		await sut.Store(localPath, "output.file", CancellationToken.None);
+		string localPath;
+		await using (var fs = await CreateFile("local.file", fileSize: 1024)) {
+			await sut.StoreAsync(fs, "output.file", CancellationToken.None);
+			localPath = fs.Name;
+		}
 
 		// read the local file
 		var localContent = await File.ReadAllBytesAsync(localPath);
@@ -92,10 +100,9 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 		var length = end - start;
 		using var buffer = Memory.AllocateExactly<byte>(length);
 		await sut.ReadAsync("output.file", buffer.Memory, offset: start, CancellationToken.None);
-		var remoteContent = buffer.Memory.ToArray();
 
 		// then
-		Assert.Equal(localContent[start..end], remoteContent);
+		Assert.Equal(localContent.AsSpan(start..end), buffer.Span);
 	}
 
 	[Theory]
@@ -106,8 +113,9 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 
 		// create a file and upload it
 		var fileSize = 345;
-		var localPath = CreateFile("local.file", fileSize);
-		await sut.Store(localPath, "output.file", CancellationToken.None);
+		await using (var fs = await CreateFile("local.file", fileSize)) {
+			await sut.StoreAsync(fs, "output.file", CancellationToken.None);
+		}
 
 		// when
 		var metadata = await sut.GetMetadataAsync("output.file", CancellationToken.None);
@@ -125,14 +133,5 @@ public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 		await Assert.ThrowsAsync<FileNotFoundException>(async () => {
 			await sut.ReadAsync("missing-from-archive.file", Memory<byte>.Empty, offset: 0, CancellationToken.None);
 		});
-	}
-
-	[Theory]
-	[StorageData.S3]
-	[StorageData.FileSystem]
-	public async Task throws_file_not_found_exception_when_storing_non_existent_file(StorageType storageType) {
-		var sut = CreateSut(storageType);
-		await Assert.ThrowsAsync<FileNotFoundException>(async () =>
-			await sut.Store("missing-input.file", "output.file", CancellationToken.None));
 	}
 }

@@ -8,11 +8,9 @@ using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DotNext.Buffers;
-using DotNext.IO;
 using EventStore.Common.Exceptions;
 using FluentStorage;
 using FluentStorage.AWS.Blobs;
-using FluentStorage.Blobs;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage.S3;
@@ -46,27 +44,18 @@ public class S3BlobStorage : IBlobStorage {
 		};
 
 		try {
-			var client = _awsBlobStorage.NativeBlobClient;
-			using var response = await client.GetObjectAsync(request, ct);
+			using var response = await _awsBlobStorage.NativeBlobClient.GetObjectAsync(request, ct);
 			var length = int.CreateSaturating(response.ContentLength);
 			await using var responseStream = response.ResponseStream;
 			await responseStream.ReadExactlyAsync(buffer.TrimLength(length), ct);
 			return length;
-		} catch (AmazonS3Exception ex) {
-			if (ex.ErrorCode == "NoSuchKey")
-				throw new FileNotFoundException();
-			throw;
+		} catch (AmazonS3Exception ex) when (ex.ErrorCode is "NoSuchKey") {
+			throw new FileNotFoundException();
 		}
 	}
 
-	public async ValueTask Store(ReadOnlyMemory<byte> sourceData, string name, CancellationToken ct) {
-		await using var stream = sourceData.AsStream();
-		await _awsBlobStorage.WriteAsync(name, stream, append: false, ct);
-	}
-
-	public async ValueTask Store(string input, string name, CancellationToken ct) {
-		await _awsBlobStorage.WriteFileAsync(name, filePath: input, ct);
-	}
+	public ValueTask StoreAsync(Stream readableStream, string name, CancellationToken ct)
+		=> new(_awsBlobStorage.WriteAsync(name, readableStream, append: false, ct));
 
 	// ByteRange is inclusive of both start and end
 	private static ByteRange GetRange(long offset, int length) => new(

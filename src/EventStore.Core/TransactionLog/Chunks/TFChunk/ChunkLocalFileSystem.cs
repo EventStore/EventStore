@@ -51,6 +51,38 @@ public sealed class ChunkLocalFileSystem : IChunkFileSystem {
 		return task;
 	}
 
+	public ValueTask SetReadOnlyAsync(string fileName, bool value, CancellationToken token) {
+		ValueTask task;
+		if (token.IsCancellationRequested) {
+			task = ValueTask.FromCanceled(token);
+		} else {
+			task = ValueTask.CompletedTask;
+			try {
+				SetReadOnly(fileName, value);
+			} catch (Exception e) {
+				task = ValueTask.FromException(e);
+			}
+		}
+
+		return task;
+	}
+
+	private static void SetReadOnly(string fileName, bool value) {
+		var flags = value
+			? FileAttributes.ReadOnly | FileAttributes.NotContentIndexed
+			: FileAttributes.NotContentIndexed;
+
+		if (OperatingSystem.IsWindows()) {
+			try {
+				File.SetAttributes(fileName, flags);
+			} catch (UnauthorizedAccessException) {
+				// suppress exception
+			}
+		} else {
+			File.SetAttributes(fileName, flags);
+		}
+	}
+
 	public IChunkFileSystem.IChunkEnumerable GetChunks()
 		=> new TFChunkEnumerable(this) { ChunkNumberProvider = ChunkNumberProvider };
 

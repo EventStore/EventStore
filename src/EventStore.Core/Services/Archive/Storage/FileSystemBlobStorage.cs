@@ -2,13 +2,17 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNext.IO;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
 public class FileSystemBlobStorage : IBlobStorage {
+	private static readonly SearchValues<char> InvalidFileNameChars = SearchValues.Create(Path.GetInvalidFileNameChars());
+
 	private readonly string _archivePath;
 	private readonly FileStreamOptions _fileStreamOptions;
 
@@ -45,48 +49,27 @@ public class FileSystemBlobStorage : IBlobStorage {
 		return task;
 	}
 
-	public async ValueTask Store(ReadOnlyMemory<byte> sourceData, string name, CancellationToken ct) {
-		if (sourceData.Length > sizeof(long)) {
-			// this is so far only used for checkpoints. data must be small so that flush is atomic
-			throw new NotSupportedException("This overload can only write small amounts of data");
-		}
+	public async ValueTask StoreAsync(Stream sourceData, string name, CancellationToken ct) {
+		if (MemoryExtensions.IndexOfAny(name, InvalidFileNameChars) >= 0)
+			throw new ArgumentOutOfRangeException(nameof(name));
 
-		var destinationPath = Path.Combine(_archivePath, name);
-		using var handle = File.OpenHandle(destinationPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None,
-			FileOptions.Asynchronous);
-
-		await RandomAccess.WriteAsync(handle, sourceData, fileOffset: 0L, ct);
-		RandomAccess.FlushToDisk(handle);
-	}
-
-	public async ValueTask Store(string input, string name, CancellationToken ct) {
 		var destinationPath = Path.Combine(_archivePath, name);
 		var tempPath = $"{destinationPath}.tmp";
-
 		if (File.Exists(tempPath))
 			File.Delete(tempPath);
 
-		{
-			await using var source = File.Open(
-				path: input,
-				options: new FileStreamOptions {
-					Mode = FileMode.Open,
-					Access = FileAccess.Read,
-					Share = FileShare.Read,
-					Options = FileOptions.SequentialScan | FileOptions.Asynchronous
-				});
-
-			await using var destination = File.Open(
-				path: tempPath,
-				options: new FileStreamOptions {
-					Mode = FileMode.CreateNew,
-					Access = FileAccess.ReadWrite,
-					Share = FileShare.None,
-					Options = FileOptions.Asynchronous,
-					PreallocationSize = new FileInfo(input).Length
-				});
-
-			await source.CopyToAsync(destination, ct);
+		var handle = File.OpenHandle(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+			FileOptions.Asynchronous, preallocationSize: sourceData.CanSeek ? sourceData.Length : 0L);
+		var outputStream = handle.AsUnbufferedStream(FileAccess.Write);
+		try {
+			await sourceData.CopyToAsync(outputStream, ct);
+			await outputStream.FlushAsync(ct);
+		} catch when (File.Exists(tempPath)) {
+			File.Delete(tempPath);
+			throw;
+		} finally {
+			await outputStream.DisposeAsync();
+			handle.Dispose();
 		}
 
 		File.Move(tempPath, destinationPath, overwrite: true);

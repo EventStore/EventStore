@@ -16,6 +16,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 public interface IChunkFileSystem {
 	ValueTask<IChunkHandle> OpenForReadAsync(string fileName, ReadOptimizationHint hint, CancellationToken token);
 
+	ValueTask SetReadOnlyAsync(string fileName, bool value, CancellationToken token);
+
 	IVersionedFileNamingStrategy NamingStrategy { get; }
 
 	IChunkEnumerable GetChunks();

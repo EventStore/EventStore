@@ -38,6 +38,12 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 			: _localFileSystem.OpenForReadAsync(fileName, hint, token);
 	}
 
+	public ValueTask SetReadOnlyAsync(string locator, bool value, CancellationToken token) {
+		return _locatorCodec.Decode(locator, out _, out var fileName)
+			? ValueTask.CompletedTask
+			: _localFileSystem.SetReadOnlyAsync(fileName, value, token);
+	}
+
 	public IChunkFileSystem.IChunkEnumerable GetChunks() {
 		return new ChunkEnumerableWithArchive(this);
 	}

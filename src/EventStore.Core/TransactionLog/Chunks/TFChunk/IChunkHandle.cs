@@ -35,8 +35,6 @@ public interface IChunkHandle : IFlushable, IDisposable {
 	/// </summary>
 	FileAccess Access { get; }
 
-	ValueTask SetReadOnlyAsync(bool value, CancellationToken token);
-
 	/// <summary>
 	/// Creates an unbuffered stream for this handle.
 	/// </summary>
