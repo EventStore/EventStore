@@ -527,7 +527,9 @@ public class SubsequentScavengeTests : SqliteDbPerTest<SubsequentScavengeTests> 
 				x.SetOriginalStreamMetadata("ab-1", MaxCount1);
 				x.SetOriginalStreamDiscardPoints(
 					Scenario.CollideEverything
+#pragma warning disable CS0162 // Unreachable code detected
 						? StreamHandle.ForStreamId("ab-1")
+#pragma warning restore CS0162 // Unreachable code detected
 						: StreamHandle.ForHash<string>(98),
 					CalculationStatus.Active,
 					DiscardPoint.DiscardBefore(2),

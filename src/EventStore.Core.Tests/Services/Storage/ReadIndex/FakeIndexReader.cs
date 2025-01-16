@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Tests.Services.Storage.ReadIndex;
@@ -72,4 +73,8 @@ class FakeIndexReader<TStreamId> : IIndexReader<TStreamId> {
 
 	public ValueTask<long> GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition, CancellationToken token)
 		=> ValueTask.FromException<long>(new NotImplementedException());
+
+	public TFReaderLease BorrowReader() {
+		throw new NotImplementedException();
+	}
 }

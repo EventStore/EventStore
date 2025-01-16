@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -337,17 +336,11 @@ public class StorageReaderWorker<TStreamId>(
 
 			using var _ = TempIndexMetrics.MeasureRead("read_stream_forward");
 
-			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
-			if (DuckDb.UseDuckDb && msg.EventStreamId.StartsWith("$ce") && msg.ResolveLinkTos) {
-				var lastEventNumber = CategoryIndex.GetCategoryLastEventNumber(msg.EventStreamId);
-				var resolved = await CategoryIndex.GetCategoryEvents(_readIndex.IndexReader, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
-				if (resolved.Count == 0)
-					return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion ?? 0);
-				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
-					ReadStreamResult.Success, resolved, StreamMetadata.Empty, false, string.Empty,
-					resolved[^1].OriginalEventNumber + 1, lastEventNumber, resolved.Count < msg.MaxCount, lastIndexPosition);
+			if (msg.EventStreamId.StartsWith("$cat")) {
+				return await DuckIndexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
 			}
 
+			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
 			if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
 				return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion.Value);
 
@@ -385,22 +378,13 @@ public class StorageReaderWorker<TStreamId>(
 			using var _ = TempIndexMetrics.MeasureRead("read_stream_backward");
 
 			var streamName = msg.EventStreamId;
-			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
-			if (DuckDb.UseDuckDb && msg.EventStreamId.StartsWith("$ce") && msg.ResolveLinkTos) {
-				var lastEventNumber = CategoryIndex.GetCategoryLastEventNumber(msg.EventStreamId);
-				if (lastEventNumber == 0)
-					return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);
-				var resolved = await CategoryIndex.GetCategoryEvents(_readIndex.IndexReader, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, token);
-				var reversed = resolved; //.OrderByDescending(x => x.OriginalEvent.EventNumber).ToList();
-				if (resolved.Count == 0)
-					return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);
-				return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
-					ReadStreamResult.Success, reversed, StreamMetadata.Empty, false, string.Empty,
-					reversed[^1].OriginalEventNumber + 1, lastEventNumber, reversed[0].OriginalEventNumber == 0, lastIndexedPosition);
+			if (msg.EventStreamId.StartsWith("$cat")) {
+				return await DuckIndexReader.ReadBackwards(msg, _readIndex.IndexReader, lastIndexedPosition, token);
 			}
+
+			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
 			if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
 				return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion.Value);
-
 			var result = await _readIndex.ReadStreamEventsBackward(streamName, streamId, msg.FromEventNumber, msg.MaxCount, token);
 			CheckEventsOrder(msg, result);
 			if (await ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User, token) is not { } resolvedPairs)
@@ -561,19 +545,19 @@ public class StorageReaderWorker<TStreamId>(
 		}
 	}
 
-	static ReadEventCompleted NoData(ReadEvent msg, ReadEventResult result, string error = null) {
+	public static ReadEventCompleted NoData(ReadEvent msg, ReadEventResult result, string error = null) {
 		return new(msg.CorrelationId, msg.EventStreamId, result, ResolvedEvent.EmptyEvent, null, false, error);
 	}
 
-	static ReadStreamEventsForwardCompleted NoData(ReadStreamEventsForward msg, ReadStreamResult result, long lastIndexedPosition, long lastEventNumber = -1, string error = null) {
+	public static ReadStreamEventsForwardCompleted NoData(ReadStreamEventsForward msg, ReadStreamResult result, long lastIndexedPosition, long lastEventNumber = -1, string error = null) {
 		return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, result, EmptyRecords, null, false, error ?? string.Empty, -1, lastEventNumber, true, lastIndexedPosition);
 	}
 
-	static ReadStreamEventsBackwardCompleted NoData(ReadStreamEventsBackward msg, ReadStreamResult result, long lastIndexedPosition, long lastEventNumber = -1, string error = null) {
+	public static ReadStreamEventsBackwardCompleted NoData(ReadStreamEventsBackward msg, ReadStreamResult result, long lastIndexedPosition, long lastEventNumber = -1, string error = null) {
 		return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, result, EmptyRecords, null, false, error ?? string.Empty, -1, lastEventNumber, true, lastIndexedPosition);
 	}
 
-	static ReadAllEventsForwardCompleted NoData(ReadAllEventsForward msg, ReadAllResult result, TFPos pos, long lastIndexedPosition, string error = null) {
+	public static ReadAllEventsForwardCompleted NoData(ReadAllEventsForward msg, ReadAllResult result, TFPos pos, long lastIndexedPosition, string error = null) {
 		return new(msg.CorrelationId, result, error, ResolvedEvent.EmptyArray, null, false, msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, lastIndexedPosition);
 	}
 

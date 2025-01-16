@@ -36,9 +36,9 @@ static class CategoryIndex {
 		Seq = Categories.Count > 0 ? Categories.Values.Max() : 0;
 	}
 
-	public static async ValueTask<IReadOnlyList<ResolvedEvent>> GetCategoryEvents<TStreamId>(IIndexReader<TStreamId> index, string streamName, long fromEventNumber, int maxCount,
+	public static async ValueTask<IReadOnlyList<ResolvedEvent>> GetCategoryEvents<TStreamId>(IIndexReader<TStreamId> index, string streamName, long fromEventNumber, long toEventNumber,
 		CancellationToken cancellationToken) {
-		var range = QueryCategory(streamName, fromEventNumber, fromEventNumber + maxCount - 1);
+		var range = QueryCategory(streamName, fromEventNumber, toEventNumber);
 		using var reader = index.BorrowReader();
 		var readPrepares = range
 			.Select(async x => (

@@ -202,7 +202,9 @@ public class ScavengeTestScenarioPortedScavengeTests : SqliteDbPerTest<ScavengeT
 					x.Recs[1].KeepAll(),
 				},
 				Scenario.CollideEverything
+#pragma warning disable CS0162 // Unreachable code detected
 					? default(Func<DbResult, LogRecord[][]>)
+#pragma warning restore CS0162 // Unreachable code detected
 					: x => new[] {
 						x.Recs[0].KeepIndexes(0, 6, 7, 8, 9, 10),
 						x.Recs[1],
@@ -265,7 +267,9 @@ public class ScavengeTestScenarioPortedScavengeTests : SqliteDbPerTest<ScavengeT
 					x.Recs[1].KeepAll(),
 				},
 				Scenario.CollideEverything
+#pragma warning disable CS0162 // Unreachable code detected
 					? default(Func<DbResult, LogRecord[][]>)
+#pragma warning restore CS0162 // Unreachable code detected
 					: x => new[] {
 						x.Recs[0].KeepIndexes(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
 						x.Recs[1],
@@ -349,7 +353,9 @@ public class ScavengeTestScenarioPortedScavengeTests : SqliteDbPerTest<ScavengeT
 					x.Recs[1].KeepAll(),
 				},
 				Scenario.CollideEverything
+#pragma warning disable CS0162 // Unreachable code detected
 					? default(Func<DbResult, LogRecord[][]>)
+#pragma warning restore CS0162 // Unreachable code detected
 					: x => new[] {
 						x.Recs[0].KeepIndexes(0, 1, 2, 3, 4, 5),
 						x.Recs[1],
@@ -405,7 +411,7 @@ public class ScavengeTestScenarioPortedScavengeTests : SqliteDbPerTest<ScavengeT
 			.WithUnsafeIgnoreHardDeletes(true)
 			.WithDb(x => x
 				.Chunk(
-					Rec.Write(t++, "bla"), 
+					Rec.Write(t++, "bla"),
 					Rec.Write(t++, "bla"))
 				.Chunk(
 					Rec.CommittedDelete(t++, "bla"))

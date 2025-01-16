@@ -591,8 +591,7 @@ public static partial class ClientMessage {
 		public readonly long TfLastCommitPosition;
 
 		public ReadStreamEventsForwardCompleted(Guid correlationId, string eventStreamId, long fromEventNumber,
-			int maxCount,
-			ReadStreamResult result, IReadOnlyList<ResolvedEvent> events,
+			int maxCount, ReadStreamResult result, IReadOnlyList<ResolvedEvent> events,
 			StreamMetadata streamMetadata, bool isCachePublic,
 			string error, long nextEventNumber, long lastEventNumber, bool isEndOfStream,
 			long tfLastCommitPosition) {
@@ -673,7 +672,8 @@ public static partial class ClientMessage {
 		public readonly bool IsEndOfStream;
 		public readonly long TfLastCommitPosition;
 
-		public ReadStreamEventsBackwardCompleted(Guid correlationId,
+		public ReadStreamEventsBackwardCompleted(
+			Guid correlationId,
 			string eventStreamId,
 			long fromEventNumber,
 			int maxCount,
@@ -686,8 +686,6 @@ public static partial class ClientMessage {
 			long lastEventNumber,
 			bool isEndOfStream,
 			long tfLastCommitPosition) {
-			Ensure.NotNull(events);
-
 			if (result != ReadStreamResult.Success) {
 				Ensure.Equal(nextEventNumber, -1, "nextEventNumber");
 				Ensure.Equal(isEndOfStream, true, "isEndOfStream");
@@ -699,7 +697,7 @@ public static partial class ClientMessage {
 			MaxCount = maxCount;
 
 			Result = result;
-			Events = events;
+			Events = Ensure.NotNull(events);
 			StreamMetadata = streamMetadata;
 			IsCachePublic = isCachePublic;
 			Error = error;

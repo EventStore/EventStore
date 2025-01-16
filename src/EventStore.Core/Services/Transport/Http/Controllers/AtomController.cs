@@ -447,34 +447,32 @@ public class AtomController : CommunicationController {
 		var embed = GetEmbedLevel(manager, match);
 
 		if (stream.IsEmptyString()) {
-			SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
+			SendBadRequest(manager, $"Invalid stream name '{stream}'");
 			return;
 		}
 
 		if (evNum != null && evNum != "head" && (!long.TryParse(evNum, out eventNumber) || eventNumber < 0)) {
-			SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
+			SendBadRequest(manager, $"'{evNum}' is not valid event number");
 			return;
 		}
 
 		if (cnt.IsNotEmptyString() && (!int.TryParse(cnt, out count) || count <= 0)) {
-			SendBadRequest(manager, string.Format("'{0}' is not valid count. Should be positive integer", cnt));
+			SendBadRequest(manager, $"'{cnt}' is not valid count. Should be positive integer");
 			return;
 		}
 
-		bool resolveLinkTos;
-		if (!GetResolveLinkTos(manager, out resolveLinkTos, true)) {
-			SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
+		if (!GetResolveLinkTos(manager, out var resolveLinkTos, true)) {
+			SendBadRequest(manager, $"{SystemHeaders.ResolveLinkTos} header in wrong format.");
 			return;
 		}
 
 		if (!GetRequireLeader(manager, out var requireLeader)) {
-			SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireLeader));
+			SendBadRequest(manager, $"{SystemHeaders.RequireLeader} header in wrong format.");
 			return;
 		}
 
 		bool headOfStream = eventNumber == -1;
-		GetStreamEventsBackward(manager, stream, eventNumber, count, resolveLinkTos, requireLeader, headOfStream,
-			embed);
+		GetStreamEventsBackward(manager, stream, eventNumber, count, resolveLinkTos, requireLeader, headOfStream, embed);
 	}
 
 	private RequestParams GetStreamEventsForward(HttpEntityManager manager, UriTemplateMatch match) {
@@ -875,13 +873,13 @@ public class AtomController : CommunicationController {
 
 	private bool GetRequireLeader(HttpEntityManager manager, out bool requireLeader) {
 		requireLeader = false;
-		
+
 		var onlyLeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireLeader);
 		var onlyMaster = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireMaster);
-		
+
 		if (StringValues.IsNullOrEmpty(onlyLeader) && StringValues.IsNullOrEmpty(onlyMaster))
 			return true;
-	
+
 		if (string.Equals(onlyLeader, "True", StringComparison.OrdinalIgnoreCase) ||
 		    string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase)) {
 			requireLeader = true;
@@ -999,8 +997,7 @@ public class AtomController : CommunicationController {
 		bool resolveLinkTos, bool requireLeader, bool headOfStream, EmbedLevel embed) {
 		var envelope = new SendToHttpEnvelope(_networkSendQueue,
 			manager,
-			(ent, msg) =>
-				Format.GetStreamEventsBackward(ent, msg, embed, headOfStream),
+			(ent, msg) => Format.GetStreamEventsBackward(ent, msg, embed, headOfStream),
 			(args, msg) => Configure.GetStreamEventsBackward(args, msg, headOfStream));
 		var corrId = Guid.NewGuid();
 		Publish(new ClientMessage.ReadStreamEventsBackward(corrId, corrId, envelope, stream, eventNumber, count,

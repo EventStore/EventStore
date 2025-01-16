@@ -15,10 +15,10 @@ namespace EventStore.Core.Duck;
 
 public static class DuckDb {
 	static readonly ILogger Log = Serilog.Log.ForContext(typeof(DuckDb));
-	public static readonly bool UseDuckDb = Environment.GetEnvironmentVariable("ES_USE_DUCKDB") == "1";
+	// public static readonly bool UseDuckDb = Environment.GetEnvironmentVariable("ES_USE_DUCKDB") == "1";
 
 	public static void Init(TFChunkDbConfig dbConfig) {
-		if (!UseDuckDb) return;
+		// if (!UseDuckDb) return;
 
 		var fileName = Path.Combine(dbConfig.Path, "index.db");
 		Connection = new($"Data Source={fileName};");
@@ -28,7 +28,7 @@ public static class DuckDb {
 	}
 
 	public static void Close() {
-		if (!UseDuckDb) return;
+		// if (!UseDuckDb) return;
 		Connection.Execute("checkpoint");
 		Connection.Close();
 	}

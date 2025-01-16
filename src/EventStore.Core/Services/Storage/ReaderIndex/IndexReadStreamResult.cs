@@ -24,8 +24,7 @@ public readonly struct IndexReadStreamResult {
 	/// <summary>
 	/// Failure Constructor
 	/// </summary>
-	public IndexReadStreamResult(long fromEventNumber, int maxCount, ReadStreamResult result,
-		StreamMetadata metadata, long lastEventNumber) {
+	public IndexReadStreamResult(long fromEventNumber, int maxCount, ReadStreamResult result, StreamMetadata metadata, long lastEventNumber) {
 		if (result == ReadStreamResult.Success)
 			throw new ArgumentException($"Wrong ReadStreamResult provided for failure constructor: {result}.", nameof(result));
 

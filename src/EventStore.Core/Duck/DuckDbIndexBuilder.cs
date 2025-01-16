@@ -19,7 +19,7 @@ class DuckDbIndexBuilder(TFChunkDbConfig dbConfig, IPublisher bus) : IAsyncHandl
 	DefaultIndexHandler _handler;
 
 	public async ValueTask HandleAsync(SystemMessage.SystemReady message, CancellationToken token) {
-		if (!DuckDb.UseDuckDb) return;
+		// if (!DuckDb.UseDuckDb) return;
 		DuckDb.Init(dbConfig);
 		_handler = new();
 		_checkpointStore = new(_handler);
@@ -32,7 +32,8 @@ class DuckDbIndexBuilder(TFChunkDbConfig dbConfig, IPublisher bus) : IAsyncHandl
 	}
 
 	public ValueTask HandleAsync(SystemMessage.BecomeShuttingDown message, CancellationToken token) {
-		if (DuckDb.UseDuckDb) _handler.Commit();
+		// if (DuckDb.UseDuckDb)
+		_handler.Commit();
 		// await _subscription.Unsubscribe(id => Log.Information("Index subscription {Subscription} unsubscribed", id), token);
 		return ValueTask.CompletedTask;
 	}

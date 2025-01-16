@@ -573,7 +573,7 @@ public class IndexReader<TStreamId> : IndexReader, IIndexReader<TStreamId> {
 	private async ValueTask<IndexReadStreamResult> ReadStreamEventsBackwardInternal(string streamName, TStreamId streamId, long fromEventNumber,
 		int maxCount, bool skipIndexScanOnRead, CancellationToken token) {
 		Ensure.Valid(streamId, _validator);
-		Ensure.Positive(maxCount, "maxCount");
+		Ensure.Positive(maxCount);
 
 		using var reader = _backend.BorrowReader();
 		var lastEventNumber = await GetStreamLastEventNumberCached(reader, streamId, token);

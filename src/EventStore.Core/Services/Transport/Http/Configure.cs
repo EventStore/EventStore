@@ -10,6 +10,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
+using Serilog;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 using OperationResult = EventStore.Core.Messages.OperationResult;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
@@ -174,35 +175,34 @@ public static class Configure {
 
 	public static ResponseConfiguration GetStreamEventsBackward(HttpResponseConfiguratorArgs entity,
 		Message message, bool headOfStream) {
-		var msg = message as ClientMessage.ReadStreamEventsBackwardCompleted;
-		if (msg != null) {
-			switch (msg.Result) {
-				case ReadStreamResult.Success:
-					var codec = entity.ResponseCodec;
-					if (msg.LastEventNumber >= msg.FromEventNumber && !headOfStream)
-						return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
-					var etag = GetPositionETag(msg.LastEventNumber, codec.ContentType);
-					var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
-					return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
-				case ReadStreamResult.NoStream:
-					return NotFound();
-				case ReadStreamResult.StreamDeleted:
-					return Gone();
-				case ReadStreamResult.NotModified:
-					return NotModified();
-				case ReadStreamResult.Error:
-					return InternalServerError(msg.Error);
-				case ReadStreamResult.AccessDenied:
-					return Unauthorized();
-				default:
-					throw new ArgumentOutOfRangeException();
-			}
+		switch (message) {
+			case ClientMessage.ReadStreamEventsBackwardCompleted msg:
+				switch (msg.Result) {
+					case ReadStreamResult.Success:
+						var codec = entity.ResponseCodec;
+						if (msg.LastEventNumber >= msg.FromEventNumber && !headOfStream)
+							return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
+						var etag = GetPositionETag(msg.LastEventNumber, codec.ContentType);
+						var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
+						return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
+					case ReadStreamResult.NoStream:
+						return NotFound();
+					case ReadStreamResult.StreamDeleted:
+						return Gone();
+					case ReadStreamResult.NotModified:
+						return NotModified();
+					case ReadStreamResult.Error:
+						return InternalServerError(msg.Error);
+					case ReadStreamResult.AccessDenied:
+						return Unauthorized();
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+			case ClientMessage.NotHandled notHandled:
+				return HandleNotHandled(entity.RequestedUrl, notHandled);
+			default:
+				return InternalServerError();
 		}
-
-		var notHandled = message as ClientMessage.NotHandled;
-		if (notHandled != null)
-			return HandleNotHandled(entity.RequestedUrl, notHandled);
-		return InternalServerError();
 	}
 
 	public static ResponseConfiguration

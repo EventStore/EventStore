@@ -37,7 +37,9 @@ public class MaxAgeTests : SqliteDbPerTest<MaxAgeTests> {
 				Scenario.CollideEverything
 					// index is the same as the log because it tries to find the log records
 					// and fails, so must remove the index entries.
+#pragma warning disable CS0162 // Unreachable code detected
 					? default(Func<DbResult, LogRecord[][]>)
+#pragma warning restore CS0162 // Unreachable code detected
 					// records kept in the index because they are 'maybe' expired
 					: x => new[] {
 						x.Recs[0],
@@ -65,7 +67,9 @@ public class MaxAgeTests : SqliteDbPerTest<MaxAgeTests> {
 					x.Recs[1],
 				},
 				Scenario.CollideEverything
+#pragma warning disable CS0162 // Unreachable code detected
 					? default(Func<DbResult, LogRecord[][]>)
+#pragma warning restore CS0162 // Unreachable code detected
 					: x => new[] {
 						x.Recs[0],
 						x.Recs[1],

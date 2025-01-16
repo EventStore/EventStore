@@ -87,7 +87,7 @@ public static class Convert {
 			feed.SetETag(Configure.GetPositionETag(msg.LastEventNumber, ContentType.AtomJson));
 
 		var prevEventNumber = Math.Min(msg.FromEventNumber, msg.LastEventNumber) + 1;
-		var nextEventNumber = msg.NextEventNumber;
+		var nextEventNumber = msg.NextEventNumber - msg.MaxCount;
 
 		feed.AddLink("self", self);
 		feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", escapedStreamId, msg.MaxCount));
