@@ -48,11 +48,21 @@ public class FileSystemBlobStorage : IBlobStorage {
 
 	public async ValueTask StoreAsync(Stream sourceData, string name, CancellationToken ct) {
 		var destinationPath = Path.Combine(_archivePath, name);
-		using var handle = File.OpenHandle(destinationPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None,
-			FileOptions.Asynchronous);
+		var tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+		var handle = File.OpenHandle(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+			FileOptions.Asynchronous, preallocationSize: sourceData.CanSeek ? sourceData.Length : 0L);
+		var outputStream = handle.AsUnbufferedStream(FileAccess.Write);
+		try {
+			await sourceData.CopyToAsync(outputStream, ct);
+			await outputStream.FlushAsync(ct);
+		} catch when (File.Exists(tempPath)) {
+			File.Delete(tempPath);
+			throw;
+		} finally {
+			await outputStream.DisposeAsync();
+			handle.Dispose();
+		}
 
-		await using var output = handle.AsUnbufferedStream(FileAccess.Write);
-		await sourceData.CopyToAsync(output, ct);
-		await output.FlushAsync(ct);
+		File.Move(tempPath, destinationPath, overwrite: true);
 	}
 }
