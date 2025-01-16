@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Buffers;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +11,8 @@ using DotNext.IO;
 namespace EventStore.Core.Services.Archive.Storage;
 
 public class FileSystemBlobStorage : IBlobStorage {
+	private static readonly SearchValues<char> InvalidFileNameChars = SearchValues.Create(Path.GetInvalidFileNameChars());
+
 	private readonly string _archivePath;
 	private readonly FileStreamOptions _fileStreamOptions;
 
@@ -47,8 +50,11 @@ public class FileSystemBlobStorage : IBlobStorage {
 	}
 
 	public async ValueTask StoreAsync(Stream sourceData, string name, CancellationToken ct) {
+		if (MemoryExtensions.IndexOfAny(name, InvalidFileNameChars) >= 0)
+			throw new ArgumentOutOfRangeException(nameof(name));
+
 		var destinationPath = Path.Combine(_archivePath, name);
-		var tempPath = Path.ChangeExtension(destinationPath, "tmp");
+		var tempPath = $"{destinationPath}.tmp";
 		if (File.Exists(tempPath))
 			File.Delete(tempPath);
 
