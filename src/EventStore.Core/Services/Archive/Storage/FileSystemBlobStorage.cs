@@ -48,7 +48,10 @@ public class FileSystemBlobStorage : IBlobStorage {
 
 	public async ValueTask StoreAsync(Stream sourceData, string name, CancellationToken ct) {
 		var destinationPath = Path.Combine(_archivePath, name);
-		var tempPath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(name, "tmp"));
+		var tempPath = Path.ChangeExtension(destinationPath, "tmp");
+		if (File.Exists(tempPath))
+			File.Delete(tempPath);
+
 		var handle = File.OpenHandle(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
 			FileOptions.Asynchronous, preallocationSize: sourceData.CanSeek ? sourceData.Length : 0L);
 		var outputStream = handle.AsUnbufferedStream(FileAccess.Write);
