@@ -319,13 +319,13 @@ public partial class TFChunk : IDisposable {
 
 	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
-		await _fileSystem.SetReadOnlyAsync(ChunkLocator, true, token);
 		_handle = await _fileSystem.OpenForReadAsync(
 			ChunkLocator,
 			_reduceFileCachePressure
 				? IChunkFileSystem.ReadOptimizationHint.None
 				: IChunkFileSystem.ReadOptimizationHint.RandomAccess,
 			token);
+		await _fileSystem.SetReadOnlyAsync(ChunkLocator, true, token);
 		_fileSize = (int)_handle.Length;
 
 		IsReadOnly = true;
