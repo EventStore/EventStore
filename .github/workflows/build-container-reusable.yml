@@ -79,13 +79,13 @@ jobs:
           --rm \
           eventstore-test
     - name: Publish Test Results (HTML)
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         path: test-results/test-results.html
         name: test-results-${{ inputs.container-runtime }}.html
     - name: Publish Test Results (All)
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results-${{ inputs.container-runtime }}
