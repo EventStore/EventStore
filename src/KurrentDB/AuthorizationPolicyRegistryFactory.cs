@@ -17,7 +17,7 @@ using EventStore.Plugins.Subsystems;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
-namespace EventStore.ClusterNode;
+namespace KurrentDB;
 
 public class AuthorizationPolicyRegistryFactory: SubsystemsPlugin {
 	private readonly ILogger _logger = Log.ForContext<AuthorizationPolicyRegistryFactory>();

@@ -26,9 +26,9 @@
 		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
 	</ItemGroup>
 	<ItemGroup>
-		<None Include="..\EventStore.ClusterNode\logconfig.json">
-			<Link>logconfig.json</Link>
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
+	  <None Include="..\KurrentDB\logconfig.json">
+	    <Link>logconfig.json</Link>
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 </Project>

@@ -47,7 +47,7 @@ FROM build as publish
 ARG RUNTIME=linux-x64
 
 RUN dotnet publish --configuration=Release --runtime=${RUNTIME} --self-contained \
-     --framework=net8.0 --output /publish EventStore.ClusterNode
+     --framework=net8.0 --output /publish KurrentDB
 
 # "runtime" image
 FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-${CONTAINER_RUNTIME} AS runtime
@@ -67,34 +67,34 @@ RUN if [[ "${RUNTIME}" = "linux-musl-x64" ]];\
         rm -rf /var/lib/apt/lists/*; \
     fi
 
-WORKDIR /opt/eventstore
+WORKDIR /opt/kurrentdb
 
-RUN addgroup --gid ${GID} "eventstore" && \
+RUN addgroup --gid ${GID} "kurrent" && \
     adduser \
     --disabled-password \
     --gecos "" \
-    --ingroup "eventstore" \
+    --ingroup "kurrent" \
     --no-create-home \
     --uid ${UID} \
-    "eventstore"
+    "kurrent"
 
-COPY --chown=eventstore:eventstore --from=publish /publish ./
+COPY --chown=kurrent:kurrent --from=publish /publish ./
 
-RUN mkdir -p /var/lib/eventstore && \
-    mkdir -p /var/log/eventstore && \
-    mkdir -p /etc/eventstore && \
-    chown -R eventstore:eventstore /var/lib/eventstore /var/log/eventstore /etc/eventstore
+RUN mkdir -p /var/lib/kurrentdb && \
+    mkdir -p /var/log/kurrentdb && \
+    mkdir -p /etc/kurrentdb && \
+    chown -R kurrent:kurrent /var/lib/kurrentdb /var/log/kurrentdb /etc/kurrentdb
 
-USER eventstore
+USER kurrent
 
 RUN printf "NodeIp: 0.0.0.0\n\
-ReplicationIp: 0.0.0.0" >> /etc/eventstore/eventstore.conf
+ReplicationIp: 0.0.0.0" >> /etc/kurrentdb/kurrentdb.conf
 
-VOLUME /var/lib/eventstore /var/log/eventstore
+VOLUME /var/lib/kurrentdb /var/log/kurrentdb
 
 EXPOSE 1112/tcp 1113/tcp 2113/tcp
 
 HEALTHCHECK --interval=5s --timeout=5s --retries=24 \
     CMD curl --fail --insecure https://localhost:2113/health/live || curl --fail http://localhost:2113/health/live || exit 1
 
-ENTRYPOINT ["/opt/eventstore/EventStore.ClusterNode"]
+ENTRYPOINT ["/opt/kurrentdb/KurrentDB"]

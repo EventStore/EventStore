@@ -295,9 +295,9 @@ internal abstract class ScenarioBase : IScenario {
 
 	private int StartNewNode() {
 		var clientFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-		//../../EventStore.ClusterNode/net471/EventStore.ClusterNode.exe
+		//../../KurrentDB/net471/KurrentDB.exe
 		var clusterNodeFolder = System.IO.Directory.GetParent(System.IO.Directory.GetParent(clientFolder).FullName)
-		                        + "/EventStore.ClusterNode/net471/";
+		                        + "/KurrentDB/net471/";
 		string fileName;
 		string argumentsHead;
 
@@ -306,9 +306,9 @@ internal abstract class ScenarioBase : IScenario {
 			Log.Information("Mono at {pathToMono} will be used.", pathToMono);
 			fileName = pathToMono;
 			argumentsHead = string.Format("--debug --gc=sgen {0}",
-				Path.Combine(clusterNodeFolder, "EventStore.ClusterNode.exe"));
+				Path.Combine(clusterNodeFolder, "KurrentDB.exe"));
 		} else {
-			fileName = Path.Combine(clusterNodeFolder, "EventStore.ClusterNode.exe");
+			fileName = Path.Combine(clusterNodeFolder, "KurrentDB.exe");
 			argumentsHead = "";
 		}
 
