@@ -59,26 +59,15 @@ class CategoryIndex(DuckDb db) {
 		                     from idx_all where category=$cat and category_seq>=$start and category_seq<=$end
 		                     """;
 
-
-		while (true) {
-			using var duration = TempIndexMetrics.MeasureIndex("duck_get_cat_range");
-			var result = db.Connection.QueryWithRetry<CategoryRecord>(query, new { cat = id, start = fromEventNumber, end = toEventNumber }).ToList();
-			return result;
-		}
+		using var duration = TempIndexMetrics.MeasureIndex("duck_get_cat_range");
+		var result = db.Connection.QueryWithRetry<CategoryRecord>(query, new { cat = id, start = fromEventNumber, end = toEventNumber }).ToList();
+		return result;
 	}
 
-	public long GetLastEventNumber(long categoryId) {
-		return CategorySizes[categoryId];
-	}
+	public long GetLastEventNumber(long categoryId) => CategorySizes[categoryId];
 
 	long GetCategoryLastEventNumber(long categoryId) {
-		while (true) {
-			try {
-				return db.Connection.Query<long>("select max(seq) from idx_all where category=$cat", new { cat = categoryId }).SingleOrDefault();
-			} catch (Exception e) {
-				Log.Warning("Error while reading index: {Exception}", e.Message);
-			}
-		}
+		return db.Connection.QueryWithRetry<long>("select max(seq) from idx_all where category=$cat", new { cat = categoryId }).SingleOrDefault();
 	}
 
 	static string GetStreamCategory(string streamName) {

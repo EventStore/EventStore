@@ -831,9 +831,7 @@ public class ClusterVNode<TStreamId> :
 
 		var grpcSendService = new GrpcSendService(_eventStoreClusterClientCache);
 		_mainBus.Subscribe<GrpcMessage.SendOverGrpc>(_workersHandler);
-		SubscribeWorkers(bus => {
-			bus.Subscribe<GrpcMessage.SendOverGrpc>(grpcSendService);
-		});
+		SubscribeWorkers(bus => bus.Subscribe<GrpcMessage.SendOverGrpc>(grpcSendService));
 
 		GossipAdvertiseInfo = GetGossipAdvertiseInfo();
 

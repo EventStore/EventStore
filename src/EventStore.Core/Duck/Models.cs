@@ -23,6 +23,14 @@ class EventTypeRecord {
 	public long stream { get; set; }
 }
 
+class AllRecord {
+	public long seq { get; set; }
+	public long log_position { get; set; }
+	public int event_number { get; set; }
+	public int event_type { get; set; }
+	public long stream { get; set; }
+}
+
 public class ReferenceRecord {
 	public long id { get; set; }
 	public string name { get; set; }

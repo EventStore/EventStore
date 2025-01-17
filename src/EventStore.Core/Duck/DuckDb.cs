@@ -20,11 +20,6 @@ public class DuckDb(TFChunkDbConfig dbConfig) {
 		DuckDbSchema.CreateSchema(Connection);
 	}
 
-	public void InitIndexes(DefaultIndexHandler handler) {
-		var defaultIndex = new DefaultIndex(this);
-		defaultIndex.Init(handler);
-	}
-
 	public void Close() {
 		Connection.Execute("checkpoint");
 		Connection.Close();

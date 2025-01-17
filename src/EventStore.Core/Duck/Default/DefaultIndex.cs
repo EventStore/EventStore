@@ -1,11 +1,14 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Dapper;
+using EventStore.Core.Metrics;
 
 namespace EventStore.Core.Duck.Default;
 
 public class DefaultIndex {
 	readonly DuckDb _db;
+	public DefaultIndexHandler Handler { get; }
 
 	public DefaultIndex(DuckDb db) {
 		_db = db;
@@ -14,12 +17,13 @@ public class DefaultIndex {
 		EventTypeIndex = new(db);
 		CategoryIndexReader = new(CategoryIndex, StreamIndex, EventTypeIndex);
 		EventTypeIndexReader = new(EventTypeIndex, StreamIndex);
+		Handler = new(db, this);
 	}
 
-	public void Init(DefaultIndexHandler handler) {
+	public void Init() {
 		CategoryIndex.Init();
 		EventTypeIndex.Init();
-		DefaultIndexReader = new(handler, StreamIndex, EventTypeIndex);
+		DefaultIndexReader = new(_db, Handler, StreamIndex, EventTypeIndex);
 	}
 
 	public ulong? GetLastPosition() {
@@ -43,12 +47,24 @@ public class DefaultIndex {
 
 public record struct SequenceRecord(long Id, long Sequence);
 
-class DefaultIndexReader(DefaultIndexHandler handler, StreamIndex streamIndex, EventTypeIndex eventTypeIndex) : DuckIndexReader(streamIndex, eventTypeIndex) {
+class DefaultIndexReader(DuckDb db, DefaultIndexHandler handler, StreamIndex streamIndex, EventTypeIndex eventTypeIndex)
+	: DuckIndexReader(streamIndex, eventTypeIndex) {
 	protected override long GetId(string streamName) => 0;
 
 	protected override long GetLastNumber(long id) => (long)handler.GetLastPosition();
 
-	protected override IEnumerable<IndexedPrepare> GetIndexRecords(long id, long fromEventNumber, long toEventNumber) {
-		throw new System.NotImplementedException();
+	protected override IEnumerable<IndexedPrepare> GetIndexRecords(long _, long fromEventNumber, long toEventNumber) {
+		var range = QueryAll(fromEventNumber, toEventNumber);
+		var indexPrepares = range.Select(x => new IndexedPrepare(x.seq, x.stream, x.event_type, x.event_number, x.log_position));
+		return indexPrepares;
+	}
+
+	[MethodImpl(MethodImplOptions.Synchronized)]
+	List<AllRecord> QueryAll(long fromEventNumber, long toEventNumber) {
+		const string query = "select seq, log_position, event_number, event_type, stream from idx_all where seq>=$start and seq<=$end";
+
+		using var duration = TempIndexMetrics.MeasureIndex("duck_get_all_range");
+		var result = db.Connection.QueryWithRetry<AllRecord>(query, new { start = fromEventNumber, end = toEventNumber }).ToList();
+		return result;
 	}
 }

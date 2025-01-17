@@ -11,23 +11,28 @@ using static EventStore.Core.Messages.SystemMessage;
 
 namespace EventStore.Core.Duck;
 
-class DuckDbIndexBuilder(TFChunkDbConfig dbConfig, IPublisher publisher) : IAsyncHandle<SystemReady>, IAsyncHandle<BecomeShuttingDown> {
+class DuckDbIndexBuilder : IAsyncHandle<SystemReady>, IAsyncHandle<BecomeShuttingDown> {
 	static readonly ILogger Log = Serilog.Log.Logger.ForContext<DuckDbIndexBuilder>();
 	InternalSubscription _subscription;
 	IndexCheckpointStore _checkpointStore;
 	DefaultIndexHandler _handler;
-	DuckDb _db;
+	readonly DuckDb _db;
 
 	internal DefaultIndex DefaultIndex;
+	readonly IPublisher _publisher;
 
-	public async ValueTask HandleAsync(SystemReady message, CancellationToken token) {
+	public DuckDbIndexBuilder(TFChunkDbConfig dbConfig, IPublisher publisher) {
+		_publisher = publisher;
 		_db = new(dbConfig);
 		_db.InitDb();
 		DefaultIndex = new(_db);
+	}
+
+	public async ValueTask HandleAsync(SystemReady message, CancellationToken token) {
 		_handler = new(_db, DefaultIndex);
-		_db.InitIndexes(_handler);
+		DefaultIndex.Init();
 		_checkpointStore = new(DefaultIndex, _handler);
-		_subscription = new(publisher, _checkpointStore, _handler);
+		_subscription = new(_publisher, _checkpointStore, _handler);
 		await _subscription.Subscribe(
 			id => Log.Information("Index subscription {Subscription} subscribed", id),
 			(id, reason, ex) => Log.Warning(ex, "Index subscription {Subscription} dropped {Reason}", id, reason),

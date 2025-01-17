@@ -339,9 +339,11 @@ public class StorageReaderWorker<TStreamId>(
 			if (msg.EventStreamId.StartsWith("$cat-")) {
 				return await defaultIndex.CategoryIndexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
 			}
-
 			if (msg.EventStreamId.StartsWith("$etype-")) {
 				return await defaultIndex.EventTypeIndexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
+			}
+			if (msg.EventStreamId == "$everything") {
+				return await defaultIndex.DefaultIndexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
 			}
 
 			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
@@ -387,6 +389,9 @@ public class StorageReaderWorker<TStreamId>(
 			}
 			if (msg.EventStreamId.StartsWith("$etype-")) {
 				return await defaultIndex.EventTypeIndexReader.ReadBackwards(msg, _readIndex.IndexReader, lastIndexedPosition, token);
+			}
+			if (msg.EventStreamId == "$everything") {
+				return await defaultIndex.DefaultIndexReader.ReadBackwards(msg, _readIndex.IndexReader, lastIndexedPosition, token);
 			}
 
 			var streamId = _readIndex.GetStreamId(msg.EventStreamId);

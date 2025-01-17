@@ -63,11 +63,9 @@ public class EventTypeIndex(DuckDb db) {
 		                     from idx_all where event_type=$et and event_type_seq>=$start and event_type_seq<=$end
 		                     """;
 
-		while (true) {
-			using var duration = TempIndexMetrics.MeasureIndex("duck_get_et_range");
-			var result = db.Connection.QueryWithRetry<EventTypeRecord>(query, new { et = eventTypeId, start = fromEventNumber, end = toEventNumber }).ToList();
-			return result;
-		}
+		using var duration = TempIndexMetrics.MeasureIndex("duck_get_et_range");
+		var result = db.Connection.QueryWithRetry<EventTypeRecord>(query, new { et = eventTypeId, start = fromEventNumber, end = toEventNumber }).ToList();
+		return result;
 	}
 
 	public SequenceRecord Handle(IMessageConsumeContext ctx) {
