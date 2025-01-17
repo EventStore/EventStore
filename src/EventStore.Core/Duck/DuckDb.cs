@@ -17,15 +17,15 @@ namespace EventStore.Core.Duck;
 
 public static class DuckDb {
 	static readonly ILogger Log = Serilog.Log.ForContext(typeof(DuckDb));
-	// public static readonly bool UseDuckDb = Environment.GetEnvironmentVariable("ES_USE_DUCKDB") == "1";
 
-	public static void Init(TFChunkDbConfig dbConfig, DefaultIndexHandler handler) {
-		// if (!UseDuckDb) return;
-
+	public static void InitDb(TFChunkDbConfig dbConfig) {
 		var fileName = Path.Combine(dbConfig.Path, "index.db");
 		Connection = new($"Data Source={fileName};");
 		Connection.Open();
 		DuckDbSchema.CreateSchema();
+	}
+
+	public static void InitIndexes(DefaultIndexHandler handler) {
 		DefaultIndex.Init(handler);
 	}
 

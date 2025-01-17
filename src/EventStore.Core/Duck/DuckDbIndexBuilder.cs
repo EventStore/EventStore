@@ -20,8 +20,9 @@ class DuckDbIndexBuilder(TFChunkDbConfig dbConfig, IPublisher publisher) : IAsyn
 	DefaultIndexHandler _handler;
 
 	public async ValueTask HandleAsync(SystemReady message, CancellationToken token) {
+		DuckDb.InitDb(dbConfig);
 		_handler = new();
-		DuckDb.Init(dbConfig, _handler);
+		DuckDb.InitIndexes(_handler);
 		_checkpointStore = new(_handler);
 		_subscription = new(publisher, _checkpointStore, _handler);
 		await _subscription.Subscribe(
