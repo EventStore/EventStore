@@ -69,7 +69,8 @@ public sealed class ArchiverService :
 			var chunk = manager.GetChunkFor(checkpoint);
 			if (chunk.ChunkFooter.IsCompleted && chunk.ChunkHeader.ChunkEndPosition <= Volatile.Read(in _replicationPosition)) {
 				await ArchiveChunkAsync(chunk, token);
-				await _archive.SetCheckpoint(checkpoint = chunk.ChunkHeader.ChunkEndPosition, token);
+				checkpoint = chunk.ChunkHeader.ChunkEndPosition;
+				await _archive.SetCheckpoint(checkpoint, token);
 			} else {
 				await _archivingSignal.WaitAsync(token);
 			}
