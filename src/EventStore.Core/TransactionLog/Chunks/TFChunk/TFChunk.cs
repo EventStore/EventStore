@@ -1039,6 +1039,7 @@ public partial class TFChunk : IDisposable {
 		return closed;
 	}
 
+	// Causes the chunk to be deleted when all the readers have returned.
 	public void MarkForDeletion() {
 		_selfdestructin54321 = true;
 		_deleteFile = true;
@@ -1082,7 +1083,7 @@ public partial class TFChunk : IDisposable {
 			Helper.EatException(LocalFileName, static filename => File.SetAttributes(filename, FileAttributes.Normal));
 
 			if (_deleteFile) {
-				Log.Information("File {chunk} has been marked for delete and will be deleted in TryDestructFileStreams.",
+				Log.Information("Deleting chunk {chunk}",
 					Path.GetFileName(ChunkLocator));
 				Helper.EatException(LocalFileName, File.Delete);
 			}

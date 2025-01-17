@@ -783,7 +783,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 
 			await newChunk.CompleteScavenge(null, token);
 
-			await db.Manager.SwitchChunk(newChunk, false, false, token);
+			await db.Manager.SwitchInTempChunk(newChunk, false, false, token);
 		}
 	}
 }

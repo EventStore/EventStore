@@ -151,7 +151,7 @@ public class RedactionService<TStreamId> :
 		Message reply;
 		switch (await IsValidSwitchChunkRequest(targetChunkFile, newChunkFile, token)) {
 			case { ValueOrDefault: { } newChunk }:
-				await _db.Manager.SwitchChunk(
+				await _db.Manager.SwitchInTempChunk(
 					chunk: newChunk,
 					verifyHash: false,
 					removeChunksWithGreaterNumbers: false,

@@ -5,9 +5,9 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using EventStore.Common.Utils;
 using System.Threading.Tasks;
 using DotNext.Threading;
+using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
@@ -255,13 +255,33 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			TriggerBackgroundCaching();
 	}
 
-	// Switches the specified chunk in.
-	// Switches other chunks out as appropriate.
-	// The specified chunk is at a temp path, part of switching it in involves renaming it to the appropriate version.
-	public async ValueTask<TFChunk.TFChunk> SwitchChunk(TFChunk.TFChunk chunk, bool verifyHash,
+	// Converts the specified temp chunk to permanent, and switches it in.
+	public async ValueTask<TFChunk.TFChunk> SwitchInTempChunk(TFChunk.TFChunk chunk, bool verifyHash,
 		bool removeChunksWithGreaterNumbers,
 		CancellationToken token) {
 		Ensure.NotNull(chunk, "chunk");
+
+		var chunkHeader = chunk.ChunkHeader;
+
+		// convert to new, permanent chunk
+		var newChunk = await MakeTempChunkPermanent(chunk, verifyHash, token);
+
+		// switch the new chunk into the chunks array.
+		int? removeChunksAfter = removeChunksWithGreaterNumbers
+			? chunkHeader.ChunkEndNumber // only true during replication
+			: null;
+		await SwitchInChunk(newChunk, removeChunksAfter, token);
+		return newChunk;
+	}
+
+	// The specified chunk is temporary, but complete. It needs closing and renaming.
+	private async ValueTask<TFChunk.TFChunk> MakeTempChunkPermanent(
+		TFChunk.TFChunk chunk,
+		bool verifyHash,
+		CancellationToken token) {
+
+		Ensure.NotNull(chunk, "chunk");
+
 		if (!chunk.IsReadOnly)
 			throw new ArgumentException(string.Format("Passed TFChunk is not completed: {0}.", chunk.ChunkLocator));
 
@@ -301,20 +321,32 @@ public class TFChunkManager : IThreadPoolWorkItem {
 				_config.ReduceFileCachePressure, token: token);
 		}
 
-		// update the chunks array
+		return newChunk;
+	}
+
+	// Atomically switches in the newChunk if it precisely overlaps one or more chunks in _chunks
+	private async ValueTask SwitchInChunk(
+		TFChunk.TFChunk newChunk,
+		int? removeChunksAfter,
+		CancellationToken token) {
+
+		Ensure.NotNull(newChunk, "chunk");
+
 		bool triggerCaching;
 		await _chunksLocker.AcquireAsync(token);
 		try {
-			if (!ReplaceChunksWith(newChunk, "Old")) {
+			if (ReplaceChunksWith(newChunk, "Old")) {
+				OnChunkSwitched?.Invoke(newChunk.ChunkInfo);
+			} else {
 				Log.Information("Chunk {chunk} will be not switched, marking for remove...", newChunk);
 				newChunk.MarkForDeletion();
-			} else
-				OnChunkSwitched?.Invoke(newChunk.ChunkInfo);
+			}
 
-			if (removeChunksWithGreaterNumbers) {
+			// only true during replication
+			if (removeChunksAfter.HasValue) {
 				var oldChunksCount = _chunksCount;
 				_chunksCount = newChunk.ChunkHeader.ChunkEndNumber + 1;
-				RemoveChunks(chunkHeader.ChunkEndNumber + 1, oldChunksCount - 1, "Excessive");
+				RemoveChunks(removeChunksAfter.Value + 1, oldChunksCount - 1, "Excessive");
 				if (_chunks[_chunksCount] is not null)
 					throw new Exception(string.Format("Excessive chunk #{0} found after raw replication switch.",
 						_chunksCount));
@@ -327,9 +359,10 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		// trigger caching out of lock to avoid lock contention
 		if (triggerCaching)
 			TriggerBackgroundCaching();
-		return newChunk;
 	}
 
+	// Checks this chunk has a compatible range to be swapped in and swaps it in.
+	// Returns false if the range is not compatible. (This would be unexpected?)
 	private bool ReplaceChunksWith(TFChunk.TFChunk newChunk, string chunkExplanation) {
 		Debug.Assert(_chunksLocker.IsLockHeld);
 
@@ -338,6 +371,8 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		for (int i = chunkStartNumber; i <= chunkEndNumber;) {
 			var chunk = _chunks[i];
 			if (chunk != null) {
+				// we would be removing `chunk` and replacing it with `newChunk`.
+				// check that chunk's range is covered by newChunk.
 				var chunkHeader = chunk.ChunkHeader;
 				if (chunkHeader.ChunkStartNumber < chunkStartNumber || chunkHeader.ChunkEndNumber > chunkEndNumber)
 					return false;
@@ -349,6 +384,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			}
 		}
 
+		// switch the chunk in to _chunks array and mark any removed chunks for deletion.
 		TFChunk.TFChunk previousRemovedChunk = null;
 		for (int i = chunkStartNumber; i <= chunkEndNumber; i += 1) {
 			var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunk);
