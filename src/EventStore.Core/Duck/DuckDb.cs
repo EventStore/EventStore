@@ -56,12 +56,13 @@ static class DuckDbExtensions {
 	}
 
 	public static void CloseWithRetry(this DuckDBAppender appender, string type) {
-		while (true) {
+		var i = 5;
+		while (i-- >= 0) {
 			try {
 				appender.Close();
 				return;
 			} catch (Exception e) {
-				Log.Warning("Error while closing appender {Type}: {Error}", type, e.Message);
+				Log.Warning(e, "Error while closing appender {Type}: {Error}", type, e.Message);
 			}
 		}
 	}
