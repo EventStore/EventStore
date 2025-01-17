@@ -14,7 +14,11 @@ public static class DefaultIndex {
 
 	public static ulong? GetLastPosition() {
 		const string query = "select max(log_position) from idx_all";
+		return DuckDb.Connection.Query<ulong?>(query).FirstOrDefault();
+	}
 
+	public static ulong? GetLastSequence() {
+		const string query = "select max(seq) from idx_all";
 		return DuckDb.Connection.Query<ulong?>(query).FirstOrDefault();
 	}
 

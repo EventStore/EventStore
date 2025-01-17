@@ -13,6 +13,7 @@ public class IndexCheckpointStore(DefaultIndexHandler handler) : ICheckpointStor
 
 	public ValueTask<Checkpoint> GetLastCheckpoint(string checkpointId, CancellationToken cancellationToken) {
 		var lastPosition = DefaultIndex.GetLastPosition();
+		Log.Information("Starting from {LastPosition}", lastPosition);
 		return ValueTask.FromResult(new Checkpoint(checkpointId, lastPosition));
 	}
 

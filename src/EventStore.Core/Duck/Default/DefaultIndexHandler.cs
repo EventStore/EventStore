@@ -21,12 +21,14 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 	public DefaultIndexHandler() {
 		_connection = DuckDb.Connection;
 		_appender = _connection.CreateAppender("idx_all");
-		var last = DefaultIndex.GetLastPosition();
+		var last = DefaultIndex.GetLastSequence();
+		Logger.Information("Last known global sequence: {Seq}", last);
 		_seq = last.HasValue ? last.Value + 1 : 0;
 	}
 
 	public ValueTask<EventHandlingStatus> HandleEvent(IMessageConsumeContext context) {
-		if (context.Stream.ToString().StartsWith('$')) return ValueTask.FromResult(EventHandlingStatus.Ignored);
+		if (context.Stream.ToString().StartsWith('$'))
+			return ValueTask.FromResult(EventHandlingStatus.Ignored);
 
 		var streamId = StreamIndex.Handle(context);
 		var et = EventTypeIndex.Handle(context);
@@ -62,6 +64,7 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 		_appender.Dispose();
 		Logger.Information("Committed {Count} records to index at sequence {Seq}", _page, _seq);
 		_page = 0;
+		if (!reopen) return;
 		_appender = _connection.CreateAppender("idx_all");
 		_semaphore.Release();
 	}
