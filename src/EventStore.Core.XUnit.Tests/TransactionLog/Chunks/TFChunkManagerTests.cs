@@ -81,7 +81,7 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 	[InlineData(2, 4, "misaligned")]
 	public async Task one_chunk_replaces_no_chunks(int start, int end, string explanation) {
 		// given
-		var chunks = new TFChunk[] {
+		var chunks = new[] {
 			await AddNewChunk(0, 0),
 			await AddNewChunk(1, 3),
 			await AddNewChunk(4, 5),
@@ -110,7 +110,7 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 	[Fact]
 	public async Task one_chunk_replaces_one_chunk() {
 		// given
-		var chunks = new TFChunk[] {
+		var chunks = new[] {
 			await AddNewChunk(0, 0),
 			await AddNewChunk(1, 3), // <-- will replace this one
 			await AddNewChunk(4, 5),
@@ -138,7 +138,7 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 	[Fact]
 	public async Task one_chunk_replaces_many_chunks() {
 		// given
-		var chunks = new TFChunk[] {
+		var chunks = new[] {
 			await AddNewChunk(0, 0),
 			await AddNewChunk(1, 3), // <-- will replace this one
 			await AddNewChunk(4, 5), // <-- and this one
@@ -165,14 +165,14 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 	[Fact]
 	public async Task many_non_contiguous_chunks_replace_no_chunks() {
 		// given
-		var chunks = new TFChunk[] {
+		var chunks = new[] {
 			await AddNewChunk(0, 0),
 			await AddNewChunk(1, 3),
 			await AddNewChunk(4, 5),
 		};
 
 		// when
-		var newChunks = new string[] {
+		var newChunks = new[] {
 			_locatorCodec.EncodeRemote(1),
 			_locatorCodec.EncodeRemote(3),
 		};
@@ -199,7 +199,7 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 	[InlineData(2, 4, "misaligned")]
 	public async Task many_chunks_replace_no_chunks(int start, int end, string explanation) {
 		// given
-		var chunks = new TFChunk[] {
+		var chunks = new[] {
 			await AddNewChunk(0, 0),
 			await AddNewChunk(1, 3),
 			await AddNewChunk(4, 5),
@@ -231,14 +231,14 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 	[Fact]
 	public async Task many_chunks_replace_one_chunk() {
 		// given
-		var chunks = new TFChunk[] {
+		var chunks = new[] {
 			await AddNewChunk(0, 0),
 			await AddNewChunk(1, 3), // <-- will replace this one
 			await AddNewChunk(4, 5),
 		}.Select(chunk => chunk.ChunkLocator).ToArray();
 
 		// when
-		var newChunks = new string[] {
+		var newChunks = new[] {
 			_locatorCodec.EncodeRemote(1),
 			_locatorCodec.EncodeRemote(2),
 			_locatorCodec.EncodeRemote(3),
@@ -265,14 +265,14 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 	[Fact]
 	public async Task many_chunks_replace_many_chunks() {
 		// given
-		var chunks = new TFChunk[] {
+		var chunks = new[] {
 			await AddNewChunk(0, 0),
 			await AddNewChunk(1, 3), // <-- will replace this one
 			await AddNewChunk(4, 5), // <-- and this one
 		}.Select(chunk => chunk.ChunkLocator).ToArray();
 
 		// when
-		var newChunks = new string[] {
+		var newChunks = new[] {
 			_locatorCodec.EncodeRemote(1),
 			_locatorCodec.EncodeRemote(2),
 			_locatorCodec.EncodeRemote(3),

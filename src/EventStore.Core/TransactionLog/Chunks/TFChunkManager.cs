@@ -444,8 +444,8 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		// switch the chunk in to _chunks array and mark any removed chunks for deletion.
 		TFChunk.TFChunk previousRemovedChunk = null;
 		var newChunkIndex = 0;
-		for (int i = chunkStartNumber; i <= chunkEndNumber; i += 1) {
-			while (!Covers(newChunks[newChunkIndex], start: i, end: i))
+		for (int i = chunkStartNumber; i <= chunkEndNumber; i++) {
+			while (!Covers(newChunks[newChunkIndex], chunkNumber: i))
 				newChunkIndex++;
 			// now newChunks[newChunkIndex] covers logical chunk i
 			var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunks[newChunkIndex]);
@@ -470,9 +470,9 @@ public class TFChunkManager : IThreadPoolWorkItem {
 
 		return true;
 
-		static bool Covers(TFChunk.TFChunk chunk, int start, int end) =>
-			chunk.ChunkHeader.ChunkStartNumber <= start &&
-			chunk.ChunkHeader.ChunkEndNumber >= end;
+		static bool Covers(TFChunk.TFChunk chunk, int chunkNumber) =>
+			chunk.ChunkHeader.ChunkStartNumber <= chunkNumber &&
+			chunk.ChunkHeader.ChunkEndNumber >= chunkNumber;
 	}
 
 	private void RemoveChunks(int chunkStartNumber, int chunkEndNumber, string chunkExplanation) {

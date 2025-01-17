@@ -18,7 +18,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Stages;
 public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 	private readonly ILogger _logger;
 	private readonly IMetastreamLookup<TStreamId> _metastreamLookup;
-	private readonly IChunkDeleter<TStreamId, TRecord> _chunkDeleter;
+	private readonly IChunkRemover<TStreamId, TRecord> _chunkDeleter;
 	private readonly IChunkManagerForChunkExecutor<TStreamId, TRecord> _chunkManager;
 	private readonly long _chunkSize;
 	private readonly bool _unsafeIgnoreHardDeletes;
@@ -29,7 +29,7 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 	public ChunkExecutor(
 		ILogger logger,
 		IMetastreamLookup<TStreamId> metastreamLookup,
-		IChunkDeleter<TStreamId, TRecord> chunkDeleter,
+		IChunkRemover<TStreamId, TRecord> chunkDeleter,
 		IChunkManagerForChunkExecutor<TStreamId, TRecord> chunkManager,
 		long chunkSize,
 		bool unsafeIgnoreHardDeletes,
@@ -120,15 +120,18 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 							physicalChunk.Name,
 							physicalWeight);
 
-
-					} else if (await _chunkDeleter.DeleteIfNotRetained(
+					} else if (await _chunkDeleter.StartRemovingIfNotRetained(
 						scavengePoint,
 						concurrentState,
 						physicalChunk,
 						cancellationToken)) {
 
-						// delete occurs regardless of weight
-						// skip scavenging this chunk, still reset the weights
+						// the chunk is being removed, but is not necessarily removed yet (it will wait
+						// for readers to complete)
+						// skip scavenging this chunk, still reset the weights (because there won't be
+						// any chunk left to have any weight).
+						// the removal was not dependent on the weight, so if the chunk is not removed
+						// (e.g. because we shutdown), then that is fine, it will just be removed next scavenge.
 						concurrentState.ResetChunkWeights(
 							physicalChunk.ChunkStartNumber,
 							physicalChunk.ChunkEndNumber);
@@ -153,9 +156,9 @@ public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
 					} else {
 						_logger.Debug(
 							"SCAVENGING: Skipped physical chunk: {oldChunkName} " +
-							"with weight {physicalWeight:N0}. ",
+							"with weight {physicalWeight:N0}. The threshold is {threshold}.",
 							physicalChunk.Name,
-							physicalWeight);
+							physicalWeight, scavengePoint.Threshold);
 					}
 
 					cancellationToken.ThrowIfCancellationRequested();

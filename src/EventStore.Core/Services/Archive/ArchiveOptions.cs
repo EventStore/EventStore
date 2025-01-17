@@ -29,6 +29,8 @@ public class S3Options {
 	public string Region { get; init; } = "";
 }
 
+// Local chunks are removed after they have passed beyond both criteria, so they
+// must both be set to be useful.
 public class RetentionOptions {
 	public long Days { get; init; } = TimeSpan.MaxValue.Days;
 	// number of bytes in the logical log

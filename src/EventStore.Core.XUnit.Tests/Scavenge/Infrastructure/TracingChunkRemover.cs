@@ -8,26 +8,26 @@ using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 
-public class TracingChunkDeleter<TStreamId, TRecord> :
-	IChunkDeleter<TStreamId, TRecord> {
+public class TracingChunkRemover<TStreamId, TRecord> :
+	IChunkRemover<TStreamId, TRecord> {
 
-	private readonly IChunkDeleter<TStreamId, TRecord> _wrapped;
+	private readonly IChunkRemover<TStreamId, TRecord> _wrapped;
 	private readonly Tracer _tracer;
 
-	public TracingChunkDeleter(IChunkDeleter<TStreamId, TRecord> wrapped, Tracer tracer) {
+	public TracingChunkRemover(IChunkRemover<TStreamId, TRecord> wrapped, Tracer tracer) {
 		_wrapped = wrapped;
 		_tracer = tracer;
 	}
 
-	public async ValueTask<bool> DeleteIfNotRetained(
+	public async ValueTask<bool> StartRemovingIfNotRetained(
 		ScavengePoint scavengePoint,
 		IScavengeStateForChunkExecutorWorker<TStreamId> concurrentState,
 		IChunkReaderForExecutor<TStreamId, TRecord> physicalChunk,
 		CancellationToken ct) {
 
-		var deleted = await _wrapped.DeleteIfNotRetained(scavengePoint, concurrentState, physicalChunk, ct);
-		var decision = deleted ? "Deleted" : "Retained";
+		var removing = await _wrapped.StartRemovingIfNotRetained(scavengePoint, concurrentState, physicalChunk, ct);
+		var decision = removing ? "Removing" : "Retaining";
 		_tracer.Trace($"{decision} Chunk {physicalChunk.ChunkStartNumber}-{physicalChunk.ChunkEndNumber}");
-		return deleted;
+		return removing;
 	}
 }
