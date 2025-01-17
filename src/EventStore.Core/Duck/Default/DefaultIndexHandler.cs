@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using DuckDB.NET.Data;
 using Eventuous.Subscriptions;
 using Eventuous.Subscriptions.Context;
+using Serilog;
 
 namespace EventStore.Core.Duck.Default;
 
@@ -12,7 +13,10 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 	readonly SemaphoreSlim _semaphore = new(1);
 
 	ulong _seq;
+	int _page;
 	DuckDBAppender _appender;
+
+	static readonly ILogger Logger = Log.ForContext<DefaultIndexHandler>();
 
 	public DefaultIndexHandler() {
 		_connection = DuckDb.Connection;
@@ -41,6 +45,7 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 		row.AppendValue(cat.Sequence);
 		row.EndRow();
 		_semaphore.Release();
+		_page++;
 
 		return ValueTask.FromResult(EventHandlingStatus.Success);
 	}
@@ -48,13 +53,18 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 	public string DiagnosticName => "DefaultIndexHandler";
 
 	public void Dispose() {
+		Commit(false);
 		_semaphore.Dispose();
 	}
 
-	public void Commit() {
+	public void Commit(bool reopen = true) {
 		_semaphore.Wait();
 		_appender.Dispose();
+		Logger.Information("Committed {Count} records to index at sequence {Seq}", _page, _seq);
+		_page = 0;
 		_appender = _connection.CreateAppender("idx_all");
 		_semaphore.Release();
 	}
+
+	public ulong GetLastPosition() => _seq;
 }

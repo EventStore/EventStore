@@ -27,10 +27,10 @@ namespace EventStore.Core.Duck;
 public class InternalSubscription(
 	IPublisher publisher,
 	ICheckpointStore checkpointStore,
-	IEventHandler eventHandler)
+	params IEventHandler[] eventHandlers)
 	: EventSubscriptionWithCheckpoint<InternalSubscriptionOptions>(
 		new() { SubscriptionId = "indexBuilder", ThrowOnError = true, CheckpointCommitBatchSize = 10000 },
-		checkpointStore, new ConsumePipe().AddDefaultConsumer(eventHandler),
+		checkpointStore, new ConsumePipe().AddDefaultConsumer(eventHandlers),
 		1, SubscriptionKind.All, new SerilogLoggerFactory(),
 		new EventSerializer(), null) {
 	const uint DefaultCheckpointIntervalMultiplier = 1000;
@@ -40,8 +40,6 @@ public class InternalSubscription(
 	Task _runner;
 
 	static readonly ILogger _log = Serilog.Log.ForContext<InternalSubscription>();
-
-	ILoggerFactory _loggerFactory = new SerilogLoggerFactory(_log);
 
 	protected override async ValueTask Subscribe(CancellationToken cancellationToken) {
 		var (_, position) = await GetCheckpoint(cancellationToken);
@@ -70,7 +68,6 @@ public class InternalSubscription(
 			if (_sub.Current is not ReadResponse.EventReceived eventReceived) continue;
 
 			try {
-				// Logger.ConfigureIfNull(Options.SubscriptionId, _loggerFactory);
 				var context = CreateContext(eventReceived.Event);
 				await HandleInternal(context);
 			} catch (Exception e) {
@@ -118,9 +115,7 @@ public class InternalSubscription(
 	}
 
 	class NoFilter : IEventFilter {
-		public bool IsEventAllowed(EventRecord eventRecord) {
-			return true;
-		}
+		public bool IsEventAllowed(EventRecord eventRecord) => true;
 	}
 }
 
