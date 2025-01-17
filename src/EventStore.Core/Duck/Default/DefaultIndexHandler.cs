@@ -30,6 +30,8 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 		if (context.Stream.ToString().StartsWith('$'))
 			return ValueTask.FromResult(EventHandlingStatus.Ignored);
 
+		if (_appenderDisposed || _disposing) return new(EventHandlingStatus.Ignored);
+
 		var streamId = StreamIndex.Handle(context);
 		var et = EventTypeIndex.Handle(context);
 		var cat = CategoryIndex.Handle(context);
@@ -54,19 +56,29 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 
 	public string DiagnosticName => "DefaultIndexHandler";
 
+	bool _disposed;
+	bool _disposing;
+	bool _appenderDisposed;
+
 	public void Dispose() {
+		if (_disposing || _disposed) return;
+		_disposing = true;
 		Commit(false);
 		_semaphore.Dispose();
+		_disposed = true;
 	}
 
 	public void Commit(bool reopen = true) {
+		if (_appenderDisposed) return;
 		_semaphore.Wait();
 		_appender.Dispose();
+		_appenderDisposed = true;
 		Logger.Information("Committed {Count} records to index at sequence {Seq}", _page, _seq);
 		_page = 0;
 		if (!reopen) return;
 		_appender = _connection.CreateAppender("idx_all");
 		_semaphore.Release();
+		_appenderDisposed = false;
 	}
 
 	public ulong GetLastPosition() => _seq;
