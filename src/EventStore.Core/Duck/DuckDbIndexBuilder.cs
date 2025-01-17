@@ -5,9 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Duck.Default;
-using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.Chunks;
-using Eventuous.Subscriptions.Checkpoints;
 using Serilog;
 using static EventStore.Core.Messages.SystemMessage;
 
@@ -18,12 +16,17 @@ class DuckDbIndexBuilder(TFChunkDbConfig dbConfig, IPublisher publisher) : IAsyn
 	InternalSubscription _subscription;
 	IndexCheckpointStore _checkpointStore;
 	DefaultIndexHandler _handler;
+	DuckDb _db;
+
+	internal DefaultIndex DefaultIndex;
 
 	public async ValueTask HandleAsync(SystemReady message, CancellationToken token) {
-		DuckDb.InitDb(dbConfig);
-		_handler = new();
-		DuckDb.InitIndexes(_handler);
-		_checkpointStore = new(_handler);
+		_db = new(dbConfig);
+		_db.InitDb();
+		DefaultIndex = new(_db);
+		_handler = new(_db, DefaultIndex);
+		_db.InitIndexes(_handler);
+		_checkpointStore = new(DefaultIndex, _handler);
 		_subscription = new(publisher, _checkpointStore, _handler);
 		await _subscription.Subscribe(
 			id => Log.Information("Index subscription {Subscription} subscribed", id),
@@ -33,9 +36,9 @@ class DuckDbIndexBuilder(TFChunkDbConfig dbConfig, IPublisher publisher) : IAsyn
 	}
 
 	public async ValueTask HandleAsync(BecomeShuttingDown message, CancellationToken token) {
-		_handler.Commit();
-		await _subscription.Unsubscribe(id => Log.Information("Index subscription {Subscription} unsubscribed", id), token);
+		_handler.Commit(false);
+		await Task.Delay(100, token);
+		_db.Close();
+		// await _subscription.Unsubscribe(id => Log.Information("Index subscription {Subscription} unsubscribed", id), token);
 	}
-
-	public DefaultIndexHandler GetHandler() => _handler;
 }

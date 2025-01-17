@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using DuckDB.NET.Data;
 using static EventStore.Core.Duck.DuckDb;
 
 namespace EventStore.Core.Duck;
@@ -8,9 +9,9 @@ namespace EventStore.Core.Duck;
 public static class DuckDbSchema {
 	static readonly Assembly Assembly = typeof(DuckDbSchema).Assembly;
 
-	public static void CreateSchema() {
+	public static void CreateSchema(DuckDBConnection connection) {
 		var names = Assembly.GetManifestResourceNames().Where(x => x.EndsWith(".sql")).OrderBy(x => x);
-		var transaction = Connection.BeginTransaction();
+		var transaction = connection.BeginTransaction();
 
 		try {
 			foreach (var name in names) {
@@ -19,7 +20,7 @@ public static class DuckDbSchema {
 
 				var script = reader.ReadToEnd();
 
-				using var cmd = Connection.CreateCommand();
+				using var cmd = connection.CreateCommand();
 				cmd.CommandText = script;
 				cmd.Transaction = transaction;
 

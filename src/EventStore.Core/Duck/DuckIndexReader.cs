@@ -20,7 +20,7 @@ namespace EventStore.Core.Duck;
 
 public record struct IndexedPrepare(long Version, long StreamId, long EventType, int EventNumber, long LogPosition);
 
-public abstract class DuckIndexReader {
+abstract class DuckIndexReader(StreamIndex streamIndex, EventTypeIndex eventTypeIndex) {
 	protected abstract long GetId(string streamName);
 
 	protected abstract long GetLastNumber(long id);
@@ -34,11 +34,11 @@ public abstract class DuckIndexReader {
 		var readPrepares = indexPrepares.Select(async x => (Record: x, Prepare: await ReadPrepare(x.LogPosition, cancellationToken)));
 		var prepared = await Task.WhenAll(readPrepares);
 		var recordsQuery = prepared.Where(x => x.Prepare != null).OrderBy(x => x.Record.Version).ToList();
-		var streams = StreamIndex.GetStreams(recordsQuery.Select(x => x.Record.StreamId).Distinct());
+		var streams = streamIndex.GetStreams(recordsQuery.Select(x => x.Record.StreamId).Distinct());
 		var records = recordsQuery
 			.Select(x => (Record: x, StreamName: streams[x.Record.StreamId]))
 			.Select(x => ResolvedEvent.ForResolvedLink(
-				new(x.Record.Record.EventNumber, x.Record.Prepare, x.StreamName, EventTypeIndex.EventTypeIds[x.Record.Record.EventType]),
+				new(x.Record.Record.EventNumber, x.Record.Prepare, x.StreamName, eventTypeIndex.EventTypeIds[x.Record.Record.EventType]),
 				new(
 					x.Record.Record.Version,
 					x.Record.Prepare.LogPosition,

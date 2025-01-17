@@ -749,11 +749,15 @@ public class ClusterVNode<TStreamId> :
 			[SystemStreams.NodeStateStream] = nodeStatusListener,
 		});
 
+		var indexBuilder = new DuckDbIndexBuilder(dbConfig, _mainQueue);
+		_mainBus.Subscribe<SystemMessage.SystemReady>(indexBuilder);
+		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(indexBuilder);
+
 		// Storage Reader
 		var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
 			logFormat.SystemStreams,
 			readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), inMemReader, _queueStatsManager,
-			trackers.QueueTrackers);
+			trackers.QueueTrackers, indexBuilder.DefaultIndex);
 
 		_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
 		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
@@ -1660,10 +1664,6 @@ public class ClusterVNode<TStreamId> :
 		_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 
-		var indexBuilder = new DuckDbIndexBuilder(dbConfig, _mainQueue);
-		_mainBus.Subscribe<SystemMessage.SystemReady>(indexBuilder);
-		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(indexBuilder);
-
 		var certificateExpiryMonitor = new CertificateExpiryMonitor(_mainQueue, _certificateSelector, Log);
 		_mainBus.Subscribe<SystemMessage.SystemStart>(certificateExpiryMonitor);
 		_mainBus.Subscribe<MonitoringMessage.CheckCertificateExpiry>(certificateExpiryMonitor);
@@ -1784,7 +1784,6 @@ public class ClusterVNode<TStreamId> :
 
 		try {
 			await _shutdownSource.Task.WaitAsync(timeout ?? DefaultShutdownTimeout, cancellationToken);
-			DuckDb.Close();
 		} catch (Exception) {
 			Log.Error("Graceful shutdown not complete. Forcing shutdown now.");
 			throw;

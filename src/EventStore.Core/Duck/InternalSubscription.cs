@@ -29,7 +29,7 @@ public class InternalSubscription(
 	ICheckpointStore checkpointStore,
 	params IEventHandler[] eventHandlers)
 	: EventSubscriptionWithCheckpoint<InternalSubscriptionOptions>(
-		new() { SubscriptionId = "indexBuilder", ThrowOnError = true, CheckpointCommitBatchSize = 50000, CheckpointCommitDelayMs = 10000},
+		new() { SubscriptionId = "indexBuilder", ThrowOnError = true, CheckpointCommitBatchSize = 50000, CheckpointCommitDelayMs = 10000 },
 		checkpointStore, new ConsumePipe().AddDefaultConsumer(eventHandlers),
 		1, SubscriptionKind.All, new SerilogLoggerFactory(),
 		new EventSerializer(), null) {
@@ -70,6 +70,8 @@ public class InternalSubscription(
 			try {
 				var context = CreateContext(eventReceived.Event);
 				await HandleInternal(context);
+			} catch (TaskCanceledException) {
+				// ignore
 			} catch (Exception e) {
 				_log.Error(e, "Error while processing event {EventType}", eventReceived.Event.Event.EventType);
 				throw;

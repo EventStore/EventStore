@@ -39,7 +39,8 @@ public class StorageReaderWorker<TStreamId>(
 	ISystemStreamLookup<TStreamId> systemStreams,
 	IReadOnlyCheckpoint writerCheckpoint,
 	IInMemoryStreamReader inMemReader,
-	int queueId)
+	int queueId,
+	DefaultIndex defaultIndex)
 	:
 		StorageReaderWorker,
 		IAsyncHandle<ReadEvent>,
@@ -336,11 +337,11 @@ public class StorageReaderWorker<TStreamId>(
 			using var _ = TempIndexMetrics.MeasureRead("read_stream_forward");
 
 			if (msg.EventStreamId.StartsWith("$cat-")) {
-				return await DefaultIndex.CategoryIndexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
+				return await defaultIndex.CategoryIndexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
 			}
 
 			if (msg.EventStreamId.StartsWith("$etype-")) {
-				return await DefaultIndex.EventTypeIndexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
+				return await defaultIndex.EventTypeIndexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
 			}
 
 			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
@@ -382,10 +383,10 @@ public class StorageReaderWorker<TStreamId>(
 
 			var streamName = msg.EventStreamId;
 			if (msg.EventStreamId.StartsWith("$cat-")) {
-				return await DefaultIndex.CategoryIndexReader.ReadBackwards(msg, _readIndex.IndexReader, lastIndexedPosition, token);
+				return await defaultIndex.CategoryIndexReader.ReadBackwards(msg, _readIndex.IndexReader, lastIndexedPosition, token);
 			}
 			if (msg.EventStreamId.StartsWith("$etype-")) {
-				return await DefaultIndex.EventTypeIndexReader.ReadBackwards(msg, _readIndex.IndexReader, lastIndexedPosition, token);
+				return await defaultIndex.EventTypeIndexReader.ReadBackwards(msg, _readIndex.IndexReader, lastIndexedPosition, token);
 			}
 
 			var streamId = _readIndex.GetStreamId(msg.EventStreamId);

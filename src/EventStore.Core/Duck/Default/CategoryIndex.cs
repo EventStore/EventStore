@@ -9,7 +9,7 @@ using Serilog;
 
 namespace EventStore.Core.Duck.Default;
 
-public class CategoryIndexReader : DuckIndexReader {
+class CategoryIndexReader(CategoryIndex categoryIndex, StreamIndex streamIndex, EventTypeIndex eventTypeIndex) : DuckIndexReader(streamIndex, eventTypeIndex) {
 	protected override long GetId(string streamName) {
 		var dashIndex = streamName.IndexOf('-');
 		if (dashIndex == -1) {
@@ -17,28 +17,28 @@ public class CategoryIndexReader : DuckIndexReader {
 		}
 
 		var category = streamName[(dashIndex + 1)..];
-		return CategoryIndex.Categories[category];
+		return categoryIndex.Categories[category];
 	}
 
-	protected override long GetLastNumber(long id) => CategoryIndex.GetLastEventNumber(id);
+	protected override long GetLastNumber(long id) => categoryIndex.GetLastEventNumber(id);
 
 	protected override IEnumerable<IndexedPrepare> GetIndexRecords(long id, long fromEventNumber, long toEventNumber)
-		=> CategoryIndex.GetRecords(id, fromEventNumber, toEventNumber);
+		=> categoryIndex.GetRecords(id, fromEventNumber, toEventNumber);
 }
 
-static class CategoryIndex {
-	internal static Dictionary<string, long> Categories = new();
-	static readonly Dictionary<long, long> CategorySizes = new();
+class CategoryIndex(DuckDb db) {
+	internal Dictionary<string, long> Categories = new();
+	readonly Dictionary<long, long> CategorySizes = new();
 
-	public static void Init() {
-		var ids = DuckDb.Connection.Query<ReferenceRecord>("select * from category").ToList();
+	public void Init() {
+		var ids = db.Connection.Query<ReferenceRecord>("select * from category").ToList();
 		Categories = ids.ToDictionary(x => x.name, x => x.id);
 		foreach (var id in ids) {
 			CategorySizes[id.id] = -1;
 		}
 
 		const string query = "select category, max(category_seq) from idx_all group by category";
-		var sequences = DuckDb.Connection.Query<(long Id, long Sequence)>(query);
+		var sequences = db.Connection.Query<(long Id, long Sequence)>(query);
 		foreach (var sequence in sequences) {
 			CategorySizes[sequence.Id] = sequence.Sequence;
 		}
@@ -46,14 +46,14 @@ static class CategoryIndex {
 		Seq = Categories.Count > 0 ? Categories.Values.Max() : 0;
 	}
 
-	public static IEnumerable<IndexedPrepare> GetRecords(long id, long fromEventNumber, long toEventNumber) {
+	public IEnumerable<IndexedPrepare> GetRecords(long id, long fromEventNumber, long toEventNumber) {
 		var range = QueryCategory(id, fromEventNumber, toEventNumber);
 		var indexPrepares = range.Select(x => new IndexedPrepare(x.category_seq, x.stream, x.event_type, x.event_number, x.log_position));
 		return indexPrepares;
 	}
 
 	[MethodImpl(MethodImplOptions.Synchronized)]
-	static List<CategoryRecord> QueryCategory(long id, long fromEventNumber, long toEventNumber) {
+	List<CategoryRecord> QueryCategory(long id, long fromEventNumber, long toEventNumber) {
 		const string query = """
 		                     select category_seq, log_position, event_number, event_type, stream
 		                     from idx_all where category=$cat and category_seq>=$start and category_seq<=$end
@@ -62,19 +62,19 @@ static class CategoryIndex {
 
 		while (true) {
 			using var duration = TempIndexMetrics.MeasureIndex("duck_get_cat_range");
-			var result = DuckDb.QueryWithRetry<CategoryRecord>(query, new { cat = id, start = fromEventNumber, end = toEventNumber }).ToList();
+			var result = db.Connection.QueryWithRetry<CategoryRecord>(query, new { cat = id, start = fromEventNumber, end = toEventNumber }).ToList();
 			return result;
 		}
 	}
 
-	public static long GetLastEventNumber(long categoryId) {
+	public long GetLastEventNumber(long categoryId) {
 		return CategorySizes[categoryId];
 	}
 
-	static long GetCategoryLastEventNumber(long categoryId) {
+	long GetCategoryLastEventNumber(long categoryId) {
 		while (true) {
 			try {
-				return DuckDb.Connection.Query<long>("select max(seq) from idx_all where category=$cat", new { cat = categoryId }).SingleOrDefault();
+				return db.Connection.Query<long>("select max(seq) from idx_all where category=$cat", new { cat = categoryId }).SingleOrDefault();
 			} catch (Exception e) {
 				Log.Warning("Error while reading index: {Exception}", e.Message);
 			}
@@ -86,12 +86,12 @@ static class CategoryIndex {
 		return dashIndex == -1 ? streamName : streamName[..dashIndex];
 	}
 
-	static string GetCategoryName(string streamName) {
+	string GetCategoryName(string streamName) {
 		var dashIndex = streamName.IndexOf('-');
 		return dashIndex == -1 ? throw new InvalidOperationException($"Stream {streamName} is not a category stream") : streamName[(dashIndex + 1)..];
 	}
 
-	public static SequenceRecord Handle(IMessageConsumeContext ctx) {
+	public SequenceRecord Handle(IMessageConsumeContext ctx) {
 		var categoryName = GetStreamCategory(ctx.Stream.ToString());
 		if (Categories.TryGetValue(categoryName, out var val)) {
 			var next = CategorySizes[val] + 1;
@@ -100,8 +100,7 @@ static class CategoryIndex {
 		}
 
 		var id = ++Seq;
-		DuckDb.ExecuteWithRetry(CatSql, new { id, name = categoryName });
-		ctx.LogContext.InfoLog?.Log("Stored category {Category} with {Id}", categoryName, id);
+		db.Connection.ExecuteWithRetry(CatSql, new { id, name = categoryName });
 		Categories[categoryName] = id;
 		CategorySizes[id] = 0;
 		return new(id, 0);

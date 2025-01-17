@@ -9,6 +9,7 @@ using Serilog;
 namespace EventStore.Core.Duck.Default;
 
 public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
+	readonly DefaultIndex _defaultIndex;
 	readonly DuckDBConnection _connection;
 	readonly SemaphoreSlim _semaphore = new(1);
 
@@ -18,10 +19,11 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 
 	static readonly ILogger Logger = Log.ForContext<DefaultIndexHandler>();
 
-	public DefaultIndexHandler() {
-		_connection = DuckDb.Connection;
+	public DefaultIndexHandler(DuckDb db, DefaultIndex defaultIndex) {
+		_defaultIndex = defaultIndex;
+		_connection = db.Connection;
 		_appender = _connection.CreateAppender("idx_all");
-		var last = DefaultIndex.GetLastSequence();
+		var last = defaultIndex.GetLastSequence();
 		Logger.Information("Last known global sequence: {Seq}", last);
 		_seq = last.HasValue ? last.Value + 1 : 0;
 	}
@@ -32,9 +34,9 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 
 		if (_appenderDisposed || _disposing) return new(EventHandlingStatus.Ignored);
 
-		var streamId = StreamIndex.Handle(context);
-		var et = EventTypeIndex.Handle(context);
-		var cat = CategoryIndex.Handle(context);
+		var streamId = _defaultIndex.StreamIndex.Handle(context);
+		var et = _defaultIndex.EventTypeIndex.Handle(context);
+		var cat = _defaultIndex.CategoryIndex.Handle(context);
 
 		_semaphore.Wait();
 		var row = _appender.CreateRow();
@@ -71,6 +73,7 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 	public void Commit(bool reopen = true) {
 		if (_appenderDisposed) return;
 		_semaphore.Wait();
+		_appender.CloseWithRetry("Default");
 		_appender.Dispose();
 		_appenderDisposed = true;
 		Logger.Information("Committed {Count} records to index at sequence {Seq}", _page, _seq);

@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Duck.Default;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -38,21 +38,20 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 		IReadOnlyCheckpoint writerCheckpoint,
 		IInMemoryStreamReader inMemReader,
 		QueueStatsManager queueStatsManager,
-		QueueTrackers trackers) {
-		Ensure.NotNull(bus, "bus");
-		Ensure.NotNull(subscriber, "subscriber");
-		Ensure.NotNull(readIndex, "readIndex");
+		QueueTrackers trackers,
+		DefaultIndex defaultIndex) {
+		Ensure.NotNull(subscriber);
 		Ensure.NotNull(systemStreams, nameof(systemStreams));
-		Ensure.Positive(threadCount, "threadCount");
-		Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
+		Ensure.Positive(threadCount);
+		Ensure.NotNull(writerCheckpoint);
 
-		_bus = bus;
-		_readIndex = readIndex;
+		_bus = Ensure.NotNull(bus);
+		_readIndex = Ensure.NotNull(readIndex);
 		_threadCount = threadCount;
 		StorageReaderWorker<TStreamId>[] readerWorkers = new StorageReaderWorker<TStreamId>[threadCount];
 		InMemoryBus[] storageReaderBuses = new InMemoryBus[threadCount];
 		for (var i = 0; i < threadCount; i++) {
-			readerWorkers[i] = new StorageReaderWorker<TStreamId>(bus, readIndex, systemStreams, writerCheckpoint, inMemReader, i);
+			readerWorkers[i] = new StorageReaderWorker<TStreamId>(bus, readIndex, systemStreams, writerCheckpoint, inMemReader, i, defaultIndex);
 			storageReaderBuses[i] = new InMemoryBus("StorageReaderBus", watchSlowMsg: false);
 			storageReaderBuses[i].Subscribe<ClientMessage.ReadEvent>(readerWorkers[i]);
 			storageReaderBuses[i].Subscribe<ClientMessage.ReadStreamEventsBackward>(readerWorkers[i]);
@@ -69,7 +68,7 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 		_workersMultiHandler = new MultiQueuedHandler(
 			_threadCount,
 			queueNum => new QueuedHandlerThreadPool(storageReaderBuses[queueNum],
-				string.Format("StorageReaderQueue #{0}", queueNum + 1),
+				$"StorageReaderQueue #{queueNum + 1}",
 				queueStatsManager,
 				trackers,
 				groupName: "StorageReaderQueue",

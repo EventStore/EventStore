@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Dapper;
 using DuckDB.NET.Data;
 using EventStore.Core.Metrics;
@@ -11,36 +12,63 @@ using Serilog;
 
 namespace EventStore.Core.Duck.Default;
 
-static class StreamIndex {
-	static long Seq;
-	static readonly MemoryCache StreamCache = new(new MemoryCacheOptions());
-	static readonly MemoryCacheEntryOptions Options = new() { SlidingExpiration = TimeSpan.FromMinutes(10) };
+class StreamIndex {
+	readonly DuckDb _db;
+	long _seq;
+	readonly MemoryCache _streamCache = new(new MemoryCacheOptions());
+	readonly MemoryCache _streamIdCache = new(new MemoryCacheOptions());
+	readonly MemoryCacheEntryOptions _options = new() { SlidingExpiration = TimeSpan.FromMinutes(10) };
 
-	public static void Init() {
+	public StreamIndex(DuckDb db) {
 		const string sql = "select max(id) from streams";
-		Seq = DuckDb.Connection.Query<long?>(sql).SingleOrDefault() ?? 0;
+		_seq = db.Connection.Query<long?>(sql).SingleOrDefault() ?? 0;
+		_appender = db.Connection.CreateAppender("streams");
+		_db = db;
 	}
 
-	public static long Handle(IMessageConsumeContext ctx) {
+	DuckDBAppender _appender;
+	readonly SemaphoreSlim _semaphore = new(1);
+
+	List<ReferenceRecord> _temp = [];
+
+	public long Handle(IMessageConsumeContext ctx) {
 		var name = ctx.Stream.ToString();
-		if (StreamCache.TryGetValue(name, out var existing)) return (long)existing!;
+		if (_streamIdCache.TryGetValue(name, out var existing)) return (long)existing!;
 		var fromDb = GetStreamIdFromDb(name);
 		if (fromDb.HasValue) {
-			StreamCache.Set(fromDb, name, Options);
+			_streamCache.Set(fromDb, name, _options);
+			_streamIdCache.Set(name, fromDb, _options);
 			return fromDb.Value;
 		}
 
-		var id = ++Seq;
-		StreamCache.Set(id, name, Options);
-		DuckDb.ExecuteWithRetry(StreamSql, new { id, name });
+		var id = ++_seq;
+		_semaphore.Wait();
+		_streamIdCache.Set(name, id, _options);
+		_streamCache.Set(id, name, _options);
+		_temp.Add(new() { id = id, name = name });
+		var row = _appender.CreateRow();
+		row.AppendValue(id);
+		row.AppendValue(name);
+		row.AppendValue((int?)null);
+		row.AppendValue((int?)null);
+		row.EndRow();
+		_semaphore.Release();
 		return id;
 	}
 
-	public static Dictionary<long, string> GetStreams(IEnumerable<long> ids) {
+	public void Commit() {
+		_semaphore.Wait();
+		_appender.CloseWithRetry("Streams");
+		_appender.Dispose();
+		_appender = _db.Connection.CreateAppender("streams");
+		_semaphore.Release();
+	}
+
+	public Dictionary<long, string> GetStreams(IEnumerable<long> ids) {
 		var result = new Dictionary<long, string>();
 		var uncached = new List<long>();
 		foreach (var id in ids) {
-			if (StreamCache.TryGetValue(id, out var name)) {
+			if (_streamCache.TryGetValue(id, out var name)) {
 				result.Add(id, (string)name);
 				continue;
 			}
@@ -56,9 +84,9 @@ static class StreamIndex {
 				using var duration = TempIndexMetrics.MeasureIndex("duck_get_streams");
 				try {
 					const string sql = "select * from streams where id in $ids";
-					var records = DuckDb.Connection.Query<ReferenceRecord>(sql, new { ids = uncached });
+					var records = _db.Connection.Query<ReferenceRecord>(sql, new { ids = uncached });
 					foreach (var record in records) {
-						StreamCache.Set(record.id, record.name, Options);
+						_streamCache.Set(record.id, record.name, _options);
 						result.Add(record.id, record.name);
 					}
 
@@ -71,19 +99,19 @@ static class StreamIndex {
 		}
 	}
 
-	static long GetStreamId(string streamName) {
-		return StreamCache.GetOrCreate(streamName, GetFromDb);
+	long GetStreamId(string streamName) {
+		return _streamCache.GetOrCreate(streamName, GetFromDb);
 
-		static long GetFromDb(ICacheEntry arg) {
+		long GetFromDb(ICacheEntry arg) {
 			arg.SlidingExpiration = TimeSpan.FromMinutes(10);
 			var id = GetStreamIdFromDb((string)arg.Key);
 			return id ?? throw new InvalidOperationException($"Stream {arg.Key} not found");
 		}
 	}
 
-	static long? GetStreamIdFromDb(string streamName) {
+	long? GetStreamIdFromDb(string streamName) {
 		const string sql = "select id from streams where name=$name";
-		return DuckDb.QueryWithRetry<long?>(sql, new { name = streamName }).SingleOrDefault();
+		return _db.Connection.QueryWithRetry<long?>(sql, new { name = streamName }).SingleOrDefault();
 	}
 
 	static readonly string StreamSql = Sql.AppendIndexSql.Replace("{table}", "streams");
