@@ -57,7 +57,7 @@ public class InternalSubscription(
 			cancellationToken: cancellationToken
 		);
 
-		_runner = Task.Run(ProcessEvents, cancellationToken);
+		_runner = Task.Run(ProcessEvents, _cts.Token);
 	}
 
 	async Task ProcessEvents() {

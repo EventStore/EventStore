@@ -31,10 +31,9 @@ class DuckDbIndexBuilder(TFChunkDbConfig dbConfig, IPublisher publisher) : IAsyn
 		);
 	}
 
-	public ValueTask HandleAsync(BecomeShuttingDown message, CancellationToken token) {
+	public async ValueTask HandleAsync(BecomeShuttingDown message, CancellationToken token) {
 		_handler.Commit();
-		// await _subscription.Unsubscribe(id => Log.Information("Index subscription {Subscription} unsubscribed", id), token);
-		return ValueTask.CompletedTask;
+		await _subscription.Unsubscribe(id => Log.Information("Index subscription {Subscription} unsubscribed", id), token);
 	}
 
 	public DefaultIndexHandler GetHandler() => _handler;
