@@ -75,7 +75,8 @@ public sealed class ArchiverService :
 		var checkpoint = await _archive.GetCheckpoint(_lifetimeToken);
 		while (!_lifetimeToken.IsCancellationRequested) {
 			var chunk = _chunkManager.GetChunkFor(checkpoint);
-			if (chunk.ChunkFooter.IsCompleted && chunk.ChunkHeader.ChunkEndPosition <= Volatile.Read(in _replicationPosition)) {
+			if (chunk.ChunkFooter is { IsCompleted: true } &&
+			    chunk.ChunkHeader.ChunkEndPosition <= Volatile.Read(in _replicationPosition)) {
 				await ArchiveChunkAsync(chunk, _lifetimeToken);
 				checkpoint = chunk.ChunkHeader.ChunkEndPosition;
 				await _archive.SetCheckpoint(checkpoint, _lifetimeToken);
@@ -90,6 +91,10 @@ public sealed class ArchiverService :
 	}
 
 	public void Handle(SystemMessage.BecomeShuttingDown message) {
+		Cancel();
+	}
+
+	private void Cancel() {
 		if (Interlocked.Exchange(ref _cts, null) is { } cts) {
 			using (cts) {
 				cts.Cancel();
@@ -98,6 +103,7 @@ public sealed class ArchiverService :
 	}
 
 	public async ValueTask DisposeAsync() {
+		Cancel();
 		try {
 			await _archivingTask.ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext |
 			                                    ConfigureAwaitOptions.SuppressThrowing);

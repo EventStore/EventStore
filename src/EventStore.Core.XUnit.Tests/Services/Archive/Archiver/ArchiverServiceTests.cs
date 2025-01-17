@@ -31,14 +31,14 @@ public sealed class ArchiverServiceTests : DirectoryPerTest<ArchiverServiceTests
 		await using var result = await dbCreator
 			.Chunk(Rec.Write(0, "test"))
 			.Chunk(Rec.Write(1, "test"))
-			.CompleteLastChunk()
+			.Chunk(Rec.Write(2, "test"))
 			.CreateDb();
 
 		var storage = new FakeArchiveStorage();
 
 		await using (var archiver = new ArchiverService(new FakeSubscriber(), storage, result.Db.Manager)) {
 			archiver.Handle(new SystemMessage.SystemStart()); // start archiving background task
-			archiver.Handle(new ReplicationTrackingMessage.ReplicatedTo(long.MaxValue - 1L));
+			archiver.Handle(new ReplicationTrackingMessage.ReplicatedTo(result.Db.Config.WriterCheckpoint.Read()));
 
 			var timeout = TimeSpan.FromSeconds(20);
 			while (storage.NumStores < 2) {
