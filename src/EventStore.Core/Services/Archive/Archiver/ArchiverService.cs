@@ -20,6 +20,7 @@ public sealed class ArchiverService :
 	IHandle<SystemMessage.ChunkCompleted>,
 	IHandle<SystemMessage.ChunkSwitched>,
 	IHandle<ReplicationTrackingMessage.ReplicatedTo>,
+	IHandle<SystemMessage.SystemStart>,
 	IHandle<SystemMessage.BecomeShuttingDown>,
 	IAsyncDisposable
 {
@@ -28,25 +29,32 @@ public sealed class ArchiverService :
 	private readonly IArchiveStorage _archive;
 	private readonly CancellationToken _lifetimeToken;
 	private readonly AsyncAutoResetEvent _archivingSignal;
-	private readonly Task _archivingTask;
+	private readonly TFChunkManager _chunkManager;
+	private Task _archivingTask;
 
 	private long _replicationPosition; // volatile
 	private volatile CancellationTokenSource _cts;
 
+	// systemStart
 	public ArchiverService(
 		ISubscriber mainBus,
 		IArchiveStorage archiveStorage,
-		TFChunkManager chunkManager) {
+		TFChunkManager chunkChunkManager) {
 		_archive = archiveStorage;
 		_cts = new();
 		_lifetimeToken = _cts.Token;
 		_archivingSignal = new(initialState: false);
-		_archivingTask = ArchiveAsync(chunkManager, _lifetimeToken);
+		_chunkManager = chunkChunkManager;
+		_archivingTask = Task.CompletedTask;
 
 		mainBus.Subscribe<SystemMessage.ChunkSwitched>(this);
 		mainBus.Subscribe<SystemMessage.ChunkCompleted>(this);
 		mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(this);
 		mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
+	}
+
+	public void Handle(SystemMessage.SystemStart message) {
+		_archivingTask = ArchiveAsync();
 	}
 
 	public void Handle(SystemMessage.ChunkCompleted message) {
@@ -63,16 +71,16 @@ public sealed class ArchiverService :
 	}
 
 	[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))]
-	private async Task ArchiveAsync(TFChunkManager manager, CancellationToken token) {
-		var checkpoint = await _archive.GetCheckpoint(token);
-		while (!token.IsCancellationRequested) {
-			var chunk = manager.GetChunkFor(checkpoint);
+	private async Task ArchiveAsync() {
+		var checkpoint = await _archive.GetCheckpoint(_lifetimeToken);
+		while (!_lifetimeToken.IsCancellationRequested) {
+			var chunk = _chunkManager.GetChunkFor(checkpoint);
 			if (chunk.ChunkFooter.IsCompleted && chunk.ChunkHeader.ChunkEndPosition <= Volatile.Read(in _replicationPosition)) {
-				await ArchiveChunkAsync(chunk, token);
+				await ArchiveChunkAsync(chunk, _lifetimeToken);
 				checkpoint = chunk.ChunkHeader.ChunkEndPosition;
-				await _archive.SetCheckpoint(checkpoint, token);
+				await _archive.SetCheckpoint(checkpoint, _lifetimeToken);
 			} else {
-				await _archivingSignal.WaitAsync(token);
+				await _archivingSignal.WaitAsync(_lifetimeToken);
 			}
 		}
 	}

@@ -29,20 +29,21 @@ public sealed class ArchiverServiceTests : DirectoryPerTest<ArchiverServiceTests
 		var dbConfig = TFChunkHelper.CreateSizedDbConfig(Fixture.Directory, 0, chunkSize: 1024 * 1024);
 		var dbCreator = await TFChunkDbCreationHelper<LogFormat.V2, string>.CreateAsync(dbConfig, logFormat);
 		await using var result = await dbCreator
-			.Chunk(Rec.Prepare(0, "test"), Rec.Commit(0, "test"))
-			.Chunk(Rec.Prepare(1, "test"), Rec.Commit(1, "test"))
+			.Chunk(Rec.Write(0, "test"))
+			.Chunk(Rec.Write(1, "test"))
 			.CompleteLastChunk()
 			.CreateDb();
 
 		var storage = new FakeArchiveStorage();
+
 		await using (var archiver = new ArchiverService(new FakeSubscriber(), storage, result.Db.Manager)) {
+			archiver.Handle(new SystemMessage.SystemStart()); // start archiving background task
 			archiver.Handle(new ReplicationTrackingMessage.ReplicatedTo(long.MaxValue - 1L));
 
 			var timeout = TimeSpan.FromSeconds(20);
 			while (storage.NumStores < 2) {
 				Assert.True(await storage.StoreChunkEvent.WaitAsync(timeout));
 			}
-
 		}
 
 		Assert.True(storage.Checkpoint > 0L);
