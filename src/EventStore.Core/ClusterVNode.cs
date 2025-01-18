@@ -1120,7 +1120,7 @@ public class ClusterVNode<TStreamId> :
 		_mainBus.Subscribe<StorageMessage.EventCommitted>(subscrQueue);
 		_mainBus.Subscribe<StorageMessage.InMemoryEventCommitted>(subscrQueue);
 
-		var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, _authorizationProvider, readIndex, inMemReader);
+		var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, _authorizationProvider, readIndex, inMemReader, indexBuilder.DefaultIndex);
 		subscrBus.Subscribe<SystemMessage.SystemStart>(subscription);
 		subscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(subscription);
 		subscrBus.Subscribe<TcpMessage.ConnectionClosed>(subscription);

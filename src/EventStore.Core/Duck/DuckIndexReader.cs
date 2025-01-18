@@ -71,6 +71,10 @@ abstract class DuckIndexReader(StreamIndex streamIndex, EventTypeIndex eventType
 		}
 	}
 
+	public long GetLastEventNumber(string streamName) {
+		var id = GetId(streamName);
+		return GetLastNumber(id);
+	}
 
 	public async Task<ReadStreamEventsBackwardCompleted> ReadBackwards<TStreamId>(
 		ReadStreamEventsBackward msg, IIndexReader<TStreamId> reader, long lastIndexedPosition, CancellationToken token

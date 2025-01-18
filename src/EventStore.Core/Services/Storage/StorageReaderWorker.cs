@@ -336,17 +336,12 @@ public class StorageReaderWorker<TStreamId>(
 
 			using var _ = TempIndexMetrics.MeasureRead("read_stream_forward");
 
-			if (msg.EventStreamId.StartsWith("$cat-")) {
-				return await defaultIndex.CategoryIndexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
-			}
-			if (msg.EventStreamId.StartsWith("$etype-")) {
-				return await defaultIndex.EventTypeIndexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
-			}
-			if (msg.EventStreamId == "$everything") {
-				return await defaultIndex.DefaultIndexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
+			var streamName = msg.EventStreamId;
+			if (defaultIndex.TryGetReader(streamName, out var indexReader)) {
+				return await indexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
 			}
 
-			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
+			var streamId = _readIndex.GetStreamId(streamName);
 			if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
 				return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion.Value);
 
@@ -355,7 +350,7 @@ public class StorageReaderWorker<TStreamId>(
 			if (await ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User, token) is not { } resolvedPairs)
 				return NoData(msg, ReadStreamResult.AccessDenied, lastIndexPosition);
 
-			return new(msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount,
+			return new(msg.CorrelationId, streamName, msg.FromEventNumber, msg.MaxCount,
 				(ReadStreamResult)result.Result, resolvedPairs, result.Metadata, false, string.Empty,
 				result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastIndexPosition);
 		} catch (Exception exc) {

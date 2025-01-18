@@ -17,9 +17,9 @@ class DuckDbIndexBuilder : IAsyncHandle<SystemReady>, IAsyncHandle<BecomeShuttin
 	IndexCheckpointStore _checkpointStore;
 	DefaultIndexHandler _handler;
 	readonly DuckDb _db;
-
-	internal DefaultIndex DefaultIndex;
 	readonly IPublisher _publisher;
+
+	internal DefaultIndex DefaultIndex { get; }
 
 	public DuckDbIndexBuilder(TFChunkDbConfig dbConfig, IPublisher publisher) {
 		_publisher = publisher;

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Duck.Default;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.InMemory;
@@ -37,19 +38,26 @@ public abstract class SubscriptionsService {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<SubscriptionsService>();
 }
 
-public class SubscriptionsService<TStreamId> :
-	SubscriptionsService,
-	IHandle<SystemMessage.SystemStart>,
-	IHandle<SystemMessage.BecomeShuttingDown>,
-	IHandle<TcpMessage.ConnectionClosed>,
-	IAsyncHandle<SubscribeToStream>,
-	IAsyncHandle<FilteredSubscribeToStream>,
-	IHandle<UnsubscribeFromStream>,
-	IHandle<SubscriptionMessage.DropSubscription>,
-	IHandle<SubscriptionMessage.PollStream>,
-	IHandle<SubscriptionMessage.CheckPollTimeout>,
-	IAsyncHandle<InMemoryEventCommitted>,
-	IAsyncHandle<EventCommitted> {
+public class SubscriptionsService<TStreamId>(
+	IPublisher bus,
+	IQueuedHandler queuedHandler,
+	IAuthorizationProvider authorizationProvider,
+	IReadIndex<TStreamId> readIndex,
+	IInMemoryStreamReader inMemReader,
+	DefaultIndex defaultIndex)
+	:
+		SubscriptionsService,
+		IHandle<SystemMessage.SystemStart>,
+		IHandle<SystemMessage.BecomeShuttingDown>,
+		IHandle<TcpMessage.ConnectionClosed>,
+		IAsyncHandle<SubscribeToStream>,
+		IAsyncHandle<FilteredSubscribeToStream>,
+		IHandle<UnsubscribeFromStream>,
+		IHandle<SubscriptionMessage.DropSubscription>,
+		IHandle<SubscriptionMessage.PollStream>,
+		IHandle<SubscriptionMessage.CheckPollTimeout>,
+		IAsyncHandle<InMemoryEventCommitted>,
+		IAsyncHandle<EventCommitted> {
 	private const int DontReportCheckpointReached = -1;
 
 	private static readonly TimeSpan TimeoutPeriod = TimeSpan.FromSeconds(1);
@@ -61,33 +69,13 @@ public class SubscriptionsService<TStreamId> :
 	private long _lastSeenCommitPosition = -1;
 	private long _lastSeenInMemoryCommitPosition = -1;
 
-	private readonly IPublisher _bus;
-	private readonly IEnvelope _busEnvelope;
-	private readonly IQueuedHandler _queuedHandler;
-	private readonly IReadIndex<TStreamId> _readIndex;
-	private readonly IInMemoryStreamReader _inMemReader;
-	private readonly IAuthorizationProvider _authorizationProvider;
+	private readonly IPublisher _bus = Ensure.NotNull(bus);
+	private readonly IEnvelope _busEnvelope = Ensure.NotNull(bus);
+	private readonly IQueuedHandler _queuedHandler = Ensure.NotNull(queuedHandler);
+	private readonly IReadIndex<TStreamId> _readIndex = Ensure.NotNull(readIndex);
+	private readonly IInMemoryStreamReader _inMemReader = Ensure.NotNull(inMemReader);
+	private readonly IAuthorizationProvider _authorizationProvider = Ensure.NotNull(authorizationProvider);
 	private static readonly char[] _linkToSeparator = ['@'];
-
-	public SubscriptionsService(
-		IPublisher bus,
-		IQueuedHandler queuedHandler,
-		IAuthorizationProvider authorizationProvider,
-		IReadIndex<TStreamId> readIndex,
-		IInMemoryStreamReader inMemReader) {
-		Ensure.NotNull(bus, nameof(bus));
-		Ensure.NotNull(queuedHandler, nameof(queuedHandler));
-		Ensure.NotNull(authorizationProvider, nameof(authorizationProvider));
-		Ensure.NotNull(readIndex, nameof(readIndex));
-		Ensure.NotNull(inMemReader, nameof(inMemReader));
-
-		_bus = bus;
-		_busEnvelope = bus;
-		_queuedHandler = queuedHandler;
-		_authorizationProvider = authorizationProvider;
-		_readIndex = readIndex;
-		_inMemReader = inMemReader;
-	}
 
 	public void Handle(SystemMessage.SystemStart message) {
 		_bus.Publish(TimerMessage.Schedule.Create(TimeoutPeriod, _busEnvelope, new SubscriptionMessage.CheckPollTimeout()));
@@ -146,7 +134,9 @@ public class SubscriptionsService<TStreamId> :
 			var readResult = _inMemReader.ReadBackwards(readMsg);
 			lastEventNumber = readResult.LastEventNumber;
 		} else if (!msg.EventStreamId.IsEmptyString()) {
-			lastEventNumber = await _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId), token);
+			lastEventNumber = defaultIndex.TryGetReader(msg.EventStreamId, out var indexReader)
+				? indexReader.GetLastEventNumber(msg.EventStreamId)
+				: await _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId), token);
 		}
 
 		if (lastEventNumber == EventNumber.DeletedStream) {

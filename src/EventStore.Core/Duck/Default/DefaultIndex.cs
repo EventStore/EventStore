@@ -3,12 +3,13 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Dapper;
 using EventStore.Core.Metrics;
+using JetBrains.Annotations;
 
 namespace EventStore.Core.Duck.Default;
 
 public class DefaultIndex {
 	readonly DuckDb _db;
-	public DefaultIndexHandler Handler { get; }
+	readonly DefaultIndexHandler _handler;
 
 	public DefaultIndex(DuckDb db) {
 		_db = db;
@@ -17,13 +18,35 @@ public class DefaultIndex {
 		EventTypeIndex = new(db);
 		CategoryIndexReader = new(CategoryIndex, StreamIndex, EventTypeIndex);
 		EventTypeIndexReader = new(EventTypeIndex, StreamIndex);
-		Handler = new(db, this);
+		_handler = new(db, this);
 	}
 
 	public void Init() {
 		CategoryIndex.Init();
 		EventTypeIndex.Init();
-		DefaultIndexReader = new(_db, Handler, StreamIndex, EventTypeIndex);
+		DefaultIndexReader = new(_db, _handler, StreamIndex, EventTypeIndex);
+	}
+
+	public bool IsIndexStream(string streamName) => streamName.StartsWith("$cat-") || streamName.StartsWith("$etype-") || streamName == "$everything";
+
+	internal bool TryGetReader(string streamName, out DuckIndexReader reader) {
+		if (streamName.StartsWith("$cat-")) {
+			reader = CategoryIndexReader;
+			return true;
+		}
+
+		if (streamName.StartsWith("$etype-")) {
+			reader = EventTypeIndexReader;
+			return true;
+		}
+
+		if (streamName == "$everything") {
+			reader = DefaultIndexReader;
+			return true;
+		}
+
+		reader = null;
+		return false;
 	}
 
 	public ulong? GetLastPosition() {
