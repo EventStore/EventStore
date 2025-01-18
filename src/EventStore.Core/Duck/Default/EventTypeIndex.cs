@@ -8,22 +8,20 @@ using Eventuous.Subscriptions.Context;
 
 namespace EventStore.Core.Duck.Default;
 
-class EventTypeIndexReader(EventTypeIndex eventTypeIndex, StreamIndex streamIndex) : DuckIndexReader(streamIndex, eventTypeIndex) {
-	readonly EventTypeIndex _index = eventTypeIndex;
-
+class EventTypeIndexReader(EventTypeIndex eventTypeIndex) : DuckIndexReader() {
 	protected override long GetId(string streamName) {
 		if (!streamName.StartsWith("$etype-")) {
 			throw new InvalidOperationException($"Stream {streamName} is not an event type stream");
 		}
 
 		var eventType = streamName[(streamName.IndexOf('-') + 1)..];
-		return _index.EventTypes[eventType];
+		return eventTypeIndex.EventTypes[eventType];
 	}
 
-	protected override long GetLastNumber(long id) => _index.GetLastEventNumber(id);
+	protected override long GetLastNumber(long id) => eventTypeIndex.GetLastEventNumber(id);
 
 	protected override IEnumerable<IndexedPrepare> GetIndexRecords(long id, long fromEventNumber, long toEventNumber)
-		=> _index.GetRecords(id, fromEventNumber, toEventNumber);
+		=> eventTypeIndex.GetRecords(id, fromEventNumber, toEventNumber);
 }
 
 public class EventTypeIndex(DuckDb db) {

@@ -9,7 +9,7 @@ using Serilog;
 
 namespace EventStore.Core.Duck.Default;
 
-class CategoryIndexReader(CategoryIndex categoryIndex, StreamIndex streamIndex, EventTypeIndex eventTypeIndex) : DuckIndexReader(streamIndex, eventTypeIndex) {
+class CategoryIndexReader(CategoryIndex categoryIndex) : DuckIndexReader() {
 	protected override long GetId(string streamName) {
 		var dashIndex = streamName.IndexOf('-');
 		if (dashIndex == -1) {

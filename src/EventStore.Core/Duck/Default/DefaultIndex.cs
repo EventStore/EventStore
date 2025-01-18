@@ -3,7 +3,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Dapper;
 using EventStore.Core.Metrics;
-using JetBrains.Annotations;
 
 namespace EventStore.Core.Duck.Default;
 
@@ -16,15 +15,15 @@ public class DefaultIndex {
 		StreamIndex = new(db);
 		CategoryIndex = new(db);
 		EventTypeIndex = new(db);
-		CategoryIndexReader = new(CategoryIndex, StreamIndex, EventTypeIndex);
-		EventTypeIndexReader = new(EventTypeIndex, StreamIndex);
+		CategoryIndexReader = new(CategoryIndex);
+		EventTypeIndexReader = new(EventTypeIndex);
 		_handler = new(db, this);
 	}
 
 	public void Init() {
 		CategoryIndex.Init();
 		EventTypeIndex.Init();
-		DefaultIndexReader = new(_db, _handler, StreamIndex, EventTypeIndex);
+		DefaultIndexReader = new(_db, _handler);
 	}
 
 	public bool IsIndexStream(string streamName) => streamName.StartsWith("$cat-") || streamName.StartsWith("$etype-") || streamName == "$everything";
@@ -70,8 +69,7 @@ public class DefaultIndex {
 
 public record struct SequenceRecord(long Id, long Sequence);
 
-class DefaultIndexReader(DuckDb db, DefaultIndexHandler handler, StreamIndex streamIndex, EventTypeIndex eventTypeIndex)
-	: DuckIndexReader(streamIndex, eventTypeIndex) {
+class DefaultIndexReader(DuckDb db, DefaultIndexHandler handler) : DuckIndexReader() {
 	protected override long GetId(string streamName) => 0;
 
 	protected override long GetLastNumber(long id) => (long)handler.GetLastPosition();
