@@ -116,9 +116,7 @@ static partial class Enumerator {
 
 				_currentRevision = streamRevision;
 
-				Log.Verbose(
-					"Subscription {subscriptionId} to {streamName} seen event {streamRevision}.",
-					_subscriptionId, _streamName, streamRevision);
+				Log.Verbose("Subscription {subscriptionId} to {streamName} seen event {streamRevision}.", _subscriptionId, _streamName, streamRevision);
 			}
 
 			_current = readResponse;
