@@ -29,16 +29,17 @@ abstract class DuckIndexReader(StreamIndex streamIndex, EventTypeIndex eventType
 
 	public async ValueTask<IReadOnlyList<ResolvedEvent>> GetEvents<TStreamId>(IIndexReader<TStreamId> index, long id, long fromEventNumber, long toEventNumber,
 		CancellationToken cancellationToken) {
+		var x = streamIndex;
 		var indexPrepares = GetIndexRecords(id, fromEventNumber, toEventNumber);
 		using var reader = index.BorrowReader();
 		var readPrepares = indexPrepares.Select(async x => (Record: x, Prepare: await ReadPrepare(x.LogPosition, cancellationToken)));
 		var prepared = await Task.WhenAll(readPrepares);
 		var recordsQuery = prepared.Where(x => x.Prepare != null).OrderBy(x => x.Record.Version).ToList();
-		var streams = streamIndex.GetStreams(recordsQuery.Select(x => x.Record.StreamId).Distinct());
+		// var streams = streamIndex.GetStreams(recordsQuery.Select(x => x.Record.StreamId).Distinct());
 		var records = recordsQuery
-			.Select(x => (Record: x, StreamName: streams[x.Record.StreamId]))
+			.Select(x => (Record: x, Smth: 1)) //StreamName: streams[x.Record.StreamId]))
 			.Select(x => ResolvedEvent.ForResolvedLink(
-				new(x.Record.Record.EventNumber, x.Record.Prepare, x.StreamName, eventTypeIndex.EventTypeIds[x.Record.Record.EventType]),
+				new(x.Record.Record.EventNumber, x.Record.Prepare, x.Record.Prepare.EventStreamId.ToString(), eventTypeIndex.EventTypeIds[x.Record.Record.EventType]),
 				new(
 					x.Record.Record.Version,
 					x.Record.Prepare.LogPosition,
@@ -46,12 +47,12 @@ abstract class DuckIndexReader(StreamIndex streamIndex, EventTypeIndex eventType
 					x.Record.Prepare.EventId,
 					x.Record.Prepare.TransactionPosition,
 					x.Record.Prepare.TransactionOffset,
-					x.StreamName,
+					x.Record.Prepare.EventStreamId.ToString(),
 					x.Record.Record.Version,
 					x.Record.Prepare.TimeStamp,
 					x.Record.Prepare.Flags,
 					"$>",
-					Encoding.UTF8.GetBytes($"{x.Record.Record.EventNumber}@{x.StreamName}"),
+					Encoding.UTF8.GetBytes($"{x.Record.Record.EventNumber}@{x.Record.Prepare.EventStreamId.ToString()}"),
 					[]
 				))
 			);
