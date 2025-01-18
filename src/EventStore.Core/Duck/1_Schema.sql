@@ -31,3 +31,5 @@ create table if not exists idx_all (
 );
 
 create index if not exists idx_all_category on idx_all(category, category_seq);
+create index if not exists idx_all_event_type on idx_all(event_type, category_seq);
+create index if not exists idx_sequence on idx_all(seq);
