@@ -8,8 +8,8 @@ using EventStore.Core.Messages;
 namespace EventStore.Core.Services.Transport.Enumerators;
 
 public static partial class Enumerator {
-	private const int MaxLiveEventBufferCount = 1024;
-	private const int ReadBatchSize = 1024; // TODO  JPB make this configurable
+	private const int MaxLiveEventBufferCount = 512;
+	private const int ReadBatchSize = 512; // TODO  JPB make this configurable
 
 	private static readonly BoundedChannelOptions BoundedChannelOptions =
 		new(MaxLiveEventBufferCount) {
