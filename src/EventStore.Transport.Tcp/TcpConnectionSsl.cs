@@ -270,7 +270,7 @@ public class TcpConnectionSsl : TcpConnectionBase, ITcpConnection {
 		}
 	}
 
-	// The following method is invoked by the RemoteCertificateValidationDelegate. 
+	// The following method is invoked by the RemoteCertificateValidationDelegate.
 	public bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain,
 		SslPolicyErrors sslPolicyErrors) {
 		var (isValid, error) = _serverCertValidator(certificate, chain, sslPolicyErrors, _otherNames);
@@ -573,19 +573,19 @@ public class TcpConnectionSsl : TcpConnectionBase, ITcpConnection {
 
 		if (_verbose) {
 			Log.Information(
-				"ES {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Received bytes: {totalBytesReceived}, Sent bytes: {totalBytesSent}",
+				"DB {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Received bytes: {totalBytesReceived}, Sent bytes: {totalBytesSent}",
 				GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
 				TotalBytesReceived, TotalBytesSent);
 			Log.Information(
-				"ES {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Send calls: {sendCalls}, callbacks: {sendCallbacks}",
+				"DB {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Send calls: {sendCalls}, callbacks: {sendCallbacks}",
 				GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
 				SendCalls, SendCallbacks);
 			Log.Information(
-				"ES {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Receive calls: {receiveCalls}, callbacks: {receiveCallbacks}",
+				"DB {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Receive calls: {receiveCalls}, callbacks: {receiveCallbacks}",
 				GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
 				ReceiveCalls, ReceiveCallbacks);
 			Log.Information(
-				"ES {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Close reason: [{e}] {reason}",
+				"DB {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Close reason: [{e}] {reason}",
 				GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
 				socketError, reason);
 		}

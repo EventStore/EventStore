@@ -464,7 +464,7 @@ public class UserManagementService :
 	void CreateAdminUser() {
 		var userData = CreateUserData(
 			SystemUsers.Admin,
-			"Event Store Administrator",
+			"KurrentDB Administrator",
 			[SystemRoles.Admins],
 			_defaultUserOptions.DefaultAdminPassword
 		);
@@ -515,7 +515,7 @@ public class UserManagementService :
 	void CreateOperationsUser() {
 		var userData = CreateUserData(
 			SystemUsers.Operations,
-			"Event Store Operations",
+			"KurrentDB Operations",
 			[SystemRoles.Operations],
 			_defaultUserOptions.DefaultOpsPassword
 		);

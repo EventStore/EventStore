@@ -15,6 +15,6 @@ public class get_current_user<TLogFormat, TStreamId> : TestWithNode<TLogFormat, 
 	public async Task returns_the_current_user() {
 		var x = await _manager.GetCurrentUserAsync(new UserCredentials("admin", "changeit"));
 		Assert.AreEqual("admin", x.LoginName);
-		Assert.AreEqual("Event Store Administrator", x.FullName);
+		Assert.AreEqual("KurrentDB Administrator", x.FullName);
 	}
 }

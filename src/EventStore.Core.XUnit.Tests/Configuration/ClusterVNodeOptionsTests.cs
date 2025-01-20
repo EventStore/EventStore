@@ -354,7 +354,7 @@ public class ClusterVNodeOptionsTests {
 
 		var options = ClusterVNodeOptions.FromConfiguration(config);
 		options.GetDeprecationWarnings().Should().Be(
-			"The EnableHistograms setting has been deprecated as of version 24.10.0 and currently has no effect. Please contact EventStore if this feature is of interest to you." +
+			"The EnableHistograms setting has been deprecated as of version 24.10.0 and currently has no effect. Please contact Kurrent if this feature is of interest to you." +
 			Environment.NewLine +
 			"AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead" +
 			Environment.NewLine);

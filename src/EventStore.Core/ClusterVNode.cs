@@ -384,7 +384,7 @@ public class ClusterVNode<TStreamId> :
 				} catch (UnauthorizedAccessException) {
 					if (dbPath == Locations.DefaultDataDirectory) {
 						Log.Information(
-							"Access to path {dbPath} denied. The Event Store database will be created in {fallbackDefaultDataDirectory}",
+							"Access to path {dbPath} denied. The KurrentDB database will be created in {fallbackDefaultDataDirectory}",
 							dbPath, Locations.FallbackDefaultDataDirectory);
 						dbPath = Locations.FallbackDefaultDataDirectory;
 						Log.Information("Defaulting DB Path to {dbPath}", dbPath);
