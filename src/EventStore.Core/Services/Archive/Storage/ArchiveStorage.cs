@@ -47,7 +47,7 @@ public class ArchiveStorage(
 		try {
 			var objectName = chunkNameResolver.ResolveFileName(logicalChunkNumber);
 			var metadata = await blobStorage.GetMetadataAsync(objectName, ct);
-			return new(Size: metadata.Size);
+			return new(PhysicalSize: metadata.Size);
 		} catch (FileNotFoundException) {
 			throw new ChunkDeletedException();
 		}

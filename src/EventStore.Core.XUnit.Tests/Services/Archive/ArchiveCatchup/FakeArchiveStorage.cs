@@ -79,6 +79,6 @@ internal class FakeArchiveStorage : IArchiveStorage {
 	}
 
 	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) {
-		return ValueTask.FromResult<ArchivedChunkMetadata>(new(Size: _fileSize));
+		return ValueTask.FromResult<ArchivedChunkMetadata>(new(PhysicalSize: _fileSize));
 	}
 }
