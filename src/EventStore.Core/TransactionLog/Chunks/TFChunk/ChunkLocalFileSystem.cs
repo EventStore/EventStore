@@ -51,6 +51,8 @@ public sealed class ChunkLocalFileSystem : IChunkFileSystem {
 		return task;
 	}
 
+	public bool IsRemote(string locator) => false;
+
 	public ValueTask SetReadOnlyAsync(string fileName, bool value, CancellationToken token) {
 		ValueTask task;
 		if (token.IsCancellationRequested) {
