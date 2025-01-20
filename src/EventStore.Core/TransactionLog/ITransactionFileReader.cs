@@ -18,7 +18,7 @@ public interface ITransactionFileReader {
 	ValueTask<bool> ExistsAt(long position, CancellationToken token);
 }
 
-public struct TFReaderLease : IDisposable {
+public readonly struct TFReaderLease : IDisposable {
 	public readonly ITransactionFileReader Reader;
 	private readonly ObjectPool<ITransactionFileReader> _pool;
 

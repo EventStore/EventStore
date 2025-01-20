@@ -2,7 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -131,8 +130,8 @@ public interface IChunkHandle : IFlushable, IDisposable {
 			return bytesRead;
 		}
 
-		protected override ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token)
-			=> handle.ReadAsync(buffer, offset, token);
+		protected override ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token) =>
+			handle.ReadAsync(buffer, offset, token);
 
 		private CancellationToken GetTimeoutToken(int timeout) {
 			_timeoutSource ??= new();

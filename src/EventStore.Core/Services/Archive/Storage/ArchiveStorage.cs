@@ -26,7 +26,7 @@ public class ArchiveStorage(
 	public async ValueTask<long> GetCheckpoint(CancellationToken ct) {
 		try {
 			using var buffer = Memory.AllocateExactly<byte>(sizeof(long));
-			await blobStorage.ReadAsync(archiveCheckpointFile, buffer.Memory, offset: 0, ct);
+			await blobStorage.ReadAsync(archiveCheckpointFile, buffer.Memory, offset: 0, ct); //qq version check
 			var checkpoint = BinaryPrimitives.ReadInt64LittleEndian(buffer.Span);
 			return checkpoint;
 		} catch (FileNotFoundException) {
@@ -34,7 +34,7 @@ public class ArchiveStorage(
 		}
 	}
 
-	public async ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
+	public async ValueTask<(int, string)> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
 		try {
 			var chunkFile = chunkNameResolver.ResolveFileName(logicalChunkNumber);
 			return await blobStorage.ReadAsync(chunkFile, buffer, offset, ct);
@@ -47,7 +47,9 @@ public class ArchiveStorage(
 		try {
 			var objectName = chunkNameResolver.ResolveFileName(logicalChunkNumber);
 			var metadata = await blobStorage.GetMetadataAsync(objectName, ct);
-			return new(PhysicalSize: metadata.Size);
+			return new(
+				PhysicalSize: metadata.Size,
+				ETag: metadata.ETag);
 		} catch (FileNotFoundException) {
 			throw new ChunkDeletedException();
 		}

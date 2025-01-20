@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
+using EventStore.Core.Services.Archive.Storage.Exceptions;
 using EventStore.Core.TransactionLog.Checkpoint;
 using Serilog;
 
@@ -156,6 +157,17 @@ public class TFChunkReader : ITransactionFileReader {
 				throw new FileBeingDeletedException(
 					"Been told the file was deleted > MaxRetries times. Probably a problem in db.");
 			return await TryReadAtInternal(position, couldBeScavenged, retries + 1, token);
+
+		//qq not totally sure that this is the right level to retry
+		// on the plus side, this is where we are already doing a retry.
+		// on the negative side, we can't take any action to resolve the problem here
+		// maybe we should resolve the problem lower down and throw FileBeingDeletedException?
+		} catch (WrongETagException) {
+			//qq hopefully we can just try again.
+			//qq (would need other logic from the filebeingdeletedexecption catcher
+			return await TryReadAtInternal(position, couldBeScavenged, retries + 1, token);
+		//} catch (WrongETagException) {
+		//	await _db.Manager.OnBrokenChunk(chunk, token);
 		}
 	}
 

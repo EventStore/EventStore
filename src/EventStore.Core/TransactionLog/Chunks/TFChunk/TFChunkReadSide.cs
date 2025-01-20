@@ -12,6 +12,7 @@ using DotNext.Threading;
 using DotNext.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
+using EventStore.Core.Services.Archive.Storage.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
 using Serilog;
 using static System.Threading.Timeout;
@@ -24,6 +25,7 @@ public partial class TFChunk {
 		void RequestCaching();
 		void Uncache();
 
+		// these logicalPositions are local to the chunk, not global to the log.
 		ValueTask<bool> ExistsAt(long logicalPosition, CancellationToken token);
 		ValueTask<long> GetActualPosition(long logicalPosition, CancellationToken token);
 		ValueTask<RecordReadResult> TryReadAt(long logicalPosition, bool couldBeScavenged, CancellationToken token);
@@ -273,6 +275,12 @@ public partial class TFChunk {
 		public async ValueTask<RecordReadResult> TryReadAt(long logicalPosition, bool couldBeScavenged, CancellationToken token) {
 			var workItem = Chunk.GetReaderWorkItem();
 			try {
+				//qqqqqqqqqqq we need the blob that we used to do the translation to also be the blob that we translate with
+				// option 1: we do it explicitly here
+				// option 2: the workitem captures it for us somehow
+				// option 3:
+				//qq maybe the question is at what level does something start caring if the object has changed
+				// do we want it to be lower or higher ideally?
 				var actualPosition = await TranslateExactPosition(workItem, logicalPosition, token);
 				if (actualPosition is -1 || actualPosition >= Chunk.PhysicalDataSize) {
 					if (!couldBeScavenged) {
@@ -376,6 +384,13 @@ public partial class TFChunk {
 					Chunk.ChunkHeader.GetLocalLogPosition(recordLogPos + record.Count + 2 * sizeof(int));
 
 				return new(true, nextLogicalPos, record.Array, record.Count);
+
+			// if we catch this in here then we can make the workitem as broken since we have it
+			} catch (WrongETagException) { //qq somewhere we should log?
+				//qqqqq so here we know the stream in the workitem is broken.
+				await workItem.Refresh(token);
+				throw; // or throw FileBeingDeletedException ?
+
 			} finally {
 				Chunk.ReturnReaderWorkItem(workItem);
 			}

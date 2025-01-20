@@ -36,7 +36,19 @@ public class S3BlobStorage : IBlobStorage {
 			region: options.Region) as IAwsS3BlobStorage;
 	}
 
-	public async ValueTask<int> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken ct) {
+	//qqqq there are two approaches,
+	// option 1: version could specify they version that we want to read, and it forms part of the request
+	//          and we retain old versions for say a day
+	//
+	// option 2: the version can be the expected version and we throw if the actual version is different
+	//
+	// option 3: we could return the version that was actually read and allow the caller to tell
+	// 
+	//
+	// somewhere somehow we need to instantiate a new TFChunk pointing to the new version
+	//qq what happens if the offset is too big (could happen if the blob has been replaced with a smaller one)
+
+	public async ValueTask<(int, string)> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken ct) {
 		var request = new GetObjectRequest {
 			BucketName = _options.Bucket,
 			Key = name,
@@ -47,8 +59,15 @@ public class S3BlobStorage : IBlobStorage {
 			using var response = await _awsBlobStorage.NativeBlobClient.GetObjectAsync(request, ct);
 			var length = int.CreateSaturating(response.ContentLength);
 			await using var responseStream = response.ResponseStream;
+
+			//response.VersionId;
+			//response.ETag;
+			//response.ChecksumSHA1;
+			//response.DeleteMarker;
+			//response.Metadata;
+
 			await responseStream.ReadExactlyAsync(buffer.TrimLength(length), ct);
-			return length;
+			return (length, response.ETag); //qqq dunno if the ETag is what we want
 		} catch (AmazonS3Exception ex) when (ex.ErrorCode is "NoSuchKey") {
 			throw new FileNotFoundException();
 		}
@@ -65,6 +84,8 @@ public class S3BlobStorage : IBlobStorage {
 	public async ValueTask<BlobMetadata> GetMetadataAsync(string name, CancellationToken token) {
 		var response = await _awsBlobStorage.NativeBlobClient.GetObjectMetadataAsync(
 			_awsBlobStorage.BucketName, name, token);
-		return new(Size: response.ContentLength);
+		return new(
+			Size: response.ContentLength,
+			ETag: response.ETag); //qqq check this is the etag of the blob
 	}
 }

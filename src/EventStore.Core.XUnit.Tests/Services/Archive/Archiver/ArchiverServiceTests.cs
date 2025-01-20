@@ -326,7 +326,7 @@ internal class FakeArchiveStorage : IArchiveStorage {
 		return ValueTask.FromResult(true);
 	}
 
-	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
+	public ValueTask<(int, string)> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
 		throw new NotImplementedException();
 	}
 

@@ -14,6 +14,7 @@ using EventStore.Plugins.Transforms;
 namespace EventStore.Core.XUnit.Tests.Services.Archive.ArchiveCatchup;
 
 internal class FakeArchiveStorage : IArchiveStorage {
+	private string _etag = "the-etag";
 	private readonly int _chunkSize;
 	private readonly int _fileSize;
 	private readonly long _checkpoint;
@@ -56,9 +57,9 @@ internal class FakeArchiveStorage : IArchiveStorage {
 			transformType: TransformType.Identity);
 	}
 
-	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
+	public ValueTask<(int, string)> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
 		if (offset == _fileSize)
-			return new(0); // end of stream
+			return new((0, _etag)); // end of stream
 
 		// we expect to read the chunk in one shot
 		if (offset != 0)
@@ -75,10 +76,10 @@ internal class FakeArchiveStorage : IArchiveStorage {
 		var header = CreateChunkHeader(logicalChunkNumber, logicalChunkNumber);
 		header.Format(buffer.Span[..ChunkHeader.Size]);
 
-		return new(_fileSize);
+		return new((_fileSize, _etag));
 	}
 
 	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) {
-		return ValueTask.FromResult<ArchivedChunkMetadata>(new(PhysicalSize: _fileSize));
+		return ValueTask.FromResult<ArchivedChunkMetadata>(new(PhysicalSize: _fileSize, ETag: _etag));
 	}
 }

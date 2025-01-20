@@ -11,9 +11,10 @@ namespace EventStore.Core.Services.Archive.Storage;
 // The purpose of this is to make it easy to implement additional cloud providers for archiving.
 // If the cloud provider is not suitable for this interface then implement IArchiveStorage instead.
 public interface IBlobStorage {
-	ValueTask<int> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken token);
+	// returns a pair of the number of bytes read and the etag of the blob that was read
+	ValueTask<(int, string)> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken token);
 	ValueTask<BlobMetadata> GetMetadataAsync(string name, CancellationToken token);
 	ValueTask StoreAsync(Stream readableStream, string name, CancellationToken ct);
 }
 
-public readonly record struct BlobMetadata(long Size);
+public readonly record struct BlobMetadata(long Size, string ETag);

@@ -73,6 +73,8 @@ public partial class TFChunk : IDisposable {
 	public string LocalFileName => _filename;
 
 	public int FileSize {
+		//qqqqqqqqqqqqqqq this can change now (we should actually update _fileSize if so)
+		// or this can just be the 'original' filesize
 		get { return _fileSize; }
 	}
 
@@ -110,7 +112,6 @@ public partial class TFChunk : IDisposable {
 
 	private readonly bool _inMem;
 	private readonly string _filename;
-	private IChunkHandle _handle;
 	private int _fileSize;
 
 	// This field establishes happens-before relationship with _fileStreams as follows:
@@ -132,6 +133,11 @@ public partial class TFChunk : IDisposable {
 	private WriterWorkItem _writerWorkItem;
 	private long _logicalDataSize;
 	private volatile int _physicalDataSize;
+
+	// _chunkHandleLock the lock protects _handle
+	// if it turns out we need both locks at once, the order is acquire _cachedDataLock before _chunkHandleLock
+	private readonly AsyncExclusiveLock _chunkHandleLock = new();
+	private IChunkHandle _handle; //qq not sure we want to keep a member handle any more
 
 	// the lock protects all three parts of the caching process:
 	// CacheInMemory, UnCacheFromMemory and TryDestructMemStreams
@@ -318,19 +324,54 @@ public partial class TFChunk : IDisposable {
 		return chunk;
 	}
 
+	//qq consider encapsulating these two methods and the lock?
+	private async ValueTask CreateChunkHandle(CancellationToken token, bool acquireLock = true) {
+		if (acquireLock) {
+			await _chunkHandleLock.AcquireAsync(token);
+		}
+
+		try {
+			_handle = await _fileSystem.OpenForReadAsync(
+				ChunkLocator,
+				_reduceFileCachePressure
+					? IChunkFileSystem.ReadOptimizationHint.None
+					: IChunkFileSystem.ReadOptimizationHint.RandomAccess,
+				token);
+		} finally {
+			if (acquireLock) {
+				_chunkHandleLock.Release();
+			}
+		}
+	}
+
+	private async ValueTask<IChunkHandle> OnChunkHandleBroken(IChunkHandle brokenHandle, CancellationToken token) {
+		await _chunkHandleLock.AcquireAsync(token);
+		try {
+			if (_handle == brokenHandle) {
+				// _handle is the broken handle, replace it.
+				_handle?.Dispose(); //qq users of the handle need to be prepared for it being disposed under them
+				await CreateChunkHandle(token, acquireLock: false);
+			} else {
+				// _handle is not the broken handle, probably it was already replaced.
+			}
+		} finally {
+			_chunkHandleLock.Release();
+		}
+
+		return _handle;
+	}
+
+	//qq we need to find anywhere that is using the handle to make sure it can cope with the handle becoming broken
+	//qq or indeed failing to work temporarily too
 	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
 		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
-		_handle = await _fileSystem.OpenForReadAsync(
-			ChunkLocator,
-			_reduceFileCachePressure
-				? IChunkFileSystem.ReadOptimizationHint.None
-				: IChunkFileSystem.ReadOptimizationHint.RandomAccess,
-			token);
+		await CreateChunkHandle(token);
 		await _fileSystem.SetReadOnlyAsync(ChunkLocator, true, token);
 		_fileSize = (int)_handle.Length;
 
 		IsReadOnly = true;
 
+		//qq do we want this to be buffered
 		await using (var stream = _handle.CreateStream()) {
 			_chunkHeader = await ReadHeader(stream, token);
 			Log.Debug("Opened completed {chunk} as version {version} (min. compatible version: {minCompatibleVersion})", ChunkLocator, _chunkHeader.Version, _chunkHeader.MinCompatibleVersion);
@@ -1085,7 +1126,7 @@ public partial class TFChunk : IDisposable {
 		}
 
 		if (!_inMem) {
-			_handle?.Dispose();
+			_handle?.Dispose(); //qq need _chunkHandleLock
 			Helper.EatException(LocalFileName, static filename => File.SetAttributes(filename, FileAttributes.Normal));
 
 			if (_deleteFile) {
@@ -1211,7 +1252,8 @@ public partial class TFChunk : IDisposable {
 		// get a filestream from the pool, or create one if the pool is empty.
 		if (_fileStreams.TryTake(out slot)) {
 			if (slot.ValueRef is not { } fileStreamWorkItem)
-				slot.ValueRef = fileStreamWorkItem = new(_handle, _transform.Read) { PositionInPool = slot.Index };
+				//qq alloc for OnChunkHandleBroken
+				slot.ValueRef = fileStreamWorkItem = new(_handle, OnChunkHandleBroken, _transform.Read) { PositionInPool = slot.Index };
 
 			return fileStreamWorkItem;
 		}
@@ -1224,7 +1266,7 @@ public partial class TFChunk : IDisposable {
 			throw new FileBeingDeletedException();
 		}
 
-		return new(_handle, _transform.Read);
+		return new(_handle, OnChunkHandleBroken, _transform.Read); //qq alloc for OnChunkHandleBroken
 
 		static int IncrementIfGreaterThanZero(int value)
 			=> value + Unsafe.BitCast<bool, byte>(value > 0);

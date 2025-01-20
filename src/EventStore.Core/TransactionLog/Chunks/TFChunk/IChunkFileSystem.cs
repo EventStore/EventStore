@@ -46,6 +46,11 @@ public static class ChunkFileSystem {
 		if (fileSystem.IsRemote(fileName))
 			Logger.Warning("Reading remote chunk header. This is OK but should be uncommon");
 
+		//qqqq if the handle itself checks the etag consistency then there is nothing to do here
+		// if we were maintaining the consistency then we would have a call to GetLength
+		// and ReadAsync and they'd both have to return the same etag to be valid
+		//qq we ought to have a retry for this somewhere, perhaps further out? but that makes no difference between options 1 and 2
+
 		using var handle = await fileSystem.OpenForReadAsync(fileName, IChunkFileSystem.ReadOptimizationHint.None, token);
 
 		var length = handle.Length;

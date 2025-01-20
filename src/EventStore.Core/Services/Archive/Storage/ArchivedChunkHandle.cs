@@ -7,27 +7,36 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.IO;
+using EventStore.Core.Services.Archive.Storage.Exceptions;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
+// A handle to a specific version of a specific chunk.
+// This detects if the remote chunk has been replaced with a new version.
+// If instead we did this check at a higher level (the UnbufferedStream that uses the IChunkHandle)
+// then it would be doing checks even for IChunkHandles where it is impossible for the version to change.
 internal sealed class ArchivedChunkHandle : IChunkHandle {
 	private readonly IArchiveStorageReader _reader;
 	private readonly int _logicalChunkNumber;
 	private readonly long _length;
+	private readonly string _etag;
 
-	private ArchivedChunkHandle(IArchiveStorageReader reader, int logicalChunkNumber, long length) {
+	private ArchivedChunkHandle(IArchiveStorageReader reader, int logicalChunkNumber, long length,
+		string etag) {
+
 		Debug.Assert(reader is not null);
 		Debug.Assert(length >= 0L);
 
 		_reader = reader;
 		_logicalChunkNumber = logicalChunkNumber;
 		_length = length;
+		_etag = etag;
 	}
 
 	public static async ValueTask<IChunkHandle> OpenForReadAsync(IArchiveStorageReader reader, int logicalChunkNumber, CancellationToken token) {
 		var metadata = await reader.GetMetadataAsync(logicalChunkNumber, token);
-		return new ArchivedChunkHandle(reader, logicalChunkNumber, metadata.PhysicalSize);
+		return new ArchivedChunkHandle(reader, logicalChunkNumber, metadata.PhysicalSize, metadata.ETag);
 	}
 
 	void IFlushable.Flush() {
@@ -39,7 +48,20 @@ internal sealed class ArchivedChunkHandle : IChunkHandle {
 	ValueTask IChunkHandle.WriteAsync(ReadOnlyMemory<byte> data, long offset, CancellationToken token)
 		=> ValueTask.FromException(new NotSupportedException());
 
-	public ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token)
+	public async ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token) {
+		var (readCount, etag) = await _reader.ReadAsync(_logicalChunkNumber, buffer, offset, token);
+
+		if (etag != _etag)
+			throw new WrongETagException(
+				objectName: $"Chunk {_logicalChunkNumber}",
+				expected: _etag,
+				actual: etag);
+
+		return readCount;
+	}
+
+	// does it make sense to have the places that want to read this handle receive the etag?
+	public ValueTask<(int, string)> ReadAsync2(Memory<byte> buffer, long offset, CancellationToken token)
 		=> _reader.ReadAsync(_logicalChunkNumber, buffer, offset, token);
 
 	public long Length {

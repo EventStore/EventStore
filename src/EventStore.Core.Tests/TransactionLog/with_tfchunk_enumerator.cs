@@ -104,7 +104,7 @@ public class with_tfchunk_enumerator : SpecificationWithDirectory {
 	public class FakeArchiveStorageReader(long checkpoint) : IArchiveStorageReader {
 		public ValueTask<long> GetCheckpoint(CancellationToken ct) => new(checkpoint);
 
-		public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
+		public ValueTask<(int, string)> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
 			throw new NotImplementedException();
 		}
 
