@@ -17,9 +17,9 @@ public class list_users<TLogFormat, TStreamId> : TestWithNode<TLogFormat, TStrea
 		var x = await _manager.ListAllAsync(new UserCredentials("admin", "changeit"));
 		Assert.AreEqual(3, x.Count);
 		Assert.AreEqual("admin", x[0].LoginName);
-		Assert.AreEqual("Event Store Administrator", x[0].FullName);
+		Assert.AreEqual("KurrentDB Administrator", x[0].FullName);
 		Assert.AreEqual("ops", x[1].LoginName);
-		Assert.AreEqual("Event Store Operations", x[1].FullName);
+		Assert.AreEqual("KurrentDB Operations", x[1].FullName);
 		Assert.AreEqual("ouro", x[2].LoginName);
 		Assert.AreEqual("ourofull", x[2].FullName);
 	}

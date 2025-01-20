@@ -64,14 +64,14 @@ internal static class Program {
 			}
 
 			if (options.DevMode.RemoveDevCerts) {
-				Log.Information("Removing EventStoreDB dev certs.");
+				Log.Information("Removing KurrentDB dev certs.");
 				CertificateManager.Instance.CleanupHttpsCertificates();
 				Log.Information("Dev certs removed. Exiting.");
 				return 0;
 			}
 
 			Log.Information(
-                    "{description,-25} {version} {edition} ({buildId}/{commitSha}, {timestamp})", "ES VERSION:",
+                    "{description,-25} {version} {edition} ({buildId}/{commitSha}, {timestamp})", "DB VERSION:",
 				VersionInfo.Version, VersionInfo.Edition, VersionInfo.BuildId, VersionInfo.CommitSha, VersionInfo.Timestamp
                 );
 
@@ -100,7 +100,7 @@ internal static class Program {
 			if (options.UnknownOptionsDetected && !options.Application.AllowUnknownOptions) {
 				Log.Fatal(
 					$"Found unknown options. To continue anyway, set {nameof(ClusterVNodeOptions.ApplicationOptions.AllowUnknownOptions)} to true.");
-				Log.Information("Use the --help option in the command line to see the full list of EventStoreDB configuration options.");
+				Log.Information("Use the --help option in the command line to see the full list of KurrentDB configuration options.");
 				return 1;
 			}
 

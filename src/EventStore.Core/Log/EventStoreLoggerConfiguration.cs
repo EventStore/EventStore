@@ -64,7 +64,7 @@ public class EventStoreLoggerConfiguration {
 
 		if (logsDirectory.StartsWith("~")) {
 			throw new ApplicationInitializationException(
-				"The given log path starts with a '~'. Event Store does not expand '~'.");
+				"The given log path starts with a '~'. KurrentDB does not expand '~'.");
 		}
 
 		var configurationRoot = new ConfigurationBuilder()
@@ -75,7 +75,7 @@ public class EventStoreLoggerConfiguration {
 
 		Serilog.Log.Logger = (configurationRoot.GetSection("Serilog").Exists()
 				? new LoggerConfiguration()
-					.Enrich.WithProperty(Constants.SourceContextPropertyName, "EventStore")
+					.Enrich.WithProperty(Constants.SourceContextPropertyName, "KurrentDB")
 					.ReadFrom.Configuration(configurationRoot)
 				: Default(logsDirectory, componentName, configurationRoot, logConsoleFormat, logFileInterval,
 					logFileSize, logFileRetentionCount, disableLogFile))
@@ -204,7 +204,7 @@ public class EventStoreLoggerConfiguration {
 
 	private static LoggerConfiguration StandardLoggerConfiguration =>
 		new LoggerConfiguration()
-			.Enrich.WithProperty(Constants.SourceContextPropertyName, "EventStore")
+			.Enrich.WithProperty(Constants.SourceContextPropertyName, "KurrentDB")
 			.Enrich.WithProcessId()
 			.Enrich.WithThreadId()
 			.Enrich.FromLogContext();

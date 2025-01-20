@@ -20,7 +20,7 @@ namespace EventStore.Common.DevCertificates;
 public abstract class CertificateManager {
 	internal const int CurrentCertificateVersion = 2;
 	internal const string EventStoreDbHttpsOid = "1.3.6.1.4.1.43941.1.1.1";
-	internal const string EventStoreHttpsOidFriendlyName = "Event Store HTTPS development certificate";
+	internal const string EventStoreHttpsOidFriendlyName = "Kurrent HTTPS development certificate";
 
 	private const string ServerAuthenticationEnhancedKeyUsageOid = "1.3.6.1.5.5.7.3.1";
 	private const string ServerAuthenticationEnhancedKeyUsageOidFriendlyName = "Server Authentication";
@@ -37,7 +37,7 @@ public abstract class CertificateManager {
                 ? new MacOSCertificateManager() as CertificateManager
                 : new UnixCertificateManager();
 #pragma warning restore CA1416 // Validate platform compatibility
-        
+
 	public static CertificateManagerEventSource Log { get; set; } = new CertificateManagerEventSource();
 
 	// Setting to 0 means we don't append the version byte,
@@ -679,9 +679,9 @@ public abstract class CertificateManager {
 	}
 
 	internal static string GetDescription(X509Certificate2 c) =>
-		$"{c.Thumbprint} - {c.Subject} - Valid from {c.NotBefore:u} to {c.NotAfter:u} - IsEventStoreDevelopmentCertificate: {IsHttpsDevelopmentCertificate(c).ToString().ToLowerInvariant()} - IsExportable: {Instance.IsExportable(c).ToString().ToLowerInvariant()}";
+		$"{c.Thumbprint} - {c.Subject} - Valid from {c.NotBefore:u} to {c.NotAfter:u} - IsKurrentDevelopmentCertificate: {IsHttpsDevelopmentCertificate(c).ToString().ToLowerInvariant()} - IsExportable: {Instance.IsExportable(c).ToString().ToLowerInvariant()}";
 
-	[EventSource(Name = "eventstore-dev-certs")]
+	[EventSource(Name = "kurrentdb-dev-certs")]
 	public sealed class CertificateManagerEventSource : EventSource {
 		[Event(1, Level = EventLevel.Verbose, Message = "Listing certificates from {0}\\{1}")]
 		[UnconditionalSuppressMessage("Trimming", "IL2026",
@@ -885,7 +885,7 @@ public abstract class CertificateManager {
 		internal void LoadCertificateError(string error) => WriteEvent(63, error);
 
 		[Event(64, Level = EventLevel.Error,
-			Message = "The provided certificate '{0}' is not a valid Event Store HTTPS development certificate.")]
+			Message = "The provided certificate '{0}' is not a valid Kurrent HTTPS development certificate.")]
 		internal void NoHttpsDevelopmentCertificate(string description) => WriteEvent(64, description);
 	}
 

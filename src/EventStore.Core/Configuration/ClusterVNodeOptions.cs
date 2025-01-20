@@ -104,10 +104,10 @@ public partial record ClusterVNodeOptions {
 
 	[Description("Dev Mode Options")]
 	public record DevModeOptions {
-		[Description("Runs EventStoreDB in dev mode. This will create and add dev certificates to your certificate store, enable atompub over http, and run standard projections.")]
+		[Description("Runs KurrentDB in dev mode. This will create and add dev certificates to your certificate store, enable atompub over http, and run standard projections.")]
 		public bool Dev { get; init; } = false;
 
-		[Description("Removes any dev certificates installed on this computer without starting EventStoreDB.")]
+		[Description("Removes any dev certificates installed on this computer without starting KurrentDB.")]
 		public bool RemoveDevCerts { get; init; } = false;
 	}
 
@@ -123,7 +123,7 @@ public partial record ClusterVNodeOptions {
 		[Description("Print effective configuration to console and then exit.")]
 		public bool WhatIf { get; init; } = false;
 
-		[Description("Allows EventStoreDB to run with unknown configuration options present.")]
+		[Description("Allows KurrentDB to run with unknown configuration options present.")]
 		public bool AllowUnknownOptions { get; init; } = false;
 
 		[Description("Disable HTTP caching.")] public bool DisableHttpCaching { get; init; } = false;
@@ -138,7 +138,7 @@ public partial record ClusterVNodeOptions {
 		[Description("Enables the tracking of various histograms in the backend, " +
 		             "typically only used for debugging, etc.")]
 		[Deprecated("The EnableHistograms setting has been deprecated as of version 24.10.0 and currently has no effect. " +
-					"Please contact EventStore if this feature is of interest to you.")]
+					"Please contact Kurrent if this feature is of interest to you.")]
 		public bool EnableHistograms { get; init; } = false;
 
 		[Description("Log Http Requests and Responses before processing them.")]
@@ -243,7 +243,7 @@ public partial record ClusterVNodeOptions {
 		public string? TrustedRootCertificatesPath { get; init; } =
 			Locations.DefaultTrustedRootCertificateDirectory;
 
-		[Description("The pattern the CN (Common Name) of a connecting EventStoreDB node must match to be authenticated. A wildcard FQDN can be specified if using wildcard certificates or if the CN is not the same on all nodes. Leave empty to automatically use the CN of this node's certificate.")]
+		[Description("The pattern the CN (Common Name) of a connecting KurrentDB node must match to be authenticated. A wildcard FQDN can be specified if using wildcard certificates or if the CN is not the same on all nodes. Leave empty to automatically use the CN of this node's certificate.")]
 		public string CertificateReservedNodeCommonName { get; init; } = string.Empty;
 	}
 
@@ -384,7 +384,7 @@ public partial record ClusterVNodeOptions {
 		[Description("Enables Unbuffered/DirectIO when writing to the file system, this bypasses filesystem " +
 		             "caches.")]
 		[Deprecated("The Unbuffered setting has been deprecated as of version 24.6.0 and currently has no effect. " +
-		            "Please contact EventStore if this feature is of interest to you.")]
+		            "Please contact Kurrent if this feature is of interest to you.")]
 		public bool Unbuffered { get; init; } = false;
 
 		[Description("The initial number of readers to start when opening a TFChunk.")]

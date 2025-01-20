@@ -24,7 +24,7 @@ public class ClusterMultipleVersionsLogger : IHandle<GossipMessage.GossipUpdated
 		Dictionary<EndPoint, string> ipAddressVsVersion = GetIPAddressVsVersion(updatedCluster, out int numDistinctKnownVersions);
 		if (numDistinctKnownVersions > 1) {
 			IEnumerable<string> ipAndVersion = ipAddressVsVersion.Select(keyvalue => $"({keyvalue.Key},{keyvalue.Value})");
-			Log.Warning($"MULTIPLE ES VERSIONS ON CLUSTER NODES FOUND [ {string.Join(", ", ipAndVersion)} ]");
+			Log.Warning($"MULTIPLE DB VERSIONS ON CLUSTER NODES FOUND [ {string.Join(", ", ipAndVersion)} ]");
 		}
 	}
 

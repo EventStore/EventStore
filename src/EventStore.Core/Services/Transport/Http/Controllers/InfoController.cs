@@ -54,6 +54,7 @@ public class InfoController : IHttpController, IHandle<SystemMessage.StateChange
 		entity.ReplyTextContent(
 			Codec.Json.To(
 				new {
+					DBVersion = VersionInfo.Version,
 					ESVersion = VersionInfo.Version,
 					State = _currentState.ToString().ToLower(),
 					Features = _features,
