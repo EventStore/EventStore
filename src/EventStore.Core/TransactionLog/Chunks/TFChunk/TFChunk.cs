@@ -283,6 +283,9 @@ public partial class TFChunk : IDisposable {
 		var transformHeader = transformFactory.TransformHeaderLength > 0
 			? new byte[transformFactory.TransformHeaderLength]
 			: [];
+
+		transformFactory.CreateTransformHeader(transformHeader);
+
 		return await CreateWithHeader(fileSystem, filename, chunkHeader, fileSize, inMem, unbuffered, writethrough,
 			reduceFileCachePressure, tracker, transformFactory, transformHeader, token);
 	}
@@ -1016,7 +1019,7 @@ public partial class TFChunk : IDisposable {
 
 		// at this point in code, 'WorkingStream` should not contain buffered bytes because SeLength
 		// can cause sync-over-async write. This fact is checked within `IChunkHandle.UnbufferedStream` class
-		workItem.ResizeStream(fileSize);
+		workItem.ResizeFileStream(fileSize);
 
 		_fileSize = fileSize;
 		return footerWithHash;
