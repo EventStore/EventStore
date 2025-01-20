@@ -38,6 +38,9 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 			: _localFileSystem.OpenForReadAsync(fileName, hint, token);
 	}
 
+	public bool IsRemote(string locator) =>
+		_locatorCodec.Decode(locator, out _, out _);
+
 	public ValueTask SetReadOnlyAsync(string locator, bool value, CancellationToken token) {
 		return _locatorCodec.Decode(locator, out _, out var fileName)
 			? ValueTask.CompletedTask

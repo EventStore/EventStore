@@ -51,8 +51,7 @@ public partial class TFChunk : IDisposable {
 		get { return _cacheStatus is CacheStatus.Cached; }
 	}
 
-	// if inMem, _handle is null but not remote
-	public bool IsRemote => _handle is not null and not ChunkFileHandle;
+	public bool IsRemote { get; }
 
 	// the logical size of (untransformed) data (could be > PhysicalDataSize if scavenged chunk)
 	public long LogicalDataSize {
@@ -92,7 +91,7 @@ public partial class TFChunk : IDisposable {
 			ChunkEndNumber = _chunkHeader.ChunkEndNumber,
 			ChunkStartPosition = _chunkHeader.ChunkStartPosition,
 			ChunkEndPosition = _chunkHeader.ChunkEndPosition,
-			IsCompleted = IsReadOnly
+			IsCompleted = IsReadOnly,
 		};
 	}
 
@@ -198,6 +197,8 @@ public partial class TFChunk : IDisposable {
 		_memStreams = new();
 		_fileStreams = new();
 		_fileSystem = fileSystem;
+
+		IsRemote = !_inMem && _fileSystem.IsRemote(ChunkLocator);
 
 		// Workaround: the lock is used by the finalizer. When the finalizer is called by .NET,
 		// the lock is already finalized (and Dispose is called) and cannot be used. To avoid that situation,
@@ -611,6 +612,11 @@ public partial class TFChunk : IDisposable {
 	public async ValueTask VerifyFileHash(CancellationToken token) {
 		if (!IsReadOnly)
 			throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
+
+		if (IsRemote) {
+			Log.Debug("Skipped verifying hash for TFChunk '{chunk}' because it is remote", ChunkLocator);
+			return;
+		}
 
 		Log.Debug("Verifying hash for TFChunk '{chunk}'...", ChunkLocator);
 		using var reader = await AcquireRawReader(token);
