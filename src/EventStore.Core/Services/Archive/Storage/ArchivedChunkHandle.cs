@@ -27,7 +27,7 @@ internal sealed class ArchivedChunkHandle : IChunkHandle {
 
 	public static async ValueTask<IChunkHandle> OpenForReadAsync(IArchiveStorageReader reader, int logicalChunkNumber, CancellationToken token) {
 		var metadata = await reader.GetMetadataAsync(logicalChunkNumber, token);
-		return new ArchivedChunkHandle(reader, logicalChunkNumber, metadata.Size);
+		return new ArchivedChunkHandle(reader, logicalChunkNumber, metadata.PhysicalSize);
 	}
 
 	void IFlushable.Flush() {

@@ -23,7 +23,7 @@ class ArchiveReaderEmptyChunks(long chunkSize, long chunksInArchive) : IArchiveS
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) => new(chunkSize * chunksInArchive);
 
 	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) =>
-		ValueTask.FromResult<ArchivedChunkMetadata>(new(Size: FileSize));
+		ValueTask.FromResult<ArchivedChunkMetadata>(new(PhysicalSize: FileSize));
 
 	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
 		if (ct.IsCancellationRequested)
