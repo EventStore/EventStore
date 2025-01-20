@@ -321,9 +321,10 @@ public class ClusterVNode<TStreamId> :
 
 		var namingStrategy = new VersionedPatternFileNamingStrategy(dbConfig.Path, "chunk-");
 		IChunkFileSystem fileSystem = new ChunkLocalFileSystem(namingStrategy);
-		IArchiveStorageReader archiveReader = NoArchiveReader.Instance;
 
 		// ARCHIVE
+		IArchiveStorageReader archiveReader = NoArchiveReader.Instance;
+		var locatorCodec = new PrefixingLocatorCodec();
 		if (archiveOptions.Enabled) {
 			var archive = ArchiveStorageFactory.Create(
 				options: archiveOptions,
@@ -333,7 +334,7 @@ public class ClusterVNode<TStreamId> :
 
 			fileSystem = new FileSystemWithArchive(
 				chunkSize: dbConfig.ChunkSize,
-				locatorCodec: new PrefixingLocatorCodec(),
+				locatorCodec: locatorCodec,
 				localFileSystem: fileSystem,
 				archive: archiveReader);
 		}
@@ -1320,11 +1321,13 @@ public class ClusterVNode<TStreamId> :
 				buffer: calculatorBuffer,
 				throttle: throttle);
 
-			var chunkDeleter = IChunkDeleter<TStreamId, ILogRecord>.NoOp;
+			var chunkDeleter = IChunkRemover<TStreamId, ILogRecord>.NoOp;
 			if (archiveOptions.Enabled) {
-				chunkDeleter = new ChunkDeleter<TStreamId, ILogRecord>(
+				chunkDeleter = new ChunkRemover<TStreamId, ILogRecord>(
 					logger: logger,
 					archiveCheckpoint: new AdvancingCheckpoint(archiveReader.GetCheckpoint),
+					chunkManager: new ChunkManagerForChunkRemover(Db.Manager),
+					locatorCodec: locatorCodec,
 					retainPeriod: TimeSpan.FromDays(archiveOptions.RetainAtLeast.Days),
 					retainBytes: archiveOptions.RetainAtLeast.LogicalBytes);
 			}

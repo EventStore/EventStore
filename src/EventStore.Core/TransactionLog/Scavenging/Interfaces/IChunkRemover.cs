@@ -6,23 +6,23 @@ using System.Threading.Tasks;
 
 namespace EventStore.Core.TransactionLog.Scavenging.Interfaces;
 
-// responsible for deleting chunks that are present in the archive and no longer
+// responsible for removing chunks that are present in the archive and no longer
 // needed locally according to the retention policy
-public interface IChunkDeleter<TStreamId, TRecord> {
-	static IChunkDeleter<TStreamId, TRecord> NoOp => NoOpChunkDeleter<TStreamId, TRecord>.Instance;
+public interface IChunkRemover<TStreamId, TRecord> {
+	static IChunkRemover<TStreamId, TRecord> NoOp => NoOpChunkRemover<TStreamId, TRecord>.Instance;
 
-	// returns true iff deleted
-	ValueTask<bool> DeleteIfNotRetained(
+	// returns true iff removing
+	ValueTask<bool> StartRemovingIfNotRetained(
 		ScavengePoint scavengePoint,
 		IScavengeStateForChunkExecutorWorker<TStreamId> concurrentState,
 		IChunkReaderForExecutor<TStreamId, TRecord> physicalChunk,
 		CancellationToken ct);
 }
 
-file class NoOpChunkDeleter<TStreamId, TRecord> : IChunkDeleter<TStreamId, TRecord> {
-	public static NoOpChunkDeleter<TStreamId, TRecord> Instance { get; } = new();
+file class NoOpChunkRemover<TStreamId, TRecord> : IChunkRemover<TStreamId, TRecord> {
+	public static NoOpChunkRemover<TStreamId, TRecord> Instance { get; } = new();
 
-	public ValueTask<bool> DeleteIfNotRetained(
+	public ValueTask<bool> StartRemovingIfNotRetained(
 		ScavengePoint scavengePoint,
 		IScavengeStateForChunkExecutorWorker<TStreamId> concurrentState,
 		IChunkReaderForExecutor<TStreamId, TRecord> physicalChunk, CancellationToken ct) {

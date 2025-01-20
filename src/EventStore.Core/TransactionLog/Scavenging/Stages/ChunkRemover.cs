@@ -6,22 +6,29 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging.Stages;
 
-public class ChunkDeleter<TStreamId, TRecord> : IChunkDeleter<TStreamId, TRecord> {
+// responsible for removing chunks that are present in the archive and no longer
+// needed locally according to the retention policy
+public class ChunkRemover<TStreamId, TRecord> : IChunkRemover<TStreamId, TRecord> {
 	private readonly ILogger _logger;
 	private readonly AdvancingCheckpoint _archiveCheckpoint;
+	private readonly IChunkManagerForChunkRemover _chunkManager;
+	private readonly ILocatorCodec _locatorCodec;
 	private readonly TimeSpan _retainPeriod;
 	private readonly long _retainBytes;
 	private readonly int _maxAttempts;
 	private readonly TimeSpan _retryDelay;
 
-	public ChunkDeleter(
+	public ChunkRemover(
 		ILogger logger,
 		AdvancingCheckpoint archiveCheckpoint,
+		IChunkManagerForChunkRemover chunkManager,
+		ILocatorCodec locatorCodec,
 		TimeSpan retainPeriod,
 		long retainBytes,
 		int maxAttempts = 10,
@@ -29,6 +36,8 @@ public class ChunkDeleter<TStreamId, TRecord> : IChunkDeleter<TStreamId, TRecord
 
 		_logger = logger;
 		_archiveCheckpoint = archiveCheckpoint;
+		_chunkManager = chunkManager;
+		_locatorCodec = locatorCodec;
 		_retainPeriod = retainPeriod;
 		_retainBytes = retainBytes;
 		_maxAttempts = maxAttempts;
@@ -39,35 +48,41 @@ public class ChunkDeleter<TStreamId, TRecord> : IChunkDeleter<TStreamId, TRecord
 			retainBytes);
 	}
 
-	// returns true iff deleted
-	public async ValueTask<bool> DeleteIfNotRetained(
+	// returns true iff removing
+	public async ValueTask<bool> StartRemovingIfNotRetained(
 		ScavengePoint scavengePoint,
 		IScavengeStateForChunkExecutorWorker<TStreamId> concurrentState,
 		IChunkReaderForExecutor<TStreamId, TRecord> physicalChunk,
 		CancellationToken ct) {
 
-		if (!ShouldDeleteForBytes(scavengePoint, physicalChunk)) {
+		if (physicalChunk.IsRemote) {
 			return false;
 		}
 
-		if (!ShouldDeleteForPeriod(scavengePoint, concurrentState, physicalChunk)) {
+		if (!ShouldRemoveForBytes(scavengePoint, physicalChunk)) {
 			return false;
 		}
 
-		await EnsurePresentInArchive(physicalChunk, ct);
-		await DeletePhysicalChunk(physicalChunk, ct);
+		if (!ShouldRemoveForPeriod(scavengePoint, concurrentState, physicalChunk)) {
+			return false;
+		}
+
+		if (!await IsConfirmedPresentInArchive(physicalChunk, ct)) {
+			return false;
+		}
+
+		await SwitchOutPhysicalChunk(physicalChunk, ct);
 		return true;
 	}
 
-	// ideally we want the scavenge to have the same results when run on
-	// different nodes so we do not skip over deleting this chunk if it is not in
-	// the archive, we stop the scavenge instead.
-	private async ValueTask EnsurePresentInArchive(
+	// if the chunk isn't present in the archive there might be a problem with the archiver node
+	// however we don't want this to prevent us from being able to scavenge this node, so we keep
+	// this chunk rather than terminate the scavenge
+	private async ValueTask<bool> IsConfirmedPresentInArchive(
 		IChunkReaderForExecutor<TStreamId, TRecord> physicalChunk,
 		CancellationToken ct) {
 
 		var logicalChunkNumber = physicalChunk.ChunkEndNumber;
-		var lastError = default(Exception);
 
 		for (var attempt = 0; attempt < _maxAttempts; attempt++) {
 			if (attempt != 0)
@@ -75,32 +90,30 @@ public class ChunkDeleter<TStreamId, TRecord> : IChunkDeleter<TStreamId, TRecord
 
 			try {
 				var isPresent = await _archiveCheckpoint.IsGreaterThanOrEqualTo(physicalChunk.ChunkEndPosition, ct);
-				if (isPresent) {
-					return;
-				} else {
-					lastError = new Exception($"Chunk {logicalChunkNumber} is not yet present in the archive. Check that the Archiver node is functioning correctly and re-run the scavenge to continue.");
-					_logger.Warning("Logical chunk {LogicalChunkNumber} is not yet present in the archive. Attempt {Attempt}/{MaxAttempts}",
-						logicalChunkNumber, attempt + 1, _maxAttempts);
+				if (!isPresent) {
+					_logger.Warning(
+						"Logical chunk {LogicalChunkNumber} is not yet present in the archive",
+						logicalChunkNumber);
 				}
+				return isPresent;
 			} catch (Exception ex) {
-				lastError = ex;
 				_logger.Warning(ex, "Unable to determine existence of logical chunk {LogicalChunkNumber} in the archive. Attempt {Attempt}/{MaxAttempts}",
 					logicalChunkNumber, attempt + 1, _maxAttempts);
 			}
 		}
 
-		throw lastError ?? new Exception("unknown error");
+		return false;
 	}
 
-	private bool ShouldDeleteForBytes(
+	private bool ShouldRemoveForBytes(
 		ScavengePoint scavengePoint,
 		IChunkReaderForExecutor<TStreamId, TRecord> physicalChunk) {
 
-		var deleteBytesBefore = scavengePoint.Position - _retainBytes;
-		return physicalChunk.ChunkEndPosition < deleteBytesBefore;
+		var removeBytesBefore = scavengePoint.Position - _retainBytes;
+		return physicalChunk.ChunkEndPosition < removeBytesBefore;
 	}
 
-	private bool ShouldDeleteForPeriod(
+	private bool ShouldRemoveForPeriod(
 		ScavengePoint scavengePoint,
 		IScavengeStateForChunkExecutorWorker<TStreamId> concurrentState,
 		IChunkReaderForExecutor<TStreamId, TRecord> physicalChunk) {
@@ -110,8 +123,8 @@ public class ChunkDeleter<TStreamId, TRecord> : IChunkDeleter<TStreamId, TRecord
 			logicalChunkNumber--) {
 
 			if (concurrentState.TryGetChunkTimeStampRange(logicalChunkNumber, out var createdAtRange)) {
-				var deleteBefore = scavengePoint.EffectiveNow - _retainPeriod;
-				return createdAtRange.Max < deleteBefore;
+				var removeBefore = scavengePoint.EffectiveNow - _retainPeriod;
+				return createdAtRange.Max < removeBefore;
 			} else {
 				// we don't have a time stamp range for this logical chunk, it had no prepares in during
 				// accumulation. we try an earlier logical chunk in this physical chunk.
@@ -119,26 +132,45 @@ public class ChunkDeleter<TStreamId, TRecord> : IChunkDeleter<TStreamId, TRecord
 		}
 
 		// no time stamp for any logical chunk in this physical chunk. its possible to get here if the
-		// physical chunk doesn't have any prepares in it at all. it's fine to delete it.
+		// physical chunk doesn't have any prepares in it at all. it's fine to remove it.
 		return true;
 	}
 
-	private ValueTask DeletePhysicalChunk(
+	private async ValueTask SwitchOutPhysicalChunk(
 		IChunkReaderForExecutor<TStreamId, TRecord> physicalChunk,
 		CancellationToken ct) {
 
-		// todo: actually delete the file in cooperation with the chunk manager
-		// so that readers are allowed to complete and chunk manager knows that
-		// the chunk has gone and must direct readers to the archive
+		var chunkStartNumber = physicalChunk.ChunkStartNumber;
+		var chunkEndNumber = physicalChunk.ChunkEndNumber;
+
 		_logger.Debug(
-			"SCAVENGING: Deleting physical chunk: {oldChunkName} " +
+			"SCAVENGING: Removing physical chunk: {oldChunkName} " +
 			"{chunkStartNumber} => {chunkEndNumber} ({chunkStartPosition} => {chunkEndPosition})",
 			physicalChunk.Name,
-			physicalChunk.ChunkStartNumber, physicalChunk.ChunkEndNumber,
+			chunkStartNumber, chunkEndNumber,
 			physicalChunk.ChunkStartPosition, physicalChunk.ChunkEndPosition);
 
-		return ct.IsCancellationRequested
-			? ValueTask.FromCanceled(ct)
-			: ValueTask.CompletedTask;
+		var numChunks = chunkEndNumber - chunkStartNumber + 1;
+		var locators = new string[numChunks];
+		for (var i = 0; i < locators.Length; i++) {
+			locators[i] = _locatorCodec.EncodeRemote(chunkStartNumber + i);
+		}
+
+		// begin the process of deleting the chunk
+		var switched = await _chunkManager.SwitchInChunks(locators, ct);
+
+		if (switched) {
+			// the switch has occurred, the physicalChunk will be deleted once any outstanding
+			// readers are returned.
+		} else {
+			// the start-end range did not align correctly, perhaps something else changed which physical
+			// chunks are present. this does not cause a problem but it should be very rare.
+			_logger.Warning(
+				"SCAVENGING: Did not remove physicalChunk: {oldChunkName} " +
+				"{chunkStartNumber} => {chunkEndNumber}. " +
+				"This will be retried next scavenge.",
+				physicalChunk.Name,
+				chunkStartNumber, chunkEndNumber);
+		}
 	}
 }
