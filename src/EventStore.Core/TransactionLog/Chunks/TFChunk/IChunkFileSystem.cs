@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using DotNext.Buffers;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using Serilog;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
@@ -14,11 +15,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 // one implementation of this interface. That implementation can compose more than one implementation
 // of IBlobFileSystem interface and act as a proxy
 public interface IChunkFileSystem {
-	ValueTask<IChunkHandle> OpenForReadAsync(string fileName, ReadOptimizationHint hint, CancellationToken token);
+	ValueTask<IChunkHandle> OpenForReadAsync(string locator, ReadOptimizationHint hint, CancellationToken token);
 
-	ValueTask SetReadOnlyAsync(string fileName, bool value, CancellationToken token);
+	ValueTask SetReadOnlyAsync(string locator, bool value, CancellationToken token);
 
 	IVersionedFileNamingStrategy NamingStrategy { get; }
+
+	// Remote means not local. It could be in any remote tier of storage, not necessarily the archive.
+	// (although at the moment the archive is the only remote tier)
+	bool IsRemote(string locator);
 
 	IChunkEnumerable GetChunks();
 
@@ -36,7 +41,11 @@ public interface IChunkFileSystem {
 }
 
 public static class ChunkFileSystem {
+	private static readonly ILogger Logger = Log.ForContext(typeof(ChunkFileSystem));
 	public static async ValueTask<ChunkHeader> ReadHeaderAsync(this IChunkFileSystem fileSystem, string fileName, CancellationToken token) {
+		if (fileSystem.IsRemote(fileName))
+			Logger.Warning("Reading remote chunk header. This is OK but should be uncommon");
+
 		using var handle = await fileSystem.OpenForReadAsync(fileName, IChunkFileSystem.ReadOptimizationHint.None, token);
 
 		var length = handle.Length;
@@ -51,6 +60,9 @@ public static class ChunkFileSystem {
 	}
 
 	public static async ValueTask<ChunkFooter> ReadFooterAsync(this IChunkFileSystem fileSystem, string fileName, CancellationToken token) {
+		if (fileSystem.IsRemote(fileName))
+			Logger.Warning("Reading remote chunk footer. This is OK but should be uncommon");
+
 		using var handle = await fileSystem.OpenForReadAsync(fileName, IChunkFileSystem.ReadOptimizationHint.None, token);
 
 		var length = handle.Length;
