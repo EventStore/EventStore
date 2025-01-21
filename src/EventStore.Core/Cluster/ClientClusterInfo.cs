@@ -59,7 +59,7 @@ public class ClientClusterInfo {
 
 		public int NodePriority { get; set; }
 		public bool IsReadOnlyReplica { get; set; }
-		
+
 		public string ESVersion { get; set; }
 
 		public ClientMemberInfo() {
@@ -123,7 +123,7 @@ public class ClientClusterInfo {
 				$"HttpEndPointIp: {HttpEndPointIp}, HttpEndPointPort: {HttpEndPointPort}, " +
 				$"LastCommitPosition: {LastCommitPosition}, WriterCheckpoint: {WriterCheckpoint}, ChaserCheckpoint: {ChaserCheckpoint}, " +
 				$"EpochPosition: {EpochPosition}, EpochNumber: {EpochNumber}, EpochId: {EpochId:B}, NodePriority: {NodePriority}, " +
-				$"IsReadOnlyReplica: {IsReadOnlyReplica}, ESVersion: ${ESVersion}";
+				$"IsReadOnlyReplica: {IsReadOnlyReplica}, DBVersion: ${ESVersion}";
 		}
 	}
 }

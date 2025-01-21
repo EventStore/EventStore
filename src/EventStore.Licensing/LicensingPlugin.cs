@@ -65,7 +65,7 @@ public class LicensingPlugin : Plugin {
 		var clientOptions = configuration.GetSection("KurrentDB").Get<KeygenClientOptions>() ?? new();
 		if (clientOptions.Licensing.BaseUrl is not null) {
 			baseUrl = clientOptions.Licensing.BaseUrl;
-			Log.Information("Using custom licensing URL: {Url}. This requires permission from EventStore Ltd.", baseUrl);
+			Log.Information("Using custom licensing URL: {Url}. This requires permission from Kurrent, Inc.", baseUrl);
 		}
 
 		IObservable<LicenseInfo> licenses;

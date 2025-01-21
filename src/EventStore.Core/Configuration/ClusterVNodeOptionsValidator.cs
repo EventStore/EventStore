@@ -71,7 +71,7 @@ public static class ClusterVNodeOptionsValidator {
 
 		if (options.Database.Db.StartsWith("~")) {
 			throw new ApplicationInitializationException(
-				"The given database path starts with a '~'. Event Store does not expand '~'.");
+				"The given database path starts with a '~'. KurrentDB does not expand '~'.");
 		}
 
 		if (options.Database.Index != null && options.Database.Db != null) {
