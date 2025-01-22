@@ -94,6 +94,23 @@ public class ArchiveStorageTests : ArchiveStorageTestsBase<ArchiveStorageTests> 
 	[Theory]
 	[StorageData.S3]
 	[StorageData.FileSystem]
+	public async Task read_with_negative_offset_throws(StorageType storageType) {
+		var sut = CreateSut(storageType);
+
+		// create a chunk and upload it
+		var chunkPath = CreateLocalChunk(0, 0);
+		await sut.StoreChunk(chunkPath, 0, CancellationToken.None);
+
+		// read the uploaded chunk partially
+		using var buffer = Memory.AllocateExactly<byte>(0);
+		await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => {
+			await sut.ReadAsync(0, buffer.Memory, offset: -1, CancellationToken.None);
+		});
+	}
+
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
 	public async Task read_missing_chunk_throws_ChunkDeletedException(StorageType storageType) {
 		var sut = CreateSut(storageType);
 
