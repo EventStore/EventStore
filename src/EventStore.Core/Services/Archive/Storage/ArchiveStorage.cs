@@ -13,7 +13,6 @@ using DotNext.IO;
 using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using Microsoft.Win32.SafeHandles;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage;
