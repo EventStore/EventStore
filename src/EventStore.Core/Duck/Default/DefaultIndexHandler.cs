@@ -8,8 +8,8 @@ using Serilog;
 
 namespace EventStore.Core.Duck.Default;
 
-public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
-	readonly DefaultIndex _defaultIndex;
+public sealed class DefaultIndexHandler<TStreamId> : IEventHandler, IDisposable {
+	readonly DefaultIndex<TStreamId> _defaultIndex;
 	readonly DuckDBConnection _connection;
 	readonly SemaphoreSlim _semaphore = new(1);
 
@@ -17,9 +17,9 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 	int _page;
 	DuckDBAppender _appender;
 
-	static readonly ILogger Logger = Log.ForContext<DefaultIndexHandler>();
+	static readonly ILogger Logger = Log.ForContext<DefaultIndexHandler<TStreamId>>();
 
-	public DefaultIndexHandler(DuckDb db, DefaultIndex defaultIndex) {
+	public DefaultIndexHandler(DuckDb db, DefaultIndex<TStreamId> defaultIndex) {
 		_defaultIndex = defaultIndex;
 		_connection = db.Connection;
 		_appender = _connection.CreateAppender("idx_all");
@@ -52,6 +52,7 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 		row.EndRow();
 		_semaphore.Release();
 		_page++;
+		LastPosition = (long)context.GlobalPosition;
 
 		return ValueTask.FromResult(EventHandlingStatus.Success);
 	}
@@ -70,8 +71,10 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 		_disposed = true;
 	}
 
+	public bool NeedsCommitting => _page > 0;
+
 	public void Commit(bool reopen = true) {
-		if (_appenderDisposed) return;
+		if (_appenderDisposed || _page == 0) return;
 		_semaphore.Wait();
 		_appender.CloseWithRetry("Default");
 		_appender.Dispose();
@@ -84,5 +87,6 @@ public sealed class DefaultIndexHandler : IEventHandler, IDisposable {
 		_appenderDisposed = false;
 	}
 
-	public ulong GetLastPosition() => _seq;
+	public long LastPosition { get; private set; }
+	public long LastSequence => (long)_seq;
 }

@@ -38,21 +38,15 @@ public static class SystemStreams {
 	public const string NodeStateStream = "$mem-node-state";
 	public const string GossipStream = "$mem-gossip";
 
+	public static bool IsInMemoryStream(string streamId) => streamId.StartsWith("$mem-");
+
 	public static bool IsSystemStream(string streamId) => streamId is ['$', ..];
 
-	public static string MetastreamOf(string streamId) {
-		return "$$" + streamId;
-	}
+	public static string MetastreamOf(string streamId) => $"$${streamId}";
 
 	public static bool IsMetastream(string streamId) => streamId is ['$', '$', ..];
 
-	public static string OriginalStreamOf(string metastreamId) {
-		return metastreamId.Substring(2);
-	}
-
-	public static bool IsInMemoryStream(string streamId) {
-		return streamId.StartsWith("$mem-");
-	}
+	public static string OriginalStreamOf(string metastreamId) => metastreamId[2..];
 }
 
 public static class SystemMetadata {

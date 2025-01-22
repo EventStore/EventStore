@@ -2,13 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Dapper;
 using EventStore.Core.Metrics;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using Eventuous.Subscriptions.Context;
 
 namespace EventStore.Core.Duck.Default;
 
-class EventTypeIndexReader(EventTypeIndex eventTypeIndex) : DuckIndexReader() {
+class EventTypeIndexReader<TStreamId>(EventTypeIndex eventTypeIndex, IReadIndex<TStreamId> index) : DuckIndexReader<TStreamId>(index) {
 	protected override long GetId(string streamName) {
 		if (!streamName.StartsWith("$etype-")) {
 			throw new InvalidOperationException($"Stream {streamName} is not an event type stream");
@@ -22,6 +24,10 @@ class EventTypeIndexReader(EventTypeIndex eventTypeIndex) : DuckIndexReader() {
 
 	protected override IEnumerable<IndexedPrepare> GetIndexRecords(long id, long fromEventNumber, long toEventNumber)
 		=> eventTypeIndex.GetRecords(id, fromEventNumber, toEventNumber);
+
+	public override ValueTask<long> GetLastIndexedPosition() => ValueTask.FromResult(eventTypeIndex.LastPosition);
+
+	public override bool OwnStream(string streamId) => streamId.StartsWith("$etype-");
 }
 
 public class EventTypeIndex(DuckDb db) {
@@ -50,14 +56,14 @@ public class EventTypeIndex(DuckDb db) {
 
 	public IEnumerable<IndexedPrepare> GetRecords(long id, long fromEventNumber, long toEventNumber) {
 		var range = QueryEventType(id, fromEventNumber, toEventNumber);
-		var indexPrepares = range.Select(x => new IndexedPrepare(x.event_type_seq, x.stream, id, x.event_number, x.log_position));
+		var indexPrepares = range.Select(x => new IndexedPrepare(x.event_type_seq, x.event_number, x.log_position));
 		return indexPrepares;
 	}
 
 	[MethodImpl(MethodImplOptions.Synchronized)]
 	List<EventTypeRecord> QueryEventType(long eventTypeId, long fromEventNumber, long toEventNumber) {
 		const string query = """
-		                     select event_type_seq, log_position, event_number, stream
+		                     select event_type_seq, log_position, event_number
 		                     from idx_all where event_type=$et and event_type_seq>=$start and event_type_seq<=$end
 		                     """;
 
@@ -67,6 +73,7 @@ public class EventTypeIndex(DuckDb db) {
 	}
 
 	public SequenceRecord Handle(IMessageConsumeContext ctx) {
+		LastPosition = (long)ctx.GlobalPosition;
 		if (EventTypes.TryGetValue(ctx.MessageType, out var val)) {
 			var next = Sequences[val] + 1;
 			Sequences[val] = next;
@@ -80,6 +87,8 @@ public class EventTypeIndex(DuckDb db) {
 		Sequences[id] = 0;
 		return new(id, 0);
 	}
+
+	internal long LastPosition { get; private set; }
 
 	static long Seq;
 	static readonly string Sql = Default.Sql.AppendIndexSql.Replace("{table}", "event_type");

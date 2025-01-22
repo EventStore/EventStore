@@ -24,10 +24,7 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Duck;
 
-public class InternalSubscription(
-	IPublisher publisher,
-	ICheckpointStore checkpointStore,
-	params IEventHandler[] eventHandlers)
+public class InternalSubscription(IPublisher publisher, ICheckpointStore checkpointStore, params IEventHandler[] eventHandlers)
 	: EventSubscriptionWithCheckpoint<InternalSubscriptionOptions>(
 		new() { SubscriptionId = "indexBuilder", ThrowOnError = true, CheckpointCommitBatchSize = 50000, CheckpointCommitDelayMs = 10000 },
 		checkpointStore, new ConsumePipe().AddDefaultConsumer(eventHandlers),
@@ -38,8 +35,6 @@ public class InternalSubscription(
 	readonly CancellationTokenSource _cts = new();
 	Enumerator.AllSubscriptionFiltered _sub;
 	Task _runner;
-
-	static readonly ILogger _log = Serilog.Log.ForContext<InternalSubscription>();
 
 	protected override async ValueTask Subscribe(CancellationToken cancellationToken) {
 		var (_, position) = await GetCheckpoint(cancellationToken);
@@ -73,21 +68,13 @@ public class InternalSubscription(
 			} catch (TaskCanceledException) {
 				// ignore
 			} catch (Exception e) {
-				_log.Error(e, "Error while processing event {EventType}", eventReceived.Event.Event.EventType);
+				Log.ErrorLog?.Log(e, "Error while processing event {EventType}", eventReceived.Event.Event.EventType);
 				throw;
 			}
 		}
 	}
 
 	MessageConsumeContext CreateContext(ResolvedEvent re) {
-		// var evt = DeserializeData(
-		// 	string.Empty,
-		// 	re.Event.EventType,
-		// 	re.Event.Data,
-		// 	re.Event.EventStreamId,
-		// 	(ulong)re.Event.EventNumber
-		// );
-
 		return new(
 			re.Event.EventId.ToString(),
 			re.Event.EventType,

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Duck.Default;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Metrics;
@@ -36,10 +35,9 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 		ISystemStreamLookup<TStreamId> systemStreams,
 		int threadCount,
 		IReadOnlyCheckpoint writerCheckpoint,
-		IInMemoryStreamReader inMemReader,
+		VirtualStreamReaders inMemReaders,
 		QueueStatsManager queueStatsManager,
-		QueueTrackers trackers,
-		DefaultIndex defaultIndex) {
+		QueueTrackers trackers) {
 		Ensure.NotNull(subscriber);
 		Ensure.NotNull(systemStreams, nameof(systemStreams));
 		Ensure.Positive(threadCount);
@@ -51,7 +49,7 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 		StorageReaderWorker<TStreamId>[] readerWorkers = new StorageReaderWorker<TStreamId>[threadCount];
 		InMemoryBus[] storageReaderBuses = new InMemoryBus[threadCount];
 		for (var i = 0; i < threadCount; i++) {
-			readerWorkers[i] = new StorageReaderWorker<TStreamId>(bus, readIndex, systemStreams, writerCheckpoint, inMemReader, i, defaultIndex);
+			readerWorkers[i] = new StorageReaderWorker<TStreamId>(bus, readIndex, systemStreams, writerCheckpoint, inMemReaders, i);
 			storageReaderBuses[i] = new InMemoryBus("StorageReaderBus", watchSlowMsg: false);
 			storageReaderBuses[i].Subscribe<ClientMessage.ReadEvent>(readerWorkers[i]);
 			storageReaderBuses[i].Subscribe<ClientMessage.ReadStreamEventsBackward>(readerWorkers[i]);

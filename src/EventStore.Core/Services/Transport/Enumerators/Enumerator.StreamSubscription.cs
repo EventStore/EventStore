@@ -15,6 +15,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Common;
 using Serilog;
+using static EventStore.Core.Services.Transport.Enumerators.ReadResponseException;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Transport.Enumerators;
@@ -162,7 +163,7 @@ static partial class Enumerator {
 					(checkpoint, sequenceNumber) = await GoLive(checkpoint, sequenceNumber, ct);
 				}
 			} catch (Exception ex) {
-				if (ex is not (OperationCanceledException or ReadResponseException.StreamDeleted))
+				if (ex is not (OperationCanceledException or StreamDeleted))
 					Log.Error(ex, "Subscription {subscriptionId} to {streamName} experienced an error.", _subscriptionId, _streamName);
 				_channel.Writer.TryComplete(ex);
 			} finally {
@@ -242,7 +243,7 @@ static partial class Enumerator {
 						throw ex;
 
 					if (message is not ClientMessage.ReadStreamEventsForwardCompleted completed)
-						throw ReadResponseException.UnknownMessage
+						throw UnknownMessage
 							.Create<ClientMessage.ReadStreamEventsForwardCompleted>(message);
 
 					switch (completed.Result) {
@@ -275,11 +276,11 @@ static partial class Enumerator {
 							Log.Debug(
 								"Subscription {subscriptionId} to {streamName} stream deleted.",
 								_subscriptionId, _streamName);
-							throw new ReadResponseException.StreamDeleted(_streamName);
+							throw new StreamDeleted(_streamName);
 						case ReadStreamResult.AccessDenied:
-							throw new ReadResponseException.AccessDenied();
+							throw new AccessDenied();
 						default:
-							throw ReadResponseException.UnknownError.Create(completed.Result);
+							throw UnknownError.Create(completed.Result);
 					}
 				} catch (Exception exception) {
 					catchupCompletionTcs.TrySetException(exception);
@@ -291,7 +292,7 @@ static partial class Enumerator {
 			await _channel.Writer.WriteAsync(new ReadResponse.EventReceived(@event), ct);
 
 			if (@event.OriginalEvent.EventType == SystemEventTypes.StreamDeleted)
-				throw new ReadResponseException.StreamDeleted(_streamName);
+				throw new StreamDeleted(_streamName);
 		}
 
 		private Task<long> SubscribeToLive() {
@@ -306,15 +307,13 @@ static partial class Enumerator {
 
 			void OnSubscriptionMessage(Message message) {
 				try {
-					if (message is ClientMessage.NotHandled notHandled &&
-					    TryHandleNotHandled(notHandled, out var ex))
+					if (message is ClientMessage.NotHandled notHandled && TryHandleNotHandled(notHandled, out var ex))
 						throw ex;
 
 					switch (message) {
 						case ClientMessage.SubscriptionConfirmation confirmed:
 							long caughtUp = confirmed.LastEventNumber ??
-							                throw ReadResponseException.UnknownError.Create(
-								                $"Live subscription {_subscriptionId} to {_streamName} failed to retrieve the last event number.");
+							                throw UnknownError.Create($"Live subscription {_subscriptionId} to {_streamName} failed to retrieve the last event number.");
 
 							Log.Debug(
 								"Subscription {subscriptionId} to {streamName} confirmed. LastEventNumber is {streamRevision:N0}.",
@@ -328,14 +327,14 @@ static partial class Enumerator {
 								_subscriptionId, _streamName, dropped.Reason);
 							switch (dropped.Reason) {
 								case SubscriptionDropReason.AccessDenied:
-									throw new ReadResponseException.AccessDenied();
+									throw new AccessDenied();
 								case SubscriptionDropReason.StreamDeleted:
-									throw new ReadResponseException.StreamDeleted(_streamName);
+									throw new StreamDeleted(_streamName);
 								case SubscriptionDropReason.Unsubscribed:
 									return;
 								case SubscriptionDropReason.NotFound: // applies only to persistent subscriptions
 								default:
-									throw ReadResponseException.UnknownError.Create(dropped.Reason);
+									throw UnknownError.Create(dropped.Reason);
 							}
 						case ClientMessage.StreamEventAppeared appeared: {
 							Log.Verbose(
@@ -350,8 +349,7 @@ static partial class Enumerator {
 							return;
 						}
 						default:
-							throw ReadResponseException.UnknownMessage
-								.Create<ClientMessage.SubscriptionConfirmation>(message);
+							throw UnknownMessage.Create<ClientMessage.SubscriptionConfirmation>(message);
 					}
 				} catch (Exception exception) {
 					_liveEvents.Writer.TryComplete(exception);

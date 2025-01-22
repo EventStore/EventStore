@@ -10,7 +10,7 @@ namespace EventStore.Core.Services.Storage.InMemory;
 // note that the SubscriptionsService currently only supports one physical log
 // and one inmemory log so we can't have separate inmemory logs per inmemory stream.
 public class InMemoryLog {
-	long _lastCommitPosition = 0L;
+	long _lastCommitPosition;
 
 	public long GetLastCommitPosition() => Interlocked.Read(ref _lastCommitPosition);
 	public long GetNextCommitPosition() => Interlocked.Increment(ref _lastCommitPosition);

@@ -2,34 +2,32 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.InMemory;
 using Xunit;
+using static EventStore.Core.Messages.ClientMessage;
 
 namespace EventStore.Core.XUnit.Tests.Services.Storage.InMemory;
 
-public class InMemoryStreamReaderTests {
-	private readonly InMemoryStreamReader _sut;
+public class VirtualStreamReadersTests {
+	private readonly VirtualStreamReaders _sut;
 	private readonly NodeStateListenerService _listener;
 
-	public InMemoryStreamReaderTests() {
+	public VirtualStreamReadersTests() {
 		var channel = Channel.CreateUnbounded<Message>();
-		_listener = new NodeStateListenerService(
-			new EnvelopePublisher(new ChannelEnvelope(channel)),
-			new InMemoryLog());
-		_sut = new InMemoryStreamReader(new Dictionary<string, IInMemoryStreamReader> {
-			[SystemStreams.NodeStateStream] = _listener,
-		});
+		_listener = new(new EnvelopePublisher(new ChannelEnvelope(channel)), new());
+		_sut = new([_listener.Stream]);
 	}
 
-	private static ClientMessage.ReadStreamEventsBackward GenReadBackwards(Guid correlation, long fromEventNumber, int maxCount) {
-		return new ClientMessage.ReadStreamEventsBackward(
+	private static ReadStreamEventsBackward GenReadBackwards(Guid correlation, long fromEventNumber, int maxCount) {
+		return new(
 			internalCorrId: correlation,
 			correlationId: correlation,
 			envelope: new NoopEnvelope(),
@@ -42,8 +40,8 @@ public class InMemoryStreamReaderTests {
 			user: ClaimsPrincipal.Current);
 	}
 
-	public static ClientMessage.ReadStreamEventsForward GenReadForwards(Guid correlation, long fromEventNumber, int maxCount) {
-		return new ClientMessage.ReadStreamEventsForward(
+	public static ReadStreamEventsForward GenReadForwards(Guid correlation, long fromEventNumber, int maxCount) {
+		return new(
 			internalCorrId: correlation,
 			correlationId: correlation,
 			envelope: new NoopEnvelope(),
@@ -57,12 +55,13 @@ public class InMemoryStreamReaderTests {
 			replyOnExpired: true);
 	}
 
-	public class ReadForwardEmptyTests : InMemoryStreamReaderTests {
+	public class ReadForwardEmptyTests : VirtualStreamReadersTests {
 		[Fact]
-		public void read_forwards_empty() {
+		public async Task read_forwards_empty() {
 			var correlation = Guid.NewGuid();
 
-			var result = _sut.ReadForwards(GenReadForwards(correlation, fromEventNumber: 0, maxCount: 10));
+			_sut.TryGetReader(SystemStreams.NodeStateStream, out var reader);
+			var result = await reader.ReadForwards(GenReadForwards(correlation, fromEventNumber: 0, maxCount: 10), CancellationToken.None);
 
 			Assert.Equal(correlation, result.CorrelationId);
 			Assert.Equal(ReadStreamResult.NoStream, result.Result);
@@ -76,13 +75,14 @@ public class InMemoryStreamReaderTests {
 		}
 	}
 
-	public class ReadForwardTests : InMemoryStreamReaderTests {
+	public class ReadForwardTests : VirtualStreamReadersTests {
 		[Fact]
-		public void read_forwards() {
+		public async Task read_forwards() {
 			_listener.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			var correlation = Guid.NewGuid();
 
-			var result = _sut.ReadForwards(GenReadForwards(correlation, fromEventNumber: 0, maxCount: 10));
+			_sut.TryGetReader(SystemStreams.NodeStateStream, out var reader);
+			var result = await reader.ReadForwards(GenReadForwards(correlation, fromEventNumber: 0, maxCount: 10), CancellationToken.None);
 
 			Assert.Equal(correlation, result.CorrelationId);
 			Assert.Equal(ReadStreamResult.Success, result.Result);
@@ -101,11 +101,12 @@ public class InMemoryStreamReaderTests {
 		}
 
 		[Fact]
-		public void read_forwards_beyond_latest_event() {
+		public async Task read_forwards_beyond_latest_event() {
 			_listener.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			var correlation = Guid.NewGuid();
 
-			var result = _sut.ReadForwards(GenReadForwards(correlation, fromEventNumber: 1000, maxCount: 10));
+			_sut.TryGetReader(SystemStreams.NodeStateStream, out var reader);
+			var result = await reader.ReadForwards(GenReadForwards(correlation, fromEventNumber: 1000, maxCount: 10), CancellationToken.None);
 
 			Assert.Equal(correlation, result.CorrelationId);
 			Assert.Equal(ReadStreamResult.Success, result.Result);
@@ -119,12 +120,13 @@ public class InMemoryStreamReaderTests {
 		}
 
 		[Fact]
-		public void read_forwards_below_latest_event() {
+		public async Task read_forwards_below_latest_event() {
 			_listener.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			_listener.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			var correlation = Guid.NewGuid();
 
-			var result = _sut.ReadForwards(GenReadForwards(correlation, fromEventNumber: 0, maxCount: 10));
+			_sut.TryGetReader(SystemStreams.NodeStateStream, out var reader);
+			var result = await reader.ReadForwards(GenReadForwards(correlation, fromEventNumber: 0, maxCount: 10), CancellationToken.None);
 
 			Assert.Equal(correlation, result.CorrelationId);
 			Assert.Equal(ReadStreamResult.Success, result.Result);
@@ -143,7 +145,7 @@ public class InMemoryStreamReaderTests {
 		}
 
 		[Fact]
-		public void read_forwards_far_below_latest_event() {
+		public async Task read_forwards_far_below_latest_event() {
 			// we specify maxCount, not an upper event number, so it is acceptable in this case to either
 			// - find event 49 (like we do for regular stream forward maxAge reads if old events have been scavenged)
 			//   and reach the end of the stream (nextEventNumber == 50)
@@ -154,7 +156,8 @@ public class InMemoryStreamReaderTests {
 				_listener.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			var correlation = Guid.NewGuid();
 
-			var result = _sut.ReadForwards(GenReadForwards(correlation, fromEventNumber: 0, maxCount: 10));
+			_sut.TryGetReader(SystemStreams.NodeStateStream, out var reader);
+			var result = await reader.ReadForwards(GenReadForwards(correlation, fromEventNumber: 0, maxCount: 10), CancellationToken.None);
 
 			Assert.Equal(correlation, result.CorrelationId);
 			Assert.Equal(ReadStreamResult.Success, result.Result);
@@ -173,12 +176,13 @@ public class InMemoryStreamReaderTests {
 		}
 	}
 
-	public class ReadBackwardsEmptyTests : InMemoryStreamReaderTests {
+	public class ReadBackwardsEmptyTests : VirtualStreamReadersTests {
 		[Fact]
-		public void read_backwards_empty() {
+		public async Task read_backwards_empty() {
 			var correlation = Guid.NewGuid();
 
-			var result = _sut.ReadBackwards(GenReadBackwards(correlation, fromEventNumber: 0, maxCount: 10));
+			_sut.TryGetReader(SystemStreams.NodeStateStream, out var reader);
+			var result = await reader.ReadBackwards(GenReadBackwards(correlation, fromEventNumber: 0, maxCount: 10), CancellationToken.None);
 
 			Assert.Equal(correlation, result.CorrelationId);
 			Assert.Equal(ReadStreamResult.NoStream, result.Result);
@@ -192,13 +196,14 @@ public class InMemoryStreamReaderTests {
 		}
 	}
 
-	public class ReadBackwardsTests : InMemoryStreamReaderTests {
+	public class ReadBackwardsTests : VirtualStreamReadersTests {
 		[Fact]
-		public void read_backwards() {
+		public async Task read_backwards() {
 			_listener.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			var correlation = Guid.NewGuid();
 
-			var result = _sut.ReadBackwards(GenReadBackwards(correlation, fromEventNumber: 0, maxCount: 10));
+			_sut.TryGetReader(SystemStreams.NodeStateStream, out var reader);
+			var result = await reader.ReadBackwards(GenReadBackwards(correlation, fromEventNumber: 0, maxCount: 10), CancellationToken.None);
 
 			Assert.Equal(correlation, result.CorrelationId);
 			Assert.Equal(ReadStreamResult.Success, result.Result);
@@ -217,11 +222,12 @@ public class InMemoryStreamReaderTests {
 		}
 
 		[Fact]
-		public void read_backwards_beyond_latest_event() {
+		public async Task read_backwards_beyond_latest_event() {
 			_listener.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			var correlation = Guid.NewGuid();
 
-			var result = _sut.ReadBackwards(GenReadBackwards(correlation, fromEventNumber: 5, maxCount: 10));
+			_sut.TryGetReader(SystemStreams.NodeStateStream, out var reader);
+			var result = await reader.ReadBackwards(GenReadBackwards(correlation, fromEventNumber: 5, maxCount: 10), CancellationToken.None);
 
 			Assert.Equal(correlation, result.CorrelationId);
 			Assert.Equal(ReadStreamResult.Success, result.Result);
@@ -240,7 +246,7 @@ public class InMemoryStreamReaderTests {
 		}
 
 		[Fact]
-		public void read_backwards_far_beyond_latest_event() {
+		public async Task read_backwards_far_beyond_latest_event() {
 			// we specify maxCount, not a lower event number, so it is acceptable in this case to either
 			// - find event 0 (like we do for regular stream forward maxAge reads if old events have been scavenged)
 			//   and reach the end of the stream (nextEventNumber == -1)
@@ -250,7 +256,8 @@ public class InMemoryStreamReaderTests {
 			_listener.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			var correlation = Guid.NewGuid();
 
-			var result = _sut.ReadBackwards(GenReadBackwards(correlation, fromEventNumber: 1000, maxCount: 10));
+			_sut.TryGetReader(SystemStreams.NodeStateStream, out var reader);
+			var result = await reader.ReadBackwards(GenReadBackwards(correlation, fromEventNumber: 1000, maxCount: 10), CancellationToken.None);
 
 			Assert.Equal(correlation, result.CorrelationId);
 			Assert.Equal(ReadStreamResult.Success, result.Result);
@@ -269,12 +276,13 @@ public class InMemoryStreamReaderTests {
 		}
 
 		[Fact]
-		public void read_backwards_below_latest_event() {
+		public async Task read_backwards_below_latest_event() {
 			_listener.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			_listener.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			var correlation = Guid.NewGuid();
 
-			var result = _sut.ReadBackwards(GenReadBackwards(correlation, fromEventNumber: 0, maxCount: 10));
+			_sut.TryGetReader(SystemStreams.NodeStateStream, out var reader);
+			var result = await reader.ReadBackwards(GenReadBackwards(correlation, fromEventNumber: 0, maxCount: 10), CancellationToken.None);
 
 			Assert.Equal(correlation, result.CorrelationId);
 			Assert.Equal(ReadStreamResult.Success, result.Result);

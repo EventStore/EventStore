@@ -1,51 +1,28 @@
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Dapper;
-using EventStore.Core.Metrics;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Duck.Default;
 
-public class DefaultIndex {
+public class DefaultIndex<TStreamId> {
 	readonly DuckDb _db;
-	readonly DefaultIndexHandler _handler;
+	readonly IReadIndex<TStreamId> _index;
 
-	public DefaultIndex(DuckDb db) {
+	public DefaultIndex(DuckDb db, IReadIndex<TStreamId> index) {
 		_db = db;
+		_index = index;
 		StreamIndex = new(db);
 		CategoryIndex = new(db);
 		EventTypeIndex = new(db);
-		CategoryIndexReader = new(CategoryIndex);
-		EventTypeIndexReader = new(EventTypeIndex);
-		_handler = new(db, this);
+		CategoryIndexReader = new(CategoryIndex, index);
+		EventTypeIndexReader = new(EventTypeIndex, index);
+		Handler = new(db, this);
+		DefaultIndexReader = new(_db, Handler, _index);
 	}
 
 	public void Init() {
 		CategoryIndex.Init();
 		EventTypeIndex.Init();
-		DefaultIndexReader = new(_db, _handler);
-	}
-
-	public bool IsIndexStream(string streamName) => streamName.StartsWith("$cat-") || streamName.StartsWith("$etype-") || streamName == "$everything";
-
-	internal bool TryGetReader(string streamName, out DuckIndexReader reader) {
-		if (streamName.StartsWith("$cat-")) {
-			reader = CategoryIndexReader;
-			return true;
-		}
-
-		if (streamName.StartsWith("$etype-")) {
-			reader = EventTypeIndexReader;
-			return true;
-		}
-
-		if (streamName == "$everything") {
-			reader = DefaultIndexReader;
-			return true;
-		}
-
-		reader = null;
-		return false;
 	}
 
 	public ulong? GetLastPosition() {
@@ -62,30 +39,11 @@ public class DefaultIndex {
 	internal CategoryIndex CategoryIndex;
 	internal EventTypeIndex EventTypeIndex;
 
-	internal readonly CategoryIndexReader CategoryIndexReader;
-	internal readonly EventTypeIndexReader EventTypeIndexReader;
-	internal DefaultIndexReader DefaultIndexReader;
+	internal readonly CategoryIndexReader<TStreamId> CategoryIndexReader;
+	internal readonly EventTypeIndexReader<TStreamId> EventTypeIndexReader;
+	internal DefaultIndexReader<TStreamId> DefaultIndexReader;
+
+	internal DefaultIndexHandler<TStreamId> Handler;
 }
 
 public record struct SequenceRecord(long Id, long Sequence);
-
-class DefaultIndexReader(DuckDb db, DefaultIndexHandler handler) : DuckIndexReader() {
-	protected override long GetId(string streamName) => 0;
-
-	protected override long GetLastNumber(long id) => (long)handler.GetLastPosition();
-
-	protected override IEnumerable<IndexedPrepare> GetIndexRecords(long _, long fromEventNumber, long toEventNumber) {
-		var range = QueryAll(fromEventNumber, toEventNumber);
-		var indexPrepares = range.Select(x => new IndexedPrepare(x.seq, x.stream, x.event_type, x.event_number, x.log_position));
-		return indexPrepares;
-	}
-
-	[MethodImpl(MethodImplOptions.Synchronized)]
-	List<AllRecord> QueryAll(long fromEventNumber, long toEventNumber) {
-		const string query = "select seq, log_position, event_number, event_type, stream from idx_all where seq>=$start and seq<=$end";
-
-		using var duration = TempIndexMetrics.MeasureIndex("duck_get_all_range");
-		var result = db.Connection.QueryWithRetry<AllRecord>(query, new { start = fromEventNumber, end = toEventNumber }).ToList();
-		return result;
-	}
-}

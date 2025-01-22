@@ -1615,27 +1615,16 @@ public static partial class ClientMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class SubscriptionConfirmation : Message {
-		public readonly Guid CorrelationId;
-		public readonly long LastIndexedPosition;
-		public readonly long? LastEventNumber;
-
-		public SubscriptionConfirmation(Guid correlationId, long lastIndexedPosition, long? lastEventNumber) {
-			CorrelationId = correlationId;
-			LastIndexedPosition = lastIndexedPosition;
-			LastEventNumber = lastEventNumber;
-		}
+	public partial class SubscriptionConfirmation(Guid correlationId, long lastIndexedPosition, long? lastEventNumber) : Message {
+		public readonly Guid CorrelationId = correlationId;
+		public readonly long LastIndexedPosition = lastIndexedPosition;
+		public readonly long? LastEventNumber = lastEventNumber;
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class StreamEventAppeared : Message {
-		public readonly Guid CorrelationId;
-		public readonly ResolvedEvent Event;
-
-		public StreamEventAppeared(Guid correlationId, ResolvedEvent @event) {
-			CorrelationId = correlationId;
-			Event = @event;
-		}
+	public partial class StreamEventAppeared(Guid correlationId, ResolvedEvent @event) : Message {
+		public readonly Guid CorrelationId = correlationId;
+		public readonly ResolvedEvent Event = @event;
 	}
 
 	[DerivedMessage(CoreMessage.Client)]

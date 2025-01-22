@@ -8,8 +8,8 @@ using Serilog;
 
 namespace EventStore.Core.Duck;
 
-public class IndexCheckpointStore(DefaultIndex defaultIndex, DefaultIndexHandler handler) : ICheckpointStore {
-	static readonly ILogger Log = Serilog.Log.ForContext<IndexCheckpointStore>();
+public class IndexCheckpointStore<TStreamId>(DefaultIndex<TStreamId> defaultIndex, DefaultIndexHandler<TStreamId> handler) : ICheckpointStore {
+	static readonly ILogger Log = Serilog.Log.ForContext<IndexCheckpointStore<TStreamId>>();
 
 	public ValueTask<Checkpoint> GetLastCheckpoint(string checkpointId, CancellationToken cancellationToken) {
 		var lastPosition = defaultIndex.GetLastPosition();
@@ -18,6 +18,8 @@ public class IndexCheckpointStore(DefaultIndex defaultIndex, DefaultIndexHandler
 	}
 
 	public async ValueTask<Checkpoint> StoreCheckpoint(Checkpoint checkpoint, bool force, CancellationToken cancellationToken) {
+		if (!handler.NeedsCommitting) return checkpoint;
+
 		while (true) {
 			try {
 				handler.Commit();

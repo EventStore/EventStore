@@ -10,8 +10,6 @@ using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Duck;
-using EventStore.Core.Duck.Default;
 using EventStore.Core.Exceptions;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.InMemory;
@@ -38,9 +36,8 @@ public class StorageReaderWorker<TStreamId>(
 	IReadIndex<TStreamId> readIndex,
 	ISystemStreamLookup<TStreamId> systemStreams,
 	IReadOnlyCheckpoint writerCheckpoint,
-	IInMemoryStreamReader inMemReader,
-	int queueId,
-	DefaultIndex defaultIndex)
+	VirtualStreamReaders inMemReaders,
+	int queueId)
 	:
 		StorageReaderWorker,
 		IAsyncHandle<ReadEvent>,
@@ -102,9 +99,13 @@ public class StorageReaderWorker<TStreamId>(
 			return;
 		}
 
+		using var _ = TempIndexMetrics.MeasureRead("read_stream_forward");
+
 		ReadStreamEventsForwardCompleted res;
 		using (token.LinkTo(msg.CancellationToken)) {
-			res = SystemStreams.IsInMemoryStream(msg.EventStreamId) ? inMemReader.ReadForwards(msg) : await ReadStreamEventsForward(msg, token);
+			res = inMemReaders.TryGetReader(msg.EventStreamId, out var virtualReader)
+				? await virtualReader.ReadForwards(msg, token)
+				: await ReadStreamEventsForward(msg, token);
 		}
 
 		switch (res.Result) {
@@ -140,8 +141,11 @@ public class StorageReaderWorker<TStreamId>(
 			return;
 		}
 
+		using var _ = TempIndexMetrics.MeasureRead("read_stream_backward");
 		using var cts = token.LinkTo(msg.CancellationToken);
-		var res = SystemStreams.IsInMemoryStream(msg.EventStreamId) ? inMemReader.ReadBackwards(msg) : await ReadStreamEventsBackward(msg, token);
+		var res = inMemReaders.TryGetReader(msg.EventStreamId, out var virtualReader)
+			? await virtualReader.ReadBackwards(msg, token)
+			: await ReadStreamEventsBackward(msg, token);
 
 		msg.Envelope.ReplyWith(res);
 	}
@@ -334,13 +338,7 @@ public class StorageReaderWorker<TStreamId>(
 				throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
 			}
 
-			using var _ = TempIndexMetrics.MeasureRead("read_stream_forward");
-
 			var streamName = msg.EventStreamId;
-			if (defaultIndex.TryGetReader(streamName, out var indexReader)) {
-				return await indexReader.ReadForwards(msg, _readIndex.IndexReader, lastIndexPosition, token);
-			}
-
 			var streamId = _readIndex.GetStreamId(streamName);
 			if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
 				return NoData(msg, ReadStreamResult.NotModified, lastIndexPosition, msg.ValidationStreamVersion.Value);
@@ -376,19 +374,7 @@ public class StorageReaderWorker<TStreamId>(
 				throw new ArgumentException($"Read size too big, should be less than {MaxPageSize} items");
 			}
 
-			using var _ = TempIndexMetrics.MeasureRead("read_stream_backward");
-
 			var streamName = msg.EventStreamId;
-			if (msg.EventStreamId.StartsWith("$cat-")) {
-				return await defaultIndex.CategoryIndexReader.ReadBackwards(msg, _readIndex.IndexReader, lastIndexedPosition, token);
-			}
-			if (msg.EventStreamId.StartsWith("$etype-")) {
-				return await defaultIndex.EventTypeIndexReader.ReadBackwards(msg, _readIndex.IndexReader, lastIndexedPosition, token);
-			}
-			if (msg.EventStreamId == "$everything") {
-				return await defaultIndex.DefaultIndexReader.ReadBackwards(msg, _readIndex.IndexReader, lastIndexedPosition, token);
-			}
-
 			var streamId = _readIndex.GetStreamId(msg.EventStreamId);
 			if (msg.ValidationStreamVersion.HasValue && await _readIndex.GetStreamLastEventNumber(streamId, token) == msg.ValidationStreamVersion)
 				return NoData(msg, ReadStreamResult.NotModified, lastIndexedPosition, msg.ValidationStreamVersion.Value);

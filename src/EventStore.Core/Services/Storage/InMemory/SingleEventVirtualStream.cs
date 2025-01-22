@@ -2,33 +2,24 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.LogRecords;
+using static EventStore.Core.Messages.ClientMessage;
 
 namespace EventStore.Core.Services.Storage.InMemory;
 
 // threading: we expect to handle one Write at a time, but Reads can happen concurrently
 // with the write and with other reads.
-public class SingleEventInMemoryStream : IInMemoryStreamReader {
-	private readonly IPublisher _publisher;
-	private readonly InMemoryLog _memLog;
-	private readonly string _streamName;
+public class SingleEventVirtualStream(IPublisher publisher, InMemoryLog memLog, string streamName) : IVirtualStreamReader {
 	private const PrepareFlags Flags = PrepareFlags.Data | PrepareFlags.IsCommitted | PrepareFlags.IsJson;
-	private long _eventNumber;
+	private long _eventNumber = 0;
 	private EventRecord _lastEvent;
 
-	public SingleEventInMemoryStream(IPublisher publisher, InMemoryLog memLog, string streamName) {
-		_publisher = publisher;
-		_eventNumber = 0;
-		_memLog = memLog;
-		_streamName = streamName;
-	}
-
-	public ClientMessage.ReadStreamEventsForwardCompleted ReadForwards(
-		ClientMessage.ReadStreamEventsForward msg) {
-
+	public ValueTask<ReadStreamEventsForwardCompleted> ReadForwards(ReadStreamEventsForward msg, CancellationToken token) {
 		ReadStreamResult result;
 		ResolvedEvent[] events;
 		long nextEventNumber, lastEventNumber;
@@ -54,7 +45,7 @@ public class SingleEventInMemoryStream : IInMemoryStreamReader {
 			}
 		}
 
-		return new ClientMessage.ReadStreamEventsForwardCompleted(
+		return ValueTask.FromResult(new ReadStreamEventsForwardCompleted(
 			msg.CorrelationId,
 			msg.EventStreamId,
 			msg.FromEventNumber,
@@ -67,12 +58,10 @@ public class SingleEventInMemoryStream : IInMemoryStreamReader {
 			nextEventNumber: nextEventNumber,
 			lastEventNumber: lastEventNumber,
 			isEndOfStream: true,
-			tfLastCommitPosition: _memLog.GetLastCommitPosition());
+			tfLastCommitPosition: memLog.GetLastCommitPosition()));
 	}
 
-	public ClientMessage.ReadStreamEventsBackwardCompleted ReadBackwards(
-		ClientMessage.ReadStreamEventsBackward msg) {
-
+	public ValueTask<ReadStreamEventsBackwardCompleted> ReadBackwards(ReadStreamEventsBackward msg, CancellationToken token) {
 		ReadStreamResult result;
 		ResolvedEvent[] events;
 		long adjustedFromEventNumber, lastEventNumber;
@@ -100,7 +89,7 @@ public class SingleEventInMemoryStream : IInMemoryStreamReader {
 			}
 		}
 
-		return new ClientMessage.ReadStreamEventsBackwardCompleted(
+		return ValueTask.FromResult(new ReadStreamEventsBackwardCompleted(
 			correlationId: msg.CorrelationId,
 			eventStreamId: msg.EventStreamId,
 			fromEventNumber: adjustedFromEventNumber,
@@ -113,18 +102,27 @@ public class SingleEventInMemoryStream : IInMemoryStreamReader {
 			nextEventNumber: -1,
 			lastEventNumber: lastEventNumber,
 			isEndOfStream: true,
-			tfLastCommitPosition: _memLog.GetLastCommitPosition());
+			tfLastCommitPosition: memLog.GetLastCommitPosition()));
 	}
 
+	public ValueTask<long> GetLastEventNumber(string streamId) {
+		var lastNumber = _lastEvent?.EventNumber ?? -1;
+		return ValueTask.FromResult(lastNumber);
+	}
+
+	public ValueTask<long> GetLastIndexedPosition() => ValueTask.FromResult(-1L);
+
+	public bool OwnStream(string streamId) => streamId == streamName;
+
 	public void Write(string eventType, ReadOnlyMemory<byte> data) {
-		var commitPosition = _memLog.GetNextCommitPosition();
+		var commitPosition = memLog.GetNextCommitPosition();
 		var prepare = new PrepareLogRecord(
 			logPosition: commitPosition,
 			correlationId: Guid.NewGuid(),
 			eventId: Guid.NewGuid(),
 			transactionPosition: commitPosition,
 			transactionOffset: 0,
-			eventStreamId: _streamName,
+			eventStreamId: streamName,
 			eventStreamIdSize: null,
 			expectedVersion: _eventNumber - 1,
 			timeStamp: DateTime.Now,
@@ -133,8 +131,8 @@ public class SingleEventInMemoryStream : IInMemoryStreamReader {
 			eventTypeSize: null,
 			data: data,
 			metadata: Array.Empty<byte>());
-		_lastEvent = new EventRecord(_eventNumber, prepare, _streamName, eventType);
-		_publisher.Publish(new StorageMessage.InMemoryEventCommitted(commitPosition, _lastEvent));
+		_lastEvent = new EventRecord(_eventNumber, prepare, streamName, eventType);
+		publisher.Publish(new StorageMessage.InMemoryEventCommitted(commitPosition, _lastEvent));
 		_eventNumber++;
 	}
 }

@@ -3,40 +3,36 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using static EventStore.Core.Messages.ClientMessage;
 
 namespace EventStore.Core.Services.Storage.InMemory;
 
 // threading: we expect to handle one StateChangeMessage at a time, but Reads can happen concurrently
 // with those handlings and with other reads.
-public class NodeStateListenerService :
-	IInMemoryStreamReader,
-	IHandle<SystemMessage.StateChangeMessage> {
-
-	private readonly SingleEventInMemoryStream _stream;
+public class NodeStateListenerService(IPublisher publisher, InMemoryLog memLog) : IHandle<SystemMessage.StateChangeMessage> {
+	public SingleEventVirtualStream Stream { get; } = new(publisher, memLog, SystemStreams.NodeStateStream);
 
 	public const string EventType = "$NodeStateChanged";
 
-	private readonly JsonSerializerOptions _options = new() {
-		Converters = {
-			new JsonStringEnumConverter(),
-		},
-	};
-
-	public NodeStateListenerService(IPublisher publisher, InMemoryLog memLog) {
-		_stream = new(publisher, memLog, SystemStreams.NodeStateStream);
-	}
+	private readonly JsonSerializerOptions _options = new() { Converters = { new JsonStringEnumConverter() } };
 
 	public void Handle(SystemMessage.StateChangeMessage message) {
 		var payload = new { message.State };
 		var data = JsonSerializer.SerializeToUtf8Bytes(payload, _options);
-		_stream.Write(EventType, data);
+		Stream.Write(EventType, data);
 	}
 
-	public ClientMessage.ReadStreamEventsForwardCompleted ReadForwards(
-		ClientMessage.ReadStreamEventsForward msg) => _stream.ReadForwards(msg);
+	public ValueTask<ReadStreamEventsForwardCompleted> ReadForwards(ReadStreamEventsForward msg, CancellationToken token)
+		=> Stream.ReadForwards(msg, token);
 
-	public ClientMessage.ReadStreamEventsBackwardCompleted ReadBackwards(
-		ClientMessage.ReadStreamEventsBackward msg) => _stream.ReadBackwards(msg);
+	public ValueTask<ReadStreamEventsBackwardCompleted> ReadBackwards(ReadStreamEventsBackward msg, CancellationToken token)
+		=> Stream.ReadBackwards(msg, token);
+
+	public ValueTask<long> GetLastEventNumber(string streamId) => Stream.GetLastEventNumber(streamId);
+
+	public bool OwnStream(string streamId) => Stream.OwnStream(streamId);
 }

@@ -4,77 +4,50 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage;
+using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.LogCommon;
 using static EventStore.Core.Messages.ClientMessage;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Duck;
 
-public record struct IndexedPrepare(long Version, long StreamId, long EventType, int EventNumber, long LogPosition);
+public record struct IndexedPrepare(long Version, int EventNumber, long LogPosition);
 
-abstract class DuckIndexReader() {
+abstract class DuckIndexReader<TStreamId>(IReadIndex<TStreamId> index) : IVirtualStreamReader {
 	protected abstract long GetId(string streamName);
 
 	protected abstract long GetLastNumber(long id);
 
 	protected abstract IEnumerable<IndexedPrepare> GetIndexRecords(long id, long fromEventNumber, long toEventNumber);
 
-	public async ValueTask<IReadOnlyList<ResolvedEvent>> GetEvents<TStreamId>(IIndexReader<TStreamId> index, long id, long fromEventNumber, long toEventNumber,
+	public async ValueTask<ReadStreamEventsForwardCompleted> ReadForwards(ReadStreamEventsForward msg, CancellationToken token) {
+		return await ReadForwards(msg, index.IndexReader, index.LastIndexedPosition, token);
+	}
+
+	public async ValueTask<ReadStreamEventsBackwardCompleted> ReadBackwards(ReadStreamEventsBackward msg, CancellationToken token) {
+		return await ReadBackwards(msg, index.IndexReader, index.LastIndexedPosition, token);
+	}
+
+	async ValueTask<IReadOnlyList<ResolvedEvent>> GetEvents(IIndexReader<TStreamId> indexReader, long id, long fromEventNumber, long toEventNumber,
 		CancellationToken cancellationToken) {
 		var indexPrepares = GetIndexRecords(id, fromEventNumber, toEventNumber);
-		using var reader = index.BorrowReader();
-		var readPrepares = indexPrepares.Select(async x => (Record: x, Prepare: await ReadPrepare(x.LogPosition, cancellationToken)));
-		var prepared = await Task.WhenAll(readPrepares);
-		var recordsQuery = prepared.Where(x => x.Prepare != null).OrderBy(x => x.Record.Version).ToList();
-		var records = recordsQuery
-			.Select(x => (Record: x, StreamName: x.Prepare.EventStreamId.ToString()))
-			.Select(x => ResolvedEvent.ForResolvedLink(
-				new(x.Record.Record.EventNumber, x.Record.Prepare, x.StreamName, x.Record.Prepare.EventType.ToString()),
-				new(
-					x.Record.Record.Version,
-					x.Record.Prepare.LogPosition,
-					x.Record.Prepare.CorrelationId,
-					x.Record.Prepare.EventId,
-					x.Record.Prepare.TransactionPosition,
-					x.Record.Prepare.TransactionOffset,
-					x.StreamName,
-					x.Record.Record.Version,
-					x.Record.Prepare.TimeStamp,
-					x.Record.Prepare.Flags,
-					"$>",
-					Encoding.UTF8.GetBytes($"{x.Record.Record.EventNumber}@{x.StreamName}"),
-					[]
-				))
-			);
-		var result = records.ToList();
-		return result;
-
-		async ValueTask<IPrepareLogRecord<TStreamId>> ReadPrepare(long logPosition, CancellationToken ct) {
-			var r = await reader.TryReadAt(logPosition, couldBeScavenged: true, ct);
-			if (!r.Success)
-				return null;
-
-			if (r.LogRecord.RecordType is not LogRecordType.Prepare
-			    and not LogRecordType.Stream
-			    and not LogRecordType.EventType)
-				throw new($"Incorrect type of log record {r.LogRecord.RecordType}, expected Prepare record.");
-			return (IPrepareLogRecord<TStreamId>)r.LogRecord;
-		}
+		return await indexReader.ReadRecords(indexPrepares, cancellationToken);
 	}
 
-	public long GetLastEventNumber(string streamName) {
+	public ValueTask<long> GetLastEventNumber(string streamName) {
 		var id = GetId(streamName);
-		return GetLastNumber(id);
+		return ValueTask.FromResult(GetLastNumber(id));
 	}
 
-	public async Task<ReadStreamEventsBackwardCompleted> ReadBackwards<TStreamId>(
+	public abstract ValueTask<long> GetLastIndexedPosition();
+
+	public abstract bool OwnStream(string streamId);
+
+	async Task<ReadStreamEventsBackwardCompleted> ReadBackwards(
 		ReadStreamEventsBackward msg, IIndexReader<TStreamId> reader, long lastIndexedPosition, CancellationToken token
 	) {
 		var id = GetId(msg.EventStreamId);
@@ -101,7 +74,7 @@ abstract class DuckIndexReader() {
 			nextEventNumber, lastEventNumber, isEndOfStream, lastIndexedPosition);
 	}
 
-	public async Task<ReadStreamEventsForwardCompleted> ReadForwards<TStreamId>(
+	async Task<ReadStreamEventsForwardCompleted> ReadForwards(
 		ReadStreamEventsForward msg, IIndexReader<TStreamId> reader, long lastIndexedPosition, CancellationToken token
 	) {
 		var id = GetId(msg.EventStreamId);

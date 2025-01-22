@@ -744,20 +744,21 @@ public class ClusterVNode<TStreamId> :
 		var nodeStatusListener = new NodeStateListenerService(_mainQueue, memLog);
 		_mainBus.Subscribe<SystemMessage.StateChangeMessage>(nodeStatusListener);
 
-		var inMemReader = new InMemoryStreamReader(new Dictionary<string, IInMemoryStreamReader> {
-			[SystemStreams.GossipStream] = gossipListener,
-			[SystemStreams.NodeStateStream] = nodeStatusListener,
-		});
-
-		var indexBuilder = new DuckDbIndexBuilder(dbConfig, _mainQueue);
+		var indexBuilder = new DuckDbIndexBuilder<TStreamId>(dbConfig, _mainQueue, readIndex);
 		_mainBus.Subscribe<SystemMessage.SystemReady>(indexBuilder);
 		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(indexBuilder);
 
+		var inMemReader = new VirtualStreamReaders([
+			gossipListener.Stream,
+			nodeStatusListener.Stream,
+			indexBuilder.DefaultIndex.DefaultIndexReader,
+			indexBuilder.DefaultIndex.CategoryIndexReader,
+			indexBuilder.DefaultIndex.EventTypeIndexReader
+		]);
+
 		// Storage Reader
-		var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
-			logFormat.SystemStreams,
-			readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), inMemReader, _queueStatsManager,
-			trackers.QueueTrackers, indexBuilder.DefaultIndex);
+		var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex, logFormat.SystemStreams,
+			readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), inMemReader, _queueStatsManager, trackers.QueueTrackers);
 
 		_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
 		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
@@ -1120,7 +1121,7 @@ public class ClusterVNode<TStreamId> :
 		_mainBus.Subscribe<StorageMessage.EventCommitted>(subscrQueue);
 		_mainBus.Subscribe<StorageMessage.InMemoryEventCommitted>(subscrQueue);
 
-		var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, _authorizationProvider, readIndex, inMemReader, indexBuilder.DefaultIndex);
+		var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, _authorizationProvider, readIndex, inMemReader);
 		subscrBus.Subscribe<SystemMessage.SystemStart>(subscription);
 		subscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(subscription);
 		subscrBus.Subscribe<TcpMessage.ConnectionClosed>(subscription);
@@ -1624,7 +1625,7 @@ public class ClusterVNode<TStreamId> :
 			// start the main queue as we publish messages to it while opening the db
 			AddTask(_controller.Start());
 
-			using (var task = Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads,createNewChunks: false).AsTask()) {
+			using (var task = Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads, createNewChunks: false).AsTask()) {
 				task.Wait(); // No timeout or cancellation, this is intended
 			}
 

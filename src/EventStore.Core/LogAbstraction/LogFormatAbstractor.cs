@@ -12,7 +12,7 @@ using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
-using LogV3StreamId = System.UInt32;
+using LogV3StreamId = uint;
 
 namespace EventStore.Core.LogAbstraction;
 
@@ -108,7 +108,7 @@ public class LogV3FormatAbstractorFactory : ILogFormatAbstractorFactory<LogV3Str
 	public LogFormatAbstractor<LogV3StreamId> Create(LogFormatAbstractorOptions options) {
 		var metastreams = new LogV3Metastreams();
 		var recordFactory = new LogV3RecordFactory();
-		
+
 		var streamNameIndexPersistence = GenStreamNameIndexPersistence(options);
 		var streamExistenceFilter = GenStreamExistenceFilter(options);
 		var streamNameIndex = GenStreamNameIndex(streamExistenceFilter, streamNameIndexPersistence, metastreams);
@@ -119,7 +119,7 @@ public class LogV3FormatAbstractorFactory : ILogFormatAbstractorFactory<LogV3Str
 
 		var eventTypeIndexPersistence = GenEventTypeIndexPersistence(options);
 		var eventTypeIndex = GenEventTypeIndex(eventTypeIndexPersistence);
-		
+
 		var abstractor = new LogFormatAbstractor<LogV3StreamId>(
 			lowHasher: new IdentityLowHasher(),
 			highHasher: new IdentityHighHasher(),
@@ -256,7 +256,7 @@ public class LogFormatAbstractor<TStreamId> : IDisposable {
 		IRecordFactory<TStreamId> recordFactory,
 		bool supportsExplicitTransactions,
 		Func<ITransactionFileReader,ITransactionFileWriter,IPartitionManager> partitionManagerFactory) {
-		
+
 		_partitionManagerFactory = partitionManagerFactory;
 
 		LowHasher = lowHasher;
@@ -308,7 +308,7 @@ public class LogFormatAbstractor<TStreamId> : IDisposable {
 	public ISystemStreamLookup<TStreamId> SystemStreams => StreamNamesProvider.SystemStreams;
 	public INameExistenceFilterInitializer StreamExistenceFilterInitializer => StreamNamesProvider.StreamExistenceFilterInitializer;
 	public bool SupportsExplicitTransactions { get; }
-	
+
 	public IPartitionManager CreatePartitionManager(ITransactionFileReader reader, ITransactionFileWriter writer) {
 		return _partitionManagerFactory(reader, writer);
 	}
