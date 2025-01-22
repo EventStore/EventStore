@@ -15,7 +15,7 @@ public class ArchiveOptions {
 
 public enum StorageType {
 	Unspecified,
-	FileSystem,
+	FileSystem, // development purposes only
 	S3,
 }
 

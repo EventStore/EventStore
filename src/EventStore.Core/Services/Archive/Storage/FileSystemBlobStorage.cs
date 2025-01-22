@@ -11,6 +11,10 @@ using DotNext.IO;
 namespace EventStore.Core.Services.Archive.Storage;
 
 public class FileSystemBlobStorage : IBlobStorage {
+	// is there a reasonable way to detect that the underlying file has been replaced by
+	// another process? what happens to existing handles likely varies a lot between os/fs
+	// implementations. for now let's keep file system blob storage for development purposes.
+	private static readonly string ETag = "none";
 	private static readonly SearchValues<char> InvalidFileNameChars = SearchValues.Create(Path.GetInvalidFileNameChars());
 
 	private readonly string _archivePath;
@@ -25,12 +29,13 @@ public class FileSystemBlobStorage : IBlobStorage {
 		};
 	}
 
-	public async ValueTask<int> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken ct) {
+	public async ValueTask<(int, string)> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken ct) {
 		var targetPath = Path.Combine(_archivePath, name);
 		using var handle = File.OpenHandle(targetPath, _fileStreamOptions.Mode, _fileStreamOptions.Access,
 			_fileStreamOptions.Share,
 			_fileStreamOptions.Options);
-		return await RandomAccess.ReadAsync(handle, buffer, offset, ct);
+		var readCount = await RandomAccess.ReadAsync(handle, buffer, offset, ct);
+		return (readCount, ETag);
 	}
 
 	public ValueTask<BlobMetadata> GetMetadataAsync(string name, CancellationToken token) {
@@ -40,7 +45,9 @@ public class FileSystemBlobStorage : IBlobStorage {
 		} else {
 			try {
 				var targetPath = Path.Combine(_archivePath, name);
-				task = ValueTask.FromResult<BlobMetadata>(new(Size: new FileInfo(targetPath).Length));
+				task = ValueTask.FromResult<BlobMetadata>(new(
+					Size: new FileInfo(targetPath).Length,
+					ETag: ETag));
 			} catch (Exception e) {
 				task = ValueTask.FromException<BlobMetadata>(e);
 			}

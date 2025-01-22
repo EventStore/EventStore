@@ -18,24 +18,25 @@ namespace EventStore.Core.XUnit.Tests.Scavenge.Infrastructure;
 // This is used by the scavenge tests, which are not concerned with the contents of the chunks in the
 // archive because the scavenge is not responsible for populating the archive.
 class ArchiveReaderEmptyChunks(long chunkSize, long chunksInArchive) : IArchiveStorageReader {
+	const string ETag = "none";
 	const int FileSize = TFConsts.ChunkHeaderSize + TFConsts.ChunkFooterSize;
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) => new(chunkSize * chunksInArchive);
 
 	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) =>
-		ValueTask.FromResult<ArchivedChunkMetadata>(new(PhysicalSize: FileSize));
+		ValueTask.FromResult<ArchivedChunkMetadata>(new(PhysicalSize: FileSize, ETag: ETag));
 
-	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
+	public ValueTask<(int, string)> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
 		if (ct.IsCancellationRequested)
-			return ValueTask.FromCanceled<int>(ct);
+			return ValueTask.FromCanceled<(int, string)>(ct);
 		try {
 			return ValueTask.FromResult(Read(logicalChunkNumber, buffer, offset));
 		} catch (Exception ex) {
-			return ValueTask.FromException<int>(ex);
+			return ValueTask.FromException<(int, string)>(ex);
 		}
 	}
 
-	private int Read(int logicalChunkNumber, Memory<byte> buffer, long offset) {
+	private (int, string) Read(int logicalChunkNumber, Memory<byte> buffer, long offset) {
 		if (logicalChunkNumber >= chunksInArchive)
 			throw new InvalidOperationException();
 
@@ -62,6 +63,6 @@ class ArchiveReaderEmptyChunks(long chunkSize, long chunksInArchive) : IArchiveS
 		writer.Write(footer);
 
 		wholeChunkFile.Span[(int)offset..].CopyTo(buffer.Span, out var writtenCount);
-		return writtenCount;
+		return (writtenCount, ETag);
 	}
 }

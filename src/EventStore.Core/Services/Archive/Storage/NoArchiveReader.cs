@@ -17,8 +17,8 @@ public class NoArchiveReader : IArchiveStorageReader {
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) =>
 		ValueTask.FromResult<long>(0);
 
-	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) =>
-		ValueTask.FromException<int>(new ChunkDeletedException());
+	public ValueTask<(int, string)> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) =>
+		ValueTask.FromException<(int, string)>(new ChunkDeletedException());
 
 	public ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token) =>
 		ValueTask.FromException<ArchivedChunkMetadata>(new ChunkDeletedException());

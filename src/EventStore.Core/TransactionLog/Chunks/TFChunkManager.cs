@@ -506,6 +506,56 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		}
 	}
 
+	//qq we can use an approach like this to replace the whole TFChunk instance when the remote blob changes
+	// as opposed to replacing something at a lower level (just the handle and the stream that reads it?)
+	// the lower level approach seems preferable if it is practical because:
+	// 1. it involves less machinery
+	// 2. it'll be cheaper than replacing the whole TFChunk instances (and we'll be replacing a bunch)
+	// 3. the chunk comes with the advantage that it knows when the readers have been returned and it can clean up
+	//       but i think this might end up being a marginal advantage. and if we don't use it for this then
+	//       it'll be easier if we want to change the chunk internals later
+	// 4. if we replace the whole chunk, we might find that there are more places that need to be able to
+	//    detect and replace the chunk due to failed handles, which will widen the impact.
+	//
+	// BUT the problem with the lower level approach is that
+	// - we can't easily just refresh the workitem, we'd need some way to ensure that users get a consistent stream
+	// - when the user checks out a workitem from the chunk maybe it should
+
+	// lots of readers can report the same chunk broken, only instantiate the new chunk once.
+	public async ValueTask OnBrokenChunk(TFChunk.TFChunk chunk, CancellationToken token) {
+		//qq the chunk is broken
+
+		if (_chunks[chunk.ChunkHeader.ChunkStartNumber] != chunk) {
+			// someone else has already replaced the chunk, nothing for us to do.
+			return;
+		}
+
+		await _chunksLocker.AcquireAsync(token);
+		try {
+			if (_chunks[chunk.ChunkHeader.ChunkStartNumber] != chunk) {
+				// someone else has already replaced the chunk, nothing for us to do.
+			}
+
+			//qq we can get most of this from our member vars or the chunk itself.
+			var newChunk = await TFChunk.TFChunk.FromCompletedFile(
+				fileSystem: FileSystem,
+				filename: chunk.ChunkLocator,
+				verifyHash: false, //qq
+				unbufferedRead: false, //qq
+				tracker: _tracker,
+				getTransformFactory: null, //qq
+				reduceFileCachePressure: false, //qq
+				token: token);
+
+			//qq a bit awkward because this expects us not to acquire the lock.
+			// we could pass in a flag that indicates that we already hold the lock?
+			await SwitchInChunks([newChunk], removeChunksAfter: null, token);
+		}
+		finally {
+			_chunksLocker.Release();
+		}
+	}
+
 	public TFChunk.TFChunk GetChunkFor(long logPosition) {
 		var chunkNum = (int)(logPosition / _config.ChunkSize);
 		if (chunkNum < 0 || chunkNum >= _chunksCount)

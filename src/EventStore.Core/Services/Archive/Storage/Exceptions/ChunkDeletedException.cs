@@ -6,3 +6,7 @@ using System;
 namespace EventStore.Core.Services.Archive.Storage.Exceptions;
 
 public class ChunkDeletedException : Exception;
+
+//qq consider location. do we want to couple this to etags specifically? maybe rename to BrokenHandleException?
+public class WrongETagException(string objectName, string expected, string actual) : Exception(
+	$"Wrong ETag for \"{objectName}\". Expected \"{expected}\" but was \"{actual}\"");

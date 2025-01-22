@@ -326,6 +326,9 @@ public class ClusterVNode<TStreamId> :
 		IArchiveStorageReader archiveReader = NoArchiveReader.Instance;
 		var locatorCodec = new PrefixingLocatorCodec();
 		if (archiveOptions.Enabled) {
+			if (archiveOptions.StorageType == StorageType.FileSystem) {
+				//qq log/throw
+			}
 			var archive = ArchiveStorageFactory.Create(
 				options: archiveOptions,
 				chunkNameResolver: new ArchiveChunkNameResolver(namingStrategy));

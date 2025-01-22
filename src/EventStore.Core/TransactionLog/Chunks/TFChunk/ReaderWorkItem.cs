@@ -4,6 +4,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using DotNext;
 using DotNext.Buffers;
 using DotNext.IO;
@@ -12,48 +14,85 @@ using static DotNext.Runtime.Intrinsics;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
+// This is not thread safe. A pooling mechanism in TFChunk ensures that the ReaderWorkItem
+// is used by only one thread at a time.
 internal sealed class ReaderWorkItem : Disposable {
 	private const int BufferSize = 4096;
+	public delegate ValueTask<IChunkHandle> ChunkHandleRefresher(IChunkHandle oldHandle, CancellationToken token);
 
 	// if item was taken from the pool, the field contains position within the array (>= 0)
 	private readonly int _positionInPool = -1;
-	public readonly ChunkDataReadStream BaseStream;
+	private readonly IChunkReadTransform _chunkReadTransform;
+	private readonly ChunkHandleRefresher _refresher;
 	private readonly bool _leaveOpen;
-	private readonly IBufferedReader _cachedReader;
 
-	private ReaderWorkItem(ChunkDataReadStream stream, bool leaveOpen) {
-		Debug.Assert(stream is not null);
+	private IChunkHandle _handle;
+	private IBufferedReader _cachedReader;
+	private ChunkDataReadStream _baseStream;
 
+	public ChunkDataReadStream BaseStream {
+		get => _baseStream;
+		set {
+			Debug.Assert(value is not null);
+
+			_baseStream = value;
+
+			// Access to the internal buffer of 'PoolingBufferedStream' is only allowed
+			// when the top-level stream doesn't perform any transformations. Otherwise,
+			// the buffer contains untransformed bytes that cannot be accessed directly.
+			_cachedReader = IsExactTypeOf<ChunkDataReadStream>(BaseStream)
+							&& BaseStream.ChunkFileStream is PoolingBufferedStream bufferedStream
+				? bufferedStream
+				: null;
+		}
+	}
+
+	private ReaderWorkItem(IChunkReadTransform chunkReadTransform, bool leaveOpen) {
+		_chunkReadTransform = chunkReadTransform;
 		_leaveOpen = leaveOpen;
-		BaseStream = stream;
-
-		// Access to the internal buffer of 'PoolingBufferedStream' is only allowed
-		// when the top-level stream doesn't perform any transformations. Otherwise,
-		// the buffer contains untransformed bytes that cannot be accessed directly.
-		_cachedReader = IsExactTypeOf<ChunkDataReadStream>(stream)
-		                && stream.ChunkFileStream is PoolingBufferedStream bufferedStream
-			? bufferedStream
-			: null;
 	}
 
 	public ReaderWorkItem(Stream sharedStream, IChunkReadTransform chunkReadTransform)
-		: this(CreateTransformedMemoryStream(sharedStream, chunkReadTransform), leaveOpen: true) {
+		: this(chunkReadTransform, leaveOpen: true) {
+
+		BaseStream = CreateTransformedMemoryStream(sharedStream);
 		IsMemory = true;
 	}
 
-	public ReaderWorkItem(IChunkHandle handle, IChunkReadTransform chunkReadTransform)
-		: this(CreateTransformedFileStream(handle, chunkReadTransform), leaveOpen: false) {
+	public ReaderWorkItem(IChunkHandle handle, ChunkHandleRefresher refresher, IChunkReadTransform chunkReadTransform)
+		: this(chunkReadTransform, leaveOpen: false) {
+
+		_handle = handle;
+		_refresher = refresher;
+		BaseStream = CreateTransformedFileStream();
 		IsMemory = false;
 	}
 
-	private static ChunkDataReadStream CreateTransformedMemoryStream(Stream memStream, IChunkReadTransform chunkReadTransform) {
-		return chunkReadTransform.TransformData(new ChunkDataReadStream(memStream));
+	//qq consider name
+	//qq call this when the stream has thrown an exception indicating that the handle has gone bad
+	// it grabs the latest handle and creates a new stream around it.
+	public async ValueTask Refresh(CancellationToken token) {
+		if (IsMemory)
+			throw new InvalidOperationException("Cannot refresh InMemory ReaderWorkItem");
+
+		if (!_leaveOpen) {
+			//qq check this, we do need to dispose the stream i think?
+			//qq what disposes the handle? not disposing this stream
+			BaseStream.Dispose();
+		}
+
+		// the handle we have got has gone bad, we need to get a new one.
+		_handle = await _refresher.Invoke(_handle, token);
+		BaseStream = CreateTransformedFileStream();
 	}
 
-	private static ChunkDataReadStream CreateTransformedFileStream(IChunkHandle handle,
-		IChunkReadTransform chunkReadTransform) {
-		var fileStream = new PoolingBufferedStream(handle.CreateStream()) { MaxBufferSize = BufferSize };
-		return chunkReadTransform.TransformData(new ChunkDataReadStream(fileStream));
+	private ChunkDataReadStream CreateTransformedMemoryStream(Stream memStream) {
+		return _chunkReadTransform.TransformData(new ChunkDataReadStream(memStream));
+	}
+
+	private ChunkDataReadStream CreateTransformedFileStream() {
+		var fileStream = new PoolingBufferedStream(_handle.CreateStream()) { MaxBufferSize = BufferSize };
+		return _chunkReadTransform.TransformData(new ChunkDataReadStream(fileStream));
 	}
 
 	public bool IsMemory { get; }
