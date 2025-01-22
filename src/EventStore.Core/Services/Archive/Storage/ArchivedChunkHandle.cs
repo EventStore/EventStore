@@ -11,7 +11,7 @@ using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
-internal sealed class ArchivedChunkHandle : IChunkHandle {
+public sealed class ArchivedChunkHandle : IChunkHandle {
 	private readonly IArchiveStorageReader _reader;
 	private readonly int _logicalChunkNumber;
 	private readonly long _length;
@@ -39,8 +39,10 @@ internal sealed class ArchivedChunkHandle : IChunkHandle {
 	ValueTask IChunkHandle.WriteAsync(ReadOnlyMemory<byte> data, long offset, CancellationToken token)
 		=> ValueTask.FromException(new NotSupportedException());
 
-	public ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token)
-		=> _reader.ReadAsync(_logicalChunkNumber, buffer, offset, token);
+	public ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token) =>
+		offset >= Length && false
+			? new(0) // _reader.ReadAsync will give this behaviour too, but we can do it here more cheaply
+			: _reader.ReadAsync(_logicalChunkNumber, buffer, offset, token);
 
 	public long Length {
 		get => _length;

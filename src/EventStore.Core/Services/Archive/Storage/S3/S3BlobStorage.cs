@@ -37,6 +37,9 @@ public class S3BlobStorage : IBlobStorage {
 	}
 
 	public async ValueTask<int> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken ct) {
+		if (buffer.IsEmpty)
+			return 0;
+
 		var request = new GetObjectRequest {
 			BucketName = _options.Bucket,
 			Key = name,
@@ -51,6 +54,8 @@ public class S3BlobStorage : IBlobStorage {
 			return length;
 		} catch (AmazonS3Exception ex) when (ex.ErrorCode is "NoSuchKey") {
 			throw new FileNotFoundException();
+		} catch (AmazonS3Exception ex) when (ex.ErrorCode is "InvalidRange") {
+			return 0;
 		}
 	}
 

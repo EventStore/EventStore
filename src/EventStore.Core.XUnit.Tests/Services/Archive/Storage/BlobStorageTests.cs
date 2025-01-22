@@ -14,6 +14,7 @@ using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
+// some of the behavior of the blob storage implementations is covered by ArchiveStorageTests.cs
 [Collection("ArchiveStorageTests")]
 public class BlobStorageTests : DirectoryPerTest<BlobStorageTests> {
 	protected const string AwsCliProfileName = "default";
