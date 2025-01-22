@@ -51,7 +51,6 @@ public class ArchiveStorageTests : ArchiveStorageTestsBase<ArchiveStorageTests> 
 		// read the uploaded chunk partially
 		var start = localContent.Length / 2;
 		var end = localContent.Length;
-		var length = end - start;
 		using var buffer = Memory.AllocateExactly<byte>(1048);
 		var read = await sut.ReadAsync(0, buffer.Memory, offset: start, CancellationToken.None);
 
