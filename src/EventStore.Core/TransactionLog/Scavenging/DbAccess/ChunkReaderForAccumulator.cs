@@ -20,7 +20,7 @@ public class ChunkReaderForAccumulator<TStreamId> : IChunkReaderForAccumulator<T
 	private readonly TFChunkManager _manager;
 	private readonly IMetastreamLookup<TStreamId> _metaStreamLookup;
 	private readonly IStreamIdConverter<TStreamId> _streamIdConverter;
-	private readonly ICheckpoint _replicationChk;
+	private readonly IReadOnlyCheckpoint _replicationChk;
 	private readonly int _chunkSize;
 
 	private readonly Func<int, byte[]> _getBuffer;
@@ -30,7 +30,7 @@ public class ChunkReaderForAccumulator<TStreamId> : IChunkReaderForAccumulator<T
 		TFChunkManager manager,
 		IMetastreamLookup<TStreamId> metastreamLookup,
 		IStreamIdConverter<TStreamId> streamIdConverter,
-		ICheckpoint replicationChk,
+		IReadOnlyCheckpoint replicationChk,
 		int chunkSize) {
 
 		_manager = manager;

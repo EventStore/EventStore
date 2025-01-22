@@ -13,8 +13,6 @@ using EventStore.Core.Metrics;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Scavenging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using Serilog;
 using Conf = EventStore.Common.Configuration.MetricsConfiguration;
 
@@ -73,7 +71,7 @@ public static class MetricsBootstrapper {
 		TFChunkDbConfig dbConfig,
 		Trackers trackers) {
 
-		LogConfig(conf);
+		OptionsFormatter.LogConfig("Metrics", conf);
 
 		MessageLabelConfigurator.ConfigureMessageLabels(
 			conf.MessageTypes, InMemoryBus.KnownMessageTypes);
@@ -330,19 +328,5 @@ public static class MetricsBootstrapper {
 			{ Conf.ProcessTracker.DiskReadOps, "read" },
 			{ Conf.ProcessTracker.DiskWrittenOps, "written" },
 		});
-	}
-
-	private static void LogConfig(Conf conf) {
-		var jsonSerializerSettings = new JsonSerializerSettings {
-			NullValueHandling = NullValueHandling.Ignore,
-		};
-		jsonSerializerSettings.Converters.Add(new StringEnumConverter());
-
-		var confJson = JsonConvert.SerializeObject(
-			conf,
-			Formatting.Indented,
-			jsonSerializerSettings);
-
-		Log.Information("Metrics Configuration: " + confJson);
 	}
 }

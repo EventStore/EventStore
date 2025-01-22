@@ -269,6 +269,7 @@ public class ClusterVNode<TStreamId> :
 #endif
 
 		var archiveOptions = configuration.GetSection($"{KurrentConfigurationKeys.Prefix}:Archive").Get<ArchiveOptions>() ?? new();
+		OptionsFormatter.LogConfig("Archive", archiveOptions);
 
 		var disableInternalTcpTls = options.Application.Insecure;
 		var disableExternalTcpTls = options.Application.Insecure;
@@ -1304,7 +1305,7 @@ public class ClusterVNode<TStreamId> :
 					Db.Manager,
 					logFormat.Metastreams,
 					logFormat.StreamIdConverter,
-					Db.Config.ReplicationCheckpoint,
+					Db.Config.ReplicationCheckpoint.AsReadOnly(),
 					TFConsts.ChunkSize),
 				index: new IndexReaderForAccumulator<TStreamId>(readIndex),
 				cancellationCheckPeriod: cancellationCheckPeriod,
