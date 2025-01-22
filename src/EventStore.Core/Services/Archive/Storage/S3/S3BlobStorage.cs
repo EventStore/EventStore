@@ -37,6 +37,8 @@ public class S3BlobStorage : IBlobStorage {
 	}
 
 	public async ValueTask<int> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken ct) {
+		ArgumentOutOfRangeException.ThrowIfNegative(offset);
+
 		var request = new GetObjectRequest {
 			BucketName = _options.Bucket,
 			Key = name,
@@ -45,12 +47,14 @@ public class S3BlobStorage : IBlobStorage {
 
 		try {
 			using var response = await _awsBlobStorage.NativeBlobClient.GetObjectAsync(request, ct);
-			var length = int.CreateSaturating(response.ContentLength);
+			buffer = buffer.TrimLength(int.CreateSaturating(response.ContentLength));
 			await using var responseStream = response.ResponseStream;
-			await responseStream.ReadExactlyAsync(buffer.TrimLength(length), ct);
-			return length;
+			await responseStream.ReadExactlyAsync(buffer, ct);
+			return buffer.Length;
 		} catch (AmazonS3Exception ex) when (ex.ErrorCode is "NoSuchKey") {
 			throw new FileNotFoundException();
+		} catch (AmazonS3Exception ex) when (ex.ErrorCode is "InvalidRange") {
+			return 0;
 		}
 	}
 
