@@ -104,6 +104,7 @@ public class ArchiveStorage(
 
 		static async Task WritePipeAsync(IChunkBlob source, PipeWriter destination, CancellationToken token) {
 			var reader = await source.AcquireRawReader(token);
+			reader.SetPosition(0L);
 			var error = default(Exception);
 			try {
 				await reader.CopyToAsync(destination, token);
