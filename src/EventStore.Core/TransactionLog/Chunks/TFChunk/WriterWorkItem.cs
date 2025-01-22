@@ -59,9 +59,8 @@ internal sealed class WriterWorkItem : Disposable {
 		return _fileStream?.WriteAsync(buf, token) ?? ValueTask.CompletedTask;
 	}
 
-	public void ResizeStream(long fileSize) {
+	public void ResizeFileStream(long fileSize) {
 		_fileStream?.SetLength(fileSize);
-		_memStream?.SetLength(fileSize);
 	}
 
 	protected override void Dispose(bool disposing) {
