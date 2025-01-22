@@ -40,7 +40,7 @@ public sealed class ArchivedChunkHandle : IChunkHandle {
 		=> ValueTask.FromException(new NotSupportedException());
 
 	public ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token) =>
-		offset >= Length && false
+		offset >= Length
 			? new(0) // _reader.ReadAsync will give this behaviour too, but we can do it here more cheaply
 			: _reader.ReadAsync(_logicalChunkNumber, buffer, offset, token);
 
