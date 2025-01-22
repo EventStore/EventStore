@@ -11,7 +11,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
-using Serilog;
 
 namespace EventStore.Core.Services.Archive.Archiver;
 
@@ -23,8 +22,6 @@ public sealed class ArchiverService :
 	IHandle<SystemMessage.BecomeShuttingDown>,
 	IAsyncDisposable
 {
-	private static readonly ILogger Log = Serilog.Log.ForContext<ArchiverService>();
-
 	private readonly IArchiveStorage _archive;
 	private readonly CancellationToken _lifetimeToken;
 	private readonly AsyncAutoResetEvent _archivingSignal;
@@ -65,7 +62,8 @@ public sealed class ArchiverService :
 		if (info.ChunkStartNumber == info.ChunkEndNumber) {
 			await _archive.StoreChunk(info.ChunkLocator, info.ChunkEndNumber, token);
 		} else {
-			// TODO: Not supported yet
+			// TODO: requires Unmerge support
+			throw new NotImplementedException();
 		}
 	}
 
