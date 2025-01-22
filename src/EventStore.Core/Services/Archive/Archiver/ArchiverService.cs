@@ -11,14 +11,13 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Archiver;
 
 public sealed class ArchiverService :
 	IHandle<SystemMessage.ChunkCompleted>,
-	IHandle<SystemMessage.ChunkSwitched>,
+	IAsyncHandle<SystemMessage.ChunkSwitched>,
 	IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 	IHandle<SystemMessage.SystemStart>,
 	IHandle<SystemMessage.BecomeShuttingDown>,
@@ -61,8 +60,13 @@ public sealed class ArchiverService :
 		_archivingSignal.Set();
 	}
 
-	public void Handle(SystemMessage.ChunkSwitched message) {
-		// TBD
+	public async ValueTask HandleAsync(SystemMessage.ChunkSwitched message, CancellationToken token) {
+		var info = message.ChunkInfo;
+		if (info.ChunkStartNumber == info.ChunkEndNumber) {
+			await _archive.StoreChunk(info.ChunkLocator, info.ChunkEndNumber, token);
+		} else {
+			// TODO: Not supported yet
+		}
 	}
 
 	public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
@@ -77,17 +81,13 @@ public sealed class ArchiverService :
 			var chunk = _chunkManager.GetChunkFor(checkpoint);
 			if (chunk.ChunkFooter is { IsCompleted: true } &&
 			    chunk.ChunkHeader.ChunkEndPosition <= Volatile.Read(in _replicationPosition)) {
-				await ArchiveChunkAsync(chunk, _lifetimeToken);
+				await _archive.StoreChunk(chunk.ChunkLocator, chunk.ChunkHeader.ChunkEndNumber, _lifetimeToken);
 				checkpoint = chunk.ChunkHeader.ChunkEndPosition;
 				await _archive.SetCheckpoint(checkpoint, _lifetimeToken);
 			} else {
 				await _archivingSignal.WaitAsync(_lifetimeToken);
 			}
 		}
-	}
-
-	private async ValueTask ArchiveChunkAsync(TFChunk chunk, CancellationToken token) {
-		await _archive.StoreChunk(chunk.ChunkLocator, chunk.ChunkHeader.ChunkEndNumber, token);
 	}
 
 	public void Handle(SystemMessage.BecomeShuttingDown message) {
