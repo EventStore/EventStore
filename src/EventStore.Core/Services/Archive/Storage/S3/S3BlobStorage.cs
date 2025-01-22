@@ -37,6 +37,8 @@ public class S3BlobStorage : IBlobStorage {
 	}
 
 	public async ValueTask<int> ReadAsync(string name, Memory<byte> buffer, long offset, CancellationToken ct) {
+		ArgumentOutOfRangeException.ThrowIfNegative(offset);
+
 		if (buffer.IsEmpty)
 			return 0;
 
