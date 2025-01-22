@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
@@ -9,6 +10,8 @@ using EventStore.Core.Services.Archive;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using Xunit;
 using DotNext.Buffers;
+using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
@@ -21,11 +24,11 @@ public class ArchiveStorageTests : ArchiveStorageTestsBase<ArchiveStorageTests> 
 		var sut = CreateSut(storageType);
 
 		// create a chunk and upload it
-		var chunkPath = CreateLocalChunk(0, 0);
-		await sut.StoreChunk(chunkPath, 0, CancellationToken.None);
+		await using var chunk = await CreateLocalChunk(0, 0);
+		await sut.StoreChunk(chunk, CancellationToken.None);
 
 		// read the local chunk
-		var localContent = await File.ReadAllBytesAsync(chunkPath);
+		var localContent = await chunk.ReadAllBytes();
 
 		// read the uploaded chunk
 		using var buffer = Memory.AllocateExactly<byte>(1000);
@@ -43,11 +46,11 @@ public class ArchiveStorageTests : ArchiveStorageTestsBase<ArchiveStorageTests> 
 		var sut = CreateSut(storageType);
 
 		// create a chunk and upload it
-		var chunkPath = CreateLocalChunk(0, 0);
-		await sut.StoreChunk(chunkPath, 0, CancellationToken.None);
+		await using var chunk = await CreateLocalChunk(0, 0);
+		await sut.StoreChunk(chunk, CancellationToken.None);
 
 		// read the local chunk
-		var localContent = await File.ReadAllBytesAsync(chunkPath);
+		var localContent = await chunk.ReadAllBytes();
 
 		// read the uploaded chunk partially
 		var start = localContent.Length / 2;
@@ -77,24 +80,14 @@ public class ArchiveStorageTests : ArchiveStorageTestsBase<ArchiveStorageTests> 
 	[StorageData.FileSystem]
 	public async Task can_store_a_chunk(StorageType storageType) {
 		var sut = CreateSut(storageType);
-		var localChunk = CreateLocalChunk(0, 0);
-		Assert.True(await sut.StoreChunk(localChunk, 0, CancellationToken.None));
+		await using var localChunk = await CreateLocalChunk(0, 0);
+		Assert.True(await sut.StoreChunk(localChunk, CancellationToken.None));
 
-		var localChunkContent = await File.ReadAllBytesAsync(localChunk);
+		var localChunkContent = await localChunk.ReadAllBytes();
 
 		using var buffer = Memory.AllocateExactly<byte>(1000);
 		await sut.ReadAsync(0, buffer.Memory, offset: 0, CancellationToken.None);
 		Assert.Equal(localChunkContent, buffer.Memory.ToArray());
-	}
-
-	[Theory]
-	[StorageData.S3]
-	[StorageData.FileSystem]
-	public async Task throws_chunk_deleted_exception_if_local_chunk_doesnt_exist(StorageType storageType) {
-		var sut = CreateSut(storageType);
-		var localChunk = CreateLocalChunk(0, 0);
-		File.Delete(localChunk);
-		await Assert.ThrowsAsync<ChunkDeletedException>(async () => await sut.StoreChunk(localChunk, 0, CancellationToken.None));
 	}
 
 	[Theory]

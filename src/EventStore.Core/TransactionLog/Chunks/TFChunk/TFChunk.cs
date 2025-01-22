@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
 using DotNext.Collections.Concurrent;
+using DotNext.Collections.Generic;
 using DotNext.Diagnostics;
 using DotNext.IO;
 using DotNext.Threading;
@@ -29,7 +30,7 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
-public partial class TFChunk : IDisposable {
+public partial class TFChunk : IChunkBlob {
 	public enum ChunkVersions : byte {
 		OriginalNotUsed = 1,
 		Unaligned = 2,
@@ -1420,6 +1421,24 @@ public partial class TFChunk : IDisposable {
 				CleanUpFileStreamDestruction();
 				break;
 		}
+	}
+
+	async Task IChunkBlob.CopyToAsync(Stream destination, CancellationToken token) {
+		var workItem = GetReaderWorkItem();
+		try {
+			workItem.BaseStream.Position = 0L;
+			await workItem.BaseStream.CopyToAsync(destination, token);
+		} finally {
+			ReturnReaderWorkItem(workItem);
+		}
+	}
+
+	IAsyncEnumerable<IChunkBlob> IChunkBlob.UnmergeAsync() {
+		if (ChunkHeader.ChunkStartNumber == ChunkHeader.ChunkEndNumber)
+			return AsyncEnumerable.Singleton(this);
+
+		// TODO: requires actual implementation
+		return AsyncEnumerable.Throw<IChunkBlob>(new NotImplementedException());
 	}
 
 	public override string ToString() {

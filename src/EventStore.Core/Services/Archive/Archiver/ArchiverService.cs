@@ -79,7 +79,7 @@ public sealed class ArchiverService :
 			var chunk = _chunkManager.GetChunkFor(checkpoint);
 			if (chunk.ChunkFooter is { IsCompleted: true } &&
 			    chunk.ChunkHeader.ChunkEndPosition <= Volatile.Read(in _replicationPosition)) {
-				await _archive.StoreChunk(chunk.ChunkLocator, chunk.ChunkHeader.ChunkEndNumber, _lifetimeToken);
+				await _archive.StoreChunk(chunk, _lifetimeToken);
 				checkpoint = chunk.ChunkHeader.ChunkEndPosition;
 				await _archive.SetCheckpoint(checkpoint, _lifetimeToken);
 			} else {
@@ -93,7 +93,8 @@ public sealed class ArchiverService :
 		// will be processed by the main loop
 		while (_switchedChunks.TryTake(out var chunkInfo)) {
 			if (chunkInfo.ChunkEndNumber < checkpoint) {
-				await _archive.StoreChunk(chunkInfo.ChunkLocator, chunkInfo.ChunkEndNumber, token);
+				var chunk = _chunkManager.GetChunk(chunkInfo.ChunkEndNumber);
+				await _archive.StoreChunk(chunk, token);
 			}
 		}
 	}

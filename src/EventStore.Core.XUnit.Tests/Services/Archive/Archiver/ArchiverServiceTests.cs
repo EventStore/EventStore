@@ -14,6 +14,7 @@ using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Archiver;
@@ -103,8 +104,8 @@ file sealed class FakeArchiveStorage : IArchiveStorage {
 		StoreChunkEvent = new(initialState: false);
 	}
 
-	public ValueTask<bool> StoreChunk(string chunkPath, int logicalChunkNumber, CancellationToken ct) {
-		Chunks.Add(logicalChunkNumber);
+	public ValueTask<bool> StoreChunk(IChunkBlob chunk, CancellationToken ct) {
+		Chunks.Add(chunk.ChunkHeader.ChunkStartNumber);
 		Interlocked.Increment(ref NumStores);
 		StoreChunkEvent.Set();
 		return ValueTask.FromResult(true);

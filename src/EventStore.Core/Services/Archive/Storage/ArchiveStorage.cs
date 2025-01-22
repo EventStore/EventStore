@@ -3,13 +3,16 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO;
+using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
 using DotNext.IO;
 using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Microsoft.Win32.SafeHandles;
 using Serilog;
 
@@ -70,27 +73,59 @@ public class ArchiveStorage(
 		}
 	}
 
-	public async ValueTask<bool> StoreChunk(string sourceChunkPath, int logicalChunkNumber, CancellationToken ct) {
-		var handle = default(SafeFileHandle);
-		var stream = default(Stream);
-		try {
-			handle = File.OpenHandle(sourceChunkPath, options: FileOptions.Asynchronous | FileOptions.SequentialScan);
-			stream = handle.AsUnbufferedStream(FileAccess.Read);
-			var destinationFile = chunkNameResolver.ResolveFileName(logicalChunkNumber);
-			await blobStorage.StoreAsync(stream, destinationFile, ct);
-			return true;
-		} catch (FileNotFoundException) {
-			throw new ChunkDeletedException();
-		} catch (Exception ex) when (ex is not OperationCanceledException) {
-			if (!File.Exists(sourceChunkPath))
-				throw new ChunkDeletedException();
+	public async ValueTask<bool> StoreChunk(IChunkBlob chunk, CancellationToken ct) {
+		var pipe = new Pipe();
 
-			Log.Error(ex, "Error while storing chunk: {logicalChunkNumber} ({chunkPath})", logicalChunkNumber,
-				sourceChunkPath);
-			return false;
-		} finally {
-			await (stream?.DisposeAsync() ?? ValueTask.CompletedTask);
-			handle?.Dispose();
+		// process single chunk
+		if (chunk.ChunkHeader.IsSingleLogicalChunk) {
+			await StoreAsync(pipe, chunk, ct);
+		} else {
+			await foreach (var unmergedChunk in chunk.UnmergeAsync().WithCancellation(ct)) {
+				// we need to dispose the unmerged chunk because it's temporary chunk
+				using (unmergedChunk) {
+					await StoreAsync(pipe, unmergedChunk, ct);
+				}
+
+				// reader/writer sides are completed at that point, it's safe to reset
+				pipe.Reset();
+			}
+		}
+
+		return true;
+	}
+
+	private Task StoreAsync(Pipe pipe, IChunkBlob chunk, CancellationToken ct) {
+		Debug.Assert(chunk.ChunkHeader.IsSingleLogicalChunk);
+
+		var copyingTask = WritePipeAsync(chunk, pipe.Writer, ct);
+		var consumingTask = ReadPipeAsync(pipe.Reader, blobStorage,
+			chunkNameResolver.ResolveFileName(chunk.ChunkHeader.ChunkStartNumber), ct);
+
+		return Task.WhenAll(copyingTask, consumingTask);
+
+		static async Task WritePipeAsync(IChunkBlob source, PipeWriter destination, CancellationToken token) {
+			var destinationStream = destination.AsStream(leaveOpen: false);
+			try {
+				await source.CopyToAsync(destinationStream, token);
+			} catch (Exception e) {
+				await destination.CompleteAsync(e);
+			} finally {
+				// completed the write part of the pipe successfully, if not yet completed
+				await destinationStream.DisposeAsync();
+			}
+		}
+
+		static async Task ReadPipeAsync(PipeReader source, IBlobStorage destination, string destinationFile,
+			CancellationToken token) {
+			var sourceStream = source.AsStream(leaveOpen: false);
+			try {
+				await destination.StoreAsync(sourceStream, destinationFile, token);
+			} catch (Exception e) {
+				await source.CompleteAsync(e);
+			} finally {
+				// completed the read part of the pipe successfully, if not yet completed
+				await sourceStream.DisposeAsync();
+			}
 		}
 	}
 }

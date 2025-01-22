@@ -1,12 +1,19 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Services.Archive;
 using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage;
+using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Plugins.Transforms;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Storage;
 
@@ -43,16 +50,41 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 		return archiveStorage;
 	}
 
-	protected static string CreateChunk(string path, int chunkStartNumber, int chunkVersion) {
+	protected static async ValueTask<FakeChunkBlob> CreateChunk(string path, int chunkStartNumber, byte chunkVersion) {
 		var namingStrategy = new VersionedPatternFileNamingStrategy(path, ChunkPrefix);
 
 		var chunk = Path.Combine(path, namingStrategy.GetFilenameFor(chunkStartNumber, chunkVersion));
 		var content = new byte[1000];
 		RandomNumberGenerator.Fill(content);
-		File.WriteAllBytes(chunk, content);
-		return chunk;
+		var result = new FakeChunkBlob(chunk, chunkStartNumber, chunkVersion);
+		await result.WriteAsync(content);
+		await result.FlushAsync();
+		result.Seek(0, SeekOrigin.Begin);
+		return result;
 	}
 
-	protected string CreateArchiveChunk(int chunkStartNumber, int chunkVersion) => CreateChunk(ArchivePath, chunkStartNumber, chunkVersion);
-	protected string CreateLocalChunk(int chunkStartNumber, int chunkVersion) => CreateChunk(DbPath, chunkStartNumber, chunkVersion);
+	protected ValueTask<FakeChunkBlob> CreateArchiveChunk(int chunkStartNumber, byte chunkVersion) => CreateChunk(ArchivePath, chunkStartNumber, chunkVersion);
+	protected ValueTask<FakeChunkBlob> CreateLocalChunk(int chunkStartNumber, byte chunkVersion) => CreateChunk(DbPath, chunkStartNumber, chunkVersion);
+
+	protected sealed class FakeChunkBlob(string chunkPath, int chunkStartNumber, byte chunkVersion, FileMode mode = FileMode.Create) : FileStream(chunkPath, mode, FileAccess.ReadWrite, FileShare.None, 1024, FileOptions.Asynchronous), IChunkBlob {
+		private ChunkHeader _header;
+
+		public IAsyncEnumerable<IChunkBlob> UnmergeAsync() {
+			throw new NotImplementedException();
+		}
+
+		public async ValueTask<byte[]> ReadAllBytes() {
+			var buffer = new byte[Length];
+			Position = 0L;
+			await ReadExactlyAsync(buffer);
+			return buffer;
+		}
+
+		public ChunkHeader ChunkHeader {
+			get {
+				return _header ??= new(chunkVersion, chunkVersion, (int)Length, chunkStartNumber,
+					chunkStartNumber, false, Guid.NewGuid(), TransformType.Identity);
+			}
+		}
+	}
 }
