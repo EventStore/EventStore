@@ -49,6 +49,40 @@ public sealed class ArchiverServiceTests : DirectoryPerTest<ArchiverServiceTests
 		Assert.True(storage.Checkpoint > 0L);
 		Assert.Equal<int>([0, 1], storage.Chunks);
 	}
+
+	[Fact]
+	public async Task switched_chunk_archived() {
+		var indexDirectory = Fixture.GetFilePathFor("index");
+		using var logFormat = LogFormatHelper<LogFormat.V2, string>.LogFormatFactory.Create(new() {
+			IndexDirectory = indexDirectory,
+		});
+		var dbConfig = TFChunkHelper.CreateSizedDbConfig(Fixture.Directory, 0, chunkSize: 1024 * 1024);
+		var dbCreator = await TFChunkDbCreationHelper<LogFormat.V2, string>.CreateAsync(dbConfig, logFormat);
+		await using var result = await dbCreator
+			.Chunk(Rec.Write(0, "test"))
+			.Chunk(Rec.Write(1, "test"))
+			.Chunk(Rec.Write(2, "test"))
+			.CreateDb();
+
+		var storage = new FakeArchiveStorage();
+		await using (var archiver = new ArchiverService(new FakeSubscriber(), storage, result.Db.Manager)) {
+			archiver.Handle(new SystemMessage.SystemStart()); // start archiving background task
+			archiver.Handle(new ReplicationTrackingMessage.ReplicatedTo(result.Db.Config.WriterCheckpoint.Read()));
+
+			// ensure that chunks archived
+			var timeout = TimeSpan.FromSeconds(20);
+			while (storage.NumStores < 2) {
+				Assert.True(await storage.StoreChunkEvent.WaitAsync(timeout));
+			}
+
+			// triggers chunk switch
+			var chunk = result.Db.Manager.GetChunk(0);
+			archiver.Handle(new SystemMessage.ChunkSwitched(chunk.ChunkInfo));
+			Assert.True(await storage.StoreChunkEvent.WaitAsync(timeout));
+		}
+
+		Assert.Equal(3, storage.NumStores);
+	}
 }
 
 file sealed class FakeSubscriber : ISubscriber {
