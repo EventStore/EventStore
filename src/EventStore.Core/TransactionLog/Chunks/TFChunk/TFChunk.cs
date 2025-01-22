@@ -1423,16 +1423,6 @@ public partial class TFChunk : IChunkBlob {
 		}
 	}
 
-	async Task IChunkBlob.CopyToAsync(Stream destination, CancellationToken token) {
-		var workItem = GetReaderWorkItem();
-		try {
-			workItem.BaseStream.Position = 0L;
-			await workItem.BaseStream.CopyToAsync(destination, token);
-		} finally {
-			ReturnReaderWorkItem(workItem);
-		}
-	}
-
 	IAsyncEnumerable<IChunkBlob> IChunkBlob.UnmergeAsync() {
 		if (ChunkHeader.ChunkStartNumber == ChunkHeader.ChunkEndNumber)
 			return AsyncEnumerable.Singleton(this);
@@ -1440,6 +1430,9 @@ public partial class TFChunk : IChunkBlob {
 		// TODO: requires actual implementation
 		return AsyncEnumerable.Throw<IChunkBlob>(new NotImplementedException());
 	}
+
+	async ValueTask<IChunkBlobReader> IChunkBlob.AcquireRawReader(CancellationToken token)
+		=> await AcquireRawReader(token);
 
 	public override string ToString() {
 		return string.Format("#{0}-{1} ({2})", _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber,

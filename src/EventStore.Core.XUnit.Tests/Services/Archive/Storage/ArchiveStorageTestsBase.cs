@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services.Archive;
 using EventStore.Core.Services.Archive.Naming;
@@ -68,6 +69,11 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 	protected sealed class FakeChunkBlob(string chunkPath, int chunkStartNumber, byte chunkVersion, FileMode mode = FileMode.Create) : FileStream(chunkPath, mode, FileAccess.ReadWrite, FileShare.None, 1024, FileOptions.Asynchronous), IChunkBlob {
 		private ChunkHeader _header;
 
+		public ValueTask<IChunkBlobReader> AcquireRawReader(CancellationToken token)
+			=> token.IsCancellationRequested
+				? ValueTask.FromCanceled<IChunkBlobReader>(token)
+				: ValueTask.FromResult<IChunkBlobReader>(new StreamReader(this));
+
 		public IAsyncEnumerable<IChunkBlob> UnmergeAsync() {
 			throw new NotImplementedException();
 		}
@@ -84,6 +90,20 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 				return _header ??= new(chunkVersion, chunkVersion, (int)Length, chunkStartNumber,
 					chunkStartNumber, false, Guid.NewGuid(), TransformType.Identity);
 			}
+		}
+	}
+
+	private sealed class StreamReader(Stream stream) : IChunkBlobReader {
+		void IDisposable.Dispose() {
+		}
+
+		public void SetPosition(long position) => stream.Position = position;
+
+		public async ValueTask<BulkReadResult> ReadNextBytes(Memory<byte> buffer, CancellationToken token) {
+			return new(
+				(int)stream.Position,
+				await stream.ReadAsync(buffer, token),
+				stream.Position >= stream.Length);
 		}
 	}
 }

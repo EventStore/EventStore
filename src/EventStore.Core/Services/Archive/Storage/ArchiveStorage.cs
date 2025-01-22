@@ -103,15 +103,17 @@ public class ArchiveStorage(
 		return Task.WhenAll(copyingTask, consumingTask);
 
 		static async Task WritePipeAsync(IChunkBlob source, PipeWriter destination, CancellationToken token) {
-			var destinationStream = destination.AsStream(leaveOpen: false);
+			var reader = await source.AcquireRawReader(token);
+			var error = default(Exception);
 			try {
-				await source.CopyToAsync(destinationStream, token);
+				await reader.CopyToAsync(destination, token);
 			} catch (Exception e) {
-				await destination.CompleteAsync(e);
+				error = e;
 			} finally {
-				// completed the write part of the pipe successfully, if not yet completed
-				await destinationStream.DisposeAsync();
+				reader.Dispose();
 			}
+
+			await destination.CompleteAsync(error);
 		}
 
 		static async Task ReadPipeAsync(PipeReader source, IBlobStorage destination, string destinationFile,
