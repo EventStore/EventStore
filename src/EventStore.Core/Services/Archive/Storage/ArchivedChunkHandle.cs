@@ -39,12 +39,12 @@ public sealed class ArchivedChunkHandle : IChunkHandle {
 	ValueTask IChunkHandle.WriteAsync(ReadOnlyMemory<byte> data, long offset, CancellationToken token)
 		=> ValueTask.FromException(new NotSupportedException());
 
-	public ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token) {
-		// cast is free, it allows to cover negative offset case
-		return (ulong)offset >= (ulong)_length
-			? new(0) // _reader.ReadAsync will give this behaviour too, but we can do it here more cheaply
-			: _reader.ReadAsync(_logicalChunkNumber, buffer, offset, token);
-	}
+	public ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token)
+		=> long.IsNegative(offset)
+			? ValueTask.FromException<int>(new ArgumentOutOfRangeException(nameof(offset)))
+			: offset < _length
+				? _reader.ReadAsync(_logicalChunkNumber, buffer, offset, token)
+				: ValueTask.FromResult(0); // _reader.ReadAsync will give this behaviour too, but we can do it here more cheaply
 
 	public long Length {
 		get => _length;
