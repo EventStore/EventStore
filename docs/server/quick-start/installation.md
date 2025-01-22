@@ -25,9 +25,9 @@ The installation procedure consists of the following steps:
 
 ### License Keys
 
-Some features of EventStoreDB require a license key to access.  When you purchase an enterprise subscription, the designated license admin at your company will be sent the licence key.  Existing customers that would like to upgrade to a 24.10+ enterprise license should contact their Kurrent (formerly Event Store) account manager or contact us [here](https://www.kurrent.io/talk_to_expert).  As an existing customer, you can also try out the enterprise features by signing up for a [free trial licence key](https://www.kurrent.io/kurrent_free_trial).  
+Some features of EventStoreDB require a license key to access. When you purchase an enterprise subscription, the license key will be sent to your company's designated license administrator. Existing customers who would like to upgrade to a 24.10+ enterprise license should contact their Kurrent (formerly Event Store) account manager or contact us [here](https://www.kurrent.io/talk_to_expert). As an existing customer, you can also try the enterprise features by signing up for a [free trial license key](https://www.kurrent.io/kurrent_free_trial).  
 
-The license key can be provided to EventStoreDB in different ways. Refer to the [configuration guide](../configuration/README.md) for more information.
+There are various ways to provide the license key to EventStoreDB. For more information, refer to the [configuration guide](../configuration/README.md).
 
 Configuration file:
 
