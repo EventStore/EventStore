@@ -9,11 +9,11 @@ namespace EventStore.Core.XUnit.Tests;
 public class DirectoryPerTest<T> : IAsyncLifetime {
 	protected DirectoryFixture<T> Fixture { get; private set; } = new();
 
-	public async Task InitializeAsync() {
+	public virtual async Task InitializeAsync() {
 		await Fixture.InitializeAsync();
 	}
 
-	public async Task DisposeAsync() {
+	public virtual async Task DisposeAsync() {
 		await Fixture.DisposeAsync();
 	}
 }

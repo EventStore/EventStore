@@ -134,7 +134,7 @@ public class TFChunkWriter : ITransactionFileWriter {
 	private async ValueTask CompleteReplicatedRawChunkInTransaction(TFChunk.TFChunk rawChunk,
 		CancellationToken token) {
 		await rawChunk.CompleteRaw(token);
-		_currentChunk = await _db.Manager.SwitchChunk(rawChunk, verifyHash: true,
+		_currentChunk = await _db.Manager.SwitchInTempChunk(rawChunk, verifyHash: true,
 			removeChunksWithGreaterNumbers: true, token);
 
 		_nextRecordPosition = rawChunk.ChunkHeader.ChunkEndPosition;

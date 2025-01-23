@@ -52,8 +52,7 @@ public partial class TFChunk : IChunkBlob {
 		get { return _cacheStatus is CacheStatus.Cached; }
 	}
 
-	// if inMem, _handle is null but not remote
-	public bool IsRemote => _handle is not null and not ChunkFileHandle;
+	public bool IsRemote { get; }
 
 	// the logical size of (untransformed) data (could be > PhysicalDataSize if scavenged chunk)
 	public long LogicalDataSize {
@@ -93,7 +92,7 @@ public partial class TFChunk : IChunkBlob {
 			ChunkEndNumber = _chunkHeader.ChunkEndNumber,
 			ChunkStartPosition = _chunkHeader.ChunkStartPosition,
 			ChunkEndPosition = _chunkHeader.ChunkEndPosition,
-			IsCompleted = IsReadOnly
+			IsCompleted = IsReadOnly,
 		};
 	}
 
@@ -200,6 +199,8 @@ public partial class TFChunk : IChunkBlob {
 		_fileStreams = new();
 		_fileSystem = fileSystem;
 
+		IsRemote = !_inMem && _fileSystem.IsRemote(ChunkLocator);
+
 		// Workaround: the lock is used by the finalizer. When the finalizer is called by .NET,
 		// the lock is already finalized (and Dispose is called) and cannot be used. To avoid that situation,
 		// we suppress the finalizer for the lock. Anyway, the lock doesn't hold any unmanaged resources.
@@ -283,6 +284,9 @@ public partial class TFChunk : IChunkBlob {
 		var transformHeader = transformFactory.TransformHeaderLength > 0
 			? new byte[transformFactory.TransformHeaderLength]
 			: [];
+
+		transformFactory.CreateTransformHeader(transformHeader);
+
 		return await CreateWithHeader(fileSystem, filename, chunkHeader, fileSize, inMem, unbuffered, writethrough,
 			reduceFileCachePressure, tracker, transformFactory, transformHeader, token);
 	}
@@ -612,6 +616,11 @@ public partial class TFChunk : IChunkBlob {
 	public async ValueTask VerifyFileHash(CancellationToken token) {
 		if (!IsReadOnly)
 			throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
+
+		if (IsRemote) {
+			Log.Debug("Skipped verifying hash for TFChunk '{chunk}' because it is remote", ChunkLocator);
+			return;
+		}
 
 		Log.Debug("Verifying hash for TFChunk '{chunk}'...", ChunkLocator);
 		using var reader = await AcquireRawReader(token);
@@ -1011,7 +1020,7 @@ public partial class TFChunk : IChunkBlob {
 
 		// at this point in code, 'WorkingStream` should not contain buffered bytes because SeLength
 		// can cause sync-over-async write. This fact is checked within `IChunkHandle.UnbufferedStream` class
-		workItem.ResizeStream(fileSize);
+		workItem.ResizeFileStream(fileSize);
 
 		_fileSize = fileSize;
 		return footerWithHash;
@@ -1040,6 +1049,7 @@ public partial class TFChunk : IChunkBlob {
 		return closed;
 	}
 
+	// Causes the chunk to be deleted when all the readers have returned.
 	public void MarkForDeletion() {
 		_selfdestructin54321 = true;
 		_deleteFile = true;
@@ -1083,7 +1093,7 @@ public partial class TFChunk : IChunkBlob {
 			Helper.EatException(LocalFileName, static filename => File.SetAttributes(filename, FileAttributes.Normal));
 
 			if (_deleteFile) {
-				Log.Information("File {chunk} has been marked for delete and will be deleted in TryDestructFileStreams.",
+				Log.Information("Deleting chunk {chunk}",
 					Path.GetFileName(ChunkLocator));
 				Helper.EatException(LocalFileName, File.Delete);
 			}

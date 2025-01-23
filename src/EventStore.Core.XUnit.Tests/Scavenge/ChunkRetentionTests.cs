@@ -14,7 +14,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge;
 
 public class ChunkRetentionTests : SqliteDbPerTest<MaxAgeTests> {
 	[Fact]
-	public async Task chunks_get_deleted() {
+	public async Task chunks_get_removed() {
 		var t = 0;
 		await new Scenario<LogFormat.V2, string>()
 			.WithDbPath(Fixture.Directory)
@@ -57,11 +57,11 @@ public class ChunkRetentionTests : SqliteDbPerTest<MaxAgeTests> {
 				Tracer.Line("    Begin"),
 				Tracer.Line("        Checkpoint: Executing chunks for SP-0 done None"),
 				Tracer.Line("    Commit"),
-				Tracer.Line("    Deleted Chunk 0-0"),
+				Tracer.Line("    Removing Chunk 0-0"),        // <---------
 				Tracer.Line("    Begin"),
 				Tracer.Line("        Checkpoint: Executing chunks for SP-0 done Chunk 0"),
 				Tracer.Line("    Commit"),
-				Tracer.Line("    Retained Chunk 1-1"),
+				Tracer.Line("    Retaining Chunk 1-1"),
 				Tracer.Line("    Begin"),
 				Tracer.Line("        Checkpoint: Executing chunks for SP-0 done Chunk 1"),
 				Tracer.Line("    Commit"),
@@ -92,10 +92,15 @@ public class ChunkRetentionTests : SqliteDbPerTest<MaxAgeTests> {
 				Tracer.Line("    Checkpoint: Done SP-0"),
 				Tracer.Line("Commit"))
 
-			// keep all records and indexes
-			.RunAsync(x => new[] {
-				x.Recs[0],
-				x.Recs[1],
-			});
+			.RunAsync(
+				x => [
+					[],        // archived chunks considered empty (ArchiveReaderEmptyChunks)
+					x.Recs[1], // chunk 1 untouched
+				],
+				// index remains the same as before
+				x => [
+					x.Recs[0],
+					x.Recs[1],
+				]);
 	}
 }

@@ -53,7 +53,7 @@ public abstract class RepeatableDbTestScenario<TLogFormat, TStreamId> : Specific
 		});
 
 		var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
-		var dbHelper = await TFChunkDbCreationHelper<TLogFormat, TStreamId>.CreateAsync(dbConfig, _logFormat, token);
+		var dbHelper = await TFChunkDbCreationHelper<TLogFormat, TStreamId>.CreateAsync(dbConfig, _logFormat, token: token);
 
 		DbRes = await dbHelper.Chunk(records).CreateDb(token: token);
 

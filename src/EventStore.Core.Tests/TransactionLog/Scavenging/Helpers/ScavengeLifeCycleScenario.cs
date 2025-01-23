@@ -32,7 +32,7 @@ abstract public class ScavengeLifeCycleScenario<TLogFormat, TStreamId> : Specifi
 		});
 
 		var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
-		var dbCreationHelper = await TFChunkDbCreationHelper<TLogFormat, TStreamId>.CreateAsync(dbConfig, _logFormat, CancellationToken.None);
+		var dbCreationHelper = await TFChunkDbCreationHelper<TLogFormat, TStreamId>.CreateAsync(dbConfig, _logFormat, token: CancellationToken.None);
 
 		_dbResult = await dbCreationHelper
 			.Chunk().CompleteLastChunk()

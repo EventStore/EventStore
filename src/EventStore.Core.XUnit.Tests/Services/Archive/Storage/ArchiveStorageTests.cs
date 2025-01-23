@@ -27,12 +27,11 @@ public class ArchiveStorageTests : ArchiveStorageTestsBase<ArchiveStorageTests> 
 		var localContent = await chunk.ReadAllBytes();
 
 		// read the uploaded chunk
-		using var buffer = Memory.AllocateExactly<byte>(1000);
-		await sut.ReadAsync(0, buffer.Memory, offset: 0, CancellationToken.None);
-		var chunkStreamContent = buffer.Memory.ToArray();
+		using var buffer = Memory.AllocateExactly<byte>(1048);
+		var read = await sut.ReadAsync(0, buffer.Memory, offset: 0, CancellationToken.None);
 
 		// then
-		Assert.Equal(localContent, chunkStreamContent);
+		Assert.Equal(localContent, buffer.Memory[..read].ToArray());
 	}
 
 	[Theory]
@@ -51,13 +50,60 @@ public class ArchiveStorageTests : ArchiveStorageTestsBase<ArchiveStorageTests> 
 		// read the uploaded chunk partially
 		var start = localContent.Length / 2;
 		var end = localContent.Length;
-		var length = end - start;
-		using var buffer = Memory.AllocateExactly<byte>(length);
-		await sut.ReadAsync(0, buffer.Memory, offset: start, CancellationToken.None);
-		var chunkStreamContent = buffer.Memory.ToArray();
+		using var buffer = Memory.AllocateExactly<byte>(1048);
+		var read = await sut.ReadAsync(0, buffer.Memory, offset: start, CancellationToken.None);
 
 		// then
-		Assert.Equal(localContent[start..end], chunkStreamContent);
+		Assert.Equal(localContent[start..end], buffer.Memory[..read].ToArray());
+	}
+
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
+	public async Task can_read_outside_of_range(StorageType storageType) {
+		var sut = CreateSut(storageType);
+
+		// create a chunk and upload it
+		var chunkPath = CreateLocalChunk(0, 0);
+		await sut.StoreChunk(chunkPath, 0, CancellationToken.None);
+
+		// read the uploaded chunk partially
+		using var buffer = Memory.AllocateExactly<byte>(1048);
+		Assert.Equal(0, await sut.ReadAsync(0, buffer.Memory, offset: 1_000, CancellationToken.None));
+		Assert.Equal(0, await sut.ReadAsync(0, buffer.Memory, offset: 1_000_000, CancellationToken.None));
+	}
+
+	// not useful in practice but to ensure consistency across the implementations
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
+	public async Task can_read_with_zero_length_buffer(StorageType storageType) {
+		var sut = CreateSut(storageType);
+
+		// create a chunk and upload it
+		var chunkPath = CreateLocalChunk(0, 0);
+		await sut.StoreChunk(chunkPath, 0, CancellationToken.None);
+
+		// read the uploaded chunk partially
+		using var buffer = Memory.AllocateExactly<byte>(0);
+		Assert.Equal(0, await sut.ReadAsync(0, buffer.Memory, offset: 0, CancellationToken.None));
+	}
+
+	[Theory]
+	[StorageData.S3]
+	[StorageData.FileSystem]
+	public async Task read_with_negative_offset_throws(StorageType storageType) {
+		var sut = CreateSut(storageType);
+
+		// create a chunk and upload it
+		var chunkPath = CreateLocalChunk(0, 0);
+		await sut.StoreChunk(chunkPath, 0, CancellationToken.None);
+
+		// read the uploaded chunk partially
+		using var buffer = Memory.AllocateExactly<byte>(0);
+		await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => {
+			await sut.ReadAsync(0, buffer.Memory, offset: -1, CancellationToken.None);
+		});
 	}
 
 	[Theory]
@@ -81,9 +127,9 @@ public class ArchiveStorageTests : ArchiveStorageTestsBase<ArchiveStorageTests> 
 
 		var localChunkContent = await localChunk.ReadAllBytes();
 
-		using var buffer = Memory.AllocateExactly<byte>(1000);
-		await sut.ReadAsync(0, buffer.Memory, offset: 0, CancellationToken.None);
-		Assert.Equal(localChunkContent, buffer.Memory.ToArray());
+		using var buffer = Memory.AllocateExactly<byte>(1048);
+		var read = await sut.ReadAsync(0, buffer.Memory, offset: 0, CancellationToken.None);
+		Assert.Equal(localChunkContent, buffer.Memory[..read].ToArray());
 	}
 
 	[Theory]

@@ -16,4 +16,4 @@ public interface IArchiveStorageReader {
 	ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken token);
 }
 
-public readonly record struct ArchivedChunkMetadata(long Size);
+public readonly record struct ArchivedChunkMetadata(long PhysicalSize);

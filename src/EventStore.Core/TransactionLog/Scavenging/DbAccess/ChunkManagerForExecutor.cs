@@ -39,11 +39,11 @@ public class ChunkManagerForExecutor<TStreamId> : IChunkManagerForChunkExecutor<
 		return new ChunkReaderForExecutor<TStreamId>(tfChunk);
 	}
 
-	public async ValueTask<string> SwitchChunk(
+	public async ValueTask<string> SwitchInTempChunk(
 		TFChunk chunk,
 		CancellationToken token) {
 
-		var tfChunk = await _manager.SwitchChunk(
+		var tfChunk = await _manager.SwitchInTempChunk(
 			chunk: chunk,
 			verifyHash: false,
 			removeChunksWithGreaterNumbers: false,

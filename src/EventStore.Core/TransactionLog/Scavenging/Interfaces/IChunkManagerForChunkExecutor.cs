@@ -18,6 +18,10 @@ public interface IChunkManagerForChunkExecutor<TStreamId, TRecord> {
 	IChunkReaderForExecutor<TStreamId, TRecord> GetChunkReaderFor(long position);
 }
 
+public interface IChunkManagerForChunkRemover {
+	ValueTask<bool> SwitchInChunks(IReadOnlyList<string> locators, CancellationToken token);
+}
+
 public interface IChunkWriterForExecutor<TStreamId, TRecord> {
 	string LocalFileName { get; }
 
