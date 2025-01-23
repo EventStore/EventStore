@@ -70,10 +70,10 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 		private ChunkHeader _header;
 		private ChunkFooter _footer;
 
-		public ValueTask<IChunkBlobReader> AcquireRawReader(CancellationToken token)
+		public ValueTask<IChunkRawReader> AcquireRawReader(CancellationToken token)
 			=> token.IsCancellationRequested
-				? ValueTask.FromCanceled<IChunkBlobReader>(token)
-				: ValueTask.FromResult<IChunkBlobReader>(new StreamReader(this));
+				? ValueTask.FromCanceled<IChunkRawReader>(token)
+				: ValueTask.FromResult<IChunkRawReader>(new StreamReader(this));
 
 		public IAsyncEnumerable<IChunkBlob> UnmergeAsync() {
 			throw new NotImplementedException();
@@ -100,17 +100,10 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 		}
 	}
 
-	private sealed class StreamReader(Stream stream) : IChunkBlobReader {
+	private sealed class StreamReader(Stream stream) : IChunkRawReader {
 		void IDisposable.Dispose() {
 		}
 
-		public void SetPosition(long position) => stream.Position = position;
-
-		public async ValueTask<BulkReadResult> ReadNextBytes(Memory<byte> buffer, CancellationToken token) {
-			return new(
-				(int)stream.Position,
-				await stream.ReadAsync(buffer, token),
-				stream.Position >= stream.Length);
-		}
+		Stream IChunkRawReader.Stream => stream;
 	}
 }

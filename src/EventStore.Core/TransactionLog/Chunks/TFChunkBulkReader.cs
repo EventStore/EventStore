@@ -10,7 +10,7 @@ using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 namespace EventStore.Core.TransactionLog.Chunks;
 
-public abstract class TFChunkBulkReader : IChunkBlobReader {
+public abstract class TFChunkBulkReader : IDisposable {
 	public TFChunk.TFChunk Chunk {
 		get { return _chunk; }
 	}

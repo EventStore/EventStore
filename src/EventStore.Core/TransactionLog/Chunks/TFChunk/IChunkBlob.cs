@@ -12,7 +12,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 /// Interprets database chunk as a blob.
 /// </summary>
 public interface IChunkBlob : IDisposable {
-	ValueTask<IChunkBlobReader> AcquireRawReader(CancellationToken token);
+	ValueTask<IChunkRawReader> AcquireRawReader(CancellationToken token);
 
 	IAsyncEnumerable<IChunkBlob> UnmergeAsync();
 

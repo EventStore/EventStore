@@ -5,7 +5,6 @@ using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
@@ -73,61 +72,27 @@ public class ArchiveStorage(
 	}
 
 	public async ValueTask<bool> StoreChunk(IChunkBlob chunk, CancellationToken ct) {
-		var pipe = new Pipe();
-
 		// process single chunk
 		if (chunk.ChunkHeader.IsSingleLogicalChunk) {
-			await StoreAsync(pipe, chunk, ct);
+			await StoreAsync(chunk, ct);
 		} else {
 			await foreach (var unmergedChunk in chunk.UnmergeAsync().WithCancellation(ct)) {
 				// we need to dispose the unmerged chunk because it's temporary chunk
 				using (unmergedChunk) {
-					await StoreAsync(pipe, unmergedChunk, ct);
+					await StoreAsync(unmergedChunk, ct);
 				}
-
-				// reader/writer sides are completed at that point, it's safe to reset
-				pipe.Reset();
 			}
 		}
 
 		return true;
 	}
 
-	private Task StoreAsync(Pipe pipe, IChunkBlob chunk, CancellationToken ct) {
+	private async ValueTask StoreAsync(IChunkBlob chunk, CancellationToken ct) {
 		Debug.Assert(chunk.ChunkHeader.IsSingleLogicalChunk);
 
-		var copyingTask = WritePipeAsync(chunk, pipe.Writer, ct);
-		var consumingTask = ReadPipeAsync(pipe.Reader, blobStorage,
-			chunkNameResolver.ResolveFileName(chunk.ChunkHeader.ChunkStartNumber), ct);
-
-		return Task.WhenAll(copyingTask, consumingTask);
-
-		static async Task WritePipeAsync(IChunkBlob source, PipeWriter destination, CancellationToken token) {
-			var reader = await source.AcquireRawReader(token);
-			reader.SetPosition(0L);
-			var error = default(Exception);
-			try {
-				await reader.CopyToAsync(destination, token);
-			} catch (Exception e) {
-				error = e;
-			} finally {
-				reader.Dispose();
-			}
-
-			await destination.CompleteAsync(error);
-		}
-
-		static async Task ReadPipeAsync(PipeReader source, IBlobStorage destination, string destinationFile,
-			CancellationToken token) {
-			var sourceStream = source.AsStream(leaveOpen: false);
-			try {
-				await destination.StoreAsync(sourceStream, destinationFile, token);
-			} catch (Exception e) {
-				await source.CompleteAsync(e);
-			} finally {
-				// completed the read part of the pipe successfully, if not yet completed
-				await sourceStream.DisposeAsync();
-			}
-		}
+		var name = chunkNameResolver.ResolveFileName(chunk.ChunkHeader.ChunkStartNumber);
+		using var reader = await chunk.AcquireRawReader(ct);
+		reader.Stream.Position = 0L;
+		await blobStorage.StoreAsync(reader.Stream, name, ct);
 	}
 }

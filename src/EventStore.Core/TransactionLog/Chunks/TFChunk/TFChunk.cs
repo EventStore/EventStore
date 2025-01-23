@@ -1441,8 +1441,8 @@ public partial class TFChunk : IChunkBlob {
 		return AsyncEnumerable.Throw<IChunkBlob>(new NotImplementedException());
 	}
 
-	async ValueTask<IChunkBlobReader> IChunkBlob.AcquireRawReader(CancellationToken token)
-		=> await AcquireRawReader(token);
+	async ValueTask<IChunkRawReader> IChunkBlob.AcquireRawReader(CancellationToken token)
+		=> (IChunkRawReader)await AcquireRawReader(token);
 
 	public override string ToString() {
 		return string.Format("#{0}-{1} ({2})", _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber,
