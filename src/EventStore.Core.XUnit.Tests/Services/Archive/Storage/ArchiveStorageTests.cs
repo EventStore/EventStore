@@ -64,8 +64,8 @@ public class ArchiveStorageTests : ArchiveStorageTestsBase<ArchiveStorageTests> 
 		var sut = CreateSut(storageType);
 
 		// create a chunk and upload it
-		var chunkPath = CreateLocalChunk(0, 0);
-		await sut.StoreChunk(chunkPath, 0, CancellationToken.None);
+		await using var chunk = await CreateLocalChunk(0, 0);
+		await sut.StoreChunk(chunk, CancellationToken.None);
 
 		// read the uploaded chunk partially
 		using var buffer = Memory.AllocateExactly<byte>(1048);
@@ -81,8 +81,8 @@ public class ArchiveStorageTests : ArchiveStorageTestsBase<ArchiveStorageTests> 
 		var sut = CreateSut(storageType);
 
 		// create a chunk and upload it
-		var chunkPath = CreateLocalChunk(0, 0);
-		await sut.StoreChunk(chunkPath, 0, CancellationToken.None);
+		await using var chunk = await CreateLocalChunk(0, 0);
+		await sut.StoreChunk(chunk, CancellationToken.None);
 
 		// read the uploaded chunk partially
 		using var buffer = Memory.AllocateExactly<byte>(0);
@@ -96,8 +96,8 @@ public class ArchiveStorageTests : ArchiveStorageTestsBase<ArchiveStorageTests> 
 		var sut = CreateSut(storageType);
 
 		// create a chunk and upload it
-		var chunkPath = CreateLocalChunk(0, 0);
-		await sut.StoreChunk(chunkPath, 0, CancellationToken.None);
+		await using var chunk = await CreateLocalChunk(0, 0);
+		await sut.StoreChunk(chunk, CancellationToken.None);
 
 		// read the uploaded chunk partially
 		using var buffer = Memory.AllocateExactly<byte>(0);
