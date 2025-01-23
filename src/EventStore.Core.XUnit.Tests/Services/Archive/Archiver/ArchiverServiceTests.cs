@@ -77,6 +77,7 @@ public sealed class ArchiverServiceTests : DirectoryPerTest<ArchiverServiceTests
 			}
 
 			// triggers chunk switch
+			storage.StoreChunkEvent.Reset();
 			var chunk = result.Db.Manager.GetChunk(0);
 			archiver.Handle(new SystemMessage.ChunkSwitched(chunk.ChunkInfo));
 			Assert.True(await storage.StoreChunkEvent.WaitAsync(timeout));
