@@ -23,7 +23,7 @@ jobs:
     name: ci/github/scan-vulnerabilities
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Install net8.0
       uses: actions/setup-dotnet@v3
       with:
@@ -39,7 +39,7 @@ jobs:
     name: ci/github/protolock
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Protolock Status
       shell: bash
       run: |
@@ -49,7 +49,7 @@ jobs:
     name: ci/github/docker-compose
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Github Registry Docker Login
       uses: azure/docker-login@v1
       with:

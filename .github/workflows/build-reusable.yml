@@ -20,10 +20,9 @@ jobs:
     name: ci/github/build-${{ inputs.os }}
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
-    - shell: bash
-      run: |
-        git fetch --prune --unshallow
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Install netcoreapp3.1
       uses: actions/setup-dotnet@v3
       with:
@@ -60,13 +59,13 @@ jobs:
       run: |
         echo $(find ./test-results -name "*.html" | xargs cat) > test-results.html
     - name: Publish Test Results (HTML)
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         path: test-results.html
         name: test-results-${{ matrix.configuration }}-${{ inputs.os }}.html
     - name: Publish Test Results (All)
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results-${{ matrix.configuration }}-${{ inputs.os }}
