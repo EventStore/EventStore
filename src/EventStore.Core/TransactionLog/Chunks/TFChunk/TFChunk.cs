@@ -856,18 +856,21 @@ public partial class TFChunk : IDisposable {
 			throw new InvalidOperationException("Cannot write to a read-only block.");
 
 		var workItem = _writerWorkItem;
-		long oldPosition;
-		int length;
-		using (var dataOnDisk = SerializeLogRecord(record, out length)) {
-			oldPosition = GetDataPosition(workItem);
-			if (workItem.WorkingStream.Position + length + 2 * sizeof(int) > ChunkHeader.Size + _chunkHeader.ChunkSize)
-				return RecordWriteResult.Failed(oldPosition);
+		var length = record.GetSizeWithLengthPrefixAndSuffix();
+		var oldPosition = GetDataPosition(workItem);
+		if (workItem.WorkingStream.Position + length > ChunkHeader.Size + _chunkHeader.ChunkSize)
+			return RecordWriteResult.Failed(oldPosition);
 
+		if (workItem.TryGetBufferedWriter(length) is { } writer) {
+			var bytesWritten = SerializeLogRecordDirectly(record, writer.Buffer.Span);
+			await workItem.AppendData(writer, bytesWritten, token);
+		} else {
+			using var dataOnDisk = SerializeLogRecord(record, length);
 			await workItem.AppendData(dataOnDisk.Memory, token);
 		}
 
 		_physicalDataSize = (int)GetDataPosition(workItem); // should fit 32 bits
-		_logicalDataSize = ChunkHeader.GetLocalLogPosition(record.LogPosition + length + 2 * sizeof(int));
+		_logicalDataSize = ChunkHeader.GetLocalLogPosition(record.LogPosition + length);
 
 		// for non-scavenged chunk _physicalDataSize should be the same as _logicalDataSize
 		// for scavenged chunk _logicalDataSize should be at least the same as _physicalDataSize
@@ -879,20 +882,36 @@ public partial class TFChunk : IDisposable {
 
 		return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
 
-		static MemoryOwner<byte> SerializeLogRecord(ILogRecord record, out int recordLength) {
-			var writer = new BufferWriterSlim<byte>(record.GetSizeWithLengthPrefixAndSuffix());
+		static void WriteRecord(ILogRecord record, ref BufferWriterSlim<byte> writer) {
 			writer.Advance(sizeof(int)); // reserved for length prefix
 			record.WriteTo(ref writer);
 
-			recordLength = writer.WrittenCount - sizeof(int);
-			writer.WriteLittleEndian(recordLength); // length suffix
+			var recordLength = writer.WrittenCount - sizeof(int);
+
+			// write length suffix
+			writer.WriteLittleEndian(recordLength);
+
+			// write length prefix
+			var bytesWritten = writer.WrittenCount;
+			writer.WrittenCount = 0;
+			writer.WriteLittleEndian(recordLength);
+			writer.WrittenCount = bytesWritten;
+		}
+
+		static MemoryOwner<byte> SerializeLogRecord(ILogRecord record, int length) {
+			var writer = new BufferWriterSlim<byte>(length);
+			WriteRecord(record, ref writer);
 
 			var buffer = writer.DetachOrCopyBuffer();
 			Debug.Assert(record.GetSizeWithLengthPrefixAndSuffix() == buffer.Length);
 
-			// write length prefix
-			BinaryPrimitives.WriteInt32LittleEndian(buffer.Span, recordLength);
 			return buffer;
+		}
+
+		static int SerializeLogRecordDirectly(ILogRecord record, Span<byte> buffer) {
+			var writer = new BufferWriterSlim<byte>(buffer);
+			WriteRecord(record, ref writer);
+			return writer.WrittenCount;
 		}
 	}
 
@@ -900,7 +919,14 @@ public partial class TFChunk : IDisposable {
 		var workItem = _writerWorkItem;
 		if (workItem.WorkingStream.Position + buffer.Length > workItem.WorkingStream.Length)
 			return false;
-		await workItem.AppendData(buffer, token);
+
+		if (workItem.TryGetBufferedWriter(buffer.Length) is { } writer) {
+			buffer.CopyTo(writer.Buffer);
+			await workItem.AppendData(writer, buffer.Length, token);
+		} else {
+			await workItem.AppendData(buffer, token);
+		}
+
 		return true;
 	}
 

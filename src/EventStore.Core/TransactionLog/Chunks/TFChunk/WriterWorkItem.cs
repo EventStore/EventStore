@@ -7,7 +7,9 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext;
+using DotNext.Buffers;
 using DotNext.IO;
+using DotNext.Runtime;
 using EventStore.Plugins.Transforms;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -45,6 +47,15 @@ internal sealed class WriterWorkItem : Disposable {
 		MD5 = md5;
 	}
 
+	public IBufferedWriter TryGetBufferedWriter(int length) {
+		// direct writes supported for untransformed streams only
+		return WorkingStream is ChunkDataWriteStream { ChunkFileStream: PoolingBufferedStream bufferedStream } stream &&
+		       Intrinsics.IsExactTypeOf<ChunkDataWriteStream>(stream) && !bufferedStream.HasBufferedDataToRead &&
+		       bufferedStream.As<IBufferedWriter>().Buffer.Length >= length
+			? bufferedStream
+			: null;
+	}
+
 	public void SetMemStream(UnmanagedMemoryStream memStream) {
 		_memStream = memStream;
 		if (_fileStream is null)
@@ -57,6 +68,14 @@ internal sealed class WriterWorkItem : Disposable {
 
 		// as we are always append-only, stream's position should be right here
 		return _fileStream?.WriteAsync(buf, token) ?? ValueTask.CompletedTask;
+	}
+
+	internal ValueTask AppendData(IBufferedWriter writer, int length, CancellationToken token) {
+		// MEMORY (in-memory write doesn't require async I/O)
+		_memStream?.Write(writer.Buffer.Span.Slice(0, length));
+
+		writer.Advance(length);
+		return writer.WriteAsync(token);
 	}
 
 	public void ResizeFileStream(long fileSize) {
