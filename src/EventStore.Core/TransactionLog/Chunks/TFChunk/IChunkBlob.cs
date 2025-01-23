@@ -17,4 +17,6 @@ public interface IChunkBlob : IDisposable {
 	IAsyncEnumerable<IChunkBlob> UnmergeAsync();
 
 	ChunkHeader ChunkHeader { get; }
+
+	ChunkFooter ChunkFooter { get; }
 }

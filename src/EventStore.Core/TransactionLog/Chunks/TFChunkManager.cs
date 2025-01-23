@@ -17,7 +17,7 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks;
 
-public class TFChunkManager : IThreadPoolWorkItem {
+public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoolWorkItem {
 	private static readonly ILogger Log = Serilog.Log.ForContext<TFChunkManager>();
 
 	// MaxChunksCount is currently capped at 400,000 since:

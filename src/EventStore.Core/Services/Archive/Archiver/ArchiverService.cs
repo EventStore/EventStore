@@ -13,6 +13,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 namespace EventStore.Core.Services.Archive.Archiver;
 
@@ -27,7 +28,7 @@ public sealed class ArchiverService :
 	private readonly IArchiveStorage _archive;
 	private readonly CancellationToken _lifetimeToken;
 	private readonly AsyncAutoResetEvent _archivingSignal;
-	private readonly TFChunkManager _chunkManager;
+	private readonly IChunkRegistry<IChunkBlob> _chunkManager;
 	private readonly ConcurrentBag<ChunkInfo> _switchedChunks;
 	private Task _archivingTask;
 
@@ -38,7 +39,7 @@ public sealed class ArchiverService :
 	public ArchiverService(
 		ISubscriber mainBus,
 		IArchiveStorage archiveStorage,
-		TFChunkManager chunkChunkManager) {
+		IChunkRegistry<IChunkBlob> chunkChunkManager) {
 		_archive = archiveStorage;
 		_cts = new();
 		_lifetimeToken = _cts.Token;

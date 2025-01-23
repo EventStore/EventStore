@@ -68,6 +68,7 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 
 	protected sealed class FakeChunkBlob(string chunkPath, int chunkStartNumber, byte chunkVersion, FileMode mode = FileMode.Create) : FileStream(chunkPath, mode, FileAccess.ReadWrite, FileShare.None, 1024, FileOptions.Asynchronous), IChunkBlob {
 		private ChunkHeader _header;
+		private ChunkFooter _footer;
 
 		public ValueTask<IChunkBlobReader> AcquireRawReader(CancellationToken token)
 			=> token.IsCancellationRequested
@@ -89,6 +90,12 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 			get {
 				return _header ??= new(chunkVersion, chunkVersion, (int)Length, chunkStartNumber,
 					chunkStartNumber, false, Guid.NewGuid(), TransformType.Identity);
+			}
+		}
+
+		public ChunkFooter ChunkFooter {
+			get {
+				return _footer ??= new(isCompleted: true, isMap12Bytes: false, (int)Length, Length, mapSize: 0);
 			}
 		}
 	}

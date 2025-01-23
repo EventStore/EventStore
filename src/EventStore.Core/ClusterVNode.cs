@@ -1590,7 +1590,7 @@ public class ClusterVNode<TStreamId> :
 						X509Certificate2Collection Roots)>>
 					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()))
 				.AddSingleton(_nodeHttpClientFactory)
-				.AddSingleton(Db.Manager)
+				.AddSingleton<IChunkRegistry<IChunkBlob>>(Db.Manager)
 				.AddSingleton(Db.Manager.FileSystem.NamingStrategy);
 
 			configureAdditionalNodeServices?.Invoke(services);
