@@ -17,7 +17,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests;
 
 [TestFixture]
 public abstract class SingleNodeScenario<TLogFormat, TStreamId> {
-	protected ClusterVNode _node;
+	protected ClusterVNode<TStreamId> _node;
 	protected ClusterVNodeOptions _options;
 	private ILogFormatAbstractorFactory<TStreamId> _logFormatFactory;
 	private readonly bool _disableMemoryOptimization;
@@ -36,12 +36,10 @@ public abstract class SingleNodeScenario<TLogFormat, TStreamId> {
 
 		_options = WithOptions(options
 			.RunInMemory()
-			.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
-				ssl_connections.GetServerCertificate()));
+			.Secure(new(ssl_connections.GetRootCertificate()), ssl_connections.GetServerCertificate()));
 		_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
-			new AuthenticationProviderFactory(c =>
-				new InternalAuthenticationProviderFactory(c, _options.DefaultUser)),
-			new AuthorizationProviderFactory(c => new InternalAuthorizationProviderFactory(
+			new(c => new InternalAuthenticationProviderFactory(c, _options.DefaultUser)),
+			new(c => new InternalAuthorizationProviderFactory(
 				new StaticAuthorizationPolicyRegistry([new LegacyPolicySelectorFactory(
 					options.Application.AllowAnonymousEndpointAccess,
 					options.Application.AllowAnonymousStreamAccess,
@@ -59,7 +57,7 @@ public abstract class SingleNodeScenario<TLogFormat, TStreamId> {
 
 [TestFixture, Category("LongRunning")]
 public abstract class ClusterMemberScenario<TLogFormat, TStreamId> {
-	protected ClusterVNode _node;
+	protected ClusterVNode<TStreamId> _node;
 	protected int _clusterSize = 3;
 	protected int _quorumSize;
 	protected ClusterVNodeOptions _options;
@@ -74,12 +72,10 @@ public abstract class ClusterMemberScenario<TLogFormat, TStreamId> {
 			.ReduceMemoryUsageForTests()
 			.InCluster(_clusterSize)
 			.RunInMemory()
-			.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
-				ssl_connections.GetServerCertificate()));
-		_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
-			new AuthenticationProviderFactory(_ =>
-				new InternalAuthenticationProviderFactory(_, _options.DefaultUser)),
-			new AuthorizationProviderFactory(c => new InternalAuthorizationProviderFactory(
+			.Secure(new(ssl_connections.GetRootCertificate()), ssl_connections.GetServerCertificate()));
+		_node = new(_options, _logFormatFactory,
+			new(_ => new InternalAuthenticationProviderFactory(_, _options.DefaultUser)),
+			new(c => new InternalAuthorizationProviderFactory(
 				new StaticAuthorizationPolicyRegistry([new LegacyPolicySelectorFactory(
 					_options.Application.AllowAnonymousEndpointAccess,
 					_options.Application.AllowAnonymousStreamAccess,

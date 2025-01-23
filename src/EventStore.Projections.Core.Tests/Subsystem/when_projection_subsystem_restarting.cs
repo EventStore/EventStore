@@ -2,12 +2,13 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using static EventStore.Core.Messages.SystemMessage;
+using static EventStore.Projections.Core.Messages.ProjectionSubsystemMessage;
+
 // ReSharper disable InconsistentNaming
 
 namespace EventStore.Projections.Core.Tests.Subsystem;
@@ -20,25 +21,21 @@ public class when_projection_subsystem_restarted
 	private Message _restartResponse;
 
 	protected override void Given() {
-		Subsystem.Handle(new SystemMessage.SystemCoreReady());
-		Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+		Subsystem.Handle(new SystemCoreReady());
+		Subsystem.Handle(new BecomeLeader(Guid.NewGuid()));
 
 		var startMsg = WaitForStartMessage();
 		ResetMessageEvents();
 		_instanceCorrelation = startMsg.InstanceCorrelationId;
 
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
-			ProjectionManager.ServiceName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
-			ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
-
-		Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(
-			new CallbackEnvelope(message => _restartResponse = message)));
+		Subsystem.Handle(new ComponentStarted(ProjectionManager.ServiceName, _instanceCorrelation));
+		Subsystem.Handle(new ComponentStarted(ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
+		Subsystem.Handle(new RestartSubsystem(new CallbackEnvelope(message => _restartResponse = message)));
 	}
 
 	[Test]
 	public void should_respond_that_subsystem_is_restarting() {
-		Assert.IsInstanceOf<ProjectionSubsystemMessage.SubsystemRestarting>(_restartResponse);
+		Assert.IsInstanceOf<SubsystemRestarting>(_restartResponse);
 	}
 
 	[Test]
@@ -51,12 +48,10 @@ public class when_projection_subsystem_restarted
 	public void should_start_the_subsystem_when_fully_stopped() {
 		WaitForStopMessage();
 
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStopped(
-			ProjectionManager.ServiceName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStopped(
-			ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionManager.ServiceName));
-		Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionCoreService.SubComponentName));
+		Subsystem.Handle(new ComponentStopped(ProjectionManager.ServiceName, _instanceCorrelation));
+		Subsystem.Handle(new ComponentStopped(ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
+		Subsystem.Handle(new IODispatcherDrained(ProjectionManager.ServiceName));
+		Subsystem.Handle(new IODispatcherDrained(ProjectionCoreService.SubComponentName));
 
 		var restartMsg = WaitForStartMessage("Timed out waiting for restart StartComponents");
 
@@ -74,46 +69,40 @@ public class when_projection_subsystem_restarted_twice
 
 	protected override void Given() {
 		// Start subsystem
-		Subsystem.Handle(new SystemMessage.SystemCoreReady());
-		Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+		Subsystem.Handle(new SystemCoreReady());
+		Subsystem.Handle(new BecomeLeader(Guid.NewGuid()));
 
 		 var startMsg = WaitForStartMessage();
 		ResetMessageEvents();
 		_instanceCorrelation = startMsg.InstanceCorrelationId;
 
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
-			ProjectionManager.ServiceName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
-			ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
+		Subsystem.Handle(new ComponentStarted(ProjectionManager.ServiceName, _instanceCorrelation));
+		Subsystem.Handle(new ComponentStarted(ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
 
 		// Restart subsystem
-		Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(new NoopEnvelope()));
+		Subsystem.Handle(new RestartSubsystem(new NoopEnvelope()));
 
 		WaitForStopMessage("Timed out waiting for StopComponents on first restart");
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStopped(
-			ProjectionManager.ServiceName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStopped(
-			ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionManager.ServiceName));
-		Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionCoreService.SubComponentName));
+		Subsystem.Handle(new ComponentStopped(ProjectionManager.ServiceName, _instanceCorrelation));
+		Subsystem.Handle(new ComponentStopped(ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
+		Subsystem.Handle(new IODispatcherDrained(ProjectionManager.ServiceName));
+		Subsystem.Handle(new IODispatcherDrained(ProjectionCoreService.SubComponentName));
 
 		var restartMsg = WaitForStartMessage("Timed out waiting for StartComponents on first restart");
 		ResetMessageEvents();
 		_restartInstanceCorrelation = restartMsg.InstanceCorrelationId;
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
-			ProjectionManager.ServiceName, _restartInstanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
-			ProjectionCoreCoordinator.ComponentName, _restartInstanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionManager.ServiceName));
-		Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionCoreService.SubComponentName));
+		Subsystem.Handle(new ComponentStarted(ProjectionManager.ServiceName, _restartInstanceCorrelation));
+		Subsystem.Handle(new ComponentStarted(ProjectionCoreCoordinator.ComponentName, _restartInstanceCorrelation));
+		Subsystem.Handle(new IODispatcherDrained(ProjectionManager.ServiceName));
+		Subsystem.Handle(new IODispatcherDrained(ProjectionCoreService.SubComponentName));
 
-		Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(
+		Subsystem.Handle(new RestartSubsystem(
 			new CallbackEnvelope(message => _secondRestartResponse = message)));
 	}
 
 	[Test]
 	public void should_respond_success_on_second_restart() {
-		Assert.IsInstanceOf<ProjectionSubsystemMessage.SubsystemRestarting>(_secondRestartResponse);
+		Assert.IsInstanceOf<SubsystemRestarting>(_secondRestartResponse);
 	}
 
 	[Test]
@@ -125,10 +114,8 @@ public class when_projection_subsystem_restarted_twice
 	[Test]
 	public void should_start_the_subsystem() {
 		WaitForStopMessage("Timed out waiting for StopComponents on second restart");
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStopped(
-			ProjectionManager.ServiceName, _restartInstanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStopped(
-			ProjectionCoreCoordinator.ComponentName, _restartInstanceCorrelation));
+		Subsystem.Handle(new ComponentStopped(ProjectionManager.ServiceName, _restartInstanceCorrelation));
+		Subsystem.Handle(new ComponentStopped(ProjectionCoreCoordinator.ComponentName, _restartInstanceCorrelation));
 
 		var restartMsg = WaitForStartMessage("Timed out waiting for StartComponents on second restart");
 		Assert.AreNotEqual(_restartInstanceCorrelation, restartMsg.InstanceCorrelationId);
@@ -139,34 +126,30 @@ public class when_projection_subsystem_restarted_twice
 public class when_projection_subsystem_restarting_and_node_becomes_unknown
 	: TestFixtureWithProjectionSubsystem {
 	private Guid _instanceCorrelation;
-	private ProjectionSubsystemMessage.StopComponents _stopMsg;
+	private StopComponents _stopMsg;
 
 	protected override void Given() {
-		Subsystem.Handle(new SystemMessage.SystemCoreReady());
-		Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+		Subsystem.Handle(new SystemCoreReady());
+		Subsystem.Handle(new BecomeLeader(Guid.NewGuid()));
 
 		var startMsg = WaitForStartMessage();
 		ResetMessageEvents();
 		_instanceCorrelation = startMsg.InstanceCorrelationId;
 
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
-			ProjectionManager.ServiceName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
-			ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
+		Subsystem.Handle(new ComponentStarted(ProjectionManager.ServiceName, _instanceCorrelation));
+		Subsystem.Handle(new ComponentStarted(ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
 
-		Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(new NoopEnvelope()));
+		Subsystem.Handle(new RestartSubsystem(new NoopEnvelope()));
 
 		_stopMsg = WaitForStopMessage();
 
 		// Become unknown before components stopped
-		Subsystem.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+		Subsystem.Handle(new BecomeUnknown(Guid.NewGuid()));
 
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStopped(
-			ProjectionManager.ServiceName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStopped(
-			ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionManager.ServiceName));
-		Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionCoreService.SubComponentName));
+		Subsystem.Handle(new ComponentStopped(ProjectionManager.ServiceName, _instanceCorrelation));
+		Subsystem.Handle(new ComponentStopped(ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
+		Subsystem.Handle(new IODispatcherDrained(ProjectionManager.ServiceName));
+		Subsystem.Handle(new IODispatcherDrained(ProjectionCoreService.SubComponentName));
 	}
 
 	[Test]
@@ -182,60 +165,54 @@ public class when_projection_subsystem_restarting_and_node_becomes_unknown
 }
 
 [TestFixture]
-public class when_projection_subsystem_starting_and_told_to_restart
-	: TestFixtureWithProjectionSubsystem {
+public class when_projection_subsystem_starting_and_told_to_restart : TestFixtureWithProjectionSubsystem {
 	private Message _restartResponse;
 
 	protected override void Given() {
-		Subsystem.Handle(new SystemMessage.SystemCoreReady());
-		Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+		Subsystem.Handle(new SystemCoreReady());
+		Subsystem.Handle(new BecomeLeader(Guid.NewGuid()));
 
 		WaitForStartMessage();
 
 		// Restart subsystem before fully started
-		Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(
-			new CallbackEnvelope(message => _restartResponse = message)));
+		Subsystem.Handle(new RestartSubsystem(new CallbackEnvelope(message => _restartResponse = message)));
 	}
 
 	[Test]
 	public void should_report_restart_failure() {
-		Assert.IsInstanceOf<ProjectionSubsystemMessage.InvalidSubsystemRestart>(_restartResponse);
+		Assert.IsInstanceOf<InvalidSubsystemRestart>(_restartResponse);
 	}
 }
 
 [TestFixture]
-public class when_projection_subsystem_stopping_and_told_to_restart
-	: TestFixtureWithProjectionSubsystem {
+public class when_projection_subsystem_stopping_and_told_to_restart : TestFixtureWithProjectionSubsystem {
 	private Guid _instanceCorrelation;
 	private Message _restartResponse;
 
 	protected override void Given() {
-		Subsystem.Handle(new SystemMessage.SystemCoreReady());
-		Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+		Subsystem.Handle(new SystemCoreReady());
+		Subsystem.Handle(new BecomeLeader(Guid.NewGuid()));
 
 		var startMsg = WaitForStartMessage();
 		ResetMessageEvents();
 		_instanceCorrelation = startMsg.InstanceCorrelationId;
 
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
-			ProjectionManager.ServiceName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
-			ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionManager.ServiceName));
-		Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionCoreService.SubComponentName));
+		Subsystem.Handle(new ComponentStarted(ProjectionManager.ServiceName, _instanceCorrelation));
+		Subsystem.Handle(new ComponentStarted(ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
+		Subsystem.Handle(new IODispatcherDrained(ProjectionManager.ServiceName));
+		Subsystem.Handle(new IODispatcherDrained(ProjectionCoreService.SubComponentName));
 
-		Subsystem.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+		Subsystem.Handle(new BecomeUnknown(Guid.NewGuid()));
 
 		WaitForStopMessage();
 
 		// Restart subsystem before fully stopped
-		Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(
-			new CallbackEnvelope(message => _restartResponse = message)));
+		Subsystem.Handle(new RestartSubsystem(new CallbackEnvelope(message => _restartResponse = message)));
 	}
 
 	[Test]
 	public void should_report_restart_failure() {
-		Assert.IsInstanceOf<ProjectionSubsystemMessage.InvalidSubsystemRestart>(_restartResponse);
+		Assert.IsInstanceOf<InvalidSubsystemRestart>(_restartResponse);
 	}
 }
 
@@ -246,52 +223,47 @@ public class when_projection_subsystem_restarting_and_told_to_restart
 	private Message _restartResponse;
 
 	protected override void Given() {
-		Subsystem.Handle(new SystemMessage.SystemCoreReady());
-		Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+		Subsystem.Handle(new SystemCoreReady());
+		Subsystem.Handle(new BecomeLeader(Guid.NewGuid()));
 
 		var startMsg = WaitForStartMessage();
 		_instanceCorrelation = startMsg.InstanceCorrelationId;
 
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
-			ProjectionManager.ServiceName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStarted(
-			ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
-		Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionManager.ServiceName));
-		Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionCoreService.SubComponentName));
+		Subsystem.Handle(new ComponentStarted(ProjectionManager.ServiceName, _instanceCorrelation));
+		Subsystem.Handle(new ComponentStarted(ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
+		Subsystem.Handle(new IODispatcherDrained(ProjectionManager.ServiceName));
+		Subsystem.Handle(new IODispatcherDrained(ProjectionCoreService.SubComponentName));
 
 		// First restart
-		Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(new NoopEnvelope()));
+		Subsystem.Handle(new RestartSubsystem(new NoopEnvelope()));
 
 		WaitForStopMessage();
 
 		// Restart subsystem before finished restart
-		Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(
-			new CallbackEnvelope(message => _restartResponse = message)));
+		Subsystem.Handle(new RestartSubsystem(new CallbackEnvelope(message => _restartResponse = message)));
 	}
 
 	[Test]
 	public void should_report_restart_failure() {
-		Assert.IsInstanceOf<ProjectionSubsystemMessage.InvalidSubsystemRestart>(_restartResponse);
+		Assert.IsInstanceOf<InvalidSubsystemRestart>(_restartResponse);
 	}
 }
 
 [TestFixture]
-public class when_projection_subsystem_stopped_and_told_to_restart
-	: TestFixtureWithProjectionSubsystem {
+public class when_projection_subsystem_stopped_and_told_to_restart : TestFixtureWithProjectionSubsystem {
 	private Message _restartResponse;
 
 	protected override void Given() {
-		Subsystem.Handle(new SystemMessage.SystemCoreReady());
+		Subsystem.Handle(new SystemCoreReady());
 		// Don't start the subsystem
-		Subsystem.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+		Subsystem.Handle(new BecomeUnknown(Guid.NewGuid()));
 
 		// Restart subsystem while stopped
-		Subsystem.Handle(new ProjectionSubsystemMessage.RestartSubsystem(
-			new CallbackEnvelope(message => _restartResponse = message)));
+		Subsystem.Handle(new RestartSubsystem(new CallbackEnvelope(message => _restartResponse = message)));
 	}
 
 	[Test]
 	public void should_report_restart_failure() {
-		Assert.IsInstanceOf<ProjectionSubsystemMessage.InvalidSubsystemRestart>(_restartResponse);
+		Assert.IsInstanceOf<InvalidSubsystemRestart>(_restartResponse);
 	}
 }

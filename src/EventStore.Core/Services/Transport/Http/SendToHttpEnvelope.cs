@@ -24,23 +24,17 @@ public class HttpResponseConfiguratorArgs {
 	}
 
 	public static implicit operator HttpResponseConfiguratorArgs(HttpEntityManager entity) {
-		return new HttpResponseConfiguratorArgs(entity.ResponseUrl, entity.RequestedUrl, entity.ResponseCodec);
+		return new(entity.ResponseUrl, entity.RequestedUrl, entity.ResponseCodec);
 	}
 }
 
-public class HttpResponseFormatterArgs {
-	public readonly Uri ResponseUrl;
-	public readonly Uri RequestedUrl;
-	public readonly ICodec ResponseCodec;
-
-	public HttpResponseFormatterArgs(Uri responseUrl, Uri requestedUrl, ICodec responseCodec) {
-		ResponseUrl = responseUrl;
-		RequestedUrl = requestedUrl;
-		ResponseCodec = responseCodec;
-	}
+public class HttpResponseFormatterArgs(Uri responseUrl, Uri requestedUrl, ICodec responseCodec) {
+	public readonly Uri ResponseUrl = responseUrl;
+	public readonly Uri RequestedUrl = requestedUrl;
+	public readonly ICodec ResponseCodec = responseCodec;
 
 	public static implicit operator HttpResponseFormatterArgs(HttpEntityManager entity) {
-		return new HttpResponseFormatterArgs(entity.ResponseUrl, entity.RequestedUrl, entity.ResponseCodec);
+		return new(entity.ResponseUrl, entity.RequestedUrl, entity.ResponseCodec);
 	}
 }
 

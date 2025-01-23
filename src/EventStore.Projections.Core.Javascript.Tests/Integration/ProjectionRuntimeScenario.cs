@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Options;
@@ -21,12 +22,9 @@ using Xunit.Abstractions;
 
 namespace EventStore.Projections.Core.Javascript.Tests.Integration;
 
-public abstract class ProjectionRuntimeScenario: SubsystemScenario {
+public abstract class ProjectionRuntimeScenario()
+	: SubsystemScenario(CreateRuntime, "$et", new CancellationTokenSource(Debugger.IsAttached ? 5 * 60 * 1000 : 5 * 1000).Token) {
 	static readonly IConfiguration EmptyConfiguration = new ConfigurationBuilder().AddInMemoryCollection().Build();
-
-	protected ProjectionRuntimeScenario() : base(CreateRuntime, "$et", new CancellationTokenSource(System.Diagnostics.Debugger.IsAttached?5*60*1000: 5*1000).Token){
-
-	}
 
 	static (Func<ValueTask>, IPublisher) CreateRuntime(SynchronousScheduler mainBus, IQueuedHandler mainQueue, ICheckpoint writerCheckpoint) {
 		var options = new ProjectionSubsystemOptions(3, ProjectionType.All, true, TimeSpan.FromMinutes(5), false, 500, 500);
@@ -35,7 +33,7 @@ public abstract class ProjectionRuntimeScenario: SubsystemScenario {
 		var qs = new QueueStatsManager();
 		var timeProvider = new RealTimeProvider();
 		var ts = new TimerService(new TimerBasedScheduler(new RealTimer(), timeProvider));
-		var sc = new StandardComponents(db.Config, mainQueue, mainBus, ts, timeProvider, null, new IHttpService[] { }, mainBus, qs, new(), true);
+		var sc = new StandardComponents(db.Config, mainQueue, mainBus, ts, timeProvider, null, new TrieUriRouter(), mainBus, qs, new(), true);
 
 		var subsystem = new ProjectionsSubsystem(options);
 

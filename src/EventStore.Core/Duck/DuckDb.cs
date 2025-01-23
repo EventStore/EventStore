@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using Dapper;
 using DuckDB.NET.Data;
-using EventStore.Core.Duck.Default;
 using EventStore.Core.TransactionLog.Chunks;
 using Serilog;
 
@@ -25,7 +24,7 @@ public class DuckDb(TFChunkDbConfig dbConfig) {
 		Connection.Close();
 	}
 
-	public DuckDBConnection Connection = new($"Data Source={Path.Combine(dbConfig.Path, "index.db")};");
+	public readonly DuckDBConnection Connection = new($"Data Source={Path.Combine(dbConfig.Path, "index.db")};");
 }
 
 static class DuckDbExtensions {

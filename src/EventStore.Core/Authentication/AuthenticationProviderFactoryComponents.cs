@@ -13,5 +13,5 @@ public record AuthenticationProviderFactoryComponents {
 	public IPublisher WorkersQueue { get; init; }
 	public InMemoryBus[] WorkerBuses { get; init; }
 	public HttpSendService HttpSendService { get; init; }
-	public IHttpService HttpService { get; init; }
+	public IUriRouter Router { get; init; }
 }

@@ -33,14 +33,4 @@ public class GossipListenerService(Guid nodeId, IPublisher publisher, InMemoryLo
 		var data = JsonSerializer.SerializeToUtf8Bytes(payload, _options);
 		Stream.Write(EventType, data);
 	}
-
-	public ValueTask<ReadStreamEventsForwardCompleted> ReadForwards(ReadStreamEventsForward msg, CancellationToken token)
-		=> Stream.ReadForwards(msg, token);
-
-	public ValueTask<ReadStreamEventsBackwardCompleted> ReadBackwards(ReadStreamEventsBackward msg, CancellationToken token)
-		=> Stream.ReadBackwards(msg, token);
-
-	public ValueTask<long> GetLastEventNumber(string streamId) => Stream.GetLastEventNumber(streamId);
-
-	public bool OwnStream(string streamId) => Stream.OwnStream(streamId);
 }

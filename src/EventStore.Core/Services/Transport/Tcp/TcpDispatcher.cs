@@ -57,26 +57,8 @@ public abstract class TcpDispatcher : ITcpDispatcher {
 			(pkg, env, user, tokens, conn) => unwrapper(pkg, env, user);
 	}
 
-	protected void AddUnwrapper<T>(TcpCommand command,
-		Func<TcpPackage, IEnvelope, ClaimsPrincipal, IReadOnlyDictionary<string, string>, T> unwrapper, ClientVersion version)
-		where T : Message {
-		_unwrappers[(byte)version][(byte)command] = (pkg, env, user, tokens, conn) =>
-			unwrapper(pkg, env, user, tokens);
-	}
-
-	protected void AddUnwrapper<T>(TcpCommand command,
-		Func<TcpPackage, IEnvelope, ClaimsPrincipal, IReadOnlyDictionary<string, string>, TcpConnectionManager, T> unwrapper,
-		ClientVersion version)
-		where T : Message {
-// ReSharper disable RedundantCast
-		_unwrappers[(byte)version][(byte)command] =
-			(Func<TcpPackage, IEnvelope, ClaimsPrincipal, IReadOnlyDictionary<string, string>, TcpConnectionManager, Message>)unwrapper;
-// ReSharper restore RedundantCast
-	}
-
 	public TcpPackage? WrapMessage(Message message, byte version) {
-		if (message == null)
-			throw new ArgumentNullException(nameof(message));
+		ArgumentNullException.ThrowIfNull(message);
 
 		try {
 			if (_wrappers[version].TryGetValue(message.GetType(), out var wrapper))

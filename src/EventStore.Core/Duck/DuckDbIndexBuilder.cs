@@ -1,8 +1,10 @@
 // Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
+using DuckDB.NET.Data;
 using EventStore.Core.Bus;
 using EventStore.Core.Duck.Default;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -21,10 +23,14 @@ class DuckDbIndexBuilder<TStreamId> : IAsyncHandle<SystemReady>, IAsyncHandle<Be
 
 	internal DefaultIndex<TStreamId> DefaultIndex { get; }
 
+	public DuckDBConnection Connection => _db.Connection;
+
+	[Experimental("DuckDBNET001")]
 	public DuckDbIndexBuilder(TFChunkDbConfig dbConfig, IPublisher publisher, IReadIndex<TStreamId> index) {
 		_publisher = publisher;
 		_db = new(dbConfig);
 		_db.InitDb();
+		new InlineFunctions<TStreamId>(_db, index.IndexReader).Run();
 		DefaultIndex = new(_db, index);
 		_checkpointStore = new(DefaultIndex, DefaultIndex.Handler);
 	}

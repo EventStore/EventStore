@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Security.AccessControl;
 using System.Threading;
 using ILogger = Serilog.ILogger;
 
@@ -12,7 +11,7 @@ namespace EventStore.Core;
 public class ClusterNodeMutex {
 	private static readonly ILogger Log = Serilog.Log.ForContext<ClusterNodeMutex>();
 
-	public readonly string MutexName;
+	public readonly string MutexName = $"ESCLUSTERNODE:{Process.GetCurrentProcess().Id}";
 
 	public bool IsAcquired {
 		get { return _acquired; }
@@ -21,22 +20,13 @@ public class ClusterNodeMutex {
 	private Mutex _clusterNodeMutex;
 	private bool _acquired;
 
-	public ClusterNodeMutex() {
-		MutexName = string.Format("ESCLUSTERNODE:{0}", Process.GetCurrentProcess().Id);
-	}
-
 	public bool Acquire() {
 		if (_acquired)
-			throw new InvalidOperationException(string.Format("Cluster Node mutex '{0}' is already acquired.",
-				MutexName));
-
+			throw new InvalidOperationException($"Cluster Node mutex '{MutexName}' is already acquired.");
 		try {
 			_clusterNodeMutex = new Mutex(initiallyOwned: true, name: MutexName, createdNew: out _acquired);
 		} catch (AbandonedMutexException exc) {
-			Log.Information(exc,
-				"Cluster Node mutex '{mutex}' is said to be abandoned. "
-				+ "Probably previous instance of server was terminated abruptly.",
-				MutexName);
+			Log.Information(exc, "Cluster Node mutex '{mutex}' is said to be abandoned. Probably previous instance of server was terminated abruptly.", MutexName);
 		}
 
 		return _acquired;
@@ -44,13 +34,12 @@ public class ClusterNodeMutex {
 
 	public void Release() {
 		if (!_acquired)
-			throw new InvalidOperationException(string.Format("Cluster Node mutex '{0}' was not acquired.",
-				MutexName));
+			throw new InvalidOperationException($"Cluster Node mutex '{MutexName}' was not acquired.");
 		_clusterNodeMutex.ReleaseMutex();
 	}
 
 	public static bool IsPresent(int pid) {
-		var mutexName = string.Format("ESCLUSTERNODE:{0}", pid);
+		var mutexName = $"ESCLUSTERNODE:{pid}";
 		try {
 			using (Mutex.OpenExisting(mutexName)) {
 				return true;

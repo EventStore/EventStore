@@ -9,9 +9,6 @@ namespace EventStore.Core.TransactionLog.Scavenging.InMemory;
 public class InMemoryTransactionFactory : ITransactionFactory<int> {
 	int _transactionNumber;
 
-	public InMemoryTransactionFactory() {
-	}
-
 	public int Begin() {
 		return _transactionNumber++;
 	}

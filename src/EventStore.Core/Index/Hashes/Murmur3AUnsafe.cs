@@ -5,50 +5,36 @@ using System;
 
 namespace EventStore.Core.Index.Hashes;
 
-public class Murmur3AUnsafe : IHasher, IHasher<string> {
-	private readonly uint _seed;
+public class Murmur3AUnsafe(uint seed = 0xc58f1a7b) : IHasher, IHasher<string> {
+	private const uint c1 = 0xcc9e2d51;
+	private const uint c2 = 0x1b873593;
 
-	private const UInt32 c1 = 0xcc9e2d51;
-	private const UInt32 c2 = 0x1b873593;
-
-	public Murmur3AUnsafe(uint seed = 0xc58f1a7b) {
-		_seed = seed;
-	}
-
-	public unsafe UInt32 Hash(string s) {
+	public unsafe uint Hash(string s) {
 		fixed (char* input = s) {
-			return Hash((byte*)input, (uint)s.Length * sizeof(char), _seed);
-		}
-	}
-
-	public unsafe uint Hash(byte[] data) {
-		fixed (byte* input = &data[0]) {
-			return Hash(input, (uint)data.Length, _seed);
-		}
-	}
-
-	public unsafe uint Hash(byte[] data, int offset, uint len, uint seed) {
-		fixed (byte* input = &data[offset]) {
-			return Hash(input, len, seed);
+			return Hash((byte*)input, (uint)s.Length * sizeof(char), seed);
 		}
 	}
 
 	public unsafe uint Hash(ReadOnlySpan<byte> data) {
 		fixed (byte* input = data) {
-			return Hash(input, (uint)data.Length, _seed);
+			return Hash(input, (uint)data.Length, seed);
 		}
 	}
 
-	private unsafe static uint Hash(byte* data, uint len, uint seed) {
-		UInt32 nblocks = len / 4;
-		UInt32 h1 = seed;
+	public unsafe uint Hash(byte[] data, int offset, uint len, uint ls) {
+		fixed (byte* input = &data[offset]) {
+			return Hash(input, len, ls);
+		}
+	}
 
-		//----------
+	static unsafe uint Hash(byte* data, uint len, uint ls) {
+		uint nblocks = len / 4;
+		uint h1 = ls;
+
 		// body
-
-		UInt32 k1;
-		UInt32* block = (UInt32*)data;
-		for (UInt32 i = nblocks; i > 0; --i, ++block) {
+		uint k1;
+		uint* block = (uint*)data;
+		for (uint i = nblocks; i > 0; --i, ++block) {
 			k1 = *block;
 
 			k1 *= c1;
@@ -62,8 +48,6 @@ public class Murmur3AUnsafe : IHasher, IHasher<string> {
 
 		//----------
 		// tail
-
-
 		k1 = 0;
 		uint rem = len & 3;
 		byte* tail = (byte*)block;
@@ -93,7 +77,7 @@ public class Murmur3AUnsafe : IHasher, IHasher<string> {
 		return h1;
 	}
 
-	private static UInt32 Rotl32(UInt32 x, int r) {
+	private static uint Rotl32(uint x, int r) {
 		return (x << r) | (x >> (32 - r));
 	}
 }

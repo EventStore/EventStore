@@ -29,8 +29,7 @@ internal partial class Streams<TStreamId> : EventStore.Client.Streams.Streams.St
 		IExpiryStrategy expiryStrategy,
 		GrpcTrackers trackers,
 		IAuthorizationProvider provider) {
-
-		if (publisher == null) throw new ArgumentNullException(nameof(publisher));
+		ArgumentNullException.ThrowIfNull(publisher);
 		_publisher = publisher;
 		_maxAppendSize = maxAppendSize;
 		_writeTimeout = writeTimeout;

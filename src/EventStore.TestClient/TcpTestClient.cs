@@ -108,7 +108,7 @@ public class TcpTestClient {
 				Guid.NewGuid(),
 				endpoint.GetHost(),
 				endpoint.GetOtherNames(),
-				endpoint.ResolveDnsToIPAddress(),
+				endpoint.ResolveDnsToIpAddress(),
 				TcpConnectionManager.ConnectionTimeout,
 				(_, _, err, _) => (err == SslPolicyErrors.None || !_validateServer, err.ToString()),
 				() => null,
@@ -118,7 +118,7 @@ public class TcpTestClient {
 		} else {
 			connection = _connector.ConnectTo(
 				Guid.NewGuid(),
-				endpoint.ResolveDnsToIPAddress(),
+				endpoint.ResolveDnsToIpAddress(),
 				TcpConnectionManager.ConnectionTimeout,
 				onConnectionEstablished,
 				onConnectionFailed,

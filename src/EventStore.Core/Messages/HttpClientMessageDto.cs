@@ -30,39 +30,6 @@ public static class HttpClientMessageDto {
 		}
 	}
 
-	[XmlType(TypeName = "event")]
-	public class ClientEventText {
-		public Guid eventId { get; set; }
-		public string eventType { get; set; }
-
-		public string data { get; set; }
-		public string metadata { get; set; }
-
-		public ClientEventText() {
-		}
-
-		public ClientEventText(Guid eventId, string eventType, string data, string metadata) {
-			Ensure.NotEmptyGuid(eventId, "eventId");
-			Ensure.NotNull(data, "data");
-
-			this.eventId = eventId;
-			this.eventType = eventType;
-
-			this.data = data;
-			this.metadata = metadata;
-		}
-
-		public ClientEventText(Guid eventId, string eventType, ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> metadata) {
-			Ensure.NotEmptyGuid(eventId, "eventId");
-
-			this.eventId = eventId;
-			this.eventType = eventType;
-
-			this.data = Helper.UTF8NoBom.GetString(data.Span);
-			this.metadata = Helper.UTF8NoBom.GetString(metadata.Span);
-		}
-	}
-
 	[XmlRoot(ElementName = "event")]
 	public class ReadEventCompletedText {
 		public string eventStreamId { get; set; }

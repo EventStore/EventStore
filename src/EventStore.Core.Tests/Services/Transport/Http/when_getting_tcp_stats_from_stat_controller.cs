@@ -24,16 +24,16 @@ public class when_getting_tcp_stats_from_stat_controller<TLogFormat, TStreamId>
 	: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 	private IEventStoreConnection _connection;
 	private string _url;
-	private string _clientConnectionName = "test-connection";
+	const string ClientConnectionName = "test-connection";
 
-	private List<MonitoringMessage.TcpConnectionStats> _results = new List<MonitoringMessage.TcpConnectionStats>();
+	private List<MonitoringMessage.TcpConnectionStats> _results = [];
 	private HttpResponseMessage _response;
 
 	protected override async Task Given() {
-		_url = _node.HttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/stats/tcp");
+		_url = _node.HttpEndPoint.ToHttpUrl(Uri.UriSchemeHttp, "/stats/tcp");
 
 		var settings = ConnectionSettings.Create().DisableServerCertificateValidation();
-		_connection = EventStoreConnection.Create(settings, _node.TcpEndPoint, _clientConnectionName);
+		_connection = EventStoreConnection.Create(settings, _node.TcpEndPoint, ClientConnectionName);
 		await _connection.ConnectAsync();
 
 		var testEvent = new EventData(Guid.NewGuid(), "TestEvent", true,
@@ -69,7 +69,7 @@ public class when_getting_tcp_stats_from_stat_controller<TLogFormat, TStreamId>
 
 	[Test]
 	public void should_have_set_the_client_connection_name() {
-		Assert.IsTrue(_results.Any(x => x.ClientConnectionName == _clientConnectionName));
+		Assert.IsTrue(_results.Any(x => x.ClientConnectionName == ClientConnectionName));
 	}
 
 	[OneTimeTearDown]

@@ -17,6 +17,7 @@ using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using static EventStore.Core.Services.SystemEventTypes;
 
 namespace EventStore.Core.Tests.Helpers;
 
@@ -339,14 +340,13 @@ public abstract class TestFixtureWithExistingEvents<TLogFormat,TStreamId> : Test
 			return;
 		}
 
-		List<EventRecord> list;
 		if (_deletedStreams.Contains(message.EventStreamId)) {
 			message.Envelope.ReplyWith(
 				new ClientMessage.ReadStreamEventsBackwardCompleted(
 					message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
 					ReadStreamResult.StreamDeleted, new ResolvedEvent[0], null, false, string.Empty, -1,
 					EventNumber.DeletedStream, true, _fakePosition));
-		} else if (_streams.TryGetValue(message.EventStreamId, out list) || _noOtherStreams) {
+		} else if (_streams.TryGetValue(message.EventStreamId, out var list) || _noOtherStreams) {
 			if (list != null && list.Count > 0 && message.FromEventNumber >= 0) {
 				ResolvedEvent[] records =
 					list.Safe()
@@ -368,30 +368,15 @@ public abstract class TestFixtureWithExistingEvents<TLogFormat,TStreamId> : Test
 						               records.Last().OriginalEvent.EventNumber == list.Last().EventNumber,
 						tfLastCommitPosition: _fakePosition));
 			} else {
-				if (list == null) {
-					message.Envelope.ReplyWith(
-						new ClientMessage.ReadStreamEventsForwardCompleted(
-							message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
-							ReadStreamResult.NoStream, new ResolvedEvent[0], null, false, "", nextEventNumber: -1,
-							lastEventNumber: -1,
-							isEndOfStream: true,
-							tfLastCommitPosition: _fakePosition));
-					return;
-				}
-
-				throw new NotImplementedException();
-/*
-                    message.Envelope.ReplyWith(
-                            new ClientMessage.ReadStreamEventsBackwardCompleted(
-                                    message.CorrelationId,
-                                    message.EventStreamId,
-                                    new EventLinkPair[0],
-                                    ReadStreamResult.Success,
-                                    nextEventNumber: -1,
-                                    lastEventNumber: list.Safe().Last().EventNumber,
-                                    isEndOfStream: true,// NOTE AN: don't know how to correctly determine this here
-                                    lastCommitPosition: _lastPosition));
-*/
+				if (list != null) throw new NotImplementedException();
+				message.Envelope.ReplyWith(
+					new ClientMessage.ReadStreamEventsForwardCompleted(
+						message.CorrelationId, message.EventStreamId, message.FromEventNumber, message.MaxCount,
+						ReadStreamResult.NoStream, new ResolvedEvent[0], null, false, "", nextEventNumber: -1,
+						lastEventNumber: -1,
+						isEndOfStream: true,
+						tfLastCommitPosition: _fakePosition));
+				return;
 			}
 		}
 	}
@@ -399,8 +384,7 @@ public abstract class TestFixtureWithExistingEvents<TLogFormat,TStreamId> : Test
 	private ResolvedEvent BuildEvent(EventRecord x, bool resolveLinks) {
 		if (x.EventType == "$>" && resolveLinks) {
 			var parts = Helper.UTF8NoBom.GetString(x.Data.Span).Split(_linkToSeparator, 2);
-			List<EventRecord> list;
-			if (_deletedStreams.Contains(parts[1]) || !_streams.TryGetValue(parts[1], out list))
+			if (_deletedStreams.Contains(parts[1]) || !_streams.TryGetValue(parts[1], out var list))
 				return ResolvedEvent.ForFailedResolvedLink(x, ReadEventResult.StreamDeleted);
 			var eventNumber = int.Parse(parts[0]);
 			var target = list[eventNumber];
@@ -411,15 +395,14 @@ public abstract class TestFixtureWithExistingEvents<TLogFormat,TStreamId> : Test
 	}
 
 	private ResolvedEvent BuildEvent(EventRecord x, bool resolveLinks, long commitPosition) {
-		if (x.EventType == "$>" && resolveLinks) {
-			var parts = Helper.UTF8NoBom.GetString(x.Data.Span).Split(_linkToSeparator, 2);
-			var list = _streams[parts[1]];
-			var eventNumber = int.Parse(parts[0]);
-			var target = list[eventNumber];
-
-			return ResolvedEvent.ForResolvedLink(target, x, commitPosition);
-		} else
+		if (x.EventType != "$>" || !resolveLinks)
 			return ResolvedEvent.ForUnresolvedEvent(x, commitPosition);
+		var parts = Helper.UTF8NoBom.GetString(x.Data.Span).Split(_linkToSeparator, 2);
+		var list = _streams[parts[1]];
+		var eventNumber = int.Parse(parts[0]);
+		var target = list[eventNumber];
+
+		return ResolvedEvent.ForResolvedLink(target, x, commitPosition);
 	}
 
 	public void Handle(ClientMessage.WriteEvents message) {
@@ -427,11 +410,8 @@ public abstract class TestFixtureWithExistingEvents<TLogFormat,TStreamId> : Test
 			ProcessWrite(
 				message.Envelope, message.CorrelationId, message.EventStreamId, message.ExpectedVersion,
 				message.Events,
-				(firstEventNumber, lastEventNumber) =>
-					new ClientMessage.WriteEventsCompleted(message.CorrelationId, firstEventNumber, lastEventNumber,
-						-1, -1),
-				new ClientMessage.WriteEventsCompleted(
-					message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
+				(firstEventNumber, lastEventNumber) => new(message.CorrelationId, firstEventNumber, lastEventNumber, -1, -1),
+				new ClientMessage.WriteEventsCompleted( message.CorrelationId, OperationResult.WrongExpectedVersion, "wrong expected version"));
 		} else if (_allWritesQueueUp)
 			_writesQueue.Enqueue(message);
 	}
@@ -447,9 +427,8 @@ public abstract class TestFixtureWithExistingEvents<TLogFormat,TStreamId> : Test
 			}
 		}
 
-		List<EventRecord> list;
-		if (!_streams.TryGetValue(streamId, out list) || list == null) {
-			list = new List<EventRecord>();
+		if (!_streams.TryGetValue(streamId, out var list) || list == null) {
+			list = [];
 			_streams[streamId] = list;
 		}
 
@@ -490,7 +469,7 @@ public abstract class TestFixtureWithExistingEvents<TLogFormat,TStreamId> : Test
 	}
 
 	public void Handle(StorageMessage.EventCommitted msg) {
-		var metadata = Json.ParseJson<ParkedMessageMetadata>(msg.Event.Metadata);
+		var metadata = msg.Event.Metadata.ParseJson<ParkedMessageMetadata>();
 		if(metadata != null) EventTimeStamps.Add(metadata.Added.ToUniversalTime());
 	}
 
@@ -743,49 +722,37 @@ public abstract class TestFixtureWithExistingEvents<TLogFormat,TStreamId> : Test
 	}
 
 	public void AssertStreamTailWithLinks(string streamId, params string[] data) {
-		var message = string.Format("Invalid events in the '{0}' stream. ", streamId);
-		List<EventRecord> events;
-		Assert.That(_streams.TryGetValue(streamId, out events), message + "The stream does not exist.");
+		var message = $"Invalid events in the '{streamId}' stream. ";
+		Assert.That(_streams.TryGetValue(streamId, out var events), message + "The stream does not exist.");
 		var eventsText =
 			events.Skip(events.Count - data.Length)
 				.Select(v => new {Text = Encoding.UTF8.GetString(v.Data.Span), EventType = v.EventType})
-				.Select(
-					v =>
-						v.EventType == SystemEventTypes.LinkTo
-							? ResolveEventText(v.Text)
-							: v.EventType + ":" + v.Text)
+				.Select(v => v.EventType == LinkTo ? ResolveEventText(v.Text) : $"{v.EventType}:{v.Text}")
 				.ToList();
 		if (data.Length > 0)
 			Assert.IsNotEmpty(events, message + "The stream is empty.");
 
 		Assert.That(
 			data.SequenceEqual(eventsText),
-			string.Format(
-				"{0} does not end with: {1}. the tail is: {2}", streamId, data.Aggregate("", (a, v) => a + " " + v),
-				eventsText.Aggregate("", (a, v) => a + " " + v)));
+			$"{streamId} does not end with: {data.Aggregate("", (a, v) => $"{a} {v}")}. the tail is: {eventsText.Aggregate("", (a, v) => $"{a} {v}")}");
 	}
 
 	private string ResolveEventText(string link) {
-		var stream = SystemEventTypes.StreamReferenceEventToStreamId(SystemEventTypes.LinkTo, link);
-		var eventNumber = SystemEventTypes.EventLinkToEventNumber(link);
-		return _streams[stream][(int)eventNumber].EventType + ":"
-		                                                    +
-		                                                    Encoding.UTF8.GetString(
-			                                                    _streams[stream][(int)eventNumber].Data.Span);
+		var stream = StreamReferenceEventToStreamId(LinkTo, link);
+		var eventNumber = EventLinkToEventNumber(link);
+		return $"{_streams[stream][(int)eventNumber].EventType}:{Encoding.UTF8.GetString(_streams[stream][(int)eventNumber].Data.Span)}";
 	}
 
 	public void AssertStreamContains(string streamId, params string[] data) {
-		var message = string.Format("Invalid events in the '{0}' stream. ", streamId);
-		List<EventRecord> events;
-		Assert.That(_streams.TryGetValue(streamId, out events), message + "The stream does not exist.");
+		var message = $"Invalid events in the '{streamId}' stream. ";
+		Assert.That(_streams.TryGetValue(streamId, out var events), message + "The stream does not exist.");
 		if (data.Length > 0)
 			Assert.IsNotEmpty(events, message + "The stream is empty.");
 
 		var eventsData = new HashSet<string>(events.Select(v => Encoding.UTF8.GetString(v.Data.Span)));
 		var missing = data.Where(v => !eventsData.Contains(v)).ToArray();
 
-		Assert.That(missing.Length == 0,
-			string.Format("{0} does not contain: {1}", streamId, missing.Aggregate("", (a, v) => a + " " + v)));
+		Assert.That(missing.Length == 0, $"{streamId} does not contain: {missing.Aggregate("", (a, v) => a + " " + v)}");
 	}
 
 	public void AssertEvent(string streamId, long eventNumber, string data) {
@@ -797,10 +764,7 @@ public abstract class TestFixtureWithExistingEvents<TLogFormat,TStreamId> : Test
 	}
 
 	public void AssertEmptyOrNoStream(string streamId) {
-		List<EventRecord> events;
-		Assert.That(
-			!_streams.TryGetValue(streamId, out events) || events.Count == 0,
-			string.Format("The stream {0} should not exist.", streamId));
+		Assert.That(!_streams.TryGetValue(streamId, out var events) || events.Count == 0, $"The stream {streamId} should not exist.");
 	}
 
 	[Conditional("DEBUG")]
@@ -823,5 +787,31 @@ public abstract class TestFixtureWithExistingEvents<TLogFormat,TStreamId> : Test
 			}
 		}
 #endif
+	}
+
+	public static string StreamReferenceEventToStreamId(string eventType, string data) {
+		string streamId = null;
+		switch (eventType) {
+			case LinkTo: {
+				string[] parts = data.Split(_linkToSeparator, 2);
+				streamId = parts[1];
+				break;
+			}
+			case StreamReference:
+			case V1__StreamCreated__:
+			case V2__StreamCreated_InIndex: {
+				streamId = data;
+				break;
+			}
+			default:
+				throw new NotSupportedException("Unknown event type: " + eventType);
+		}
+
+		return streamId;
+	}
+
+	public static long EventLinkToEventNumber(string link) {
+		string[] parts = link.Split(_linkToSeparator, 2);
+		return long.Parse(parts[0]);
 	}
 }

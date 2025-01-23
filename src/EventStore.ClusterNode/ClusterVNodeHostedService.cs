@@ -34,6 +34,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.Services.Transport.Http;
 
 namespace EventStore.ClusterNode;
 
@@ -46,12 +47,8 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 
 	public ClusterVNode Node { get; }
 
-	public ClusterVNodeHostedService(
-		ClusterVNodeOptions options,
-		CertificateProvider certificateProvider,
-		IConfiguration configuration) {
-
-		if (options == null) throw new ArgumentNullException(nameof(options));
+	public ClusterVNodeHostedService(ClusterVNodeOptions options, CertificateProvider certificateProvider, IConfiguration configuration) {
+		ArgumentNullException.ThrowIfNull(options);
 
 		// two plugin mechanisms; pluginLoader is the new one
 		var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
@@ -62,9 +59,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 		try {
 			options = options.WithPlugableComponent(ConfigureMD5());
 		} catch {
-			throw new
-				InvalidConfigurationException(
-					"Failed to configure MD5. If FIPS mode is enabled in your OS, please use the MD5 commercial plugin.");
+			throw new InvalidConfigurationException("Failed to configure MD5. If FIPS mode is enabled in your OS, please use the MD5 commercial plugin.");
 		}
 
 		var projectionMode = options.DevMode.Dev && options.Projection.RunProjections == ProjectionType.None
@@ -105,26 +100,30 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			? _options.Application.Config
 			: _options.Auth.AuthenticationConfig;
 
-
 		(_options, var authProviderFactory) = GetAuthorizationProviderFactory();
-		if (_options.Database.DbLogFormat == DbLogFormat.V2) {
-			var logFormatFactory = new LogV2FormatAbstractorFactory();
-			Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-				authProviderFactory,
-				GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
-				configuration);
-		} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
-			var logFormatFactory = new LogV3FormatAbstractorFactory();
-			Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-				authProviderFactory,
-				GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
-				configuration);
-		} else {
-			throw new ArgumentOutOfRangeException(nameof(_options.Database.DbLogFormat), "Unexpected log format specified.");
+		switch (_options.Database.DbLogFormat) {
+			case DbLogFormat.V2: {
+				var logFormatFactory = new LogV2FormatAbstractorFactory();
+				Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
+					authProviderFactory,
+					GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
+					configuration);
+				break;
+			}
+			case DbLogFormat.ExperimentalV3: {
+				var logFormatFactory = new LogV3FormatAbstractorFactory();
+				Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
+					authProviderFactory,
+					GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
+					configuration);
+				break;
+			}
+			default:
+				throw new ArgumentOutOfRangeException(nameof(_options.Database.DbLogFormat), "Unexpected log format specified.");
 		}
 
 		var enabledNodeSubsystems = projectionMode >= ProjectionType.System
-			? new[] {NodeSubsystems.Projections}
+			? new[] { NodeSubsystems.Projections }
 			: Array.Empty<NodeSubsystems>();
 
 		RegisterWebControllers(enabledNodeSubsystems);
@@ -132,7 +131,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 
 		(ClusterVNodeOptions, AuthorizationProviderFactory) GetAuthorizationProviderFactory() {
 			if (_options.Application.Insecure) {
-				return (_options, new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory()));
+				return (_options, new(_ => new PassthroughAuthorizationProviderFactory()));
 			}
 
 			var modifiedOptions = _options;
@@ -155,17 +154,13 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 					Log.Information(
 						"Loaded authorization plugin: {plugin} version {version} (Command Line: {commandLine})",
 						potentialPlugin.Name, potentialPlugin.Version, commandLine);
-					authorizationTypeToPlugin.Add(commandLine,
-						new AuthorizationProviderFactory(
-							_ => potentialPlugin.GetAuthorizationProviderFactory(authorizationConfig)
-						));
+					authorizationTypeToPlugin.Add(commandLine, new(_ => potentialPlugin.GetAuthorizationProviderFactory(authorizationConfig)));
 				} catch (CompositionException ex) {
 					Log.Error(ex, "Error loading authentication plugin.");
 				}
 			}
 
-			if (!authorizationTypeToPlugin.TryGetValue(_options.Auth.AuthorizationType.ToLowerInvariant(),
-				out var factory)) {
+			if (!authorizationTypeToPlugin.TryGetValue(_options.Auth.AuthorizationType.ToLowerInvariant(), out var factory)) {
 				throw new ApplicationInitializationException(
 					$"The authorization type {_options.Auth.AuthorizationType} is not recognised. If this is supposed " +
 					$"to be provided by an authorization plugin, confirm the plugin DLL is located in {Locations.PluginsDirectory}." +
@@ -187,8 +182,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 				Log.Information("Adding: {pluginsDirectory} to the plugin catalog.", Locations.PluginsDirectory);
 				catalog.Catalogs.Add(new DirectoryCatalog(Locations.PluginsDirectory));
 
-				foreach (string dirPath in Directory.GetDirectories(Locations.PluginsDirectory, "*",
-					SearchOption.TopDirectoryOnly)) {
+				foreach (string dirPath in Directory.GetDirectories(Locations.PluginsDirectory, "*", SearchOption.TopDirectoryOnly)) {
 					Log.Information("Adding: {pluginsDirectory} to the plugin catalog.", dirPath);
 					catalog.Catalogs.Add(new DirectoryCatalog(dirPath));
 				}
@@ -207,8 +201,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			foreach (var potentialPlugin in allPlugins) {
 				try {
 					var plugin = potentialPlugin.Value;
-					Log.Information("Loaded consumer strategy plugin: {plugin} version {version}.", plugin.Name,
-						plugin.Version);
+					Log.Information("Loaded consumer strategy plugin: {plugin} version {version}.", plugin.Name, plugin.Version);
 					strategyFactories.Add(plugin.GetConsumerStrategyFactory());
 				} catch (CompositionException ex) {
 					Log.Error(ex, "Error loading consumer strategy plugin.");
@@ -224,10 +217,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			}
 
 			var authenticationTypeToPlugin = new Dictionary<string, AuthenticationProviderFactory> {
-				{
-					"internal", new AuthenticationProviderFactory(components =>
-						new InternalAuthenticationProviderFactory(components, _options.DefaultUser))
-				}
+				["internal"] = new(components => new InternalAuthenticationProviderFactory(components, _options.DefaultUser))
 			};
 
 			foreach (var potentialPlugin in pluginLoader.Load<IAuthenticationPlugin>()) {
@@ -236,9 +226,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 					Log.Information(
 						"Loaded authentication plugin: {plugin} version {version} (Command Line: {commandLine})",
 						potentialPlugin.Name, potentialPlugin.Version, commandLine);
-					authenticationTypeToPlugin.Add(commandLine,
-						new AuthenticationProviderFactory(_ =>
-							potentialPlugin.GetAuthenticationProviderFactory(authenticationConfig)));
+					authenticationTypeToPlugin.Add(commandLine, new(_ => potentialPlugin.GetAuthenticationProviderFactory(authenticationConfig)));
 				} catch (CompositionException ex) {
 					Log.Error(ex, "Error loading authentication plugin.");
 				}
@@ -257,14 +245,11 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 		static ClusterVNodeOptions LoadSubsystemsPlugins(PluginLoader pluginLoader, ClusterVNodeOptions options) {
 			var plugins = pluginLoader.Load<ISubsystemsPlugin>().ToArray();
 			foreach (var plugin in plugins) {
-				Log.Information("Loaded SubsystemsPlugin plugin: {plugin} {version}.",
-					plugin.CommandLineName,
-					plugin.Version);
+				Log.Information("Loaded SubsystemsPlugin plugin: {plugin} {version}.", plugin.CommandLineName, plugin.Version);
 				var subsystems = plugin.GetSubsystems();
-				foreach (var subsystem in subsystems) {
-					options = options.WithPlugableComponent(subsystem);
-				}
+				options = subsystems.Aggregate(options, (current, subsystem) => current.WithPlugableComponent(subsystem));
 			}
+
 			return options;
 		}
 
@@ -277,7 +262,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			} catch {
 				// didn't work, we are probably in a fips environment, try to load a plugin
 				provider = GetMD5ProviderFactories().FirstOrDefault()?.Build() ??
-					throw new ApplicationInitializationException("Could not find an enabled FileHashProviderFactory");
+				           throw new ApplicationInitializationException("Could not find an enabled FileHashProviderFactory");
 				MD5.UseProvider(provider);
 			}
 
@@ -291,9 +276,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 			foreach (var plugin in pluginLoader.Load<IMD5Plugin>()) {
 				try {
 					var commandLine = plugin.CommandLineName.ToLowerInvariant();
-					Log.Information(
-						"Loaded MD5 plugin: {plugin} version {version} (Command Line: {commandLine})",
-						plugin.Name, plugin.Version, commandLine);
+					Log.Information( "Loaded MD5 plugin: {plugin} version {version} (Command Line: {commandLine})", plugin.Name, plugin.Version, commandLine);
 					md5ProviderFactories.Add(plugin.GetMD5ProviderFactory());
 				} catch (CompositionException ex) {
 					Log.Error(ex, "Error loading MD5 plugin: {plugin}.", plugin.Name);
@@ -306,8 +289,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 
 	private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems) {
 		if (!_options.Interface.DisableAdminUi) {
-			Node.HttpService.SetupController(new ClusterWebUiController(Node.MainQueue,
-				enabledNodeSubsystems));
+			Node.Router.RegisterController(new ClusterWebUiController(Node.MainQueue, enabledNodeSubsystems));
 		}
 	}
 
@@ -318,9 +300,10 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 		Node.StopAsync(cancellationToken: cancellationToken);
 
 	public void Dispose() {
-		if (_dbLock is not {IsAcquired: true}) {
+		if (_dbLock is not { IsAcquired: true }) {
 			return;
 		}
+
 		using (_dbLock) {
 			_dbLock.Release();
 		}

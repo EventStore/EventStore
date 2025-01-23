@@ -6,12 +6,11 @@ using System;
 namespace EventStore.Core.Index.Hashes;
 
 public interface IHasher {
-	uint Hash(byte[] data);
-	uint Hash(byte[] data, int offset, uint len, uint seed);
 	uint Hash(ReadOnlySpan<byte> data);
+	uint Hash(byte[] data, int offset, uint len, uint ls);
 }
 
-public interface IHasher<TStreamId> {
+public interface IHasher<in TStreamId> {
 	uint Hash(TStreamId s);
 }
 

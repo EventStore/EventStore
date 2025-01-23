@@ -93,8 +93,7 @@ public struct TcpPackage {
 		: this(command, TcpFlags.None, correlationId, null, data) {
 	}
 
-	public TcpPackage(TcpCommand command, TcpFlags flags, Guid correlationId, string login, string password,
-		byte[] data)
+	public TcpPackage(TcpCommand command, TcpFlags flags, Guid correlationId, string login, string password, byte[] data)
 		: this(command, flags, correlationId, login, password, new ArraySegment<byte>(data ?? Empty.ByteArray)) {
 	}
 

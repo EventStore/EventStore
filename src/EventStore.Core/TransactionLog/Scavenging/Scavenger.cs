@@ -256,15 +256,15 @@ public class Scavenger<TStreamId> : IScavenger {
 			if (_syncOnly) {
 				_logger.Debug("SCAVENGING: No existing scavenge point to sync with, nothing to do.");
 				return;
-			} else {
-				_logger.Debug("SCAVENGING: Creating the first scavenge point.");
-				// no latest scavenge point, create the first one
-				nextScavengePoint = await _scavengePointSource
-					.AddScavengePointAsync(
-						ExpectedVersion.NoStream,
-						threshold: _thresholdForNewScavenge,
-						cancellationToken);
 			}
+
+			_logger.Debug("SCAVENGING: Creating the first scavenge point.");
+			// no latest scavenge point, create the first one
+			nextScavengePoint = await _scavengePointSource
+				.AddScavengePointAsync(
+					ExpectedVersion.NoStream,
+					threshold: _thresholdForNewScavenge,
+					cancellationToken);
 		} else {
 			// got the latest scavenge point
 			if (prevScavengePoint == null ||
@@ -278,19 +278,19 @@ public class Scavenger<TStreamId> : IScavenger {
 				if (_syncOnly) {
 					_logger.Debug("SCAVENGING: No existing scavenge point to sync with, nothing to do.");
 					return;
-				} else {
-					// the latest scavengepoint is the prev scavenge point, so create a new one
-					var expectedVersion = prevScavengePoint.EventNumber;
-					_logger.Debug(
-						"SCAVENGING: Creating the next scavenge point: {scavengePointNumber}",
-						expectedVersion + 1);
-
-					nextScavengePoint = await _scavengePointSource
-						.AddScavengePointAsync(
-							expectedVersion,
-							threshold: _thresholdForNewScavenge,
-							cancellationToken);
 				}
+
+				// the latest scavengepoint is the prev scavenge point, so create a new one
+				var expectedVersion = prevScavengePoint.EventNumber;
+				_logger.Debug(
+					"SCAVENGING: Creating the next scavenge point: {scavengePointNumber}",
+					expectedVersion + 1);
+
+				nextScavengePoint = await _scavengePointSource
+					.AddScavengePointAsync(
+						expectedVersion,
+						threshold: _thresholdForNewScavenge,
+						cancellationToken);
 			}
 		}
 

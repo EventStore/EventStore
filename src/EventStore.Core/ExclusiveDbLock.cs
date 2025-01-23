@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using System.Security.Cryptography;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
@@ -22,7 +21,7 @@ public class ExclusiveDbLock : IDisposable {
 	private bool _acquired;
 
 	public ExclusiveDbLock(string dbPath) {
-		Ensure.NotNullOrEmpty(dbPath, "dbPath");
+		Ensure.NotNullOrEmpty(dbPath);
 		MutexName = @"Global\ESDB-HASHED:" + GetDbPathHash(dbPath);
 	}
 

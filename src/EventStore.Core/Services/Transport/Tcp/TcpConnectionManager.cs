@@ -179,9 +179,9 @@ public class TcpConnectionManager : IHandle<TcpMessage.Heartbeat>, IHandle<TcpMe
 
 		RemoteEndPoint = remoteEndPoint;
 		_connection = useSsl
-			? connector.ConnectSslTo(ConnectionId, targetHost, otherNames, remoteEndPoint.ResolveDnsToIPAddress(), ConnectionTimeout,
+			? connector.ConnectSslTo(ConnectionId, targetHost, otherNames, remoteEndPoint.ResolveDnsToIpAddress(), ConnectionTimeout,
 				sslServerCertValidator, sslClientCertificatesSelector, OnConnectionEstablished, OnConnectionFailed)
-			: connector.ConnectTo(ConnectionId, remoteEndPoint.ResolveDnsToIPAddress(), ConnectionTimeout, OnConnectionEstablished,
+			: connector.ConnectTo(ConnectionId, remoteEndPoint.ResolveDnsToIpAddress(), ConnectionTimeout, OnConnectionEstablished,
 				OnConnectionFailed);
 		_connection.ConnectionClosed += OnConnectionClosed;
 		if (_connection.IsClosed)

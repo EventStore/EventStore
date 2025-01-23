@@ -6,18 +6,16 @@ namespace EventStore.Core.Duck.Default;
 
 public class DefaultIndex<TStreamId> {
 	readonly DuckDb _db;
-	readonly IReadIndex<TStreamId> _index;
 
 	public DefaultIndex(DuckDb db, IReadIndex<TStreamId> index) {
 		_db = db;
-		_index = index;
 		StreamIndex = new(db);
 		CategoryIndex = new(db);
 		EventTypeIndex = new(db);
 		CategoryIndexReader = new(CategoryIndex, index);
 		EventTypeIndexReader = new(EventTypeIndex, index);
 		Handler = new(db, this);
-		DefaultIndexReader = new(_db, Handler, _index);
+		DefaultIndexReader = new(_db, Handler, index);
 	}
 
 	public void Init() {

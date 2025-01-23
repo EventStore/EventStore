@@ -47,7 +47,7 @@ public class TestFixtureWithProjectionSubsystem {
 		var timerService = new TimerService(threadBasedScheduler);
 
 		return new StandardComponents(dbConfig, mainQueue, mainBus,
-			timerService, timeProvider: null, httpForwarder: null, httpServices: new IHttpService[] { },
+			timerService, timeProvider: null, httpForwarder: null, router: new TrieUriRouter(),
 			networkSendService: null, queueStatsManager: new QueueStatsManager(),
 			trackers: new(), true);
 	}

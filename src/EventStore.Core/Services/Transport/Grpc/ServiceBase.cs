@@ -14,7 +14,7 @@ using Grpc.Core;
 namespace EventStore.Cluster {
 	partial class Gossip {
 		partial class GossipBase : ServiceBase {
-			
+
 		}
 	}
 
@@ -28,13 +28,6 @@ namespace EventStore.Cluster {
 namespace EventStore.Client.PersistentSubscriptions {
 	partial class PersistentSubscriptions {
 		partial class PersistentSubscriptionsBase : ServiceBase {
-		}
-	}
-}
-
-namespace EventStore.Client.FeatureDiscovery {
-	partial class FeatureDiscovery {
-		partial class FeatureDiscoveryBase : ServiceBase {
 		}
 	}
 }
@@ -83,10 +76,5 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			bool.TryParse(requiresLeaderHeaderValue, out var requiresLeader);
 			return requiresLeader;
 		}
-
-		public static Exception AccessDenied() =>
-			new RpcException(new Status(StatusCode.PermissionDenied, "Access Denied"), new Metadata {
-				{ Constants.Exceptions.ExceptionKey, Constants.Exceptions.AccessDenied }
-			});
 	}
 }

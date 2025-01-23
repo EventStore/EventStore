@@ -11,6 +11,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Telemetry;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
@@ -18,6 +19,8 @@ using EventStore.Projections.Core.Metrics;
 using EventStore.Projections.Core.Services.Http;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
+using static EventStore.Core.Messages.SystemMessage;
+using static EventStore.Projections.Core.Messages.ProjectionManagementMessage;
 
 namespace EventStore.Projections.Core;
 
@@ -42,9 +45,7 @@ public class ProjectionManagerNode {
 			externalRequestQueue: standardComponents.MainQueue);
 
 		if (projectionsStandardComponents.RunProjections != ProjectionType.None) {
-			foreach (var httpService in standardComponents.HttpServices) {
-				httpService.SetupController(projectionsController);
-			}
+			standardComponents.Router.RegisterController(projectionsController);
 		}
 
 		var projectionManagerMessageDispatcher = new ProjectionManagerMessageDispatcher(queues);
@@ -66,7 +67,6 @@ public class ProjectionManagerNode {
 			ioDispatcher,
 			projectionManagerMessageDispatcher);
 
-
 		SubscribeOutputBus(standardComponents, projectionsStandardComponents, forwarder, ioDispatcher);
 	}
 
@@ -77,21 +77,21 @@ public class ProjectionManagerNode {
 		IODispatcher ioDispatcher,
 		ProjectionManagerMessageDispatcher projectionManagerMessageDispatcher) {
 		if (runProjections >= ProjectionType.System) {
-			mainBus.Subscribe<ProjectionManagementMessage.Command.Post>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.PostBatch>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.GetQuery>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.Delete>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.GetStatistics>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.GetState>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.GetResult>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.Disable>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.Enable>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.Abort>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.SetRunAs>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.Reset>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.GetConfig>(projectionManager);
-			mainBus.Subscribe<ProjectionManagementMessage.Command.UpdateConfig>(projectionManager);
+			mainBus.Subscribe<Command.Post>(projectionManager);
+			mainBus.Subscribe<Command.PostBatch>(projectionManager);
+			mainBus.Subscribe<Command.UpdateQuery>(projectionManager);
+			mainBus.Subscribe<Command.GetQuery>(projectionManager);
+			mainBus.Subscribe<Command.Delete>(projectionManager);
+			mainBus.Subscribe<Command.GetStatistics>(projectionManager);
+			mainBus.Subscribe<Command.GetState>(projectionManager);
+			mainBus.Subscribe<Command.GetResult>(projectionManager);
+			mainBus.Subscribe<Command.Disable>(projectionManager);
+			mainBus.Subscribe<Command.Enable>(projectionManager);
+			mainBus.Subscribe<Command.Abort>(projectionManager);
+			mainBus.Subscribe<Command.SetRunAs>(projectionManager);
+			mainBus.Subscribe<Command.Reset>(projectionManager);
+			mainBus.Subscribe<Command.GetConfig>(projectionManager);
+			mainBus.Subscribe<Command.UpdateConfig>(projectionManager);
 			mainBus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(projectionManager);
 			mainBus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(projectionManager);
 			mainBus.Subscribe<CoreProjectionStatusMessage.Started>(projectionManager);
@@ -140,25 +140,16 @@ public class ProjectionManagerNode {
 
 		managerOutput.Subscribe<TimerMessage.Schedule>(standardComponents.TimerService);
 		managerOutput.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(standardComponents.MainQueue));
-		managerOutput.Subscribe(
-			Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(standardComponents.MainQueue));
-		managerOutput.Subscribe<SystemMessage.SubSystemInitialized>(forwarder);
+		managerOutput.Subscribe(Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(standardComponents.MainQueue));
+		managerOutput.Subscribe<SubSystemInitialized>(forwarder);
 
 		// self forward all
-		standardComponents.MainBus.Subscribe(
-			Forwarder.Create<SystemMessage.StateChangeMessage>(projectionsStandardComponents.LeaderInputQueue));
-		standardComponents.MainBus.Subscribe(
-			Forwarder.Create<SystemMessage.SystemCoreReady>(projectionsStandardComponents.LeaderInputQueue));
-		standardComponents.MainBus.Subscribe(
-			Forwarder.Create<SystemMessage.EpochWritten>(projectionsStandardComponents.LeaderInputQueue));
-		standardComponents.MainBus.Subscribe(
-			Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStarted>(projectionsStandardComponents
-				.LeaderInputQueue));
-		standardComponents.MainBus.Subscribe(
-			Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStopped>(projectionsStandardComponents
-				.LeaderInputQueue));
-		standardComponents.MainBus.Subscribe(
-			Forwarder.Create<TelemetryMessage.Request>(projectionsStandardComponents.LeaderInputQueue));
+		standardComponents.MainBus.Subscribe(Forwarder.Create<StateChangeMessage>(projectionsStandardComponents.LeaderInputQueue));
+		standardComponents.MainBus.Subscribe(Forwarder.Create<SystemCoreReady>(projectionsStandardComponents.LeaderInputQueue));
+		standardComponents.MainBus.Subscribe(Forwarder.Create<EpochWritten>(projectionsStandardComponents.LeaderInputQueue));
+		standardComponents.MainBus.Subscribe(Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStarted>(projectionsStandardComponents.LeaderInputQueue));
+		standardComponents.MainBus.Subscribe(Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStopped>(projectionsStandardComponents.LeaderInputQueue));
+		standardComponents.MainBus.Subscribe(Forwarder.Create<TelemetryMessage.Request>(projectionsStandardComponents.LeaderInputQueue));
 		projectionsStandardComponents.LeaderInputBus.Subscribe(new UnwrapEnvelopeHandler());
 	}
 }

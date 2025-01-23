@@ -14,41 +14,29 @@ using EventStore.Core.Messages;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using Newtonsoft.Json.Linq;
+using static EventStore.Plugins.Authorization.Operations;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers;
 
-public class InfoController : IHttpController, IHandle<SystemMessage.StateChangeMessage> {
+public class InfoController(
+	ClusterVNodeOptions options,
+	IDictionary<string, bool> features,
+	IAuthenticationProvider authenticationProvider)
+	: IHttpController, IHandle<SystemMessage.StateChangeMessage> {
 	private static readonly ILogger Log = Serilog.Log.ForContext<InfoController>();
-	private static readonly ICodec[] SupportedCodecs = { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
+	private static readonly ICodec[] SupportedCodecs = [Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text];
 
-	private readonly ClusterVNodeOptions _options;
-	private readonly IDictionary<string, bool> _features;
-	private readonly IAuthenticationProvider _authenticationProvider;
 	private VNodeState _currentState;
 
-	public InfoController(ClusterVNodeOptions options, IDictionary<string, bool> features,
-		IAuthenticationProvider authenticationProvider) {
-		_options = options;
-		_features = features;
-		_authenticationProvider = authenticationProvider;
+	public void Subscribe(IUriRouter router) {
+		Ensure.NotNull(router);
+
+		router.RegisterAction(new("/info", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Node.Information.Read)), OnGetInfo);
+		router.RegisterAction(new("/info/options", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Node.Information.Options)), OnGetOptions);
 	}
 
-	public void Subscribe(IHttpService service) {
-		Ensure.NotNull(service, "service");
-
-		service.RegisterAction(
-			new("/info", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs,
-				new Operation(Operations.Node.Information.Read)),
-			OnGetInfo);
-		service.RegisterAction(
-			new("/info/options", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs,
-				new Operation(Operations.Node.Information.Options)),
-			OnGetOptions);
-	}
-
-	public void Handle(SystemMessage.StateChangeMessage message) =>
-		_currentState = message.State;
+	public void Handle(SystemMessage.StateChangeMessage message) => _currentState = message.State;
 
 	private void OnGetInfo(HttpEntityManager entity, UriTemplateMatch match) {
 		entity.ReplyTextContent(
@@ -56,7 +44,7 @@ public class InfoController : IHttpController, IHandle<SystemMessage.StateChange
 				new {
 					ESVersion = VersionInfo.Version,
 					State = _currentState.ToString().ToLower(),
-					Features = _features,
+					Features = features,
 					Authentication = GetAuthenticationInfo()
 				}
 			),
@@ -68,19 +56,19 @@ public class InfoController : IHttpController, IHandle<SystemMessage.StateChange
 	}
 
 	private Dictionary<string, object> GetAuthenticationInfo() {
-		if (_authenticationProvider == null)
+		if (authenticationProvider == null)
 			return null;
 
 		return new() {
-			{ "type", _authenticationProvider.Name },
-			{ "properties", _authenticationProvider.GetPublicProperties() }
+			{ "type", authenticationProvider.Name },
+			{ "properties", authenticationProvider.GetPublicProperties() }
 		};
 	}
 
 	private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match) {
 		if (entity.User != null && (entity.User.LegacyRoleCheck(SystemRoles.Operations) ||
 		                            entity.User.LegacyRoleCheck(SystemRoles.Admins))) {
-			var options = _options.LoadedOptions.Values.Select(
+			var options1 = options.LoadedOptions.Values.Select(
 				x => new OptionStructure {
 					Name = x.Metadata.Name,
 					Description = x.Metadata.Description,
@@ -93,7 +81,7 @@ public class InfoController : IHttpController, IHandle<SystemMessage.StateChange
 			);
 
 			entity.ReplyTextContent(
-				Codec.Json.To(options),
+				Codec.Json.To(options1),
 				HttpStatusCode.OK,
 				"OK",
 				entity.ResponseCodec.ContentType,
@@ -105,7 +93,7 @@ public class InfoController : IHttpController, IHandle<SystemMessage.StateChange
 		}
 	}
 
-	private void LogReplyError(Exception exc) =>
+	private static void LogReplyError(Exception exc) =>
 		Log.Debug("Error while replying (info controller): {e}.", exc.Message);
 
 	public class OptionStructure {

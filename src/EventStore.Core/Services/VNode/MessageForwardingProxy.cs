@@ -30,21 +30,16 @@ public class MessageForwardingProxy {
 	public bool TryForwardReply<TMessage>(Guid correlationId, TMessage originalMessage,
 		Func<Guid, TMessage, TMessage> getForwardMessage)
 		where TMessage : Message {
-		Forwarding forwarding;
-		if (_forwardings.TryRemove(correlationId, out forwarding)) {
-			forwarding.Envelope.ReplyWith(getForwardMessage(forwarding.ClientCorrId, originalMessage));
-			return true;
-		}
-
-		return false;
+		if (!_forwardings.TryRemove(correlationId, out var forwarding)) return false;
+		forwarding.Envelope.ReplyWith(getForwardMessage(forwarding.ClientCorrId, originalMessage));
+		return true;
 	}
 
 	public void TimeoutForwardings() {
 		var now = _stopwatch.Elapsed;
 
 		foreach (var forwPair in _forwardings) {
-			Forwarding forwarding;
-			if (forwPair.Value.TimeoutTimestamp <= now && _forwardings.TryRemove(forwPair.Key, out forwarding))
+			if (forwPair.Value.TimeoutTimestamp <= now && _forwardings.TryRemove(forwPair.Key, out var forwarding))
 				forwarding.Envelope.ReplyWith(forwarding.TimeoutMessage);
 		}
 	}

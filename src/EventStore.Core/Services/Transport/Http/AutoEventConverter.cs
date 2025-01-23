@@ -50,7 +50,6 @@ public static class AutoEventConverter {
 			case ContentType.EventJson:
 				return targetCodec.To(dto);
 
-
 			default:
 				throw new NotSupportedException();
 		}
@@ -83,9 +82,7 @@ public static class AutoEventConverter {
 			case ContentType.EventsJson:
 			case ContentType.AtomJson:
 				var writeEvents = LoadFromJson(sourceCodec.Encoding.GetString(request));
-				if (writeEvents.IsEmpty())
-					return null;
-				return Parse(writeEvents);
+				return writeEvents.IsEmpty() ? null : Parse(writeEvents);
 
 			case ContentType.ApplicationXml:
 			case ContentType.Xml:
@@ -94,9 +91,7 @@ public static class AutoEventConverter {
 			case ContentType.EventsXml:
 			case ContentType.Atom:
 				var writeEvents2 = LoadFromXml(sourceCodec.Encoding.GetString(request));
-				if (writeEvents2.IsEmpty())
-					return null;
-				return Parse(writeEvents2);
+				return writeEvents2.IsEmpty() ? null : Parse(writeEvents2);
 			default:
 				return null;
 		}
@@ -154,38 +149,34 @@ public static class AutoEventConverter {
 		var events = new Event[dynamicEvents.Length];
 		for (int i = 0, n = dynamicEvents.Length; i < n; ++i) {
 			var textEvent = dynamicEvents[i];
-			bool dataIsJson;
-			bool metadataIsJson;
-			var data = AsBytes(textEvent.data, out dataIsJson);
-			var metadata = AsBytes(textEvent.metadata, out metadataIsJson);
+			var data = AsBytes(textEvent.data, out var dataIsJson);
+			var metadata = AsBytes(textEvent.metadata, out var metadataIsJson);
 
-			events[i] = new Event(textEvent.eventId, textEvent.eventType, dataIsJson || metadataIsJson, data,
-				metadata);
+			events[i] = new Event(textEvent.eventId, textEvent.eventType, dataIsJson || metadataIsJson, data, metadata);
 		}
 
 		return events.ToArray();
 	}
 
 	private static byte[] AsBytes(object obj, out bool isJson) {
-		if (obj is JObject || obj is JArray) {
-			isJson = true;
-			return Helper.UTF8NoBom.GetBytes(Codec.Json.To(obj));
-		} else if(obj is string){
-			try{
-				var jsonObject = JsonConvert.DeserializeObject((string)obj);
-				if(jsonObject is JObject || jsonObject is JArray){
+		switch (obj) {
+			case JObject:
+			case JArray:
+				isJson = true;
+				return Helper.UTF8NoBom.GetBytes(Codec.Json.To(obj));
+			case string s:
+				try {
+					var jsonObject = JsonConvert.DeserializeObject(s);
+					if (jsonObject is not JObject && jsonObject is not JArray) throw new JsonException();
 					isJson = true;
 					return Helper.UTF8NoBom.GetBytes(Codec.Json.To(jsonObject));
+				} catch (JsonException) {
+					isJson = false;
+					return Helper.UTF8NoBom.GetBytes(s);
 				}
-				else
-					throw new JsonException();
-			}
-			catch(JsonException){
+			default:
 				isJson = false;
-				return Helper.UTF8NoBom.GetBytes((obj as string));
-			}
+				return Helper.UTF8NoBom.GetBytes(string.Empty);
 		}
-		isJson = false;
-		return Helper.UTF8NoBom.GetBytes(string.Empty);
 	}
 }

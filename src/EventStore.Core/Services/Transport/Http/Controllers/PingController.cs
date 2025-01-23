@@ -15,16 +15,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers;
 public class PingController : IHttpController {
 	private static readonly ILogger Log = Serilog.Log.ForContext<PingController>();
 
-	private static readonly ICodec[] SupportedCodecs = new ICodec[]
-		{Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text};
+	private static readonly ICodec[] SupportedCodecs = [Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text];
 
-	public void Subscribe(IHttpService service) {
-		Ensure.NotNull(service, "service");
-		service.RegisterAction(new ControllerAction("/ping", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Ping)),
-			OnGetPing);
+	public void Subscribe(IUriRouter router) {
+		Ensure.NotNull(router);
+		router.RegisterAction(new("/ping", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Ping)), OnGetPing);
 	}
 
-	private void OnGetPing(HttpEntityManager entity, UriTemplateMatch match) {
+	private static void OnGetPing(HttpEntityManager entity, UriTemplateMatch match) {
 		var response = new HttpMessage.TextMessage("Ping request successfully handled");
 		entity.ReplyTextContent(Format.TextMessage(entity, response),
 			HttpStatusCode.OK,

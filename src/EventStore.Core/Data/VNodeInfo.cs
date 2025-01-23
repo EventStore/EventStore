@@ -46,15 +46,7 @@ public class VNodeInfo {
 	}
 
 	public override string ToString() {
-		return string.Format("InstanceId: {0:B}, InternalTcp: {1}, InternalSecureTcp: {2}, " +
-		                     "ExternalTcp: {3}, ExternalSecureTcp: {4}, HttpEndPoint: {5}," +
-							 "IsReadOnlyReplica: {6}",
-			InstanceId,
-			InternalTcp,
-			InternalSecureTcp,
-			ExternalTcp,
-			ExternalSecureTcp,
-			HttpEndPoint,
-			IsReadOnlyReplica);
+		return $"InstanceId: {InstanceId:B}, InternalTcp: {InternalTcp}, InternalSecureTcp: {InternalSecureTcp}, " +
+		       $"ExternalTcp: {ExternalTcp}, ExternalSecureTcp: {ExternalSecureTcp}, HttpEndPoint: {HttpEndPoint}," + $"IsReadOnlyReplica: {IsReadOnlyReplica}";
 	}
 }

@@ -18,59 +18,37 @@ using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using Microsoft.Extensions.Primitives;
 using Serilog;
+using static EventStore.Core.Messages.ClientMessage;
+using static EventStore.Core.Messages.MonitoringMessage;
+using static EventStore.Plugins.Authorization.Operations;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers;
 
-public class AdminController : CommunicationController {
-	private readonly IPublisher _networkSendQueue;
+public class AdminController(IPublisher publisher, IPublisher networkSendQueue) : CommunicationController(publisher) {
 	private static readonly ILogger Log = Serilog.Log.ForContext<AdminController>();
 
-	private static readonly ICodec[] SupportedCodecs = new ICodec[]
-		{Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml};
+	private static readonly ICodec[] SupportedCodecs = [Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml];
 
 	public static readonly char[] ETagSeparatorArray = { ';' };
 
-	private static readonly Func<UriTemplateMatch, Operation> ReadStreamOperationForScavengeStream =
-		ForScavengeStream(Operations.Streams.Read);
-	public AdminController(IPublisher publisher, IPublisher networkSendQueue) : base(publisher) {
-		_networkSendQueue = networkSendQueue;
-	}
+	private static readonly Func<UriTemplateMatch, Operation> ReadStreamOperationForScavengeStream = ForScavengeStream(Streams.Read);
 
-	protected override void SubscribeCore(IHttpService service) {
-		service.RegisterAction(
-			new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Shutdown)),
-			OnPostShutdown);
-		service.RegisterAction(
-			new ControllerAction("/admin/reloadconfig", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.ReloadConfiguration)),
-			OnPostReloadConfig);
-		service.RegisterAction(
-			new ControllerAction("/admin/scavenge?startFromChunk={startFromChunk}&threads={threads}&threshold={threshold}&throttlePercent={throttlePercent}&syncOnly={syncOnly}",
-				HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Scavenge.Start)), OnPostScavenge);
-		service.RegisterAction(
-			new ControllerAction("/admin/scavenge/{scavengeId}", HttpMethod.Delete, Codec.NoCodecs,
-				SupportedCodecs, new Operation(Operations.Node.Scavenge.Stop)), OnStopScavenge);
-		service.RegisterAction(
-			new ControllerAction("/admin/scavenge/current", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Scavenge.Read)),
-			OnGetCurrentScavenge);
-		service.RegisterAction(
-			new ControllerAction("/admin/scavenge/last", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Scavenge.Read)),
-			OnGetLastScavenge);
-		service.RegisterAction(
-			new ControllerAction("/admin/mergeindexes", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.MergeIndexes)),
-			OnPostMergeIndexes);
-		service.RegisterAction(
-			new ControllerAction("/admin/node/priority/{nodePriority}", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.SetPriority)),
-			OnSetNodePriority);
-		service.RegisterAction(
-			new ControllerAction("/admin/node/resign", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Resign)),
-			OnResignNode);
-		service.RegisterAction(
-			new ControllerAction("/admin/login", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Login)),
-			OnGetLogin);
-		Register(service, "/streams/$scavenges/{scavengeId}/{event}/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
+	protected override void SubscribeCore(IUriRouter router) {
+		router.RegisterAction(new("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Node.Shutdown)), OnPostShutdown);
+		router.RegisterAction(new("/admin/reloadconfig", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Node.ReloadConfiguration)), OnPostReloadConfig);
+		router.RegisterAction(
+			new("/admin/scavenge?startFromChunk={startFromChunk}&threads={threads}&threshold={threshold}&throttlePercent={throttlePercent}&syncOnly={syncOnly}", HttpMethod.Post, Codec.NoCodecs,
+				SupportedCodecs, new Operation(Node.Scavenge.Start)), OnPostScavenge);
+		router.RegisterAction(new("/admin/scavenge/{scavengeId}", HttpMethod.Delete, Codec.NoCodecs, SupportedCodecs, new Operation(Node.Scavenge.Stop)), OnStopScavenge);
+		router.RegisterAction(new("/admin/scavenge/current", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Node.Scavenge.Read)), OnGetCurrentScavenge);
+		router.RegisterAction(new("/admin/scavenge/last", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Node.Scavenge.Read)), OnGetLastScavenge);
+		router.RegisterAction(new("/admin/mergeindexes", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Node.MergeIndexes)), OnPostMergeIndexes);
+		router.RegisterAction(new("/admin/node/priority/{nodePriority}", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Node.SetPriority)), OnSetNodePriority);
+		router.RegisterAction(new("/admin/node/resign", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Node.Resign)), OnResignNode);
+		router.RegisterAction(new("/admin/login", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Node.Login)), OnGetLogin);
+		Register(router, "/streams/$scavenges/{scavengeId}/{event}/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
 			SupportedCodecs, ReadStreamOperationForScavengeStream);
-		Register(service, "/streams/$scavenges?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
-			SupportedCodecs, ReadStreamOperationForScavengeStream);
+		Register(router, "/streams/$scavenges?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs, SupportedCodecs, ReadStreamOperationForScavengeStream);
 	}
 
 	private static Func<UriTemplateMatch, Operation> ForScavengeStream(OperationDefinition definition) {
@@ -79,56 +57,56 @@ public class AdminController : CommunicationController {
 			var stream = "$scavenges";
 			var scavengeId = match.BoundVariables["scavengeId"];
 			if (scavengeId != null)
-				stream = stream + "-" + scavengeId;
+				stream = $"{stream}-{scavengeId}";
 
-			if (!string.IsNullOrEmpty(stream)) {
-				return operation.WithParameter(Operations.Streams.Parameters.StreamId(stream));
-			}
-
-			return operation;
+			return !string.IsNullOrEmpty(stream) ? operation.WithParameter(Streams.Parameters.StreamId(stream)) : operation;
 		};
 	}
 
+	static bool IsUnauthorized(HttpEntityManager entity)
+		=> entity.User == null || (!entity.User.LegacyRoleCheck(SystemRoles.Admins) && !entity.User.LegacyRoleCheck(SystemRoles.Operations));
+
+	static void ReplyUnauthorised(HttpEntityManager entity)
+		=> entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+
 	private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match) {
-		if (entity.User != null &&
-		    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
-			Log.Information("Request shut down of node because shutdown command has been received.");
-			Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
-			entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
-		} else {
-			entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+		if (IsUnauthorized(entity)) {
+			ReplyUnauthorised(entity);
+			return;
 		}
+
+		Log.Information("Request shut down of node because shutdown command has been received.");
+		Publish(new RequestShutdown(exitProcess: true, shutdownHttp: true));
+		entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 	}
 
 	private void OnPostReloadConfig(HttpEntityManager entity, UriTemplateMatch match) {
-		if (entity.User != null &&
-		    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
-			Log.Information("Reloading the node's configuration since a request has been received on /admin/reloadconfig.");
-			Publish(new ClientMessage.ReloadConfig());
-			entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
-		} else {
-			entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+		if (IsUnauthorized(entity)) {
+			ReplyUnauthorised(entity);
+			return;
 		}
+
+		Log.Information("Reloading the node's configuration since a request has been received on /admin/reloadconfig.");
+		Publish(new ReloadConfig());
+		entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 	}
 
 	private void OnPostMergeIndexes(HttpEntityManager entity, UriTemplateMatch match) {
-		Log.Information("Request merge indexes because /admin/mergeindexes request has been received.");
+		Log.Debug("Request merge indexes because /admin/mergeindexes request has been received.");
 
 		var correlationId = Guid.NewGuid();
-		var envelope = new SendToHttpEnvelope(_networkSendQueue, entity,
-			(e, message) => { return e.ResponseCodec.To(new MergeIndexesResultDto(correlationId.ToString())); },
+		var envelope = new SendToHttpEnvelope(networkSendQueue, entity,
+			(e, _) => e.ResponseCodec.To(new MergeIndexesResultDto(correlationId.ToString())),
 			(e, message) => {
-				var completed = message as ClientMessage.MergeIndexesResponse;
-				switch (completed?.Result) {
-					case ClientMessage.MergeIndexesResponse.MergeIndexesResult.Started:
-						return Configure.Ok(e.ResponseCodec.ContentType);
-					default:
-						return Configure.InternalServerError();
-				}
+				var completed = message as MergeIndexesResponse;
+				return completed?.Result switch {
+					MergeIndexesResponse.MergeIndexesResult.Started => Configure.Ok(e.ResponseCodec.ContentType),
+					_ => Configure.InternalServerError()
+				};
 			}
 		);
 
-		Publish(new ClientMessage.MergeIndexes(envelope, correlationId, entity.User));
+		Publish(new MergeIndexes(envelope, correlationId, entity.User));
 	}
 
 	private void OnPostScavenge(HttpEntityManager entity, UriTemplateMatch match) {
@@ -213,15 +191,14 @@ public class AdminController : CommunicationController {
 		sb.Append(" request has been received.");
 		Log.Information(sb.ToString(), args.ToArray());
 
-		var envelope = new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseStartedResponse>(_networkSendQueue, entity,(e, message) => {
-				return e.To(new ScavengeResultDto(message?.ScavengeId));
-			},
-			(e, message) => {
-				return Configure.Ok(e.ContentType);
-			}, CreateErrorEnvelope(entity)
+		var envelope = new SendToHttpEnvelope<ScavengeDatabaseStartedResponse>(
+			networkSendQueue, entity,
+			(e, message) => e.To(new ScavengeResultDto(message?.ScavengeId)),
+			(e, _) => Configure.Ok(e.ContentType),
+			CreateErrorEnvelope(entity)
 		);
 
-		Publish(new ClientMessage.ScavengeDatabase(
+		Publish(new ScavengeDatabase(
 			envelope: envelope,
 			correlationId: Guid.Empty,
 			user: entity.User,
@@ -235,52 +212,48 @@ public class AdminController : CommunicationController {
 	private void OnStopScavenge(HttpEntityManager entity, UriTemplateMatch match) {
 		var scavengeId = match.BoundVariables["scavengeId"];
 
-		Log.Information("Stopping scavenge because /admin/scavenge/{scavengeId} DELETE request has been received.",
-			scavengeId);
+		Log.Information("Stopping scavenge because /admin/scavenge/{scavengeId} DELETE request has been received.", scavengeId);
 
-		var envelope = new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseStoppedResponse>(_networkSendQueue, entity, (e, message) => {
-				return e.To(message?.ScavengeId);
-			},
-			(e, message) => {
-				return Configure.Ok(e.ContentType);
-			}, CreateErrorEnvelope(entity)
+		var envelope = new SendToHttpEnvelope<ScavengeDatabaseStoppedResponse>(
+			networkSendQueue, entity,
+			(e, message) => e.To(message?.ScavengeId),
+			(e, _) => Configure.Ok(e.ContentType),
+			CreateErrorEnvelope(entity)
 		);
 
-		Publish(new ClientMessage.StopDatabaseScavenge(envelope, Guid.Empty, entity.User, scavengeId));
+		Publish(new StopDatabaseScavenge(envelope, Guid.Empty, entity.User, scavengeId));
 	}
 
 	private void OnGetCurrentScavenge(HttpEntityManager entity, UriTemplateMatch match) {
-		Log.Information("/admin/scavenge/current GET request has been received.");
+		Log.Verbose("/admin/scavenge/current GET request has been received.");
 
-		var envelope = new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseGetCurrentResponse>(
-			_networkSendQueue,
+		var envelope = new SendToHttpEnvelope<ScavengeDatabaseGetCurrentResponse>(
+			networkSendQueue,
 			entity,
 			(e, message) => {
 				var result = new ScavengeGetCurrentResultDto();
 
 				if (message is not null &&
-				    message.Result == ClientMessage.ScavengeDatabaseGetCurrentResponse.ScavengeResult.InProgress &&
+				    message.Result == ScavengeDatabaseGetCurrentResponse.ScavengeResult.InProgress &&
 				    message.ScavengeId is not null) {
-
 					result.ScavengeId = message.ScavengeId;
 					result.ScavengeLink = $"/admin/scavenge/{message.ScavengeId}";
 				}
 
 				return e.To(result);
 			},
-			(e, message) => {
-				return Configure.Ok(e.ContentType);
-			}, CreateErrorEnvelope(entity)
+			(e, _) => Configure.Ok(e.ContentType),
+			CreateErrorEnvelope(entity)
 		);
 
-		Publish(new ClientMessage.GetCurrentDatabaseScavenge(envelope, Guid.Empty, entity.User));
+		Publish(new GetCurrentDatabaseScavenge(envelope, Guid.Empty, entity.User));
 	}
 
 	private void OnGetLastScavenge(HttpEntityManager entity, UriTemplateMatch match) {
-		Log.Information("/admin/scavenge/last GET request has been received.");
+		Log.Verbose("/admin/scavenge/last GET request has been received.");
 
-		var envelope = new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseGetLastResponse>(
-			_networkSendQueue,
+		var envelope = new SendToHttpEnvelope<ScavengeDatabaseGetLastResponse>(
+			networkSendQueue,
 			entity,
 			(e, message) => {
 				var result = new ScavengeGetLastResultDto();
@@ -288,54 +261,53 @@ public class AdminController : CommunicationController {
 					result.ScavengeId = message.ScavengeId;
 					result.ScavengeLink = $"/admin/scavenge/{message.ScavengeId}";
 				}
+
 				result.ScavengeResult = message.Result.ToString();
 
 				return e.To(result);
 			},
-			(e, message) => {
-				return Configure.Ok(e.ContentType);
-			}, CreateErrorEnvelope(entity)
+			(e, _) => Configure.Ok(e.ContentType),
+			CreateErrorEnvelope(entity)
 		);
 
-		Publish(new ClientMessage.GetLastDatabaseScavenge(envelope, Guid.Empty, entity.User));
+		Publish(new GetLastDatabaseScavenge(envelope, Guid.Empty, entity.User));
 	}
 
 	private void OnSetNodePriority(HttpEntityManager entity, UriTemplateMatch match) {
-		if (entity.User != null &&
-		    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
-			Log.Information("Request to set node priority.");
-
-			int nodePriority;
-			var nodePriorityVariable = match.BoundVariables["nodePriority"];
-			if (nodePriorityVariable == null) {
-				SendBadRequest(entity, "Could not find expected `nodePriority` in the request body.");
-				return;
-			}
-
-			if (!int.TryParse(nodePriorityVariable, out nodePriority)) {
-				SendBadRequest(entity, "nodePriority must be an integer.");
-				return;
-			}
-
-			Publish(new ClientMessage.SetNodePriority(nodePriority));
-			entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
-		} else {
-			entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+		if (IsUnauthorized(entity)) {
+			ReplyUnauthorised(entity);
+			return;
 		}
+
+		Log.Information("Request to set node priority.");
+
+		var nodePriorityVariable = match.BoundVariables["nodePriority"];
+		if (nodePriorityVariable == null) {
+			SendBadRequest(entity, "Could not find expected `nodePriority` in the request body.");
+			return;
+		}
+
+		if (!int.TryParse(nodePriorityVariable, out var nodePriority)) {
+			SendBadRequest(entity, "nodePriority must be an integer.");
+			return;
+		}
+
+		Publish(new SetNodePriority(nodePriority));
+		entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 	}
 
 	private void OnResignNode(HttpEntityManager entity, UriTemplateMatch match) {
-		if (entity.User != null &&
-		    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
-			Log.Information("Request to resign node.");
-			Publish(new ClientMessage.ResignNode());
-			entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
-		} else {
-			entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+		if (IsUnauthorized(entity)) {
+			ReplyUnauthorised(entity);
+			return;
 		}
+
+		Log.Information("Request to resign node.");
+		Publish(new ResignNode());
+		entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 	}
 
-	private void OnGetLogin(HttpEntityManager entity, UriTemplateMatch match) {
+	private static void OnGetLogin(HttpEntityManager entity, UriTemplateMatch match) {
 		var message = new UserManagementMessage.UserDetailsResult(
 			new UserManagementMessage.UserData(
 				entity.User.Identity.Name,
@@ -354,90 +326,87 @@ public class AdminController : CommunicationController {
 	}
 
 	private IEnvelope CreateErrorEnvelope(HttpEntityManager http) {
-		return new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseInProgressResponse>(
-			_networkSendQueue,
+		return new SendToHttpEnvelope<ScavengeDatabaseInProgressResponse>(
+			networkSendQueue,
 			http,
 			ScavengeInProgressFormatter,
 			ScavengeInProgressConfigurator,
-			new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseNotFoundResponse>(
-					_networkSendQueue,
+			new SendToHttpEnvelope<ScavengeDatabaseNotFoundResponse>(
+				networkSendQueue,
+				http,
+				ScavengeNotFoundFormatter,
+				ScavengeNotFoundConfigurator,
+				new SendToHttpEnvelope<ScavengeDatabaseUnauthorizedResponse>(
+					networkSendQueue,
 					http,
-					ScavengeNotFoundFormatter,
-					ScavengeNotFoundConfigurator,
-					new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseUnauthorizedResponse>(
-						_networkSendQueue,
-						http,
-						ScavengeUnauthorizedFormatter,
-						ScavengeUnauthorizedConfigurator,
-						null)));
+					ScavengeUnauthorizedFormatter,
+					ScavengeUnauthorizedConfigurator,
+					null)));
 	}
 
-	private ResponseConfiguration ScavengeInProgressConfigurator(ICodec codec, ClientMessage.ScavengeDatabaseInProgressResponse message) {
-		return new ResponseConfiguration(HttpStatusCode.BadRequest, "Bad Request", "text/plain", Helper.UTF8NoBom);
+	private static ResponseConfiguration ScavengeInProgressConfigurator(ICodec codec, ScavengeDatabaseInProgressResponse message) {
+		return new(HttpStatusCode.BadRequest, "Bad Request", "text/plain", Helper.UTF8NoBom);
 	}
 
-	private string ScavengeInProgressFormatter(ICodec codec, ClientMessage.ScavengeDatabaseInProgressResponse message) {
+	private static string ScavengeInProgressFormatter(ICodec codec, ScavengeDatabaseInProgressResponse message) {
 		return message.Reason;
 	}
 
-	private ResponseConfiguration ScavengeNotFoundConfigurator(ICodec codec, ClientMessage.ScavengeDatabaseNotFoundResponse message) {
-		return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", "text/plain", Helper.UTF8NoBom);
+	private static ResponseConfiguration ScavengeNotFoundConfigurator(ICodec codec, ScavengeDatabaseNotFoundResponse message) {
+		return new(HttpStatusCode.NotFound, "Not Found", "text/plain", Helper.UTF8NoBom);
 	}
 
-	private string ScavengeNotFoundFormatter(ICodec codec, ClientMessage.ScavengeDatabaseNotFoundResponse message) {
+	private static string ScavengeNotFoundFormatter(ICodec codec, ScavengeDatabaseNotFoundResponse message) {
 		return message.Reason;
 	}
 
-	private ResponseConfiguration ScavengeUnauthorizedConfigurator(ICodec codec, ClientMessage.ScavengeDatabaseUnauthorizedResponse message) {
-		return new ResponseConfiguration(HttpStatusCode.Unauthorized, "Unauthorized", "text/plain", Helper.UTF8NoBom);
+	private static ResponseConfiguration ScavengeUnauthorizedConfigurator(ICodec codec, ScavengeDatabaseUnauthorizedResponse message) {
+		return new(HttpStatusCode.Unauthorized, "Unauthorized", "text/plain", Helper.UTF8NoBom);
 	}
 
-	private string ScavengeUnauthorizedFormatter(ICodec codec, ClientMessage.ScavengeDatabaseUnauthorizedResponse message) {
+	private static string ScavengeUnauthorizedFormatter(ICodec codec, ScavengeDatabaseUnauthorizedResponse message) {
 		return message.Reason;
 	}
 
-	private void LogReplyError(Exception exc) {
+	private static void LogReplyError(Exception exc) {
 		Log.Debug("Error while closing HTTP connection (admin controller): {e}.", exc.Message);
 	}
-		private bool GetDescriptionDocument(HttpEntityManager manager, UriTemplateMatch match) {
-		if (manager.ResponseCodec.ContentType == ContentType.DescriptionDocJson) {
-			var stream = match.BoundVariables["stream"];
-			var accepts = (manager.HttpEntity.Request.AcceptTypes?.Length ?? 0) == 0 ||
-			              manager.HttpEntity.Request.AcceptTypes.Contains(ContentType.Any);
-			var responseStatusCode = accepts ? HttpStatusCode.NotAcceptable : HttpStatusCode.OK;
-			var responseMessage = manager.HttpEntity.Request.AcceptTypes == null
-				? "We are unable to represent the stream in the format requested."
-				: "Description Document";
-			var envelope = new SendToHttpEnvelope(
-				_networkSendQueue, manager,
-				(args, message) => {
-					var m = message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted;
-					if (m == null)
-						throw new Exception("Could not get subscriptions for stream " + stream);
 
-					string[] persistentSubscriptionGroups = null;
-					if (m.Result == MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus
-						    .Success) {
-						persistentSubscriptionGroups = m.SubscriptionStats.Select(x => x.GroupName).ToArray();
-					}
+	private bool GetDescriptionDocument(HttpEntityManager manager, UriTemplateMatch match) {
+		if (manager.ResponseCodec.ContentType != ContentType.DescriptionDocJson) return false;
 
-					manager.ReplyTextContent(
-						Format.GetDescriptionDocument(manager, stream, persistentSubscriptionGroups),
-						responseStatusCode, responseMessage,
-						manager.ResponseCodec.ContentType,
-						null,
-						e => Log.Error(e, "Error while writing HTTP response"));
-					return String.Empty;
-				},
-				(args, message) => new ResponseConfiguration(HttpStatusCode.OK, manager.ResponseCodec.ContentType,
-					manager.ResponseCodec.Encoding));
-			var cmd = new MonitoringMessage.GetStreamPersistentSubscriptionStats(envelope, stream);
-			Publish(cmd);
-			return true;
-		}
+		var stream = match.BoundVariables["stream"];
+		var accepts = (manager.HttpEntity.Request.AcceptTypes?.Length ?? 0) == 0 ||
+		              manager.HttpEntity.Request.AcceptTypes.Contains(ContentType.Any);
+		var responseStatusCode = accepts ? HttpStatusCode.NotAcceptable : HttpStatusCode.OK;
+		var responseMessage = manager.HttpEntity.Request.AcceptTypes == null
+			? "We are unable to represent the stream in the format requested."
+			: "Description Document";
+		var envelope = new SendToHttpEnvelope(
+			networkSendQueue, manager,
+			(_, message) => {
+				if (message is not GetPersistentSubscriptionStatsCompleted m)
+					throw new Exception("Could not get subscriptions for stream " + stream);
 
-		return false;
+				string[] persistentSubscriptionGroups = null;
+				if (m.Result == GetPersistentSubscriptionStatsCompleted.OperationStatus.Success) {
+					persistentSubscriptionGroups = m.SubscriptionStats.Select(x => x.GroupName).ToArray();
+				}
+
+				manager.ReplyTextContent(
+					Format.GetDescriptionDocument(manager, stream, persistentSubscriptionGroups),
+					responseStatusCode, responseMessage,
+					manager.ResponseCodec.ContentType,
+					null,
+					e => Log.Error(e, "Error while writing HTTP response"));
+				return string.Empty;
+			},
+			(_, _) => new(HttpStatusCode.OK, manager.ResponseCodec.ContentType, manager.ResponseCodec.Encoding));
+		var cmd = new GetStreamPersistentSubscriptionStats(envelope, stream);
+		Publish(cmd);
+		return true;
 	}
+
 	private void GetStreamEventsBackwardScavenges(HttpEntityManager manager, UriTemplateMatch match) {
 		if (GetDescriptionDocument(manager, match))
 			return;
@@ -454,67 +423,61 @@ public class AdminController : CommunicationController {
 			stream = stream + "-" + scavengeId;
 
 		if (stream.IsEmptyString()) {
-			SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
+			SendBadRequest(manager, $"Invalid stream name '{stream}'");
 			return;
 		}
 
 		if (evNum != null && evNum != "head" && (!long.TryParse(evNum, out eventNumber) || eventNumber < 0)) {
-			SendBadRequest(manager, string.Format("'{0}' is not valid event number", evNum));
+			SendBadRequest(manager, $"'{evNum}' is not valid event number");
 			return;
 		}
 
 		if (cnt.IsNotEmptyString() && (!int.TryParse(cnt, out count) || count <= 0)) {
-			SendBadRequest(manager, string.Format("'{0}' is not valid count. Should be positive integer", cnt));
+			SendBadRequest(manager, $"'{cnt}' is not valid count. Should be positive integer");
 			return;
 		}
 
-		bool resolveLinkTos;
-		if (!GetResolveLinkTos(manager, out resolveLinkTos, true)) {
-			SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
+		if (!GetResolveLinkTos(manager, out var resolveLinkTos, true)) {
+			SendBadRequest(manager, $"{SystemHeaders.ResolveLinkTos} header in wrong format.");
 			return;
 		}
 
 		if (!GetRequireLeader(manager, out var requireLeader)) {
-			SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireLeader));
+			SendBadRequest(manager, $"{SystemHeaders.RequireLeader} header in wrong format.");
 			return;
 		}
 
 		bool headOfStream = eventNumber == -1;
-		GetStreamEventsBackward(manager, stream, eventNumber, count, resolveLinkTos, requireLeader, headOfStream,
-			embed);
+		GetStreamEventsBackward(manager, stream, eventNumber, count, resolveLinkTos, requireLeader, headOfStream, embed);
 	}
+
 	private void GetStreamEventsBackward(HttpEntityManager manager, string stream, long eventNumber, int count,
 		bool resolveLinkTos, bool requireLeader, bool headOfStream, EmbedLevel embed) {
-		var envelope = new SendToHttpEnvelope(_networkSendQueue,
+		var envelope = new SendToHttpEnvelope(networkSendQueue,
 			manager,
-			(ent, msg) =>
-				Format.GetStreamEventsBackward(ent, msg, embed, headOfStream),
+			(ent, msg) => Format.GetStreamEventsBackward(ent, msg, embed, headOfStream),
 			(args, msg) => Configure.GetStreamEventsBackward(args, msg, headOfStream));
 		var corrId = Guid.NewGuid();
-		Publish(new ClientMessage.ReadStreamEventsBackward(corrId, corrId, envelope, stream, eventNumber, count,
+		Publish(new ReadStreamEventsBackward(corrId, corrId, envelope, stream, eventNumber, count,
 			resolveLinkTos, requireLeader, GetETagStreamVersion(manager), manager.User));
 	}
+
 	private static EmbedLevel GetEmbedLevel(HttpEntityManager manager, UriTemplateMatch match,
 		EmbedLevel htmlLevel = EmbedLevel.PrettyBody) {
 		if (manager.ResponseCodec is IRichAtomCodec)
 			return htmlLevel;
 		var rawValue = match.BoundVariables["embed"] ?? string.Empty;
-		switch (rawValue.ToLowerInvariant()) {
-			case "content":
-				return EmbedLevel.Content;
-			case "rich":
-				return EmbedLevel.Rich;
-			case "body":
-				return EmbedLevel.Body;
-			case "pretty":
-				return EmbedLevel.PrettyBody;
-			case "tryharder":
-				return EmbedLevel.TryHarder;
-			default:
-				return EmbedLevel.None;
-		}
+		return rawValue.ToLowerInvariant() switch {
+			"content" => EmbedLevel.Content,
+			"rich" => EmbedLevel.Rich,
+			"body" => EmbedLevel.Body,
+			"pretty" => EmbedLevel.PrettyBody,
+			"tryharder" => EmbedLevel.TryHarder,
+			_ => EmbedLevel.None
+		};
 	}
-	private bool GetResolveLinkTos(HttpEntityManager manager, out bool resolveLinkTos, bool defaultOption = false) {
+
+	private static bool GetResolveLinkTos(HttpEntityManager manager, out bool resolveLinkTos, bool defaultOption = false) {
 		resolveLinkTos = defaultOption;
 		var linkToHeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.ResolveLinkTos);
 		if (StringValues.IsNullOrEmpty(linkToHeader))
@@ -530,7 +493,8 @@ public class AdminController : CommunicationController {
 
 		return false;
 	}
-	private bool GetRequireLeader(HttpEntityManager manager, out bool requireLeader) {
+
+	private static bool GetRequireLeader(HttpEntityManager manager, out bool requireLeader) {
 		requireLeader = false;
 
 		var onlyLeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireLeader);
@@ -548,21 +512,18 @@ public class AdminController : CommunicationController {
 		return string.Equals(onlyLeader, "False", StringComparison.OrdinalIgnoreCase) ||
 		       string.Equals(onlyMaster, "False", StringComparison.OrdinalIgnoreCase);
 	}
-	private long? GetETagStreamVersion(HttpEntityManager manager) {
-		var etag = manager.HttpEntity.Request.GetHeaderValues("If-None-Match");
-		if (!StringValues.IsNullOrEmpty(etag)) {
-			// etag format is version;contenttypehash
-			var splitted = etag.ToString().Trim('\"').Split(ETagSeparatorArray);
-			if (splitted.Length == 2) {
-				var typeHash = manager.ResponseCodec.ContentType.GetHashCode()
-					.ToString(CultureInfo.InvariantCulture);
-				var res = splitted[1] == typeHash && long.TryParse(splitted[0], out var streamVersion)
-					? (long?)streamVersion
-					: null;
-				return res;
-			}
-		}
 
-		return null;
+	private static long? GetETagStreamVersion(HttpEntityManager manager) {
+		var etag = manager.HttpEntity.Request.GetHeaderValues("If-None-Match");
+		if (StringValues.IsNullOrEmpty(etag)) return null;
+		// etag format is version;contenttypehash
+		var splitted = etag.ToString().Trim('\"').Split(ETagSeparatorArray);
+		if (splitted.Length != 2) return null;
+		var typeHash = manager.ResponseCodec.ContentType.GetHashCode()
+			.ToString(CultureInfo.InvariantCulture);
+		var res = splitted[1] == typeHash && long.TryParse(splitted[0], out var streamVersion)
+			? (long?)streamVersion
+			: null;
+		return res;
 	}
 }

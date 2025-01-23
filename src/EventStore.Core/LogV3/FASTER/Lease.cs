@@ -6,7 +6,7 @@ using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.LogV3.FASTER;
 
-public struct Lease<T> : IDisposable {
+public readonly struct Lease<T> : IDisposable {
 	private readonly ObjectPool<T> _pool;
 	public T Reader { get; }
 

@@ -8,7 +8,7 @@ using EventStore.Core.Data;
 
 namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
-class RoundRobinPersistentSubscriptionConsumerStrategy : IPersistentSubscriptionConsumerStrategy {
+public class RoundRobinPersistentSubscriptionConsumerStrategy : IPersistentSubscriptionConsumerStrategy {
 	protected readonly Queue<PersistentSubscriptionClient> Clients = new Queue<PersistentSubscriptionClient>();
 
 	public virtual string Name {

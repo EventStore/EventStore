@@ -15,7 +15,6 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Plugins.Authorization;
 using static EventStore.Core.Messages.ClientMessage;
 using static EventStore.Core.Messages.StorageMessage;

@@ -30,11 +30,11 @@ public class MiniWeb {
 		_fileSystemRoot = fileSystemRoot;
 	}
 
-	public void RegisterControllerActions(IHttpService service) {
+	public void RegisterControllerActions(IUriRouter router) {
 		var pattern = _localWebRootPath + "/{*remaining_path}";
 		Logger.Verbose("Binding MiniWeb to {path}", pattern);
-		service.RegisterAction(
-			new ControllerAction(pattern, HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, new Operation(Operations.Node.StaticContent)),
+		router.RegisterAction(
+			new ControllerAction(pattern, HttpMethod.Get, Codec.NoCodecs, [Codec.ManualEncoding], new Operation(Operations.Node.StaticContent)),
 			OnStaticContent);
 	}
 
@@ -69,9 +69,8 @@ public class MiniWeb {
 			var extension = Path.GetExtension(contentLocalPath);
 			var fullPath = Path.Combine(_fileSystemRoot, contentLocalPath);
 
-			string contentType;
 			if (string.IsNullOrEmpty(extension)
-			    || !extensionToContentType.TryGetValue(extension.ToLower(), out contentType)
+			    || !extensionToContentType.TryGetValue(extension.ToLower(), out var contentType)
 			    || !File.Exists(fullPath)) {
 				Logger.Information("Replying 404 for {contentLocalPath} ==> {fullPath}", contentLocalPath, fullPath);
 				http.ReplyTextContent(

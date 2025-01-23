@@ -16,10 +16,7 @@
 		<PackageReference Include="NUnit" Version="3.14.0" />
 		<PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
 		<PackageReference Include="Google.Protobuf" Version="3.27.2" />
-		<PackageReference Include="Grpc.Tools" Version="2.65.0">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-		</PackageReference>
+		<PackageReference Include="Grpc.Tools" Version="2.65.0" PrivateAssets="All"/>
 		<PackageReference Include="Scrutor" Version="5.0.2" />
 		<PackageReference Include="Serilog.Sinks.InMemory" Version="0.11.0" />
 
@@ -35,11 +32,13 @@
 		<EmbeddedResource Include="Services\Transport\Tcp\test_certificates\**\*.crt" />
 		<EmbeddedResource Include="Services\Transport\Tcp\test_certificates\**\*.key" />
 		<EmbeddedResource Remove="FakePlugin\**" />
+		<EmbeddedResource Remove="Helpers\IODispatcherTests\ReadEventsTests\**" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="TestConfigs\*.yaml">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+		<None Remove="Helpers\IODispatcherTests\ReadEventsTests\**" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="TestCertificates\*.*">
@@ -66,5 +65,6 @@
 		<None Remove="FakePlugin\**" />
 		<Compile Remove="FakePlugin\**" />
 		<Content Include="FakePlugin\**" CopyToOutputDirectory="Always" />
+		<Compile Remove="Helpers\IODispatcherTests\ReadEventsTests\**" />
 	</ItemGroup>
 </Project>

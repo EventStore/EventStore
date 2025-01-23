@@ -16,7 +16,6 @@ using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
 using System.Threading.Tasks;
-using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Authorization.AuthorizationPolicies;
@@ -24,6 +23,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Certificates;
 using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Transport.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
@@ -57,7 +57,7 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 	public static readonly Stopwatch StartingTime = new Stopwatch();
 	public static readonly Stopwatch StoppingTime = new Stopwatch();
 
-	public readonly ClusterVNode Node;
+	public readonly ClusterVNode<TStreamId> Node;
 	public readonly TFChunkDb Db;
 	public readonly string DbPath;
 	public readonly HttpClient HttpClient;
@@ -89,7 +89,6 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 		IExpiryStrategy expiryStrategy = null,
 		string transform = "identity",
 		IReadOnlyList<IDbTransform> newTransforms = null) {
-
 		RunningTime.Start();
 		RunCount += 1;
 
@@ -177,12 +176,12 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 			: options.RunOnDisk(DbPath);
 
 		Log.Information("\n{0,-25} {1} ({2}/{3}, {4})\n"
-				 + "{5,-25} {6} ({7})\n"
-				 + "{8,-25} {9} ({10}-bit)\n"
-				 + "{11,-25} {12}\n"
-				 + "{13,-25} {14}\n"
-				 + "{15,-25} {16}\n"
-				 + "{17,-25} {18}\n\n",
+		                + "{5,-25} {6} ({7})\n"
+		                + "{8,-25} {9} ({10}-bit)\n"
+		                + "{11,-25} {12}\n"
+		                + "{13,-25} {14}\n"
+		                + "{15,-25} {16}\n"
+		                + "{17,-25} {18}\n\n",
 			"ES VERSION:", VersionInfo.Version, VersionInfo.Edition, VersionInfo.CommitSha, VersionInfo.Timestamp,
 			"OS:", RuntimeInformation.OsPlatform, Environment.OSVersion,
 			"RUNTIME:", RuntimeInformation.RuntimeVersion, RuntimeInformation.RuntimeMode,
@@ -201,24 +200,22 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 				HighHasher = hash32bit ? new ConstantHasher(0) : options.HighHasher,
 			});
 
-		Node = new ClusterVNode<TStreamId>(options, logFormatFactory,
-			new AuthenticationProviderFactory(
-				c => authenticationProviderFactory ?? new InternalAuthenticationProviderFactory(
-					c,
-					options.DefaultUser)),
-			new AuthorizationProviderFactory(
-				c => authorizationProviderFactory ?? new InternalAuthorizationProviderFactory(
-					new StaticAuthorizationPolicyRegistry([new LegacyPolicySelectorFactory(
+		Node = new(options, logFormatFactory,
+			new(c => authenticationProviderFactory ?? new InternalAuthenticationProviderFactory(c, options.DefaultUser)),
+			new(c => authorizationProviderFactory ?? new InternalAuthorizationProviderFactory(
+				new StaticAuthorizationPolicyRegistry([
+					new LegacyPolicySelectorFactory(
 						options.Application.AllowAnonymousEndpointAccess,
 						options.Application.AllowAnonymousStreamAccess,
-						options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue)]))),
+						options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue)
+				]))),
 			expiryStrategy: expiryStrategy,
 			certificateProvider: new OptionsCertificateProvider(),
 			configuration: inMemConf,
 			configureAdditionalNodeServices: services => ConfigureMiniNodeServices(services, newTransforms));
 		Db = Node.Db;
 
-		Node.HttpService.SetupController(new TestController(Node.MainQueue));
+		Node.Router.RegisterController(new TestController(Node.MainQueue));
 		_kestrelTestServer = new TestServer(new WebHostBuilder()
 			.UseKestrel(o => {
 				o.Listen(HttpEndPoint, options => {
@@ -230,10 +227,12 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 							ClientCertificateMode = ClientCertificateMode.AllowCertificate,
 							ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
 								var (isValid, error) =
-									ClusterVNode<string>.ValidateClientCertificate(certificate, chain, sslPolicyErrors, () => null, () => new X509Certificate2Collection(ssl_connections.GetRootCertificate()));
+									ClusterVNode<string>.ValidateClientCertificate(certificate, chain, sslPolicyErrors, () => null,
+										() => new X509Certificate2Collection(ssl_connections.GetRootCertificate()));
 								if (!isValid && error != null) {
 									Log.Error("Client certificate validation error: {e}", error);
 								}
+
 								return isValid;
 							}
 						});
@@ -302,7 +301,6 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 	}
 
 	public async Task Shutdown(bool keepDb = false) {
-
 		StoppingTime.Start();
 
 		_kestrelTestServer.Dispose();

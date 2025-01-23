@@ -33,16 +33,8 @@ public static partial class ElectionMessage {
 			AttemptedView = attemptedView;
 		}
 
-		public ViewChange(ElectionMessageDto.ViewChangeDto dto) {
-			AttemptedView = dto.AttemptedView;
-			ServerId = dto.ServerId;
-			ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
-				dto.ServerHttpPort);
-		}
-
 		public override string ToString() {
-			return string.Format("---- ViewChange: attemptedView {0}, serverId {1}, serverHttp {2}",
-				AttemptedView, ServerId, ServerHttpEndPoint);
+			return $"---- ViewChange: attemptedView {AttemptedView}, serverId {ServerId}, serverHttp {ServerHttpEndPoint}";
 		}
 	}
 
@@ -56,13 +48,6 @@ public static partial class ElectionMessage {
 			ServerId = serverId;
 			ServerHttpEndPoint = serverHttpEndPoint;
 			InstalledView = installedView;
-		}
-
-		public ViewChangeProof(ElectionMessageDto.ViewChangeProofDto dto) {
-			ServerId = dto.ServerId;
-			ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
-				dto.ServerHttpPort);
-			InstalledView = dto.InstalledView;
 		}
 
 		public override string ToString() {
@@ -101,13 +86,6 @@ public static partial class ElectionMessage {
 			ServerId = serverId;
 			ServerHttpEndPoint = serverHttpEndPoint;
 			View = view;
-		}
-
-		public Prepare(ElectionMessageDto.PrepareDto dto) {
-			ServerId = dto.ServerId;
-			ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
-				dto.ServerHttpPort);
-			View = dto.View;
 		}
 
 		public override string ToString() {
@@ -157,22 +135,6 @@ public static partial class ElectionMessage {
 			ClusterInfo = clusterInfo;
 		}
 
-		public PrepareOk(ElectionMessageDto.PrepareOkDto dto) {
-			View = dto.View;
-			ServerId = dto.ServerId;
-			ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
-				dto.ServerHttpPort);
-			EpochNumber = dto.EpochNumber;
-			EpochPosition = dto.EpochPosition;
-			EpochId = dto.EpochId;
-			EpochLeaderInstanceId = dto.EpochLeaderInstanceId;
-			LastCommitPosition = dto.LastCommitPosition;
-			WriterCheckpoint = dto.WriterCheckpoint;
-			ChaserCheckpoint = dto.ChaserCheckpoint;
-			NodePriority = dto.NodePriority;
-			ClusterInfo = dto.ClusterInfo;
-		}
-
 		public override string ToString() {
 			return string.Format(
 				"---- PrepareOk: view {0}, serverId {1}, serverHttp {2}, epochNumber {3}, " +
@@ -217,24 +179,6 @@ public static partial class ElectionMessage {
 			NodePriority = nodePriority;
 		}
 
-		public Proposal(ElectionMessageDto.ProposalDto dto) {
-			ServerId = dto.ServerId;
-			ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
-				dto.ServerHttpPort);
-			LeaderId = dto.LeaderId;
-			LeaderHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.LeaderHttpAddress),
-				dto.LeaderHttpPort);
-			View = dto.View;
-			EpochNumber = dto.EpochNumber;
-			EpochPosition = dto.EpochPosition;
-			EpochId = dto.EpochId;
-			EpochLeaderInstanceId = dto.EpochLeaderInstanceId;
-			LastCommitPosition = dto.LastCommitPosition;
-			WriterCheckpoint = dto.WriterCheckpoint;
-			ChaserCheckpoint = dto.ChaserCheckpoint;
-			NodePriority = dto.NodePriority;
-		}
-
 		public override string ToString() {
 			return string.Format(
 				"---- Proposal: serverId {0}, serverHttp {1}, leaderId {2}, leaderHttp {3}, "
@@ -263,16 +207,6 @@ public static partial class ElectionMessage {
 			View = view;
 		}
 
-		public Accept(ElectionMessageDto.AcceptDto dto) {
-			ServerId = dto.ServerId;
-			ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
-				dto.ServerHttpPort);
-			LeaderId = dto.LeaderId;
-			LeaderHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.LeaderHttpAddress),
-				dto.LeaderHttpPort);
-			View = dto.View;
-		}
-
 		public override string ToString() {
 			return string.Format(
 				"---- Accept: serverId {0}, serverHttp {1}, leaderId {2}, leaderHttp {3}, view {4}",
@@ -290,12 +224,6 @@ public static partial class ElectionMessage {
 			LeaderHttpEndPoint = leaderHttpEndPoint;
 		}
 
-		public LeaderIsResigning(ElectionMessageDto.LeaderIsResigningDto dto) {
-			LeaderId = dto.LeaderId;
-			LeaderHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.LeaderHttpAddress),
-				dto.LeaderHttpPort);
-		}
-
 		public override string ToString() {
 			return $"---- LeaderIsResigning: serverId {LeaderId}";
 		}
@@ -307,15 +235,6 @@ public static partial class ElectionMessage {
 		public readonly EndPoint LeaderHttpEndPoint;
 		public readonly Guid ServerId;
 		public readonly EndPoint ServerHttpEndPoint;
-
-		public LeaderIsResigningOk(ElectionMessageDto.LeaderIsResigningOkDto dto) {
-			LeaderId = dto.LeaderId;
-			LeaderHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.LeaderHttpAddress),
-				dto.LeaderHttpPort);
-			ServerId = dto.ServerId;
-			ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
-				dto.ServerHttpPort);
-		}
 
 		public LeaderIsResigningOk(Guid leaderId, EndPoint leaderHttpEndPoint, Guid serverId, EndPoint serverHttpEndPoint) {
 			LeaderId = leaderId;

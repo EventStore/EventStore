@@ -117,14 +117,11 @@ public interface IScavengeStateForChunkExecutorWorker<TStreamId> : IDisposable {
 	bool TryGetChunkTimeStampRange(int logicalChunkNumber, out ChunkTimeStampRange range);
 }
 
-public interface IScavengeStateForChunkMerger : IScavengeStateCommon {
-}
+public interface IScavengeStateForChunkMerger : IScavengeStateCommon;
 
 public interface IScavengeStateForIndexExecutor<TStreamId> : IScavengeStateCommon {
 	bool IsCollision(ulong streamHash);
-	bool TryGetIndexExecutionInfo(
-		StreamHandle<TStreamId> streamHandle,
-		out IndexExecutionInfo info);
+	bool TryGetIndexExecutionInfo(StreamHandle<TStreamId> streamHandle, out IndexExecutionInfo info);
 	TStreamId LookupUniqueHashUser(ulong streamHash);
 }
 

@@ -18,7 +18,7 @@ public class InMemoryCheckpoint : ICheckpoint {
 	public InMemoryCheckpoint(long initialValue) : this(Guid.NewGuid().ToString(), initialValue) {
 	}
 
-	public InMemoryCheckpoint() : this(Guid.NewGuid().ToString(), 0) {
+	public InMemoryCheckpoint() : this(Guid.NewGuid().ToString()) {
 	}
 
 	public InMemoryCheckpoint(string name, long initValue = 0) {

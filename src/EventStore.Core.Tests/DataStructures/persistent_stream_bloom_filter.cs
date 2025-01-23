@@ -30,16 +30,8 @@ public class persistent_stream_bloom_filter : SpecificationWithDirectoryPerTestF
 
 	PersistentStreamBloomFilter GenSut(string path, bool create, long size, ILongHasher<string> hasher) =>
 		(create ? _forCreate : _forOpen) switch {
-			PersistenceStrategy.MemoryMapped =>
-				new PersistentStreamBloomFilter(
-					new MemoryMappedFilePersistence(size, path, create),
-					hasher: hasher),
-
-			PersistenceStrategy.FileStream =>
-				new PersistentStreamBloomFilter(
-					new FileStreamPersistence(size, path, create),
-					hasher: hasher),
-
+			PersistenceStrategy.MemoryMapped => new(new MemoryMappedFilePersistence(size, path, create), hasher: hasher),
+			PersistenceStrategy.FileStream => new(new FileStreamPersistence(size, path, create), hasher: hasher),
 			_ => throw new ArgumentOutOfRangeException(),
 	};
 
@@ -88,8 +80,7 @@ public class persistent_stream_bloom_filter : SpecificationWithDirectoryPerTestF
 		private PersistentStreamBloomFilter _filter;
 		private string _path;
 
-		public with_fixed_size_filter(PersistenceStrategy forCreate, PersistenceStrategy forOpen)
-			: base(forCreate, forOpen) {
+		public with_fixed_size_filter(PersistenceStrategy forCreate, PersistenceStrategy forOpen) : base(forCreate, forOpen) {
 		}
 
 		[SetUp]

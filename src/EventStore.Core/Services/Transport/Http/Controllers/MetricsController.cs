@@ -11,25 +11,20 @@ using EventStore.Transport.Http.Codecs;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers;
 
-public class MetricsController : CommunicationController {
-	private static readonly ICodec[] SupportedCodecs = new ICodec[] {
+public class MetricsController() : CommunicationController(new NoOpPublisher()) {
+	private static readonly ICodec[] SupportedCodecs = [
 		Codec.CreateCustom(Codec.Text, "text/plain", Helper.UTF8NoBom, false, false),
-		Codec.CreateCustom(Codec.Text, "application/openmetrics-text", Helper.UTF8NoBom, false, false),
-	};
+		Codec.CreateCustom(Codec.Text, "application/openmetrics-text", Helper.UTF8NoBom, false, false)
+	];
 
-	public MetricsController() : base(new NoOpPublisher()) {
-	}
-
-	protected override void SubscribeCore(IHttpService service) {
-		Ensure.NotNull(service, "service");
+	protected override void SubscribeCore(IUriRouter router) {
+		Ensure.NotNull(router);
 
 		// this exists only to specify the permissions required for the /metrics endpoint
-		service.RegisterAction(new ControllerAction("/metrics", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs,
+		router.RegisterAction(new("/metrics", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs,
 			new Operation(Operations.Node.Statistics.Read)),
-			(x, y) => {
-				// the PrometheusExporterMiddleware handles the request itself, this will not be called
-				throw new InvalidOperationException();
-			});
+			// the PrometheusExporterMiddleware handles the request itself, this will not be called
+			(_, _) => throw new InvalidOperationException());
 	}
 
 	class NoOpPublisher : IPublisher {

@@ -5,7 +5,7 @@ using EventStore.Core.Data;
 
 namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
-class DispatchToSinglePersistentSubscriptionConsumerStrategy : RoundRobinPersistentSubscriptionConsumerStrategy {
+public class DispatchToSinglePersistentSubscriptionConsumerStrategy : RoundRobinPersistentSubscriptionConsumerStrategy {
 	public override string Name {
 		get { return SystemConsumerStrategies.DispatchToSingle; }
 	}

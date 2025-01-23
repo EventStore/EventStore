@@ -40,23 +40,13 @@ public abstract class uri_router_should {
 		_router = _uriRouterFactory();
 
 		var p = new RequestParams(TimeSpan.Zero);
-		_router.RegisterAction(
-			new ControllerAction("/", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()), (x, y) => p);
-		_router.RegisterAction(
-			new ControllerAction("/{placeholder}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()),
-			(x, y) => p);
-		_router.RegisterAction(
-			new ControllerAction("/halt", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()),
-			(x, y) => p);
-		_router.RegisterAction(
-			new ControllerAction("/streams/{stream}/{event}/backward/{count}?embed={embed}", HttpMethod.Get,
-				Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()), (x, y) => p);
-		_router.RegisterAction(
-			new ControllerAction(
-				"/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}",
+		_router.RegisterAction(new("/", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()), (x, y) => p);
+		_router.RegisterAction(new("/{placeholder}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()), (x, y) => p);
+		_router.RegisterAction(new("/halt", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()), (x, y) => p);
+		_router.RegisterAction(new("/streams/{stream}/{event}/backward/{count}?embed={embed}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()), (x, y) => p);
+		_router.RegisterAction(new("/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}",
 				HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()), (x, y) => p);
-		_router.RegisterAction(
-			new ControllerAction("/s/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs,
+		_router.RegisterAction(new("/s/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs,
 				FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 		_router.RegisterAction(
 			new ControllerAction("/streams/$all/", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()),

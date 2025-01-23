@@ -10,7 +10,6 @@ namespace EventStore.Core.TransactionLog.Checkpoint;
 
 public class FileCheckpoint : ICheckpoint {
 	private readonly string _name;
-	private readonly string _filename;
 	private readonly FileStream _fileStream;
 
 	private long _last;
@@ -19,15 +18,13 @@ public class FileCheckpoint : ICheckpoint {
 	private readonly BinaryWriter _writer;
 	private readonly BinaryReader _reader;
 
-	public FileCheckpoint(string filename)
-		: this(filename, Guid.NewGuid().ToString()) {
+	public FileCheckpoint(string filename) : this(filename, Guid.NewGuid().ToString()) {
 	}
 
 	public FileCheckpoint(string filename, string name, bool mustExist = false, long initValue = 0) {
-		_filename = filename;
 		_name = name;
 		var old = File.Exists(filename);
-		_fileStream = new FileStream(_filename,
+		_fileStream = new FileStream(filename,
 			mustExist ? FileMode.Open : FileMode.OpenOrCreate,
 			FileAccess.ReadWrite,
 			FileShare.ReadWrite);

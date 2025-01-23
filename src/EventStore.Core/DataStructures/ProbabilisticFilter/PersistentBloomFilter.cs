@@ -11,7 +11,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter;
 // the bloom filter has a pluggable strategy for persisting data. the IPersistenceStrategy
 // provides us with a BloomFilterAccessor that we can use to manipulate the data.
 // we deal with actually bloom filter hashing in here and synchronise the access to the data.
-public class PersistentBloomFilter : IProbabilisticFilter, IDisposable {
+public class PersistentBloomFilter : IDisposable {
 	/*
 	    Bloom filter implementation based on the following paper by Adam Kirsch and Michael Mitzenmacher:
 	    "Less Hashing, Same Performance: Building a Better Bloom Filter"

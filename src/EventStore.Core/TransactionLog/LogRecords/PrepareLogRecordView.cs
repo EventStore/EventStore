@@ -27,7 +27,6 @@ public struct PrepareLogRecordView {
 	public ReadOnlySpan<byte> Metadata => _record.AsSpan(_metadataOffset, _metadataSize);
 
 	private readonly byte[] _record;
-	private readonly int _length;
 	private readonly long _expectedVersion;
 	private readonly int _streamIdSize;
 	private readonly int _streamIdOffset;
@@ -46,7 +45,6 @@ public struct PrepareLogRecordView {
 			throw new NotSupportedException();
 
 		_record = record;
-		_length = length;
 
 		Version = _record[1];
 		if (Version != LogRecordVersion.LogRecordV0 && Version != LogRecordVersion.LogRecordV1)
@@ -64,7 +62,7 @@ public struct PrepareLogRecordView {
 			currentOffset += 8;
 		}
 
-		_streamIdSize = Read7BitEncodedInt(_record.AsSpan(0, _length), ref currentOffset);
+		_streamIdSize = Read7BitEncodedInt(_record.AsSpan(0, length), ref currentOffset);
 		_streamIdOffset = currentOffset;
 		currentOffset += _streamIdSize;
 
@@ -77,7 +75,7 @@ public struct PrepareLogRecordView {
 		_timestampOffset = currentOffset;
 		currentOffset += 8;
 
-		_eventTypeSize = Read7BitEncodedInt(_record.AsSpan(0, _length), ref currentOffset);
+		_eventTypeSize = Read7BitEncodedInt(_record.AsSpan(0, length), ref currentOffset);
 		_eventTypeOffset = currentOffset;
 		currentOffset += _eventTypeSize;
 
@@ -91,8 +89,8 @@ public struct PrepareLogRecordView {
 		_metadataOffset = currentOffset;
 		currentOffset += _metadataSize;
 
-		if (currentOffset != _length) {
-			throw new ArgumentException($"Unexpected record length: {currentOffset}, expected: {_length}");
+		if (currentOffset != length) {
+			throw new ArgumentException($"Unexpected record length: {currentOffset}, expected: {length}");
 		}
 
 		// this is smaller than the actual record size but should be good enough to detect potential corruption

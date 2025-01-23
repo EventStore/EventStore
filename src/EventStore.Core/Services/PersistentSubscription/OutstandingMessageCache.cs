@@ -16,9 +16,9 @@ public enum StartMessageResult {
 }
 
 public class OutstandingMessageCache {
-	private readonly Dictionary<Guid, Tuple<DateTime, OutstandingMessage>> _outstandingRequests;
-	private readonly SortedDictionary<Tuple<DateTime, RetryableMessage>, bool> _byTime;
-	private readonly SortedList<long, OutstandingMessage> _bySequences;
+	private readonly Dictionary<Guid, Tuple<DateTime, OutstandingMessage>> _outstandingRequests = new();
+	private readonly SortedDictionary<Tuple<DateTime, RetryableMessage>, bool> _byTime = new(new ByTypeComparer());
+	private readonly SortedList<long, OutstandingMessage> _bySequences = new();
 
 	public class ByTypeComparer : IComparer<Tuple<DateTime, RetryableMessage>> {
 		public int Compare(Tuple<DateTime, RetryableMessage> x, Tuple<DateTime, RetryableMessage> y) {
@@ -31,25 +31,14 @@ public class OutstandingMessageCache {
 		}
 	}
 
-	public OutstandingMessageCache() {
-		_outstandingRequests = new Dictionary<Guid, Tuple<DateTime, OutstandingMessage>>();
-		_byTime = new SortedDictionary<Tuple<DateTime, RetryableMessage>, bool>(new ByTypeComparer());
-		_bySequences = new SortedList<long, OutstandingMessage>();
-	}
-
-	public int Count {
-		get { return _outstandingRequests.Count; }
-	}
+	public int Count => _outstandingRequests.Count;
 
 	public void Remove(Guid messageId) {
-		Tuple<DateTime, OutstandingMessage> m;
-		if (_outstandingRequests.TryGetValue(messageId, out m)) {
-			_byTime.Remove(new Tuple<DateTime, RetryableMessage>(m.Item1,
-				new RetryableMessage(m.Item2.EventId, m.Item1)));
-			_outstandingRequests.Remove(messageId);
-			if (m.Item2.EventSequenceNumber.HasValue) {
-				_bySequences.Remove(m.Item2.EventSequenceNumber.Value);
-			}
+		if (!_outstandingRequests.TryGetValue(messageId, out var m)) return;
+		_byTime.Remove(new(m.Item1, new(m.Item2.EventId, m.Item1)));
+		_outstandingRequests.Remove(messageId);
+		if (m.Item2.EventSequenceNumber.HasValue) {
+			_bySequences.Remove(m.Item2.EventSequenceNumber.Value);
 		}
 	}
 
@@ -60,13 +49,12 @@ public class OutstandingMessageCache {
 	public StartMessageResult StartMessage(OutstandingMessage message, DateTime expires) {
 		if (_outstandingRequests.ContainsKey(message.EventId))
 			return StartMessageResult.SkippedDuplicate;
-		_outstandingRequests[message.EventId] = new Tuple<DateTime, OutstandingMessage>(expires, message);
+		_outstandingRequests[message.EventId] = new(expires, message);
 		Debug.Assert(message.IsReplayedEvent || message.EventSequenceNumber.HasValue);
 		if (message.EventSequenceNumber.HasValue) {
 			_bySequences.Add(message.EventSequenceNumber.Value, message);
 		}
-		_byTime.Add(new Tuple<DateTime, RetryableMessage>(expires, new RetryableMessage(message.EventId, expires)),
-			false);
+		_byTime.Add(new(expires, new(message.EventId, expires)), false);
 
 		return StartMessageResult.Success;
 	}
@@ -79,8 +67,7 @@ public class OutstandingMessageCache {
 			}
 
 			_byTime.Remove(item);
-			Tuple<DateTime, OutstandingMessage> m;
-			if (_outstandingRequests.TryGetValue(item.Item2.MessageId, out m)) {
+			if (_outstandingRequests.TryGetValue(item.Item2.MessageId, out var m)) {
 				yield return _outstandingRequests[item.Item2.MessageId].Item2;
 				_outstandingRequests.Remove(item.Item2.MessageId);
 				if (m.Item2.EventSequenceNumber.HasValue) {
@@ -88,10 +75,6 @@ public class OutstandingMessageCache {
 				}
 			}
 		}
-	}
-
-	public IEnumerable<Tuple<DateTime, RetryableMessage>> WaitingTimeMessages() {
-		return _byTime.Keys;
 	}
 
 	public (OutstandingMessage? message, long sequenceNumber) GetLowestPosition() {
@@ -103,13 +86,14 @@ public class OutstandingMessageCache {
 	}
 
 	public bool GetMessageById(Guid id, out OutstandingMessage outstandingMessage) {
-		outstandingMessage = new OutstandingMessage();
-		Tuple<DateTime, OutstandingMessage> m;
-		if (_outstandingRequests.TryGetValue(id, out m)) {
-			outstandingMessage = m.Item2;
-			return true;
-		}
+		outstandingMessage = new();
+		if (!_outstandingRequests.TryGetValue(id, out var m)) return false;
+		outstandingMessage = m.Item2;
+		return true;
+	}
 
-		return false;
+	// Only used in tests
+	public IEnumerable<Tuple<DateTime, RetryableMessage>> WaitingTimeMessages() {
+		return _byTime.Keys;
 	}
 }

@@ -282,10 +282,6 @@ public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCom
 		public void AddPendingPrepares(IEnumerable<IPrepareLogRecord<TStreamId>> prepares) {
 			Prepares.AddRange(prepares);
 		}
-
-		public void SetPendingCommit(CommitLogRecord commit) {
-			_commit = commit;
-		}
 	}
 
 	public void Handle(ClientMessage.MergeIndexes message) {

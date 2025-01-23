@@ -20,9 +20,10 @@ public static class Ensure {
 		return string.IsNullOrEmpty(argument) ? throw new ArgumentNullException(argument, argumentName) : argument;
 	}
 
-	public static void Positive(int number, [CallerArgumentExpression("number")] string argumentName = null) {
+	public static int Positive(int number, [CallerArgumentExpression("number")] string argumentName = null) {
 		if (number <= 0)
 			throw new ArgumentOutOfRangeException(argumentName, $"{argumentName} should be positive.");
+		return number;
 	}
 
 	public static void Positive(long number, [CallerArgumentExpression("number")] string argumentName = null) {

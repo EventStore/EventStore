@@ -16,11 +16,7 @@ using Eventuous.Subscriptions;
 using Eventuous.Subscriptions.Checkpoints;
 using Eventuous.Subscriptions.Context;
 using Eventuous.Subscriptions.Filters;
-using Eventuous.Subscriptions.Logging;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Serilog.Extensions.Logging;
-using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Duck;
 

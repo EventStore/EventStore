@@ -25,14 +25,11 @@ public class HttpSendService : IHttpForwarder,
 	IHandle<HttpMessage.HttpSend> {
 	private static readonly ILogger Log = Serilog.Log.ForContext<HttpSendService>();
 
-	private readonly HttpMessagePipe _httpPipe;
 	private readonly bool _forwardRequests;
 	private readonly HttpClient _forwardClient;
 	private MemberInfo _leaderInfo;
 
-	public HttpSendService(HttpMessagePipe httpPipe, bool forwardRequests, CertificateDelegates.ServerCertificateValidator externServerCertValidator) {
-		Ensure.NotNull(httpPipe, "httpPipe");
-		_httpPipe = httpPipe;
+	public HttpSendService(bool forwardRequests, CertificateDelegates.ServerCertificateValidator externServerCertValidator) {
 		_forwardRequests = forwardRequests;
 
 		var socketsHttpHandler = new SocketsHttpHandler {
@@ -43,6 +40,7 @@ public class HttpSendService : IHttpForwarder,
 					if (!isValid && error != null) {
 						Log.Error("Server certificate validation error: {e}", error);
 					}
+
 					return isValid;
 				}
 			},
@@ -79,16 +77,11 @@ public class HttpSendService : IHttpForwarder,
 	}
 
 	public void Handle(HttpMessage.HttpSend message) {
-		var deniedToHandle = message.Message as HttpMessage.DeniedToHandle;
-		if (deniedToHandle != null) {
-			int code;
-			switch (deniedToHandle.Reason) {
-				case DenialReason.ServerTooBusy:
-					code = HttpStatusCode.ServiceUnavailable;
-					break;
-				default:
-					throw new ArgumentOutOfRangeException();
-			}
+		if (message.Message is HttpMessage.DeniedToHandle deniedToHandle) {
+			int code = deniedToHandle.Reason switch {
+				DenialReason.ServerTooBusy => HttpStatusCode.ServiceUnavailable,
+				_ => throw new ArgumentOutOfRangeException()
+			};
 
 			// todo: histogram metric?
 			message.HttpEntityManager.ReplyStatus(
@@ -101,15 +94,14 @@ public class HttpSendService : IHttpForwarder,
 			var config = message.Configuration;
 
 			// todo: histogram metric?
-			if (response is byte[]) {
+			if (response is byte[] bytes) {
 				message.HttpEntityManager.ReplyContent(
-					response as byte[],
+					bytes,
 					config.Code,
 					config.Description,
 					config.ContentType,
 					config.Headers,
-					exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.",
-						message.Message, exc.Message));
+					exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.", message.Message, exc.Message));
 			} else {
 				message.HttpEntityManager.ReplyTextContent(
 					response as string,
@@ -117,32 +109,28 @@ public class HttpSendService : IHttpForwarder,
 					config.Description,
 					config.ContentType,
 					config.Headers,
-					exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.",
-						message.Message, exc.Message));
+					exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.", message.Message, exc.Message));
 			}
 		}
 	}
 
 	bool IHttpForwarder.ForwardRequest(HttpEntityManager manager) {
 		var leaderInfo = _leaderInfo;
-		if (_forwardRequests && leaderInfo != null) {
-			var srcUrl = manager.RequestedUrl;
-			var srcBase = new Uri($"{srcUrl.Scheme}://{srcUrl.Host}:{srcUrl.Port}/",
-				UriKind.Absolute);
-			var baseUri = new Uri(leaderInfo.HttpEndPoint.ToHttpUrl(srcUrl.Scheme));
-			var forwardUri = new Uri(baseUri, srcBase.MakeRelativeUri(srcUrl));
-			ForwardRequest(manager, forwardUri);
-			return true;
-		}
+		if (!_forwardRequests || leaderInfo == null) return false;
 
-		return false;
+		var srcUrl = manager.RequestedUrl;
+		var srcBase = new Uri($"{srcUrl.Scheme}://{srcUrl.Host}:{srcUrl.Port}/", UriKind.Absolute);
+		var baseUri = new Uri(leaderInfo.HttpEndPoint.ToHttpUrl(srcUrl.Scheme));
+		var forwardUri = new Uri(baseUri, srcBase.MakeRelativeUri(srcUrl));
+		ForwardRequest(manager, forwardUri);
+		return true;
 	}
 
 	private void ForwardRequest(HttpEntityManager manager, Uri forwardUri) {
 		var srcReq = manager.HttpEntity.Request;
 		var request = new HttpRequestMessage();
 		request.RequestUri = forwardUri;
-		request.Method = new System.Net.Http.HttpMethod(srcReq.HttpMethod);
+		request.Method = new(srcReq.HttpMethod);
 
 		var hasContentLength = false;
 		// Copy unrestricted headers (including cookies, if any)
@@ -153,7 +141,6 @@ public class HttpSendService : IHttpForwarder,
 						request.Headers.Accept.ParseAdd(srcReq.GetHeaderValues(headerKey).ToString());
 						break;
 					case "connection":
-						break;
 					case "content-type":
 						break;
 					case "content-length":
@@ -168,11 +155,9 @@ public class HttpSendService : IHttpForwarder,
 						request.Headers.Host = $"{forwardUri.Host}:{forwardUri.Port}";
 						break;
 					case "if-modified-since":
-						request.Headers.IfModifiedSince =
-							DateTime.Parse(srcReq.GetHeaderValues(headerKey).ToString());
+						request.Headers.IfModifiedSince = DateTime.Parse(srcReq.GetHeaderValues(headerKey).ToString());
 						break;
 					case "proxy-connection":
-						break;
 					case "range":
 						break;
 					case "referer":
@@ -195,8 +180,7 @@ public class HttpSendService : IHttpForwarder,
 		}
 
 		if (!request.Headers.Contains(ProxyHeaders.XForwardedHost)) {
-			request.Headers.Add(ProxyHeaders.XForwardedHost, string.Format("{0}:{1}",
-				manager.RequestedUrl.Host, manager.RequestedUrl.Port));
+			request.Headers.Add(ProxyHeaders.XForwardedHost, $"{manager.RequestedUrl.Host}:{manager.RequestedUrl.Port}");
 		}
 
 		// Copy content (if content body is allowed)
@@ -207,8 +191,7 @@ public class HttpSendService : IHttpForwarder,
 			streamContent.Headers.ContentLength = srcReq.ContentLength64;
 			request.Content = streamContent;
 
-			MediaTypeHeaderValue contentType;
-			if (MediaTypeHeaderValue.TryParse(srcReq.ContentType, out contentType)) {
+			if (MediaTypeHeaderValue.TryParse(srcReq.ContentType, out var contentType)) {
 				streamContent.Headers.ContentType = contentType;
 			}
 		}
@@ -216,7 +199,7 @@ public class HttpSendService : IHttpForwarder,
 		ForwardResponse(manager, request);
 	}
 
-	private void ForwardReplyFailed(HttpEntityManager manager) {
+	private static void ForwardReplyFailed(HttpEntityManager manager) {
 		manager.ReplyStatus(HttpStatusCode.InternalServerError, "Error while forwarding request", _ => { });
 	}
 

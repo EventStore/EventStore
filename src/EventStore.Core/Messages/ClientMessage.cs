@@ -1471,22 +1471,6 @@ public static partial class ClientMessage {
 	}
 
 	[DerivedMessage(CoreMessage.Client)]
-	public partial class PersistentSubscriptionNakEvents : ReadRequestMessage {
-		public readonly string SubscriptionId;
-		public readonly Guid[] ProcessedEventIds;
-
-		public PersistentSubscriptionNakEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-			string subscriptionId, Guid[] processedEventIds, ClaimsPrincipal user, DateTime? expires = null)
-			: base(internalCorrId, correlationId, envelope, user, expires) {
-			Ensure.NotNullOrEmpty(subscriptionId, "subscriptionId");
-			Ensure.NotNull(processedEventIds, "processedEventIds");
-
-			SubscriptionId = subscriptionId;
-			ProcessedEventIds = processedEventIds;
-		}
-	}
-
-	[DerivedMessage(CoreMessage.Client)]
 	public partial class PersistentSubscriptionConfirmation : Message {
 		public readonly Guid CorrelationId;
 		public readonly long LastIndexedPosition;
@@ -1905,16 +1889,7 @@ public static partial class ClientMessage {
 		}
 
 		public override string ToString() {
-			return String.Format("Version: {0}, Connection Name: {1}", Version, ConnectionName);
-		}
-	}
-
-	[DerivedMessage(CoreMessage.Client)]
-	public partial class ClientIdentified : Message {
-		public readonly Guid CorrelationId;
-
-		public ClientIdentified(Guid correlationId) {
-			CorrelationId = correlationId;
+			return $"Version: {Version}, Connection Name: {ConnectionName}";
 		}
 	}
 }

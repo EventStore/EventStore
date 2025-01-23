@@ -30,12 +30,10 @@ public class InlineFunctions<TStreamId>(DuckDb db, IIndexReader<TStreamId> index
 	static readonly ILogger log = Log.ForContext<InlineFunctions<TStreamId>>();
 
 	[Experimental("DuckDBNET001")]
-	public Task Run() {
+	public void Run() {
 		// db.Connection.RegisterTableFunction<ulong>("kdb_all", ReadAllResultCallback, ReadAllMapperCallback);
 		// db.Connection.RegisterTableFunction<string>("kdb_stream", ReadStreamResultCallback, ReadAllMapperCallback);
 		db.Connection.RegisterScalarFunction<ulong, string>("kdb_get", GetEvent);
-
-		return Task.CompletedTask;
 	}
 
 	// TableFunction ReadStreamResultCallback(IReadOnlyList<IDuckDBValueReader> parameters) {

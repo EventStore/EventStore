@@ -5,44 +5,32 @@ using System;
 
 namespace EventStore.Core.Index.Hashes;
 
-public class XXHashUnsafe : IHasher, IHasher<string> {
-	private readonly uint _seed;
-
+public class XXHashUnsafe(uint seed = 0xc58f1a7b) : IHasher, IHasher<string> {
 	private const uint PRIME1 = 2654435761U;
 	private const uint PRIME2 = 2246822519U;
 	private const uint PRIME3 = 3266489917U;
 	private const uint PRIME4 = 668265263U;
 	private const int PRIME5 = 0x165667b1;
 
-	public XXHashUnsafe(uint seed = 0xc58f1a7b) {
-		_seed = seed;
-	}
-
-	public unsafe UInt32 Hash(string s) {
+	public unsafe uint Hash(string s) {
 		fixed (char* input = s) {
-			return Hash((byte*)input, (uint)s.Length * sizeof(char), _seed);
-		}
-	}
-
-	public unsafe uint Hash(byte[] data) {
-		fixed (byte* input = &data[0]) {
-			return Hash(input, (uint)data.Length, _seed);
-		}
-	}
-
-	public unsafe uint Hash(byte[] data, int offset, uint len, uint seed) {
-		fixed (byte* input = &data[offset]) {
-			return Hash(input, len, seed);
+			return Hash((byte*)input, (uint)s.Length * sizeof(char), seed);
 		}
 	}
 
 	public unsafe uint Hash(ReadOnlySpan<byte> data) {
 		fixed (byte* input = data) {
-			return Hash(input, (uint)data.Length, _seed);
+			return Hash(input, (uint)data.Length, seed);
 		}
 	}
 
-	private unsafe static uint Hash(byte* data, uint len, uint seed) {
+	public unsafe uint Hash(byte[] data, int offset, uint len, uint ls) {
+		fixed (byte* input = &data[offset]) {
+			return Hash(input, len, ls);
+		}
+	}
+
+	private static unsafe uint Hash(byte* data, uint len, uint seed) {
 		if (len < 16)
 			return HashSmall(data, len, seed);
 

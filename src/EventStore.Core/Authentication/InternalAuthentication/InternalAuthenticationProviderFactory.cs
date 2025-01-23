@@ -3,6 +3,7 @@
 
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Settings;
@@ -39,7 +40,7 @@ public class InternalAuthenticationProviderFactory : IAuthenticationProviderFact
 			components.WorkersQueue
 		);
 
-		components.HttpService.SetupController(usersController);
+		components.Router.RegisterController(usersController);
 	}
 
 	public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts) {

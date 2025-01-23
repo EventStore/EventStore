@@ -17,23 +17,15 @@ using Serilog;
 namespace EventStore.Licensing;
 
 // circumventing the license mechanism is against the ESLv2 license.
-public class LicensingPlugin : Plugin {
+public class LicensingPlugin(Action<Exception> requestShutdown, ILicenseProvider? provider) : Plugin {
 	private static readonly ILogger Log = Serilog.Log.ForContext<LicensingPlugin>();
-
-	private readonly ILicenseProvider? _licenseProvider;
-	private readonly Action<Exception> _requestShutdown;
 
 	public LicensingPlugin(Action<Exception> requestShutdown) : this(requestShutdown, null) {
 	}
 
-	public LicensingPlugin(Action<Exception> requestShutdown, ILicenseProvider? licenseProvider) : base() {
-		_licenseProvider = licenseProvider;
-		_requestShutdown = requestShutdown;
-	}
-
-
 	public override void ConfigureApplication(IApplicationBuilder builder, IConfiguration configuration) {
-		var licenseService = builder.ApplicationServices.GetRequiredService<ILicenseService>();
+		var b = (WebApplication)builder;
+		var licenseService = b.Services.GetRequiredService<ILicenseService>();
 
 		License? currentLicense = null;
 		Exception? licenseError = null;
@@ -47,17 +39,16 @@ public class LicensingPlugin : Plugin {
 				licenseError = ex;
 			});
 
-		builder.UseEndpoints(endpoints => endpoints
-			.MapGet("/license", (HttpContext context) => {
-				if (currentLicense is { } license )
+		b.MapGet("/license", (HttpContext _) => {
+				if (currentLicense is { } license)
 					return Results.Json(LicenseSummary.SelectForEndpoint(license));
 
 				if (licenseError is NoLicenseKeyException)
 					return Results.NotFound();
 
-				return Results.NotFound(licenseError?.Message ?? "Unknown eror");
+				return Results.NotFound(licenseError?.Message ?? "Unknown error");
 			})
-			.RequireAuthorization());
+			.RequireAuthorization();
 	}
 
 	public override void ConfigureServices(IServiceCollection services, IConfiguration configuration) {
@@ -94,12 +85,12 @@ public class LicensingPlugin : Plugin {
 			// other components such as plugins can use this to subscribe to the licenses, inspect them, and reject them
 			.AddSingleton<ILicenseService>(sp => {
 				var licenseProvider =
-					_licenseProvider ??
+					provider ??
 					new KeygenLicenseProvider(licenses);
 
 				return new LicenseService(
 					sp.GetRequiredService<IHostApplicationLifetime>(),
-					_requestShutdown,
+					requestShutdown,
 					licenseProvider);
 			})
 			.AddHostedService(sp => new LicenseTelemetryService(

@@ -111,7 +111,7 @@ internal class TcpSanitazationCheckProcessor : ICmdProcessor {
 
 	private void SendRaw(EndPoint endPoint, byte[] package) {
 		using var client = new TcpClient();
-		client.Connect(endPoint.ResolveDnsToIPAddress());
+		client.Connect(endPoint.ResolveDnsToIpAddress());
 		using var stream = client.GetStream();
 		stream.Write(package, 0, package.Length);
 	}

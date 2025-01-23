@@ -29,6 +29,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using ILogger = Serilog.ILogger;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.Transport.Http;
 using EventStore.Plugins.Subsystems;
 using EventStore.TcpUnitTestPlugin;
 using Microsoft.Extensions.Configuration;
@@ -38,9 +39,9 @@ namespace EventStore.Core.Tests.Helpers;
 
 public class MiniClusterNode<TLogFormat, TStreamId> {
 	public static int RunCount = 0;
-	public static readonly Stopwatch RunningTime = new Stopwatch();
-	public static readonly Stopwatch StartingTime = new Stopwatch();
-	public static readonly Stopwatch StoppingTime = new Stopwatch();
+	public static readonly Stopwatch RunningTime = new();
+	public static readonly Stopwatch StartingTime = new();
+	public static readonly Stopwatch StoppingTime = new();
 
 	private static readonly ILogger Log = Serilog.Log.ForContext<MiniClusterNode<TLogFormat, TStreamId>>();
 
@@ -50,7 +51,7 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 
 	public readonly int DebugIndex;
 
-	public readonly ClusterVNode Node;
+	public readonly ClusterVNode<TStreamId> Node;
 	public TFChunkDb Db => Node.Db;
 	private readonly string _dbPath;
 	private readonly bool _isReadOnlyReplica;
@@ -84,9 +85,7 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 		ExternalTcpEndPoint = externalTcp;
 		HttpEndPoint = httpEndPoint;
 
-		_dbPath = Path.Combine(
-			pathname,
-			$"mini-cluster-node-db-{externalTcp.Port}-{httpEndPoint.Port}");
+		_dbPath = Path.Combine(pathname, $"mini-cluster-node-db-{externalTcp.Port}-{httpEndPoint.Port}");
 
 		Directory.CreateDirectory(_dbPath);
 		FileStreamExtensions.ConfigureFlush(disableFlushToDisk);
@@ -195,7 +194,7 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 			configuration: inMemConf,
 			expiryStrategy,
 			Guid.NewGuid(), debugIndex);
-		Node.HttpService.SetupController(new TestController(Node.MainQueue));
+		Node.Router.RegisterController(new TestController(Node.MainQueue));
 
 		_host = new WebHostBuilder()
 			.UseKestrel(o => {

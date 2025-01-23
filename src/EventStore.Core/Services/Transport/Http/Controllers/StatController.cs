@@ -10,36 +10,24 @@ using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using static EventStore.Plugins.Authorization.Operations.Node;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers;
 
-public class StatController : CommunicationController {
-	private static readonly ICodec[] SupportedCodecs = new ICodec[] {Codec.Json, Codec.Xml, Codec.ApplicationXml};
+public class StatController(IPublisher publisher, IPublisher networkSendQueue) : CommunicationController(publisher) {
+	private static readonly ICodec[] SupportedCodecs = [Codec.Json, Codec.Xml, Codec.ApplicationXml];
 
-	private readonly IPublisher _networkSendQueue;
+	protected override void SubscribeCore(IUriRouter router) {
+		Ensure.NotNull(router);
 
-	public StatController(IPublisher publisher, IPublisher networkSendQueue)
-		: base(publisher) {
-		_networkSendQueue = networkSendQueue;
-	}
-
-	protected override void SubscribeCore(IHttpService service) {
-		Ensure.NotNull(service, "service");
-
-		service.RegisterAction(new ControllerAction("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Statistics.Read)),
-			OnGetFreshStats);
-		service.RegisterAction(
-			new ControllerAction("/stats/replication", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Statistics.Replication)),
-			OnGetReplicationStats);
-		service.RegisterAction(new ControllerAction("/stats/tcp", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Statistics.Tcp)),
-			OnGetTcpConnectionStats);
-		service.RegisterAction(
-			new ControllerAction("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Statistics.Custom)),
-			OnGetFreshStats);
+		router.RegisterAction(new("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Statistics.Read)), OnGetFreshStats);
+		router.RegisterAction(new("/stats/replication", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Statistics.Replication)), OnGetReplicationStats);
+		router.RegisterAction(new("/stats/tcp", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Statistics.Tcp)), OnGetTcpConnectionStats);
+		router.RegisterAction(new("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Statistics.Custom)), OnGetFreshStats);
 	}
 
 	private void OnGetTcpConnectionStats(HttpEntityManager entity, UriTemplateMatch match) {
-		var envelope = new SendToHttpEnvelope(_networkSendQueue,
+		var envelope = new SendToHttpEnvelope(networkSendQueue,
 			entity,
 			Format.GetFreshTcpConnectionStatsCompleted,
 			Configure.GetFreshTcpConnectionStatsCompleted);
@@ -47,7 +35,7 @@ public class StatController : CommunicationController {
 	}
 
 	private void OnGetFreshStats(HttpEntityManager entity, UriTemplateMatch match) {
-		var envelope = new SendToHttpEnvelope(_networkSendQueue,
+		var envelope = new SendToHttpEnvelope(networkSendQueue,
 			entity,
 			Format.GetFreshStatsCompleted,
 			Configure.GetFreshStatsCompleted);
@@ -55,12 +43,10 @@ public class StatController : CommunicationController {
 		var statPath = match.BoundVariables["statPath"];
 		var statSelector = GetStatSelector(statPath);
 
-		bool useMetadata;
-		if (!bool.TryParse(match.QueryParameters["metadata"], out useMetadata))
+		if (!bool.TryParse(match.QueryParameters["metadata"], out var useMetadata))
 			useMetadata = false;
 
-		bool useGrouping;
-		if (!bool.TryParse(match.QueryParameters["group"], out useGrouping))
+		if (!bool.TryParse(match.QueryParameters["group"], out var useGrouping))
 			useGrouping = true;
 
 		if (!useGrouping && !string.IsNullOrEmpty(statPath)) {
@@ -78,7 +64,7 @@ public class StatController : CommunicationController {
 		//NOTE: this is fix for Mono incompatibility in UriTemplate behavior for /a/b{*C}
 		//todo: use IsMono here?
 		if (statPath.StartsWith("stats/")) {
-			statPath = statPath.Substring(6);
+			statPath = statPath[6..];
 			if (string.IsNullOrEmpty(statPath))
 				return dict => dict;
 		}
@@ -89,8 +75,7 @@ public class StatController : CommunicationController {
 			Ensure.NotNull(dict, "dictionary");
 
 			foreach (string groupName in groups) {
-				object item;
-				if (!dict.TryGetValue(groupName, out item))
+				if (!dict.TryGetValue(groupName, out var item))
 					return null;
 
 				dict = item as Dictionary<string, object>;
@@ -104,7 +89,7 @@ public class StatController : CommunicationController {
 	}
 
 	private void OnGetReplicationStats(HttpEntityManager entity, UriTemplateMatch match) {
-		var envelope = new SendToHttpEnvelope(_networkSendQueue,
+		var envelope = new SendToHttpEnvelope(networkSendQueue,
 			entity,
 			Format.GetReplicationStatsCompleted,
 			Configure.GetReplicationStatsCompleted);

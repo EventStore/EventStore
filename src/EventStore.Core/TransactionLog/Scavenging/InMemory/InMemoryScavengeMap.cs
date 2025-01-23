@@ -8,9 +8,6 @@ using EventStore.Core.TransactionLog.Scavenging.Interfaces;
 namespace EventStore.Core.TransactionLog.Scavenging.InMemory;
 
 public class InMemoryScavengeMap<TKey, TValue> : IScavengeMap<TKey, TValue> {
-	public InMemoryScavengeMap() {
-	}
-
 	private readonly Dictionary<TKey, TValue> _dict = new Dictionary<TKey, TValue>();
 
 	public TValue this[TKey key] {

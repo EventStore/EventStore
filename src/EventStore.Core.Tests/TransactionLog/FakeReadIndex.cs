@@ -123,10 +123,6 @@ internal class FakeReadIndex<TLogFormat, TStreamId> : IReadIndex<TStreamId> {
 	public ValueTask<TStreamId> GetEventStreamIdByTransactionId(long transactionId, CancellationToken token)
 		=> ValueTask.FromException<TStreamId>(new NotImplementedException());
 
-	public StreamAccess CheckStreamAccess(TStreamId streamId, StreamAccessType streamAccessType, ClaimsPrincipal user) {
-		throw new NotImplementedException();
-	}
-
 	public ValueTask<StreamMetadata> GetStreamMetadata(TStreamId streamId, CancellationToken token)
 		=> ValueTask.FromException<StreamMetadata>(new NotImplementedException());
 

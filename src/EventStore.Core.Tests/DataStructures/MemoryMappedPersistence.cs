@@ -6,9 +6,10 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using EventStore.Common.Utils;
+using EventStore.Core.DataStructures.ProbabilisticFilter;
 using Serilog;
 
-namespace EventStore.Core.DataStructures.ProbabilisticFilter;
+namespace EventStore.Core.Tests.DataStructures;
 
 public unsafe class MemoryMappedFilePersistence : IPersistenceStrategy {
 	public static readonly ILogger Log = Serilog.Log.ForContext<MemoryMappedFilePersistence>();

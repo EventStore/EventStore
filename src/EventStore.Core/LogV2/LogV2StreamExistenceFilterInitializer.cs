@@ -22,25 +22,14 @@ namespace EventStore.Core.LogV2;
 /// Reads the index and transaction log to populate the stream existence filter from the last checkpoint.
 /// May add a stream hash more than once.
 /// </summary>
-/// In V2 the the bloom filter checkpoint is the post-position of the last processed
+/// In V2 the bloom filter checkpoint is the post-position of the last processed
 /// log record. Sometimes we only have the pre-position, but this is also the post-position
 /// of the previous record, which is fine. the net effect is an extra record is initialized
 /// on startup next time.
-public class LogV2StreamExistenceFilterInitializer : INameExistenceFilterInitializer {
-	private readonly Func<TFReaderLease> _tfReaderFactory;
-	private readonly ITableIndex _tableIndex;
+public class LogV2StreamExistenceFilterInitializer(Func<TFReaderLease> tfReaderFactory, ITableIndex tableIndex) : INameExistenceFilterInitializer {
+	private readonly ITableIndex _tableIndex = Ensure.NotNull(tableIndex);
 
-	protected static readonly ILogger Log = Serilog.Log.ForContext<LogV2StreamExistenceFilterInitializer>();
-
-	public LogV2StreamExistenceFilterInitializer(
-		Func<TFReaderLease> tfReaderFactory,
-		ITableIndex tableIndex) {
-
-		Ensure.NotNull(tableIndex, nameof(tableIndex));
-
-		_tfReaderFactory = tfReaderFactory;
-		_tableIndex = tableIndex;
-	}
+	static readonly ILogger Log = Serilog.Log.ForContext<LogV2StreamExistenceFilterInitializer>();
 
 	public async ValueTask Initialize(INameExistenceFilter filter, long truncateToPosition, CancellationToken token) {
 		if (truncateToPosition < filter.CurrentCheckpoint) {
@@ -140,7 +129,7 @@ public class LogV2StreamExistenceFilterInitializer : INameExistenceFilterInitial
 		// whether the checkpoint is the pre or post position of the last processed record.
 		var startPosition = filter.CurrentCheckpoint == -1 ? 0 : filter.CurrentCheckpoint;
 		Log.Information("Initializing from log starting at {startPosition:N0}", startPosition);
-		using var reader = _tfReaderFactory();
+		using var reader = tfReaderFactory();
 		reader.Reposition(startPosition);
 
 		while (await reader.TryReadNext(token) is { Success: true } result) {

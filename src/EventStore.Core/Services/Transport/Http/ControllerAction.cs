@@ -8,39 +8,21 @@ using EventStore.Transport.Http;
 
 namespace EventStore.Core.Services.Transport.Http;
 
-public class ControllerAction {
-	public readonly string UriTemplate;
-	public readonly string HttpMethod;
-	public readonly Func<UriTemplateMatch, Operation> Operation;
-	public readonly ICodec[] SupportedRequestCodecs;
-	public readonly ICodec[] SupportedResponseCodecs;
-	public readonly ICodec DefaultResponseCodec;
+public class ControllerAction(
+	string uriTemplate,
+	string httpMethod,
+	ICodec[] requestCodecs,
+	ICodec[] responseCodecs,
+	Func<UriTemplateMatch, Operation> operation) {
+	public readonly string UriTemplate = Ensure.NotNull(uriTemplate);
+	public readonly string HttpMethod = Ensure.NotNull(httpMethod);
+	public readonly Func<UriTemplateMatch, Operation> Operation = operation;
+	public readonly ICodec[] SupportedRequestCodecs = Ensure.NotNull(requestCodecs);
+	public readonly ICodec[] SupportedResponseCodecs = Ensure.NotNull(responseCodecs);
+	public readonly ICodec DefaultResponseCodec = responseCodecs.Length > 0 ? responseCodecs[0] : null;
 
-	public ControllerAction(string uriTemplate,
-		string httpMethod,
-		ICodec[] requestCodecs,
-		ICodec[] responseCodecs,
-		Operation operation) :this(uriTemplate,httpMethod, requestCodecs, responseCodecs, _=>operation){
-
-	}
-
-	public ControllerAction(string uriTemplate,
-		string httpMethod,
-		ICodec[] requestCodecs,
-		ICodec[] responseCodecs,
-		Func<UriTemplateMatch, Operation> operation) {
-		Ensure.NotNull(uriTemplate, "uriTemplate");
-		Ensure.NotNull(httpMethod, "httpMethod");
-		Ensure.NotNull(requestCodecs, "requestCodecs");
-		Ensure.NotNull(responseCodecs, "responseCodecs");
-
-		UriTemplate = uriTemplate;
-		HttpMethod = httpMethod;
-
-		SupportedRequestCodecs = requestCodecs;
-		SupportedResponseCodecs = responseCodecs;
-		DefaultResponseCodec = responseCodecs.Length > 0 ? responseCodecs[0] : null;
-		Operation = operation;
+	public ControllerAction(string uriTemplate, string httpMethod, ICodec[] requestCodecs, ICodec[] responseCodecs, Operation operation)
+		: this(uriTemplate, httpMethod, requestCodecs, responseCodecs, _ => operation) {
 	}
 
 	public bool Equals(ControllerAction other) {

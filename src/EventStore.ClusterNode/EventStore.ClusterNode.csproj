@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 	<PropertyGroup>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<OutputType>Exe</OutputType>
@@ -6,15 +6,17 @@
 		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="SharpDotYaml.Extensions.Configuration" Version="0.3.0" />
-		<PackageReference Include="System.ComponentModel.Composition" Version="8.0.0" />
+		<PackageReference Include="SharpDotYaml.Extensions.Configuration" Version="0.3.0"/>
+		<PackageReference Include="System.ComponentModel.Composition" Version="8.0.0"/>
+		<PackageReference Include="BlazorMonaco" Version="3.3.0" />
+		<PackageReference Include="MudBlazor" Version="8.0.0" />
 	</ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj" />
-		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
-		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
-		<ProjectReference Include="..\EventStore.PluginHosting\EventStore.PluginHosting.csproj" />
-		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
+		<ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj"/>
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj"/>
+		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj"/>
+		<ProjectReference Include="..\EventStore.PluginHosting\EventStore.PluginHosting.csproj"/>
+		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj"/>
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="..\EventStore.Common\Utils\version.properties">
@@ -37,18 +39,13 @@
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="logconfig.json">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
 	<ItemGroup>
-		<Content Include="app2.ico" />
-		<None Remove="certs\**\*" />
-		<Content Include="bin\ARM64\Debug\net8.0\data\file.db" />
-		<Content Include="bin\Debug\net8.0\data\file.db" />
-		<Content Include="certs\**\*" CopyToOutputDirectory="PreserveNewest" />
-	</ItemGroup>
-	<ItemGroup>
-	  <Folder Include="bin\Debug\net8.0\data\" />
+		<Content Include="app2.ico"/>
+		<None Remove="certs\**\*"/>
+		<Content Include="certs\**\*" CopyToOutputDirectory="PreserveNewest"/>
 	</ItemGroup>
 	<!-- TODO(jen20): Investigate which of these are correct -->
 	<PropertyGroup>

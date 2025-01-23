@@ -31,8 +31,7 @@ public static class HttpEntityManagerExtensions {
 		IEnumerable<KeyValuePair<string, string>> headers,
 		Action<Exception> onError) {
 		//TODO: add encoding header???
-		self.Reply(Helper.UTF8NoBom.GetBytes(response ?? string.Empty), code, description, type, Helper.UTF8NoBom,
-			headers, onError);
+		self.Reply(Helper.UTF8NoBom.GetBytes(response ?? string.Empty), code, description, type, Helper.UTF8NoBom, headers, onError);
 	}
 
 	public static void ContinueReplyTextContent(

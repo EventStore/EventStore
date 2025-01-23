@@ -9,8 +9,7 @@ using System.Net.Sockets;
 namespace EventStore.Common.Utils;
 
 public static class EndpointExtensions {
-	public static string HTTP_SCHEMA => Uri.UriSchemeHttp;
-	public static string HTTPS_SCHEMA => Uri.UriSchemeHttps;
+	public static string HttpSchema => Uri.UriSchemeHttp;
 
 	public static string ToHttpUrl(this EndPoint endPoint, string schema, string rawUrl = null) =>
 		endPoint switch {
@@ -23,7 +22,7 @@ public static class EndpointExtensions {
 
 	public static string GetHost(this EndPoint endpoint) =>
 		endpoint switch {
-			IPWithClusterDnsEndPoint ipWithClusterDns => ipWithClusterDns.Address.ToString(),
+			IpWithClusterDnsEndPoint ipWithClusterDns => ipWithClusterDns.Address.ToString(),
 			IPEndPoint ip => ip.Address.ToString(),
 			DnsEndPoint dns => dns.Host,
 			_ => throw new ArgumentOutOfRangeException(nameof(endpoint), endpoint?.GetType(),
@@ -32,7 +31,7 @@ public static class EndpointExtensions {
 
 	public static string[] GetOtherNames(this EndPoint endpoint) =>
 		endpoint switch {
-			IPWithClusterDnsEndPoint ipWithClusterDns => new [] { ipWithClusterDns.ClusterDnsName },
+			IpWithClusterDnsEndPoint ipWithClusterDns => new [] { ipWithClusterDns.ClusterDnsName },
 			IPEndPoint => null,
 			DnsEndPoint => null,
 			_ => throw new ArgumentOutOfRangeException(nameof(endpoint), endpoint?.GetType(),
@@ -47,7 +46,7 @@ public static class EndpointExtensions {
 				"An invalid endpoint has been provided")
 		};
 
-	public static IPEndPoint ResolveDnsToIPAddress(this EndPoint endpoint) {
+	public static IPEndPoint ResolveDnsToIpAddress(this EndPoint endpoint) {
 		var entries = Dns.GetHostAddresses(endpoint.GetHost());
 		if (entries.Length == 0)
 			throw new Exception($"Unable get host addresses for DNS host ({endpoint.GetHost()})");
@@ -59,14 +58,14 @@ public static class EndpointExtensions {
 
 	public static EndPoint WithClusterDns(this DnsEndPoint dnsEndPoint, string clusterDns) {
 		if (clusterDns != null && IPAddress.TryParse(dnsEndPoint.Host, out var ip))
-			return new IPWithClusterDnsEndPoint(ip, clusterDns, dnsEndPoint.Port);
+			return new IpWithClusterDnsEndPoint(ip, clusterDns, dnsEndPoint.Port);
 
 		return dnsEndPoint;
 	}
 
 	public static EndPoint WithClusterDns(this IPEndPoint ipEndPoint, string clusterDns) {
 		if (clusterDns != null)
-			return new IPWithClusterDnsEndPoint(ipEndPoint.Address, clusterDns, ipEndPoint.Port);
+			return new IpWithClusterDnsEndPoint(ipEndPoint.Address, clusterDns, ipEndPoint.Port);
 
 		return ipEndPoint;
 	}

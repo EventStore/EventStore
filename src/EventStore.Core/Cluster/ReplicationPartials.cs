@@ -8,12 +8,6 @@ using Google.Protobuf;
 // ReSharper disable once CheckNamespace
 namespace EventStore.Cluster;
 
-partial class ReplicaLogWrite {
-	public ReplicaLogWrite(long logPosition, byte[] replicaId) {
-		LogPosition = logPosition;
-		ReplicaId = ByteString.CopyFrom(replicaId);
-	}
-}
 partial class ReplicatedTo {
 	public ReplicatedTo(long logPosition) {
 		LogPosition = logPosition;

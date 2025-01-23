@@ -35,9 +35,6 @@ public interface ILogFormatAbstractorFactory<TStreamId> {
 }
 
 public class LogV2FormatAbstractorFactory : ILogFormatAbstractorFactory<string> {
-	public LogV2FormatAbstractorFactory() {
-	}
-
 	public LogFormatAbstractor<string> Create(LogFormatAbstractorOptions options) {
 		var streamExistenceFilter = GenStreamExistenceFilter(options);
 		var streamNameIndex = new LogV2StreamNameIndex(streamExistenceFilter);
@@ -102,9 +99,6 @@ public class LogV2FormatAbstractorFactory : ILogFormatAbstractorFactory<string> 
 }
 
 public class LogV3FormatAbstractorFactory : ILogFormatAbstractorFactory<LogV3StreamId> {
-	public LogV3FormatAbstractorFactory() {
-	}
-
 	public LogFormatAbstractor<LogV3StreamId> Create(LogFormatAbstractorOptions options) {
 		var metastreams = new LogV3Metastreams();
 		var recordFactory = new LogV3RecordFactory();

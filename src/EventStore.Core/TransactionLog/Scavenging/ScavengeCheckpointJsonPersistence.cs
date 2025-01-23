@@ -76,19 +76,19 @@ public class ScavengeCheckpointJsonPersistence<TStreamId> {
 				dto.DoneLogicalChunkNumber = x.DoneLogicalChunkNumber;
 				break;
 
-			case ScavengeCheckpoint.MergingChunks _:
+			case ScavengeCheckpoint.MergingChunks:
 				dto.CheckpointStage = Stage.MergingChunks;
 				break;
 
-			case ScavengeCheckpoint.ExecutingIndex _:
+			case ScavengeCheckpoint.ExecutingIndex:
 				dto.CheckpointStage = Stage.ExecutingIndex;
 				break;
 
-			case ScavengeCheckpoint.Cleaning _:
+			case ScavengeCheckpoint.Cleaning:
 				dto.CheckpointStage = Stage.Cleaning;
 				break;
 
-			case ScavengeCheckpoint.Done _:
+			case ScavengeCheckpoint.Done:
 				dto.CheckpointStage = Stage.Done;
 				break;
 

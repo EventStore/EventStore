@@ -58,12 +58,12 @@ public class when_creating_persistent_subscription {
 
 	[OneTimeSetUp]
 	public void Setup() {
-		_sub = new Core.Services.PersistentSubscription.PersistentSubscription(
-				Helper.CreatePersistentSubscriptionBuilderFor(_eventSource)
-					.WithEventLoader(new FakeStreamReader())
-					.WithCheckpointReader(new FakeCheckpointReader())
-					.WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
-					.WithMessageParker(new FakeMessageParker()));
+		_sub = new(
+			Helper.CreatePersistentSubscriptionBuilderFor(_eventSource)
+				.WithEventLoader(new FakeStreamReader())
+				.WithCheckpointReader(new FakeCheckpointReader())
+				.WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+				.WithMessageParker(new FakeMessageParker()));
 	}
 
 	[Test]
@@ -142,8 +142,7 @@ public class when_creating_persistent_subscription {
 
 	[Test]
 	public void null_groupname_throws_argument_null() {
-		switch (_eventSource)
-		{
+		switch (_eventSource) {
 			case EventSource.SingleStream:
 				Assert.Throws<ArgumentNullException>(() => {
 					_sub = new Core.Services.PersistentSubscription.PersistentSubscription(
@@ -171,7 +170,6 @@ public class when_creating_persistent_subscription {
 [TestFixture(typeof(LogFormat.V2), typeof(string))]
 [TestFixture(typeof(LogFormat.V3), typeof(uint))]
 public class when_updating_all_stream_subscription_with_filter<TLogFormat, TStreamId> {
-
 	private readonly PersistentSubscriptionService<TStreamId> _sut;
 	private readonly FakeStorage _storage;
 	private ClientMessage.CreatePersistentSubscriptionToAll _create;
@@ -191,7 +189,7 @@ public class when_updating_all_stream_subscription_with_filter<TLogFormat, TStre
 
 		_sut = new PersistentSubscriptionService<TStreamId>(
 			new QueuedHandlerThreadPool(bus, "test", new QueueStatsManager(), new QueueTrackers()),
-			new FakeReadIndex<TLogFormat,TStreamId>(_ => false, new MetaStreamLookup()),
+			new FakeReadIndex<TLogFormat, TStreamId>(_ => false, new MetaStreamLookup()),
 			ioDispatcher, bus,
 			new PersistentSubscriptionConsumerStrategyRegistry(bus, bus,
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>()), trackers.PersistentSubscriptionTracker);
@@ -203,7 +201,6 @@ public class when_updating_all_stream_subscription_with_filter<TLogFormat, TStre
 
 	[Test]
 	public async Task should_not_overwrite_filter() {
-
 		_sut.Handle(UpdateMessage(_create.GroupName, new NoopEnvelope()));
 
 		await _storage.FinishedWriting.Task;
@@ -212,8 +209,8 @@ public class when_updating_all_stream_subscription_with_filter<TLogFormat, TStre
 		var allFiltersSet = _storage.Configurtations.All(
 			cfg => cfg.Entries.All(
 				e => (e.Filter is not null
-					&& e.Filter.Data.Equals(filterWhenCreateDto.Data)
-					&& e.Filter.IsAllStream)));
+				      && e.Filter.Data.Equals(filterWhenCreateDto.Data)
+				      && e.Filter.IsAllStream)));
 
 		Assert.True(allFiltersSet, "Expected all filters to be set!");
 	}
@@ -374,7 +371,6 @@ public class when_updating_all_stream_subscription_with_filter<TLogFormat, TStre
 	}
 }
 
-
 [TestFixture(EventSource.SingleStream)]
 [TestFixture(EventSource.AllStream)]
 [TestFixture(EventSource.FilteredAllStream)]
@@ -459,7 +455,7 @@ public class LiveTests {
 				.StartFromBeginning());
 		reader.Load(null);
 		sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
-		sub.HandleReadCompleted(new[] {Helper.GetFakeEventFor(0, _eventSource)}, Helper.GetStreamPositionFor(1, _eventSource), false);
+		sub.HandleReadCompleted(new[] { Helper.GetFakeEventFor(0, _eventSource) }, Helper.GetStreamPositionFor(1, _eventSource), false);
 		Assert.AreEqual(1, envelope1.Replies.Count);
 	}
 
@@ -476,7 +472,7 @@ public class LiveTests {
 				.StartFromBeginning());
 		Assert.DoesNotThrow(() => {
 			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
-			sub.HandleReadCompleted(new[] {Helper.GetFakeEventFor( 0, _eventSource)}, Helper.GetStreamPositionFor(1, _eventSource),
+			sub.HandleReadCompleted(new[] { Helper.GetFakeEventFor(0, _eventSource) }, Helper.GetStreamPositionFor(1, _eventSource),
 				false);
 		});
 	}
@@ -566,6 +562,7 @@ public class LiveTests {
 							if (!skipFirstEvent) {
 								events.Add(Helper.GetFakeEventFor(0, _eventSource));
 							}
+
 							events.Add(Helper.GetFakeEventFor(1, _eventSource));
 							events.Add(Helper.GetFakeEventFor(2, _eventSource));
 							nextPosition = 3;
@@ -613,6 +610,7 @@ public class LiveTests {
 
 public class FilteredAllTests {
 	private EventSource _eventSource = EventSource.FilteredAllStream;
+
 	[Test]
 	public void live_subscription_with_stream_prefix_filter_pushes_matching_events_to_client() {
 		var envelope = new FakeEnvelope();
@@ -627,11 +625,11 @@ public class FilteredAllTests {
 				.StartFromCurrent());
 		reader.Load(null);
 		sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, streamPrefix:"test"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, streamPrefix:"something"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, streamPrefix:"test"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, streamPrefix:"foo"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, streamPrefix:"bar"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, streamPrefix: "test"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, streamPrefix: "something"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, streamPrefix: "test"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, streamPrefix: "foo"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, streamPrefix: "bar"));
 		Assert.AreEqual(2, envelope.Replies.Count);
 	}
 
@@ -649,11 +647,11 @@ public class FilteredAllTests {
 				.StartFromCurrent());
 		reader.Load(null);
 		sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, streamPrefix:"test"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, streamPrefix:"ttest"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, streamPrefix:"team"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, streamPrefix:"tteam"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, streamPrefix:"bar"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, streamPrefix: "test"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, streamPrefix: "ttest"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, streamPrefix: "team"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, streamPrefix: "tteam"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, streamPrefix: "bar"));
 		Assert.AreEqual(2, envelope.Replies.Count);
 	}
 
@@ -671,11 +669,11 @@ public class FilteredAllTests {
 				.StartFromCurrent());
 		reader.Load(null);
 		sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, eventType:"test"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, eventType:"something"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, eventType:"test"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, eventType:"foo"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, eventType:"bar"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, eventType: "test"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, eventType: "something"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, eventType: "test"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, eventType: "foo"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, eventType: "bar"));
 		Assert.AreEqual(2, envelope.Replies.Count);
 	}
 
@@ -693,11 +691,11 @@ public class FilteredAllTests {
 				.StartFromCurrent());
 		reader.Load(null);
 		sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, eventType:"test"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, eventType:"ttest"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, eventType:"team"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, eventType:"tteam"));
-		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, eventType:"bar"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, eventType: "test"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, eventType: "ttest"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, eventType: "team"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, eventType: "tteam"));
+		sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, eventType: "bar"));
 		Assert.AreEqual(2, envelope.Replies.Count);
 	}
 
@@ -951,6 +949,7 @@ public class FilteredAllTests {
 [TestFixture(EventSource.FilteredAllStream)]
 public class DeleteTests {
 	private readonly EventSource _eventSource;
+
 	public DeleteTests(EventSource eventSource) {
 		_eventSource = eventSource;
 	}
@@ -993,6 +992,7 @@ public class DeleteTests {
 [TestFixture(EventSource.FilteredAllStream)]
 public class SynchronousReadingClient {
 	private readonly EventSource _eventSource;
+
 	public SynchronousReadingClient(EventSource eventSource) {
 		_eventSource = eventSource;
 	}
@@ -1084,6 +1084,7 @@ public class SynchronousReadingClient {
 [TestFixture(EventSource.FilteredAllStream)]
 public class Checkpointing {
 	private readonly EventSource _eventSource;
+
 	public Checkpointing(EventSource eventSource) {
 		_eventSource = eventSource;
 	}
@@ -1548,6 +1549,7 @@ public class Checkpointing {
 [TestFixture(EventSource.FilteredAllStream)]
 public class LoadCheckpointTests {
 	private readonly EventSource _eventSource;
+
 	public LoadCheckpointTests(EventSource eventSource) {
 		_eventSource = eventSource;
 	}
@@ -1557,8 +1559,7 @@ public class LoadCheckpointTests {
 		bool skip = false;
 		var reader = new FakeCheckpointReader();
 		var streamReader = new FakeStreamReader(
-			(stream, startPosition, countToLoad, batchSize, maxWindowSize, resolveLinkTos, skipFirstEvent, onEventsFound) =>
-			{ skip = skipFirstEvent; }
+			(stream, startPosition, countToLoad, batchSize, maxWindowSize, resolveLinkTos, skipFirstEvent, onEventsFound) => { skip = skipFirstEvent; }
 		);
 		new Core.Services.PersistentSubscription.PersistentSubscription(
 			Helper.CreatePersistentSubscriptionBuilderFor(_eventSource)
@@ -1569,8 +1570,7 @@ public class LoadCheckpointTests {
 				.PreferDispatchToSingle()
 				.StartFromBeginning()
 				.MaximumToCheckPoint(1));
-		switch (_eventSource)
-		{
+		switch (_eventSource) {
 			case EventSource.SingleStream:
 				reader.Load("1");
 				break;
@@ -1579,6 +1579,7 @@ public class LoadCheckpointTests {
 				reader.Load("C:1/P:1");
 				break;
 		}
+
 		Assert.IsTrue(skip);
 	}
 
@@ -1596,8 +1597,7 @@ public class LoadCheckpointTests {
 				.StartFromBeginning()
 				.MaximumToCheckPoint(1));
 		string checkpoint = "";
-		switch (_eventSource)
-		{
+		switch (_eventSource) {
 			case EventSource.SingleStream:
 				checkpoint = "1";
 				reader.Load(checkpoint);
@@ -1632,8 +1632,7 @@ public class LoadCheckpointTests {
 				.MaximumToCheckPoint(1));
 		reader.Load(null);
 
-		switch (_eventSource)
-		{
+		switch (_eventSource) {
 			case EventSource.SingleStream:
 				Assert.AreEqual(new PersistentSubscriptionSingleStreamPosition(0L), actualStart);
 				break;
@@ -1680,6 +1679,7 @@ public class LoadCheckpointTests {
 [TestFixture(EventSource.FilteredAllStream)]
 public class TimeoutTests {
 	private readonly EventSource _eventSource;
+
 	public TimeoutTests(EventSource eventSource) {
 		_eventSource = eventSource;
 	}
@@ -1856,9 +1856,9 @@ public class TimeoutTests {
 		var id1 = Helper.GetEventIdFor(0);
 		var id2 = Helper.GetEventIdFor(1);
 		Assert.IsTrue(id1 == parker.ParkedEvents[0].OriginalEvent.EventId ||
-					  id1 == parker.ParkedEvents[1].OriginalEvent.EventId);
+		              id1 == parker.ParkedEvents[1].OriginalEvent.EventId);
 		Assert.IsTrue(id2 == parker.ParkedEvents[0].OriginalEvent.EventId ||
-					  id2 == parker.ParkedEvents[1].OriginalEvent.EventId);
+		              id2 == parker.ParkedEvents[1].OriginalEvent.EventId);
 	}
 
 	[Test]
@@ -1934,6 +1934,7 @@ public class TimeoutTests {
 [TestFixture(EventSource.FilteredAllStream)]
 public class NAKTests {
 	private readonly EventSource _eventSource;
+
 	public NAKTests(EventSource eventSource) {
 		_eventSource = eventSource;
 	}
@@ -2059,7 +2060,7 @@ public class NAKTests {
 		var ev = Helper.GetFakeEventFor(0, _eventSource);
 		sub.HandleReadCompleted(new[] {
 			ev,
-		},Helper.GetStreamPositionFor(1, _eventSource), false);
+		}, Helper.GetStreamPositionFor(1, _eventSource), false);
 
 		for (int i = 1; i < 11; i++) {
 			sub.NotAcknowledgeMessagesProcessed(corrid, new[] { Helper.GetEventIdFor(0) }, NakAction.Retry, "a reason from client.");
@@ -2102,7 +2103,7 @@ public class NAKTests {
 
 		sub.NotAcknowledgeMessagesProcessed(corrid, new[] { Helper.GetEventIdFor(0) }, NakAction.Park, "a reason from client.");
 		Assert.AreEqual(2, envelope1.Replies.Count);
-		Assert.That(parker.ParkedEvents, Has.Exactly(1).Matches<ResolvedEvent>(_ => _.Event.EventId == Helper.GetEventIdFor(0) ));
+		Assert.That(parker.ParkedEvents, Has.Exactly(1).Matches<ResolvedEvent>(_ => _.Event.EventId == Helper.GetEventIdFor(0)));
 
 		sub.NotAcknowledgeMessagesProcessed(corrid, new[] { Helper.GetEventIdFor(1) }, NakAction.Park, "a reason from client.");
 		Assert.That(parker.ParkedEvents, Has.Exactly(1).Matches<ResolvedEvent>(_ => _.Event.EventId == Helper.GetEventIdFor(1)));
@@ -2115,6 +2116,7 @@ public class NAKTests {
 [TestFixture(EventSource.FilteredAllStream)]
 public class AddingClientTests {
 	private readonly EventSource _eventSource;
+
 	public AddingClientTests(EventSource eventSource) {
 		_eventSource = eventSource;
 	}
@@ -2139,6 +2141,7 @@ public class AddingClientTests {
 [TestFixture(EventSource.FilteredAllStream)]
 public class RemoveClientTests {
 	private readonly EventSource _eventSource;
+
 	public RemoveClientTests(EventSource eventSource) {
 		_eventSource = eventSource;
 	}
@@ -2254,6 +2257,7 @@ public class RemoveClientTests {
 [TestFixture(EventSource.FilteredAllStream)]
 public class ParkTests {
 	private readonly EventSource _eventSource;
+
 	public ParkTests(EventSource eventSource) {
 		_eventSource = eventSource;
 	}
@@ -2355,7 +2359,6 @@ public class ParkTests {
 
 		Assert.AreEqual(19, messageParker.MarkedAsProcessed);
 		Assert.AreEqual(19, sub.OutstandingMessageCount);
-
 	}
 
 	[Test]
@@ -2404,7 +2407,6 @@ public class ParkTests {
 		Assert.AreEqual(7, messageParker.MarkedAsProcessed);
 
 		Assert.AreEqual(7, sub.OutstandingMessageCount);
-
 	}
 }
 
@@ -2433,13 +2435,13 @@ public class DeadlockTest<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLo
 		var received = 0;
 		var manualResetEventSlim = new ManualResetEventSlim();
 		var sub1 = _conn.ConnectToPersistentSubscription("TestStream", "TestGroup", (sub, ev) => {
-			received++;
-			if (received == count) {
-				manualResetEventSlim.Set();
-			}
+				received++;
+				if (received == count) {
+					manualResetEventSlim.Set();
+				}
 
-			return Task.CompletedTask;
-		},
+				return Task.CompletedTask;
+			},
 			(sub, reason, ex) => { });
 		Assert.IsTrue(manualResetEventSlim.Wait(TimeSpan.FromSeconds(30)),
 			"Failed to receive all events in 2 minutes. Assume event store is deadlocked.");
@@ -2520,26 +2522,22 @@ public static class Helper {
 		};
 	}
 
-	public static ResolvedEvent BuildFakeEvent(Guid id, string type, string stream, long version, long commitPosition=1234567, long preparePosition=1234567) {
+	public static ResolvedEvent BuildFakeEvent(Guid id, string type, string stream, long version, long commitPosition = 1234567, long preparePosition = 1234567) {
 		return BuildFakeEventWithMetadata(id, type, stream, version, new byte[0], commitPosition, preparePosition);
 	}
 
-	public static ResolvedEvent BuildFakeEventWithMetadata(Guid id, string type, string stream, long version, byte[] metaData, long commitPosition=1234567, long preparePosition=1234567) {
+	public static ResolvedEvent BuildFakeEventWithMetadata(Guid id, string type, string stream, long version, byte[] metaData, long commitPosition = 1234567, long preparePosition = 1234567) {
 		return
-			ResolvedEvent.ForUnresolvedEvent(new EventRecord(version, preparePosition, Guid.NewGuid(), id, commitPosition, 1234,
-				stream, version,
-				DateTime.UtcNow, PrepareFlags.SingleWrite, type, new byte[0], metaData), commitPosition);
+			ResolvedEvent.ForUnresolvedEvent(new(version, preparePosition, Guid.NewGuid(), id, commitPosition, 1234,
+				stream, version, DateTime.UtcNow, PrepareFlags.SingleWrite, type, [], metaData), commitPosition);
 	}
 
-	public static ResolvedEvent BuildLinkEvent(Guid id, string stream, long version, ResolvedEvent ev, bool resolved = true, long commitPosition=1234567, long preparePosition=1234567) {
+	public static ResolvedEvent BuildLinkEvent(Guid id, string stream, long version, ResolvedEvent ev, bool resolved = true, long commitPosition = 1234567, long preparePosition = 1234567) {
 		var link = new EventRecord(version, preparePosition, Guid.NewGuid(), id, commitPosition, 1234, stream, version,
 			DateTime.UtcNow, PrepareFlags.SingleWrite, SystemEventTypes.LinkTo,
-			Encoding.UTF8.GetBytes(string.Format("{0}@{1}", ev.OriginalEventNumber, ev.OriginalStreamId)),
-			new byte[0]);
-		if (resolved)
-			return ResolvedEvent.ForResolvedLink(ev.Event, link, commitPosition);
-		else
-			return ResolvedEvent.ForUnresolvedEvent(link, commitPosition);
+			Encoding.UTF8.GetBytes($"{ev.OriginalEventNumber}@{ev.OriginalStreamId}"),
+			[]);
+		return resolved ? ResolvedEvent.ForResolvedLink(ev.Event, link, commitPosition) : ResolvedEvent.ForUnresolvedEvent(link, commitPosition);
 	}
 }
 
@@ -2550,7 +2548,8 @@ class FakeStreamReader : IPersistentSubscriptionStreamReader {
 	public FakeStreamReader() {
 	}
 
-	public FakeStreamReader(Action<IPersistentSubscriptionEventSource, IPersistentSubscriptionStreamPosition, int, int, int, bool, bool, Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool>> action) {
+	public FakeStreamReader(
+		Action<IPersistentSubscriptionEventSource, IPersistentSubscriptionStreamPosition, int, int, int, bool, bool, Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool>> action) {
 		_action = action;
 	}
 
@@ -2559,9 +2558,7 @@ class FakeStreamReader : IPersistentSubscriptionStreamReader {
 		Action<IReadOnlyList<ResolvedEvent>, IPersistentSubscriptionStreamPosition, bool> onEventsFound,
 		Action<IPersistentSubscriptionStreamPosition, long> onEventsSkipped,
 		Action<string> onError) {
-		if (_action != null) {
-			_action(stream, startEventNumber, countToLoad, batchSize, maxWindowSize, resolveLinkTos, skipFirstEvent, onEventsFound);
-		}
+		_action?.Invoke(stream, startEventNumber, countToLoad, batchSize, maxWindowSize, resolveLinkTos, skipFirstEvent, onEventsFound);
 	}
 }
 
@@ -2621,13 +2618,10 @@ class FakeMessageParker : IPersistentSubscriptionMessageParker {
 		_deleteAction?.Invoke();
 	}
 
-	public long ParkedMessageCount {
-		get {
-			return _lastParkedEventNumber == -1 ? 0 :
-				_lastTruncateBefore == -1 ? _lastParkedEventNumber + 1 :
-				_lastParkedEventNumber - _lastTruncateBefore + 1;
-		}
-	}
+	public long ParkedMessageCount =>
+		_lastParkedEventNumber == -1 ? 0 :
+		_lastTruncateBefore == -1 ? _lastParkedEventNumber + 1 :
+		_lastParkedEventNumber - _lastTruncateBefore + 1;
 
 	public void BeginLoadStats(Action completed) {
 		completed();
@@ -2636,21 +2630,12 @@ class FakeMessageParker : IPersistentSubscriptionMessageParker {
 	public DateTime? GetOldestParkedMessage { get; }
 }
 
-
-class FakeCheckpointWriter : IPersistentSubscriptionCheckpointWriter {
-	private readonly Action<IPersistentSubscriptionStreamPosition> _action;
-	private readonly Action _deleteAction;
-
-	public FakeCheckpointWriter(Action<IPersistentSubscriptionStreamPosition> action, Action deleteAction = null) {
-		_action = action;
-		_deleteAction = deleteAction;
-	}
-
+class FakeCheckpointWriter(Action<IPersistentSubscriptionStreamPosition> action, Action deleteAction = null) : IPersistentSubscriptionCheckpointWriter {
 	public void BeginWriteState(IPersistentSubscriptionStreamPosition state) {
-		_action(state);
+		action(state);
 	}
 
 	public void BeginDelete(Action<IPersistentSubscriptionCheckpointWriter> completed) {
-		_deleteAction?.Invoke();
+		deleteAction?.Invoke();
 	}
 }

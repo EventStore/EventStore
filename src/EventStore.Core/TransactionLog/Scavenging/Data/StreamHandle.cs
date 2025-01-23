@@ -14,7 +14,7 @@ public struct StreamHandle {
 		None,
 		Hash,
 		Id,
-	};
+	}
 
 	public static StreamHandle<TStreamId> ForHash<TStreamId>(ulong streamHash) {
 		return new StreamHandle<TStreamId>(kind: Kind.Hash, default, streamHash);

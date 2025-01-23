@@ -113,32 +113,6 @@ public static class SystemEventTypes {
 
 		return streamId;
 	}
-
-	public static string StreamReferenceEventToStreamId(string eventType, string data) {
-		string streamId = null;
-		switch (eventType) {
-			case LinkTo: {
-				string[] parts = data.Split(_linkToSeparator, 2);
-				streamId = parts[1];
-				break;
-			}
-			case StreamReference:
-			case V1__StreamCreated__:
-			case V2__StreamCreated_InIndex: {
-				streamId = data;
-				break;
-			}
-			default:
-				throw new NotSupportedException("Unknown event type: " + eventType);
-		}
-
-		return streamId;
-	}
-
-	public static long EventLinkToEventNumber(string link) {
-		string[] parts = link.Split(_linkToSeparator, 2);
-		return long.Parse(parts[0]);
-	}
 }
 
 public static class SystemRoles {

@@ -31,7 +31,7 @@ public static class Convert {
 		string escapedStreamId = Uri.EscapeDataString(msg.EventStreamId);
 		var self = HostName.Combine(requestedUrl, "/streams/{0}", escapedStreamId);
 		var feed = new FeedElement();
-		feed.SetTitle(string.Format("Event stream '{0}'", msg.EventStreamId));
+		feed.SetTitle($"Event stream '{msg.EventStreamId}'");
 		feed.StreamId = msg.EventStreamId;
 		feed.SetId(self);
 		feed.SetUpdated(msg.Events.Count > 0 && msg.Events[0].Event != null
@@ -44,20 +44,14 @@ public static class Convert {
 		var nextEventNumber = msg.FromEventNumber - 1;
 
 		feed.AddLink("self", self);
-		feed.AddLink("first",
-			HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", escapedStreamId, msg.MaxCount));
+		feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", escapedStreamId, msg.MaxCount));
 		if (nextEventNumber >= 0) {
-			feed.AddLink("last",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, 0, msg.MaxCount));
-			feed.AddLink("next",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", escapedStreamId, nextEventNumber,
-					msg.MaxCount));
+			feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, 0, msg.MaxCount));
+			feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", escapedStreamId, nextEventNumber, msg.MaxCount));
 		}
 
 		if (!msg.IsEndOfStream || msg.Events.Count > 0)
-			feed.AddLink("previous",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber,
-					msg.MaxCount));
+			feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", escapedStreamId, prevEventNumber, msg.MaxCount));
 		if (!escapedStreamId.StartsWith("$$"))
 			feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", escapedStreamId));
 		for (int i = msg.Events.Count - 1; i >= 0; --i) {
@@ -119,21 +113,14 @@ public static class Convert {
 		feed.SetAuthor(AtomSpecs.Author);
 
 		feed.AddLink("self", self);
-		feed.AddLink("first",
-			HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllEscaped, msg.MaxCount));
+		feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllEscaped, msg.MaxCount));
 		if (msg.CurrentPos.CommitPosition != 0) {
-			feed.AddLink("last",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped,
-					new TFPos(0, 0).AsString(), msg.MaxCount));
-			feed.AddLink("next",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllEscaped, msg.PrevPos.AsString(),
-					msg.MaxCount));
+			feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, new TFPos(0, 0).AsString(), msg.MaxCount));
+			feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllEscaped, msg.PrevPos.AsString(), msg.MaxCount));
 		}
 
 		if (!msg.IsEndOfStream || msg.Events.Count > 0)
-			feed.AddLink("previous",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, msg.NextPos.AsString(),
-					msg.MaxCount));
+			feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, msg.NextPos.AsString(), msg.MaxCount));
 		feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", AllEscaped));
 		for (int i = msg.Events.Count - 1; i >= 0; --i) {
 			feed.AddEntry(ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent));
@@ -154,21 +141,14 @@ public static class Convert {
 		feed.SetAuthor(AtomSpecs.Author);
 
 		feed.AddLink("self", self);
-		feed.AddLink("first",
-			HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllFilteredEscaped, msg.MaxCount));
+		feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllFilteredEscaped, msg.MaxCount));
 		if (msg.CurrentPos.CommitPosition != 0) {
-			feed.AddLink("last",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped,
-					new TFPos(0, 0).AsString(), msg.MaxCount));
-			feed.AddLink("next",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllFilteredEscaped, msg.PrevPos.AsString(),
-					msg.MaxCount));
+			feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped, new TFPos(0, 0).AsString(), msg.MaxCount));
+			feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllFilteredEscaped, msg.PrevPos.AsString(), msg.MaxCount));
 		}
 
 		if (!msg.IsEndOfStream || msg.Events.Count > 0)
-			feed.AddLink("previous",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped, msg.NextPos.AsString(),
-					msg.MaxCount));
+			feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped, msg.NextPos.AsString(), msg.MaxCount));
 		for (int i = msg.Events.Count - 1; i >= 0; --i) {
 			feed.AddEntry(ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent));
 		}
@@ -188,20 +168,13 @@ public static class Convert {
 		feed.SetAuthor(AtomSpecs.Author);
 
 		feed.AddLink("self", self);
-		feed.AddLink("first",
-			HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllEscaped, msg.MaxCount));
+		feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllEscaped, msg.MaxCount));
 		if (!msg.IsEndOfStream) {
-			feed.AddLink("last",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped,
-					new TFPos(0, 0).AsString(), msg.MaxCount));
-			feed.AddLink("next",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllEscaped, msg.NextPos.AsString(),
-					msg.MaxCount));
+			feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, new TFPos(0, 0).AsString(), msg.MaxCount));
+			feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllEscaped, msg.NextPos.AsString(), msg.MaxCount));
 		}
 
-		feed.AddLink("previous",
-			HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, msg.PrevPos.AsString(),
-				msg.MaxCount));
+		feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, msg.PrevPos.AsString(), msg.MaxCount));
 		feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", AllEscaped));
 		for (int i = 0; i < msg.Events.Count; ++i) {
 			feed.AddEntry(ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent));
@@ -214,7 +187,7 @@ public static class Convert {
 		Uri requestedUrl, EmbedLevel embedContent) {
 		var self = HostName.Combine(requestedUrl, "/streams/{0}", AllFilteredEscaped);
 		var feed = new FeedElement();
-		feed.SetTitle(string.Format("All events"));
+		feed.SetTitle("All events");
 		feed.SetId(self);
 		feed.SetUpdated(msg.Events.Count > 0 && msg.Events[0].Event != null
 			? msg.Events[0].Event.TimeStamp
@@ -222,20 +195,13 @@ public static class Convert {
 		feed.SetAuthor(AtomSpecs.Author);
 
 		feed.AddLink("self", self);
-		feed.AddLink("first",
-			HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllFilteredEscaped, msg.MaxCount));
+		feed.AddLink("first", HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllFilteredEscaped, msg.MaxCount));
 		if (!msg.IsEndOfStream) {
-			feed.AddLink("last",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped,
-					new TFPos(0, 0).AsString(), msg.MaxCount));
-			feed.AddLink("next",
-				HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllFilteredEscaped, msg.NextPos.AsString(),
-					msg.MaxCount));
+			feed.AddLink("last", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped, new TFPos(0, 0).AsString(), msg.MaxCount));
+			feed.AddLink("next", HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllFilteredEscaped, msg.NextPos.AsString(), msg.MaxCount));
 		}
 
-		feed.AddLink("previous",
-			HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped, msg.PrevPos.AsString(),
-				msg.MaxCount));
+		feed.AddLink("previous", HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped, msg.PrevPos.AsString(), msg.MaxCount));
 		for (int i = 0; i < msg.Events.Count; ++i) {
 			feed.AddEntry(ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent));
 		}
@@ -252,28 +218,21 @@ public static class Convert {
 		feed.SetTitle(string.Format("Messages for '{0}/{1}'", streamId, groupName));
 		feed.SetId(self);
 		feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].ResolvedEvent.Event != null
-			? msg.Events[msg.Events.Length - 1].ResolvedEvent.Event.TimeStamp
+			? msg.Events[^1].ResolvedEvent.Event.TimeStamp
 			: DateTime.MinValue.ToUniversalTime());
 		feed.SetAuthor(AtomSpecs.Author);
 
-		if (msg.Events != null && msg.Events.Length > 0) {
-			var ackAllQueryString = String.Format("?ids={0}",
-				String.Join(",", msg.Events.Select(x => x.ResolvedEvent.OriginalEvent.EventId)));
-			var ackAll =
-				HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack", escapedStreamId, escapedGroupName) +
-				ackAllQueryString;
+		if (msg.Events is { Length: > 0 }) {
+			var ackAllQueryString = $"?ids={string.Join(",", msg.Events.Select(x => x.ResolvedEvent.OriginalEvent.EventId))}";
+			var ackAll = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack", escapedStreamId, escapedGroupName) + ackAllQueryString;
 			feed.AddLink("ackAll", ackAll);
 
-			var nackAllQueryString = String.Format("?ids={0}",
-				String.Join(",", msg.Events.Select(x => x.ResolvedEvent.OriginalEvent.EventId)));
-			var nackAll =
-				HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/nack", escapedStreamId, escapedGroupName) +
-				nackAllQueryString;
+			var nackAllQueryString = $"?ids={string.Join(",", msg.Events.Select(x => x.ResolvedEvent.OriginalEvent.EventId))}";
+			var nackAll = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/nack", escapedStreamId, escapedGroupName) + nackAllQueryString;
 			feed.AddLink("nackAll", nackAll);
 		}
 
-		var prev = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/{2}", escapedStreamId, escapedGroupName,
-			count);
+		var prev = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/{2}", escapedStreamId, escapedGroupName, count);
 		feed.AddLink("previous", prev);
 
 		feed.AddLink("self", self);
@@ -296,23 +255,16 @@ public static class Convert {
 		string[] subscriptions) {
 		string escapedStreamId = Uri.EscapeDataString(streamId);
 		var descriptionDocument = new DescriptionDocument();
-		descriptionDocument.SetTitle(string.Format("Description document for '{0}'", streamId));
+		descriptionDocument.SetTitle($"Description document for '{streamId}'");
 		descriptionDocument.SetDescription(
 			@"The description document will be presented when no accept header is present or it was requested");
 
-		descriptionDocument.SetSelf("/streams/" + escapedStreamId,
-			Codec.DescriptionJson.ContentType);
-
-		descriptionDocument.SetStream("/streams/" + escapedStreamId,
-			Codec.EventStoreXmlCodec.ContentType,
-			Codec.EventStoreJsonCodec.ContentType);
+		descriptionDocument.SetSelf($"/streams/{escapedStreamId}", Codec.DescriptionJson.ContentType);
+		descriptionDocument.SetStream($"/streams/{escapedStreamId}", Codec.EventStoreXmlCodec.ContentType, Codec.EventStoreJsonCodec.ContentType);
 
 		if (subscriptions != null) {
 			foreach (var group in subscriptions) {
-				descriptionDocument.AddStreamSubscription(
-					String.Format("/subscriptions/{0}/{1}", escapedStreamId, group),
-					Codec.CompetingXml.ContentType,
-					Codec.CompetingJson.ContentType);
+				descriptionDocument.AddStreamSubscription($"/subscriptions/{escapedStreamId}/{group}", Codec.CompetingXml.ContentType, Codec.CompetingJson.ContentType);
 			}
 		}
 
@@ -368,7 +320,6 @@ public static class Convert {
 
 				// metadata
 				if (embedContent >= EmbedLevel.Body) {
-
 					try {
 						richEntry.MetaData = Helper.UTF8NoBom.GetString(evnt.Metadata.Span);
 						richEntry.IsMetaData = richEntry.MetaData.IsNotEmptyString();
@@ -419,24 +370,21 @@ public static class Convert {
 
 	private static Tuple<string, long> GetLinkData(string link) {
 		Ensure.NotNull(link, "link data cannot be null");
-		var loc = link.IndexOf("@", StringComparison.Ordinal);
-		if (loc == -1) throw new Exception(String.Format("Unable to parse link {0}", link));
-		var position = long.Parse(link.Substring(0, loc));
+		var loc = link.IndexOf('@');
+		if (loc == -1) throw new Exception($"Unable to parse link {link}");
+		var position = long.Parse(link[..loc]);
 		var stream = link.Substring(loc + 1, link.Length - loc - 1);
-		return new Tuple<string, long>(stream, position);
+		return new(stream, position);
 	}
 
-	private static void SetEntryProperties(string stream, long eventNumber, DateTime timestamp, Uri requestedUrl,
-		EntryElement entry) {
+	private static void SetEntryProperties(string stream, long eventNumber, DateTime timestamp, Uri requestedUrl, EntryElement entry) {
 		var escapedStreamId = Uri.EscapeDataString(stream);
-		entry.SetTitle(eventNumber + "@" + stream);
+		entry.SetTitle($"{eventNumber}@{stream}");
 		entry.SetId(HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, eventNumber));
 		entry.SetUpdated(timestamp);
 		entry.SetAuthor(AtomSpecs.Author);
-		entry.AddLink("edit",
-			HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, eventNumber));
-		entry.AddLink("alternate",
-			HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, eventNumber));
+		entry.AddLink("edit", HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, eventNumber));
+		entry.AddLink("alternate", HostName.Combine(requestedUrl, "/streams/{0}/{1}", escapedStreamId, eventNumber));
 	}
 
 	private static string FormatJson(string unformattedjson) {
@@ -487,9 +435,8 @@ public class DescriptionDocument {
 	}
 
 	public void AddStreamSubscription(string href, params string[] supportedContentTypes) {
-		if (Links.StreamSubscription == null) Links.StreamSubscription = new List<Link>();
-
-		Links.StreamSubscription.Add(new Link(href, supportedContentTypes));
+		Links.StreamSubscription ??= [];
+		Links.StreamSubscription.Add(new(href, supportedContentTypes));
 	}
 
 	public void SetStream(string href, params string[] supportedContentTypes) {

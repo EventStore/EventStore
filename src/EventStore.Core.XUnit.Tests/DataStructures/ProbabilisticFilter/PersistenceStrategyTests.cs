@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using EventStore.Core.DataStructures.ProbabilisticFilter;
+using EventStore.Core.Tests.DataStructures;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.DataStructures.ProbabilisticFilter;
@@ -62,43 +63,25 @@ public abstract class PersistenceStrategyTests {
 		}
 	}
 
-	public class MemoryMappedFilePersistenceTests :
+	public class MemoryMappedFilePersistenceTests(DirectoryFixture<MemoryMappedFilePersistenceTests> fixture) :
 		PersistenceStrategyTests,
 		IClassFixture<DirectoryFixture<MemoryMappedFilePersistenceTests>> {
-
-		private readonly DirectoryFixture<MemoryMappedFilePersistenceTests> _fixture;
-
-		public MemoryMappedFilePersistenceTests(
-			DirectoryFixture<MemoryMappedFilePersistenceTests> fixture) {
-
-			_fixture = fixture;
-		}
-
 		protected override IPersistenceStrategy GenSut(
 			long size, bool create, string fileName) {
 
 			return new MemoryMappedFilePersistence(
-				size, _fixture.GetFilePathFor(fileName), create);
+				size, fixture.GetFilePathFor(fileName), create);
 		}
 	}
 
-	public class FileStreamFilePersistenceTests :
+	public class FileStreamFilePersistenceTests(DirectoryFixture<FileStreamFilePersistenceTests> fixture) :
 		PersistenceStrategyTests,
 		IClassFixture<DirectoryFixture<FileStreamFilePersistenceTests>> {
-
-		private readonly DirectoryFixture<FileStreamFilePersistenceTests> _fixture;
-
-		public FileStreamFilePersistenceTests(
-			DirectoryFixture<FileStreamFilePersistenceTests> fixture) {
-
-			_fixture = fixture;
-		}
-
 		protected override FileStreamPersistence GenSut(
 			long size, bool create, string fileName) {
 
 			return new FileStreamPersistence(
-				size, _fixture.GetFilePathFor(fileName), create);
+				size, fixture.GetFilePathFor(fileName), create);
 		}
 
 		[Theory]

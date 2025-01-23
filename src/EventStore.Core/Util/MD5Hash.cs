@@ -7,8 +7,6 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext.Buffers;
-using DotNext.Collections.Generic;
 using EventStore.Common.Utils;
 using MD5 = EventStore.Core.Hashing.MD5;
 
@@ -17,22 +15,21 @@ namespace EventStore.Core.Util;
 public class MD5Hash {
 	public static byte[] GetHashFor(Stream s) {
 		//when using this, it will calculate from this point to the END of the stream!
-		using (var md5 = MD5.Create())
-			return md5.ComputeHash(s);
+		using var md5 = MD5.Create();
+		return md5.ComputeHash(s);
 	}
 
 	public static byte[] GetHashFor(Stream s, int startPosition, long count) {
 		Ensure.Nonnegative(count, "count");
 
-		using (var md5 = MD5.Create()) {
-			ContinuousHashFor(md5, s, startPosition, count);
-			md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
-			return md5.Hash;
-		}
+		using var md5 = MD5.Create();
+		ContinuousHashFor(md5, s, startPosition, count);
+		md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
+		return md5.Hash;
 	}
 
 	public static void ContinuousHashFor(HashAlgorithm md5, Stream s, int startPosition, long count) {
-		Ensure.NotNull(md5, "md5");
+		Ensure.NotNull(md5);
 		Ensure.Nonnegative(count, "count");
 
 		if (s.Position != startPosition)
@@ -51,7 +48,7 @@ public class MD5Hash {
 	}
 
 	public static async ValueTask ContinuousHashFor(IncrementalHash md5, Stream s, int startPosition, long count, CancellationToken token) {
-		Ensure.NotNull(md5, "md5");
+		Ensure.NotNull(md5);
 		Ensure.Nonnegative(count, "count");
 
 		if (s.Position != startPosition)

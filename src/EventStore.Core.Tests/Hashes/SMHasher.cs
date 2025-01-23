@@ -35,10 +35,7 @@ public static class SMHasher {
 
 		// The first four bytes of that hash, interpreted as a little-endian integer, is our
 		// verification value
-
 		//uint verification = (final[0] << 0) | (final[1] << 8) | (final[2] << 16) | (final[3] << 24);
-
-
 		//----------
 
 		if (expected != verification) {

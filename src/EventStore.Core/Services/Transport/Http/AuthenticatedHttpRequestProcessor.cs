@@ -17,12 +17,10 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http;
 
-internal class AuthenticatedHttpRequestProcessor : IHandle<HttpMessage.PurgeTimedOutRequests>,
-	IHandle<AuthenticatedHttpRequestMessage> {
+internal class AuthenticatedHttpRequestProcessor : IHandle<HttpMessage.PurgeTimedOutRequests>, IHandle<AuthenticatedHttpRequestMessage> {
 	private static readonly ILogger Log = Serilog.Log.ForContext<AuthenticatedHttpRequestProcessor>();
 
-	private readonly PairingHeap<Tuple<DateTime, HttpEntityManager>> _pending =
-		new PairingHeap<Tuple<DateTime, HttpEntityManager>>((x, y) => x.Item1 < y.Item1);
+	private readonly PairingHeap<Tuple<DateTime, HttpEntityManager>> _pending = new((x, y) => x.Item1 < y.Item1);
 
 	public void Handle(HttpMessage.PurgeTimedOutRequests message) {
 		PurgeTimedOutRequests();
@@ -62,7 +60,7 @@ internal class AuthenticatedHttpRequestProcessor : IHandle<HttpMessage.PurgeTime
 		PurgeTimedOutRequests();
 	}
 
-	private void InternalServerError(HttpEntityManager entity) {
+	private static void InternalServerError(HttpEntityManager entity) {
 		entity.ReplyStatus(HttpStatusCode.InternalServerError, "Internal Server Error",
 			e => Log.Debug("Error while closing HTTP connection (HTTP service core): {e}.", e.Message));
 	}

@@ -31,7 +31,7 @@ public class async_read_stream_events_backward_with_cancelled_read<TLogFormat, T
 			}
 		);
 
-		IODispatcherAsync.Run(step);
+		IODispatcher.Run(step);
 		_cancellationScope.Cancel();
 		_eventSet = mre.WaitOne(TimeSpan.FromSeconds(5));
 	}

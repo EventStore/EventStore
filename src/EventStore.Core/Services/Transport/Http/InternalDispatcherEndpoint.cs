@@ -14,35 +14,25 @@ using Serilog;
 
 namespace EventStore.Core.Services.Transport.Http;
 
-public class InternalDispatcherEndpoint : IHandle<HttpMessage.PurgeTimedOutRequests> {
-	private static readonly ILogger Log = Serilog.Log.ForContext<AuthorizationMiddleware>();
-	private readonly IPublisher _inputBus;
-	private readonly MultiQueuedHandler _requestsMultiHandler;
+public class InternalDispatcherEndpoint(IPublisher inputBus, MultiQueuedHandler requestsMultiHandler) : IHandle<HttpMessage.PurgeTimedOutRequests> {
+	private static readonly ILogger Log = Serilog.Log.ForContext<InternalDispatcherEndpoint>();
 	private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
-	private readonly IEnvelope _publishEnvelope;
-	public InternalDispatcherEndpoint(IPublisher inputBus, MultiQueuedHandler requestsMultiHandler) {
+	private readonly IEnvelope _publishEnvelope = inputBus;
 
-		_inputBus = inputBus;
-		_requestsMultiHandler = requestsMultiHandler;
-		_publishEnvelope = inputBus;
-	}
 	public void Handle(HttpMessage.PurgeTimedOutRequests message) {
-		
-		_requestsMultiHandler.PublishToAll(message);
+		requestsMultiHandler.PublishToAll(message);
 
-		_inputBus.Publish(
-			TimerMessage.Schedule.Create(
-				UpdateInterval, _publishEnvelope, message));
+		inputBus.Publish(TimerMessage.Schedule.Create(UpdateInterval, _publishEnvelope, message));
 	}
 
 	public Task InvokeAsync(HttpContext context) {
-		
-		if (InternalHttpHelper.TryGetInternalContext(context, out var manager, out var match, out var tcs)) {
-			_requestsMultiHandler.Publish(new AuthenticatedHttpRequestMessage(manager, match));
-			return tcs.Task;
+		if (!InternalHttpHelper.TryGetInternalContext(context, out var manager, out var match, out var tcs)) {
+			Log.Error("Failed to get internal http components for request {requestId}", context.TraceIdentifier);
+			context.Response.StatusCode = HttpStatusCode.InternalServerError;
+			return Task.CompletedTask;
 		}
-		Log.Error("Failed to get internal http components for request {requestId}", context.TraceIdentifier);
-		context.Response.StatusCode = HttpStatusCode.InternalServerError;
-		return Task.CompletedTask;
+
+		requestsMultiHandler.Publish(new AuthenticatedHttpRequestMessage(manager, match));
+		return tcs.Task;
 	}
 }

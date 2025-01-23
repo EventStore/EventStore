@@ -10,12 +10,8 @@ using EventStore.Common.Utils;
 namespace EventStore.Core.TransactionLog.Checkpoint;
 
 public class MemoryMappedFileCheckpoint : ICheckpoint {
-	public string Name {
-		get { return _name; }
-	}
+	public string Name { get; }
 
-	private readonly string _filename;
-	private readonly string _name;
 	private readonly FileStream _fileStream;
 	private readonly MemoryMappedFile _file;
 	private long _last;
@@ -27,10 +23,9 @@ public class MemoryMappedFileCheckpoint : ICheckpoint {
 
 	public MemoryMappedFileCheckpoint(string filename, string name, bool mustExist = false,
 		long initValue = 0) {
-		_filename = filename;
-		_name = name;
-		var old = File.Exists(_filename);
-		_fileStream = new FileStream(_filename,
+		Name = name;
+		var old = File.Exists(filename);
+		_fileStream = new FileStream(filename,
 			mustExist ? FileMode.Open : FileMode.OpenOrCreate,
 			FileAccess.ReadWrite,
 			FileShare.ReadWrite);

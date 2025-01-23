@@ -11,10 +11,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.TimeService;
 
-public class FakeScheduler : TimerBasedScheduler {
-	public FakeScheduler(ITimer timer, ITimeProvider timeProvider) : base(timer, timeProvider) {
-	}
-
+public class FakeScheduler(ITimer timer, ITimeProvider timeProvider) : TimerBasedScheduler(timer, timeProvider) {
 	public void TriggerProcessing() {
 		ProcessOperations();
 	}
@@ -51,12 +48,8 @@ public class FakeTimer : ITimer {
 	}
 }
 
-public class TestResponseMessage : Message {
-	public int Id { get; }
-
-	public TestResponseMessage(int id) {
-		Id = id;
-	}
+public class TestResponseMessage(int id) : Message {
+	public int Id { get; } = id;
 }
 
 [TestFixture]

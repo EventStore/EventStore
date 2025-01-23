@@ -64,23 +64,19 @@ public static class GrpcProtocolHelpers {
 		destination[MessageTrailer] = escapedDetail;
 	}
 
-	private static readonly char[] HexChars = new[]
-	{
-		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
-	};
-	internal const int MaxUnicodeCharsReallocate = 40; // Maximum batch size when working with unicode characters
-	private const int MaxUtf8BytesPerUnicodeChar = 4;
-	private const int AsciiMaxValue = 127;
+	static readonly char[] HexChars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
+	const int MaxUnicodeCharsReallocate = 40; // Maximum batch size when working with unicode characters
+	const int MaxUtf8BytesPerUnicodeChar = 4;
+	const int AsciiMaxValue = 127;
 
 	// From https://github.com/grpc/grpc/blob/324189c9dc540f0693d79f02dcb8c5f9261b535e/src/core/lib/slice/percent_encoding.cc#L31
-	private static readonly byte[] PercentEncodingUnreservedBitField =
-	{
+	private static readonly byte[] PercentEncodingUnreservedBitField = [
 		0x00, 0x00, 0x00, 0x00, 0xdf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff, 0xff, 0x7f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	};
+	];
 
-	public static string PercentEncode(string value) {
+	static string PercentEncode(string value) {
 		// Count the number of bytes needed to output this string
 		var encodedLength = 0L;
 		for (var i = 0; i < value.Length; i++) {
@@ -117,10 +113,10 @@ public static class GrpcProtocolHelpers {
 				var current = s[i];
 				if (current > AsciiMaxValue) {
 					// Leave a character for possible low surrogate
-					const int MaxCount = MaxUnicodeCharsReallocate - 1;
+					const int maxCount = MaxUnicodeCharsReallocate - 1;
 
 					// Get additional unicode characters
-					var unicodeCharCount = GetCountOfNonAsciiUtf16CodeUnits(s, i, MaxCount);
+					var unicodeCharCount = GetCountOfNonAsciiUtf16CodeUnits(s, i, maxCount);
 
 					// Note that invalid UTF-16 data, e.g. unpaired surrogates, will be converted to EF BF BD (unicode replacement character)
 					var numberOfBytes = Encoding.UTF8.GetBytes(s.AsSpan(i, unicodeCharCount), unicodeBytesBuffer);
@@ -167,44 +163,26 @@ public static class GrpcProtocolHelpers {
 		return ((PercentEncodingUnreservedBitField[c / 8] >> (c % 8)) & 1) != 0;
 	}
 
-	public static string ToTrailerString(this StatusCode status) {
-		switch (status) {
-			case StatusCode.OK:
-				return "0";
-			case StatusCode.Cancelled:
-				return "1";
-			case StatusCode.Unknown:
-				return "2";
-			case StatusCode.InvalidArgument:
-				return "3";
-			case StatusCode.DeadlineExceeded:
-				return "4";
-			case StatusCode.NotFound:
-				return "5";
-			case StatusCode.AlreadyExists:
-				return "6";
-			case StatusCode.PermissionDenied:
-				return "7";
-			case StatusCode.ResourceExhausted:
-				return "8";
-			case StatusCode.FailedPrecondition:
-				return "9";
-			case StatusCode.Aborted:
-				return "10";
-			case StatusCode.OutOfRange:
-				return "11";
-			case StatusCode.Unimplemented:
-				return "12";
-			case StatusCode.Internal:
-				return "13";
-			case StatusCode.Unavailable:
-				return "14";
-			case StatusCode.DataLoss:
-				return "15";
-			case StatusCode.Unauthenticated:
-				return "16";
-			default:
-				return status.ToString("D");
-		}
+	static string ToTrailerString(this StatusCode status) {
+		return status switch {
+			StatusCode.OK => "0",
+			StatusCode.Cancelled => "1",
+			StatusCode.Unknown => "2",
+			StatusCode.InvalidArgument => "3",
+			StatusCode.DeadlineExceeded => "4",
+			StatusCode.NotFound => "5",
+			StatusCode.AlreadyExists => "6",
+			StatusCode.PermissionDenied => "7",
+			StatusCode.ResourceExhausted => "8",
+			StatusCode.FailedPrecondition => "9",
+			StatusCode.Aborted => "10",
+			StatusCode.OutOfRange => "11",
+			StatusCode.Unimplemented => "12",
+			StatusCode.Internal => "13",
+			StatusCode.Unavailable => "14",
+			StatusCode.DataLoss => "15",
+			StatusCode.Unauthenticated => "16",
+			_ => status.ToString("D")
+		};
 	}
 }

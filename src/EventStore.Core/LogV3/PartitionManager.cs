@@ -13,24 +13,14 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.LogV3;
 
-public class PartitionManager : IPartitionManager {
+public class PartitionManager(ITransactionFileReader reader, ITransactionFileWriter writer, LogV3RecordFactory recordFactory) : IPartitionManager {
 	private static readonly ILogger _log = Serilog.Log.ForContext<PartitionManager>();
-	private readonly ITransactionFileReader _reader;
-	private readonly ITransactionFileWriter _writer;
-	private readonly LogV3RecordFactory _recordFactory;
 
 	private const string RootPartitionName = "Root";
 	private const string RootPartitionTypeName = "Root";
 
 	public Guid? RootId { get; private set; }
 	public Guid? RootTypeId  { get; private set; }
-
-	public PartitionManager(
-		ITransactionFileReader reader, ITransactionFileWriter writer, LogV3RecordFactory recordFactory) {
-		_reader = reader;
-		_writer = writer;
-		_recordFactory = recordFactory;
-	}
 
 	public async ValueTask Initialize(CancellationToken token) {
 		if (RootId.HasValue)
@@ -44,26 +34,26 @@ public class PartitionManager : IPartitionManager {
 		// below code only takes into account offline truncation
 		if (!RootTypeId.HasValue) {
 			RootTypeId = Guid.NewGuid();
-			long pos = _writer.Position;
-			var rootPartitionType = _recordFactory.CreatePartitionTypeRecord(
+			long pos = writer.Position;
+			var rootPartitionType = recordFactory.CreatePartitionTypeRecord(
 				timeStamp: DateTime.UtcNow,
 				logPosition: pos,
 				partitionTypeId: RootTypeId.Value,
 				partitionId: Guid.Empty,
 				name: RootPartitionTypeName);
 
-			if (await _writer.Write(rootPartitionType, token) is (false, _))
+			if (await writer.Write(rootPartitionType, token) is (false, _))
 				throw new Exception($"Failed to write root partition type!");
 
-			await _writer.Flush(token);
+			await writer.Flush(token);
 
 			_log.Debug("Root partition type created, id: {id}", RootTypeId);
 		}
 
 		if (!RootId.HasValue) {
 			RootId = Guid.NewGuid();
-			long pos = _writer.Position;
-			var rootPartition = _recordFactory.CreatePartitionRecord(
+			long pos = writer.Position;
+			var rootPartition = recordFactory.CreatePartitionRecord(
 				timeStamp: DateTime.UtcNow,
 				logPosition: pos,
 				partitionId: RootId.Value,
@@ -73,12 +63,12 @@ public class PartitionManager : IPartitionManager {
 				referenceNumber: 0,
 				name: RootPartitionName);
 
-			if (await _writer.Write(rootPartition, token) is (false, _))
+			if (await writer.Write(rootPartition, token) is (false, _))
 				throw new Exception($"Failed to write root partition!");
 
-			await _writer.Flush(token);
+			await writer.Flush(token);
 
-			_recordFactory.SetRootPartitionId(RootId.Value);
+			recordFactory.SetRootPartitionId(RootId.Value);
 
 			_log.Debug("Root partition created, id: {id}", RootId);
 		}
@@ -86,50 +76,40 @@ public class PartitionManager : IPartitionManager {
 
 	private async ValueTask ReadRootPartition(CancellationToken token) {
 		SeqReadResult result;
-		_reader.Reposition(0);
-		while ((result = await _reader.TryReadNext(token)).Success) {
+		reader.Reposition(0);
+		while ((result = await reader.TryReadNext(token)).Success) {
 			var rec = result.LogRecord;
 			switch (rec.RecordType) {
 				case LogRecordType.PartitionType:
 					var r = ((PartitionTypeLogRecord) rec).Record;
-					if (r.StringPayload == RootPartitionTypeName && r.SubHeader.PartitionId == Guid.Empty) {
-						RootTypeId = r.Header.RecordId;
+					if (r.StringPayload != RootPartitionTypeName || r.SubHeader.PartitionId != Guid.Empty)
+						throw new InvalidDataException("Unexpected partition type encountered while trying to read the root partition type.");
+					RootTypeId = r.Header.RecordId;
 
-						_log.Debug("Root partition type read, id: {id}", RootTypeId);
+					_log.Debug("Root partition type read, id: {id}", RootTypeId);
 
-						break;
-					}
-
-					throw new InvalidDataException(
-						"Unexpected partition type encountered while trying to read the root partition type.");
+					break;
 
 				case LogRecordType.Partition:
 					var p = ((PartitionLogRecord) rec).Record;
-					if (p.StringPayload == RootPartitionName && p.SubHeader.PartitionTypeId == RootTypeId
-					                                         && p.SubHeader.ParentPartitionId == Guid.Empty) {
-						RootId = p.Header.RecordId;
-						_recordFactory.SetRootPartitionId(RootId.Value);
+					if (p.StringPayload != RootPartitionName || p.SubHeader.PartitionTypeId != RootTypeId
+					                                         || p.SubHeader.ParentPartitionId != Guid.Empty)
+						throw new InvalidDataException("Unexpected partition encountered while trying to read the root partition.");
+					RootId = p.Header.RecordId;
+					recordFactory.SetRootPartitionId(RootId.Value);
 
-						_log.Debug("Root partition read, id: {id}", RootId);
+					_log.Debug("Root partition read, id: {id}", RootId);
 
-						return;
-					}
-
-					throw new InvalidDataException(
-						"Unexpected partition encountered while trying to read the root partition.");
+					return;
 
 				case LogRecordType.System:
 					var systemLogRecord = (ISystemLogRecord)result.LogRecord;
-					if (systemLogRecord.SystemRecordType == SystemRecordType.Epoch) {
-						continue;
-					}
-
-					throw new ArgumentOutOfRangeException("SystemRecordType",
-						"Unexpected system record while trying to read the root partition");
+					if (systemLogRecord.SystemRecordType != SystemRecordType.Epoch)
+						throw new ArgumentOutOfRangeException("SystemRecordType", "Unexpected system record while trying to read the root partition");
+					continue;
 
 				default:
-					throw new ArgumentOutOfRangeException("RecordType",
-						"Unexpected record while trying to read the root partition");
+					throw new ArgumentOutOfRangeException("RecordType", "Unexpected record while trying to read the root partition");
 			}
 		}
 	}

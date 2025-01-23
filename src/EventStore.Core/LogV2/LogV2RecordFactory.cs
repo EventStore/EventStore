@@ -8,9 +8,6 @@ using EventStore.Core.TransactionLog.LogRecords;
 namespace EventStore.Core.LogV2;
 
 public class LogV2RecordFactory : IRecordFactory<string> {
-	public LogV2RecordFactory() {
-	}
-
 	public bool ExplicitStreamCreation => false;
 	public bool ExplicitEventTypeCreation => false;
 

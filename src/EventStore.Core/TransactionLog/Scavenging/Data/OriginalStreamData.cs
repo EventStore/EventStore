@@ -6,10 +6,6 @@ using System;
 namespace EventStore.Core.TransactionLog.Scavenging;
 
 public class OriginalStreamData {
-
-	public OriginalStreamData() {
-	}
-
 	// Populated by Accumulator and Calculator. Read by Calculator and Cleaner.
 	public CalculationStatus Status { get; set; }
 

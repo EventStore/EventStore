@@ -24,25 +24,14 @@ public sealed class HttpEntityManager {
 	public object AsyncState { get; set; }
 	public readonly HttpEntity HttpEntity;
 
-	public bool IsProcessing {
-		get { return _processing != 0; }
-	}
+	public bool IsProcessing => _processing != 0;
 
 	private int _processing;
 	private readonly string[] _allowedMethods;
 	private readonly Action<HttpEntity> _onRequestSatisfied;
-	private readonly ICodec _requestCodec;
-	private readonly ICodec _responseCodec;
-	private readonly Uri _responseUrl;
-	private readonly Uri _requestedUrl;
 	private readonly string _responseContentEncoding;
-
-	private static readonly string[] SupportedCompressionAlgorithms =
-		{CompressionAlgorithms.Gzip, CompressionAlgorithms.Deflate};
-
-	private static readonly BufferManager
-		_compressionBufferManager = new BufferManager(20, 50 * 1024); //create 20 50KB buffers (1MB total)
-
+	private static readonly string[] SupportedCompressionAlgorithms = [CompressionAlgorithms.Gzip, CompressionAlgorithms.Deflate];
+	private static readonly BufferManager _compressionBufferManager = new(20, 50 * 1024); //create 20 50KB buffers (1MB total)
 	private readonly bool _logHttpRequests;
 	private readonly Action _onComplete;
 
@@ -62,38 +51,28 @@ public sealed class HttpEntityManager {
 
 		_allowedMethods = allowedMethods;
 		_onRequestSatisfied = onRequestSatisfied;
-		_requestCodec = requestCodec;
-		_responseCodec = responseCodec;
-		_responseUrl = httpEntity.ResponseUrl;
-		_requestedUrl = httpEntity.RequestedUrl;
+		RequestCodec = requestCodec;
+		ResponseCodec = responseCodec;
+		ResponseUrl = httpEntity.ResponseUrl;
+		RequestedUrl = httpEntity.RequestedUrl;
 		_responseContentEncoding = GetRequestedContentEncoding(httpEntity);
 		_logHttpRequests = logHttpRequests;
 		_onComplete = onComplete;
 
 		if (HttpEntity.Request != null && HttpEntity.Request.ContentLength64 == 0) {
-			LogRequest(new byte[0]);
+			LogRequest([]);
 		}
 	}
 
-	public ICodec RequestCodec {
-		get { return _requestCodec; }
-	}
+	public ICodec RequestCodec { get; }
 
-	public ICodec ResponseCodec {
-		get { return _responseCodec; }
-	}
+	public ICodec ResponseCodec { get; }
 
-	public Uri ResponseUrl {
-		get { return _responseUrl; }
-	}
+	public Uri ResponseUrl { get; }
 
-	public Uri RequestedUrl {
-		get { return _requestedUrl; }
-	}
+	public Uri RequestedUrl { get; }
 
-	public ClaimsPrincipal User {
-		get { return HttpEntity.User; }
-	}
+	public ClaimsPrincipal User => HttpEntity.User;
 
 	private void SetResponseCode(int code) {
 		try {
@@ -122,7 +101,7 @@ public sealed class HttpEntityManager {
 			return;
 		try {
 			HttpEntity.Response.ContentType =
-				contentType + (encoding != null ? ("; charset=" + encoding.WebName) : "");
+				contentType + (encoding != null ? $"; charset={encoding.WebName}" : "");
 		} catch (ObjectDisposedException) {
 			// ignore
 		} catch (InvalidOperationException e) {
@@ -185,10 +164,8 @@ public sealed class HttpEntityManager {
 		Ensure.NotNull(onReadSuccess, "OnReadSuccess");
 		Ensure.NotNull(onError, "onError");
 
-		var state = new ManagerOperationState(
-			HttpEntity.Request.InputStream, new MemoryStream(), onReadSuccess, onError);
-		var copier = new AsyncStreamCopier<ManagerOperationState>(
-			state.InputStream, state.OutputStream, state, RequestRead);
+		var state = new ManagerOperationState(HttpEntity.Request.InputStream, new MemoryStream(), onReadSuccess, onError);
+		var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state, RequestRead);
 		copier.Start();
 	}
 
@@ -240,7 +217,7 @@ public sealed class HttpEntityManager {
 			return;
 
 		if (response == null || response.Length == 0) {
-			LogResponse(Array.Empty<byte>());
+			LogResponse([]);
 			SetResponseLength(0);
 			_onComplete();
 			CloseConnection(onError);
@@ -268,8 +245,7 @@ public sealed class HttpEntityManager {
 					HttpEntity.Response.ContentType = response.Content.Headers.ContentType.MediaType;
 				}
 
-				IEnumerable<string> values;
-				if (response.Content.Headers.TryGetValues("Content-Encoding", out values)) {
+				if (response.Content.Headers.TryGetValues("Content-Encoding", out var values)) {
 					HttpEntity.Response.AddHeader("Content-Encoding", values.FirstOrDefault());
 				}
 
@@ -277,21 +253,13 @@ public sealed class HttpEntityManager {
 			}
 
 			foreach (var header in response.Headers) {
-				string headerValue;
 				switch (header.Key) {
 					case "Content-Length":
-						break;
 					case "Keep-Alive":
-						break;
 					case "Transfer-Encoding":
 						break;
-					case "WWW-Authenticate":
-						headerValue = header.Value.FirstOrDefault();
-						HttpEntity.Response.AddHeader(header.Key, headerValue);
-						break;
-
 					default:
-						headerValue = header.Value.FirstOrDefault();
+						var headerValue = header.Value.FirstOrDefault();
 						HttpEntity.Response.AddHeader(header.Key, headerValue);
 						break;
 				}
@@ -320,9 +288,7 @@ public sealed class HttpEntityManager {
 
 		if (copier.Error != null) {
 			state.Dispose();
-			CloseConnection(exc =>
-				Log.Debug("Close connection error (after crash in read request): {e}", exc.Message));
-
+			CloseConnection(exc => Log.Debug("Close connection error (after crash in read request): {e}", exc.Message));
 			state.OnError(copier.Error);
 			return;
 		}
@@ -349,15 +315,6 @@ public sealed class HttpEntityManager {
 		}
 	}
 
-	private string CreateHeaderLog() {
-		var logBuilder = new StringBuilder();
-		foreach (var header in HttpEntity.Request.GetHeaderKeys()) {
-			logBuilder.AppendFormat("{0}: {1}\n", header, HttpEntity.Request.GetHeaderValues(header));
-		}
-
-		return logBuilder.ToString();
-	}
-
 	private Dictionary<string, object> CreateHeaderLogStructured() {
 		var dict = new Dictionary<string, object>();
 		foreach (var header in HttpEntity.Request.GetHeaderKeys()) {
@@ -368,39 +325,37 @@ public sealed class HttpEntityManager {
 	}
 
 	private void LogRequest(byte[] body) {
-		if (_logHttpRequests) {
-			var bodyStr = "";
-			if (body != null && body.Length > 0) {
-				bodyStr = Encoding.Default.GetString(body);
-			}
-
-			Log.Debug("HTTP Request Received\n{dateTime}\nFrom: {remoteEndPoint}\n{httpMethod} {requestUrl}\n{headers}" + "\n{body}"
-				, DateTime.Now
-				, HttpEntity.Request.RemoteEndPoint.ToString()
-				, HttpEntity.Request.HttpMethod
-				, HttpEntity.Request.Url
-				, CreateHeaderLogStructured()
-				, bodyStr
-			);
+		if (!_logHttpRequests) return;
+		var bodyStr = "";
+		if (body is { Length: > 0 }) {
+			bodyStr = Encoding.Default.GetString(body);
 		}
+
+		Log.Debug("HTTP Request Received\n{dateTime}\nFrom: {remoteEndPoint}\n{httpMethod} {requestUrl}\n{headers}" + "\n{body}"
+			, DateTime.Now
+			, HttpEntity.Request.RemoteEndPoint.ToString()
+			, HttpEntity.Request.HttpMethod
+			, HttpEntity.Request.Url
+			, CreateHeaderLogStructured()
+			, bodyStr
+		);
 	}
 
 	private void LogResponse(byte[] body) {
-		if (_logHttpRequests) {
-			var bodyStr = "";
-			if (body != null && body.Length > 0) {
-				bodyStr = Encoding.Default.GetString(body);
-			}
-
-			Log.Debug(
-				"HTTP Response\n{dateTime}\n{statusCode} {statusDescription}\n{headers}\n{body}",
-				DateTime.Now,
-				HttpEntity.Response.StatusCode,
-				HttpEntity.Response.StatusDescription,
-				CreateHeaderLogStructured(),
-				bodyStr
-			);
+		if (!_logHttpRequests) return;
+		var bodyStr = "";
+		if (body is { Length: > 0 }) {
+			bodyStr = Encoding.Default.GetString(body);
 		}
+
+		Log.Debug(
+			"HTTP Response\n{dateTime}\n{statusCode} {statusDescription}\n{headers}\n{body}",
+			DateTime.Now,
+			HttpEntity.Response.StatusCode,
+			HttpEntity.Response.StatusDescription,
+			CreateHeaderLogStructured(),
+			bodyStr
+		);
 	}
 
 	public static byte[] CompressResponse(byte[] response, string compressionAlgorithm) {
@@ -411,28 +366,26 @@ public sealed class HttpEntityManager {
 		MemoryStream outputStream;
 		var useBufferManager =
 			10L * response.Length <=
-			9L * _compressionBufferManager
-				.ChunkSize; //in some rare cases, compression can result in larger outputs. Added a 10% overhead just to be sure.
+			9L * _compressionBufferManager.ChunkSize; //in some rare cases, compression can result in larger outputs. Added a 10% overhead just to be sure.
 		var bufferManagerArraySegment = new ArraySegment<byte>();
 
 		if (useBufferManager) {
 			//use buffer manager to handle responses less than ~50kb long to prevent excessive memory allocations
 			bufferManagerArraySegment = _compressionBufferManager.CheckOut();
-			outputStream = new MemoryStream(bufferManagerArraySegment.Array, bufferManagerArraySegment.Offset,
-				bufferManagerArraySegment.Count);
+			outputStream = new(bufferManagerArraySegment.Array, bufferManagerArraySegment.Offset, bufferManagerArraySegment.Count);
 			outputStream.SetLength(0);
 		} else {
 			//since Gzip/Deflate compression ratio doesn't go below 20% in most cases, we can initialize the array to a quarter of the original response length
 			//this also limits memory stream growth operations to at most 2.
-			outputStream = new MemoryStream((response.Length + 4 - 1) / 4);
+			outputStream = new((response.Length + 4 - 1) / 4);
 		}
 
 		using (outputStream) {
-			Stream compressedStream = null;
-			if (compressionAlgorithm.Equals(CompressionAlgorithms.Gzip))
-				compressedStream = new GZipStream(outputStream, CompressionLevel.Fastest);
-			else if (compressionAlgorithm.Equals(CompressionAlgorithms.Deflate))
-				compressedStream = new DeflateStream(outputStream, CompressionLevel.Fastest);
+			Stream compressedStream = compressionAlgorithm switch {
+				CompressionAlgorithms.Gzip => new GZipStream(outputStream, CompressionLevel.Fastest),
+				CompressionAlgorithms.Deflate => new DeflateStream(outputStream, CompressionLevel.Fastest),
+				_ => null
+			};
 
 			using (compressedStream)
 			using (var dataStream = new MemoryStream(response)) {
@@ -446,7 +399,7 @@ public sealed class HttpEntityManager {
 		}
 	}
 
-	private string GetRequestedContentEncoding(HttpEntity httpEntity) {
+	private static string GetRequestedContentEncoding(HttpEntity httpEntity) {
 		if (httpEntity?.Request == null)
 			return null;
 

@@ -2,7 +2,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using DuckDB.NET.Data;
-using static EventStore.Core.Duck.DuckDb;
 
 namespace EventStore.Core.Duck;
 

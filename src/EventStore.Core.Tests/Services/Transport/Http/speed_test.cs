@@ -13,25 +13,13 @@ using EventStore.Transport.Http.Codecs;
 
 namespace EventStore.Core.Tests.Services.Transport.Http;
 
-public class FakeController : IHttpController {
-	private readonly IUriRouter _router;
-
-	public static readonly ICodec[] SupportedCodecs = new ICodec[]
-		{Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text};
-
-	private IHttpService _http;
+public class FakeController(int reqCount, IUriRouter router) : IHttpController {
+	public static readonly ICodec[] SupportedCodecs = [Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text];
 
 	public readonly List<Tuple<string, string>> BoundRoutes = new List<Tuple<string, string>>();
-	public readonly CountdownEvent CountdownEvent;
+	public readonly CountdownEvent CountdownEvent = new(reqCount);
 
-	public FakeController(int reqCount, IUriRouter router) {
-		_router = router;
-		CountdownEvent = new CountdownEvent(reqCount);
-	}
-
-	public void Subscribe(IHttpService http) {
-		_http = http;
-
+	public void Subscribe(IUriRouter router) {
 		Register("/", HttpMethod.Get);
 		Register("/ping", HttpMethod.Get);
 		Register("/halt", HttpMethod.Get);
@@ -97,21 +85,12 @@ public class FakeController : IHttpController {
 	}
 
 	private void Register(string route, string verb) {
-		if (_router == null) {
-			_http.RegisterAction(
-				new ControllerAction(route, verb, Codec.NoCodecs, SupportedCodecs, new Operation()),
-				(x, y) => {
-					x.Reply(new byte[0], 200, "", "", Helper.UTF8NoBom, null, e => new Exception());
-					CountdownEvent.Signal();
-				});
-		} else {
-			_router.RegisterAction(
-				new ControllerAction(route, verb, Codec.NoCodecs, SupportedCodecs, new Operation()),
-				(x, y) => {
-					CountdownEvent.Signal();
-					return new RequestParams(TimeSpan.Zero);
-				});
-		}
+		router.RegisterAction(
+			new(route, verb, Codec.NoCodecs, SupportedCodecs, new Operation()),
+			(_, _) => {
+				CountdownEvent.Signal();
+				return new RequestParams(TimeSpan.Zero);
+			});
 
 		var uriTemplate = new UriTemplate(route);
 		var bound = uriTemplate.BindByPosition(new Uri("http://localhost:12345/"),

@@ -15,7 +15,7 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogAbstraction.Common;
 using FASTER.core;
 using Serilog;
-using Value = System.UInt32;
+using Value = uint;
 using static System.Threading.Timeout;
 
 namespace EventStore.Core.LogV3.FASTER;
@@ -24,9 +24,7 @@ public class NameIndexPersistence {
 	protected static readonly ILogger Log = Serilog.Log.ForContext<NameIndexPersistence>();
 }
 
-public class FASTERNameIndexPersistence :
-	NameIndexPersistence,
-	INameIndexPersistence<Value> {
+public class FASTERNameIndexPersistence : NameIndexPersistence, INameIndexPersistence<Value> {
 
 	private static readonly Encoding _utf8NoBom = new UTF8Encoding(false, true);
 	private readonly IDevice _log;
@@ -125,7 +123,7 @@ public class FASTERNameIndexPersistence :
 		_cancellationTokenSource = new();
 		_logCheckpointer = new Debouncer(
 			checkpointInterval,
-			async token => {
+			async _ => {
 				try {
 					var success = await CheckpointLogAsync();
 					if (!success)
@@ -167,10 +165,7 @@ public class FASTERNameIndexPersistence :
 				_lastValueLock.Release();
 			}
 
-			Log.Information(
-				"{indexName} has been recovered. " +
-				"Last entry was {name}:{value}",
-				_indexName, name, value);
+			Log.Information("{indexName} has been recovered. Last entry was {name}:{value}", _indexName, name, value);
 		} catch (FasterException ex) {
 			Log.Information($"{_indexName} is starting from scratch: {ex.Message}");
 		}
