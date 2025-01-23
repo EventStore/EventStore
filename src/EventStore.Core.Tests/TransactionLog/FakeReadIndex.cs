@@ -9,7 +9,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	internal class FakeReadIndex<TLogFormat, TStreamId> : IReadIndex<TStreamId> {
+	public class FakeReadIndex<TLogFormat, TStreamId> : IReadIndex<TStreamId> {
 		private readonly IMetastreamLookup<TStreamId> _metastreams;
 
 		public long LastIndexedPosition {

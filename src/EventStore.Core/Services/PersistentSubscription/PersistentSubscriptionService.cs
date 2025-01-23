@@ -1226,7 +1226,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private void SaveConfiguration(Action continueWith) {
 			Log.Debug("Saving persistent subscription configuration");
 			var data = _config.GetSerializedForm();
-			var ev = new Event(Guid.NewGuid(), "$PersistentConfig", true, data, new byte[0]);
+			var ev = new Event(Guid.NewGuid(), SystemEventTypes.PersistentSubscriptionConfig, true, data, new byte[0]);
 			var metadata = new StreamMetadata(maxCount: 2);
 			Lazy<StreamMetadata> streamMetadata = new Lazy<StreamMetadata>(() => metadata);
 			Event[] events = new Event[] {ev};
@@ -1260,7 +1260,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Handle(MonitoringMessage.GetPersistentSubscriptionStats message) {
 			if (!_started) {
 				message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
-					MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotReady, null)
+					MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotReady, null, 0)
 				);
 				return;
 			}
@@ -1268,7 +1268,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			List<PersistentSubscription> subscribers;
 			if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers) || subscribers == null) {
 				message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
-					MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotFound, null)
+					MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotFound, null, 0)
 				);
 				return;
 			}
@@ -1276,7 +1276,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			var subscription = subscribers.FirstOrDefault(x => x.GroupName == message.GroupName);
 			if (subscription == null) {
 				message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
-					MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotFound, null)
+					MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotFound, null, 0)
 				);
 				return;
 			}
@@ -1285,14 +1285,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				subscription.GetStatistics()
 			};
 			message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
-				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success, stats)
+				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success, stats, 1)
 			);
 		}
 
 		public void Handle(MonitoringMessage.GetStreamPersistentSubscriptionStats message) {
 			if (!_started) {
 				message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
-					MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotReady, null)
+					MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotReady, null, 0)
 				);
 				return;
 			}
@@ -1300,30 +1300,39 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			List<PersistentSubscription> subscribers;
 			if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers)) {
 				message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
-					MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotFound, null)
+					MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotFound, null, 0)
 				);
 				return;
 			}
 
 			var stats = subscribers.Select(sub => sub.GetStatistics()).ToList();
 			message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
-				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success, stats)
+				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success, stats, subscribers.Count)
 			);
 		}
 
 		public void Handle(MonitoringMessage.GetAllPersistentSubscriptionStats message) {
 			if (!_started) {
 				message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
-					MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotReady, null)
+					MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.NotReady, null, 0)
 				);
 				return;
 			}
 
-			var stats = (from subscription in _subscriptionTopics.Values
-				from sub in subscription
-				select sub.GetStatistics()).ToList();
+			List<MonitoringMessage.PersistentSubscriptionInfo> stats;
+			if (message.Count is null) {
+				stats = (from subscription in _subscriptionTopics.Values
+					from sub in subscription
+					select sub.GetStatistics()).ToList();
+			} else {
+				stats = (from subscription in _subscriptionTopics.Values
+						.Skip(message.Offset).Take(message.Count.Value)
+					from sub in subscription
+					select sub.GetStatistics()).ToList();
+			}
+
 			message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
-				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success, stats)
+				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success, stats, _subscriptionTopics.Count(), message.Offset)
 			);
 		}
 

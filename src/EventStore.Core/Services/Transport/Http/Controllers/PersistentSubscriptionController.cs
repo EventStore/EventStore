@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
-			Register(service, "/subscriptions", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
+			Register(service, "/subscriptions?count={count}&offset={offset}", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
 			Register(service, "/subscriptions/restart", HttpMethod.Post, RestartPersistentSubscriptions, Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Restart));
 			Register(service, "/subscriptions/{stream}", HttpMethod.Get, GetSubscriptionInfoForStream, Codec.NoCodecs,
 				DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
@@ -725,14 +725,46 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private void GetAllSubscriptionInfo(HttpEntityManager http, UriTemplateMatch match) {
 			if (_httpForwarder.ForwardRequest(http))
 				return;
-			var envelope = new SendToHttpEnvelope(
-				_networkSendQueue, http,
-				(args, message) =>
-					http.ResponseCodec.To(ToSummaryDto(http,
-						message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted).ToArray()),
-				(args, message) => StatsConfiguration(http, message));
-			var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope);
-			Publish(cmd);
+			var countParam = match.BoundVariables["count"];
+			var offsetParam = match.BoundVariables["offset"];
+			if (countParam is null && offsetParam is null) {
+				GetSubscriptionInfoUnpaged();
+			} else {
+				GetSubscriptionInfoPaged();
+			}
+
+			void GetSubscriptionInfoUnpaged() {
+				var envelope = new SendToHttpEnvelope(
+					_networkSendQueue, http,
+					(args, message) =>
+						http.ResponseCodec.To(ToSummaryDto(http,
+							message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted).ToArray()),
+					(args, message) => StatsConfiguration(http, message));
+				var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope);
+				Publish(cmd);
+			}
+
+			void GetSubscriptionInfoPaged() {
+				int? count = countParam is not null && int.TryParse(countParam, out var cnt) && cnt != 0 ? cnt : null;
+				int offset = offsetParam is not null && int.TryParse(offsetParam, out var off) ? off : 0;
+				if (count is null || count < 1) {
+					SendBadRequest(http, $"Count ({count ?? 0}) must be greater than 1");
+					return;
+				}
+				if (offset < 0) {
+					SendBadRequest(http, $"Offset ({offset}) must be positive");
+					return;
+				}
+
+				var envelope = new SendToHttpEnvelope(
+					_networkSendQueue, http,
+					(_, message) =>
+						http.ResponseCodec.To(ToPagedSummaryDto(
+							http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted, count ?? 0)),
+					(_, message) => StatsConfiguration(http, message));
+				var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope, count, offset);
+				Publish(cmd);
+			}
 		}
 
 		private void GetSubscriptionInfoForStream(HttpEntityManager http, UriTemplateMatch match) {
@@ -973,6 +1005,29 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			}
 		}
 
+		private PagedSubscriptionInfo ToPagedSummaryDto(HttpEntityManager manager,
+			MonitoringMessage.GetPersistentSubscriptionStatsCompleted message, int requestedCount) {
+			if (message is null || message.SubscriptionStats is null) {
+				return new PagedSubscriptionInfo();
+			}
+
+			var stats = ToSummaryDto(manager, message).ToArray();
+			var actualCount = stats.Length;
+			var nextOffset = message.Offset + actualCount;
+			var prevOffset = Math.Max(0, message.Offset - requestedCount);
+			return new PagedSubscriptionInfo {
+				Links = new List<RelLink>() {
+					new(MakeUrl(manager, "/subscriptions", $"?count={requestedCount}&offset={message.Offset}"), "self"),
+					new(MakeUrl(manager, "/subscriptions", $"?count={requestedCount}&offset={nextOffset}"), "next"),
+					new(MakeUrl(manager, "/subscriptions", $"?count={requestedCount}&offset={prevOffset}"), "previous")
+				},
+				Count = actualCount,
+				Offset = message.Offset,
+				Total = message.Total,
+				Subscriptions = stats
+			};
+		}
+
 		private IEnumerable<SubscriptionSummary> ToSummaryDto(HttpEntityManager manager,
 			MonitoringMessage.GetPersistentSubscriptionStatsCompleted message) {
 			if (message == null) yield break;
@@ -1050,6 +1105,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				LiveBufferSize = 500;
 				ReadBatchSize = 20;
 			}
+		}
+
+		public class PagedSubscriptionInfo {
+			public List<RelLink> Links { get; set; }
+			public int Offset { get; set; }
+			public int Count { get; set; }
+			public int Total { get; set; }
+			public IEnumerable<SubscriptionSummary> Subscriptions { get; set; }
 		}
 
 		public class SubscriptionSummary {

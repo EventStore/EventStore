@@ -91,11 +91,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			Action<HttpEntityManager, UriTemplateMatch> action) {
 			Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, DefaultCodecs, operation);
 		}
-
 		protected static string MakeUrl(HttpEntityManager http, string path) {
 			if (path.Length > 0 && path[0] == '/') path = path.Substring(1);
 			var hostUri = http.ResponseUrl;
 			var builder = new UriBuilder(hostUri.Scheme, hostUri.Host, hostUri.Port, hostUri.LocalPath + path);
+			return builder.Uri.AbsoluteUri;
+		}
+		protected static string MakeUrl(HttpEntityManager http, string path, string query) {
+			if (path.Length > 0 && path[0] == '/') path = path.Substring(1);
+			var hostUri = http.ResponseUrl;
+			var builder = new UriBuilder(hostUri.Scheme, hostUri.Host, hostUri.Port, hostUri.LocalPath + path, query);
 			return builder.Uri.AbsoluteUri;
 		}
 	}
