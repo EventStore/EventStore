@@ -89,7 +89,6 @@ public partial class TFChunk : IChunkBlob {
 		get => new() {
 			ChunkEndNumber = _chunkHeader.ChunkEndNumber,
 			ChunkEndPosition = _chunkHeader.ChunkEndPosition,
-			Version = _chunkHeader.Version,
 		};
 	}
 

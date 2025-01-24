@@ -76,11 +76,14 @@ public sealed class ArchiverService :
 	private async Task ArchiveAsync() {
 		// If we have multiple switched versions of the same chunk in _switchedChunks,
 		// we can skip duplicate uploads
-		var switchedChunkIdentities = new Dictionary<long, byte>();
+		var switchedChunks = new Dictionary<int, long>();
 		var checkpoint = await _archive.GetCheckpoint(_lifetimeToken);
 		while (!_lifetimeToken.IsCancellationRequested) {
-			await ProcessSwitchedChunksAsync(switchedChunkIdentities, checkpoint, _lifetimeToken);
-			switchedChunkIdentities.Clear();
+			// deduplicate. but make sure we stop reading from _switchedChunks before we start processing switchedChunks
+			while (_switchedChunks.TryTake(out var chunkInfo))
+				switchedChunks[chunkInfo.ChunkEndNumber] = chunkInfo.ChunkEndPosition;
+			await ProcessSwitchedChunksAsync(switchedChunks, checkpoint, _lifetimeToken);
+			switchedChunks.Clear();
 
 			var chunk = _chunkManager.GetChunkFor(checkpoint);
 			if (chunk.ChunkFooter is { IsCompleted: true } &&
@@ -98,16 +101,13 @@ public sealed class ArchiverService :
 		}
 	}
 
-	private async ValueTask ProcessSwitchedChunksAsync(IDictionary<long, byte> cache, long checkpoint, CancellationToken token) {
-		// process only chunks that are behind of the checkpoint, all other chunks
+	private async ValueTask ProcessSwitchedChunksAsync(Dictionary<int, long> switchedChunks, long checkpoint, CancellationToken token) {
+		// process only chunks that are already in the archive, all other chunks
 		// will be processed by the main loop
-		while (_switchedChunks.TryTake(out var chunkInfo)) {
-			if (chunkInfo.ChunkEndPosition <= checkpoint
-			    && (!cache.TryGetValue(chunkInfo.ChunkEndNumber, out var version)
-			        || version < chunkInfo.Version)) {
-				var chunk = _chunkManager.GetChunk(chunkInfo.ChunkEndNumber);
+		foreach (var (chunkEndNumber, chunkEndPosition) in switchedChunks) {
+			if (chunkEndPosition <= checkpoint) {
+				var chunk = _chunkManager.GetChunk(chunkEndNumber);
 				await _archive.StoreChunk(chunk, token);
-				cache[chunkInfo.ChunkEndNumber] = chunk.ChunkHeader.Version;
 			}
 		}
 	}

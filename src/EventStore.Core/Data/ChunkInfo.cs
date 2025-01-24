@@ -6,5 +6,4 @@ namespace EventStore.Core.Data;
 public readonly record struct ChunkInfo {
 	public required int ChunkEndNumber { get; init; }
 	public required long ChunkEndPosition { get; init; }
-	public required byte Version { get; init; }
 }
