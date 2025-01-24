@@ -168,7 +168,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 				tracker: _tracker,
 				transformFactory: _transformManager.GetFactoryForNewChunk(),
 				token);
-			AddChunk(chunk, isNew: true);
+			AddChunk(chunk);
 			triggerCaching = _cachingEnabled;
 		} finally {
 			_chunksLocker.Release();
@@ -207,7 +207,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 				transformFactory: _transformManager.GetFactoryForExistingChunk(chunkHeader.TransformType),
 				transformHeader: transformHeader,
 				token);
-			AddChunk(chunk, isNew: true);
+			AddChunk(chunk);
 			triggerCaching = _cachingEnabled;
 		} finally {
 			_chunksLocker.Release();
@@ -219,7 +219,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 		return chunk;
 	}
 
-	private void AddChunk(TFChunk.TFChunk chunk, bool isNew) {
+	private void AddChunk(TFChunk.TFChunk chunk) {
 		Debug.Assert(chunk is not null);
 		Debug.Assert(_chunksLocker.IsLockHeld);
 
@@ -236,7 +236,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 		bool triggerCaching;
 		await _chunksLocker.AcquireAsync(token);
 		try {
-			AddChunk(chunk, isNew: false);
+			AddChunk(chunk);
 			triggerCaching = _cachingEnabled;
 		} finally {
 			_chunksLocker.Release();
