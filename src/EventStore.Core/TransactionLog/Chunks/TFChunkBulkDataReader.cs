@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Common.Utils;
+using DotNext.IO;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 namespace EventStore.Core.TransactionLog.Chunks;
@@ -17,6 +17,15 @@ public sealed class TFChunkBulkDataReader(TFChunk.TFChunk chunk, Stream streamTo
 	public override void SetPosition(long dataPosition) {
 		var rawPos = dataPosition + ChunkHeader.Size;
 		Stream.Position = rawPos;
+	}
+
+	//qq arrange for this stream to be disposed, 
+	public Stream MyStream { get; } = CreateSegment(chunk, streamToUse);
+
+	private static StreamSegment CreateSegment(TFChunk.TFChunk chunk, Stream stream) {
+		var s = new StreamSegment(stream);
+		s.Adjust(ChunkHeader.Size, chunk.PhysicalDataSize);
+		return s;
 	}
 
 	public override async ValueTask<BulkReadResult> ReadNextBytes(Memory<byte> buffer, CancellationToken token) {

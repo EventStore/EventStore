@@ -713,6 +713,7 @@ public partial class TFChunk : IChunkBlob {
 				if (!IsReadOnly)
 					// we do not cache the header for the active chunk -
 					// it's not necessary as the cache is used only for reading data.
+					//qqqq the readers are sneaky, im not sure this makes any difference :S
 					await BuildCacheArray(
 						size: GetAlignedSize(ChunkHeader.Size + _chunkHeader.ChunkSize + ChunkFooter.Size),
 						reader: await AcquireFileReader(raw: false, token),
@@ -1314,7 +1315,7 @@ public partial class TFChunk : IChunkBlob {
 			return new TFChunkBulkRawReader(this, stream, isMemory: false);
 		}
 
-		var streamToUse = _transform.Read.TransformData(new ChunkDataReadStream(stream));
+		var streamToUse = _transform.Read.TransformData(new MyChunkDataReadStream(stream));
 		return new TFChunkBulkDataReader(this, streamToUse, isMemory: false);
 	}
 
@@ -1391,7 +1392,7 @@ public partial class TFChunk : IChunkBlob {
 			return true;
 		}
 
-		var streamToUse = new ChunkDataReadStream(stream);
+		ChunkDataReadStream streamToUse = new MyChunkDataReadStream(stream);
 		streamToUse = (_cachedDataTransformed
 			? _transform.Read
 			: IdentityChunkReadTransform.Instance).TransformData(streamToUse);

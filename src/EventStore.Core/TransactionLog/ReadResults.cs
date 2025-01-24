@@ -13,12 +13,14 @@ public readonly struct RecordReadResult {
 	public readonly long NextPosition;
 	public readonly ILogRecord LogRecord;
 	public readonly int RecordLength;
+	internal readonly long? ActualPosition;
 
-	public RecordReadResult(bool success, long nextPosition, ILogRecord logRecord, int recordLength) {
+	public RecordReadResult(bool success, long nextPosition, ILogRecord logRecord, int recordLength, long? actualPosition = null) {
 		Success = success;
 		LogRecord = logRecord;
 		NextPosition = nextPosition;
 		RecordLength = recordLength;
+		ActualPosition = actualPosition;
 	}
 
 	public override string ToString() {

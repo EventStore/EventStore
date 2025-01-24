@@ -13,7 +13,7 @@ using static DotNext.Runtime.Intrinsics;
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 internal sealed class ReaderWorkItem : Disposable {
-	private const int BufferSize = 4096;
+	public const int BufferSize = 4096; //qqq public?
 
 	// if item was taken from the pool, the field contains position within the array (>= 0)
 	private readonly int _positionInPool = -1;

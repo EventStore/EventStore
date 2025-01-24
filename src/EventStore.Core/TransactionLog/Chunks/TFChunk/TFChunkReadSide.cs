@@ -16,6 +16,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using Serilog;
 using static System.Threading.Timeout;
 using Range = EventStore.Core.Data.Range;
+using DotNext.Diagnostics;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
@@ -91,7 +92,7 @@ public partial class TFChunk {
 					return RecordReadResult.Failure;
 
 				long nextLogicalPos = record.GetNextLogPosition(logicalPosition, length);
-				return new(true, nextLogicalPos, record, length);
+				return new(true, nextLogicalPos, record, length, logicalPosition);
 			} finally {
 				Chunk.ReturnReaderWorkItem(workItem);
 			}
@@ -197,6 +198,7 @@ public partial class TFChunk {
 		}
 
 		private async ValueTask<Midpoint[]> PopulateMidpoints(int depth, ReaderWorkItem workItem, CancellationToken token) {
+			var start = new Timestamp();
 			if (depth > 31)
 				throw new ArgumentOutOfRangeException(nameof(depth), "Depth too for midpoints.");
 
@@ -224,6 +226,8 @@ public partial class TFChunk {
 				// add the very last item as the last midpoint (possibly it is done twice)
 				midpoints[^1] = new Midpoint(mapCount - 1,
 					await ReadPosMap(workItem, mapCount - 1, buffer.Memory, token));
+
+				Log.Warning("########## populate midpoints took {elapsed}ms", start.ElapsedMilliseconds);
 				return midpoints;
 			} catch (FileBeingDeletedException) {
 				return null;
@@ -234,11 +238,26 @@ public partial class TFChunk {
 			}
 		}
 
+		long count;
+		long sync;
+		long async;
+		long hasbuffered;
+		long hasnotbuffered;
 		private ValueTask<PosMap> ReadPosMap(ReaderWorkItem workItem, long index, Memory<byte> buffer, CancellationToken token) {
+			var start = new Timestamp();
 			ValueTask<PosMap> task;
 			if (Chunk.ChunkFooter.IsMap12Bytes) {
 				var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.FullSize;
 				workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
+
+				var bs = workItem.BaseStream.ChunkFileStream;
+				if (bs is PoolingBufferedStream pbs) {
+					if (pbs.HasBufferedDataToRead) {
+						hasbuffered++;
+					} else {
+						hasnotbuffered++;
+					}
+				}
 				task = workItem.BaseStream.ReadAsync<PosMap>(buffer, token);
 			} else {
 				var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.DeprecatedSize;
@@ -246,6 +265,20 @@ public partial class TFChunk {
 				task = PosMap.FromOldFormat(workItem.BaseStream, buffer, token);
 			}
 
+			if (task.IsCompleted) {
+				sync++;
+
+				if (sync % 1024 == 0) {
+					Log.Warning("readposmap took {elapsed}ms. sync {sync} async {async}", start.ElapsedMilliseconds, sync, async);
+				}
+			} else {
+				async++;
+			}
+
+			if (count++ % 4096 == 0) {
+				Log.Warning("stats: hasbuffered {hasbuffered} hasnotbuffered {hasnotbuffered} " +
+					"", hasbuffered, hasnotbuffered);
+			}
 			return task;
 		}
 
@@ -297,8 +330,10 @@ public partial class TFChunk {
 				: await TranslateExactWithoutMidpoints(workItem, pos, 0, Chunk.ChunkFooter.MapCount - 1, token);
 		}
 
+		//qq might need something similar here
 		private async ValueTask<int> TranslateExactWithoutMidpoints(ReaderWorkItem workItem, long pos, long startIndex,
 			long endIndex, CancellationToken token) {
+			Log.Warning("TranslateExactWithoutMidpoints");
 			long low = startIndex;
 			long high = endIndex;
 
@@ -344,7 +379,7 @@ public partial class TFChunk {
 
 				long nextLogicalPos =
 					Chunk.ChunkHeader.GetLocalLogPosition(record.GetNextLogPosition(record.LogPosition, length));
-				return new RecordReadResult(true, nextLogicalPos, record, length);
+				return new RecordReadResult(true, nextLogicalPos, record, length, actualPosition);
 			} finally {
 				Chunk.ReturnReaderWorkItem(workItem);
 			}
@@ -424,28 +459,100 @@ public partial class TFChunk {
 		private async ValueTask<int> TranslateClosestForwardWithoutMidpoints(ReaderWorkItem workItem, long pos, long startIndex,
 			long endIndex, CancellationToken token) {
 
-			using var buffer = Memory.AllocateAtLeast<byte>(PosMap.FullSize);
-			PosMap res = await ReadPosMap(workItem, endIndex, buffer.Memory, token);
+			//qqqqqq maybe if the range is small enough we can here do a oneshot read and then chop the memory or linear search the memory
 
-			// to allow backward reading of the last record, forward read will decline anyway
-			if (pos > res.LogPos)
-				return Chunk.PhysicalDataSize;
 
-			long low = startIndex;
-			long high = endIndex;
-			while (low < high) {
-				var mid = low + (high - low) / 2;
-				var v = await ReadPosMap(workItem, mid, buffer.Memory, token);
+			// one possibility is the length is less than the reader work item buffer size - in which case we can one shot
+			// another: something is already in the buffer
+			// +1??
+			//qq not necessarily full size
 
-				if (v.LogPos < pos)
-					low = mid + 1;
-				else {
-					high = mid;
-					res = v;
+
+			var length = (int)((endIndex - startIndex + 1) * PosMap.FullSize);
+
+
+			//qqq do a run where we run both nad see that they come out the same
+
+			if (length <= ReaderWorkItem.BufferSize && workItem.BaseStream.ChunkFileStream is IBufferedReader pbs) {
+//				Log.Warning("shortcut");
+				// we can one shot
+				workItem.BaseStream.Position = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + startIndex * PosMap.FullSize;
+
+				if (pbs.Buffer.Length < length)
+					await pbs.ReadAsync(token);
+
+				var buffer2 = pbs.Buffer.TrimLength(length);
+				// everything we need is in buffer2
+
+				var s2 = buffer2.Slice((int)(endIndex - startIndex) * PosMap.FullSize, length: PosMap.FullSize);
+				var res = PosMap.FromNewFormat(s2.Span);
+
+				if (pos > res.LogPos)
+					return Chunk.PhysicalDataSize; //qq not sure what this is about
+
+				//qq try linear, binary also possible.
+				//for (var i = 0; i < endIndex - startIndex + 1; i++) {
+				//	var s = buffer2.Slice(i * PosMap.FullSize, length: PosMap.FullSize);
+				//	var res = PosMap.FromNewFormat(s.Span);
+
+				//	if (res.LogPos == pos) {
+				//		return res.ActualPos;
+				//	}
+				//}
+
+				long low = startIndex;
+				long high = endIndex;
+				while (low < high) {
+					var mid = low + (high - low) / 2;
+
+					var s = buffer2.Slice((int)(mid - startIndex) * PosMap.FullSize, length: PosMap.FullSize);
+					var v = PosMap.FromNewFormat(s.Span);
+
+
+					if (v.LogPos < pos)
+						low = mid + 1;
+					else {
+						high = mid;
+						res = v;
+					}
 				}
-			}
+				return res.ActualPos;
 
-			return res.ActualPos;
+
+//				throw new Exception("oh dear dsfg sd");
+
+
+
+
+
+
+
+
+			} else {
+				Log.Warning("slow path. length is {length}", length);
+
+				using var buffer = Memory.AllocateAtLeast<byte>(PosMap.FullSize);
+				PosMap res = await ReadPosMap(workItem, endIndex, buffer.Memory, token);
+
+				// to allow backward reading of the last record, forward read will decline anyway
+				if (pos > res.LogPos)
+					return Chunk.PhysicalDataSize;
+
+				long low = startIndex;
+				long high = endIndex;
+				while (low < high) {
+					var mid = low + (high - low) / 2;
+					var v = await ReadPosMap(workItem, mid, buffer.Memory, token);
+
+					if (v.LogPos < pos)
+						low = mid + 1;
+					else {
+						high = mid;
+						res = v;
+					}
+				}
+				return res.ActualPos;
+			}
 		}
 
 		private static Range LocatePosRange(Midpoint[] midpoints, long pos) {

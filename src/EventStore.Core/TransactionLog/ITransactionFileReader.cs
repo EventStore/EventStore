@@ -33,6 +33,7 @@ public struct TFReaderLease : IDisposable {
 	}
 
 	void IDisposable.Dispose() {
+		Reader.Reposition(0); //qq hack to 'park' the reader
 		if (_pool != null)
 			_pool.Return(Reader);
 	}

@@ -617,7 +617,7 @@ public class ClusterVNode<TStreamId> :
 			"ReadIndex readers pool",
 			ESConsts.PTableInitialReaderCount,
 			pTableMaxReaderCount,
-			() => new TFChunkReader(
+			() => new MyTFChunkReader( //qq
 				Db,
 				Db.Config.WriterCheckpoint.AsReadOnly()));
 
