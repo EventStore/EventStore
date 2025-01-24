@@ -114,7 +114,7 @@ public sealed class ArchiverService :
 
 	private async ValueTask ValidateCheckpointAsync(long expected, CancellationToken token) {
 		var actual = await _archive.GetCheckpoint(token);
-		if (expected != await _archive.GetCheckpoint(token))
+		if (expected != actual)
 			Application.Exit(ExitCode.Error,
 				$"Remote and local checkpoints are out of sync: expected {expected}, but actual {actual}");
 	}
