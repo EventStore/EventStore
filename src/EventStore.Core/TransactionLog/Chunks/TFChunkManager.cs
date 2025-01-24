@@ -41,8 +41,6 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 	private readonly AsyncExclusiveLock _chunksLocker = new();
 	private int _backgroundPassesRemaining;
 	private int _backgroundRunning;
-	public Action<ChunkInfo> OnChunkLoaded { get; init; }
-	public Action<ChunkInfo> OnChunkCompleted { get; init; }
 	public Action<ChunkInfo> OnChunkSwitched { get; init; }
 
 	public TFChunkManager(
@@ -230,13 +228,6 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 		}
 
 		_chunksCount = Math.Max(chunk.ChunkHeader.ChunkEndNumber + 1, _chunksCount);
-
-		if (isNew) {
-			if (chunk.ChunkHeader.ChunkStartNumber > 0)
-				OnChunkCompleted?.Invoke(_chunks[chunk.ChunkHeader.ChunkStartNumber - 1].ChunkInfo);
-		} else {
-			OnChunkLoaded?.Invoke(chunk.ChunkInfo);
-		}
 	}
 
 	public async ValueTask AddChunk(TFChunk.TFChunk chunk, CancellationToken token) {

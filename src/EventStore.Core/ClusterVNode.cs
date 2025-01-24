@@ -344,12 +344,6 @@ public class ClusterVNode<TStreamId> :
 			tracker: trackers.TransactionFileTracker,
 			fileSystem: fileSystem,
 			transformManager: new DbTransformManager(),
-			onChunkLoaded: chunkInfo => {
-				_mainQueue.Publish(new SystemMessage.ChunkLoaded(chunkInfo));
-			},
-			onChunkCompleted: chunkInfo => {
-				_mainQueue.Publish(new SystemMessage.ChunkCompleted(chunkInfo));
-			},
 			onChunkSwitched: chunkInfo => {
 				_mainQueue.Publish(new SystemMessage.ChunkSwitched(chunkInfo));
 			});

@@ -22,8 +22,8 @@ public sealed class ArchiverService :
 	IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 	IHandle<SystemMessage.SystemStart>,
 	IHandle<SystemMessage.BecomeShuttingDown>,
-	IAsyncDisposable
-{
+	IAsyncDisposable {
+
 	private readonly IArchiveStorage _archive;
 	private readonly CancellationToken _lifetimeToken;
 	private readonly AsyncAutoResetEvent _archivingSignal;
@@ -45,7 +45,7 @@ public sealed class ArchiverService :
 		_archivingSignal = new(initialState: false);
 		_chunkManager = chunkChunkManager;
 		_archivingTask = Task.CompletedTask;
-		_switchedChunks = new();
+		_switchedChunks = [];
 
 		mainBus.Subscribe<SystemMessage.ChunkSwitched>(this);
 		mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(this);
