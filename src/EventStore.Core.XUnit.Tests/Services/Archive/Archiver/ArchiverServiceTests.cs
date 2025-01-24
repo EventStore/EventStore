@@ -85,6 +85,39 @@ public sealed class ArchiverServiceTests : DirectoryPerTest<ArchiverServiceTests
 
 		Assert.Equal(3, storage.NumStores);
 	}
+
+	[Fact]
+	public async Task switched_chunk_not_archived_when_not_replicated() {
+		var indexDirectory = Fixture.GetFilePathFor("index");
+		using var logFormat = LogFormatHelper<LogFormat.V2, string>.LogFormatFactory.Create(new() {
+			IndexDirectory = indexDirectory,
+		});
+		var dbConfig = TFChunkHelper.CreateSizedDbConfig(Fixture.Directory, 0, chunkSize: 1024 * 1024);
+		var dbCreator = await TFChunkDbCreationHelper<LogFormat.V2, string>.CreateAsync(dbConfig, logFormat);
+		await using var result = await dbCreator
+			.Chunk(Rec.Write(0, "test"))
+			.Chunk(Rec.Write(1, "test"))
+			.Chunk(Rec.Write(2, "test"))
+			.CreateDb();
+
+		var storage = new FakeArchiveStorage();
+		await using (var archiver = new ArchiverService(new FakeSubscriber(), storage, result.Db.Manager)) {
+			archiver.Handle(new SystemMessage.SystemStart()); // start archiving background task
+
+			// archive chunk #0
+			archiver.Handle(new ReplicationTrackingMessage.ReplicatedTo(result.Db.Manager.GetChunk(0).ChunkHeader.ChunkEndPosition));
+
+			// switch chunk #1
+			archiver.Handle(new SystemMessage.ChunkSwitched(result.Db.Manager.GetChunk(1).ChunkInfo));
+
+			// ensure that just one chunk is archived
+			var timeout = TimeSpan.FromSeconds(20);
+			await storage.StoreChunkEvent.WaitAsync(timeout);
+		}
+
+		Assert.Equal(1, storage.NumStores);
+		Assert.Contains(0, storage.Chunks);
+	}
 }
 
 file sealed class FakeSubscriber : ISubscriber {
