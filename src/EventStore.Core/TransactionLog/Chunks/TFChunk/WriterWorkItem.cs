@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Threading;
@@ -20,6 +21,7 @@ internal sealed class WriterWorkItem : Disposable {
 	public Stream WorkingStream { get; private set; }
 
 	private readonly ChunkDataWriteStream _fileStream;
+	private readonly IBufferedWriter _cachedWriter;
 	private Stream _memStream;
 	public readonly IncrementalHash MD5;
 
@@ -45,15 +47,19 @@ internal sealed class WriterWorkItem : Disposable {
 
 		WorkingStream = _fileStream = chunkWriteTransform.TransformData(chunkDataWriteStream);
 		MD5 = md5;
+		_cachedWriter = fileStream as IBufferedWriter;
 	}
 
-	public IBufferedWriter TryGetBufferedWriter(int length) {
-		// direct writes supported for untransformed streams only
-		return WorkingStream is ChunkDataWriteStream { ChunkFileStream: PoolingBufferedStream bufferedStream } stream &&
-		       Intrinsics.IsExactTypeOf<ChunkDataWriteStream>(stream) && !bufferedStream.HasBufferedDataToRead &&
-		       bufferedStream.As<IBufferedWriter>().Buffer.Length >= length
-			? bufferedStream
-			: null;
+	public Memory<byte> TryGetDirectBuffer(int length) {
+		Memory<byte> buffer;
+		if (_cachedWriter is PoolingBufferedStream { HasBufferedDataToRead: false }
+		    && (buffer = _cachedWriter.Buffer).Length >= length) {
+			buffer = buffer.Slice(0, length);
+		} else {
+			buffer = Memory<byte>.Empty;
+		}
+
+		return buffer;
 	}
 
 	public void SetMemStream(UnmanagedMemoryStream memStream) {
@@ -70,12 +76,16 @@ internal sealed class WriterWorkItem : Disposable {
 		return _fileStream?.WriteAsync(buf, token) ?? ValueTask.CompletedTask;
 	}
 
-	internal ValueTask AppendData(IBufferedWriter writer, int length, CancellationToken token) {
-		// MEMORY (in-memory write doesn't require async I/O)
-		_memStream?.Write(writer.Buffer.Span.Slice(0, length));
+	internal void AppendData(int length) {
+		Debug.Assert(_cachedWriter is not null);
 
-		writer.Advance(length);
-		return writer.WriteAsync(token);
+		ReadOnlySpan<byte> buffer = _cachedWriter.Buffer.Span.Slice(0, length);
+
+		// MEMORY (in-memory write doesn't require async I/O)
+		_memStream?.Write(buffer);
+
+		_cachedWriter.Produce(length);
+		MD5.AppendData(buffer);
 	}
 
 	public void ResizeFileStream(long fileSize) {

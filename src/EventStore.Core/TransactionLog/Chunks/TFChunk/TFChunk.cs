@@ -587,6 +587,12 @@ public partial class TFChunk : IDisposable {
 		var realPosition = GetRawPosition(writePosition);
 		// the writer work item's stream is responsible for computing the current checksum when the position is set
 		workItem.WorkingStream.Position = realPosition;
+
+		// Workaround: the following call triggers the hash computation for the data up to a new position
+		// (see ChunkDataWriteStream.WriteAsync sources). Otherwise, the optimization with
+		// WriterWorkItem.TryGetBufferedWriter doesn't work.
+		await workItem.WorkingStream.WriteAsync(ReadOnlyMemory<byte>.Empty, token);
+
 		_writerWorkItem = workItem;
 
 		return chunkHeader;
@@ -615,10 +621,10 @@ public partial class TFChunk : IDisposable {
 		if (!IsReadOnly)
 			throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
 
-		if (IsRemote) {
-			Log.Debug("Skipped verifying hash for TFChunk '{chunk}' because it is remote", ChunkLocator);
-			return;
-		}
+		// if (IsRemote) {
+		// 	Log.Debug("Skipped verifying hash for TFChunk '{chunk}' because it is remote", ChunkLocator);
+		// 	return;
+		// }
 
 		Log.Debug("Verifying hash for TFChunk '{chunk}'...", ChunkLocator);
 		using var reader = await AcquireRawReader(token);
@@ -860,10 +866,12 @@ public partial class TFChunk : IDisposable {
 		if (workItem.WorkingStream.Position + length > ChunkHeader.Size + _chunkHeader.ChunkSize)
 			return RecordWriteResult.Failed(oldPosition);
 
-		if (workItem.TryGetBufferedWriter(length) is { } writer) {
-			var bytesWritten = SerializeLogRecordDirectly(record, writer.Buffer.Span);
-			await workItem.AppendData(writer, bytesWritten, token);
-		} else {
+		if (workItem.TryGetDirectBuffer(length) is {IsEmpty:false} directBuf) {
+			var bytesWritten = SerializeLogRecordDirectly(record, directBuf.Span);
+			Debug.Assert(bytesWritten == length);
+			workItem.AppendData(bytesWritten);
+		} else
+		{
 			using var dataOnDisk = SerializeLogRecord(record, length);
 			await workItem.AppendData(dataOnDisk.Memory, token);
 		}
@@ -898,11 +906,12 @@ public partial class TFChunk : IDisposable {
 		}
 
 		static MemoryOwner<byte> SerializeLogRecord(ILogRecord record, int length) {
-			var writer = new BufferWriterSlim<byte>(length);
+			using var buffer2 = Memory.AllocateExactly<byte>(length);
+			var writer = new BufferWriterSlim<byte>(buffer2.Span);
 			WriteRecord(record, ref writer);
 
 			var buffer = writer.DetachOrCopyBuffer();
-			Debug.Assert(record.GetSizeWithLengthPrefixAndSuffix() == buffer.Length);
+			Debug.Assert(length == buffer.Length);
 
 			return buffer;
 		}
@@ -919,9 +928,9 @@ public partial class TFChunk : IDisposable {
 		if (workItem.WorkingStream.Position + buffer.Length > workItem.WorkingStream.Length)
 			return false;
 
-		if (workItem.TryGetBufferedWriter(buffer.Length) is { } writer) {
-			buffer.CopyTo(writer.Buffer);
-			await workItem.AppendData(writer, buffer.Length, token);
+		if (workItem.TryGetDirectBuffer(buffer.Length) is { IsEmpty: false } directBuf) {
+			buffer.CopyTo(directBuf);
+			workItem.AppendData(buffer.Length);
 		} else {
 			await workItem.AppendData(buffer, token);
 		}
