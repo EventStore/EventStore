@@ -18,10 +18,10 @@ using EventStore.Core.TransactionLog.Chunks.TFChunk;
 namespace EventStore.Core.Services.Archive.Archiver;
 
 public sealed class ArchiverService :
-	IHandle<SystemMessage.ChunkSwitched>,
-	IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 	IHandle<SystemMessage.SystemStart>,
 	IHandle<SystemMessage.BecomeShuttingDown>,
+	IHandle<SystemMessage.ChunkSwitched>,
+	IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 	IAsyncDisposable {
 
 	private readonly IArchiveStorage _archive;
@@ -54,6 +54,10 @@ public sealed class ArchiverService :
 
 	public void Handle(SystemMessage.SystemStart message) {
 		_archivingTask = ArchiveAsync();
+	}
+
+	public void Handle(SystemMessage.BecomeShuttingDown message) {
+		Cancel();
 	}
 
 	public void Handle(SystemMessage.ChunkSwitched message) {
@@ -92,10 +96,6 @@ public sealed class ArchiverService :
 				await _archive.StoreChunk(chunk, token);
 			}
 		}
-	}
-
-	public void Handle(SystemMessage.BecomeShuttingDown message) {
-		Cancel();
 	}
 
 	private void Cancel() {
