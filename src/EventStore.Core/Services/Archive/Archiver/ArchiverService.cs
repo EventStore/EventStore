@@ -91,7 +91,7 @@ public sealed class ArchiverService :
 		// process only chunks that are behind of the checkpoint, all other chunks
 		// will be processed by the main loop
 		while (_switchedChunks.TryTake(out var chunkInfo)) {
-			if (chunkInfo.ChunkEndNumber < checkpoint) {
+			if (chunkInfo.ChunkEndPosition <= checkpoint) {
 				var chunk = _chunkManager.GetChunk(chunkInfo.ChunkEndNumber);
 				await _archive.StoreChunk(chunk, token);
 			}
