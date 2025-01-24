@@ -47,7 +47,9 @@ internal sealed class WriterWorkItem : Disposable {
 
 		WorkingStream = _fileStream = chunkWriteTransform.TransformData(chunkDataWriteStream);
 		MD5 = md5;
-		_cachedWriter = fileStream as IBufferedWriter;
+		_cachedWriter = Intrinsics.IsExactTypeOf<ChunkDataWriteStream>(_fileStream)
+			? fileStream as IBufferedWriter
+			: null;
 	}
 
 	public Memory<byte> TryGetDirectBuffer(int length) {
