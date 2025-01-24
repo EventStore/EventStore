@@ -621,10 +621,10 @@ public partial class TFChunk : IDisposable {
 		if (!IsReadOnly)
 			throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
 
-		// if (IsRemote) {
-		// 	Log.Debug("Skipped verifying hash for TFChunk '{chunk}' because it is remote", ChunkLocator);
-		// 	return;
-		// }
+		if (IsRemote) {
+			Log.Debug("Skipped verifying hash for TFChunk '{chunk}' because it is remote", ChunkLocator);
+			return;
+		}
 
 		Log.Debug("Verifying hash for TFChunk '{chunk}'...", ChunkLocator);
 		using var reader = await AcquireRawReader(token);
