@@ -116,7 +116,8 @@ public sealed class ArchiverService :
 		var actual = await _archive.GetCheckpoint(token);
 		if (expected != actual)
 			Application.Exit(ExitCode.Error,
-				$"Remote and local checkpoints are out of sync: expected {expected}, but actual {actual}");
+				$"Critical error: Remote and local Archive checkpoints are out of sync: expected {expected}, but actual {actual}. " +
+				$"Is another cluster configured to use the same archive?");
 	}
 
 	private void Cancel() {
