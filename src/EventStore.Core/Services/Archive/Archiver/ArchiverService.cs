@@ -38,7 +38,7 @@ public sealed class ArchiverService :
 	public ArchiverService(
 		ISubscriber mainBus,
 		IArchiveStorage archiveStorage,
-		IChunkRegistry<IChunkBlob> chunkChunkManager) {
+		IChunkRegistry<IChunkBlob> chunkManager) {
 		_archive = archiveStorage;
 		_cts = new();
 		_lifetimeToken = _cts.Token;
