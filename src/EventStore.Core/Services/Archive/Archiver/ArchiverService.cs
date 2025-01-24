@@ -44,7 +44,7 @@ public sealed class ArchiverService :
 		_cts = new();
 		_lifetimeToken = _cts.Token;
 		_archivingSignal = new(initialState: false);
-		_chunkManager = chunkChunkManager;
+		_chunkManager = chunkManager;
 		_archivingTask = Task.CompletedTask;
 		_switchedChunks = [];
 
