@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Runtime.CompilerServices;
 using DotNext.Threading;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -79,6 +80,10 @@ public sealed class ArchiverService :
 			if (chunk.ChunkFooter is { IsCompleted: true } &&
 			    chunk.ChunkHeader.ChunkEndPosition <= Volatile.Read(in _replicationPosition)) {
 				await _archive.StoreChunk(chunk, _lifetimeToken);
+
+				// verify checkpoint to make sure that no one changed it concurrently, e.g. by another
+				// cluster that points to the same archive storage
+				await ValidateCheckpointAsync(checkpoint, _lifetimeToken);
 				checkpoint = chunk.ChunkHeader.ChunkEndPosition;
 				await _archive.SetCheckpoint(checkpoint, _lifetimeToken);
 			} else {
@@ -96,6 +101,13 @@ public sealed class ArchiverService :
 				await _archive.StoreChunk(chunk, token);
 			}
 		}
+	}
+
+	private async ValueTask ValidateCheckpointAsync(long expected, CancellationToken token) {
+		var actual = await _archive.GetCheckpoint(token);
+		if (expected != await _archive.GetCheckpoint(token))
+			Application.Exit(ExitCode.Error,
+				$"Remote and local checkpoints are out of sync: expected {expected}, but actual {actual}");
 	}
 
 	private void Cancel() {
