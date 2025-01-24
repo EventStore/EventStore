@@ -67,7 +67,7 @@ public sealed class ArchiverService :
 	}
 
 	public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
-		Atomic.AccumulateAndGet(ref _replicationPosition, message.LogPosition, long.Max);
+		_replicationPosition = long.Max(_replicationPosition, message.LogPosition);
 		_archivingSignal.Set();
 	}
 
