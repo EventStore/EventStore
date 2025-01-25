@@ -49,7 +49,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		IHandle<MonitoringMessage.GetPersistentSubscriptionStats>,
 		IHandle<MonitoringMessage.GetStreamPersistentSubscriptionStats> {
 
+		// for constant time lookups in ProcessEventCommited
 		private Dictionary<string, List<PersistentSubscription>> _subscriptionTopics;
+		// for quick indexing into stable pages of topics
+		private SortedList<string, List<PersistentSubscription>> _sortedSubscriptionTopics;
 		private Dictionary<string, PersistentSubscription> _subscriptionsById;
 
 		private readonly IQueuedHandler _queuedHandler;
@@ -89,6 +92,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void InitToEmpty() {
 			_handleTick = false;
 			_subscriptionTopics = new Dictionary<string, List<PersistentSubscription>>();
+			_sortedSubscriptionTopics = new SortedList<string, List<PersistentSubscription>>();
 			_subscriptionsById = new Dictionary<string, PersistentSubscription>();
 		}
 
@@ -849,6 +853,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			if (!_subscriptionTopics.TryGetValue(eventSource, out var subscribers)) {
 				subscribers = new List<PersistentSubscription>();
 				_subscriptionTopics.Add(eventSource, subscribers);
+				_sortedSubscriptionTopics.Add(eventSource, subscribers);
 			}
 
 			// shut down any existing subscription
@@ -1319,7 +1324,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				return;
 			}
 
-			var topics = _subscriptionTopics.Values
+			var topics = _sortedSubscriptionTopics.Values
 				.Skip(message.Offset)
 				.Take(message.Count);
 
@@ -1331,7 +1336,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success,
 				stats,
 				offset: message.Offset,
-				total: _subscriptionTopics.Count));
+				total: _sortedSubscriptionTopics.Count));
 		}
 
 		public void Handle(SubscriptionMessage.PersistentSubscriptionTimerTick message) {
