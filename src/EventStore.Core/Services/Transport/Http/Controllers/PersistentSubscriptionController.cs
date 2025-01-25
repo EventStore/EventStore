@@ -728,12 +728,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			var countParam = match.BoundVariables["count"];
 			var offsetParam = match.BoundVariables["offset"];
 			if (countParam is null && offsetParam is null) {
-				GetSubscriptionInfoUnpaged();
+				GetSubscriptionInfoUnpaged(http);
 			} else {
-				GetSubscriptionInfoPaged();
+				GetSubscriptionInfoPaged(http, countParam, offsetParam);
 			}
 
-			void GetSubscriptionInfoUnpaged() {
+			void GetSubscriptionInfoUnpaged(HttpEntityManager http) {
 				var envelope = new SendToHttpEnvelope(
 					_networkSendQueue, http,
 					(args, message) =>
@@ -744,7 +744,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				Publish(cmd);
 			}
 
-			void GetSubscriptionInfoPaged() {
+			void GetSubscriptionInfoPaged(HttpEntityManager http, string countParam, string offsetParam) {
 				int? count = countParam is not null && int.TryParse(countParam, out var cnt) && cnt != 0 ? cnt : null;
 				int offset = offsetParam is not null && int.TryParse(offsetParam, out var off) ? off : 0;
 				if (count is null || count < 1) {
