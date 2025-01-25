@@ -733,6 +733,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				GetSubscriptionInfoPaged(http, offsetParam, countParam);
 			}
 
+			// old api api for backwards compatibility: just returns the list of persistent subscriptions
 			void GetSubscriptionInfoUnpaged(HttpEntityManager http) {
 				var envelope = new SendToHttpEnvelope(
 					_networkSendQueue, http,
@@ -744,15 +745,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				Publish(cmd);
 			}
 
+			// new api: returns the list (page) of persistent subscriptions with paging info.
+			// count must be provided
 			void GetSubscriptionInfoPaged(HttpEntityManager http, string offsetParam, string countParam) {
-				int offset = offsetParam is not null && int.TryParse(offsetParam, out var off) ? off : 0;
-				int? count = countParam is not null && int.TryParse(countParam, out var cnt) && cnt != 0 ? cnt : null;
+				int offset = offsetParam is null
+					? 0
+					: int.TryParse(offsetParam, out var off)
+						? off
+						: -1;
+
 				if (offset < 0) {
-					SendBadRequest(http, $"Offset ({offset}) must be positive");
+					SendBadRequest(http, $"Offset \"{offsetParam}\" must be a non-negative integer");
 					return;
 				}
-				if (count is null || count < 1) {
-					SendBadRequest(http, $"Count ({count ?? 0}) must be greater than 1");
+
+				if (!int.TryParse(countParam, out var count) || count < 1) {
+					SendBadRequest(http, $"Count \"{countParam}\" must be a positive integer");
 					return;
 				}
 
@@ -760,7 +768,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					_networkSendQueue, http,
 					(_, message) =>
 						http.ResponseCodec.To(ToPagedSummaryDto(
-							http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted, count ?? 0)),
+							http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted, count)),
 					(_, message) => StatsConfiguration(http, message));
 				var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope, offset, count);
 				Publish(cmd);
