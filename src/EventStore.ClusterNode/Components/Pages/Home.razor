@@ -50,6 +50,7 @@
 						<MudText Typo="Typo.h6">@item</MudText>
 
 						<Json JsonString="@context.Item[item]?.ToString()"></Json>
+						@* @context.Item[item]?.ToString() *@
 					}
 				</MudCardContent>
 			</MudCard>
@@ -92,7 +93,7 @@
 		try {
 			_items = (IEnumerable<IDictionary<string, object>>)Connection.Query(sql);
 			watch.Stop();
-			_message = $"Query executed in {watch.Elapsed.Microseconds}";
+			_message = $"Query executed in {watch}";
 		}
 		catch (Exception e) {
 			_error = e.Message;

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
+using EventStore.Core.Duck.Infrastructure;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.Storage.ReaderIndex;

@@ -52,6 +52,7 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 			readerWorkers[i] = new StorageReaderWorker<TStreamId>(bus, readIndex, systemStreams, writerCheckpoint, inMemReaders, i);
 			storageReaderBuses[i] = new InMemoryBus("StorageReaderBus", watchSlowMsg: false);
 			storageReaderBuses[i].Subscribe<ClientMessage.ReadEvent>(readerWorkers[i]);
+			storageReaderBuses[i].Subscribe<ClientMessage.ReadLogEvents>(readerWorkers[i]);
 			storageReaderBuses[i].Subscribe<ClientMessage.ReadStreamEventsBackward>(readerWorkers[i]);
 			storageReaderBuses[i].Subscribe<ClientMessage.ReadStreamEventsForward>(readerWorkers[i]);
 			storageReaderBuses[i].Subscribe<ClientMessage.ReadAllEventsForward>(readerWorkers[i]);
@@ -75,6 +76,7 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 		_workersMultiHandler.Start();
 
 		subscriber.Subscribe<ClientMessage.ReadEvent>(_workersMultiHandler);
+		subscriber.Subscribe<ClientMessage.ReadLogEvents>(_workersMultiHandler);
 		subscriber.Subscribe<ClientMessage.ReadStreamEventsBackward>(_workersMultiHandler);
 		subscriber.Subscribe<ClientMessage.ReadStreamEventsForward>(_workersMultiHandler);
 		subscriber.Subscribe<ClientMessage.ReadAllEventsForward>(_workersMultiHandler);

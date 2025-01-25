@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,8 +11,10 @@ using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Duck.Infrastructure;
 using EventStore.Core.Exceptions;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.InMemory;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -37,10 +40,10 @@ public class StorageReaderWorker<TStreamId>(
 	ISystemStreamLookup<TStreamId> systemStreams,
 	IReadOnlyCheckpoint writerCheckpoint,
 	VirtualStreamReaders inMemReaders,
-	int queueId)
-	:
+	int queueId) :
 		StorageReaderWorker,
 		IAsyncHandle<ReadEvent>,
+		IAsyncHandle<ReadLogEvents>,
 		IAsyncHandle<ReadStreamEventsBackward>,
 		IAsyncHandle<ReadStreamEventsForward>,
 		IAsyncHandle<ReadAllEventsForward>,
@@ -75,6 +78,24 @@ public class StorageReaderWorker<TStreamId>(
 		ReadEventCompleted ev;
 		using (token.LinkTo(msg.CancellationToken)) {
 			ev = await ReadEvent(msg, token);
+		}
+
+		msg.Envelope.ReplyWith(ev);
+	}
+
+	async ValueTask IAsyncHandle<ReadLogEvents>.HandleAsync(ReadLogEvents msg, CancellationToken token) {
+		if (msg.CancellationToken.IsCancellationRequested)
+			return;
+
+		if (msg.Expires < DateTime.UtcNow) {
+			if (LogExpiredMessage(msg.Expires))
+				Log.Debug("Read Log Events operation has expired. Operation Expired at {expiryDateTime}", msg.Expires);
+			return;
+		}
+
+		ReadLogEventsCompleted ev;
+		using (token.LinkTo(msg.CancellationToken)) {
+			ev = await ReadLogEvents(msg, token);
 		}
 
 		msg.Envelope.ReplyWith(ev);
@@ -305,6 +326,19 @@ public class StorageReaderWorker<TStreamId>(
 		}
 
 		msg.Envelope.ReplyWith(reply);
+	}
+
+	async ValueTask<ReadLogEventsCompleted> ReadLogEvents(ReadLogEvents msg, CancellationToken token) {
+		try {
+			using var reader = _readIndex.IndexReader.BorrowReader();
+			var readPrepares = msg.LogPositions.Select(async (pos, index) => (Index: index, Prepare: await reader.ReadPrepare<TStreamId>(pos, token)));
+			var prepared = (await Task.WhenAll(readPrepares))
+				.Select(x => ResolvedEvent.ForUnresolvedEvent(new(x.Index, x.Prepare, x.Prepare.EventStreamId.ToString(), x.Prepare.EventType.ToString())));
+			return new(msg.CorrelationId, ReadEventResult.Success, prepared.ToArray(), null);
+		} catch (Exception e) {
+			Log.Error(e, "Error during processing ReadEvent request.");
+			return NoData(msg, ReadEventResult.Error, e.Message);
+		}
 	}
 
 	private async ValueTask<ReadEventCompleted> ReadEvent(ReadEvent msg, CancellationToken token) {
@@ -540,6 +574,10 @@ public class StorageReaderWorker<TStreamId>(
 
 	public static ReadEventCompleted NoData(ReadEvent msg, ReadEventResult result, string error = null) {
 		return new(msg.CorrelationId, msg.EventStreamId, result, ResolvedEvent.EmptyEvent, null, false, error);
+	}
+
+	public static ReadLogEventsCompleted NoData(ReadLogEvents msg, ReadEventResult result, string error = null) {
+		return new(msg.CorrelationId, result, [], error);
 	}
 
 	public static ReadStreamEventsForwardCompleted NoData(ReadStreamEventsForward msg, ReadStreamResult result, long lastIndexedPosition, long lastEventNumber = -1, string error = null) {

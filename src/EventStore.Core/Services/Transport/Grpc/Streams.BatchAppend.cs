@@ -15,7 +15,6 @@ using EventStore.Client.Streams;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.Transport.Common;
@@ -28,6 +27,11 @@ using Empty = Google.Protobuf.WellKnownTypes.Empty;
 using Status = Google.Rpc.Status;
 using static EventStore.Client.Streams.BatchAppendReq.Types;
 using static EventStore.Client.Streams.BatchAppendReq.Types.Options;
+using static EventStore.Core.Messages.ClientMessage;
+using static EventStore.Core.Messages.ClientMessage.NotHandled.Types;
+using static EventStore.Core.Messages.OperationResult;
+using static EventStore.Plugins.Authorization.Operations;
+using static EventStore.Plugins.Authorization.Operations.Streams;
 using OperationResult = EventStore.Core.Messages.OperationResult;
 
 namespace EventStore.Core.Services.Transport.Grpc;
@@ -92,15 +96,15 @@ partial class Streams<TStreamId> {
 			var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
 #if DEBUG
-	var sendTask =
+			var sendTask =
 #endif
-			Send(_channel.Reader, cancellationToken)
-				.ContinueWith(HandleCompletion, CancellationToken.None);
+				Send(_channel.Reader, cancellationToken)
+					.ContinueWith(HandleCompletion, CancellationToken.None);
 #if DEBUG
-	var receiveTask =
+			var receiveTask =
 #endif
-			Receive(_channel.Writer, _user, _requiresLeader, cancellationToken)
-				.ContinueWith(HandleCompletion, CancellationToken.None);
+				Receive(_channel.Writer, _user, _requiresLeader, cancellationToken)
+					.ContinueWith(HandleCompletion, CancellationToken.None);
 
 			return tcs.Task;
 
@@ -115,8 +119,7 @@ partial class Streams<TStreamId> {
 				} catch (IOException ex) {
 					Log.Information("Closing gRPC client connection: {message}", ex.GetBaseException().Message);
 					tcs.TrySetException(ex);
-				}
-				catch (Exception ex) {
+				} catch (Exception ex) {
 					tcs.TrySetException(ex);
 				}
 			}
@@ -149,9 +152,10 @@ partial class Streams<TStreamId> {
 						if (request.Options != null) {
 							var timeout = Min(GetRequestedTimeout(request.Options), _writeTimeout);
 
-							if (!await _authorizationProvider.CheckAccessAsync(user, WriteOperation.WithParameter(
-								Plugins.Authorization.Operations.Streams.Parameters.StreamId(
-									request.Options.StreamIdentifier)), cancellationToken)) {
+							if (!await _authorizationProvider.CheckAccessAsync(
+								    user,
+								    WriteOperation.WithParameter(Parameters.StreamId(request.Options.StreamIdentifier)),
+								    cancellationToken)) {
 								await writer.WriteAsync(new BatchAppendResp {
 									CorrelationId = request.CorrelationId,
 									StreamIdentifier = request.Options.StreamIdentifier,
@@ -164,8 +168,7 @@ partial class Streams<TStreamId> {
 								await writer.WriteAsync(new BatchAppendResp {
 									CorrelationId = request.CorrelationId,
 									StreamIdentifier = request.Options.StreamIdentifier,
-									Error = Status.BadRequest(
-										$"Required field {nameof(request.Options.StreamIdentifier)} not set.")
+									Error = Status.BadRequest($"Required field {nameof(request.Options.StreamIdentifier)} not set.")
 								}, cancellationToken);
 								continue;
 							}
@@ -219,46 +222,36 @@ partial class Streams<TStreamId> {
 
 						BatchAppendResp ConvertMessage(Message message) {
 							var batchAppendResp = message switch {
-								ClientMessage.NotHandled notHandled => new BatchAppendResp {
+								NotHandled notHandled => new BatchAppendResp {
 									Error = new Status {
 										Details = Any.Pack(new Empty()),
 										Message = (notHandled.Reason, AdditionalInfo: notHandled.LeaderInfo) switch {
-											(ClientMessage.NotHandled.Types.NotHandledReason.NotReady, _) => "Server Is Not Ready",
-											(ClientMessage.NotHandled.Types.NotHandledReason.TooBusy, _) => "Server Is Busy",
-											(ClientMessage.NotHandled.Types.NotHandledReason.NotLeader or ClientMessage.NotHandled.Types.NotHandledReason.IsReadOnly,
-												ClientMessage.NotHandled.Types.LeaderInfo leaderInfo) =>
-												throw RpcExceptions.LeaderInfo(leaderInfo.Http.GetHost(),
-													leaderInfo.Http.GetPort()),
-											(ClientMessage.NotHandled.Types.NotHandledReason.NotLeader or ClientMessage.NotHandled.Types.NotHandledReason.IsReadOnly, _) =>
-												"No leader info available in response",
-											_ => $"Unknown {nameof(ClientMessage.NotHandled.Types.NotHandledReason)} ({(int)notHandled.Reason})"
+											(NotHandledReason.NotReady, _) => "Server Is Not Ready",
+											(NotHandledReason.TooBusy, _) => "Server Is Busy",
+											(NotHandledReason.NotLeader or NotHandledReason.IsReadOnly, LeaderInfo leaderInfo) =>
+												throw RpcExceptions.LeaderInfo(leaderInfo.Http.GetHost(), leaderInfo.Http.GetPort()),
+											(NotHandledReason.NotLeader or NotHandledReason.IsReadOnly, _) => "No leader info available in response",
+											_ => $"Unknown {nameof(NotHandledReason)} ({(int)notHandled.Reason})"
 										}
 									}
 								},
-								ClientMessage.WriteEventsCompleted completed => completed.Result switch {
-									OperationResult.Success => new BatchAppendResp {
-										Success = BatchAppendResp.Types.Success.Completed(completed.CommitPosition,
-											completed.PreparePosition, completed.LastEventNumber),
+								WriteEventsCompleted completed => completed.Result switch {
+									Success => new BatchAppendResp {
+										Success = BatchAppendResp.Types.Success.Completed(completed.CommitPosition, completed.PreparePosition, completed.LastEventNumber),
 									},
 									OperationResult.WrongExpectedVersion => new BatchAppendResp {
-										Error = Status.WrongExpectedVersion(
-											StreamRevision.FromInt64(completed.CurrentVersion),
-											clientWriteRequest.ExpectedVersion)
+										Error = Status.WrongExpectedVersion(StreamRevision.FromInt64(completed.CurrentVersion), clientWriteRequest.ExpectedVersion)
 									},
-									OperationResult.AccessDenied => new BatchAppendResp
-										{ Error = Status.AccessDenied },
+									OperationResult.AccessDenied => new BatchAppendResp { Error = Status.AccessDenied },
 									OperationResult.StreamDeleted => new BatchAppendResp {
 										Error = Status.StreamDeleted(clientWriteRequest.StreamId)
 									},
-									OperationResult.CommitTimeout or
-										OperationResult.ForwardTimeout or
-										OperationResult.PrepareTimeout => new BatchAppendResp
-											{ Error = Status.Timeout },
+									CommitTimeout or ForwardTimeout or PrepareTimeout => new BatchAppendResp { Error = Status.Timeout },
 									_ => new BatchAppendResp { Error = Status.Unknown }
 								},
 								_ => new BatchAppendResp {
 									Error = Status.InternalError(
-										$"Envelope callback expected either {nameof(ClientMessage.WriteEventsCompleted)} or {nameof(ClientMessage.NotHandled)}, received {message.GetType().Name} instead.")
+										$"Envelope callback expected either {nameof(WriteEventsCompleted)} or {nameof(NotHandled)}, received {message.GetType().Name} instead.")
 								}
 							};
 							batchAppendResp.CorrelationId = request.CorrelationId;
@@ -285,11 +278,9 @@ partial class Streams<TStreamId> {
 				throw;
 			}
 
-			ClientWriteRequest FromOptions(Guid correlationId, Options options, TimeSpan timeout,
-				CancellationToken cancellationToken) =>
+			ClientWriteRequest FromOptions(Guid correlationId, Options options, TimeSpan timeout, CancellationToken token) =>
 				new(correlationId, options.StreamIdentifier, options.ExpectedStreamPositionCase switch {
-					ExpectedStreamPositionOneofCase.StreamPosition => new StreamRevision(options.StreamPosition)
-						.ToInt64(),
+					ExpectedStreamPositionOneofCase.StreamPosition => new StreamRevision(options.StreamPosition).ToInt64(),
 					ExpectedStreamPositionOneofCase.Any => AnyStreamRevision.Any.ToInt64(),
 					ExpectedStreamPositionOneofCase.StreamExists => AnyStreamRevision.StreamExists.ToInt64(),
 					ExpectedStreamPositionOneofCase.NoStream => AnyStreamRevision.NoStream.ToInt64(),
@@ -302,8 +293,8 @@ partial class Streams<TStreamId> {
 								StreamName = ByteString.CopyFromUtf8(pendingWrite.StreamId)
 							},
 							Error = Status.Timeout
-						}, cancellationToken)
-						: new ValueTask(Task.CompletedTask), cancellationToken);
+						}, token)
+						: new ValueTask(Task.CompletedTask), token);
 
 			static Event FromProposedMessage(ProposedMessage proposedMessage) =>
 				new(Uuid.FromDto(proposedMessage.Id).ToGuid(),
@@ -312,7 +303,7 @@ partial class Streams<TStreamId> {
 					Constants.Metadata.ContentTypes.ApplicationJson, proposedMessage.Data.ToByteArray(),
 					proposedMessage.CustomMetadata.ToByteArray());
 
-			static ClientMessage.WriteEvents ToInternalMessage(ClientWriteRequest request, IEnvelope envelope,
+			static WriteEvents ToInternalMessage(ClientWriteRequest request, IEnvelope envelope,
 				bool requiresLeader, ClaimsPrincipal user, CancellationToken token) =>
 				new(Guid.NewGuid(), request.CorrelationId, envelope, requiresLeader, request.StreamId,
 					request.ExpectedVersion, request.Events.ToArray(), user, cancellationToken: token);

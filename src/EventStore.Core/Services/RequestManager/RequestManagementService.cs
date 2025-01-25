@@ -14,54 +14,35 @@ using EventStore.Core.Data;
 
 namespace EventStore.Core.Services.RequestManager;
 
-public class RequestManagementService :
-	IHandle<SystemMessage.SystemInit>,
-	IHandle<ClientMessage.WriteEvents>,
-	IHandle<ClientMessage.DeleteStream>,
-	IHandle<ClientMessage.TransactionStart>,
-	IHandle<ClientMessage.TransactionWrite>,
-	IHandle<ClientMessage.TransactionCommit>,
-	IHandle<StorageMessage.RequestCompleted>,
-	IHandle<StorageMessage.AlreadyCommitted>,
-	IHandle<StorageMessage.PrepareAck>,
-	IHandle<ReplicationTrackingMessage.ReplicatedTo>,
-	IHandle<ReplicationTrackingMessage.IndexedTo>,
-	IHandle<StorageMessage.CommitIndexed>,
-	IHandle<StorageMessage.WrongExpectedVersion>,
-	IHandle<StorageMessage.InvalidTransaction>,
-	IHandle<StorageMessage.StreamDeleted>,
-	IHandle<StorageMessage.RequestManagerTimerTick>,
-	IHandle<SystemMessage.StateChangeMessage> {
-	private readonly IPublisher _bus;
-	private readonly TimerMessage.Schedule _tickRequestMessage;
-	private readonly Dictionary<Guid, RequestManagerBase> _currentRequests = new Dictionary<Guid, RequestManagerBase>();
-	private readonly Dictionary<Guid, Stopwatch> _currentTimedRequests = new Dictionary<Guid, Stopwatch>();
-	private readonly TimeSpan _prepareTimeout;
-	private readonly TimeSpan _commitTimeout;
-	private readonly CommitSource _commitSource;
-	private readonly bool _explicitTransactionsSupported;
-	private VNodeState _nodeState;		
+public class RequestManagementService(IPublisher bus, TimeSpan prepareTimeout, TimeSpan commitTimeout, bool explicitTransactionsSupported) :
+		IHandle<SystemMessage.SystemInit>,
+		IHandle<ClientMessage.WriteEvents>,
+		IHandle<ClientMessage.DeleteStream>,
+		IHandle<ClientMessage.TransactionStart>,
+		IHandle<ClientMessage.TransactionWrite>,
+		IHandle<ClientMessage.TransactionCommit>,
+		IHandle<StorageMessage.RequestCompleted>,
+		IHandle<StorageMessage.AlreadyCommitted>,
+		IHandle<StorageMessage.PrepareAck>,
+		IHandle<ReplicationTrackingMessage.ReplicatedTo>,
+		IHandle<ReplicationTrackingMessage.IndexedTo>,
+		IHandle<StorageMessage.CommitIndexed>,
+		IHandle<StorageMessage.WrongExpectedVersion>,
+		IHandle<StorageMessage.InvalidTransaction>,
+		IHandle<StorageMessage.StreamDeleted>,
+		IHandle<StorageMessage.RequestManagerTimerTick>,
+		IHandle<SystemMessage.StateChangeMessage> {
+	private readonly IPublisher _bus = Ensure.NotNull(bus);
+	private readonly TimerMessage.Schedule _tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000), bus, new StorageMessage.RequestManagerTimerTick());
+	private readonly Dictionary<Guid, RequestManagerBase> _currentRequests = new();
+	private readonly Dictionary<Guid, Stopwatch> _currentTimedRequests = new();
+	private readonly CommitSource _commitSource = new();
+	private VNodeState _nodeState;
 
-	public RequestManagementService(IPublisher bus,
-		TimeSpan prepareTimeout,
-		TimeSpan commitTimeout,
-		bool explicitTransactionsSupported) {
-		Ensure.NotNull(bus, "bus");
-		_bus = bus;
-		_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
-			bus,
-			new StorageMessage.RequestManagerTimerTick());
-
-		_prepareTimeout = prepareTimeout;
-		_commitTimeout = commitTimeout;
-		_commitSource = new CommitSource();
-		_explicitTransactionsSupported = explicitTransactionsSupported;
-	}
-	
 	public void Handle(ClientMessage.WriteEvents message) {
 		var manager = new WriteEvents(
 							_bus,
-							_commitTimeout,
+							commitTimeout,
 							message.Envelope,
 							message.InternalCorrId,
 							message.CorrelationId,
@@ -78,7 +59,7 @@ public class RequestManagementService :
 	public void Handle(ClientMessage.DeleteStream message) {
 		var manager = new DeleteStream(
 							_bus,
-							_commitTimeout,
+							commitTimeout,
 							message.Envelope,
 							message.InternalCorrId,
 							message.CorrelationId,
@@ -93,7 +74,7 @@ public class RequestManagementService :
 	}
 
 	public void Handle(ClientMessage.TransactionStart message) {
-		if (!_explicitTransactionsSupported) {
+		if (!explicitTransactionsSupported) {
 			var reply = new ClientMessage.TransactionStartCompleted(
 				message.CorrelationId,
 				default,
@@ -105,7 +86,7 @@ public class RequestManagementService :
 
 		var manager = new TransactionStart(
 							_bus,
-							_prepareTimeout,
+							prepareTimeout,
 							message.Envelope,
 							message.InternalCorrId,
 							message.CorrelationId,
@@ -118,7 +99,7 @@ public class RequestManagementService :
 	}
 
 	public void Handle(ClientMessage.TransactionWrite message) {
-		if (!_explicitTransactionsSupported) {
+		if (!explicitTransactionsSupported) {
 			var reply = new ClientMessage.TransactionWriteCompleted(
 				message.CorrelationId,
 				default,
@@ -130,7 +111,7 @@ public class RequestManagementService :
 
 		var manager = new TransactionWrite(
 							_bus,
-							_prepareTimeout,
+							prepareTimeout,
 							message.Envelope,
 							message.InternalCorrId,
 							message.CorrelationId,
@@ -143,7 +124,7 @@ public class RequestManagementService :
 	}
 
 	public void Handle(ClientMessage.TransactionCommit message) {
-		if (!_explicitTransactionsSupported) {
+		if (!explicitTransactionsSupported) {
 			var reply = new ClientMessage.TransactionCommitCompleted(
 				message.CorrelationId,
 				default,
@@ -155,8 +136,8 @@ public class RequestManagementService :
 
 		var manager = new TransactionCommit(
 							_bus,
-							_prepareTimeout,
-							_commitTimeout,
+							prepareTimeout,
+							commitTimeout,
 							message.Envelope,
 							message.InternalCorrId,
 							message.CorrelationId,
@@ -166,10 +147,10 @@ public class RequestManagementService :
 		_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 		manager.Start();
 	}
-	
-	
+
+
 	public void Handle(SystemMessage.StateChangeMessage message) {
-		
+
 		if (_nodeState == VNodeState.Leader && message.State is not VNodeState.Leader or VNodeState.ResigningLeader) {
 			var keys = _currentRequests.Keys;
 			foreach (var key in keys) {
@@ -209,7 +190,7 @@ public class RequestManagementService :
 			// entries from _currentRequests
 		}
 	}
-	
+
 	public void Handle(ReplicationTrackingMessage.ReplicatedTo message) => _commitSource.Handle(message);
 	public void Handle(ReplicationTrackingMessage.IndexedTo message) => _commitSource.Handle(message);
 
@@ -219,7 +200,7 @@ public class RequestManagementService :
 	public void Handle(StorageMessage.WrongExpectedVersion message) => DispatchInternal(message.CorrelationId, message, static (manager, m) => manager.Handle(m));
 	public void Handle(StorageMessage.InvalidTransaction message) => DispatchInternal(message.CorrelationId, message, static (manager, m) => manager.Handle(m));
 	public void Handle(StorageMessage.StreamDeleted message) => DispatchInternal(message.CorrelationId, message, static (manager, m) => manager.Handle(m));
-	
+
 	private void DispatchInternal<T>(Guid correlationId, T message, Action<RequestManagerBase, T> handle) where T : Message {
 		if (_currentRequests.TryGetValue(correlationId, out var manager)) {
 			handle(manager, message);

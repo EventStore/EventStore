@@ -65,7 +65,7 @@ partial class Enumerator {
 			_maxSearchWindow = maxSearchWindow ?? ReadBatchSize;
 			_deadline = deadline;
 			_cancellationToken = cancellationToken;
-			_semaphore = new SemaphoreSlim(1, 1);
+			_semaphore = new(1, 1);
 			_channel = Channel.CreateBounded<ReadResponse>(BoundedChannelOptions);
 
 			ReadPage(position);

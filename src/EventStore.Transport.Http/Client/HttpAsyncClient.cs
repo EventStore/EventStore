@@ -80,7 +80,7 @@ public class HttpAsyncClient : IHttpClient {
 	private void Receive(string method, string url, IEnumerable<KeyValuePair<string, string>> headers,
 		Action<HttpResponse> onSuccess, Action<Exception> onException) {
 		var request = new HttpRequestMessage();
-		request.Method = new System.Net.Http.HttpMethod(method);
+		request.Method = new(method);
 		request.RequestUri = new Uri(url);
 
 		if (headers != null) {
@@ -98,7 +98,7 @@ public class HttpAsyncClient : IHttpClient {
 		var bodyBytes = Helper.UTF8NoBom.GetBytes(body);
 		var stream = new MemoryStream(bodyBytes);
 		var request = new HttpRequestMessage {
-			Method = new System.Net.Http.HttpMethod(method),
+			Method = new(method),
 			RequestUri = new Uri(url),
 			Content = new StreamContent(stream) {
 				Headers = {

@@ -578,22 +578,13 @@ public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>, IHandle<
 									ExpectedVersion.Any,
 									principal,
 									streamMetadata.Value,
-									metaCompleted =>
-										WriteEvents(streamId, expectedVersion, events, principal, action));
+									_ => WriteEvents(streamId, expectedVersion, events, principal, action));
 							break;
 						case ReadStreamResult.AccessDenied:
-							action(
-								new WriteEventsCompleted(
-									Guid.NewGuid(),
-									OperationResult.AccessDenied,
-									""));
+							action(new( Guid.NewGuid(), OperationResult.AccessDenied, ""));
 							break;
 						case ReadStreamResult.StreamDeleted:
-							action(
-								new WriteEventsCompleted(
-									Guid.NewGuid(),
-									OperationResult.StreamDeleted,
-									""));
+							action(new( Guid.NewGuid(), OperationResult.StreamDeleted, ""));
 							break;
 						default:
 							throw new NotSupportedException();
@@ -627,27 +618,21 @@ public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>, IHandle<
 	}
 
 	private class PendingWrites {
-		private readonly Dictionary<Guid, Action<WriteEventsCompleted>> _map;
-
-		public PendingWrites() {
-			_map = new Dictionary<Guid, Action<WriteEventsCompleted>>();
-		}
+		private readonly Dictionary<Guid, Action<WriteEventsCompleted>> _map = new();
 
 		public void CaptureCallback(Guid correlationId, Action<WriteEventsCompleted> action) {
 			_map.Add(correlationId, action);
 		}
 
 		public void CompleteRequest(WriteEventsCompleted message) {
-			Action<WriteEventsCompleted> action;
-			if (_map.TryGetValue(message.CorrelationId, out action)) {
-				_map.Remove(message.CorrelationId);
+			if (_map.Remove(message.CorrelationId, out var action)) {
 				action(message);
 			}
 		}
 	}
 
 	private class PendingReads {
-		private readonly HashSet<Guid> _pendingReads = new HashSet<Guid>();
+		private readonly HashSet<Guid> _pendingReads = [];
 
 		public void Register(Guid id) {
 			_pendingReads.Add(id);
@@ -664,15 +649,10 @@ public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>, IHandle<
 	}
 
 	private class WriterQueueSet {
-		private readonly Dictionary<Guid, WriterQueue> _queues;
-
-		public WriterQueueSet() {
-			_queues = new Dictionary<Guid, WriterQueue>();
-		}
+		private readonly Dictionary<Guid, WriterQueue> _queues = new();
 
 		public void AddToQueue(Guid key, WriteEvents message) {
-			WriterQueue writerQueue;
-			if (!_queues.TryGetValue(key, out writerQueue)) {
+			if (!_queues.TryGetValue(key, out var writerQueue)) {
 				writerQueue = new WriterQueue();
 				_queues.Add(key, writerQueue);
 			}
@@ -711,14 +691,9 @@ public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>, IHandle<
 	}
 
 	private class WriterQueue {
-		private readonly Queue<WriteEvents> _queue;
+		private readonly Queue<WriteEvents> _queue = new();
 		public bool IsBusy;
 		public int Count => _queue.Count;
-
-		public WriterQueue() {
-			IsBusy = false;
-			_queue = new Queue<WriteEvents>();
-		}
 
 		public void Enqueue(WriteEvents message) {
 			_queue.Enqueue(message);
@@ -834,7 +809,7 @@ public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>, IHandle<
 		WriteEvents(
 			SystemStreams.MetastreamOf(streamId),
 			expectedVersion,
-			new[] { new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata.ToJsonBytes(), null) },
+			[new(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata.ToJsonBytes(), null)],
 			principal,
 			completed);
 	}

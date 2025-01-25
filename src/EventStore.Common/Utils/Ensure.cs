@@ -31,9 +31,10 @@ public static class Ensure {
 			throw new ArgumentOutOfRangeException(argumentName, $"{argumentName} should be positive.");
 	}
 
-	public static void Nonnegative(long number, string argumentName) {
+	public static long Nonnegative(long number, [CallerArgumentExpression("number")] string argumentName = null) {
 		if (number < 0)
 			throw new ArgumentOutOfRangeException(argumentName, argumentName + " should be non negative.");
+		return number;
 	}
 
 	public static int Nonnegative(int number, [CallerArgumentExpression("number")] string argumentName = null) {

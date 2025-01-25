@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -27,7 +26,6 @@ using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ILogger = Serilog.ILogger;
-using OperationCanceledException = System.OperationCanceledException;
 
 namespace EventStore.Core.Services.Storage;
 
@@ -86,13 +84,12 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	private long _lastFlushSize;
 	private long _maxFlushSize;
 	private long _maxFlushDelay;
-	private readonly List<Task> _tasks = new List<Task>();
+	private readonly List<Task> _tasks = [];
 	private readonly TStreamId _emptyEventTypeId;
 	private readonly TStreamId _scavengePointsStreamId;
 	private readonly TStreamId _scavengePointEventTypeId;
-	public IEnumerable<Task> Tasks {
-		get { return _tasks; }
-	}
+
+	public IEnumerable<Task> Tasks => _tasks;
 
 	public StorageWriterService(IPublisher bus,
 		ISubscriber subscribeToBus,
@@ -110,7 +107,6 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		QueueTrackers queueTrackers,
 		IMaxTracker<long> flushSizeTracker,
 		IDurationMaxTracker flushDurationTracker) {
-
 		Ensure.NotNull(bus, "bus");
 		Ensure.NotNull(subscribeToBus, "subscribeToBus");
 		Ensure.NotNull(db, "db");
@@ -180,7 +176,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		StorageWriterQueue.Publish(message);
 
 		if (message is SystemMessage.BecomeShuttingDown)
-		// we need to handle this message on main thread to stop StorageWriterQueue
+			// we need to handle this message on main thread to stop StorageWriterQueue
 		{
 			StorageWriterQueue.Stop();
 			BlockWriter = true;
@@ -189,17 +185,15 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	}
 
 	private async ValueTask CommonHandle(Message message, CancellationToken token) {
-		if (BlockWriter && !(message is SystemMessage.StateChangeMessage)) {
+		if (BlockWriter && message is not SystemMessage.StateChangeMessage) {
 			Log.Verbose("Blocking message {message} in StorageWriterService. Message:", message.GetType().Name);
 			Log.Verbose("{message}", message);
 			return;
 		}
 
 		if (_vnodeState is not VNodeState.Leader and not VNodeState.ResigningLeader && message is StorageMessage.ILeaderWriteMessage) {
-			Log.Fatal("{message} appeared in StorageWriter during state {vnodeStrate}.", message.GetType().Name,
-				_vnodeState);
-			var msg = String.Format("{0} appeared in StorageWriter during state {1}.", message.GetType().Name,
-				_vnodeState);
+			Log.Fatal("{message} appeared in StorageWriter during state {vnodeStrate}.", message.GetType().Name, _vnodeState);
+			var msg = $"{message.GetType().Name} appeared in StorageWriter during state {_vnodeState}.";
 			Application.Exit(ExitCode.Error, msg);
 			return;
 		}
@@ -209,8 +203,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		} catch (Exception exc) {
 			BlockWriter = true;
 			Log.Fatal(exc, "Unexpected error in StorageWriterService. Terminating the process...");
-			Application.Exit(ExitCode.Error,
-				string.Format("Unexpected error in StorageWriterService: {0}", exc.Message));
+			Application.Exit(ExitCode.Error, $"Unexpected error in StorageWriterService: {exc.Message}");
 		}
 	}
 
@@ -223,21 +216,21 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 		switch (message.State) {
 			case VNodeState.Leader: {
-					_indexWriter.Reset();
-					_streamNameIndex.CancelReservations();
-					_eventTypeIndex.CancelReservations();
-					break;
-				}
+				_indexWriter.Reset();
+				_streamNameIndex.CancelReservations();
+				_eventTypeIndex.CancelReservations();
+				break;
+			}
 			case VNodeState.ShuttingDown: {
-					await Writer.Flush(token);
-					break;
-				}
+				await Writer.Flush(token);
+				break;
+			}
 		}
 	}
 
 	async ValueTask IAsyncHandle<SystemMessage.WriteEpoch>.HandleAsync(SystemMessage.WriteEpoch message, CancellationToken token) {
 		if (_vnodeState is not VNodeState.Leader and not VNodeState.PreLeader)
-			throw new Exception(string.Format("New Epoch request not in leader or preleader state. State: {0}.", _vnodeState));
+			throw new Exception($"New Epoch request not in leader or preleader state. State: {_vnodeState}.");
 
 		if (Writer.NeedsNewChunk)
 			await Writer.AddNewChunk(token: token);
@@ -251,7 +244,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		if (_vnodeState is not VNodeState.PreLeader
 		    and not VNodeState.PreReplica
 		    and not VNodeState.PreReadOnlyReplica)
-			throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));
+			throw new Exception($"{message.GetType().Name} appeared in {_vnodeState} state.");
 
 		if (Writer.HasOpenTransaction())
 			throw new InvalidOperationException("Writer has an open transaction.");
@@ -263,7 +256,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 		var sw = Stopwatch.StartNew();
 		while (Db.Config.ChaserCheckpoint.Read() < Db.Config.WriterCheckpoint.Read() &&
-			   sw.Elapsed < WaitForChaserSingleIterationTimeout) {
+		       sw.Elapsed < WaitForChaserSingleIterationTimeout) {
 			Thread.Sleep(1);
 		}
 
@@ -396,8 +389,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	private async ValueTask<(TStreamId, long)> GetOrWriteEventType(string eventType, long logPosition, CancellationToken token) {
 		GetOrReserveEventType(eventType, logPosition, out var eventTypeId, out var eventTypeRecord);
 
-		if (eventTypeRecord is not null)
-		{
+		if (eventTypeRecord is not null) {
 			var result = await WritePrepareWithRetry(eventTypeRecord, token);
 			logPosition = result.NewPos;
 		}
@@ -418,13 +410,11 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	}
 
 	private async ValueTask SoftUndeleteStream(TStreamId streamId, long metaLastEventNumber, ReadOnlyMemory<byte> rawMeta, long recreateFrom, CancellationToken token) {
-		byte[] modifiedMeta;
-		if (!SoftUndeleteRawMeta(rawMeta, recreateFrom, out modifiedMeta))
+		if (!SoftUndeleteRawMeta(rawMeta, recreateFrom, out var modifiedMeta))
 			return;
 
 		var logPosition = Writer.Position;
-		(var streamMetadataEventTypeId, logPosition) =
-			await GetOrWriteEventType(SystemEventTypes.StreamMetadata, logPosition, token);
+		(var streamMetadataEventTypeId, logPosition) = await GetOrWriteEventType(SystemEventTypes.StreamMetadata, logPosition, token);
 
 		var res = await WritePrepareWithRetry(
 			LogRecord.Prepare(_recordFactory, logPosition, Guid.NewGuid(), Guid.NewGuid(), logPosition, 0,
@@ -440,14 +430,13 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		try {
 			var jobj = JObject.Parse(Encoding.UTF8.GetString(rawMeta.Span));
 			jobj[SystemMetadata.TruncateBefore] = recreateFromEventNumber;
-			using (var memoryStream = new MemoryStream()) {
-				using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream))) {
-					jobj.WriteTo(jsonWriter);
-				}
-
-				modifiedMeta = memoryStream.ToArray();
-				return true;
+			using var memoryStream = new MemoryStream();
+			using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream))) {
+				jobj.WriteTo(jsonWriter);
 			}
+
+			modifiedMeta = memoryStream.ToArray();
+			return true;
 		} catch (Exception) {
 			modifiedMeta = null;
 			return false;
@@ -499,15 +488,14 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				var expectedVersion = await _indexWriter.GetStreamLastEventNumber(metastreamId, token);
 
 				if (await _indexWriter.GetStreamLastEventNumber(streamId, token) < 0 && expectedVersion < 0) {
-					var result = new CommitCheckResult<TStreamId>(CommitDecision.WrongExpectedVersion, streamId,
-						-1, -1, -1, false);
+					var result = new CommitCheckResult<TStreamId>(CommitDecision.WrongExpectedVersion, streamId, -1, -1, -1, false);
 					await ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, result, token);
 					return;
 				}
 
 
 				const PrepareFlags flags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted |
-										   PrepareFlags.IsJson;
+				                           PrepareFlags.IsJson;
 				var data = new StreamMetadata(truncateBefore: EventNumber.DeletedStream).ToJsonBytes();
 
 				(var streamMetadataEventTypeId, logPosition) =
@@ -541,8 +529,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			var res = await WritePrepareWithRetry(record, token);
 
 			// we update cache to avoid non-cached look-up on next TransactionWrite
-			_indexWriter.UpdateTransactionInfo(res.WrittenPos, res.WrittenPos,
-				new TransactionInfo<TStreamId>(-1, streamId));
+			_indexWriter.UpdateTransactionInfo(res.WrittenPos, res.WrittenPos, new(-1, streamId));
 		} catch (Exception exc) {
 			Log.Error(exc, "Exception in writer.");
 			throw;
@@ -645,17 +632,14 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				return;
 			}
 
-
 			var commit = await WriteCommitWithRetry(LogRecord.Commit(commitPos,
-				message.CorrelationId,
-				message.TransactionPosition,
-				commitCheck.CurrentVersion + 1),
+					message.CorrelationId,
+					message.TransactionPosition,
+					commitCheck.CurrentVersion + 1),
 				token);
 
-			bool softUndeleteMetastream = _systemStreams.IsMetaStream(commitCheck.EventStreamId)
-										  &&
-										  await _indexWriter.IsSoftDeleted(
-											  _systemStreams.OriginalStreamOf(commitCheck.EventStreamId), token);
+			bool softUndeleteMetastream = _systemStreams.IsMetaStream(commitCheck.EventStreamId) &&
+			                              await _indexWriter.IsSoftDeleted(_systemStreams.OriginalStreamOf(commitCheck.EventStreamId), token);
 
 			await _indexWriter.PreCommit(commit, token);
 
@@ -698,7 +682,9 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			case CommitDecision.IdempotentNotReady:
 				//TODO(clc): when we have the pre-index we should be able to get the logPosition from the pre-index and allow the transaction to wait for the cluster commit
 				//just drop the write and wait for the client to retry
-				Log.Debug("Dropping idempotent write to stream {@stream}, startEventNumber: {@startEventNumber}, endEventNumber: {@endEventNumber} since the original write has not yet been replicated.", result.EventStreamId, result.StartEventNumber, result.EndEventNumber);
+				Log.Debug(
+					"Dropping idempotent write to stream {@stream}, startEventNumber: {@startEventNumber}, endEventNumber: {@endEventNumber} since the original write has not yet been replicated.",
+					result.EventStreamId, result.StartEventNumber, result.EndEventNumber);
 				break;
 			default:
 				throw new ArgumentOutOfRangeException();
@@ -718,8 +704,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			prepareSizes += prepare.GetSizeWithLengthPrefixAndSuffix();
 
 		if (prepareSizes > Db.Config.ChunkSize) {
-			Log.Error("Transaction size ({prepareSizes:N0}) exceeds chunk size ({chunkSize:N0})",
-				prepareSizes, Db.Config.ChunkSize);
+			Log.Error("Transaction size ({prepareSizes:N0}) exceeds chunk size ({chunkSize:N0})", prepareSizes, Db.Config.ChunkSize);
 			return false;
 		}
 
@@ -760,6 +745,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 			writerPos = newWriterPos;
 		}
+
 		Writer.CommitTransaction();
 
 		return true;
@@ -782,15 +768,12 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			writtenPos = newPos;
 			(written, newPos) = await Writer.Write(record, token);
 			if (!written) {
-				throw new Exception(
-					string.Format("Second write try failed when first writing prepare at {0}, then at {1}.",
-						prepare.LogPosition,
-						writtenPos));
+				throw new Exception($"Second write try failed when first writing prepare at {prepare.LogPosition}, then at {writtenPos}.");
 			}
 		}
 
 		if (StreamIdComparer.Equals(prepare.EventType, _scavengePointEventTypeId) &&
-			StreamIdComparer.Equals(prepare.EventStreamId, _scavengePointsStreamId)) {
+		    StreamIdComparer.Equals(prepare.EventStreamId, _scavengePointsStreamId)) {
 			await Writer.CompleteChunk(token);
 			await Writer.AddNewChunk(token: token);
 		}
@@ -810,10 +793,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				commit.FirstEventNumber);
 			long writtenPos = newPos;
 			if (await Writer.Write(record, token) is (false, _)) {
-				throw new Exception(
-					string.Format("Second write try failed when first writing commit at {0}, then at {1}.",
-						commit.LogPosition,
-						writtenPos));
+				throw new Exception($"Second write try failed when first writing commit at {commit.LogPosition}, then at {writtenPos}.");
 			}
 
 			return record;
@@ -866,16 +846,10 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		_indexWriter.PurgeNotProcessedTransactions(Db.Config.WriterCheckpoint.Read());
 	}
 
-	private struct WriteResult {
-		public readonly long WrittenPos;
-		public readonly long NewPos;
-		public readonly IPrepareLogRecord<TStreamId> Prepare;
-
-		public WriteResult(long writtenPos, long newPos, IPrepareLogRecord<TStreamId> prepare) {
-			WrittenPos = writtenPos;
-			NewPos = newPos;
-			Prepare = prepare;
-		}
+	private struct WriteResult(long writtenPos, long newPos, IPrepareLogRecord<TStreamId> prepare) {
+		public readonly long WrittenPos = writtenPos;
+		public readonly long NewPos = newPos;
+		public readonly IPrepareLogRecord<TStreamId> Prepare = prepare;
 	}
 
 	public void Handle(MonitoringMessage.InternalStatsRequest message) {
@@ -891,13 +865,13 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		var queuedFlushMessages = FlushMessagesInQueue;
 
 		var stats = new Dictionary<string, object> {
-			{"es-writer-lastFlushSize", new StatMetadata(lastFlushSize, "Writer Last Flush Size")},
-			{"es-writer-lastFlushDelayMs", new StatMetadata(lastFlushDelayMs, "Writer Last Flush Delay, ms")},
-			{"es-writer-meanFlushSize", new StatMetadata(meanFlushSize, "Writer Mean Flush Size")},
-			{"es-writer-meanFlushDelayMs", new StatMetadata(meanFlushDelayMs, "Writer Mean Flush Delay, ms")},
-			{"es-writer-maxFlushSize", new StatMetadata(maxFlushSize, "Writer Max Flush Size")},
-			{"es-writer-maxFlushDelayMs", new StatMetadata(maxFlushDelayMs, "Writer Max Flush Delay, ms")},
-			{"es-writer-queuedFlushMessages", new StatMetadata(queuedFlushMessages, "Writer Queued Flush Message")}
+			{ "es-writer-lastFlushSize", new StatMetadata(lastFlushSize, "Writer Last Flush Size") },
+			{ "es-writer-lastFlushDelayMs", new StatMetadata(lastFlushDelayMs, "Writer Last Flush Delay, ms") },
+			{ "es-writer-meanFlushSize", new StatMetadata(meanFlushSize, "Writer Mean Flush Size") },
+			{ "es-writer-meanFlushDelayMs", new StatMetadata(meanFlushDelayMs, "Writer Mean Flush Delay, ms") },
+			{ "es-writer-maxFlushSize", new StatMetadata(maxFlushSize, "Writer Max Flush Size") },
+			{ "es-writer-maxFlushDelayMs", new StatMetadata(maxFlushDelayMs, "Writer Max Flush Delay, ms") },
+			{ "es-writer-queuedFlushMessages", new StatMetadata(queuedFlushMessages, "Writer Queued Flush Message") }
 		};
 
 		message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));

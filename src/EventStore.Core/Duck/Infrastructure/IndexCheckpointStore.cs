@@ -5,7 +5,7 @@ using EventStore.Core.Duck.Default;
 using Eventuous.Subscriptions.Checkpoints;
 using Serilog;
 
-namespace EventStore.Core.Duck;
+namespace EventStore.Core.Duck.Infrastructure;
 
 public class IndexCheckpointStore<TStreamId>(DefaultIndex<TStreamId> defaultIndex, DefaultIndexHandler<TStreamId> handler) : ICheckpointStore {
 	static readonly ILogger Log = Serilog.Log.ForContext<IndexCheckpointStore<TStreamId>>();

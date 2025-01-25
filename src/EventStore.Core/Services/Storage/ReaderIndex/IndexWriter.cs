@@ -74,6 +74,7 @@ public class IndexWriter<TStreamId> : IndexWriter, IIndexWriter<TStreamId> {
 	private readonly INameLookup<TStreamId> _streamNames;
 	private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 	private readonly TStreamId _emptyStreamId;
+
 	private readonly IStickyLRUCache<long, TransactionInfo<TStreamId>> _transactionInfoCache =
 		new StickyLRUCache<long, TransactionInfo<TStreamId>>(ESConsts.TransactionMetadataCacheCapacity);
 
@@ -183,20 +184,21 @@ public class IndexWriter<TStreamId> : IndexWriter, IIndexWriter<TStreamId> {
 		}
 
 		var curVersion = await GetStreamLastEventNumber(streamId, token);
-		if (curVersion is EventNumber.DeletedStream)
-			return new CommitCheckResult<TStreamId>(CommitDecision.Deleted, streamId, curVersion, -1, -1, false);
-		if (curVersion is EventNumber.Invalid)
-			return new CommitCheckResult<TStreamId>(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
+		switch (curVersion) {
+			case EventNumber.DeletedStream:
+				return new(CommitDecision.Deleted, streamId, curVersion, -1, -1, false);
+			case EventNumber.Invalid:
+				return new(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
+		}
 
 		if (expectedVersion is ExpectedVersion.StreamExists) {
 			if (await IsSoftDeleted(streamId, token))
-				return new CommitCheckResult<TStreamId>(CommitDecision.Deleted, streamId, curVersion, -1, -1, true);
+				return new(CommitDecision.Deleted, streamId, curVersion, -1, -1, true);
 
 			if (curVersion < 0) {
 				var metadataVersion = await GetStreamLastEventNumber(_systemStreams.MetaStreamOf(streamId), token);
 				if (metadataVersion < 0)
-					return new CommitCheckResult<TStreamId>(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1,
-						false);
+					return new(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
 			}
 		}
 
@@ -207,7 +209,7 @@ public class IndexWriter<TStreamId> : IndexWriter, IIndexWriter<TStreamId> {
 			long endEventNumber = -1;
 			foreach (var eventId in eventIds) {
 				if (!_committedEvents.TryGetRecord(eventId, out var prepInfo) || !StreamIdComparer.Equals(prepInfo.StreamId, streamId))
-					return new CommitCheckResult<TStreamId>(first ? CommitDecision.Ok : CommitDecision.CorruptedIdempotency,
+					return new(first ? CommitDecision.Ok : CommitDecision.CorruptedIdempotency,
 						streamId, curVersion, -1, -1, first && await IsSoftDeleted(streamId, token));
 				if (first)
 					startEventNumber = prepInfo.EventNumber;
@@ -215,21 +217,20 @@ public class IndexWriter<TStreamId> : IndexWriter, IIndexWriter<TStreamId> {
 				first = false;
 			}
 
-			if(first) /*no data in transaction*/
-				return new CommitCheckResult<TStreamId>(CommitDecision.Ok, streamId, curVersion, -1, -1, await IsSoftDeleted(streamId, token));
-			else{
-				var isReplicated = await _indexReader.GetStreamLastEventNumber(streamId, token) >= endEventNumber;
-				//TODO(clc): the new index should hold the log positions removing this read
-				//n.b. the index will never have the event in the case of NotReady as it only committed records are indexed
-				//in that case the position will need to come from the pre-index
-				var idempotentEvent = await _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, endEventNumber, token);
-				var logPos = idempotentEvent.Result == ReadEventResult.Success
-					? idempotentEvent.Record.LogPosition : -1;
-				if(isReplicated)
-					return new CommitCheckResult<TStreamId>(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber, false, logPos);
-				else
-					return new CommitCheckResult<TStreamId>(CommitDecision.IdempotentNotReady, streamId, curVersion, startEventNumber, endEventNumber, false, logPos);
-			}
+			if (first) /*no data in transaction*/
+				return new(CommitDecision.Ok, streamId, curVersion, -1, -1, await IsSoftDeleted(streamId, token));
+
+			var isReplicated = await _indexReader.GetStreamLastEventNumber(streamId, token) >= endEventNumber;
+			//TODO(clc): the new index should hold the log positions removing this read
+			//n.b. the index will never have the event in the case of NotReady as it only committed records are indexed
+			//in that case the position will need to come from the pre-index
+			var idempotentEvent = await _indexReader.ReadEvent(IndexReader.UnspecifiedStreamName, streamId, endEventNumber, token);
+			var logPos = idempotentEvent.Result == ReadEventResult.Success
+				? idempotentEvent.Record.LogPosition
+				: -1;
+			return isReplicated
+				? new(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber, false, logPos)
+				: new(CommitDecision.IdempotentNotReady, streamId, curVersion, startEventNumber, endEventNumber, false, logPos);
 		}
 
 		if (expectedVersion < curVersion) {

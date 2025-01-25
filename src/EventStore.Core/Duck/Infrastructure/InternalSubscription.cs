@@ -18,7 +18,7 @@ using Eventuous.Subscriptions.Context;
 using Eventuous.Subscriptions.Filters;
 using Serilog.Extensions.Logging;
 
-namespace EventStore.Core.Duck;
+namespace EventStore.Core.Duck.Infrastructure;
 
 public class InternalSubscription(IPublisher publisher, ICheckpointStore checkpointStore, params IEventHandler[] eventHandlers)
 	: EventSubscriptionWithCheckpoint<InternalSubscriptionOptions>(
