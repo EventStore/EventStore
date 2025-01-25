@@ -10,16 +10,16 @@ namespace EventStore.Core.Messages {
 		public partial class GetAllPersistentSubscriptionStats : Message {
 			public readonly IEnvelope Envelope;
 			public readonly int Offset;
-			public readonly int? Count;
+			public readonly int Count;
 
 			public GetAllPersistentSubscriptionStats(IEnvelope envelope) {
 				Ensure.NotNull(envelope, "envelope");
 				Envelope = envelope;
 				Offset = 0;
-				Count = null;
+				Count = int.MaxValue;
 			}
 
-			public GetAllPersistentSubscriptionStats(IEnvelope envelope, int offset, int? count) {
+			public GetAllPersistentSubscriptionStats(IEnvelope envelope, int offset, int count) {
 				Ensure.NotNull(envelope, "envelope");
 				Envelope = envelope;
 				Offset = offset;

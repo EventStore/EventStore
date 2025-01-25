@@ -1120,7 +1120,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public int Offset { get; set; }
 			public int Count { get; set; }
 			public int Total { get; set; }
-			public IEnumerable<SubscriptionSummary> Subscriptions { get; set; }
+			public IReadOnlyList<SubscriptionSummary> Subscriptions { get; set; }
 		}
 
 		public class SubscriptionSummary {

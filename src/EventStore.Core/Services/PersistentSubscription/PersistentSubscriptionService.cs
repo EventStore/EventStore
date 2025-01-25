@@ -1319,23 +1319,19 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				return;
 			}
 
-			List<MonitoringMessage.PersistentSubscriptionInfo> stats;
-			if (message.Count is null) {
-				stats = (from subscription in _subscriptionTopics.Values
-					from sub in subscription
-					select sub.GetStatistics()).ToList();
-			} else {
-				stats = (from subscription in _subscriptionTopics.Values
-						.Skip(message.Offset).Take(message.Count.Value)
-					from sub in subscription
-					select sub.GetStatistics()).ToList();
-			}
+			var topics = _subscriptionTopics.Values
+				.Skip(message.Offset)
+				.Take(message.Count);
+
+			var stats = (from subscription in topics
+				from sub in subscription
+				select sub.GetStatistics()).ToList();
 
 			message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
 				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success,
 				stats,
 				offset: message.Offset,
-				total: _subscriptionTopics.Count()));
+				total: _subscriptionTopics.Count));
 		}
 
 		public void Handle(SubscriptionMessage.PersistentSubscriptionTimerTick message) {

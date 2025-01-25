@@ -127,12 +127,13 @@ public class GetAllPersistentSubscriptionStatsTests {
 	}
 
 	[Theory]
-	[InlineData(10, null, new[] {"1", "2", "3", "4"})]
+	[InlineData(0, 0, new string[]{})]
+	[InlineData(10, 0, new string[]{})]
 	[InlineData(0, 2, new[] {"1", "2"})]
 	[InlineData(2, 2, new[] {"3", "4"})]
 	[InlineData(3, 2, new[] {"4"})]
 	[InlineData(4, 2, new string[]{})]
-	public void when_getting_all_stats_from_multiple_subscriptions_paged(int offset, int? count, string[] expectedSubscriptions) {
+	public void when_getting_all_stats_from_multiple_subscriptions_paged(int offset, int count, string[] expectedSubscriptions) {
 		// Arrange
 		var responseEnvelope = new FakeEnvelope();
 		var sut = CreateSut();
