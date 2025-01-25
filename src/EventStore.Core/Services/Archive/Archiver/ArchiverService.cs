@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -74,16 +73,9 @@ public sealed class ArchiverService :
 
 	[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))]
 	private async Task ArchiveAsync() {
-		// If we have multiple switched versions of the same chunk in _switchedChunks,
-		// we can skip duplicate uploads
-		var switchedChunks = new Dictionary<int, long>();
 		var checkpoint = await _archive.GetCheckpoint(_lifetimeToken);
 		while (!_lifetimeToken.IsCancellationRequested) {
-			// deduplicate. but make sure we stop reading from _switchedChunks before we start processing switchedChunks
-			while (_switchedChunks.TryTake(out var chunkInfo))
-				switchedChunks[chunkInfo.ChunkEndNumber] = chunkInfo.ChunkEndPosition;
-			await ProcessSwitchedChunksAsync(switchedChunks, checkpoint, _lifetimeToken);
-			switchedChunks.Clear();
+			await ProcessSwitchedChunksAsync(checkpoint, _lifetimeToken);
 
 			var chunk = _chunkManager.GetChunkFor(checkpoint);
 			if (chunk.ChunkFooter is { IsCompleted: true } &&
@@ -101,12 +93,12 @@ public sealed class ArchiverService :
 		}
 	}
 
-	private async ValueTask ProcessSwitchedChunksAsync(Dictionary<int, long> switchedChunks, long checkpoint, CancellationToken token) {
+	private async ValueTask ProcessSwitchedChunksAsync(long checkpoint, CancellationToken token) {
 		// process only chunks that are already in the archive, all other chunks
 		// will be processed by the main loop
-		foreach (var (chunkEndNumber, chunkEndPosition) in switchedChunks) {
-			if (chunkEndPosition <= checkpoint) {
-				var chunk = _chunkManager.GetChunk(chunkEndNumber);
+		while (_switchedChunks.TryTake(out var chunkInfo)) {
+			if (chunkInfo.ChunkEndPosition <= checkpoint) {
+				var chunk = _chunkManager.GetChunk(chunkInfo.ChunkEndNumber);
 				await _archive.StoreChunk(chunk, token);
 			}
 		}
