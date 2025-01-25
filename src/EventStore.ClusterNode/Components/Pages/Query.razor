@@ -2,12 +2,16 @@
 @using System.Diagnostics
 @using Dapper
 @using DuckDB.NET.Data
+@using EventStore.ClusterNode.Components.Dialogs
 @using EventStore.ClusterNode.Services
 @using EventStore.ClusterNode.Components.Tools
+@using Serilog
 @inject DuckDBConnection Connection
 @inject Preferences Preferences
+@inject IDialogService DialogService
+@implements IDisposable
 
-<PageTitle>Home</PageTitle>
+<PageTitle>KurrentDB: Query</PageTitle>
 
 <MudCard Outlined="true">
 	<MudCardContent>
@@ -23,6 +27,7 @@
 	</MudCardContent>
 	<MudCardActions>
 		<MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="Execute">Run</MudButton>
+		<MudIconButton Icon="@Icons.Material.Filled.Help" Color="Color.Default" OnClick="ShowHelp">Help</MudIconButton>
 	</MudCardActions>
 </MudCard>
 <MudOverlay Visible="_showProgress" DarkBackground="true" Absolute="true">
@@ -63,6 +68,7 @@
 
 @code {
 
+	static readonly ILogger Log = Serilog.Log.ForContext<Query>();
 	IEnumerable<IDictionary<string, object>> _items;
 	StandaloneCodeEditor _editor = null!;
 	string _message = "";
@@ -75,6 +81,11 @@
 		Theme = EditorTheme(),
 		FontSize = 16
 	};
+
+	readonly DialogOptions _maxWidth = new() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+	async Task ShowHelp() {
+		await DialogService.ShowAsync<QueryHelpDialog>("How to use the query engine", _maxWidth);
+	}
 
 	async Task Execute() {
 		var sql = await _editor.GetValue();
@@ -119,5 +130,10 @@
 	static bool IsJsonString(object value) => value is string s && (s.StartsWith('{') && s.EndsWith('}') || s.StartsWith('[') && s.EndsWith(']'));
 
 	string EditorTheme() => Preferences.DarkMode ? "vs-dark" : "vs-light";
+
+	public void Dispose() {
+		_editor?.Dispose();
+	}
+
 }
 

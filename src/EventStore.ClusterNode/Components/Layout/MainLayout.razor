@@ -8,12 +8,13 @@
 <MudSnackbarProvider/>
 <MudLayout>
 	<MudAppBar Elevation="1">
+		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
 		<img src="@(Preferences.DarkMode ? "logo_white.svg" : "logo_plum.svg")" height="32"/>
 		@* <MudText Typo="Typo.h5" Class="ml-3">Kurrent SQL</MudText> *@
 		<MudSpacer/>
 		<MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle"/>
 	</MudAppBar>
-	<MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+	<MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2" Width="200px">
 		<NavMenu/>
 	</MudDrawer>
 	<MudMainContent Class="mt-16 pa-4">
@@ -28,7 +29,7 @@
 </div>
 
 @code {
-	private bool _drawerOpen;
+	private bool _drawerOpen = true;
 	private MudTheme _theme;
 
 	protected override async Task OnAfterRenderAsync(bool firstRender) {
@@ -89,7 +90,7 @@
 		BackgroundGray = "#151521",
 		AppbarText = "#92929f",
 		AppbarBackground = "#000000",
-		DrawerBackground = "#1a1a27",
+		DrawerBackground = "#000000",
 		ActionDefault = "#74718e",
 		ActionDisabled = "#9999994d",
 		ActionDisabledBackground = "#605f6d4d",

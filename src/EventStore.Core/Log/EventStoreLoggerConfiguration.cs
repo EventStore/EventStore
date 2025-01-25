@@ -62,9 +62,8 @@ public class EventStoreLoggerConfiguration {
 			throw new InvalidOperationException($"{nameof(Initialize)} may not be called more than once.");
 		}
 
-		if (logsDirectory.StartsWith("~")) {
-			throw new ApplicationInitializationException(
-				"The given log path starts with a '~'. Event Store does not expand '~'.");
+		if (logsDirectory.StartsWith('~')) {
+			throw new ApplicationInitializationException("The given log path starts with a '~'. Event Store does not expand '~'.");
 		}
 
 		var configurationRoot = new ConfigurationBuilder()
@@ -150,6 +149,7 @@ public class EventStoreLoggerConfiguration {
 				logConsoleFormat == LogConsoleFormat.Plain
 					? ConsoleOutputExpressionTemplate
 					: new(CompactJsonTemplate));
+			configuration.WriteTo.Sink(FrontEndLogging.Instance);
 
 			if (!disableLogFile) {
 				configuration.WriteTo

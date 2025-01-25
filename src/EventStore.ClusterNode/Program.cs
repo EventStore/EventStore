@@ -30,6 +30,7 @@ using EventStore.Common.DevCertificates;
 using EventStore.Core.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Logging;
+using MudBlazor;
 using MudBlazor.Services;
 using Serilog.Events;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
@@ -216,6 +217,7 @@ try {
 			builder.Services.AddSingleton<Preferences>();
 			builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 			builder.Services.AddMudServices();
+			builder.Services.AddMudMarkdownServices();
 			var app = builder.Build();
 			hostedService.Node.Startup.Configure(app);
 			app.UseStaticFiles();

@@ -10,7 +10,7 @@ namespace EventStore.Common.Log;
 
 public class SerilogEventListener : EventListener {
 	private readonly Dictionary<string, LogEventLevel> _eventSources = new() {
-		{ "eventstore-dev-certs", LogEventLevel.Verbose }
+		["eventstore-dev-certs"] = LogEventLevel.Verbose
 	};
 
 	protected override void OnEventSourceCreated(EventSource eventSource) {

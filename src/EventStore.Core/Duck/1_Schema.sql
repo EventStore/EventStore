@@ -64,4 +64,20 @@ select
 from (
 	select k.*, kdb_get(k.log_position)::JSON as event
 	from (select seq, event_number, log_position, created from idx_all where seq > position) k
-)
+);
+
+create or replace macro read_category(name, start, count) as table
+select
+	category_seq as seq,
+	event->>'stream_id' as stream_id,
+	event_number,
+	event->>'event_type' as event_type,
+	created,
+	event->>'data' as data,
+	event->>'metadata' as metadata
+from (
+	select idx_all.category_seq, idx_all.event_number, idx_all.created, kdb_get(log_position)::JSON as event
+	from idx_all
+	inner join category on idx_all.category=category.id
+	where category.name=name and category_seq>=start and category_seq<start+count
+);

@@ -17,6 +17,7 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
+using Serilog;
 
 namespace EventStore.Core.Duck.Infrastructure;
 
@@ -69,9 +70,6 @@ public static class ReaderExtensions {
 		while (enumerator.MoveNext()) {
 			if (enumerator.Current is ReadResponse.EventReceived eventReceived)
 				yield return eventReceived.Event;
-
-			if (enumerator.Current is ReadResponse.StreamNotFound streamNotFound)
-				throw new ReadResponseException.StreamNotFound(streamNotFound.StreamName);
 		}
 
 		yield break;
@@ -94,11 +92,10 @@ public static class ReaderExtensions {
 		using var enumerator = GetEnumerator();
 
 		while (enumerator.MoveNext()) {
-			if (enumerator.Current is ReadResponse.EventReceived eventReceived)
+			if (enumerator.Current is ReadResponse.EventReceived eventReceived) {
+				Log.Debug("Returning event {Event}", eventReceived.Event);
 				yield return eventReceived.Event;
-
-			if (enumerator.Current is ReadResponse.StreamNotFound streamNotFound)
-				throw new ReadResponseException.StreamNotFound(streamNotFound.StreamName);
+			}
 		}
 
 		yield break;
@@ -124,9 +121,6 @@ public static class ReaderExtensions {
 		while (enumerator.MoveNext()) {
 			if (enumerator.Current is ReadResponse.EventReceived eventReceived)
 				yield return eventReceived.Event;
-
-			if (enumerator.Current is ReadResponse.StreamNotFound streamNotFound)
-				throw new ReadResponseException.StreamNotFound(streamNotFound.StreamName);
 		}
 
 		yield break;
@@ -145,6 +139,7 @@ public static class ReaderExtensions {
 
 	class UserEventsFilter : IEventFilter {
 		public static UserEventsFilter Instance = new();
+
 		public bool IsEventAllowed(EventRecord eventRecord) {
 			return !eventRecord.EventType.StartsWith('$') && !eventRecord.EventStreamId.StartsWith('$');
 		}
