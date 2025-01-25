@@ -74,11 +74,10 @@ namespace EventStore.Core.Messages {
 			public readonly int Total;
 
 			public GetPersistentSubscriptionStatsCompleted(OperationStatus result,
-				List<PersistentSubscriptionInfo> subscriptionStats, int total, string errorString = "") {
+				List<PersistentSubscriptionInfo> subscriptionStats, string errorString = "") {
 				Result = result;
 				SubscriptionStats = subscriptionStats;
 				ErrorString = errorString;
-				Offset = 0;
 			}
 
 			public GetPersistentSubscriptionStatsCompleted(OperationStatus result,

@@ -1015,6 +1015,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private PagedSubscriptionInfo ToPagedSummaryDto(HttpEntityManager manager,
 			MonitoringMessage.GetPersistentSubscriptionStatsCompleted message, int requestedCount) {
+
 			if (message is null || message.SubscriptionStats is null) {
 				return new PagedSubscriptionInfo();
 			}
