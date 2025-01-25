@@ -9,21 +9,21 @@ namespace EventStore.Core.Messages {
 		[DerivedMessage(CoreMessage.Monitoring)]
 		public partial class GetAllPersistentSubscriptionStats : Message {
 			public readonly IEnvelope Envelope;
-			public readonly int? Count;
 			public readonly int Offset;
+			public readonly int? Count;
 
 			public GetAllPersistentSubscriptionStats(IEnvelope envelope) {
 				Ensure.NotNull(envelope, "envelope");
 				Envelope = envelope;
-				Count = null;
 				Offset = 0;
+				Count = null;
 			}
 
-			public GetAllPersistentSubscriptionStats(IEnvelope envelope, int? count, int offset) {
+			public GetAllPersistentSubscriptionStats(IEnvelope envelope, int offset, int? count) {
 				Ensure.NotNull(envelope, "envelope");
 				Envelope = envelope;
-				Count = count;
 				Offset = offset;
+				Count = count;
 			}
 		}
 
@@ -82,7 +82,7 @@ namespace EventStore.Core.Messages {
 			}
 
 			public GetPersistentSubscriptionStatsCompleted(OperationStatus result,
-				List<PersistentSubscriptionInfo> subscriptionStats, int total, int offset, string errorString = "") {
+				List<PersistentSubscriptionInfo> subscriptionStats, int offset, int total, string errorString = "") {
 				Result = result;
 				SubscriptionStats = subscriptionStats;
 				ErrorString = errorString;

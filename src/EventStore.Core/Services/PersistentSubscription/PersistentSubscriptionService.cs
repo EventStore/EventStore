@@ -1332,8 +1332,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 
 			message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
-				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success, stats, _subscriptionTopics.Count(), message.Offset)
-			);
+				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success,
+				stats,
+				offset: message.Offset,
+				total: _subscriptionTopics.Count()));
 		}
 
 		public void Handle(SubscriptionMessage.PersistentSubscriptionTimerTick message) {

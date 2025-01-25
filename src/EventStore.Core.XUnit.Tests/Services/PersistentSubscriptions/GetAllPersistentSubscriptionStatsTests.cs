@@ -127,12 +127,12 @@ public class GetAllPersistentSubscriptionStatsTests {
 	}
 
 	[Theory]
-	[InlineData(null, 10, new[] {"1", "2", "3", "4"})]
-	[InlineData(2, 0, new[] {"1", "2"})]
+	[InlineData(10, null, new[] {"1", "2", "3", "4"})]
+	[InlineData(0, 2, new[] {"1", "2"})]
 	[InlineData(2, 2, new[] {"3", "4"})]
-	[InlineData(2, 3, new[] {"4"})]
-	[InlineData(2, 4, new string[]{})]
-	public void when_getting_all_stats_from_multiple_subscriptions_paged(int? count, int offset, string[] expectedSubscriptions) {
+	[InlineData(3, 2, new[] {"4"})]
+	[InlineData(4, 2, new string[]{})]
+	public void when_getting_all_stats_from_multiple_subscriptions_paged(int offset, int? count, string[] expectedSubscriptions) {
 		// Arrange
 		var responseEnvelope = new FakeEnvelope();
 		var sut = CreateSut();
@@ -162,7 +162,7 @@ public class GetAllPersistentSubscriptionStatsTests {
 		read.Envelope.ReplyWith(ReadPersistentSubscriptionConfigCompleted(read, psubConfig));
 
 		// Act
-		sut.Handle(new MonitoringMessage.GetAllPersistentSubscriptionStats(responseEnvelope, count, offset));
+		sut.Handle(new MonitoringMessage.GetAllPersistentSubscriptionStats(responseEnvelope, offset, count));
 		var response = responseEnvelope.Replies.OfType<MonitoringMessage.GetPersistentSubscriptionStatsCompleted>()
 			.SingleOrDefault();
 

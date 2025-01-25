@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
-			Register(service, "/subscriptions?count={count}&offset={offset}", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
+			Register(service, "/subscriptions?offset={offset}&count={count}", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
 			Register(service, "/subscriptions/restart", HttpMethod.Post, RestartPersistentSubscriptions, Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Restart));
 			Register(service, "/subscriptions/{stream}", HttpMethod.Get, GetSubscriptionInfoForStream, Codec.NoCodecs,
 				DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
@@ -725,12 +725,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private void GetAllSubscriptionInfo(HttpEntityManager http, UriTemplateMatch match) {
 			if (_httpForwarder.ForwardRequest(http))
 				return;
-			var countParam = match.BoundVariables["count"];
 			var offsetParam = match.BoundVariables["offset"];
-			if (countParam is null && offsetParam is null) {
+			var countParam = match.BoundVariables["count"];
+			if (offsetParam is null && countParam is null) {
 				GetSubscriptionInfoUnpaged(http);
 			} else {
-				GetSubscriptionInfoPaged(http, countParam, offsetParam);
+				GetSubscriptionInfoPaged(http, offsetParam, countParam);
 			}
 
 			void GetSubscriptionInfoUnpaged(HttpEntityManager http) {
@@ -744,15 +744,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				Publish(cmd);
 			}
 
-			void GetSubscriptionInfoPaged(HttpEntityManager http, string countParam, string offsetParam) {
-				int? count = countParam is not null && int.TryParse(countParam, out var cnt) && cnt != 0 ? cnt : null;
+			void GetSubscriptionInfoPaged(HttpEntityManager http, string offsetParam, string countParam) {
 				int offset = offsetParam is not null && int.TryParse(offsetParam, out var off) ? off : 0;
-				if (count is null || count < 1) {
-					SendBadRequest(http, $"Count ({count ?? 0}) must be greater than 1");
-					return;
-				}
+				int? count = countParam is not null && int.TryParse(countParam, out var cnt) && cnt != 0 ? cnt : null;
 				if (offset < 0) {
 					SendBadRequest(http, $"Offset ({offset}) must be positive");
+					return;
+				}
+				if (count is null || count < 1) {
+					SendBadRequest(http, $"Count ({count ?? 0}) must be greater than 1");
 					return;
 				}
 
@@ -762,7 +762,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						http.ResponseCodec.To(ToPagedSummaryDto(
 							http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted, count ?? 0)),
 					(_, message) => StatsConfiguration(http, message));
-				var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope, count, offset);
+				var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope, offset, count);
 				Publish(cmd);
 			}
 		}
@@ -1016,13 +1016,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			var nextOffset = message.Offset + actualCount;
 			var prevOffset = Math.Max(0, message.Offset - requestedCount);
 			return new PagedSubscriptionInfo {
-				Links = new List<RelLink>() {
-					new(MakeUrl(manager, "/subscriptions", $"?count={requestedCount}&offset={message.Offset}"), "self"),
-					new(MakeUrl(manager, "/subscriptions", $"?count={requestedCount}&offset={nextOffset}"), "next"),
-					new(MakeUrl(manager, "/subscriptions", $"?count={requestedCount}&offset={prevOffset}"), "previous")
-				},
-				Count = actualCount,
+				Links = [
+					new(MakeUrl(manager, "/subscriptions", $"?offset={message.Offset}&count={requestedCount}"), "self"),
+					new(MakeUrl(manager, "/subscriptions", $"?offset={nextOffset}&count={requestedCount}"), "next"),
+					new(MakeUrl(manager, "/subscriptions", $"?offset={prevOffset}&count={requestedCount}"), "previous")
+				],
 				Offset = message.Offset,
+				Count = actualCount,
 				Total = message.Total,
 				Subscriptions = stats
 			};
