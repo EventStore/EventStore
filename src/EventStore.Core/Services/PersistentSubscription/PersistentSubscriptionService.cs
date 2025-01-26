@@ -1324,9 +1324,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				return;
 			}
 
-			var topics = _sortedSubscriptionTopics.Values
-				.Skip(message.Offset)
-				.Take(message.Count);
+			var total = _sortedSubscriptionTopics.Count;
+			var pageOffset = Math.Clamp(message.Offset, 0, total);
+			var pageLength = Math.Clamp(message.Count, 0, total - pageOffset);
+			var topics = new List<PersistentSubscription>[pageLength];
+			for (var i = 0; i < pageLength; i++) {
+				topics[i] = _sortedSubscriptionTopics.Values[i + pageOffset];
+			}
 
 			var stats = (from subscription in topics
 				from sub in subscription
@@ -1336,7 +1340,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success,
 				stats,
 				offset: message.Offset,
-				total: _sortedSubscriptionTopics.Count));
+				total: total));
 		}
 
 		public void Handle(SubscriptionMessage.PersistentSubscriptionTimerTick message) {
