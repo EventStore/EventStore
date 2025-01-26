@@ -138,7 +138,8 @@ public class GetAllPersistentSubscriptionStatsTests {
 		var responseEnvelope = new FakeEnvelope();
 		var sut = CreateSut();
 		var psubs = new List<PersistentSubscriptionEntry>();
-		for (var i = 0; i < 4; i++) {
+		var groups = new int[] { 3, 2, 0, 1 }; // no particular order
+		foreach (var i in groups) {
 			psubs.Add(new PersistentSubscriptionEntry {
 				Group = $"{i + 1}",
 				Stream = $"test-stream-{i + 1}",
