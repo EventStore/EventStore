@@ -1,12 +1,13 @@
 @page "/logs"
-@using System.Collections.ObjectModel
-@using EventStore.Common.Log
+@using System.ComponentModel
+@using EventStore.ClusterNode.Services
 @using Serilog.Events
+@inject LogObserver LogObserver
 @implements IDisposable
 
 <PageTitle>KurrentDB: Logs</PageTitle>
 
-<MudDataGrid @ref="_dataGrid" Items="@_items" Dense="@true" Filterable="true">
+<MudDataGrid @ref="_dataGrid" Items="@LogObserver.Items" Dense="@true" Filterable="true">
 	@* Style="font-size: 0.5em;"> *@
 	<Columns>
 		<PropertyColumn Property="x => x.Timestamp" Title="Timestamp" Format="HH:mm:ss" Filterable="@false"/>
@@ -15,24 +16,26 @@
 		                CellStyleFunc="_cellStyleFunc"/>
 	</Columns>
 </MudDataGrid>
-@if (_items.Count == 0) {
+@if (LogObserver.Items.Count == 0) {
 	<MudText>Waiting for log events...</MudText>
 }
 
+
 @code {
-	readonly ObservableCollection<LogEvent> _items = [];
-	IDisposable _sub;
 	MudDataGrid<LogEvent> _dataGrid;
+
+	protected override Task OnInitializedAsync() {
+		LogObserver.PropertyChanged += HandleUpdate;
+		return base.OnInitializedAsync();
+	}
+
+	void HandleUpdate(object sender, PropertyChangedEventArgs e) {
+		Task.Run(() => InvokeAsync(Update));
+	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender) {
 		await base.OnAfterRenderAsync(firstRender);
-		if (!firstRender) return;
 		await _dataGrid.SetSortAsync(nameof(LogEvent.Timestamp), SortDirection.Descending, x => x.Timestamp);
-	}
-
-	protected override void OnInitialized() {
-		base.OnInitialized();
-		_sub ??= FrontEndLogging.Instance.Subscribe(new LogObserver(this));
 	}
 
 	Func<LogEvent, string> _cellStyleFunc => x => {
@@ -49,33 +52,12 @@
 		return style;
 	};
 
-	#region .. Logging ..
-
-	void AddItem(LogEvent item) {
-		_items.Add(item);
-		if (_items.Count > 100) _items.RemoveAt(0);
-		StateHasChanged();
-	}
-
-	void ReceiveItem(LogEvent item) => InvokeAsync(() => AddItem(item));
-
-	class LogObserver(Logging page) : IObserver<LogEvent> {
-		public void OnNext(LogEvent value) {
-			page.ReceiveItem(value);
-		}
-
-		public void OnCompleted() {
-		}
-
-		public void OnError(Exception error) {
-		}
-	}
-
-	#endregion
-
 	public void Dispose() {
-		_sub?.Dispose();
-		_sub = null;
+		LogObserver.PropertyChanged -= HandleUpdate;
+	}
+
+	void Update() {
+		StateHasChanged();
 	}
 
 }

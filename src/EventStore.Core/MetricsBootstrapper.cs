@@ -68,15 +68,10 @@ public static class MetricsBootstrapper {
 	public const string LogicalChunkReadDistributionName = "eventstore-logical-chunk-read-distribution";
 	private static readonly ILogger Log = Serilog.Log.ForContext(typeof(MetricsBootstrapper));
 
-	public static void Bootstrap(
-		Conf conf,
-		TFChunkDbConfig dbConfig,
-		Trackers trackers) {
-
+	public static void Bootstrap(Conf conf, TFChunkDbConfig dbConfig, Trackers trackers) {
 		LogConfig(conf);
 
-		MessageLabelConfigurator.ConfigureMessageLabels(
-			conf.MessageTypes, InMemoryBus.KnownMessageTypes);
+		MessageLabelConfigurator.ConfigureMessageLabels(conf.MessageTypes, InMemoryBus.KnownMessageTypes);
 
 		if (conf.ExpectedScrapeIntervalSeconds <= 0)
 			return;
@@ -141,29 +136,27 @@ public static class MetricsBootstrapper {
 
 		// from a users perspective an event is written when it is indexed: thats when it can be read.
 		if (conf.Events.TryGetValue(Conf.EventTracker.Written, out var writtenEnabled) && writtenEnabled) {
-			trackers.IndexTracker = new IndexTracker(new CounterSubMetric(
-				eventMetric,
-				new[] {new KeyValuePair<string, object>("activity", "written")}));
+			trackers.IndexTracker = new IndexTracker(new CounterSubMetric(eventMetric, [new("activity", "written")]));
 		}
 
 		// gossip
 		if (conf.Gossip.Count != 0) {
-			if (conf.Gossip.TryGetValue(Conf.GossipTracker.PullFromPeer, out var pullFromPeer) && pullFromPeer)
+			if (IsEnabled(conf.Gossip, Conf.GossipTracker.PullFromPeer))
 				trackers.GossipTrackers.PullFromPeer = new DurationTracker(gossipLatencyMetric, "pull-from-peer");
 
-			if (conf.Gossip.TryGetValue(Conf.GossipTracker.PushToPeer, out var pushToPeer) && pushToPeer)
+			if (IsEnabled(conf.Gossip, Conf.GossipTracker.PushToPeer))
 				trackers.GossipTrackers.PushToPeer = new DurationTracker(gossipLatencyMetric, "push-to-peer");
 
-			if (conf.Gossip.TryGetValue(Conf.GossipTracker.ProcessingPushFromPeer, out var processingPushFromPeer) && processingPushFromPeer)
+			if (IsEnabled(conf.Gossip, Conf.GossipTracker.ProcessingPushFromPeer))
 				trackers.GossipTrackers.ProcessingPushFromPeer = new DurationTracker(gossipProcessingMetric, "push-from-peer");
 
-			if (conf.Gossip.TryGetValue(Conf.GossipTracker.ProcessingRequestFromPeer, out var processingRequestFromPeer) && processingRequestFromPeer)
+			if (IsEnabled(conf.Gossip, Conf.GossipTracker.ProcessingRequestFromPeer))
 				trackers.GossipTrackers.ProcessingRequestFromPeer = new DurationTracker(gossipProcessingMetric, "request-from-peer");
 
-			if (conf.Gossip.TryGetValue(Conf.GossipTracker.ProcessingRequestFromGrpcClient, out var processingRequestFromGrpcClient) && processingRequestFromGrpcClient)
+			if (IsEnabled(conf.Gossip, Conf.GossipTracker.ProcessingRequestFromGrpcClient))
 				trackers.GossipTrackers.ProcessingRequestFromGrpcClient = new DurationTracker(gossipProcessingMetric, "request-from-grpc-client");
 
-			if (conf.Gossip.TryGetValue(Conf.GossipTracker.ProcessingRequestFromHttpClient, out var processingRequestFromHttpClient) && processingRequestFromHttpClient)
+			if (IsEnabled(conf.Gossip, Conf.GossipTracker.ProcessingRequestFromHttpClient))
 				trackers.GossipTrackers.ProcessingRequestFromHttpClient = new DurationTracker(gossipProcessingMetric, "request-from-http-client");
 		}
 
@@ -204,16 +197,16 @@ public static class MetricsBootstrapper {
 
 		// status metrics
 		if (conf.Statuses.Count > 0) {
-			if (conf.Statuses.TryGetValue(Conf.StatusTracker.Node, out var nodeStatus) && nodeStatus) {
+			if (IsEnabled(conf.Statuses, Conf.StatusTracker.Node)) {
 				var tracker = new NodeStatusTracker(statusMetric);
 				trackers.NodeStatusTracker = tracker;
 				trackers.InaugurationStatusTracker = tracker;
 			}
 
-			if (conf.Statuses.TryGetValue(Conf.StatusTracker.Index, out var indexStatus) && indexStatus)
+			if (IsEnabled(conf.Statuses, Conf.StatusTracker.Index))
 				trackers.IndexStatusTracker = new IndexStatusTracker(statusMetric);
 
-			if (conf.Statuses.TryGetValue(Conf.StatusTracker.Scavenge, out var scavengeStatus) && scavengeStatus)
+			if (IsEnabled(conf.Statuses, Conf.StatusTracker.Scavenge))
 				trackers.ScavengeStatusTracker = new ScavengeStatusTracker(statusMetric);
 		}
 
@@ -225,7 +218,7 @@ public static class MetricsBootstrapper {
 
 		// storage writer
 		if (conf.Writer.Count > 0) {
-			if (conf.Writer.TryGetValue(Conf.WriterTracker.FlushSize, out var flushSizeEnabled) && flushSizeEnabled) {
+			if (IsEnabled(conf.Writer, Conf.WriterTracker.FlushSize)) {
 				var maxMetric = new MaxMetric<long>(coreMeter, "eventstore-writer-flush-size-max");
 				trackers.WriterFlushSizeTracker = new MaxTracker<long>(
 					metric: maxMetric,
@@ -233,7 +226,7 @@ public static class MetricsBootstrapper {
 					expectedScrapeIntervalSeconds: conf.ExpectedScrapeIntervalSeconds);
 			}
 
-			if (conf.Writer.TryGetValue(Conf.WriterTracker.FlushDuration, out var flushDurationEnabled) && flushDurationEnabled) {
+			if (IsEnabled(conf.Writer, Conf.WriterTracker.FlushDuration)) {
 				var maxDurationmetric = new DurationMaxMetric(coreMeter, "eventstore-writer-flush-duration-max");
 				trackers.WriterFlushDurationTracker = new DurationMaxTracker(
 					maxDurationmetric,
@@ -247,22 +240,22 @@ public static class MetricsBootstrapper {
 		Func<string, IDurationMaxTracker> lengthFactory = name => new DurationMaxTracker.NoOp();
 		Func<string, IQueueProcessingTracker> processingFactory = name => new QueueProcessingTracker.NoOp();
 
-		if (conf.Queues.TryGetValue(Conf.QueueTracker.Busy, out var busyEnabled) && busyEnabled)
+		if (IsEnabled(conf.Queues, Conf.QueueTracker.Busy))
 			busyTrackerFactory = name => new QueueBusyTracker(queueBusyMetric, name);
 
-		if (conf.Queues.TryGetValue(Conf.QueueTracker.Length, out var lengthEnabled) && lengthEnabled)
+		if (IsEnabled(conf.Queues, Conf.QueueTracker.Length))
 			lengthFactory = name => new DurationMaxTracker(
 				name: name,
 				metric: queueQueueingDurationMaxMetric,
 				expectedScrapeIntervalSeconds: conf.ExpectedScrapeIntervalSeconds);
 
-		if (conf.Queues.TryGetValue(Conf.QueueTracker.Processing, out var processingEnabled) && processingEnabled)
+		if (IsEnabled(conf.Queues, Conf.QueueTracker.Processing))
 			processingFactory = name => new QueueProcessingTracker(queueProcessingDurationMetric, name);
 
 		trackers.QueueTrackers = new QueueTrackers(conf.QueueLabels, busyTrackerFactory, lengthFactory, processingFactory);
 
 		// kestrel
-		if (conf.Kestrel.TryGetValue(Conf.KestrelTracker.ConnectionCount, out var kestrelConnections) && kestrelConnections) {
+		if (IsEnabled(conf.Kestrel, Conf.KestrelTracker.ConnectionCount)) {
 			_ = new ConnectionMetric(coreMeter, "eventstore-kestrel-connections");
 		}
 
@@ -332,6 +325,8 @@ public static class MetricsBootstrapper {
 			{ Conf.ProcessTracker.DiskReadOps, "read" },
 			{ Conf.ProcessTracker.DiskWrittenOps, "written" },
 		});
+
+		static bool IsEnabled<T>(Dictionary<T, bool> dict, T key) => dict.TryGetValue(key, out var enabled) && enabled;
 	}
 
 	private static void LogConfig(Conf conf) {

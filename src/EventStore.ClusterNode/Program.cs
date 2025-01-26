@@ -218,6 +218,8 @@ try {
 			builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 			builder.Services.AddMudServices();
 			builder.Services.AddMudMarkdownServices();
+			builder.Services.AddSingleton(options);
+			builder.Services.AddScoped<LogObserver>();
 			var app = builder.Build();
 			hostedService.Node.Startup.Configure(app);
 			app.UseStaticFiles();
