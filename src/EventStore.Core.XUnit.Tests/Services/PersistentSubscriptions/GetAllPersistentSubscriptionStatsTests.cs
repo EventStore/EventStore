@@ -117,7 +117,7 @@ public class GetAllPersistentSubscriptionStatsTests {
 		Assert.NotNull(response);
 		Assert.Equal(OperationStatus.Success, response.Result);
 		Assert.Single(response.SubscriptionStats);
-		Assert.Equal(0, response.Offset);
+		Assert.Equal(0, response.RequestedOffset);
 		Assert.Equal(1, response.Total);
 		var responseEntry = response.SubscriptionStats[0];
 		Assert.Equal(psubEntry.Group, responseEntry.GroupName);
@@ -173,7 +173,7 @@ public class GetAllPersistentSubscriptionStatsTests {
 		// Assert
 		Assert.NotNull(response);
 		Assert.Equal(OperationStatus.Success, response.Result);
-		Assert.Equal(offset, response.Offset);
+		Assert.Equal(offset, response.RequestedOffset);
 		Assert.Equal(4, response.Total);
 
 		var actualTopics = response.SubscriptionStats

@@ -1339,7 +1339,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
 				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success,
 				stats,
-				offset: message.Offset,
+				requestedOffset: message.Offset,
+				requestedCount: message.Count,
 				total: total));
 		}
 

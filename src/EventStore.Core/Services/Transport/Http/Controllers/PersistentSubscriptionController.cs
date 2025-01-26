@@ -768,7 +768,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					_networkSendQueue, http,
 					(_, message) =>
 						http.ResponseCodec.To(ToPagedSummaryDto(
-							http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted, count)),
+							http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted)),
 					(_, message) => StatsConfiguration(http, message));
 				var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope, offset, count);
 				Publish(cmd);
@@ -1014,24 +1014,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		private PagedSubscriptionInfo ToPagedSummaryDto(HttpEntityManager manager,
-			MonitoringMessage.GetPersistentSubscriptionStatsCompleted message, int requestedCount) {
+			MonitoringMessage.GetPersistentSubscriptionStatsCompleted message) {
 
 			if (message is null || message.SubscriptionStats is null) {
 				return new PagedSubscriptionInfo();
 			}
 
 			var stats = ToSummaryDto(manager, message).ToArray();
-			var actualCount = stats.Length; //qq this is the count of subscriptions not the count of topics
-			var nextOffset = message.Offset + actualCount; //qq maybe use requestedCount to keep alignment?
-			var prevOffset = Math.Max(0, message.Offset - requestedCount);
+			var offset = message.RequestedOffset;
+			var count = message.RequestedCount;
+			var nextOffset = offset + count;
+			var prevOffset = Math.Max(0, offset - count);
 			return new PagedSubscriptionInfo {
 				Links = [
-					new(MakeUrl(manager, "/subscriptions", $"?offset={message.Offset}&count={requestedCount}"), "self"),
-					new(MakeUrl(manager, "/subscriptions", $"?offset={nextOffset}&count={requestedCount}"), "next"),
-					new(MakeUrl(manager, "/subscriptions", $"?offset={prevOffset}&count={requestedCount}"), "previous")
+					new(MakeUrl(manager, "/subscriptions", $"?offset={offset}&count={count}"), "self"),
+					new(MakeUrl(manager, "/subscriptions", $"?offset={nextOffset}&count={count}"), "next"),
+					new(MakeUrl(manager, "/subscriptions", $"?offset={prevOffset}&count={count}"), "previous")
 				],
-				Offset = message.Offset,
-				Count = actualCount, //qq what does this mean to the ui, maybe we should pass the requestedCount and get it from the completed message
+				Offset = offset,
+				Count = count,
 				Total = message.Total,
 				Subscriptions = stats,
 			};

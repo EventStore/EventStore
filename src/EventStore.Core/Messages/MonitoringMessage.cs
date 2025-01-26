@@ -70,7 +70,8 @@ namespace EventStore.Core.Messages {
 			public readonly OperationStatus Result;
 			public readonly List<PersistentSubscriptionInfo> SubscriptionStats;
 			public string ErrorString;
-			public readonly int Offset; //qq rename to RequestedOffset?
+			public readonly int RequestedOffset;
+			public readonly int RequestedCount;
 			public readonly int Total;
 
 			public GetPersistentSubscriptionStatsCompleted(OperationStatus result,
@@ -81,11 +82,12 @@ namespace EventStore.Core.Messages {
 			}
 
 			public GetPersistentSubscriptionStatsCompleted(OperationStatus result,
-				List<PersistentSubscriptionInfo> subscriptionStats, int offset, int total, string errorString = "") {
+				List<PersistentSubscriptionInfo> subscriptionStats, int requestedOffset, int requestedCount, int total, string errorString = "") {
 				Result = result;
 				SubscriptionStats = subscriptionStats;
 				ErrorString = errorString;
-				Offset = offset;
+				RequestedOffset = requestedOffset;
+				RequestedCount = requestedCount;
 				Total = total;
 			}
 
