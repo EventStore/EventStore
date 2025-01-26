@@ -1021,8 +1021,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			}
 
 			var stats = ToSummaryDto(manager, message).ToArray();
-			var actualCount = stats.Length;
-			var nextOffset = message.Offset + actualCount;
+			var actualCount = stats.Length; //qq this is the count of subscriptions not the count of topics
+			var nextOffset = message.Offset + actualCount; //qq maybe use requestedCount to keep alignment?
 			var prevOffset = Math.Max(0, message.Offset - requestedCount);
 			return new PagedSubscriptionInfo {
 				Links = [
@@ -1031,9 +1031,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					new(MakeUrl(manager, "/subscriptions", $"?offset={prevOffset}&count={requestedCount}"), "previous")
 				],
 				Offset = message.Offset,
-				Count = actualCount,
+				Count = actualCount, //qq what does this mean to the ui, maybe we should pass the requestedCount and get it from the completed message
 				Total = message.Total,
-				Subscriptions = stats
+				Subscriptions = stats,
 			};
 		}
 

@@ -70,7 +70,7 @@ namespace EventStore.Core.Messages {
 			public readonly OperationStatus Result;
 			public readonly List<PersistentSubscriptionInfo> SubscriptionStats;
 			public string ErrorString;
-			public readonly int Offset;
+			public readonly int Offset; //qq rename to RequestedOffset?
 			public readonly int Total;
 
 			public GetPersistentSubscriptionStatsCompleted(OperationStatus result,

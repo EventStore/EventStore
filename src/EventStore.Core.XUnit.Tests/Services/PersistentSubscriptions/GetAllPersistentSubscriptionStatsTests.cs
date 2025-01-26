@@ -127,27 +127,29 @@ public class GetAllPersistentSubscriptionStatsTests {
 	}
 
 	[Theory]
-	[InlineData(0, 0, new string[]{})]
-	[InlineData(10, 0, new string[]{})]
-	[InlineData(0, 2, new[] {"1", "2"})]
-	[InlineData(2, 2, new[] {"3", "4"})]
-	[InlineData(3, 2, new[] {"4"})]
-	[InlineData(4, 2, new string[]{})]
-	public void when_getting_all_stats_from_multiple_subscriptions_paged(int offset, int count, string[] expectedSubscriptions) {
+	[InlineData(0, 0, new string[] { })]
+	[InlineData(10, 0, new string[] { })]
+	[InlineData(0, 2, new[] { "stream-1", "stream-2" })]
+	[InlineData(2, 2, new[] { "stream-3", "stream-4" })]
+	[InlineData(3, 2, new[] { "stream-4" })]
+	[InlineData(4, 2, new string[] { })]
+	public void when_getting_all_stats_from_multiple_subscriptions_paged(int offset, int count, string[] expectedTopics) {
 		// Arrange
 		var responseEnvelope = new FakeEnvelope();
 		var sut = CreateSut();
 		var psubs = new List<PersistentSubscriptionEntry>();
-		var groups = new int[] { 3, 2, 0, 1 }; // no particular order
-		foreach (var i in groups) {
-			psubs.Add(new PersistentSubscriptionEntry {
-				Group = $"{i + 1}",
-				Stream = $"test-stream-{i + 1}",
-				HistoryBufferSize = 20,
-				LiveBufferSize = 20,
-				ReadBatchSize = 10,
-				NamedConsumerStrategy = SystemConsumerStrategies.RoundRobin
-			});
+		var topics = new int[] { 3, 2, 0, 1 }; // no particular order
+		foreach (var topic in topics) {
+			for (var group = 0; group < 2; group++) {
+				psubs.Add(new PersistentSubscriptionEntry {
+					Group = $"{group + 1}",
+					Stream = $"stream-{topic + 1}",
+					HistoryBufferSize = 20,
+					LiveBufferSize = 20,
+					ReadBatchSize = 10,
+					NamedConsumerStrategy = SystemConsumerStrategies.RoundRobin
+				});
+			}
 		}
 
 		var psubConfig = new PersistentSubscriptionConfig {
@@ -171,11 +173,14 @@ public class GetAllPersistentSubscriptionStatsTests {
 		// Assert
 		Assert.NotNull(response);
 		Assert.Equal(OperationStatus.Success, response.Result);
-		for (var i = 0; i < expectedSubscriptions.Length; i++) {
-			Assert.Equal(expectedSubscriptions[i], response.SubscriptionStats[i].GroupName);
-			Assert.Equal(offset, response.Offset);
-			Assert.Equal(4, response.Total);
-		}
+		Assert.Equal(offset, response.Offset);
+		Assert.Equal(4, response.Total);
+
+		var actualTopics = response.SubscriptionStats
+			.GroupBy(x => x.EventSource)
+			.Select(x => x.Key)
+			.Order();
+		Assert.Equal(expectedTopics, actualTopics);
 	}
 
 	private ClientMessage.ReadStreamEventsBackwardCompleted ReadPersistentSubscriptionConfigCompleted(
