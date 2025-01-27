@@ -203,12 +203,18 @@ try {
 				x.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
 #endif
 			});
-			builder.WebHost.UseKestrel(server => {
+			builder.WebHost.ConfigureKestrel(server => {
 				server.Limits.Http2.KeepAlivePingDelay = TimeSpan.FromMilliseconds(options.Grpc.KeepAliveInterval);
 				server.Limits.Http2.KeepAlivePingTimeout = TimeSpan.FromMilliseconds(options.Grpc.KeepAliveTimeout);
 
-				server.Listen(options.Interface.NodeIp, options.Interface.NodePort, listenOptions =>
-					ConfigureHttpOptions(listenOptions, hostedService, useHttps: !hostedService.Node.DisableHttps));
+				server.Listen(options.Interface.NodeIp, options.Interface.NodePort, listenOptions => {
+					ConfigureHttpOptions(listenOptions, hostedService, useHttps: !hostedService.Node.DisableHttps);
+					listenOptions.Protocols = HttpProtocols.Http2;
+				});
+				server.Listen(options.Interface.NodeIp, 2114, listenOptions => {
+					ConfigureHttpOptions(listenOptions, hostedService, useHttps: !hostedService.Node.DisableHttps);
+					listenOptions.Protocols = HttpProtocols.Http1;
+				});
 
 				if (hostedService.Node.EnableUnixSocket)
 					TryListenOnUnixSocket(hostedService, server);
@@ -216,7 +222,7 @@ try {
 			hostedService.Node.Startup.ConfigureServices(builder.Services);
 			builder.Services.AddSingleton<IHostedService>(hostedService);
 			builder.Services.AddSingleton<Preferences>();
-			builder.Services.AddDataProtection().PersistKeysToFileSystem(new(options.Database.Db));
+			builder.Services.AddDataProtection().PersistKeysToFileSystem(new(hostedService.Node.Db.Config.Path));
 			builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 			builder.Services.AddMudServices();
 			builder.Services.AddMudMarkdownServices();
@@ -248,8 +254,8 @@ try {
 static void ConfigureHttpOptions(ListenOptions listenOptions, ClusterVNodeHostedService hostedService, bool useHttps) {
 	if (useHttps)
 		listenOptions.UseHttps(CreateServerOptionsSelectionCallback(hostedService), null);
-	else
-		listenOptions.Use(next => new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
+	// else
+		// listenOptions.Use(next => new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
 }
 
 static void TryListenOnUnixSocket(ClusterVNodeHostedService hostedService, KestrelServerOptions server) {
