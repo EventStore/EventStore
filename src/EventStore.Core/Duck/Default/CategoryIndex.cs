@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Dapper;
+using EventStore.Core.Data;
 using EventStore.Core.Metrics;
 using Eventuous.Subscriptions.Context;
 
@@ -46,7 +47,7 @@ class CategoryIndex(DuckDb db) {
 		return result;
 	}
 
-	public long GetLastEventNumber(long categoryId) => CategorySizes[categoryId];
+	public long GetLastEventNumber(long categoryId) => CategorySizes.TryGetValue(categoryId, out var size) ? size : ExpectedVersion.NoStream;
 
 	long GetCategoryLastEventNumber(long categoryId) {
 		return db.Connection.QueryWithRetry<long>("select max(seq) from idx_all where category=$cat", new { cat = categoryId }).SingleOrDefault();

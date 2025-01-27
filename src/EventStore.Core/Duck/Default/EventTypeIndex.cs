@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Dapper;
+using EventStore.Core.Data;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using Eventuous.Subscriptions.Context;
@@ -13,11 +14,11 @@ namespace EventStore.Core.Duck.Default;
 class EventTypeIndexReader<TStreamId>(EventTypeIndex eventTypeIndex, IReadIndex<TStreamId> index) : DuckIndexReader<TStreamId>(index) {
 	protected override long GetId(string streamName) {
 		if (!streamName.StartsWith("$etype-")) {
-			throw new InvalidOperationException($"Stream {streamName} is not an event type stream");
+			return EventNumber.Invalid;
 		}
 
 		var eventType = streamName[(streamName.IndexOf('-') + 1)..];
-		return eventTypeIndex.EventTypes[eventType];
+		return eventTypeIndex.EventTypes.TryGetValue(eventType, out var id) ? id : ExpectedVersion.NoStream;
 	}
 
 	protected override long GetLastNumber(long id) => eventTypeIndex.GetLastEventNumber(id);
@@ -52,7 +53,7 @@ public class EventTypeIndex(DuckDb db) {
 		}
 	}
 
-	public long GetLastEventNumber(long id) => Sequences[id];
+	public long GetLastEventNumber(long id) => Sequences.TryGetValue(id, out var size) ? size : ExpectedVersion.NoStream;
 
 	public IEnumerable<IndexedPrepare> GetRecords(long id, long fromEventNumber, long toEventNumber) {
 		var range = QueryEventType(id, fromEventNumber, toEventNumber);

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Duck.Default;
@@ -12,11 +13,11 @@ class CategoryIndexReader<TStreamId>(CategoryIndex categoryIndex, IReadIndex<TSt
 	protected override long GetId(string streamName) {
 		var dashIndex = streamName.IndexOf('-');
 		if (dashIndex == -1) {
-			throw new InvalidOperationException($"Stream {streamName} is not a category stream");
+			return ExpectedVersion.Invalid;
 		}
 
 		var category = streamName[(dashIndex + 1)..];
-		return categoryIndex.Categories[category];
+		return categoryIndex.Categories.TryGetValue(category, out var id) ? id : ExpectedVersion.NoStream;
 	}
 
 	protected override long GetLastNumber(long id) => categoryIndex.GetLastEventNumber(id);

@@ -22,7 +22,7 @@ using Serilog;
 namespace EventStore.Core.Duck.Infrastructure;
 
 public static class ReaderExtensions {
-	public static async ValueTask<IReadOnlyList<ResolvedEvent>> ReadRecords<TStreamId>(this IIndexReader<TStreamId> index, IEnumerable<IndexedPrepare> indexPrepares,
+	public static async ValueTask<IReadOnlyList<ResolvedEvent>> ReadRecords<TStreamId>(this IIndexReader<TStreamId> index, string virtualStreamId, IEnumerable<IndexedPrepare> indexPrepares,
 		CancellationToken cancellationToken) {
 		using var reader = index.BorrowReader();
 		// ReSharper disable once AccessToDisposedClosure
@@ -30,22 +30,21 @@ public static class ReaderExtensions {
 		var prepared = await Task.WhenAll(readPrepares);
 		var recordsQuery = prepared.Where(x => x.Prepare != null).OrderBy(x => x.Record.Version).ToList();
 		var records = recordsQuery
-			.Select(x => (Record: x, StreamName: x.Prepare.EventStreamId.ToString()))
 			.Select(x => ResolvedEvent.ForResolvedLink(
-				new(x.Record.Record.EventNumber, x.Record.Prepare, x.StreamName, x.Record.Prepare.EventType.ToString()),
+				new(x.Record.EventNumber, x.Prepare, x.Prepare.EventStreamId.ToString(), x.Prepare.EventType.ToString()),
 				new(
-					x.Record.Record.Version,
-					x.Record.Prepare.LogPosition,
-					x.Record.Prepare.CorrelationId,
-					x.Record.Prepare.EventId,
-					x.Record.Prepare.TransactionPosition,
-					x.Record.Prepare.TransactionOffset,
-					x.StreamName,
-					x.Record.Record.Version,
-					x.Record.Prepare.TimeStamp,
-					x.Record.Prepare.Flags,
+					x.Record.Version,
+					x.Prepare.LogPosition,
+					x.Prepare.CorrelationId,
+					x.Prepare.EventId,
+					x.Prepare.TransactionPosition,
+					x.Prepare.TransactionOffset,
+					virtualStreamId,
+					x.Record.Version,
+					x.Prepare.TimeStamp,
+					x.Prepare.Flags,
 					"$>",
-					Encoding.UTF8.GetBytes($"{x.Record.Record.EventNumber}@{x.StreamName}"),
+					Encoding.UTF8.GetBytes($"{x.Record.EventNumber}@{x.Prepare.EventStreamId.ToString()}"),
 					[]
 				))
 			);

@@ -33,15 +33,15 @@ abstract class DuckIndexReader<TStreamId>(IReadIndex<TStreamId> index) : IVirtua
 		return await ReadBackwards(msg, index.IndexReader, index.LastIndexedPosition, token);
 	}
 
-	async ValueTask<IReadOnlyList<ResolvedEvent>> GetEvents(IIndexReader<TStreamId> indexReader, long id, long fromEventNumber, long toEventNumber,
+	async ValueTask<IReadOnlyList<ResolvedEvent>> GetEvents(IIndexReader<TStreamId> indexReader, string virtualStreamId, long id, long fromEventNumber, long toEventNumber,
 		CancellationToken cancellationToken) {
 		var indexPrepares = GetIndexRecords(id, fromEventNumber, toEventNumber);
-		return await indexReader.ReadRecords(indexPrepares, cancellationToken);
+		return await indexReader.ReadRecords(virtualStreamId, indexPrepares, cancellationToken);
 	}
 
 	public ValueTask<long> GetLastEventNumber(string streamName) {
 		var id = GetId(streamName);
-		return ValueTask.FromResult(GetLastNumber(id));
+		return ValueTask.FromResult(id >= 0 ? GetLastNumber(id) : id);
 	}
 
 	public abstract ValueTask<long> GetLastIndexedPosition();
@@ -61,7 +61,7 @@ abstract class DuckIndexReader<TStreamId>(IReadIndex<TStreamId> index) : IVirtua
 
 		long endEventNumber = msg.FromEventNumber < 0 ? lastEventNumber : msg.FromEventNumber;
 		long startEventNumber = Math.Max(0L, endEventNumber - msg.MaxCount + 1);
-		var resolved = await GetEvents(reader, id, startEventNumber, endEventNumber, token);
+		var resolved = await GetEvents(reader, msg.EventStreamId, id, startEventNumber, endEventNumber, token);
 
 		if (resolved.Count == 0)
 			return StorageReaderWorker<TStreamId>.NoData(msg, ReadStreamResult.Success, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);
@@ -87,7 +87,7 @@ abstract class DuckIndexReader<TStreamId>(IReadIndex<TStreamId> index) : IVirtua
 		var fromEventNumber = msg.FromEventNumber < 0 ? 0 : msg.FromEventNumber;
 		var maxCount = msg.MaxCount;
 		var endEventNumber = fromEventNumber > long.MaxValue - maxCount + 1 ? long.MaxValue : fromEventNumber + maxCount - 1;
-		var resolved = await GetEvents(reader, id, fromEventNumber, endEventNumber, token);
+		var resolved = await GetEvents(reader, msg.EventStreamId, id, fromEventNumber, endEventNumber, token);
 
 		if (resolved.Count == 0)
 			return StorageReaderWorker<TStreamId>.NoData(msg, ReadStreamResult.Success, lastIndexedPosition, msg.ValidationStreamVersion ?? 0);

@@ -7,15 +7,18 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using Serilog;
 
 namespace EventStore.Core.Duck.Default;
 
 class DefaultIndexReader<TStreamId>(DuckDb db, DefaultIndexHandler<TStreamId> handler, IReadIndex<TStreamId> index) : DuckIndexReader<TStreamId>(index) {
+	static readonly ILogger Log = Serilog.Log.ForContext<DefaultIndexReader<TStreamId>>();
 	protected override long GetId(string streamName) => 0;
 
-	protected override long GetLastNumber(long id) => handler.LastSequence;
+	protected override long GetLastNumber(long id) => handler.LastSequence - 1;
 
 	protected override IEnumerable<IndexedPrepare> GetIndexRecords(long _, long fromEventNumber, long toEventNumber) {
+		// Log.Debug("Querying default index from {From} to {To}", fromEventNumber, toEventNumber);
 		var range = QueryAll(fromEventNumber, toEventNumber);
 		var indexPrepares = range.Select(x => new IndexedPrepare(x.seq, x.event_number, x.log_position));
 		return indexPrepares;
