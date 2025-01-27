@@ -58,7 +58,7 @@ public class AuthenticationMiddleware(IReadOnlyList<IHttpAuthenticationProvider>
 	private async Task HandleAsGrpcAsync(HttpContext context, RequestDelegate next) {
 		var (status, principal) = TrySelectProvider(context, out var authenticationRequest)
 			? await authenticationRequest.AuthenticateAsync()
-			: (HttpAuthenticationRequestStatus.Unauthenticated, default);
+			: (HttpAuthenticationRequestStatus.Unauthenticated, null);
 
 		GrpcProtocolHelpers.AddProtocolHeaders(context.Response);
 		var trailersDestination = GrpcProtocolHelpers.GetTrailersDestination(context.Response);

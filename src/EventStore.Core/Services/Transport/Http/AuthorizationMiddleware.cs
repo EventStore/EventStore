@@ -24,7 +24,9 @@ public class AuthorizationMiddleware(IAuthorizationProvider authorization) : IMi
 		}
 
 		//LOG
-		Log.Error("Failed to get internal http components for request {requestId}", context.TraceIdentifier);
-		context.Response.StatusCode = HttpStatusCode.InternalServerError;
+		await next(context);
+		// TODO: Why was it like this? It fails for all HTTP calls for which there's no component.
+		// Log.Error("Failed to get internal http components for request {requestId}", context.TraceIdentifier);
+		// context.Response.StatusCode = HttpStatusCode.InternalServerError;
 	}
 }

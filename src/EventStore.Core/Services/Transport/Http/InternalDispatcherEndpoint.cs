@@ -25,7 +25,9 @@ public class InternalDispatcherEndpoint(IPublisher inputBus, MultiQueuedHandler 
 		inputBus.Publish(TimerMessage.Schedule.Create(UpdateInterval, _publishEnvelope, message));
 	}
 
-	public Task InvokeAsync(HttpContext context) {
+	public Task InvokeAsync(HttpContext context, RequestDelegate next) {
+		if (context.IsGrpc() || context.Request.Path.StartsWithSegments("/ui")) return next(context);
+
 		if (!InternalHttpHelper.TryGetInternalContext(context, out var manager, out var match, out var tcs)) {
 			Log.Error("Failed to get internal http components for request {requestId}", context.TraceIdentifier);
 			context.Response.StatusCode = HttpStatusCode.InternalServerError;

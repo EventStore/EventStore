@@ -18,7 +18,14 @@ namespace EventStore.Core.Services.Transport.Http;
 public class KestrelToInternalBridgeMiddleware(IUriRouter uriRouter, bool logHttpRequests, string advertiseAsAddress, int advertiseAsPort) : IMiddleware {
 	private static readonly ILogger Log = Serilog.Log.ForContext<KestrelToInternalBridgeMiddleware>();
 
+	public Task InvokeAsync(HttpContext context, RequestDelegate next) {
+		return TryMatch(context, uriRouter, logHttpRequests, advertiseAsAddress, advertiseAsPort) ? next(context) : Task.CompletedTask;
+	}
+
 	private static bool TryMatch(HttpContext context, IUriRouter uriRouter, bool logHttpRequests, string advertiseAsAddress, int advertiseAsPort) {
+		if (context.IsGrpc() || context.Request.Path.StartsWithSegments("/ui")) {
+			return true;
+		}
 		var tcs = new TaskCompletionSource<bool>();
 		var httpEntity = new HttpEntity(context, logHttpRequests, advertiseAsAddress, advertiseAsPort, () => tcs.TrySetResult(true));
 
@@ -163,9 +170,5 @@ public class KestrelToInternalBridgeMiddleware(IUriRouter uriRouter, bool logHtt
 			"atomsvcxj" => ContentType.AtomServiceDocJson,
 			_ => throw new NotSupportedException("Unknown format requested")
 		};
-	}
-
-	public Task InvokeAsync(HttpContext context, RequestDelegate next) {
-		return TryMatch(context, uriRouter, logHttpRequests, advertiseAsAddress, advertiseAsPort) ? next(context) : Task.CompletedTask;
 	}
 }

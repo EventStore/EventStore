@@ -19,6 +19,7 @@ using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -106,12 +107,6 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		var internalDispatcher = new InternalDispatcherEndpoint(_mainQueue, _httpMessageHandler);
 		_mainBus.Subscribe(internalDispatcher);
 
-		app.Map("/health", _statusCheck.Configure);
-		app.UseStaticFiles();
-		// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
-		// the resulting ClaimsPrinciple to HttpContext.User
-		app.UseMiddleware<AuthenticationMiddleware>();
-
 		// UseAuthentication/UseAuthorization allow the rest of the pipeline to access auth
 		// in a conventional way (e.g. with AuthorizeAttribute). The server doesn't make use
 		// of this yet but plugins may. The registered authentication scheme (es auth)
@@ -120,6 +115,12 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 			.UseRouting()
 			.UseAuthorization()
 			.UseAntiforgery();
+
+		app.Map("/health", _statusCheck.Configure);
+		app.UseStaticFiles();
+		// AuthenticationMiddleware uses _httpAuthenticationProviders and assigns
+		// the resulting ClaimsPrinciple to HttpContext.User
+		app.UseMiddleware<AuthenticationMiddleware>();
 
 		// allow all subsystems to register their legacy controllers before calling MapLegacyHttp
 		foreach (var component in _plugableComponents)
@@ -135,6 +136,8 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		app.MapGrpcService<ClientGossip>();
 		app.MapGrpcService<Monitoring>();
 		app.MapGrpcService<ServerFeatures>();
+
+		// app.MapGet("/", () => Results.RedirectToRoute("/ui"));
 
 		// enable redaction service on unix sockets only
 		app.MapGrpcService<Redaction>().AddEndpointFilter(async (c, next) => {
@@ -155,11 +158,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
 		// Internal dispatcher looks up the InternalContext to call the appropriate controller
-		app.Use(_ => internalDispatcher.InvokeAsync);
-
-		// Map the legacy controller endpoints with special middleware pipeline
-		// var dispatcher = ((IApplicationBuilder)app).Build();
-		// app.MapLegacyHttp(dispatcher, _httpService);
+		app.Use((ctx, next) => internalDispatcher.InvokeAsync(ctx, next));
 
 		_startNode(app);
 	}
