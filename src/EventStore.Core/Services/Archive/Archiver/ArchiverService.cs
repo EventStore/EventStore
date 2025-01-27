@@ -27,6 +27,7 @@ public sealed class ArchiverService :
 	IAsyncDisposable {
 
 	private static readonly ILogger Log = Serilog.Log.ForContext<ArchiverService>();
+	private static readonly TimeSpan MaxInterval = TimeSpan.FromSeconds(10);
 	private readonly IArchiveStorage _archive;
 	private readonly CancellationToken _lifetimeToken;
 	private readonly AsyncAutoResetEvent _archivingSignal;
@@ -76,6 +77,7 @@ public sealed class ArchiverService :
 	[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))]
 	private async Task ArchiveAsync() {
 		var checkpoint = await _archive.GetCheckpoint(_lifetimeToken);
+		Log.Warning("Archive is at checkpoint 0x{checkpoint:X}", checkpoint);
 		while (!_lifetimeToken.IsCancellationRequested) {
 			await ProcessSwitchedChunksAsync(checkpoint, _lifetimeToken);
 
@@ -92,7 +94,10 @@ public sealed class ArchiverService :
 				Log.Information("Setting archive checkpoint to 0x{checkpoint:X}", checkpoint);
 				await _archive.SetCheckpoint(checkpoint, _lifetimeToken);
 			} else {
-				await _archivingSignal.WaitAsync(_lifetimeToken);
+				// loop after MaxInterval even if not triggered. (e.g. replication checkpoint can move
+				// before the chunks are available for us to store to the archive)
+				await _archivingSignal.WaitAsync(MaxInterval, _lifetimeToken);
+			}
 			}
 		}
 	}
