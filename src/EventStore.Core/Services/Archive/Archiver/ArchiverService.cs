@@ -98,7 +98,6 @@ public sealed class ArchiverService :
 				// before the chunks are available for us to store to the archive)
 				await _archivingSignal.WaitAsync(MaxInterval, _lifetimeToken);
 			}
-			}
 		}
 	}
 
