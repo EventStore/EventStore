@@ -28,8 +28,8 @@ public sealed class FileSystemWithArchive : IChunkFileSystem {
 		_archive = archive;
 	}
 
-	public IVersionedFileNamingStrategy NamingStrategy =>
-		_localFileSystem.NamingStrategy;
+	public IVersionedFileNamingStrategy LocalNamingStrategy =>
+		_localFileSystem.LocalNamingStrategy;
 
 	public ValueTask<IChunkHandle> OpenForReadAsync(string locator, IChunkFileSystem.ReadOptimizationHint hint,
 		CancellationToken token) {

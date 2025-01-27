@@ -127,7 +127,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 	}
 
 	public ValueTask<TFChunk.TFChunk> CreateTempChunk(ChunkHeader chunkHeader, int fileSize, CancellationToken token) {
-		var chunkFileName = FileSystem.NamingStrategy.CreateTempFilename();
+		var chunkFileName = FileSystem.LocalNamingStrategy.CreateTempFilename();
 		return TFChunk.TFChunk.CreateWithHeader(
 			FileSystem,
 			chunkFileName,
@@ -153,7 +153,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 		await _chunksLocker.AcquireAsync(token);
 		try {
 			var chunkNumber = _chunksCount;
-			var chunkName = FileSystem.NamingStrategy.GetFilenameFor(chunkNumber, 0);
+			var chunkName = FileSystem.LocalNamingStrategy.GetFilenameFor(chunkNumber, 0);
 			chunk = await TFChunk.TFChunk.CreateNew(
 				FileSystem,
 				chunkName,
@@ -193,7 +193,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 					"Received request to create a new ongoing chunk #{0}-{1}, but current chunks count is {2}.",
 					chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, _chunksCount));
 
-			var chunkName = FileSystem.NamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, 0);
+			var chunkName = FileSystem.LocalNamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, 0);
 			chunk = await TFChunk.TFChunk.CreateWithHeader(
 				FileSystem,
 				chunkName,
@@ -324,7 +324,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 
 			// calculate the appropriate chunk version and move the chunk to the right filename.
 			var newFileName =
-				FileSystem.NamingStrategy.DetermineNewVersionFilenameForIndex(chunkHeader.ChunkStartNumber, defaultVersion: 1);
+				FileSystem.LocalNamingStrategy.DetermineNewVersionFilenameForIndex(chunkHeader.ChunkStartNumber, defaultVersion: 1);
 			Log.Information("File {oldFileName} will be moved to file {newFileName}", Path.GetFileName(oldFileName),
 				Path.GetFileName(newFileName));
 			try {

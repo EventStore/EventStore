@@ -16,6 +16,8 @@ public class ArchiveChunkNameResolver : IArchiveChunkNameResolver {
 	public string Prefix => _namingStrategy.Prefix;
 
 	public string ResolveFileName(int logicalChunkNumber) {
+		// naming chunks remotely in a way that is compatible with locally allows us
+		// to easily download remote chunks and use them locally.
 		var filePath = _namingStrategy.GetFilenameFor(logicalChunkNumber, version: 1);
 		return Path.GetFileName(filePath);
 	}

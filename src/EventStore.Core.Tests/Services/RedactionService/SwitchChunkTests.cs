@@ -33,7 +33,7 @@ public abstract class SwitchChunkTests<TLogFormat, TStreamId> : RedactionService
 
 		var writerPos = Writer.Position;
 		var chunk = Path.GetFileName(Db.Manager.GetChunkFor(writerPos).LocalFileName);
-		var chunkNum = Db.Manager.FileSystem.NamingStrategy.GetIndexFor(chunk);
+		var chunkNum = Db.Manager.FileSystem.LocalNamingStrategy.GetIndexFor(chunk);
 		Assert.AreEqual(2, chunkNum);
 
 		// create an empty file that can be used in tests that require the target or new chunk files to exist
@@ -61,7 +61,7 @@ public abstract class SwitchChunkTests<TLogFormat, TStreamId> : RedactionService
 	}
 
 	protected string GetChunk(int chunkNum, int chunkVersion, bool fullPath = false) {
-		var chunkPath = Db.Manager.FileSystem.NamingStrategy.GetFilenameFor(chunkNum, chunkVersion);
+		var chunkPath = Db.Manager.FileSystem.LocalNamingStrategy.GetFilenameFor(chunkNum, chunkVersion);
 		return fullPath ? chunkPath : Path.GetFileName(chunkPath);
 	}
 

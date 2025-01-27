@@ -1588,7 +1588,7 @@ public class ClusterVNode<TStreamId> :
 					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()))
 				.AddSingleton(_nodeHttpClientFactory)
 				.AddSingleton<IChunkRegistry<IChunkBlob>>(Db.Manager)
-				.AddSingleton(Db.Manager.FileSystem.NamingStrategy);
+				.AddSingleton<IVersionedFileNamingStrategy>(Db.Manager.FileSystem.LocalNamingStrategy);
 
 			configureAdditionalNodeServices?.Invoke(services);
 			return services;
