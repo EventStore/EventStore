@@ -17,7 +17,7 @@ namespace EventStore.Core.Services.Archive.Storage;
 
 public class ArchiveStorage(
 	IBlobStorage blobStorage,
-	IArchiveChunkNameResolver chunkNameResolver,
+	IArchiveNamingStrategy namingStrategy,
 	string archiveCheckpointFile)
 	: IArchiveStorage {
 
@@ -34,7 +34,7 @@ public class ArchiveStorage(
 
 	public async ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {
 		try {
-			var chunkFile = chunkNameResolver.ResolveFileName(logicalChunkNumber);
+			var chunkFile = namingStrategy.GetBlobNameFor(logicalChunkNumber);
 			return await blobStorage.ReadAsync(chunkFile, buffer, offset, ct);
 		} catch (FileNotFoundException) {
 			throw new ChunkDeletedException();
@@ -43,7 +43,7 @@ public class ArchiveStorage(
 
 	public async ValueTask<ArchivedChunkMetadata> GetMetadataAsync(int logicalChunkNumber, CancellationToken ct) {
 		try {
-			var objectName = chunkNameResolver.ResolveFileName(logicalChunkNumber);
+			var objectName = namingStrategy.GetBlobNameFor(logicalChunkNumber);
 			var metadata = await blobStorage.GetMetadataAsync(objectName, ct);
 			return new(PhysicalSize: metadata.Size);
 		} catch (FileNotFoundException) {
@@ -80,7 +80,7 @@ public class ArchiveStorage(
 	private async ValueTask StoreAsync(IChunkBlob chunk, CancellationToken ct) {
 		Debug.Assert(chunk.ChunkHeader.IsSingleLogicalChunk);
 
-		var name = chunkNameResolver.ResolveFileName(chunk.ChunkHeader.ChunkStartNumber);
+		var name = namingStrategy.GetBlobNameFor(chunk.ChunkHeader.ChunkStartNumber);
 		using var reader = await chunk.AcquireRawReader(ct);
 		reader.Stream.Position = 0L;
 		await blobStorage.StoreAsync(reader.Stream, name, ct);

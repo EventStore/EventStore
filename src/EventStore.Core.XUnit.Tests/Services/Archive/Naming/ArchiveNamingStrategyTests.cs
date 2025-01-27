@@ -8,10 +8,10 @@ using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Services.Archive.Naming;
 
-public class ArchiveChunkNameResolverTests {
-	private static ArchiveChunkNameResolver CreateSut() {
+public class ArchiveNamingStrategyTests {
+	private static ArchiveNamingStrategy CreateSut() {
 		var namingStrategy = new VersionedPatternFileNamingStrategy(string.Empty, "chunk-");
-		return new ArchiveChunkNameResolver(namingStrategy);
+		return new ArchiveNamingStrategy(namingStrategy);
 	}
 
 	[Theory]
@@ -20,14 +20,14 @@ public class ArchiveChunkNameResolverTests {
 	[InlineData(1000, "chunk-001000.000001")]
 	public void returns_correct_file_name(int logicalChunkNumber, string expectedFileName) {
 		var sut = CreateSut();
-		Assert.Equal(expectedFileName, sut.ResolveFileName(logicalChunkNumber));
+		Assert.Equal(expectedFileName, sut.GetBlobNameFor(logicalChunkNumber));
 	}
 
 	[Fact]
 	public void throws_if_chunk_number_is_negative() {
 		var sut = CreateSut();
-		Assert.Throws<ArgumentOutOfRangeException>(() => sut.ResolveFileName(-1));
-		Assert.Throws<ArgumentOutOfRangeException>(() => sut.ResolveFileName(-2));
+		Assert.Throws<ArgumentOutOfRangeException>(() => sut.GetBlobNameFor(-1));
+		Assert.Throws<ArgumentOutOfRangeException>(() => sut.GetBlobNameFor(-2));
 	}
 
 	[Fact]

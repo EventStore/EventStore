@@ -31,7 +31,7 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 	private readonly ICheckpoint _epochCheckpoint;
 	private readonly int _chunkSize;
 	private readonly IArchiveStorageReader _archiveReader;
-	private readonly IArchiveChunkNameResolver _chunkNameResolver;
+	private readonly IArchiveNamingStrategy _namingStrategy;
 
 	private static readonly ILogger Log = Serilog.Log.ForContext<ArchiveCatchup>();
 	private static readonly TimeSpan RetryInterval = TimeSpan.FromMinutes(1);
@@ -43,14 +43,14 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 		ICheckpoint epochCheckpoint,
 		int chunkSize,
 		IArchiveStorageReader archiveStorageReader,
-		IArchiveChunkNameResolver chunkNameResolver) {
+		IArchiveNamingStrategy namingStrategy) {
 		_dbPath = dbPath;
 		_writerCheckpoint = writerCheckpoint;
 		_chaserCheckpoint = chaserCheckpoint;
 		_epochCheckpoint = epochCheckpoint;
 		_chunkSize = chunkSize;
 		_archiveReader = archiveStorageReader;
-		_chunkNameResolver = chunkNameResolver;
+		_namingStrategy = namingStrategy;
 	}
 
 	public Task Run() => Run(CancellationToken.None);
@@ -95,7 +95,7 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 	}
 
 	private async Task<bool> FetchAndCommitChunk(int logicalChunkNumber, CancellationToken ct) {
-		var destinationFile = _chunkNameResolver.ResolveFileName(logicalChunkNumber);
+		var destinationFile = _namingStrategy.GetBlobNameFor(logicalChunkNumber);
 		var destinationPath = Path.Combine(_dbPath, destinationFile);
 		if (!await FetchChunk(logicalChunkNumber, destinationPath, ct))
 			return false;

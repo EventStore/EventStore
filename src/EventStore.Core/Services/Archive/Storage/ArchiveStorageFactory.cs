@@ -10,11 +10,11 @@ namespace EventStore.Core.Services.Archive.Storage;
 public static class ArchiveStorageFactory {
 	private const string ArchiveCheckpointFile = "archive.chk";
 
-	public static IArchiveStorage Create(ArchiveOptions options, IArchiveChunkNameResolver chunkNameResolver) =>
+	public static IArchiveStorage Create(ArchiveOptions options, IArchiveNamingStrategy namingStrategy) =>
 		options.StorageType switch {
 			StorageType.Unspecified => throw new InvalidOperationException("Please specify an Archive StorageType"),
-			StorageType.FileSystem => new ArchiveStorage(new FileSystemBlobStorage(options.FileSystem), chunkNameResolver, ArchiveCheckpointFile),
-			StorageType.S3 => new ArchiveStorage(new S3BlobStorage(options.S3), chunkNameResolver, ArchiveCheckpointFile),
+			StorageType.FileSystem => new ArchiveStorage(new FileSystemBlobStorage(options.FileSystem), namingStrategy, ArchiveCheckpointFile),
+			StorageType.S3 => new ArchiveStorage(new S3BlobStorage(options.S3), namingStrategy, ArchiveCheckpointFile),
 			_ => throw new ArgumentOutOfRangeException(nameof(options.StorageType))
 		};
 }

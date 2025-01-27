@@ -333,7 +333,7 @@ public class ClusterVNode<TStreamId> :
 				ResiliencePipelines.RetrySlow,
 				ArchiveStorageFactory.Create(
 					options: archiveOptions,
-					chunkNameResolver: new ArchiveChunkNameResolver(namingStrategy)));
+					namingStrategy: new ArchiveNamingStrategy(namingStrategy)));
 
 			fileSystem = new FileSystemWithArchive(
 				chunkSize: dbConfig.ChunkSize,
