@@ -44,6 +44,8 @@ public sealed class ArchivedChunkHandle : IChunkHandle {
 			? _reader.ReadAsync(_logicalChunkNumber, buffer, offset, token)
 			: ValueTask.FromResult(0); // _reader.ReadAsync will give this behaviour too, but we can do it here more cheaply
 
+	public string Name => $"archive-handle-{_logicalChunkNumber}";
+
 	public long Length {
 		get => _length;
 		set => throw new NotSupportedException();

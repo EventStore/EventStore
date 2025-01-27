@@ -2,7 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +9,7 @@ using DotNext;
 using DotNext.Buffers;
 using DotNext.IO;
 using DotNext.Threading.Tasks;
+using Serilog;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
@@ -29,6 +29,8 @@ public interface IChunkHandle : IFlushable, IDisposable {
 		get;
 		set;
 	}
+
+	string Name { get; }
 
 	/// <summary>
 	/// Gets access mode for this handle.
@@ -97,7 +99,7 @@ public interface IChunkHandle : IFlushable, IDisposable {
 			// never called. Quite a few synchronous stream operations can call synchronous write under
 			// the hood (e.g. SetLength). We want to be sure that these are at least not called
 			// routinely, because it is inefficient.
-			// todo: Debug.Fail("Synchronous writes are undesirable");
+			Log.Warning("Synchronous writes should be uncommon. Handle: {Handle}", handle.Name);
 		}
 
 
@@ -126,8 +128,7 @@ public interface IChunkHandle : IFlushable, IDisposable {
 				}
 			}
 
-			// see comment on other Debug.Fail call
-			// todo: Debug.Fail("Synchronous writes are undesirable");
+			Log.Warning("Synchronous reads should be uncommon. Handle: {Handle}", handle.Name);
 			return bytesRead;
 		}
 
