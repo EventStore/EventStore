@@ -487,6 +487,12 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 			ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
 	}
 
+	bool IChunkRegistry<TFChunk.TFChunk>.TryGetChunkFor(long logPosition, out IChunkBlob chunk) {
+		var ret = TryGetChunkFor(logPosition, out TFChunk.TFChunk tfChunk);
+		chunk = tfChunk;
+		return ret;
+	}
+
 	public bool TryGetChunkFor(long logPosition, out TFChunk.TFChunk chunk) {
 		try {
 			chunk = GetChunkFor(logPosition);

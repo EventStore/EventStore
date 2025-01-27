@@ -8,6 +8,6 @@ namespace EventStore.Core.TransactionLog.Chunks;
 public interface IChunkRegistry<out TChunk>
 	where TChunk : class, IChunkBlob {
 
-	TChunk GetChunkFor(long logPosition);
+	bool TryGetChunkFor(long logPosition, out IChunkBlob chunk);
 	TChunk GetChunk(int chunkNum);
 }
