@@ -26,7 +26,7 @@ public class KestrelToInternalBridgeMiddleware(IUriRouter uriRouter, bool logHtt
 		try {
 			var allMatches = uriRouter.GetAllUriMatches(request.Url);
 			if (allMatches.Count == 0) {
-				// NotFound(httpEntity);
+				NotFound(httpEntity);
 				return false;
 			}
 
