@@ -35,7 +35,6 @@ public sealed class ArchiverService :
 	private long _replicationPosition; // volatile
 	private volatile CancellationTokenSource _cts;
 
-	// systemStart
 	public ArchiverService(
 		ISubscriber mainBus,
 		IArchiveStorage archiveStorage,
@@ -48,9 +47,10 @@ public sealed class ArchiverService :
 		_archivingTask = Task.CompletedTask;
 		_switchedChunks = [];
 
+		mainBus.Subscribe<SystemMessage.SystemStart>(this);
+		mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
 		mainBus.Subscribe<SystemMessage.ChunkSwitched>(this);
 		mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(this);
-		mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
 	}
 
 	public void Handle(SystemMessage.SystemStart message) {
