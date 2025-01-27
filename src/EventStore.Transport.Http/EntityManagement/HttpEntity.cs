@@ -48,7 +48,7 @@ public class HttpEntity {
 		}
 
 		if (advertiseAsAddress != null) {
-			uriBuilder.Host = advertiseAsAddress.ToString();
+			uriBuilder.Host = advertiseAsAddress;
 		}
 
 		if (advertiseAsPort > 0) {
@@ -73,7 +73,7 @@ public class HttpEntity {
 		if (!StringValues.IsNullOrEmpty(forwardedHostHeaderValue)) {
 			var host = forwardedHostHeaderValue.First();
 			if (!string.IsNullOrEmpty(host)) {
-				var parts = host.Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries);
+				var parts = host.Split([":"], StringSplitOptions.RemoveEmptyEntries);
 				uriBuilder.Host = parts[0];
 				if (parts.Length > 1 && int.TryParse(parts[1], out var port)) {
 					uriBuilder.Port = port;

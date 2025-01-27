@@ -88,7 +88,7 @@ public static class Format {
 
 	public static string SendPublicGossip(HttpResponseFormatterArgs entity, Message message) {
 		if (message.GetType() != typeof(GossipMessage.SendClientGossip))
-			throw new Exception($"Unexpected type of response message: {message.GetType().Name}, expected: {typeof(GossipMessage.SendClientGossip).Name}");
+			throw new Exception($"Unexpected type of response message: {message.GetType().Name}, expected: {nameof(GossipMessage.SendClientGossip)}");
 
 		return message is GossipMessage.SendClientGossip sendPublicGossip
 			? entity.ResponseCodec.To(sendPublicGossip.ClusterInfo)

@@ -1,23 +1,32 @@
 @page "/ui/config"
-@using System.Net
-@using System.Text.Json
-@using System.Text.Json.Serialization
 @using EventStore.Core
+@using EventStore.Core.Bus
+@using EventStore.Core.Cluster
+@using EventStore.Core.Messages
+@using EventStore.Core.Messaging
 @inject ClusterVNodeOptions Configuration
+@inject IPublisher Publisher
 
 <PageTitle>KurrentDB: Configuration</PageTitle>
 
-<MudDataGrid @ref="_dataGrid" Items="@_items" Dense="@true" Filterable="true">
+<MudText>
+	Server address: @_clusterInfo?.ServerIp:@_clusterInfo?.ServerPort
+</MudText>
+@foreach (var member in _clusterInfo?.Members ?? []) {
+	<MudText>@member.HttpEndPointIp:@member.HttpEndPointPort @member.State @(member.IsAlive ? "Alive" : "Dead")</MudText>
+}
+
+<MudDataGrid Items="@_items" Dense="@true" Filterable="true">
 	<Columns>
-		<PropertyColumn Property="x => x.Metadata.Name" Title="Option" />
+		<PropertyColumn Property="x => x.Metadata.Name" Title="Option"/>
 		<TemplateColumn>
 			<CellTemplate>
 				<MudTooltip Text="@context.Item.Metadata.Description">
-					<MudIcon Icon="@Icons.Material.Outlined.Info" />
+					<MudIcon Icon="@Icons.Material.Outlined.Info"/>
 				</MudTooltip>
 			</CellTemplate>
 		</TemplateColumn>
-		<PropertyColumn Property="x => x.DisplayValue" Title="Value" />
+		<PropertyColumn Property="x => x.DisplayValue" Title="Value"/>
 		<PropertyColumn Property="x => x.SourceDisplayName" Title="Source"/>
 		<TemplateColumn Title="Default">
 			<CellTemplate>
@@ -27,9 +36,7 @@
 	</Columns>
 </MudDataGrid>
 
-
 @code {
-	MudDataGrid<LoadedOption> _dataGrid;
 	IReadOnlyCollection<LoadedOption> _items;
 
 	protected override void OnInitialized() {
@@ -37,24 +44,11 @@
 		_items = Configuration.LoadedOptions.Select(x => x.Value).ToList();
 	}
 
-	class JsonIpAddresConverter : JsonConverter<IPAddress> {
-		public override IPAddress Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-			return IPAddress.Parse(reader.GetString());
-		}
-
-		public override void Write(Utf8JsonWriter writer, IPAddress value, JsonSerializerOptions options) {
-			writer.WriteStringValue(value.ToString());
-		}
+	protected override async Task OnInitializedAsync() {
+		await base.OnInitializedAsync();
+		var r = await RequestClient.RequestAsync<GossipMessage.ClientGossip, GossipMessage.SendClientGossip>(Publisher, env => new(env));
+		_clusterInfo = r.ClusterInfo;
 	}
 
-	class OptionsMetadataConverter : JsonConverter<OptionMetadata> {
-		public override OptionMetadata Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-			throw new NotImplementedException();
-		}
-
-		public override void Write(Utf8JsonWriter writer, OptionMetadata value, JsonSerializerOptions options) {
-			writer.WriteStringValue((string)null);
-		}
-	}
-
+	ClientClusterInfo _clusterInfo;
 }

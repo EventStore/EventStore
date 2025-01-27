@@ -13,6 +13,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.Transport.Grpc.Cluster;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins;
 using EventStore.Plugins.Authentication;
@@ -137,7 +138,7 @@ public class ClusterVNodeStartup<TStreamId> : IInternalStartup, IHandle<SystemMe
 		app.MapGrpcService<Monitoring>();
 		app.MapGrpcService<ServerFeatures>();
 
-		// app.MapGet("/", () => Results.RedirectToRoute("/ui"));
+		app.MapGetInfo();
 
 		// enable redaction service on unix sockets only
 		app.MapGrpcService<Redaction>().AddEndpointFilter(async (c, next) => {

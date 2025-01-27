@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -59,7 +60,7 @@ public sealed class HttpEntityManager {
 		_logHttpRequests = logHttpRequests;
 		_onComplete = onComplete;
 
-		if (HttpEntity.Request != null && HttpEntity.Request.ContentLength64 == 0) {
+		if (HttpEntity.Request is { ContentLength64: 0 }) {
 			LogRequest([]);
 		}
 	}
@@ -140,7 +141,7 @@ public sealed class HttpEntityManager {
 		}
 	}
 
-	private void SetContentEncodingHeader(String contentEncoding) {
+	private void SetContentEncodingHeader(string contentEncoding) {
 		try {
 			HttpEntity.Response.AddHeader("Content-Encoding", contentEncoding);
 		} catch (Exception e) {
@@ -161,7 +162,7 @@ public sealed class HttpEntityManager {
 	}
 
 	public void ReadRequestAsync(Action<HttpEntityManager, byte[]> onReadSuccess, Action<Exception> onError) {
-		Ensure.NotNull(onReadSuccess, "OnReadSuccess");
+		Ensure.NotNull(onReadSuccess, "onReadSuccess");
 		Ensure.NotNull(onError, "onError");
 
 		var state = new ManagerOperationState(HttpEntity.Request.InputStream, new MemoryStream(), onReadSuccess, onError);
@@ -192,8 +193,8 @@ public sealed class HttpEntityManager {
 	}
 
 	public void ContinueReply(byte[] response, Action<Exception> onError, Action onCompleted) {
-		Ensure.NotNull(onError, "onError");
-		Ensure.NotNull(onCompleted, "onCompleted");
+		Debug.Assert(onError != null);
+		Debug.Assert(onCompleted != null);
 
 		Task.Run(async () => {
 			try {
@@ -205,13 +206,10 @@ public sealed class HttpEntityManager {
 		});
 	}
 
-	public void EndReply() {
-	}
-
 	public void Reply(
 		byte[] response, int code, string description, string contentType, Encoding encoding,
 		IEnumerable<KeyValuePair<string, string>> headers, Action<Exception> onError) {
-		Ensure.NotNull(onError, "onError");
+		Debug.Assert(onError != null);
 
 		if (!BeginReply(code, description, contentType, encoding, headers))
 			return;
@@ -231,8 +229,8 @@ public sealed class HttpEntityManager {
 	}
 
 	public void ForwardReply(HttpResponseMessage response, Action<Exception> onError) {
-		Ensure.NotNull(response, "response");
-		Ensure.NotNull(onError, "onError");
+		Debug.Assert(response != null);
+		Debug.Assert(onError != null);
 
 		if (Interlocked.CompareExchange(ref _processing, 1, 0) != 0)
 			return;

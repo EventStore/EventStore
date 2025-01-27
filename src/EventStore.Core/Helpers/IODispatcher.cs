@@ -285,8 +285,7 @@ public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>, IHandle<
 		ClaimsPrincipal principal,
 		Action<ReadStreamEventsForwardCompleted> action,
 		Guid? corrId = null) {
-		if (!corrId.HasValue)
-			corrId = Guid.NewGuid();
+		corrId ??= Guid.NewGuid();
 		return
 			ForwardReader.Publish(
 				new ReadStreamEventsForward(

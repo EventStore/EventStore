@@ -5,36 +5,31 @@ using System;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace EventStore.Core.Messaging;
 
-public class ChannelEnvelope : IEnvelope {
-	private readonly Channel<Message> _channel;
-
-	public ChannelEnvelope(Channel<Message> channel) {
-		_channel = channel;
-	}
-
+public class ChannelEnvelope(Channel<Message> channel) : IEnvelope {
 	public void ReplyWith<T>(T message) where T : Message {
-		_channel.Writer.TryWrite(message);
+		channel.Writer.TryWrite(message);
 	}
 }
-public class ContinuationEnvelope : IEnvelope {
-	private readonly Func<Message, CancellationToken, Task> _onMessage;
-	private readonly SemaphoreSlim _semaphore;
-	private readonly CancellationToken _cancellationToken;
 
-	public ContinuationEnvelope(Func<Message, CancellationToken, Task> onMessage, SemaphoreSlim semaphore,
-		CancellationToken cancellationToken) {
-		_onMessage = onMessage;
-		_semaphore = semaphore;
-		_cancellationToken = cancellationToken;
+public class ChannelWithCompletionEnvelope(ChannelWriter<Message> writer) : IEnvelope {
+	public void ReplyWith<T>(T message) where T : Message {
+		writer.TryWrite(message);
+		writer.Complete();
 	}
+}
 
+public class ContinuationEnvelope(
+	Func<Message, CancellationToken, Task> onMessage,
+	SemaphoreSlim semaphore,
+	CancellationToken cancellationToken) : IEnvelope {
 	public void ReplyWith<T>(T message) where T : Message {
 		try {
-			_semaphore.Wait(_cancellationToken);
-			_onMessage(message, _cancellationToken).ContinueWith(_ => _semaphore.Release(), _cancellationToken);
+			semaphore.Wait(cancellationToken);
+			onMessage(message, cancellationToken).ContinueWith(_ => semaphore.Release(), cancellationToken);
 		}
 		catch (ObjectDisposedException) {}
 		catch (OperationCanceledException) {}

@@ -4,7 +4,6 @@
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -72,7 +71,7 @@ public class HttpSendService : IHttpForwarder,
 				_leaderInfo = null;
 				break;
 			default:
-				throw new Exception(string.Format("Unknown node state: {0}.", message.State));
+				throw new Exception($"Unknown node state: {message.State}.");
 		}
 	}
 
@@ -87,30 +86,30 @@ public class HttpSendService : IHttpForwarder,
 			message.HttpEntityManager.ReplyStatus(
 				code,
 				deniedToHandle.Details,
-				exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.",
-					message.Message, exc.Message));
-		} else {
-			var response = message.Data;
-			var config = message.Configuration;
+				exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.", message.Message, exc.Message));
+			return;
+		}
 
-			// todo: histogram metric?
-			if (response is byte[] bytes) {
-				message.HttpEntityManager.ReplyContent(
-					bytes,
-					config.Code,
-					config.Description,
-					config.ContentType,
-					config.Headers,
-					exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.", message.Message, exc.Message));
-			} else {
-				message.HttpEntityManager.ReplyTextContent(
-					response as string,
-					config.Code,
-					config.Description,
-					config.ContentType,
-					config.Headers,
-					exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.", message.Message, exc.Message));
-			}
+		var response = message.Data;
+		var config = message.Configuration;
+
+		// todo: histogram metric?
+		if (response is byte[] bytes) {
+			message.HttpEntityManager.ReplyContent(
+				bytes,
+				config.Code,
+				config.Description,
+				config.ContentType,
+				config.Headers,
+				exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.", message.Message, exc.Message));
+		} else {
+			message.HttpEntityManager.ReplyTextContent(
+				response as string,
+				config.Code,
+				config.Description,
+				config.ContentType,
+				config.Headers,
+				exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.", message.Message, exc.Message));
 		}
 	}
 

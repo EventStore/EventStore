@@ -29,9 +29,7 @@ public class InternalDispatcherEndpoint(IPublisher inputBus, MultiQueuedHandler 
 		if (context.IsGrpc() || context.Request.Path.StartsWithSegments("/ui")) return next(context);
 
 		if (!InternalHttpHelper.TryGetInternalContext(context, out var manager, out var match, out var tcs)) {
-			Log.Error("Failed to get internal http components for request {requestId}", context.TraceIdentifier);
-			context.Response.StatusCode = HttpStatusCode.InternalServerError;
-			return Task.CompletedTask;
+			return next(context);
 		}
 
 		requestsMultiHandler.Publish(new AuthenticatedHttpRequestMessage(manager, match));

@@ -13,11 +13,28 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using Newtonsoft.Json.Linq;
 using static EventStore.Plugins.Authorization.Operations;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers;
+
+public static class InfoEndpoints {
+	public static void MapGetInfo(this IEndpointRouteBuilder app) {
+		app.MapGet("/info", ([FromServices] InfoController controller) => Results.Ok(
+			new {
+				ESVersion = VersionInfo.Version,
+				State = controller.State.ToString().ToLower(),
+				Features = controller.Features,
+				Authentication = controller.GetAuthenticationInfo()
+			}
+		));
+	}
+}
 
 public class InfoController(
 	ClusterVNodeOptions options,
@@ -29,10 +46,13 @@ public class InfoController(
 
 	private VNodeState _currentState;
 
+	internal VNodeState State => _currentState;
+	internal IDictionary<string, bool> Features => features;
+
 	public void Subscribe(IUriRouter router) {
 		Ensure.NotNull(router);
 
-		router.RegisterAction(new("/info", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Node.Information.Read)), OnGetInfo);
+		// router.RegisterAction(new("/info", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Node.Information.Read)), OnGetInfo);
 		router.RegisterAction(new("/info/options", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Node.Information.Options)), OnGetOptions);
 	}
 
@@ -55,7 +75,7 @@ public class InfoController(
 			e => Log.Error(e, "Error while writing HTTP response (info)"));
 	}
 
-	private Dictionary<string, object> GetAuthenticationInfo() {
+	internal Dictionary<string, object> GetAuthenticationInfo() {
 		if (authenticationProvider == null)
 			return null;
 

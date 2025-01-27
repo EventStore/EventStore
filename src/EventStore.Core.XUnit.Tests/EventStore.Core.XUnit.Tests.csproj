@@ -10,7 +10,7 @@
 		<PackageReference Include="xunit" Version="2.9.2" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="All"/>
 		<PackageReference Include="coverlet.collector" Version="6.0.0" PrivateAssets="All"/>
-		<PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" Version="9.0.0-preview.3.24209.3" />
+		<PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" Version="9.1.0" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj" />

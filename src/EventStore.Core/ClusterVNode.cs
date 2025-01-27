@@ -1412,10 +1412,10 @@ public class ClusterVNode<TStreamId> : ClusterVNode,
 		_subsystems = options.Subsystems;
 
 		var standardComponents = new StandardComponents(Db.Config, _mainQueue, _mainBus, _timerService, _timeProvider,
-			httpSendService, Router, //[_httpService],
-			WorkersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
+			httpSendService, Router, WorkersHandler, _queueStatsManager, trackers.QueueTrackers, metricsConfiguration.ProjectionStats);
 
 		IServiceCollection ConfigureNodeServices(IServiceCollection services) {
+			services.AddSingleton(infoController);
 			services
 				.AddSingleton(telemetryService) // for correct disposal
 				.AddSingleton(_readIndex)

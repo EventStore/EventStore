@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace EventStore.Common.Utils;
 
-public interface IValidator<T> {
+public interface IValidator<in T> {
 	void Validate(T t);
 }
 

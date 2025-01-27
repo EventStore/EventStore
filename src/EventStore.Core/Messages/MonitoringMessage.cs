@@ -22,39 +22,30 @@ public static partial class MonitoringMessage {
 
 	[DerivedMessage(CoreMessage.Monitoring)]
 	public partial class GetPersistentSubscriptionStats : Message {
-		public string EventStreamId {
-			get { return _eventStreamId; }
-		}
+		public string EventStreamId { get; }
 
-		public string GroupName {
-			get { return _groupName; }
-		}
+		public string GroupName { get; }
 
 		public readonly IEnvelope Envelope;
-		private readonly string _eventStreamId;
-		private readonly string _groupName;
 
 		public GetPersistentSubscriptionStats(IEnvelope envelope, string eventStreamId, string groupName) {
 			Ensure.NotNull(envelope, "envelope");
 			Envelope = envelope;
-			_eventStreamId = eventStreamId;
-			_groupName = groupName;
+			EventStreamId = eventStreamId;
+			GroupName = groupName;
 		}
 	}
 
 	[DerivedMessage(CoreMessage.Monitoring)]
 	public partial class GetStreamPersistentSubscriptionStats : Message {
-		public string EventStreamId {
-			get { return _eventStreamId; }
-		}
+		public string EventStreamId { get; }
 
 		public readonly IEnvelope Envelope;
-		private readonly string _eventStreamId;
 
 		public GetStreamPersistentSubscriptionStats(IEnvelope envelope, string eventStreamId) {
 			Ensure.NotNull(envelope, "envelope");
 			Envelope = envelope;
-			_eventStreamId = eventStreamId;
+			EventStreamId = eventStreamId;
 		}
 	}
 

@@ -156,8 +156,7 @@ public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,
 			gossipRound = Math.Min(int.MaxValue - 1, node == null ? message.GossipRound : message.GossipRound + 1);
 		}
 
-		_bus.Publish(
-			TimerMessage.Schedule.Create(interval, _publishEnvelope, new GossipMessage.Gossip(gossipRound)));
+		_bus.Publish(TimerMessage.Schedule.Create(interval, _publishEnvelope, new GossipMessage.Gossip(gossipRound)));
 	}
 
 	private MemberInfo GetNodeToGossipTo(MemberInfo[] members) {
@@ -198,22 +197,20 @@ public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,
 	}
 
 	public void Handle(GossipMessage.ClientGossip message) {
-		if (_cluster != null) {
-			var advertisedAddress = string.IsNullOrEmpty(_memberInfo.AdvertiseHostToClientAs)
-				? _memberInfo.HttpEndPoint.GetHost()
-				: _memberInfo.AdvertiseHostToClientAs;
-			var advertisedPort = _memberInfo.AdvertiseHttpPortToClientAs == 0
-				? _memberInfo.HttpEndPoint.GetPort()
-				: _memberInfo.AdvertiseHttpPortToClientAs;
-			message.Envelope.ReplyWith(new GossipMessage.SendClientGossip(
-				new ClientClusterInfo(_cluster, advertisedAddress, advertisedPort)));
-		}
+		if (_cluster == null) return;
+
+		var advertisedAddress = string.IsNullOrEmpty(_memberInfo.AdvertiseHostToClientAs)
+			? _memberInfo.HttpEndPoint.GetHost()
+			: _memberInfo.AdvertiseHostToClientAs;
+		var advertisedPort = _memberInfo.AdvertiseHttpPortToClientAs == 0
+			? _memberInfo.HttpEndPoint.GetPort()
+			: _memberInfo.AdvertiseHttpPortToClientAs;
+		message.Envelope.ReplyWith(new GossipMessage.SendClientGossip(new(_cluster, advertisedAddress, advertisedPort)));
 	}
 
 	public void Handle(SystemMessage.StateChangeMessage message) {
 		CurrentRole = message.State;
-		var replicaState = message as SystemMessage.ReplicaStateMessage;
-		CurrentLeader = replicaState == null ? null : replicaState.Leader;
+		CurrentLeader = message is not SystemMessage.ReplicaStateMessage replicaState ? null : replicaState.Leader;
 
 		if (_cluster is null)
 			return;
@@ -226,7 +223,7 @@ public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,
 
 	public void Handle(GossipMessage.GossipSendFailed message) {
 		var node = _cluster.Members.FirstOrDefault(x => x.Is(message.Recipient));
-		if (node == null || !node.IsAlive)
+		if (node is not { IsAlive: true })
 			return;
 
 		if (node.InstanceId == CurrentLeader?.InstanceId) {
@@ -250,7 +247,7 @@ public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,
 
 	public void Handle(SystemMessage.VNodeConnectionLost message) {
 		var node = _cluster.Members.FirstOrDefault(x => x.Is(message.VNodeEndPoint));
-		if (node == null || !node.IsAlive)
+		if (node is not { IsAlive: true })
 			return;
 
 		Log.Information("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost). Issuing a gossip to confirm.",
@@ -275,7 +272,7 @@ public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,
 			DeadMemberRemovalPeriod);
 
 		if (_cluster.HasChangedSince(oldCluster))
-			LogClusterChange(oldCluster, _cluster, string.Format("gossip received from [{0}]", message.Server));
+			LogClusterChange(oldCluster, _cluster, $"gossip received from [{message.Server}]");
 
 		_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 	}
@@ -290,26 +287,22 @@ public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,
 
 		var oldCluster = _cluster;
 		_cluster = UpdateCluster(_cluster, x => x.Is(message.Recipient)
-				? x.Updated(
-					_timeProvider.UtcNow, isAlive: false)
+				? x.Updated(_timeProvider.UtcNow, isAlive: false)
 				: x,
 			_timeProvider, DeadMemberRemovalPeriod, CurrentRole);
 		if (_cluster.HasChangedSince(oldCluster))
-			LogClusterChange(oldCluster, _cluster,
-				string.Format("TCP connection lost to [{0}]", message.Recipient));
+			LogClusterChange(oldCluster, _cluster, $"TCP connection lost to [{message.Recipient}]");
 		_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 	}
 
 	public void Handle(SystemMessage.VNodeConnectionEstablished message) {
 		var oldCluster = _cluster;
 		_cluster = UpdateCluster(_cluster, x => x.Is(message.VNodeEndPoint)
-				? x.Updated(
-					_timeProvider.UtcNow, isAlive: true)
+				? x.Updated(_timeProvider.UtcNow, isAlive: true)
 				: x,
 			_timeProvider, DeadMemberRemovalPeriod, CurrentRole);
 		if (_cluster.HasChangedSince(oldCluster))
-			LogClusterChange(oldCluster, _cluster,
-				string.Format("TCP connection established to [{0}]", message.VNodeEndPoint));
+			LogClusterChange(oldCluster, _cluster, $"TCP connection established to [{message.VNodeEndPoint}]");
 		_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 	}
 
@@ -332,11 +325,11 @@ public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,
 		var members = myCluster.Members.ToDictionary(member => member.HttpEndPoint,
 			new EndPointEqualityComparer());
 		MemberInfo peerNode = peerEndPoint != null
-			? othersCluster.Members.SingleOrDefault(member => member.Is(peerEndPoint), null) : null;
+			? othersCluster.Members.SingleOrDefault(member => member.Is(peerEndPoint), null)
+			: null;
 		bool isPeerOld = peerNode?.ESVersion == null;
 		foreach (var member in othersCluster.Members) {
-			if (member.InstanceId == me.InstanceId || member.Is(me.HttpEndPoint)
-			) // we know about ourselves better
+			if (member.InstanceId == me.InstanceId || member.Is(me.HttpEndPoint)) // we know about ourselves better
 				continue;
 			if (member.Equals(peerNode)) // peer knows about itself better
 			{
@@ -345,27 +338,21 @@ public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,
 					          + "UTC now: {dateTime:yyyy-MM-dd HH:mm:ss.fff}, peer's time stamp: {peerTimestamp:yyyy-MM-dd HH:mm:ss.fff}.",
 						peerEndPoint, utcNow, member.TimeStamp);
 				}
+
 				members[member.HttpEndPoint] = member.Updated(utcNow: member.TimeStamp, esVersion: isPeerOld ? VersionInfo.OldVersion : member.ESVersion);
 			} else {
-				MemberInfo existingMem;
 				// if there is no data about this member or data is stale -- update
-				if (!members.TryGetValue(member.HttpEndPoint, out existingMem) ||
-				    IsMoreUpToDate(member, existingMem)) {
+				if (!members.TryGetValue(member.HttpEndPoint, out var existingMem) || IsMoreUpToDate(member, existingMem)) {
 					// we do not trust leader's alive status and state to come from outside
-					if (currentLeaderInstanceId != null && existingMem != null &&
-					    member.InstanceId == currentLeaderInstanceId)
-						members[member.HttpEndPoint] =
-							member.Updated(utcNow: utcNow, isAlive: existingMem.IsAlive,
-								state: existingMem.State);
-					else
-						members[member.HttpEndPoint] = member;
+					members[member.HttpEndPoint] = currentLeaderInstanceId != null && existingMem != null && member.InstanceId == currentLeaderInstanceId
+						? member.Updated(utcNow: utcNow, isAlive: existingMem.IsAlive, state: existingMem.State)
+						: member;
 				}
 
 				if (peerNode != null && isPeerOld) {
 					MemberInfo newInfo = members[member.HttpEndPoint];
 					// if we don't have past information about es version of the node, es version is unknown because old peer won't be sending version info in gossip
-					members[member.HttpEndPoint] = newInfo.Updated(newInfo.TimeStamp,
-						esVersion: existingMem?.ESVersion ?? VersionInfo.UnknownVersion);
+					members[member.HttpEndPoint] = newInfo.Updated(newInfo.TimeStamp, esVersion: existingMem?.ESVersion ?? VersionInfo.UnknownVersion);
 				}
 			}
 		}
@@ -385,7 +372,6 @@ public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,
 
 	public static ClusterInfo UpdateCluster(ClusterInfo cluster, Func<MemberInfo, MemberInfo> update,
 		ITimeProvider timeProvider, TimeSpan deadMemberRemovalTimeout, VNodeState currentRole) {
-
 		var newMembers = cluster.Members.Select(update)
 			.Where(x => KeepNodeInGossip(x, timeProvider.UtcNow, deadMemberRemovalTimeout, currentRole));
 		return new ClusterInfo(newMembers);
@@ -394,16 +380,14 @@ public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,
 	private static bool KeepNodeInGossip(MemberInfo m, DateTime utcNow, TimeSpan deadMemberRemovalTimeout, VNodeState currentRole) {
 		// remove dead timed-out members, if there are any, and if we are not in an unknown/initializing/leaderless state
 		return m.IsAlive || utcNow - m.TimeStamp < deadMemberRemovalTimeout
-			|| currentRole <= VNodeState.Unknown || currentRole == VNodeState.ReadOnlyLeaderless;
+		                 || currentRole <= VNodeState.Unknown || currentRole == VNodeState.ReadOnlyLeaderless;
 	}
 
 	private static void LogClusterChange(ClusterInfo oldCluster, ClusterInfo newCluster, string source) {
 		var endPointComparer = new EndPointComparer();
 
-		List<MemberInfo> oldMembers = oldCluster.Members
-			.OrderByDescending(x => x.HttpEndPoint, endPointComparer).ToList();
-		List<MemberInfo> newMembers = newCluster.Members
-			.OrderByDescending(x => x.HttpEndPoint, endPointComparer).ToList();
+		List<MemberInfo> oldMembers = oldCluster.Members.OrderByDescending(x => x.HttpEndPoint, endPointComparer).ToList();
+		List<MemberInfo> newMembers = newCluster.Members.OrderByDescending(x => x.HttpEndPoint, endPointComparer).ToList();
 		Log.Information(
 			"CLUSTER HAS CHANGED {source}"
 			+ "\nOld:"

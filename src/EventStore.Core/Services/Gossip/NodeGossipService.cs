@@ -68,9 +68,9 @@ public class NodeGossipService : GossipServiceBase, IHandle<GossipMessage.Update
 			_getLastCommitPosition(),
 			_writerCheckpoint.Read(),
 			_chaserCheckpoint.Read(),
-			lastEpoch == null ? -1 : lastEpoch.EpochPosition,
-			lastEpoch == null ? -1 : lastEpoch.EpochNumber,
-			lastEpoch == null ? Guid.Empty : lastEpoch.EpochId,
+			lastEpoch?.EpochPosition ?? -1,
+			lastEpoch?.EpochNumber ?? -1,
+			lastEpoch?.EpochId ?? Guid.Empty,
 			_nodePriority,
 			_memberInfo.IsReadOnlyReplica, _memberInfo.ESVersion);
 	}

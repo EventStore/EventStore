@@ -23,9 +23,13 @@ public class KestrelToInternalBridgeMiddleware(IUriRouter uriRouter, bool logHtt
 	}
 
 	private static bool TryMatch(HttpContext context, IUriRouter uriRouter, bool logHttpRequests, string advertiseAsAddress, int advertiseAsPort) {
+		Log.Debug("Trying to match {Path}", context.Request.Path);
 		if (context.IsGrpc() || context.Request.Path.StartsWithSegments("/ui")) {
+			Log.Debug("Ignoring endpoint {Path}", context.Request.Path);
 			return true;
 		}
+		Log.Debug("Request to {Path} using {ContentType} is neither gRPC or UI", context.Request.Path, context.Request.ContentType);
+
 		var tcs = new TaskCompletionSource<bool>();
 		var httpEntity = new HttpEntity(context, logHttpRequests, advertiseAsAddress, advertiseAsPort, () => tcs.TrySetResult(true));
 
@@ -33,8 +37,7 @@ public class KestrelToInternalBridgeMiddleware(IUriRouter uriRouter, bool logHtt
 		try {
 			var allMatches = uriRouter.GetAllUriMatches(request.Url);
 			if (allMatches.Count == 0) {
-				NotFound(httpEntity);
-				return false;
+				return true;
 			}
 
 			var allowedMethods = GetAllowedMethods(allMatches);

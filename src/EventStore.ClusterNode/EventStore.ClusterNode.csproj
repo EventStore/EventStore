@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 	<PropertyGroup>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<TargetFramework>net9.0</TargetFramework>
 		<OutputType>Exe</OutputType>
 		<ApplicationIcon>app2.ico</ApplicationIcon>
 		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
