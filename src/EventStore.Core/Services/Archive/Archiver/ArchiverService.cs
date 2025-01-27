@@ -15,6 +15,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
+using Serilog;
 
 namespace EventStore.Core.Services.Archive.Archiver;
 
@@ -25,6 +26,7 @@ public sealed class ArchiverService :
 	IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 	IAsyncDisposable {
 
+	private static readonly ILogger Log = Serilog.Log.ForContext<ArchiverService>();
 	private readonly IArchiveStorage _archive;
 	private readonly CancellationToken _lifetimeToken;
 	private readonly AsyncAutoResetEvent _archivingSignal;
@@ -80,12 +82,14 @@ public sealed class ArchiverService :
 			var chunk = _chunkManager.GetChunkFor(checkpoint);
 			if (chunk.ChunkFooter is { IsCompleted: true } &&
 			    chunk.ChunkHeader.ChunkEndPosition <= Volatile.Read(in _replicationPosition)) {
+				Log.Information("Storing chunk in archive: \"{chunk}\"", chunk.ChunkLocator);
 				await _archive.StoreChunk(chunk, _lifetimeToken);
 
 				// verify checkpoint to make sure that no one changed it concurrently, e.g. by another
 				// cluster that points to the same archive storage
 				await ValidateCheckpointAsync(checkpoint, _lifetimeToken);
 				checkpoint = chunk.ChunkHeader.ChunkEndPosition;
+				Log.Information("Setting archive checkpoint to 0x{checkpoint:X}", checkpoint);
 				await _archive.SetCheckpoint(checkpoint, _lifetimeToken);
 			} else {
 				await _archivingSignal.WaitAsync(_lifetimeToken);
@@ -99,6 +103,7 @@ public sealed class ArchiverService :
 		while (_switchedChunks.TryTake(out var chunkInfo)) {
 			if (chunkInfo.ChunkEndPosition <= checkpoint) {
 				var chunk = _chunkManager.GetChunk(chunkInfo.ChunkEndNumber);
+				Log.Information("Storing switched chunk in archive: \"{chunk}\"", chunk.ChunkLocator);
 				await _archive.StoreChunk(chunk, token);
 			}
 		}
