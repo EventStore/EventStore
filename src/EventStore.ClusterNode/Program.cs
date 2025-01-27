@@ -29,6 +29,7 @@ using EventStore.ClusterNode.Services;
 using EventStore.Common.DevCertificates;
 using EventStore.Core.Configuration;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
 using MudBlazor.Services;
@@ -215,6 +216,7 @@ try {
 			hostedService.Node.Startup.ConfigureServices(builder.Services);
 			builder.Services.AddSingleton<IHostedService>(hostedService);
 			builder.Services.AddSingleton<Preferences>();
+			builder.Services.AddDataProtection().PersistKeysToFileSystem(new(options.Database.Db));
 			builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 			builder.Services.AddMudServices();
 			builder.Services.AddMudMarkdownServices();
