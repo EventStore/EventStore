@@ -77,7 +77,7 @@ public sealed class ArchiverService :
 	[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))]
 	private async Task ArchiveAsync() {
 		var checkpoint = await _archive.GetCheckpoint(_lifetimeToken);
-		Log.Warning("Archive is at checkpoint 0x{checkpoint:X}", checkpoint);
+		Log.Information("Archive is at checkpoint 0x{checkpoint:X}", checkpoint);
 		while (!_lifetimeToken.IsCancellationRequested) {
 			await ProcessSwitchedChunksAsync(checkpoint, _lifetimeToken);
 
