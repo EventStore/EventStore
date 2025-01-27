@@ -1023,14 +1023,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			var stats = ToSummaryDto(manager, message).ToArray();
 			var offset = message.RequestedOffset;
 			var count = message.RequestedCount;
-			var nextOffset = offset + count;
-			var prevOffset = Math.Max(0, offset - count);
+			var links = new List<RelLink> {
+				new(MakeUrl(manager, "/subscriptions", $"?offset={offset}&count={count}"), "self"),
+				new(MakeUrl(manager, "/subscriptions", $"?offset=0&count={count}"), "first"),
+			};
+			if (offset > 0) {
+				var prevOffset = Math.Max(0, offset - count);
+				links.Add(new RelLink(MakeUrl(manager, "/subscriptions", $"?offset={prevOffset}&count={count}"), "previous"));
+			}
+			if (offset + count < message.Total) {
+				var nextOffset = offset + count;
+				links.Add(new RelLink(MakeUrl(manager, "/subscriptions", $"?offset={nextOffset}&count={count}"), "next"));
+			}
 			return new PagedSubscriptionInfo {
-				Links = [
-					new(MakeUrl(manager, "/subscriptions", $"?offset={offset}&count={count}"), "self"),
-					new(MakeUrl(manager, "/subscriptions", $"?offset={nextOffset}&count={count}"), "next"),
-					new(MakeUrl(manager, "/subscriptions", $"?offset={prevOffset}&count={count}"), "previous")
-				],
+				Links = links,
 				Offset = offset,
 				Count = count,
 				Total = message.Total,
