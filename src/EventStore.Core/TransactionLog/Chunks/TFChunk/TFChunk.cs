@@ -1371,6 +1371,7 @@ public partial class TFChunk : IDisposable {
 		}
 	}
 
+	// 'unsafe' because _cachedDataLock must be acquired first
 	private bool TryCreateBulkMemReaderUnsafe(bool raw, out TFChunkBulkReader reader) {
 		Debug.Assert(_cachedDataLock.IsLockHeld);
 
@@ -1386,6 +1387,13 @@ public partial class TFChunk : IDisposable {
 		var stream = CreateMemoryStream(_cachedLength);
 
 		if (raw) {
+			if (!_cachedDataTransformed) {
+				// we want a raw reader for a cached chunk (which should return transformed data)
+				// but the cached data is not transformed so we can't use it directly.
+				// (likely this chunk was cached before it was completed)
+				reader = null;
+				return false;
+			}
 			reader = new TFChunkBulkRawReader(chunk: this, streamToUse: stream, isMemory: true);
 			return true;
 		}
