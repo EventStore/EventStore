@@ -209,11 +209,6 @@ try {
 
 				server.Listen(options.Interface.NodeIp, options.Interface.NodePort, listenOptions => {
 					ConfigureHttpOptions(listenOptions, hostedService, useHttps: !hostedService.Node.DisableHttps);
-					listenOptions.Protocols = HttpProtocols.Http2;
-				});
-				server.Listen(options.Interface.NodeIp, 2114, listenOptions => {
-					ConfigureHttpOptions(listenOptions, hostedService, useHttps: !hostedService.Node.DisableHttps);
-					listenOptions.Protocols = HttpProtocols.Http1;
 				});
 
 				if (hostedService.Node.EnableUnixSocket)
@@ -254,8 +249,8 @@ try {
 static void ConfigureHttpOptions(ListenOptions listenOptions, ClusterVNodeHostedService hostedService, bool useHttps) {
 	if (useHttps)
 		listenOptions.UseHttps(CreateServerOptionsSelectionCallback(hostedService), null);
-	// else
-		// listenOptions.Use(next => new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
+	else
+		listenOptions.Use(next => new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
 }
 
 static void TryListenOnUnixSocket(ClusterVNodeHostedService hostedService, KestrelServerOptions server) {
