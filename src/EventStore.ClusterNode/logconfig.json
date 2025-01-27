@@ -4,7 +4,7 @@
 			"Default": "Debug",
 			"EventStore.Core.Services.Transport.Enumerators": "Information",
 			"System": "Warning",
-			"Microsoft": "Information",
+			"Microsoft": "Warning",
 			"Grpc": "Warning"
 		}
 	}
