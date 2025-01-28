@@ -296,7 +296,7 @@ public partial class TFChunk {
 				: await TranslateWithoutMidpoints(workItem, pos, 0, Chunk.ChunkFooter.MapCount - 1, exactMatch: true, token);
 		}
 
-		private ValueTask<int> TranslateExactWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, long pos, CancellationToken token) {
+		private ValueTask<int> TranslateExactWithMidpoints(ReaderWorkItem workItem, ReadOnlySpan<Midpoint> midpoints, long pos, CancellationToken token) {
 			if (pos < midpoints[0].LogPos || pos > midpoints[^1].LogPos)
 				return ValueTask.FromResult(-1);
 
@@ -390,7 +390,7 @@ public partial class TFChunk {
 					Chunk.ChunkFooter.MapCount - 1, exactMatch: false, token);
 		}
 
-		private ValueTask<int> TranslateClosestForwardWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, long pos, CancellationToken token) {
+		private ValueTask<int> TranslateClosestForwardWithMidpoints(ReaderWorkItem workItem, ReadOnlySpan<Midpoint> midpoints, long pos, CancellationToken token) {
 			// to allow backward reading of the last record, forward read will decline anyway
 			if (pos > midpoints[^1].LogPos)
 				return ValueTask.FromResult(Chunk.PhysicalDataSize);
@@ -452,7 +452,7 @@ public partial class TFChunk {
 			}
 		}
 
-		private static Range LocatePosRange(Midpoint[] midpoints, long pos) {
+		private static Range LocatePosRange(ReadOnlySpan<Midpoint> midpoints, long pos) {
 			int lowerMidpoint = LowerMidpointBound(midpoints, pos);
 			int upperMidpoint = UpperMidpointBound(midpoints, pos);
 			return new(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
@@ -462,7 +462,7 @@ public partial class TFChunk {
 		/// Returns the index of lower midpoint for given logical position.
 		/// Assumes it always exists.
 		/// </summary>
-		private static int LowerMidpointBound(Midpoint[] midpoints, long pos) {
+		private static int LowerMidpointBound(ReadOnlySpan<Midpoint> midpoints, long pos) {
 			int l = 0;
 			int r = midpoints.Length - 1;
 			while (l < r) {
@@ -480,7 +480,7 @@ public partial class TFChunk {
 		/// Returns the index of upper midpoint for given logical position.
 		/// Assumes it always exists.
 		/// </summary>
-		private static int UpperMidpointBound(Midpoint[] midpoints, long pos) {
+		private static int UpperMidpointBound(ReadOnlySpan<Midpoint> midpoints, long pos) {
 			int l = 0;
 			int r = midpoints.Length - 1;
 			while (l < r) {
