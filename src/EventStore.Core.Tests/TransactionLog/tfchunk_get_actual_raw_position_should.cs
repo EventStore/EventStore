@@ -67,7 +67,7 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 		var logPositions = new List<long>();
 		var posMap = new List<PosMap>();
 
-		var chunk = await CreateChunk(
+		using var chunk = await CreateChunk(
 			numEvents: numEvents,
 			completed: false,
 			scavenged: false,
@@ -87,7 +87,7 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 		var logPositions = new List<long>();
 		var posMap = new List<PosMap>();
 
-		var chunk = await CreateChunk(
+		using var chunk = await CreateChunk(
 			numEvents: numEvents,
 			completed: true,
 			scavenged: false,
@@ -107,7 +107,7 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 		var logPositions = new List<long>();
 		var posMap = new List<PosMap>();
 
-		var chunk = await CreateChunk(
+		using var chunk = await CreateChunk(
 			numEvents: numEvents,
 			completed: true,
 			scavenged: true,
@@ -127,7 +127,7 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 		var logPositions = new List<long>();
 		var posMap = new List<PosMap>();
 
-		var chunk = await CreateChunk(
+		using var chunk = await CreateChunk(
 			numEvents: 1,
 			completed: true,
 			scavenged: false,
@@ -148,7 +148,7 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 		var logPositions = new List<long>();
 		var posMap = new List<PosMap>();
 
-		var chunk = await CreateChunk(
+		using var chunk = await CreateChunk(
 			numEvents: 1,
 			completed: true,
 			scavenged: true,
@@ -167,7 +167,7 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 		var logPositions = new List<long>();
 		var posMap = new List<PosMap>();
 
-		var chunk = await CreateChunk(
+		using var chunk = await CreateChunk(
 			numEvents: 1,
 			completed: false,
 			scavenged: false,
