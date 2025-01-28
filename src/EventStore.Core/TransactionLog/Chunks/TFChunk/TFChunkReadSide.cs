@@ -189,6 +189,8 @@ public partial class TFChunk {
 				if (!_wantMidpoints)
 					return null;
 
+				//qq need to check _midpoints again
+
 				// want midpoints but don't have them, get them. synchronization is ok here because rare
 				_midpoints = await PopulateMidpoints(Chunk._midpointsDepth, workItem, token);
 				return _midpoints;
