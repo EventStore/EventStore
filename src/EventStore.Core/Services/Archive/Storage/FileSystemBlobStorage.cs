@@ -7,17 +7,21 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.IO;
+using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
 public class FileSystemBlobStorage : IBlobStorage {
+	private static readonly ILogger Log = Serilog.Log.ForContext<FileSystemBlobStorage>();
 	private static readonly SearchValues<char> InvalidFileNameChars = SearchValues.Create(Path.GetInvalidFileNameChars());
 
 	private readonly string _archivePath;
 	private readonly FileStreamOptions _fileStreamOptions;
 
 	public FileSystemBlobStorage(FileSystemOptions options) {
-		_archivePath = options.Path;
+		_archivePath = Path.GetFullPath(options.Path);
+		Log.Information($"Using file system archive storage at {_archivePath}");
+
 		_fileStreamOptions = new FileStreamOptions {
 			Access = FileAccess.Read,
 			Mode = FileMode.Open,
@@ -72,6 +76,7 @@ public class FileSystemBlobStorage : IBlobStorage {
 			handle.Dispose();
 		}
 
+		Log.Information($"Storing to archive file {destinationPath}");
 		File.Move(tempPath, destinationPath, overwrite: true);
 	}
 }

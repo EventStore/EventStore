@@ -60,14 +60,23 @@ public class ChunkRemover<TStreamId, TRecord> : IChunkRemover<TStreamId, TRecord
 		}
 
 		if (!ShouldRemoveForBytes(scavengePoint, physicalChunk)) {
+			_logger.Debug(
+				"SCAVENGING: ChunkRemover is keeping chunk {PhysicalChunk} because of " +
+				"the retention policy for bytes", physicalChunk.Name);
 			return false;
 		}
 
 		if (!ShouldRemoveForPeriod(scavengePoint, concurrentState, physicalChunk)) {
+			_logger.Debug(
+				"SCAVENGING: ChunkRemover is keeping chunk {PhysicalChunk} because of " +
+				"the retention policy for days", physicalChunk.Name);
 			return false;
 		}
 
 		if (!await IsConfirmedPresentInArchive(physicalChunk, ct)) {
+			_logger.Debug(
+				"SCAVENGING: ChunkRemover is keeping chunk {PhysicalChunk} because it " +
+				"is not confirmed present in the archive", physicalChunk.Name);
 			return false;
 		}
 
