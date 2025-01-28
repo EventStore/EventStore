@@ -60,9 +60,6 @@ public class ArchiveStorage(
 		try {
 			BinaryPrimitives.WriteInt64LittleEndian(buffer.Span, checkpoint);
 			await blobStorage.StoreAsync(stream, archiveCheckpointFile, ct);
-		} catch (Exception ex) when (ex is not OperationCanceledException) {
-			Log.Error(ex, "Error while setting checkpoint to: {checkpoint} (0x{checkpoint:X})",
-				checkpoint, checkpoint);
 		} finally {
 			await stream.DisposeAsync();
 			buffer.Dispose();
