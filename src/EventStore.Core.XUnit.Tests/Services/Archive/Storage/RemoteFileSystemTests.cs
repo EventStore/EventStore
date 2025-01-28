@@ -42,7 +42,9 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 		}
 
 		// upload the chunk
-		Assert.True(await archive.StoreChunk(chunkLocalPath, logicalChunkNumber, CancellationToken.None));
+		await using (var localChunk = new FakeChunkBlob(chunkLocalPath, logicalChunkNumber, 0, FileMode.Open)) {
+			Assert.True(await archive.StoreChunk(localChunk, CancellationToken.None));
+		}
 
 		// read the remote chunk
 		var codec = new PrefixingLocatorCodec();
@@ -87,7 +89,9 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 		}
 
 		// upload the chunk
-		Assert.True(await archive.StoreChunk(chunkLocalPath, logicalChunkNumber, CancellationToken.None));
+		await using (var localChunk = new FakeChunkBlob(chunkLocalPath, logicalChunkNumber, 0, FileMode.Open)) {
+			Assert.True(await archive.StoreChunk(localChunk, CancellationToken.None));
+		}
 
 		// read the remote chunk
 		var codec = new PrefixingLocatorCodec();

@@ -19,15 +19,15 @@ public class ArchiveChunkHandleTests : ArchiveStorageTestsBase<ArchiveChunkHandl
 		var archive = CreateSut(storageType);
 
 		// create a chunk and upload it
-		var chunkPath = CreateLocalChunk(0, 0);
-		await archive.StoreChunk(chunkPath, 0, CancellationToken.None);
+		await using var chunk = await CreateLocalChunk(0, 0);
+		await archive.StoreChunk(chunk, CancellationToken.None);
 
 		// read the local chunk
-		var localContent = await File.ReadAllBytesAsync(chunkPath);
+		var localContent = await chunk.ReadAllBytes();
 
 		// read the uploaded chunk
 		using var sut = await ArchivedChunkHandle.OpenForReadAsync(archive, 0, CancellationToken.None);
-		using var inputStream = sut.CreateStream();
+		await using var inputStream = sut.CreateStream();
 		var outputStream = new MemoryStream();
 		await inputStream.CopyToAsync(outputStream, CancellationToken.None);
 

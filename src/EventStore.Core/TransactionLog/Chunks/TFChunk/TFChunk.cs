@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
 using DotNext.Collections.Concurrent;
+using DotNext.Collections.Generic;
 using DotNext.Diagnostics;
 using DotNext.IO;
 using DotNext.Threading;
@@ -29,7 +30,7 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
-public partial class TFChunk : IDisposable {
+public partial class TFChunk : IChunkBlob {
 	public enum ChunkVersions : byte {
 		OriginalNotUsed = 1,
 		Unaligned = 2,
@@ -86,12 +87,8 @@ public partial class TFChunk : IDisposable {
 
 	public ChunkInfo ChunkInfo {
 		get => new() {
-			ChunkLocator = ChunkLocator,
-			ChunkStartNumber = _chunkHeader.ChunkStartNumber,
 			ChunkEndNumber = _chunkHeader.ChunkEndNumber,
-			ChunkStartPosition = _chunkHeader.ChunkStartPosition,
 			ChunkEndPosition = _chunkHeader.ChunkEndPosition,
-			IsCompleted = IsReadOnly,
 		};
 	}
 
@@ -1439,6 +1436,17 @@ public partial class TFChunk : IDisposable {
 				break;
 		}
 	}
+
+	IAsyncEnumerable<IChunkBlob> IChunkBlob.UnmergeAsync() {
+		if (ChunkHeader.ChunkStartNumber == ChunkHeader.ChunkEndNumber)
+			return AsyncEnumerable.Singleton(this);
+
+		// TODO: requires actual implementation
+		return AsyncEnumerable.Throw<IChunkBlob>(new NotImplementedException());
+	}
+
+	async ValueTask<IChunkRawReader> IChunkBlob.AcquireRawReader(CancellationToken token)
+		=> (IChunkRawReader)await AcquireRawReader(token);
 
 	public override string ToString() {
 		return string.Format("#{0}-{1} ({2})", _chunkHeader.ChunkStartNumber, _chunkHeader.ChunkEndNumber,

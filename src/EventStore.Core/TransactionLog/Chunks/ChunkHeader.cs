@@ -155,6 +155,8 @@ public sealed class ChunkHeader : IBinaryFormattable<ChunkHeader> {
 		return ChunkStartPosition + localLogicalPosition;
 	}
 
+	public bool IsSingleLogicalChunk => ChunkStartNumber == ChunkEndNumber;
+
 	public override string ToString() {
 		return string.Format(
 			"Version: {0}, ChunkSize: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, IsScavenged: {4}, ChunkId: {5}\n" +

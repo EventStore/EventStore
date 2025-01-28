@@ -30,8 +30,6 @@ public sealed class TFChunkDb : IAsyncDisposable {
 		ILogger log = null,
 		IChunkFileSystem fileSystem = null,
 		DbTransformManager transformManager = null,
-		Action<Data.ChunkInfo> onChunkLoaded = null,
-		Action<Data.ChunkInfo> onChunkCompleted = null,
 		Action<Data.ChunkInfo> onChunkSwitched = null) {
 		Ensure.NotNull(config, "config");
 
@@ -41,9 +39,7 @@ public sealed class TFChunkDb : IAsyncDisposable {
 		fileSystem ??= new ChunkLocalFileSystem(config.Path);
 
 		Manager = new TFChunkManager(Config, fileSystem, _tracker, TransformManager) {
-			OnChunkLoaded = onChunkLoaded,
-			OnChunkCompleted = onChunkCompleted,
-			OnChunkSwitched = onChunkSwitched
+			OnChunkSwitched = onChunkSwitched,
 		};
 
 		_log = log ?? Serilog.Log.ForContext<TFChunkDb>();

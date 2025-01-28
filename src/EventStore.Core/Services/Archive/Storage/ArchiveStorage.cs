@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,7 +11,7 @@ using DotNext.Buffers;
 using DotNext.IO;
 using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
-using Microsoft.Win32.SafeHandles;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage;
@@ -70,27 +71,28 @@ public class ArchiveStorage(
 		}
 	}
 
-	public async ValueTask<bool> StoreChunk(string sourceChunkPath, int logicalChunkNumber, CancellationToken ct) {
-		var handle = default(SafeFileHandle);
-		var stream = default(Stream);
-		try {
-			handle = File.OpenHandle(sourceChunkPath, options: FileOptions.Asynchronous | FileOptions.SequentialScan);
-			stream = handle.AsUnbufferedStream(FileAccess.Read);
-			var destinationFile = chunkNameResolver.ResolveFileName(logicalChunkNumber);
-			await blobStorage.StoreAsync(stream, destinationFile, ct);
-			return true;
-		} catch (FileNotFoundException) {
-			throw new ChunkDeletedException();
-		} catch (Exception ex) when (ex is not OperationCanceledException) {
-			if (!File.Exists(sourceChunkPath))
-				throw new ChunkDeletedException();
-
-			Log.Error(ex, "Error while storing chunk: {logicalChunkNumber} ({chunkPath})", logicalChunkNumber,
-				sourceChunkPath);
-			return false;
-		} finally {
-			await (stream?.DisposeAsync() ?? ValueTask.CompletedTask);
-			handle?.Dispose();
+	public async ValueTask<bool> StoreChunk(IChunkBlob chunk, CancellationToken ct) {
+		// process single chunk
+		if (chunk.ChunkHeader.IsSingleLogicalChunk) {
+			await StoreAsync(chunk, ct);
+		} else {
+			await foreach (var unmergedChunk in chunk.UnmergeAsync().WithCancellation(ct)) {
+				// we need to dispose the unmerged chunk because it's temporary chunk
+				using (unmergedChunk) {
+					await StoreAsync(unmergedChunk, ct);
+				}
+			}
 		}
+
+		return true;
+	}
+
+	private async ValueTask StoreAsync(IChunkBlob chunk, CancellationToken ct) {
+		Debug.Assert(chunk.ChunkHeader.IsSingleLogicalChunk);
+
+		var name = chunkNameResolver.ResolveFileName(chunk.ChunkHeader.ChunkStartNumber);
+		using var reader = await chunk.AcquireRawReader(ct);
+		reader.Stream.Position = 0L;
+		await blobStorage.StoreAsync(reader.Stream, name, ct);
 	}
 }
