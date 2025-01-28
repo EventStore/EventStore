@@ -11,15 +11,16 @@ using EventStore.Core.TransactionLog.Chunks.TFChunk;
 namespace EventStore.Core.TransactionLog.Chunks;
 
 public sealed class TFChunkBulkRawReader(TFChunk.TFChunk chunk, Stream streamToUse, bool isMemory)
-	: TFChunkBulkReader(chunk, streamToUse, isMemory) {
+	: TFChunkBulkReader(chunk, streamToUse, isMemory), IChunkRawReader {
 
 	public override void SetPosition(long rawPosition) {
 		if (rawPosition >= Stream.Length)
-			throw new ArgumentOutOfRangeException("rawPosition",
-				string.Format("Raw position {0} is out of bounds.", rawPosition));
+			throw new ArgumentOutOfRangeException(nameof(rawPosition),
+				$"Raw position {rawPosition} is out of bounds.");
 		Stream.Position = rawPosition;
-
 	}
+
+	Stream IChunkRawReader.Stream => Stream;
 
 	public override async ValueTask<BulkReadResult> ReadNextBytes(Memory<byte> buffer, CancellationToken token) {
 		var oldPos = (int)Stream.Position;

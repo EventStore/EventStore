@@ -17,7 +17,7 @@ public class when_marking_for_deletion_a_tfchunk_that_has_been_locked_and_unlock
 	public override async Task SetUp() {
 		await base.SetUp();
 		_chunk = await TFChunkHelper.CreateNewChunk(Filename, 1000);
-		var reader = await _chunk.AcquireRawReader(CancellationToken.None);
+		var reader = await _chunk.AcquireDataReader(CancellationToken.None);
 		_chunk.MarkForDeletion();
 		reader.Release();
 	}

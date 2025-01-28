@@ -24,7 +24,7 @@ public abstract class TFChunkBulkReader : IDisposable {
 	private bool _disposed;
 	public bool IsMemory { get; }
 
-	internal TFChunkBulkReader(TFChunk.TFChunk chunk, Stream streamToUse, bool isMemory) {
+	protected TFChunkBulkReader(TFChunk.TFChunk chunk, Stream streamToUse, bool isMemory) {
 		Ensure.NotNull(chunk, "chunk");
 		Ensure.NotNull(streamToUse, "stream");
 		_chunk = chunk;
@@ -40,7 +40,6 @@ public abstract class TFChunkBulkReader : IDisposable {
 	}
 
 	public void Release() {
-		_stream.Close();
 		_stream.Dispose();
 		_disposed = true;
 		_chunk.ReleaseReader(this);

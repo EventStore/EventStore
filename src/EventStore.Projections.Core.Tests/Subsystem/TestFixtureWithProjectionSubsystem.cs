@@ -37,7 +37,7 @@ public class TestFixtureWithProjectionSubsystem {
 	static readonly IConfiguration EmptyConfiguration = new ConfigurationBuilder().AddInMemoryCollection().Build();
 
 	private StandardComponents CreateStandardComponents() {
-		var dbConfig = TFChunkHelper.CreateDbConfig(Path.GetTempPath(), 0);
+		var dbConfig = TFChunkHelper.CreateDbConfig(Path.Combine(Path.GetTempPath(), "ES-Projections"), 0);
 		var mainQueue = new QueuedHandlerThreadPool
 		(new AdHocHandler<Message>(msg => {
 			/* Ignore messages */

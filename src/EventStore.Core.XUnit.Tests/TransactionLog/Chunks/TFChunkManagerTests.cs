@@ -19,8 +19,6 @@ namespace EventStore.Core.XUnit.Tests.TransactionLog.Chunks;
 public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 	private readonly TFChunkManager _sut;
 	private readonly ILocatorCodec _locatorCodec;
-	private readonly List<Data.ChunkInfo> _onCompleted = [];
-	private readonly List<Data.ChunkInfo> _onLoaded = [];
 	private readonly List<Data.ChunkInfo> _onSwitched = [];
 
 	public TFChunkManagerTests() {
@@ -36,9 +34,6 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 		_sut = new TFChunkManager(dbConfig, fileSystem,
 			new TFChunkTracker.NoOp(),
 			DbTransformManager.Default) {
-
-			OnChunkCompleted = info => _onCompleted.Add(info),
-			OnChunkLoaded = info => _onLoaded.Add(info),
 			OnChunkSwitched = info => _onSwitched.Add(info),
 		};
 	}
@@ -101,8 +96,6 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 
 		Assert.False(switched);
 		Assert.Equal(expectedChunks.Select(chunk => chunk.ChunkLocator), ActualChunks);
-		Assert.Equal(2, _onCompleted.Count);
-		Assert.Empty(_onLoaded);
 		Assert.Empty(_onSwitched);
 		_ = explanation;
 	}
@@ -130,8 +123,6 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 
 		Assert.True(switched);
 		Assert.Equal(expectedChunks.Select(chunk => chunk.ChunkLocator), ActualChunks);
-		Assert.Equal(2, _onCompleted.Count);
-		Assert.Empty(_onLoaded);
 		Assert.Single(_onSwitched);
 	}
 
@@ -157,8 +148,6 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 
 		Assert.True(switched);
 		Assert.Equal(expectedChunks.Select(chunk => chunk.ChunkLocator), ActualChunks);
-		Assert.Equal(2, _onCompleted.Count);
-		Assert.Empty(_onLoaded);
 		Assert.Single(_onSwitched);
 	}
 
@@ -188,8 +177,6 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 
 		Assert.False(switched);
 		Assert.Equal(expectedChunks.Select(chunk => chunk.ChunkLocator), ActualChunks);
-		Assert.Equal(2, _onCompleted.Count);
-		Assert.Empty(_onLoaded);
 		Assert.Empty(_onSwitched);
 	}
 
@@ -222,8 +209,6 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 
 		Assert.False(switched);
 		Assert.Equal(expectedChunks.Select(chunk => chunk.ChunkLocator), ActualChunks);
-		Assert.Equal(2, _onCompleted.Count);
-		Assert.Empty(_onLoaded);
 		Assert.Empty(_onSwitched);
 		_ = explanation;
 	}
@@ -257,8 +242,6 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 
 		Assert.True(switched);
 		Assert.Equal(expectedChunks, ActualChunks);
-		Assert.Equal(2, _onCompleted.Count);
-		Assert.Empty(_onLoaded);
 		Assert.Equal(3, _onSwitched.Count);
 	}
 
@@ -294,8 +277,6 @@ public  class TFChunkManagerTests : DirectoryPerTest<TFChunkManagerTests>{
 
 		Assert.True(switched);
 		Assert.Equal(expectedChunks, ActualChunks);
-		Assert.Equal(2, _onCompleted.Count);
-		Assert.Empty(_onLoaded);
 		Assert.Equal(5, _onSwitched.Count);
 	}
 }

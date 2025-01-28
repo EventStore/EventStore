@@ -16,7 +16,7 @@ using NUnit.Framework;
 namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests;
 
 [TestFixture]
-public abstract class SingleNodeScenario<TLogFormat, TStreamId> {
+public abstract class SingleNodeScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 	protected ClusterVNode _node;
 	protected ClusterVNodeOptions _options;
 	private ILogFormatAbstractorFactory<TStreamId> _logFormatFactory;
@@ -27,7 +27,8 @@ public abstract class SingleNodeScenario<TLogFormat, TStreamId> {
 	}
 
 	[OneTimeSetUp]
-	public virtual void TestFixtureSetUp() {
+	public override async Task TestFixtureSetUp() {
+		await base.TestFixtureSetUp();
 		_logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 
 		var options = _disableMemoryOptimization
@@ -51,7 +52,10 @@ public abstract class SingleNodeScenario<TLogFormat, TStreamId> {
 	}
 
 	[OneTimeTearDown]
-	public virtual Task TestFixtureTearDown() => _node?.StopAsync() ?? Task.CompletedTask;
+	public override async Task TestFixtureTearDown() {
+		await (_node?.StopAsync() ?? Task.CompletedTask);
+		await base.TestFixtureTearDown();
+	}
 
 	protected abstract ClusterVNodeOptions WithOptions(ClusterVNodeOptions options);
 

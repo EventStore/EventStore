@@ -42,7 +42,7 @@ public class with_ssl_enabled_and_using_a_security_certificate_from_file<TLogFor
 	}
 
 	private string GetCertificatePath() {
-		var filePath = Path.Combine(Path.GetTempPath(), $"cert-{Guid.NewGuid()}.p12");
+		var filePath = Path.Combine(PathName, $"ES-cert-{Guid.NewGuid()}.p12");
 		var cert = ssl_connections.GetUntrustedCertificate();
 
 		using var fileStream = File.Create(filePath);

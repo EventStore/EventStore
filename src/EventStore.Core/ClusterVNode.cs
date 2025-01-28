@@ -270,6 +270,7 @@ public class ClusterVNode<TStreamId> :
 
 		var archiveOptions = configuration.GetSection($"{KurrentConfigurationKeys.Prefix}:Archive").Get<ArchiveOptions>() ?? new();
 		OptionsFormatter.LogConfig("Archive", archiveOptions);
+		archiveOptions.Validate();
 
 		var disableInternalTcpTls = options.Application.Insecure;
 		var disableExternalTcpTls = options.Application.Insecure;
@@ -345,12 +346,6 @@ public class ClusterVNode<TStreamId> :
 			tracker: trackers.TransactionFileTracker,
 			fileSystem: fileSystem,
 			transformManager: new DbTransformManager(),
-			onChunkLoaded: chunkInfo => {
-				_mainQueue.Publish(new SystemMessage.ChunkLoaded(chunkInfo));
-			},
-			onChunkCompleted: chunkInfo => {
-				_mainQueue.Publish(new SystemMessage.ChunkCompleted(chunkInfo));
-			},
 			onChunkSwitched: chunkInfo => {
 				_mainQueue.Publish(new SystemMessage.ChunkSwitched(chunkInfo));
 			});
@@ -1591,6 +1586,7 @@ public class ClusterVNode<TStreamId> :
 						X509Certificate2Collection Roots)>>
 					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()))
 				.AddSingleton(_nodeHttpClientFactory)
+				.AddSingleton<IChunkRegistry<IChunkBlob>>(Db.Manager)
 				.AddSingleton(Db.Manager.FileSystem.NamingStrategy);
 
 			configureAdditionalNodeServices?.Invoke(services);

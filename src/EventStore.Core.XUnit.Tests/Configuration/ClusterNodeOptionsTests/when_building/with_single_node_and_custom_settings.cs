@@ -2,8 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 #nullable enable
-using System;
-using System.IO;
 using System.Net;
 using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Tests;
@@ -17,9 +15,7 @@ namespace EventStore.Core.XUnit.Tests.Configuration.ClusterNodeOptionsTests.when
 [TestFixture(typeof(LogFormat.V2), typeof(string))]
 [TestFixture(typeof(LogFormat.V3), typeof(uint))]
 public class with_run_on_disk<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
-	private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"Test-{Guid.NewGuid()}");
-
-	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options.RunOnDisk(_dbPath);
+	protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options.RunOnDisk(PathName);
 
 	[Test]
 	public void should_set_memdb_to_false() {
@@ -28,7 +24,7 @@ public class with_run_on_disk<TLogFormat, TStreamId> : SingleNodeScenario<TLogFo
 
 	[Test]
 	public void should_set_the_db_path() {
-		Assert.AreEqual(_dbPath, _node.Db.Config.Path);
+		Assert.AreEqual(PathName, _node.Db.Config.Path);
 	}
 }
 

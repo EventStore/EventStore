@@ -17,7 +17,7 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks;
 
-public class TFChunkManager : IThreadPoolWorkItem {
+public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoolWorkItem {
 	private static readonly ILogger Log = Serilog.Log.ForContext<TFChunkManager>();
 
 	// MaxChunksCount is currently capped at 400,000 since:
@@ -41,8 +41,6 @@ public class TFChunkManager : IThreadPoolWorkItem {
 	private readonly AsyncExclusiveLock _chunksLocker = new();
 	private int _backgroundPassesRemaining;
 	private int _backgroundRunning;
-	public Action<ChunkInfo> OnChunkLoaded { get; init; }
-	public Action<ChunkInfo> OnChunkCompleted { get; init; }
 	public Action<ChunkInfo> OnChunkSwitched { get; init; }
 
 	public TFChunkManager(
@@ -170,7 +168,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 				tracker: _tracker,
 				transformFactory: _transformManager.GetFactoryForNewChunk(),
 				token);
-			AddChunk(chunk, isNew: true);
+			AddChunk(chunk);
 			triggerCaching = _cachingEnabled;
 		} finally {
 			_chunksLocker.Release();
@@ -209,7 +207,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 				transformFactory: _transformManager.GetFactoryForExistingChunk(chunkHeader.TransformType),
 				transformHeader: transformHeader,
 				token);
-			AddChunk(chunk, isNew: true);
+			AddChunk(chunk);
 			triggerCaching = _cachingEnabled;
 		} finally {
 			_chunksLocker.Release();
@@ -221,7 +219,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		return chunk;
 	}
 
-	private void AddChunk(TFChunk.TFChunk chunk, bool isNew) {
+	private void AddChunk(TFChunk.TFChunk chunk) {
 		Debug.Assert(chunk is not null);
 		Debug.Assert(_chunksLocker.IsLockHeld);
 
@@ -230,13 +228,6 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		}
 
 		_chunksCount = Math.Max(chunk.ChunkHeader.ChunkEndNumber + 1, _chunksCount);
-
-		if (isNew) {
-			if (chunk.ChunkHeader.ChunkStartNumber > 0)
-				OnChunkCompleted?.Invoke(_chunks[chunk.ChunkHeader.ChunkStartNumber - 1].ChunkInfo);
-		} else {
-			OnChunkLoaded?.Invoke(chunk.ChunkInfo);
-		}
 	}
 
 	public async ValueTask AddChunk(TFChunk.TFChunk chunk, CancellationToken token) {
@@ -245,7 +236,7 @@ public class TFChunkManager : IThreadPoolWorkItem {
 		bool triggerCaching;
 		await _chunksLocker.AcquireAsync(token);
 		try {
-			AddChunk(chunk, isNew: false);
+			AddChunk(chunk);
 			triggerCaching = _cachingEnabled;
 		} finally {
 			_chunksLocker.Release();
@@ -496,27 +487,22 @@ public class TFChunkManager : IThreadPoolWorkItem {
 			ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
 	}
 
-	public bool TryGetChunkFor(long logPosition, out TFChunk.TFChunk chunk) {
-		try {
-			chunk = GetChunkFor(logPosition);
-			return true;
-		} catch {
-			chunk = null;
-			return false;
-		}
-	}
+	public bool TryGetChunkFor(long logPosition, out TFChunk.TFChunk chunk)
+		=> (chunk = TryGetChunkFor(logPosition)) is not null;
 
 	public TFChunk.TFChunk GetChunkFor(long logPosition) {
 		var chunkNum = (int)(logPosition / _config.ChunkSize);
 		if (chunkNum < 0 || chunkNum >= _chunksCount)
-			throw new ArgumentOutOfRangeException("logPosition",
-				string.Format("LogPosition {0} does not have corresponding chunk in DB.", logPosition));
+			throw new ArgumentOutOfRangeException(nameof(logPosition),
+				$"LogPosition {logPosition} does not have corresponding chunk in DB.");
 
-		var chunk = _chunks[chunkNum];
-		if (chunk == null)
-			throw new Exception(string.Format(
-				"Requested chunk for LogPosition {0}, which is not present in TFChunkManager.", logPosition));
-		return chunk;
+		return _chunks[chunkNum] ?? throw new Exception(
+			$"Requested chunk for LogPosition {logPosition}, which is not present in TFChunkManager.");
+	}
+
+	public TFChunk.TFChunk TryGetChunkFor(long logPosition) {
+		var chunkNum = (int)(logPosition / _config.ChunkSize);
+		return chunkNum >= 0 && chunkNum < _chunksCount ? _chunks[chunkNum] : null;
 	}
 
 	public TFChunk.TFChunk GetChunk(int chunkNum) {
