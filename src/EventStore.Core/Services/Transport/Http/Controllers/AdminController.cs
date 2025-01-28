@@ -400,7 +400,8 @@ public class AdminController : CommunicationController {
 		Log.Debug("Error while closing HTTP connection (admin controller): {e}.", exc.Message);
 	}
 		private bool GetDescriptionDocument(HttpEntityManager manager, UriTemplateMatch match) {
-		if (manager.ResponseCodec.ContentType == ContentType.DescriptionDocJson) {
+		if (manager.ResponseCodec.ContentType == ContentType.DescriptionDocJson ||
+		    manager.ResponseCodec.ContentType == ContentType.LegacyDescriptionDocJson) {
 			var stream = match.BoundVariables["stream"];
 			var accepts = (manager.HttpEntity.Request.AcceptTypes?.Length ?? 0) == 0 ||
 			              manager.HttpEntity.Request.AcceptTypes.Contains(ContentType.Any);

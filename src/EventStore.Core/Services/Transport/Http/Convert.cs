@@ -309,18 +309,21 @@ public static class Convert {
 			@"The description document will be presented when no accept header is present or it was requested");
 
 		descriptionDocument.SetSelf("/streams/" + escapedStreamId,
-			Codec.DescriptionJson.ContentType);
+			Codec.DescriptionJson.ContentType,
+			Codec.LegacyDescriptionJson.ContentType);
 
 		descriptionDocument.SetStream("/streams/" + escapedStreamId,
 			Codec.EventStoreXmlCodec.ContentType,
-			Codec.EventStoreJsonCodec.ContentType);
+			Codec.KurrentJsonCodec.ContentType,
+			Codec.LegacyEventStoreJsonCodec.ContentType);
 
 		if (subscriptions != null) {
 			foreach (var group in subscriptions) {
 				descriptionDocument.AddStreamSubscription(
 					String.Format("/subscriptions/{0}/{1}", escapedStreamId, group),
 					Codec.CompetingXml.ContentType,
-					Codec.CompetingJson.ContentType);
+					Codec.CompetingJson.ContentType,
+					Codec.LegacyCompetingJson.ContentType);
 			}
 		}
 

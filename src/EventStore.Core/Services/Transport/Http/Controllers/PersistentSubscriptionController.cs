@@ -31,6 +31,7 @@ public class PersistentSubscriptionController : CommunicationController {
 	private static readonly ICodec[] AtomCodecs = {
 		Codec.CompetingXml,
 		Codec.CompetingJson,
+		Codec.LegacyCompetingJson,
 	};
 
 	private static readonly ILogger Log = Serilog.Log.ForContext<PersistentSubscriptionController>();
@@ -62,11 +63,11 @@ public class PersistentSubscriptionController : CommunicationController {
 			Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
 		RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/replayParked?stopAt={stopAt}", HttpMethod.Post,
 			WithParameters(Operations.Subscriptions.ReplayParked), ReplayParkedMessages);
-		RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack/{messageid}", HttpMethod.Post, 
+		RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack/{messageid}", HttpMethod.Post,
 			WithParameters(Operations.Subscriptions.ProcessMessages), AckMessage);
 		RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/nack/{messageid}?action={action}",
 			HttpMethod.Post, WithParameters(Operations.Subscriptions.ProcessMessages), NackMessage);
-		RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack?ids={messageids}", HttpMethod.Post, 
+		RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack?ids={messageids}", HttpMethod.Post,
 			WithParameters(Operations.Subscriptions.ProcessMessages), AckMessages);
 		RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/nack?ids={messageids}&action={action}",
 			HttpMethod.Post, WithParameters(Operations.Subscriptions.ProcessMessages), NackMessages);
@@ -194,13 +195,13 @@ public class PersistentSubscriptionController : CommunicationController {
 	}
 	private bool GetRequireLeader(HttpEntityManager manager, out bool requireLeader) {
 		requireLeader = false;
-		
+
 		var onlyLeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireLeader);
 		var onlyMaster = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireMaster);
-		
+
 		if (StringValues.IsNullOrEmpty(onlyLeader) && StringValues.IsNullOrEmpty(onlyMaster))
 			return true;
-	
+
 		if (string.Equals(onlyLeader, "True", StringComparison.OrdinalIgnoreCase) ||
 		    string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase)) {
 			requireLeader = true;
@@ -393,7 +394,7 @@ public class PersistentSubscriptionController : CommunicationController {
 		Publish(cmd);
 		http.ReplyStatus(HttpStatusCode.Accepted, "", exception => { });
 	}
-	
+
 	private void ReplayParkedMessages(HttpEntityManager http, UriTemplateMatch match) {
 		if (_httpForwarder.ForwardRequest(http))
 			return;
@@ -425,7 +426,7 @@ public class PersistentSubscriptionController : CommunicationController {
 		var groupname = match.BoundVariables["subscription"];
 		var stream = match.BoundVariables["stream"];
 		var stopAtStr = match.BoundVariables["stopAt"];
-		
+
 		long? stopAt;
 		// if stopAt is declared...
 		if (stopAtStr != null) {
@@ -706,7 +707,7 @@ public class PersistentSubscriptionController : CommunicationController {
 			groupname, http.User);
 		Publish(cmd);
 	}
-	
+
 	private void RestartPersistentSubscriptions(HttpEntityManager http, UriTemplateMatch match) {
 		if (_httpForwarder.ForwardRequest(http))
 			return;
@@ -768,7 +769,7 @@ public class PersistentSubscriptionController : CommunicationController {
 		var cmd = new MonitoringMessage.GetPersistentSubscriptionStats(envelope, stream, groupName);
 		Publish(cmd);
 	}
-	
+
 	private IEnvelope CreateErrorEnvelope(HttpEntityManager http) {
 		return new SendToHttpEnvelope<SubscriptionMessage.InvalidPersistentSubscriptionsRestart>(
 			_networkSendQueue,

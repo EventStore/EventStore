@@ -27,6 +27,7 @@ public static class Format {
 		switch (entity.ResponseCodec.ContentType) {
 			case ContentType.Atom:
 			case ContentType.AtomJson:
+			case ContentType.LegacyAtomJson:
 			case ContentType.Html:
 				return entity.ResponseCodec.To(Convert.ToEntry(msg.Record, entity.ResponseUrl, embed,
 					singleEntry: true));
@@ -62,7 +63,7 @@ public static class Format {
 
 		return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg, entity.ResponseUrl, embed));
 	}
-	
+
 	public static string ReadAllEventsBackwardFilteredCompleted(HttpResponseFormatterArgs entity, Message message,
 		EmbedLevel embed) {
 		var msg = message as ClientMessage.FilteredReadAllEventsBackwardCompleted;
@@ -80,7 +81,7 @@ public static class Format {
 
 		return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg, entity.ResponseUrl, embed));
 	}
-	
+
 	public static string ReadAllEventsForwardFilteredCompleted(HttpResponseFormatterArgs entity, Message message,
 		EmbedLevel embed) {
 		var msg = message as ClientMessage.FilteredReadAllEventsForwardCompleted;
@@ -142,7 +143,7 @@ public static class Format {
 			    .ReadNextNPersistentMessagesResult.Success) {
 			return msg != null ? entity.ResponseCodec.To(msg.Reason) : string.Empty;
 		}
-		
+
 		return entity.ResponseCodec.To(Convert.ToNextNPersistentMessagesFeed(msg, entity.ResponseUrl, streamId,
 			groupName, count, embed));
 	}
