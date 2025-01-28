@@ -4,7 +4,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
-using System.IO;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
@@ -205,10 +205,8 @@ public partial class TFChunk {
 			if (mapCount is 0) // empty chunk
 				return null;
 
-			var isMap12Bytes = Chunk.ChunkFooter.IsMap12Bytes;
-			using var posMapTable = isMap12Bytes
-				? UnmanagedMemory.Allocate<byte>(PosMap.FullSize * mapCount)
-				: UnmanagedMemory.Allocate<byte>(PosMap.DeprecatedSize * mapCount);
+			var posmapSize = Chunk.ChunkFooter.IsMap12Bytes ? PosMap.FullSize : PosMap.DeprecatedSize;
+			using var posMapTable = UnmanagedMemory.Allocate<byte>(posmapSize * mapCount);
 
 			// write the table once
 			workItem.BaseStream.Position = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize;
@@ -226,41 +224,23 @@ public partial class TFChunk {
 			}
 
 			for (int x = 0, i = 0, xN = mapCount - 1; x < xN; x += segmentSize, i++) {
-				midpoints[i] = new(x, ReadPosMap(posMapTable.Span, x, isMap12Bytes));
+				midpoints[i] = new(x, ReadPosMap(posMapTable.Span, x, posmapSize));
 			}
 
 			// add the very last item as the last midpoint (possibly it is done twice)
-			midpoints[^1] = new(mapCount - 1, ReadPosMap(posMapTable.Span, mapCount - 1, isMap12Bytes));
+			midpoints[^1] = new(mapCount - 1, ReadPosMap(posMapTable.Span, mapCount - 1, posmapSize));
 			return midpoints;
-
-			static unsafe PosMap ReadPosMap(ReadOnlySpan<byte> table, int index, bool isMap12Bytes) {
-				delegate*<ReadOnlySpan<byte>, PosMap> factory;
-				int size;
-				if (isMap12Bytes) {
-					size = PosMap.FullSize;
-					factory = &PosMap.FromNewFormat;
-				} else {
-					size = PosMap.DeprecatedSize;
-					factory = &PosMap.FromOldFormat;
-				}
-
-				return factory(table.Slice(index * size, size));
-			}
 		}
 
-		private ValueTask<PosMap> ReadPosMap(ReaderWorkItem workItem, long index, Memory<byte> buffer, CancellationToken token) {
-			ValueTask<PosMap> task;
-			if (Chunk.ChunkFooter.IsMap12Bytes) {
-				var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.FullSize;
-				workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
-				task = workItem.BaseStream.ReadAsync<PosMap>(buffer, token);
+		private static unsafe PosMap ReadPosMap(ReadOnlySpan<byte> table, int index, int posmapSize) {
+			delegate*<ReadOnlySpan<byte>, PosMap> factory;
+			if (posmapSize is PosMap.FullSize) {
+				factory = &PosMap.FromNewFormat;
 			} else {
-				var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index * PosMap.DeprecatedSize;
-				workItem.BaseStream.Seek(pos, SeekOrigin.Begin);
-				task = PosMap.FromOldFormat(workItem.BaseStream, buffer, token);
+				factory = &PosMap.FromOldFormat;
 			}
 
-			return task;
+			return factory(table.Slice(index * posmapSize, posmapSize));
 		}
 
 		public async ValueTask<bool> ExistsAt(long logicalPosition, CancellationToken token) {
@@ -308,28 +288,7 @@ public partial class TFChunk {
 		private async ValueTask<int> TranslateExactPosition(ReaderWorkItem workItem, long pos, CancellationToken token) {
 			return await GetOrCreateMidPoints(workItem, token) is { } midpoints
 				? await TranslateExactWithMidpoints(workItem, midpoints, pos, token)
-				: await TranslateExactWithoutMidpoints(workItem, pos, 0, Chunk.ChunkFooter.MapCount - 1, token);
-		}
-
-		private async ValueTask<int> TranslateExactWithoutMidpoints(ReaderWorkItem workItem, long pos, long startIndex,
-			long endIndex, CancellationToken token) {
-			long low = startIndex;
-			long high = endIndex;
-
-			using var buffer = Memory.AllocateAtLeast<byte>(PosMap.FullSize);
-			while (low <= high) {
-				var mid = low + (high - low) / 2;
-				var v = await ReadPosMap(workItem, mid, buffer.Memory, token);
-
-				if (v.LogPos == pos)
-					return v.ActualPos;
-				if (v.LogPos < pos)
-					low = mid + 1;
-				else
-					high = mid - 1;
-			}
-
-			return -1;
+				: await TranslateWithoutMidpoints(workItem, pos, 0, Chunk.ChunkFooter.MapCount - 1, exactMatch: true, token);
 		}
 
 		private ValueTask<int> TranslateExactWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, long pos, CancellationToken token) {
@@ -337,7 +296,7 @@ public partial class TFChunk {
 				return ValueTask.FromResult(-1);
 
 			var recordRange = LocatePosRange(midpoints, pos);
-			return TranslateExactWithoutMidpoints(workItem, pos, recordRange.Lower, recordRange.Upper, token);
+			return TranslateWithoutMidpoints(workItem, pos, recordRange.Lower, recordRange.Upper, exactMatch: true, token);
 		}
 
 		public ValueTask<RecordReadResult> TryReadFirst(CancellationToken token)
@@ -422,8 +381,8 @@ public partial class TFChunk {
 		private async ValueTask<int> TranslateClosestForwardPosition(ReaderWorkItem workItem, long logicalPosition, CancellationToken token) {
 			return await GetOrCreateMidPoints(workItem, token) is { } midpoints
 				? await TranslateClosestForwardWithMidpoints(workItem, midpoints, logicalPosition, token)
-				: await TranslateClosestForwardWithoutMidpoints(workItem, logicalPosition, 0,
-					Chunk.ChunkFooter.MapCount - 1, token);
+				: await TranslateWithoutMidpoints(workItem, logicalPosition, 0,
+					Chunk.ChunkFooter.MapCount - 1, exactMatch: false, token);
 		}
 
 		private ValueTask<int> TranslateClosestForwardWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, long pos, CancellationToken token) {
@@ -432,34 +391,60 @@ public partial class TFChunk {
 				return ValueTask.FromResult(Chunk.PhysicalDataSize);
 
 			var recordRange = LocatePosRange(midpoints, pos);
-			return TranslateClosestForwardWithoutMidpoints(workItem, pos, recordRange.Lower, recordRange.Upper, token);
+			return TranslateWithoutMidpoints(workItem, pos, recordRange.Lower, recordRange.Upper, exactMatch: false, token);
 		}
 
-		private async ValueTask<int> TranslateClosestForwardWithoutMidpoints(ReaderWorkItem workItem, long pos, long startIndex,
-			long endIndex, CancellationToken token) {
+		private async ValueTask<int> TranslateWithoutMidpoints(ReaderWorkItem workItem, long pos, long startIndex,
+			long endIndex, [ConstantExpected] bool exactMatch, CancellationToken token) {
+			var count = (int)(endIndex - startIndex + 1L);
+			var posmapSize = Chunk.ChunkFooter.IsMap12Bytes
+				? PosMap.FullSize
+				: PosMap.DeprecatedSize;
 
-			using var buffer = Memory.AllocateAtLeast<byte>(PosMap.FullSize);
-			PosMap res = await ReadPosMap(workItem, endIndex, buffer.Memory, token);
+			using var buffer = Memory.AllocateAtLeast<byte>(count * posmapSize);
+			workItem.BaseStream.Position =
+				ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + startIndex * posmapSize;
 
-			// to allow backward reading of the last record, forward read will decline anyway
-			if (pos > res.LogPos)
-				return Chunk.PhysicalDataSize;
+			await workItem.BaseStream.ReadExactlyAsync(buffer.Memory, token);
+			return exactMatch ? ExactMatch(buffer.Span) : ClosestForward(buffer.Span);
 
-			long low = startIndex;
-			long high = endIndex;
-			while (low < high) {
-				var mid = low + (high - low) / 2;
-				var v = await ReadPosMap(workItem, mid, buffer.Memory, token);
+			int ExactMatch(ReadOnlySpan<byte> segment) {
+				for (int low = 0, high = count - 1; low <= high;) {
+					var mid = low + (high - low) / 2;
+					var v = ReadPosMap(segment, mid, posmapSize);
 
-				if (v.LogPos < pos)
-					low = mid + 1;
-				else {
-					high = mid;
-					res = v;
+					if (v.LogPos == pos)
+						return v.ActualPos;
+					if (v.LogPos < pos)
+						low = mid + 1;
+					else
+						high = mid - 1;
 				}
+
+				return -1;
 			}
 
-			return res.ActualPos;
+			int ClosestForward(ReadOnlySpan<byte> segment) {
+				var res = ReadPosMap(segment, count - 1, posmapSize);
+
+				// to allow backward reading of the last record, forward read will decline anyway
+				if (pos > res.LogPos)
+					return Chunk.PhysicalDataSize;
+
+				for (int low = 0, high = count - 1; low < high;) {
+					var mid = low + (high - low) / 2;
+					var v = ReadPosMap(segment, mid, posmapSize);
+
+					if (v.LogPos < pos)
+						low = mid + 1;
+					else {
+						high = mid;
+						res = v;
+					}
+				}
+
+				return res.ActualPos;
+			}
 		}
 
 		private static Range LocatePosRange(Midpoint[] midpoints, long pos) {
