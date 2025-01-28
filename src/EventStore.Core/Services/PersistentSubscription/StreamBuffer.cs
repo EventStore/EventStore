@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 			while (currentNode != null) {
 				var currentEventPosition = currentNode.Value.EventPosition;
-				if (retryEventPosition.CompareTo(currentEventPosition) < 0) {
+				if (currentEventPosition is not null && retryEventPosition.CompareTo(currentEventPosition) < 0) {
 					_retry.AddBefore(currentNode, ev);
 					return;
 				}
