@@ -13,6 +13,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 internal sealed class ChunkFileHandle : Disposable, IChunkHandle {
 	private readonly SafeFileHandle _handle;
+	private readonly string _path;
 
 	public ChunkFileHandle(string path, FileStreamOptions options) {
 		Debug.Assert(options is not null);
@@ -21,6 +22,7 @@ internal sealed class ChunkFileHandle : Disposable, IChunkHandle {
 		_handle = File.OpenHandle(path, options.Mode, options.Access, options.Share, options.Options,
 			options.PreallocationSize);
 		Access = options.Access;
+		_path = path;
 	}
 
 	internal static FileOptions ConvertToFileOptions(IChunkFileSystem.ReadOptimizationHint optimizationHint) => optimizationHint switch {
@@ -28,6 +30,8 @@ internal sealed class ChunkFileHandle : Disposable, IChunkHandle {
 		IChunkFileSystem.ReadOptimizationHint.SequentialScan => FileOptions.Asynchronous | FileOptions.SequentialScan,
 		_ => FileOptions.Asynchronous,
 	};
+
+	public string Name => _path;
 
 	public void Flush() => RandomAccess.FlushToDisk(_handle);
 
