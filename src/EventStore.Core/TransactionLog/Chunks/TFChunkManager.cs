@@ -491,17 +491,18 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 		=> (chunk = TryGetChunkFor(logPosition)) is not null;
 
 	public TFChunk.TFChunk GetChunkFor(long logPosition) {
-		return TryGetChunkFor(logPosition) ?? throw new Exception(string.Format(
-			"Requested chunk for LogPosition {0}, which is not present in TFChunkManager.", logPosition));
+		var chunkNum = (int)(logPosition / _config.ChunkSize);
+		if (chunkNum < 0 || chunkNum >= _chunksCount)
+			throw new ArgumentOutOfRangeException(nameof(logPosition),
+				$"LogPosition {logPosition} does not have corresponding chunk in DB.");
+
+		return _chunks[chunkNum] ?? throw new Exception(
+			$"Requested chunk for LogPosition {logPosition}, which is not present in TFChunkManager.");
 	}
 
 	public TFChunk.TFChunk TryGetChunkFor(long logPosition) {
 		var chunkNum = (int)(logPosition / _config.ChunkSize);
-		if (chunkNum < 0 || chunkNum >= _chunksCount)
-			throw new ArgumentOutOfRangeException("logPosition",
-				string.Format("LogPosition {0} does not have corresponding chunk in DB.", logPosition));
-
-		return _chunks[chunkNum];
+		return chunkNum >= 0 && chunkNum < _chunksCount ? _chunks[chunkNum] : null;
 	}
 
 	public TFChunk.TFChunk GetChunk(int chunkNum) {
