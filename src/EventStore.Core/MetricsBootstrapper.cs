@@ -64,7 +64,6 @@ public class GossipTrackers {
 
 public static class MetricsBootstrapper {
 	public const string LogicalChunkReadDistributionName = "eventstore-logical-chunk-read-distribution";
-	private static readonly ILogger Log = Serilog.Log.ForContext(typeof(MetricsBootstrapper));
 
 	public static void Bootstrap(
 		Conf conf,
