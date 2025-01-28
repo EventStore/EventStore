@@ -5,7 +5,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Resilience;
-using EventStore.Core.Services.Archive.Archiver;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Polly;
 using Serilog;
@@ -13,7 +12,7 @@ using Serilog;
 namespace EventStore.Core.Services.Archive.Storage;
 
 public class ResilientArchiveStorage(ResiliencePipeline pipeline, IArchiveStorage wrapped) : IArchiveStorage {
-	private static readonly ILogger Log = Serilog.Log.ForContext<ArchiverService>();
+	private static readonly ILogger Log = Serilog.Log.ForContext<ResilientArchiveStorage>();
 	private readonly PipelineExecutor _executor = new(pipeline, nameof(ResilientArchiveStorage), Log);
 
 	public ValueTask SetCheckpoint(long checkpoint, CancellationToken ct) =>
