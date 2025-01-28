@@ -13,7 +13,6 @@ using EventStore.Core.Metrics;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Scavenging;
-using Serilog;
 using Conf = EventStore.Common.Configuration.MetricsConfiguration;
 
 namespace EventStore.Core;
