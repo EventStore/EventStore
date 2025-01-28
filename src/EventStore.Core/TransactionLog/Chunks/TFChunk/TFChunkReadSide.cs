@@ -206,7 +206,7 @@ public partial class TFChunk {
 				return null;
 
 			var isMap12Bytes = Chunk.ChunkFooter.IsMap12Bytes;
-			var posMapTable = isMap12Bytes
+			using var posMapTable = isMap12Bytes
 				? UnmanagedMemory.Allocate<byte>(PosMap.FullSize * mapCount)
 				: UnmanagedMemory.Allocate<byte>(PosMap.DeprecatedSize * mapCount);
 
@@ -214,28 +214,24 @@ public partial class TFChunk {
 			workItem.BaseStream.Position = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize;
 			await workItem.BaseStream.ReadExactlyAsync(posMapTable.Memory, token);
 
-			try {
-				int midPointsCnt = 1 << depth;
-				int segmentSize;
-				Midpoint[] midpoints;
-				if (mapCount < midPointsCnt) {
-					segmentSize = 1; // we cache all items
-					midpoints = new Midpoint[mapCount];
-				} else {
-					segmentSize = mapCount / midPointsCnt;
-					midpoints = new Midpoint[1 + (mapCount + segmentSize - 1) / segmentSize];
-				}
-
-				for (int x = 0, i = 0, xN = mapCount - 1; x < xN; x += segmentSize, i++) {
-					midpoints[i] = new(x, ReadPosMap(posMapTable.Span, x, isMap12Bytes));
-				}
-
-				// add the very last item as the last midpoint (possibly it is done twice)
-				midpoints[^1] = new(mapCount - 1, ReadPosMap(posMapTable.Span, mapCount - 1, isMap12Bytes));
-				return midpoints;
-			} finally {
-				posMapTable.Dispose();
+			int midPointsCnt = 1 << depth;
+			int segmentSize;
+			Midpoint[] midpoints;
+			if (mapCount < midPointsCnt) {
+				segmentSize = 1; // we cache all items
+				midpoints = new Midpoint[mapCount];
+			} else {
+				segmentSize = mapCount / midPointsCnt;
+				midpoints = new Midpoint[1 + (mapCount + segmentSize - 1) / segmentSize];
 			}
+
+			for (int x = 0, i = 0, xN = mapCount - 1; x < xN; x += segmentSize, i++) {
+				midpoints[i] = new(x, ReadPosMap(posMapTable.Span, x, isMap12Bytes));
+			}
+
+			// add the very last item as the last midpoint (possibly it is done twice)
+			midpoints[^1] = new(mapCount - 1, ReadPosMap(posMapTable.Span, mapCount - 1, isMap12Bytes));
+			return midpoints;
 
 			static unsafe PosMap ReadPosMap(ReadOnlySpan<byte> table, int index, bool isMap12Bytes) {
 				delegate*<ReadOnlySpan<byte>, PosMap> factory;
