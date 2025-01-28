@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
+using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using NUnit.Framework;
 
@@ -17,6 +18,6 @@ public class when_opening_tfchunk_from_non_existing_file : SpecificationWithFile
 	public void it_should_throw_a_file_not_found_exception() {
 		Assert.ThrowsAsync<CorruptDatabaseException>(async () => await TFChunk.FromCompletedFile(new ChunkLocalFileSystem(Path.GetDirectoryName(Filename)), Filename, verifyHash: true,
 			unbufferedRead: false, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
-			getTransformFactory: _ => new IdentityChunkTransformFactory()));
+			getTransformFactory: DbTransformManager.Default));
 	}
 }

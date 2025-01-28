@@ -9,6 +9,7 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using EventStore.Plugins.Transforms;
 
@@ -56,6 +57,7 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 			reduceFileCachePressure: db.Config.ReduceFileCachePressure,
 			tracker: new TFChunkTracker.NoOp(),
 			transformFactory: new IdentityChunkTransformFactory(),
+			getTransformFactory: DbTransformManager.Default,
 			transformHeader: ReadOnlyMemory<byte>.Empty,
 			token);
 

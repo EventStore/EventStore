@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using NUnit.Framework;
 
@@ -21,7 +22,7 @@ public class scavenged_chunk : SpecificationWithFile {
 		var chunk = await TFChunk.CreateNew(new ChunkLocalFileSystem(path: ""), Filename, 1024 * 1024, 0, 0, true, false, false, false,
 			false,
 			new TFChunkTracker.NoOp(),
-			new IdentityChunkTransformFactory(),
+			DbTransformManager.Default,
 			CancellationToken.None);
 		long logPos = 0;
 		for (int i = 0, n = ChunkFooter.Size / PosMap.FullSize + 1; i < n; ++i) {

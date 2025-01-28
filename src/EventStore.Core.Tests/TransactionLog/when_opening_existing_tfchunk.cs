@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using NUnit.Framework;
 
@@ -25,7 +26,7 @@ public class when_opening_existing_tfchunk : SpecificationWithFilePerTestFixture
 		await _chunk.Complete(CancellationToken.None);
 		_testChunk = await TFChunk.FromCompletedFile(new ChunkLocalFileSystem(Path.GetDirectoryName(Filename)), Filename, true, false,
 			reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
-			getTransformFactory: _ => new IdentityChunkTransformFactory());
+			getTransformFactory: DbTransformManager.Default);
 	}
 
 	[TearDown]

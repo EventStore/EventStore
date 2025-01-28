@@ -142,7 +142,8 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 			// since the raw data being replicated is already transformed, we use
 			// the identity transform as we don't want to transform the data again
 			// when appending raw data to the chunk.
-			new IdentityChunkTransformFactory(),
+			transformFactory: new IdentityChunkTransformFactory(),
+			getTransformFactory: _transformManager,
 			ReadOnlyMemory<byte>.Empty,
 			token);
 	}
@@ -166,7 +167,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 				writethrough: _config.WriteThrough,
 				reduceFileCachePressure: _config.ReduceFileCachePressure,
 				tracker: _tracker,
-				transformFactory: _transformManager.GetFactoryForNewChunk(),
+				getTransformFactory: _transformManager,
 				token);
 			AddChunk(chunk);
 			triggerCaching = _cachingEnabled;
@@ -205,6 +206,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 				reduceFileCachePressure: _config.ReduceFileCachePressure,
 				tracker: _tracker,
 				transformFactory: _transformManager.GetFactoryForExistingChunk(chunkHeader.TransformType),
+				getTransformFactory: _transformManager,
 				transformHeader: transformHeader,
 				token);
 			AddChunk(chunk);
@@ -250,7 +252,6 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 	// Takes a collection of locators for chunks which must be contiguous.
 	// Atomically switches them in if the range precisely overlaps one or more chunks in _chunks
 	public async ValueTask<bool> SwitchInCompletedChunks(IReadOnlyList<string> locators, CancellationToken token) {
-		var getFactoryForExistingChunk = _transformManager.GetFactoryForExistingChunk;
 		var newChunks = new TFChunk.TFChunk[locators.Count];
 		try {
 			for (var i = 0; i < locators.Count; i++) {
@@ -260,7 +261,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 					verifyHash: false,
 					unbufferedRead: _config.Unbuffered,
 					tracker: _tracker,
-					getTransformFactory: getFactoryForExistingChunk,
+					getTransformFactory: _transformManager,
 					reduceFileCachePressure: _config.ReduceFileCachePressure,
 					token: token);
 			}
@@ -336,7 +337,7 @@ public sealed class TFChunkManager : IChunkRegistry<TFChunk.TFChunk>, IThreadPoo
 			}
 
 			newChunk = await TFChunk.TFChunk.FromCompletedFile(FileSystem, newFileName, verifyHash, _config.Unbuffered,
-				_tracker, _transformManager.GetFactoryForExistingChunk,
+				_tracker, _transformManager,
 				_config.ReduceFileCachePressure, token: token);
 		}
 

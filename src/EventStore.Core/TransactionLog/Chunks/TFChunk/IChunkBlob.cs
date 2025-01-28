@@ -16,7 +16,9 @@ public interface IChunkBlob : IDisposable {
 
 	ValueTask<IChunkRawReader> AcquireRawReader(CancellationToken token);
 
-	IAsyncEnumerable<IChunkBlob> UnmergeAsync();
+	IAsyncEnumerable<IChunkBlob> UnmergeAsync(CancellationToken token);
+
+	void MarkForDeletion();
 
 	ChunkHeader ChunkHeader { get; }
 

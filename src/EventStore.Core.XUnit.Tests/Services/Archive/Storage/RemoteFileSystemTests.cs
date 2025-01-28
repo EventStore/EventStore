@@ -14,6 +14,7 @@ using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using Xunit;
 
@@ -54,7 +55,7 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 		using var remoteChunk = await TFChunk.FromCompletedFile(
 			fs, remoteChunkName, verifyHash: false,
 			unbufferedRead: false, tracker: new TFChunkTracker.NoOp(),
-			getTransformFactory: static _ => new IdentityChunkTransformFactory());
+			getTransformFactory: DbTransformManager.Default);
 
 		var logPosition = 0L;
 		for (var i = 0; i < recordsCount; i++) {
@@ -100,7 +101,7 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 		using var remoteChunk = await TFChunk.FromCompletedFile(
 			fs, remoteChunkName, verifyHash: false,
 			unbufferedRead: false, tracker: new TFChunkTracker.NoOp(),
-			getTransformFactory: static _ => new IdentityChunkTransformFactory());
+			getTransformFactory: DbTransformManager.Default);
 
 		// make sure that chunks are equivalent
 		using (var localChunk = File.OpenHandle(chunkLocalPath, options: FileOptions.Asynchronous)) {
