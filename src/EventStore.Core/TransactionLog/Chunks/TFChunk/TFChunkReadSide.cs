@@ -196,19 +196,28 @@ public partial class TFChunk {
 			}
 		}
 
-		private async ValueTask<Midpoint[]> PopulateMidpoints(int depth, ReaderWorkItem workItem, CancellationToken token) {
+		private async ValueTask<Midpoint[]> PopulateMidpoints(int depth, ReaderWorkItem workItem,
+			CancellationToken token) {
 			if (depth > 31)
 				throw new ArgumentOutOfRangeException(nameof(depth), "Depth too for midpoints.");
 
-			if (Chunk.ChunkFooter.MapCount is 0) // empty chunk
+			var mapCount = Chunk.ChunkFooter.MapCount;
+			if (mapCount is 0) // empty chunk
 				return null;
 
-			var buffer = Memory.AllocateAtLeast<byte>(PosMap.FullSize);
+			var isMap12Bytes = Chunk.ChunkFooter.IsMap12Bytes;
+			var posMapTable = isMap12Bytes
+				? UnmanagedMemory.Allocate<byte>(PosMap.FullSize * mapCount)
+				: UnmanagedMemory.Allocate<byte>(PosMap.DeprecatedSize * mapCount);
+
+			// write the table once
+			workItem.BaseStream.Position = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize;
+			await workItem.BaseStream.ReadExactlyAsync(posMapTable.Memory, token);
+
 			try {
 				int midPointsCnt = 1 << depth;
 				int segmentSize;
 				Midpoint[] midpoints;
-				var mapCount = Chunk.ChunkFooter.MapCount;
 				if (mapCount < midPointsCnt) {
 					segmentSize = 1; // we cache all items
 					midpoints = new Midpoint[mapCount];
@@ -218,19 +227,28 @@ public partial class TFChunk {
 				}
 
 				for (int x = 0, i = 0, xN = mapCount - 1; x < xN; x += segmentSize, i++) {
-					midpoints[i] = new Midpoint(x, await ReadPosMap(workItem, x, buffer.Memory, token));
+					midpoints[i] = new(x, ReadPosMap(posMapTable.Span, x, isMap12Bytes));
 				}
 
 				// add the very last item as the last midpoint (possibly it is done twice)
-				midpoints[^1] = new Midpoint(mapCount - 1,
-					await ReadPosMap(workItem, mapCount - 1, buffer.Memory, token));
+				midpoints[^1] = new(mapCount - 1, ReadPosMap(posMapTable.Span, mapCount - 1, isMap12Bytes));
 				return midpoints;
-			} catch (FileBeingDeletedException) {
-				return null;
-			} catch (OutOfMemoryException) {
-				return null;
 			} finally {
-				buffer.Dispose();
+				posMapTable.Dispose();
+			}
+
+			static unsafe PosMap ReadPosMap(ReadOnlySpan<byte> table, int index, bool isMap12Bytes) {
+				delegate*<ReadOnlySpan<byte>, PosMap> factory;
+				int size;
+				if (isMap12Bytes) {
+					size = PosMap.FullSize;
+					factory = &PosMap.FromNewFormat;
+				} else {
+					size = PosMap.DeprecatedSize;
+					factory = &PosMap.FromOldFormat;
+				}
+
+				return factory(table.Slice(index * size, size));
 			}
 		}
 
