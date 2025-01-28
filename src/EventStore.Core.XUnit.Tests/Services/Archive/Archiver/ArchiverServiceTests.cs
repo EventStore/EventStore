@@ -138,20 +138,20 @@ file sealed class FakeArchiveStorage : IArchiveStorage {
 		StoreChunkEvent = new(initialState: false);
 	}
 
-	public ValueTask<bool> StoreChunk(IChunkBlob chunk, CancellationToken ct) {
+	public ValueTask StoreChunk(IChunkBlob chunk, CancellationToken ct) {
 		Chunks.Add(chunk.ChunkHeader.ChunkStartNumber);
 		Interlocked.Increment(ref NumStores);
 		StoreChunkEvent.Set();
-		return ValueTask.FromResult(true);
+		return ValueTask.CompletedTask;
 	}
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) {
 		return ValueTask.FromResult(Checkpoint);
 	}
 
-	public ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) {
+	public ValueTask SetCheckpoint(long checkpoint, CancellationToken ct) {
 		Checkpoint = checkpoint;
-		return ValueTask.FromResult(true);
+		return ValueTask.CompletedTask;
 	}
 
 	public ValueTask<int> ReadAsync(int logicalChunkNumber, Memory<byte> buffer, long offset, CancellationToken ct) {

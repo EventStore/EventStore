@@ -123,7 +123,7 @@ public class ArchiveStorageTests : ArchiveStorageTestsBase<ArchiveStorageTests> 
 	public async Task can_store_a_chunk(StorageType storageType) {
 		var sut = CreateSut(storageType);
 		await using var localChunk = await CreateLocalChunk(0, 0);
-		Assert.True(await sut.StoreChunk(localChunk, CancellationToken.None));
+		await sut.StoreChunk(localChunk, CancellationToken.None);
 
 		var localChunkContent = await localChunk.ReadAllBytes();
 

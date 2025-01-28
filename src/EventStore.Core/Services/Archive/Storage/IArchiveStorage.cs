@@ -3,26 +3,14 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Archive.Storage.Exceptions;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
 public interface IArchiveStorage : IArchiveStorageReader {
 	/// <summary>Sets the position in the transaction log up to which all chunks have been archived</summary>
-	/// <returns>
-	/// <see langword="true"/> if the checkpoint was set<br/>
-	/// <see langword="false"/> if the operation failed and the caller needs to retry after some time
-	/// </returns>
-	public ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct);
+	public ValueTask SetCheckpoint(long checkpoint, CancellationToken ct);
 
 	/// <summary>Stores a chunk in the archive</summary>
-	/// <param name="chunk">The chunk to be stored</param>
-	/// <param name="ct"></param>
-	/// <exception cref="ChunkDeletedException">Thrown if the chunk file is deleted while being archived</exception>
-	/// <returns>
-	/// <see langword="true"/> if the chunk was successfully archived<br/>
-	/// <see langword="false"/> if the operation failed and the caller needs to retry after some time
-	/// </returns>
-	public ValueTask<bool> StoreChunk(IChunkBlob chunk, CancellationToken ct);
+	public ValueTask StoreChunk(IChunkBlob chunk, CancellationToken ct);
 }

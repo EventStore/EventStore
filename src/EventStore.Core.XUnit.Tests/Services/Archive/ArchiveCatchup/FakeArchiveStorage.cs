@@ -37,8 +37,8 @@ internal class FakeArchiveStorage : IArchiveStorage {
 		_chunkGets = [];
 	}
 
-	public ValueTask<bool> StoreChunk(IChunkBlob chunk, CancellationToken ct) => throw new NotImplementedException();
-	public ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) => throw new NotImplementedException();
+	public ValueTask StoreChunk(IChunkBlob chunk, CancellationToken ct) => throw new NotImplementedException();
+	public ValueTask SetCheckpoint(long checkpoint, CancellationToken ct) => throw new NotImplementedException();
 
 	public ValueTask<long> GetCheckpoint(CancellationToken ct) {
 		return ValueTask.FromResult(_checkpoint);
