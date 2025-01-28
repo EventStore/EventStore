@@ -4,12 +4,14 @@
 using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using DotNext.Buffers;
 using DotNext.Buffers.Binary;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
-public struct PosMap : IBinaryFormattable<PosMap> {
+[StructLayout(LayoutKind.Auto)]
+public readonly struct PosMap : IBinaryFormattable<PosMap> {
 	public const int FullSize = sizeof(long) + sizeof(int);
 	public const int DeprecatedSize = sizeof(int) + sizeof(int);
 

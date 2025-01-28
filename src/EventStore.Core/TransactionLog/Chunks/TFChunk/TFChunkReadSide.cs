@@ -212,24 +212,29 @@ public partial class TFChunk {
 			workItem.BaseStream.Position = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize;
 			await workItem.BaseStream.ReadExactlyAsync(posMapTable.Memory, token);
 
-			int midPointsCnt = 1 << depth;
-			int segmentSize;
-			Midpoint[] midpoints;
-			if (mapCount < midPointsCnt) {
-				segmentSize = 1; // we cache all items
-				midpoints = new Midpoint[mapCount];
-			} else {
-				segmentSize = mapCount / midPointsCnt;
-				midpoints = new Midpoint[1 + (mapCount + segmentSize - 1) / segmentSize];
-			}
+			return CreateMidpoints(posMapTable.Span, depth, mapCount, posmapSize);
 
-			for (int x = 0, i = 0, xN = mapCount - 1; x < xN; x += segmentSize, i++) {
-				midpoints[i] = new(x, ReadPosMap(posMapTable.Span, x, posmapSize));
-			}
+			static Midpoint[] CreateMidpoints(ReadOnlySpan<byte> posMapTable, int depth, int mapCount, int posmapSize) {
+				int midPointsCnt = 1 << depth;
+				int segmentSize;
+				Midpoint[] midpoints;
+				if (mapCount < midPointsCnt) {
+					segmentSize = 1; // we cache all items
+					midpoints = GC.AllocateUninitializedArray<Midpoint>(mapCount);
+				} else {
+					segmentSize = mapCount / midPointsCnt;
+					midpoints = GC.AllocateUninitializedArray<Midpoint>(1 + (mapCount + segmentSize - 1) /
+						segmentSize);
+				}
 
-			// add the very last item as the last midpoint (possibly it is done twice)
-			midpoints[^1] = new(mapCount - 1, ReadPosMap(posMapTable.Span, mapCount - 1, posmapSize));
-			return midpoints;
+				for (int x = 0, i = 0, xN = mapCount - 1; x < xN; x += segmentSize, i++) {
+					midpoints[i] = new(x, ReadPosMap(posMapTable, x, posmapSize));
+				}
+
+				// add the very last item as the last midpoint (possibly it is done twice)
+				midpoints[^1] = new(mapCount - 1, ReadPosMap(posMapTable, mapCount - 1, posmapSize));
+				return midpoints;
+			}
 		}
 
 		private static unsafe PosMap ReadPosMap(ReadOnlySpan<byte> table, int index, int posmapSize) {
