@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
 using DotNext.Buffers.Binary;
-using DotNext.IO;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
