@@ -102,6 +102,7 @@ public static class SystemEventTypes {
 	public const string ScavengePoint = "$scavengePoint";
 
 	public const string AuthorizationPolicyChanged = "$authorization-policy-changed";
+	public const string PersistentSubscriptionConfig = "$PersistentConfig";
 
 	public static string StreamReferenceEventToStreamId(string eventType, ReadOnlyMemory<byte> data) {
 		string streamId = null;
