@@ -27,7 +27,7 @@ public struct Duration : IDisposable {
 		_failed = true;
 	}
 
-	public void Dispose() {
+	public readonly void Dispose() {
 		_metric?.Record(
 			_start,
 			new KeyValuePair<string, object>("activity", _name),

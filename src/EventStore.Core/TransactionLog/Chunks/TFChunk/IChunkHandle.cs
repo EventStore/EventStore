@@ -32,6 +32,8 @@ public interface IChunkHandle : IFlushable, IDisposable {
 
 	string Name { get; }
 
+	bool IsRemote { get; }
+
 	/// <summary>
 	/// Gets access mode for this handle.
 	/// </summary>
