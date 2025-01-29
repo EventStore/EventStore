@@ -92,6 +92,7 @@ namespace EventStore.Core.Services {
 		public const string EventTypeDefined = "$event-type";
 		public const string ScavengePoint = "$scavengePoint";
 
+		public const string PersistentSubscriptionConfig = "$PersistentConfig";
 		public static string StreamReferenceEventToStreamId(string eventType, ReadOnlyMemory<byte> data) {
 			string streamId = null;
 			switch (eventType) {

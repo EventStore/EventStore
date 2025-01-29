@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
-			Register(service, "/subscriptions", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
+			Register(service, "/subscriptions?offset={offset}&count={count}", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
 			Register(service, "/subscriptions/restart", HttpMethod.Post, RestartPersistentSubscriptions, Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Restart));
 			Register(service, "/subscriptions/{stream}", HttpMethod.Get, GetSubscriptionInfoForStream, Codec.NoCodecs,
 				DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
@@ -725,14 +725,54 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private void GetAllSubscriptionInfo(HttpEntityManager http, UriTemplateMatch match) {
 			if (_httpForwarder.ForwardRequest(http))
 				return;
-			var envelope = new SendToHttpEnvelope(
-				_networkSendQueue, http,
-				(args, message) =>
-					http.ResponseCodec.To(ToSummaryDto(http,
-						message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted).ToArray()),
-				(args, message) => StatsConfiguration(http, message));
-			var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope);
-			Publish(cmd);
+			var offsetParam = match.BoundVariables["offset"];
+			var countParam = match.BoundVariables["count"];
+			if (offsetParam is null && countParam is null) {
+				GetSubscriptionInfoUnpaged(http);
+			} else {
+				GetSubscriptionInfoPaged(http, offsetParam, countParam);
+			}
+
+			// old api api for backwards compatibility: just returns the list of persistent subscriptions
+			void GetSubscriptionInfoUnpaged(HttpEntityManager http) {
+				var envelope = new SendToHttpEnvelope(
+					_networkSendQueue, http,
+					(args, message) =>
+						http.ResponseCodec.To(ToSummaryDto(http,
+							message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted).ToArray()),
+					(args, message) => StatsConfiguration(http, message));
+				var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope);
+				Publish(cmd);
+			}
+
+			// new api: returns the list (page) of persistent subscriptions with paging info.
+			// count must be provided
+			void GetSubscriptionInfoPaged(HttpEntityManager http, string offsetParam, string countParam) {
+				int offset = offsetParam is null
+					? 0
+					: int.TryParse(offsetParam, out var off)
+						? off
+						: -1;
+
+				if (offset < 0) {
+					SendBadRequest(http, $"Offset \"{offsetParam}\" must be a non-negative integer");
+					return;
+				}
+
+				if (!int.TryParse(countParam, out var count) || count < 1) {
+					SendBadRequest(http, $"Count \"{countParam}\" must be a positive integer");
+					return;
+				}
+
+				var envelope = new SendToHttpEnvelope(
+					_networkSendQueue, http,
+					(_, message) =>
+						http.ResponseCodec.To(ToPagedSummaryDto(
+							http, message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted)),
+					(_, message) => StatsConfiguration(http, message));
+				var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope, offset, count);
+				Publish(cmd);
+			}
 		}
 
 		private void GetSubscriptionInfoForStream(HttpEntityManager http, UriTemplateMatch match) {
@@ -973,6 +1013,37 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			}
 		}
 
+		private PagedSubscriptionInfo ToPagedSummaryDto(HttpEntityManager manager,
+			MonitoringMessage.GetPersistentSubscriptionStatsCompleted message) {
+
+			if (message is null || message.SubscriptionStats is null) {
+				return new PagedSubscriptionInfo();
+			}
+
+			var stats = ToSummaryDto(manager, message).ToArray();
+			var offset = message.RequestedOffset;
+			var count = message.RequestedCount;
+			var links = new List<RelLink> {
+				new(MakeUrl(manager, "/subscriptions", $"?offset={offset}&count={count}"), "self"),
+				new(MakeUrl(manager, "/subscriptions", $"?offset=0&count={count}"), "first"),
+			};
+			if (offset > 0) {
+				var prevOffset = Math.Max(0, offset - count);
+				links.Add(new RelLink(MakeUrl(manager, "/subscriptions", $"?offset={prevOffset}&count={count}"), "previous"));
+			}
+			if (offset + count < message.Total) {
+				var nextOffset = offset + count;
+				links.Add(new RelLink(MakeUrl(manager, "/subscriptions", $"?offset={nextOffset}&count={count}"), "next"));
+			}
+			return new PagedSubscriptionInfo {
+				Links = links,
+				Offset = offset,
+				Count = count,
+				Total = message.Total,
+				Subscriptions = stats,
+			};
+		}
+
 		private IEnumerable<SubscriptionSummary> ToSummaryDto(HttpEntityManager manager,
 			MonitoringMessage.GetPersistentSubscriptionStatsCompleted message) {
 			if (message == null) yield break;
@@ -1050,6 +1121,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				LiveBufferSize = 500;
 				ReadBatchSize = 20;
 			}
+		}
+
+		public class PagedSubscriptionInfo {
+			public List<RelLink> Links { get; set; }
+			public int Offset { get; set; }
+			public int Count { get; set; }
+			public int Total { get; set; }
+			public IReadOnlyList<SubscriptionSummary> Subscriptions { get; set; }
 		}
 
 		public class SubscriptionSummary {
