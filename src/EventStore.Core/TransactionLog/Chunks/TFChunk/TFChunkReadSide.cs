@@ -227,9 +227,13 @@ public partial class TFChunk {
 						segmentSize);
 				}
 
-				for (int x = 0, i = 0, xN = mapCount - 1; x < xN; x += segmentSize, i++) {
+				var i = 0;
+				for (int x = 0, xN = mapCount - 1; x < xN; x += segmentSize, i++) {
 					midpoints[i] = new(x, ReadPosMap(posMapTable, x, posmapSize));
 				}
+
+				if (i < midpoints.Length - 2)
+					throw new Exception("The table with midpoints is not populated correctly");
 
 				// add the very last item as the last midpoint (possibly it is done twice)
 				midpoints[^1] = new(mapCount - 1, ReadPosMap(posMapTable, mapCount - 1, posmapSize));
@@ -406,7 +410,7 @@ public partial class TFChunk {
 				? PosMap.FullSize
 				: PosMap.DeprecatedSize;
 
-			using var buffer = Memory.AllocateAtLeast<byte>(count * posmapSize);
+			using var buffer = Memory.AllocateExactly<byte>(count * posmapSize);
 			workItem.BaseStream.Position =
 				ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + startIndex * posmapSize;
 
