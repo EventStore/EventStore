@@ -42,7 +42,7 @@ public abstract class CommunicationController : IHttpController {
 		httpEntityManager.ReplyContent(Encoding.ASCII.GetBytes(reason), HttpStatusCode.BadRequest,
 			"Bad Request",type: "text/plain", headers:null,
 			e => Log.Debug("Error while closing HTTP connection (bad request): {e}.", e.Message));
- 
+
 		return new RequestParams(done: true);
 	}
 
@@ -100,6 +100,13 @@ public abstract class CommunicationController : IHttpController {
 		if (path.Length > 0 && path[0] == '/') path = path.Substring(1);
 		var hostUri = http.ResponseUrl;
 		var builder = new UriBuilder(hostUri.Scheme, hostUri.Host, hostUri.Port, hostUri.LocalPath + path);
+		return builder.Uri.AbsoluteUri;
+	}
+
+	protected static string MakeUrl(HttpEntityManager http, string path, string query) {
+		if (path.Length > 0 && path[0] == '/') path = path.Substring(1);
+		var hostUri = http.ResponseUrl;
+		var builder = new UriBuilder(hostUri.Scheme, hostUri.Host, hostUri.Port, hostUri.LocalPath + path, query);
 		return builder.Uri.AbsoluteUri;
 	}
 }
