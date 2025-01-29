@@ -483,8 +483,8 @@ public partial class TFChunk : IChunkBlob {
 	private FileOptions WritableHandleOptions {
 		get {
 			var options = _reduceFileCachePressure
-				? FileOptions.Asynchronous
-				: FileOptions.RandomAccess | FileOptions.Asynchronous;
+				? ChunkFileHandle.DefaultFileOptions
+				: ChunkFileHandle.DefaultFileOptions | FileOptions.RandomAccess;
 			if (_writeThrough)
 				options |= FileOptions.WriteThrough;
 
@@ -503,7 +503,7 @@ public partial class TFChunk : IChunkBlob {
 			Mode = FileMode.CreateNew,
 			Access = FileAccess.ReadWrite,
 			Share = FileShare.Read,
-			Options = FileOptions.SequentialScan | FileOptions.Asynchronous,
+			Options = FileOptions.SequentialScan | ChunkFileHandle.DefaultFileOptions,
 			PreallocationSize = fileSize, // avoid fragmentation of file
 			BufferSize = WriterWorkItem.BufferSize,
 		};
@@ -525,7 +525,7 @@ public partial class TFChunk : IChunkBlob {
 		options.Mode = FileMode.Open;
 		options.Options = WritableHandleOptions;
 		options.PreallocationSize = 0L;
-		_handle = new ChunkFileHandle(LocalFileName, options);
+		_handle = ChunkFileHandle.Create(LocalFileName, options);
 		_writerWorkItem = new(_handle, md5, _unbuffered, _transform.Write, ChunkHeader.Size + transformHeader.Length);
 		await _fileSystem.SetReadOnlyAsync(LocalFileName, false, token);
 	}
@@ -540,7 +540,7 @@ public partial class TFChunk : IChunkBlob {
 			Options = WritableHandleOptions,
 		};
 
-		_handle = new ChunkFileHandle(LocalFileName, options);
+		_handle = ChunkFileHandle.Create(LocalFileName, options);
 
 		var stream = _handle.CreateStream();
 		ChunkHeader chunkHeader;
