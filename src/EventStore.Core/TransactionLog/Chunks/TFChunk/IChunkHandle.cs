@@ -13,6 +13,12 @@ using Serilog;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
+// An IChunkHandle that can also be accessed synchronously
+public interface IChunkHandleWithSync : IChunkHandle {
+	void Write(ReadOnlySpan<byte> data, long offset);
+	int Read(Span<byte> buffer, long offset);
+}
+
 /// <summary>
 /// Represents a handle to access the underlying chunk physical storage.
 /// </summary>
@@ -46,7 +52,7 @@ public interface IChunkHandle : IFlushable, IDisposable {
 	protected static Stream CreateStream(IChunkHandle handle, bool leaveOpen, int synchronousTimeout)
 		=> new UnbufferedStream(handle, leaveOpen) { ReadTimeout = synchronousTimeout, WriteTimeout = synchronousTimeout };
 
-	private sealed class UnbufferedStream(IChunkHandle handle, bool leaveOpen) : RandomAccessStream {
+	protected class UnbufferedStream(IChunkHandle handle, bool leaveOpen) : RandomAccessStream {
 		private int _readTimeout, _writeTimeout;
 		private CancellationTokenSource _timeoutSource;
 

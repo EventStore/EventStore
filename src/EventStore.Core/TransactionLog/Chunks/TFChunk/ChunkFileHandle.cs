@@ -11,7 +11,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
-internal sealed class ChunkFileHandle : Disposable, IChunkHandle {
+internal sealed class ChunkFileHandle : Disposable, IChunkHandleWithSync {
 	const bool AsynchronousByDefault = true;
 
 	private readonly SafeFileHandle _handle;
@@ -32,6 +32,21 @@ internal sealed class ChunkFileHandle : Disposable, IChunkHandle {
 		Access = options.Access;
 		_path = path;
 		_asynchronous = asynchronous;
+	}
+
+	// UnbufferedStreamWithSync makes use of the synchronous Read/Write methods on the handle only
+	// when the synchronous Read/Write methods of the stream are called.
+	// It is suitable regardless of the value of _asynchronous
+	public Stream CreateStream(bool leaveOpen = true) => new UnbufferedStreamWithSync(this, leaveOpen);
+
+	private sealed class UnbufferedStreamWithSync(IChunkHandleWithSync handle, bool leaveOpen)
+		: IChunkHandle.UnbufferedStream(handle, leaveOpen) {
+
+		protected override void Write(ReadOnlySpan<byte> buffer, long offset) =>
+			handle.Write(buffer, offset);
+
+		protected override int Read(Span<byte> buffer, long offset) =>
+			handle.Read(buffer, offset);
 	}
 
 	internal static FileOptions ConvertToFileOptions(IChunkFileSystem.ReadOptimizationHint optimizationHint) => optimizationHint switch {
