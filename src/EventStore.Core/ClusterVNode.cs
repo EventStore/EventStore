@@ -36,6 +36,7 @@ using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Resilience;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Archive;
 using EventStore.Core.Services.Archive.Naming;
@@ -328,11 +329,11 @@ public class ClusterVNode<TStreamId> :
 		IArchiveStorageReader archiveReader = NoArchiveReader.Instance;
 		var locatorCodec = new PrefixingLocatorCodec();
 		if (archiveOptions.Enabled) {
-			var archive = ArchiveStorageFactory.Create(
-				options: archiveOptions,
-				chunkNameResolver: new ArchiveChunkNameResolver(namingStrategy));
-
-			archiveReader = archive;
+			archiveReader = new ResilientArchiveStorage(
+				ResiliencePipelines.RetrySlow,
+				ArchiveStorageFactory.Create(
+					options: archiveOptions,
+					chunkNameResolver: new ArchiveChunkNameResolver(namingStrategy)));
 
 			fileSystem = new FileSystemWithArchive(
 				chunkSize: dbConfig.ChunkSize,

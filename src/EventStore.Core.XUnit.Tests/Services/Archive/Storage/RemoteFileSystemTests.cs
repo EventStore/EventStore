@@ -43,7 +43,7 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 
 		// upload the chunk
 		await using (var localChunk = new FakeChunkBlob(chunkLocalPath, logicalChunkNumber, 0, FileMode.Open)) {
-			Assert.True(await archive.StoreChunk(localChunk, CancellationToken.None));
+			await archive.StoreChunk(localChunk, CancellationToken.None);
 		}
 
 		// read the remote chunk
@@ -90,7 +90,7 @@ public sealed class RemoteFileSystemTests : ArchiveStorageTestsBase<RemoteFileSy
 
 		// upload the chunk
 		await using (var localChunk = new FakeChunkBlob(chunkLocalPath, logicalChunkNumber, 0, FileMode.Open)) {
-			Assert.True(await archive.StoreChunk(localChunk, CancellationToken.None));
+			await archive.StoreChunk(localChunk, CancellationToken.None);
 		}
 
 		// read the remote chunk

@@ -12,7 +12,6 @@ using DotNext.IO;
 using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage.Exceptions;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using Serilog;
 
 namespace EventStore.Core.Services.Archive.Storage;
 
@@ -21,8 +20,6 @@ public class ArchiveStorage(
 	IArchiveChunkNameResolver chunkNameResolver,
 	string archiveCheckpointFile)
 	: IArchiveStorage {
-
-	private static readonly ILogger Log = Serilog.Log.ForContext<ArchiveStorage>();
 
 	public async ValueTask<long> GetCheckpoint(CancellationToken ct) {
 		try {
@@ -54,24 +51,19 @@ public class ArchiveStorage(
 		}
 	}
 
-	public async ValueTask<bool> SetCheckpoint(long checkpoint, CancellationToken ct) {
+	public async ValueTask SetCheckpoint(long checkpoint, CancellationToken ct) {
 		var buffer = Memory.AllocateExactly<byte>(sizeof(long));
 		var stream = StreamSource.AsStream(buffer.Memory);
 		try {
 			BinaryPrimitives.WriteInt64LittleEndian(buffer.Span, checkpoint);
 			await blobStorage.StoreAsync(stream, archiveCheckpointFile, ct);
-			return true;
-		} catch (Exception ex) when (ex is not OperationCanceledException) {
-			Log.Error(ex, "Error while setting checkpoint to: {checkpoint} (0x{checkpoint:X})",
-				checkpoint, checkpoint);
-			return false;
 		} finally {
 			await stream.DisposeAsync();
 			buffer.Dispose();
 		}
 	}
 
-	public async ValueTask<bool> StoreChunk(IChunkBlob chunk, CancellationToken ct) {
+	public async ValueTask StoreChunk(IChunkBlob chunk, CancellationToken ct) {
 		// process single chunk
 		if (chunk.ChunkHeader.IsSingleLogicalChunk) {
 			await StoreAsync(chunk, ct);
@@ -83,8 +75,6 @@ public class ArchiveStorage(
 				}
 			}
 		}
-
-		return true;
 	}
 
 	private async ValueTask StoreAsync(IChunkBlob chunk, CancellationToken ct) {

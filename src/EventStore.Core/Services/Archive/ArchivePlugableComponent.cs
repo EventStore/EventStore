@@ -3,11 +3,15 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Bus;
 using EventStore.Core.Configuration.Sources;
+using EventStore.Core.Resilience;
 using EventStore.Core.Services.Archive.Archiver;
-using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.Services.Archive.Archiver.Unmerger;
 using EventStore.Core.Services.Archive.Naming;
+using EventStore.Core.Services.Archive.Storage;
+using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Plugins;
 using EventStore.Plugins.Licensing;
 using Microsoft.AspNetCore.Builder;
@@ -69,7 +73,13 @@ public class ArchivePlugableComponent : IPlugableComponent {
 
 		if (_isArchiver) {
 			services.AddSingleton<IChunkUnmerger, ChunkUnmerger>();
-			services.AddSingleton<ArchiverService>();
+			services.AddSingleton<ArchiverService>(s => {
+				var archiveStorage = s.GetRequiredService<IArchiveStorage>();
+				return new(
+					mainBus: s.GetRequiredService<ISubscriber>(),
+					archiveStorage: new ResilientArchiveStorage(ResiliencePipelines.RetryForever, archiveStorage),
+					chunkManager: s.GetRequiredService<IChunkRegistry<IChunkBlob>>());
+			});
 		}
 	}
 
@@ -88,7 +98,9 @@ public class ArchivePlugableComponent : IPlugableComponent {
 			chaserCheckpoint: standardComponents.DbConfig.ChaserCheckpoint,
 			epochCheckpoint: standardComponents.DbConfig.EpochCheckpoint,
 			chunkSize: standardComponents.DbConfig.ChunkSize,
-			serviceProvider.GetRequiredService<IArchiveStorage>(),
+			new ResilientArchiveStorage(
+				ResiliencePipelines.RetryForever,
+				serviceProvider.GetRequiredService<IArchiveStorage>()),
 			serviceProvider.GetRequiredService<IArchiveChunkNameResolver>()));
 
 		return newStartupTasks;

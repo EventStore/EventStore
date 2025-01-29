@@ -76,27 +76,31 @@ public sealed class ArchiverService :
 
 	[AsyncMethodBuilder(typeof(SpawningAsyncTaskMethodBuilder))]
 	private async Task ArchiveAsync() {
-		var checkpoint = await _archive.GetCheckpoint(_lifetimeToken);
-		Log.Information("Archive is at checkpoint 0x{checkpoint:X}", checkpoint);
-		while (!_lifetimeToken.IsCancellationRequested) {
-			await ProcessSwitchedChunksAsync(checkpoint, _lifetimeToken);
+		try {
+			var checkpoint = await _archive.GetCheckpoint(_lifetimeToken);
+			Log.Information("Archive is at checkpoint 0x{checkpoint:X}", checkpoint);
+			while (!_lifetimeToken.IsCancellationRequested) {
+				await ProcessSwitchedChunksAsync(checkpoint, _lifetimeToken);
 
-			if (_chunkManager.TryGetChunkFor(checkpoint) is { ChunkFooter.IsCompleted: true } chunk &&
-			    chunk.ChunkHeader.ChunkEndPosition <= Volatile.Read(in _replicationPosition)) {
-				Log.Information("Storing chunk in archive: \"{chunk}\"", chunk.ChunkLocator);
-				await _archive.StoreChunk(chunk, _lifetimeToken);
+				if (_chunkManager.TryGetChunkFor(checkpoint) is { ChunkFooter.IsCompleted: true } chunk &&
+					chunk.ChunkHeader.ChunkEndPosition <= Volatile.Read(in _replicationPosition)) {
+					Log.Information("Storing chunk in archive: \"{chunk}\"", chunk.ChunkLocator);
+					await _archive.StoreChunk(chunk, _lifetimeToken);
 
-				// verify checkpoint to make sure that no one changed it concurrently, e.g. by another
-				// cluster that points to the same archive storage
-				await ValidateCheckpointAsync(checkpoint, _lifetimeToken);
-				checkpoint = chunk.ChunkHeader.ChunkEndPosition;
-				Log.Information("Setting archive checkpoint to 0x{checkpoint:X}", checkpoint);
-				await _archive.SetCheckpoint(checkpoint, _lifetimeToken);
-			} else {
-				// loop after MaxInterval even if not triggered. (e.g. replication checkpoint can move
-				// before the chunks are available for us to store to the archive)
-				await _archivingSignal.WaitAsync(MaxInterval, _lifetimeToken);
+					// verify checkpoint to make sure that no one changed it concurrently, e.g. by another
+					// cluster that points to the same archive storage
+					await ValidateCheckpointAsync(checkpoint, _lifetimeToken);
+					checkpoint = chunk.ChunkHeader.ChunkEndPosition;
+					Log.Information("Setting archive checkpoint to 0x{checkpoint:X}", checkpoint);
+					await _archive.SetCheckpoint(checkpoint, _lifetimeToken);
+				} else {
+					// loop after MaxInterval even if not triggered. (e.g. replication checkpoint can move
+					// before the chunks are available for us to store to the archive)
+					await _archivingSignal.WaitAsync(MaxInterval, _lifetimeToken);
+				}
 			}
+		} catch (Exception ex) when (ex is not OperationCanceledException oce || oce.CancellationToken != _lifetimeToken) {
+			Log.Error(ex, "Archive process has terminated unexpectedly");
 		}
 	}
 
