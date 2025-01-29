@@ -232,7 +232,7 @@ public partial class TFChunk {
 					midpoints[i] = new(x, ReadPosMap(posMapTable, x, posmapSize));
 				}
 
-				if (i < midpoints.Length - 2)
+				if (i < midpoints.Length - 1)
 					throw new Exception("The table with midpoints is not populated correctly");
 
 				// add the very last item as the last midpoint (possibly it is done twice)
