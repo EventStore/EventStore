@@ -12,7 +12,7 @@ using Microsoft.Win32.SafeHandles;
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 internal sealed class ChunkFileHandle : Disposable, IChunkHandleWithSync {
-	const bool AsynchronousByDefault = true;
+	const bool AsynchronousByDefault = false;
 
 	private readonly SafeFileHandle _handle;
 	private readonly string _path;
