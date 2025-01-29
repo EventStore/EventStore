@@ -227,6 +227,26 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			Assert.AreEqual(2, buffer.GetLowestRetry().sequenceNumber);
 		}
 
+		[Test]
+		public void can_add_retries_after_replayed_events() {
+			var buffer = new StreamBuffer(10, 10, null, true);
+			// add parked events
+			var parkedEvent = BuildMessageAt(1);
+			buffer.AddRetry(OutstandingMessage.ForParkedEvent(Helper.BuildLinkEvent(Guid.NewGuid(), "$persistentsubscription-foo::group-parked", 0, parkedEvent.ResolvedEvent)));
+
+			// add retried events
+			buffer.AddRetry(BuildMessageAt(4));
+			buffer.AddRetry(BuildMessageAt(2));
+			buffer.AddRetry(BuildMessageAt(3));
+
+			Assert.AreEqual(2, buffer.GetLowestRetry().sequenceNumber);
+			var messagePointers = buffer.Scan().ToArray();
+			Assert.AreEqual(GetEventIdFor(1), messagePointers[0].Message.ResolvedEvent.Event.EventId);
+			Assert.AreEqual(GetEventIdFor(2), messagePointers[1].Message.EventId);
+			Assert.AreEqual(GetEventIdFor(3), messagePointers[2].Message.EventId);
+			Assert.AreEqual(GetEventIdFor(4), messagePointers[3].Message.EventId);
+		}
+
 		private OutstandingMessage BuildMessageAt(int position, Guid? forcedEventId = null) {
 			IPersistentSubscriptionStreamPosition previousEventPosition =
 				position > 0 ? Helper.GetStreamPositionFor(position - 1, _eventSource) : null;
