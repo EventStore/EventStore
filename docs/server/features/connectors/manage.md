@@ -39,7 +39,7 @@ Create a connector by sending a `POST` request to `connectors/{connector_id}`, w
 ```powershell
 $JSON = @"
 {
-  "name": "Demo Logger Sink",
+  "name": "Demo Serilog Sink",
   "settings": {
     "instanceTypeName": "serilog-sink",
     "subscription:filter:scope": "stream",
@@ -59,7 +59,7 @@ curl.exe -X POST `
 
 ```bash
 JSON='{
-  "name": "Demo Logger Sink",
+  "name": "Demo Serilog Sink",
   "settings": {
     "instanceTypeName": "serilog-sink",
     "subscription:filter:scope": "stream",
@@ -204,7 +204,7 @@ Additionally, you can filter the results using the `state`, `instanceType`, and
     },
     {
       "connectorId": "serilog-sink",
-      "name": "Demo Logger Sink",
+      "name": "Demo Serilog Sink",
       "state": "CONNECTOR_STATE_RUNNING",
       "stateTimestamp": "2024-08-13T12:21:47.459327600Z",
       "settings": {
