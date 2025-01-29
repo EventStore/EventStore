@@ -12,34 +12,71 @@ using Microsoft.Win32.SafeHandles;
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 internal sealed class ChunkFileHandle : Disposable, IChunkHandle {
+	const bool AsynchronousByDefault = true;
+
 	private readonly SafeFileHandle _handle;
 	private readonly string _path;
+	// determines whether ReadAsync/WriteAsync are forced to run synchronously
+	private readonly bool _asynchronous;
 
-	public ChunkFileHandle(string path, FileStreamOptions options) {
+	public ChunkFileHandle(string path, FileStreamOptions options, bool asynchronous = AsynchronousByDefault) {
 		Debug.Assert(options is not null);
 		Debug.Assert(path is { Length: > 0 });
 
-		_handle = File.OpenHandle(path, options.Mode, options.Access, options.Share, options.Options,
+		var fileOptions = asynchronous
+			? options.Options | FileOptions.Asynchronous
+			: options.Options;
+
+		_handle = File.OpenHandle(path, options.Mode, options.Access, options.Share, fileOptions,
 			options.PreallocationSize);
 		Access = options.Access;
 		_path = path;
+		_asynchronous = asynchronous;
 	}
 
 	internal static FileOptions ConvertToFileOptions(IChunkFileSystem.ReadOptimizationHint optimizationHint) => optimizationHint switch {
-		IChunkFileSystem.ReadOptimizationHint.RandomAccess => FileOptions.Asynchronous | FileOptions.RandomAccess,
-		IChunkFileSystem.ReadOptimizationHint.SequentialScan => FileOptions.Asynchronous | FileOptions.SequentialScan,
-		_ => FileOptions.Asynchronous,
+		IChunkFileSystem.ReadOptimizationHint.RandomAccess => FileOptions.RandomAccess,
+		IChunkFileSystem.ReadOptimizationHint.SequentialScan => FileOptions.SequentialScan,
+		_ => FileOptions.None,
 	};
 
 	public string Name => _path;
 
 	public void Flush() => RandomAccess.FlushToDisk(_handle);
 
-	public ValueTask WriteAsync(ReadOnlyMemory<byte> data, long offset, CancellationToken token)
-		=> RandomAccess.WriteAsync(_handle, data, offset, token);
+	public ValueTask WriteAsync(ReadOnlyMemory<byte> data, long offset, CancellationToken token) {
+		var ret = ValueTask.CompletedTask;
+		if (_asynchronous) {
+			ret = RandomAccess.WriteAsync(_handle, data, offset, token);
+		} else {
+			try {
+				Write(data.Span, offset);
+			} catch (Exception ex) {
+				ret = ValueTask.FromException(ex);
+			}
+		}
+		return ret;
+	}
 
-	public ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token)
-		=> RandomAccess.ReadAsync(_handle, buffer, offset, token);
+	public ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token) {
+		ValueTask<int> ret;
+		if (_asynchronous) {
+			ret = RandomAccess.ReadAsync(_handle, buffer, offset, token);
+		} else {
+			try {
+				ret = new(Read(buffer.Span, offset));
+			} catch (Exception ex) {
+				ret = ValueTask.FromException<int>(ex);
+			}
+		}
+		return ret;
+	}
+
+	public void Write(ReadOnlySpan<byte> data, long offset) =>
+		RandomAccess.Write(_handle, data, offset);
+
+	public int Read(Span<byte> buffer, long offset) =>
+		RandomAccess.Read(_handle, buffer, offset);
 
 	public long Length {
 		get => RandomAccess.GetLength(_handle);
