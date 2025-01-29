@@ -333,7 +333,7 @@ public class ClusterVNode<TStreamId> :
 				ResiliencePipelines.RetrySlow,
 				ArchiveStorageFactory.Create(
 					options: archiveOptions,
-					chunkNameResolver: new ArchiveChunkNameResolver(namingStrategy)));
+					namingStrategy: new ArchiveNamingStrategy(namingStrategy)));
 
 			fileSystem = new FileSystemWithArchive(
 				chunkSize: dbConfig.ChunkSize,
@@ -1588,7 +1588,7 @@ public class ClusterVNode<TStreamId> :
 					(() => (_certificateSelector(), _intermediateCertsSelector(), _trustedRootCertsSelector()))
 				.AddSingleton(_nodeHttpClientFactory)
 				.AddSingleton<IChunkRegistry<IChunkBlob>>(Db.Manager)
-				.AddSingleton(Db.Manager.FileSystem.NamingStrategy);
+				.AddSingleton<IVersionedFileNamingStrategy>(Db.Manager.FileSystem.LocalNamingStrategy);
 
 			configureAdditionalNodeServices?.Invoke(services);
 			return services;

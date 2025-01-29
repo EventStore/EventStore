@@ -65,11 +65,11 @@ public class ArchivePlugableComponent : IPlugableComponent {
 
 		services.AddSingleton<ArchiveOptions>(options);
 		services.AddSingleton<IArchiveStorage>(s => {
-			var resolver = s.GetRequiredService<IArchiveChunkNameResolver>();
+			var resolver = s.GetRequiredService<IArchiveNamingStrategy>();
 			return ArchiveStorageFactory.Create(options, resolver);
 		});
 		services.Decorate<IReadOnlyList<IClusterVNodeStartupTask>>(AddArchiveCatchupTask);
-		services.AddSingleton<IArchiveChunkNameResolver, ArchiveChunkNameResolver>();
+		services.AddSingleton<IArchiveNamingStrategy, ArchiveNamingStrategy>();
 
 		if (_isArchiver) {
 			services.AddSingleton<IChunkUnmerger, ChunkUnmerger>();
@@ -101,7 +101,7 @@ public class ArchivePlugableComponent : IPlugableComponent {
 			new ResilientArchiveStorage(
 				ResiliencePipelines.RetryForever,
 				serviceProvider.GetRequiredService<IArchiveStorage>()),
-			serviceProvider.GetRequiredService<IArchiveChunkNameResolver>()));
+			serviceProvider.GetRequiredService<IArchiveNamingStrategy>()));
 
 		return newStartupTasks;
 	}

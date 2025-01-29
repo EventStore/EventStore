@@ -33,7 +33,7 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 
 	protected IArchiveStorage CreateSut(StorageType storageType) {
 		var namingStrategy = new VersionedPatternFileNamingStrategy(ArchivePath, ChunkPrefix);
-		var nameResolver  = new ArchiveChunkNameResolver(namingStrategy);
+		var archiveNamingStrategy  = new ArchiveNamingStrategy(namingStrategy);
 		var archiveStorage = ArchiveStorageFactory.Create(
 				new() {
 					StorageType = storageType,
@@ -46,7 +46,7 @@ public abstract class ArchiveStorageTestsBase<T> : DirectoryPerTest<T> {
 						Region = AwsRegion,
 					}
 				},
-				nameResolver);
+				archiveNamingStrategy);
 		return archiveStorage;
 	}
 

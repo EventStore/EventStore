@@ -22,7 +22,7 @@ public sealed class ChunkLocalFileSystem : IChunkFileSystem {
 		: this(new(path, chunkFilePrefix)) {
 	}
 
-	public IVersionedFileNamingStrategy NamingStrategy => _strategy;
+	public IVersionedFileNamingStrategy LocalNamingStrategy => _strategy;
 
 	// is used from tests only
 	public Func<string, int, int, CancellationToken, ValueTask<int>> ChunkNumberProvider {

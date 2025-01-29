@@ -39,7 +39,7 @@ public class ArchiveCatchupTests : DirectoryPerTest<ArchiveCatchupTests> {
 		string[] dbChunks = null,
 		Action<int> onGetChunk = null) {
 		var namingStrategy = new VersionedPatternFileNamingStrategy(string.Empty, "chunk-");
-		var archiveChunkNameResolver = new ArchiveChunkNameResolver(namingStrategy);
+		var archiveNamingStrategy = new ArchiveNamingStrategy(namingStrategy);
 
 		dbCheckpoint ??= 0L;
 		archiveCheckpoint ??= 0L;
@@ -64,7 +64,7 @@ public class ArchiveCatchupTests : DirectoryPerTest<ArchiveCatchupTests> {
 			epochCheckpoint: epochCheckpoint,
 			chunkSize: ChunkSize,
 			archiveStorageReader: archive,
-			chunkNameResolver: archiveChunkNameResolver
+			namingStrategy: archiveNamingStrategy
 		);
 
 		return new Sut {

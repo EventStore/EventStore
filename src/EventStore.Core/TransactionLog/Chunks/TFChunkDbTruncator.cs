@@ -47,7 +47,7 @@ public class TFChunkDbTruncator {
 		chunkEnumerator.LastChunkNumber = oldLastChunkNum;
 		var truncatingToBoundary = truncateChk % _config.ChunkSize is 0;
 
-		var excessiveChunks = _fileSystem.NamingStrategy.GetAllVersionsFor(oldLastChunkNum + 1);
+		var excessiveChunks = _fileSystem.LocalNamingStrategy.GetAllVersionsFor(oldLastChunkNum + 1);
 		if (excessiveChunks.Length > 0)
 			throw new Exception(
 				$"During truncation of DB excessive TFChunks were found:\n{string.Join("\n", excessiveChunks)}.");

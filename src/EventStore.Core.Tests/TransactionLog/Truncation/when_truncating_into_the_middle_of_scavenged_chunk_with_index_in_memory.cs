@@ -53,7 +53,7 @@ public class when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_me
 	}
 
 	private string GetChunkName(int chunkNumber) {
-		var allVersions = Db.Manager.FileSystem.NamingStrategy.GetAllVersionsFor(chunkNumber);
+		var allVersions = Db.Manager.FileSystem.LocalNamingStrategy.GetAllVersionsFor(chunkNumber);
 		Assert.AreEqual(1, allVersions.Length);
 		return allVersions[0];
 	}

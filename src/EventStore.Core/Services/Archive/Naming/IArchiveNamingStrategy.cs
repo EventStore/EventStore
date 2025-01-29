@@ -3,7 +3,7 @@
 
 namespace EventStore.Core.Services.Archive.Naming;
 
-public interface IArchiveChunkNameResolver {
+public interface IArchiveNamingStrategy {
 	string Prefix { get; } // The prefix that is applied to all chunks
-	string ResolveFileName(int logicalChunkNumber);
+	string GetBlobNameFor(int logicalChunkNumber);
 }

@@ -26,7 +26,7 @@ public abstract class LogReplicationWithExistingDbFixture<TLogFormat, TStreamId>
 	protected abstract Task CreateChunks(TFChunkDb leaderDb);
 
 	protected static async Task CreateChunk(TFChunkDb db, bool raw, bool complete, int chunkStartNumber, int chunkEndNumber, ILogRecord[] logRecords, CancellationToken token = default) {
-		var filename = db.Manager.FileSystem.NamingStrategy.GetFilenameFor(chunkStartNumber, raw ? 1 : 0);
+		var filename = db.Manager.FileSystem.LocalNamingStrategy.GetFilenameFor(chunkStartNumber, raw ? 1 : 0);
 
 		if (raw && !complete)
 			throw new InvalidOperationException("A raw chunk must be complete");

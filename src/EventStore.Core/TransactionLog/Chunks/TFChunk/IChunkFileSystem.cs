@@ -19,7 +19,8 @@ public interface IChunkFileSystem {
 
 	ValueTask SetReadOnlyAsync(string locator, bool value, CancellationToken token);
 
-	IVersionedFileNamingStrategy NamingStrategy { get; }
+	// do not use for chunks that may be remote
+	IVersionedFileNamingStrategy LocalNamingStrategy { get; }
 
 	// Remote means not local. It could be in any remote tier of storage, not necessarily the archive.
 	// (although at the moment the archive is the only remote tier)

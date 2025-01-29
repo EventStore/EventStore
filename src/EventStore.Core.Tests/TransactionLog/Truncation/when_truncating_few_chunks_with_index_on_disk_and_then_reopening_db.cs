@@ -51,7 +51,7 @@ public class when_truncating_few_chunks_with_index_on_disk_and_then_reopening_db
 	}
 
 	private string GetChunkName(int chunkNumber) {
-		var allVersions = Db.Manager.FileSystem.NamingStrategy.GetAllVersionsFor(chunkNumber);
+		var allVersions = Db.Manager.FileSystem.LocalNamingStrategy.GetAllVersionsFor(chunkNumber);
 		Assert.AreEqual(1, allVersions.Length);
 		return allVersions[0];
 	}
