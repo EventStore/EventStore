@@ -75,7 +75,7 @@ public class ArchivePlugableComponent : IPlugableComponent {
 			services.AddSingleton<IChunkUnmerger, ChunkUnmerger>();
 			services.AddSingleton<ArchiverService>(s => {
 				var archiveStorage = s.GetRequiredService<IArchiveStorage>();
-				return new ArchiverService(
+				return new(
 					mainBus: s.GetRequiredService<ISubscriber>(),
 					archiveStorage: new ResilientArchiveStorage(ResiliencePipelines.RetryForever, archiveStorage),
 					chunkManager: s.GetRequiredService<IChunkRegistry<IChunkBlob>>());

@@ -5,6 +5,9 @@ linter: jetbrains/qodana-dotnet:2024.1
 dotnet:
   solution: src/EventStore.sln
 
+exclude:
+  - name: RedundantTypeArgumentsOfMethod
+
 #
 # License Audit
 #
