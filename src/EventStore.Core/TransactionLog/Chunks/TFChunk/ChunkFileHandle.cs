@@ -11,21 +11,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk;
 
-file sealed class SynchronousChunkFileHandle(string path, FileStreamOptions options) : ChunkFileHandle(path, options), IChunkHandle {
-	Stream IChunkHandle.CreateStream(bool leaveOpen) => new UnbufferedStreamWithSync(this, leaveOpen);
-
-	private sealed class UnbufferedStreamWithSync(SynchronousChunkFileHandle handle, bool leaveOpen)
-		: IChunkHandle.UnbufferedStream(handle, leaveOpen) {
-
-		public override bool CanTimeout => false;
-
-		protected override void Write(ReadOnlySpan<byte> buffer, long offset) =>
-			handle.Write(buffer, offset);
-
-		protected override int Read(Span<byte> buffer, long offset) =>
-			handle.Read(buffer, offset);
-	}
-
+file sealed class SynchronousChunkFileHandle(string path, FileStreamOptions options) : ChunkFileHandle(path, options) {
 	public override ValueTask WriteAsync(ReadOnlyMemory<byte> data, long offset, CancellationToken token) {
 		var ret = ValueTask.CompletedTask;
 		if (token.IsCancellationRequested) {
@@ -53,12 +39,6 @@ file sealed class SynchronousChunkFileHandle(string path, FileStreamOptions opti
 		}
 		return ret;
 	}
-
-	private void Write(ReadOnlySpan<byte> data, long offset) =>
-		RandomAccess.Write(_handle, data, offset);
-
-	private int Read(Span<byte> buffer, long offset) =>
-		RandomAccess.Read(_handle, buffer, offset);
 }
 
 file sealed class AsynchronousChunkFileHandle(string path, FileStreamOptions options) : ChunkFileHandle(path, options) {
@@ -106,6 +86,23 @@ internal abstract class ChunkFileHandle : Disposable, IChunkHandle {
 		return flags | DefaultFileOptions;
 	}
 
+	// UnbufferedStreamWithSync makes use of the synchronous Read/Write methods on the handle only
+	// when the synchronous Read/Write methods of the stream are called.
+	// It is suitable regardless of the value of _asynchronous
+	Stream IChunkHandle.CreateStream(bool leaveOpen) => new UnbufferedStreamWithSync(this, leaveOpen);
+
+	private sealed class UnbufferedStreamWithSync(ChunkFileHandle handle, bool leaveOpen)
+		: IChunkHandle.UnbufferedStream(handle, leaveOpen) {
+
+		public override bool CanTimeout => false;
+
+		protected override void Write(ReadOnlySpan<byte> buffer, long offset) =>
+			handle.Write(buffer, offset);
+
+		protected override int Read(Span<byte> buffer, long offset) =>
+			handle.Read(buffer, offset);
+	}
+
 	public string Name => _path;
 
 	public void Flush() => RandomAccess.FlushToDisk(_handle);
@@ -113,6 +110,12 @@ internal abstract class ChunkFileHandle : Disposable, IChunkHandle {
 	public abstract ValueTask WriteAsync(ReadOnlyMemory<byte> data, long offset, CancellationToken token);
 
 	public abstract ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken token);
+
+	protected void Write(ReadOnlySpan<byte> data, long offset) =>
+		RandomAccess.Write(_handle, data, offset);
+
+	protected int Read(Span<byte> buffer, long offset) =>
+		RandomAccess.Read(_handle, buffer, offset);
 
 	public long Length {
 		get => RandomAccess.GetLength(_handle);
