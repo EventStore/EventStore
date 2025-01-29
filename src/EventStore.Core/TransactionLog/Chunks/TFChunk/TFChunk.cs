@@ -1453,18 +1453,12 @@ public partial class TFChunk : IChunkBlob {
 			Path.GetFileName(ChunkLocator));
 	}
 
-	private struct Midpoint {
-		public readonly int ItemIndex;
-		public readonly long LogPos;
+	[StructLayout(LayoutKind.Auto)]
+	private readonly struct Midpoint(int itemIndex, in PosMap posmap) {
+		public readonly int ItemIndex = itemIndex;
+		public readonly long LogPos = posmap.LogPos;
 
-		public Midpoint(int itemIndex, PosMap posmap) {
-			ItemIndex = itemIndex;
-			LogPos = posmap.LogPos;
-		}
-
-		public override string ToString() {
-			return string.Format("ItemIndex: {0}, LogPos: {1}", ItemIndex, LogPos);
-		}
+		public override string ToString() => $"ItemIndex: {ItemIndex}, LogPos: {LogPos}";
 	}
 
 	[StructLayout(LayoutKind.Auto)]
