@@ -166,7 +166,7 @@ public partial class TFChunk {
 		}
 
 		private async ValueTask<Midpoint[]> GetOrCreateMidPoints(ReaderWorkItem workItem, CancellationToken token) {
-			// don't use mipoints when reading from memory
+			// don't use midpoints when reading from memory
 			if (workItem.IsMemory)
 				return null;
 
@@ -183,8 +183,10 @@ public partial class TFChunk {
 
 			await _lock.AcquireAsync(token);
 			try {
-				// guaranteed up to date. we don't want to assign to _midpoints if we aren't supposed to
-				// because the midpoints will take up memory unnecessarily.
+				// guaranteed up to date
+				if (_midpoints is { } midpointsDouble)
+					return midpointsDouble;
+
 				if (!_wantMidpoints)
 					return null;
 
