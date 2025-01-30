@@ -1211,7 +1211,7 @@ public partial class TFChunk : IChunkBlob {
 		// get a filestream from the pool, or create one if the pool is empty.
 		if (_fileStreams.TryTake(out slot)) {
 			if (slot.ValueRef is not { } fileStreamWorkItem)
-				slot.ValueRef = fileStreamWorkItem = new(_handle, _transform.Read) { PositionInPool = slot.Index };
+				slot.ValueRef = fileStreamWorkItem = new(_handle, _transform.Read, _chunkHeader.IsScavenged) { PositionInPool = slot.Index };
 
 			return fileStreamWorkItem;
 		}
@@ -1224,7 +1224,7 @@ public partial class TFChunk : IChunkBlob {
 			throw new FileBeingDeletedException();
 		}
 
-		return new(_handle, _transform.Read);
+		return new(_handle, _transform.Read, _chunkHeader.IsScavenged);
 
 		static int IncrementIfGreaterThanZero(int value)
 			=> value + Unsafe.BitCast<bool, byte>(value > 0);

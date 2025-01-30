@@ -18,42 +18,36 @@ internal sealed class ReaderWorkItem : Disposable {
 	// if item was taken from the pool, the field contains position within the array (>= 0)
 	private readonly int _positionInPool = -1;
 	public readonly ChunkDataReadStream BaseStream;
+	public readonly ChunkDataReadStream PosMapStream;
 	private readonly bool _leaveOpen;
 	private readonly IBufferedReader _cachedReader;
 
-	private ReaderWorkItem(ChunkDataReadStream stream, bool leaveOpen) {
-		Debug.Assert(stream is not null);
+	public ReaderWorkItem(Stream sharedStream, IChunkReadTransform chunkReadTransform) {
+		IsMemory = true;
+		_leaveOpen = true;
+		BaseStream = PosMapStream = chunkReadTransform.TransformData(new ChunkDataReadStream(sharedStream));
+	}
 
-		_leaveOpen = leaveOpen;
-		BaseStream = stream;
+	public ReaderWorkItem(IChunkHandle handle, IChunkReadTransform chunkReadTransform, bool scavenged) {
+		var source = handle.CreateStream();
+		BaseStream = chunkReadTransform.TransformData(new ChunkDataReadStream(new PoolingBufferedStream(source) {
+			MaxBufferSize = BufferSize,
+		}));
+
+		PosMapStream = scavenged
+			? chunkReadTransform.TransformData(
+				new ChunkDataReadStream(new PoolingBufferedStream(source, leaveOpen: true) {
+					MaxBufferSize = BufferSize
+				}))
+			: BaseStream;
 
 		// Access to the internal buffer of 'PoolingBufferedStream' is only allowed
 		// when the top-level stream doesn't perform any transformations. Otherwise,
 		// the buffer contains untransformed bytes that cannot be accessed directly.
-		_cachedReader = IsExactTypeOf<ChunkDataReadStream>(stream)
-		                && stream.ChunkFileStream is PoolingBufferedStream bufferedStream
+		_cachedReader = IsExactTypeOf<ChunkDataReadStream>(BaseStream)
+		                && BaseStream.ChunkFileStream is PoolingBufferedStream bufferedStream
 			? bufferedStream
 			: null;
-	}
-
-	public ReaderWorkItem(Stream sharedStream, IChunkReadTransform chunkReadTransform)
-		: this(CreateTransformedMemoryStream(sharedStream, chunkReadTransform), leaveOpen: true) {
-		IsMemory = true;
-	}
-
-	public ReaderWorkItem(IChunkHandle handle, IChunkReadTransform chunkReadTransform)
-		: this(CreateTransformedFileStream(handle, chunkReadTransform), leaveOpen: false) {
-		IsMemory = false;
-	}
-
-	private static ChunkDataReadStream CreateTransformedMemoryStream(Stream memStream, IChunkReadTransform chunkReadTransform) {
-		return chunkReadTransform.TransformData(new ChunkDataReadStream(memStream));
-	}
-
-	private static ChunkDataReadStream CreateTransformedFileStream(IChunkHandle handle,
-		IChunkReadTransform chunkReadTransform) {
-		var fileStream = new PoolingBufferedStream(handle.CreateStream()) { MaxBufferSize = BufferSize };
-		return chunkReadTransform.TransformData(new ChunkDataReadStream(fileStream));
 	}
 
 	public bool IsMemory { get; }
@@ -80,8 +74,10 @@ internal sealed class ReaderWorkItem : Disposable {
 
 	protected override void Dispose(bool disposing) {
 		if (disposing) {
-			if (!_leaveOpen)
+			if (!_leaveOpen) {
 				BaseStream.Dispose();
+				PosMapStream.Dispose();
+			}
 		}
 
 		base.Dispose(disposing);

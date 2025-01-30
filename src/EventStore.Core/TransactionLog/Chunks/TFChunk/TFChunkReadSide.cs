@@ -207,10 +207,11 @@ public partial class TFChunk {
 
 			var posmapSize = Chunk.ChunkFooter.IsMap12Bytes ? PosMap.FullSize : PosMap.DeprecatedSize;
 			using var posMapTable = UnmanagedMemory.Allocate<byte>(posmapSize * mapCount);
+			Console.WriteLine($"Size of posmap table: {posMapTable.Length}");
 
 			// write the table once
-			workItem.BaseStream.Position = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize;
-			await workItem.BaseStream.ReadExactlyAsync(posMapTable.Memory, token);
+			workItem.PosMapStream.Position = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize;
+			await workItem.PosMapStream.ReadExactlyAsync(posMapTable.Memory, token);
 
 			return CreateMidpoints(posMapTable.Span, depth, mapCount, posmapSize);
 
@@ -411,10 +412,10 @@ public partial class TFChunk {
 				: PosMap.DeprecatedSize;
 
 			using var buffer = Memory.AllocateExactly<byte>(count * posmapSize);
-			workItem.BaseStream.Position =
+			workItem.PosMapStream.Position =
 				ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + startIndex * posmapSize;
 
-			await workItem.BaseStream.ReadExactlyAsync(buffer.Memory, token);
+			await workItem.PosMapStream.ReadExactlyAsync(buffer.Memory, token);
 			return exactMatch ? ExactMatch(buffer.Span) : ClosestForward(buffer.Span);
 
 			int ExactMatch(ReadOnlySpan<byte> segment) {
