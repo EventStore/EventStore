@@ -134,3 +134,7 @@ For an event with schema subject "TestEvent", this would result in the URL:
 ```
 https://api.example.com/TestEvent
 ```
+
+### Tutorial
+
+[Learn how to configure and use a connector using the HTTP Sink in EventStoreDB through a tutorial.](https://developers.eventstore.com/tutorials/HTTP_Connector.md) 
