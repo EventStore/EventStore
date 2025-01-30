@@ -207,7 +207,6 @@ public partial class TFChunk {
 
 			var posmapSize = Chunk.ChunkFooter.IsMap12Bytes ? PosMap.FullSize : PosMap.DeprecatedSize;
 			using var posMapTable = UnmanagedMemory.Allocate<byte>(posmapSize * mapCount);
-			Console.WriteLine($"Size of posmap table: {posMapTable.Length}");
 
 			// write the table once
 			workItem.PosMapStream.Position = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize;
