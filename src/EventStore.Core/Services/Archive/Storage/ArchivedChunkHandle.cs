@@ -46,8 +46,6 @@ public sealed class ArchivedChunkHandle : IChunkHandle {
 
 	public string Name => $"archive-handle-{_logicalChunkNumber}";
 
-	public bool IsRemote => true;
-
 	public long Length {
 		get => _length;
 		set => throw new NotSupportedException();

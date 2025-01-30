@@ -42,10 +42,10 @@ internal sealed class ReaderWorkItem : Disposable {
 		Source = ITransactionFileTracker.Source.ChunkCache;
 	}
 
-	public ReaderWorkItem(IChunkHandle handle, IChunkReadTransform chunkReadTransform)
+	public ReaderWorkItem(IChunkHandle handle, IChunkReadTransform chunkReadTransform, bool isRemoteChunk)
 		: this(CreateTransformedFileStream(handle, chunkReadTransform), leaveOpen: false) {
 		IsMemory = false;
-		Source = handle.IsRemote
+		Source = isRemoteChunk
 			? ITransactionFileTracker.Source.Archive
 			: ITransactionFileTracker.Source.FileSystem;
 	}

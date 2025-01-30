@@ -33,8 +33,6 @@ internal sealed class ChunkFileHandle : Disposable, IChunkHandle {
 
 	public string Name => _path;
 
-	public bool IsRemote => false;
-
 	public void Flush() => RandomAccess.FlushToDisk(_handle);
 
 	public ValueTask WriteAsync(ReadOnlyMemory<byte> data, long offset, CancellationToken token)
