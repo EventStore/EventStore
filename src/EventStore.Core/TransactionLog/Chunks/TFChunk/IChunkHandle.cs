@@ -46,35 +46,35 @@ public interface IChunkHandle : IFlushable, IDisposable {
 	protected static Stream CreateStream(IChunkHandle handle, bool leaveOpen, int synchronousTimeout)
 		=> new UnbufferedStream(handle, leaveOpen) { ReadTimeout = synchronousTimeout, WriteTimeout = synchronousTimeout };
 
-	private sealed class UnbufferedStream(IChunkHandle handle, bool leaveOpen) : RandomAccessStream {
+	private protected class UnbufferedStream(IChunkHandle handle, bool leaveOpen) : RandomAccessStream {
 		private int _readTimeout, _writeTimeout;
 		private CancellationTokenSource _timeoutSource;
 
-		public override void Flush() => handle.Flush();
+		public sealed override void Flush() => handle.Flush();
 
-		public override void SetLength(long value) => handle.Length = value;
+		public sealed override void SetLength(long value) => handle.Length = value;
 
-		public override bool CanRead => handle.Access.HasFlag(FileAccess.Read);
+		public sealed override bool CanRead => handle.Access.HasFlag(FileAccess.Read);
 
-		public override bool CanSeek => true;
+		public sealed override bool CanSeek => true;
 
-		public override bool CanWrite => handle.Access.HasFlag(FileAccess.Write);
+		public sealed override bool CanWrite => handle.Access.HasFlag(FileAccess.Write);
 
 		public override bool CanTimeout => true;
 
-		public override int WriteTimeout {
+		public sealed override int WriteTimeout {
 			get => _writeTimeout;
 			set => _writeTimeout =
 				value >= Timeout.Infinite ? value : throw new ArgumentOutOfRangeException(nameof(value));
 		}
 
-		public override int ReadTimeout {
+		public sealed override int ReadTimeout {
 			get => _readTimeout;
 			set => _readTimeout =
 				value >= Timeout.Infinite ? value : throw new ArgumentOutOfRangeException(nameof(value));
 		}
 
-		public override long Length => handle.Length;
+		public sealed override long Length => handle.Length;
 
 		protected override void Write(ReadOnlySpan<byte> buffer, long offset) {
 			// leave fast without sync over async

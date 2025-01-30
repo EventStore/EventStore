@@ -40,7 +40,7 @@ public sealed class ChunkLocalFileSystem : IChunkFileSystem {
 				Options = ChunkFileHandle.ConvertToFileOptions(hint),
 			};
 
-			task = new(new ChunkFileHandle(fileName, options));
+			task = new(ChunkFileHandle.Create(fileName, options));
 		} catch (FileNotFoundException) {
 			task = ValueTask.FromException<IChunkHandle>(
 				new CorruptDatabaseException(new ChunkNotFoundException(fileName)));
