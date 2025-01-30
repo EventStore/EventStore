@@ -87,6 +87,7 @@ public static class MetricsBootstrapper {
 		var queueBusyMetric = new AverageMetric(coreMeter, "eventstore-queue-busy", "seconds", label => new("queue", label));
 		var byteMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "bytes");
 		var eventMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "events");
+		var recordReadDurationMetric = new DurationMetric(coreMeter, "eventstore-io-record-read-duration");
 		var electionsCounterMetric = new CounterMetric(coreMeter, "eventstore-elections-count", unit: "");
 
 		// incoming grpc calls
@@ -129,6 +130,7 @@ public static class MetricsBootstrapper {
 					name: LogicalChunkReadDistributionName,
 					writer: dbConfig.WriterCheckpoint,
 					chunkSize: dbConfig.ChunkSize),
+				readDurationMetric: recordReadDurationMetric,
 				readBytes: new CounterSubMetric(byteMetric, [readTag]),
 				readEvents: new CounterSubMetric(eventMetric, [readTag]));
 		}

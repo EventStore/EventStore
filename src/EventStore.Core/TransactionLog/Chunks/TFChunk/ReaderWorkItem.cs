@@ -39,11 +39,15 @@ internal sealed class ReaderWorkItem : Disposable {
 	public ReaderWorkItem(Stream sharedStream, IChunkReadTransform chunkReadTransform)
 		: this(CreateTransformedMemoryStream(sharedStream, chunkReadTransform), leaveOpen: true) {
 		IsMemory = true;
+		Source = ITransactionFileTracker.Source.ChunkCache;
 	}
 
-	public ReaderWorkItem(IChunkHandle handle, IChunkReadTransform chunkReadTransform)
+	public ReaderWorkItem(IChunkHandle handle, IChunkReadTransform chunkReadTransform, bool isRemoteChunk)
 		: this(CreateTransformedFileStream(handle, chunkReadTransform), leaveOpen: false) {
 		IsMemory = false;
+		Source = isRemoteChunk
+			? ITransactionFileTracker.Source.Archive
+			: ITransactionFileTracker.Source.FileSystem;
 	}
 
 	private static ChunkDataReadStream CreateTransformedMemoryStream(Stream memStream, IChunkReadTransform chunkReadTransform) {
@@ -57,6 +61,8 @@ internal sealed class ReaderWorkItem : Disposable {
 	}
 
 	public bool IsMemory { get; }
+
+	public ITransactionFileTracker.Source Source { get; }
 
 	public int PositionInPool {
 		get => _positionInPool;
