@@ -248,6 +248,13 @@ public class ClusterVNode<TStreamId> :
 
 		ReloadLogOptions(options);
 
+		T GetOptions<T>(string subsection) where T : new() => configuration
+			.GetSection($"{KurrentConfigurationKeys.Prefix}:{subsection}")
+			.Get<T>() ?? new();
+
+		var experimentalOptions = GetOptions<ExperimentalOptions>("Experimental");
+		ChunkFileHandle.AsynchronousByDefault = experimentalOptions.AsyncIO;
+
 		var isRunningInContainer = ContainerizedEnvironment.IsRunningInContainer();
 
 		instanceId ??= Guid.NewGuid();
@@ -269,13 +276,13 @@ public class ClusterVNode<TStreamId> :
 		AddTask(_taskAddedTrigger.Task);
 #endif
 
-		var archiveOptions = configuration.GetSection($"{KurrentConfigurationKeys.Prefix}:Archive").Get<ArchiveOptions>() ?? new();
+		var archiveOptions = GetOptions<ArchiveOptions>("Archive");
 		OptionsFormatter.LogConfig("Archive", archiveOptions);
 		archiveOptions.Validate();
 
 		var disableInternalTcpTls = options.Application.Insecure;
 		var disableExternalTcpTls = options.Application.Insecure;
-		var nodeTcpOptions = configuration.GetSection($"{KurrentConfigurationKeys.Prefix}:TcpPlugin").Get<NodeTcpOptions>() ?? new();
+		var nodeTcpOptions = GetOptions<NodeTcpOptions>("TcpPlugin");
 		var enableExternalTcp = nodeTcpOptions.EnableExternalTcp;
 
 		var httpEndPoint = new IPEndPoint(options.Interface.NodeIp, options.Interface.NodePort);
@@ -319,7 +326,7 @@ public class ClusterVNode<TStreamId> :
 			out var workerThreadsCount);
 
 		var trackers = new Trackers();
-		var metricsConfiguration = MetricsConfiguration.Get((configuration));
+		var metricsConfiguration = MetricsConfiguration.Get(configuration);
 		MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
 		var namingStrategy = new VersionedPatternFileNamingStrategy(dbConfig.Path, "chunk-");

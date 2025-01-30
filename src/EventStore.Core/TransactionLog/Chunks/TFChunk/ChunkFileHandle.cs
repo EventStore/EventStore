@@ -50,9 +50,9 @@ file sealed class AsynchronousChunkFileHandle(string path, FileStreamOptions opt
 }
 
 internal abstract class ChunkFileHandle : Disposable, IChunkHandle {
-	const bool AsynchronousByDefault = false;
+	public static bool AsynchronousByDefault { get; set; } = false;
 
-	public const FileOptions DefaultFileOptions = AsynchronousByDefault
+	public static FileOptions DefaultFileOptions => AsynchronousByDefault
 		? FileOptions.Asynchronous
 		: FileOptions.None;
 
