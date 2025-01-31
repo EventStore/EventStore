@@ -9,7 +9,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -32,20 +31,11 @@ public class TestFixtureWithProjectionCoreService {
 			throw new NotImplementedException();
 		}
 
-		public string Name { get; }
-		public Task Start() {
-			throw new NotImplementedException();
-		}
+		public void Start() => throw new NotImplementedException();
 
-		public void Stop() {
-			throw new NotImplementedException();
-		}
+		public Task Stop() => Task.FromException(new NotImplementedException());
 
 		public void RequestStop() {
-			throw new NotImplementedException();
-		}
-
-		public QueueStats GetStatistics() {
 			throw new NotImplementedException();
 		}
 

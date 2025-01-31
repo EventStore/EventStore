@@ -1646,7 +1646,7 @@ public class ClusterVNode<TStreamId> :
 			}
 
 			// start the main queue as we publish messages to it while opening the db
-			AddTask(_controller.Start());
+			_controller.Start();
 
 			await Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads,
 				createNewChunks: false, token: token);
@@ -1654,14 +1654,12 @@ public class ClusterVNode<TStreamId> :
 			await epochManager.Init(token);
 
 			storageWriter.Start();
-			AddTasks(storageWriter.Tasks);
 
-			AddTasks(_workersHandler.Start());
-			AddTask(monitoringQueue.Start());
-			AddTask(subscrQueue.Start());
-			AddTask(perSubscrQueue.Start());
-			AddTask(redactionQueue.Start());
-
+			_workersHandler.Start();
+			monitoringQueue.Start();
+			subscrQueue.Start();
+			perSubscrQueue.Start();
+			redactionQueue.Start();
 			dynamicCacheManager.Start();
 		}
 		_start = StartNode;

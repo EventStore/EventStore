@@ -2,7 +2,6 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -30,25 +29,21 @@ public class MultiQueuedHandler : IPublisher {
 
 	private int NextQueueHash() => Interlocked.Increment(ref _nextQueueNum);
 
-	public IEnumerable<Task> Start() {
-		var queues = _queues.Span;
-		var tasks = new Task[queues.Length];
-
-		for (var i = 0; i < queues.Length; i++) {
-			tasks[i] = queues[i].Start();
+	public void Start() {
+		foreach (var t in _queues.Span)
+		{
+			t.Start();
 		}
-
-		return tasks;
 	}
 
-	public void Stop() {
+	public Task Stop() {
 		var stopTasks = new Task[_queues.Length];
 		var queues = _queues.Span;
 		for (int i = 0; i < queues.Length; ++i) {
-			stopTasks[i] = Task.Factory.StartNew(queues[i].Stop);
+			stopTasks[i] = Task.Run(queues[i].Stop);
 		}
 
-		Task.WaitAll(stopTasks);
+		return Task.WhenAll(stopTasks);
 	}
 
 	public void Publish(Message message) {

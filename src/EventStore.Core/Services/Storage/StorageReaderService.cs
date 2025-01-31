@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.LogAbstraction;
@@ -20,13 +22,12 @@ public abstract class StorageReaderService {
 }
 
 public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<SystemMessage.SystemInit>,
-	IHandle<SystemMessage.BecomeShuttingDown>,
+	IAsyncHandle<SystemMessage.BecomeShuttingDown>,
 	IHandle<SystemMessage.BecomeShutdown>,
 	IHandle<MonitoringMessage.InternalStatsRequest> {
 
 	private readonly IPublisher _bus;
 	private readonly IReadIndex _readIndex;
-	private readonly int _threadCount;
 	private readonly MultiQueuedHandler _workersMultiHandler;
 
 	public StorageReaderService(
@@ -39,7 +40,6 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 		IInMemoryStreamReader inMemReader,
 		QueueStatsManager queueStatsManager,
 		QueueTrackers trackers) {
-
 		Ensure.NotNull(bus, "bus");
 		Ensure.NotNull(subscriber, "subscriber");
 		Ensure.NotNull(readIndex, "readIndex");
@@ -49,7 +49,6 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 
 		_bus = bus;
 		_readIndex = readIndex;
-		_threadCount = threadCount;
 		StorageReaderWorker<TStreamId>[] readerWorkers = new StorageReaderWorker<TStreamId>[threadCount];
 		InMemoryBus[] storageReaderBuses = new InMemoryBus[threadCount];
 		for (var i = 0; i < threadCount; i++) {
@@ -68,7 +67,7 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 		}
 
 		_workersMultiHandler = new MultiQueuedHandler(
-			_threadCount,
+			threadCount,
 			queueNum => new QueuedHandlerThreadPool(storageReaderBuses[queueNum],
 				string.Format("StorageReaderQueue #{0}", queueNum + 1),
 				queueStatsManager,
@@ -94,9 +93,9 @@ public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<Sys
 		_bus.Publish(new SystemMessage.ServiceInitialized("StorageReader"));
 	}
 
-	void IHandle<SystemMessage.BecomeShuttingDown>.Handle(SystemMessage.BecomeShuttingDown message) {
+	async ValueTask IAsyncHandle<SystemMessage.BecomeShuttingDown>.HandleAsync(SystemMessage.BecomeShuttingDown message, CancellationToken token) {
 		try {
-			_workersMultiHandler.Stop();
+			await _workersMultiHandler.Stop();
 		} catch (Exception exc) {
 			Log.Error(exc, "Error while stopping readers multi handler.");
 		}

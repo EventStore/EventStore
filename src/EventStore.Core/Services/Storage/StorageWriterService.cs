@@ -87,13 +87,9 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	private long _lastFlushSize;
 	private long _maxFlushSize;
 	private long _maxFlushDelay;
-	private readonly List<Task> _tasks = new();
 	private readonly TStreamId _emptyEventTypeId;
 	private readonly TStreamId _scavengePointsStreamId;
 	private readonly TStreamId _scavengePointEventTypeId;
-	public IEnumerable<Task> Tasks {
-		get { return _tasks; }
-	}
 
 	public StorageWriterService(IPublisher bus,
 		ISubscriber subscribeToBus,
@@ -166,7 +162,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 	public void Start() {
 		Writer.Open();
-		_tasks.Add(_writerQueue.Start());
+		_writerQueue.Start();
 	}
 
 	protected void SubscribeToMessage<T>() where T : Message {
@@ -179,12 +175,6 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			Interlocked.Increment(ref FlushMessagesInQueue);
 
 		_writerQueue.Publish(message);
-
-		if (message is SystemMessage.BecomeShuttingDown) {
-			// WaitForStop() on main thread to avoid deadlock with queue waiting for itself to stop
-			_writerQueue.WaitForStop();
-			Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
-		}
 	}
 
 	private async ValueTask CommonHandle(Message message, CancellationToken token) {
@@ -229,8 +219,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				}
 			case VNodeState.ShuttingDown: {
 					await Writer.Flush(token);
-					_writerQueue.RequestStop();
 					BlockWriter = true;
+					_writerQueue.Stop().GetAwaiter().OnCompleted(Bus.PublishStorageWriterShutdown);
 					break;
 				}
 		}
@@ -903,4 +893,9 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 		message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));
 	}
+}
+
+file static class MessageBusHelpers {
+	internal static void PublishStorageWriterShutdown(this IPublisher publisher)
+		=> publisher.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
 }

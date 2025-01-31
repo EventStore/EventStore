@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
@@ -28,8 +29,8 @@ public abstract class QueuedHandlerTestWithWaitingConsumer {
 	}
 
 	[TearDown]
-	public virtual void TearDown() {
-		Queue.Stop();
+	public virtual async Task TearDown() {
+		await Queue.Stop();
 		Queue = null;
 		Consumer.Dispose();
 		Consumer = null;

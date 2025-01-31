@@ -352,7 +352,7 @@ public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController {
 		return stm;
 	}
 
-	public Task Start() => _mainQueue.Start();
+	public void Start() => _mainQueue.Start();
 
 	private ValueTask Handle(SystemMessage.SystemInit message, CancellationToken token) {
 		Log.Information("========== [{httpEndPoint}] SYSTEM INIT...", _nodeInfo.HttpEndPoint);
@@ -561,7 +561,7 @@ public sealed class ClusterVNodeController<TStreamId> : ClusterVNodeController {
 		}
 
 		try {
-			_node.WorkersHandler.Stop();
+			await _node.WorkersHandler.Stop();
 			_mainQueue.RequestStop();
 		} catch (Exception exc) {
 			Log.Error(exc, "Error when stopping workers/main queue.");

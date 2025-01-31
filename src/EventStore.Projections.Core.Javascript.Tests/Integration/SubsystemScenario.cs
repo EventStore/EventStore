@@ -54,7 +54,7 @@ public abstract class SubsystemScenario  : IHandle<Message>, IAsyncLifetime {
 	protected virtual void OnMainBusMessage(Message msg){}
 
 	public async Task InitializeAsync() {
-		var _ = _mainQueue.Start();
+		_mainQueue.Start();
 		_mainQueue.Publish(new SystemMessage.SystemCoreReady());
 		_mainQueue.Publish(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 		await _ready.WaitAsync(TestTimeout);
@@ -64,7 +64,7 @@ public abstract class SubsystemScenario  : IHandle<Message>, IAsyncLifetime {
 		_miniStore.Complete();
 		await _complete;
 		await _stop();
-		_mainQueue.Stop();
+		await _mainQueue.Stop();
 	}
 
 	protected async Task<(long commitPosition, long nextRevision)> WriteEvents(string stream, long expectedRevision, params Event[] events) {
