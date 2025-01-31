@@ -1655,7 +1655,7 @@ public class ClusterVNode<TStreamId> :
 			Task.WaitAll(startupTasks); // No timeout or cancellation, this is intended
 
 			// start the main queue as we publish messages to it while opening the db
-			AddTask(_controller.Start());
+			_controller.Start();
 
 			using (var task = Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads,
 				       createNewChunks: false).AsTask()) {
@@ -1669,12 +1669,11 @@ public class ClusterVNode<TStreamId> :
 			storageWriter.Start();
 			AddTasks(storageWriter.Tasks);
 
-			AddTasks(_workersHandler.Start());
-			AddTask(monitoringQueue.Start());
-			AddTask(subscrQueue.Start());
-			AddTask(perSubscrQueue.Start());
-			AddTask(redactionQueue.Start());
-
+			_workersHandler.Start();
+			monitoringQueue.Start();
+			subscrQueue.Start();
+			perSubscrQueue.Start();
+			redactionQueue.Start();
 			dynamicCacheManager.Start();
 		}
 

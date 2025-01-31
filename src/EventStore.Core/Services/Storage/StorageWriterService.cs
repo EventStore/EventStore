@@ -166,7 +166,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 	public void Start() {
 		Writer.Open();
-		_tasks.Add(_writerQueue.Start());
+		_writerQueue.Start();
 	}
 
 	protected void SubscribeToMessage<T>() where T : Message {

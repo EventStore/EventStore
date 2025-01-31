@@ -32,18 +32,11 @@ public class TestFixtureWithProjectionCoreService {
 			throw new NotImplementedException();
 		}
 
-		public string Name { get; }
-		public Task Start() {
-			throw new NotImplementedException();
-		}
+		public void Start() => throw new NotImplementedException();
 
 		public Task Stop() => Task.FromException(new NotImplementedException());
 
 		public void RequestStop() {
-			throw new NotImplementedException();
-		}
-
-		public QueueStats GetStatistics() {
 			throw new NotImplementedException();
 		}
 

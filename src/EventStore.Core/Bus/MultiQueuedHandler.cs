@@ -30,15 +30,11 @@ public class MultiQueuedHandler : IPublisher {
 
 	private int NextQueueHash() => Interlocked.Increment(ref _nextQueueNum);
 
-	public IEnumerable<Task> Start() {
-		var queues = _queues.Span;
-		var tasks = new Task[queues.Length];
-
-		for (var i = 0; i < queues.Length; i++) {
-			tasks[i] = queues[i].Start();
+	public void Start() {
+		foreach (var t in _queues.Span)
+		{
+			t.Start();
 		}
-
-		return tasks;
 	}
 
 	public Task Stop() {

@@ -78,9 +78,8 @@ namespace EventStore.Core.Bus;
 			_tracker = trackers.GetTrackerForQueue(name);
 		}
 
-		public Task Start() {
+		public void Start() {
 			_queueMonitor.Register(this);
-			return _tcs.Task;
 		}
 
 		private void Cancel() {
