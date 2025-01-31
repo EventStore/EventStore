@@ -14,7 +14,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNext.Buffers;
 using DotNext.Collections.Concurrent;
-using DotNext.Collections.Generic;
 using DotNext.Diagnostics;
 using DotNext.IO;
 using DotNext.Threading;
@@ -22,6 +21,8 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLog.Scavenging.DbAccess;
+using EventStore.Core.Transforms;
 using EventStore.Core.Transforms.Identity;
 using EventStore.Core.Util;
 using EventStore.Plugins.Transforms;
@@ -172,6 +173,7 @@ public partial class TFChunk : IChunkBlob {
 
 	private IChunkReadSide _readSide;
 
+	private readonly IGetChunkTransformFactory _getTransformFactory;
 	private IChunkTransform _transform;
 	private ReadOnlyMemory<byte> _transformHeader;
 
@@ -181,7 +183,8 @@ public partial class TFChunk : IChunkBlob {
 		bool unbuffered,
 		bool writethrough,
 		bool reduceFileCachePressure,
-		IChunkFileSystem fileSystem) {
+		IChunkFileSystem fileSystem,
+		IGetChunkTransformFactory getTransformFactory) {
 		Ensure.NotNullOrEmpty(filename, "filename");
 		Ensure.Nonnegative(midpointsDepth, "midpointsDepth");
 
@@ -194,6 +197,7 @@ public partial class TFChunk : IChunkBlob {
 		_memStreams = new();
 		_fileStreams = new();
 		_fileSystem = fileSystem;
+		_getTransformFactory = getTransformFactory;
 
 		IsRemote = !_inMem && _fileSystem.IsRemote(ChunkLocator);
 
@@ -209,7 +213,7 @@ public partial class TFChunk : IChunkBlob {
 
 	// local or remote
 	public static async ValueTask<TFChunk> FromCompletedFile(IChunkFileSystem fileSystem, string filename, bool verifyHash, bool unbufferedRead,
-		ITransactionFileTracker tracker, Func<TransformType, IChunkTransformFactory> getTransformFactory,
+		ITransactionFileTracker tracker, IGetChunkTransformFactory getTransformFactory,
 		bool reduceFileCachePressure = false, CancellationToken token = default) {
 
 		var chunk = new TFChunk(
@@ -219,7 +223,8 @@ public partial class TFChunk : IChunkBlob {
 			unbufferedRead,
 			false,
 			reduceFileCachePressure,
-			fileSystem);
+			fileSystem,
+			getTransformFactory);
 
 		try {
 			await chunk.InitCompleted(verifyHash, tracker, getTransformFactory, token);
@@ -234,7 +239,7 @@ public partial class TFChunk : IChunkBlob {
 	// always local
 	public static async ValueTask<TFChunk> FromOngoingFile(IChunkFileSystem fileSystem, string filename, int writePosition, bool unbuffered,
 		bool writethrough, bool reduceFileCachePressure, ITransactionFileTracker tracker,
-		Func<TransformType, IChunkTransformFactory> getTransformFactory,
+		IGetChunkTransformFactory getTransformFactory,
 		CancellationToken token) {
 		var chunk = new TFChunk(filename,
 			TFConsts.MidpointsDepth,
@@ -242,7 +247,8 @@ public partial class TFChunk : IChunkBlob {
 			unbuffered,
 			writethrough,
 			reduceFileCachePressure,
-			fileSystem: fileSystem);
+			fileSystem: fileSystem,
+			getTransformFactory: getTransformFactory);
 		try {
 			await chunk.InitOngoing(writePosition, tracker, getTransformFactory, token);
 		} catch {
@@ -266,8 +272,9 @@ public partial class TFChunk : IChunkBlob {
 		bool writethrough,
 		bool reduceFileCachePressure,
 		ITransactionFileTracker tracker,
-		IChunkTransformFactory transformFactory,
+		IGetChunkTransformFactory getTransformFactory,
 		CancellationToken token) {
+		var transformFactory = getTransformFactory.ForNewChunk();
 		var version = CurrentChunkVersion;
 		var minCompatibleVersion = transformFactory.Type == TransformType.Identity
 			? (byte) ChunkVersions.Aligned
@@ -284,7 +291,7 @@ public partial class TFChunk : IChunkBlob {
 		transformFactory.CreateTransformHeader(transformHeader);
 
 		return await CreateWithHeader(fileSystem, filename, chunkHeader, fileSize, inMem, unbuffered, writethrough,
-			reduceFileCachePressure, tracker, transformFactory, transformHeader, token);
+			reduceFileCachePressure, tracker, transformFactory, getTransformFactory, transformHeader, token);
 	}
 
 	// local only
@@ -299,6 +306,7 @@ public partial class TFChunk : IChunkBlob {
 		bool reduceFileCachePressure,
 		ITransactionFileTracker tracker,
 		IChunkTransformFactory transformFactory,
+		IGetChunkTransformFactory getTransformFactory,
 		ReadOnlyMemory<byte> transformHeader,
 		CancellationToken token) {
 		var chunk = new TFChunk(filename,
@@ -307,7 +315,8 @@ public partial class TFChunk : IChunkBlob {
 			unbuffered,
 			writethrough,
 			reduceFileCachePressure,
-			fileSystem: fileSystem);
+			fileSystem: fileSystem,
+			getTransformFactory: getTransformFactory);
 		try {
 			await chunk.InitNew(header, fileSize, tracker, transformFactory, transformHeader, token);
 		} catch {
@@ -319,7 +328,7 @@ public partial class TFChunk : IChunkBlob {
 	}
 
 	private async ValueTask InitCompleted(bool verifyHash, ITransactionFileTracker tracker,
-		Func<TransformType, IChunkTransformFactory> getTransformFactory, CancellationToken token) {
+		IGetChunkTransformFactory getTransformFactory, CancellationToken token) {
 		_handle = await _fileSystem.OpenForReadAsync(
 			ChunkLocator,
 			_reduceFileCachePressure
@@ -339,7 +348,7 @@ public partial class TFChunk : IChunkBlob {
 				throw new CorruptDatabaseException(new UnsupportedFileVersionException(ChunkLocator, _chunkHeader.MinCompatibleVersion,
 					CurrentChunkVersion));
 
-			var transformFactory = getTransformFactory(_chunkHeader.TransformType);
+			var transformFactory = getTransformFactory.ForExistingChunk(_chunkHeader.TransformType);
 
 			var transformHeader = transformFactory.TransformHeaderLength > 0
 				? new byte[transformFactory.TransformHeaderLength]
@@ -405,7 +414,7 @@ public partial class TFChunk : IChunkBlob {
 	}
 
 	private async ValueTask InitOngoing(int writePosition, ITransactionFileTracker tracker,
-		Func<TransformType, IChunkTransformFactory> getTransformFactory,
+		IGetChunkTransformFactory getTransformFactory,
 		CancellationToken token) {
 		Ensure.Nonnegative(writePosition, "writePosition");
 		var fileInfo = new FileInfo(LocalFileName);
@@ -531,7 +540,7 @@ public partial class TFChunk : IChunkBlob {
 	}
 
 	private async ValueTask<ChunkHeader> CreateWriterWorkItemForExistingChunk(int writePosition,
-		Func<TransformType, IChunkTransformFactory> getTransformFactory,
+		IGetChunkTransformFactory getTransformFactory,
 		CancellationToken token) {
 		var options = new FileStreamOptions {
 			Mode = FileMode.Open,
@@ -566,7 +575,7 @@ public partial class TFChunk : IChunkBlob {
 				await stream.FlushAsync(token);
 			}
 
-			var transformFactory = getTransformFactory(chunkHeader.TransformType);
+			var transformFactory = getTransformFactory.ForExistingChunk(chunkHeader.TransformType);
 
 			var transformHeader = transformFactory.TransformHeaderLength > 0
 				? new byte[transformFactory.TransformHeaderLength]
@@ -1437,12 +1446,51 @@ public partial class TFChunk : IChunkBlob {
 		}
 	}
 
-	IAsyncEnumerable<IChunkBlob> IChunkBlob.UnmergeAsync() {
+	public async IAsyncEnumerable<IChunkBlob> UnmergeAsync([EnumeratorCancellation] CancellationToken token) {
 		if (ChunkHeader.ChunkStartNumber == ChunkHeader.ChunkEndNumber)
-			return AsyncEnumerable.Singleton(this);
+			throw new InvalidOperationException($"Chunk: {ChunkLocator} is not merged");
 
-		// TODO: requires actual implementation
-		return AsyncEnumerable.Throw<IChunkBlob>(new NotImplementedException());
+		if (!ChunkHeader.IsScavenged)
+			throw new InvalidOperationException($"Chunk: {ChunkLocator} is not scavenged");
+
+		if (!IsReadOnly)
+			throw new InvalidOperationException($"Chunk: {ChunkLocator} is not complete");
+
+		var recordReadResult = await TryReadClosestForward(0L, token);
+
+		for (var logicalChunkNumber = ChunkHeader.ChunkStartNumber;
+			 logicalChunkNumber <= ChunkHeader.ChunkEndNumber;
+			 logicalChunkNumber++) {
+
+			var unmerged = await Spawn(logicalChunkNumber);
+			var writer = new ScavengedChunkWriter(unmerged);
+
+			while (recordReadResult.Success) {
+				var recordChunkNumber = (int)(recordReadResult.LogRecord.LogPosition / ChunkHeader.ChunkSize);
+				if (recordChunkNumber != logicalChunkNumber)
+					break;
+				await writer.WriteRecord(recordReadResult.LogRecord, token);
+				recordReadResult = await TryReadClosestForward(recordReadResult.NextPosition, token);
+			}
+
+			await writer.Complete(token);
+			yield return unmerged;
+		}
+
+		ValueTask<TFChunk> Spawn(int logicalChunkNumber) => CreateNew(
+			_fileSystem,
+			filename: Path.Combine(Path.GetDirectoryName(_filename)!, Guid.NewGuid() + ".unmerge.tmp"),
+			chunkDataSize: _chunkHeader.ChunkSize,
+			chunkStartNumber: logicalChunkNumber,
+			chunkEndNumber: logicalChunkNumber,
+			isScavenged: true,
+			inMem: _inMem,
+			unbuffered: _unbuffered,
+			writethrough: _writeThrough,
+			reduceFileCachePressure: _reduceFileCachePressure,
+			tracker: new TFChunkTracker.NoOp(),
+			getTransformFactory: _getTransformFactory,
+			token);
 	}
 
 	async ValueTask<IChunkRawReader> IChunkBlob.AcquireRawReader(CancellationToken token)

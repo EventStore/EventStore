@@ -9,7 +9,7 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Transforms.Identity;
+using EventStore.Core.Transforms;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog;
@@ -39,7 +39,7 @@ public class when_reading_from_a_cached_tfchunk<TLogFormat, TStreamId> : Specifi
 		await _chunk.Complete(CancellationToken.None);
 		_cachedChunk = await TFChunk.FromCompletedFile(new ChunkLocalFileSystem(Path.GetDirectoryName(Filename)), Filename, verifyHash: true, unbufferedRead: false,
 			reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
-			getTransformFactory: _ => new IdentityChunkTransformFactory());
+			getTransformFactory: DbTransformManager.Default);
 		await _cachedChunk.CacheInMemory(CancellationToken.None);
 	}
 

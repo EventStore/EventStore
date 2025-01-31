@@ -32,6 +32,20 @@ public abstract class TFChunkScavenger {
 	public const int MaxThreadCount = 4;
 	public const int MaxRetryCount = 5;
 	public const int FlushPageInterval = 32; // max 65536 pages to write resulting in 2048 flushes per chunk
+
+	public static async ValueTask<PosMap> WriteRecord(TFChunk.TFChunk newChunk, ILogRecord record, CancellationToken token) {
+		var writeResult = await newChunk.TryAppend(record, token);
+		if (!writeResult.Success) {
+			throw new Exception(string.Format(
+				"Unable to append record to scavenged chunk. Writer position: {0}, Record: {1}.",
+				writeResult.OldPosition,
+				record));
+		}
+
+		long logPos = newChunk.ChunkHeader.GetLocalLogPosition(record.LogPosition);
+		int actualPos = (int)writeResult.OldPosition;
+		return new PosMap(logPos, actualPos);
+	}
 }
 
 public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
@@ -206,7 +220,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 				writethrough: _db.Config.WriteThrough,
 				reduceFileCachePressure: _db.Config.ReduceFileCachePressure,
 				tracker: new TFChunkTracker.NoOp(),
-				transformFactory: _db.TransformManager.GetFactoryForNewChunk(),
+				getTransformFactory: _db.TransformManager,
 				ct);
 		} catch (IOException exc) {
 			_logger.Error(exc,
@@ -442,7 +456,7 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 				writethrough: db.Config.WriteThrough,
 				reduceFileCachePressure: db.Config.ReduceFileCachePressure,
 				tracker: new TFChunkTracker.NoOp(),
-				transformFactory: db.TransformManager.GetFactoryForNewChunk(),
+				getTransformFactory: db.TransformManager,
 				ct);
 		} catch (IOException exc) {
 			logger.Error(exc,
@@ -745,20 +759,6 @@ public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 
 			result = await chunk.TryReadClosestForward(result.NextPosition, ct);
 		}
-	}
-
-	public static async ValueTask<PosMap> WriteRecord(TFChunk.TFChunk newChunk, ILogRecord record, CancellationToken token) {
-		var writeResult = await newChunk.TryAppend(record, token);
-		if (!writeResult.Success) {
-			throw new Exception(string.Format(
-				"Unable to append record during scavenging. Scavenge position: {0}, Record: {1}.",
-				writeResult.OldPosition,
-				record));
-		}
-
-		long logPos = newChunk.ChunkHeader.GetLocalLogPosition(record.LogPosition);
-		int actualPos = (int)writeResult.OldPosition;
-		return new PosMap(logPos, actualPos);
 	}
 
 	internal class CommitInfo {

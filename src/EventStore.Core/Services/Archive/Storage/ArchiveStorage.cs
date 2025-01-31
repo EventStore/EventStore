@@ -68,10 +68,11 @@ public class ArchiveStorage(
 		if (chunk.ChunkHeader.IsSingleLogicalChunk) {
 			await StoreAsync(chunk, ct);
 		} else {
-			await foreach (var unmergedChunk in chunk.UnmergeAsync().WithCancellation(ct)) {
+			await foreach (var unmergedChunk in chunk.UnmergeAsync(ct)) {
 				// we need to dispose the unmerged chunk because it's temporary chunk
 				using (unmergedChunk) {
 					await StoreAsync(unmergedChunk, ct);
+					unmergedChunk.MarkForDeletion();
 				}
 			}
 		}

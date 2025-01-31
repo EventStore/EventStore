@@ -10,7 +10,7 @@ using Serilog;
 
 namespace EventStore.Core.Transforms;
 
-public class DbTransformManager {
+public class DbTransformManager : IGetChunkTransformFactory {
 	private IReadOnlyList<IDbTransform> _transforms;
 	private IDbTransform _activeTransform;
 
@@ -69,4 +69,7 @@ public class DbTransformManager {
 			return dbTransformManager;
 		}
 	}
+
+	public IChunkTransformFactory ForNewChunk() => GetFactoryForNewChunk();
+	public IChunkTransformFactory ForExistingChunk(TransformType type) => GetFactoryForExistingChunk(type);
 }

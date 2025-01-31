@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.Transforms.Identity;
+using EventStore.Core.Transforms;
 
 namespace EventStore.Core.Tests.TransactionLog;
 
@@ -67,11 +67,17 @@ public static class TFChunkHelper {
 			new InMemoryCheckpoint(-1));
 	}
 
-	public static ValueTask<TFChunk> CreateNewChunk(string fileName, int chunkSize = 4096, bool isScavenged = false, CancellationToken token = default) {
-		return TFChunk.CreateNew(new ChunkLocalFileSystem(path: ""), fileName, chunkSize, 0, 0,
-			isScavenged: isScavenged, inMem: false, unbuffered: false,
+	public static ValueTask<TFChunk> CreateNewChunk(
+		string fileName,
+		int chunkSize = 4096,
+		bool isScavenged = false,
+		int chunkStartNumber = 0,
+		int chunkEndNumber = 0,
+		CancellationToken token = default) {
+		return TFChunk.CreateNew(new ChunkLocalFileSystem(path: ""), fileName, chunkSize,
+			chunkStartNumber, chunkEndNumber, isScavenged: isScavenged, inMem: false, unbuffered: false,
 			writethrough: false, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
-			transformFactory: new IdentityChunkTransformFactory(),
+			getTransformFactory: DbTransformManager.Default,
 			token);
 	}
 }

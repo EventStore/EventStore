@@ -2,11 +2,10 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.IO;
-using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.Transforms.Identity;
+using EventStore.Core.Transforms;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog;
@@ -17,6 +16,6 @@ public class when_opening_tfchunk_from_non_existing_file : SpecificationWithFile
 	public void it_should_throw_a_file_not_found_exception() {
 		Assert.ThrowsAsync<CorruptDatabaseException>(async () => await TFChunk.FromCompletedFile(new ChunkLocalFileSystem(Path.GetDirectoryName(Filename)), Filename, verifyHash: true,
 			unbufferedRead: false, reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp(),
-			getTransformFactory: _ => new IdentityChunkTransformFactory()));
+			getTransformFactory: DbTransformManager.Default));
 	}
 }

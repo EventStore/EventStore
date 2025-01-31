@@ -793,6 +793,7 @@ public class Scenario<TLogFormat, TStreamId> : Scenario {
 				reduceFileCachePressure: false,
 				tracker: new TFChunkTracker.NoOp(),
 				transformFactory: transformFactory,
+				getTransformFactory: db.TransformManager,
 				transformHeader: transformHeader,
 				token);
 

@@ -7,7 +7,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Configuration.Sources;
 using EventStore.Core.Resilience;
 using EventStore.Core.Services.Archive.Archiver;
-using EventStore.Core.Services.Archive.Archiver.Unmerger;
 using EventStore.Core.Services.Archive.Naming;
 using EventStore.Core.Services.Archive.Storage;
 using EventStore.Core.TransactionLog.Chunks;
@@ -72,7 +71,6 @@ public class ArchivePlugableComponent : IPlugableComponent {
 		services.AddSingleton<IArchiveNamingStrategy, ArchiveNamingStrategy>();
 
 		if (_isArchiver) {
-			services.AddSingleton<IChunkUnmerger, ChunkUnmerger>();
 			services.AddSingleton<ArchiverService>(s => {
 				var archiveStorage = s.GetRequiredService<IArchiveStorage>();
 				return new(

@@ -32,7 +32,7 @@ public class tfchunk_get_actual_raw_position_should<TLogFormat, TStreamId> : Spe
 		if (scavenged && !completed)
 			throw new ArgumentException("scavenged chunk must be completed");
 
-		var chunk = await TFChunkHelper.CreateNewChunk(Path.Combine(PathName, $"{Guid.NewGuid()}.chunk"), 4096, scavenged, token);
+		var chunk = await TFChunkHelper.CreateNewChunk(Path.Combine(PathName, $"{Guid.NewGuid()}.chunk"), 4096, scavenged, token: token);
 
 		var actualPos = 0;
 		for (int i = 0; i < numEvents; i++) {
