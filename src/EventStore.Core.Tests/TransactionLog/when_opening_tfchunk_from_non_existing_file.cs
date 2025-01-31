@@ -2,12 +2,10 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.IO;
-using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.Transforms;
-using EventStore.Core.Transforms.Identity;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog;

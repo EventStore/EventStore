@@ -7,7 +7,6 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.Transforms;
-using EventStore.Core.Transforms.Identity;
 
 namespace EventStore.Core.Tests.TransactionLog;
 

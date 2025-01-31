@@ -1462,7 +1462,7 @@ public partial class TFChunk : IChunkBlob {
 			 logicalChunkNumber <= ChunkHeader.ChunkEndNumber;
 			 logicalChunkNumber++) {
 
-			var unmerged = await Spawn(logicalChunkNumber, token);
+			var unmerged = await Spawn(logicalChunkNumber);
 			var writer = new ScavengedChunkWriter(unmerged);
 
 			while (recordReadResult.Success) {
@@ -1477,7 +1477,7 @@ public partial class TFChunk : IChunkBlob {
 			yield return unmerged;
 		}
 
-		ValueTask<TFChunk> Spawn(int logicalChunkNumber, CancellationToken token) => CreateNew(
+		ValueTask<TFChunk> Spawn(int logicalChunkNumber) => CreateNew(
 			_fileSystem,
 			filename: Path.Combine(Path.GetDirectoryName(_filename)!, Guid.NewGuid() + ".unmerge.tmp"),
 			chunkDataSize: _chunkHeader.ChunkSize,
