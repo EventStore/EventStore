@@ -101,6 +101,7 @@ public sealed class ArchiverService :
 			}
 		} catch (Exception ex) when (ex is not OperationCanceledException oce || oce.CancellationToken != _lifetimeToken) {
 			Log.Error(ex, "Archive process has terminated unexpectedly");
+			Application.Exit(ExitCode.Error, "Archive process has terminated unexpectedly");
 		}
 	}
 
