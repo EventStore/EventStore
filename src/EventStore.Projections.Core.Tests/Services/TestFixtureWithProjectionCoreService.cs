@@ -9,7 +9,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;

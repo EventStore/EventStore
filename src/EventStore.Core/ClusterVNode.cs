@@ -1667,7 +1667,6 @@ public class ClusterVNode<TStreamId> :
 			}
 
 			storageWriter.Start();
-			AddTasks(storageWriter.Tasks);
 
 			_workersHandler.Start();
 			monitoringQueue.Start();

@@ -87,13 +87,9 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	private long _lastFlushSize;
 	private long _maxFlushSize;
 	private long _maxFlushDelay;
-	private readonly List<Task> _tasks = new();
 	private readonly TStreamId _emptyEventTypeId;
 	private readonly TStreamId _scavengePointsStreamId;
 	private readonly TStreamId _scavengePointEventTypeId;
-	public IEnumerable<Task> Tasks {
-		get { return _tasks; }
-	}
 
 	public StorageWriterService(IPublisher bus,
 		ISubscriber subscribeToBus,
