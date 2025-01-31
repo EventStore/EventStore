@@ -210,11 +210,6 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 			Application.Exit(ExitCode.Error,
 				string.Format("Unexpected error in StorageWriterService: {0}", exc.Message));
 		}
-
-		if (message is SystemMessage.BecomeShuttingDown) {
-			_writerQueue.RequestStop();
-			BlockWriter = true;
-		}
 	}
 
 	void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message) {
@@ -233,6 +228,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				}
 			case VNodeState.ShuttingDown: {
 					await Writer.Flush(token);
+					_writerQueue.RequestStop();
+					BlockWriter = true;
 					break;
 				}
 		}
