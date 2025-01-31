@@ -237,6 +237,8 @@ internal static class Program {
 						.RunConsoleAsync(x => x.SuppressStatusMessages = true, cts.Token);
 
 					exitCodeSource.TrySetResult(0);
+				} catch (OperationCanceledException) {
+					; // no op
 				} catch (Exception ex) {
 					Log.Fatal(ex, "Exiting");
 					exitCodeSource.TrySetResult(1);

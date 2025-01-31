@@ -146,10 +146,9 @@ public class when_node_becomes_leader_with_unindexed_data<TLogFormat, TStreamId>
 		subsystems: Array.Empty<ISubsystem>(), gossipSeeds: gossipSeeds, inMemDb: false,
 		nodePriority: nodePriority, intHostAdvertiseAs: intHostAdvertiseAs);
 
-	private Task StartNode(int i, int priority, string intHostAdvertiseAs = null) {
+	private async Task StartNode(int i, int priority, string intHostAdvertiseAs = null) {
 		_nodes[i] = CreateNode(i, _nodeEndpoints[i], _nodeGossipSeeds[i], priority, intHostAdvertiseAs);
-		_nodes[i].Start();
-		return Task.CompletedTask;
+		await _nodes[i].Start();
 	}
 
 	private async Task<HttpStatusCode> GetLiveStatus(IPEndPoint httpEndPoint){
@@ -227,7 +226,7 @@ public class when_node_becomes_leader_with_unindexed_data<TLogFormat, TStreamId>
 
 		for (int i = 0; i < 3; i++) {
 			_nodes[i] = CreateNode(i, _nodeEndpoints[i], _nodeGossipSeeds[i], 0, null);
-			_nodes[i].Start();
+			await _nodes[i].Start();
 		}
 	}
 

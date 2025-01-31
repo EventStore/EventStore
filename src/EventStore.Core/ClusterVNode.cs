@@ -133,8 +133,7 @@ public abstract class ClusterVNode {
 	abstract public bool EnableUnixSocket { get; }
 	abstract public bool IsShutdown { get; }
 
-	abstract public void Start();
-	abstract public Task<ClusterVNode> StartAsync(bool waitUntilRead);
+	abstract public Task<ClusterVNode> StartAsync(bool waitUntilReady, CancellationToken token);
 	abstract public Task StopAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 }
 
@@ -203,6 +202,7 @@ public class ClusterVNode<TStreamId> :
 	private readonly CertificateDelegates.ServerCertificateValidator _externalServerCertificateValidator;
 	private readonly CertificateProvider _certificateProvider;
 	private readonly ClusterVNodeStartup<TStreamId> _startup;
+	private readonly Func<CancellationToken, ValueTask> _start;
 	private readonly INodeHttpClientFactory _nodeHttpClientFactory;
 	private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
@@ -1601,6 +1601,8 @@ public class ClusterVNode<TStreamId> :
 			return services;
 		}
 
+		IReadOnlyList<IClusterVNodeStartupTask> startupTasks = [];
+
 		void ConfigureNode(IApplicationBuilder app) {
 			var dbTransforms = app.ApplicationServices.GetService<IReadOnlyList<IDbTransform>>();
 			Db.TransformManager.LoadTransforms(dbTransforms);
@@ -1608,11 +1610,13 @@ public class ClusterVNode<TStreamId> :
 			if (!Db.TransformManager.TrySetActiveTransform(options.Database.Transform))
 				throw new InvalidConfigurationException(
 					$"Unknown {nameof(options.Database.Transform)} specified: {options.Database.Transform}");
+
+			startupTasks = app.ApplicationServices.GetRequiredService<IReadOnlyList<IClusterVNodeStartupTask>>();
 		}
 
-		void StartNodeUnwrapException(IApplicationBuilder app) {
+		async ValueTask StartNodeUnwrapException(CancellationToken token) {
 			try {
-				StartNode(app);
+				await StartNode(token);
 			} catch (AggregateException aggEx) when (aggEx.InnerException is { } innerEx) {
 				// We only really care that *something* is wrong - throw the first inner exception.
 				// keeping its original stack
@@ -1620,7 +1624,7 @@ public class ClusterVNode<TStreamId> :
 			}
 		}
 
-		void StartNode(IApplicationBuilder app) {
+		async ValueTask StartNode(CancellationToken token) {
 			// TRUNCATE IF NECESSARY
 			var truncPos = Db.Config.TruncateCheckpoint.Read();
 			if (truncPos != -1) {
@@ -1629,42 +1633,35 @@ public class ClusterVNode<TStreamId> :
 					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
 					epochCheckpoint, epochCheckpoint);
 				var truncator = new TFChunkDbTruncator(Db.Config, Db.Manager.FileSystem, type => Db.TransformManager.GetFactoryForExistingChunk(type));
-				using (var task = truncator.TruncateDb(truncPos, CancellationToken.None).AsTask()) {
-					task.Wait(DefaultShutdownTimeout);
-				}
+				await truncator.TruncateDb(truncPos, CancellationToken.None);
 
 				// The truncator has moved the checkpoints but it is possible that other components in the startup have
 				// already read the old values. If we ensure all checkpoint reads are performed after the truncation
 				// then we can remove this extra restart
 				Log.Information("Truncation successful. Shutting down.");
 				var shutdownGuid = Guid.NewGuid();
-				using (var task = HandleAsync(
-					       new SystemMessage.BecomeShuttingDown(shutdownGuid, exitProcess: true, shutdownHttp: true),
-					       CancellationToken.None).AsTask()) {
-					task.Wait(DefaultShutdownTimeout);
-				}
+				await HandleAsync(
+						new SystemMessage.BecomeShuttingDown(shutdownGuid, exitProcess: true, shutdownHttp: true),
+						token)
+					.AsTask()
+					.WaitAsync(DefaultShutdownTimeout, token);
 
 				Handle(new SystemMessage.BecomeShutdown(shutdownGuid));
 				Application.Exit(0, "Shutting down after successful truncation.");
 				return;
 			}
 
-			var startupTasks = (app.ApplicationServices.GetRequiredService<IReadOnlyList<IClusterVNodeStartupTask>>())
-				.Select(x => x.Run())
-				.ToArray();
-			Task.WaitAll(startupTasks); // No timeout or cancellation, this is intended
+			foreach (var x in startupTasks) {
+				await x.Run(token);
+			}
 
 			// start the main queue as we publish messages to it while opening the db
 			AddTask(_controller.Start());
 
-			using (var task = Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads,
-				       createNewChunks: false).AsTask()) {
-				task.Wait(); // No timeout or cancellation, this is intended
-			}
+			await Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads,
+				createNewChunks: false, token: token);
 
-			using (var task = epochManager.Init(CancellationToken.None).AsTask()) {
-				task.Wait(); // No timeout or cancellation, this is intended
-			}
+			await epochManager.Init(token);
 
 			storageWriter.Start();
 			AddTasks(storageWriter.Tasks);
@@ -1677,6 +1674,7 @@ public class ClusterVNode<TStreamId> :
 
 			dynamicCacheManager.Start();
 		}
+		_start = StartNodeUnwrapException;
 
 		_startup = new ClusterVNodeStartup<TStreamId>(
 			modifiedOptions.PlugableComponents,
@@ -1690,8 +1688,7 @@ public class ClusterVNode<TStreamId> :
 			trackers,
 			options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
 			ConfigureNodeServices,
-			ConfigureNode,
-			StartNodeUnwrapException);
+			ConfigureNode);
 
 		_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 		_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
@@ -1804,10 +1801,6 @@ public class ClusterVNode<TStreamId> :
 		}
 	}
 
-	public override void Start() {
-		_mainQueue.Publish(new SystemMessage.SystemInit());
-	}
-
 	public override async Task StopAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default) {
 		if (Interlocked.Exchange(ref _stopCalled, 1) == 1) {
 			Log.Warning("Stop was already called.");
@@ -1880,7 +1873,7 @@ public class ClusterVNode<TStreamId> :
 #endif
 	}
 
-	public override Task<ClusterVNode> StartAsync(bool waitUntilReady) {
+	public override async Task<ClusterVNode> StartAsync(bool waitUntilReady, CancellationToken token) {
 		var tcs = new TaskCompletionSource<ClusterVNode>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		if (waitUntilReady) {
@@ -1890,12 +1883,13 @@ public class ClusterVNode<TStreamId> :
 			tcs.TrySetResult(this);
 		}
 
-		Start();
+		await _start(token);
+		_mainQueue.Publish(new SystemMessage.SystemInit());
 
 		if (IsShutdown)
 			tcs.TrySetResult(this);
 
-		return tcs.Task;
+		return await tcs.Task;
 	}
 
 	public static ValueTuple<bool, string> ValidateServerCertificate(X509Certificate certificate,

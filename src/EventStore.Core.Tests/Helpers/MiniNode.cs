@@ -38,6 +38,7 @@ using EventStore.Plugins.Transforms;
 using Microsoft.Extensions.DependencyInjection;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
 using EventStore.Core.Tests.Index.Hashers;
+using System.Threading;
 
 namespace EventStore.Core.Tests.Helpers;
 
@@ -293,7 +294,7 @@ public class MiniNode<TLogFormat, TStreamId> : MiniNode, IAsyncDisposable {
 		if (Node.IsShutdown)
 			_started.TrySetResult(true);
 
-		await Node.StartAsync(true).WithTimeout(TimeSpan.FromSeconds(60));
+		await Node.StartAsync(true, CancellationToken.None).WithTimeout(TimeSpan.FromSeconds(60));
 
 		await Started.WithTimeout();
 

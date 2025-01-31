@@ -56,7 +56,6 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 	private readonly StatusCheck _statusCheck;
 	private readonly Func<IServiceCollection, IServiceCollection> _configureNodeServices;
 	private readonly Action<IApplicationBuilder> _configureNode;
-	private readonly Action<IApplicationBuilder> _startNode;
 
 	private bool _ready;
 	private readonly IAuthorizationProvider _authorizationProvider;
@@ -79,8 +78,7 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		Trackers trackers,
 		string clusterDns,
 		Func<IServiceCollection, IServiceCollection> configureNodeServices,
-		Action<IApplicationBuilder> configureNode,
-		Action<IApplicationBuilder> startNode) {
+		Action<IApplicationBuilder> configureNode) {
 
 		Ensure.Positive(maxAppendSize, nameof(maxAppendSize));
 
@@ -113,7 +111,6 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 		_clusterDns = clusterDns;
 		_configureNodeServices = configureNodeServices ?? throw new ArgumentNullException(nameof(configureNodeServices));
 		_configureNode = configureNode ?? throw new ArgumentNullException(nameof(configureNode));
-		_startNode = startNode ?? throw new ArgumentNullException(nameof(startNode));
 		_statusCheck = new StatusCheck(this);
 	}
 
@@ -180,8 +177,6 @@ public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.Sy
 						.Build(),
 					_httpService);
 			});
-
-		_startNode(app);
 	}
 
 	public IServiceProvider ConfigureServices(IServiceCollection services) {

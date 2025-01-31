@@ -34,7 +34,6 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 	private readonly IArchiveNamingStrategy _namingStrategy;
 
 	private static readonly ILogger Log = Serilog.Log.ForContext<ArchiveCatchup>();
-	private static readonly TimeSpan RetryInterval = TimeSpan.FromMinutes(1);
 
 	public ArchiveCatchup(
 		string dbPath,
@@ -53,11 +52,9 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 		_namingStrategy = namingStrategy;
 	}
 
-	public Task Run() => Run(CancellationToken.None);
-
-	private async Task Run(CancellationToken ct) {
+	public async ValueTask Run(CancellationToken ct) {
 		var writerChk = _writerCheckpoint.Read();
-		var archiveChk = await GetArchiveCheckpoint(ct);
+		var archiveChk = await _archiveReader.GetCheckpoint(ct);
 
 		if (writerChk >= archiveChk)
 			return;
@@ -81,17 +78,6 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 
 		Log.Information("Catch-up with the archive completed");
 		return true;
-	}
-
-	private async Task<long> GetArchiveCheckpoint(CancellationToken ct) {
-		do {
-			try {
-				return await _archiveReader.GetCheckpoint(ct);
-			} catch (Exception ex) {
-				Log.Error(ex, "Failed to get archive checkpoint. Retrying in: {interval}", RetryInterval);
-				await Task.Delay(RetryInterval, ct);
-			}
-		} while (true);
 	}
 
 	private async Task<bool> FetchAndCommitChunk(int logicalChunkNumber, CancellationToken ct) {
@@ -136,10 +122,6 @@ public class ArchiveCatchup : IClusterVNodeStartupTask {
 			return true;
 		} catch (ChunkDeletedException) {
 			Log.Warning("Failed to fetch chunk: {logicalChunkNumber} from the archive as it was deleted. This can happen if the archive is being scavenged.", logicalChunkNumber);
-			return false;
-		} catch (Exception ex) {
-			Log.Error(ex, "Failed to fetch chunk: {logicalChunkNumber} from the archive. Retrying in {interval}", logicalChunkNumber, RetryInterval);
-			await Task.Delay(RetryInterval, ct);
 			return false;
 		}
 	}

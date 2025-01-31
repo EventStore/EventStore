@@ -312,7 +312,7 @@ public class ClusterVNodeHostedService : IHostedService, IDisposable {
 	}
 
 	public Task StartAsync(CancellationToken cancellationToken) =>
-		_options.Application.WhatIf ? Task.CompletedTask : Node.StartAsync(false);
+		_options.Application.WhatIf ? Task.CompletedTask : Node.StartAsync(waitUntilReady: false, cancellationToken);
 
 	public Task StopAsync(CancellationToken cancellationToken) =>
 		Node.StopAsync(cancellationToken: cancellationToken);

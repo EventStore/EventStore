@@ -83,7 +83,7 @@ public abstract class specification_with_standard_projections_runnning<TLogForma
 		var projectionsStarted = _projections.Select(p => SystemProjections.Created(p.LeaderInputBus)).ToArray();
 
 		foreach (var node in _nodes) {
-			node.Start();
+			await node.Start();
 			node.WaitIdle();
 		}
 
