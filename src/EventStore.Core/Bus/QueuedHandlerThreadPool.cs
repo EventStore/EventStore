@@ -94,10 +94,14 @@ namespace EventStore.Core.Bus;
 
 		public void Stop() {
 			Cancel();
-			if (!_stopped.Wait(_threadStopWaitTimeout))
-				throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", Name));
+			WaitForStop();
 			TryStopQueueStats();
 			_queueMonitor.Unregister(this);
+		}
+
+		public void WaitForStop() {
+			if (!_stopped.Wait(_threadStopWaitTimeout))
+				throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", Name));
 		}
 
 		public void RequestStop() {
