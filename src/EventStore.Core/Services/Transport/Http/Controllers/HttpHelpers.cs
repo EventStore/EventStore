@@ -21,7 +21,7 @@ public static class HttpHelpers {
 				new ICodec[] {Codec.ManualEncoding},
 				new Operation(Operations.Node.Redirect)),
 			(http, match) => http.ReplyTextContent(
-				"Moved", 302, "Found", "text/plain",
+				"Moved", 302, "Found", ContentType.PlainText,
 				new[] {
 					new KeyValuePair<string, string>(
 						"Location", new Uri(match.BaseUri, toUrl).AbsoluteUri)

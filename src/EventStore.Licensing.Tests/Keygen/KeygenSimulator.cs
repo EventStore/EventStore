@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text;
 using System.Net;
 using System;
+using ContentType = EventStore.Transport.Http.ContentType;
 
 namespace EventStore.Licensing.Tests.Keygen;
 
@@ -44,7 +45,7 @@ partial class KeygenSimulator : HttpMessageHandler {
 		var content = JsonSerializer.Serialize(response, _serializerOptions);
 		await _responses.Writer.WriteAsync(new HttpResponseMessage {
 			StatusCode = httpStatusCode,
-			Content = new StringContent(content, Encoding.UTF8, "application/json")
+			Content = new StringContent(content, Encoding.UTF8, ContentType.Json)
 		});
 	}
 }

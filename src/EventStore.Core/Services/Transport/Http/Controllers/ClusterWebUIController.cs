@@ -42,7 +42,7 @@ public class ClusterWebUiController : CommunicationController {
 			Codec.Json.To(_enabledNodeSubsystems),
 			200,
 			"OK",
-			"application/json",
+			ContentType.Json,
 			null,
 			ex => Log.Information(ex, "Failed to prepare main menu")
 		);
@@ -57,7 +57,7 @@ public class ClusterWebUiController : CommunicationController {
 				new ICodec[] {Codec.ManualEncoding},
 				new Operation(Operations.Node.Redirect)),
 			(http, match) => http.ReplyTextContent(
-				"Moved", 302, "Found", "text/plain",
+				"Moved", 302, "Found", ContentType.PlainText,
 				new[] {
 					new KeyValuePair<string, string>(
 						"Location", new Uri(http.HttpEntity.RequestedUrl, toUrl).AbsoluteUri)

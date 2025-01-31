@@ -23,10 +23,6 @@ abstract class SpecificationWithUsers<TLogFormat, TStreamId>
 
 	protected readonly NetworkCredential _admin = DefaultData.AdminNetworkCredentials;
 
-	protected override bool GivenSkipInitializeStandardUsersCheck() {
-		return false;
-	}
-
 	protected override MiniNode<TLogFormat, TStreamId> CreateMiniNode() {
 		return new MiniNode<TLogFormat, TStreamId>(PathName,
 			enableTrustedAuth: true);

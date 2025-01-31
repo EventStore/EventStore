@@ -40,7 +40,7 @@ public abstract class CommunicationController : IHttpController {
 
 	protected RequestParams SendBadRequest(HttpEntityManager httpEntityManager, string reason) {
 		httpEntityManager.ReplyContent(Encoding.ASCII.GetBytes(reason), HttpStatusCode.BadRequest,
-			"Bad Request",type: "text/plain", headers:null,
+			"Bad Request",type: ContentType.PlainText, headers:null,
 			e => Log.Debug("Error while closing HTTP connection (bad request): {e}.", e.Message));
 
 		return new RequestParams(done: true);

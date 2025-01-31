@@ -11,8 +11,7 @@ using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Core.Tests.Http.Streams;
 
-public abstract class HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId>
-	: HttpBehaviorSpecification<TLogFormat, TStreamId> {
+public abstract class HttpSpecificationWithLinkToToDeletedEvents : HttpBehaviorSpecification {
 	protected string LinkedStreamName;
 	protected string DeletedStreamName;
 

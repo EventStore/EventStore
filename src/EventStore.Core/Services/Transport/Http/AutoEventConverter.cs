@@ -48,6 +48,7 @@ public static class AutoEventConverter {
 			}
 
 			case ContentType.EventJson:
+			case ContentType.LegacyEventJson:
 				return targetCodec.To(dto);
 
 
@@ -80,8 +81,11 @@ public static class AutoEventConverter {
 			case ContentType.Json:
 				return LoadRaw(sourceCodec.Encoding.GetString(request), true, includedId, includedType);
 			case ContentType.EventJson:
+			case ContentType.LegacyEventJson:
 			case ContentType.EventsJson:
+			case ContentType.LegacyEventsJson:
 			case ContentType.AtomJson:
+			case ContentType.LegacyAtomJson:
 				var writeEvents = LoadFromJson(sourceCodec.Encoding.GetString(request));
 				if (writeEvents.IsEmpty())
 					return null;

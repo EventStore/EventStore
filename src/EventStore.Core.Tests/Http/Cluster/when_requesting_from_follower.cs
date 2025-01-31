@@ -12,6 +12,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Integration;
 using NUnit.Framework;
+using ContentType = EventStore.Transport.Http.ContentType;
 
 namespace EventStore.Core.Tests.Http.Cluster;
 
@@ -31,12 +32,12 @@ public class when_requesting_from_follower<TLogFormat, TStreamId> : specificatio
 		var follower = GetFollowers().First();
 		_followerEndPoint = follower.HttpEndPoint;
 		_client = follower.CreateHttpClient();
-		
+
 		// Wait for the admin user to be created
 		await leader.AdminUserCreated;
 		// Wait for the admin user created event to be replicated before starting our tests
 		var leaderIndex = leader.Db.Config.IndexCheckpoint.Read();
-		AssertEx.IsOrBecomesTrue(()=> follower.Db.Config.IndexCheckpoint.Read() >= leaderIndex, 
+		AssertEx.IsOrBecomesTrue(()=> follower.Db.Config.IndexCheckpoint.Read() >= leaderIndex,
 			timeout: TimeSpan.FromSeconds(10),
 			msg: $"Waiting for follower to reach index checkpoint timed out! (LeaderIndex={leaderIndex},FollowerState={follower.NodeState})");
 
@@ -55,7 +56,7 @@ public class when_requesting_from_follower<TLogFormat, TStreamId> : specificatio
 		AssertEx.IsOrBecomesTrue(() => leader.Db.Config.IndexCheckpoint.Read() > leaderIndex,
 			timeout: TimeSpan.FromSeconds(10),
 			msg: "Waiting for event to be processed on leader timed out!");
-		
+
 		leaderIndex = leader.Db.Config.IndexCheckpoint.Read();
 		AssertEx.IsOrBecomesTrue(() => follower.Db.Config.IndexCheckpoint.Read() >= leaderIndex,
 			timeout: TimeSpan.FromSeconds(10),
@@ -178,7 +179,7 @@ public class when_requesting_from_follower<TLogFormat, TStreamId> : specificatio
 	private Task<HttpResponseMessage> ReadStream(IPEndPoint nodeEndpoint, string path, bool requireLeader) {
 		var uri = CreateUri(nodeEndpoint, path);
 		var request = CreateRequest(uri, HttpMethod.Get, requireLeader);
-		request.Headers.Add("Accept", "application/json");
+		request.Headers.Add("Accept", ContentType.Json);
 		return GetRequestResponse(request);
 	}
 
@@ -196,11 +197,11 @@ public class when_requesting_from_follower<TLogFormat, TStreamId> : specificatio
 		request.Headers.Add("ES-ExpectedVersion", ExpectedVersion.Any.ToString());
 		request.Headers.Add("ES-EventId", Guid.NewGuid().ToString());
 		var data = "{a : \"1\", b:\"3\", c:\"5\" }";
-		request.Content = new StringContent(data, Encoding.UTF8, "application/json");
+		request.Content = new StringContent(data, Encoding.UTF8, ContentType.Json);
 
 		return GetRequestResponse(request);
 	}
-	
+
 	private static string GetAuthorizationHeader(NetworkCredential credentials)
 		=> Convert.ToBase64String(Encoding.ASCII.GetBytes($"{credentials.UserName}:{credentials.Password}"));
 

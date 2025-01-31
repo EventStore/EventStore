@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,13 +16,12 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
-using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Core.Tests.Http.Users.users;
+using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace EventStore.Core.Tests.Http.Streams {
 	namespace feed {
-		public abstract class SpecificationWithLongFeed<TLogFormat, TStreamId>
-			: with_admin_user<TLogFormat, TStreamId> {
+		public abstract class SpecificationWithLongFeed : with_admin_user {
 			protected int _numberOfEvents;
 
 			protected override async Task Given() {
@@ -51,27 +49,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_posting_multiple_events<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
-			protected override Task When() {
-				return GetJson<JObject>(TestStream, ContentType.AtomJson);
-			}
-
-			[Test]
-			public void returns_ok_status_code() {
-				Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
-			}
-		}
-
-		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_retrieving_feed_head<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
+		[TestFixture(ContentType.AtomJson)]
+		[TestFixture(ContentType.LegacyAtomJson)]
+		public class when_retrieving_feed_head(string contentType) : SpecificationWithLongFeed {
 			private JObject _feed;
 
 			protected override async Task When() {
-				_feed = await GetJson<JObject>(TestStream, ContentType.AtomJson);
+				_feed = await GetJson<JObject>(TestStream, contentType);
 			}
 
 			[Test]
@@ -111,9 +95,9 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_retrieving_feed_head_with_forwarded_prefix<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
+		[TestFixture(ContentType.AtomJson)]
+		[TestFixture(ContentType.LegacyAtomJson)]
+		public class when_retrieving_feed_head_with_forwarded_prefix(string contentType) : SpecificationWithLongFeed {
 			private JObject _feed;
 			private string _prefix;
 
@@ -121,7 +105,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 				_prefix = "testprefix";
 				var headers = new NameValueCollection();
 				headers.Add("X-Forwarded-Prefix", _prefix);
-				_feed = await GetJson<JObject>(TestStream, ContentType.AtomJson, headers: headers);
+				_feed = await GetJson<JObject>(TestStream, contentType, headers: headers);
 			}
 
 			[Test]
@@ -161,21 +145,21 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_retrieving_the_previous_link_of_the_feed_head<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
+		[TestFixture(ContentType.AtomJson)]
+		[TestFixture(ContentType.LegacyAtomJson)]
+		public class when_retrieving_the_previous_link_of_the_feed_head(string contentType) : SpecificationWithLongFeed {
 			private JObject _feed;
 			private JObject _head;
 			private string _previous;
 
 			protected override async Task Given() {
 				await base.Given();
-				_head = await GetJson<JObject>(TestStream, ContentType.AtomJson);
+				_head = await GetJson<JObject>(TestStream, contentType);
 				_previous = GetLink(_head, "previous");
 			}
 
 			protected override async Task When() {
-				_feed = await GetJson<JObject>(_previous, ContentType.AtomJson);
+				_feed = await GetJson<JObject>(_previous, contentType);
 			}
 
 			[Test]
@@ -227,10 +211,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_reading_a_stream_forward_with_deleted_linktos<TLogFormat, TStreamId>
-			: HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
+		[TestFixture]
+		public class when_reading_a_stream_forward_with_deleted_linktos : HttpSpecificationWithLinkToToDeletedEvents {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -260,10 +242,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_reading_a_stream_forward_with_linkto<TLogFormat, TStreamId>
-			: HttpSpecificationWithLinkToToEvents<TLogFormat, TStreamId> {
+		[TestFixture]
+		public class when_reading_a_stream_forward_with_linkto : HttpSpecificationWithLinkToToEvents {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -308,10 +288,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_reading_a_stream_forward_with_linkto_with_at_sign_in_name<TLogFormat, TStreamId>
-			: HttpBehaviorSpecification<TLogFormat, TStreamId> {
+		[TestFixture]
+		public class when_reading_a_stream_forward_with_linkto_with_at_sign_in_name : HttpBehaviorSpecification {
 			protected string LinkedStreamName;
 			protected string StreamName;
 
@@ -388,11 +366,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class
-			when_reading_a_stream_forward_with_maxcount_deleted_linktos<TLogFormat, TStreamId> :
-				SpecificationWithLinkToToMaxCountDeletedEvents<TLogFormat, TStreamId> {
+		[TestFixture]
+		public class when_reading_a_stream_forward_with_maxcount_deleted_linktos : SpecificationWithLinkToToMaxCountDeletedEvents {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -408,12 +383,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		[Explicit("Failing test for Greg demonstrating NullReferenceException in Convert.cs")]
-		public class
-			when_reading_a_stream_forward_with_maxcount_deleted_linktos_with_rich_entry<TLogFormat, TStreamId> :
-				SpecificationWithLinkToToMaxCountDeletedEvents<TLogFormat, TStreamId> {
+		[TestFixture]
+		public class when_reading_a_stream_forward_with_maxcount_deleted_linktos_with_rich_entry : SpecificationWithLinkToToMaxCountDeletedEvents {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -430,10 +401,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_reading_a_stream_forward_with_deleted_linktos_with_content_enabled_as_xml<TLogFormat, TStreamId> :
-			HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
+		[TestFixture]
+		public class when_reading_a_stream_forward_with_deleted_linktos_with_content_enabled_as_xml : HttpSpecificationWithLinkToToDeletedEvents {
 			private XDocument _feed;
 			private XElement[] _entries;
 
@@ -461,11 +430,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class
-			when_reading_a_stream_forward_with_deleted_linktos_with_content_enabled<TLogFormat, TStreamId> :
-				HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
+		[TestFixture]
+		public class when_reading_a_stream_forward_with_deleted_linktos_with_content_enabled : HttpSpecificationWithLinkToToDeletedEvents {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -496,10 +462,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_reading_a_stream_backward_with_deleted_linktos<TLogFormat, TStreamId>
-			: HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
+		[TestFixture]
+		public class when_reading_a_stream_backward_with_deleted_linktos : HttpSpecificationWithLinkToToDeletedEvents {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -529,11 +493,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class
-			when_reading_a_stream_backward_with_deleted_linktos_and_embed_of_content<TLogFormat, TStreamId> :
-				HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
+		[TestFixture]
+		public class when_reading_a_stream_backward_with_deleted_linktos_and_embed_of_content : HttpSpecificationWithLinkToToDeletedEvents {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -564,9 +525,9 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_polling_the_head_forward_and_a_new_event_appears<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
+		[TestFixture(ContentType.AtomJson)]
+		[TestFixture(ContentType.LegacyAtomJson)]
+		public class when_polling_the_head_forward_and_a_new_event_appears(string contentType) : SpecificationWithLongFeed {
 			private JObject _feed;
 			private JObject _head;
 			private string _previous;
@@ -574,7 +535,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			protected override async Task Given() {
 				await base.Given();
-				_head = await GetJson<JObject>(TestStream, ContentType.AtomJson);
+				_head = await GetJson<JObject>(TestStream, contentType);
 				Console.WriteLine(new string('*', 60));
 				Console.WriteLine(_head);
 				Console.WriteLine(TestStream);
@@ -584,7 +545,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 
 			protected override async Task When() {
-				_feed = await GetJson<JObject>(_previous, ContentType.AtomJson);
+				_feed = await GetJson<JObject>(_previous, contentType);
 			}
 
 			[Test]
@@ -599,16 +560,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class
-			when_reading_a_stream_forward_from_beginning_asking_for_less_events_than_in_the_stream<TLogFormat, TStreamId>  :
-				SpecificationWithLongFeed<TLogFormat, TStreamId> {
+		[TestFixture(ContentType.AtomJson)]
+		[TestFixture(ContentType.LegacyAtomJson)]
+		public class when_reading_a_stream_forward_from_beginning_asking_for_less_events_than_in_the_stream(string contentType) : SpecificationWithLongFeed {
 			private JObject _feed;
 
 			protected override async Task When() {
-				_feed = await GetJson<JObject>(TestStream + "/0/forward/" + (_numberOfEvents - 1),
-					accept: ContentType.AtomJson);
+				_feed = await GetJson<JObject>(TestStream + "/0/forward/" + (_numberOfEvents - 1), accept: contentType);
 			}
 
 			[Test]
@@ -618,16 +576,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class
-			when_reading_a_stream_forward_from_beginning_asking_for_more_events_than_in_the_stream<TLogFormat, TStreamId> :
-				SpecificationWithLongFeed<TLogFormat, TStreamId> {
+		[TestFixture(ContentType.AtomJson)]
+		[TestFixture(ContentType.LegacyAtomJson)]
+		public class when_reading_a_stream_forward_from_beginning_asking_for_more_events_than_in_the_stream(string contentType) : SpecificationWithLongFeed {
 			private JObject _feed;
 
 			protected override async Task When() {
-				_feed = await GetJson<JObject>(TestStream + "/0/forward/" + (_numberOfEvents + 1),
-					accept: ContentType.AtomJson);
+				_feed = await GetJson<JObject>(TestStream + "/0/forward/" + (_numberOfEvents + 1), accept: contentType);
 			}
 
 			[Test]
@@ -637,15 +592,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class
-			when_reading_a_stream_forward_from_beginning_asking_for_exactly_the_events_in_the_stream<TLogFormat, TStreamId> :
-				SpecificationWithLongFeed<TLogFormat, TStreamId> {
+		[TestFixture(ContentType.AtomJson)]
+		[TestFixture(ContentType.LegacyAtomJson)]
+		public class when_reading_a_stream_forward_from_beginning_asking_for_exactly_the_events_in_the_stream(string contentType) : SpecificationWithLongFeed {
 			private JObject _feed;
 
 			protected override async Task When() {
-				_feed = await GetJson<JObject>(TestStream + "/0/forward/" + _numberOfEvents, accept: ContentType.AtomJson);
+				_feed = await GetJson<JObject>(TestStream + "/0/forward/" + _numberOfEvents, accept: contentType);
 			}
 
 			[Test]
@@ -655,16 +608,16 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_reading_a_stream_forward_with_etag_in_header<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
+		[TestFixture(ContentType.AtomJson)]
+		[TestFixture(ContentType.LegacyAtomJson)]
+		public class when_reading_a_stream_forward_with_etag_in_header(string contentType) : SpecificationWithLongFeed {
 			private JObject _feed;
 
 			protected override async Task When() {
-				_feed = await GetJson<JObject>(TestStream, accept: ContentType.AtomJson);
+				_feed = await GetJson<JObject>(TestStream, accept: contentType);
 				var etag = _feed.Value<string>("eTag");
 				var headers = new NameValueCollection { { "If-None-Match", EntityTagHeaderValue.Parse($@"""{etag}""").Tag } };
-				_feed = await GetJson<JObject>(TestStream, accept: ContentType.AtomJson, headers: headers);
+				_feed = await GetJson<JObject>(TestStream, accept: contentType, headers: headers);
 			}
 
 			[Test]
@@ -675,10 +628,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[Category("LongRunning")]
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_reading_the_all_stream_backward_with_resolve_link_to<TLogFormat, TStreamId>
-		: HttpSpecificationWithLinkToToEvents<TLogFormat, TStreamId> {
+	[TestFixture]
+	public class when_reading_the_all_stream_backward_with_resolve_link_to : HttpSpecificationWithLinkToToEvents {
 		private JObject _feed;
 		private List<JToken> _entries;
 
@@ -694,13 +645,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(StreamName));
 			Assert.AreEqual(3, events.Count());
 		}
-		
+
 		[Test]
 		public void there_are_two_events_for_the_second_original_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(Stream2Name));
 			Assert.AreEqual(2, events.Count());
 		}
-		
+
 		[Test]
 		public void there_are_no_events_for_the_linked_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(LinkedStreamName));
@@ -709,10 +660,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[Category("LongRunning")]
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_reading_the_all_stream_backward_with_resolve_link_to_disabled<TLogFormat, TStreamId>
-		: HttpSpecificationWithLinkToToEvents<TLogFormat, TStreamId> {
+	[TestFixture]
+	public class when_reading_the_all_stream_backward_with_resolve_link_to_disabled : HttpSpecificationWithLinkToToEvents {
 		private JObject _feed;
 		private List<JToken> _entries;
 
@@ -728,31 +677,29 @@ namespace EventStore.Core.Tests.Http.Streams {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(StreamName));
 			Assert.AreEqual(2, events.Count());
 		}
-		
+
 		[Test]
 		public void there_is_one_event_for_the_second_original_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(Stream2Name));
 			Assert.AreEqual(1, events.Count());
 		}
-		
+
 		[Test]
 		public void there_are_two_events_for_the_linked_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(LinkedStreamName));
 			Assert.AreEqual(2, events.Count());
 		}
 	}
-		
+
 	[Category("LongRunning")]
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_reading_the_all_stream_forward_with_resolve_link_to<TLogFormat, TStreamId>
-		: HttpSpecificationWithLinkToToEvents<TLogFormat, TStreamId> {
+	[TestFixture]
+	public class when_reading_the_all_stream_forward_with_resolve_link_to : HttpSpecificationWithLinkToToEvents {
 		private JObject _feed;
 		private List<JToken> _entries;
 
 		protected override async Task When() {
 			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "True"}};
-			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/30", 
+			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/30",
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 		}
@@ -762,13 +709,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(StreamName));
 			Assert.AreEqual(3, events.Count());
 		}
-		
+
 		[Test]
 		public void there_are_two_events_for_the_second_original_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(Stream2Name));
 			Assert.AreEqual(2, events.Count());
 		}
-		
+
 		[Test]
 		public void there_are_no_events_for_the_linked_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(LinkedStreamName));
@@ -777,16 +724,14 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[Category("LongRunning")]
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_reading_the_all_stream_forward_with_resolve_link_to_disabled<TLogFormat, TStreamId>
-		: HttpSpecificationWithLinkToToEvents<TLogFormat, TStreamId> {
+	[TestFixture]
+	public class when_reading_the_all_stream_forward_with_resolve_link_to_disabled : HttpSpecificationWithLinkToToEvents {
 		private JObject _feed;
 		private List<JToken> _entries;
 
 		protected override async Task When() {
 			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "False"}};
-			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/30", 
+			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/30",
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 		}
@@ -796,13 +741,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(StreamName));
 			Assert.AreEqual(2, events.Count());
 		}
-		
+
 		[Test]
 		public void there_is_one_event_for_the_second_original_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(Stream2Name));
 			Assert.AreEqual(1, events.Count());
 		}
-		
+
 		[Test]
 		public void there_are_two_events_for_the_linked_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(LinkedStreamName));
@@ -815,22 +760,25 @@ namespace EventStore.Core.Tests.Http.Streams {
 namespace EventStore.Core.Tests.Http {
 	public class when_running_the_node_advertising_a_different_ip_as {
 		[Category("LongRunning")]
-		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_retrieving_feed_head_and_http_advertise_ip_is_set<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
+		[TestFixture(ContentType.EventsJson, ContentType.AtomJson)]
+		[TestFixture(ContentType.LegacyEventsJson, ContentType.AtomJson)]
+		[TestFixture(ContentType.EventsJson, ContentType.LegacyAtomJson)]
+		[TestFixture(ContentType.LegacyEventsJson, ContentType.LegacyAtomJson)]
+		public class when_retrieving_feed_head_and_http_advertise_ip_is_set(string postContentType, string getContentType) : with_admin_user {
 			private JObject _feed;
 			private string advertisedAddress = "127.0.10.1";
 			private int advertisedPort = 2116;
 
-			protected override MiniNode<TLogFormat, TStreamId> CreateMiniNode() {
-				return new MiniNode<TLogFormat, TStreamId>(PathName,
+			protected override MiniNode<LogFormat.V2, string> CreateMiniNode() {
+				return new MiniNode<LogFormat.V2, string>(PathName,
 					advertisedExtHostAddress: advertisedAddress, advertisedHttpPort: advertisedPort);
 			}
 
 			protected override async Task Given() {
 				var response = await MakeArrayEventsPost(
 					TestStream,
-					new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { Number = 1 } } });
+					new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { Number = 1 } } },
+					contentType: postContentType);
 				Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 			}
 
@@ -853,7 +801,7 @@ namespace EventStore.Core.Tests.Http {
 
 			protected override async Task When() {
 				Console.WriteLine("Getting feed");
-				_feed = await GetJson<JObject>(TestStream, ContentType.AtomJson);
+				_feed = await GetJson<JObject>(TestStream, getContentType);
 				Console.WriteLine("Feed: {0}", _feed);
 			}
 

@@ -2,23 +2,21 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
-using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Http.Streams.basic;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
-using System.Xml.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.Http.Users.users;
+using HttpStatusCode = System.Net.HttpStatusCode;
+using ContentType = EventStore.Transport.Http.ContentType;
 
 namespace EventStore.Core.Tests.Http.Streams;
 
-[TestFixture(typeof(LogFormat.V2), typeof(string))]
-[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-public class when_posting_metadata_as_json_to_non_existing_stream<TLogFormat, TStreamId>
-	: with_admin_user<TLogFormat, TStreamId> {
+[TestFixture]
+public class when_posting_metadata_as_json_to_non_existing_stream : with_admin_user {
 	private HttpResponseMessage _response;
 
 	protected override Task Given() => Task.CompletedTask;
@@ -47,14 +45,14 @@ public class when_posting_metadata_as_json_to_non_existing_stream<TLogFormat, TS
 	}
 }
 
-[TestFixture(typeof(LogFormat.V2), typeof(string))]
-[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-public class when_posting_metadata_as_json_to_existing_stream<TLogFormat, TStreamId>
-	: HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId> {
+[TestFixture(ContentType.EventsJson)]
+[TestFixture(ContentType.LegacyEventsJson)]
+public class when_posting_metadata_as_json_to_existing_stream(string contentType) : HttpBehaviorSpecificationWithSingleEvent {
 	protected override async Task Given() {
 		_response = await MakeArrayEventsPost(
 			TestStream,
-			new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { A = "1" } } });
+			new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { A = "1" } } },
+			contentType: contentType);
 	}
 
 	protected override async Task When() {
@@ -81,11 +79,8 @@ public class when_posting_metadata_as_json_to_existing_stream<TLogFormat, TStrea
 	}
 }
 
-[TestFixture(typeof(LogFormat.V2), typeof(string))]
-[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-public class
-	when_getting_metadata_for_an_existing_stream_without_an_accept_header<TLogFormat, TStreamId> :
-		HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId> {
+[TestFixture]
+public class when_getting_metadata_for_an_existing_stream_without_an_accept_header : HttpBehaviorSpecificationWithSingleEvent {
 	protected override Task When() {
 		return Get(TestStream + "/metadata", null, null, DefaultData.AdminNetworkCredentials, false);
 	}
@@ -101,19 +96,18 @@ public class
 	}
 }
 
-[TestFixture(typeof(LogFormat.V2), typeof(string))]
-[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-public class
-	when_getting_metadata_for_an_existing_stream_and_no_metadata_exists<TLogFormat, TStreamId>
-	: HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId> {
+[TestFixture(ContentType.EventsJson)]
+[TestFixture(ContentType.LegacyEventsJson)]
+public class when_getting_metadata_for_an_existing_stream_and_no_metadata_exists(string contentType) : HttpBehaviorSpecificationWithSingleEvent {
 	protected override async Task Given() {
 		_response = await MakeArrayEventsPost(
 			TestStream,
-			new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { A = "1" } } });
+			new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { A = "1" } } },
+			contentType: contentType);
 	}
 
 	protected override Task When() {
-		return Get(TestStream + "/metadata", String.Empty, Transport.Http.ContentType.Json,
+		return Get(TestStream + "/metadata", String.Empty, ContentType.Json,
 			DefaultData.AdminNetworkCredentials);
 	}
 

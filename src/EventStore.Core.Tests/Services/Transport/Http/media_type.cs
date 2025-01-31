@@ -71,22 +71,22 @@ public class media_type {
 
 	[Test]
 	public void parses_with_encoding() {
-		var c = MediaType.Parse("application/json;charset=utf-8");
+		var c = MediaType.Parse($"{ContentType.Json};charset=utf-8");
 
 		Assert.AreEqual("application", c.Type);
 		Assert.AreEqual("json", c.Subtype);
-		Assert.AreEqual("application/json", c.Range);
+		Assert.AreEqual(ContentType.Json, c.Range);
 		Assert.IsTrue(c.EncodingSpecified);
 		Assert.AreEqual(Helper.UTF8NoBom, c.Encoding);
 	}
 
 	[Test]
 	public void parses_with_encoding_and_priority() {
-		var c = MediaType.Parse("application/json;q=0.3;charset=utf-8");
+		var c = MediaType.Parse($"{ContentType.Json};q=0.3;charset=utf-8");
 
 		Assert.AreEqual("application", c.Type);
 		Assert.AreEqual("json", c.Subtype);
-		Assert.AreEqual("application/json", c.Range);
+		Assert.AreEqual(ContentType.Json, c.Range);
 		Assert.AreEqual(0.3f, c.Priority);
 		Assert.IsTrue(c.EncodingSpecified);
 		Assert.AreEqual(Helper.UTF8NoBom, c.Encoding);
@@ -94,33 +94,33 @@ public class media_type {
 
 	[Test]
 	public void parses_unknown_encoding() {
-		var c = MediaType.Parse("application/json;charset=woftam");
+		var c = MediaType.Parse($"{ContentType.Json};charset=woftam");
 
 		Assert.AreEqual("application", c.Type);
 		Assert.AreEqual("json", c.Subtype);
-		Assert.AreEqual("application/json", c.Range);
+		Assert.AreEqual(ContentType.Json, c.Range);
 		Assert.IsTrue(c.EncodingSpecified);
 		Assert.IsNull(c.Encoding);
 	}
 
 	[Test]
 	public void parses_with_spaces_between_parameters() {
-		var c = MediaType.Parse("application/json; charset=woftam");
+		var c = MediaType.Parse($"{ContentType.Json}; charset=woftam");
 
 		Assert.AreEqual("application", c.Type);
 		Assert.AreEqual("json", c.Subtype);
-		Assert.AreEqual("application/json", c.Range);
+		Assert.AreEqual(ContentType.Json, c.Range);
 		Assert.IsTrue(c.EncodingSpecified);
 		Assert.IsNull(c.Encoding);
 	}
 
 	[Test]
 	public void parses_upper_case_parameters() {
-		var c = MediaType.Parse("application/json; charset=UTF-8");
+		var c = MediaType.Parse($"{ContentType.Json}; charset=UTF-8");
 
 		Assert.AreEqual("application", c.Type);
 		Assert.AreEqual("json", c.Subtype);
-		Assert.AreEqual("application/json", c.Range);
+		Assert.AreEqual(ContentType.Json, c.Range);
 		Assert.IsTrue(c.EncodingSpecified);
 		Assert.AreEqual(Helper.UTF8NoBom, c.Encoding);
 	}
