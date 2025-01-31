@@ -94,10 +94,14 @@ namespace EventStore.Core.Bus;
 
 		public void Stop() {
 			Cancel();
-			if (!_stopped.Wait(_threadStopWaitTimeout))
-				throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", Name));
+			WaitForStop();
 			TryStopQueueStats();
 			_queueMonitor.Unregister(this);
+		}
+
+		public void WaitForStop() {
+			if (!_stopped.Wait(_threadStopWaitTimeout))
+				throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", Name));
 		}
 
 		public void RequestStop() {
@@ -159,6 +163,8 @@ namespace EventStore.Core.Bus;
 							}
 
 							_queueStats.ProcessingEnded(1);
+						} catch (OperationCanceledException ex) when (ex.CancellationToken == _lifetimeToken) {
+							break;
 						} catch (Exception ex) {
 							Log.Error(ex,
 								"Error while processing message {message} in queued handler '{queue}'.", msg,
