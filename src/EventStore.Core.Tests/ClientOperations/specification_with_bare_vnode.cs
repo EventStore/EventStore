@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
@@ -20,7 +21,7 @@ namespace EventStore.Core.Tests.ClientOperations;
 public abstract class specification_with_bare_vnode<TLogFormat, TStreamId> : IPublisher, ISubscriber, IDisposable {
 	private ClusterVNode _node;
 	private readonly List<IDisposable> _disposables = new List<IDisposable>();
-	public void CreateTestNode() {
+	public async ValueTask CreateTestNode() {
 		var logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 		var options = new ClusterVNodeOptions()
 			.ReduceMemoryUsageForTests()
@@ -42,7 +43,7 @@ public abstract class specification_with_bare_vnode<TLogFormat, TStreamId> : IPu
 		var app = builder.Build();
 		_node.Startup.Configure(app);
 
-		_node.StartAsync(true).Wait();
+		await _node.StartAsync(true, CancellationToken.None);
 	}
 	public void Publish(Message message) {
 		_node.MainQueue.Handle(message);

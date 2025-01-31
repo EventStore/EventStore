@@ -100,7 +100,7 @@ public class ArchiveCatchupTests : DirectoryPerTest<ArchiveCatchupTests> {
 	public async Task doesnt_catch_up_if_db_is_ahead_or_in_sync_with_archive(long dbCheckpoint, long archiveCheckpoint) {
 		var sut = CreateSut(dbCheckpoint: dbCheckpoint, archiveCheckpoint: archiveCheckpoint);
 
-		await sut.Catchup.Run();
+		await sut.Catchup.Run(CancellationToken.None);
 
 		Assert.Empty(sut.Archive.ChunkGets);
 		Assert.Equal(dbCheckpoint, sut.WriterCheckpoint.Read());
@@ -122,7 +122,7 @@ public class ArchiveCatchupTests : DirectoryPerTest<ArchiveCatchupTests> {
 			dbCheckpoint: dbCheckpoint,
 			archiveCheckpoint: archiveCheckpoint);
 
-		await sut.Catchup.Run();
+		await sut.Catchup.Run(CancellationToken.None);
 
 		var chunksToGet = new List<int>();
 		for (var i = (int)(dbCheckpoint / ChunkSize); i < (int)(archiveCheckpoint / ChunkSize); i++)
@@ -152,7 +152,7 @@ public class ArchiveCatchupTests : DirectoryPerTest<ArchiveCatchupTests> {
 			archiveCheckpoint: archiveCheckpoint,
 			dbChunks: dbChunks);
 
-		await sut.Catchup.Run();
+		await sut.Catchup.Run(CancellationToken.None);
 		await VerifyCatchUp(sut, dbCheckpoint, archiveCheckpoint, expectedChunksToFetch, expectedChunksToBackup);
 	}
 
@@ -168,7 +168,7 @@ public class ArchiveCatchupTests : DirectoryPerTest<ArchiveCatchupTests> {
 			archiveCheckpoint: 2000L,
 			onGetChunk: OnGetChunk);
 
-		await sut.Catchup.Run();
+		await sut.Catchup.Run(CancellationToken.None);
 
 		Assert.Equal(2000L, sut.WriterCheckpoint.Read());
 

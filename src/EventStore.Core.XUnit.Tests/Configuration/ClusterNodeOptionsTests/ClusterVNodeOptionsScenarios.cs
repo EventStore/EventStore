@@ -2,6 +2,7 @@
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
@@ -48,7 +49,7 @@ public abstract class SingleNodeScenario<TLogFormat, TStreamId> : SpecificationW
 					options.Application.AllowAnonymousStreamAccess,
 					options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue)]))),
 			certificateProvider: new OptionsCertificateProvider());
-		_node.Start();
+		await _node.StartAsync(waitUntilReady: false, CancellationToken.None);
 	}
 
 	[OneTimeTearDown]
@@ -70,7 +71,7 @@ public abstract class ClusterMemberScenario<TLogFormat, TStreamId> {
 	protected ILogFormatAbstractorFactory<TStreamId> _logFormatFactory;
 
 	[OneTimeSetUp]
-	public virtual void TestFixtureSetUp() {
+	public virtual async Task TestFixtureSetUp() {
 		_logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 		_quorumSize = _clusterSize / 2 + 1;
 
@@ -89,7 +90,7 @@ public abstract class ClusterMemberScenario<TLogFormat, TStreamId> {
 					_options.Application.AllowAnonymousStreamAccess,
 					_options.Application.OverrideAnonymousEndpointAccessForGossip).Create(c.MainQueue)]))),
 			certificateProvider: new OptionsCertificateProvider());
-		_node.Start();
+		await _node.StartAsync(waitUntilReady: false, CancellationToken.None);
 	}
 
 	[OneTimeTearDown]

@@ -23,7 +23,7 @@ public class when_restarting_one_node_at_a_time<TLogFormat, TStreamId> : specifi
 			
 			var node = CreateNode(i % 3, _nodeEndpoints[i % 3],
 				new[] {_nodeEndpoints[(i+1)%3].HttpEndPoint, _nodeEndpoints[(i+2)%3].HttpEndPoint});
-			node.Start();
+			await node.Start();
 			_nodes[i % 3] = node;
 
 			await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));

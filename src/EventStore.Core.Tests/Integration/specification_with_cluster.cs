@@ -106,9 +106,9 @@ public abstract class specification_with_cluster<TLogFormat, TStreamId> : Specif
 
 		BeforeNodesStart();
 
-		_nodes[0].Start();
-		_nodes[1].Start();
-		_nodes[2].Start();
+		await _nodes[0].Start();
+		await _nodes[1].Start();
+		await _nodes[2].Start();
 
 		try {
 			await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(60));

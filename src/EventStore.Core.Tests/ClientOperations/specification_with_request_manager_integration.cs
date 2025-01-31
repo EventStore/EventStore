@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -25,8 +26,8 @@ public abstract class specification_with_request_manager_integration<TLogFormat,
 	protected abstract Message When();
 
 	[SetUp]
-	public void Setup() {
-		CreateTestNode();
+	public async Task Setup() {
+		await CreateTestNode();
 		Envelope = new FakeEnvelope();
 
 		foreach (var m in WithInitialMessages()) {

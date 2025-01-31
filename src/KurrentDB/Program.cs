@@ -39,7 +39,6 @@ internal static class Program {
 
 		ThreadPool.SetMaxThreads(1000, 1000);
 		var exitCodeSource = new TaskCompletionSource<int>();
-		var cts = new CancellationTokenSource();
 
 		Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 		try {
@@ -178,6 +177,8 @@ internal static class Program {
 				return 0;
 			}
 
+			using var cts = new CancellationTokenSource();
+			var token = cts.Token;
 			Application.RegisterExitAction(code => {
 				// add a small delay to allow the host to start up in case there's a premature shutdown
 				cts.CancelAfter(TimeSpan.FromSeconds(1));
@@ -234,9 +235,11 @@ internal static class Program {
 						// Allows the subsystems to resolve dependencies out of the DI in Configure() before being started.
 						// Later it may be possible to use constructor injection instead if it fits with the bootstrapping strategy.
 						.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
-						.RunConsoleAsync(x => x.SuppressStatusMessages = true, cts.Token);
+						.RunConsoleAsync(x => x.SuppressStatusMessages = true, token);
 
 					exitCodeSource.TrySetResult(0);
+				} catch (OperationCanceledException) {
+					// no op
 				} catch (Exception ex) {
 					Log.Fatal(ex, "Exiting");
 					exitCodeSource.TrySetResult(1);

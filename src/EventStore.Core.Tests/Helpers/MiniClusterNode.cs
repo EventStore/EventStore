@@ -34,6 +34,7 @@ using EventStore.Plugins.Subsystems;
 using EventStore.TcpUnitTestPlugin;
 using Microsoft.Extensions.Configuration;
 using RuntimeInformation = System.Runtime.RuntimeInformation;
+using System.Threading;
 
 namespace EventStore.Core.Tests.Helpers;
 
@@ -223,7 +224,7 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 			.Build();
 	}
 
-	public void Start() {
+	public async Task Start() {
 		StartingTime.Start();
 
 		Node.MainBus.Subscribe(
@@ -263,7 +264,7 @@ public class MiniClusterNode<TLogFormat, TStreamId> {
 		}
 
 		_host.Start();
-		Node.Start();
+		await Node.StartAsync(waitUntilReady: false, CancellationToken.None);
 	}
 
 	public HttpClient CreateHttpClient() {
