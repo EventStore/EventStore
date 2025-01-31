@@ -28,6 +28,15 @@ public class AdminController : CommunicationController {
 	private static readonly ICodec[] SupportedCodecs = new ICodec[]
 		{Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml};
 
+	private static readonly ICodec[] SupportedStreamCodecs = new ICodec[] {
+		Codec.DescriptionJson,
+		Codec.LegacyDescriptionJson,
+		Codec.Text,
+		Codec.Json,
+		Codec.Xml,
+		Codec.ApplicationXml
+	};
+
 	public static readonly char[] ETagSeparatorArray = { ';' };
 
 	private static readonly Func<UriTemplateMatch, Operation> ReadStreamOperationForScavengeStream =
@@ -68,9 +77,9 @@ public class AdminController : CommunicationController {
 			new ControllerAction("/admin/login", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Login)),
 			OnGetLogin);
 		Register(service, "/streams/$scavenges/{scavengeId}/{event}/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
-			SupportedCodecs, ReadStreamOperationForScavengeStream);
+			SupportedStreamCodecs, ReadStreamOperationForScavengeStream);
 		Register(service, "/streams/$scavenges?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
-			SupportedCodecs, ReadStreamOperationForScavengeStream);
+			SupportedStreamCodecs, ReadStreamOperationForScavengeStream);
 	}
 
 	private static Func<UriTemplateMatch, Operation> ForScavengeStream(OperationDefinition definition) {
@@ -373,7 +382,7 @@ public class AdminController : CommunicationController {
 	}
 
 	private ResponseConfiguration ScavengeInProgressConfigurator(ICodec codec, ClientMessage.ScavengeDatabaseInProgressResponse message) {
-		return new ResponseConfiguration(HttpStatusCode.BadRequest, "Bad Request", "text/plain", Helper.UTF8NoBom);
+		return new ResponseConfiguration(HttpStatusCode.BadRequest, "Bad Request", ContentType.PlainText, Helper.UTF8NoBom);
 	}
 
 	private string ScavengeInProgressFormatter(ICodec codec, ClientMessage.ScavengeDatabaseInProgressResponse message) {
@@ -381,7 +390,7 @@ public class AdminController : CommunicationController {
 	}
 
 	private ResponseConfiguration ScavengeNotFoundConfigurator(ICodec codec, ClientMessage.ScavengeDatabaseNotFoundResponse message) {
-		return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", "text/plain", Helper.UTF8NoBom);
+		return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", ContentType.PlainText, Helper.UTF8NoBom);
 	}
 
 	private string ScavengeNotFoundFormatter(ICodec codec, ClientMessage.ScavengeDatabaseNotFoundResponse message) {
@@ -389,7 +398,7 @@ public class AdminController : CommunicationController {
 	}
 
 	private ResponseConfiguration ScavengeUnauthorizedConfigurator(ICodec codec, ClientMessage.ScavengeDatabaseUnauthorizedResponse message) {
-		return new ResponseConfiguration(HttpStatusCode.Unauthorized, "Unauthorized", "text/plain", Helper.UTF8NoBom);
+		return new ResponseConfiguration(HttpStatusCode.Unauthorized, "Unauthorized", ContentType.PlainText, Helper.UTF8NoBom);
 	}
 
 	private string ScavengeUnauthorizedFormatter(ICodec codec, ClientMessage.ScavengeDatabaseUnauthorizedResponse message) {

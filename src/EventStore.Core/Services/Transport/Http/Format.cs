@@ -43,7 +43,7 @@ public static class Format {
 			return String.Empty;
 
 		return entity.ResponseCodec.To(
-			Convert.ToStreamEventBackwardFeed(msg, entity.ResponseUrl, embed, headOfStream));
+			Convert.ToStreamEventBackwardFeed(msg, entity.ResponseUrl, embed, headOfStream, entity.ResponseCodec.ContentType));
 	}
 
 	public static string GetStreamEventsForward(HttpResponseFormatterArgs entity, Message message,
@@ -151,6 +151,6 @@ public static class Format {
 	public static string GetDescriptionDocument(HttpResponseFormatterArgs entity, string streamId,
 		string[] persistentSubscriptionStats) {
 		return entity.ResponseCodec.To(Convert.ToDescriptionDocument(entity.RequestedUrl, streamId,
-			persistentSubscriptionStats));
+			persistentSubscriptionStats, entity.ResponseCodec.ContentType));
 	}
 }

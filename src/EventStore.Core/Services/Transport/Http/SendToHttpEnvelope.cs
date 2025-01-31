@@ -1,4 +1,4 @@
-// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
+﻿// Copyright (c) Event Store Ltd and/or licensed to Event Store Ltd under one or more agreements.
 // Event Store Ltd licenses this file to you under the Event Store License v2 (see LICENSE.md).
 
 using System;
@@ -96,7 +96,7 @@ public class SendToHttpEnvelope<TExpectedResponseMessage> : IEnvelope where TExp
 			return _configurator(http.ResponseCodec, (TExpectedResponseMessage)message);
 		} catch (InvalidCastException) {
 			//NOTE: using exceptions to allow handling errors in debugger
-			return new ResponseConfiguration(500, "Internal server error", "text/plain", Helper.UTF8NoBom);
+			return new ResponseConfiguration(500, "Internal server error", ContentType.PlainText, Helper.UTF8NoBom);
 		}
 	}
 

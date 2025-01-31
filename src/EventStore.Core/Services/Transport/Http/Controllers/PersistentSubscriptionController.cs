@@ -780,7 +780,7 @@ public class PersistentSubscriptionController : CommunicationController {
 	}
 
 	private ResponseConfiguration ErrorConfigurator(ICodec codec, SubscriptionMessage.InvalidPersistentSubscriptionsRestart message) {
-		return new ResponseConfiguration(HttpStatusCode.BadRequest, "Bad Request", "text/plain",
+		return new ResponseConfiguration(HttpStatusCode.BadRequest, "Bad Request", ContentType.PlainText,
 			Helper.UTF8NoBom);
 	}
 

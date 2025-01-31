@@ -75,7 +75,7 @@ public class MiniWeb {
 			    || !File.Exists(fullPath)) {
 				Logger.Information("Replying 404 for {contentLocalPath} ==> {fullPath}", contentLocalPath, fullPath);
 				http.ReplyTextContent(
-					"Not Found", 404, "Not Found", "text/plain", null,
+					"Not Found", 404, "Not Found", ContentType.PlainText, null,
 					ex => Logger.Information(ex, "Error while replying from MiniWeb"));
 			} else {
 				var config = GetWebPageConfig(contentType);
@@ -90,7 +90,7 @@ public class MiniWeb {
 					ex => Logger.Information(ex, "Error while replying from MiniWeb"));
 			}
 		} catch (Exception ex) {
-			http.ReplyTextContent(ex.ToString(), 500, "Internal Server Error", "text/plain", null,
+			http.ReplyTextContent(ex.ToString(), 500, "Internal Server Error", ContentType.PlainText, null,
 				Console.WriteLine);
 		}
 	}

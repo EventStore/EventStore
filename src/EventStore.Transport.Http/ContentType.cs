@@ -35,4 +35,6 @@ public static class ContentType {
 	public const string LegacyCompetingJson = "application/vnd.eventstore.competingatom+json";
 
 	public const string Raw = "application/octet-stream";
+
+	public const string OpenMetricsText = "application/openmetrics-text";
 }

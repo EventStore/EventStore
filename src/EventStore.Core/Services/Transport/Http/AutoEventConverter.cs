@@ -48,6 +48,7 @@ public static class AutoEventConverter {
 			}
 
 			case ContentType.EventJson:
+			case ContentType.LegacyEventJson:
 				return targetCodec.To(dto);
 
 

@@ -245,7 +245,8 @@ public class AtomController : CommunicationController {
 	}
 
 	private bool GetDescriptionDocument(HttpEntityManager manager, UriTemplateMatch match) {
-		if (manager.ResponseCodec.ContentType == ContentType.DescriptionDocJson) {
+		if (manager.ResponseCodec.ContentType == ContentType.DescriptionDocJson ||
+		    manager.ResponseCodec.ContentType == ContentType.LegacyDescriptionDocJson) {
 			var stream = match.BoundVariables["stream"];
 			var accepts = (manager.HttpEntity.Request.AcceptTypes?.Length ?? 0) == 0 ||
 						  manager.HttpEntity.Request.AcceptTypes.Contains(ContentType.Any);
@@ -324,7 +325,7 @@ public class AtomController : CommunicationController {
 			var header = new[]
 				{new KeyValuePair<string, string>("Location", uri)};
 			manager.ReplyTextContent("Forwarding to idempotent URI", HttpStatusCode.RedirectKeepVerb,
-				"Temporary Redirect", "text/plain", header, e => { });
+				"Temporary Redirect", ContentType.PlainText, header, e => { });
 			return;
 		}
 
