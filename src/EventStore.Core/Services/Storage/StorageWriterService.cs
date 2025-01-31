@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -27,13 +26,15 @@ using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ILogger = Serilog.ILogger;
-using OperationCanceledException = System.OperationCanceledException;
 
 namespace EventStore.Core.Services.Storage;
 
 public abstract class StorageWriterService {
 }
 
+// StorageWriterService has its own queue. Messages are handled on that queue atomically, any exception
+// will shutdown the server. Messages therefore cannot be cancelled in the middle of processing
+// and instead Cancellation tokens are checked once at the top
 public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>,
 	IAsyncHandle<SystemMessage.StateChangeMessage>,
 	IAsyncHandle<SystemMessage.WriteEpoch>,
@@ -48,7 +49,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	private static readonly ILogger Log = Serilog.Log.ForContext<StorageWriterService>();
 	private static EqualityComparer<TStreamId> StreamIdComparer { get; } = EqualityComparer<TStreamId>.Default;
 
-	protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
+	private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
 	private static readonly TimeSpan WaitForChaserSingleIterationTimeout = TimeSpan.FromMilliseconds(200);
 
 	protected readonly TFChunkDb Db;
@@ -64,7 +65,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	protected readonly IEpochManager EpochManager;
 	protected readonly IPublisher Bus;
 	private readonly ISubscriber _subscribeToBus;
-	protected readonly IQueuedHandler StorageWriterQueue;
+	private readonly QueuedHandlerThreadPool _writerQueue;
 	private readonly InMemoryBus _writerBus;
 
 	private readonly Clock _clock = Clock.Instance;
@@ -86,7 +87,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	private long _lastFlushSize;
 	private long _maxFlushSize;
 	private long _maxFlushDelay;
-	private readonly List<Task> _tasks = new List<Task>();
+	private readonly List<Task> _tasks = new();
 	private readonly TStreamId _emptyEventTypeId;
 	private readonly TStreamId _scavengePointsStreamId;
 	private readonly TStreamId _scavengePointEventTypeId;
@@ -144,7 +145,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		Writer = writer;
 
 		_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
-		StorageWriterQueue = new QueuedHandlerThreadPool(new AdHocHandler<Message>(CommonHandle),
+		_writerQueue = new QueuedHandlerThreadPool(new AdHocHandler<Message>(CommonHandle),
 			"StorageWriterQueue",
 			queueStatsManager,
 			queueTrackers,
@@ -165,7 +166,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 
 	public void Start() {
 		Writer.Open();
-		_tasks.Add(StorageWriterQueue.Start());
+		_tasks.Add(_writerQueue.Start());
 	}
 
 	protected void SubscribeToMessage<T>() where T : Message {
@@ -177,19 +178,17 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 		if (message is StorageMessage.IFlushableMessage)
 			Interlocked.Increment(ref FlushMessagesInQueue);
 
-		StorageWriterQueue.Publish(message);
+		_writerQueue.Publish(message);
 
-		if (message is SystemMessage.BecomeShuttingDown)
-		// we need to handle this message on main thread to stop StorageWriterQueue
-		{
-			StorageWriterQueue.Stop();
-			BlockWriter = true;
+		if (message is SystemMessage.BecomeShuttingDown) {
+			// WaitForStop() on main thread to avoid deadlock with queue waiting for itself to stop
+			_writerQueue.WaitForStop();
 			Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
 		}
 	}
 
 	private async ValueTask CommonHandle(Message message, CancellationToken token) {
-		if (BlockWriter && !(message is SystemMessage.StateChangeMessage)) {
+		if (BlockWriter && message is not SystemMessage.StateChangeMessage) {
 			Log.Verbose("Blocking message {message} in StorageWriterService. Message:", message.GetType().Name);
 			Log.Verbose("{message}", message);
 			return;
@@ -230,6 +229,8 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 				}
 			case VNodeState.ShuttingDown: {
 					await Writer.Flush(token);
+					_writerQueue.RequestStop();
+					BlockWriter = true;
 					break;
 				}
 		}
