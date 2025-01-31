@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNext.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -27,13 +26,15 @@ using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ILogger = Serilog.ILogger;
-using OperationCanceledException = System.OperationCanceledException;
 
 namespace EventStore.Core.Services.Storage;
 
 public abstract class StorageWriterService {
 }
 
+// StorageWriterService has its own queue. Messages are handled on that queue atomically, any exception
+// will shutdown the server. Messages therefore cannot be cancelled in the middle of processing
+// and instead Cancellation tokens are checked once at the top
 public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>,
 	IAsyncHandle<SystemMessage.StateChangeMessage>,
 	IAsyncHandle<SystemMessage.WriteEpoch>,
@@ -48,7 +49,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	private static readonly ILogger Log = Serilog.Log.ForContext<StorageWriterService>();
 	private static EqualityComparer<TStreamId> StreamIdComparer { get; } = EqualityComparer<TStreamId>.Default;
 
-	protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
+	private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
 	private static readonly TimeSpan WaitForChaserSingleIterationTimeout = TimeSpan.FromMilliseconds(200);
 
 	protected readonly TFChunkDb Db;
@@ -86,7 +87,7 @@ public class StorageWriterService<TStreamId> : IHandle<SystemMessage.SystemInit>
 	private long _lastFlushSize;
 	private long _maxFlushSize;
 	private long _maxFlushDelay;
-	private readonly List<Task> _tasks = new List<Task>();
+	private readonly List<Task> _tasks = new();
 	private readonly TStreamId _emptyEventTypeId;
 	private readonly TStreamId _scavengePointsStreamId;
 	private readonly TStreamId _scavengePointEventTypeId;
