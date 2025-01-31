@@ -238,7 +238,7 @@ internal static class Program {
 
 					exitCodeSource.TrySetResult(0);
 				} catch (OperationCanceledException) {
-					; // no op
+					// no op
 				} catch (Exception ex) {
 					Log.Fatal(ex, "Exiting");
 					exitCodeSource.TrySetResult(1);
